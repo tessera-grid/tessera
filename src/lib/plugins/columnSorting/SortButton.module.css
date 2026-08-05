@@ -1,0 +1,16 @@
+.root {
+  display: flex;
+  color: var(--data-grid-control-color);
+}
+
+.sorted {
+  color: var(--data-grid-control-active-color);
+}
+
+.sorted:hover {
+  background-color: var(--data-grid-control-active-hover-bg);
+}
+
+.disabled {
+  cursor: not-allowed;
+}

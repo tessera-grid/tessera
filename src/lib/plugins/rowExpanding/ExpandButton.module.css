@@ -1,0 +1,11 @@
+.button {
+  transform: rotate(180deg);
+}
+
+.expanded {
+  transform: rotate(0deg);
+}
+
+.disabled {
+  transform: rotate(90deg);
+}

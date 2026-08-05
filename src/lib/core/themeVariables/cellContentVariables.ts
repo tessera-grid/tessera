@@ -1,0 +1,2 @@
+export const COLUMN_CONTENT_PADDING = 16
+export const COLUMN_CONTENT_GAP = 4

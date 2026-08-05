@@ -1,0 +1,12 @@
+.body-row--skeleton {
+  contain: paint;
+  display: flex;
+  width: 100%;
+  height: var(--data-grid-row-height);
+  z-index: 1;
+  background-color: var(--data-grid-row-bg);
+}
+
+.body-row--skeleton-odd {
+  background-color: var(--data-grid-row-odd-bg);
+}

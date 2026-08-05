@@ -1,0 +1,89 @@
+.body__row {
+  contain: layout paint;
+  display: flex;
+  position: absolute;
+  width: 100%;
+  height: var(--data-grid-row-height);
+  z-index: 1;
+  will-change: top;
+  background-color: var(--data-grid-row-bg);
+  transition: var(--data-grid-row-transition);
+
+  /* Бэкграунд нечетной строки (odd) */
+
+  &:is([data-row-odd='true']) {
+    background-color: var(--data-grid-row-odd-bg);
+  }
+
+  /* Бэкграунд строки при наведении (hover) */
+
+  &:hover {
+    background-color: var(--data-grid-row-hovered-bg);
+  }
+
+  /* Бэкграунд выбранной строки (selected) */
+
+  &:is([data-selected='true']) {
+    background-color: var(--data-grid-row-selected-bg);
+  }
+
+  /* Бэкграунд выбранной строки при наведении (selected + hover) */
+
+  &:hover:is([data-selected='true']) {
+    background-color: var(--data-grid-row-selected-hovered-bg);
+  }
+
+  /* Бэкграунд ячейки закрепленной колонки слева и выбранной строки (selected + pinned) */
+
+  &:is([data-selected='true'])
+    > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
+    background-color: var(--data-grid-cell-pinned-bg) !important;
+  }
+
+  /* Бэкграунд ячейки закрепленной колонки слева и выбранной строки при наведении (selected + hover + pinned) */
+
+  &:hover:is([data-selected='true'])
+    > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
+    background-color: var(
+      --data-grid-cell-pinned-selected-hovered-bg
+    ) !important;
+  }
+
+  /* Бэкграунд ячейки закрепленной колонки слева и невыбранной строки при наведении (not selected + hover + pinned) */
+
+  &:hover:not([data-selected='true'])
+    > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
+    background-color: var(--data-grid-cell-pinned-hovered-bg) !important;
+  }
+
+  /* Специфичные стили для строки, которая перетаскивается в данный момент */
+
+  &:is([data-row-draggable='true']),
+  &:hover:is([data-row-draggable='true']) {
+    background-color: var(--draggable-row-background-color) !important;
+    z-index: 5 !important;
+
+    & > * {
+      opacity: 0;
+      height: 0;
+    }
+  }
+}
+
+/* Плавность появления hidden-кнопок в строке */
+
+.body__row .row__button {
+  transition: var(--data-grid-button-cell-transition);
+}
+
+/* Скрытие hidden-кнопок в строке */
+
+.body__row .row__button--hidden {
+  opacity: 0;
+}
+
+/* Появление hidden-кнопок в строке при наведении */
+
+.body__row:hover:is([data-row-interact='true']) .row__button--hidden {
+  opacity: 1;
+}

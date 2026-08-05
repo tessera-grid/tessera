@@ -1,0 +1,28 @@
+.cell__wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  min-height: var(--data-grid-row-height);
+  gap: var(--data-grid-cell-content-gap);
+  padding: var(--data-grid-cell-content-padding);
+  overflow-x: hidden;
+  box-shadow: inherit;
+  box-sizing: border-box;
+}
+
+.cell__wrapper--flexCenter {
+  justify-content: center !important;
+}
+
+.cell__wrapper--flexEnd {
+  justify-content: flex-end !important;
+}
+
+.cell__wrapper--small-padding {
+  padding: 4px !important;
+}
+
+.cell__wrapper--no-padding {
+  padding: 0 !important;
+}

@@ -1,0 +1,17 @@
+.head {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+
+  position: sticky;
+  top: 0;
+  z-index: var(--data-grid-z-index-head);
+
+  opacity: var(--data-grid-opacity);
+  background-color: var(--data-grid-head-bg);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  &:is([data-layout='grid']) {
+    border-top: 1px solid var(--data-grid-row-hovered-bg);
+  }
+}

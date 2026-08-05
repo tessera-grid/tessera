@@ -1,0 +1,43 @@
+.wrapper {
+  position: absolute;
+  display: flex;
+  justify-content: flex-end;
+  height: 100%;
+  right: 0;
+  color: var(--data-grid-control-color);
+  background-color: var(--data-grid-head-bg);
+  z-index: 1;
+  width: var(--data-grid-resize-handler-width);
+}
+
+.wrapper:hover .handler:not([aria-disabled='true']) {
+  height: 20px;
+}
+
+.wrapper .handler[data-button-active='true'] {
+  height: 20px;
+}
+
+.wrapper:hover[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.wrapper:hover {
+  cursor: col-resize;
+}
+
+.background {
+  display: inherit;
+  padding-right: 4px;
+}
+
+.handler {
+  border-style: solid;
+  align-self: center;
+  border-radius: 2px;
+  border-width: 2px;
+  height: 16px;
+  touch-action: none;
+  user-select: none;
+  transition: var(--data-grid-resize-handler-transition);
+}

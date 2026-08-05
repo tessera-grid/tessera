@@ -1,0 +1,25 @@
+.cellButton {
+  display: flex;
+  color: var(--data-grid-action-button-color);
+}
+
+.cellButtonDisabled {
+  color: var(--data-grid-control-disabled-color);
+}
+
+.rowButton {
+  color: var(--data-grid-action-button-color);
+  background-color: var(--data-grid-action-button-bg);
+  border-radius: 50%;
+  box-shadow: rgb(0 0 0 / 20%) 0px 0px 4px 2px;
+}
+
+.rowButton:hover {
+  background-color: var(--data-grid-action-button-hover-bg);
+  transition: var(--data-grid-action-button-transition);
+}
+
+.rowButtonDisabled {
+  color: var(--data-grid-control-disabled-color);
+  background-color: var(--data-grid-action-button-bg) !important;
+}

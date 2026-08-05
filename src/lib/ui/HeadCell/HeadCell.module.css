@@ -1,0 +1,107 @@
+.head__cell {
+  contain: layout paint;
+  display: flex;
+  will-change: width, transform;
+  padding: 0;
+  user-select: none;
+  overflow: hidden;
+  transition: var(--data-grid-head-cell-transition);
+
+  /* Бордеры для ячеек заголовков */
+
+  &:is([data-layout='grid']) {
+    &:is([data-first-header-in-row='true']) {
+      border-left: 1px solid var(--data-grid-row-hovered-bg);
+    }
+
+    /*&:not([data-last-header-in-row='true']) {*/
+    border-right: 1px solid var(--data-grid-row-hovered-bg);
+    /*}*/
+
+    &:not([data-last-headers-row='true']):not(
+        [data-header-full-height='true']
+      ) {
+      border-bottom: 1px solid var(--data-grid-row-hovered-bg);
+    }
+  }
+
+  /* Sticky-ячейка закрепленной колонки слева */
+
+  &:is([data-cell-pinned='left']) {
+    will-change: transform;
+    z-index: var(--data-grid-z-index-pinned);
+    opacity: var(--data-grid-opacity);
+    background-color: var(--data-grid-cell-pinned-left-bg);
+    position: sticky;
+  }
+
+  /* Ширина и позиционирование контента последней ячейки действий в строке заголовков (заголовок колонки действий незакрепляемый!) */
+
+  &:is([data-layout='flex']):is([data-actions-column-cell='true']):is(
+      [data-last-header-in-row='true']
+    ) {
+    justify-content: flex-end;
+    flex-grow: 1;
+  }
+
+  /* Бордер для ячейки последней закрепленной колонки слева */
+
+  &:is([data-cell-last-left-pinned='true']) {
+    border-right: 1px solid var(--data-grid-cell-pinned-border-color);
+  }
+
+  /* Правый отступ для заголовков с ресайзером */
+
+  &:hover:is([data-column-resizable='true'])
+    :global(.data-grid__cell-wrapper-content) {
+    padding-right: var(--data-grid-resize-handler-width) !important;
+  }
+
+  /* Бэкграунд для заголовков и правого отступа с ресайзером при наведении */
+
+  &:hover:not([data-actions-column-cell='true']),
+  &:is([data-column-resizing='true']) {
+    background-color: var(--data-grid-head-cell-hovered-bg);
+
+    /*
+     * Хэндл должен маскировать контент ячейки (область ресайза), поэтому фон
+     * непрозрачный и равен фону ячейки — hovered-bg сделан сплошным цветом,
+     * иначе полупрозрачность удваивалась бы и хэндл темнел.
+     */
+    :global(.resize__handler--column) {
+      background-color: var(--data-grid-head-cell-hovered-bg);
+    }
+  }
+
+  /* Абсолютное позиционирование drag-иконки в заголовке */
+
+  & :global(.drag__handler--column) {
+    position: absolute !important;
+    left: 0 !important;
+  }
+}
+
+/* Плавность появления hidden-кнопок в заголовке */
+
+.head__cell .cell__button {
+  transition: var(--data-grid-button-cell-transition);
+}
+
+/* Скрытие hidden-кнопок в заголовке */
+
+.head__cell .cell__button--hidden:not([data-button-active='true']) {
+  min-width: 0;
+  flex: 1;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* Появление hidden-кнопок в заголовке при наведении */
+
+.head__cell:not([data-column-resizing='true']):hover
+  .cell__button--hidden:not([data-button-active='true']) {
+  opacity: 1;
+  flex: auto;
+  overflow: unset;
+  flex-shrink: 0;
+}

@@ -1,0 +1,53 @@
+.switch {
+  --_track-w: 32px;
+  --_track-h: 18px;
+  --_thumb: 14px;
+  --_gap: 2px;
+
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: var(--_track-w);
+  height: var(--_track-h);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--data-grid-switch-track-off);
+  cursor: pointer;
+  outline: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--data-grid-button-cell-transition);
+}
+
+.switch[data-state='checked'] {
+  background-color: var(--data-grid-switch-track-on);
+}
+
+.switch:focus-visible {
+  box-shadow: 0 0 0 var(--data-grid-focus-ring-width)
+    var(--data-grid-focus-ring);
+}
+
+.switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.thumb {
+  display: block;
+  width: var(--_thumb);
+  height: var(--_thumb);
+  border-radius: 50%;
+  background-color: var(--data-grid-switch-thumb);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateX(var(--_gap));
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.thumb[data-state='checked'] {
+  transform: translateX(calc(var(--_track-w) - var(--_thumb) - var(--_gap)));
+}

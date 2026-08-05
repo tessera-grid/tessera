@@ -1,0 +1,15 @@
+.button {
+  display: flex;
+  color: var(--data-grid-control-color);
+  cursor: grab;
+}
+
+.button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.disabled {
+  cursor: not-allowed;
+  color: var(--data-grid-control-disabled-color);
+}

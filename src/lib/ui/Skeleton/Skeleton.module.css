@@ -1,0 +1,30 @@
+.skeleton {
+  display: block;
+  background-color: var(--data-grid-skeleton-bg);
+  border-radius: 4px;
+}
+
+.wave {
+  position: relative;
+  overflow: hidden;
+}
+
+.wave::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--data-grid-skeleton-wave),
+    transparent
+  );
+  animation: data-grid-skeleton-wave 1.6s linear 0.5s infinite;
+}
+
+@keyframes data-grid-skeleton-wave {
+  100% {
+    transform: translateX(100%);
+  }
+}

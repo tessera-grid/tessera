@@ -1,0 +1,142 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+ * Палитра «Vercel Inspired» (см. docs/design.md) — единый источник правды темы.
+ * Моно-чернила (#171717) на почти-белом холсте (#fafafa), нейтральная серая
+ * шкала, красный для ошибок и один семантический синий (--info, #0070f3) для
+ * статусов/ссылок. Тема грида (--data-grid-*) целиком выводится из этих токенов.
+ */
+:root {
+  --radius: 0.625rem;
+  --background: #fafafa; /* canvas-soft */
+  --foreground: #171717; /* ink */
+  --card: #ffffff; /* canvas */
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #171717; /* ink — единственный primary */
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5; /* canvas-soft-2 */
+  --secondary-foreground: #171717;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373; /* нейтральный серый (вторичный текст, иконки контролов) */
+  --accent: #f5f5f5;
+  --accent-foreground: #171717;
+  --destructive: #ee0000; /* error */
+  --destructive-foreground: #ffffff;
+  --info: #0070f3; /* link — единственный семантический акцент (статусы/лоадер) */
+  --info-foreground: #ffffff;
+  --border: #ebebeb; /* hairline */
+  --input: #ebebeb;
+  --ring: #171717; /* ink-тонированный фокус-ринг */
+  --chart-1: #0070f3;
+  --chart-2: #50e3c2;
+  --chart-3: #7928ca;
+  --chart-4: #f5a623;
+  --chart-5: #ff0080;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #171717;
+  --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #ebebeb;
+  --sidebar-ring: #171717;
+}
+
+/*
+ * Тёмная тема: инверсия ink/canvas (design.md dark-режима не задаёт).
+ * Почти-чёрный холст, near-white чернила, тонкие белые alpha-границы.
+ */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --popover: #171717;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa; /* инверсия — near-white primary */
+  --primary-foreground: #171717;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a1a1a1; /* hairline-strong как вторичный текст на тёмном */
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --destructive: #ff4d4d;
+  --destructive-foreground: #171717;
+  --info: #3b82f6; /* ярче синий на тёмном */
+  --info-foreground: #ffffff;
+  --border: #ffffff1a; /* white 10% */
+  --input: #ffffff26; /* white 15% */
+  --ring: #e5e5e5;
+  --chart-1: #3b82f6;
+  --chart-2: #50e3c2;
+  --chart-3: #a78bfa;
+  --chart-4: #f5a623;
+  --chart-5: #ff4da6;
+  --sidebar: #171717;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #171717;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #ffffff1a;
+  --sidebar-ring: #e5e5e5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

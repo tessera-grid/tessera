@@ -1,0 +1,20 @@
+.root {
+  display: flex;
+  color: var(--data-grid-control-color);
+}
+
+.pinned {
+  color: var(--data-grid-control-active-color);
+}
+
+.pinned:hover {
+  background-color: var(--data-grid-control-active-hover-bg);
+}
+
+.pinned svg {
+  rotate: -45deg;
+}
+
+.disabled {
+  cursor: not-allowed;
+}

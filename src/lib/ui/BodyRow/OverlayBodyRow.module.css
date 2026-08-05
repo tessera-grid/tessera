@@ -1,0 +1,33 @@
+.body__row--overlay__container {
+  position: relative;
+  height: var(--data-grid-row-height);
+  width: 200px;
+}
+
+.body__row--overlay {
+  display: flex;
+  align-items: center;
+  border: none;
+  user-select: none;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 2px;
+  opacity: var(--data-grid-draggable-opacity) !important;
+  background-color: var(--data-grid-draggable-cell-bg);
+}
+
+.bubble {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--data-grid-accent);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 32px;
+  font-size: 0.875rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+}

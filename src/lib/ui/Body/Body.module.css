@@ -1,0 +1,11 @@
+.body {
+  contain: strict;
+  will-change: transform;
+  display: grid;
+  position: relative;
+  height: var(--data-grid-body-height);
+
+  &:is([data-layout='grid']) {
+    border-bottom: 1px solid var(--data-grid-row-hovered-bg);
+  }
+}
