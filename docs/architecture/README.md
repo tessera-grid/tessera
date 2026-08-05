@@ -62,6 +62,7 @@ The design decisions behind these choices are recorded as ADRs in
 | [rowdragging.md](rowdragging.md)                                   | The `rowDragging` plugin: activation, service column, drag handle, overlay, drop indicator     |
 | [reactivity.md](reactivity.md)                                     | The two update mechanisms: reference identity vs Pub-Sub                                       |
 | [rendering-and-virtualization.md](rendering-and-virtualization.md) | `DataGrid` render pipeline, flex vs grid layout, virtualization, DnD, theming                  |
+| [visual-tests.md](visual-tests.md)                                 | Visual-test coverage requirements: every plugin & component, one spec requirement per test     |
 
 ## The layers
 
@@ -135,3 +136,6 @@ flowchart TB
   contract driven by a `colorMode` prop. See rendering doc.
 - **Plugins are TanStack features.** A `TablePlugin` _is_ a TanStack
   `TableFeature` with extra lifecycle sugar. See plugins doc.
+- **Every plugin & component is visually tested.** Each plugin and UI component
+  ships visual tests — one per spec requirement, self-restoring, spec-named. See
+  [visual-tests.md](visual-tests.md).
