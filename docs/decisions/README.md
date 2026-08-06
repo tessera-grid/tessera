@@ -16,6 +16,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0007](0007-reactivity-pubsub.md)                   | Гранулярная реактивность на v8: Pub-Sub                        | Принято |
 | [0008](0008-fast-scroll.md)                         | Fast-scroll: скелетоны ячеек при быстрой прокрутке             | Принято |
 | [0009](0009-rowdragging-plugin.md)                  | Плагин rowDragging: реализация                                 | Принято |
+| [0011](0011-columndragging-plugin.md)               | Плагин columnDragging: реализация                              | Принято |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).
