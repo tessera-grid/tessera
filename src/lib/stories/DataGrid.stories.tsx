@@ -485,6 +485,12 @@ export const ColumnDragging: StoryObj<StoryProps> = {
   name: 'Column Dragging',
   args: {
     enableColumnDragging: true,
+    // Sized to overflow on both axes so the auto-scroll requirements (C12–C14)
+    // have real horizontal scroll distance and a vertical axis to stay off.
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
   },
 }
 
