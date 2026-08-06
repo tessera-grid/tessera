@@ -6,6 +6,11 @@ export {
   COLUMN_ACTIONS_SIZE,
 } from './lib/core/createColumns/actionColumnParams'
 
+// ID встроенных сервисных колонок — чтобы кастомный плагин мог таргетить их по id
+export { COLUMN_SELECTION_ID } from './lib/plugins/rowSelection'
+export { COLUMN_EXPANDING_ID } from './lib/plugins/rowExpanding'
+export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
+
 export { useSubscribeStore } from './lib/core/subscribeStore/subscribeStore'
 export { useCreateHooks, type PluginsHooks } from './lib/core/createHooks'
 
