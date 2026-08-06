@@ -1,16 +1,13 @@
 /**
- * Нейтральные заглушки для демо-историй.
- * Заменяют прежние брендовые зависимости (MUI v4 / внутренние UI-пакеты) и
- * переведены на shadcn: кнопки — на `Button` из src/lib/ui/shadcn, переключатель
- * догфудит библиотечный `Switch`, иконки — lucide. Оформление берёт цвета из
- * токенов темы shadcn (--card / --border / --muted-foreground / --radius).
+ * Нейтральные заглушки для демо-историй: кнопки — нативные `<button>`,
+ * переключатель догфудит библиотечный `Switch`, иконки — lucide. Оформление
+ * берёт цвета из токенов темы (--card / --border / --muted-foreground / --radius).
  */
 import { ChangeEvent, CSSProperties, ReactNode, useId } from 'react'
 
 import { Download, Lock, SquarePen, Trash2 } from 'lucide-react'
 
 import { Switch as LibSwitch } from '../../ui/Switch'
-import { Button as ShadcnButton } from '../../ui/shadcn/button'
 
 /* ---------- Layout ---------- */
 
@@ -57,9 +54,9 @@ interface ButtonProps {
 }
 
 export const Button = ({ children, disabled, onClick }: ButtonProps) => (
-  <ShadcnButton disabled={disabled} onClick={onClick}>
+  <button type="button" disabled={disabled} onClick={onClick}>
     {children}
-  </ShadcnButton>
+  </button>
 )
 
 export const Switch = ({
@@ -113,25 +110,23 @@ export const PaginationRow = ({
 }: PaginationRowProps) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
     <span>Total: {totalRecordsAmount}</span>
-    <ShadcnButton
-      variant="outline"
-      size="icon-sm"
+    <button
+      type="button"
       disabled={currentPage <= 0}
       onClick={() => onChangePage(null, currentPage)}
     >
       {'<'}
-    </ShadcnButton>
+    </button>
     <span>
       {currentPage + 1} / {totalPageAmount}
     </span>
-    <ShadcnButton
-      variant="outline"
-      size="icon-sm"
+    <button
+      type="button"
       disabled={currentPage + 1 >= totalPageAmount}
       onClick={() => onChangePage(null, currentPage + 2)}
     >
       {'>'}
-    </ShadcnButton>
+    </button>
     <select
       value={recordsOnPage}
       onChange={e =>
