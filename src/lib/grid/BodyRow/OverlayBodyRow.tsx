@@ -3,7 +3,7 @@ import { memo } from 'react'
 import { Cell, flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
-import { DragHandler } from '../../plugins/ui'
+import { DragHandler } from '../dnd'
 import { CellWrapperContent } from '../CellWrapperContent'
 import { CellWrapperTitle } from '../CellWrapperTitle'
 

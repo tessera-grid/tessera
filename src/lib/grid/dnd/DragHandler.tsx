@@ -2,12 +2,11 @@ import { MouseEvent, PointerEvent, TouchEvent } from 'react'
 
 import clsx from 'clsx'
 
-import { useItemSortableContext } from '../utils/ItemSortableContext'
+import { useItemSortableContext } from './ItemSortableContext'
 import { useIcons } from '../../ui/icons'
 
-import bodyRowStyles from '../../ui/BodyRow/BodyRow.module.css'
-import headCellStyles from '../../ui/HeadCell/HeadCell.module.css'
 import styles from './DragHandler.module.css'
+import '../cellControls/buttonVisibility.css'
 
 export interface DragHandlerProps {
   id: string
@@ -48,10 +47,10 @@ export const DragHandler = ({ disabled, onClick }: DragHandlerProps) => {
     >
       <DragIcon
         className={clsx(
-          headCellStyles.cell__button,
-          headCellStyles['cell__button--hidden'],
-          bodyRowStyles.row__button,
-          bodyRowStyles['row__button--hidden'],
+          'cell__button',
+          'cell__button--hidden',
+          'row__button',
+          'row__button--hidden',
         )}
       />
     </span>

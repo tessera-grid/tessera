@@ -7,7 +7,7 @@ import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 
-import headCellStyles from '../../ui/HeadCell/HeadCell.module.css'
+import headCellStyles from '../../grid/HeadCell/HeadCell.module.css'
 import styles from './GroupButton.module.css'
 
 export interface GroupButtonProps {

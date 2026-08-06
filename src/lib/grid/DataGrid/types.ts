@@ -4,7 +4,7 @@ import { Table } from '@tanstack/react-table'
 
 import { TableLabels } from '../../core/localization'
 import { ColorMode } from '../../core/themeVariables'
-import { TableIcons } from '../icons'
+import { TableIcons } from '../../ui/icons'
 
 export interface DataGridProps {
   /**

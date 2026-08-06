@@ -2,11 +2,11 @@ import { MouseEvent, ReactNode, memo } from 'react'
 
 import clsx from 'clsx'
 
-import { IconButton } from '../IconButton'
-import { Tooltip } from '../Tooltip'
+import { IconButton } from '../../ui/IconButton'
+import { Tooltip } from '../../ui/Tooltip'
 import { useRowButtonStyles } from './styles'
 
-import bodyRowStyles from '../BodyRow/BodyRow.module.css'
+import '../cellControls/buttonVisibility.css'
 
 export interface RowButtonProps {
   title: string
@@ -33,10 +33,7 @@ export const RowButton = memo(
     return (
       <Tooltip title={title} disabled={disabled && !showTooltipWhenDisabled}>
         <div
-          className={clsx(
-            bodyRowStyles.row__button,
-            !isVisible && bodyRowStyles['row__button--hidden'],
-          )}
+          className={clsx('row__button', !isVisible && 'row__button--hidden')}
         >
           <IconButton
             data-testid={testId}

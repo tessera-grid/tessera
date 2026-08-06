@@ -11,7 +11,7 @@ import { useCellPinningParams } from '../../plugins/columnPinning'
 import { getCellExpandingStyles } from '../../plugins/rowExpanding'
 import { CellWrapperContent, getAlignContent } from '../CellWrapperContent'
 import { CellWrapperTitle } from '../CellWrapperTitle'
-import { Skeleton } from '../Skeleton'
+import { Skeleton } from '../../ui/Skeleton'
 
 import styles from './BodyCell.module.css'
 

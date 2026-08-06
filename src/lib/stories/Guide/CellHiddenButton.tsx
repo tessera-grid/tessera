@@ -2,7 +2,7 @@ import { memo } from 'react'
 
 import { Icon } from '../_shims'
 
-import { CellButton } from '../../ui/Actions/CellButton'
+import { CellButton } from '../../grid/Actions/CellButton'
 
 export const CellHiddenButton = memo(
   ({ active, onClick }: { active: boolean; onClick: () => void }) => {

@@ -77,27 +77,7 @@
   }
 }
 
-/* Плавность появления hidden-кнопок в ячейке */
-
-.head__cell .cell__button {
-  transition: var(--data-grid-button-cell-transition);
-}
-
-/* Скрытие hidden-кнопок в ячейке */
-
-.body__cell .cell__button--hidden:not([data-button-active='true']) {
-  min-width: 0;
-  flex: 1;
-  opacity: 0;
-  overflow: hidden;
-}
-
-/* Появление hidden-кнопок в ячейке при наведении */
-
-.body__cell:hover:is([data-cell-interact='true'])
-  .cell__button--hidden:not([data-button-active='true']) {
-  opacity: 1;
-  flex: auto;
-  overflow: unset;
-  flex-shrink: 0;
-}
+/*
+ * Видимость hidden-кнопок ячейки — единый контракт в
+ * grid/cellControls/buttonVisibility.css.
+ */

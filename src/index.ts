@@ -27,8 +27,8 @@ export type {
   CellComponentProps,
 } from './lib/plugins/types'
 
-export { DataGrid } from './lib/ui/DataGrid/DataGrid'
-export { type DataGridProps } from './lib/ui/DataGrid/types'
+export { DataGrid } from './lib/grid/DataGrid/DataGrid'
+export { type DataGridProps } from './lib/grid/DataGrid/types'
 
 export {
   type TableIcons,

@@ -2,7 +2,7 @@ import { memo } from 'react'
 
 import { useSubscribeStore } from '../../core/subscribeStore'
 import { HeaderComponentProps } from '../types'
-import { DragHandler } from '../ui'
+import { DragHandler } from '../../grid/dnd'
 
 export const ColumnDraggingComponent = memo(
   ({ column, table }: HeaderComponentProps) => {

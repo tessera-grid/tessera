@@ -11,7 +11,7 @@ import {
 import { RegisterSlotParams } from '../../core/createSlots'
 import { RenderSlot } from '../../core/renderSlots'
 import { useCellPinningParams } from '../../plugins/columnPinning'
-import { ItemDraggableWrapper } from '../../plugins/utils/ItemDraggableWrapper'
+import { ItemDraggableWrapper } from '../dnd'
 import { CellWrapperContent, getAlignContent } from '../CellWrapperContent'
 import { CellWrapperTitle } from '../CellWrapperTitle'
 import { useGridStyles } from './gridStyles'

@@ -1,6 +1,6 @@
 import { memo } from 'react'
 
-import { Skeleton } from '../Skeleton'
+import { Skeleton } from '../../ui/Skeleton'
 
 /**
  * @description

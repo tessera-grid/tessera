@@ -19,7 +19,7 @@ import {
   DEFAULT_MAX_EXPANDING_DEPTH,
   rowExpandingPlugin,
 } from '../../plugins/rowExpanding'
-import { rowGroupingPlugin } from '../../plugins/rowGrouping/rowGroupingPlugin'
+import { rowGroupingPlugin } from '../../plugins/rowGrouping'
 import {
   rowSelectionPlugin,
   useRowSelectionReset,

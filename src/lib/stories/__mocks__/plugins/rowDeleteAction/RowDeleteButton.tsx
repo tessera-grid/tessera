@@ -1,6 +1,6 @@
 import { memo } from 'react'
 
-import { RowButton } from '../../../../ui/Actions/RowButton'
+import { RowButton } from '../../../../grid/Actions/RowButton'
 import { DeleteIcon } from '../../../_shims'
 
 export interface RowDeleteButtonProps {

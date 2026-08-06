@@ -2,7 +2,7 @@ import { memo } from 'react'
 
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
 import { CellComponentProps } from '../types'
-import { DragHandler } from '../ui'
+import { DragHandler } from '../../grid/dnd'
 
 export const RowDraggingComponent = memo(({ row }: CellComponentProps) => {
   useSubscribeStore(() => [row.getCanDrag()])

@@ -2,7 +2,7 @@ import { MouseEvent, TouchEvent, memo, useCallback } from 'react'
 
 import clsx from 'clsx'
 
-import headCellStyles from '../../ui/HeadCell/HeadCell.module.css'
+import headCellStyles from '../../grid/HeadCell/HeadCell.module.css'
 import styles from './ResizeHandler.module.css'
 
 export interface ResizeSplitterProps {

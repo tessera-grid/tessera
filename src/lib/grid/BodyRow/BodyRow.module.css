@@ -70,20 +70,7 @@
   }
 }
 
-/* Плавность появления hidden-кнопок в строке */
-
-.body__row .row__button {
-  transition: var(--data-grid-button-cell-transition);
-}
-
-/* Скрытие hidden-кнопок в строке */
-
-.body__row .row__button--hidden {
-  opacity: 0;
-}
-
-/* Появление hidden-кнопок в строке при наведении */
-
-.body__row:hover:is([data-row-interact='true']) .row__button--hidden {
-  opacity: 1;
-}
+/*
+ * Видимость hidden-кнопок строки — единый контракт в
+ * grid/cellControls/buttonVisibility.css.
+ */

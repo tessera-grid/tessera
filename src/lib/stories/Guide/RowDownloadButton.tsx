@@ -2,7 +2,7 @@ import { memo } from 'react'
 
 import { Icon } from '../_shims'
 
-import { RowButton } from '../../ui/Actions/RowButton'
+import { RowButton } from '../../grid/Actions/RowButton'
 
 export const RowDownloadButton = memo(
   ({ onClick }: { onClick: () => void }) => {

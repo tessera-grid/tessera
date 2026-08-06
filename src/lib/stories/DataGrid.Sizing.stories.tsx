@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
 
-import { DataGridProps } from '../ui/DataGrid/types'
+import { DataGridProps } from '../grid/DataGrid/types'
 import { StoryComponent } from './DataGrid.stories'
 import {
   columnCountType,
