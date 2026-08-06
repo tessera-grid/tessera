@@ -30,5 +30,5 @@ drag & drop как колонок, так и строк, включая пере
   изменения здесь требуют живой проверки в Storybook.
 - **−** Группировка + перетаскивание строк вместе **пока не** реализованы
   (считается выполнимым) — известное ограничение.
-- См. [rendering-and-virtualization.md](../architecture/rendering-and-virtualization.md)
-  про структуру обёртки/оверлея DnD.
+- См. [dnd.md](../architecture/dnd.md) про структуру обёртки/оверлея DnD и
+  [ADR 0008](0008-rowdragging-plugin.md) про реализацию плагина `rowDragging`.

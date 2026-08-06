@@ -1,103 +1,106 @@
-# Tessera — Architecture
+# Tessera — архитектура
 
-`@mstrvtt/tessera` is a headless-first, plugin-driven data grid built on top of
-**TanStack Table v8** (table model), **TanStack Virtual** (row/column
-virtualization), and **dnd-kit** (drag & drop). Tessera does not fork these
-libraries — it composes and extends them, adding a plugin/slot rendering layer,
-a granular Pub-Sub reactivity mechanism, and a theme-agnostic UI built on CSS
-variables.
+`@mstrvtt/tessera` — это headless-first, plugin-driven таблица данных, построенная
+поверх **TanStack Table v8** (модель таблицы), **TanStack Virtual** (виртуализация
+строк/столбцов) и **dnd-kit** (drag & drop). Tessera не форкает эти библиотеки —
+она их компонует и расширяет, добавляя слой рендеринга на плагинах/слотах,
+гранулярный механизм реактивности Pub-Sub и theme-agnostic UI на CSS-переменных.
 
-> This knowledge base is written for **contributors**. It reflects the current
-> source (verified against code, not only the README). Where a section describes
-> an upstream library, it is a conceptual summary and is labelled as such.
+> Эта база знаний написана для **контрибьюторов**. Она отражает текущий
+> исходный код (сверено с кодом, а не только с README). Там, где раздел описывает
+> upstream-библиотеку, это концептуальное резюме, и оно помечено как таковое.
 
-## Why Tessera exists
+## Зачем нужна Tessera
 
-Tessera began as the answer to a concrete problem: **highload CRM tables** that
-had to be flexible, extensible, and fast across many different use cases — and no
-existing option fit.
+Tessera решает конкретный класс задач: **highload-таблицы со сложным, гибким
+поведением**, которым нужно быть расширяемыми и быстрыми в множестве разных
+сценариев. Существующие варианты для этого не подошли:
 
-- **react-base-table** — what the project ran on, but effectively abandoned for years.
-- **Modern React table kits** (e.g. Material React Table) — ruled out by the host
-  project's dated stack.
-- **AG Grid** — capable, but its licensing was not an option to pay for.
-- **Canvas-rendered grids** — powerful for raw performance, but the development
-  complexity was disproportionate.
+- **Современные React-киты для таблиц** (например, Material React Table) —
+  поставляют стилизованный batteries-included UI, несовместимый с agnostic-целью.
+- **AG Grid** — функционально мощный, но с неподходящей моделью лицензирования.
+- **Гриды на canvas** — сильны в чистой производительности, но несоразмерно сложны
+  в разработке.
 
-So Tessera was designed from scratch, around four priorities:
+Поэтому Tessera была спроектирована с нуля вокруг четырёх приоритетов:
 
-1. **Agnostic** — not tied to any one app, design system, or backend.
-2. **A modern core** — build on TanStack Table rather than a bespoke or canvas model.
-3. **Performance** — virtualization and granular reactivity as first-class concerns.
-4. **Extensibility from the outside** — teams needed genuinely different things:
-   render their own buttons into rows, change table behavior in response to
-   external state, and compose complex structures inside the table. The plugin +
-   slot + `hooks` model exists to serve exactly that.
+1. **Agnostic** — не привязана ни к одному приложению, дизайн-системе или бэкенду.
+2. **Современное ядро** — построение на TanStack Table, а не на самодельной или
+   canvas-модели.
+3. **Производительность** — виртуализация и гранулярная реактивность как
+   first-class-задачи.
+4. **Расширяемость снаружи** — командам нужны были действительно разные вещи:
+   рендерить свои кнопки в строки, менять поведение таблицы в ответ на внешнее
+   состояние и компоновать сложные структуры внутри таблицы. Модель plugin + slot
+   + `hooks` существует именно ради этого.
 
-### Audience & scope
+### Аудитория и охват
 
-Tessera targets **any system that needs complex, flexible table interfaces** — CRM
-was the origin, not the ceiling. A flexible, customizable visual layer is an
-explicit goal (today: a theme-agnostic CSS-variable contract; see the rendering
-doc).
+Tessera нацелена на **любую систему, которой нужны сложные, гибкие табличные
+интерфейсы** — highload-сценарии вроде CRM это пример такой системы, а не её
+потолок. Гибкий, кастомизируемый
+визуальный слой — явная цель (сегодня: theme-agnostic контракт на CSS-переменных;
+см. документ о рендеринге).
 
 ### Non-goals
 
-- **Not a canvas grid.** The DOM + virtualization path is a deliberate trade of
-  peak throughput for development tractability and extensibility.
-- **Not a batteries-included styled UI kit.** Tessera ships no runtime component
-  library; it provides mechanics and override contracts, and leaves final visuals
-  to the consumer.
+- **Не canvas-грид.** Путь DOM + виртуализация — это осознанный размен пиковой
+  пропускной способности на управляемость разработки и расширяемость.
+- **Не batteries-included стилизованный UI-кит.** Tessera не поставляет
+  runtime-библиотеку компонентов; она предоставляет механику и контракты
+  переопределения, а финальный визуал оставляет на потребителя.
 
-The design decisions behind these choices are recorded as ADRs in
+Проектные решения за этими выборами зафиксированы как ADR в
 [`docs/decisions/`](../decisions/).
 
-## Documents
+## Документы
 
-| Doc                                                                | Scope                                                                                          |
+| Документ                                                           | Охват                                                                                          |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [upstream-foundations.md](upstream-foundations.md)                 | How TanStack Table / Virtual and dnd-kit work, and which extension points Tessera hooks into   |
-| [table-assembly.md](table-assembly.md)                             | `useCreateTable`: columns, state split, hooks, slots, plugin injection                         |
-| [plugins-and-slots.md](plugins-and-slots.md)                       | The `TablePlugin` (TableFeature) lifecycle, slot registration, render slots, `renderComponent` |
-| [rowdragging.md](rowdragging.md)                                   | The `rowDragging` plugin: activation, service column, drag handle, overlay, drop indicator     |
-| [reactivity.md](reactivity.md)                                     | The two update mechanisms: reference identity vs Pub-Sub                                       |
-| [rendering-and-virtualization.md](rendering-and-virtualization.md) | `DataGrid` render pipeline, flex vs grid layout, virtualization, DnD, theming                  |
-| [visual-tests.md](visual-tests.md)                                 | Visual-test coverage requirements: every plugin & component, one spec requirement per test     |
+| [upstream-foundations.md](upstream-foundations.md)                 | Как работают TanStack Table / Virtual и dnd-kit и в какие точки расширения врезается Tessera    |
+| [table-assembly.md](table-assembly.md)                             | `useCreateTable`: столбцы, разделение состояния, hooks, слоты, инъекция плагинов                |
+| [plugins-and-slots.md](plugins-and-slots.md)                       | Жизненный цикл `TablePlugin` (TableFeature), регистрация слотов, render-слоты, `renderComponent` |
+| [reactivity.md](reactivity.md)                                     | Два механизма обновления: идентичность ссылки против Pub-Sub                                    |
+| [rendering.md](rendering.md)                                       | Пайплайн `DataGrid`: стек провайдеров, layout flex против grid, отрисовка, состояния загрузки   |
+| [virtualization.md](virtualization.md)                             | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк    |
+| [dnd.md](dnd.md)                                                   | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers       |
+| [theming-and-overrides.md](theming-and-overrides.md)               | Контракты переопределения: `colorMode` → CSS-переменные, иконки, локализация                    |
+| [visual-tests.md](visual-tests.md)                                 | Требования к покрытию визуальными тестами: каждый плагин и компонент, одно требование на тест   |
 
-## The layers
+## Слои
 
-Tessera is deliberately layered so that **table mechanics** and **consumer
-business logic** never fuse into a God object. Data flows down; events flow up
-through `hooks`; rendering is driven by state, plugins, and slots.
+Tessera намеренно слоистая, чтобы **механика таблицы** и **бизнес-логика
+потребителя** никогда не сливались в God object. Данные текут вниз; события текут
+вверх через `hooks`; рендеринг управляется состоянием, плагинами и слотами.
 
 ```mermaid
 flowchart TB
-    subgraph consumer["Consumer inputs (stable references)"]
+    subgraph consumer["Входы потребителя (стабильные ссылки)"]
         COLS["columns (TanStack column defs)"]
-        DATA["data (row array)"]
+        DATA["data (массив строк)"]
         STATE["state + handlers"]
-        HOOKS["hooks (business contract)"]
-        PLUGINS["plugins (custom TablePlugins)"]
-        OPTS["enable* options / icons / localization / colorMode"]
+        HOOKS["hooks (бизнес-контракт)"]
+        PLUGINS["plugins (кастомные TablePlugins)"]
+        OPTS["enable*-опции / icons / localization / colorMode"]
     end
 
-    subgraph core["Core — useCreateTable()"]
-        CC["useCreateColumns<br/>(injects action/selection/expand/drag columns)"]
-        CS["useCreateState<br/>(core vs external split)"]
+    subgraph core["Ядро — useCreateTable()"]
+        CC["useCreateColumns<br/>(инъекция столбцов action/selection/expand/drag)"]
+        CS["useCreateState<br/>(разделение core против external)"]
         CH["useCreateHooks"]
         CSL["useCreateSlots"]
-        RT["useReactTable (TanStack)<br/>_features = base plugins + custom<br/>native getCoreRowModel"]
+        RT["useReactTable (TanStack)<br/>_features = базовые плагины + кастомные<br/>нативный getCoreRowModel"]
     end
 
-    subgraph inst["Table instance"]
-        TI["table<br/>+ getHooks / getRenderSlots / setRenderSlot<br/>+ SDK helpers"]
+    subgraph inst["Инстанс таблицы"]
+        TI["table<br/>+ getHooks / getRenderSlots / setRenderSlot<br/>+ SDK-хелперы"]
     end
 
-    subgraph render["Rendering — <DataGrid/>"]
+    subgraph render["Рендеринг — <DataGrid/>"]
         PROV["IconsProvider · LocalizationProvider<br/>SubscriptionStoreProvider · FastScrollProvider"]
-        VIRT["row + column virtualizers (TanStack Virtual)"]
-        DND["DnD wrappers (dnd-kit)"]
-        UI["Head / Body / Footer → cells<br/>+ RenderSlot / renderComponent"]
+        VIRT["виртуализаторы строк + столбцов (TanStack Virtual)"]
+        DND["DnD-обёртки (dnd-kit)"]
+        UI["Head / Body / Footer → ячейки<br/>+ RenderSlot / renderComponent"]
     end
 
     COLS --> CC
@@ -117,25 +120,28 @@ flowchart TB
     DND --> UI
 ```
 
-## Reading order
+## Порядок чтения
 
-1. **upstream-foundations** — so the TanStack/dnd-kit terms below make sense.
-2. **table-assembly** — how a `table` instance is built.
-3. **plugins-and-slots** — how features render into the grid.
-4. **reactivity** — how updates propagate (the perf story).
-5. **rendering-and-virtualization** — how it all paints.
+1. **upstream-foundations** — чтобы термины TanStack/dnd-kit ниже обрели смысл.
+2. **table-assembly** — как собирается инстанс `table`.
+3. **plugins-and-slots** — как фичи рендерятся в грид.
+4. **reactivity** — как распространяются обновления (история про производительность).
+5. **rendering** — как `DataGrid` всё это отрисовывает, а следом — механики
+   рендер-слоя: **virtualization**, **dnd** и **theming-and-overrides**.
 
-## Design invariants
+## Инварианты дизайна
 
-- **Stable references.** `columns` and `data` identity changes recreate the
-  table model from scratch (TanStack behavior). Consumers must memoize inputs.
-- **`hooks` never re-render.** Business callbacks live in `hooks`; reading them
-  does not subscribe to anything. Dynamic values that must drive rendering live
-  in `state`.
-- **Theme-agnostic.** No component library at runtime; theming is a CSS-variable
-  contract driven by a `colorMode` prop. See rendering doc.
-- **Plugins are TanStack features.** A `TablePlugin` _is_ a TanStack
-  `TableFeature` with extra lifecycle sugar. See plugins doc.
-- **Every plugin & component is visually tested.** Each plugin and UI component
-  ships visual tests — one per spec requirement, self-restoring, spec-named. See
+- **Стабильные ссылки.** Смена идентичности `columns` и `data` пересоздаёт модель
+  таблицы с нуля (поведение TanStack). Потребители обязаны мемоизировать входы.
+- **`hooks` никогда не вызывают перерендер.** Бизнес-колбэки живут в `hooks`; их
+  чтение ни на что не подписывается. Динамические значения, которые должны
+  управлять рендерингом, живут в `state`.
+- **Theme-agnostic.** Нет библиотеки компонентов в рантайме; темизация — это
+  контракт на CSS-переменных, управляемый пропом `colorMode`. См. документ о
+  рендеринге.
+- **Плагины — это TanStack-фичи.** `TablePlugin` _является_ TanStack
+  `TableFeature` с дополнительным сахаром жизненного цикла. См. документ о плагинах.
+- **Каждый плагин и компонент покрыт визуальными тестами.** Каждый плагин и
+  UI-компонент поставляется с визуальными тестами — по одному на требование
+  спецификации, самовосстанавливающимися, названными по спецификации. См.
   [visual-tests.md](visual-tests.md).

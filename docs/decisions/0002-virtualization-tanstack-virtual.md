@@ -36,5 +36,5 @@
   заголовков**, которые используют CSS-раскладку `grid` — другой путь
   рендеринга. Именно поэтому вложенные заголовки пока не сочетаются с
   закреплением/перетаскиванием колонок (известное ограничение).
-- См. [rendering-and-virtualization.md](../architecture/rendering-and-virtualization.md)
-  про разделение раскладки flex vs grid.
+- См. [virtualization.md](../architecture/virtualization.md) про виртуализаторы и
+  [rendering.md](../architecture/rendering.md) про разделение раскладки flex vs grid.

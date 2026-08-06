@@ -58,7 +58,7 @@ upstream-библиотек headless-ядра — он никогда их не 
 | L1  | Контракт                    | входы `useCreateTable` + пропы `<DataGrid>`                    | Публичная поверхность: `columns`, `data`, `state`+handlers, `hooks`, `plugins`, `enable*`, `icons`, `localization`, `colorMode`. Канал вниз/вверх: `hooks` = бизнес-контракт (не рендерит), `state` = динамика (рендерит через реактивность). |
 | L2  | Сборка (ядро)               | `core/createTable/useCreateTable.ts` · `table-assembly.md`     | `useCreateColumns` (инъекция служебных колонок) → `useCreateState` (core/external split) → `useCreateHooks` → `useCreateSlots` → мемоизированный `_features` → `useReactTable` + нативный `getCoreRowModel`.                                  |
 | L3  | Расширение (плагины+слоты)  | `plugins/common`, `plugins/types.ts` · `plugins-and-slots.md`  | `TablePlugin` = TanStack `TableFeature` с хуками жизненного цикла. `commonPlugin` (первым) ставит `getHooks/getRenderSlots/setRenderSlot` + помощники строк/заголовков. Расширение UI: слот (`setRenderSlot`) или `renderComponent`.          |
-| L4  | Рендеринг                   | `ui/DataGrid/DataGrid.tsx` · `rendering-and-virtualization.md` | Провайдеры (Icons/Localization/SubscriptionStore/FastScroll) → виртуализаторы → DnD-обёртки → Head/Body/Footer; `RenderSlot` + `renderComponent`.                                                                                             |
+| L4  | Рендеринг                   | `ui/DataGrid/DataGrid.tsx` · `rendering.md` (+ `virtualization.md`, `dnd.md`, `theming-and-overrides.md`) | Провайдеры (Icons/Localization/SubscriptionStore/FastScroll) → виртуализаторы → DnD-обёртки → Head/Body/Footer; `RenderSlot` + `renderComponent`. Механики рендер-слоя разнесены по отдельным докам.                                          |
 | ↕   | **Реактивность (сквозная)** | `subscribeStore` · `reactivity.md`                             | Пронизывает L1–L4: идентичность ссылок (широкий радиус) + Pub-Sub (гранулярно). Определяет, что именно перерисуется при изменении входов/состояния. Подробно ниже.                                                                            |
 
 > **Где проходят швы.** L1↔L2 — граница публичного API (входы против внутренней сборки).
@@ -111,7 +111,10 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 - `docs/architecture/table-assembly.md` — внутренности `useCreateTable`
 - `docs/architecture/plugins-and-slots.md` — жизненный цикл плагина, слоты, `renderComponent`
 - `docs/architecture/reactivity.md` — механизмы реактивности в глубину
-- `docs/architecture/rendering-and-virtualization.md` — DataGrid, раскладки, DnD, темизация
+- `docs/architecture/rendering.md` — DataGrid: провайдеры, раскладки, отрисовка, загрузка
+- `docs/architecture/virtualization.md` — виртуализаторы, range extractors, filler-столбцы
+- `docs/architecture/dnd.md` — DnD рендер-слоя: обёртки, overlay, collision/modifiers
+- `docs/architecture/theming-and-overrides.md` — colorMode/CSS-переменные, иконки, локализация
 
 ### Известные проблемы (не баги, которые надо «обнаружить»)
 

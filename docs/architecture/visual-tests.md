@@ -1,50 +1,52 @@
-# Visual tests — coverage requirements
+# Визуальные тесты — требования к покрытию
 
-> This is a **normative** document: it states what visual-test coverage Tessera
-> requires, not just how the runner works. For the runner mechanics (Vitest
-> browser mode, `composeStories`, existing suites) see the _Tests_ section of
+> Это **нормативный** документ: он утверждает, какое покрытие визуальными тестами
+> Tessera требует, а не только как работает раннер. За механикой раннера (Vitest
+> browser mode, `composeStories`, существующие сьюты) см. раздел _Tests_ в
 > [`AGENTS.md`](../../AGENTS.md).
 
-Tessera's behaviour is visual and layout-dependent — virtualization, slots, DnD,
-theming. A green type-check and a passing unit assertion do not prove the grid
-_renders_ the thing a plugin or component promises. Visual tests, run in a real
-browser against real layout, are the gate that does.
+Поведение Tessera визуальное и зависит от layout — виртуализация, слоты, DnD,
+темизация. Зелёный type-check и проходящий unit-ассерт не доказывают, что грид
+_рендерит_ то, что обещает плагин или компонент. Визуальные тесты, запускаемые в
+реальном браузере против реального layout, — это тот самый гейт, что доказывает.
 
-## Requirements
+## Требования
 
-1. **Full coverage.** Every **plugin** and every **UI component** of the table
-   must have visual tests. No plugin and no rendered component ships without them.
+1. **Полное покрытие.** Каждый **плагин** и каждый **UI-компонент** таблицы обязан
+   иметь визуальные тесты. Ни один плагин и ни один рендерящийся компонент не
+   поставляется без них.
 
-2. **One requirement per test.** Each visual test verifies exactly **one**
-   concrete requirement drawn from that plugin's or component's specification. A
-   test that checks two things is two tests.
+2. **Одно требование на тест.** Каждый визуальный тест проверяет ровно **одно**
+   конкретное требование, взятое из спецификации этого плагина или компонента.
+   Тест, проверяющий две вещи, — это два теста.
 
-3. **Self-restoring.** If a test mutates data, table state, selection, expansion,
-   ordering, etc., it must **return the table to its initial state** on
-   completion. Tests must not leak state into each other; order of execution must
-   not change outcomes.
+3. **Самовосстановление.** Если тест мутирует данные, состояние таблицы, выбор,
+   раскрытие, порядок и т. п., он обязан **вернуть таблицу в её начальное
+   состояние** по завершении. Тесты не должны протекать состоянием друг в друга;
+   порядок выполнения не должен менять исходы.
 
-4. **Spec-driven naming.** Each test is **named after the requirement** it
-   verifies, from the plugin/component specification, in a **single consistent
-   naming style** across the suite. Reading the test name should tell you which
-   spec requirement is covered.
+4. **Именование по спецификации.** Каждый тест **назван по требованию**, которое он
+   проверяет, из спецификации плагина/компонента, в **едином согласованном стиле
+   именования** по всему сьюту. Чтение имени теста должно говорить вам, какое
+   требование спецификации покрыто.
 
-## How this maps to the current setup
+## Как это ложится на текущую настройку
 
-- Tests live in `src/lib/stories/__tests__/` and reuse Storybook stories as
-  fixtures via `composeStories` (see [`AGENTS.md`](../../AGENTS.md) → _Tests_).
-- The requirement above means: for each plugin and component, its spec is the
-  checklist. Each line of the spec becomes one named, self-restoring visual test.
-- Coverage is measured against the **specification**, not against lines of code —
-  a plugin is "covered" when every requirement in its spec has a matching test.
+- Тесты живут в `src/lib/stories/__tests__/` и переиспользуют Storybook-истории как
+  фикстуры через `composeStories` (см. [`AGENTS.md`](../../AGENTS.md) → _Tests_).
+- Требование выше означает: для каждого плагина и компонента его спецификация —
+  это чек-лист. Каждая строка спецификации становится одним именованным,
+  самовосстанавливающимся визуальным тестом.
+- Покрытие измеряется относительно **спецификации**, а не строк кода — плагин
+  «покрыт», когда каждое требование в его спецификации имеет соответствующий тест.
 
-## Why these four rules
+## Почему именно эти четыре правила
 
-- **Full coverage** keeps the plugin/component contract honest: the promise in a
-  spec is only real if a browser test holds it to it.
-- **One requirement per test** makes failures diagnostic — a red test names the
-  exact broken requirement instead of a vague "something in this plugin".
-- **Self-restoring** is what lets stories be shared fixtures and lets the suite
-  run in any order without cross-test contamination.
-- **Spec-driven naming** turns the test list into a readable coverage report:
-  the names _are_ the specification, checked.
+- **Полное покрытие** держит контракт плагина/компонента честным: обещание в
+  спецификации реально, только если браузерный тест держит его в узде.
+- **Одно требование на тест** делает падения диагностичными — красный тест называет
+  точное сломанное требование вместо расплывчатого «что-то в этом плагине».
+- **Самовосстановление** — это то, что позволяет историям быть общими фикстурами и
+  позволяет сьюту выполняться в любом порядке без кросс-тестового загрязнения.
+- **Именование по спецификации** превращает список тестов в читаемый отчёт о
+  покрытии: имена _и есть_ спецификация, проверенная на деле.

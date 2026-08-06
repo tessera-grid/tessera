@@ -1,101 +1,102 @@
-# Table assembly — `useCreateTable`
+# Сборка таблицы — `useCreateTable`
 
-`useCreateTable<TData, THooks, TState, TOptions>` is the single entry point. It
-turns consumer inputs into a configured TanStack instance. Source:
+`useCreateTable<TData, THooks, TState, TOptions>` — единственная точка входа. Она
+превращает входы потребителя в сконфигурированный инстанс TanStack. Источник:
 `src/lib/core/createTable/useCreateTable.ts`.
 
-## Generics
+## Дженерики
 
-| Generic    | Meaning                                                | Default |
-| ---------- | ------------------------------------------------------ | ------- |
-| `TData`    | row shape                                              | `any`   |
-| `THooks`   | business-logic contract exposed via `table.getHooks()` | `any`   |
-| `TState`   | custom state slices merged into `table.getState()`     | `any`   |
-| `TOptions` | custom handlers/options merged into `table.options`    | `any`   |
+| Дженерик   | Значение                                               | По умолчанию |
+| ---------- | ------------------------------------------------------ | ------------ |
+| `TData`    | форма строки                                            | `any`        |
+| `THooks`   | бизнес-контракт, доступный через `table.getHooks()`     | `any`        |
+| `TState`   | кастомные слайсы состояния, влитые в `table.getState()` | `any`        |
+| `TOptions` | кастомные handlers/опции, влитые в `table.options`      | `any`        |
 
-A fifth generic, `TValue` (cell value), appears **last and optional** on
-`TablePlugin`, `HeaderComponentProps`, and `CellComponentProps`.
+Пятый дженерик, `TValue` (значение ячейки), стоит **последним и опциональным** в
+`TablePlugin`, `HeaderComponentProps` и `CellComponentProps`.
 
-## Pipeline
+## Пайплайн
 
 ```mermaid
 flowchart TB
     IN["useCreateTable(params)"]
 
-    COLS["useCreateColumns<br/>injects service columns:<br/>selection · expanding · dragging · row-actions<br/>(when the matching enable* is set)"]
-    ST["useCreateState<br/>splits state/handlers into core vs external<br/>merges service-column pinning + visibility"]
-    HK["useCreateHooks<br/>memoized business contract"]
-    SL["useCreateSlots<br/>empty slot buckets"]
-    PLG["useMemo plugins<br/>[base plugins…, ...externalPlugins]<br/>(stable _features reference)"]
+    COLS["useCreateColumns<br/>инъекция сервисных столбцов:<br/>selection · expanding · dragging · row-actions<br/>(когда установлен соответствующий enable*)"]
+    ST["useCreateState<br/>разделяет state/handlers на core против external<br/>сливает pinning + visibility сервисных столбцов"]
+    HK["useCreateHooks<br/>мемоизированный бизнес-контракт"]
+    SL["useCreateSlots<br/>пустые «корзины» слотов"]
+    PLG["useMemo plugins<br/>[базовые плагины…, ...externalPlugins]<br/>(стабильная ссылка _features)"]
 
-    RT["useReactTable(...)<br/>state = {...coreState, ...externalState}<br/>handlers = {...coreHandlers, ...externalHandlers}<br/>getCoreRowModel = getCoreRowModel() (native)<br/>_features = plugins<br/>hooks, slots passed as options"]
+    RT["useReactTable(...)<br/>state = {...coreState, ...externalState}<br/>handlers = {...coreHandlers, ...externalHandlers}<br/>getCoreRowModel = getCoreRowModel() (нативный)<br/>_features = plugins<br/>hooks, slots переданы как опции"]
 
-    OUT["table instance"]
+    OUT["инстанс table"]
 
     IN --> COLS --> ST --> HK --> SL --> PLG --> RT --> OUT
     RT --> RESET["useRowSelectionReset<br/>useColumnActionsAutosize"]
 ```
 
-## Service columns (`useCreateColumns`)
+## Сервисные столбцы (`useCreateColumns`)
 
-Tessera injects non-data columns based on `enable*` flags: a checkbox column
-(`enableRowSelection`), an expander column (`enableRowExpanding`), a drag-handle
-column (`enableRowDragging`), and a right-pinned actions column
-(`enableRowActions`). These have reserved ids and are recognized by the helpers
+Tessera инъектирует не-data столбцы на основе флагов `enable*`: столбец с
+чекбоксом (`enableRowSelection`), столбец-expander (`enableRowExpanding`),
+столбец с drag-ручкой (`enableRowDragging`) и правозакреплённый столбец действий
+(`enableRowActions`). У них зарезервированные id, и они распознаются хелперами
 `checkIsActionColumn` / `column.getIsActionsColumn()`.
 
-## State: the core / external split
+## Состояние: разделение core / external
 
-`useCreateState` is the heart of Tessera's controlled-state story. It
-partitions the consumer's `state` and `handlers`:
+`useCreateState` — сердце истории Tessera про controlled-состояние. Он разбивает
+`state` и `handlers` потребителя:
 
-- **Core state** — the TanStack slices Tessera manages itself
+- **Core state** — слайсы TanStack, которыми Tessera управляет сама
   (`columnSizing`, `columnOrder`, `sorting`, `columnPinning`, `rowSelection`,
-  `columnVisibility`, `expanded`, `grouping`) plus non-TanStack extras
-  (`columnDraggingActiveId`, `rowDragging`). For each, an external value wins if
-  supplied (`external ?? internal`), and service-column pinning/visibility are
-  merged in.
-- **External state** — anything else the consumer put in `state` (custom
-  `TState` slices, e.g. `hiddenCells`) is spread straight through to
-  `useReactTable`, so it lives in `table.getState()` alongside the built-ins.
+  `columnVisibility`, `expanded`, `grouping`) плюс не-TanStack-экстра
+  (`columnDraggingActiveId`, `rowDragging`). Для каждого внешнее значение
+  побеждает, если передано (`external ?? internal`), а pinning/visibility
+  сервисных столбцов вливаются.
+- **External state** — всё прочее, что потребитель положил в `state` (кастомные
+  слайсы `TState`, например `hiddenCells`), пробрасывается напрямую в
+  `useReactTable`, так что оно живёт в `table.getState()` рядом со встроенным.
 
 ```mermaid
 flowchart LR
     subgraph input["params.state / params.handlers"]
-        K["known TanStack slices"]
-        X["custom TState slices"]
+        K["известные слайсы TanStack"]
+        X["кастомные слайсы TState"]
     end
-    K --> CORE["coreState / coreHandlers<br/>(managed + service columns merged)"]
+    K --> CORE["coreState / coreHandlers<br/>(управляемые + слиты сервисные столбцы)"]
     X --> EXT["externalState / externalHandlers<br/>(pass-through)"]
-    CORE --> MERGE["useReactTable state/handlers"]
+    CORE --> MERGE["state/handlers для useReactTable"]
     EXT --> MERGE
 ```
 
-> **Contributor note.** Because custom `TState` keys are spread into the same
-> object as TanStack's built-in state, a future TanStack state key could collide
-> with a consumer key. This is a known sharp edge (see the project's
-> known-future-work notes).
+> **Заметка для контрибьютора.** Поскольку кастомные ключи `TState`
+> распространяются в тот же объект, что и встроенное состояние TanStack, будущий
+> ключ состояния TanStack мог бы столкнуться с ключом потребителя. Это известный
+> острый угол (см. заметки проекта о будущих работах).
 
-## Hooks — the business contract
+## Hooks — бизнес-контракт
 
-`hooks` is a typed object of business callbacks/values (e.g.
-`rowSelection.onSelectRow`). It is attached as a table option and read via the
-Tessera-added `table.getHooks()` (installed by `commonPlugin.createTable`).
-Reading `getHooks()` does **not** subscribe to anything — hooks are meant to be
-side-effect entry points, not render inputs. Dynamic values that must drive
-rendering belong in `state` and are consumed via Pub-Sub
+`hooks` — это типизированный объект бизнес-колбэков/значений (например,
+`rowSelection.onSelectRow`). Он прикрепляется как опция таблицы и читается через
+добавленный Tessera `table.getHooks()` (устанавливается `commonPlugin.createTable`).
+Чтение `getHooks()` **ни на что не подписывается** — hooks задуманы как точки
+входа для сайд-эффектов, а не как входы рендера. Динамические значения, которые
+должны управлять рендерингом, принадлежат `state` и потребляются через Pub-Sub
 ([reactivity.md](reactivity.md)).
 
-## Plugins
+## Плагины
 
-The `_features` array is a memoized list of the built-in plugins followed by
-`...externalPlugins`. Memoizing it keeps the `_features` reference stable across
-renders (avoids re-running feature setup). **Stability now depends on the
-consumer passing a stable `plugins` prop** — an inline array re-busts the memo.
+Массив `_features` — это мемоизированный список встроенных плагинов, за которым
+следует `...externalPlugins`. Мемоизация удерживает ссылку `_features` стабильной
+между рендерами (избегает повторного прогона настройки фич). **Теперь стабильность
+зависит от того, что потребитель передаёт стабильный проп `plugins`** — inline-массив
+сбрасывает memo.
 
-Built-in order: `common`, `rowSelection`, `rowExpanding`, `columnPinning`,
+Встроенный порядок: `common`, `rowSelection`, `rowExpanding`, `columnPinning`,
 `columnSizing`, `columnSorting`, `columnDragging`, `rowDragging`, `rowGrouping`,
-then consumer plugins. `commonPlugin` must be first — it installs
-`getHooks/getRenderSlots/setRenderSlot` that later plugins call.
+затем плагины потребителя. `commonPlugin` обязан быть первым — он устанавливает
+`getHooks/getRenderSlots/setRenderSlot`, которые вызывают более поздние плагины.
 
-See [plugins-and-slots.md](plugins-and-slots.md) for the lifecycle.
+Про жизненный цикл см. [plugins-and-slots.md](plugins-and-slots.md).

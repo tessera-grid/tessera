@@ -14,6 +14,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0005](0005-develop-on-master-human-owns-git.md) | Разработка на `master`; коммиты и пуши остаются за человеком   | Принято |
 | [0006](0006-formalize-tech-stack.md)             | Формализация технического стека (Tailwind v4 + Base UI + shadcn) | Принято |
 | [0007](0007-fast-scroll.md)                      | Fast-scroll: скелетоны ячеек при быстрой прокрутке             | Принято |
+| [0008](0008-rowdragging-plugin.md)               | Плагин rowDragging: реализация                                 | Принято |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

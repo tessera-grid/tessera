@@ -1,20 +1,20 @@
-# Plugins & slots
+# Плагины и слоты
 
-A Tessera **plugin** is a TanStack `TableFeature` (`TablePlugin` in
-`src/lib/plugins/types.ts`) plus a rendering convention built on **slots** and
-per-cell/per-header `renderComponent` overrides.
+**Плагин** Tessera — это TanStack `TableFeature` (`TablePlugin` в
+`src/lib/plugins/types.ts`) плюс конвенция рендеринга, построенная на **слотах** и
+переопределениях `renderComponent` на уровне ячейки/заголовка.
 
-## The `TablePlugin` lifecycle
+## Жизненный цикл `TablePlugin`
 
 ```ts
 interface TablePlugin<TData, THooks, TState, TOptions, TValue> {
-  // one-time, at instance construction
+  // однократно, при конструировании инстанса
   createTable?(table): void
   getDefaultColumnDef?(): Partial<ColumnDef>
   getDefaultOptions?(table): Partial<TableOptionsResolved> & TOptions
   getInitialState?(initialState?): InitialTableState & TState
 
-  // per-instance of each model object
+  // на каждый инстанс каждого объекта модели
   createColumn?(column, table): void
   createHeader?(header, table): void
   createRow?(row, table): void
@@ -24,12 +24,12 @@ interface TablePlugin<TData, THooks, TState, TOptions, TValue> {
 
 ```mermaid
 flowchart TB
-    subgraph once["Once per table instance"]
-        GIS["getInitialState → seed custom TState"]
+    subgraph once["Однократно на инстанс таблицы"]
+        GIS["getInitialState → засев кастомного TState"]
         GDO["getDefaultOptions / getDefaultColumnDef"]
-        CT["createTable → augment instance,<br/>register slots"]
+        CT["createTable → аугментация инстанса,<br/>регистрация слотов"]
     end
-    subgraph per["Per model object (re)creation"]
+    subgraph per["(Пере)создание объекта модели"]
         CCOL["createColumn"]
         CH["createHeader"]
         CR["createRow"]
@@ -38,73 +38,73 @@ flowchart TB
     once --> per
 ```
 
-> **Cost model.** `createTable` / `getDefaultOptions` / `getInitialState` run
-> **once**. `createColumn/Header/Row/Cell` run on every (re)creation of that
-> object — keep them cheap. Do not do heavy work or rendering decisions in
-> `createCell`.
+> **Модель стоимости.** `createTable` / `getDefaultOptions` / `getInitialState`
+> выполняются **однократно**. `createColumn/Header/Row/Cell` выполняются при каждом
+> (пере)создании этого объекта — держите их дешёвыми. Не делайте тяжёлой работы или
+> решений о рендеринге в `createCell`.
 
-### `commonPlugin` — the bootstrap feature
+### `commonPlugin` — bootstrap-фича
 
-`commonPlugin` runs first and, in `createTable`, installs the extensions every
-other plugin and the UI depend on:
+`commonPlugin` выполняется первым и в `createTable` устанавливает расширения, от
+которых зависят каждый другой плагин и UI:
 
 - `table.getHooks()` → `table.options.hooks`
 - `table.getRenderSlots()` → `table.options.slots`
 - `table.setRenderSlot(params)` → `registerSlot({ ...params, table })`
-- plus helpers: `getHeaderGroups` (wrapped with first/last-group flags),
-  `getIsAnyColumnResizing`, and per-row/header/cell helpers via the other
-  `create*` hooks.
+- плюс хелперы: `getHeaderGroups` (обёрнут флагами первой/последней группы),
+  `getIsAnyColumnResizing` и хелперы на строку/заголовок/ячейку через остальные
+  `create*`-хуки.
 
-## Slots
+## Слоты
 
-A **slot** is a named insertion point rendered around cell/header content. The
-buckets (`useCreateSlots`) are:
+**Слот** — это именованная точка вставки, рендерящаяся вокруг содержимого
+ячейки/заголовка. «Корзины» (`useCreateSlots`):
 
 `leftHeaderSlot`, `rightHeaderSlot`, `leftCellSlot`, `rightCellSlot`,
 `actionRowSlot`.
 
-Plugins register into slots in their **`createTable`** hook (this moved out of
-`createHeader`/`createRow` — registration is a once-per-table concern):
+Плагины регистрируются в слотах в своём хуке **`createTable`** (это переехало из
+`createHeader`/`createRow` — регистрация это забота уровня «однократно на таблицу»):
 
 ```ts
 createTable: table => {
   table.setRenderSlot({
-    id: 'columnPinningPlugin', // unique id — dedup key
+    id: 'columnPinningPlugin', // уникальный id — ключ дедупликации
     slot: 'rightHeaderSlot',
-    order: 0, // number = splice index, 'last'/undefined = push
-    component: PinButton, // or `render: (ctx) => ReactNode`
+    order: 0, // число = индекс splice, 'last'/undefined = push
+    component: PinButton, // либо `render: (ctx) => ReactNode`
   })
 }
 ```
 
-`registerSlot` (`core/createSlots/registerSlot.ts`) **dedupes by `id`**: if the
-id already exists in the slot it updates `visible/render/component` in place,
-otherwise it inserts (by `order`) or pushes. So repeated registration is safe
-and idempotent.
+`registerSlot` (`core/createSlots/registerSlot.ts`) **дедуплицирует по `id`**: если
+id уже существует в слоте, он обновляет `visible/render/component` на месте, иначе
+вставляет (по `order`) или пушит. Так что повторная регистрация безопасна и
+идемпотентна.
 
 ```mermaid
 flowchart LR
-    subgraph reg["registration (createTable, once)"]
+    subgraph reg["регистрация (createTable, однократно)"]
         P1["pinning → rightHeaderSlot"]
         P2["sizing → rightHeaderSlot"]
         P3["sorting → leftHeaderSlot"]
         P4["dragging → leftHeaderSlot"]
         P5["grouping → rightHeaderSlot"]
-        CUST["custom plugin → any slot"]
+        CUST["кастомный плагин → любой слот"]
     end
-    STORE["table.options.slots<br/>(registerSlot dedupes by id)"]
+    STORE["table.options.slots<br/>(registerSlot дедуплицирует по id)"]
     reg --> STORE
-    STORE --> RS["RenderSlot maps slot[] → components<br/>inside Head / Body cells"]
+    STORE --> RS["RenderSlot маппит slot[] → компоненты<br/>внутри ячеек Head / Body"]
 ```
 
-At render, `HeadCell` / `BodyCell` pull the relevant slot array from
-`table.getRenderSlots()` and hand it to `RenderSlot`, which renders each
-registered `component`/`render` with the cell/header context.
+При рендере `HeadCell` / `BodyCell` вытягивают релевантный массив слота из
+`table.getRenderSlots()` и передают его в `RenderSlot`, который рендерит каждый
+зарегистрированный `component`/`render` с контекстом ячейки/заголовка.
 
-## `renderComponent` overrides
+## Переопределения `renderComponent`
 
-Besides slots, a plugin can replace the entire content of a specific cell or
-header by setting `renderComponent` in `createCell` / `createHeader`:
+Помимо слотов, плагин может заменить всё содержимое конкретной ячейки или
+заголовка, задав `renderComponent` в `createCell` / `createHeader`:
 
 ```ts
 createCell: cell => {
@@ -113,19 +113,21 @@ createCell: cell => {
 }
 ```
 
-`BodyCell` prefers `cell.renderComponent` when present. This is how the built-in
-service columns (selection checkbox, expander) inject their UI, and how the
-Guide's `switchActionPlugin` swaps a column's cell renderer.
+`BodyCell` предпочитает `cell.renderComponent`, когда он присутствует. Именно так
+встроенные сервисные столбцы (чекбокс выбора, expander) инъектируют свой UI и так
+`switchActionPlugin` из Guide подменяет рендерер ячейки столбца.
 
-## Authoring guidance
+## Руководство для авторов
 
-- **Render a button in every row/cell/header** → register a slot in
+- **Рендерить кнопку в каждой строке/ячейке/заголовке** → зарегистрируйте слот в
   `createTable`.
-- **Own an entire column's cell/header** → set `renderComponent` in
-  `createCell`/`createHeader` guarded by the column id.
-- **Add custom table state** → `getInitialState` + type via `TState`.
-- **Add custom methods/options** → `createTable` / `getDefaultOptions` + type
-  via `TOptions`.
-- **React to external values inside a plugin component** → read `table.getState()`
-  and subscribe with `useSubscribeStore` ([reactivity.md](reactivity.md)); call
-  business functions via `table.getHooks()`.
+- **Владеть ячейкой/заголовком всего столбца** → задайте `renderComponent` в
+  `createCell`/`createHeader`, защитив по id столбца.
+- **Добавить кастомное состояние таблицы** → `getInitialState` + типизация через
+  `TState`.
+- **Добавить кастомные методы/опции** → `createTable` / `getDefaultOptions` +
+  типизация через `TOptions`.
+- **Реагировать на внешние значения внутри компонента плагина** → читайте
+  `table.getState()` и подписывайтесь через `useSubscribeStore`
+  ([reactivity.md](reactivity.md)); вызывайте бизнес-функции через
+  `table.getHooks()`.

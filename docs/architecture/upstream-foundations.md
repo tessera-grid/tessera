@@ -1,53 +1,54 @@
-# Upstream foundations
+# Upstream-основания
 
-Tessera composes three headless libraries. This page summarizes, in our own
-words, the parts of each that matter for Tessera, and marks the exact extension
-points Tessera hooks into. For authoritative API details, see each library's
-own documentation.
+Tessera компонует три headless-библиотеки. Эта страница своими словами резюмирует
+те части каждой из них, что важны для Tessera, и помечает точные точки расширения,
+в которые Tessera врезается. За авторитетными деталями API обращайтесь к
+документации каждой библиотеки.
 
 ## TanStack Table v8
 
-TanStack Table is a **headless** table core: it computes models (rows, columns,
-headers, footers) from `columns` + `data` + `state`, and exposes an instance of
-methods — it renders nothing itself.
+TanStack Table — это **headless** ядро таблицы: оно вычисляет модели (строки,
+столбцы, заголовки, футеры) из `columns` + `data` + `state` и выдаёт инстанс с
+методами — само по себе оно ничего не рендерит.
 
-Concepts Tessera relies on:
+Концепции, на которые опирается Tessera:
 
-- **Instance** — created by `useReactTable(options)`; a stable object whose
-  methods (`getHeaderGroups`, `getRowModel`, `getState`, …) are read during
-  render.
-- **Models are memoized.** Each model (core row model, sorted, grouped,
-  expanded, header groups) is a memoized function keyed on specific inputs.
-  Recomputation happens only when those inputs change identity. Tessera
-  **replaces** the core row model function to widen those keys (see
-  [reactivity.md](reactivity.md)).
-- **State is controlled/uncontrolled per slice.** You may pass `state.X` +
-  `onXChange` to control a slice, or let the table own it. Tessera formalizes
-  this into a core/external split (see [table-assembly.md](table-assembly.md)).
-- **`_features` (TableFeature[]).** The custom-features API. Each feature can
-  hook the lifecycle of the instance and of every column/row/header/cell, and
-  can contribute default options and initial state. **A Tessera `TablePlugin`
-  is exactly a `TableFeature`** with a small amount of added convention.
-- **`meta`** — an arbitrary per-column context bag (`column.columnDef.meta`),
-  used by consumers to carry field metadata.
+- **Instance** — создаётся через `useReactTable(options)`; стабильный объект, чьи
+  методы (`getHeaderGroups`, `getRowModel`, `getState`, …) читаются во время
+  рендера.
+- **Модели мемоизированы.** Каждая модель (core row model, sorted, grouped,
+  expanded, header groups) — это мемоизированная функция, ключами которой служат
+  конкретные входы. Пересчёт происходит только когда эти входы меняют
+  идентичность. Tessera **заменяет** функцию core row model, чтобы расширить эти
+  ключи (см. [reactivity.md](reactivity.md)).
+- **Состояние controlled/uncontrolled по слайсам.** Вы можете передать `state.X` +
+  `onXChange`, чтобы контролировать слайс, либо отдать его во владение таблице.
+  Tessera формализует это в разделение core/external (см.
+  [table-assembly.md](table-assembly.md)).
+- **`_features` (TableFeature[]).** API кастомных фич. Каждая фича может
+  подцепиться к жизненному циклу инстанса и каждого column/row/header/cell и может
+  вносить дефолтные опции и начальное состояние. **`TablePlugin` в Tessera — это в
+  точности `TableFeature`** с небольшим количеством добавленной конвенции.
+- **`meta`** — произвольный контекстный «мешок» на столбец (`column.columnDef.meta`),
+  используемый потребителями для переноса метаданных поля.
 
-Tessera's touch points: native `getCoreRowModel`, native `getHeaderGroups`
-(wrapped by `commonPlugin` for first/last-group flags), `_features` list, and
-instance augmentation via a feature's `createTable` (adds `getHooks`,
-`getRenderSlots`, `setRenderSlot`, and SDK helpers).
+Точки соприкосновения Tessera: нативный `getCoreRowModel`, нативный
+`getHeaderGroups` (обёрнутый `commonPlugin` для флагов первой/последней группы),
+список `_features` и аугментация инстанса через `createTable` фичи (добавляет
+`getHooks`, `getRenderSlots`, `setRenderSlot` и SDK-хелперы).
 
 ```mermaid
 flowchart LR
-    subgraph opts["useReactTable options"]
+    subgraph opts["опции useReactTable"]
         C["columns"]
         D["data"]
         S["state + on*Change"]
         F["_features (TablePlugin[])"]
-        M["native getCoreRowModel<br/>+ native getHeaderGroups<br/>(wrapped for first/last flags)"]
+        M["нативный getCoreRowModel<br/>+ нативный getHeaderGroups<br/>(обёрнут для флагов first/last)"]
     end
-    INST["table instance"]
-    RM["row model (memoized)"]
-    HG["header groups (memoized)"]
+    INST["инстанс table"]
+    RM["row model (мемоизирована)"]
+    HG["header groups (мемоизированы)"]
     opts --> INST
     INST --> RM
     INST --> HG
@@ -55,66 +56,65 @@ flowchart LR
 
 ## TanStack Virtual
 
-TanStack Virtual computes **which items in a scroll container are visible** and
-the padding needed to preserve scroll size. It is measurement + math; it renders
-nothing.
+TanStack Virtual вычисляет, **какие элементы в scroll-контейнере видимы**, и
+padding, нужный для сохранения размера прокрутки. Это измерение + математика; он
+ничего не рендерит.
 
-Concepts Tessera relies on:
+Концепции, на которые опирается Tessera:
 
-- **Virtualizer** — configured with `count`, `getScrollElement`,
-  `estimateSize`, and (optionally) `getItemKey` / dynamic measurement. It yields
-  `virtualItems` (index, start, size) and `totalSize`.
-- **Range extractor** — the function that decides which indices are "in range".
-  Tessera customizes this to always keep pinned/action columns and to widen the
-  row range (see `core/virtualization`).
-- **Dynamic row measurement** — rows can measure their real height via
-  `measureElement`, so variable-height rows work.
+- **Virtualizer** — конфигурируется через `count`, `getScrollElement`,
+  `estimateSize` и (опционально) `getItemKey` / динамическое измерение. Он выдаёт
+  `virtualItems` (index, start, size) и `totalSize`.
+- **Range extractor** — функция, решающая, какие индексы «в диапазоне». Tessera
+  кастомизирует её, чтобы всегда удерживать pinned/action-столбцы и расширять
+  диапазон строк (см. `core/virtualization`).
+- **Динамическое измерение строк** — строки могут измерять свою реальную высоту
+  через `measureElement`, так что строки переменной высоты работают.
 
-Tessera uses **two** virtualizers: one for rows (always on) and one for columns
-(on only for the flat/`flex` layout — see
-[rendering-and-virtualization.md](rendering-and-virtualization.md)). Padding is
-emitted as left/right filler columns and body height CSS variables.
+Как именно Tessera это использует — два виртуализатора (строки всегда, столбцы
+только при плоском layout), кастомные range extractors, filler-столбцы для padding
+и динамическое измерение строк — см. [virtualization.md](virtualization.md).
 
 ## dnd-kit
 
-dnd-kit is a headless drag-and-drop toolkit for React.
+dnd-kit — это headless-тулкит drag-and-drop для React.
 
-Concepts Tessera relies on:
+Концепции, на которые опирается Tessera:
 
-- **`DndContext`** — provides drag state, wires sensors, emits
-  `onDragStart/Over/End`. Tessera wraps head and body in `DndHeadWrapper` /
-  `DndBodyWrapper`.
-- **`SortableContext` + `useSortable`** — ordered, sortable lists; used for
-  column reordering (header) and row reordering (body).
-- **Sensors / collision detection / modifiers** — Tessera supplies a custom
-  collision strategy for columns and modifiers to constrain movement.
-- **Drag overlay** — a floating element rendered during drag; Tessera renders
-  `OverlayHeadCell` / `OverlayBodyRow` for this.
+- **`DndContext`** — предоставляет состояние перетаскивания, подключает сенсоры,
+  эмитит `onDragStart/Over/End`. Tessera оборачивает head и body в
+  `DndHeadWrapper` / `DndBodyWrapper`.
+- **`SortableContext` + `useSortable`** — упорядоченные, сортируемые списки;
+  используются для переупорядочивания столбцов (header) и строк (body).
+- **Sensors / collision detection / modifiers** — Tessera поставляет кастомную
+  стратегию коллизий для столбцов и модификаторы для ограничения движения.
+- **Drag overlay** — плавающий элемент, рендерящийся во время перетаскивания;
+  Tessera рендерит для этого `OverlayHeadCell` / `OverlayBodyRow`.
 
-## Where Tessera sits
+## Где находится Tessera
 
 ```mermaid
 flowchart TB
     subgraph tessera["Tessera"]
-        PL["Plugin + Slot layer"]
-        PS["Pub-Sub reactivity"]
-        THEME["CSS-variable theming<br/>(Base UI + native controls)"]
-        UI["DataGrid render pipeline"]
+        PL["Слой Plugin + Slot"]
+        PS["Реактивность Pub-Sub"]
+        THEME["Темизация на CSS-переменных<br/>(Base UI + нативные контролы)"]
+        UI["Пайплайн рендеринга DataGrid"]
     end
     subgraph up["Upstream (headless)"]
-        TT["TanStack Table<br/>(model + _features)"]
-        TV["TanStack Virtual<br/>(row/col virtualizers)"]
-        DND["dnd-kit<br/>(DnD contexts)"]
+        TT["TanStack Table<br/>(модель + _features)"]
+        TV["TanStack Virtual<br/>(виртуализаторы строк/столбцов)"]
+        DND["dnd-kit<br/>(DnD-контексты)"]
     end
     PL --> TT
-    PS -.->|reads getState/getHooks| TT
+    PS -.->|читает getState/getHooks| TT
     UI --> TV
     UI --> DND
     UI --> TT
     THEME --> UI
 ```
 
-Rule of thumb when reading the codebase: anything named `create*` on a
-plugin, `_features`, `getRowModel`, `getState` is **TanStack**; anything named
-`setRenderSlot`, `getRenderSlots`, `getHooks`, `useSubscribeStore`,
-`renderComponent` is **Tessera's** extension.
+Практическое правило при чтении кодовой базы: всё, что названо `create*` на
+плагине, `_features`, `getRowModel`, `getState` — это **TanStack**; всё, что
+названо `setRenderSlot`, `getRenderSlots`, `getHooks`, `useSubscribeStore`,
+`renderComponent` — это расширение **самой Tessera**.
