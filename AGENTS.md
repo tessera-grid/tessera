@@ -256,8 +256,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
 (`src/lib/stories/__tests__/helpers.tsx`).
 
 - `npm test` — прогнать один раз. `npm run test:watch` — watch-режим.
-- Существующие наборы (`src/lib/stories/__tests__/`): `render-counts` (колонки/строки
-  рендерятся по args; виртуализированные наборы остаются достижимы), `scroll-perf`
+- Существующие наборы (`src/lib/stories/__tests__/`): `core` (требования ядра R1–R18 из
+  [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) — структура, размеры, роли,
+  визуальные состояния, раскладка при прокрутке), `scroll-perf`
   (X/Y-скролл держит 60fps — p95 кадра < 16.7ms), `plugins` (обе проверки на каждый плагин
   и все вместе), `stress` (1000×1000, с плагинами и без).
 - **`npm test` намеренно КРАСНЫЙ прямо сейчас.** Perf-тесты `stress` держат сетку на строгих
