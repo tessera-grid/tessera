@@ -1,48 +1,48 @@
-# 0005 — Develop on `master`; commits and pushes stay with the human
+# 0005 — Разработка на `master`; коммиты и пуши остаются за человеком
 
-- **Status:** Accepted
-- **Date:** 2026-08-05
+- **Статус:** Принято
+- **Дата:** 2026-08-05
 
-## Context
+## Контекст
 
-Agent work had been landing on ad-hoc `claude/*` branches and worktrees, while the
-guidance in [AGENTS §6](../../AGENTS.md#6-constraints) still named `main` as the
-default and told the agent to "create a branch first." The result was branch
-sprawl and an ambiguous `main`-vs-`master` story: in-progress work scattered across
-throwaway branches, and the human left to reconcile it.
+Работа агента попадала в разрозненные ветки `claude/*` и worktree'ы, тогда как
+указания в [AGENTS §6](../../AGENTS.md#6-constraints) всё ещё называли `main`
+веткой по умолчанию и предписывали агенту «сначала создать ветку». Результат —
+разрастание веток и неоднозначность `main`-vs-`master`: незавершённая работа
+разбросана по одноразовым веткам, а человеку остаётся всё это согласовывать.
 
-The human wants one predictable place for work-in-progress and full control over
-history and the remote. The repo already follows a Conventional-Commits style
-(`feat(theme): …`, `fix(ui): …`, `refactor(ui): …`, `chore(shadcn): …`).
+Человек хочет одно предсказуемое место для незавершённой работы и полный контроль
+над историей и удалённым репозиторием. Репозиторий уже следует стилю
+Conventional Commits (`feat(theme): …`, `fix(ui): …`, `refactor(ui): …`,
+`chore(shadcn): …`).
 
-## Decision
+## Решение
 
-**All development happens on `master`. The agent never commits or pushes on its
-own; the human owns git.**
+**Вся разработка идёт на `master`. Агент никогда не коммитит и не пушит сам; git
+принадлежит человеку.**
 
-Concretely:
+Конкретно:
 
-- **`master` is the working branch.** Do not spin up `claude/*` / feature branches
-  for routine work — edit `master`'s working tree directly.
-- **The agent does not commit or push.** No autonomous `git commit`, no `git push`
-  — under any framing. Leave staged/unstaged changes for the human to review and
-  commit. (This tightens the "requires approval" line in AGENTS §6 into an
-  unconditional one for commit/push.)
-- **Commits are atomic, with clear messages.** When commits are made, each is one
-  coherent, reviewable change with a descriptive Conventional-Commits subject
-  matching repo history. Keep the working tree coherent so a change can be staged
-  and described on its own.
+- **`master` — рабочая ветка.** Не заводить ветки `claude/*` / фиче-ветки для
+  рутинной работы — редактировать рабочее дерево `master` напрямую.
+- **Агент не коммитит и не пушит.** Никаких автономных `git commit`, никаких
+  `git push` — под любым предлогом. Оставлять staged/unstaged-изменения человеку на
+  ревью и коммит. (Это ужесточает строку «требует одобрения» из AGENTS §6 до
+  безусловной для коммита/пуша.)
+- **Коммиты атомарны, с ясными сообщениями.** Когда коммиты делаются, каждый — одно
+  цельное, обозримое изменение с описательным заголовком в стиле Conventional
+  Commits, согласованным с историей репозитория. Держать рабочее дерево цельным,
+  чтобы изменение можно было застейджить и описать по отдельности.
 
-## Consequences
+## Последствия
 
-- **+** A single source of in-progress truth on `master`; no branch sprawl and no
-  `main`-vs-`master` ambiguity.
-- **+** The human controls history and the remote — nothing is committed or pushed
-  without them.
-- **+** Atomic, well-described commits keep the log readable and reviewable.
-- **−** No isolated branch per task: several in-flight changes share one working
-  tree, so the agent must keep edits scoped and reviewable, and the human stages
-  selectively when committing.
-- **Supersedes** the earlier AGENTS §6 guidance ("default branch is `main`; if
-  you're on a default branch, create a branch first"), which is updated to point
-  here.
+- **+** Единый источник правды о незавершённой работе на `master`; нет разрастания
+  веток и нет неоднозначности `main`-vs-`master`.
+- **+** Человек контролирует историю и удалённый репозиторий — ничего не коммитится
+  и не пушится без него.
+- **+** Атомарные, хорошо описанные коммиты держат лог читаемым и обозримым.
+- **−** Нет изолированной ветки под задачу: несколько параллельных изменений делят
+  одно рабочее дерево, поэтому агент должен держать правки узкими и обозримыми, а
+  человек стейджит выборочно при коммите.
+- **Отменяет** прежние указания AGENTS §6 («ветка по умолчанию — `main`; если вы на
+  ветке по умолчанию, сначала создайте ветку»), которые обновлены и ссылаются сюда.

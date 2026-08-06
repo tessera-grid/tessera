@@ -1,18 +1,19 @@
 # Architecture Decision Records
 
-Each ADR captures **one** decision: the context that forced it, the decision
-itself, and the consequences (including what was rejected). Format is deliberately
-light — _Context → Decision → Consequences_. Files are numbered sequentially and
-never renumbered; a superseded decision gets a new ADR that references the old one.
+Каждый ADR фиксирует **одно** решение: контекст, который его вынудил, само решение
+и последствия (включая то, что было отвергнуто). Формат сознательно лёгкий —
+_Контекст → Решение → Последствия_. Файлы нумеруются последовательно и никогда не
+перенумеровываются; отменённое решение получает новый ADR, ссылающийся на старый.
 
-| #                                                | Decision                                                  | Status   |
-| ------------------------------------------------ | --------------------------------------------------------- | -------- |
-| [0001](0001-core-on-tanstack-table.md)           | Build the core on TanStack Table v8                       | Accepted |
-| [0002](0002-virtualization-tanstack-virtual.md)  | Virtualize with TanStack Virtual                          | Accepted |
-| [0003](0003-dnd-with-dnd-kit.md)                 | Drag & drop with dnd-kit (columns + hierarchical rows)    | Accepted |
-| [0004](0004-perf-strategy-pubsub-fastscroll.md)  | Performance strategy on v8: Pub-Sub + fast-scroll         | Accepted |
-| [0005](0005-develop-on-master-human-owns-git.md) | Develop on `master`; commits and pushes stay with human   | Accepted |
-| [0006](0006-formalize-tech-stack.md)             | Formalize the tech stack (Tailwind v4 + Base UI + shadcn) | Accepted |
+| #                                                | Решение                                                        | Статус  |
+| ------------------------------------------------ | -------------------------------------------------------------- | ------- |
+| [0001](0001-core-on-tanstack-table.md)           | Строим ядро на TanStack Table v8                               | Принято |
+| [0002](0002-virtualization-tanstack-virtual.md)  | Виртуализация через TanStack Virtual                           | Принято |
+| [0003](0003-dnd-with-dnd-kit.md)                 | Drag & drop через dnd-kit (колонки + иерархические строки)     | Принято |
+| [0004](0004-reactivity-pubsub.md)                | Гранулярная реактивность на v8: Pub-Sub                        | Принято |
+| [0005](0005-develop-on-master-human-owns-git.md) | Разработка на `master`; коммиты и пуши остаются за человеком   | Принято |
+| [0006](0006-formalize-tech-stack.md)             | Формализация технического стека (Tailwind v4 + Base UI + shadcn) | Принято |
+| [0007](0007-fast-scroll.md)                      | Fast-scroll: скелетоны ячеек при быстрой прокрутке             | Принято |
 
-See also the project rationale in
-[`docs/architecture/README.md` → Why Tessera exists](../architecture/README.md#why-tessera-exists).
+См. также мотивацию проекта в
+[`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

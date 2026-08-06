@@ -1,31 +1,34 @@
-# 0003 — Drag & drop with dnd-kit (columns + hierarchical rows)
+# 0003 — Drag & drop через dnd-kit (колонки + иерархические строки)
 
-- **Status:** Accepted
-- **Date:** 2026-08-02
+- **Статус:** Принято
+- **Дата:** 2026-08-02
 
-## Context
+## Контекст
 
-Consumers needed to reorder both **columns** and **rows** by drag & drop — and row
-dragging had to work **within hierarchy and grouping**, not just on a flat list.
-This is a demanding requirement: a DnD solution had to integrate with
-virtualization and the TanStack model without owning layout.
+Потребителям нужно было переупорядочивать и **колонки**, и **строки** через drag &
+drop — причём перетаскивание строк должно было работать **внутри иерархии и
+группировки**, а не только на плоском списке. Это требовательная задача:
+DnD-решение должно было интегрироваться с виртуализацией и моделью TanStack, не
+завладевая раскладкой.
 
-## Decision
+## Решение
 
-Use **dnd-kit** (`@dnd-kit/core`, `sortable`, `modifiers`, `utilities`) for both
-column and row drag & drop, including **hierarchical / grouped row** dragging.
+Используем **dnd-kit** (`@dnd-kit/core`, `sortable`, `modifiers`, `utilities`) для
+drag & drop как колонок, так и строк, включая перетаскивание **иерархических /
+сгруппированных строк**.
 
-## Consequences
+## Последствия
 
-- **+** Column reordering and row reordering share one modern, composable DnD
-  foundation; order is surfaced back to consumers via `columnOrder` /
-  `onColumnOrderChange` and `onRowOrderChange`.
-- **+** Hierarchical row dragging (reparenting within groups/trees) works — a
-  genuinely hard capability that off-the-shelf grids rarely expose cleanly.
-- **−** Getting hierarchical row DnD correct alongside virtualization was
-  **very difficult** and is among the most intricate parts of the codebase; changes
-  here warrant live Storybook verification.
-- **−** Grouping + RowDragging together is **not yet** implemented (believed
-  feasible) — a known edge.
-- See [rendering-and-virtualization.md](../architecture/rendering-and-virtualization.md)
-  for the DnD wrapper/overlay structure.
+- **+** Переупорядочивание колонок и строк опирается на единый современный,
+  компонуемый DnD-фундамент; порядок возвращается потребителям через
+  `columnOrder` / `onColumnOrderChange` и `onRowOrderChange`.
+- **+** Перетаскивание иерархических строк (смена родителя внутри групп/деревьев)
+  работает — по-настоящему сложная возможность, которую готовые таблицы редко
+  предоставляют аккуратно.
+- **−** Корректно реализовать DnD иерархических строк вместе с виртуализацией было
+  **очень трудно**, и это одна из самых замысловатых частей кодовой базы;
+  изменения здесь требуют живой проверки в Storybook.
+- **−** Группировка + перетаскивание строк вместе **пока не** реализованы
+  (считается выполнимым) — известное ограничение.
+- См. [rendering-and-virtualization.md](../architecture/rendering-and-virtualization.md)
+  про структуру обёртки/оверлея DnD.

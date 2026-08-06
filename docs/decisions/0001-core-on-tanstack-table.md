@@ -1,40 +1,45 @@
-# 0001 — Build the core on TanStack Table v8
+# 0001 — Строим ядро на TanStack Table v8
 
-- **Status:** Accepted
-- **Date:** 2026-08-02
+- **Статус:** Принято
+- **Дата:** 2026-08-02
 
-## Context
+## Контекст
 
-Tessera had to deliver flexible, extensible, high-performance tables for varied
-(originally CRM) use cases. The existing and off-the-shelf options were each
-disqualified:
+Tessera должна была предоставить гибкие, расширяемые и высокопроизводительные
+таблицы для разнообразных (изначально CRM) сценариев. Существовавшие и готовые
+решения были отклонены — каждое по своей причине:
 
-- **react-base-table** — the incumbent, effectively abandoned for years.
-- **Material React Table** and similar modern kits — incompatible with the host
-  project's dated stack.
-- **AG Grid** — capable, but the licensing cost was not payable.
-- **Canvas-rendered grids** — strong raw performance, but a disproportionate
-  development burden for the flexibility/extensibility we needed.
+- **Material React Table** и подобные современные наборы — навязывают собственный
+  стек и внешний вид.
+- **AG Grid** — мощный, но стоимость лицензии была неподъёмной.
+- **Таблицы на canvas** — сильны в чистой производительности, но требуют
+  непропорционально больших затрат на разработку ради нужной нам
+  гибкости/расширяемости.
 
-We needed a **headless, agnostic model** we could extend from the outside, not a
-styled product or a rendering engine we'd have to build and maintain ourselves.
+Нам нужна была **headless-, agnostic-модель**, которую можно расширять снаружи, а
+не стилизованный продукт или движок рендеринга, который пришлось бы строить и
+поддерживать самим.
 
-## Decision
+## Решение
 
-Build Tessera's table model on **TanStack Table v8**, composed (never forked) and
-extended through its `_features` / `TableFeature` extension point. TanStack owns
-the model, state, and columns; Tessera adds the plugin/slot layer, reactivity, and
-theming on top.
+Строим модель таблицы Tessera на **TanStack Table v8**, компонуя (никогда не
+форкая) и расширяя её через точку расширения `_features` / `TableFeature`.
+TanStack владеет моделью, состоянием и колонками; Tessera добавляет поверх слой
+плагинов/слотов, реактивность и темизацию.
 
-## Consequences
+## Последствия
 
-- **+** A modern, well-maintained, headless core; no bespoke model to maintain.
-- **+** The `TableFeature` API becomes Tessera's native plugin substrate — every
-  plugin _is_ a TanStack feature with extra lifecycle sugar.
-- **+** Agnostic by construction: no design system or backend assumptions baked in.
-- **−** We inherit TanStack v8's architectural cost: state/data changes trigger a
-  full model recalculation. This is the root perf constraint addressed in
-  [ADR 0004](0004-perf-strategy-pubsub-fastscroll.md) and motivates a possible
-  future migration to v9 (**under consideration**; see [roadmap](../roadmap.md)).
-- Deliberately **not** a canvas grid — a trade of peak throughput for
-  extensibility and development tractability.
+- **+** Современное, хорошо поддерживаемое headless-ядро; нет собственной модели,
+  которую нужно поддерживать.
+- **+** API `TableFeature` становится нативной основой для плагинов Tessera —
+  каждый плагин _является_ фичей TanStack с дополнительным синтаксическим сахаром
+  для жизненного цикла.
+- **+** Agnostic по своей конструкции: никаких зашитых предположений о дизайн-
+  системе или бэкенде.
+- **−** Мы наследуем архитектурную цену TanStack v8: изменения состояния/данных
+  запускают полный пересчёт модели. Это корневое ограничение производительности,
+  которое решается в [ADR 0004](0004-reactivity-pubsub.md) и служит
+  мотивацией для возможной будущей миграции на v9 (**рассматривается**; см.
+  [roadmap](../roadmap.md)).
+- Сознательно **не** canvas-таблица — размен пиковой пропускной способности на
+  расширяемость и посильность разработки.
