@@ -23,6 +23,15 @@ import { rowDeleteActionPlugin } from './__mocks__/plugins/rowDeleteAction/rowDe
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { usePagination } from './__mocks__/usePagination'
 import {
+  HANDLE,
+  ROW,
+  beginDrag,
+  firePointer,
+  nextFrame,
+  rowSignatures,
+  sortedRows,
+} from './rowDragging.dnd'
+import {
   columnCountType,
   containerHeightType,
   dataCountType,
@@ -261,70 +270,15 @@ export const StoryComponent = memo(
   },
 )
 
-// --- Row Dragging visual test -------------------------------------------------
+// --- Row Dragging demo scenario -----------------------------------------------
 // Meta-level play: runs for EVERY story, but only does anything when the story
-// actually enables row dragging (`args.enableRowDragging`). So the same check
-// covers any current/future story that flips the flag on. Uses synthetic pointer
-// events (works in the Storybook UI and under vitest-browser); the CSS-`:hover`
-// reveal, which synthetic events can't drive, is verified with trusted input in
-// the vitest runner (`__tests__/row-dragging.test.tsx`).
-
-/** Icon side per spec (`DragHandler.module.css`: `.button svg { 16px }`). */
-const DRAG_ICON_SIZE = 16
-/** Column width per spec: icon (16) + left padding (4) + right padding (4). */
-const DRAG_COLUMN_WIDTH = DRAG_ICON_SIZE + 4 + 4 // = 24
-
-const ROW = '.data-grid__body-row'
-const USER_CELL = '.data-grid__body-cell:not([data-actions-column-cell="true"])'
-const HANDLE = '.drag__handler--column'
-/** OverlayBodyRow container (the drag "cloud") — distinct class from body rows. */
-const OVERLAY = '.data-grid-body__row'
-/** The row whose slot shows the colour drop-indicator while dragging. */
-const DRAG_FILL = '.data-grid__body-row[data-row-draggable="true"]'
-/** The element that actually overflows and scrolls. */
-const SCROLLER = '.MuiTableContainer-root'
-
-const sortByIndex = (a: HTMLElement, b: HTMLElement) =>
-  Number(a.getAttribute('data-index')) - Number(b.getAttribute('data-index'))
-
-const nextFrame = () =>
-  new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
-
-const firePointer = (
-  type: 'pointerdown' | 'pointermove' | 'pointerup',
-  target: Element | Document,
-  x: number,
-  y: number,
-) => {
-  target.dispatchEvent(
-    new PointerEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      composed: true,
-      pointerId: 1,
-      pointerType: 'mouse',
-      isPrimary: true,
-      button: type === 'pointermove' ? -1 : 0,
-      buttons: type === 'pointerup' ? 0 : 1,
-      clientX: x,
-      clientY: y,
-    }),
-  )
-}
-
-/** Visible order of rows keyed by a per-row signature (all user-cell text). */
-const rowSignatures = (canvas: HTMLElement) =>
-  Array.from(canvas.querySelectorAll<HTMLElement>(ROW))
-    .sort(
-      (a, b) =>
-        Number(a.getAttribute('data-index')) -
-        Number(b.getAttribute('data-index')),
-    )
-    .map(row =>
-      Array.from(row.querySelectorAll<HTMLElement>(USER_CELL))
-        .map(cell => cell.textContent?.trim() ?? '')
-        .join('|'),
-    )
+// actually enables row dragging (`args.enableRowDragging`). It is intentionally
+// THIN — a single representative drag-and-drop so the Storybook Interactions
+// panel demonstrates the feature. The per-requirement assertions (handle, hover
+// reveal, cloud + fill, column width, auto-scroll R12–R14) each live as their
+// own named test in `__tests__/row-dragging.test.tsx`, so `npm test` reports and
+// fails them individually. Both share the pointer choreography in
+// `rowDragging.dnd.ts` so the demo and the tests can't drift apart.
 
 const rowDraggingPlay: NonNullable<Meta<StoryProps>['play']> = async ({
   args,
@@ -339,195 +293,27 @@ const rowDraggingPlay: NonNullable<Meta<StoryProps>['play']> = async ({
     expect(canvas.querySelectorAll(ROW).length).toBeGreaterThan(3),
   )
 
-  await step('drag column: dedicated first column with a 16px handle', async () => {
-    const rows = Array.from(canvas.querySelectorAll<HTMLElement>(ROW))
-    const handles = canvas.querySelectorAll<HTMLElement>(HANDLE)
-
-    // Every row is draggable here (enableRowDragging: true), so `getCanDrag()`
-    // renders a handle in each rendered row.
-    expect(handles.length).toBe(rows.length)
-
-    const firstHandle = handles[0]
-    const dragCell = firstHandle.closest<HTMLElement>(
-      '.data-grid__body-cell[data-actions-column-cell="true"]',
-    )
-    // The handle lives in the left-most (action) column.
-    expect(dragCell).toBeTruthy()
-    expect(dragCell).toBe(
-      rows[0].querySelector('.data-grid__body-cell[data-actions-column-cell="true"]'),
-    )
-
-    const svg = firstHandle.querySelector('svg')!
-    const iconStyle = getComputedStyle(svg)
-    expect(iconStyle.width).toBe(`${DRAG_ICON_SIZE}px`)
-    expect(iconStyle.height).toBe(`${DRAG_ICON_SIZE}px`)
-  })
-
-  await step('handle is hidden (opacity 0) until the row is hovered', async () => {
-    // The reveal-on-hover half is CSS-`:hover`-driven and needs trusted input;
-    // it is asserted in the vitest runner. Here we lock in the hidden default.
-    const svg = canvas.querySelector<HTMLElement>(`${HANDLE} svg`)!
-    expect(getComputedStyle(svg).opacity).toBe('0')
-  })
-
-  const before = rowSignatures(canvas)
-
-  await step('drag shows the "cloud" overlay and the drop-indicator fill', async () => {
-    const rows = Array.from(canvas.querySelectorAll<HTMLElement>(ROW)).sort(
-      (a, b) =>
-        Number(a.getAttribute('data-index')) -
-        Number(b.getAttribute('data-index')),
-    )
+  await step('drag the first row onto a lower row and drop', async () => {
+    const before = rowSignatures(canvas)
+    const rows = sortedRows(canvas)
     const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
     const target = rows[3]
 
-    const hr = handle.getBoundingClientRect()
-    const hx = hr.left + hr.width / 2
-    const hy = hr.top + hr.height / 2
+    // Keep x fixed (no horizontal drift) so nesting depth stays 0 on flat data.
+    const { hx } = await beginDrag(handle)
     const tr = target.getBoundingClientRect()
     const ty = tr.top + tr.height / 2
-
-    // Keep x fixed (no horizontal drift) so nesting depth stays 0 on flat data.
-    firePointer('pointerdown', handle, hx, hy)
-    await nextFrame()
-    firePointer('pointermove', document, hx, hy + 6) // pass the activation move
-    await nextFrame()
-    await nextFrame()
     firePointer('pointermove', document, hx, ty) // over the target row
     await nextFrame()
     await nextFrame()
     firePointer('pointermove', document, hx, ty + 1) // settle collision/over
     await nextFrame()
     await nextFrame()
-
-    // Mid-drag: the cloud follows the cursor and the source row shows the fill.
-    await waitFor(() => {
-      expect(canvas.querySelector(OVERLAY)).toBeTruthy()
-      expect(canvas.querySelector(DRAG_FILL)).toBeTruthy()
-    })
-
-    firePointer('pointerup', document, hx, ty + 1)
-  })
-
-  await step('after drop: order changed, cloud + fill are gone', async () => {
-    // Cleanup: overlay unmounts and the fill attribute clears.
-    await waitFor(() => {
-      expect(canvas.querySelector(OVERLAY)).toBeNull()
-      expect(canvas.querySelector(DRAG_FILL)).toBeNull()
-    })
-
-    // The dragged row got a new index → the visible order is different, but no
-    // row was lost (the dragged signature still present, just lower down).
-    await waitFor(() => {
-      const after = rowSignatures(canvas)
-      expect(after.join('¦')).not.toBe(before.join('¦'))
-      expect(after[0]).not.toBe(before[0])
-      expect(after).toContain(before[0])
-    })
-  })
-
-  await step('drag column width = 16 + 4 + 4 (spec)', async () => {
-    const dragCell = canvas
-      .querySelector<HTMLElement>(HANDLE)!
-      .closest<HTMLElement>('.data-grid__body-cell')!
-    // Spec width: 16 + 4 + 4 = 24 (`COLUMN_DRAGGING_SIZE`, border-box cell).
-    expect(Math.round(dragCell.getBoundingClientRect().width)).toBe(
-      DRAG_COLUMN_WIDTH,
-    )
-  })
-
-  // --- Auto-scroll (R12–R14) ---------------------------------------------------
-  // Only meaningful when the grid overflows; each step self-skips otherwise, so
-  // the play stays correct on small stories that flip the flag on.
-  const scroller = canvas.querySelector<HTMLElement>(SCROLLER)
-
-  const sortedRows = () =>
-    Array.from(canvas.querySelectorAll<HTMLElement>(ROW)).sort(sortByIndex)
-
-  /** Press on a row handle and pass the activation move; pointer stays down. */
-  const beginDrag = async (handle: HTMLElement) => {
-    const hr = handle.getBoundingClientRect()
-    const hx = hr.left + hr.width / 2
-    const hy = hr.top + hr.height / 2
-    firePointer('pointerdown', handle, hx, hy)
-    await nextFrame()
-    firePointer('pointermove', document, hx, hy + 6)
-    await nextFrame()
-    await nextFrame()
-    await nextFrame()
-    return { hx, hy }
-  }
-
-  await step('R12: dragging near the bottom edge auto-scrolls down', async () => {
-    if (!scroller || scroller.scrollHeight <= scroller.clientHeight) return
-
-    scroller.scrollTop = 0
-    await nextFrame()
-    const { hx, hy } = await beginDrag(sortedRows()[0].querySelector(HANDLE)!)
-    const cr = scroller.getBoundingClientRect()
-    // Hold inside the bottom 20% threshold; dnd-kit keeps scrolling per frame.
-    firePointer('pointermove', document, cr.left + cr.width / 2, cr.bottom - cr.height * 0.05)
-    try {
-      await waitFor(
-        () => expect(scroller.scrollTop).toBeGreaterThan(0),
-        { timeout: 2000 },
-      )
-    } finally {
-      firePointer('pointerup', document, hx, hy)
-    }
-    await nextFrame()
-  })
-
-  await step('R14: dragging near the right edge does NOT scroll horizontally', async () => {
-    if (!scroller || scroller.scrollWidth <= scroller.clientWidth) return
-
-    scroller.scrollLeft = 0
-    scroller.scrollTop = 0
-    await nextFrame()
-    const { hx, hy } = await beginDrag(sortedRows()[0].querySelector(HANDLE)!)
-    const cr = scroller.getBoundingClientRect()
-    // Near the right edge but vertically centred (outside the vertical threshold).
-    firePointer('pointermove', document, cr.right - cr.width * 0.03, cr.top + cr.height / 2)
-    for (let i = 0; i < 40; i++) {
-      // eslint-disable-next-line no-await-in-loop
-      await nextFrame()
-    }
-    try {
-      expect(scroller.scrollLeft).toBe(0)
-    } finally {
-      firePointer('pointerup', document, hx, hy)
-    }
-    await nextFrame()
-  })
-
-  await step('R13: a row reorders correctly after a vertical scroll', async () => {
-    if (!scroller || scroller.scrollHeight <= scroller.clientHeight) return
-
-    scroller.scrollTop = Math.min(1500, scroller.scrollHeight - scroller.clientHeight)
-    for (let i = 0; i < 6; i++) {
-      // eslint-disable-next-line no-await-in-loop
-      await nextFrame()
-    }
-
-    const rows = sortedRows()
-    const source = rows[1]
-    const target = rows[4]
-    const beforeScroll = rowSignatures(canvas)
-
-    const { hx } = await beginDrag(source.querySelector(HANDLE)!)
-    const tr = target.getBoundingClientRect()
-    const ty = tr.top + tr.height / 2
-    // Mid-container target (no edge → no auto-scroll): the reorder is what moves.
-    firePointer('pointermove', document, hx, ty)
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointermove', document, hx, ty + 1)
-    await nextFrame()
-    await nextFrame()
     firePointer('pointerup', document, hx, ty + 1)
 
+    // Sanity for the demo: the drop reordered the rows.
     await waitFor(() =>
-      expect(rowSignatures(canvas).join('¦')).not.toBe(beforeScroll.join('¦')),
+      expect(rowSignatures(canvas).join('¦')).not.toBe(before.join('¦')),
     )
   })
 }
