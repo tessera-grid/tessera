@@ -1,13 +1,13 @@
-# 0008 — Плагин rowDragging: реализация
+# 0009 — Плагин rowDragging: реализация
 
 - **Статус:** Принято
 - **Дата:** 2026-08-06
-- **Связано:** [ADR 0003](0003-dnd-with-dnd-kit.md) — решение использовать dnd-kit
+- **Связано:** [ADR 0006](0006-dnd-with-dnd-kit.md) — решение использовать dnd-kit
   для drag & drop колонок и строк.
 
 ## Контекст
 
-[ADR 0003](0003-dnd-with-dnd-kit.md) зафиксировал решение строить drag & drop на
+[ADR 0006](0006-dnd-with-dnd-kit.md) зафиксировал решение строить drag & drop на
 dnd-kit. Этот ADR фиксирует, **как** на его основе реализован плагин `rowDragging`
 — как он подключён к таблице и UI: активация, сервисный столбец, drag-ручка,
 overlay, drop-индикатор и flow фиксации-при-сбросе.
@@ -282,6 +282,6 @@ Storybook (одно перетаскивание с drop); он **не** нес�
 - глубина вложенности **> 1** пока не поддерживается математикой перемещения (см.
   `TODO` по `acceptable` / depth в `getRowDraggingEvents` / `draggingHelpers`).
 
-См. [ADR 0003](0003-dnd-with-dnd-kit.md) про общее решение по DnD,
+См. [ADR 0006](0006-dnd-with-dnd-kit.md) про общее решение по DnD,
 [dnd.md](../architecture/dnd.md) про механизм DnD рендер-слоя и
 [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм плагинов.

@@ -21,7 +21,7 @@ import {
 } from '../rowDragging.dnd'
 
 // Every Row Dragging requirement is its own named test, prefixed with its spec ID
-// (R1–R14, from the requirements table in docs/decisions/0008-rowdragging-plugin.md).
+// (R1–R14, from the requirements table in docs/decisions/0009-rowdragging-plugin.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/architecture/visual-tests.md). All tests drive the canonical `RowDragging`

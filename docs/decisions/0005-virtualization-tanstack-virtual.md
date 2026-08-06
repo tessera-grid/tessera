@@ -1,4 +1,4 @@
-# 0002 — Виртуализация через TanStack Virtual
+# 0005 — Виртуализация через TanStack Virtual
 
 - **Статус:** Принято
 - **Дата:** 2026-08-02
@@ -15,7 +15,7 @@
 - **react-window / react-virtualized** — уже устаревшие.
 - **TanStack Virtual** — низкоуровневый и без навязанных мнений, виртуализирует
   любую ось и естественно сочетается с ядром TanStack Table
-  ([ADR 0001](0001-core-on-tanstack-table.md)).
+  ([ADR 0004](0004-core-on-tanstack-table.md)).
 
 ## Решение
 

@@ -54,4 +54,4 @@ padding-переменные при скролле.
 перетаскивании), опирается на индекс row-model / `virtualIndex` **реально
 отрендеренных** строк, которые виртуализатор держит точными по мере прокрутки окна.
 Подробнее про взаимодействие с DnD — в [dnd.md](dnd.md) и
-[ADR 0008](../decisions/0008-rowdragging-plugin.md).
+[ADR 0009](../decisions/0009-rowdragging-plugin.md).

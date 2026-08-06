@@ -6,7 +6,7 @@ Tessera строит перетаскивание рендер-слоя пове
 **строк** (в body, с иерархией). Этот документ описывает общий механизм DnD в
 `<DataGrid/>`; **плагинный** deep-dive по перетаскиванию строк (активация,
 сервисный столбец, drag-ручка, drop-индикатор, алгоритм переупорядочивания) — в
-[ADR 0008](../decisions/0008-rowdragging-plugin.md).
+[ADR 0009](../decisions/0009-rowdragging-plugin.md).
 
 ## DnD-обёртки
 
@@ -34,7 +34,7 @@ flowchart TB
 Активное перетаскивание рендерит плавающий overlay, следующий за курсором:
 `OverlayHeadCell` для столбца и `OverlayBodyRow` для строки. Состояние принятия
 row-drag питает CSS-переменные, тонирующие accept/reject (детали заливки строки —
-в [ADR 0008](../decisions/0008-rowdragging-plugin.md)).
+в [ADR 0009](../decisions/0009-rowdragging-plugin.md)).
 
 ## Collision detection и modifiers
 

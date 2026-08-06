@@ -1,4 +1,4 @@
-# 0006 — Формализация технического стека
+# 0003 — Формализация технического стека
 
 - **Статус:** Принято
 - **Дата:** 2026-08-05
@@ -6,9 +6,9 @@
 ## Контекст
 
 Ранние ADR фиксируют только _headless-ядро_: TanStack Table
-([0001](0001-core-on-tanstack-table.md)), TanStack Virtual
-([0002](0002-virtualization-tanstack-virtual.md)) и dnd-kit
-([0003](0003-dnd-with-dnd-kit.md)). Рантайм-слой контролов и стилизации —
+([0004](0004-core-on-tanstack-table.md)), TanStack Virtual
+([0005](0005-virtualization-tanstack-virtual.md)) и dnd-kit
+([0006](0006-dnd-with-dnd-kit.md)). Рантайм-слой контролов и стилизации —
 примитивы, утилитарный CSS, токены темы — сложился позже и **не зафиксирован ни в
 одном ADR**, а `AGENTS.md` и `docs/**` не описывали его полно.
 
@@ -34,7 +34,7 @@
 | **Стилизация грида**            | **CSS Modules** (`*.module.css`) для раскладки и `--data-grid-*`                                                           | собирается в единый `dist/style.css`              |
 | **Анимация (задел)**            | `motion` — объявлена, **пока не импортирована**; зарезервирована под будущие анимации                                      | бандлится по факту использования                  |
 | **Сборка**                      | **Vite 8** (lib mode, ESM + CJS), `vite-plugin-dts`, `@vitejs/plugin-react`                                                | —                                                 |
-| **Язык / типы**                 | **TypeScript `~6`** (зафиксирован; TS 7 ломает typescript-eslint и dts, см. [0001](0001-core-on-tanstack-table.md))        | —                                                 |
+| **Язык / типы**                 | **TypeScript `~6`** (зафиксирован; TS 7 ломает typescript-eslint и dts, см. [0004](0004-core-on-tanstack-table.md))        | —                                                 |
 | **Тесты**                       | **Vitest 4** browser mode (Playwright/Chromium), `vitest-browser-react`                                                    | —                                                 |
 | **Качество**                    | ESLint 10 (flat config) + `typescript-eslint` + `eslint-plugin-react-hooks` (классические правила); Prettier               | —                                                 |
 | **Витрина**                     | **Storybook 10** (`@storybook/react-vite`); `@faker-js/faker`, `@fontsource/inter`                                         | dev-only                                          |
@@ -88,7 +88,7 @@
   контрибьютор должен знать, где какая применяется.
 - **−** Тема грида **жёстко зависит** от токенов shadcn/Tailwind: `--data-grid-*`
   без базовых токенов падают на «Vercel»-fallback'и, заданные в `var(--token, fallback)`.
-- ADR **0001–0004 не отменяются** — ядро по-прежнему headless и компонуется, а не
+- ADR **0004–0007 не отменяются** — ядро по-прежнему headless и компонуется, а не
   форкается; этот ADR лишь формализует рантайм-слой контролов и стилизации поверх него.
 
 ### Отвергнутые альтернативы
