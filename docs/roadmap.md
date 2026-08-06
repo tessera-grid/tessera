@@ -1,27 +1,43 @@
 # Roadmap
 
-Planned forward direction for Tessera. This is **intent**, not a commitment —
-distinct from the acknowledged _edges_ (untested/unimplemented gaps) documented in
-the architecture docs. Decisions, once made, are recorded as
-[ADRs](decisions/README.md).
+Планируемое направление развития Tessera. Это **намерение**, а не обязательство.
+Принятые решения фиксируются как [ADR](decisions/README.md).
 
-## Under consideration
+Здесь же ведётся список **известных проблем** — признанных краёв (непокрытых тестами
+или нереализованных пробелов), которые относятся к проектной работе, а не к дефектам.
 
-- **Migrate to TanStack Table v9.** The strategic fix for v8's core constraint:
-  any change to table state or data recalculates the **entire** table model, an
-  architecture-level performance hit. Pub-Sub and fast-scroll
-  ([ADR 0004](decisions/0004-perf-strategy-pubsub-fastscroll.md)) mitigate this on
-  v8 but do not remove it. Migration is being evaluated, not yet decided.
+## На рассмотрении
 
-## Planned
+- **Миграция на TanStack Table v9.** Стратегическое лечение ключевого ограничения v8:
+  любое изменение состояния таблицы или данных пересчитывает **всю** модель таблицы —
+  это архитектурный удар по производительности. Pub-Sub и fast-scroll
+  ([ADR 0004](decisions/0004-perf-strategy-pubsub-fastscroll.md)) смягчают его на v8,
+  но не устраняют. Миграция оценивается, решение ещё не принято.
 
-- **Full pivot-table support.** First-class pivot mode, with **all existing
-  plugins adapted** to work under it.
-- **Flexible, customizable appearance.** Grow the theme-agnostic CSS-variable
-  layer into a genuinely customizable visual system.
-- **Developer experience.** Ongoing DX improvements across the API and tooling.
+## Запланировано
 
-## Context
+- **Полная поддержка сводных таблиц (pivot).** Первоклассный режим pivot, со **всеми
+  существующими плагинами, адаптированными** к работе под ним.
+- **Гибкий, настраиваемый внешний вид.** Развить тема-независимый слой CSS-переменных в
+  по-настоящему настраиваемую визуальную систему.
+- **Опыт разработчика (DX).** Постоянные улучшения DX по всему API и тулингу.
 
-The motivation behind the project is in
-[architecture/README.md → Why Tessera exists](architecture/README.md#why-tessera-exists).
+## Известные проблемы
+
+Признаны и относятся к greenfield — относитесь к ним как к проектной работе, а не к
+дефектам, и не «чините» их походя (см. AGENTS.md §6 «Архитектурная дисциплина»).
+Когда край закрыт или обнаружен новый — обновляйте этот список и соответствующий
+`docs/architecture/*.md`, держа их синхронными.
+
+- **Pub-Sub на масштабе** — fan-out не измерен на тысячах подписчиков.
+- **Grouping + RowDragging** — не реализованы вместе (считается осуществимым).
+- **Вложенные заголовки + ColumnPinning/Dragging** — другой путь раскладки (`grid`, без
+  виртуализации колонок); не реализованы вместе.
+- **Коллизия ключей `externalState`** — кастомные ключи `TState` вливаются в общий
+  `table.getState()`; могут столкнуться с будущими полями TanStack.
+- **`getRowId: row => row.id` захардкожен** — данные обязаны нести `id`.
+
+## Контекст
+
+Мотивация проекта — в
+[architecture/README.md → Зачем существует Tessera](architecture/README.md#why-tessera-exists).
