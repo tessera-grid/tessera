@@ -6,7 +6,7 @@ import {
   renderedColumnIndexes,
   renderedRowIndexes,
   scrollToEnd,
-} from './helpers'
+} from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
 
 // R17–R18 из docs/decisions/0004-core-on-tanstack-table.md: раскладка при

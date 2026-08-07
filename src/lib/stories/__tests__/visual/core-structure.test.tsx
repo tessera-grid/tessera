@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { bodyRows, headCells, renderGrid } from './helpers'
+import { bodyRows, headCells, renderGrid } from '../helpers'
 import {
   bodyCellsOf,
   headCellsLeftRight,

@@ -12,7 +12,7 @@ import {
   renderedColumnIndexes,
   renderedRowIndexes,
   scrollToEnd,
-} from './helpers'
+} from '../helpers'
 
 // Каждое требование виртуализации из docs/decisions/0005-virtualization-tanstack-virtual.md —
 // это отдельный именованный тест с префиксом `V<n>`, чтобы `npm test` отчитывался

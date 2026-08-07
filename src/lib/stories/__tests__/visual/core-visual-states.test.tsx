@@ -1,7 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
-import { renderGrid } from './helpers'
+import { renderGrid } from '../helpers'
 import {
   bodyCellsOf,
   headCellsLeftRight,

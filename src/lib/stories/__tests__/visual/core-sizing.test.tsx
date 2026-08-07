@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { SEL, bodyRows, headCells, renderGrid } from './helpers'
+import { SEL, bodyRows, headCells, renderGrid } from '../helpers'
 import {
   HEAD_HEIGHT_VAR,
   ROW_HEIGHT_VAR,

@@ -3,7 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../DataGrid.stories'
+import * as stories from '../../DataGrid.stories'
 import {
   DRAG_COLUMN_WIDTH,
   DRAG_FILL,
@@ -18,7 +18,7 @@ import {
   nextFrame,
   rowSignatures,
   sortedRows,
-} from '../rowDragging.dnd'
+} from '../../rowDragging.dnd'
 
 // Every Row Dragging requirement is its own named test, prefixed with its spec ID
 // (D1–D14, the row block of the shared drag & drop requirements table in

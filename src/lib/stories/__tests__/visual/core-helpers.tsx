@@ -1,7 +1,7 @@
 import { page } from 'vitest/browser'
 import { expect } from 'vitest'
 
-import { SEL, bodyRows, getScroller, headCells } from './helpers'
+import { SEL, bodyRows, getScroller, headCells } from '../helpers'
 
 // Общие хелперы для набора тестов ядра (core-*.test.tsx). Разбиты по требованиям
 // ADR 0004: структура, размеры, роли, визуальные состояния и раскладка при

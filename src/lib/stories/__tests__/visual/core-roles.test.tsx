@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { bodyRows, headCells, renderGrid } from './helpers'
+import { bodyRows, headCells, renderGrid } from '../helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
 
 // R10–R12 из docs/decisions/0004-core-on-tanstack-table.md: базовые роли и
