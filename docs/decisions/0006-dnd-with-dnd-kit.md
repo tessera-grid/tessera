@@ -599,8 +599,8 @@ overlay визуально совпадает с перетаскиваемым 
 [ADR 0009](0009-test-coverage-visual-and-performance.md)) каждое требование — это
 **отдельный именованный тест** с ID-префиксом `D<n>:`, совпадающим с ID из таблиц
 ниже. Нумерация сквозная по обоим плагинам: **D1–D14** — строки, **D15–D30** —
-столбцы. Тесты строк живут в `stories/__tests__/row-dragging.test.tsx`, тесты
-столбцов — в `stories/__tests__/column-dragging.test.tsx` (оба — vitest-browser,
+столбцы. Тесты строк живут в `stories/__tests__/visual/row-dragging.test.tsx`, тесты
+столбцов — в `stories/__tests__/visual/column-dragging.test.tsx` (оба — vitest-browser,
 реальный Chromium). Каждый набор гоняет свою историю (`RowDragging` /
 `ColumnDragging`), подобранную по размеру так, чтобы переполнять по обеим осям
 (поэтому требования скролла D12–D14 и D26–D28 имеют реальную дистанцию для
