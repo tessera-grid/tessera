@@ -5,7 +5,7 @@ import { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
 import { CellSlot } from '../../core/createSlots'
-import { BodyRow } from '../BodyRow'
+import { BodyRow, DraggableBodyRow } from '../BodyRow'
 
 import styles from './Body.module.css'
 
@@ -24,6 +24,7 @@ interface TableBodyProps {
 
   isResizingColumns: false | string
   isVirtualColumns: boolean
+  enableRowDragging: boolean
 }
 
 /**
@@ -45,7 +46,10 @@ export const Body = ({
 
   isResizingColumns: _isResizingColumns,
   isVirtualColumns,
+  enableRowDragging,
 }: TableBodyProps) => {
+  const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
+
   return (
     <div
       className={clsx('data-grid__body', styles.body)}
@@ -56,7 +60,7 @@ export const Body = ({
         const row = rows[virtualRow.index]
 
         return (
-          <BodyRow
+          <RowComponent
             key={row.id}
             layout={layout}
             row={row}

@@ -21,6 +21,7 @@ interface TableHeadProps {
 
   isResizingColumns: ColumnSizingInfoState['isResizingColumn']
   isVirtualColumns: boolean
+  enableColumnDragging: boolean
 }
 
 /**
@@ -39,6 +40,7 @@ export const Head = ({
 
   isResizingColumns: _isResizingColumns,
   isVirtualColumns,
+  enableColumnDragging,
 }: TableHeadProps) => {
   return (
     <div
@@ -57,6 +59,7 @@ export const Head = ({
           leftHeaderSlot={leftHeaderSlot}
           rightHeaderSlot={rightHeaderSlot}
           isVirtualColumns={isVirtualColumns}
+          enableColumnDragging={enableColumnDragging}
         />
       ))}
     </div>

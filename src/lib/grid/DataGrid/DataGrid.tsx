@@ -16,9 +16,9 @@ import {
 import { LocalizationProvider } from '../../core/localization'
 import { getRowDraggableStyles } from '../../plugins/rowDragging'
 import { IconsProvider } from '../../ui/icons'
-import { DndBodyWrapper, MemoizedBody } from '../Body'
+import { BodyDndBoundary, MemoizedBody } from '../Body'
 import { MemoizedFooter } from '../Footer'
-import { DndHeadWrapper, MemoizedHead } from '../Head'
+import { HeadDndBoundary, MemoizedHead } from '../Head'
 import { LinearProgress } from '../../ui/LinearProgress'
 import { SkeletonOverlay } from '../SkeletonOverlay'
 import { getTableHeight } from './getTableHeight'
@@ -48,6 +48,9 @@ export const DataGrid = ({
   const { rows } = table.getRowModel()
 
   const { columnSizingInfo, rowDragging } = table.getState()
+
+  const enableRowDragging = !!table.options.enableRowDragging
+  const enableColumnDragging = !!table.options.enableColumnDragging
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -186,10 +189,11 @@ export const DataGrid = ({
                       ...virtualPaddingStyles,
                     }}
                   >
-                    <DndHeadWrapper
+                    <HeadDndBoundary
                       table={table}
                       leftHeaderSlot={leftHeaderSlot}
                       rightHeaderSlot={rightHeaderSlot}
+                      enableColumnDragging={enableColumnDragging}
                     >
                       <MemoizedHead
                         layout={layout}
@@ -200,9 +204,13 @@ export const DataGrid = ({
                         rightHeaderSlot={rightHeaderSlot}
                         isResizingColumns={isResizingColumns}
                         isVirtualColumns={!hasNestedGroups}
+                        enableColumnDragging={enableColumnDragging}
                       />
-                    </DndHeadWrapper>
-                    <DndBodyWrapper table={table}>
+                    </HeadDndBoundary>
+                    <BodyDndBoundary
+                      table={table}
+                      enableRowDragging={enableRowDragging}
+                    >
                       <MemoizedBody
                         layout={layout}
                         rows={rows}
@@ -214,8 +222,9 @@ export const DataGrid = ({
                         actionRowSlot={actionRowSlot}
                         isResizingColumns={isResizingColumns}
                         isVirtualColumns={!hasNestedGroups}
+                        enableRowDragging={enableRowDragging}
                       />
-                    </DndBodyWrapper>
+                    </BodyDndBoundary>
                     {table.options.enableFooter && (
                       <MemoizedFooter
                         layout={layout}

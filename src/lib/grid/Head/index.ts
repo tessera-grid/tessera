@@ -1,2 +1,2 @@
 export { MemoizedHead } from './Head'
-export { DndHeadWrapper } from './DndHeadWrapper'
+export { DndHeadWrapper, HeadDndBoundary } from './DndHeadWrapper'

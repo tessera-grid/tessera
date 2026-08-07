@@ -1,2 +1,2 @@
 export { MemoizedBody } from './Body'
-export { DndBodyWrapper } from './DndBodyWrapper'
+export { BodyDndBoundary, DndBodyWrapper } from './DndBodyWrapper'

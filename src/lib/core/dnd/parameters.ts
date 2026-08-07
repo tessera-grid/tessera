@@ -22,7 +22,7 @@ export const adjustOverlayPosition: Modifier = ({ transform }) => {
 
 export const measuring: MeasuringConfiguration = {
   droppable: {
-    strategy: MeasuringStrategy.Always,
+    strategy: MeasuringStrategy.WhileDragging,
   },
 }
 

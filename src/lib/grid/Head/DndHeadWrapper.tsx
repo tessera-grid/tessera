@@ -27,6 +27,39 @@ export interface DndHeadWrapperProps {
   rightHeaderSlot?: HeaderSlot
 }
 
+export interface HeadDndBoundaryProps extends DndHeadWrapperProps {
+  enableColumnDragging: boolean
+}
+
+/**
+ * @description
+ * Монтирует Drag&Drop-обвязку хедера (`DndContext` + `SortableContext`) только
+ * когда перетаскивание колонок включено. При выключенном `enableColumnDragging`
+ * хедер рендерится напрямую — без sortable-контекста, цена которого иначе
+ * платилась бы на каждую отрендеренную при горизонтальном скролле ячейку.
+ */
+export const HeadDndBoundary = ({
+  table,
+  leftHeaderSlot,
+  rightHeaderSlot,
+  enableColumnDragging,
+  children,
+}: PropsWithChildren<HeadDndBoundaryProps>) => {
+  if (!enableColumnDragging) {
+    return children
+  }
+
+  return (
+    <DndHeadWrapper
+      table={table}
+      leftHeaderSlot={leftHeaderSlot}
+      rightHeaderSlot={rightHeaderSlot}
+    >
+      {children}
+    </DndHeadWrapper>
+  )
+}
+
 /**
  * @description
  * Компонент-обертка для реализации Drag&Drop для колонок таблицы только для компонентов хедера.

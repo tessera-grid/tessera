@@ -3,7 +3,7 @@ import { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
 import { HeaderSlot } from '../../core/createSlots'
-import { HeadCell } from '../HeadCell'
+import { DraggableHeadCell, HeadCell } from '../HeadCell'
 import { LeftEmptyColumn, RightEmptyColumn } from '../VirtualizePaddingColumns'
 import { RightFillerHeadColumn } from './RightFillerHeadColumn'
 
@@ -20,6 +20,7 @@ interface TableHeadRowProps {
   rightHeaderSlot?: HeaderSlot
 
   isVirtualColumns: boolean
+  enableColumnDragging: boolean
 }
 
 /**
@@ -37,15 +38,18 @@ export const HeadRow = ({
   rightHeaderSlot,
 
   isVirtualColumns,
+  enableColumnDragging,
 }: TableHeadRowProps) => {
   const { headers } = headerGroup
+
+  const CellComponent = enableColumnDragging ? DraggableHeadCell : HeadCell
 
   if (!isVirtualColumns) {
     return (
       <div style={{ display: 'contents' }}>
         {headers.map(header => {
           return (
-            <HeadCell
+            <CellComponent
               key={header.id}
               layout={layout}
               header={header}
@@ -72,7 +76,7 @@ export const HeadRow = ({
         const header = headers[virtualColumn.index]
 
         return (
-          <HeadCell
+          <CellComponent
             key={header.id}
             layout={layout}
             header={header}

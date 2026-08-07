@@ -27,6 +27,29 @@ export interface DndBodyWrapperProps {
   table: Table
 }
 
+export interface BodyDndBoundaryProps extends DndBodyWrapperProps {
+  enableRowDragging: boolean
+}
+
+/**
+ * @description
+ * Монтирует Drag&Drop-обвязку тела (`DndContext` + `SortableContext`) только
+ * когда перетаскивание строк включено. При выключенном `enableRowDragging`
+ * тело рендерится напрямую — без sortable-контекста, цена которого иначе
+ * платилась бы на каждый смонтированный при вертикальном скролле ряд.
+ */
+export const BodyDndBoundary = ({
+  table,
+  enableRowDragging,
+  children,
+}: PropsWithChildren<BodyDndBoundaryProps>) => {
+  if (!enableRowDragging) {
+    return children
+  }
+
+  return <DndBodyWrapper table={table}>{children}</DndBodyWrapper>
+}
+
 export const DndBodyWrapper = ({
   table,
   children,
