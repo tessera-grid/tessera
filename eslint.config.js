@@ -57,6 +57,13 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
+  // Node-скрипты сборки/отчётов
+  {
+    files: ['scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
   // Отключает правила ESLint, конфликтующие с Prettier (должно идти последним)
   prettier,
 )

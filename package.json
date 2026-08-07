@@ -35,6 +35,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "perf": "vitest run src/lib/stories/__tests__/performance && node scripts/perf-report.mjs",
+    "perf:report": "node scripts/perf-report.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
