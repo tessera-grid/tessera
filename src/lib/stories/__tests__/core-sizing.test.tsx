@@ -1,0 +1,86 @@
+import { describe, expect, test } from 'vitest'
+
+import { SEL, bodyRows, headCells, renderGrid } from './helpers'
+import {
+  HEAD_HEIGHT_VAR,
+  ROW_HEIGHT_VAR,
+  bodyCellsOf,
+  cssVar,
+  headCellsLeftRight,
+  rowsTopDown,
+  waitForGrid,
+} from './core-helpers'
+
+// R6–R9 из docs/decisions/0004-core-on-tanstack-table.md: размеры и отступы.
+// Каждое требование — отдельный именованный тест `R<n>`.
+
+describe('Ядро на TanStack — размеры и отступы', () => {
+  test('R6: высота ряда заголовков фиксирована (50px/уровень + 1px разделитель)', async () => {
+    renderGrid({ columnCount: 4, dataCount: 4 })
+    await waitForGrid()
+
+    // Один уровень заголовков → переменная высоты шапки = 50 + 1.
+    expect(cssVar(HEAD_HEIGHT_VAR)).toBe('51px')
+
+    const cells = headCells()
+    cells.forEach(cell => {
+      const wrapper = cell.querySelector<HTMLElement>(
+        '.data-grid__cell-wrapper-content',
+      )!
+      // Фиксированный пол высоты — 50px, а overflow:hidden не даёт контенту
+      // растянуть ячейку сверх него (высота не зависит от содержимого).
+      expect(getComputedStyle(wrapper).minHeight).toBe('50px')
+      expect(getComputedStyle(cell).overflow).toBe('hidden')
+    })
+
+    // Все заголовки одного уровня одной высоты.
+    const heights = cells.map(c => Math.round(c.getBoundingClientRect().height))
+    expect(new Set(heights).size).toBe(1)
+  })
+
+  test('R7: высота строки тела фиксирована (--data-grid-row-height, 50px)', async () => {
+    renderGrid({ columnCount: 4, dataCount: 6 })
+    await waitForGrid()
+
+    expect(cssVar(ROW_HEIGHT_VAR)).toBe('50px')
+
+    const rows = bodyRows()
+    rows.forEach(row => {
+      // Высота задана переменной явно — не зависит от содержимого ячеек.
+      expect(getComputedStyle(row).height).toBe('50px')
+    })
+  })
+
+  test('R8: ширина колонки определяется её размером (columnDef.size)', async () => {
+    // country=200, firstName=150, lastName=150 (см. __mocks__/columns).
+    renderGrid({ columnCount: 3, dataCount: 3 })
+    await waitForGrid()
+
+    const widths = headCellsLeftRight().map(c =>
+      Math.round(c.getBoundingClientRect().width),
+    )
+    expect(widths).toEqual([200, 150, 150])
+  })
+
+  test('R9: горизонтальный отступ контента ячейки зависит от режима', async () => {
+    // Дефолтный режим: COLUMN_CONTENT_PADDING = 16px по горизонтали.
+    renderGrid({ columnCount: 3, dataCount: 3, enableRowActions: true })
+    await waitForGrid()
+
+    const dataWrapper = bodyCellsOf(rowsTopDown()[0])[0].querySelector<HTMLElement>(
+      '.data-grid__cell-wrapper-content',
+    )!
+    const dataStyle = getComputedStyle(dataWrapper)
+    expect(dataStyle.paddingLeft).toBe('16px')
+    expect(dataStyle.paddingRight).toBe('16px')
+
+    // Сервисная колонка действий рендерится в режиме smallPadding = 4px.
+    const actionCell = document.querySelector<HTMLElement>(
+      `${SEL.bodyCell}[data-actions-column-cell='true']`,
+    )!
+    const actionWrapper = actionCell.querySelector<HTMLElement>(
+      '.data-grid__cell-wrapper-content',
+    )!
+    expect(getComputedStyle(actionWrapper).padding).toBe('4px')
+  })
+})
