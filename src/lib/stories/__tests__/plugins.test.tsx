@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 import {
   FRAME_BUDGET_60FPS,
   bodyRows,
-  measureScrollFps,
+  measureScrollWork,
   renderGrid,
   renderedRowIndexes,
   scrollToEnd,
@@ -61,16 +61,16 @@ describe.each(CASES)('$name', ({ args }) => {
     renderGrid({ columnCount: COLUMN_COUNT, dataCount: DATA_COUNT, ...args })
     await waitForGrid()
 
-    const y = await measureScrollFps('y')
+    const y = await measureScrollWork('y')
     expect(
-      y.p95,
-      `Y-scroll p95=${y.p95.toFixed(1)}ms worst=${y.worst.toFixed(1)}ms`,
+      y.p95Ms,
+      `Y-scroll p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms`,
     ).toBeLessThanOrEqual(FRAME_BUDGET_60FPS)
 
-    const x = await measureScrollFps('x')
+    const x = await measureScrollWork('x')
     expect(
-      x.p95,
-      `X-scroll p95=${x.p95.toFixed(1)}ms worst=${x.worst.toFixed(1)}ms`,
+      x.p95Ms,
+      `X-scroll p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms`,
     ).toBeLessThanOrEqual(FRAME_BUDGET_60FPS)
   })
 })

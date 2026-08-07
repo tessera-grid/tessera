@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
+import {
+  perfTraceStart,
+  perfTraceStop,
+} from './src/lib/stories/__tests__/perf.commands'
+
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
 // timing — neither of which jsdom provides. This config is intentionally
@@ -21,6 +26,10 @@ export default defineConfig({
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./vitest.setup.ts'],
+    // Perf tests measure real main-thread work via process-wide CDP tracing;
+    // parallel test files would contend for CPU and pollute each other's
+    // traces, so run files one at a time for stable, uncontended measurements.
+    fileParallelism: false,
     browser: {
       enabled: true,
       headless: true,
@@ -31,6 +40,7 @@ export default defineConfig({
         launchOptions: { channel: 'chromium' },
       }),
       instances: [{ browser: 'chromium' }],
+      commands: { perfTraceStart, perfTraceStop },
     },
   },
 })

@@ -1,9 +1,11 @@
 import type { ComponentProps } from 'react'
 
+import { commands } from '@vitest/browser/context'
 import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 
 import * as stories from '../DataGrid.stories'
+import type { ScrollWorkResult } from './perf.commands'
 
 /** All DataGrid stories, composed as portable React components. */
 export const Stories = composeStories(stories)
@@ -90,57 +92,67 @@ export async function scrollToEnd(
   await nextFrame()
 }
 
-export interface FpsResult {
-  frames: number
-  /** 95th-percentile frame duration in ms (lower is smoother) */
-  p95: number
-  /** worst single frame in ms */
-  worst: number
-  /** mean frame duration in ms */
-  avg: number
-  /** equivalent fps derived from p95 */
-  fpsFromP95: number
+const perfCommands = commands as unknown as {
+  perfTraceStart: (id: string) => Promise<void>
+  perfTraceStop: (id: string) => Promise<ScrollWorkResult>
 }
 
+let traceSeq = 0
+
+export type { ScrollWorkResult }
+
 /**
- * Drive a programmatic scroll along one axis and measure per-frame durations.
- * Advances by a realistic per-frame pixel delta (like a mouse wheel), so a heavy
- * re-render triggered by scrolling shows up as an inflated frame delta.
+ * Drive a programmatic scroll along one axis and measure the REAL main-thread
+ * work per frame via CDP tracing (Playwright). Unlike `measureScrollFps`, this
+ * reports actual task durations (script/style/layout), not rAF wall-clock — so
+ * it is not quantised by the display refresh rate and is portable across
+ * machines' refresh rates.
  */
-export async function measureScrollFps(
+export async function measureScrollWork(
   axis: 'y' | 'x',
-  { frames = 60, stepPx = 100 }: { frames?: number; stepPx?: number } = {},
-): Promise<FpsResult> {
+  {
+    frames = 60,
+    stepPx = 100,
+    warmupFrames = 20,
+  }: { frames?: number; stepPx?: number; warmupFrames?: number } = {},
+): Promise<ScrollWorkResult> {
   const scroller = getScroller()
+
+  const distance = () =>
+    axis === 'y'
+      ? scroller.scrollHeight - scroller.clientHeight
+      : scroller.scrollWidth - scroller.clientWidth
+
+  const setPos = (pos: number) => {
+    if (axis === 'y') scroller.scrollTop = pos
+    else scroller.scrollLeft = pos
+  }
+
+  // Warm-up pass (untraced): trigger JIT compilation, the first fast-scroll
+  // transition and initial layout so the measured pass reflects steady scroll
+  // cost, not one-off startup spikes.
+  for (let i = 1; i <= warmupFrames; i++) {
+    setPos(Math.min(distance(), i * stepPx))
+    // eslint-disable-next-line no-await-in-loop
+    await nextFrame()
+  }
 
   scroller.scrollTop = 0
   scroller.scrollLeft = 0
   await nextFrame()
   await nextFrame()
 
-  const distance =
-    axis === 'y'
-      ? scroller.scrollHeight - scroller.clientHeight
-      : scroller.scrollWidth - scroller.clientWidth
+  const id = `${axis}-${traceSeq++}-${Date.now()}`
+  await perfCommands.perfTraceStart(id)
 
-  const deltas: number[] = []
-  let prev = await nextFrame()
-
+  const total = distance()
   for (let i = 1; i <= frames; i++) {
-    const pos = Math.min(distance, i * stepPx)
-    if (axis === 'y') scroller.scrollTop = pos
-    else scroller.scrollLeft = pos
+    const pos = Math.min(total, i * stepPx)
+    setPos(pos)
     // eslint-disable-next-line no-await-in-loop
-    const t = await nextFrame()
-    deltas.push(t - prev)
-    prev = t
-    if (pos >= distance) break
+    await nextFrame()
+    if (pos >= total) break
   }
 
-  deltas.sort((a, b) => a - b)
-  const p95 = deltas[Math.max(0, Math.ceil(deltas.length * 0.95) - 1)]
-  const worst = deltas[deltas.length - 1]
-  const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length
-
-  return { frames: deltas.length, p95, worst, avg, fpsFromP95: 1000 / p95 }
+  return perfCommands.perfTraceStop(id)
 }
