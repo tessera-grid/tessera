@@ -11,7 +11,7 @@ import {
 
 // R1–R5 из docs/decisions/0004-core-on-tanstack-table.md: структура, порядок и
 // содержимое. Каждое требование — отдельный именованный тест `R<n>` (см.
-// docs/architecture/visual-tests.md). Все тесты гоняют историю `All Features` и
+// docs/decisions/0009-test-coverage-visual-and-performance.md). Все тесты гоняют историю `All Features` и
 // монтируются заново (auto-cleanup vitest-browser-react).
 
 describe('Ядро на TanStack — структура и порядок', () => {

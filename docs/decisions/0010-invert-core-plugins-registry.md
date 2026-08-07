@@ -136,7 +136,7 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
 
 > **Охват.** Инверсия ядра и форма композиции. Паритет рендера проверяется
 > существующими визуальными тестами плагинов
-> ([visual-tests.md](../architecture/visual-tests.md)).
+> ([ADR 0009](0009-test-coverage-visual-and-performance.md)).
 
 **Инверсия и композиция**
 

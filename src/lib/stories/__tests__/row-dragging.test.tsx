@@ -25,7 +25,7 @@ import {
 // docs/decisions/0006-dnd-with-dnd-kit.md; columns are D15–D30).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
-// docs/architecture/visual-tests.md). All tests drive the canonical `RowDragging`
+// docs/decisions/0009-test-coverage-visual-and-performance.md). All tests drive the canonical `RowDragging`
 // story, sized to overflow on both axes so the auto-scroll requirements (D12–D14)
 // have real scroll distance. The thin Storybook `play` in DataGrid.stories.tsx is
 // only a demo scenario now; the assertions live here. Synthetic pointer events

@@ -13,7 +13,7 @@ import { firePointer, nextFrame } from '../rowDragging.dnd'
 // ID (D15–D30, the column block of the shared drag & drop requirements table in
 // docs/decisions/0006-dnd-with-dnd-kit.md; rows are D1–D14). So `npm test` reports
 // — and fails — each requirement individually, and the test name points straight at
-// the requirement it guards (see the naming rule in docs/architecture/visual-tests.md).
+// the requirement it guards (see the naming rule in docs/decisions/0009-test-coverage-visual-and-performance.md).
 // All tests drive the canonical `ColumnDragging` story, sized to overflow on both
 // axes so the auto-scroll requirements (D26–D28) have real scroll distance.
 // Synthetic pointer events drive the mechanics; the one thing they can't do — the
