@@ -80,7 +80,7 @@ export const DataGrid = ({
     getScrollElement,
   })
 
-  const fastScrollState = useFastScroll({ getScrollElement })
+  const fastScrollStore = useFastScroll({ getScrollElement })
 
   const virtualPaddingStyles = useColumnVirtualizerScroll({
     table,
@@ -155,7 +155,7 @@ export const DataGrid = ({
     <IconsProvider icons={icons}>
       <LocalizationProvider localization={localization}>
         <SubscriptionStoreProvider table={table}>
-          <FastScrollProvider state={fastScrollState}>
+          <FastScrollProvider store={fastScrollStore}>
             <div
               ref={wrapperRef}
               className={clsx(dataGridStyles['table__theme-wrapper'], {

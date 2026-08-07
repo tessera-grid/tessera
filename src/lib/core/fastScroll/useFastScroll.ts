@@ -1,5 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 
+const useScrollElement = (
+  getScrollElement: () => HTMLDivElement | null,
+): HTMLDivElement | null => {
+  const [element, setElement] = useState<HTMLDivElement | null>(null)
+
+  // Пере-считываем ссылку на скролл-контейнер после каждого рендера: узел может
+  // быть заменён без размонтирования DataGrid, и подписку нужно перевесить на
+  // актуальный элемент. `setElement` обновляет состояние только при смене узла
+  // (functional update возвращает прежнюю ссылку), поэтому цикла обновлений нет.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const next = getScrollElement()
+    setElement(prev => (prev === next ? prev : next))
+  })
+
+  return element
+}
+
 export const FAST_SCROLL_ENTER_VELOCITY_Y = 2000
 export const FAST_SCROLL_ENTER_VELOCITY_X = 4500
 
@@ -13,6 +31,13 @@ export const IDLE_DELAY = 300
 export const MIN_DURATION = 250
 
 const VELOCITY_WINDOW = 250
+
+// Нижняя граница интервала, по которому считается скорость. Пока окно ещё не
+// заполнилось (первые кадры скролла), делим накопленный путь на реально
+// прошедшее время, а не на весь `VELOCITY_WINDOW` — иначе скорость занижается и
+// быстрый скролл распознаётся с задержкой в несколько кадров. Флор гасит
+// всплески при слишком коротком интервале между двумя первыми событиями.
+const MIN_VELOCITY_SPAN = 16
 
 export interface FastScrollState {
   isFastScrolling: boolean
@@ -40,13 +65,43 @@ export interface FastScrollOptions {
   getScrollElement: () => HTMLDivElement | null
 }
 
-export const useFastScroll = ({ getScrollElement }: FastScrollOptions) => {
-  const [state, setState] = useState<FastScrollState>(INITIAL_STATE)
+/**
+ * Внешнее хранилище состояния быстрого скролла. Ячейки подписываются на него
+ * через `useSyncExternalStore` с селектором и перерисовываются только когда
+ * меняется именно их производное значение (подавлена/нет), а не при каждом
+ * переключении режима. Это убирает массовый ре-рендер всех видимых ячеек в
+ * кадре входа в fast-scroll.
+ */
+export interface FastScrollStore {
+  subscribe: (listener: () => void) => () => void
+  getSnapshot: () => FastScrollState
+}
+
+export const useFastScroll = ({
+  getScrollElement,
+}: FastScrollOptions): FastScrollStore => {
+  const stateRef = useRef<FastScrollState>(INITIAL_STATE)
+  const listenersRef = useRef<Set<() => void>>(new Set())
   const isFastScrollingRef = useRef(false)
 
-  useEffect(() => {
-    const element = getScrollElement()
+  const storeRef = useRef<FastScrollStore | null>(null)
+  if (storeRef.current === null) {
+    storeRef.current = {
+      subscribe: listener => {
+        listenersRef.current.add(listener)
 
+        return () => {
+          listenersRef.current.delete(listener)
+        }
+      },
+      getSnapshot: () => stateRef.current,
+    }
+  }
+  const store = storeRef.current
+
+  const element = useScrollElement(getScrollElement)
+
+  useEffect(() => {
     if (!element) {
       return
     }
@@ -70,10 +125,12 @@ export const useFastScroll = ({ getScrollElement }: FastScrollOptions) => {
 
       isFastScrollingRef.current = value
 
-      setState(prev => ({
+      const prev = stateRef.current
+      stateRef.current = {
         isFastScrolling: value,
         sessionId: value ? prev.sessionId + 1 : prev.sessionId,
-      }))
+      }
+      listenersRef.current.forEach(listener => listener())
     }
 
     const requestExit = () => {
@@ -108,8 +165,8 @@ export const useFastScroll = ({ getScrollElement }: FastScrollOptions) => {
       lastTop = element.scrollTop
       lastLeft = element.scrollLeft
 
-      const toVelocity = (travelled: number) =>
-        (travelled / VELOCITY_WINDOW) * 1000
+      const elapsed = Math.max(now - samples[0].time, MIN_VELOCITY_SPAN)
+      const toVelocity = (travelled: number) => (travelled / elapsed) * 1000
 
       const velocityX = toVelocity(
         samples.reduce((sum, sample) => sum + sample.deltaX, 0),
@@ -143,7 +200,7 @@ export const useFastScroll = ({ getScrollElement }: FastScrollOptions) => {
       clearTimeout(idleTimer)
       clearTimeout(exitTimer)
     }
-  }, [getScrollElement])
+  }, [element])
 
-  return state
+  return store
 }

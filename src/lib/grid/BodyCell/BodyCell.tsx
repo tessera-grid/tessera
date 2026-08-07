@@ -1,11 +1,11 @@
-import { memo, useMemo, useRef } from 'react'
+import { memo, useMemo } from 'react'
 
 import { Cell, CellContext, flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { getColumnSizeVariable } from '../../core/createColumns/calculateColumnSizes'
 import { RegisterSlotParams } from '../../core/createSlots'
-import { useFastScrollState } from '../../core/fastScroll'
+import { useFastScrollSuppressed } from '../../core/fastScroll'
 import { RenderSlot } from '../../core/renderSlots'
 import { useCellPinningParams } from '../../plugins/columnPinning'
 import { getCellExpandingStyles } from '../../plugins/rowExpanding'
@@ -68,10 +68,7 @@ export const BodyCell = memo(
     const isActionsColumn = cell.column.getIsActionsColumn()
     const isRowActionsColumn = cell.column.getIsRowActionsColumn()
 
-    const { isFastScrolling, sessionId } = useFastScrollState()
-    const mountedInSession = useRef(sessionId).current
-
-    const isSuppressed = isFastScrolling && mountedInSession === sessionId
+    const isSuppressed = useFastScrollSuppressed()
     const showSkeleton = isSuppressed && !isActionsColumn && !isPinnedColumn
 
     const canRenderSlots = !isActionsColumn && !showSkeleton
