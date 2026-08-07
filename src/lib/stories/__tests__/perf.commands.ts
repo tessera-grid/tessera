@@ -1,5 +1,10 @@
 /// <reference types="@vitest/browser-playwright" />
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+
 import type { BrowserCommand } from 'vitest/node'
+
+import { CPU_THROTTLE_RATE, FRAME_BUDGET_60FPS, LONG_TASK_MS } from './perf.constants'
 
 // Измерение плавности скролла через Playwright CDP `Tracing`. Трейс процессный,
 // поэтому ловит работу главного потока рендерера в iframe (где Vitest монтирует
@@ -7,8 +12,8 @@ import type { BrowserCommand } from 'vitest/node'
 // (`ThreadControllerImpl::RunTask`) — это фактическое время работы на кадр в
 // микросекундах, без привязки к частоте дисплея (в отличие от rAF-каденции).
 
-/** Порог кадра 60fps в мс. */
-const FRAME_BUDGET_MS = 1000 / 60
+/** Порог кадра 60fps в мс (RAIL Animation). */
+const FRAME_BUDGET_MS = FRAME_BUDGET_60FPS
 
 /** Мелкие задачи (mojo/микротаски) — не кадровая работа; отсекаем при перцентилях. */
 const SUBSTANTIAL_TASK_MS = 1
@@ -39,6 +44,10 @@ export interface ScrollWorkResult {
   longestMs: number
   /** Сколько задач превысило бюджет кадра 16.7мс (≈ пропущенные кадры). */
   tasksOverBudget: number
+  /** Число длинных задач (> 50мс) — блокирующих главный поток. */
+  longTasks: number
+  /** Total Blocking Time: сумма превышений длинных задач над 50мс, мс. */
+  tbtMs: number
   /** 95-й перцентиль длительности содержательных задач, мс. */
   p95Ms: number
   /** 99-й перцентиль, мс. */
@@ -66,6 +75,9 @@ export const perfTraceStart: BrowserCommand<[id: string]> = async (
     if (value) events.push(...value)
   })
 
+  // Троттлинг применяется только на измеряемое окно (сброс — в perfTraceStop).
+  await session.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE_RATE })
+
   await session.send('Tracing.start', {
     transferMode: 'ReportEvents',
     traceConfig: { includedCategories: ['toplevel', '__metadata'] },
@@ -80,7 +92,15 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
 ): Promise<ScrollWorkResult> => {
   const trace = traces.get(id)
   if (!trace) {
-    return { taskCount: 0, longestMs: 0, tasksOverBudget: 0, p95Ms: 0, p99Ms: 0 }
+    return {
+      taskCount: 0,
+      longestMs: 0,
+      tasksOverBudget: 0,
+      longTasks: 0,
+      tbtMs: 0,
+      p95Ms: 0,
+      p99Ms: 0,
+    }
   }
 
   const { session, events } = trace
@@ -90,6 +110,7 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
   )
   await session.send('Tracing.end')
   await complete
+  await session.send('Emulation.setCPUThrottlingRate', { rate: 1 })
   await session.detach()
   traces.delete(id)
 
@@ -128,11 +149,84 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
   const percentile = (q: number) =>
     substantial[Math.max(0, Math.ceil(n * q) - 1)] ?? 0
 
+  const longTaskDurations = all.filter(d => d > LONG_TASK_MS)
+
   return {
     taskCount: n,
     longestMs: all.length ? Math.max(...all) : 0,
     tasksOverBudget: all.filter(d => d > FRAME_BUDGET_MS).length,
+    longTasks: longTaskDurations.length,
+    tbtMs: longTaskDurations.reduce((sum, d) => sum + (d - LONG_TASK_MS), 0),
     p95Ms: percentile(0.95),
     p99Ms: percentile(0.99),
   }
+}
+
+// --- Запись результатов для дашборда -----------------------------------------
+// Перф-тесты складывают итог каждого кейса сюда; генератор (`scripts/perf-report.mjs`)
+// рендерит из этого JSON локальный HTML-борд. Хранится только ПОСЛЕДНИЙ прогон:
+// первая запись в процессе `vitest run` очищает накопитель, остальные добавляются.
+
+/** Одна измеренная величина кейса (ось для прокрутки; для отрисовки оси нет). */
+export interface PerfMetric {
+  axis?: 'y' | 'x'
+  /** Модель порога: RAIL Animation (кадр 16.7мс) или Load (интерактивность 1000мс). */
+  kind: 'animation' | 'load'
+  /** Какая величина сверяется с порогом: p95 (прокрутка) или longest (отрисовка). */
+  metric: 'p95' | 'longest'
+  /** Значение проверяемой метрики, мс. */
+  valueMs: number
+  /** Абсолютный порог RAIL/CWV, мс. */
+  budgetMs: number
+  pass: boolean
+  p95Ms: number
+  p99Ms: number
+  longestMs: number
+  tasksOverBudget: number
+  longTasks: number
+  tbtMs: number
+  taskCount: number
+}
+
+/** Результат одного перф-кейса (P1–P8). */
+export interface PerfRecord {
+  id: string
+  label: string
+  operation: 'render' | 'scroll'
+  /** Объём данных, напр. '30×500'. */
+  size: string
+  /** Режим плагинов. */
+  plugins: 'none' | 'all'
+  /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
+  cpuThrottle: number
+  /** Известный недостиг: кейс намеренно не укладывается в порог RAIL (xfail). */
+  knownShortfall: boolean
+  metrics: PerfMetric[]
+}
+
+export interface PerfReport {
+  generatedAt: string
+  records: PerfRecord[]
+}
+
+const RESULTS_PATH = resolve(process.cwd(), 'performance-results/latest.json')
+
+// null → в этом процессе `vitest run` ещё не было записей; первая запись начинает
+// новый прогон с чистого листа (семантика «только последний прогон»).
+let runRecords: PerfRecord[] | null = null
+
+export const perfRecord: BrowserCommand<[record: PerfRecord]> = async (
+  _ctx,
+  record,
+) => {
+  if (runRecords === null) runRecords = []
+  // Пере-запись кейса с тем же id (на случай повторного прогона файла) вместо дубля.
+  runRecords = [...runRecords.filter(r => r.id !== record.id), record]
+
+  const report: PerfReport = {
+    generatedAt: new Date().toISOString(),
+    records: runRecords,
+  }
+  mkdirSync(dirname(RESULTS_PATH), { recursive: true })
+  writeFileSync(RESULTS_PATH, `${JSON.stringify(report, null, 2)}\n`)
 }

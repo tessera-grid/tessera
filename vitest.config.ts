@@ -5,6 +5,7 @@ import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 import {
+  perfRecord,
   perfTraceStart,
   perfTraceStop,
 } from './src/lib/stories/__tests__/perf.commands'
@@ -40,7 +41,7 @@ export default defineConfig({
         launchOptions: { channel: 'chromium' },
       }),
       instances: [{ browser: 'chromium' }],
-      commands: { perfTraceStart, perfTraceStop },
+      commands: { perfTraceStart, perfTraceStop, perfRecord },
     },
   },
 })

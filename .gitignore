@@ -14,6 +14,9 @@ coverage/
 **/__screenshots__/
 .vitest-attachments/
 
+# Perf dashboard (генерируется прогоном; хранится только последний)
+performance-results/
+
 # Nx / cache
 .nx/
 .swc/

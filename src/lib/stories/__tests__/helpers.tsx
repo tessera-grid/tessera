@@ -2,10 +2,10 @@ import type { ComponentProps } from 'react'
 
 import { commands } from '@vitest/browser/context'
 import { composeStories } from '@storybook/react-vite'
-import { render } from 'vitest-browser-react'
+import { cleanup, render } from 'vitest-browser-react'
 
 import * as stories from '../DataGrid.stories'
-import type { ScrollWorkResult } from './perf.commands'
+import type { PerfRecord, ScrollWorkResult } from './perf.commands'
 
 /** All DataGrid stories, composed as portable React components. */
 export const Stories = composeStories(stories)
@@ -19,7 +19,7 @@ export const SEL = {
 } as const
 
 /** 60fps frame budget in milliseconds (1000 / 60). */
-export const FRAME_BUDGET_60FPS = 1000 / 60
+export { FRAME_BUDGET_60FPS } from './perf.constants'
 
 type GridArgs = Partial<ComponentProps<typeof Stories.AllFeatures>>
 
@@ -95,11 +95,22 @@ export async function scrollToEnd(
 const perfCommands = commands as unknown as {
   perfTraceStart: (id: string) => Promise<void>
   perfTraceStop: (id: string) => Promise<ScrollWorkResult>
+  perfRecord: (record: PerfRecord) => Promise<void>
 }
 
 let traceSeq = 0
 
-export type { ScrollWorkResult }
+export type { PerfRecord, ScrollWorkResult }
+
+/**
+ * Persist one performance case's result for the local dashboard. Written to
+ * `performance-results/latest.json` by the `perfRecord` browser command and
+ * rendered by `scripts/perf-report.mjs`. Call it BEFORE the budget assertion so
+ * a failing case is still recorded.
+ */
+export function recordPerf(record: PerfRecord): Promise<void> {
+  return perfCommands.perfRecord(record)
+}
 
 /**
  * Drive a programmatic scroll along one axis and measure the REAL main-thread
@@ -154,5 +165,46 @@ export async function measureScrollWork(
     if (pos >= total) break
   }
 
+  return perfCommands.perfTraceStop(id)
+}
+
+/**
+ * Measure the REAL main-thread work of the INITIAL render (mount → first paint)
+ * via CDP tracing, the same way `measureScrollWork` measures scrolling: actual
+ * task durations, not wall-clock, so the metric is portable across machines.
+ *
+ * A warmup mount+unmount runs first (untraced) so the measured mount reflects the
+ * steady render cost rather than one-off JIT/startup spikes. The measured mount is
+ * left in the DOM so the caller can make follow-up assertions.
+ */
+export async function measureRenderWork(
+  mount: () => void,
+  ready: () => boolean,
+  {
+    warmup = true,
+    timeoutFrames = 600,
+  }: { warmup?: boolean; timeoutFrames?: number } = {},
+): Promise<ScrollWorkResult> {
+  const waitReady = async () => {
+    for (let i = 0; i < timeoutFrames; i++) {
+      if (ready()) return
+      // eslint-disable-next-line no-await-in-loop
+      await nextFrame()
+    }
+    throw new Error('grid did not render within the frame budget')
+  }
+
+  if (warmup) {
+    mount()
+    await waitReady()
+    cleanup()
+    await nextFrame()
+    await nextFrame()
+  }
+
+  const id = `render-${traceSeq++}-${Date.now()}`
+  await perfCommands.perfTraceStart(id)
+  mount()
+  await waitReady()
   return perfCommands.perfTraceStop(id)
 }
