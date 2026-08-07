@@ -21,14 +21,15 @@ import {
 } from '../rowDragging.dnd'
 
 // Every Row Dragging requirement is its own named test, prefixed with its spec ID
-// (R1–R14, from the requirements table in docs/decisions/0009-rowdragging-plugin.md).
+// (D1–D14, the row block of the shared drag & drop requirements table in
+// docs/decisions/0006-dnd-with-dnd-kit.md; columns are D15–D30).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/architecture/visual-tests.md). All tests drive the canonical `RowDragging`
-// story, sized to overflow on both axes so the auto-scroll requirements (R12–R14)
+// story, sized to overflow on both axes so the auto-scroll requirements (D12–D14)
 // have real scroll distance. The thin Storybook `play` in DataGrid.stories.tsx is
 // only a demo scenario now; the assertions live here. Synthetic pointer events
-// drive the mechanics; the one thing they can't do — the CSS-`:hover` reveal (R7)
+// drive the mechanics; the one thing they can't do — the CSS-`:hover` reveal (D7)
 // — uses trusted Playwright input.
 
 const composed = composeStories(stories)
@@ -47,27 +48,27 @@ const scrollerOf = (container: HTMLElement) =>
   container.querySelector<HTMLElement>(SCROLLER)!
 
 // --- Setup guard --------------------------------------------------------------
-// Not a requirement itself; it protects the auto-scroll requirements (R12–R14)
+// Not a requirement itself; it protects the auto-scroll requirements (D12–D14)
 // from silently passing when the grid doesn't actually overflow.
 
 describe('Row Dragging — setup guard', () => {
-  test('RowDragging story overflows on both axes (feeds R12–R14)', async () => {
+  test('RowDragging story overflows on both axes (feeds D12–D14)', async () => {
     const scroller = scrollerOf(await renderRowDragging())
     expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
     expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
   })
 })
 
-// --- Requirements (R1–R14) ----------------------------------------------------
+// --- Requirements (D1–D14) ----------------------------------------------------
 
 describe('Row Dragging — requirements', () => {
-  test('R1: the plugin activates when `enableRowDragging` is on', async () => {
+  test('D1: the plugin activates when `enableRowDragging` is on', async () => {
     // With the flag on, the story renders drag handles at all.
     const container = await renderRowDragging()
     expect(container.querySelectorAll(HANDLE).length).toBeGreaterThan(0)
   })
 
-  test('R2: the drag handle lives in the dedicated first (service) column', async () => {
+  test('D2: the drag handle lives in the dedicated first (service) column', async () => {
     const container = await renderRowDragging()
     const handle = container.querySelector<HTMLElement>(HANDLE)!
     const dragCell = handle.closest<HTMLElement>('.data-grid__body-cell')!
@@ -79,7 +80,7 @@ describe('Row Dragging — requirements', () => {
     expect(dragCell).toBe(row.querySelector('.data-grid__body-cell'))
   })
 
-  test('R3: the drag handle icon is 16×16', async () => {
+  test('D3: the drag handle icon is 16×16', async () => {
     const container = await renderRowDragging()
     const svg = container.querySelector<HTMLElement>(`${HANDLE} svg`)!
     const style = getComputedStyle(svg)
@@ -87,7 +88,7 @@ describe('Row Dragging — requirements', () => {
     expect(style.height).toBe(`${DRAG_ICON_SIZE}px`)
   })
 
-  test('R4: the service column width is 24px (icon 16 + padding 4 + 4)', async () => {
+  test('D4: the service column width is 24px (icon 16 + padding 4 + 4)', async () => {
     const container = await renderRowDragging()
     const dragCell = container
       .querySelector<HTMLElement>(HANDLE)!
@@ -98,7 +99,7 @@ describe('Row Dragging — requirements', () => {
     )
   })
 
-  test('R5: one drag handle renders per draggable row', async () => {
+  test('D5: one drag handle renders per draggable row', async () => {
     const container = await renderRowDragging()
     const rows = container.querySelectorAll(ROW)
     const handles = container.querySelectorAll(HANDLE)
@@ -106,13 +107,13 @@ describe('Row Dragging — requirements', () => {
     expect(handles.length).toBe(rows.length)
   })
 
-  test('R6: the drag handle is hidden (opacity 0) until the row is hovered', async () => {
+  test('D6: the drag handle is hidden (opacity 0) until the row is hovered', async () => {
     const container = await renderRowDragging()
     const icon = container.querySelector<HTMLElement>(`${HANDLE} svg`)!
     expect(getComputedStyle(icon).opacity).toBe('0')
   })
 
-  test('R7: the drag handle is revealed on row hover', async () => {
+  test('D7: the drag handle is revealed on row hover', async () => {
     const container = await renderRowDragging()
     // The top row (data-index 0) is reliably on-screen; hovering its first user
     // cell puts `:hover` on the row ancestor, which drives the reveal.
@@ -127,7 +128,7 @@ describe('Row Dragging — requirements', () => {
     await expect.poll(() => getComputedStyle(icon).opacity).toBe('1')
   })
 
-  test('R8: dragging shows the "cloud" overlay', async () => {
+  test('D8: dragging shows the "cloud" overlay', async () => {
     const container = await renderRowDragging()
     const rows = sortedRows(container)
     const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
@@ -148,7 +149,7 @@ describe('Row Dragging — requirements', () => {
     }
   })
 
-  test('R9: the dragged row slot shows the drop-indicator fill', async () => {
+  test('D9: the dragged row slot shows the drop-indicator fill', async () => {
     const container = await renderRowDragging()
     const rows = sortedRows(container)
     const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
@@ -169,7 +170,7 @@ describe('Row Dragging — requirements', () => {
     }
   })
 
-  test('R10: on drop the row takes a new index → order changes', async () => {
+  test('D10: on drop the row takes a new index → order changes', async () => {
     const container = await renderRowDragging()
     const before = rowSignatures(container)
     const rows = sortedRows(container)
@@ -201,7 +202,7 @@ describe('Row Dragging — requirements', () => {
       .toBe(true)
   })
 
-  test('R11: after drop the cloud + fill are gone', async () => {
+  test('D11: after drop the cloud + fill are gone', async () => {
     const container = await renderRowDragging()
     const rows = sortedRows(container)
     const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
@@ -225,7 +226,7 @@ describe('Row Dragging — requirements', () => {
       .toBe(true)
   })
 
-  test('R12: dragging near the bottom edge auto-scrolls vertically', async () => {
+  test('D12: dragging near the bottom edge auto-scrolls vertically', async () => {
     const container = await renderRowDragging()
     const scroller = scrollerOf(container)
 
@@ -251,7 +252,7 @@ describe('Row Dragging — requirements', () => {
     await nextFrame()
   })
 
-  test('R13: a row reorders correctly after a vertical scroll', async () => {
+  test('D13: a row reorders correctly after a vertical scroll', async () => {
     const container = await renderRowDragging()
     const scroller = scrollerOf(container)
 
@@ -286,7 +287,7 @@ describe('Row Dragging — requirements', () => {
       .toBe(true)
   })
 
-  test('R14: dragging near the right edge never scrolls horizontally', async () => {
+  test('D14: dragging near the right edge never scrolls horizontally', async () => {
     const container = await renderRowDragging()
     const scroller = scrollerOf(container)
 

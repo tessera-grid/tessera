@@ -275,7 +275,7 @@ export const StoryComponent = memo(
 // actually enables row dragging (`args.enableRowDragging`). It is intentionally
 // THIN — a single representative drag-and-drop so the Storybook Interactions
 // panel demonstrates the feature. The per-requirement assertions (handle, hover
-// reveal, cloud + fill, column width, auto-scroll R12–R14) each live as their
+// reveal, cloud + fill, column width, auto-scroll D12–D14) each live as their
 // own named test in `__tests__/row-dragging.test.tsx`, so `npm test` reports and
 // fails them individually. Both share the pointer choreography in
 // `rowDragging.dnd.ts` so the demo and the tests can't drift apart.
@@ -485,7 +485,7 @@ export const ColumnDragging: StoryObj<StoryProps> = {
   name: 'Column Dragging',
   args: {
     enableColumnDragging: true,
-    // Sized to overflow on both axes so the auto-scroll requirements (C12–C14)
+    // Sized to overflow on both axes so the auto-scroll requirements (D26–D28)
     // have real horizontal scroll distance and a vertical axis to stay off.
     dataCount: 60,
     containerHeight: 400,
@@ -567,7 +567,7 @@ export const RowDragging: StoryObj<StoryProps> = {
   name: 'Row Dragging',
   args: {
     enableRowDragging: true,
-    // Sized to overflow on both axes so the play's auto-scroll steps (R12–R14)
+    // Sized to overflow on both axes so the play's auto-scroll steps (D12–D14)
     // have real vertical + horizontal scroll to exercise.
     dataCount: 60,
     containerHeight: 400,

@@ -10,14 +10,14 @@ import * as stories from '../DataGrid.stories'
 import { firePointer, nextFrame } from '../rowDragging.dnd'
 
 // Every Column Dragging requirement is its own named test, prefixed with its spec
-// ID (C1–C16, from the requirements table in
-// docs/decisions/0011-columndragging-plugin.md). So `npm test` reports — and fails
-// — each requirement individually, and the test name points straight at the
-// requirement it guards (see the naming rule in docs/architecture/visual-tests.md).
+// ID (D15–D30, the column block of the shared drag & drop requirements table in
+// docs/decisions/0006-dnd-with-dnd-kit.md; rows are D1–D14). So `npm test` reports
+// — and fails — each requirement individually, and the test name points straight at
+// the requirement it guards (see the naming rule in docs/architecture/visual-tests.md).
 // All tests drive the canonical `ColumnDragging` story, sized to overflow on both
-// axes so the auto-scroll requirements (C12–C14) have real scroll distance.
+// axes so the auto-scroll requirements (D26–D28) have real scroll distance.
 // Synthetic pointer events drive the mechanics; the one thing they can't do — the
-// CSS-`:hover` reveal (C7) — uses trusted browser input.
+// CSS-`:hover` reveal (D21) — uses trusted browser input.
 
 const composed = composeStories(stories)
 
@@ -124,26 +124,26 @@ const dragColumnOnto = async (source: HTMLElement, target: HTMLElement) => {
 }
 
 // --- Setup guard --------------------------------------------------------------
-// Not a requirement itself; it protects the auto-scroll requirements (C12–C14)
+// Not a requirement itself; it protects the auto-scroll requirements (D26–D28)
 // from silently passing when the grid doesn't actually overflow.
 
 describe('Column Dragging — setup guard', () => {
-  test('ColumnDragging story overflows on both axes (feeds C12–C14)', async () => {
+  test('ColumnDragging story overflows on both axes (feeds D26–D28)', async () => {
     const scroller = scrollerOf(await renderColumnDragging())
     expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
     expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
   })
 })
 
-// --- Requirements (C1–C16) ----------------------------------------------------
+// --- Requirements (D15–D30) ---------------------------------------------------
 
 describe('Column Dragging — requirements', () => {
-  test('C1: the plugin activates when `enableColumnDragging` is on', async () => {
+  test('D15: the plugin activates when `enableColumnDragging` is on', async () => {
     const container = await renderColumnDragging()
     expect(container.querySelectorAll(HEAD_HANDLE).length).toBeGreaterThan(0)
   })
 
-  test('C2: only columns with `enableDragging` get a handle (per-column opt-in)', async () => {
+  test('D16: only columns with `enableDragging` get a handle (per-column opt-in)', async () => {
     // Row actions add a non-draggable action column; it must carry no handle,
     // while the opt-in data columns each do. Few columns so nothing is
     // virtualized off-screen and the action column is guaranteed rendered.
@@ -161,7 +161,7 @@ describe('Column Dragging — requirements', () => {
     expect(dataCell.querySelector(HANDLE)).not.toBeNull()
   })
 
-  test('C3: the drag handle lives in the header cell (no service column)', async () => {
+  test('D17: the drag handle lives in the header cell (no service column)', async () => {
     const container = await renderColumnDragging()
     const handle = container.querySelector<HTMLElement>(HEAD_HANDLE)!
     const cell = handle.closest<HTMLElement>(HEAD_CELL)!
@@ -176,7 +176,7 @@ describe('Column Dragging — requirements', () => {
     )
   })
 
-  test('C4: the drag handle icon is 16×16', async () => {
+  test('D18: the drag handle icon is 16×16', async () => {
     const container = await renderColumnDragging()
     const svg = container.querySelector<HTMLElement>(`${HEAD_HANDLE} svg`)!
     const style = getComputedStyle(svg)
@@ -184,7 +184,7 @@ describe('Column Dragging — requirements', () => {
     expect(style.height).toBe(`${DRAG_ICON_SIZE}px`)
   })
 
-  test('C5: the handle is absolutely positioned and fits the left content padding', async () => {
+  test('D19: the handle is absolutely positioned and fits the left content padding', async () => {
     const container = await renderColumnDragging()
     const handle = container.querySelector<HTMLElement>(HEAD_HANDLE)!
     const cell = handle.closest<HTMLElement>(HEAD_CELL)!
@@ -206,13 +206,13 @@ describe('Column Dragging — requirements', () => {
     expect(handleRect.right - cellRect.left).toBeLessThanOrEqual(padLeft + 1)
   })
 
-  test('C6: the drag handle is hidden (opacity 0) until the header is hovered', async () => {
+  test('D20: the drag handle is hidden (opacity 0) until the header is hovered', async () => {
     const container = await renderColumnDragging()
     const icon = container.querySelector<HTMLElement>(`${HEAD_HANDLE} svg`)!
     expect(getComputedStyle(icon).opacity).toBe('0')
   })
 
-  test('C7: the drag handle is revealed on header hover', async () => {
+  test('D21: the drag handle is revealed on header hover', async () => {
     const container = await renderColumnDragging()
     const cell = renderedCells(container)[0]
     const icon = cell.querySelector<HTMLElement>(`${HANDLE} svg`)!
@@ -222,7 +222,7 @@ describe('Column Dragging — requirements', () => {
     await expect.poll(() => getComputedStyle(icon).opacity).toBe('1')
   })
 
-  test('C8: dragging shows the overlay clone of the header cell', async () => {
+  test('D22: dragging shows the overlay clone of the header cell', async () => {
     const container = await renderColumnDragging()
     const { source, target } = pickSourceTarget(container)
     const handle = source.querySelector<HTMLElement>(HANDLE)!
@@ -242,7 +242,7 @@ describe('Column Dragging — requirements', () => {
     }
   })
 
-  test('C9: the source cell is hidden and neighbours shift via translateX', async () => {
+  test('D23: the source cell is hidden and neighbours shift via translateX', async () => {
     const container = await renderColumnDragging()
     const { source, target } = pickSourceTarget(container)
     const handle = source.querySelector<HTMLElement>(HANDLE)!
@@ -273,7 +273,7 @@ describe('Column Dragging — requirements', () => {
     }
   })
 
-  test('C10: on drop the columnOrder changes → columns reorder', async () => {
+  test('D24: on drop the columnOrder changes → columns reorder', async () => {
     const container = await renderColumnDragging()
     const before = columnOrder(container)
     const { source, target } = pickSourceTarget(container)
@@ -293,7 +293,7 @@ describe('Column Dragging — requirements', () => {
       .toBe(true)
   })
 
-  test('C11: after drop the overlay is gone and the column re-renders in place', async () => {
+  test('D25: after drop the overlay is gone and the column re-renders in place', async () => {
     const container = await renderColumnDragging()
     const { source, target } = pickSourceTarget(container)
 
@@ -311,7 +311,7 @@ describe('Column Dragging — requirements', () => {
       .toBe(true)
   })
 
-  test('C12: dragging near the right edge auto-scrolls horizontally', async () => {
+  test('D26: dragging near the right edge auto-scrolls horizontally', async () => {
     const container = await renderColumnDragging()
     const scroller = scrollerOf(container)
 
@@ -340,7 +340,7 @@ describe('Column Dragging — requirements', () => {
     await nextFrame()
   })
 
-  test('C13: a column reorders correctly after a horizontal scroll', async () => {
+  test('D27: a column reorders correctly after a horizontal scroll', async () => {
     const container = await renderColumnDragging()
     const scroller = scrollerOf(container)
 
@@ -363,7 +363,7 @@ describe('Column Dragging — requirements', () => {
       .toBe(true)
   })
 
-  test('C14: dragging near the bottom edge never scrolls vertically', async () => {
+  test('D28: dragging near the bottom edge never scrolls vertically', async () => {
     const container = await renderColumnDragging()
     const scroller = scrollerOf(container)
 
@@ -395,7 +395,7 @@ describe('Column Dragging — requirements', () => {
     await nextFrame()
   })
 
-  test('C15: a pinned column cannot be dragged (handle disabled)', async () => {
+  test('D29: a pinned column cannot be dragged (handle disabled)', async () => {
     const container = await renderColumnDragging({ enableColumnPinning: true })
     const firstCell = renderedCells(container)[0]
 
@@ -420,7 +420,7 @@ describe('Column Dragging — requirements', () => {
     expect(getComputedStyle(handle).cursor).toBe('not-allowed')
   })
 
-  test('C16: a column dropped onto the pinned column never lands in the pinned zone', async () => {
+  test('D30: a column dropped onto the pinned column never lands in the pinned zone', async () => {
     const container = await renderColumnDragging({ enableColumnPinning: true })
     const firstCell = renderedCells(container)[0]
 
