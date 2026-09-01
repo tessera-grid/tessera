@@ -71,6 +71,7 @@ const HeadCellView = ({
   useSubscribeStore(() => [
     header.column.getCanSort(),
     header.column.getIsSorted(),
+    header.column.getIsResizing(),
   ])
 
   const ariaSort = getAriaSort(header)
