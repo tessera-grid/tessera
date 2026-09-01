@@ -18,6 +18,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0009](0009-test-coverage-visual-and-performance.md) | Покрытие тестами: визуальные + перформанс                     | Принято |
 | [0010](0010-invert-core-plugins-registry.md)        | Инверсия core ↔ plugins: composable-плагины (presence-based)   | Рассматривается |
 | [0011](0011-column-pinning.md)                      | Закрепление столбцов: плагин columnPinning (CP1–CP15)          | Принято |
+| [0012](0012-column-sorting.md)                      | Сортировка столбцов: плагин columnSorting (CS1–CS13)           | Принято |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

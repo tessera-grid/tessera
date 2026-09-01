@@ -105,6 +105,13 @@ export interface StoryProps extends CreateDataGridOptions {
    */
   onTogglePin?: (pinned: boolean) => void
 
+  /**
+   * Проброс hook сортировки столбца (`columnSorting.onToggleColumnSort`) наружу.
+   * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении сортировки
+   * (см. ADR 0012, CS11); в обычных историях не задаётся.
+   */
+  onToggleColumnSort?: (id: string, sortDirection: 'asc' | 'desc' | false) => void
+
   updateArgs: (
     args: Partial<
       Pick<StoryProps, 'isAllRowsSelected' | 'page' | 'recordsOnPage'>
@@ -148,6 +155,7 @@ export const StoryComponent = memo(
     initialExpanded,
 
     onTogglePin,
+    onToggleColumnSort,
 
     updateArgs,
 
@@ -219,6 +227,9 @@ export const StoryComponent = memo(
           isAllRowsSelected,
         },
         ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
+        ...(onToggleColumnSort
+          ? { columnSorting: { onToggleColumnSort } }
+          : {}),
       }),
       ...options,
       // Раскрываемы: узлы дерева (isGroup) и сгруппированные строки TanStack.
@@ -480,6 +491,12 @@ export const ColumnSorting: StoryObj<StoryProps> = {
   name: 'Column Sorting',
   args: {
     enableColumnSorting: true,
+    // Sized to overflow vertically so the row-ordering requirements (CS12–CS13)
+    // have enough rendered rows to prove the sort order against.
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
   },
 }
 
