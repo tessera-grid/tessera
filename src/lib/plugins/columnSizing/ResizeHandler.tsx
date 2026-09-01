@@ -2,8 +2,8 @@ import { MouseEvent, TouchEvent, memo, useCallback } from 'react'
 
 import clsx from 'clsx'
 
-import headCellStyles from '../../grid/HeadCell/HeadCell.module.css'
 import styles from './ResizeHandler.module.css'
+import '../../grid/cellControls/buttonVisibility.css'
 
 export interface ResizeSplitterProps {
   isResizing: boolean
@@ -45,8 +45,8 @@ export const ResizeHandler = memo(
         aria-disabled={disabled}
         className={clsx(
           styles.wrapper,
-          headCellStyles.cell__button,
-          headCellStyles['cell__button--hidden'],
+          'cell__button',
+          'cell__button--hidden',
           'resize__handler--column',
         )}
         data-button-active={isResizing}

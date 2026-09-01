@@ -7,8 +7,8 @@ import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 
-import headCellStyles from '../../grid/HeadCell/HeadCell.module.css'
 import styles from './GroupButton.module.css'
+import '../../grid/cellControls/buttonVisibility.css'
 
 export interface GroupButtonProps {
   isGrouped: boolean
@@ -27,10 +27,7 @@ export const GroupButton = memo(
     return (
       <Tooltip title={title} disabled={disabled}>
         <div
-          className={clsx(
-            headCellStyles.cell__button,
-            headCellStyles['cell__button--hidden'],
-          )}
+          className={clsx('cell__button', 'cell__button--hidden')}
           data-button-active={isGrouped}
         >
           <IconButton
