@@ -141,6 +141,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-index={virtualRow.index}
       data-selected={row.getIsSelected()}
       data-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
+      data-group-row={row.getIsGrouped()}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-interact
       data-last-row={row.getIsLastRow()}
@@ -212,6 +213,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-index={virtualRow.index}
       data-selected={row.getIsSelected()}
       data-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
+      data-group-row={row.getIsGrouped()}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
       data-row-interact={isRowInteract}
