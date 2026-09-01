@@ -12,6 +12,7 @@ import {
 } from '../../core/createColumns/calculateColumnSizes'
 import { RegisterSlotParams } from '../../core/createSlots'
 import { RenderSlot } from '../../core/renderSlots'
+import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
 import { useCellPinningParams } from '../../plugins/columnPinning'
 import { ItemDraggableWrapper } from '../dnd'
 import { CellWrapperContent, getAlignContent } from '../CellWrapperContent'
@@ -66,6 +67,13 @@ const HeadCellView = ({
 
   const isActionsColumn = header.column.getIsActionsColumn()
   const enableResizingColumn = header.column.getCanResize()
+
+  useSubscribeStore(() => [
+    header.column.getCanSort(),
+    header.column.getIsSorted(),
+  ])
+
+  const ariaSort = getAriaSort(header)
 
   const canRenderSlots = !isActionsColumn
 
@@ -171,6 +179,8 @@ const HeadCellView = ({
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
       role="columnheader"
       aria-colindex={header.column.getIndex()}
+      aria-sort={ariaSort}
+      data-column-id={header.column.id}
       data-cell-pinned={header.column.getIsPinned()}
       data-cell-last-left-pinned={isLastLeftPinnedColumn}
       data-column-resizable={enableResizingColumn}
@@ -191,6 +201,28 @@ const HeadCellView = ({
       </CellWrapperContent>
     </div>
   )
+}
+
+/**
+ * Значение `aria-sort` для заголовка. Проставляется только на сортируемом
+ * столбце (`getCanSort()`): `ascending` / `descending` по текущему направлению,
+ * иначе `none`. На несортируемом столбце атрибут опускается (`undefined`) — по
+ * ARIA `aria-sort='none'` подразумевает сортируемый, но пока не отсортированный
+ * столбец.
+ */
+const getAriaSort = (
+  header: Header,
+): 'ascending' | 'descending' | 'none' | undefined => {
+  if (!header.column.getCanSort()) {
+    return undefined
+  }
+
+  const sorted = header.column.getIsSorted()
+
+  if (sorted === 'asc') return 'ascending'
+  if (sorted === 'desc') return 'descending'
+
+  return 'none'
 }
 
 const getDisabledSortable = (header: Header): boolean =>

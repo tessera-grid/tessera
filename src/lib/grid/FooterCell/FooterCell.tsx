@@ -23,6 +23,7 @@ export const FooterCell = ({ layout, header }: FooterCellProps) => {
         willChange: 'width',
       }}
       aria-colindex={header.column.getIndex()}
+      data-column-id={header.column.id}
       data-layout={layout}
       data-first-cell-in-row={header.column.getIsFirstColumn()}
       data-last-cell-in-row={header.column.getIsLastColumn()}

@@ -100,4 +100,24 @@ describe('Ядро на TanStack — структура и порядок', () =
     expect(textOf(firstRowCells[0])).toBe('Wonderland')
     expect(textOf(firstRowCells[1])).toBe('Alice')
   })
+
+  test('R19: каждая ячейка несёт data-column-id, согласованный между шапкой и телом', async () => {
+    renderGrid({ columnCount: 3, dataCount: 3 })
+    await waitForGrid()
+
+    const heads = headCellsLeftRight()
+    // Каждый заголовок несёт непустой логический id столбца, и id уникальны.
+    const headIds = heads.map(h => h.getAttribute('data-column-id'))
+    headIds.forEach(id => expect(id).toBeTruthy())
+    expect(new Set(headIds).size).toBe(headIds.length)
+
+    // i-я ячейка первой строки (слева направо) несёт тот же data-column-id, что и
+    // i-й заголовок — идентификация столбца согласована между шапкой и телом.
+    const firstRowCells = bodyCellsOf(rowsTopDown()[0]).sort(
+      (a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+    )
+    expect(firstRowCells.map(c => c.getAttribute('data-column-id'))).toEqual(
+      headIds,
+    )
+  })
 })

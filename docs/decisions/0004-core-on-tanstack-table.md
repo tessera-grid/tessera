@@ -70,6 +70,7 @@ TanStack владеет моделью, состоянием и колонкам
 | R10 | Выставлены базовые роли: `role="table"` (контейнер), `rowgroup` (head/body/footer), `row` (строки), `columnheader` (заголовки) | п.5 | ✔ `core` R10 |
 | R11 | Выставлены базовые индексы: `aria-colindex` (head/body/footer-ячейки), `aria-rowindex` + `data-index` (строки) | п.5 | ✔ `core` R11 |
 | R12 | На строках/ячейках/заголовках присутствуют базовые позиционные `data`-атрибуты: `data-layout`, `data-row-odd`, `data-last-row`, `data-first-cell-in-row`/`data-last-cell-in-row`, `data-cell-of-first-row`/`data-cell-of-last-row`, `data-first-header-in-row`/`data-last-header-in-row`, `data-first-headers-row`/`data-last-headers-row`, `data-header-full-height` | п.5 | ✔ `core` R12 |
+| R19 | Ячейка шапки, тела и футера несёт `data-column-id` = `column.id` — логическая идентификация столбца, позволяющая адресовать его по стабильному id, а не позиционно (`aria-colindex`) и не по тексту заголовка | п.5 | ✔ `core` R19 |
 
 **Визуальные состояния**
 

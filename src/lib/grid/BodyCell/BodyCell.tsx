@@ -135,6 +135,7 @@ export const BodyCell = memo(
           paddingLeft,
         }}
         aria-colindex={cell.column.getIndex()}
+        data-column-id={cell.column.id}
         data-cell-pinned={cell.column.getIsPinned()}
         data-cell-odd-left-pinned={isLeftPinned && rowIndex % 2 !== 0}
         data-cell-last-left-pinned={isLastLeftPinnedColumn}
