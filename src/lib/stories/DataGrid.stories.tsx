@@ -98,6 +98,13 @@ export interface StoryProps extends CreateDataGridOptions {
   page: number
   recordsOnPage: number
 
+  /**
+   * Проброс hook закрепления столбца (`columnPinning.onTogglePin`) наружу.
+   * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении пина
+   * (см. ADR 0011, CP9); в обычных историях не задаётся.
+   */
+  onTogglePin?: (pinned: boolean) => void
+
   updateArgs: (
     args: Partial<
       Pick<StoryProps, 'isAllRowsSelected' | 'page' | 'recordsOnPage'>
@@ -139,6 +146,8 @@ export const StoryComponent = memo(
     dataOverride,
     initialGrouping,
     initialExpanded,
+
+    onTogglePin,
 
     updateArgs,
 
@@ -209,6 +218,7 @@ export const StoryComponent = memo(
           onSelectAllRowsOnPage: (): null => null,
           isAllRowsSelected,
         },
+        ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
       }),
       ...options,
       // Раскрываемы: узлы дерева (isGroup) и сгруппированные строки TanStack.
@@ -498,6 +508,12 @@ export const ColumnPinning: StoryObj<StoryProps> = {
   name: 'Column Pinning',
   args: {
     enableColumnPinning: true,
+    // Sized to overflow on both axes so the sticky requirements (CP10–CP12)
+    // have real horizontal scroll distance to prove the pinned offset against.
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
   },
 }
 
