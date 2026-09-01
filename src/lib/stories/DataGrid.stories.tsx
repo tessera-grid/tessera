@@ -118,6 +118,13 @@ export interface StoryProps extends CreateDataGridOptions {
    */
   onToggleColumnSort?: (id: string, sortDirection: 'asc' | 'desc' | false) => void
 
+  /**
+   * Проброс hook изменения ширины столбца (`columnSizing.onColumnResizeEnd`)
+   * наружу. Нужен визуальным тестам, чтобы наблюдать вызов hook по завершении
+   * ресайза и сброса (см. ADR 0013, CR10–CR11); в обычных историях не задаётся.
+   */
+  onColumnResizeEnd?: (props: { id: string; width: number }) => void
+
   updateArgs: (
     args: Partial<
       Pick<StoryProps, 'isAllRowsSelected' | 'page' | 'recordsOnPage'>
@@ -163,6 +170,7 @@ export const StoryComponent = memo(
 
     onTogglePin,
     onToggleColumnSort,
+    onColumnResizeEnd,
 
     updateArgs,
 
@@ -241,6 +249,7 @@ export const StoryComponent = memo(
         ...(onToggleColumnSort
           ? { columnSorting: { onToggleColumnSort } }
           : {}),
+        ...(onColumnResizeEnd ? { columnSizing: { onColumnResizeEnd } } : {}),
       }),
       ...options,
       // Раскрываемы: узлы дерева (isGroup) и сгруппированные строки TanStack.
@@ -495,6 +504,12 @@ export const ColumnResizing: StoryObj<StoryProps> = {
   name: 'Column Resizing',
   args: {
     enableColumnResizing: true,
+    // Несколько строк, чтобы требование синхронизации ширины шапки и тела
+    // (CR8) имело отрисованные body-ячейки для сверки.
+    dataCount: 30,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
   },
 }
 
