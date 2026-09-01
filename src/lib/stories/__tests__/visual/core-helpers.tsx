@@ -1,4 +1,3 @@
-import { page } from 'vitest/browser'
 import { expect } from 'vitest'
 
 import { SEL, bodyRows, getScroller, headCells } from '../helpers'
@@ -11,9 +10,16 @@ import { SEL, bodyRows, getScroller, headCells } from '../helpers'
 export const nextFrame = () =>
   new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
 
-/** Дождаться, пока грид смонтируется и отрисует заголовки и строки. */
+/**
+ * Дождаться, пока грид смонтируется и отрисует заголовки и строки. Гейт опирается
+ * на контракт селекторов (`.data-grid__head-cell` / `.data-grid__body-row`), а не
+ * на текст мока: готовность — это наличие структуры, а не конкретных значений
+ * (см. docs/decisions/0009-test-coverage-visual-and-performance.md — запрет хардкода мок-данных).
+ */
 export const waitForGrid = () =>
-  expect.element(page.getByText('Country')).toBeInTheDocument()
+  expect
+    .poll(() => headCells().length > 0 && bodyRows().length > 0)
+    .toBe(true)
 
 export const bodyCellsOf = (row: HTMLElement) =>
   Array.from(row.querySelectorAll<HTMLElement>(SEL.bodyCell))

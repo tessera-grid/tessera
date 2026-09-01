@@ -1,7 +1,6 @@
-import { page } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
-import { measureScrollWork, recordPerf, renderGrid } from '../helpers'
+import { headCells, measureScrollWork, recordPerf, renderGrid } from '../helpers'
 import {
   ALL_PLUGINS,
   ANIMATION_BUDGET_MS,
@@ -59,8 +58,10 @@ const CASES: ScrollCase[] = [
   },
 ]
 
+// Готовность — по контракту селекторов (`.data-grid__head-cell`), а не по тексту
+// мока (см. ADR 0009 — запрет хардкода мок-данных).
 const waitForGrid = () =>
-  expect.element(page.getByText('Country')).toBeInTheDocument()
+  expect.poll(() => headCells().length).toBeGreaterThan(0)
 
 describe('Производительность прокрутки', () => {
   for (const c of CASES) {
