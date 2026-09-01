@@ -10,4 +10,4 @@ export {
 export { getCellExpandingStyles } from './getCellExpandingStyles'
 export { ExpandButton } from './ExpandButton'
 
-export type { RowExpandingPlugin } from './types'
+export type { RowExpandingPlugin, RowExpandingPluginParams } from './types'

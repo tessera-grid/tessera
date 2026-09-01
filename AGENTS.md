@@ -271,7 +271,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
   `column-pinning` (CP1–CP15, [ADR 0011](docs/decisions/0011-column-pinning.md)),
   `column-sorting` (CS1–CS14, [ADR 0012](docs/decisions/0012-column-sorting.md)),
   `column-resizing` (CR1–CR15, [ADR 0013](docs/decisions/0013-column-sizing.md)),
-  `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md));
+  `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md)),
+  `row-expanding` (RE1–RE11, [ADR 0015](docs/decisions/0015-row-expanding.md));
   **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500/1000×1000 × плагины,
   требования P1–P8 из [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md)):
   `first-render` (стоимость монтирования) и `scroll` (работа на кадр). Общие

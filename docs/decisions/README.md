@@ -21,6 +21,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0012](0012-column-sorting.md)                       | Сортировка столбцов: плагин columnSorting (CS1–CS13)                     | Принято         |
 | [0013](0013-column-sizing.md)                        | Изменение ширины столбцов: плагин columnSizing (CR1–CR15)                | Принято         |
 | [0014](0014-row-selection.md)                        | Выбор строк: плагин rowSelection (RS1–RS18)                              | Принято         |
+| [0015](0015-row-expanding.md)                        | Раскрытие строк: плагин rowExpanding (RE1–RE11)                          | Принято         |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

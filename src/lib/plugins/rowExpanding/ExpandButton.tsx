@@ -31,7 +31,7 @@ export const ExpandButton = ({
     >
       <div>
         <IconButton
-          className={clsx(styles.button, {
+          className={clsx('row-expand-button', styles.button, {
             [styles.expanded]: expanded,
             [styles.disabled]: disabled && !expanded,
           })}

@@ -121,7 +121,11 @@ const BodyRowCells = ({
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow } = props
 
-  useSubscribeStore(() => [row.getIsSelected()])
+  useSubscribeStore(() => [
+    row.getIsSelected(),
+    row.getIsExpanded(),
+    row.getCanExpand(),
+  ])
 
   const rowStyles = useMemo(
     () => ({ top: virtualRow.start }),
@@ -133,8 +137,10 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
       aria-rowindex={virtualRow.index}
+      aria-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
       data-index={virtualRow.index}
       data-selected={row.getIsSelected()}
+      data-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-interact
       data-last-row={row.getIsLastRow()}
@@ -156,7 +162,12 @@ BodyRow.displayName = 'BodyRow'
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow } = props
 
-  useSubscribeStore(() => [row.getIsSelected(), row.getCanDrag()])
+  useSubscribeStore(() => [
+    row.getIsSelected(),
+    row.getCanDrag(),
+    row.getIsExpanded(),
+    row.getCanExpand(),
+  ])
 
   const {
     setActivatorNodeRef,
@@ -197,8 +208,10 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
       aria-rowindex={virtualRow.index}
+      aria-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
       data-index={virtualRow.index}
       data-selected={row.getIsSelected()}
+      data-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
       data-row-interact={isRowInteract}

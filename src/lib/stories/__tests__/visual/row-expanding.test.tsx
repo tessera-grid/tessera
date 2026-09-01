@@ -1,0 +1,294 @@
+import { userEvent } from 'vitest/browser'
+import { composeStories } from '@storybook/react-vite'
+import { render } from 'vitest-browser-react'
+import { describe, expect, test, vi } from 'vitest'
+
+import * as stories from '../../DataGrid.stories'
+import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
+
+// Each Row Expanding requirement is its own named test, prefixed with its spec ID
+// (RE1–RE11 from the requirements table in docs/decisions/0015-row-expanding.md).
+// So `npm test` reports — and fails — each requirement individually, and the test
+// name points straight at the requirement it guards (see the naming rule in
+// docs/decisions/0009-test-coverage-visual-and-performance.md).
+// Tests drive the `RowExpanding` story: a deterministic generated tree (group
+// roots with nested groups one level down) plus a couple of flat leaf roots,
+// started collapsed. State is read from the DOM/ARIA contract (row
+// `data-expanded`/`aria-expanded`, the `.row-expand-button` toggle, the service
+// column's `data-column-id`), not from mock literals (ADR 0009 — no hard-coded
+// mock data).
+
+const composed = composeStories(stories)
+
+// --- Selectors (part of the component contract) -------------------------------
+
+const HEAD_CELL = '.data-grid__head-cell'
+const BODY_ROW = '.data-grid__body-row'
+const BODY_CELL = '.data-grid__body-cell'
+/** The row-expanding toggle (stable class on `ExpandButton`). */
+const TOGGLE = '.row-expand-button'
+/** Depth indent step per `getCellExpandingStyles` (`EXPANDING_DEPTH_OFFSET_PX`). */
+const DEPTH_OFFSET_PX = 32
+
+// --- Rendering / DOM helpers --------------------------------------------------
+
+type RowExpandingArgs = Partial<Parameters<typeof composed.RowExpanding>[0]>
+
+/** Body rows in visual (top-to-bottom) order — real rows only (skip padding). */
+const rowsTopDown = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>(BODY_ROW))
+    .filter(row => row.getAttribute('data-index') !== null)
+    .sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    )
+
+/** The expand toggle inside a body row (absent when the row is not expandable). */
+const rowToggle = (row: HTMLElement) => row.querySelector<HTMLElement>(TOGGLE)
+
+/** The header cell of the service expanding column. */
+const expandingHeadCell = (container: HTMLElement) =>
+  container.querySelector<HTMLElement>(
+    `${HEAD_CELL}[data-column-id='${COLUMN_EXPANDING_ID}']`,
+  )
+
+/** First user (non-service) cell of a row — the one that carries the depth indent. */
+const firstUserCell = (row: HTMLElement) =>
+  row.querySelector<HTMLElement>(
+    `${BODY_CELL}[data-actions-column-cell='false']`,
+  )
+
+const isRowExpanded = (row: HTMLElement) =>
+  row.getAttribute('data-expanded') === 'true'
+
+const paddingLeftOf = (el: HTMLElement) =>
+  parseFloat(getComputedStyle(el).paddingLeft) || 0
+
+/** Render the RowExpanding story and wait until its rows are on screen. */
+async function renderRowExpanding(args: RowExpandingArgs = {}) {
+  const { container } = await render(<composed.RowExpanding {...args} />)
+  await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
+  return container
+}
+
+// --- Requirements (RE1–RE11) --------------------------------------------------
+
+describe('Row Expanding — activation & service column', () => {
+  test('RE1: the plugin is inert without `enableRowExpanding`', async () => {
+    const container = await renderRowExpanding({ enableRowExpanding: false })
+    // No expanding service column and no toggle anywhere.
+    expect(container.querySelector(TOGGLE)).toBeNull()
+    expect(expandingHeadCell(container)).toBeNull()
+  })
+
+  test('RE2: enabling adds a leading service column and an expandable row gets a toggle', async () => {
+    const container = await renderRowExpanding()
+    const head = expandingHeadCell(container)
+    expect(head).not.toBeNull()
+    // It is a service (actions) column…
+    expect(head!.getAttribute('data-actions-column-cell')).toBe('true')
+    // …and at least one visible row (a group root) carries an expand toggle.
+    const rows = rowsTopDown(container)
+    expect(rows.some(row => rowToggle(row) !== null)).toBe(true)
+  })
+
+  test('RE3: the expanding column is not sortable, resizable, pinnable or draggable', async () => {
+    // Turn sorting and resizing ON to prove the service column stays inert.
+    const container = await renderRowExpanding({
+      enableColumnSorting: true,
+      enableColumnResizing: true,
+    })
+    const head = expandingHeadCell(container)!
+    // No sort affordance (aria-sort omitted on a non-sortable column) and not
+    // resizable; no sort control is rendered inside it.
+    expect(head.hasAttribute('aria-sort')).toBe(false)
+    expect(head.getAttribute('data-column-resizable')).toBe('false')
+    expect(head.querySelector('.column-sort__button')).toBeNull()
+  })
+})
+
+describe('Row Expanding — toggle', () => {
+  /** First expandable (group) row in top-down order. */
+  const firstExpandable = (container: HTMLElement) =>
+    rowsTopDown(container).find(row => rowToggle(row) !== null)!
+
+  test('RE4: clicking the toggle expands the row and reveals its children', async () => {
+    const container = await renderRowExpanding()
+    const before = rowsTopDown(container).length
+    const parent = firstExpandable(container)
+
+    await userEvent.click(rowToggle(parent)!)
+    // The row is marked expanded and more rows are now on screen (its children).
+    await expect
+      .poll(() => isRowExpanded(firstExpandable(container)))
+      .toBe(true)
+    expect(rowsTopDown(container).length).toBeGreaterThan(before)
+
+    // Restore: collapse back to the initial state (self-restoring).
+    await userEvent.click(rowToggle(firstExpandable(container))!)
+    await expect.poll(() => rowsTopDown(container).length).toBe(before)
+  })
+
+  test('RE5: clicking the toggle again collapses the row and hides its children', async () => {
+    const container = await renderRowExpanding()
+    const collapsed = rowsTopDown(container).length
+
+    // Expand…
+    await userEvent.click(rowToggle(firstExpandable(container))!)
+    await expect
+      .poll(() => isRowExpanded(firstExpandable(container)))
+      .toBe(true)
+    expect(rowsTopDown(container).length).toBeGreaterThan(collapsed)
+
+    // …then collapse: the children go away and the row is no longer expanded.
+    await userEvent.click(rowToggle(firstExpandable(container))!)
+    await expect
+      .poll(() => isRowExpanded(firstExpandable(container)))
+      .toBe(false)
+    expect(rowsTopDown(container).length).toBe(collapsed)
+  })
+
+  test('RE6: toggling calls the `onExpandRow` hook with the row and next state', async () => {
+    const onExpandRow = vi.fn()
+    const container = await renderRowExpanding({ onExpandRow })
+    const parent = firstExpandable(container)
+
+    await userEvent.click(rowToggle(parent)!)
+    // Called with the row object and the next expanded state (true).
+    await expect.poll(() => onExpandRow.mock.calls.length).toBeGreaterThan(0)
+    expect(onExpandRow.mock.calls.at(-1)![1]).toBe(true)
+    expect(onExpandRow.mock.calls.at(-1)![0]).toBeTypeOf('object')
+
+    // Collapse → hook fires again with the next state false (also restores state).
+    await userEvent.click(rowToggle(firstExpandable(container))!)
+    await expect.poll(() => onExpandRow.mock.calls.at(-1)?.[1]).toBe(false)
+  })
+})
+
+describe('Row Expanding — expandability & depth', () => {
+  test('RE7: a leaf (non-group) row gets no toggle and no expanded state', async () => {
+    const container = await renderRowExpanding()
+    const rows = rowsTopDown(container)
+
+    // The fixture mixes group roots (with a toggle) and flat leaf roots (without).
+    const leaves = rows.filter(row => rowToggle(row) === null)
+    expect(leaves.length).toBeGreaterThan(0)
+    expect(rows.some(row => rowToggle(row) !== null)).toBe(true)
+
+    // A non-expandable row carries no expansion state attribute at all.
+    leaves.forEach(leaf => {
+      expect(leaf.hasAttribute('data-expanded')).toBe(false)
+      expect(leaf.hasAttribute('aria-expanded')).toBe(false)
+    })
+  })
+
+  test('RE8: a group deeper than `maxExpandingDepth` gets no toggle', async () => {
+    const container = await renderRowExpanding()
+    const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
+
+    // Expand a top-level group to reveal its (grouped) children one level down.
+    await userEvent.click(rowToggle(parent)!)
+    await expect
+      .poll(() => rowsTopDown(container).some(row => isRowExpanded(row)))
+      .toBe(true)
+
+    // The revealed children sit one level deeper (indented) — and even though the
+    // fixture nests groups there, none of them gets a toggle (max depth = 1).
+    const deeper = rowsTopDown(container).filter(
+      row => paddingLeftOf(firstUserCell(row)!) >= DEPTH_OFFSET_PX,
+    )
+    expect(deeper.length).toBeGreaterThan(0)
+    expect(deeper.every(row => rowToggle(row) === null)).toBe(true)
+
+    // Restore.
+    await userEvent.click(
+      rowToggle(rowsTopDown(container).find(row => rowToggle(row) !== null)!)!,
+    )
+  })
+})
+
+describe('Row Expanding — indentation', () => {
+  test('RE9: a child row is indented by its depth', async () => {
+    const container = await renderRowExpanding()
+    const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
+
+    // A top-level row sits flush (no depth indent).
+    expect(paddingLeftOf(firstUserCell(parent)!)).toBe(0)
+
+    await userEvent.click(rowToggle(parent)!)
+    await expect
+      .poll(() =>
+        rowsTopDown(container).some(
+          row => paddingLeftOf(firstUserCell(row)!) === DEPTH_OFFSET_PX,
+        ),
+      )
+      .toBe(true)
+
+    // A depth-1 child is indented by exactly one step.
+    const child = rowsTopDown(container).find(
+      row => paddingLeftOf(firstUserCell(row)!) === DEPTH_OFFSET_PX,
+    )!
+    expect(paddingLeftOf(firstUserCell(child)!)).toBe(DEPTH_OFFSET_PX)
+
+    // Restore.
+    await userEvent.click(
+      rowToggle(rowsTopDown(container).find(row => rowToggle(row) !== null)!)!,
+    )
+  })
+})
+
+describe('Row Expanding — accessibility & appearance', () => {
+  test('RE10: the row exposes expansion via `aria-expanded`', async () => {
+    const container = await renderRowExpanding()
+    const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
+
+    // Collapsed: expandable row advertises aria-expanded='false'…
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    // …a leaf row has no aria-expanded at all.
+    const leaf = rowsTopDown(container).find(row => rowToggle(row) === null)!
+    expect(leaf.hasAttribute('aria-expanded')).toBe(false)
+
+    // Expanding flips it to 'true'.
+    await userEvent.click(rowToggle(parent)!)
+    await expect
+      .poll(() =>
+        rowsTopDown(container)
+          .find(row => rowToggle(row) !== null)!
+          .getAttribute('aria-expanded'),
+      )
+      .toBe('true')
+
+    // Restore.
+    await userEvent.click(
+      rowToggle(rowsTopDown(container).find(row => rowToggle(row) !== null)!)!,
+    )
+  })
+
+  test('RE11: the toggle chevron rotates when the row is expanded', async () => {
+    const container = await renderRowExpanding()
+    const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
+
+    const collapsedTransform = getComputedStyle(rowToggle(parent)!).transform
+
+    await userEvent.click(rowToggle(parent)!)
+    await expect
+      .poll(() => isRowExpanded(firstExpandableRow(container)))
+      .toBe(true)
+
+    // The chevron transform differs between collapsed and expanded states.
+    const expandedTransform = getComputedStyle(
+      rowToggle(firstExpandableRow(container))!,
+    ).transform
+    expect(expandedTransform).not.toBe(collapsedTransform)
+
+    // Restore.
+    await userEvent.click(rowToggle(firstExpandableRow(container))!)
+    await expect
+      .poll(() => isRowExpanded(firstExpandableRow(container)))
+      .toBe(false)
+  })
+})
+
+/** First expandable (group) row in top-down order (shared by appearance specs). */
+function firstExpandableRow(container: HTMLElement) {
+  return rowsTopDown(container).find(row => row.querySelector(TOGGLE) !== null)!
+}

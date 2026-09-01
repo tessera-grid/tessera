@@ -20,6 +20,7 @@ import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
 import { rowDeleteActionPlugin } from './__mocks__/plugins/rowDeleteAction/rowDeleteActionPlugin'
+import { RowExpandingPluginParams } from '../plugins/rowExpanding'
 import { RowSelectionPluginParams } from '../plugins/rowSelection'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { usePagination } from './__mocks__/usePagination'
@@ -138,6 +139,13 @@ export interface StoryProps extends CreateDataGridOptions {
   onSelectRow?: RowSelectionPluginParams['onSelectRow']
   onSelectAllRowsOnPage?: RowSelectionPluginParams['onSelectAllRowsOnPage']
 
+  /**
+   * Проброс hook раскрытия строки (`rowExpanding.onExpandRow`) наружу. Нужен
+   * визуальным тестам, чтобы наблюдать вызов hook при тоггле раскрытия (см. ADR
+   * 0015, RE6); в обычных историях не задаётся (дефолт — no-op).
+   */
+  onExpandRow?: RowExpandingPluginParams['onExpandRow']
+
   updateArgs: (
     args: Partial<
       Pick<StoryProps, 'isAllRowsSelected' | 'page' | 'recordsOnPage'>
@@ -155,6 +163,17 @@ const subRowSelectionTree = makeData({
   depth: 2,
   breadth: 3,
 })
+
+// Данные для истории Row Expanding (генератор, а не захардкоженные строки).
+// Дерево из 3 уровней: корни (depth 0) и их дети (depth 1) — узлы `isGroup`, у
+// внуков (depth 2) детей нет. Три уровня специально: при `maxExpandingDepth = 1`
+// раскрывать можно только корни, а группы глубже (depth 1) тоггла не получают
+// (RE8). Плюс несколько плоских листовых корней (без subRows) — раскрываемости у
+// них нет, тоггла нет (RE7).
+const rowExpandingData = [
+  ...makeData({ shape: 'tree', count: 3, depth: 3, breadth: 2 }),
+  ...makeData({ shape: 'flat', count: 2 }),
+]
 
 export const StoryComponent = memo(
   ({
@@ -186,6 +205,7 @@ export const StoryComponent = memo(
     onColumnResizeEnd,
     onSelectRow,
     onSelectAllRowsOnPage,
+    onExpandRow,
 
     updateArgs,
 
@@ -265,6 +285,7 @@ export const StoryComponent = memo(
           ? { columnSorting: { onToggleColumnSort } }
           : {}),
         ...(onColumnResizeEnd ? { columnSizing: { onColumnResizeEnd } } : {}),
+        ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
       }),
       ...options,
       // Раскрываемы: узлы дерева (isGroup) и сгруппированные строки TanStack.
@@ -628,6 +649,36 @@ export const SubRowSelection: StoryObj<StoryProps> = {
     enableRowSelection: true,
     enableSubRowSelection: true,
     enableRowExpanding: true,
+  },
+  parameters: {
+    controls: {
+      exclude: [
+        'columnCount',
+        'dataCount',
+        'page',
+        'recordsOnPage',
+        'dataMode',
+        'dataOverride',
+        'initialExpanded',
+      ],
+    },
+  },
+}
+
+export const RowExpanding: StoryObj<StoryProps> = {
+  name: 'Row Expanding',
+  args: {
+    // Реальные данные из генератора (см. rowExpandingData) — раскрытие видно на
+    // настоящих subRows, а не на захардкоженных строках.
+    dataOverride: rowExpandingData,
+    enableRowExpanding: true,
+    // Стартуем свёрнутыми: тесты сами раскрывают строки и сверяют появление
+    // детей и контракт data-expanded / aria-expanded.
+    initialExpanded: {},
+
+    containerHeight: 640,
+    height: 540,
+    maxHeight: 540,
   },
   parameters: {
     controls: {
