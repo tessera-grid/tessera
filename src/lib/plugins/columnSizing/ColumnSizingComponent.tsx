@@ -18,13 +18,18 @@ export const ColumnSizingComponent = memo(
 
     const onResetSize = () => {
       const { onColumnResizeEnd } = table.getHooks().columnSizing
-      const defaultSize = table.options.defaultColumn?.size || 150
+      const { minSize, size, maxSize } = column.columnDef
 
       column.resetSize()
 
+      const width = Math.min(
+        Math.max(minSize ?? 20, size ?? 150),
+        maxSize ?? Number.MAX_SAFE_INTEGER,
+      )
+
       onColumnResizeEnd?.({
         id: column.id,
-        width: defaultSize,
+        width,
       })
     }
 
