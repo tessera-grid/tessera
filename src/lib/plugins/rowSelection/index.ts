@@ -8,4 +8,4 @@ export { useRowSelectionReset } from './useRowSelectionReset'
 
 export { SelectCheckbox, type SelectCheckboxProps } from './SelectCheckbox'
 
-export type { RowSelectionPlugin } from './types'
+export type { RowSelectionPlugin, RowSelectionPluginParams } from './types'

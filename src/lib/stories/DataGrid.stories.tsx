@@ -20,6 +20,7 @@ import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
 import { rowDeleteActionPlugin } from './__mocks__/plugins/rowDeleteAction/rowDeleteActionPlugin'
+import { RowSelectionPluginParams } from '../plugins/rowSelection'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { usePagination } from './__mocks__/usePagination'
 import {
@@ -116,7 +117,10 @@ export interface StoryProps extends CreateDataGridOptions {
    * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении сортировки
    * (см. ADR 0012, CS11); в обычных историях не задаётся.
    */
-  onToggleColumnSort?: (id: string, sortDirection: 'asc' | 'desc' | false) => void
+  onToggleColumnSort?: (
+    id: string,
+    sortDirection: 'asc' | 'desc' | false,
+  ) => void
 
   /**
    * Проброс hook изменения ширины столбца (`columnSizing.onColumnResizeEnd`)
@@ -124,6 +128,15 @@ export interface StoryProps extends CreateDataGridOptions {
    * ресайза и сброса (см. ADR 0013, CR10–CR11); в обычных историях не задаётся.
    */
   onColumnResizeEnd?: (props: { id: string; width: number }) => void
+
+  /**
+   * Проброс hooks выбора строк (`rowSelection.onSelectRow` /
+   * `onSelectAllRowsOnPage`) наружу. Нужны визуальным тестам, чтобы наблюдать
+   * вызов hook при переключении строки и «выбрать все на странице» (см. ADR
+   * 0014, RS6/RS11); в обычных историях не задаются (дефолт — no-op).
+   */
+  onSelectRow?: RowSelectionPluginParams['onSelectRow']
+  onSelectAllRowsOnPage?: RowSelectionPluginParams['onSelectAllRowsOnPage']
 
   updateArgs: (
     args: Partial<
@@ -171,6 +184,8 @@ export const StoryComponent = memo(
     onTogglePin,
     onToggleColumnSort,
     onColumnResizeEnd,
+    onSelectRow,
+    onSelectAllRowsOnPage,
 
     updateArgs,
 
@@ -241,8 +256,8 @@ export const StoryComponent = memo(
       },
       hooks: useCreateHooks({
         rowSelection: {
-          onSelectRow: (): null => null,
-          onSelectAllRowsOnPage: (): null => null,
+          onSelectRow: onSelectRow ?? ((): null => null),
+          onSelectAllRowsOnPage: onSelectAllRowsOnPage ?? ((): null => null),
           isAllRowsSelected,
         },
         ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
@@ -583,6 +598,13 @@ export const RowSelection: StoryObj<StoryProps> = {
   name: 'Row Selection',
   args: {
     enableRowSelection: true,
+    // Небольшой набор, целиком помещающийся в вьюпорт: требования «выбрать все
+    // на странице» (RS8–RS10, RS12) сверяются со всеми отрисованными строками,
+    // поэтому вертикальная виртуализация не должна прятать часть строк.
+    dataCount: 10,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
   },
 }
 
