@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useState } from 'react'
 
-import { ExpandedState } from '@tanstack/react-table'
+import { ColumnDef, ExpandedState } from '@tanstack/react-table'
 import { Meta, StoryObj } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
 import { expect, waitFor } from 'storybook/test'
@@ -73,6 +73,12 @@ export interface StoryProps extends CreateDataGridOptions {
    * Используется группой Sizing/Data для параметризованных данных.
    */
   dataOverride?: any[]
+  /**
+   * Явный набор колонок вместо генерируемого `useColumns(columnCount)`. Даёт
+   * тестам seam, чтобы подать колонки с известными `header`/`size` и сверяться с
+   * ними, а не с литералами дефолтного мока (ADR 0009 — запрет хардкода мок-данных).
+   */
+  columnsOverride?: ColumnDef<any>[]
   /**
    * Начальный grouping-state (список колонок). Если задан — StoryComponent
    * контролирует grouping и прокидывает onGroupingChange (интерактивно).
@@ -151,6 +157,7 @@ export const StoryComponent = memo(
     recordsOnPage,
 
     dataOverride,
+    columnsOverride,
     initialGrouping,
     initialExpanded,
 
@@ -164,12 +171,16 @@ export const StoryComponent = memo(
     const columnsWithCount = useColumns(columnCount)
 
     const columnsGetter = useMemo(() => {
+      if (columnsOverride) {
+        return columnsOverride
+      }
+
       if (showHeaderGroups) {
         return groupedColumns
       }
 
       return columnsWithCount
-    }, [showHeaderGroups, columnsWithCount])
+    }, [columnsOverride, showHeaderGroups, columnsWithCount])
 
     const { data: mockData, setData } = useData({
       count: dataCount,

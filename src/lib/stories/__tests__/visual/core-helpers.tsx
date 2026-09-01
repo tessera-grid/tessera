@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react'
+
+import type { CellContext, ColumnDef } from '@tanstack/react-table'
 import { expect } from 'vitest'
 
 import { SEL, bodyRows, getScroller, headCells } from '../helpers'
@@ -23,6 +26,27 @@ export const waitForGrid = () =>
 
 export const bodyCellsOf = (row: HTMLElement) =>
   Array.from(row.querySelectorAll<HTMLElement>(SEL.bodyCell))
+
+interface ColumnSpec {
+  id: string
+  header: string
+  size?: number
+  cell?: (info: CellContext<any, any>) => ReactNode
+}
+
+/**
+ * Собрать явные колонки с известными `header`/`size`/`cell` — seam против
+ * дефолтного мока: тест подаёт их через `columnsOverride` и сверяется с ними, а
+ * не с литералами `__mocks__/columns` (ADR 0009 — запрет хардкода мок-данных).
+ */
+export const buildColumns = (specs: ColumnSpec[]): ColumnDef<any>[] =>
+  specs.map(({ id, header, size, cell }) => ({
+    id,
+    accessorKey: id,
+    header,
+    ...(size !== undefined ? { size } : {}),
+    ...(cell ? { cell } : {}),
+  }))
 
 export const textOf = (el: Element) => el.textContent?.trim() ?? ''
 

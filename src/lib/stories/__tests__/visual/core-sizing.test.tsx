@@ -5,6 +5,7 @@ import {
   HEAD_HEIGHT_VAR,
   ROW_HEIGHT_VAR,
   bodyCellsOf,
+  buildColumns,
   cssVar,
   headCellsLeftRight,
   rowsTopDown,
@@ -52,14 +53,25 @@ describe('Ядро на TanStack — размеры и отступы', () => {
   })
 
   test('R8: ширина колонки определяется её размером (columnDef.size)', async () => {
-    // country=200, firstName=150, lastName=150 (см. __mocks__/columns).
-    renderGrid({ columnCount: 3, dataCount: 3 })
+    // Явные размеры (seam columnsOverride) — сверяемся с поданными size, а не с
+    // размерами дефолтного мока.
+    renderGrid({
+      // Размеры в пределах дефолтного диапазона [minSize 150, maxSize 750] и
+      // отличны от размеров дефолтного мока — чтобы тест доказывал использование
+      // именно переданных size.
+      columnsOverride: buildColumns([
+        { id: 'a', header: 'A', size: 220 },
+        { id: 'b', header: 'B', size: 300 },
+        { id: 'c', header: 'C', size: 175 },
+      ]),
+      dataOverride: [{ a: 1, b: 2, c: 3 }],
+    })
     await waitForGrid()
 
     const widths = headCellsLeftRight().map(c =>
       Math.round(c.getBoundingClientRect().width),
     )
-    expect(widths).toEqual([200, 150, 150])
+    expect(widths).toEqual([220, 300, 175])
   })
 
   test('R9: горизонтальный отступ контента ячейки зависит от режима', async () => {
