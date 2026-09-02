@@ -58,15 +58,34 @@ export const useCreateTable = <
     [plugins],
   )
 
+  // Сигнатура СТРУКТУРЫ активного набора: состав/порядок фич и размещение их
+  // сервисных колонок (id/side/order). Массив `plugins` нестабилен по
+  // идентичности между рендерами (потребитель обычно отдаёт свежий массив, как и
+  // демо-`argsToPlugins`), а из него — `activePlugins`. Если структура не
+  // изменилась, держим ПРЕЖНИЕ ссылки `features`/`pluginColumns` — иначе новый
+  // `columns`/`_features` заставлял бы TanStack пересобирать таблицу каждый рендер
+  // (перф-регрессия на большой выборке). Тонкие опции (config) при этом
+  // продолжают пересчитываться ниже — они и должны отражать смену настроек, а на
+  // структуру колонок не влияют (фичи — синглтоны, ширина/removal идут в options).
+  const structureSignature = activePlugins
+    .map(plugin =>
+      plugin.column
+        ? `${plugin.id}#${plugin.column.id}:${plugin.column.side}:${plugin.column.order}`
+        : plugin.id,
+    )
+    .join('|')
+
   const features = useMemo(
     () => [commonPlugin, ...activePlugins.map(plugin => plugin.feature)],
-    [activePlugins],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре структуры (features — синглтоны)
+    [structureSignature],
   )
 
   const pluginColumns = useMemo<ServiceColumn[]>(
     () =>
       activePlugins.flatMap(plugin => (plugin.column ? [plugin.column] : [])),
-    [activePlugins],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре структуры
+    [structureSignature],
   )
 
   // Сервисные колонки для ядра: id (сев видимости) + объявленный плагином pin.
