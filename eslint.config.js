@@ -47,6 +47,47 @@ export default tseslint.config(
       '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
+  // ADR 0010 (R1): слой `core` не импортирует конкретные плагины — стрелка
+  // зависимости смотрит вверх (плагины → контракт core/pluginContract ← ядро).
+  // Инверсия выполнена, поэтому уровень — `error`.
+  {
+    files: ['src/lib/core/**/*.{ts,tsx}'],
+    ignores: ['src/lib/core/**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/plugins', '**/plugins/**'],
+              message:
+                'ADR 0010 (R1): core не импортирует конкретные плагины. Плагин приносит feature/column/state-слайс сам (RegistryEntry), а core остаётся обобщённым. Контракт — в core/pluginContract.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // createHooks: статический PluginsHooks ещё импортит типы плагинов — вне охвата
+  // ADR 0010 (нужен per-instance вывод типов, types-mode b). Держим `warn` до той
+  // задачи, чтобы `eslint .` не краснел.
+  {
+    files: ['src/lib/core/createHooks/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['**/plugins', '**/plugins/**'],
+              message:
+                'createHooks: static PluginsHooks — отложено в types-mode (b) (ADR 0010).',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Демо-истории — послабления
   {
     files: ['src/lib/stories/**/*.{ts,tsx}'],
