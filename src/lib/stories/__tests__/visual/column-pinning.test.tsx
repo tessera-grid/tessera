@@ -342,6 +342,41 @@ describe('Column Pinning — requirements', () => {
     await expect.poll(() => leadingServicePins()).toBe('left')
   })
 
+  test('CP14c: unpinning the last user column releases leading service columns (pin.when=with-user)', async () => {
+    const container = await renderColumnPinning({
+      enableRowSelection: true,
+      enableRowActions: true,
+      columnCount: 5,
+    })
+
+    const leadingServicePin = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>(
+          `${HEAD_CELL}[data-actions-column-cell='true']`,
+        ),
+      )
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+        )[0]
+        ?.getAttribute('data-cell-pinned')
+
+    // Pin a data column left → the leading service column joins the left block…
+    await pinFirstColumn(container)
+    await expect.poll(() => leadingServicePin()).toBe('left')
+
+    // …unpin it → with no user pins left, the leading service column releases
+    // (proves service ids don't leak into the stored user pinning and keep it
+    // stuck — `when: 'with-user'` is evaluated on real user pins only). Re-query
+    // the data column's pin toggle fresh — the node re-rendered above (the
+    // service column carries no toggle: enablePinning=false).
+    const dataPinButton = container.querySelector<HTMLElement>(
+      `${LEFT_PINNED_HEAD} ${PIN_BUTTON}`,
+    )!
+    await userEvent.click(dataPinButton)
+    await expect.poll(() => leadingServicePin()).not.toBe('left')
+  })
+
   test('CP15: a pinned column cannot be dragged — covered by column-dragging D29', () => {
     // The pinned-column-not-draggable guarantee is exercised where dragging lives:
     // see `column-dragging.test.tsx` → D29 (docs/decisions/0006-dnd-with-dnd-kit.md).
