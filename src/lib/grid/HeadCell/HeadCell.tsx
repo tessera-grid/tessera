@@ -229,7 +229,9 @@ const getAriaSort = (
 const getDisabledSortable = (header: Header): boolean =>
   header.column.getIsPinned() !== false ||
   header.column.getIsActionsColumn() ||
-  !header.column.getCanDrag()
+  // При presence-based композиции columnDragging может отсутствовать — тогда
+  // getCanDrag не определён (перетаскивания нет), что эквивалентно canDrag=false.
+  !(header.column.getCanDrag?.() ?? false)
 
 /**
  * @description

@@ -1,14 +1,14 @@
-import {
-  ROW_ACTIONS_COLUMN_ID,
-  checkIsActionColumn,
-} from '../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID, checkIsActionColumn } from './createColumns'
 import {
   type RegisterCellSlotParams,
   type RegisterHeaderSlotParams,
   registerSlot,
-} from '../../core/createSlots'
-import { TablePlugin } from '../types'
+} from './createSlots'
+import { TablePlugin } from './pluginContract'
 
+// Always-on baseline-фича ядра (ADR 0010, R5): не входит в список плагинов
+// потребителя, вклеивается ядром всегда. Живёт в ядре (не в plugins/), т.к. это
+// инфраструктура ядра, а не opt-in фича.
 export const commonPlugin: TablePlugin = {
   createTable: table => {
     // The built-in Headers feature (applied before user features) already builds

@@ -1,15 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import {
-  ColumnPinningState,
-  OnChangeFn,
-  TableOptions,
-} from '@tanstack/react-table'
-
-import { COLUMN_DRAGGING_ID } from '../../plugins/rowDragging'
-import { COLUMN_EXPANDING_ID } from '../../plugins/rowExpanding'
-import { COLUMN_SELECTION_ID } from '../../plugins/rowSelection'
-import { ROW_ACTIONS_COLUMN_ID } from '../createColumns'
+import { ColumnPinningState, OnChangeFn } from '@tanstack/react-table'
 
 export const mergeColumnPinning = (
   prevColumnPinning: ColumnPinningState | undefined,
@@ -31,56 +22,43 @@ export const mergeColumnPinning = (
   }
 }
 
-interface UseColumnPinningInitialStateParams<TData> {
-  enableRowSelection: TableOptions<TData>['enableRowSelection']
-  enableRowExpanding: TableOptions<TData>['enableRowExpanding']
-  enableRowDragging: TableOptions<TData>['enableRowDragging']
-  enableRowActions: TableOptions<TData>['enableRowActions']
+export interface ServiceColumnPin {
+  side: 'left' | 'right'
+  when: 'always' | 'with-user'
 }
 
-export const useColumnPinningInitialState = <TData>({
-  enableRowExpanding,
-  enableRowSelection,
-  enableRowDragging,
-  enableRowActions,
-}: UseColumnPinningInitialStateParams<TData>) => {
-  const actionLeftColumnsPinning: ColumnPinningState = useMemo(() => {
-    let left: ColumnPinningState['left'] = []
+/**
+ * Слияние пользовательского пиннинга с сервисными колонками (ADR 0010, R10).
+ * Только МЕХАНИКА: ядро исполняет пиннинг, объявленный самими колонками (`pin`),
+ * а политику (какая сторона / всегда или только с пользователем) задаёт
+ * плагин-владелец. Генерик по списку — без знания конкретных плагинов, поэтому
+ * применяется всегда и не зависит от наличия фичи columnPinning.
+ */
+export const mergeServiceColumnPinning = (
+  pinning: ColumnPinningState | undefined,
+  serviceColumns: { id: string; pin?: ServiceColumnPin }[],
+): ColumnPinningState => {
+  const active = pinning ?? { left: [], right: [] }
+  const userLeft = active.left ?? []
+  const userRight = active.right ?? []
+  const hasUserLeft = userLeft.length > 0
+  const hasUserRight = userRight.length > 0
 
-    if (enableRowExpanding) {
-      left = [COLUMN_EXPANDING_ID, ...left]
-    }
+  const pinnedTo = (side: ServiceColumnPin['side'], hasUser: boolean) =>
+    serviceColumns
+      .filter(
+        column =>
+          column.pin?.side === side &&
+          (column.pin.when === 'always' || hasUser),
+      )
+      .map(column => column.id)
 
-    if (enableRowSelection) {
-      left = [COLUMN_SELECTION_ID, ...left]
-    }
-
-    if (enableRowDragging) {
-      left = [COLUMN_DRAGGING_ID, ...left]
-    }
-
-    return {
-      left,
-      right: [],
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!enableRowDragging, !!enableRowExpanding, !!enableRowSelection])
-
-  const actionRightColumnsPinning: ColumnPinningState = useMemo(() => {
-    let right: ColumnPinningState['right'] = []
-
-    if (enableRowActions) {
-      right = [...right, ROW_ACTIONS_COLUMN_ID]
-    }
-
-    return {
-      left: [],
-      right,
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!enableRowActions])
-
-  return { actionLeftColumnsPinning, actionRightColumnsPinning }
+  // Сервисные колонки прижаты к внешнему краю блока: лидирующие — слева перед
+  // пользовательскими, трейлинг — справа после них.
+  return {
+    left: [...new Set([...pinnedTo('left', hasUserLeft), ...userLeft])],
+    right: [...new Set([...userRight, ...pinnedTo('right', hasUserRight)])],
+  }
 }
 
 export const defaultColumnPinningState: ColumnPinningState = {

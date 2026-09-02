@@ -1,6 +1,6 @@
 import { ColumnDefTemplate } from '@tanstack/react-table'
 
-import { CellComponentProps, HeaderComponentProps } from '../../plugins/types'
+import { CellComponentProps, HeaderComponentProps } from '../pluginContract'
 
 export interface RegisterSlotParams<TContext extends object> {
   /**

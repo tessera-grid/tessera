@@ -1,12 +1,9 @@
 import { useMemo } from 'react'
 
-import { AccessorKeyColumnDef, TableOptions } from '@tanstack/react-table'
+import { AccessorKeyColumnDef } from '@tanstack/react-table'
 
-import { getRowDraggingColumn } from '../../plugins/rowDragging'
-import { getRowExpandingColumn } from '../../plugins/rowExpanding'
-import { getRowSelectionColumn } from '../../plugins/rowSelection'
+import { ServiceColumn } from '../pluginContract'
 import { CreateDataGridParams } from '../createTable/types'
-import { getRowActionsColumn } from './createRowActionsColumn'
 import { getMaxColumnsDepth } from './getMaxColumnsDepth'
 
 export interface UseCreateColumnsParams<
@@ -21,10 +18,12 @@ export interface UseCreateColumnsParams<
     TState,
     TOptions
   >['columns']
-  enableRowSelection: TableOptions<TData>['enableRowSelection']
-  enableRowExpanding: TableOptions<TData>['enableRowExpanding']
-  enableRowDragging: TableOptions<TData>['enableRowDragging']
-  enableRowActions: TableOptions<TData>['enableRowActions']
+  /**
+   * Сервисные колонки, принесённые плагинами (и ядром — напр. колонка действий).
+   * Ядро не знает конкретных плагинов: размещение задаёт `side`, порядок — `order`
+   * (при равенстве — позиция в списке; сортировка стабильна). См. ADR 0010.
+   */
+  pluginColumns: ServiceColumn[]
 }
 
 // TODO: переделать на Set будет проще?
@@ -43,6 +42,11 @@ const deduplicateColumns = <
   return Array.from(columnsMap.values())
 }
 
+const bySide = (side: ServiceColumn['side']) => (a: ServiceColumn) =>
+  a.side === side
+
+const byOrder = (a: ServiceColumn, b: ServiceColumn) => a.order - b.order
+
 export const useCreateColumns = <
   TData = any,
   THooks = any,
@@ -50,99 +54,31 @@ export const useCreateColumns = <
   TOptions = any,
 >({
   initialColumns,
-  enableRowSelection,
-  enableRowExpanding,
-  enableRowDragging,
-  enableRowActions,
+  pluginColumns,
 }: UseCreateColumnsParams<TData, THooks, TState, TOptions>) => {
-  const maxDepthColumns = useMemo(
-    () => getMaxColumnsDepth(initialColumns),
-    [initialColumns],
-  )
-
-  const rowSelectionColumn = useMemo(
-    () => getRowSelectionColumn(maxDepthColumns),
-    [maxDepthColumns],
-  )
-  const rowExpandingColumn = useMemo(
-    () => getRowExpandingColumn(maxDepthColumns),
-    [maxDepthColumns],
-  )
-  const rowDraggingColumn = useMemo(
-    () => getRowDraggingColumn(maxDepthColumns),
-    [maxDepthColumns],
-  )
-  const rowActionsColumn = useMemo(
-    () => getRowActionsColumn(maxDepthColumns),
-    [maxDepthColumns],
-  )
-
   return useMemo(() => {
     if (initialColumns.length === 0) {
       return []
     }
 
-    const temp = [...initialColumns]
+    const depth = getMaxColumnsDepth(initialColumns)
 
-    if (enableRowExpanding) {
-      temp.unshift(
-        rowExpandingColumn as AccessorKeyColumnDef<
-          TData,
-          unknown,
-          THooks,
-          TState,
-          TOptions
-        >,
-      )
-    }
+    const leading = pluginColumns.filter(bySide('leading')).sort(byOrder)
+    const trailing = pluginColumns.filter(bySide('trailing')).sort(byOrder)
 
-    if (enableRowSelection) {
-      temp.unshift(
-        rowSelectionColumn as AccessorKeyColumnDef<
-          TData,
-          unknown,
-          THooks,
-          TState,
-          TOptions
-        >,
-      )
-    }
+    const make = (column: ServiceColumn) =>
+      column.make(depth) as AccessorKeyColumnDef<
+        TData,
+        unknown,
+        THooks,
+        TState,
+        TOptions
+      >
 
-    if (enableRowDragging) {
-      temp.unshift(
-        rowDraggingColumn as AccessorKeyColumnDef<
-          TData,
-          unknown,
-          THooks,
-          TState,
-          TOptions
-        >,
-      )
-    }
-
-    if (enableRowActions) {
-      temp.push(
-        rowActionsColumn as AccessorKeyColumnDef<
-          TData,
-          unknown,
-          THooks,
-          TState,
-          TOptions
-        >,
-      )
-    }
-
-    return deduplicateColumns(temp)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    initialColumns,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    !!enableRowExpanding,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    !!enableRowSelection,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    !!enableRowDragging,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    !!enableRowActions,
-  ])
+    return deduplicateColumns([
+      ...leading.map(make),
+      ...initialColumns,
+      ...trailing.map(make),
+    ])
+  }, [initialColumns, pluginColumns])
 }

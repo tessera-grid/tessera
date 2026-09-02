@@ -1,17 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
-import { TableState } from '@tanstack/react-table'
+import {
+  ColumnPinningState,
+  OnChangeFn,
+  TableState,
+  functionalUpdate,
+} from '@tanstack/react-table'
 
-import { DragOverlayState } from '../../plugins/columnDragging'
-import { RowDragOverlayState } from '../../plugins/rowDragging'
-import { DEFAULT_ROW_DRAG_OVERLAY_STATE } from '../../plugins/rowDragging/types'
-import { COLUMN_EXPANDING_ID } from '../../plugins/rowExpanding'
-import { COLUMN_SELECTION_ID } from '../../plugins/rowSelection'
-import { ROW_ACTIONS_COLUMN_ID } from '../createColumns/createRowActionsColumn'
 import { useColumnOrderState } from './columnOrderState'
 import {
-  mergeColumnPinning,
-  useColumnPinningInitialState,
+  mergeServiceColumnPinning,
   useColumnPinningState,
 } from './columnPinningState'
 import { useColumnSizingState } from './columnSizingState'
@@ -31,10 +29,7 @@ export const useCreateState = <
   columns,
   state,
   handlers,
-  enableRowSelection,
-  enableRowExpanding,
-  enableRowDragging,
-  enableRowActions,
+  serviceColumns,
 }: CreateStateParams<TData, THooks, TState, TOptions>): {
   coreState: Partial<TableState>
   externalState: any
@@ -78,13 +73,16 @@ export const useCreateState = <
 
   /** COLUMN VISIBILITY */
 
+  // Видимость сервисных колонок сеется по их наличию: колонка есть в наборе
+  // (плагин присутствует) → она видима. Ядро не знает конкретных плагинов —
+  // только список сервисных колонок (ADR 0010, R8/R10).
   const initialColumnVisibility = useMemo(
-    () => ({
-      [COLUMN_SELECTION_ID]: !!enableRowSelection,
-      [COLUMN_EXPANDING_ID]: !!enableRowExpanding,
-      [ROW_ACTIONS_COLUMN_ID]: !!enableRowActions,
-    }),
-    [enableRowActions, enableRowExpanding, enableRowSelection],
+    () =>
+      serviceColumns.reduce<Record<string, boolean>>((acc, column) => {
+        acc[column.id] = true
+        return acc
+      }, {}),
+    [serviceColumns],
   )
 
   const { columnVisibility, onColumnVisibilityChange } =
@@ -112,47 +110,43 @@ export const useCreateState = <
 
   /** COLUMN PINNING */
 
-  const { actionLeftColumnsPinning, actionRightColumnsPinning } =
-    useColumnPinningInitialState({
-      enableRowExpanding,
-      enableRowSelection,
-      enableRowDragging,
-      enableRowActions,
-    })
-
   const { columnPinning, onColumnPinningChange } = useColumnPinningState()
 
-  const mergedColumnPinning = useMemo(() => {
-    const externalUserColumnsLeftPinningExist =
-      externalColumnPinning !== undefined &&
-      Array.isArray(externalColumnPinning.left) &&
-      externalColumnPinning.left.length > 0
+  // Хранимый пиннинг — ТОЛЬКО пользовательский (без сервисных колонок). Пиннинг
+  // сервисных колонок — политика плагинов, применяется как display-трансформ на
+  // выходе в TanStack (ADR 0010, R10). Так `when:'with-user'` считается по
+  // реальным пользовательским пинам, а сервисные id не протекают в стор.
+  const userColumnPinning = externalColumnPinning ?? columnPinning
+  const setUserColumnPinning = onColumnPinningExternalChange ?? onColumnPinningChange
 
-    const userColumnsLeftPinningExist =
-      Array.isArray(columnPinning.left) && columnPinning.left.length > 0
+  const mergedColumnPinning = useMemo(
+    () => mergeServiceColumnPinning(userColumnPinning, serviceColumns),
+    [userColumnPinning, serviceColumns],
+  )
 
-    if (externalUserColumnsLeftPinningExist || userColumnsLeftPinningExist) {
-      const actionColumnsPinning = mergeColumnPinning(
-        actionLeftColumnsPinning,
-        actionRightColumnsPinning,
-      )
+  const serviceColumnIds = useMemo(
+    () => serviceColumns.map(column => column.id),
+    [serviceColumns],
+  )
 
-      return mergeColumnPinning(
-        actionColumnsPinning,
-        externalColumnPinning ?? columnPinning,
-      )
-    }
-
-    return mergeColumnPinning(
-      externalColumnPinning ?? columnPinning,
-      actionRightColumnsPinning,
-    )
-  }, [
-    actionLeftColumnsPinning,
-    actionRightColumnsPinning,
-    columnPinning,
-    externalColumnPinning,
-  ])
+  const handleColumnPinningChange = useCallback<
+    OnChangeFn<ColumnPinningState>
+  >(
+    updater =>
+      setUserColumnPinning(prev => {
+        // prev — чистый пользовательский пиннинг; реконструируем отображаемый
+        // (со сервисными), применяем апдейт TanStack, срезаем сервисные обратно.
+        const displayed = mergeServiceColumnPinning(prev, serviceColumns)
+        const next = functionalUpdate(updater, displayed)
+        return {
+          left: (next.left ?? []).filter(id => !serviceColumnIds.includes(id)),
+          right: (next.right ?? []).filter(
+            id => !serviceColumnIds.includes(id),
+          ),
+        }
+      }),
+    [setUserColumnPinning, serviceColumns, serviceColumnIds],
+  )
 
   /** COLUMN SORTING */
 
@@ -170,14 +164,9 @@ export const useCreateState = <
 
   const { grouping, onGroupingChange } = useRowGroupingState()
 
-  /** COLUMN/ROWS DRAGGING */
-
-  const [columnDraggingActiveId, setColumnDraggingActiveId] =
-    useState<DragOverlayState>(null)
-
-  const [rowDragging, setRowDragging] = useState<RowDragOverlayState>(
-    DEFAULT_ROW_DRAG_OVERLAY_STATE,
-  )
+  // Drag-оверлеи (columnDraggingActiveId / rowDragging) больше не управляются
+  // ядром — их сеют и обновляют сами плагины через getInitialState/
+  // getDefaultOptions, а TanStack держит слайсы как uncontrolled (ADR 0010).
 
   return {
     coreState: {
@@ -188,16 +177,13 @@ export const useCreateState = <
       rowSelection: externalRowSelection || rowSelection,
       columnVisibility: mergedColumnVisibility,
       expanded: externalExpanded || rowExpanded,
-      columnDraggingActiveId,
-      rowDragging,
       grouping: externalGrouping || grouping,
     },
     externalState,
     coreHandlers: {
       onRowSelectionChange:
         onRowSelectionExternalChange || onRowSelectionChange,
-      onColumnPinningChange:
-        onColumnPinningExternalChange || onColumnPinningChange,
+      onColumnPinningChange: handleColumnPinningChange,
       onColumnOrderChange: onColumnOrderExternalChange || onColumnOrderChange,
       onRowOrderChange,
       onColumnSizingChange:
@@ -206,8 +192,6 @@ export const useCreateState = <
         onColumnVisibilityExternalChange || onColumnVisibilityChange,
       onSortingChange: onColumnSortingExternalChange || onColumnSortingChange,
       onExpandedChange: onRowExpandedExternalChange || onRowExpandedChange,
-      onColumnDraggingActiveIdChange: setColumnDraggingActiveId,
-      onRowDraggingChange: setRowDragging,
       onColumnAutoSizingChange,
       onGroupingChange: onGroupingExternalChange || onGroupingChange,
     },

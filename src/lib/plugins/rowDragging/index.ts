@@ -1,6 +1,8 @@
 export { getRowDraggingColumn, COLUMN_DRAGGING_ID } from './rowDraggingColumn'
 export { rowDraggingPlugin } from './rowDraggingPlugin'
 
+export { rowDragging } from './registry'
+
 export { getRowDraggableStyles } from './getRowDraggableStyles'
 export { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 

@@ -17,6 +17,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./plugins": {
+      "types": "./dist/plugins.d.ts",
+      "import": "./dist/plugins.js",
+      "require": "./dist/plugins.cjs"
+    },
     "./ui": {
       "types": "./dist/ui.d.ts",
       "import": "./dist/ui.js",

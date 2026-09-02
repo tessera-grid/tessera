@@ -92,14 +92,16 @@ export const DataGrid = ({
     colorMode,
   })
 
+  // rowDragging — uncontrolled слайс плагина rowDragging (ADR 0010): при
+  // отсутствии плагина его нет в state, поэтому читаем через ?. с дефолтами.
   const draggableCssVariables = useMemo(
     () =>
       getRowDraggableStyles({
-        activeId: rowDragging.activeId,
-        acceptable: rowDragging.acceptable,
-        offsetLeft: rowDragging.offsetLeft,
+        activeId: rowDragging?.activeId ?? null,
+        acceptable: rowDragging?.acceptable ?? true,
+        offsetLeft: rowDragging?.offsetLeft ?? 0,
       }),
-    [rowDragging.activeId, rowDragging.acceptable, rowDragging.offsetLeft],
+    [rowDragging?.activeId, rowDragging?.acceptable, rowDragging?.offsetLeft],
   )
 
   const {

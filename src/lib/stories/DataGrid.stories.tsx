@@ -1,6 +1,12 @@
 import React, { memo, useMemo, useState } from 'react'
 
-import { ColumnDef, ExpandedState } from '@tanstack/react-table'
+import {
+  ColumnDef,
+  ExpandedState,
+  GroupingState,
+  Updater,
+  functionalUpdate,
+} from '@tanstack/react-table'
 import { Meta, StoryObj } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
 import { expect, waitFor } from 'storybook/test'
@@ -19,10 +25,10 @@ import { BatchToolbar } from './BatchToolbar'
 import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
-import { rowDeleteActionPlugin } from './__mocks__/plugins/rowDeleteAction/rowDeleteActionPlugin'
 import { RowExpandingPluginParams } from '../plugins/rowExpanding'
 import { RowSelectionPluginParams } from '../plugins/rowSelection'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
+import { FeatureToggles, argsToPlugins } from './__mocks__/utils/argsToPlugins'
 import { usePagination } from './__mocks__/usePagination'
 import {
   HANDLE,
@@ -65,7 +71,7 @@ const COLUMN_COUNT = 20
 const DATA_COUNT = 10
 const PAGE_OFFSET = 5
 
-export interface StoryProps extends CreateDataGridOptions {
+export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   columnCount: number
   dataCount: number
   dataMode?: 'flat' | 'hierarchy' | 'groups'
@@ -276,7 +282,10 @@ export const StoryComponent = memo(
         onRowSelectionChange,
         onRowOrderChange: setData,
         ...(initialGrouping !== undefined
-          ? { onGroupingChange: setGrouping }
+          ? {
+              onGroupingChange: (updater: Updater<GroupingState>) =>
+                setGrouping(prev => functionalUpdate(updater, prev ?? [])),
+            }
           : {}),
       },
       hooks: useCreateHooks({
@@ -292,12 +301,15 @@ export const StoryComponent = memo(
         ...(onColumnResizeEnd ? { columnSizing: { onColumnResizeEnd } } : {}),
         ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
       }),
-      ...options,
-      // Раскрываемы: узлы дерева (isGroup) и сгруппированные строки TanStack.
-      enableRowExpanding: options.enableRowExpanding
-        ? row => row.getIsGrouped() || !!row.original?.isGroup
-        : false,
-      plugins: [rowDeleteActionPlugin],
+      // Ядровые (не плагинные) опции остаются флагами.
+      enableSkeleton: options.enableSkeleton,
+      skeletonOptions: options.skeletonOptions,
+      enableLoading: options.enableLoading,
+      enableRowActions: options.enableRowActions,
+      rowActionsOptions: options.rowActionsOptions,
+      enableFooter: options.enableFooter,
+      // Фичи-плагины композируются из тумблеров через настоящие фабрики.
+      plugins: argsToPlugins(options),
     })
 
     return (

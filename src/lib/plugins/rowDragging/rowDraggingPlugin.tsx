@@ -1,8 +1,19 @@
+import { stateUpdater } from '../../core/createState/stateUpdater'
 import { TablePlugin } from '../types'
 import { RowDraggingComponent } from './RowDraggingComponent'
 import { COLUMN_DRAGGING_ID } from './rowDraggingColumn'
+import { DEFAULT_ROW_DRAG_OVERLAY_STATE } from './types'
 
 export const rowDraggingPlugin: TablePlugin = {
+  // Плагин сам сеет свой слайс overlay-состояния и его updater (ADR 0010): ядро
+  // больше не управляет rowDragging вручную.
+  getInitialState: state => ({
+    rowDragging: DEFAULT_ROW_DRAG_OVERLAY_STATE,
+    ...state,
+  }),
+  getDefaultOptions: table => ({
+    onRowDraggingChange: stateUpdater('rowDragging', table),
+  }),
   createRow: (_staticRow, table) => {
     const enableRowDragging = table.options.enableRowDragging
 

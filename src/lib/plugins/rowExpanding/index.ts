@@ -7,6 +7,8 @@ export {
   DEFAULT_MAX_EXPANDING_DEPTH,
 } from './rowExpandingPlugin'
 
+export { rowExpanding, type RowExpandingOptions } from './registry'
+
 export { getCellExpandingStyles } from './getCellExpandingStyles'
 export { ExpandButton } from './ExpandButton'
 

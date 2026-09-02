@@ -1,6 +1,6 @@
 import { Table } from '@tanstack/react-table'
 
-import { CellComponentProps, HeaderComponentProps } from '../../plugins/types'
+import { CellComponentProps, HeaderComponentProps } from '../pluginContract'
 import { RegisterSlotParams, RenderSlots } from './types'
 
 export interface RegisterHeaderSlotParams<

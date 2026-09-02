@@ -1,1 +1,0 @@
-export { commonPlugin } from './commonPlugin'

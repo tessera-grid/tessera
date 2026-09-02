@@ -35,6 +35,7 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolvePath('src/index.ts'),
+        plugins: resolvePath('src/plugins.ts'),
         ui: resolvePath('src/ui.ts'),
         styles: resolvePath('src/styles.ts'),
       },

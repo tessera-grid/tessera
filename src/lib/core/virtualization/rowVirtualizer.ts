@@ -18,7 +18,10 @@ export const useRowVirtualizer = ({
   table,
   getScrollElement,
 }: RowVirtualizerParams) => {
+  // rowDragging — uncontrolled слайс плагина rowDragging (ADR 0010): при
+  // отсутствии плагина его нет в state, поэтому читаем activeId через ?.
   const { rowDragging } = table.getState()
+  const rowDraggingActiveId = rowDragging?.activeId ?? null
 
   const { rows } = table.getRowModel()
 
@@ -27,11 +30,11 @@ export const useRowVirtualizer = ({
 
   const rowDraggingIndex = useMemo(() => {
     const index = rowsRef.current.findIndex(
-      row => row.id === rowDragging.activeId,
+      row => row.id === rowDraggingActiveId,
     )
 
     return index === -1 ? undefined : index
-  }, [rowDragging.activeId])
+  }, [rowDraggingActiveId])
 
   const getEstimateSize = useCallback(() => {
     return ESTIMATE_SIZE

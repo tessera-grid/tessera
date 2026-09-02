@@ -1,9 +1,6 @@
-import {
-  AccessorKeyColumnDef,
-  TableOptions,
-  TableState,
-} from '@tanstack/react-table'
+import { AccessorKeyColumnDef, TableState } from '@tanstack/react-table'
 
+import { ServiceColumn } from '../pluginContract'
 import { CreateDataGridHandlers } from '../createTable'
 
 export interface CreateStateParams<
@@ -15,8 +12,10 @@ export interface CreateStateParams<
   columns: AccessorKeyColumnDef<TData, unknown, THooks, TState, TOptions>[]
   state: Partial<TableState> & TState
   handlers: CreateDataGridHandlers<TData> & TOptions
-  enableRowSelection: TableOptions<TData>['enableRowSelection']
-  enableRowExpanding: TableOptions<TData>['enableRowExpanding']
-  enableRowDragging: TableOptions<TData>['enableRowDragging']
-  enableRowActions: TableOptions<TData>['enableRowActions']
+  /**
+   * Сервисные колонки (id + объявленный плагином пиннинг), принесённые плагинами
+   * и ядром. Ядро сеет их видимость по наличию и исполняет объявленный `pin`
+   * (ADR 0010).
+   */
+  serviceColumns: { id: string; pin?: ServiceColumn['pin'] }[]
 }

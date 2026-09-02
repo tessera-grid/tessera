@@ -4,7 +4,7 @@ export {
 } from './rowSelectionColumn'
 export { rowSelectionPlugin } from './rowSelectionPlugin'
 
-export { useRowSelectionReset } from './useRowSelectionReset'
+export { rowSelection, type RowSelectionOptions } from './registry'
 
 export { SelectCheckbox, type SelectCheckboxProps } from './SelectCheckbox'
 
