@@ -1,4 +1,5 @@
 import {
+  ColumnSizingState,
   TableOptionsResolved,
   TableState,
   Updater,
@@ -43,4 +44,11 @@ export interface TableSDK<
   ) => void
 
   getIsAnyColumnResizing: () => boolean
+
+  /**
+   * Записать авто-слайс размеров колонок (generic-механизм ADR 0010). Применяется
+   * поверх пользовательского/контролируемого columnSizing; плагины вызывают его
+   * в `setup` (напр. rowActions задаёт ширину колонки действий).
+   */
+  setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
 }

@@ -11,8 +11,7 @@ import {
 
 import { RegistryEntry, ServiceColumn } from '../pluginContract'
 import { commonPlugin } from '../commonPlugin'
-import { useColumnActionsAutosize, useCreateColumns } from '../createColumns'
-import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../createColumns/createRowActionsColumn'
+import { useCreateColumns } from '../createColumns'
 import { DEFAULT_COLUMN } from '../createColumns/defaultColumnOptions'
 import { PluginsHooks, useCreateHooks } from '../createHooks'
 import { useCreateSlots } from '../createSlots'
@@ -20,6 +19,7 @@ import { useCreateState } from '../createState'
 import { DEFAULT_SKELETON_OPTIONS } from '../skeletonOverlay/options'
 import { FEATURE_OFF_BASELINE, foldPluginOptions } from './pluginOptions'
 import { CreateDataGridHandlers, CreateDataGridParams } from './types'
+import { usePluginSetups } from './usePluginSetups'
 import { useRowSelectionReset } from './useRowSelectionReset'
 
 export const useCreateTable = <
@@ -148,16 +148,17 @@ export const useCreateTable = <
 
     enableFooter,
 
+    // Writer авто-слайса размеров — generic-механизм ядра; commonPlugin вешает
+    // на таблицу table.setColumnAutoSizing, которым пользуются плагины в setup.
+    onColumnAutoSizingChange,
+
     _features: features,
   })
 
   useRowSelectionReset({ table })
-  // Автосайз колонки действий — always-on инфраструктура ядра (ADR 0010,
-  // прагматичный сплит): ширину приносит плагин rowActions через свои опции.
-  useColumnActionsAutosize({
-    rowActionsOptions: table.options.rowActionsOptions ?? DEFAULT_ROW_ACTIONS_OPTIONS,
-    onColumnAutoSizingChange,
-  })
+  // Императивный сетап плагинов (generic-escape ADR 0010): напр. плагин rowActions
+  // задаёт ширину колонки действий через table.setColumnAutoSizing.
+  usePluginSetups({ table, activePlugins })
 
   return table
 }

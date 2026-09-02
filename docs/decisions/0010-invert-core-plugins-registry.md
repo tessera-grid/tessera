@@ -82,6 +82,12 @@ export interface RegistryEntry {
   column?: ServiceColumn // опционально — не у всех фич есть колонка
   options?: Partial<TableOptionsResolved<any>> & TOptions // тонкие опции фичи
   enabled?: boolean // false → ядро отсеивает запись (выключатель фабрики)
+  // generic-escape: императивный сетап после создания таблицы (побочный эффект,
+  // невыразимый через feature/options — напр. запись авто-слайса размеров).
+  // Ядро запускает setup всех активных плагинов в ЕДИНОМ useEffect (не хук —
+  // rules-of-hooks соблюдены при любом числе плагинов). Setup обязан быть
+  // идемпотентным (список плагинов обычно нестабилен между рендерами).
+  setup?: (table: Table<any>) => void | (() => void)
 }
 ```
 
@@ -230,14 +236,17 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
   генерик-механику `mergeServiceColumnPinning` (исполнить объявленные `pin`), без
   per-фиче политики; это R1-чисто (ядро не импортит плагины). Отдельный
   `reduceState`-escape не понадобился (YAGNI) — вернём, если появится реальный
-  неоднородный merge. `rowActions` вынесена в плагин
-  (`@mstrvtt/tessera/plugins`) прагматичным сплитом: наружу opt-in — только
-  фабрика-запись `rowActions({ width })`, объявляющая свою колонку и `pin`
-  (`right/always`); механика колонки (её фабрика, автосайз, предикаты
-  `getIsActionsColumn`) остаётся always-on инфраструктурой ядра, плагин импортит
-  её из `core` (стрелка вверх, R1-чисто). Полный вынос механики в плагин
-  (автосайз через lifecycle фичи либо generic-escape для хуков плагина) —
-  отдельная задача.
+  неоднородный merge. `rowActions` полностью вынесена в плагин
+  (`@mstrvtt/tessera/plugins`): её колонка, опции (`width`) и автосайз живут в
+  `plugins/rowActions`; фабрика `rowActions({ width })` объявляет колонку и `pin`
+  (`right/always`). В ядре остаётся лишь id колонки (`ROW_ACTIONS_COLUMN_ID`) и
+  предикаты `getIsActionsColumn`/`getIsRowActionsColumn` (always-on `commonPlugin`
+  безусловно читает их в grid — плагин в ядро не импортить, R1). Плагин импортит
+  id из `core` (стрелка вверх). Автосайз применяется через generic-escape:
+  плагин в `setup` вызывает `table.setColumnAutoSizing` — ядровый writer
+  авто-слайса размеров (`commonPlugin` вешает его на таблицу; слайс применяется
+  поверх даже контролируемого `columnSizing`, поэтому `getInitialState`-seed не
+  годился). Writer бейлит при равенстве (идемпотентность `setup`).
 
 ## План внедрения
 
@@ -280,8 +289,11 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
 (always-on инфраструктура). R1-правило поднято до `error` для
 `createTable`/`createColumns`/`createState`/`createSlots` (`createHooks` остаётся
 `warn` до types-mode (b)); R2/R4/R5 покрыты `composition.test.tsx`, R3 по сути
-обеспечен R1=`error`. `rowActions` вынесена в плагин прагматичным сплитом
-(фабрика `rowActions({ width })` в `@mstrvtt/tessera/plugins`; механика колонки —
-always-on в ядре, см. решение по пиннингу). Осталось отдельными задачами:
-build-size CI-проверка (R3), полный вынос механики `rowActions` в плагин
-(автосайз/предикаты), types-mode (b) для `createHooks`.
+обеспечен R1=`error`. `rowActions` полностью вынесена в плагин
+(`@mstrvtt/tessera/plugins`): колонка/опции/автосайз в `plugins/rowActions`, в
+ядре — только id + предикаты (см. решение по пиннингу). Для этого в контракт
+добавлен generic-escape `RegistryEntry.setup` (императивный сетап плагина) и
+ядровый writer `table.setColumnAutoSizing`. Осталось отдельными задачами:
+build-size CI-проверка (R3), types-mode (b) для `createHooks`, миграция доков на
+API ADR 0010 (`README.md` и `docs/architecture/table-assembly.md` пока
+документируют старый `enable*` + сырой `plugins:[feature]`).

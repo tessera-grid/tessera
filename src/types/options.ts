@@ -1,9 +1,13 @@
 import { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
-import { OnChangeFn, Row, TableState } from '@tanstack/react-table'
+import {
+  ColumnSizingState,
+  OnChangeFn,
+  Row,
+  TableState,
+} from '@tanstack/react-table'
 
 import { PluginsHooks } from '../lib/core/createHooks/types'
 import { RenderSlots } from '../lib/core/createSlots'
-import { RowActionsOptions } from '../lib/core/createColumns/createRowActionsColumn'
 import { SkeletonOptions } from '../lib/core/skeletonOverlay/types'
 import { ColumnDraggingOptions } from '../lib/plugins/columnDragging'
 import { RowDraggingOptions } from '../lib/plugins/rowDragging'
@@ -29,8 +33,11 @@ export interface TableOptionsResolvedSDK<
   enableLoading?: boolean
 
   enableRowActions?: boolean
-  rowActionsOptions?: RowActionsOptions
   enableFooter?: boolean
+
+  // Writer авто-слайса размеров (generic-механизм ADR 0010) — ядро прокидывает
+  // сюда сеттер авто-слайса, commonPlugin оборачивает его в table.setColumnAutoSizing.
+  onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
 
   // eslint-disable-next-line no-use-before-define
   enableRowExpanding?: boolean | ((row: Row<TData>) => boolean)

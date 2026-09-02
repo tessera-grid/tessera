@@ -1,8 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { getActionColumnId } from './actionColumnParams'
-
-export const ROW_ACTIONS_COLUMN_ID = getActionColumnId('rowActions')
+import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns'
 
 const columnHelper = createColumnHelper<any>()
 

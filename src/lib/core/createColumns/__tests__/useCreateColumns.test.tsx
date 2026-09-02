@@ -5,8 +5,9 @@ import { describe, expect, test } from 'vitest'
 import { COLUMN_DRAGGING_ID, rowDragging } from '../../../plugins/rowDragging'
 import { COLUMN_EXPANDING_ID, rowExpanding } from '../../../plugins/rowExpanding'
 import { COLUMN_SELECTION_ID, rowSelection } from '../../../plugins/rowSelection'
+import { getRowActionsColumn } from '../../../plugins/rowActions'
 import { ServiceColumn } from '../../../plugins/types'
-import { ROW_ACTIONS_COLUMN_ID, getRowActionsColumn } from '../createRowActionsColumn'
+import { ROW_ACTIONS_COLUMN_ID } from '../index'
 import { useCreateColumns } from '../useCreateColumns'
 
 // Сеть безопасности под инверсию ядра (docs/decisions/0010-invert-core-plugins-registry.md).
@@ -20,7 +21,7 @@ const cols = [
   { id: 'b', accessorKey: 'b' },
 ] as unknown as AccessorKeyColumnDef<any>[]
 
-// Колонка действий — ядровая (не плагин): подаётся как trailing ServiceColumn.
+// Колонка действий приходит из плагина rowActions как trailing ServiceColumn.
 const rowActionsColumn: ServiceColumn = {
   id: ROW_ACTIONS_COLUMN_ID,
   make: getRowActionsColumn as ServiceColumn['make'],

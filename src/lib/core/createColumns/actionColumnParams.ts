@@ -18,3 +18,8 @@ export const getActionColumnId = (columnId: string) =>
 
 export const checkIsActionColumn = (columnId = '') =>
   columnId.includes(COLUMN_ACTIONS_PREFIX)
+
+// Стабильный id колонки действий. Живёт в ядре (а не в плагине rowActions), т.к.
+// его безусловно читают предикаты `getIsActionsColumn` в always-on commonPlugin
+// (плагин не импортить в ядро — R1). Саму колонку/автосайз приносит плагин.
+export const ROW_ACTIONS_COLUMN_ID = getActionColumnId('rowActions')

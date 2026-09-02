@@ -12,7 +12,7 @@ import {
   rowGrouping,
   rowSelection,
 } from '../../../plugins'
-import { RowActionsOptions } from '../../../core/createColumns/createRowActionsColumn'
+import { RowActionsOptions } from '../../../plugins/rowActions'
 import { rowDeleteActionPlugin } from '../plugins/rowDeleteAction/rowDeleteActionPlugin'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров

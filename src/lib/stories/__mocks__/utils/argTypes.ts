@@ -1,6 +1,6 @@
 import { ArgTypes, InputType } from 'storybook/internal/csf'
 
-import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../core/createColumns/createRowActionsColumn'
+import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../plugins/rowActions'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../core/skeletonOverlay/options'
 
 export const columnCountType: ArgTypes = {

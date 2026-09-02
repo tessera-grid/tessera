@@ -12,7 +12,7 @@ import { useArgs } from 'storybook/preview-api'
 import { expect, waitFor } from 'storybook/test'
 
 import { Card, CardContent, Grid, NoDataStub } from './_shims'
-import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../core/createColumns/createRowActionsColumn'
+import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../plugins/rowActions'
 import { useCreateHooks } from '../core/createHooks/useCreateHooks'
 import { useRowExpandingState } from '../core/createState/rowExpandingState'
 import { useRowSelectionState } from '../core/createState/rowSelectionState'

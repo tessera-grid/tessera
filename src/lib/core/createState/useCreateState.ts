@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 
 import {
   ColumnPinningState,
+  ColumnSizingState,
   OnChangeFn,
   TableState,
   functionalUpdate,
@@ -19,6 +20,17 @@ import { useRowExpandingState } from './rowExpandingState'
 import { useRowGroupingState } from './rowGroupingState'
 import { useRowSelectionState } from './rowSelectionState'
 import { CreateStateParams } from './types'
+
+// Поверхностное сравнение слайсов размеров (для бейла авто-слайса при равенстве).
+const isSameColumnSizing = (
+  a: ColumnSizingState,
+  b: ColumnSizingState,
+): boolean => {
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  if (aKeys.length !== bKeys.length) return false
+  return aKeys.every(key => a[key] === b[key])
+}
 
 export const useCreateState = <
   TData = any,
@@ -99,8 +111,22 @@ export const useCreateState = <
 
   const {
     columnSizing: columnAutoSizing,
-    onColumnSizingChange: onColumnAutoSizingChange,
+    onColumnSizingChange: setColumnAutoSizing,
   } = useColumnSizingState()
+
+  // Авто-слайс размеров пишут плагины в `setup` (generic-escape ADR 0010), а
+  // `setup` ядро запускает при каждой смене идентичности списка плагинов — а она
+  // нестабильна (потребитель обычно отдаёт новый массив каждый рендер). Поэтому
+  // writer бейлит при равенстве (возвращает prev → React пропускает рендер),
+  // иначе идемпотентная запись той же ширины крутила бы бесконечный цикл.
+  const onColumnAutoSizingChange = useCallback<OnChangeFn<ColumnSizingState>>(
+    updater =>
+      setColumnAutoSizing(prev => {
+        const next = functionalUpdate(updater, prev)
+        return isSameColumnSizing(prev, next) ? prev : next
+      }),
+    [setColumnAutoSizing],
+  )
 
   const { columnSizing, onColumnSizingChange } = useColumnSizingState()
 

@@ -30,6 +30,12 @@ export const commonPlugin: TablePlugin = {
     table.getIsAnyColumnResizing = () =>
       table.getVisibleLeafColumns().some(column => column.getIsResizing())
 
+    // Generic-writer авто-слайса размеров (ADR 0010): плагины (напр. rowActions)
+    // задают ширину сервисной колонки поверх пользовательского columnSizing —
+    // авто-слайс применяется даже при контролируемом извне размере.
+    table.setColumnAutoSizing = updater =>
+      table.options.onColumnAutoSizingChange?.(updater)
+
     table.getHooks = () => table.options.hooks
 
     table.getRenderSlots = () => table.options.slots
