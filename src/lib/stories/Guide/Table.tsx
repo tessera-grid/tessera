@@ -7,6 +7,7 @@ import { useCreateHooks } from '../../core/createHooks/useCreateHooks'
 import { useRowSelectionState } from '../../core/createState/rowSelectionState'
 import { useCreateTable } from '../../core/createTable/useCreateTable'
 import { DataGrid } from '../../grid/DataGrid/DataGrid'
+import { rowActions } from '../../plugins/rowActions'
 import { rowSelection as selectionPlugin } from '../../plugins/rowSelection'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
@@ -57,12 +58,9 @@ export const Table = () => {
       onChangeHiddenCells: setHiddenCells,
     },
     hooks,
-    enableRowActions: true,
-    rowActionsOptions: {
-      width: 40,
-    },
     plugins: [
       selectionPlugin(),
+      rowActions({ width: 40 }),
       // Пользовательские плагины приносят свою фичу через ту же запись реестра.
       { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
       { id: 'cellHiddenAction', feature: cellHiddenActionPlugin },

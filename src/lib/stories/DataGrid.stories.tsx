@@ -305,10 +305,9 @@ export const StoryComponent = memo(
       enableSkeleton: options.enableSkeleton,
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
-      enableRowActions: options.enableRowActions,
-      rowActionsOptions: options.rowActionsOptions,
       enableFooter: options.enableFooter,
-      // Фичи-плагины композируются из тумблеров через настоящие фабрики.
+      // Фичи-плагины (включая rowActions) композируются из тумблеров через
+      // настоящие фабрики.
       plugins: argsToPlugins(options),
     })
 

@@ -9,6 +9,7 @@ export { rowSelection, type RowSelectionOptions } from './rowSelection'
 export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
 export { rowDragging } from './rowDragging'
 export { rowGrouping } from './rowGrouping'
+export { rowActions, type RowActionsPluginOptions } from './rowActions'
 
 export { columnSorting, type ColumnSortingOptions } from './columnSorting'
 export { columnPinning } from './columnPinning'

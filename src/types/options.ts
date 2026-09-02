@@ -3,6 +3,7 @@ import { OnChangeFn, Row, TableState } from '@tanstack/react-table'
 
 import { PluginsHooks } from '../lib/core/createHooks/types'
 import { RenderSlots } from '../lib/core/createSlots'
+import { RowActionsOptions } from '../lib/core/createColumns/createRowActionsColumn'
 import { SkeletonOptions } from '../lib/core/skeletonOverlay/types'
 import { ColumnDraggingOptions } from '../lib/plugins/columnDragging'
 import { RowDraggingOptions } from '../lib/plugins/rowDragging'
@@ -28,6 +29,7 @@ export interface TableOptionsResolvedSDK<
   enableLoading?: boolean
 
   enableRowActions?: boolean
+  rowActionsOptions?: RowActionsOptions
   enableFooter?: boolean
 
   // eslint-disable-next-line no-use-before-define

@@ -230,8 +230,14 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
   генерик-механику `mergeServiceColumnPinning` (исполнить объявленные `pin`), без
   per-фиче политики; это R1-чисто (ядро не импортит плагины). Отдельный
   `reduceState`-escape не понадобился (YAGNI) — вернём, если появится реальный
-  неоднородный merge. `rowActions` — ядровая колонка, её `pin` объявляет ядро как
-  владелец (TODO: вынести rowActions в плагин).
+  неоднородный merge. `rowActions` вынесена в плагин
+  (`@mstrvtt/tessera/plugins`) прагматичным сплитом: наружу opt-in — только
+  фабрика-запись `rowActions({ width })`, объявляющая свою колонку и `pin`
+  (`right/always`); механика колонки (её фабрика, автосайз, предикаты
+  `getIsActionsColumn`) остаётся always-on инфраструктурой ядра, плагин импортит
+  её из `core` (стрелка вверх, R1-чисто). Полный вынос механики в плагин
+  (автосайз через lifecycle фичи либо generic-escape для хуков плагина) —
+  отдельная задача.
 
 ## План внедрения
 
@@ -274,8 +280,8 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
 (always-on инфраструктура). R1-правило поднято до `error` для
 `createTable`/`createColumns`/`createState`/`createSlots` (`createHooks` остаётся
 `warn` до types-mode (b)); R2/R4/R5 покрыты `composition.test.tsx`, R3 по сути
-обеспечен R1=`error`. Осталось отдельными задачами: build-size CI-проверка (R3),
-вынос `rowActions` в плагин, types-mode (b) для `createHooks`. Исходный список:
-добить R2
-(добавление плагина без правок core), R3 (build-size/tree-shaking), R4 (паритет
-пользовательского плагина), R5 (`common` всегда включён).
+обеспечен R1=`error`. `rowActions` вынесена в плагин прагматичным сплитом
+(фабрика `rowActions({ width })` в `@mstrvtt/tessera/plugins`; механика колонки —
+always-on в ядре, см. решение по пиннингу). Осталось отдельными задачами:
+build-size CI-проверка (R3), полный вынос механики `rowActions` в плагин
+(автосайз/предикаты), types-mode (b) для `createHooks`.

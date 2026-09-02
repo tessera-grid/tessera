@@ -12,11 +12,7 @@ import {
 import { RegistryEntry, ServiceColumn } from '../pluginContract'
 import { commonPlugin } from '../commonPlugin'
 import { useColumnActionsAutosize, useCreateColumns } from '../createColumns'
-import {
-  DEFAULT_ROW_ACTIONS_OPTIONS,
-  ROW_ACTIONS_COLUMN_ID,
-  getRowActionsColumn,
-} from '../createColumns/createRowActionsColumn'
+import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../createColumns/createRowActionsColumn'
 import { DEFAULT_COLUMN } from '../createColumns/defaultColumnOptions'
 import { PluginsHooks, useCreateHooks } from '../createHooks'
 import { useCreateSlots } from '../createSlots'
@@ -47,9 +43,6 @@ export const useCreateTable = <
 
   enableLoading = false,
 
-  enableRowActions = false,
-  rowActionsOptions = DEFAULT_ROW_ACTIONS_OPTIONS,
-
   enableFooter = false,
 
   defaultColumn = DEFAULT_COLUMN,
@@ -71,25 +64,9 @@ export const useCreateTable = <
   )
 
   const pluginColumns = useMemo<ServiceColumn[]>(
-    () => [
-      ...activePlugins.flatMap(plugin =>
-        plugin.column ? [plugin.column] : [],
-      ),
-      ...(enableRowActions
-        ? [
-            {
-              id: ROW_ACTIONS_COLUMN_ID,
-              make: getRowActionsColumn as ServiceColumn['make'],
-              side: 'trailing' as const,
-              order: 0,
-              // Колонка действий — ядровая; ядро объявляет её пиннинг как владелец
-              // колонки (всегда вправо). TODO: вынести rowActions в плагин.
-              pin: { side: 'right' as const, when: 'always' as const },
-            },
-          ]
-        : []),
-    ],
-    [activePlugins, enableRowActions],
+    () =>
+      activePlugins.flatMap(plugin => (plugin.column ? [plugin.column] : [])),
+    [activePlugins],
   )
 
   // Сервисные колонки для ядра: id (сев видимости) + объявленный плагином pin.
@@ -169,14 +146,18 @@ export const useCreateTable = <
     skeletonOptions,
     enableLoading,
 
-    enableRowActions,
     enableFooter,
 
     _features: features,
   })
 
   useRowSelectionReset({ table })
-  useColumnActionsAutosize({ rowActionsOptions, onColumnAutoSizingChange })
+  // Автосайз колонки действий — always-on инфраструктура ядра (ADR 0010,
+  // прагматичный сплит): ширину приносит плагин rowActions через свои опции.
+  useColumnActionsAutosize({
+    rowActionsOptions: table.options.rowActionsOptions ?? DEFAULT_ROW_ACTIONS_OPTIONS,
+    onColumnAutoSizingChange,
+  })
 
   return table
 }

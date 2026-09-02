@@ -15,7 +15,6 @@ import {
 } from '@tanstack/react-table'
 
 import { RegistryEntry } from '../pluginContract'
-import { RowActionsOptions } from '../createColumns/createRowActionsColumn'
 import { PluginsHooks } from '../createHooks'
 import { SkeletonOptions } from '../skeletonOverlay/types'
 
@@ -32,16 +31,14 @@ export interface CreateDataGridHandlers<TData = any> {
 }
 
 // Опции ядра, НЕ относящиеся к плагинам (фичи включаются через `plugins`,
-// см. ADR 0010). skeleton/loading/rowActions/footer — ядровые (rowActions пока
-// не вынесена в плагин).
+// см. ADR 0010). skeleton/loading/footer — ядровые. rowActions вынесена в
+// плагин (@mstrvtt/tessera/plugins), автосайз/предикаты остаются в ядре.
 export interface CreateDataGridOptions<TData = any, TOptions = any> {
   enableSkeleton?: TableOptions<TData>['enableSkeleton']
   enableLoading?: TableOptions<TData>['enableLoading']
 
-  enableRowActions?: TableOptions<TData>['enableRowActions']
   enableFooter?: TableOptions<TData>['enableFooter']
 
-  rowActionsOptions?: RowActionsOptions
   skeletonOptions?: SkeletonOptions
 
   handlers?: CreateDataGridHandlers<TData> & TOptions

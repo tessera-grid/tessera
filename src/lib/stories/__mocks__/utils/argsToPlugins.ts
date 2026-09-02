@@ -6,11 +6,13 @@ import {
   columnSizing,
   columnSorting,
   type RegistryEntry,
+  rowActions,
   rowDragging,
   rowExpanding,
   rowGrouping,
   rowSelection,
 } from '../../../plugins'
+import { RowActionsOptions } from '../../../core/createColumns/createRowActionsColumn'
 import { rowDeleteActionPlugin } from '../plugins/rowDeleteAction/rowDeleteActionPlugin'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
@@ -30,6 +32,8 @@ export interface FeatureToggles {
   enableColumnResizing?: boolean
   enableColumnDragging?: boolean
   enableGrouping?: boolean
+  enableRowActions?: boolean
+  rowActionsOptions?: RowActionsOptions
 }
 
 export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
@@ -61,6 +65,10 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     }),
     columnDragging({ enabled: !!o.enableColumnDragging }),
     rowGrouping({ enabled: !!o.enableGrouping }),
+    rowActions({
+      enabled: !!o.enableRowActions,
+      width: o.rowActionsOptions?.width,
+    }),
     // Демо-плагин внешнего действия (удаление строки) — сырая фича в записи.
     { id: 'rowDeleteAction', feature: rowDeleteActionPlugin },
   ]
