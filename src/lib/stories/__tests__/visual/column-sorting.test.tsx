@@ -372,6 +372,27 @@ describe('Column Sorting — requirements', () => {
     expect(columnValues(container, colIndex)).toEqual(before)
   })
 
+  test('CS15: enabling the plugin after mount reveals the sort button (presence-based slots are reactive)', async () => {
+    // Regression: slots used to be registered imperatively in `feature.createTable`,
+    // which TanStack runs only once at construction, so a plugin toggled on AFTER
+    // mount never registered its header slot and the button never appeared. Slots
+    // are now declared on the registry entry and folded reactively from the active
+    // plugin set, so toggling presence must add the button.
+    const { container, rerender } = await render(
+      <composed.ColumnSorting enableColumnSorting={false} />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(3)
+    expect(container.querySelector(SORT_BUTTON)).toBeNull()
+
+    // Toggle the plugin on — the sort button must appear without a remount.
+    await rerender(<composed.ColumnSorting enableColumnSorting />)
+    await expect
+      .poll(() => container.querySelectorAll(SORT_BUTTON).length)
+      .toBeGreaterThan(0)
+  })
+
   test('CS14: a sortable header exposes aria-sort; a non-sortable one omits it', async () => {
     // Feature off → the column is not sortable → the attribute is absent
     // entirely (per ARIA, `aria-sort='none'` would imply a sortable column).

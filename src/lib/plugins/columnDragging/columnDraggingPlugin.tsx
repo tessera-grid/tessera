@@ -6,7 +6,6 @@ import {
 
 import { stateUpdater } from '../../core/createState/stateUpdater'
 import { TablePlugin } from '../types'
-import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { getColumnDraggingEvents } from './getColumnDraggingEvents'
 
 export const columnDraggingPlugin: TablePlugin = {
@@ -40,6 +39,8 @@ export const columnDraggingPlugin: TablePlugin = {
       getMemoOptions(table.options, 'debugColumns', 'getDraggableIndex'),
     )
   },
+  // Кнопка перетаскивания объявлена декларативно в записи реестра
+  // (`registry.ts`); здесь фича регистрирует обработчики dnd-событий.
   createTable: table => {
     const { onColumnDragStart, onColumnDragEnd } =
       getColumnDraggingEvents(table)
@@ -48,13 +49,6 @@ export const columnDraggingPlugin: TablePlugin = {
       ...table.options,
       onColumnDragStart,
       onColumnDragEnd,
-    })
-
-    table.setRenderSlot({
-      id: 'columnDraggingPlugin',
-      slot: 'leftHeaderSlot',
-      order: 0,
-      component: ColumnDraggingComponent,
     })
   },
 }

@@ -1,3 +1,4 @@
+import { ColumnSortingComponent } from './ColumnSortingComponent'
 import { PluginOptions, RegistryEntry } from '../types'
 import { columnSortingPlugin } from './columnSortingPlugin'
 import type { ColumnSortingPlugin } from './types'
@@ -15,6 +16,14 @@ export const columnSorting = (
   id: 'columnSorting',
   enabled: opts.enabled,
   feature: columnSortingPlugin,
+  slots: [
+    {
+      id: 'columnSortingPlugin',
+      slot: 'rightHeaderSlot',
+      order: 1,
+      component: ColumnSortingComponent,
+    },
+  ],
   options: {
     enableSorting: true,
     enableSortingRemoval: opts.removal ?? true,

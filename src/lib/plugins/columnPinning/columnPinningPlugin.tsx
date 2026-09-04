@@ -1,9 +1,11 @@
 import { TablePlugin } from '../types'
-import { ColumnPinningComponent } from './ColumnPinningComponent'
 
 /**
  * Расширение для возможности закрепления столбцов
  * Предполагается, что пользователь может закреплять столбцы только к левому краю таблицы
+ *
+ * Кнопка закрепления объявлена декларативно в записи реестра (`registry.ts`);
+ * здесь фича лишь ограничивает закрепление одноуровневой шапкой.
  */
 export const columnPinningPlugin: TablePlugin = {
   createColumn: (_staticColumn, table) => {
@@ -16,13 +18,5 @@ export const columnPinningPlugin: TablePlugin = {
 
       return originalGetCanPin()
     }
-  },
-  createTable: table => {
-    table.setRenderSlot({
-      id: 'columnPinningPlugin',
-      slot: 'rightHeaderSlot',
-      order: 0,
-      component: ColumnPinningComponent,
-    })
   },
 }

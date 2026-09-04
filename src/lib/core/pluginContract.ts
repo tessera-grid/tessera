@@ -11,6 +11,7 @@ import {
 
 import { CellContextSDK } from '../../types/cell'
 import { HeaderContextSDK } from '../../types/header'
+import type { PluginSlot } from './createSlots'
 
 // Контракт плагинов — принадлежит ядру (ADR 0010): ядро определяет, ЧТО такое
 // плагин, а плагины его реализуют. Стрелка зависимости: плагины → этот контракт
@@ -130,6 +131,16 @@ export interface RegistryEntry<THooksSlice = Record<never, never>> {
   feature: TablePlugin
   column?: ServiceColumn
   options?: Partial<TableOptionsResolved<any>>
+  /**
+   * Декларативные слоты плагина (ADR 0010): кнопки в шапке/ячейке/строке
+   * действий. Ядро собирает их реактивно из активного набора, поэтому
+   * появление/исчезновение слота точно следует за наличием плагина — в отличие
+   * от императивного `table.setRenderSlot` в `createTable`, который выполняется
+   * лишь однажды при конструировании таблицы (TanStack не переигрывает
+   * `createTable` при смене `_features`) и не реагирует на включение плагина
+   * после монтирования.
+   */
+  slots?: PluginSlot[]
   /**
    * Фантомный носитель типа hook-слайса плагина: существует только в типах (нет
    * рантайм-значения), нужен чтобы `THooksSlice` был выводим через

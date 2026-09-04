@@ -1,19 +1,10 @@
 import { TablePlugin } from '../../plugins/types'
-import { RowDownloadComponent } from './RowDownloadComponent'
 import { ItemType, MyTableHooks, MyTableOptions, MyTableState } from './types'
 
+// Кнопка скачивания объявлена декларативно в записи реестра (см. Table.tsx).
 export const rowDownloadActionPlugin: TablePlugin<
   ItemType,
   MyTableHooks,
   MyTableState,
   MyTableOptions
-> = {
-  createTable: table => {
-    table.setRenderSlot({
-      id: 'rowDownloadActionPlugin',
-      order: 0,
-      slot: 'actionRowSlot',
-      component: RowDownloadComponent,
-    })
-  },
-}
+> = {}

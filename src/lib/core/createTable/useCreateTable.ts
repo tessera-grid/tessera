@@ -19,7 +19,7 @@ import { commonPlugin } from '../commonPlugin'
 import { useCreateColumns } from '../createColumns'
 import { DEFAULT_COLUMN } from '../createColumns/defaultColumnOptions'
 import { useCreateHooks } from '../createHooks'
-import { useCreateSlots } from '../createSlots'
+import { createEmptyRenderSlots, registerSlotInto } from '../createSlots'
 import { useCreateState } from '../createState'
 import { DEFAULT_SKELETON_OPTIONS } from '../skeletonOverlay/options'
 import { FEATURE_OFF_BASELINE, foldPluginOptions } from './pluginOptions'
@@ -64,34 +64,39 @@ export const useCreateTable = <
     [plugins],
   )
 
-  // Сигнатура СТРУКТУРЫ активного набора: состав/порядок фич и размещение их
-  // сервисных колонок (id/side/order). Массив `plugins` нестабилен по
+  // Сигнатуры СТРУКТУРЫ активного набора. Массив `plugins` нестабилен по
   // идентичности между рендерами (потребитель обычно отдаёт свежий массив, как и
-  // демо-`argsToPlugins`), а из него — `activePlugins`. Если структура не
-  // изменилась, держим ПРЕЖНИЕ ссылки `features`/`pluginColumns` — иначе новый
-  // `columns`/`_features` заставлял бы TanStack пересобирать таблицу каждый рендер
-  // (перф-регрессия на большой выборке). Тонкие опции (config) при этом
-  // продолжают пересчитываться ниже — они и должны отражать смену настроек, а на
-  // структуру колонок не влияют (фичи — синглтоны, ширина/removal идут в options).
-  const structureSignature = activePlugins
-    .map(plugin =>
-      plugin.column
-        ? `${plugin.id}#${plugin.column.id}:${plugin.column.side}:${plugin.column.order}`
-        : plugin.id,
+  // демо-`argsToPlugins`), а из него — `activePlugins`. Держим ПРЕЖНИЕ ссылки
+  // производных, пока их структура не изменилась — иначе новый `columns`/
+  // `_features`/`slots` заставлял бы пересобирать таблицу каждый рендер
+  // (перф-регрессия). Тонкие опции (config) при этом продолжают пересчитываться
+  // ниже — они и должны отражать смену настроек, на структуру колонок не влияя.
+  //
+  // Две РАЗДЕЛЬНЫЕ сигнатуры: колонки зависят ТОЛЬКО от плагинов, вносящих
+  // сервисную колонку (id/side/order). Тумблер плагина без колонки (сортировка/
+  // ресайз/пиннинг/группировка/dnd колонок) не должен пересобирать `pluginColumns`
+  // → `columns` → всю таблицу; иначе каждый такой тумблер даёт заметный лаг.
+  const pluginSignature = activePlugins.map(plugin => plugin.id).join('|')
+
+  const columnSignature = activePlugins
+    .filter(plugin => plugin.column)
+    .map(
+      plugin =>
+        `${plugin.id}#${plugin.column!.id}:${plugin.column!.side}:${plugin.column!.order}`,
     )
     .join('|')
 
   const features = useMemo(
     () => [commonPlugin, ...activePlugins.map(plugin => plugin.feature)],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре структуры (features — синглтоны)
-    [structureSignature],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора (фичи — синглтоны)
+    [pluginSignature],
   )
 
   const pluginColumns = useMemo<ServiceColumn[]>(
     () =>
       activePlugins.flatMap(plugin => (plugin.column ? [plugin.column] : [])),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре структуры
-    [structureSignature],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре колонок
+    [columnSignature],
   )
 
   // Сервисные колонки для ядра: id (сев видимости) + объявленный плагином pin.
@@ -132,7 +137,26 @@ export const useCreateTable = <
       [externalHooks],
     ),
   )
-  const slots = useCreateSlots()
+
+  // Слоты собираются реактивно из декларативных объявлений активных плагинов
+  // (ADR 0010): при включении/выключении плагина набор кнопок пересобирается, а
+  // не «застревает» на составе, зафиксированном при конструировании таблицы (в
+  // TanStack `feature.createTable` не переигрывается при смене `_features`).
+  // Порядок фолда = порядок активных плагинов, поэтому итоговая раскладка слотов
+  // совпадает с прежней императивной регистрацией. Держим по сигнатуре структуры.
+  const slots = useMemo(
+    () => {
+      const built = createEmptyRenderSlots()
+
+      activePlugins.forEach(plugin =>
+        plugin.slots?.forEach(slot => registerSlotInto(built, slot)),
+      )
+
+      return built
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
+    [pluginSignature],
+  )
 
   const table = useReactTable<
     TData,

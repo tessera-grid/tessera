@@ -31,6 +31,21 @@ export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]
 
 export type CellSlot = RegisterSlotParams<CellComponentProps>[]
 
+/**
+ * Декларативное объявление слота плагином (ADR 0010). Плагин НЕ регистрирует
+ * слот императивно в `createTable` (тот выполняется один раз при конструировании
+ * таблицы и не переигрывается при смене активного набора), а объявляет его в
+ * записи реестра — ядро собирает слоты реактивно из активных плагинов, поэтому
+ * появление/исчезновение кнопки точно следует за наличием плагина.
+ */
+export type PluginSlot =
+  | (RegisterSlotParams<HeaderComponentProps> & {
+    slot: 'leftHeaderSlot' | 'rightHeaderSlot'
+  })
+  | (RegisterSlotParams<CellComponentProps> & {
+    slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot'
+  })
+
 export interface RenderSlots {
   /**
    * Место под плагин в заголовке колонки слева от текста

@@ -1,7 +1,7 @@
 import { Table } from '@tanstack/react-table'
 
 import { CellComponentProps, HeaderComponentProps } from '../pluginContract'
-import { RegisterSlotParams, RenderSlots } from './types'
+import { PluginSlot, RegisterSlotParams, RenderSlots } from './types'
 
 export interface RegisterHeaderSlotParams<
   TData = any,
@@ -43,19 +43,14 @@ export interface RegisterCellSlotParams<
 }
 
 /**
- * Метод регистрации плагина. Позволяет задать конкретный слот, порядок отображения плагина и возвращаемый JSX.
+ * Регистрирует слот в переданный объект `RenderSlots` (чистая операция без
+ * привязки к инстансу таблицы). Ядро использует её, чтобы собрать слоты
+ * реактивно из декларативных объявлений активных плагинов (ADR 0010).
  */
-export const registerSlot = ({
-  id,
-  order,
-  visible = true,
-  slot,
-  render,
-  component,
-  table,
-}: RegisterHeaderSlotParams | RegisterCellSlotParams) => {
-  const slots = table.getRenderSlots()
-
+export const registerSlotInto = (
+  slots: RenderSlots,
+  { id, order, visible = true, slot, render, component }: PluginSlot,
+) => {
   const currentSlot = slots[slot]
 
   const pluginIndexInSlot = currentSlot.findIndex(plugin => plugin.id === id)
@@ -81,4 +76,17 @@ export const registerSlot = ({
   } else {
     currentSlot.splice(order, 0, entry)
   }
+}
+
+/**
+ * Метод императивной регистрации плагина на инстансе таблицы. Оставлен как
+ * generic-escape для пользовательских плагинов; выполняется в `createTable`
+ * один раз при конструировании и НЕ реактивен к смене активного набора —
+ * реактивное появление слота обеспечивает декларативный `slots` записи реестра.
+ */
+export const registerSlot = ({
+  table,
+  ...params
+}: RegisterHeaderSlotParams | RegisterCellSlotParams) => {
+  registerSlotInto(table.getRenderSlots(), params)
 }

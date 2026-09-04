@@ -1,13 +1,6 @@
 import { TablePlugin } from '../types'
-import { ColumnSortingComponent } from './ColumnSortingComponent'
 
-export const columnSortingPlugin: TablePlugin = {
-  createTable: table => {
-    table.setRenderSlot({
-      id: 'columnSortingPlugin',
-      slot: 'rightHeaderSlot',
-      order: 1,
-      component: ColumnSortingComponent,
-    })
-  },
-}
+// Поведение сортировки обеспечивает встроенная фича TanStack (RowSorting) +
+// опция `enableSorting`; кнопка сортировки объявлена декларативно в записи
+// реестра (`registry.ts`), поэтому фиче здесь нечего добавлять к инстансу.
+export const columnSortingPlugin: TablePlugin = {}

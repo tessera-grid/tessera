@@ -1,3 +1,4 @@
+import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { PluginOptions, RegistryEntry } from '../types'
 import { columnDraggingPlugin } from './columnDraggingPlugin'
 import type { ColumnDraggingPlugin } from './types'
@@ -8,6 +9,14 @@ export const columnDragging = (
   id: 'columnDragging',
   enabled: opts.enabled,
   feature: columnDraggingPlugin,
+  slots: [
+    {
+      id: 'columnDraggingPlugin',
+      slot: 'leftHeaderSlot',
+      order: 0,
+      component: ColumnDraggingComponent,
+    },
+  ],
   options: {
     enableColumnDragging: true,
   },

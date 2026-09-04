@@ -1,13 +1,6 @@
 import { TablePlugin } from '../types'
-import { ColumnSizingComponent } from './ColumnSizingComponent'
 
-export const columnSizingPlugin: TablePlugin = {
-  createTable: table => {
-    table.setRenderSlot({
-      id: 'columnSizingPlugin',
-      slot: 'rightHeaderSlot',
-      order: 'last',
-      component: ColumnSizingComponent,
-    })
-  },
-}
+// Поведение ресайза обеспечивает встроенная фича TanStack (ColumnSizing) +
+// опции `enableColumnResizing`/`columnResizeMode`; ручка ресайза объявлена
+// декларативно в записи реестра (`registry.ts`).
+export const columnSizingPlugin: TablePlugin = {}

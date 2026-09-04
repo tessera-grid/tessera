@@ -1,13 +1,6 @@
 import { TablePlugin } from '../types'
-import { RowGroupingComponent } from './RowGroupingComponent'
 
-export const rowGroupingPlugin: TablePlugin = {
-  createTable: table => {
-    table.setRenderSlot({
-      id: 'rowGroupingPlugin',
-      slot: 'rightHeaderSlot',
-      order: 1,
-      component: RowGroupingComponent,
-    })
-  },
-}
+// Поведение группировки обеспечивает встроенная фича TanStack (ColumnGrouping) +
+// опция `enableGrouping`; кнопка группировки объявлена декларативно в записи
+// реестра (`registry.ts`).
+export const rowGroupingPlugin: TablePlugin = {}

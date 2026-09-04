@@ -13,6 +13,7 @@ import {
   rowSelection,
 } from '../../../plugins'
 import { RowActionsOptions } from '../../../plugins/rowActions'
+import { RowDeleteActionComponent } from '../plugins/rowDeleteAction/RowDeleteActionComponent'
 import { rowDeleteActionPlugin } from '../plugins/rowDeleteAction/rowDeleteActionPlugin'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
@@ -69,7 +70,18 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
       enabled: !!o.enableRowActions,
       width: o.rowActionsOptions?.width,
     }),
-    // Демо-плагин внешнего действия (удаление строки) — сырая фича в записи.
-    { id: 'rowDeleteAction', feature: rowDeleteActionPlugin },
+    // Демо-плагин внешнего действия (удаление строки) — фича + декларативный слот.
+    {
+      id: 'rowDeleteAction',
+      feature: rowDeleteActionPlugin,
+      slots: [
+        {
+          id: 'rowDeletePlugin',
+          order: 'last',
+          slot: 'actionRowSlot',
+          component: RowDeleteActionComponent,
+        },
+      ],
+    },
   ]
 }

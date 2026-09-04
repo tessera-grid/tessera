@@ -10,6 +10,8 @@ import { DataGrid } from '../../grid/DataGrid/DataGrid'
 import type { BuiltinPluginsHooks } from '../../plugins'
 import { rowActions } from '../../plugins/rowActions'
 import { rowSelection as selectionPlugin } from '../../plugins/rowSelection'
+import { CellHiddenComponent } from './CellHiddenComponent'
+import { RowDownloadComponent } from './RowDownloadComponent'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
 import { switchActionPlugin } from './switchActionPlugin'
@@ -62,9 +64,32 @@ export const Table = () => {
     plugins: [
       selectionPlugin(),
       rowActions({ width: 40 }),
-      // Пользовательские плагины приносят свою фичу через ту же запись реестра.
-      { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
-      { id: 'cellHiddenAction', feature: cellHiddenActionPlugin },
+      // Пользовательские плагины приносят свою фичу и декларативные слоты через
+      // ту же запись реестра.
+      {
+        id: 'rowDownloadAction',
+        feature: rowDownloadActionPlugin,
+        slots: [
+          {
+            id: 'rowDownloadActionPlugin',
+            order: 0,
+            slot: 'actionRowSlot',
+            component: RowDownloadComponent,
+          },
+        ],
+      },
+      {
+        id: 'cellHiddenAction',
+        feature: cellHiddenActionPlugin,
+        slots: [
+          {
+            id: 'cellHiddenActionPlugin',
+            slot: 'rightCellSlot',
+            order: 0,
+            component: CellHiddenComponent,
+          },
+        ],
+      },
       { id: 'switchAction', feature: switchActionPlugin },
     ],
   })
