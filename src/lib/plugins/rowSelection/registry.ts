@@ -1,13 +1,16 @@
 import { PluginOptions, RegistryEntry, ServiceColumn } from '../types'
 import { COLUMN_SELECTION_ID, getRowSelectionColumn } from './rowSelectionColumn'
 import { rowSelectionPlugin } from './rowSelectionPlugin'
+import type { RowSelectionPlugin } from './types'
 
 export interface RowSelectionOptions extends PluginOptions {
   /** Разрешить выбор дочерних строк (каскад на поддерево). */
   subRows?: boolean
 }
 
-export const rowSelection = (opts: RowSelectionOptions = {}): RegistryEntry => ({
+export const rowSelection = (
+  opts: RowSelectionOptions = {},
+): RegistryEntry<RowSelectionPlugin> => ({
   id: 'rowSelection',
   enabled: opts.enabled,
   feature: rowSelectionPlugin,

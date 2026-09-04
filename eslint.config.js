@@ -49,7 +49,8 @@ export default tseslint.config(
   },
   // ADR 0010 (R1): слой `core` не импортирует конкретные плагины — стрелка
   // зависимости смотрит вверх (плагины → контракт core/pluginContract ← ядро).
-  // Инверсия выполнена, поэтому уровень — `error`.
+  // Инверсия выполнена целиком, включая `createHooks` (types-mode b: `PluginsHooks`
+  // пуст, тип хуков выводится из набора `plugins`), поэтому уровень — `error`.
   {
     files: ['src/lib/core/**/*.{ts,tsx}'],
     ignores: ['src/lib/core/**/__tests__/**'],
@@ -62,26 +63,6 @@ export default tseslint.config(
               group: ['**/plugins', '**/plugins/**'],
               message:
                 'ADR 0010 (R1): core не импортирует конкретные плагины. Плагин приносит feature/column/state-слайс сам (RegistryEntry), а core остаётся обобщённым. Контракт — в core/pluginContract.',
-            },
-          ],
-        },
-      ],
-    },
-  },
-  // createHooks: статический PluginsHooks ещё импортит типы плагинов — вне охвата
-  // ADR 0010 (нужен per-instance вывод типов, types-mode b). Держим `warn` до той
-  // задачи, чтобы `eslint .` не краснел.
-  {
-    files: ['src/lib/core/createHooks/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'warn',
-        {
-          patterns: [
-            {
-              group: ['**/plugins', '**/plugins/**'],
-              message:
-                'createHooks: static PluginsHooks — отложено в types-mode (b) (ADR 0010).',
             },
           ],
         },

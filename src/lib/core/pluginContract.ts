@@ -117,12 +117,26 @@ export interface ServiceColumn {
  * Запись реестра плагина: то, что фабрика плагина отдаёт потребителю для
  * presence-based композиции (см. ADR 0010). Фича остаётся плоским `TablePlugin`;
  * привязка колонки и тонкие опции живут в записи, а не на фиче.
+ *
+ * `THooksSlice` — hook-слайс, который плагин добавляет в контракт хуков таблицы
+ * (`{ rowSelection: RowSelectionPluginParams }` и т.п.). Ядро выводит из набора
+ * записей объединение слайсов (`InferPluginHooks`) и типизирует им параметр
+ * `hooks` в `useCreateTable` — presence-based, без глобального `PluginsHooks`
+ * (types-mode b, ADR 0010). Плагины без хуков оставляют дефолт «пустой слайс»
+ * (`Record<never, never>` — не добавляет ключей в пересечение).
  */
-export interface RegistryEntry {
+export interface RegistryEntry<THooksSlice = Record<never, never>> {
   id: string
   feature: TablePlugin
   column?: ServiceColumn
   options?: Partial<TableOptionsResolved<any>>
+  /**
+   * Фантомный носитель типа hook-слайса плагина: существует только в типах (нет
+   * рантайм-значения), нужен чтобы `THooksSlice` был выводим через
+   * `RegistryEntry<infer S>`. Фабрика задаёт слайс аннотацией типа возврата
+   * (`rowSelection(): RegistryEntry<RowSelectionPlugin>`), а не этим полем.
+   */
+  readonly __hooksSlice?: THooksSlice
   /**
    * Включён ли плагин. `undefined`/`true` — включён (наличие = включено);
    * `false` — ядро отсеивает запись при сборке. Позволяет отключить конкретный
@@ -145,6 +159,31 @@ export interface PluginOptions {
   /** `false` — плагин отключён (запись отсеивается ядром). По умолчанию включён. */
   enabled?: boolean
 }
+
+/** Свести объединение в пересечение (`A | B` → `A & B`). */
+export type UnionToIntersection<U> = (
+  U extends any ? (arg: U) => void : never
+) extends (arg: infer I) => void
+  ? I
+  : never
+
+/** Элемент списка `plugins` в `useCreateTable` (запись или отсеиваемое falsy). */
+export type PluginEntryInput = RegistryEntry<any> | false | null | undefined
+
+/**
+ * Вывести контракт хуков из кортежа плагинов (presence-based, types-mode b):
+ * пересечение hook-слайсов всех записей набора. Falsy-элементы и плагины без
+ * слайса (`{}`) вклада не дают. Так `useCreateTable` типизирует `hooks` ровно по
+ * переданным плагинам, не завися от глобального `PluginsHooks`.
+ */
+export type InferPluginHooks<TPlugins extends readonly PluginEntryInput[]> =
+  UnionToIntersection<
+    TPlugins[number] extends infer Entry
+      ? Entry extends RegistryEntry<infer Slice>
+        ? Slice
+        : never
+      : never
+  >
 
 /**
  * Тип для описания компонента заголовков

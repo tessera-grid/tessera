@@ -5,6 +5,19 @@
 
 export type { RegistryEntry, ServiceColumn, PluginOptions } from './types'
 
+// Контракт хуков для потребителя (types-mode b, ADR 0010): агрегат всех встроенных
+// слайсов + сами слайсы как примитивы композиции.
+export type {
+  BuiltinPluginsHooks,
+  ColumnDraggingPlugin,
+  ColumnPinningPlugin,
+  ColumnSizingPlugin,
+  ColumnSortingPlugin,
+  RowDraggingPlugin,
+  RowExpandingPlugin,
+  RowSelectionPlugin,
+} from './hooks'
+
 export { rowSelection, type RowSelectionOptions } from './rowSelection'
 export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
 export { rowDragging } from './rowDragging'

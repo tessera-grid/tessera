@@ -14,8 +14,10 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 
-import { RegistryEntry } from '../pluginContract'
-import { PluginsHooks } from '../createHooks'
+import {
+  InferPluginHooks,
+  PluginEntryInput,
+} from '../pluginContract'
 import { SkeletonOptions } from '../skeletonOverlay/types'
 
 export interface CreateDataGridHandlers<TData = any> {
@@ -49,18 +51,26 @@ export interface CreateDataGridParams<
   THooks = any,
   TState = any,
   TOptions = any,
+  TPlugins extends readonly PluginEntryInput[] = readonly PluginEntryInput[],
 > extends CreateDataGridOptions<TData, TOptions> {
   columns: AccessorKeyColumnDef<TData, unknown, THooks, TState, TOptions>[]
   data: TableOptions<TData>['data']
 
   state?: Partial<TableState> & TState
-  hooks?: Partial<PluginsHooks> & THooks
+  /**
+   * Контракт хуков (types-mode b, ADR 0010). Встроенные слайсы выводятся из
+   * набора `plugins` (`InferPluginHooks`) — presence-based, работает в вызове
+   * БЕЗ явных generic-аргументов. Кастомные хуки идут через `THooks`. При явных
+   * дженериках вывод из кортежа не срабатывает — типизируйте `hooks` через
+   * `BuiltinPluginsHooks` из `@mstrvtt/tessera/plugins`.
+   */
+  hooks?: Partial<InferPluginHooks<TPlugins>> & THooks
   /**
    * Presence-based композиция плагинов (ADR 0010). Наличие фабрики = фича
    * включена; отключить конкретный плагин можно через `фабрика({ enabled: false })`.
    * Falsy-записи игнорируются.
    */
-  plugins?: (RegistryEntry | false | null | undefined)[]
+  plugins?: TPlugins
 
   debug?: boolean
   defaultColumn?: ColumnSizingColumnDef

@@ -7,6 +7,7 @@ import { useCreateHooks } from '../../core/createHooks/useCreateHooks'
 import { useRowSelectionState } from '../../core/createState/rowSelectionState'
 import { useCreateTable } from '../../core/createTable/useCreateTable'
 import { DataGrid } from '../../grid/DataGrid/DataGrid'
+import type { BuiltinPluginsHooks } from '../../plugins'
 import { rowActions } from '../../plugins/rowActions'
 import { rowSelection as selectionPlugin } from '../../plugins/rowSelection'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
@@ -28,7 +29,7 @@ export const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<MyTableHooks>({
+  const hooks = useCreateHooks<BuiltinPluginsHooks & MyTableHooks>({
     rowSelection: {
       onSelectRow: (row: Row<any>, selected: boolean) =>
         action('onSelectRow')({ rowId: row.id, selected }),
@@ -43,7 +44,7 @@ export const Table = () => {
 
   const table = useCreateTable<
     ItemType,
-    MyTableHooks,
+    BuiltinPluginsHooks & MyTableHooks,
     MyTableState,
     MyTableOptions
   >({

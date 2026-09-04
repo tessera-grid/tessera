@@ -9,11 +9,16 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-import { RegistryEntry, ServiceColumn } from '../pluginContract'
+import {
+  InferPluginHooks,
+  PluginEntryInput,
+  RegistryEntry,
+  ServiceColumn,
+} from '../pluginContract'
 import { commonPlugin } from '../commonPlugin'
 import { useCreateColumns } from '../createColumns'
 import { DEFAULT_COLUMN } from '../createColumns/defaultColumnOptions'
-import { PluginsHooks, useCreateHooks } from '../createHooks'
+import { useCreateHooks } from '../createHooks'
 import { useCreateSlots } from '../createSlots'
 import { useCreateState } from '../createState'
 import { DEFAULT_SKELETON_OPTIONS } from '../skeletonOverlay/options'
@@ -27,6 +32,7 @@ export const useCreateTable = <
   THooks = any,
   TState = any,
   TOptions = any,
+  const TPlugins extends readonly PluginEntryInput[] = readonly PluginEntryInput[],
 >({
   columns: initialColumns,
   data,
@@ -34,7 +40,7 @@ export const useCreateTable = <
   state = {} as Partial<TableState> & TState,
   handlers = {} as CreateDataGridHandlers<TData> & TOptions,
   hooks: externalHooks,
-  plugins = [],
+  plugins = [] as unknown as TPlugins,
 
   debug = false,
 
@@ -46,7 +52,7 @@ export const useCreateTable = <
   enableFooter = false,
 
   defaultColumn = DEFAULT_COLUMN,
-}: CreateDataGridParams<TData, THooks, TState, TOptions>) => {
+}: CreateDataGridParams<TData, THooks, TState, TOptions, TPlugins>) => {
   // Presence-based композиция (ADR 0010): фичи, сервисные колонки и опции
   // выводятся из списка плагинов. Falsy-записи и отключённые (`enabled: false`)
   // отсеиваются; `common` вклеивается ядром всегда.
@@ -120,15 +126,20 @@ export const useCreateTable = <
     serviceColumns,
   })
 
-  const hooks = useCreateHooks<THooks>(
+  const hooks = useCreateHooks(
     useMemo(
-      () => externalHooks ?? ({} as PluginsHooks & THooks),
+      () => externalHooks ?? ({} as NonNullable<typeof externalHooks>),
       [externalHooks],
     ),
   )
   const slots = useCreateSlots()
 
-  const table = useReactTable<TData, THooks, TState, TOptions>({
+  const table = useReactTable<
+    TData,
+    InferPluginHooks<TPlugins> & THooks,
+    TState,
+    TOptions
+  >({
     columns,
     data,
 

@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 
-import { PluginsHooks } from './types'
-
-const defaultHooks: PluginsHooks = {
+// Always-on no-op дефолты хуков — инфраструктура ядра: гарантируют, что чтение
+// любого встроенного слайса не упадёт, даже если потребитель его не передал.
+// Это литералы, а не импорт плагинов (R1-чисто) — типы слайсов ядру не нужны.
+const defaultHooks = {
   columnDragging: { onColumnDragEnd: () => null },
   columnPinning: { onTogglePin: () => null },
   columnSizing: { onColumnResizeEnd: () => null },
@@ -19,16 +20,11 @@ const defaultHooks: PluginsHooks = {
 }
 
 /**
- * Функция реализации API-контракта между плагинами и внешним миром.
+ * Слить пользовательские хуки с always-on дефолтами ядра. Тип возврата — то, что
+ * передал вызывающий: встроенные слайсы он типизирует через набор `plugins`
+ * (`useCreateTable`) либо объявляет сам; ядро лишь подкладывает no-op дефолты.
  */
-export const useCreateHooks = <THooks = any>(
-  hooks: Partial<PluginsHooks> & THooks,
-): PluginsHooks & THooks => {
-  return useMemo(
-    () => ({
-      ...defaultHooks,
-      ...hooks,
-    }),
-    [hooks],
-  )
-}
+export const useCreateHooks = <THooks extends object = Record<never, never>>(
+  hooks: Partial<THooks> = {},
+): THooks =>
+  useMemo(() => ({ ...defaultHooks, ...hooks }) as THooks, [hooks])

@@ -1,5 +1,6 @@
 import { PluginOptions, RegistryEntry } from '../types'
 import { columnSortingPlugin } from './columnSortingPlugin'
+import type { ColumnSortingPlugin } from './types'
 
 export interface ColumnSortingOptions extends PluginOptions {
   /** Разрешить снятие сортировки третьим кликом (по умолчанию true). */
@@ -10,7 +11,7 @@ export interface ColumnSortingOptions extends PluginOptions {
 
 export const columnSorting = (
   opts: ColumnSortingOptions = {},
-): RegistryEntry => ({
+): RegistryEntry<ColumnSortingPlugin> => ({
   id: 'columnSorting',
   enabled: opts.enabled,
   feature: columnSortingPlugin,

@@ -1,8 +1,11 @@
 import { PluginOptions, RegistryEntry, ServiceColumn } from '../types'
 import { COLUMN_DRAGGING_ID, getRowDraggingColumn } from './rowDraggingColumn'
 import { rowDraggingPlugin } from './rowDraggingPlugin'
+import type { RowDraggingPlugin } from './types'
 
-export const rowDragging = (opts: PluginOptions = {}): RegistryEntry => ({
+export const rowDragging = (
+  opts: PluginOptions = {},
+): RegistryEntry<RowDraggingPlugin> => ({
   id: 'rowDragging',
   enabled: opts.enabled,
   feature: rowDraggingPlugin,
