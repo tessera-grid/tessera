@@ -30,9 +30,6 @@ export const rowActions = (
       // Колонка действий закреплена всегда вправо — политику объявляет запись.
       pin: { side: 'right', when: 'always' },
     },
-    options: {
-      enableRowActions: true,
-    },
     setup: table => {
       table.setColumnAutoSizing?.(prev => ({
         ...prev,

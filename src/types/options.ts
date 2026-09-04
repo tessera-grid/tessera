@@ -27,12 +27,9 @@ export interface TableOptionsResolvedSDK<
   hooks: PluginsHooks & THooks
   slots: RenderSlots
 
-  // _features: TablePlugin[]
-
   enableSkeleton?: boolean
   enableLoading?: boolean
 
-  enableRowActions?: boolean
   enableFooter?: boolean
 
   // Writer авто-слайса размеров (generic-механизм ADR 0010) — ядро прокидывает
