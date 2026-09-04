@@ -4,6 +4,13 @@
 - **Дата:** 2026-08-02 (решение по dnd-kit); 2026-08-07 (в ADR влиты реализации
   плагинов `rowDragging` и `columnDragging`)
 
+> **Обновление ([ADR 0010](0010-invert-core-plugins-registry.md)).** Активация
+> через флаги `enableRowDragging`/`enableColumnDragging` у `useCreateTable` заменена
+> presence-based композицией: плагины включаются фабриками `rowDragging()` /
+> `columnDragging()` в массиве `plugins`. Упомянутые ниже имена `enable*` остаются
+> TanStack-опциями, которые фабрика проставляет сама (`RegistryEntry.options`).
+> Текст ниже отражает исходное решение и сохранён как история.
+
 ## Контекст
 
 Потребителям нужно было переупорядочивать и **колонки**, и **строки** через drag &

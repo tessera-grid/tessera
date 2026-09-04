@@ -19,6 +19,14 @@
     ресайзом приём: плагин — это `TableFeature`, служебный столбец инъектируется
     в сборке колонок, а состояние выражено атрибутами ячейки.
 
+> **Обновление ([ADR 0010](0010-invert-core-plugins-registry.md)).** Активация
+> через флаг `enableRowSelection` у `useCreateTable` заменена presence-based
+> композицией: плагин включается фабрикой `rowSelection({ subRows })` в массиве
+> `plugins`. Упомянутые ниже `enableRowSelection`/`enableSubRowSelection` остаются
+> TanStack-опциями, которые фабрика проставляет сама (`RegistryEntry.options`). Тип
+> хуков плагина (`rowSelection`) выводится из набора `plugins` (`InferPluginHooks`).
+> Текст ниже отражает исходное решение и сохранён как история.
+
 ## Контекст
 
 Потребителям нужно выбирать строки — по одной чекбоксом в строке, все на

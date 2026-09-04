@@ -1,8 +1,12 @@
 # Плагины и слоты
 
-**Плагин** Tessera — это TanStack `TableFeature` (`TablePlugin` в
-`src/lib/plugins/types.ts`) плюс конвенция рендеринга, построенная на **слотах** и
-переопределениях `renderComponent` на уровне ячейки/заголовка.
+**Плагин** Tessera — это TanStack `TableFeature` (`TablePlugin`; контракт
+принадлежит ядру — `src/lib/core/pluginContract.ts`, `plugins/types.ts` его
+реэкспортит, ADR 0010) плюс конвенция рендеринга, построенная на **слотах** и
+переопределениях `renderComponent` на уровне ячейки/заголовка. Потребителю плагин
+доставляется фабрикой-записью `RegistryEntry` (presence-based композиция): фича
+остаётся плоским `TablePlugin`, а привязка сервисной колонки, тонкие опции и
+hook-слайс живут в записи.
 
 ## Жизненный цикл `TablePlugin`
 

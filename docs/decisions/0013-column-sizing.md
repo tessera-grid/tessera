@@ -16,6 +16,13 @@
     общий с пиннингом и сортировкой контракт affordance в шапке: слот
     `rightHeaderSlot`, скрытие до наведения через `buttonVisibility.css`.
 
+> **Обновление ([ADR 0010](0010-invert-core-plugins-registry.md)).** Активация
+> через флаг `enableColumnResizing` у `useCreateTable` заменена presence-based
+> композицией: плагин включается фабрикой `columnSizing()` в массиве `plugins`.
+> Упомянутые ниже `enable*` остаются TanStack-опциями, которые фабрика проставляет
+> сама (`RegistryEntry.options`). Тип хуков плагина выводится из набора `plugins`
+> (`InferPluginHooks`). Текст ниже отражает исходное решение и сохранён как история.
+
 ## Контекст
 
 Потребителям нужно менять ширину столбца прямо из шапки — тянуть за грип у

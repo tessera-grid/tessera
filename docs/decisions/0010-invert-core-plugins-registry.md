@@ -164,7 +164,7 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
 
 | ID  | Требование                                                                                              | Тест                                  |
 | --- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| R1  | `core` (`createTable`/`createColumns`/`createState`) не импортирует ни один конкретный плагин. `createHooks` — вне охвата этой ADR (см. ниже) | ✔ [`eslint.config.js`](../../eslint.config.js) `no-restricted-imports` уровня `error` (контракт вынесен в `core/pluginContract`; `createHooks` остаётся `warn`) |
+| R1  | `core` (`createTable`/`createColumns`/`createState`/`createSlots`/`createHooks`) не импортирует ни один конкретный плагин | ✔ [`eslint.config.js`](../../eslint.config.js) `no-restricted-imports` уровня `error` для всего `src/lib/core/**` (контракт — в `core/pluginContract`; `createHooks` доведён до `error` в types-mode (b), см. ниже) |
 | R2  | Добавление плагина не требует правок файлов `core` — только новая фабрика-запись                         | ✔ `createTable/__tests__/composition.test.tsx` |
 | R3  | Плагины, не импортированные потребителем, отсутствуют в его бандле (tree-shaking)                        | ✔ по сути гарантирован R1=`error` (ядро без статических импортов плагинов; вход `@mstrvtt/tessera/plugins` отдельный). Build-size CI-проверка — отдельная задача |
 | R4  | Пользовательский плагин приносит `feature`, `column` и state-слайс тем же способом, что встроенный        | ✔ `createTable/__tests__/composition.test.tsx` |
@@ -231,12 +231,32 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
   Пиннинг сервисных колонок — единственное текущее исключение.
 - **`common` → внутренний always-on дефолт ядра.** Не входит в список
   потребителя, вклеивается ядром всегда (R5); opt-in касается только фич.
-- **`createHooks` → вне охвата этой ADR, отложен в types-mode (b).** Хуки не
-  гейтятся presence (потребитель передаёт их сам, always-on инфраструктура), а
-  динамическая агрегация `PluginsHooks` из набора требует per-instance вывода
-  типов. Поэтому статический `PluginsHooks` остаётся; инверсия ядра здесь — только
-  `createTable`/`createColumns`/`createState`. Flip R1→`error` (Фаза 6) не
-  затрагивает `createHooks` — он остаётся `warn` до задачи types-mode (b).
+- **`createHooks` → инверсия выполнена (types-mode b).** Хуки не гейтятся
+  presence (always-on инфраструктура), но тип хуков теперь выводится per-instance
+  из набора `plugins`, а не из глобального агрегата:
+  - `PluginsHooks` в ядре — пустой (`Record<never, never>`); импортов плагинов в
+    `createHooks` больше нет (R1 = `error` для всего `src/lib/core/**`).
+  - Каждая фабрика несёт свой hook-слайс в типе записи
+    (`RegistryEntry<THooksSlice>`; `rowSelection(): RegistryEntry<RowSelectionPlugin>`).
+    `useCreateTable` выводит `InferPluginHooks<TPlugins>` из кортежа и типизирует
+    им параметр `hooks` (`Partial<InferPluginHooks<TPlugins>> & THooks`), а таблицу
+    инстанцирует как `useReactTable<…, InferPluginHooks<TPlugins> & THooks, …>` —
+    так `table.getHooks()` у потребителя несёт выведенные слайсы. Кастомные хуки
+    идут через `THooks`; чужой слайс мягко поглощается в `THooks` (безвредно —
+    хуки always-on), но проверка формы известного слайса сохраняется.
+  - **Ограничение вывода:** `const TPlugins` выводится только в вызове БЕЗ явных
+    generic-аргументов (TS не выводит хвостовой параметр при частично заданных
+    дженериках). Для вызовов с явными дженериками именованный агрегат
+    `BuiltinPluginsHooks` (= бывший `PluginsHooks`) вынесен во вход
+    `@mstrvtt/tessera/plugins` (стрелка вверх, R1-чисто): `useCreateTable<Data,
+    BuiltinPluginsHooks & MyHooks, …>({ … })`.
+  - **Приёмка переформулирована:** символ `PluginsHooks` в `dist` намеренно пуст
+    (`{}`) — полный контракт хуков доходит до потребителя через сигнатуру
+    `useCreateTable` (presence-based) и через `BuiltinPluginsHooks` из `/plugins`,
+    а не через символ `PluginsHooks`. Проверяется мини-пробой из собранного `dist`
+    (вывод параметра `hooks` + резолв `BuiltinPluginsHooks` в полный union).
+  - `useCreateHooks` — тонкий generic-merge (`<THooks>(hooks: Partial<THooks>)`),
+    always-on no-op дефолты остаются в ядре литералами (значения, не импорт → R1).
 - **Пиннинг сервисных колонок → политику объявляет плагин, ядро исполняет.**
   Каждая `ServiceColumn` несёт `pin: { side, when }`: `when:'always'` — закреплена
   всегда (колонка действий вправо, независимо от фичи `columnPinning`);
@@ -295,14 +315,23 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
 **Фаза 6 — затянуть гейты (выполнено).** Контракт плагинов вынесен из
 `plugins/types` в `core/pluginContract` (стрелка зависимости выправлена);
 `commonPlugin` и `useRowSelectionReset` перенесены из `plugins/` в ядро
-(always-on инфраструктура). R1-правило поднято до `error` для
-`createTable`/`createColumns`/`createState`/`createSlots` (`createHooks` остаётся
-`warn` до types-mode (b)); R2/R4/R5 покрыты `composition.test.tsx`, R3 по сути
-обеспечен R1=`error`. `rowActions` полностью вынесена в плагин
-(`@mstrvtt/tessera/plugins`): колонка/опции/автосайз в `plugins/rowActions`, в
-ядре — только id + предикаты (см. решение по пиннингу). Для этого в контракт
-добавлен generic-escape `RegistryEntry.setup` (императивный сетап плагина) и
-ядровый writer `table.setColumnAutoSizing`. Осталось отдельными задачами:
-build-size CI-проверка (R3), types-mode (b) для `createHooks`, миграция доков на
-API ADR 0010 (`README.md` и `docs/architecture/table-assembly.md` пока
-документируют старый `enable*` + сырой `plugins:[feature]`).
+(always-on инфраструктура). R1-правило поднято до `error` для всего
+`src/lib/core/**` (включая `createHooks` — см. Фазу 7); R2/R4/R5 покрыты
+`composition.test.tsx`, R3 по сути обеспечен R1=`error`. `rowActions` полностью
+вынесена в плагин (`@mstrvtt/tessera/plugins`): колонка/опции/автосайз в
+`plugins/rowActions`, в ядре — только id + предикаты (см. решение по пиннингу).
+Для этого в контракт добавлен generic-escape `RegistryEntry.setup` (императивный
+сетап плагина) и ядровый writer `table.setColumnAutoSizing`.
+
+**Фаза 7 — инверсия `createHooks` (types-mode b, выполнено).** `PluginsHooks`
+сведён к пустому `Record<never, never>` (импорты плагинов убраны); фабрики несут
+hook-слайс через `RegistryEntry<THooksSlice>`; `useCreateTable` выводит тип хуков
+из кортежа `plugins` (`InferPluginHooks`) и инстанцирует таблицу выведенными
+хуками; агрегат `BuiltinPluginsHooks` вынесен во вход `/plugins` для вызовов с
+явными дженериками (см. решение по `createHooks` выше). R1 доведён до `error` и
+для `createHooks`. `tsc`/`eslint`/`build` зелёные; presence-вывод и полнота
+`BuiltinPluginsHooks` проверены мини-пробой из собранного `dist`.
+
+Осталось отдельными задачами: build-size CI-проверка (R3), миграция доков на API
+ADR 0010 (`README.md` и `docs/architecture/table-assembly.md` пока документируют
+старый `enable*` + сырой `plugins:[feature]`).

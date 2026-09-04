@@ -16,7 +16,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0007](0007-reactivity-pubsub.md)                    | Гранулярная реактивность на v8: Pub-Sub                                  | Принято         |
 | [0008](0008-fast-scroll.md)                          | Fast-scroll: скелетоны ячеек при быстрой прокрутке                       | Принято         |
 | [0009](0009-test-coverage-visual-and-performance.md) | Покрытие тестами: визуальные + перформанс                                | Принято         |
-| [0010](0010-invert-core-plugins-registry.md)         | Инверсия core ↔ plugins: composable-плагины (presence-based)             | Рассматривается |
+| [0010](0010-invert-core-plugins-registry.md)         | Инверсия core ↔ plugins: composable-плагины (presence-based)             | Принято         |
 | [0011](0011-column-pinning.md)                       | Закрепление столбцов: плагин columnPinning (CP1–CP15)                    | Принято         |
 | [0012](0012-column-sorting.md)                       | Сортировка столбцов: плагин columnSorting (CS1–CS13)                     | Принято         |
 | [0013](0013-column-sizing.md)                        | Изменение ширины столбцов: плагин columnSizing (CR1–CR15)                | Принято         |
