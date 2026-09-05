@@ -7,7 +7,7 @@ import { useCalculateColumnSizes } from '../../core/createColumns'
 import { FastScrollProvider, useFastScroll } from '../../core/fastScroll'
 import { useSkeletonOverlayState } from '../../core/skeletonOverlay/state'
 import { SubscriptionStoreProvider } from '../../core/subscribeStore'
-import { useThemeVariables } from '../../core/themeVariables'
+import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
 import {
   useColumnVirtualizer,
   useColumnVirtualizerScroll,
@@ -41,6 +41,8 @@ export const DataGrid = ({
   colorMode = 'light',
   icons,
   localization,
+  className,
+  style,
 }: DataGridProps) => {
   const headerGroups = table.getHeaderGroups()
   const leafColumns: Column<any, unknown>[] = table.getVisibleLeafColumns()
@@ -88,10 +90,6 @@ export const DataGrid = ({
     columnsTotalSize: bodyWidth,
   })
 
-  const cssVariables = useThemeVariables({
-    colorMode,
-  })
-
   // rowDragging — uncontrolled слайс плагина rowDragging (ADR 0010): при
   // отсутствии плагина его нет в state, поэтому читаем через ?. с дефолтами.
   const draggableCssVariables = useMemo(
@@ -127,15 +125,27 @@ export const DataGrid = ({
   useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
 
   const containerStyles = getTableHeight({ height, maxHeight })
+  // Дефолты токенов темы (`--data-grid-*`) объявлены в theme.css на классе
+  // `.data-grid-theme` (нулевая специфичность), поэтому здесь инлайн — только
+  // РАНТАЙМ-переменные (высоты шапки/тела, drag-офсеты) и переданный потребителем
+  // `style`. Инлайн-стиль потребителя бьёт дефолты слоя — так `--data-grid-*`
+  // переопределяются пер-инстансно, а глобально — обычным CSS-правилом на
+  // `.data-grid-theme`.
   const wrapperStyles = {
-    ...cssVariables,
     ...({
       '--data-grid-head-height': `${headerGroupsDepth * 50 + headerGroupsDepth}px`,
       '--data-grid-body-height': `${bodyHeight}px`,
     } as CSSProperties),
     ...draggableCssVariables,
     ...containerStyles,
+    ...style,
   }
+
+  // Класс `dark` активирует токены темы из global.css (.dark {…}), из которых
+  // выводятся все --data-grid-*; `data-grid-theme` несёт дефолты токенов.
+  const themeClassName = clsx(DATA_GRID_THEME_CLASS, className, {
+    dark: colorMode === 'dark',
+  })
 
   if (showStub) {
     return (
@@ -144,9 +154,10 @@ export const DataGrid = ({
           'MuiPaper-root',
           'MuiTableContainer-root',
           'MuiPaper-rounded',
+          themeClassName,
         )}
         ref={scrollableNodeRef}
-        style={containerStyles}
+        style={{ ...containerStyles, ...style }}
       >
         <div className={dataGridStyles.table__stub}>{stub}</div>
       </div>
@@ -160,11 +171,10 @@ export const DataGrid = ({
           <FastScrollProvider store={fastScrollStore}>
             <div
               ref={wrapperRef}
-              className={clsx(dataGridStyles['table__theme-wrapper'], {
-                // Класс `dark` активирует токены темы из global.css (.dark {…}),
-                // из которых выводятся все --data-grid-* переменные.
-                dark: colorMode === 'dark',
-              })}
+              className={clsx(
+                dataGridStyles['table__theme-wrapper'],
+                themeClassName,
+              )}
               style={wrapperStyles}
             >
               {showLinearProgress && <LinearProgress />}

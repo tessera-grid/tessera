@@ -11,7 +11,7 @@
   user-select: none;
   overflow: hidden;
   border-radius: 8px;
-  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 2px;
+  box-shadow: var(--data-grid-shadow-drag);
   opacity: var(--data-grid-draggable-opacity) !important;
   background-color: var(--data-grid-draggable-cell-bg);
 }
@@ -29,5 +29,5 @@
   padding: 2px 8px;
   border-radius: 32px;
   font-size: 0.875rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: var(--data-grid-shadow-drop-bubble);
 }

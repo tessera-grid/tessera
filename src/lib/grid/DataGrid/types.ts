@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { CSSProperties, ReactNode } from 'react'
 
 import { Table } from '@tanstack/react-table'
 
@@ -42,4 +42,16 @@ export interface DataGridProps {
    * Компонент, отображающийся при отсутствии данных в таблице
    */
   stub?: ReactNode
+  /**
+   * Дополнительный CSS-класс на обёртке грида (несущей `.data-grid-theme`).
+   * Удобно для скоупинга переопределений темы под конкретный инстанс.
+   */
+  className?: string
+  /**
+   * Инлайн-стиль обёртки грида. Основное назначение — пер-инстансное
+   * переопределение токенов темы: `style={{ '--data-grid-loader-bar': '#f00' }}`
+   * (инлайн бьёт дефолты слоя `.data-grid-theme`). Также принимает обычные
+   * CSS-свойства.
+   */
+  style?: CSSProperties
 }

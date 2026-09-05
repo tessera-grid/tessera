@@ -11,7 +11,7 @@
   color: var(--data-grid-action-button-color);
   background-color: var(--data-grid-action-button-bg);
   border-radius: 50%;
-  box-shadow: rgb(0 0 0 / 20%) 0px 0px 4px 2px;
+  box-shadow: var(--data-grid-shadow-action);
 }
 
 .rowButton:hover {

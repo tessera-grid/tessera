@@ -1,0 +1,202 @@
+/*
+ * Дефолтные значения токенов темы грида (`--data-grid-*`).
+ *
+ * Объявлены на классе `.data-grid-theme` через `:where()` — НУЛЕВАЯ
+ * специфичность, поэтому потребитель переопределяет любой токен обычным
+ * правилом (`.data-grid-theme { --data-grid-loader-bar: … }` или на своём
+ * контейнере), не прибегая к `!important`. Рантайм-значения (высоты шапки/тела,
+ * ширина скроллбара, drag-офсеты) сюда НЕ входят — их DataGrid вешает инлайн.
+ *
+ * Тема грида — тонкая производная от токенов shadcn (см. src/styles/global.css и
+ * docs/design.md): значения ссылаются на `--primary`, `--foreground`, `--muted`,
+ * `--border`, `--destructive`, `--ring`, `--info` и т.д. через `var()`/
+ * `color-mix()`. Фолбэк в `var(--token, fallback)` — дефолт в духе «Vercel»
+ * (моно-чернила #171717 на #fafafa), так что грид не ломается, даже если
+ * global.css не подключён. Тёмный режим приходит из класса `.dark` на обёртке
+ * грида, который переопределяет базовые shadcn-токены — поэтому набор ниже
+ * одинаков для light/dark.
+ */
+:where(.data-grid-theme) {
+  --data-grid-z-index-pinned: 2;
+  --data-grid-z-index-head: 3;
+  --data-grid-z-index-loader: 4;
+
+  --data-grid-opacity: 0.99;
+  --data-grid-draggable-opacity: 0.95;
+
+  --data-grid-scrollbar-width: 6px;
+  --data-grid-scrollbar-thumb: color-mix(
+    in oklch,
+    var(--foreground, #171717) 25%,
+    transparent
+  );
+  --data-grid-scrollbar-thumb-hover: color-mix(
+    in oklch,
+    var(--foreground, #171717) 40%,
+    transparent
+  );
+  --data-grid-resize-handler-width: 24px;
+
+  --data-grid-head-cell-transition: background-color 150ms
+      cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+    transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  --data-grid-row-transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1)
+    0ms;
+  --data-grid-button-cell-transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1)
+      0ms,
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+    opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+    transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+    height 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  --data-grid-resize-handler-transition: height 150ms
+    cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  --data-grid-action-button-transition: background-color 300ms
+    cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+
+  --data-grid-loader-height: 2px;
+  --data-grid-row-height: 50px;
+
+  --data-grid-head-bg: var(--muted, #f5f5f5);
+  /* Непрозрачный hover — этим же фоном красится ресайз-хэндл, обязанный
+   * маскировать контент ячейки; muted, слегка затемнённый чернилами. */
+  --data-grid-head-cell-hovered-bg: color-mix(
+    in oklch,
+    var(--muted, #f5f5f5),
+    var(--foreground, #171717) 8%
+  );
+  --data-grid-draggable-cell-bg: var(--background, #fafafa);
+
+  --data-grid-row-bg: var(--card, #ffffff);
+  --data-grid-row-odd-bg: var(--background, #fafafa);
+  --data-grid-row-hovered-bg: color-mix(
+    in oklch,
+    var(--foreground, #171717) 4%,
+    transparent
+  );
+  --data-grid-row-selected-bg: color-mix(
+    in oklch,
+    var(--foreground, #171717) 6%,
+    transparent
+  );
+  --data-grid-row-selected-hovered-bg: color-mix(
+    in oklch,
+    var(--foreground, #171717) 10%,
+    transparent
+  );
+
+  --data-grid-cell-outline-color: var(--primary, #171717);
+  --data-grid-cell-pinned-bg: var(--muted, #f5f5f5);
+  --data-grid-cell-pinned-hovered-bg: color-mix(
+    in oklch,
+    var(--muted, #f5f5f5),
+    var(--foreground, #171717) 6%
+  );
+  --data-grid-cell-pinned-selected-hovered-bg: color-mix(
+    in oklch,
+    var(--muted, #f5f5f5),
+    var(--foreground, #171717) 6%
+  );
+  --data-grid-body-cell-outline-color: var(--primary, #171717);
+  --data-grid-cell-content-padding: 0px 16px;
+  --data-grid-cell-content-gap: 4px;
+  --data-grid-cell-font-size: 0.8125rem;
+  /* Typography — theme-agnostic default (system stack); override to use a
+   * custom face. Numeric feature aligns digits in columns. */
+  --data-grid-font-family: system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Arial, sans-serif;
+  --data-grid-numeric-font-feature: tabular-nums;
+  --data-grid-cell-odd-pinned-left-bg: var(--muted, #f5f5f5);
+  --data-grid-cell-pinned-left-bg: var(--background, #fafafa);
+  --data-grid-cell-pinned-border-color: var(--border, #ebebeb);
+
+  --data-grid-row-accept-draggable-bg: var(--primary, #171717);
+  --data-grid-row-not-accept-draggable-bg: var(--destructive, #ee0000);
+
+  /* Иконки контролов должны выделяться: заметный тон (ink ~78%), а не бледный
+   * muted-foreground. Активное состояние — полный ink. */
+  --data-grid-control-color: color-mix(
+    in oklch,
+    var(--foreground, #171717) 78%,
+    var(--background, #fafafa)
+  );
+  --data-grid-control-active-color: var(--foreground, #171717);
+  --data-grid-control-active-hover-bg: color-mix(
+    in oklch,
+    var(--foreground, #171717) 8%,
+    transparent
+  );
+  --data-grid-control-hover-bg: color-mix(
+    in oklch,
+    var(--foreground, #171717) 5%,
+    transparent
+  );
+  --data-grid-control-disabled-color: color-mix(
+    in oklch,
+    var(--foreground, #171717) 32%,
+    transparent
+  );
+
+  /* Общая форма/интеракции контролов — из shadcn-токенов. */
+  --data-grid-control-radius: var(--radius-md, 8px);
+  --data-grid-control-border: var(--border, #ebebeb);
+  --data-grid-focus-ring: color-mix(
+    in oklch,
+    var(--ring, #171717) 40%,
+    transparent
+  );
+  --data-grid-focus-ring-width: 2px;
+
+  /* Checkbox — монохром: заливка primary + галочка primary-foreground. */
+  --data-grid-checkbox-size: 16px;
+  --data-grid-checkbox-radius: 4px;
+  --data-grid-checkbox-checked-bg: var(--primary, #171717);
+  --data-grid-checkbox-check-color: var(--primary-foreground, #ffffff);
+
+  /* Switch — монохром: primary-трек во включённом, thumb цвета карточки. */
+  --data-grid-switch-track-off: color-mix(
+    in oklch,
+    var(--foreground, #171717) 25%,
+    transparent
+  );
+  --data-grid-switch-track-on: var(--primary, #171717);
+  --data-grid-switch-thumb: var(--card, #ffffff);
+
+  --data-grid-action-button-color: color-mix(
+    in oklch,
+    var(--foreground, #171717) 78%,
+    var(--background, #fafafa)
+  );
+  --data-grid-action-button-bg: var(--card, #ffffff);
+  --data-grid-action-button-hover-bg: var(--muted, #f5f5f5);
+
+  --data-grid-accent: var(--primary, #171717);
+  --data-grid-skeleton-bg: color-mix(
+    in oklch,
+    var(--foreground, #171717) 10%,
+    transparent
+  );
+  --data-grid-skeleton-wave: color-mix(
+    in oklch,
+    var(--foreground, #171717) 5%,
+    transparent
+  );
+  --data-grid-loader-track: color-mix(
+    in oklch,
+    var(--foreground, #171717) 10%,
+    transparent
+  );
+  /* Загрузка — это статус, а не бренд-акцент (как ошибка остаётся красной):
+   * линейный прогресс держит синий (--info), чтобы активность читалась сразу. */
+  --data-grid-loader-bar: var(--info, #0070f3);
+
+  /* Тени (elevation). Цвет основных теней управляется единым
+   * `--data-grid-shadow-color`; полные значения по поверхностям переопределяемы
+   * целиком. `-drop-bubble`/`-action` держат собственную плотность (0.08/0.2). */
+  --data-grid-shadow-color: rgba(0, 0, 0, 0.1);
+  --data-grid-shadow-head: 0 4px 8px var(--data-grid-shadow-color);
+  --data-grid-shadow-footer: 0 -4px 8px var(--data-grid-shadow-color);
+  --data-grid-shadow-drag: var(--data-grid-shadow-color) 0 2px 4px 2px;
+  --data-grid-shadow-drop-bubble: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+  --data-grid-shadow-action: rgb(0 0 0 / 20%) 0px 0px 4px 2px;
+}

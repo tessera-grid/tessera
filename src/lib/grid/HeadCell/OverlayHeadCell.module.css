@@ -7,7 +7,7 @@
   overflow: hidden;
 
   border-radius: 8px;
-  box-shadow: rgba(0, 0, 0, 0.1) 0 2px 4px 2px;
+  box-shadow: var(--data-grid-shadow-drag);
   opacity: var(--data-grid-draggable-opacity) !important;
   background-color: var(--data-grid-draggable-cell-bg);
 

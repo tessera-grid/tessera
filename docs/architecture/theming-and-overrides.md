@@ -10,21 +10,34 @@
 
 Интерактивные контролы — это примитивы Base UI (фундамент shadcn),
 стилизованные Tailwind + cva; layout грида и темизация используют CSS Modules,
-читающие CSS custom properties (`--data-grid-*`).
+читающие CSS custom properties (`--data-grid-*`). См.
+[ADR 0018](../decisions/0018-external-theming.md).
 
-- `useThemeVariables({ colorMode })` (`core/themeVariables`) производит полный
-  набор токенов (фоны, тона закрепления, переходы, цвета контролов, скелетон,
-  лоадер, акцент) для `'light' | 'dark'`. Значения — это внутренние дефолты;
-  потребители переопределяют, задавая те же `--data-grid-*`-переменные на обёртке.
-- Theme-обёртка также инъектирует layout-переменные
-  (`--data-grid-head-height`, `--data-grid-body-height`).
+- **Дефолты токенов** объявлены в
+  [`theme.css`](../../src/lib/core/themeVariables/theme.css) на классе
+  `.data-grid-theme` через `:where()` (нулевая специфичность). Обёртка грида
+  несёт стабильный класс `DATA_GRID_THEME_CLASS = 'data-grid-theme'`. Значения —
+  тонкая производная от апстрим-токенов shadcn (`--primary`/`--foreground`/
+  `--info`…) через `var()`/`color-mix()`, с «Vercel»-фолбэками, поэтому грид не
+  ломается без global.css. Тёмный режим — класс `.dark` на обёртке
+  переопределяет апстрим-токены.
+- **Два рычага переопределения** (оба без `!important`):
+  - глобально/по селектору — обычным CSS: `.data-grid-theme { --data-grid-*: … }`
+    бьёт слой `:where(...)`;
+  - пер-инстансно — пропы `style`/`className` на `<DataGrid/>` кладутся на
+    обёртку (`style={{ '--data-grid-loader-bar': '#f00' }}`), инлайн бьёт дефолт
+    слоя.
+- Правка апстрим-палитры согласованно меняет ВСЕ производные `--data-grid-*`.
+- Инлайн на обёртке остаются только РАНТАЙМ-переменные
+  (`--data-grid-head-height`, `--data-grid-body-height`, drag-офсеты).
 
 ```mermaid
 flowchart LR
-    CM["проп colorMode"] --> UTV["useThemeVariables"]
-    UTV --> VARS["--data-grid-* на theme-обёртке"]
+    TC["theme.css :where(.data-grid-theme)"] --> VARS["--data-grid-* на обёртке"]
+    PAL["апстрим shadcn-токены (var/color-mix)"] --> VARS
     VARS --> CSSM["CSS Modules (компоненты)"]
-    OVER["потребитель переопределяет те же переменные"] -.-> VARS
+    OVERCSS["CSS-правило потребителя на .data-grid-theme"] -.-> VARS
+    OVERINLINE["проп style/className на DataGrid"] -.-> VARS
 ```
 
 ## Иконки

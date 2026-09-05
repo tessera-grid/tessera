@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* Дефолты токенов темы (`:where(.data-grid-theme)`). Подключаем через CSS
+ * @import из этого шиппящегося модуля, а не bare-`import` в JS: последний
+ * вырезается tree-shaking'ом при сборке библиотеки, и дефолты не попадали бы в
+ * dist/style.css. @import инлайнится в CSS-графе и гарантированно шиппится. */
+@import "../../core/themeVariables/theme.css";
 
 .table__theme-wrapper {
   height: 100%;
