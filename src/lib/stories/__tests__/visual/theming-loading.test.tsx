@@ -114,11 +114,14 @@ describe('Theming matrix — loading / tooltip / icons (ADR 0019, этап 4)', 
     )
     await userEvent.hover(getByRole('button').element())
 
-    // Popup уходит в портал (вне контейнера) и несёт класс `data-grid-theme`
-    // (фикс токенизации) + текст подсказки — по ним и находим его.
+    // И positioner, и popup несут `data-grid-theme` (positioner — чтобы резолвился
+    // его `z-index`-токен). Фон — на popup; positioner прозрачен и помечен
+    // `role="presentation"`, поэтому целимся мимо него.
     const findPopup = () =>
-      [...document.querySelectorAll<HTMLElement>('.data-grid-theme')].find(el =>
-        (el.textContent ?? '').includes('hi'),
+      [...document.querySelectorAll<HTMLElement>('.data-grid-theme')].find(
+        el =>
+          el.getAttribute('role') !== 'presentation' &&
+          (el.textContent ?? '').includes('hi'),
       ) ?? null
     await expect.poll(findPopup, { timeout: 5000 }).not.toBeNull()
     const popup = findPopup()!
