@@ -6,7 +6,7 @@ import { describe, expect, test, vi } from 'vitest'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Resizing requirement is its own named test, prefixed with its spec
-// ID (CR1–CR15 from the requirements table in docs/decisions/0013-column-sizing.md).
+// ID (CR1–CR16 from the requirements table in docs/decisions/0013-column-sizing.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -415,5 +415,50 @@ describe('Column Resizing — requirements', () => {
     )
     expect(leafHead).toBeDefined()
     expect(leafHead!.querySelector(RESIZE_GRIP)).not.toBeNull()
+  })
+
+  test('CR16: while resizing the grid is non-interactive except the active grip', async () => {
+    const container = await renderColumnResizing()
+    const cells = renderedDataCells(container)
+    const target = cells[0]
+    const siblingColIndex = colIndexOf(cells[1])
+
+    // The scroll container carries the `data-resizing` seam CSS gates the
+    // interactive-isolation on (`columnSizingInfo.isResizingColumn !== false`).
+    const scroll = () => container.querySelector<HTMLElement>('[data-resizing]')!
+    expect(scroll().getAttribute('data-resizing')).toBe('false')
+
+    // Press the grip and pass a move so the drag is in flight.
+    const grip = await revealGrip(target)
+    const { x0, y } = await beginResize(grip)
+    fireMouse('mousemove', document, x0 + 120, y)
+
+    // Mid-drag the container advertises the resize…
+    await expect.poll(() => scroll().getAttribute('data-resizing')).toBe('true')
+    // …neighbouring header and body cells are inert to the pointer, so the
+    // cursor drifting onto them raises no hover / click / sort…
+    expect(getComputedStyle(renderedDataCells(container)[1]).pointerEvents).toBe(
+      'none',
+    )
+    expect(
+      getComputedStyle(bodyCellAt(container, siblingColIndex)).pointerEvents,
+    ).toBe('none')
+    // …while the active grip stays live (so it holds `col-resize`); its
+    // `data-button-active` is reactive, so poll it back to 'auto'.
+    await expect
+      .poll(
+        () =>
+          getComputedStyle(gripOf(renderedDataCells(container)[0]))
+            .pointerEvents,
+      )
+      .toBe('auto')
+
+    fireMouse('mouseup', document, x0 + 120, y)
+
+    // Release lifts the isolation: container is unmarked and cells interact again.
+    await expect.poll(() => scroll().getAttribute('data-resizing')).toBe('false')
+    expect(
+      getComputedStyle(renderedDataCells(container)[1]).pointerEvents,
+    ).not.toBe('none')
   })
 })

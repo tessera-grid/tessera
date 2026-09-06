@@ -197,6 +197,7 @@ export const DataGrid = ({
                   },
                 )}
                 ref={scrollableNodeRef}
+                data-resizing={isResizingColumns !== false}
               >
                 {showSkeletonOverlay ? (
                   <SkeletonOverlay table={table} columnSizes={columnSizes} />

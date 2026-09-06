@@ -55,3 +55,30 @@
 .table__container--skeleton {
   overflow: hidden;
 }
+
+/*
+ * Изоляция интерактива на время ресайза столбца. Пока тянут грип
+ * (`data-resizing='true'` от `columnSizingInfo.isResizingColumn`), содержимое
+ * грида неинтерактивно: наведение, клики и сортировка не срабатывают, если
+ * курсор заезжает на соседние ячейки. Единый `col-resize` держится по всей
+ * области, а `user-select: none` глушит случайное выделение текста при драге.
+ */
+.table__container[data-resizing='true'] {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.table__container[data-resizing='true'] :global(.data-grid__head-cell),
+.table__container[data-resizing='true'] :global(.data-grid__body-cell),
+.table__container[data-resizing='true'] :global(.data-grid__body-row) {
+  pointer-events: none;
+}
+
+/*
+ * Активный сплиттер остаётся живым: сам ресайз ведут document-listener'ы, но так
+ * курсор над грипом сохраняет col-resize, а не гасится вместе с ячейкой-хостом.
+ */
+.table__container[data-resizing='true']
+  :global(.resize__handler--column[data-button-active='true']) {
+  pointer-events: auto;
+}
