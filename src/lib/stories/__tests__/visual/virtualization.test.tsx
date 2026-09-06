@@ -135,7 +135,7 @@ describe('Виртуализация — окно строк и столбцов
 
   test('V6: высота body соответствует полному числу строк (скроллбар отражает весь набор)', async () => {
     const dataCount = 300
-    const rowHeight = 50 // ESTIMATE_SIZE / --data-grid-row-height
+    const rowHeight = 50 // ESTIMATE_SIZE / --tsr-comp-row-height
     renderGrid({ dataCount })
     await waitForGrid()
 

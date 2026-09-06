@@ -39,7 +39,7 @@ describe('Ядро на TanStack — размеры и отступы', () => {
     expect(new Set(heights).size).toBe(1)
   })
 
-  test('R7: высота строки тела фиксирована (--data-grid-row-height, 50px)', async () => {
+  test('R7: высота строки тела фиксирована (--tsr-comp-row-height, 50px)', async () => {
     renderGrid({ columnCount: 4, dataCount: 6 })
     await waitForGrid()
 

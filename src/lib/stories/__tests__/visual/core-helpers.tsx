@@ -64,7 +64,7 @@ export const headCellsLeftRight = () =>
 
 /**
  * Разрешить цвет CSS-переменной грида в конкретный rgb: пробник наследует
- * `--data-grid-*` от обёртки темы, поэтому `var(--token)` вычисляется так же, как
+ * `--tsr-comp-*` от обёртки темы, поэтому `var(--token)` вычисляется так же, как
  * на реальной ячейке. Позволяет сравнивать фактический цвет с обещанным токеном
  * без хрупких хардкод-rgb.
  */
@@ -78,8 +78,8 @@ export const resolveVarColor = (expr: string): string => {
   return rgb
 }
 
-export const HEAD_HEIGHT_VAR = '--data-grid-head-height'
-export const ROW_HEIGHT_VAR = '--data-grid-row-height'
+export const HEAD_HEIGHT_VAR = '--tsr-comp-head-height'
+export const ROW_HEIGHT_VAR = '--tsr-comp-row-height'
 
 /** Значение CSS-переменной, вычисленное на реальном узле грида. */
 export const cssVar = (name: string) =>
