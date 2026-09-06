@@ -298,6 +298,37 @@ describe('Column Pinning — requirements', () => {
     expect(container.querySelector(PIN_BUTTON)).toBeNull()
   })
 
+  test('CP16: enabling the plugin after mount keeps multi-level headers unpinnable (matches a fresh mount)', async () => {
+    // Regression: the plugin's `feature.createColumn` wraps `getCanPin` to forbid
+    // pinning under nested headers (CP13). TanStack freezes `_features` at
+    // `createTable` (useReactTable never rebuilds the table), so a feature absent
+    // at mount never appears on a live toggle — the option flips and the reactive
+    // toggle slot reveals, but the wrapper stays missing, so `getCanPin` fell back
+    // to the base (always pinnable) and pin buttons wrongly showed on grouped
+    // headers, pinning a column out of its group and breaking the layout. The
+    // registry now keeps the pinning feature in `_features` even while disabled
+    // (inert until `enableColumnPinning`), so a live toggle matches a fresh mount.
+    const { container, rerender } = await render(
+      <composed.ColumnPinning showHeaderGroups enableColumnPinning={false} />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(1)
+    // Disabled: no toggles yet.
+    expect(container.querySelector(PIN_BUTTON)).toBeNull()
+
+    // Toggle the plugin on without a remount — under nested headers `getCanPin()`
+    // must stay false, so no toggle appears (as CP13 guarantees on a fresh mount).
+    await rerender(
+      <composed.ColumnPinning showHeaderGroups enableColumnPinning />,
+    )
+    // Give the reactive slot a chance to render a (wrongly-revealed) button.
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(1)
+    expect(container.querySelector(PIN_BUTTON)).toBeNull()
+  })
+
   test('CP14: the row-actions column is auto-pinned right without any click', async () => {
     const container = await renderColumnPinning({
       enableRowSelection: true,
