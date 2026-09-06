@@ -188,6 +188,7 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
 | --- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | R9  | Эквивалентный набор плагинов даёт поведение, идентичное текущему (существующие визуальные тесты зелёные) | ✔ существующие спеки плагинов                                                            |
 | R10 | Логика state сохранена: merge пиннинга, сев видимости сервисных колонок, приоритет external-vs-core      | ✔ оракул `columnPinningState.test.ts`, `useCreateState.test.tsx`, `stateSlices.test.tsx` |
+| R11 | Включение/выключение любого плагина в рантайме (без перезагрузки) меняет грид как свежий маунт: аффорданс появляется/исчезает, без пустых артефактов и падений | ✔ `plugin-runtime-toggle.test.tsx` (RT-\*), плюс `column-dragging` D31, `column-pinning` CP16 |
 
 ## Последствия
 
@@ -226,6 +227,21 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
   плагина. `setRenderSlot` оставлен как императивный escape для пользовательских
   плагинов (нереактивен по своей природе). Покрыто `CS15` в
   [column-sorting.test.tsx](../../src/lib/stories/__tests__/visual/column-sorting.test.tsx).
+- **− `_features` фиксируются на маунте — фичам с методами нужен
+  `keepFeatureWhenDisabled`.** TanStack вычисляет `_features` ОДИН раз при
+  `createTable` и не перечитывает их при смене `_features`, поэтому фича,
+  навешивающая на инстанс методы (`getCanDrag`/`getDraggableIndex`, `getCanPin`,
+  `getCanExpand`, `getCanSomeRowsSelect`) или `renderComponent` сервисной
+  ячейки/шапки (чекбокс выбора, кнопка раскрытия), не попав в набор на маунте с
+  выключенным плагином, не появляется при live-включении: реактивный UI зовёт
+  несуществующий метод, а сервисная колонка рендерится пустой. Такие записи
+  помечаются `keepFeatureWhenDisabled` — фича держится в `_features` всегда, а
+  колонка/слоты/опции по-прежнему следуют за `enabled` (методы читают свою опцию в
+  момент вызова и инертны, пока плагин выключен). Флаг несут `columnDragging`,
+  `rowDragging`, `columnPinning`, `rowSelection`, `rowExpanding`; плагины с пустой
+  фичей (`columnSorting`/`columnSizing`/`rowGrouping`) и `rowActions` (колонка
+  рендерит себя сама через слот) в нём не нуждаются. Паритет по всем плагинам в обе
+  стороны — `plugin-runtime-toggle.test.tsx` (R11).
 
 ## Решения по открытым вопросам
 

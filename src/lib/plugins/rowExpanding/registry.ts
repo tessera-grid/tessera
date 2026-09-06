@@ -19,6 +19,12 @@ export const rowExpanding = (
 ): RegistryEntry<RowExpandingPlugin> => ({
   id: 'rowExpanding',
   enabled: opts.enabled,
+  // Фича вешает renderComponent на ячейку сервисной колонки (кнопка раскрытия) и
+  // оборачивает row.getCanExpand. Сервисная колонка сама рендерера не несёт,
+  // поэтому держим фичу в _features всегда: иначе при live-включении колонка
+  // раскрытия появляется пустой (createCell не отработал на маунте). Пока опция
+  // выключена, сервисной колонки нет и обёртка getCanExpand инертна.
+  keepFeatureWhenDisabled: true,
   feature: rowExpandingPlugin,
   column: {
     id: COLUMN_EXPANDING_ID,

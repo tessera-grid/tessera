@@ -16,6 +16,12 @@ export const rowSelection = (
 ): RegistryEntry<RowSelectionPlugin> => ({
   id: 'rowSelection',
   enabled: opts.enabled,
+  // Фича вешает renderComponent на шапку и ячейки сервисной колонки (чекбоксы) и
+  // добавляет table.getCanSomeRowsSelect. Сервисная колонка сама рендерера не
+  // несёт, поэтому держим фичу в _features всегда: иначе при live-включении
+  // колонка выбора появляется пустой (createHeader/createCell не отработали на
+  // маунте). Пока опция выключена, сервисной колонки нет и хуки инертны.
+  keepFeatureWhenDisabled: true,
   feature: rowSelectionPlugin,
   column: {
     id: COLUMN_SELECTION_ID,
