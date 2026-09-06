@@ -1,18 +1,16 @@
 .content {
-  background-color: rgba(38, 38, 42, 0.96);
-  color: #fff;
+  background-color: var(--tsr-comp-tooltip-bg);
+  color: var(--tsr-comp-tooltip-fg);
   padding: 5px 9px;
-  border-radius: 6px;
+  border-radius: var(--tsr-comp-tooltip-radius);
   font-size: 0.6875rem;
   line-height: 1.4;
   max-width: 300px;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.18),
-    0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--tsr-comp-tooltip-shadow);
   user-select: none;
   z-index: 1500;
 }
 
 .arrow {
-  fill: rgba(38, 38, 42, 0.96);
+  fill: var(--tsr-comp-tooltip-bg);
 }

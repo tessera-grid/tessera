@@ -9,7 +9,7 @@ export type SwitchProps = ComponentPropsWithoutRef<typeof BaseSwitch.Root>
 
 /**
  * Переключатель на базе Base UI (фундамент shadcn). Стилизован под наш набор
- * CSS-переменных (--data-grid-switch-*).
+ * CSS-переменных (--tsr-comp-switch-*).
  */
 export const Switch = forwardRef<
   ElementRef<typeof BaseSwitch.Root>,

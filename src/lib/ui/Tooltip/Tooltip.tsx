@@ -1,7 +1,9 @@
 import { ReactElement, ReactNode } from 'react'
 
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
+import clsx from 'clsx'
 
+import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
 import styles from './Tooltip.module.css'
 
 export type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
@@ -39,7 +41,9 @@ export const Tooltip = ({
         <BaseTooltip.Trigger render={children} />
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner side={side} sideOffset={6}>
-            <BaseTooltip.Popup className={styles.content}>
+            <BaseTooltip.Popup
+              className={clsx(DATA_GRID_THEME_CLASS, styles.content)}
+            >
               {title}
               <BaseTooltip.Arrow className={styles.arrow} />
             </BaseTooltip.Popup>

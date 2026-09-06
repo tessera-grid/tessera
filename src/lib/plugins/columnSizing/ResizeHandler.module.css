@@ -4,10 +4,10 @@
   justify-content: flex-end;
   height: 100%;
   right: 0;
-  color: var(--data-grid-control-color);
-  background-color: var(--data-grid-head-bg);
+  color: var(--tsr-comp-control-color);
+  background-color: var(--tsr-comp-head-bg);
   z-index: 1;
-  width: var(--data-grid-resize-handler-width);
+  width: var(--tsr-comp-resize-handler-width);
 }
 
 .wrapper:hover .handler:not([aria-disabled='true']) {
@@ -34,10 +34,10 @@
 .handler {
   border-style: solid;
   align-self: center;
-  border-radius: 2px;
+  border-radius: var(--tsr-comp-resize-handler-radius, 2px);
   border-width: 2px;
   height: 16px;
   touch-action: none;
   user-select: none;
-  transition: var(--data-grid-resize-handler-transition);
+  transition: var(--tsr-comp-resize-handler-transition);
 }

@@ -5,38 +5,40 @@
   box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
-  width: var(--data-grid-checkbox-size);
-  height: var(--data-grid-checkbox-size);
+  width: var(--tsr-comp-checkbox-size);
+  height: var(--tsr-comp-checkbox-size);
   padding: 0;
   margin: 0;
-  border: 1px solid var(--data-grid-control-border);
-  border-radius: var(--data-grid-checkbox-radius);
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-checkbox-radius);
   background-color: transparent;
-  color: var(--data-grid-checkbox-check-color);
+  color: var(--tsr-comp-checkbox-check-color);
   cursor: pointer;
   outline: 0;
   -webkit-tap-highlight-color: transparent;
-  transition: var(--data-grid-button-cell-transition);
+  transition: var(--tsr-comp-button-cell-transition);
 }
 
 .checkbox:hover:not(:disabled) {
-  border-color: var(--data-grid-control-active-color);
+  border-color: var(--tsr-comp-control-active-color);
 }
 
 /* base-ui выставляет data-checked / data-indeterminate (не radix data-state) */
 .checkbox[data-checked],
 .checkbox[data-indeterminate] {
-  background-color: var(--data-grid-checkbox-checked-bg);
-  border-color: var(--data-grid-checkbox-checked-bg);
+  background-color: var(--tsr-comp-checkbox-checked-bg);
+  border-color: var(--tsr-comp-checkbox-checked-bg);
 }
 
 .checkbox:focus-visible {
-  box-shadow: 0 0 0 var(--data-grid-focus-ring-width)
-    var(--data-grid-focus-ring);
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width)
+    var(--tsr-comp-focus-ring);
 }
 
-.checkbox:disabled {
-  opacity: 0.5;
+/* base-ui выставляет [data-disabled] (не всегда нативный :disabled). */
+.checkbox:disabled,
+.checkbox[data-disabled] {
+  opacity: var(--tsr-comp-disabled-opacity, 0.5);
   cursor: default;
 }
 
@@ -44,7 +46,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--data-grid-checkbox-check-color);
+  color: var(--tsr-comp-checkbox-check-color);
 }
 
 .indicator .icon {
