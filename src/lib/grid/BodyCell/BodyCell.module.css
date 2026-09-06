@@ -10,21 +10,21 @@
    * ширина колонки не меняется.
    */
   box-sizing: border-box;
-  transition: var(--data-grid-row-transition);
+  transition: var(--tsr-comp-row-transition);
 
   /* Бордеры для ячеек */
 
   &:is([data-layout='grid']) {
     &:is([data-first-cell-in-row='true']) {
-      border-left: 1px solid var(--data-grid-row-hovered-bg);
+      border-left: 1px solid var(--tsr-comp-row-hovered-bg);
     }
 
     /*&:not([data-last-cell-in-row='true']) {*/
-    border-right: 1px solid var(--data-grid-row-hovered-bg);
+    border-right: 1px solid var(--tsr-comp-row-hovered-bg);
     /*}*/
 
     &:not([data-cell-of-first-row='true']) {
-      border-top: 1px solid var(--data-grid-row-hovered-bg);
+      border-top: 1px solid var(--tsr-comp-row-hovered-bg);
     }
   }
 
@@ -33,7 +33,7 @@
   &:hover:not([data-actions-column-cell='true']):is(
       [data-cell-interact='true']
     ) {
-    outline: 1px solid var(--data-grid-cell-outline-color);
+    outline: 1px solid var(--tsr-comp-cell-outline-color);
     outline-offset: -1px;
   }
 
@@ -41,30 +41,30 @@
 
   &:is([data-cell-pinned='left']) {
     will-change: transform;
-    z-index: var(--data-grid-z-index-pinned);
-    opacity: var(--data-grid-opacity);
-    background-color: var(--data-grid-cell-pinned-left-bg);
+    z-index: var(--tsr-comp-z-index-pinned);
+    opacity: var(--tsr-comp-opacity);
+    background-color: var(--tsr-comp-cell-pinned-left-bg);
     position: sticky;
   }
 
   /* Бэкграунд ячейки нечетной строки */
 
   &:is([data-cell-odd-left-pinned='true']) {
-    background-color: var(--data-grid-cell-odd-pinned-left-bg) !important;
+    background-color: var(--tsr-comp-cell-odd-pinned-left-bg) !important;
   }
 
   /* Бордер для ячейки последней закрепленной колонки слева  */
 
   &:is([data-cell-last-left-pinned='true']) {
-    border-right: 1px solid var(--data-grid-cell-pinned-border-color);
+    border-right: 1px solid var(--tsr-comp-cell-pinned-border-color);
   }
 
   /* Sticky-ячейка закрепленной колонки справа */
 
   &:is([data-cell-pinned='right']) {
     will-change: transform;
-    z-index: var(--data-grid-z-index-pinned);
-    opacity: var(--data-grid-opacity);
+    z-index: var(--tsr-comp-z-index-pinned);
+    opacity: var(--tsr-comp-opacity);
     position: sticky;
   }
 

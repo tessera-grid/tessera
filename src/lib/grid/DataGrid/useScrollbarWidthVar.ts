@@ -1,6 +1,6 @@
 import { RefObject, useLayoutEffect } from 'react'
 
-export const SCROLLBAR_WIDTH_VAR = '--data-grid-scrollbar-actual-width'
+export const SCROLLBAR_WIDTH_VAR = '--tsr-comp-scrollbar-actual-width'
 
 /**
  * Измеряет реальную ширину вертикального скроллбара скролл-контейнера и кладёт

@@ -1,6 +1,6 @@
 .skeleton {
   display: block;
-  background-color: var(--data-grid-skeleton-bg);
+  background-color: var(--tsr-comp-skeleton-bg);
   border-radius: 4px;
 }
 
@@ -17,7 +17,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    var(--data-grid-skeleton-wave),
+    var(--tsr-comp-skeleton-wave),
     transparent
   );
   animation: data-grid-skeleton-wave 1.6s linear 0.5s infinite;

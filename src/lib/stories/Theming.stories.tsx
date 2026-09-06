@@ -18,14 +18,18 @@ import {
 import { useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
 
-// История витрины темизации: контролы Storybook меняют цвет каждого токена, а
-// значение прокидывается в грид через инлайн-`style` обёртки (бьёт дефолты слоя
-// `.data-grid-theme` из theme.css — см. ADR 0018). Два раздела:
-//   • «Палитра (shadcn)» — апстрим-токены (`--primary`/`--foreground`/`--info`…),
-//     из которых через var()/color-mix() выводятся ВСЕ токены грида: правишь один
-//     — согласованно меняется вся тема.
-//   • «Токены грида» — прямые `--data-grid-*`: точечный оверрайд конкретного
-//     элемента (напр. только цвет прогресс-бара), не трогая палитру.
+// История витрины темизации: контролы Storybook меняют цвет токена, значение
+// прокидывается в грид инлайн-`style` обёртки (бьёт дефолты слоя из theme.css —
+// ADR 0018). Три поверхности переопределения по уровням токенов (ADR 0019),
+// от общего к частному:
+//   • «shadcn — мост (broad)» — апстрим-токены (`--primary`/`--foreground`/…):
+//     интеграция с дизайн-системой приложения; каскадит во всё.
+//   • «Semantic (--tsr-sys-*)» — роли грида (fg/surface/accent/overlay…): средний
+//     рычаг, меняет всю группу; тема-зависимый уровень (флипается в dark).
+//   • «Component (--tsr-comp-*)» — прямые токены части: точечный оверрайд
+//     конкретного элемента, не трогая уровни выше.
+// Primitive (`--tsr-ref-*`) в витрину не выносим — это не поверхность
+// переопределения (ADR 0019, T-R9).
 
 interface TokenControl {
   /** CSS-переменная, в которую пишется значение. */
@@ -38,48 +42,65 @@ interface TokenControl {
   desc: string
 }
 
-// Апстрим-палитра shadcn — верхний рычаг: правка каскадит во все токены грида.
+// Апстрим-палитра shadcn — верхний рычаг: правка влияет на все токены грида.
 const PALETTE: TokenControl[] = [
-  { token: '--background', arg: 'background', label: 'background', desc: 'Базовый фон холста. Каскадит в фон нечётных строк, закреплённых слева ячеек и drag-клона.' },
+  { token: '--background', arg: 'background', label: 'background', desc: 'Базовый фон холста. Задаёт фон нечётных строк, закреплённых слева ячеек и drag-клона.' },
   { token: '--foreground', arg: 'foreground', label: 'foreground', desc: 'Основные «чернила» (текст/иконки). База для hover/selected-фонов, цвета контролов, скелетона, фокус-ринга.' },
-  { token: '--card', arg: 'card', label: 'card', desc: 'Фон карточки. Каскадит в фон чётных строк, кнопок действий и thumb переключателя.' },
-  { token: '--muted', arg: 'muted', label: 'muted', desc: 'Приглушённый фон. Каскадит в шапку, закреплённые ячейки и hover кнопок действий.' },
-  { token: '--primary', arg: 'primary', label: 'primary', desc: 'Акцент/чернила. Каскадит в аутлайн ячейки, заливку чекбокса, включённый трек switch, accent.' },
-  { token: '--primary-foreground', arg: 'primaryForeground', label: 'primary-foreground', desc: 'Контраст к primary. Каскадит в цвет галочки чекбокса.' },
-  { token: '--border', arg: 'border', label: 'border', desc: 'Цвет hairline-границ. Каскадит в границы контролов и разделитель закреплённых колонок.' },
+  { token: '--card', arg: 'card', label: 'card', desc: 'Фон карточки. Задаёт фон чётных строк, кнопок действий и thumb переключателя.' },
+  { token: '--muted', arg: 'muted', label: 'muted', desc: 'Приглушённый фон. Задаёт шапку, закреплённые ячейки и hover кнопок действий.' },
+  { token: '--primary', arg: 'primary', label: 'primary', desc: 'Акцент/чернила. Задаёт аутлайн ячейки, заливку чекбокса, включённый трек switch, accent.' },
+  { token: '--primary-foreground', arg: 'primaryForeground', label: 'primary-foreground', desc: 'Контраст к primary. Задаёт цвет галочки чекбокса.' },
+  { token: '--border', arg: 'border', label: 'border', desc: 'Цвет hairline-границ. Задаёт границы контролов и разделитель закреплённых колонок.' },
   { token: '--ring', arg: 'ring', label: 'ring', desc: 'База цвета кольца фокуса (клавиатурный фокус контролов).' },
   { token: '--destructive', arg: 'destructive', label: 'destructive', desc: 'Цвет ошибки/опасности. Фон строки при недопустимом drop.' },
   { token: '--info', arg: 'info', label: 'info (loader)', desc: 'Семантический синий (статус). По умолчанию — цвет бегущей полосы прогресс-бара.' },
 ]
 
-// Прямые токены грида — точечный оверрайд конкретного элемента.
+// Semantic-уровень грида (--tsr-sys-*) — средний рычаг: роли, из которых выводятся
+// component-токены. Тема-зависим (флипается в dark). Правка роли меняет всю группу.
+const SEMANTIC: TokenControl[] = [
+  { token: '--tsr-sys-fg', arg: 'sysFg', label: 'sys-fg', desc: 'Роль «чернил». База для текста, hover/selected-оверлеев, контролов, скелетона.' },
+  { token: '--tsr-sys-bg', arg: 'sysBg', label: 'sys-bg', desc: 'Роль базового фона. Фон нечётных строк, drag-клона, закреплённых слева ячеек.' },
+  { token: '--tsr-sys-surface', arg: 'sysSurface', label: 'sys-surface', desc: 'Роль поверхности. Фон чётных строк, кнопок действий, thumb переключателя.' },
+  { token: '--tsr-sys-muted', arg: 'sysMuted', label: 'sys-muted', desc: 'Роль приглушённого фона. Шапка, закреплённые ячейки, hover кнопок действий.' },
+  { token: '--tsr-sys-accent', arg: 'sysAccent', label: 'sys-accent', desc: 'Роль акцента. Аутлайн ячейки, чекбокс, трек switch, accept-drop.' },
+  { token: '--tsr-sys-accent-fg', arg: 'sysAccentFg', label: 'sys-accent-fg', desc: 'Контраст к accent. Цвет галочки чекбокса.' },
+  { token: '--tsr-sys-border', arg: 'sysBorder', label: 'sys-border', desc: 'Роль границы. Границы контролов, разделитель закреплённых колонок.' },
+  { token: '--tsr-sys-ring', arg: 'sysRing', label: 'sys-ring', desc: 'База кольца фокуса контролов.' },
+  { token: '--tsr-sys-danger', arg: 'sysDanger', label: 'sys-danger', desc: 'Роль опасности. Фон строки при недопустимом drop.' },
+  { token: '--tsr-sys-info', arg: 'sysInfo', label: 'sys-info', desc: 'Роль статуса. По умолчанию — цвет полосы прогресс-бара.' },
+  { token: '--tsr-sys-overlay-hover', arg: 'sysOverlayHover', label: 'sys-overlay-hover', desc: 'Оверлей наведения (один рычаг интенсивности hover-подсветки строк/ячеек).' },
+  { token: '--tsr-sys-overlay-selected', arg: 'sysOverlaySelected', label: 'sys-overlay-selected', desc: 'Оверлей выделения (интенсивность подсветки выбранной строки).' },
+]
+
+// Component-уровень (--tsr-comp-*) — точечный оверрайд конкретного элемента.
 const GRID_TOKENS: TokenControl[] = [
-  { token: '--data-grid-head-bg', arg: 'headBg', label: 'head-bg', desc: 'Фон ячеек шапки.' },
-  { token: '--data-grid-head-cell-hovered-bg', arg: 'headHoverBg', label: 'head-cell-hovered-bg', desc: 'Фон ячейки шапки при наведении (и подложка ресайз-хэндла).' },
-  { token: '--data-grid-row-bg', arg: 'rowBg', label: 'row-bg', desc: 'Фон чётных строк тела.' },
-  { token: '--data-grid-row-odd-bg', arg: 'rowOddBg', label: 'row-odd-bg', desc: 'Фон нечётных строк (зебра).' },
-  { token: '--data-grid-row-hovered-bg', arg: 'rowHoverBg', label: 'row-hovered-bg', desc: 'Фон строки при наведении курсора.' },
-  { token: '--data-grid-row-selected-bg', arg: 'rowSelectedBg', label: 'row-selected-bg', desc: 'Фон выбранной (отмеченной) строки.' },
-  { token: '--data-grid-cell-outline-color', arg: 'cellOutline', label: 'cell-outline-color', desc: 'Цвет аутлайна ячейки шапки при наведении.' },
-  { token: '--data-grid-cell-pinned-bg', arg: 'pinnedBg', label: 'cell-pinned-bg', desc: 'Фон закреплённой (pinned) ячейки.' },
-  { token: '--data-grid-cell-pinned-border-color', arg: 'pinnedBorder', label: 'cell-pinned-border-color', desc: 'Цвет границы-разделителя закреплённых колонок.' },
-  { token: '--data-grid-control-color', arg: 'controlColor', label: 'control-color', desc: 'Цвет иконок контролов шапки (сортировка/пиннинг/группировка) в покое.' },
-  { token: '--data-grid-control-active-color', arg: 'controlActive', label: 'control-active-color', desc: 'Цвет активного контрола (напр. включённой сортировки).' },
-  { token: '--data-grid-focus-ring', arg: 'focusRing', label: 'focus-ring', desc: 'Цвет кольца фокуса на чекбоксе/переключателе/кнопке.' },
-  { token: '--data-grid-checkbox-checked-bg', arg: 'checkboxBg', label: 'checkbox-checked-bg', desc: 'Фон отмеченного чекбокса выбора строки.' },
-  { token: '--data-grid-checkbox-check-color', arg: 'checkboxCheck', label: 'checkbox-check-color', desc: 'Цвет галочки внутри чекбокса.' },
-  { token: '--data-grid-action-button-color', arg: 'actionColor', label: 'action-button-color', desc: 'Цвет иконок кнопок действий над строкой.' },
-  { token: '--data-grid-action-button-bg', arg: 'actionBg', label: 'action-button-bg', desc: 'Фон кнопок действий над строкой.' },
-  { token: '--data-grid-accent', arg: 'accent', label: 'accent', desc: 'Общий акцентный цвет грида.' },
-  { token: '--data-grid-skeleton-bg', arg: 'skeletonBg', label: 'skeleton-bg', desc: 'Базовый цвет скелетон-заглушки при загрузке.' },
-  { token: '--data-grid-loader-track', arg: 'loaderTrack', label: 'loader-track', desc: 'Цвет дорожки линейного прогресс-бара.' },
-  { token: '--data-grid-loader-bar', arg: 'loaderBar', label: 'loader-bar', desc: 'Цвет бегущей полосы прогресс-бара.' },
-  { token: '--data-grid-scrollbar-thumb', arg: 'scrollbarThumb', label: 'scrollbar-thumb', desc: 'Цвет ползунка тонкого скроллбара.' },
+  { token: '--tsr-comp-head-bg', arg: 'headBg', label: 'head-bg', desc: 'Фон ячеек шапки.' },
+  { token: '--tsr-comp-head-cell-hovered-bg', arg: 'headHoverBg', label: 'head-cell-hovered-bg', desc: 'Фон ячейки шапки при наведении (и подложка ресайз-хэндла).' },
+  { token: '--tsr-comp-row-bg', arg: 'rowBg', label: 'row-bg', desc: 'Фон чётных строк тела.' },
+  { token: '--tsr-comp-row-odd-bg', arg: 'rowOddBg', label: 'row-odd-bg', desc: 'Фон нечётных строк (зебра).' },
+  { token: '--tsr-comp-row-hovered-bg', arg: 'rowHoverBg', label: 'row-hovered-bg', desc: 'Фон строки при наведении курсора.' },
+  { token: '--tsr-comp-row-selected-bg', arg: 'rowSelectedBg', label: 'row-selected-bg', desc: 'Фон выбранной (отмеченной) строки.' },
+  { token: '--tsr-comp-cell-outline-color', arg: 'cellOutline', label: 'cell-outline-color', desc: 'Цвет аутлайна ячейки шапки при наведении.' },
+  { token: '--tsr-comp-cell-pinned-bg', arg: 'pinnedBg', label: 'cell-pinned-bg', desc: 'Фон закреплённой (pinned) ячейки.' },
+  { token: '--tsr-comp-cell-pinned-border-color', arg: 'pinnedBorder', label: 'cell-pinned-border-color', desc: 'Цвет границы-разделителя закреплённых колонок.' },
+  { token: '--tsr-comp-control-color', arg: 'controlColor', label: 'control-color', desc: 'Цвет иконок контролов шапки (сортировка/пиннинг/группировка) в покое.' },
+  { token: '--tsr-comp-control-active-color', arg: 'controlActive', label: 'control-active-color', desc: 'Цвет активного контрола (напр. включённой сортировки).' },
+  { token: '--tsr-comp-focus-ring', arg: 'focusRing', label: 'focus-ring', desc: 'Цвет кольца фокуса на чекбоксе/переключателе/кнопке.' },
+  { token: '--tsr-comp-checkbox-checked-bg', arg: 'checkboxBg', label: 'checkbox-checked-bg', desc: 'Фон отмеченного чекбокса выбора строки.' },
+  { token: '--tsr-comp-checkbox-check-color', arg: 'checkboxCheck', label: 'checkbox-check-color', desc: 'Цвет галочки внутри чекбокса.' },
+  { token: '--tsr-comp-action-button-color', arg: 'actionColor', label: 'action-button-color', desc: 'Цвет иконок кнопок действий над строкой.' },
+  { token: '--tsr-comp-action-button-bg', arg: 'actionBg', label: 'action-button-bg', desc: 'Фон кнопок действий над строкой.' },
+  { token: '--tsr-comp-accent', arg: 'accent', label: 'accent', desc: 'Общий акцентный цвет грида.' },
+  { token: '--tsr-comp-skeleton-bg', arg: 'skeletonBg', label: 'skeleton-bg', desc: 'Базовый цвет скелетон-заглушки при загрузке.' },
+  { token: '--tsr-comp-loader-track', arg: 'loaderTrack', label: 'loader-track', desc: 'Цвет дорожки линейного прогресс-бара.' },
+  { token: '--tsr-comp-loader-bar', arg: 'loaderBar', label: 'loader-bar', desc: 'Цвет бегущей полосы прогресс-бара.' },
+  { token: '--tsr-comp-scrollbar-thumb', arg: 'scrollbarThumb', label: 'scrollbar-thumb', desc: 'Цвет ползунка тонкого скроллбара.' },
 ]
 
 // Цвет основных теней — единый рычаг (color-контрол).
 const SHADOW_COLOR: TokenControl = {
-  token: '--data-grid-shadow-color',
+  token: '--tsr-comp-shadow-color',
   arg: 'shadowColor',
   label: 'shadow-color',
   desc: 'Цвет основных теней (шапка, футер, drag-оверлеи). Единый рычаг тональности теней.',
@@ -91,35 +112,35 @@ interface ShadowControl extends TokenControl {
 }
 const SHADOW_TOKENS: ShadowControl[] = [
   {
-    token: '--data-grid-shadow-head',
+    token: '--tsr-comp-shadow-head',
     arg: 'shadowHead',
     label: 'shadow-head',
     desc: 'Тень под шапкой при скролле (box-shadow целиком).',
-    default: '0 4px 8px var(--data-grid-shadow-color)',
+    default: '0 4px 8px var(--tsr-comp-shadow-color)',
   },
   {
-    token: '--data-grid-shadow-footer',
+    token: '--tsr-comp-shadow-footer',
     arg: 'shadowFooter',
     label: 'shadow-footer',
     desc: 'Тень над футером (box-shadow целиком).',
-    default: '0 -4px 8px var(--data-grid-shadow-color)',
+    default: '0 -4px 8px var(--tsr-comp-shadow-color)',
   },
   {
-    token: '--data-grid-shadow-drag',
+    token: '--tsr-comp-shadow-drag',
     arg: 'shadowDrag',
     label: 'shadow-drag',
     desc: 'Тень клона строки/колонки при перетаскивании.',
-    default: 'var(--data-grid-shadow-color) 0 2px 4px 2px',
+    default: 'var(--tsr-comp-shadow-color) 0 2px 4px 2px',
   },
   {
-    token: '--data-grid-shadow-drop-bubble',
+    token: '--tsr-comp-shadow-drop-bubble',
     arg: 'shadowBubble',
     label: 'shadow-drop-bubble',
     desc: 'Тень бейджа-счётчика при перетаскивании нескольких строк.',
     default: '0 1px 2px 0 rgba(0, 0, 0, 0.08)',
   },
   {
-    token: '--data-grid-shadow-action',
+    token: '--tsr-comp-shadow-action',
     arg: 'shadowAction',
     label: 'shadow-action',
     desc: 'Тень всплывающих кнопок действий над строкой.',
@@ -128,7 +149,7 @@ const SHADOW_TOKENS: ShadowControl[] = [
 ]
 
 // Цветовые токены (резолвятся в rgb для свотчей); тени-строки — отдельно.
-const ALL_TOKENS = [...PALETTE, ...GRID_TOKENS, SHADOW_COLOR]
+const ALL_TOKENS = [...PALETTE, ...SEMANTIC, ...GRID_TOKENS, SHADOW_COLOR]
 
 // Резолв цвета в чистый rgb(a): скрытый пробник с классом темы наследует и
 // апстрим-палитру shadcn, и дефолты theme.css, поэтому `var(--token)`
@@ -187,7 +208,7 @@ interface ThemingArgs {
 /**
  * Собрать инлайн-`style` из значений контролов. Инжектим ТОЛЬКО реально
  * изменённые токены (значение ≠ дефолт) — иначе форсированный инлайн маскировал
- * бы дефолты слоя и ломал бы тёмный режим/каскад палитры для нетронутых токенов.
+ * бы дефолты слоя и ломал бы тёмный режим и влияние палитры на нетронутые токены.
  */
 const buildThemeStyle = (args: ThemingArgs): CSSProperties => {
   const style: Record<string, string> = {}
@@ -309,8 +330,9 @@ const meta = {
       control: { type: 'boolean' },
       table: { category: 'Режим' },
     },
-    ...colorArgTypes(PALETTE, 'Палитра (shadcn)'),
-    ...colorArgTypes(GRID_TOKENS, 'Токены грида (--data-grid-*)'),
+    ...colorArgTypes(PALETTE, 'shadcn — мост (broad)'),
+    ...colorArgTypes(SEMANTIC, 'Semantic (--tsr-sys-*)'),
+    ...colorArgTypes(GRID_TOKENS, 'Component (--tsr-comp-*)'),
     ...colorArgTypes([SHADOW_COLOR], 'Тени'),
     ...Object.fromEntries(
       SHADOW_TOKENS.map(({ arg, label, desc }) => [

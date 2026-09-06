@@ -3,41 +3,41 @@
   display: flex;
   position: absolute;
   width: 100%;
-  height: var(--data-grid-row-height);
+  height: var(--tsr-comp-row-height);
   z-index: 1;
   will-change: top;
-  background-color: var(--data-grid-row-bg);
-  transition: var(--data-grid-row-transition);
+  background-color: var(--tsr-comp-row-bg);
+  transition: var(--tsr-comp-row-transition);
 
   /* Бэкграунд нечетной строки (odd) */
 
   &:is([data-row-odd='true']) {
-    background-color: var(--data-grid-row-odd-bg);
+    background-color: var(--tsr-comp-row-odd-bg);
   }
 
   /* Бэкграунд строки при наведении (hover) */
 
   &:hover {
-    background-color: var(--data-grid-row-hovered-bg);
+    background-color: var(--tsr-comp-row-hovered-bg);
   }
 
   /* Бэкграунд выбранной строки (selected) */
 
   &:is([data-selected='true']) {
-    background-color: var(--data-grid-row-selected-bg);
+    background-color: var(--tsr-comp-row-selected-bg);
   }
 
   /* Бэкграунд выбранной строки при наведении (selected + hover) */
 
   &:hover:is([data-selected='true']) {
-    background-color: var(--data-grid-row-selected-hovered-bg);
+    background-color: var(--tsr-comp-row-selected-hovered-bg);
   }
 
   /* Бэкграунд ячейки закрепленной колонки слева и выбранной строки (selected + pinned) */
 
   &:is([data-selected='true'])
     > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
-    background-color: var(--data-grid-cell-pinned-bg) !important;
+    background-color: var(--tsr-comp-cell-pinned-bg) !important;
   }
 
   /* Бэкграунд ячейки закрепленной колонки слева и выбранной строки при наведении (selected + hover + pinned) */
@@ -45,7 +45,7 @@
   &:hover:is([data-selected='true'])
     > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
     background-color: var(
-      --data-grid-cell-pinned-selected-hovered-bg
+      --tsr-comp-cell-pinned-selected-hovered-bg
     ) !important;
   }
 
@@ -53,7 +53,7 @@
 
   &:hover:not([data-selected='true'])
     > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
-    background-color: var(--data-grid-cell-pinned-hovered-bg) !important;
+    background-color: var(--tsr-comp-cell-pinned-hovered-bg) !important;
   }
 
   /* Специфичные стили для строки, которая перетаскивается в данный момент */

@@ -5,23 +5,23 @@
   padding: 0;
   user-select: none;
   overflow: hidden;
-  transition: var(--data-grid-head-cell-transition);
+  transition: var(--tsr-comp-head-cell-transition);
 
   /* Бордеры для ячеек заголовков */
 
   &:is([data-layout='grid']) {
     &:is([data-first-header-in-row='true']) {
-      border-left: 1px solid var(--data-grid-row-hovered-bg);
+      border-left: 1px solid var(--tsr-comp-row-hovered-bg);
     }
 
     /*&:not([data-last-header-in-row='true']) {*/
-    border-right: 1px solid var(--data-grid-row-hovered-bg);
+    border-right: 1px solid var(--tsr-comp-row-hovered-bg);
     /*}*/
 
     &:not([data-last-headers-row='true']):not(
         [data-header-full-height='true']
       ) {
-      border-bottom: 1px solid var(--data-grid-row-hovered-bg);
+      border-bottom: 1px solid var(--tsr-comp-row-hovered-bg);
     }
   }
 
@@ -29,9 +29,9 @@
 
   &:is([data-cell-pinned='left']) {
     will-change: transform;
-    z-index: var(--data-grid-z-index-pinned);
-    opacity: var(--data-grid-opacity);
-    background-color: var(--data-grid-cell-pinned-left-bg);
+    z-index: var(--tsr-comp-z-index-pinned);
+    opacity: var(--tsr-comp-opacity);
+    background-color: var(--tsr-comp-cell-pinned-left-bg);
     position: sticky;
   }
 
@@ -47,21 +47,21 @@
   /* Бордер для ячейки последней закрепленной колонки слева */
 
   &:is([data-cell-last-left-pinned='true']) {
-    border-right: 1px solid var(--data-grid-cell-pinned-border-color);
+    border-right: 1px solid var(--tsr-comp-cell-pinned-border-color);
   }
 
   /* Правый отступ для заголовков с ресайзером */
 
   &:hover:is([data-column-resizable='true'])
     :global(.data-grid__cell-wrapper-content) {
-    padding-right: var(--data-grid-resize-handler-width) !important;
+    padding-right: var(--tsr-comp-resize-handler-width) !important;
   }
 
   /* Бэкграунд для заголовков и правого отступа с ресайзером при наведении */
 
   &:hover:not([data-actions-column-cell='true']),
   &:is([data-column-resizing='true']) {
-    background-color: var(--data-grid-head-cell-hovered-bg);
+    background-color: var(--tsr-comp-head-cell-hovered-bg);
 
     /*
      * Хэндл должен маскировать контент ячейки (область ресайза), поэтому фон
@@ -69,7 +69,7 @@
      * иначе полупрозрачность удваивалась бы и хэндл темнел.
      */
     :global(.resize__handler--column) {
-      background-color: var(--data-grid-head-cell-hovered-bg);
+      background-color: var(--tsr-comp-head-cell-hovered-bg);
     }
   }
 

@@ -3,9 +3,9 @@
   will-change: transform;
   display: grid;
   position: relative;
-  height: var(--data-grid-body-height);
+  height: var(--tsr-comp-body-height);
 
   &:is([data-layout='grid']) {
-    border-bottom: 1px solid var(--data-grid-row-hovered-bg);
+    border-bottom: 1px solid var(--tsr-comp-row-hovered-bg);
   }
 }

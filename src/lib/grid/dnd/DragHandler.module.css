@@ -1,6 +1,6 @@
 .button {
   display: flex;
-  color: var(--data-grid-control-color);
+  color: var(--tsr-comp-control-color);
   cursor: grab;
 }
 
@@ -11,5 +11,5 @@
 
 .disabled {
   cursor: not-allowed;
-  color: var(--data-grid-control-disabled-color);
+  color: var(--tsr-comp-control-disabled-color);
 }

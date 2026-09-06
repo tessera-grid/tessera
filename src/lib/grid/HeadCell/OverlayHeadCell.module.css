@@ -7,15 +7,15 @@
   overflow: hidden;
 
   border-radius: 8px;
-  box-shadow: var(--data-grid-shadow-drag);
-  opacity: var(--data-grid-draggable-opacity) !important;
-  background-color: var(--data-grid-draggable-cell-bg);
+  box-shadow: var(--tsr-comp-shadow-drag);
+  opacity: var(--tsr-comp-draggable-opacity) !important;
+  background-color: var(--tsr-comp-draggable-cell-bg);
 
   /* Padding for resizable cell wrapper */
 
   &:is([data-column-resizable='true'])
     :global(.data-grid__cell-wrapper-content) {
-    padding-right: var(--data-grid-resize-handler-width) !important;
+    padding-right: var(--tsr-comp-resize-handler-width) !important;
   }
 
   &:is([data-column-resizable='false']) {
@@ -24,7 +24,7 @@
   }
 
   & :global(.resize__handler--column) {
-    background-color: var(--data-grid-head-cell-hovered-bg);
+    background-color: var(--tsr-comp-head-cell-hovered-bg);
   }
 
   & :global(.drag__handler--column) {

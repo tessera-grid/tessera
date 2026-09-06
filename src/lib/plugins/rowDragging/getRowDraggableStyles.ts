@@ -7,8 +7,8 @@ export const getRowDraggableStyles = ({
 }: Omit<RowDragOverlayState, 'isExpanded'>) => {
   return {
     '--draggable-row-background-color': acceptable
-      ? 'var(--data-grid-row-accept-draggable-bg)'
-      : 'var(--data-grid-row-not-accept-draggable-bg)',
+      ? 'var(--tsr-comp-row-accept-draggable-bg)'
+      : 'var(--tsr-comp-row-not-accept-draggable-bg)',
     [`--draggable-row-${activeId}-offset-left`]: offsetLeft
       ? `${offsetLeft}px`
       : '0px',

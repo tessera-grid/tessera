@@ -4,9 +4,9 @@
 
   display: flex;
   contain: strict;
-  height: var(--data-grid-row-height);
+  height: var(--tsr-comp-row-height);
 
-  background-color: var(--data-grid-head-bg);
+  background-color: var(--tsr-comp-head-bg);
 
-  box-shadow: var(--data-grid-shadow-footer);
+  box-shadow: var(--tsr-comp-shadow-footer);
 }

@@ -27,6 +27,11 @@ import { useScrollbarWidthVar } from './useScrollbarWidthVar'
 import { DataGridProps } from './types'
 
 import dataGridStyles from './DataGrid.module.css'
+// Токены темы (`:where(.data-grid-theme)`: --tsr-ref/sys/comp, light/dark).
+// Импортируем как ГЛОБАЛЬНЫЙ (не-модульный) CSS side-effect отсюда — из
+// удерживаемого в графе компонента, — чтобы классы `data-grid-theme`/`dark`
+// шиппились НЕ захешированными (через @import в .module.css их скоупит CSS Modules).
+import '../../core/themeVariables/theme.css'
 
 /**
  * @description
@@ -125,24 +130,25 @@ export const DataGrid = ({
   useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
 
   const containerStyles = getTableHeight({ height, maxHeight })
-  // Дефолты токенов темы (`--data-grid-*`) объявлены в theme.css на классе
+  // Дефолты токенов темы (`--tsr-comp-*`) объявлены в theme.css на классе
   // `.data-grid-theme` (нулевая специфичность), поэтому здесь инлайн — только
   // РАНТАЙМ-переменные (высоты шапки/тела, drag-офсеты) и переданный потребителем
-  // `style`. Инлайн-стиль потребителя бьёт дефолты слоя — так `--data-grid-*`
+  // `style`. Инлайн-стиль потребителя бьёт дефолты слоя — так `--tsr-comp-*`
   // переопределяются пер-инстансно, а глобально — обычным CSS-правилом на
   // `.data-grid-theme`.
   const wrapperStyles = {
     ...({
-      '--data-grid-head-height': `${headerGroupsDepth * 50 + headerGroupsDepth}px`,
-      '--data-grid-body-height': `${bodyHeight}px`,
+      '--tsr-comp-head-height': `${headerGroupsDepth * 50 + headerGroupsDepth}px`,
+      '--tsr-comp-body-height': `${bodyHeight}px`,
     } as CSSProperties),
     ...draggableCssVariables,
     ...containerStyles,
     ...style,
   }
 
-  // Класс `dark` активирует токены темы из global.css (.dark {…}), из которых
-  // выводятся все --data-grid-*; `data-grid-theme` несёт дефолты токенов.
+  // Класс `dark` флипает тёмные роли semantic-уровня `--tsr-sys-*` из theme.css
+  // (и, если у потребителя shadcn с плоским `.dark {…}`, — заодно его апстрим-
+  // токены), из которых выводятся все --tsr-comp-*; `data-grid-theme` несёт дефолты.
   const themeClassName = clsx(DATA_GRID_THEME_CLASS, className, {
     dark: colorMode === 'dark',
   })

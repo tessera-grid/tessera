@@ -3,9 +3,9 @@
   align-items: center;
   position: relative;
   width: 100%;
-  min-height: var(--data-grid-row-height);
-  gap: var(--data-grid-cell-content-gap);
-  padding: var(--data-grid-cell-content-padding);
+  min-height: var(--tsr-comp-row-height);
+  gap: var(--tsr-comp-cell-content-gap);
+  padding: var(--tsr-comp-cell-content-padding);
   overflow-x: hidden;
   box-shadow: inherit;
   box-sizing: border-box;

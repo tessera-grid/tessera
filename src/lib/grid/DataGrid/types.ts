@@ -49,7 +49,7 @@ export interface DataGridProps {
   className?: string
   /**
    * Инлайн-стиль обёртки грида. Основное назначение — пер-инстансное
-   * переопределение токенов темы: `style={{ '--data-grid-loader-bar': '#f00' }}`
+   * переопределение токенов темы: `style={{ '--tsr-comp-loader-bar': '#f00' }}`
    * (инлайн бьёт дефолты слоя `.data-grid-theme`). Также принимает обычные
    * CSS-свойства.
    */

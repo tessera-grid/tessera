@@ -2,28 +2,28 @@
   position: absolute;
   /*
    * Ширину скроллбара измеряет useScrollbarWidthVar и кладёт в
-   * --data-grid-scrollbar-actual-width. Фолбэк на токен-догадку — до первого
+   * --tsr-comp-scrollbar-actual-width. Фолбэк на токен-догадку — до первого
    * измерения (первый кадр) и на случай, если измерение отключено.
    */
   width: calc(
     100% -
-      var(--data-grid-scrollbar-actual-width, var(--data-grid-scrollbar-width))
+      var(--tsr-comp-scrollbar-actual-width, var(--tsr-comp-scrollbar-width))
   );
   transform: translateY(
-    calc(var(--data-grid-head-height) - var(--data-grid-loader-height))
+    calc(var(--tsr-comp-head-height) - var(--tsr-comp-loader-height))
   );
-  z-index: var(--data-grid-z-index-loader);
-  opacity: var(--data-grid-opacity);
-  height: var(--data-grid-loader-height);
+  z-index: var(--tsr-comp-z-index-loader);
+  opacity: var(--tsr-comp-opacity);
+  height: var(--tsr-comp-loader-height);
   overflow: hidden;
-  background-color: var(--data-grid-loader-track);
+  background-color: var(--tsr-comp-loader-track);
 }
 
 .bar {
   position: absolute;
   height: 100%;
   width: 100%;
-  background-color: var(--data-grid-loader-bar);
+  background-color: var(--tsr-comp-loader-bar);
   transform-origin: left center;
   animation: data-grid-linear-progress 1.5s
     cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;

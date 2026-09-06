@@ -1,14 +1,14 @@
 .root {
   display: flex;
-  color: var(--data-grid-control-color);
+  color: var(--tsr-comp-control-color);
 }
 
 .sorted {
-  color: var(--data-grid-control-active-color);
+  color: var(--tsr-comp-control-active-color);
 }
 
 .sorted:hover {
-  background-color: var(--data-grid-control-active-hover-bg);
+  background-color: var(--tsr-comp-control-active-hover-bg);
 }
 
 .disabled {

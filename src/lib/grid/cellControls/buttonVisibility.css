@@ -14,7 +14,7 @@
 .data-grid__head-cell .cell__button,
 .data-grid__body-cell .cell__button,
 .data-grid__body-row .row__button {
-  transition: var(--data-grid-button-cell-transition);
+  transition: var(--tsr-comp-button-cell-transition);
 }
 
 /* Скрытие hidden-кнопок ячейки */

@@ -3,19 +3,19 @@
   display: flex;
   will-change: width;
   padding: 0;
-  transition: var(--data-grid-row-transition);
+  transition: var(--tsr-comp-row-transition);
 
   /* Бордеры для ячеек */
 
   &:is([data-layout='grid']) {
     &:is([data-first-cell-in-row='true']) {
-      border-left: 1px solid var(--data-grid-row-hovered-bg);
+      border-left: 1px solid var(--tsr-comp-row-hovered-bg);
     }
 
     /*&:not([data-last-cell-in-row='true']) {*/
-    border-right: 1px solid var(--data-grid-row-hovered-bg);
+    border-right: 1px solid var(--tsr-comp-row-hovered-bg);
     /*}*/
 
-    border-bottom: 1px solid var(--data-grid-row-hovered-bg);
+    border-bottom: 1px solid var(--tsr-comp-row-hovered-bg);
   }
 }
