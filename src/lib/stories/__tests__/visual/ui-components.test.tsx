@@ -2,6 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import { Bubble } from '@/lib/ui/Bubble'
 import { IconButton } from '@/lib/ui/IconButton'
 import { Tooltip } from '@/lib/ui/Tooltip'
 import { Switch } from '@/lib/ui/Switch'
@@ -17,7 +18,7 @@ import {
 } from '@/lib/ui/icons'
 
 // Every UI-component requirement is its own named test, prefixed with its spec ID
-// (IB/TT/SW/SK/LP/IC<n> from the requirements tables in
+// (IB/TT/SW/SK/LP/IC/BU<n> from the requirements tables in
 // docs/decisions/0017-ui-components.md). So `npm test` reports — and fails —
 // each requirement individually, and the test name points straight at the
 // requirement it guards (see the naming rule in
@@ -219,7 +220,9 @@ describe('Skeleton', () => {
     expect(waveStyle.position).toBe('relative')
     expect(waveStyle.overflow).toBe('hidden')
     // animation={false} is a plain, static placeholder.
-    const still = await render(<Skeleton width={80} height={12} animation={false} />)
+    const still = await render(
+      <Skeleton width={80} height={12} animation={false} />,
+    )
     expect(computed(still.container.querySelector('span')!).position).toBe(
       'static',
     )
@@ -227,7 +230,12 @@ describe('Skeleton', () => {
 
   test('SK3: forwards className and style', async () => {
     const { container } = await render(
-      <Skeleton width={40} height={40} className="my-skel" style={{ opacity: '0.3' }} />,
+      <Skeleton
+        width={40}
+        height={40}
+        className="my-skel"
+        style={{ opacity: '0.3' }}
+      />,
     )
     const el = container.querySelector('span')! as HTMLElement
     expect(el.classList.contains('my-skel')).toBe(true)
@@ -250,6 +258,51 @@ describe('LinearProgress', () => {
     expect(computed(root).position).toBe('absolute')
     // Contains a single animated bar element.
     expect(root.querySelector('div')).not.toBeNull()
+  })
+})
+
+// --- Bubble (BU1–BU4) ---------------------------------------------------------
+
+describe('Bubble', () => {
+  test('BU1: renders its content in a span', async () => {
+    const { container } = await render(<Bubble>3</Bubble>)
+    const el = container.querySelector('span')!
+    expect(el.tagName).toBe('SPAN')
+    expect(el.textContent).toBe('3')
+  })
+
+  test('BU2: is a non-interactive overlay (never steals clicks from its anchor)', async () => {
+    // The whole point of the bubble is to sit ON TOP of an anchor (button, drag
+    // overlay) without changing its geometry — so it must not intercept pointer
+    // events. Positioning itself is the consumer's job, not the component's.
+    const { container } = await render(<Bubble>1</Bubble>)
+    expect(computed(container.querySelector('span')!).pointerEvents).toBe(
+      'none',
+    )
+  })
+
+  test('BU3: `sm` is more compact than the default `md`', async () => {
+    const md = await render(<Bubble>1</Bubble>)
+    const sm = await render(<Bubble size="sm">1</Bubble>)
+    const mdSize = parseFloat(
+      computed(md.container.querySelector('span')!).fontSize,
+    )
+    const smSize = parseFloat(
+      computed(sm.container.querySelector('span')!).fontSize,
+    )
+    expect(smSize).toBeLessThan(mdSize)
+  })
+
+  test('BU4: forwards className and arbitrary props', async () => {
+    const { container } = await render(
+      <Bubble className="extra" data-sort-priority="2" aria-hidden>
+        2
+      </Bubble>,
+    )
+    const el = container.querySelector('span')!
+    expect(el.classList.contains('extra')).toBe(true)
+    expect(el.getAttribute('data-sort-priority')).toBe('2')
+    expect(el.getAttribute('aria-hidden')).not.toBeNull()
   })
 })
 
@@ -285,7 +338,10 @@ describe('Icons', () => {
       expect(Icon, `DEFAULT_ICONS.${key} is defined`).toBeDefined()
       // Every default is a renderable component producing an svg.
       const { container } = await render(<Icon />)
-      expect(container.querySelector('svg'), `${key} renders an svg`).not.toBeNull()
+      expect(
+        container.querySelector('svg'),
+        `${key} renders an svg`,
+      ).not.toBeNull()
     }
   })
 

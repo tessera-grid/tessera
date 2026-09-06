@@ -144,6 +144,18 @@ export const enableSortingRemovalType: ArgTypes = {
   },
 }
 
+export const enableMultiSortType: ArgTypes = {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  control: 'boolean',
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  description: 'Мультисортировка по нескольким столбцам (жест Shift+клик)',
+  table: {
+    defaultValue: { summary: true },
+  },
+}
+
 export const serverColumnSortingType: ArgTypes = {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error

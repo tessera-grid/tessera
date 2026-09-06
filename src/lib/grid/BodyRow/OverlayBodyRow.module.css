@@ -21,13 +21,4 @@
   top: 0;
   right: 0;
   transform: translate(50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--tsr-comp-accent);
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 32px;
-  font-size: 0.875rem;
-  box-shadow: var(--tsr-comp-shadow-drop-bubble);
 }

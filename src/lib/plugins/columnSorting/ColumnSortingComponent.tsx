@@ -10,6 +10,8 @@ export const ColumnSortingComponent = memo(
       column.getIsSorted(),
       column.getNextSortingOrder(),
       column.getCanSort(),
+      column.getSortIndex(),
+      table.getState().sorting.length,
       table.options.enableSorting,
       table.options.enableSortingRemoval,
     ])
@@ -20,6 +22,11 @@ export const ColumnSortingComponent = memo(
 
     const operation = column.getIsSorted()
     const nextOperation = column.getNextSortingOrder()
+
+    // Индикатор приоритета — только при 2+ отсортированных столбцах.
+    const sortCount = table.getState().sorting.length
+    const sortIndex = column.getSortIndex()
+    const isMultiSorted = sortCount > 1 && sortIndex >= 0
 
     const onSort = (event: MouseEvent<HTMLButtonElement>) => {
       const { onToggleColumnSort } = table.getHooks().columnSorting
@@ -32,6 +39,8 @@ export const ColumnSortingComponent = memo(
       <SortButton
         operation={operation}
         nextOperation={nextOperation}
+        sortIndex={isMultiSorted ? sortIndex : undefined}
+        sortCount={sortCount}
         onClick={onSort}
       />
     )

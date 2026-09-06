@@ -50,6 +50,7 @@ import {
   enableFooterType,
   enableGroupingType,
   enableLoadingType,
+  enableMultiSortType,
   enableRowActionsType,
   enableRowDraggingType,
   enableRowExpandingType,
@@ -456,6 +457,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableColumnSorting: false,
     enableSortingRemoval: true,
     serverColumnSorting: false,
+    enableMultiSort: true,
 
     enableColumnResizing: false,
     enableColumnDragging: false,
@@ -492,6 +494,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableColumnSorting: enableColumnSortingType,
     enableSortingRemoval: enableSortingRemovalType,
     serverColumnSorting: serverColumnSortingType,
+    enableMultiSort: enableMultiSortType,
 
     enableColumnResizing: enableColumnResizingType,
     enableColumnDragging: enableColumnDraggingType,
@@ -583,6 +586,20 @@ export const ColumnSortingNotRemovable: StoryObj<StoryProps> = {
   args: {
     enableColumnSorting: true,
     enableSortingRemoval: false,
+  },
+}
+
+export const ColumnMultiSorting: StoryObj<StoryProps> = {
+  name: 'Column Multi Sorting',
+  args: {
+    enableColumnSorting: true,
+    enableMultiSort: true,
+    // Shift+клик по нескольким заголовкам добавляет столбцы к сортировке; у
+    // каждого отсортированного столбца в шапке виден порядковый бейдж приоритета.
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
   },
 }
 

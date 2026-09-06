@@ -32,6 +32,8 @@ const HEAD_CELL = '.data-grid__head-cell'
 const BODY_CELL = '.data-grid__body-cell'
 /** ColumnSorting plugin's sort toggle, rendered per sortable header. */
 const SORT_BUTTON = '.column-sort__button'
+/** Multi-sort priority badge, rendered only while 2+ columns are sorted. */
+const PRIORITY_BADGE = '.column-sort__priority'
 /** A header cell of a real (non-action) data column. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 
@@ -106,7 +108,38 @@ const revealSort = async (cell: HTMLElement) => {
 }
 
 /** The leftmost rendered data column (always in the horizontal window). */
-const firstDataCell = (container: HTMLElement) => renderedDataCells(container)[0]
+const firstDataCell = (container: HTMLElement) =>
+  renderedDataCells(container)[0]
+
+/** The nth rendered data column (0-based), re-queried against the live DOM. */
+const dataCell = (container: HTMLElement, index: number) =>
+  renderedDataCells(container)[index]
+
+/** The priority badge inside a header cell, or null when it isn't rendered. */
+const priorityOf = (cell: HTMLElement) =>
+  cell.querySelector<HTMLElement>(PRIORITY_BADGE)
+
+/** Count of data columns currently carrying a direction (aria-sort ≠ none). */
+const sortedColumnCount = (container: HTMLElement) =>
+  renderedDataCells(container).filter(cell => ariaSortOf(cell) !== 'none')
+    .length
+
+/**
+ * Click while Shift is held — the default multi-sort gesture (`isMultiSortEvent`
+ * = `e.shiftKey`). Playwright tracks the held key, so the click event carries
+ * `shiftKey`. Press and release around the click so no other input is affected.
+ */
+const shiftClick = async (element: HTMLElement) => {
+  await userEvent.keyboard('{Shift>}')
+  await userEvent.click(element)
+  await userEvent.keyboard('{/Shift}')
+}
+
+/** Reveal a column's toggle (hover), then Shift+click it to add it to the sort. */
+const shiftSort = async (cell: HTMLElement) => {
+  const button = await revealSort(cell)
+  await shiftClick(button)
+}
 
 /** The `aria-colindex` of a header cell as a selector-ready string. */
 const colIndexOf = (cell: HTMLElement) => cell.getAttribute('aria-colindex')!
@@ -122,7 +155,9 @@ const columnValues = (container: HTMLElement, colIndex: string) =>
       `${BODY_CELL}[aria-colindex='${colIndex}']`,
     ),
   )
-    .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+    .sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    )
     .map(cell => cell.textContent?.trim() ?? '')
 
 /** Case-insensitive code-point compare — matches TanStack's `text` sorting fn. */
@@ -410,5 +445,132 @@ describe('Column Sorting — requirements', () => {
     await expect
       .poll(() => ariaSortOf(firstDataCell(container)))
       .toBe('descending')
+  })
+})
+
+// --- Multi-sort requirements (CS16–CS23) --------------------------------------
+// Multi-sort is built on TanStack's native model (`enableMultiSort`,
+// `isMultiSortEvent`, `maxMultiSortColCount`, `column.getSortIndex()`); the plugin
+// adds the config surface, the header priority badge and the a11y label. The
+// default gesture is Shift+click, so a plain click still replaces the sort — which
+// is why the single-column requirements above are unaffected. See the CS16–CS23
+// table in docs/decisions/0012-column-sorting.md.
+
+describe('Column Sorting — multi-sort requirements', () => {
+  test('CS16: Shift+click adds a second column to the sort', async () => {
+    const container = await renderColumnSorting()
+
+    // Plain click on the first column establishes a single-column sort…
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await expect
+      .poll(() => ariaSortOf(dataCell(container, 0)))
+      .toBe('descending')
+
+    // …then Shift+click on the second column ADDS it instead of replacing.
+    await shiftSort(dataCell(container, 1))
+    await expect
+      .poll(() => ariaSortOf(dataCell(container, 1)))
+      .toBe('descending')
+    // The first column keeps its direction — both columns now sort the rows.
+    expect(ariaSortOf(dataCell(container, 0))).toBe('descending')
+    expect(sortedColumnCount(container)).toBe(2)
+  })
+
+  test('CS17: the priority badge appears only when 2+ columns are sorted', async () => {
+    const container = await renderColumnSorting()
+
+    // A single sorted column carries no priority badge (UI stays as single-sort).
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await expect
+      .poll(() => ariaSortOf(dataCell(container, 0)))
+      .toBe('descending')
+    expect(priorityOf(dataCell(container, 0))).toBeNull()
+
+    // Adding a second sorted column reveals the badge on BOTH.
+    await shiftSort(dataCell(container, 1))
+    await expect.poll(() => priorityOf(dataCell(container, 0))).not.toBeNull()
+    expect(priorityOf(dataCell(container, 1))).not.toBeNull()
+  })
+
+  test('CS18: priority badges number columns in sort order (1-based)', async () => {
+    const container = await renderColumnSorting()
+
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await shiftSort(dataCell(container, 1))
+
+    // First-added column is priority 1, second-added is priority 2.
+    await expect
+      .poll(() =>
+        priorityOf(dataCell(container, 0))?.getAttribute('data-sort-priority'),
+      )
+      .toBe('1')
+    expect(
+      priorityOf(dataCell(container, 1))?.getAttribute('data-sort-priority'),
+    ).toBe('2')
+  })
+
+  test('CS19: `max` caps the number of columns in the multi-sort', async () => {
+    const container = await renderColumnSorting({
+      multiSortOptions: { max: 2 },
+    })
+
+    // Sort three columns: plain first, then Shift+click two more.
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await shiftSort(dataCell(container, 1))
+    await shiftSort(dataCell(container, 2))
+
+    // The cap holds — never more than two columns sort at once (the oldest is
+    // evicted), and it doesn't collapse back to a single column.
+    await expect.poll(() => sortedColumnCount(container)).toBe(2)
+  })
+
+  test('CS21: with multi-sort off, Shift+click replaces instead of adding', async () => {
+    const container = await renderColumnSorting({ enableMultiSort: false })
+
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await expect
+      .poll(() => ariaSortOf(dataCell(container, 0)))
+      .toBe('descending')
+
+    // Shift+click on another column REPLACES the sort (single-column model), so
+    // exactly one column is sorted and no priority badge is shown.
+    await shiftSort(dataCell(container, 1))
+    await expect
+      .poll(() => ariaSortOf(dataCell(container, 1)))
+      .toBe('descending')
+    expect(ariaSortOf(dataCell(container, 0))).toBe('none')
+    expect(sortedColumnCount(container)).toBe(1)
+    expect(priorityOf(dataCell(container, 1))).toBeNull()
+  })
+
+  test('CS22: the sort button aria-label conveys the priority for screen readers', async () => {
+    const container = await renderColumnSorting()
+
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await shiftSort(dataCell(container, 1))
+    await expect.poll(() => priorityOf(dataCell(container, 0))).not.toBeNull()
+
+    // aria-label overrides the button's content, so the numeric badge is spoken
+    // via the label — the first column announces "priority 1 of 2".
+    const label = sortButtonOf(dataCell(container, 0)).getAttribute(
+      'aria-label',
+    )
+    expect(label).toContain('Sort priority 1 of 2')
+  })
+
+  test('CS23: server multi-sort keeps row order but tracks every sorted column', async () => {
+    const container = await renderColumnSorting({ serverColumnSorting: true })
+    const colIndex = colIndexOf(dataCell(container, 0))
+    const before = columnValues(container, colIndex)
+
+    await userEvent.click(await revealSort(dataCell(container, 0)))
+    await shiftSort(dataCell(container, 1))
+
+    // Both columns register in the sort state (indicators + badges)…
+    await expect.poll(() => sortedColumnCount(container)).toBe(2)
+    expect(priorityOf(dataCell(container, 0))).not.toBeNull()
+
+    // …but the client row model is untouched — the server owns the order.
+    expect(columnValues(container, colIndex)).toEqual(before)
   })
 })

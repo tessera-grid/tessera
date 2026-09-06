@@ -3,6 +3,7 @@ import { memo } from 'react'
 import { Cell, flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
+import { Bubble } from '../../ui/Bubble'
 import { DragHandler } from '../dnd'
 import { CellWrapperContent } from '../CellWrapperContent'
 import { CellWrapperTitle } from '../CellWrapperTitle'
@@ -35,7 +36,7 @@ export const OverlayBodyRow = memo(
             </CellWrapperTitle>
           </CellWrapperContent>
         </div>
-        {withCount && <span className={styles.bubble}>{subRowsCount}</span>}
+        {withCount && <Bubble className={styles.bubble}>{subRowsCount}</Bubble>}
       </div>
     )
   },

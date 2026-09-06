@@ -12,6 +12,7 @@ import {
   rowGrouping,
   rowSelection,
 } from '../../../plugins'
+import type { ColumnMultiSortOptions } from '../../../plugins/columnSorting'
 import { RowActionsOptions } from '../../../plugins/rowActions'
 import { RowDeleteActionComponent } from '../plugins/rowDeleteAction/RowDeleteActionComponent'
 import { rowDeleteActionPlugin } from '../plugins/rowDeleteAction/rowDeleteActionPlugin'
@@ -29,6 +30,10 @@ export interface FeatureToggles {
   enableColumnSorting?: boolean
   enableSortingRemoval?: boolean
   serverColumnSorting?: boolean
+  /** Мультисортировка (по умолчанию включена штатным жестом Shift+клик). */
+  enableMultiSort?: boolean
+  /** Тонкая настройка мультисорта (`max` / `removal` / `event`) для тестов/историй. */
+  multiSortOptions?: ColumnMultiSortOptions
   enableColumnPinning?: boolean
   enableColumnResizing?: boolean
   enableColumnDragging?: boolean
@@ -63,6 +68,9 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
       enabled: !!o.enableColumnSorting,
       removal: o.enableSortingRemoval,
       server: o.serverColumnSorting,
+      // Объектная форма (если задана) имеет приоритет; иначе — булев тумблер
+      // (undefined → дефолт фабрики: мультисорт включён жестом Shift).
+      multiSort: o.multiSortOptions ?? o.enableMultiSort,
     }),
     columnDragging({ enabled: !!o.enableColumnDragging }),
     rowGrouping({ enabled: !!o.enableGrouping }),

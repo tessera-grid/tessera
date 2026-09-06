@@ -37,6 +37,8 @@ Tessera рендерит служебные контролы (тоггл рас�
 - **`Switch`** — переключатель (обёртка над Base UI `Switch`).
 - **`Skeleton`** — плейсхолдер содержимого при загрузке / быстрой прокрутке.
 - **`LinearProgress`** — индикатор асинхронной загрузки.
+- **`Bubble`** — пузырёк-оверлей: счётчик/бейдж поверх якоря (число строк в drag-
+  оверлее, порядковый номер мультисортировки), два размера.
 - **Иконки** — `SvgIcon` (базовая обёртка inline-SVG 24×24 на `currentColor`),
   in-house `CheckboxOutlineIcon` и набор `TableIcons` (`DEFAULT_ICONS` +
   `IconsProvider`/`useIcons`), переопределяемый пропом `icons` у `DataGrid`.
@@ -109,6 +111,18 @@ Tessera рендерит служебные контролы (тоггл рас�
 анимация). Компонент презентационен — без пропсов и без числового значения
 (индетерминантный лоадер).
 
+### `Bubble`
+
+Презентационный пузырёк-оверлей: `<span>` с фоном `--tsr-comp-accent`, белым
+текстом и тенью `--tsr-comp-shadow-drop-bubble`. **Только внешний вид** —
+позиционирование отдаётся потребителю через `className`, поэтому пузырёк можно
+наложить на любой якорь, не меняя его геометрию. Не перехватывает указатель
+(`pointer-events: none`), чтобы не воровать клики у якоря под ним. Два размера:
+`md` (дефолт) — счётчик перетаскиваемых строк в `OverlayBodyRow`; `sm` —
+компактный порядковый бейдж мультисортировки в `SortButton` (наложен на
+relative-якорь кнопки, круглая геометрия кнопки-иконки сохраняется). `className`
+и произвольные атрибуты (`data-*`, `aria-hidden`) проходят насквозь.
+
 ### Иконки
 
 - **`SvgIcon`** — базовая обёртка inline-SVG: сетка 24×24 (`viewBox='0 0 24 24'`,
@@ -137,6 +151,8 @@ Tessera рендерит служебные контролы (тоггл рас�
 - **`Skeleton`** — `<span>` с инлайн-`width/height`; `wave` даёт
   `position: relative`.
 - **`LinearProgress`** — `role='progressbar'`.
+- **`Bubble`** — `<span>` c `pointer-events: none`; позиционирование — на
+  потребителе, `className`/`data-*` проходят насквозь.
 - **Иконки** — `<svg viewBox='0 0 24 24' aria-hidden>`; `DEFAULT_ICONS`
   покрывает весь контракт `TableIcons`.
 
@@ -147,11 +163,11 @@ Tessera рендерит служебные контролы (тоггл рас�
 `theming-contracts.test.tsx` (TC-1…TC-5): новый член добавляется в список семейства
 и обязан пройти контракт.
 
-| Семейство | Члены | Признак → канонический токен |
-| --- | --- | --- |
+| Семейство            | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **F1 icon-контролы** | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round` |
-| **F2 action-кнопки** | RowButton, CellButton | color/bg/hover `action-button-*` · shadow `shadow-action` · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round` |
-| **F3 форм-контролы** | Checkbox, Switch | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill` |
+| **F2 action-кнопки** | RowButton, CellButton                                              | color/bg/hover `action-button-*` · shadow `shadow-action` · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round`                                           |
+| **F3 форм-контролы** | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                         |
 
 **Правила единого disabled (по семейству):** иконки/кнопки (F1/F2) гаснут **цветом**
 (`--tsr-comp-control-disabled-color`); наполненные форм-контролы (F3) — общей
@@ -202,70 +218,79 @@ Tessera рендерит служебные контролы (тоггл рас�
 Критерии приёмки, которые кодируют тесты. По конвенции проекта
 ([ADR 0001](0001-spec-driven-development.md),
 [ADR 0009](0009-test-coverage-visual-and-performance.md)) каждое требование —
-**отдельный именованный тест** с ID-префиксом (`IB/TT/SW/SK/LP/IC<n>:`),
+**отдельный именованный тест** с ID-префиксом (`IB/TT/SW/SK/LP/IC/BU<n>:`),
 совпадающим с ID из таблиц ниже. Визуальные тесты живут в
 `stories/__tests__/visual/ui-components.test.tsx` (vitest-browser, реальный
 Chromium) и рендерят компоненты напрямую, читая состояние из контракта DOM/ARIA.
 
 **`IconButton`**
 
-| ID  | Требование                                                                                     | Тест                                          |
-| --- | ---------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| IB1 | Рендерит нативный `<button type='button'>` — не сабмитит форму                                 | ✔ `IB1: renders a non-submit native button`   |
-| IB2 | Круглая и центрирует контент (`border-radius: 50%`, `inline-flex`, центрирование)              | ✔ `IB2: is a round, centered icon button`     |
-| IB3 | В `disabled` — атрибут `disabled`, курсор `default`, применён `disabledClassName`              | ✔ `IB3: disabled state`                       |
-| IB4 | Прокидывает `ref`, `onClick` и произвольные пропсы/`className` на кнопку                        | ✔ `IB4: forwards ref, className and props`    |
+| ID  | Требование                                                                        | Тест                                        |
+| --- | --------------------------------------------------------------------------------- | ------------------------------------------- |
+| IB1 | Рендерит нативный `<button type='button'>` — не сабмитит форму                    | ✔ `IB1: renders a non-submit native button` |
+| IB2 | Круглая и центрирует контент (`border-radius: 50%`, `inline-flex`, центрирование) | ✔ `IB2: is a round, centered icon button`   |
+| IB3 | В `disabled` — атрибут `disabled`, курсор `default`, применён `disabledClassName` | ✔ `IB3: disabled state`                     |
+| IB4 | Прокидывает `ref`, `onClick` и произвольные пропсы/`className` на кнопку          | ✔ `IB4: forwards ref, className and props`  |
 
 **`Tooltip`**
 
-| ID  | Требование                                                                                  | Тест                                              |
-| --- | ------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| TT1 | При `disabled` или пустом `title` рендерит только триггер, без подсказки                    | ✔ `TT1: disabled/empty renders only the trigger` |
-| TT2 | При наведении показывает подсказку с текстом `title`                                        | ✔ `TT2: hovering shows the tooltip`               |
-| TT3 | Уводя курсор, подсказка скрывается (самовосстановление)                                     | ✔ `TT3: leaving hides the tooltip`                |
-| TT4 | Подсказка появляется со стороны `side` (`data-side`)                                        | ✔ `TT4: honors the `side` prop`                   |
+| ID  | Требование                                                               | Тест                                             |
+| --- | ------------------------------------------------------------------------ | ------------------------------------------------ |
+| TT1 | При `disabled` или пустом `title` рендерит только триггер, без подсказки | ✔ `TT1: disabled/empty renders only the trigger` |
+| TT2 | При наведении показывает подсказку с текстом `title`                     | ✔ `TT2: hovering shows the tooltip`              |
+| TT3 | Уводя курсор, подсказка скрывается (самовосстановление)                  | ✔ `TT3: leaving hides the tooltip`               |
+| TT4 | Подсказка появляется со стороны `side` (`data-side`)                     | ✔ `TT4: honors the `side` prop`                  |
 
 **`Switch`**
 
-| ID  | Требование                                                                                  | Тест                                          |
-| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| SW1 | `role='switch'`, `aria-checked` отражает `defaultChecked`/`checked`                         | ✔ `SW1: exposes the switch role and state`    |
-| SW2 | Клик переключает `aria-checked` (неуправляемо, самовосстановление)                          | ✔ `SW2: clicking toggles the state`           |
-| SW3 | `disabled` выражен `data-disabled` и не переключается                                       | ✔ `SW3: disabled state`                       |
-| SW4 | Трек фиксированного размера (32×18) и не растягивается                                       | ✔ `SW4: fixed-size track`                     |
+| ID  | Требование                                                          | Тест                                       |
+| --- | ------------------------------------------------------------------- | ------------------------------------------ |
+| SW1 | `role='switch'`, `aria-checked` отражает `defaultChecked`/`checked` | ✔ `SW1: exposes the switch role and state` |
+| SW2 | Клик переключает `aria-checked` (неуправляемо, самовосстановление)  | ✔ `SW2: clicking toggles the state`        |
+| SW3 | `disabled` выражен `data-disabled` и не переключается               | ✔ `SW3: disabled state`                    |
+| SW4 | Трек фиксированного размера (32×18) и не растягивается              | ✔ `SW4: fixed-size track`                  |
 
 **`Skeleton`**
 
-| ID  | Требование                                                                                  | Тест                                          |
-| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| SK1 | Рендерит `<span>` с заданными `width`/`height` (инлайн-стилем)                              | ✔ `SK1: renders a sized span`                 |
-| SK2 | `animation='wave'` даёт бегущий блик (`relative`/`overflow`), `false` — статичный           | ✔ `SK2: wave vs static animation`             |
-| SK3 | Прокидывает `className`/`style`, сохраняет скругление 4px                                   | ✔ `SK3: forwards className and style`         |
+| ID  | Требование                                                                        | Тест                                  |
+| --- | --------------------------------------------------------------------------------- | ------------------------------------- |
+| SK1 | Рендерит `<span>` с заданными `width`/`height` (инлайн-стилем)                    | ✔ `SK1: renders a sized span`         |
+| SK2 | `animation='wave'` даёт бегущий блик (`relative`/`overflow`), `false` — статичный | ✔ `SK2: wave vs static animation`     |
+| SK3 | Прокидывает `className`/`style`, сохраняет скругление 4px                         | ✔ `SK3: forwards className and style` |
 
 **`LinearProgress`**
 
-| ID  | Требование                                                                                  | Тест                                          |
-| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| LP1 | Доступен как индикатор загрузки (`role='progressbar'`)                                      | ✔ `LP1: exposes the progressbar role`         |
-| LP2 | Overlay: спозиционирован абсолютно и содержит анимируемый бар                               | ✔ `LP2: is an absolutely-positioned overlay`  |
+| ID  | Требование                                                    | Тест                                         |
+| --- | ------------------------------------------------------------- | -------------------------------------------- |
+| LP1 | Доступен как индикатор загрузки (`role='progressbar'`)        | ✔ `LP1: exposes the progressbar role`        |
+| LP2 | Overlay: спозиционирован абсолютно и содержит анимируемый бар | ✔ `LP2: is an absolutely-positioned overlay` |
+
+**`Bubble`**
+
+| ID  | Требование                                                                 | Тест                                            |
+| --- | -------------------------------------------------------------------------- | ----------------------------------------------- |
+| BU1 | Рендерит `<span>` с переданным содержимым                                  | ✔ `BU1: renders its content in a span`          |
+| BU2 | Неинтерактивный оверлей (`pointer-events: none`) — не ворует клики у якоря | ✔ `BU2: is a non-interactive overlay …`         |
+| BU3 | `sm` компактнее дефолтного `md` (меньший кегль)                            | ✔ `BU3: \`sm\` is more compact …`               |
+| BU4 | Прокидывает `className` и произвольные атрибуты (`data-*`, `aria-hidden`)  | ✔ `BU4: forwards className and arbitrary props` |
 
 **Иконки**
 
-| ID  | Требование                                                                                  | Тест                                          |
-| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| IC1 | `SvgIcon` рисует 24×24 `<svg>` на `currentColor`, `aria-hidden` (декоративная)              | ✔ `IC1: SvgIcon draws a 24×24 currentColor svg` |
-| IC2 | `DEFAULT_ICONS` покрывает весь контракт `TableIcons`                                        | ✔ `IC2: default icons cover the contract`     |
-| IC3 | `IconsProvider` переопределяет иконку через `icons`, прочие остаются дефолтными             | ✔ `IC3: IconsProvider overrides selectively`  |
+| ID  | Требование                                                                      | Тест                                            |
+| --- | ------------------------------------------------------------------------------- | ----------------------------------------------- |
+| IC1 | `SvgIcon` рисует 24×24 `<svg>` на `currentColor`, `aria-hidden` (декоративная)  | ✔ `IC1: SvgIcon draws a 24×24 currentColor svg` |
+| IC2 | `DEFAULT_ICONS` покрывает весь контракт `TableIcons`                            | ✔ `IC2: default icons cover the contract`       |
+| IC3 | `IconsProvider` переопределяет иконку через `icons`, прочие остаются дефолтными | ✔ `IC3: IconsProvider overrides selectively`    |
 
 **Контракт стилевых признаков по семействам** (`theming-contracts.test.tsx`)
 
-| ID   | Требование                                                                     | Тест                                    |
-| ---- | ------------------------------------------------------------------------------ | --------------------------------------- |
-| TC-1 | Семейство кнопок (F1/F2) делит единый disabled-цвет `control-disabled-color`   | ✔ `TC-1: button family … disabled color` |
-| TC-2 | Семейство кнопок делит единую `transition`                                     | ✔ `TC-2: button family … transition`    |
-| TC-3 | Семейство кнопок делит единый радиус `radius-round` (50%)                      | ✔ `TC-3: button family … radius`        |
-| TC-4 | Форм-контролы (F3) делят единую disabled-прозрачность `disabled-opacity`       | ✔ `TC-4: form controls … disabled opacity` |
-| TC-5 | Форм-контролы делят единую `transition`                                        | ✔ `TC-5: form controls … transition`    |
+| ID   | Требование                                                                   | Тест                                       |
+| ---- | ---------------------------------------------------------------------------- | ------------------------------------------ |
+| TC-1 | Семейство кнопок (F1/F2) делит единый disabled-цвет `control-disabled-color` | ✔ `TC-1: button family … disabled color`   |
+| TC-2 | Семейство кнопок делит единую `transition`                                   | ✔ `TC-2: button family … transition`       |
+| TC-3 | Семейство кнопок делит единый радиус `radius-round` (50%)                    | ✔ `TC-3: button family … radius`           |
+| TC-4 | Форм-контролы (F3) делят единую disabled-прозрачность `disabled-opacity`     | ✔ `TC-4: form controls … disabled opacity` |
+| TC-5 | Форм-контролы делят единую `transition`                                      | ✔ `TC-5: form controls … transition`       |
 
 См. [ADR 0003](0003-formalize-tech-stack.md) про стек контролов,
 [ADR 0019](0019-token-architecture.md) про уровни токенов и

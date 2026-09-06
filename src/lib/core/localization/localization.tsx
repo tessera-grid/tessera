@@ -19,6 +19,12 @@ export interface TableLabels {
   sortDescending: string
   /** Тултип «сбросить сортировку» */
   clearSort: string
+  /**
+   * Доступное имя приоритета столбца в мультисортировке (`position` из `total`,
+   * 1-based). Уходит в `aria-label` кнопки — числовой бейдж приоритета скринридер
+   * не читает, поэтому порядок сортировки проговаривается тут.
+   */
+  sortPriority: (position: number, total: number) => string
   /** Тултип кнопки группировки */
   group: string
   /** Тултип кнопки разгруппировки */
@@ -39,6 +45,7 @@ export const DEFAULT_LABELS: TableLabels = {
   sortAscending: 'Sort ascending',
   sortDescending: 'Sort descending',
   clearSort: 'Clear sorting',
+  sortPriority: (position, total) => `Sort priority ${position} of ${total}`,
   group: 'Group',
   ungroup: 'Ungroup',
   table: 'Data table',
