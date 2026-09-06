@@ -143,6 +143,11 @@ describe('Column Dragging — requirements', () => {
     expect(container.querySelectorAll(HEAD_HANDLE).length).toBeGreaterThan(0)
   })
 
+  // Паритет включения/выключения columnDragging в рантайме (ручка появляется и
+  // исчезает без ремаунта, без падения getCanDrag/getDraggableIndex) — часть
+  // сквозного инварианта presence-based композиции, а не столбцовая специфика:
+  // plugin-runtime-toggle.test.tsx (RT-columnDragging, ADR 0010 R11).
+
   test('D16: only columns with `enableDragging` get a handle (per-column opt-in)', async () => {
     // Row actions add a non-draggable action column; it must carry no handle,
     // while the opt-in data columns each do. Few columns so nothing is
