@@ -130,8 +130,8 @@ Hook `isAllRowsSelected` — флаг режима «выбрано всё по�
 
 - **`data-selected` на `role="row"`** (`BodyRow.tsx`) — `row.getIsSelected()`;
   реактивен (`useSubscribeStore`). На нём `BodyRow.module.css` включает фон
-  выбранной строки (`--data-grid-row-selected-bg`, при наведении —
-  `--data-grid-row-selected-hovered-bg`).
+  выбранной строки (`--tsr-comp-row-selected-bg`, при наведении —
+  `--tsr-comp-row-selected-hovered-bg`).
 - **`data-checked` / `data-indeterminate` / `data-unchecked` на чекбоксе**
   (`.row-select-checkbox`) — состояние, которое проставляет Base UI Checkbox;
   блокировка — нативным `disabled` / `data-disabled`.

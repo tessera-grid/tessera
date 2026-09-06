@@ -5,7 +5,7 @@
 - **Связано:**
   - [ADR 0003](0003-formalize-tech-stack.md) — стек контролов: примитивы Base UI
     (фундамент shadcn), стилизация Tailwind v4 + cva и CSS Modules поверх
-    кастомных свойств `--data-grid-*`. Этот ADR не выбирает стек заново, а
+    кастомных свойств `--tsr-comp-*`. Этот ADR не выбирает стек заново, а
     фиксирует спецификацию собственных обёрток над ним.
   - [ADR 0007](0007-reactivity-pubsub.md) — UI-компоненты — «глупые»
     презентеры: они не подписаны на состояние таблицы и не рендерят
@@ -54,7 +54,7 @@ Tessera рендерит служебные контролы (тоггл рас�
 
 Компоненты остаются тонкими обёртками над примитивами Base UI
 ([ADR 0003](0003-formalize-tech-stack.md)) — они добавляют только стили
-(CSS Modules на токенах `--data-grid-*`) и узкий, стабильный проп-контракт. Своя
+(CSS Modules на токенах `--tsr-comp-*`) и узкий, стабильный проп-контракт. Своя
 логика доступности, фокуса и порталов не пишется — она делегируется Base UI.
 Компоненты **презентационны**: они не знают о таблице, её состоянии или плагинах
 и потому переиспользуемы и тестируемы в изоляции.
@@ -87,12 +87,12 @@ Tessera рендерит служебные контролы (тоггл рас�
 `defaultChecked`). Трек фиксированного размера (32×18px, локальные переменные
 `--_track-w/-h`), не растягивается (`flex: 0 0 auto`); бегунок съезжает в
 включённом состоянии. `disabled` выражен style-hook’ом `data-disabled` (Base UI)
-и приглушает контрол; фокус даёт кольцо `--data-grid-focus-ring`.
+и приглушает контрол; фокус даёт кольцо `--tsr-comp-focus-ring`.
 
 ### `Skeleton`
 
 Плейсхолдер загрузки: `<span>` с заданными `width`/`height` (инлайн-стилем,
-число трактуется как px), скруглением 4px и фоном `--data-grid-skeleton-bg`. При
+число трактуется как px), скруглением 4px и фоном `--tsr-comp-skeleton-bg`. При
 `animation='wave'` (дефолт) добавляется бегущий блик через псевдоэлемент —
 элемент становится `position: relative; overflow: hidden`; при `animation={false}`
 блика нет (статичный плейсхолдер). `className`/`style` прокидываются и
@@ -136,6 +136,45 @@ Tessera рендерит служебные контролы (тоггл рас�
 - **`LinearProgress`** — `role='progressbar'`.
 - **Иконки** — `<svg viewBox='0 0 24 24' aria-hidden>`; `DEFAULT_ICONS`
   покрывает весь контракт `TableIcons`.
+
+### Контракт стилевых признаков по семействам (ADR 0019)
+
+Компоненты сгруппированы в **семейства** со схожей стилевой ролью; члены семейства
+ОБЯЗАНЫ делить единые признаки, привязанные к каноническим токенам. Enforcement —
+`theming-contracts.test.tsx` (TC-1…TC-5): новый член добавляется в список семейства
+и обязан пройти контракт.
+
+| Семейство | Члены | Признак → канонический токен |
+| --- | --- | --- |
+| **F1 icon-контролы** | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round` |
+| **F2 action-кнопки** | RowButton, CellButton | color/bg/hover `action-button-*` · shadow `shadow-action` · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round` |
+| **F3 форм-контролы** | Checkbox, Switch | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill` |
+
+**Правила единого disabled (по семейству):** иконки/кнопки (F1/F2) гаснут **цветом**
+(`--tsr-comp-control-disabled-color`); наполненные форм-контролы (F3) — общей
+**прозрачностью** (`--tsr-comp-disabled-opacity`). Оба — канонические токены; больше
+никаких `cursor`-only или хардкод-`opacity:0.5`. Disabled base-ui-контролов ловится
+и `:disabled`, и `[data-disabled]` (base-ui выставляет data-атрибут).
+
+**Формы радиуса токенизированы:** `--tsr-comp-radius-round` (кнопки F1/F2),
+`--tsr-comp-radius-pill` (switch), `--tsr-comp-checkbox-radius`,
+`--tsr-comp-resize-handler-radius`. У формы — литерал-фолбэк (`var(--…, 50%)`), т.к.
+форма не тема-зависима и примитив должен быть круглым и вне слоя темы.
+
+**Остаточные расхождения (осознанные, by design):**
+
+- **Два механизма disabled** (цвет для F1/F2, прозрачность для F3) — намеренно:
+  цветом гасить наполненный checkbox/switch некорректно, прозрачностью — иконку.
+- **Три transition-токена** (`action-button` F1/F2 · `button-cell` F3 · surface-
+  transition для строк/ячеек/ресайза) — намеренно: у кнопки, чекбокса и строки
+  разные наборы анимируемых свойств/длительностей; «одна transition на всё» была бы
+  неверной.
+- **ResizeHandler/DragHandler — не на базе IconButton** (кастомные контролы):
+  делят disabled-цвет, но hover/структура свои; полный контракт F1 к ним не
+  применяется (отдельная форма).
+- **`:focus-visible` в рантайме не тестируется** (капризно в headless) — токен
+  `focus-ring` общий по построению, но состояние фокуса проверяется только фактом
+  единого токена, не поднятием фокуса.
 
 ## Последствия
 
@@ -215,6 +254,17 @@ Chromium) и рендерят компоненты напрямую, читая 
 | IC2 | `DEFAULT_ICONS` покрывает весь контракт `TableIcons`                                        | ✔ `IC2: default icons cover the contract`     |
 | IC3 | `IconsProvider` переопределяет иконку через `icons`, прочие остаются дефолтными             | ✔ `IC3: IconsProvider overrides selectively`  |
 
-См. [ADR 0003](0003-formalize-tech-stack.md) про стек контролов и
+**Контракт стилевых признаков по семействам** (`theming-contracts.test.tsx`)
+
+| ID   | Требование                                                                     | Тест                                    |
+| ---- | ------------------------------------------------------------------------------ | --------------------------------------- |
+| TC-1 | Семейство кнопок (F1/F2) делит единый disabled-цвет `control-disabled-color`   | ✔ `TC-1: button family … disabled color` |
+| TC-2 | Семейство кнопок делит единую `transition`                                     | ✔ `TC-2: button family … transition`    |
+| TC-3 | Семейство кнопок делит единый радиус `radius-round` (50%)                      | ✔ `TC-3: button family … radius`        |
+| TC-4 | Форм-контролы (F3) делят единую disabled-прозрачность `disabled-opacity`       | ✔ `TC-4: form controls … disabled opacity` |
+| TC-5 | Форм-контролы делят единую `transition`                                        | ✔ `TC-5: form controls … transition`    |
+
+См. [ADR 0003](0003-formalize-tech-stack.md) про стек контролов,
+[ADR 0019](0019-token-architecture.md) про уровни токенов и
 [theming-and-overrides.md](../architecture/theming-and-overrides.md) про токены
-`--data-grid-*` и переопределение иконок.
+`--tsr-comp-*` и переопределение иконок.

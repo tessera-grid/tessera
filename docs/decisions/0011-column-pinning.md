@@ -123,7 +123,7 @@ const handleClick = () => {
   `<DataGrid icons={{ pin }} />`) — **16×16**;
 - в закреплённом состоянии иконка **повёрнута на −45°** (`PinButton.module.css`:
   `.pinned svg { rotate: -45deg }`) и красится в активный цвет
-  (`--data-grid-control-active-color`), `data-button-active` = `true`;
+  (`--tsr-comp-control-active-color`), `data-button-active` = `true`;
 - тултип — `pin` / `unpin` из локализации (по умолчанию `Pin column` /
   `Unpin column`);
 - **видимость только при наведении** — кнопка присутствует в DOM всегда, но
@@ -140,13 +140,13 @@ const handleClick = () => {
   `right = column.getAfter('right')` для правого — накопительное смещение с
   учётом ширин соседних закреплённых столбцов;
 - **sticky-слой:** CSS по `data-cell-pinned` даёт `position: sticky`,
-  `z-index: var(--data-grid-z-index-pinned)`, фон
-  (`--data-grid-cell-pinned-left-bg`, для нечётных строк —
-  `--data-grid-cell-odd-pinned-left-bg`), чтобы прокручиваемый контент не
+  `z-index: var(--tsr-comp-z-index-pinned)`, фон
+  (`--tsr-comp-cell-pinned-left-bg`, для нечётных строк —
+  `--tsr-comp-cell-odd-pinned-left-bg`), чтобы прокручиваемый контент не
   просвечивал сквозь закреплённую ячейку;
 - **разделитель:** последний закреплённый слева столбец
   (`data-cell-last-left-pinned`, `column.getIsLastColumn('left')`) получает
-  правую границу `--data-grid-cell-pinned-border-color`; правый край
+  правую границу `--tsr-comp-cell-pinned-border-color`; правый край
   зеркально (`isFirstRightPinnedColumn` / `isAloneRightPinnedColumn`
   выравнивают контент по правому краю).
 

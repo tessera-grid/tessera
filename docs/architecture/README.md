@@ -79,16 +79,16 @@ flowchart TB
         DATA["data (массив строк)"]
         STATE["state + handlers"]
         HOOKS["hooks (бизнес-контракт)"]
-        PLUGINS["plugins (кастомные TablePlugins)"]
-        OPTS["enable*-опции / icons / localization / colorMode"]
+        PLUGINS["plugins (фабрики: встроенные + кастомные, presence-based)"]
+        OPTS["ядровые опции (skeleton / loading / footer) / icons / localization / colorMode"]
     end
 
     subgraph core["Ядро — useCreateTable()"]
-        CC["useCreateColumns<br/>(инъекция столбцов action/selection/expand/drag)"]
+        CC["useCreateColumns<br/>(инъекция сервисных столбцов по наличию плагина-владельца)"]
         CS["useCreateState<br/>(разделение core против external)"]
         CH["useCreateHooks"]
         CSL["useCreateSlots"]
-        RT["useReactTable (TanStack)<br/>_features = базовые плагины + кастомные<br/>нативный getCoreRowModel"]
+        RT["useReactTable (TanStack)<br/>_features = commonPlugin + активные из plugins (presence-based)<br/>нативный getCoreRowModel"]
     end
 
     subgraph inst["Инстанс таблицы"]

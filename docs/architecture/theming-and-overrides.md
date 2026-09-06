@@ -6,38 +6,50 @@
 дефолты и позволяет их перекрыть, ничего не хардкодя. Питаются из провайдеров в
 стеке `<DataGrid/>` (см. [rendering.md](rendering.md)).
 
-## Тема — CSS-переменные
+## Тема — CSS-переменные (трёхуровневая система токенов)
 
 Интерактивные контролы — это примитивы Base UI (фундамент shadcn),
 стилизованные Tailwind + cva; layout грида и темизация используют CSS Modules,
-читающие CSS custom properties (`--data-grid-*`). См.
-[ADR 0018](../decisions/0018-external-theming.md).
+читающие CSS custom properties `--tsr-*`. Токены разложены на **три уровня**
+(ADR [0019](../decisions/0019-token-architecture.md)); слой и шиппинг — ADR
+[0018](../decisions/0018-external-theming.md).
 
-- **Дефолты токенов** объявлены в
-  [`theme.css`](../../src/lib/core/themeVariables/theme.css) на классе
-  `.data-grid-theme` через `:where()` (нулевая специфичность). Обёртка грида
-  несёт стабильный класс `DATA_GRID_THEME_CLASS = 'data-grid-theme'`. Значения —
-  тонкая производная от апстрим-токенов shadcn (`--primary`/`--foreground`/
-  `--info`…) через `var()`/`color-mix()`, с «Vercel»-фолбэками, поэтому грид не
-  ломается без global.css. Тёмный режим — класс `.dark` на обёртке
-  переопределяет апстрим-токены.
-- **Два рычага переопределения** (оба без `!important`):
-  - глобально/по селектору — обычным CSS: `.data-grid-theme { --data-grid-*: … }`
-    бьёт слой `:where(...)`;
-  - пер-инстансно — пропы `style`/`className` на `<DataGrid/>` кладутся на
-    обёртку (`style={{ '--data-grid-loader-bar': '#f00' }}`), инлайн бьёт дефолт
-    слоя.
-- Правка апстрим-палитры согласованно меняет ВСЕ производные `--data-grid-*`.
+| Уровень | Префикс | Что | Тема-зависим |
+| --- | --- | --- | --- |
+| Primitive | `--tsr-ref-*` | сырые шкалы (`neutral-50…950`, `blue-500`, `radius-md`) | нет |
+| Semantic | `--tsr-sys-*` | роли (`fg`/`surface`/`accent`/`overlay-*`) + мост к shadcn | **да** |
+| Component | `--tsr-comp-*` | токены части грида (`head-bg`/`row-*`/`checkbox-*`) | нет (из semantic) |
+
+- **Ссылки строго вниз:** `comp → sys → ref`. Component упоминает только
+  `--tsr-sys-*`; primitive и shadcn там не встречаются.
+- **Мост к shadcn — только в Semantic:** `--tsr-sys-x: var(--<shadcn>, <ref>)`.
+  Если потребитель задал апстрим-палитру (`--foreground`/`--card`/…), она
+  наследуется в обёртку и побеждает; иначе берётся primitive-дефолт. Дженерик-имена
+  в глобальный скоуп НЕ выносятся — грид не мешает чужому UI-фреймворку.
+- **Тема-зависимость — только в Semantic:** light/dark переключают, какой primitive
+  играет роль. Дефолты — на `.data-grid-theme` через `:where()`; dark —
+  `:where(.data-grid-theme.dark), :where(.dark .data-grid-theme)`. Обёртка несёт
+  стабильный `DATA_GRID_THEME_CLASS = 'data-grid-theme'`.
+- **Шиппинг:** `theme.css` — ГЛОБАЛЬНЫЙ (не-модульный) CSS side-effect, импортится
+  из `DataGrid.tsx`. Через `@import` в `.module.css` его нельзя — CSS Modules
+  захешировали бы классы `data-grid-theme`/`dark` (инвариант сборки:
+  `grep -c '_data-grid-theme_' dist/style.css` = 0).
+- **Три публичные поверхности переопределения** (все без `!important`, бьют
+  `:where(...)` нулевой специфичности): broad — shadcn (`--foreground`…);
+  mid — `--tsr-sys-*`; narrow — `--tsr-comp-*`. Ось режима — `.dark`; ось
+  инстанса — проп `style`/`className` на `<DataGrid/>`. Primitive НЕ является
+  поверхностью переопределения.
 - Инлайн на обёртке остаются только РАНТАЙМ-переменные
-  (`--data-grid-head-height`, `--data-grid-body-height`, drag-офсеты).
+  (`--tsr-comp-head-height`, `--tsr-comp-body-height`, drag-офсеты).
 
 ```mermaid
 flowchart LR
-    TC["theme.css :where(.data-grid-theme)"] --> VARS["--data-grid-* на обёртке"]
-    PAL["апстрим shadcn-токены (var/color-mix)"] --> VARS
-    VARS --> CSSM["CSS Modules (компоненты)"]
-    OVERCSS["CSS-правило потребителя на .data-grid-theme"] -.-> VARS
-    OVERINLINE["проп style/className на DataGrid"] -.-> VARS
+    SHADCN["shadcn потребителя (опц.)"] -.-> SYS
+    REF["--tsr-ref-* (primitive)"] --> SYS["--tsr-sys-* (semantic, light/dark)"]
+    SYS --> COMP["--tsr-comp-* (component)"]
+    COMP --> CSSM["CSS Modules (компоненты грида)"]
+    OVERCSS["CSS-правило на .data-grid-theme"] -.-> COMP
+    OVERINLINE["проп style/className на DataGrid"] -.-> COMP
 ```
 
 ## Иконки

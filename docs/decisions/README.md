@@ -24,7 +24,8 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0015](0015-row-expanding.md)                        | Раскрытие строк: плагин rowExpanding (RE1–RE11)                          | Принято         |
 | [0016](0016-row-grouping.md)                         | Группировка строк: плагин rowGrouping (RG1–RG11)                         | Принято         |
 | [0017](0017-ui-components.md)                        | UI-компоненты: контракт и покрытие (IB/TT/SW/SK/LP/IC)                   | Принято         |
-| [0018](0018-external-theming.md)                     | Внешняя темизация: переопределяемый слой токенов + тени (TH1–TH5)        | Принято         |
+| [0018](0018-external-theming.md)                     | Внешняя темизация: переопределяемый слой токенов + тени (TH1–TH8)        | Принято         |
+| [0019](0019-token-architecture.md)                   | Архитектура токенов: 3 уровня `--tsr-ref/sys/comp` (T-R1–T-R10, TK1–TK4) | Принято         |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

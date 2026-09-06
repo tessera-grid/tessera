@@ -108,7 +108,7 @@ const onSort = (event) => {
   - `desc` → `sortDesc` (по умолчанию `ChevronDown`);
   - не отсортировано → `sort` (по умолчанию `ChevronsUpDown`);
 - в отсортированном состоянии кнопка красится в активный цвет
-  (`SortButton.module.css`: `.sorted { color: var(--data-grid-control-active-color) }`)
+  (`SortButton.module.css`: `.sorted { color: var(--tsr-comp-control-active-color) }`)
   и несёт `data-button-active` = `true`;
 - **тултип описывает следующее действие** (из локализации):
   не отсортировано → `sortDescending`; отсортировано `desc` → `sortAscending`;

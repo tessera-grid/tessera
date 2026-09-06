@@ -220,8 +220,8 @@ sequenceDiagram
 
 `--draggable-row-background-color` устанавливается на каждое перетаскивание через
 `getRowDraggableStyles` (из `rowDragging.acceptable`):
-`--data-grid-row-accept-draggable-bg`, когда текущая глубина разрешена,
-`--data-grid-row-not-accept-draggable-bg`, когда нет.
+`--tsr-comp-row-accept-draggable-bg`, когда текущая глубина разрешена,
+`--tsr-comp-row-not-accept-draggable-bg`, когда нет.
 
 #### «Облако» перетаскивания (overlay)
 
@@ -444,7 +444,7 @@ export const ColumnDraggingComponent = memo(({ column, table }) => {
 
 `.head__cell` даёт контейнер (`overflow: hidden`, `padding: 0`), а
 `CellWrapperContent` внутри держит `position: relative` и горизонтальный отступ
-`--data-grid-cell-content-padding` = `0px COLUMN_CONTENT_PADDING(16)px`. Ручка
+`--tsr-comp-cell-content-padding` = `0px COLUMN_CONTENT_PADDING(16)px`. Ручка
 `16×16` прижата к `left: 0` и **умещается ровно в этот 16px левый отступ-жёлоб**:
 она садится в паддинг, не занимает layout-ширину и не наезжает на текст заголовка
 (который начинается за отступом).
