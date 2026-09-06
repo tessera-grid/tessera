@@ -210,17 +210,28 @@ describe('Column Pinning — requirements', () => {
       .toBe(true)
   })
 
-  test('CP8: a pinned toggle is active and its icon is rotated −45°', async () => {
+  test('CP8: a pinned toggle highlights its icon with the accent colour, not a rotation', async () => {
     const container = await renderColumnPinning()
     const pinnedCell = await pinFirstColumn(container)
-    const button = pinButtonOf(pinnedCell)
+    const pinnedButton = pinButtonOf(pinnedCell)
 
-    expect(hiddenWrapperOf(button).getAttribute('data-button-active')).toBe(
-      'true',
+    expect(
+      hiddenWrapperOf(pinnedButton).getAttribute('data-button-active'),
+    ).toBe('true')
+
+    // The pinned toggle switches to `--tsr-comp-control-active-color`, so its
+    // colour differs from an unpinned column's toggle…
+    const plainCell = renderedDataCells(container).find(
+      cell => cell.getAttribute('data-cell-pinned') !== 'left',
+    )!
+    const plainButton = await revealPin(plainCell)
+    expect(getComputedStyle(pinnedButton).color).not.toBe(
+      getComputedStyle(plainButton).color,
     )
-    // `.pinned svg { rotate: -45deg }` — the individual rotate transform.
-    const svg = button.querySelector<HTMLElement>('svg')!
-    expect(getComputedStyle(svg).rotate).toBe('-45deg')
+
+    // …while the icon itself stays upright (no `rotate` transform).
+    const svg = pinnedButton.querySelector<HTMLElement>('svg')!
+    expect(getComputedStyle(svg).rotate).toBe('none')
   })
 
   test('CP9: toggling pin calls the `onTogglePin` hook with the new flag', async () => {

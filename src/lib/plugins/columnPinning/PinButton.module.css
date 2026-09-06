@@ -11,10 +11,6 @@
   background-color: var(--tsr-comp-control-active-hover-bg);
 }
 
-.pinned svg {
-  rotate: -45deg;
-}
-
 .disabled {
   cursor: not-allowed;
 }
