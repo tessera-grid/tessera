@@ -70,7 +70,11 @@ export const HeadRow = ({
   }
 
   return (
-    <div className={clsx('data-grid__head-row', styles.HeadRow)} role="row">
+    <div
+      className={clsx('data-grid__head-row', styles.HeadRow)}
+      role="row"
+      aria-rowindex={headerGroup.depth + 1}
+    >
       <LeftEmptyColumn />
       {virtualColumns.map(virtualColumn => {
         const header = headers[virtualColumn.index]

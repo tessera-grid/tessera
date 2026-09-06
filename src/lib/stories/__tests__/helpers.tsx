@@ -61,7 +61,8 @@ export function renderedRowIndexes(): number[] {
 }
 
 export function renderedColumnIndexes(): number[] {
-  return headCells().map(h => Number(h.getAttribute('aria-colindex')))
+  // aria-colindex — 1-based (ARIA), а здесь нужен 0-based индекс колонки.
+  return headCells().map(h => Number(h.getAttribute('aria-colindex')) - 1)
 }
 
 const nextFrame = () =>

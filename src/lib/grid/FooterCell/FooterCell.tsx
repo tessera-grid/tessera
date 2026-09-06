@@ -17,12 +17,13 @@ export const FooterCell = ({ layout, header }: FooterCellProps) => {
   return (
     <div
       key={header.id}
+      role="cell"
       className={clsx('data-grid__footer-cell', styles.footer__cell)}
       style={{
         width: `var(${getHeaderSizeVariable(header.id)})`,
         willChange: 'width',
       }}
-      aria-colindex={header.column.getIndex()}
+      aria-colindex={header.column.getIndex() + 1}
       data-column-id={header.column.id}
       data-layout={layout}
       data-first-cell-in-row={header.column.getIsFirstColumn()}

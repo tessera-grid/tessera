@@ -11,11 +11,12 @@ export interface SelectCheckboxProps {
   selected: boolean
   indeterminate?: boolean
   disabled?: boolean
+  label?: string
   onClick: (event: ChangeEvent<HTMLInputElement>, checked: boolean) => void
 }
 
 export const SelectCheckbox = memo(
-  ({ selected, indeterminate, disabled, onClick }: SelectCheckboxProps) => {
+  ({ selected, indeterminate, disabled, label, onClick }: SelectCheckboxProps) => {
     const {
       checkboxChecked: CheckedIcon,
       checkboxIndeterminate: IndeterminateIcon,
@@ -38,6 +39,7 @@ export const SelectCheckbox = memo(
         indeterminate={indeterminate}
         onCheckedChange={handleCheckedChange}
         disabled={disabled}
+        aria-label={label}
       >
         <Checkbox.Indicator keepMounted className={styles.indicator}>
           {indeterminate ? (

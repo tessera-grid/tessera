@@ -1,0 +1,114 @@
+import axe from 'axe-core'
+import { describe, expect, test } from 'vitest'
+
+import { bodyRows, headCells, renderGrid } from '../helpers'
+import { bodyCellsOf, waitForGrid } from './core-helpers'
+
+// A1–A5: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
+// vitest.config.ts). Каждое требование — отдельный именованный тест `A<n>`
+// (docs/decisions/0009-test-coverage-visual-and-performance.md).
+//
+// Отключённые правила — вне зоны структурной доступности этого набора:
+// - color-contrast: зависит от токенов темы, покрыт тестами темизации;
+// - region: документ-левел landmark-правило, неприменимо к встраиваемому гриду;
+// - scrollable-region-focusable: клавиатурная прокрутка/навигация — отдельная
+//   (пока не реализованная) область, а не имена/роли/структура.
+const AXE_OPTIONS: axe.RunOptions = {
+  rules: {
+    'color-contrast': { enabled: false },
+    region: { enabled: false },
+    'scrollable-region-focusable': { enabled: false },
+  },
+}
+
+/** Корень таблицы (`role="table"`) — контекст для axe. */
+const gridRoot = (): HTMLElement => {
+  const el = document.querySelector<HTMLElement>('[role="table"]')
+  if (!el) {
+    throw new Error('grid root [role="table"] not found')
+  }
+  return el
+}
+
+/** Нарушения axe в пределах грида. */
+const violations = async (): Promise<axe.Result[]> => {
+  const { violations } = await axe.run(gridRoot(), AXE_OPTIONS)
+  return violations
+}
+
+const byRule = (list: axe.Result[], id: string) =>
+  list.filter(v => v.id === id)
+
+describe('Доступность (a11y)', () => {
+  test('A1: у таблицы есть доступное имя, aria-rowcount и aria-colcount', async () => {
+    renderGrid({ columnCount: 3, dataCount: 5, enableFooter: true })
+    await waitForGrid()
+
+    const table = gridRoot()
+    // Имя таблицы (переопределяемо через localization.table).
+    expect(table.getAttribute('aria-label')).toBeTruthy()
+    // rowcount = строки заголовка (1) + строки данных (5); colcount = число колонок.
+    expect(table.getAttribute('aria-rowcount')).toBe('6')
+    expect(Number(table.getAttribute('aria-colcount'))).toBe(headCells().length)
+  })
+
+  test('A2: ячейки тела и футера несут role="cell" (валидная структура table→row→cell)', async () => {
+    renderGrid({ columnCount: 3, dataCount: 3, enableFooter: true })
+    await waitForGrid()
+
+    bodyCellsOf(bodyRows()[0]).forEach(cell =>
+      expect(cell.getAttribute('role')).toBe('cell'),
+    )
+    document
+      .querySelectorAll<HTMLElement>('.data-grid__footer-cell')
+      .forEach(cell => expect(cell.getAttribute('role')).toBe('cell'))
+
+    const found = await violations()
+    expect(byRule(found, 'aria-required-children')).toEqual([])
+    expect(byRule(found, 'aria-required-parent')).toEqual([])
+  })
+
+  test('A3: icon-кнопки заголовка имеют доступное имя (axe button-name)', async () => {
+    renderGrid({
+      columnCount: 4,
+      dataCount: 5,
+      enableColumnSorting: true,
+      enableColumnPinning: true,
+      enableGrouping: true,
+    })
+    await waitForGrid()
+
+    // Кнопки действий заголовка снабжены aria-label из локализации.
+    expect(
+      gridRoot().querySelectorAll('button[aria-label]').length,
+    ).toBeGreaterThan(0)
+
+    expect(byRule(await violations(), 'button-name')).toEqual([])
+  })
+
+  test('A4: чекбоксы выбора имеют доступное имя', async () => {
+    renderGrid({ columnCount: 3, dataCount: 5, enableRowSelection: true })
+    await waitForGrid()
+
+    const checkboxes = gridRoot().querySelectorAll('.row-select-checkbox')
+    expect(checkboxes.length).toBeGreaterThan(0)
+    checkboxes.forEach(cb =>
+      expect(cb.getAttribute('aria-label')).toBeTruthy(),
+    )
+  })
+
+  test('A5: грид со всеми (совместимыми) фичами не имеет нарушений axe', async () => {
+    renderGrid({
+      columnCount: 8,
+      dataCount: 30,
+      enableColumnSorting: true,
+      enableColumnPinning: true,
+      enableGrouping: true,
+      enableRowSelection: true,
+      enableFooter: true,
+    })
+    await waitForGrid()
+
+    expect(await violations()).toEqual([])
+  })
+})

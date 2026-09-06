@@ -38,6 +38,7 @@ export const GroupButton = memo(
             onClick={onClick}
             disabled={disabled}
             aria-disabled={disabled}
+            aria-label={title}
           >
             <GroupIcon width={16} height={16} />
           </IconButton>

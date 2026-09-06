@@ -26,6 +26,8 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0017](0017-ui-components.md)                        | UI-компоненты: контракт и покрытие (IB/TT/SW/SK/LP/IC)                   | Принято         |
 | [0018](0018-external-theming.md)                     | Внешняя темизация: переопределяемый слой токенов + тени (TH1–TH8)        | Принято         |
 | [0019](0019-token-architecture.md)                   | Архитектура токенов: 3 уровня `--tsr-ref/sys/comp` (T-R1–T-R10, TK1–TK4) | Принято         |
+| [0020](0020-accessibility.md)                        | Доступность (a11y): роли, имена, индексы, axe (A1–A5)                    | Принято         |
+| [0021](0021-keyboard-navigation.md)                  | Клавиатурная навигация: плагин `keyboardNavigation` (KN1–KN14)           | Предложено      |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

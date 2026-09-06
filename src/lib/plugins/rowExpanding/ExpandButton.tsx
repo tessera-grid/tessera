@@ -24,11 +24,10 @@ export const ExpandButton = ({
 
   const labels = useLocalization()
 
+  const label = expanded ? labels.collapse : labels.expand
+
   return (
-    <Tooltip
-      title={expanded ? labels.collapse : labels.expand}
-      disabled={disabled}
-    >
+    <Tooltip title={label} disabled={disabled}>
       <div>
         <IconButton
           className={clsx('row-expand-button', styles.button, {
@@ -37,6 +36,7 @@ export const ExpandButton = ({
           })}
           disabled={disabled}
           onClick={onClick}
+          aria-label={label}
         >
           <ExpandIcon width={20} height={20} />
         </IconButton>

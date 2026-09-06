@@ -44,11 +44,11 @@ describe('Ядро на TanStack — структура и порядок', () =
     })
     await waitForGrid()
 
-    // DOM-порядок заголовков (слева направо) и их aria-colindex — восходящие 0..n-1,
-    // а тексты идут ровно в порядке определения колонок.
+    // DOM-порядок заголовков (слева направо) и их aria-colindex — восходящие 1..n
+    // (ARIA 1-based), а тексты идут ровно в порядке определения колонок.
     const cells = headCellsLeftRight()
     expect(cells.map(c => Number(c.getAttribute('aria-colindex')))).toEqual([
-      0, 1, 2,
+      1, 2, 3,
     ])
     expect(cells.map(textOf)).toEqual(['Alpha', 'Bravo', 'Charlie'])
   })
@@ -59,11 +59,11 @@ describe('Ядро на TanStack — структура и порядок', () =
     await waitForGrid()
 
     const rows = rowsTopDown()
-    // Сверху вниз индексы идут 0..n-1 (порядок массива data), а aria-rowindex
-    // на каждой строке совпадает с её data-index.
+    // data-index идёт 0..n-1 (порядок массива data), а aria-rowindex — 1-based по
+    // ARIA и учитывает строку заголовка: первая строка данных = 2 (заголовок = 1).
     rows.forEach((row, i) => {
       expect(row.getAttribute('data-index')).toBe(String(i))
-      expect(row.getAttribute('aria-rowindex')).toBe(String(i))
+      expect(row.getAttribute('aria-rowindex')).toBe(String(i + 2))
     })
   })
 

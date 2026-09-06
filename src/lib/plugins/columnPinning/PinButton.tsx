@@ -38,6 +38,7 @@ export const PinButton = memo(
             onClick={onClick}
             disabled={disabled}
             aria-disabled={disabled}
+            aria-label={title}
           >
             <PinIcon width={16} height={16} />
           </IconButton>

@@ -126,6 +126,7 @@ export const BodyCell = memo(
 
     return (
       <div
+        role="cell"
         className={clsx('data-grid__body-cell', styles.body__cell)}
         style={{
           minWidth: `var(${getColumnSizeVariable(cell.column.id)})`,
@@ -134,7 +135,7 @@ export const BodyCell = memo(
           right: isRightPinned ? `${getAfterRight}px` : undefined,
           paddingLeft,
         }}
-        aria-colindex={cell.column.getIndex()}
+        aria-colindex={cell.column.getIndex() + 1}
         data-column-id={cell.column.id}
         data-cell-pinned={cell.column.getIsPinned()}
         data-cell-odd-left-pinned={isLeftPinned && rowIndex % 2 !== 0}

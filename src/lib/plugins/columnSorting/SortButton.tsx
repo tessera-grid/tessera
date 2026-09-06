@@ -61,6 +61,7 @@ export const SortButton = memo(
             onClick={onClick}
             disabled={disabled}
             aria-disabled={disabled}
+            aria-label={title}
           >
             {operation === 'asc' && <SortAscIcon width={16} height={16} />}
             {operation === 'desc' && <SortDescIcon width={16} height={16} />}

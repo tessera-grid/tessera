@@ -2,10 +2,13 @@ import { memo } from 'react'
 
 import { HeaderContext } from '@tanstack/react-table'
 
+import { useLocalization } from '../../core/localization'
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
 import { SelectCheckbox } from './SelectCheckbox'
 
 export const HeadSelectionComponent = memo(({ table }: HeaderContext) => {
+  const labels = useLocalization()
+
   useSubscribeStore(() => [
     table.getIsAllPageRowsSelected(),
     table.getIsSomePageRowsSelected(),
@@ -35,6 +38,7 @@ export const HeadSelectionComponent = memo(({ table }: HeaderContext) => {
       indeterminate={indeterminate}
       onClick={handleSelectAllPageRows}
       disabled={disabled}
+      label={labels.selectAll}
     />
   )
 })

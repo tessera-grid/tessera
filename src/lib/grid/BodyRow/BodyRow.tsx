@@ -29,6 +29,8 @@ interface TableBodyRowProps {
   rightCellSlot?: CellSlot
   actionRowSlot?: CellSlot
 
+  headerRowCount: number
+
   isVirtualColumns: boolean
 }
 
@@ -119,7 +121,7 @@ const BodyRowCells = ({
  * скролле ряд.
  */
 export const BodyRow = memo((props: TableBodyRowProps) => {
-  const { layout, row, virtualRow } = props
+  const { layout, row, virtualRow, headerRowCount } = props
 
   useSubscribeStore(() => [
     row.getIsSelected(),
@@ -136,7 +138,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
     <div
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
-      aria-rowindex={virtualRow.index}
+      aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
       data-index={virtualRow.index}
       data-selected={row.getIsSelected()}
@@ -161,7 +163,7 @@ BodyRow.displayName = 'BodyRow'
  * `SortableContext` и управляет стилями/состоянием перетаскивания.
  */
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
-  const { row, virtualRow } = props
+  const { row, virtualRow, headerRowCount } = props
 
   useSubscribeStore(() => [
     row.getIsSelected(),
@@ -208,7 +210,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       }}
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
-      aria-rowindex={virtualRow.index}
+      aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={row.getCanExpand() ? row.getIsExpanded() : undefined}
       data-index={virtualRow.index}
       data-selected={row.getIsSelected()}

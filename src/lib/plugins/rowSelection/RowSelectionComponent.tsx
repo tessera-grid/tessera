@@ -1,11 +1,14 @@
 import { memo } from 'react'
 
+import { useLocalization } from '../../core/localization'
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
 import { CellComponentProps } from '../types'
 import { SelectCheckbox } from './SelectCheckbox'
 
 export const RowSelectionComponent = memo(
   ({ row, table }: CellComponentProps) => {
+    const labels = useLocalization()
+
     useSubscribeStore(() => [
       row.getIsSelected(),
       row.getIsSomeSelected(),
@@ -40,6 +43,7 @@ export const RowSelectionComponent = memo(
         indeterminate={indeterminate}
         onClick={handleSelectRow}
         disabled={!canSelect || isAllRowsSelected}
+        label={labels.selectRow}
       />
     )
   },

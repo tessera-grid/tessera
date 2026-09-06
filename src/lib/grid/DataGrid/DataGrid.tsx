@@ -13,7 +13,7 @@ import {
   useColumnVirtualizerScroll,
   useRowVirtualizer,
 } from '../../core/virtualization'
-import { LocalizationProvider } from '../../core/localization'
+import { DEFAULT_LABELS, LocalizationProvider } from '../../core/localization'
 import { getRowDraggableStyles } from '../../plugins/rowDragging'
 import { IconsProvider } from '../../ui/icons'
 import { BodyDndBoundary, MemoizedBody } from '../Body'
@@ -68,6 +68,8 @@ export const DataGrid = ({
 
   const headerGroupsDepth = headerGroups.length
   const hasNestedGroups = headerGroupsDepth > 1
+
+  const tableLabel = localization?.table ?? DEFAULT_LABELS.table
 
   const layout = hasNestedGroups ? 'grid' : 'flex'
   const headStyles = getGridLayout({
@@ -201,6 +203,9 @@ export const DataGrid = ({
                 ) : (
                   <div
                     role="table"
+                    aria-label={tableLabel}
+                    aria-rowcount={headerGroupsDepth + rows.length}
+                    aria-colcount={leafColumns.length}
                     className={clsx('MuiTable-root', dataGridStyles.table)}
                     style={{
                       ...columnSizes,
@@ -238,6 +243,7 @@ export const DataGrid = ({
                         leftCellSlot={leftCellSlot}
                         rightCellSlot={rightCellSlot}
                         actionRowSlot={actionRowSlot}
+                        headerRowCount={headerGroupsDepth}
                         isResizingColumns={isResizingColumns}
                         isVirtualColumns={!hasNestedGroups}
                         enableRowDragging={enableRowDragging}

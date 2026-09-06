@@ -23,6 +23,12 @@ export interface TableLabels {
   group: string
   /** Тултип кнопки разгруппировки */
   ungroup: string
+  /** Доступное имя таблицы (`aria-label` на `role="table"`) */
+  table: string
+  /** Доступное имя чекбокса выбора строки */
+  selectRow: string
+  /** Доступное имя чекбокса выбора всех строк */
+  selectAll: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -35,6 +41,9 @@ export const DEFAULT_LABELS: TableLabels = {
   clearSort: 'Clear sorting',
   group: 'Group',
   ungroup: 'Ungroup',
+  table: 'Data table',
+  selectRow: 'Select row',
+  selectAll: 'Select all rows',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)
