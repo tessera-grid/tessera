@@ -137,7 +137,7 @@ drag-ручка сидит в своём крайнем левом столбц�
   (`rowSpan`), чтобы охватить полную высоту заголовка; на одноуровневом заголовке
   возвращается как есть.
 - **ширина** — это `COLUMN_DRAGGING_SIZE = иконка (16px) + левый padding (4) +
-  правый padding (4) = 24` (`ACTION_COLUMN_CONTENT_PADDING = 4`).
+правый padding (4) = 24` (`ACTION_COLUMN_CONTENT_PADDING = 4`).
 
 ### Drag-ручка
 
@@ -165,8 +165,12 @@ pointer-listeners на свой `<span class="drag__handler--column">`.
 конвенцию `row__button--hidden` в `BodyRow.module.css`:
 
 ```css
-.body__row .row__button--hidden { opacity: 0; }
-.body__row:hover:is([data-row-interact='true']) .row__button--hidden { opacity: 1; }
+.body__row .row__button--hidden {
+  opacity: 0;
+}
+.body__row:hover:is([data-row-interact='true']) .row__button--hidden {
+  opacity: 1;
+}
 ```
 
 Так что affordance перетаскивания появляется только при наведении на строку (и
@@ -214,7 +218,10 @@ sequenceDiagram
 .body__row:is([data-row-draggable='true']) {
   background-color: var(--draggable-row-background-color) !important;
   z-index: 5 !important;
-  & > * { opacity: 0; height: 0; }
+  & > * {
+    opacity: 0;
+    height: 0;
+  }
 }
 ```
 
@@ -275,7 +282,7 @@ drop-индикатор, и порядок строк меняется. Зате
 `RowDraggingState` / `RowDraggingOptions` (`types.ts`):
 
 - `state.rowDragging: RowDragOverlayState` — `{ activeId, offsetLeft, isExpanded,
-  acceptable }`, управляется через `onRowDraggingChange`.
+acceptable }`, управляется через `onRowDraggingChange`.
 - `onRowOrderChange` — updater переупорядочивания (стандартный TanStack `Updater`),
   который потребитель обязан обработать, чтобы сохранить новый порядок.
 
@@ -524,7 +531,7 @@ sequenceDiagram
 
 - прячет **исходную** ячейку — `opacity: isDragging ? 0 : 1`;
 - сдвигает **соседние** ячейки в реальном времени — `transform:
-  translateX(${transform?.x || 0}px)` (для перетаскиваемых, не-`disabledSortable`
+translateX(${transform?.x || 0}px)` (для перетаскиваемых, не-`disabledSortable`
   столбцов),
 
 так что зазор, куда встанет столбец, показывается самим расступанием соседей.
@@ -620,43 +627,43 @@ smoke-тестом ради паритета.
 
 #### Строки — `rowDragging` (D1–D14, `row-dragging.test.tsx`)
 
-| ID  | Требование                                                          | Тест                                  |
-| --- | ------------------------------------------------------------------- | ------------------------------------- |
-| D1  | Плагин активируется через `enableRowDragging`                       | `D1: the plugin activates …`          |
-| D2  | Drag-ручка живёт в выделенном первом (сервисном) столбце            | `D2: … dedicated first … column`      |
-| D3  | Иконка ручки — 16×16                                                | `D3: … icon is 16×16`                 |
-| D4  | Ширина сервисного столбца = 16 + 4 + 4 = 24                         | `D4: … service column width …`        |
-| D5  | Ручка рендерится на каждый `row.getCanDrag()` (одна на перетаскиваемую строку) | `D5: one drag handle per … row` |
-| D6  | Ручка скрыта (`opacity: 0`), пока на строку не наведён курсор       | `D6: … hidden … until … hovered`      |
-| D7  | Ручка проявляется при наведении на строку                          | `D7: … revealed on row hover` (доверенный hover) |
-| D8  | Перетаскивание показывает overlay-«облако» (размером с первую текстовую ячейку) | `D8: … "cloud" overlay`   |
-| D9  | Слот перетаскиваемой строки показывает цветную заливку drop-индикатора | `D9: … drop-indicator fill`        |
-| D10 | При сбросе строка занимает новый индекс → порядок меняется          | `D10: … new index → order changes`    |
-| D11 | После сброса облако + заливка исчезают; строка рендерится на новом индексе | `D11: … cloud + fill are gone`  |
-| D12 | Возле верхнего/нижнего края перетаскивание автоскроллит таблицу вертикально | `D12: … auto-scrolls vertically` |
-| D13 | Строка переупорядочивается корректно после вертикального скролла (в любом направлении) | `D13: … reorders … after a vertical scroll` |
-| D14 | Перетаскивание никогда не автоскроллит таблицу горизонтально        | `D14: … never scrolls horizontally`   |
+| ID  | Требование                                                                             | Тест                                             |
+| --- | -------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| D1  | Плагин активируется через `enableRowDragging`                                          | `D1: the plugin activates …`                     |
+| D2  | Drag-ручка живёт в выделенном первом (сервисном) столбце                               | `D2: … dedicated first … column`                 |
+| D3  | Иконка ручки — 16×16                                                                   | `D3: … icon is 16×16`                            |
+| D4  | Ширина сервисного столбца = 16 + 4 + 4 = 24                                            | `D4: … service column width …`                   |
+| D5  | Ручка рендерится на каждый `row.getCanDrag()` (одна на перетаскиваемую строку)         | `D5: one drag handle per … row`                  |
+| D6  | Ручка скрыта (`opacity: 0`), пока на строку не наведён курсор                          | `D6: … hidden … until … hovered`                 |
+| D7  | Ручка проявляется при наведении на строку                                              | `D7: … revealed on row hover` (доверенный hover) |
+| D8  | Перетаскивание показывает overlay-«облако» (размером с первую текстовую ячейку)        | `D8: … "cloud" overlay`                          |
+| D9  | Слот перетаскиваемой строки показывает цветную заливку drop-индикатора                 | `D9: … drop-indicator fill`                      |
+| D10 | При сбросе строка занимает новый индекс → порядок меняется                             | `D10: … new index → order changes`               |
+| D11 | После сброса облако + заливка исчезают; строка рендерится на новом индексе             | `D11: … cloud + fill are gone`                   |
+| D12 | Возле верхнего/нижнего края перетаскивание автоскроллит таблицу вертикально            | `D12: … auto-scrolls vertically`                 |
+| D13 | Строка переупорядочивается корректно после вертикального скролла (в любом направлении) | `D13: … reorders … after a vertical scroll`      |
+| D14 | Перетаскивание никогда не автоскроллит таблицу горизонтально                           | `D14: … never scrolls horizontally`              |
 
 #### Столбцы — `columnDragging` (D15–D30, `column-dragging.test.tsx`)
 
-| ID  | Требование                                                                    | Тест                                  |
-| --- | ----------------------------------------------------------------------------- | ------------------------------------- |
-| D15 | Плагин активируется совпадением `enableColumnDragging` + `columnDef.enableDragging` | `D15: the plugin activates …`   |
-| D16 | Только столбцы с `enableDragging` получают ручку (opt-in на столбец)          | `D16: only columns with … handle`     |
-| D17 | Drag-ручка живёт в самой ячейке заголовка (слот `leftHeaderSlot`), без сервисного столбца | `D17: … in the header cell …` |
-| D18 | Иконка ручки — 16×16                                                          | `D18: … icon is 16×16`                |
-| D19 | Ручка спозиционирована абсолютно (`left: 0`) и умещается в левый отступ содержимого ячейки (16px) | `D19: … absolutely positioned …` |
-| D20 | Ручка скрыта (`opacity: 0`), пока на заголовок не наведён курсор              | `D20: … hidden … until … hovered`     |
-| D21 | Ручка проявляется при наведении на заголовок                                 | `D21: … revealed on header hover`     |
-| D22 | Перетаскивание показывает overlay-клон ячейки заголовка (та же ширина/контент) | `D22: … overlay clone …`            |
-| D23 | Исходная ячейка скрыта (`opacity: 0`) во время перетаскивания; соседи сдвигаются `translateX` | `D23: … neighbours shift …` |
-| D24 | При сбросе `columnOrder` меняется → столбцы переупорядочиваются               | `D24: … columnOrder changes …`        |
-| D25 | После сброса overlay исчезает; столбец рендерится на новой позиции            | `D25: … overlay is gone …`            |
-| D26 | Возле левого/правого края перетаскивание автоскроллит таблицу горизонтально   | `D26: … auto-scrolls horizontally`    |
-| D27 | Столбец переупорядочивается корректно после горизонтального скролла (в любом направлении) | `D27: … after a horizontal scroll` |
-| D28 | Перетаскивание никогда не двигает столбец по вертикали (restrictToHorizontalAxis + autoScrollOnlyX) | `D28: … never scrolls vertically` |
-| D29 | Закреплённый столбец нельзя перетащить (ручка `disabled`, `useSortable` disabled) | `D29: … pinned column cannot be dragged` |
-| D30 | Сброс над закреплённой/сервисной колонкой зажимается к крайней перетаскиваемой колонке | `D30: … never lands in the pinned zone` |
+| ID  | Требование                                                                                          | Тест                                     |
+| --- | --------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| D15 | Плагин активируется совпадением `enableColumnDragging` + `columnDef.enableDragging`                 | `D15: the plugin activates …`            |
+| D16 | Только столбцы с `enableDragging` получают ручку (opt-in на столбец)                                | `D16: only columns with … handle`        |
+| D17 | Drag-ручка живёт в самой ячейке заголовка (слот `leftHeaderSlot`), без сервисного столбца           | `D17: … in the header cell …`            |
+| D18 | Иконка ручки — 16×16                                                                                | `D18: … icon is 16×16`                   |
+| D19 | Ручка спозиционирована абсолютно (`left: 0`) и умещается в левый отступ содержимого ячейки (16px)   | `D19: … absolutely positioned …`         |
+| D20 | Ручка скрыта (`opacity: 0`), пока на заголовок не наведён курсор                                    | `D20: … hidden … until … hovered`        |
+| D21 | Ручка проявляется при наведении на заголовок                                                        | `D21: … revealed on header hover`        |
+| D22 | Перетаскивание показывает overlay-клон ячейки заголовка (та же ширина/контент)                      | `D22: … overlay clone …`                 |
+| D23 | Исходная ячейка скрыта (`opacity: 0`) во время перетаскивания; соседи сдвигаются `translateX`       | `D23: … neighbours shift …`              |
+| D24 | При сбросе `columnOrder` меняется → столбцы переупорядочиваются                                     | `D24: … columnOrder changes …`           |
+| D25 | После сброса overlay исчезает; столбец рендерится на новой позиции                                  | `D25: … overlay is gone …`               |
+| D26 | Возле левого/правого края перетаскивание автоскроллит таблицу горизонтально                         | `D26: … auto-scrolls horizontally`       |
+| D27 | Столбец переупорядочивается корректно после горизонтального скролла (в любом направлении)           | `D27: … after a horizontal scroll`       |
+| D28 | Перетаскивание никогда не двигает столбец по вертикали (restrictToHorizontalAxis + autoScrollOnlyX) | `D28: … never scrolls vertically`        |
+| D29 | Закреплённый столбец нельзя перетащить (ручка `disabled`, `useSortable` disabled)                   | `D29: … pinned column cannot be dragged` |
+| D30 | Сброс над закреплённой/сервисной колонкой зажимается к крайней перетаскиваемой колонке              | `D30: … never lands in the pinned zone`  |
 
 Не покрыто тестом (см. [Известные ограничения](#известные-ограничения), список
 случаев `getRowDraggingEvents` и `TODO` в `getColumnDraggingEvents.ts`): вложенное /

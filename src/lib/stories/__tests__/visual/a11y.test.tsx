@@ -36,8 +36,7 @@ const violations = async (): Promise<axe.Result[]> => {
   return violations
 }
 
-const byRule = (list: axe.Result[], id: string) =>
-  list.filter(v => v.id === id)
+const byRule = (list: axe.Result[], id: string) => list.filter(v => v.id === id)
 
 describe('Доступность (a11y)', () => {
   test('A1: у таблицы есть доступное имя, aria-rowcount и aria-colcount', async () => {
@@ -92,9 +91,7 @@ describe('Доступность (a11y)', () => {
 
     const checkboxes = gridRoot().querySelectorAll('.row-select-checkbox')
     expect(checkboxes.length).toBeGreaterThan(0)
-    checkboxes.forEach(cb =>
-      expect(cb.getAttribute('aria-label')).toBeTruthy(),
-    )
+    checkboxes.forEach(cb => expect(cb.getAttribute('aria-label')).toBeTruthy())
   })
 
   test('A5: грид со всеми (совместимыми) фичами не имеет нарушений axe', async () => {

@@ -107,7 +107,9 @@ describe('Theming matrix — DnD overlays & edges (ADR 0019, этап 6)', () =>
     })
 
     test('TT-37 column drag overlay — draggable-cell-bg + shadow-drag', async () => {
-      const { container } = await render(<HeadOverlayHarness colorMode={mode} />)
+      const { container } = await render(
+        <HeadOverlayHarness colorMode={mode} />,
+      )
       const overlay = byDraggableOpacity(container)
       expect(read(overlay, 'background-color')).toBe(
         resolveColor('--tsr-comp-draggable-cell-bg', dark),
@@ -116,7 +118,6 @@ describe('Theming matrix — DnD overlays & edges (ADR 0019, этап 6)', () =>
         resolveColor('--tsr-comp-shadow-color', dark),
       )
     })
-
   })
 
   // TT-38: accept/reject — чистая функция стилей строки при drag-over.

@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
 
-import { headCells, measureScrollWork, recordPerf, renderGrid } from '../helpers'
+import {
+  headCells,
+  measureScrollWork,
+  recordPerf,
+  renderGrid,
+} from '../helpers'
 import {
   ALL_PLUGINS,
   ANIMATION_BUDGET_MS,
@@ -75,7 +80,8 @@ describe('Производительность прокрутки', () => {
         const y = await measureScrollWork('y')
         const x = await measureScrollWork('x')
 
-        const size = c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'
+        const size =
+          c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'
         await recordPerf({
           id: c.id,
           label: c.label,
@@ -85,8 +91,24 @@ describe('Производительность прокрутки', () => {
           cpuThrottle: CPU_THROTTLE_RATE,
           knownShortfall: c.knownShortfall,
           metrics: [
-            { axis: 'y', kind: 'animation', metric: 'p95', valueMs: y.p95Ms, budgetMs: ANIMATION_BUDGET_MS, pass: y.p95Ms <= ANIMATION_BUDGET_MS, ...y },
-            { axis: 'x', kind: 'animation', metric: 'p95', valueMs: x.p95Ms, budgetMs: ANIMATION_BUDGET_MS, pass: x.p95Ms <= ANIMATION_BUDGET_MS, ...x },
+            {
+              axis: 'y',
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: y.p95Ms,
+              budgetMs: ANIMATION_BUDGET_MS,
+              pass: y.p95Ms <= ANIMATION_BUDGET_MS,
+              ...y,
+            },
+            {
+              axis: 'x',
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: x.p95Ms,
+              budgetMs: ANIMATION_BUDGET_MS,
+              pass: x.p95Ms <= ANIMATION_BUDGET_MS,
+              ...x,
+            },
           ],
         })
 

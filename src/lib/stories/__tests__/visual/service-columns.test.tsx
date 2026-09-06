@@ -92,7 +92,9 @@ describe('Сервисные колонки — размещение и пинн
     expect(ids.at(-1)).toBe(ROW_ACTIONS_COLUMN_ID)
     // …и по умолчанию запиннена к правому краю.
     await expect
-      .poll(() => serviceHead(ROW_ACTIONS_COLUMN_ID)?.getAttribute('data-cell-pinned'))
+      .poll(() =>
+        serviceHead(ROW_ACTIONS_COLUMN_ID)?.getAttribute('data-cell-pinned'),
+      )
       .toBe('right')
   })
 })

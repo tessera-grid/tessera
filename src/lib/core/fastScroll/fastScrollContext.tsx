@@ -6,7 +6,11 @@ import {
   useSyncExternalStore,
 } from 'react'
 
-import { FastScrollState, FastScrollStore, INITIAL_STATE } from './useFastScroll'
+import {
+  FastScrollState,
+  FastScrollStore,
+  INITIAL_STATE,
+} from './useFastScroll'
 
 const NOOP_STORE: FastScrollStore = {
   subscribe: () => () => {},

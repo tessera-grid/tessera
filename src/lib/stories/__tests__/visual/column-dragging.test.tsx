@@ -318,9 +318,8 @@ describe('Column Dragging — requirements', () => {
     scroller.scrollLeft = 0
     scroller.scrollTop = 0
     await nextFrame()
-    const handle = renderedCells(container)[1].querySelector<HTMLElement>(
-      HANDLE,
-    )!
+    const handle =
+      renderedCells(container)[1].querySelector<HTMLElement>(HANDLE)!
     const { hy } = await beginColumnDrag(handle)
     const cr = scroller.getBoundingClientRect()
     // Hold inside the right threshold; dnd-kit keeps scrolling per frame.
@@ -370,9 +369,8 @@ describe('Column Dragging — requirements', () => {
     scroller.scrollLeft = 0
     scroller.scrollTop = 0
     await nextFrame()
-    const handle = renderedCells(container)[1].querySelector<HTMLElement>(
-      HANDLE,
-    )!
+    const handle =
+      renderedCells(container)[1].querySelector<HTMLElement>(HANDLE)!
     const { hy } = await beginColumnDrag(handle)
     const cr = scroller.getBoundingClientRect()
     // Near the bottom edge but horizontally centred; the X-only auto-scroll +

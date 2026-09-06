@@ -79,20 +79,27 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 
 ```css
 /* Tier 1 PRIMITIVE — сырые шкалы, числа для цвета/spacing, t-shirt для радиуса */
---tsr-ref-neutral-0:#ffffff;  --tsr-ref-neutral-900:#171717;  --tsr-ref-neutral-950:#0a0a0a;
---tsr-ref-blue-500:#0070f3;   --tsr-ref-red-500:#ee0000;
---tsr-ref-space-4:16px;       --tsr-ref-radius-md:8px;
+--tsr-ref-neutral-0: #ffffff;
+--tsr-ref-neutral-900: #171717;
+--tsr-ref-neutral-950: #0a0a0a;
+--tsr-ref-blue-500: #0070f3;
+--tsr-ref-red-500: #ee0000;
+--tsr-ref-space-4: 16px;
+--tsr-ref-radius-md: 8px;
 
 /* Tier 2 SEMANTIC — роли, тема-зависимы, мост к shadcn ЗДЕСЬ */
---tsr-sys-fg:      var(--foreground, var(--tsr-ref-neutral-900));  /* dark: neutral-50 */
---tsr-sys-accent:  var(--primary,    var(--tsr-ref-neutral-900));
+--tsr-sys-fg: var(
+  --foreground,
+  var(--tsr-ref-neutral-900)
+); /* dark: neutral-50 */
+--tsr-sys-accent: var(--primary, var(--tsr-ref-neutral-900));
 --tsr-sys-overlay-hover: color-mix(in oklch, var(--tsr-sys-fg) 4%, transparent);
---tsr-sys-radius:  var(--radius-md,  var(--tsr-ref-radius-md));
+--tsr-sys-radius: var(--radius-md, var(--tsr-ref-radius-md));
 
 /* Tier 3 COMPONENT — часть грида, только var(--tsr-sys-*) */
---tsr-comp-head-bg:         var(--tsr-sys-muted);
---tsr-comp-row-hovered-bg:  var(--tsr-sys-overlay-hover);
---tsr-comp-control-radius:  var(--tsr-sys-radius);
+--tsr-comp-head-bg: var(--tsr-sys-muted);
+--tsr-comp-row-hovered-bg: var(--tsr-sys-overlay-hover);
+--tsr-comp-control-radius: var(--tsr-sys-radius);
 ```
 
 ## Последствия
@@ -121,12 +128,12 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 Расширяет матрицу TH из ADR 0018 (те же тесты, переименованные токены). Новые —
 на уровни и однонаправленность.
 
-| ID   | Требование                                                                       | Тест                                |
-| ---- | -------------------------------------------------------------------------------- | ----------------------------------- |
-| TK1  | Primitive-шкала присутствует и мода-независима (`--tsr-ref-*` не меняется в dark) | ✔ `TK1: primitive scale is …`       |
-| TK2  | Semantic флипается в dark, подставляя другой primitive (`--tsr-sys-fg`)           | ✔ `TK2: semantic role flips …`      |
-| TK3  | Component ссылается на semantic: `--tsr-sys-accent` перекрывает группу            | ✔ `TK3: overriding a semantic …`    |
-| TK4  | Мост shadcn в semantic: `--primary` потребителя выигрывает у primitive-дефолта    | ✔ `TK4: a shadcn upstream token …`  |
+| ID  | Требование                                                                        | Тест                               |
+| --- | --------------------------------------------------------------------------------- | ---------------------------------- |
+| TK1 | Primitive-шкала присутствует и мода-независима (`--tsr-ref-*` не меняется в dark) | ✔ `TK1: primitive scale is …`      |
+| TK2 | Semantic флипается в dark, подставляя другой primitive (`--tsr-sys-fg`)           | ✔ `TK2: semantic role flips …`     |
+| TK3 | Component ссылается на semantic: `--tsr-sys-accent` перекрывает группу            | ✔ `TK3: overriding a semantic …`   |
+| TK4 | Мост shadcn в semantic: `--primary` потребителя выигрывает у primitive-дефолта    | ✔ `TK4: a shadcn upstream token …` |
 
 Существующие TH1–TH9 (ADR 0018 + токенизация Tooltip) сохраняются с
 переименованными токенами (`theming.test.tsx`).

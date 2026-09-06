@@ -26,5 +26,4 @@ const defaultHooks = {
  */
 export const useCreateHooks = <THooks extends object = Record<never, never>>(
   hooks: Partial<THooks> = {},
-): THooks =>
-  useMemo(() => ({ ...defaultHooks, ...hooks }) as THooks, [hooks])
+): THooks => useMemo(() => ({ ...defaultHooks, ...hooks }) as THooks, [hooks])

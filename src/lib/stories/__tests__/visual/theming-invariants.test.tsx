@@ -27,9 +27,7 @@ const matchAll = (css: string, re: RegExp) =>
 
 describe('Token architecture — static invariants (ADR 0019)', () => {
   test('TI-05: every `var(--tsr-comp-*)` used in CSS is defined in theme.css', () => {
-    const defined = new Set(
-      matchAll(themeCss, /(--tsr-comp-[a-z0-9-]+)\s*:/g),
-    )
+    const defined = new Set(matchAll(themeCss, /(--tsr-comp-[a-z0-9-]+)\s*:/g))
     const used = new Set<string>()
     for (const css of Object.values(moduleCss)) {
       matchAll(css, /var\(\s*(--tsr-comp-[a-z0-9-]+)/g).forEach(t =>

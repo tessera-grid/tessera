@@ -1,5 +1,8 @@
 import { PluginOptions, RegistryEntry, ServiceColumn } from '../types'
-import { COLUMN_EXPANDING_ID, getRowExpandingColumn } from './rowExpandingColumn'
+import {
+  COLUMN_EXPANDING_ID,
+  getRowExpandingColumn,
+} from './rowExpandingColumn'
 import {
   DEFAULT_MAX_EXPANDING_DEPTH,
   rowExpandingPlugin,

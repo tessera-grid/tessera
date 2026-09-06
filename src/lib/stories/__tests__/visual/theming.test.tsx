@@ -21,9 +21,7 @@ type Args = Partial<Parameters<typeof composed.Playground>[0]>
 
 async function renderTheming(args: Args = {}) {
   const { container } = await render(<composed.Playground {...args} />)
-  await expect
-    .poll(() => container.querySelector(LOADER_BAR))
-    .not.toBeNull()
+  await expect.poll(() => container.querySelector(LOADER_BAR)).not.toBeNull()
   return container
 }
 
@@ -108,8 +106,9 @@ describe('Theming — external customization + token tiers (ADR 0018/0019)', () 
     ancestor.appendChild(wrapper)
     document.body.appendChild(ancestor)
 
-    expect(getComputedStyle(wrapper).getPropertyValue('--tsr-sys-fg').trim())
-      .toBe('#fafafa')
+    expect(
+      getComputedStyle(wrapper).getPropertyValue('--tsr-sys-fg').trim(),
+    ).toBe('#fafafa')
 
     ancestor.remove()
   })
@@ -143,16 +142,18 @@ describe('Theming — external customization + token tiers (ADR 0018/0019)', () 
   test('TK1: primitive scale is mode-independent (`--tsr-ref-*` is not themed)', () => {
     // Primitive — сырые значения без light/dark: одинаковы в обоих режимах.
     expect(readVar('--tsr-ref-neutral-900')).toBe('#171717')
-    expect(readVar('--tsr-ref-neutral-900', { className: 'data-grid-theme dark' }))
-      .toBe('#171717')
+    expect(
+      readVar('--tsr-ref-neutral-900', { className: 'data-grid-theme dark' }),
+    ).toBe('#171717')
   })
 
   test('TK2: a semantic role flips light↔dark via the primitive fallback', () => {
     // Без shadcn (гасим `--foreground`) роль fg берёт разные primitive в light/dark.
     const vars = { '--foreground': 'initial' }
     expect(readVar('--tsr-sys-fg', { vars })).toBe('#171717')
-    expect(readVar('--tsr-sys-fg', { className: 'data-grid-theme dark', vars }))
-      .toBe('#fafafa')
+    expect(
+      readVar('--tsr-sys-fg', { className: 'data-grid-theme dark', vars }),
+    ).toBe('#fafafa')
   })
 
   test('TK3: a component token references its semantic role (override sys → comp follows)', () => {

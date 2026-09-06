@@ -32,7 +32,8 @@ export const useCreateTable = <
   THooks = any,
   TState = any,
   TOptions = any,
-  const TPlugins extends readonly PluginEntryInput[] = readonly PluginEntryInput[],
+  const TPlugins extends readonly PluginEntryInput[] =
+    readonly PluginEntryInput[],
 >({
   columns: initialColumns,
   data,

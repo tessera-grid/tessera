@@ -16,7 +16,10 @@ export const columnDraggingPlugin: TablePlugin = {
     ...state,
   }),
   getDefaultOptions: table => ({
-    onColumnDraggingActiveIdChange: stateUpdater('columnDraggingActiveId', table),
+    onColumnDraggingActiveIdChange: stateUpdater(
+      'columnDraggingActiveId',
+      table,
+    ),
   }),
   createColumn: (_staticColumn, table) => {
     _staticColumn.getCanDrag = () => {

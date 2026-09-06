@@ -47,7 +47,6 @@
 
 /* Появление hidden-кнопок строки при наведении */
 
-.data-grid__body-row:hover:is([data-row-interact='true'])
-  .row__button--hidden {
+.data-grid__body-row:hover:is([data-row-interact='true']) .row__button--hidden {
   opacity: 1;
 }

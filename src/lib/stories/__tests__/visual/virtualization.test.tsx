@@ -29,7 +29,9 @@ const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
 
 /** CSS-переменная виртуального паддинга, вычисленная на узле `.MuiTable-root`. */
-const virtualPadding = (name: '--virtual-padding-left' | '--virtual-padding-right') => {
+const virtualPadding = (
+  name: '--virtual-padding-left' | '--virtual-padding-right',
+) => {
   const table = document.querySelector<HTMLElement>('.MuiTable-root')!
   return parseFloat(getComputedStyle(table).getPropertyValue(name)) || 0
 }
@@ -106,8 +108,12 @@ describe('Виртуализация — окно строк и столбцов
       (a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left,
     )[0]
     await userEvent.hover(firstHead)
-    await userEvent.click(firstHead.querySelector<HTMLElement>('.column-pin__button')!)
-    await expect.poll(() => container.querySelector(PINNED_HEAD) !== null).toBe(true)
+    await userEvent.click(
+      firstHead.querySelector<HTMLElement>('.column-pin__button')!,
+    )
+    await expect
+      .poll(() => container.querySelector(PINNED_HEAD) !== null)
+      .toBe(true)
 
     // После прокрутки до правого края закреплённый заголовок всё ещё в DOM.
     await scrollToEnd('x')
@@ -185,7 +191,9 @@ describe('Виртуализация — filler-паддинги и достиж
     await nextFrame()
     await expect
       .poll(() =>
-        renderedRowIndexes().some(i => i > dataCount * 0.4 && i < dataCount * 0.6),
+        renderedRowIndexes().some(
+          i => i > dataCount * 0.4 && i < dataCount * 0.6,
+        ),
       )
       .toBe(true)
 

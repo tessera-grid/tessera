@@ -91,7 +91,10 @@ describe('mergeServiceColumnPinning — пиннинг сервисных кол
   })
 
   test('внешний left-пиннинг втягивает лидирующие сервисные колонки в левый блок', () => {
-    const merged = mergeServiceColumnPinning({ left: ['a'], right: [] }, services)
+    const merged = mergeServiceColumnPinning(
+      { left: ['a'], right: [] },
+      services,
+    )
     expect(merged.left).toContain(COLUMN_SELECTION_ID)
     expect(merged.left).toContain('a')
     expect(merged.right).toContain(ROW_ACTIONS_COLUMN_ID)

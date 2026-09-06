@@ -41,7 +41,9 @@ describe('Ядро на TanStack — роли и атрибуты', () => {
     })
     document
       .querySelectorAll<HTMLElement>('.data-grid__footer-cell')
-      .forEach(cell => expect(cell.getAttribute('aria-colindex')).not.toBeNull())
+      .forEach(cell =>
+        expect(cell.getAttribute('aria-colindex')).not.toBeNull(),
+      )
 
     bodyRows().forEach(row => {
       expect(row.getAttribute('aria-rowindex')).not.toBeNull()

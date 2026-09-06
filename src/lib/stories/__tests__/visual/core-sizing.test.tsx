@@ -79,9 +79,9 @@ describe('Ядро на TanStack — размеры и отступы', () => {
     renderGrid({ columnCount: 3, dataCount: 3, enableRowActions: true })
     await waitForGrid()
 
-    const dataWrapper = bodyCellsOf(rowsTopDown()[0])[0].querySelector<HTMLElement>(
-      '.data-grid__cell-wrapper-content',
-    )!
+    const dataWrapper = bodyCellsOf(
+      rowsTopDown()[0],
+    )[0].querySelector<HTMLElement>('.data-grid__cell-wrapper-content')!
     const dataStyle = getComputedStyle(dataWrapper)
     expect(dataStyle.paddingLeft).toBe('16px')
     expect(dataStyle.paddingRight).toBe('16px')

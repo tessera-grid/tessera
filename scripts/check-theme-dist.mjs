@@ -41,7 +41,11 @@ check(
 )
 
 // TI-02 — старый префикс токенов вычищен.
-check('TI-02', !css.includes('--data-grid-'), 'остался старый префикс `--data-grid-`')
+check(
+  'TI-02',
+  !css.includes('--data-grid-'),
+  'остался старый префикс `--data-grid-`',
+)
 
 // TI-03 — грид НЕ определяет дженерик-токены shadcn в глобале (только читает
 // их через var). Ищем определения `--<name>:`, а не чтения `var(--<name>,`.
@@ -69,7 +73,9 @@ for (const tier of ['--tsr-ref-', '--tsr-sys-', '--tsr-comp-']) {
 }
 
 if (fails.length) {
-  console.error('[check-theme-dist] ПРОВАЛ инвариантов темы:\n  ' + fails.join('\n  '))
+  console.error(
+    '[check-theme-dist] ПРОВАЛ инвариантов темы:\n  ' + fails.join('\n  '),
+  )
   process.exit(1)
 }
 console.log('[check-theme-dist] OK — TI-01…TI-04 зелёные (dist/style.css).')

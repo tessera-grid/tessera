@@ -31,7 +31,7 @@
 | **Стилизация контролов**        | **Tailwind CSS v4** (`@tailwindcss/vite`) + `tw-animate-css`; `class-variance-authority`; `cn` (`clsx` + `tailwind-merge`) | Tailwind — build-time; cva/clsx/merge — бандлятся |
 | **shadcn-компоненты**           | генерируются CLI `shadcn`, живут в `src/lib/ui/shadcn`                                                                     | код в репозитории; бандлится                      |
 | **Иконки**                      | `lucide-react` — набор по умолчанию, переопределяемый через `IconsContext`                                                 | бандлится                                         |
-| **Стилизация грида**            | **CSS Modules** (`*.module.css`) для раскладки и `--tsr-comp-*`                                                           | собирается в единый `dist/style.css`              |
+| **Стилизация грида**            | **CSS Modules** (`*.module.css`) для раскладки и `--tsr-comp-*`                                                            | собирается в единый `dist/style.css`              |
 | **Анимация (задел)**            | `motion` — объявлена, **пока не импортирована**; зарезервирована под будущие анимации                                      | бандлится по факту использования                  |
 | **Сборка**                      | **Vite 8** (lib mode, ESM + CJS), `vite-plugin-dts`, `@vitejs/plugin-react`                                                | —                                                 |
 | **Язык / типы**                 | **TypeScript `~6`** (зафиксирован; TS 7 ломает typescript-eslint и dts, см. [0004](0004-core-on-tanstack-table.md))        | —                                                 |

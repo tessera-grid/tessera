@@ -20,9 +20,7 @@ describe('Ядро на TanStack — визуальные состояния (с
 
     try {
       await userEvent.hover(cell)
-      await expect
-        .poll(() => getComputedStyle(cell).outlineStyle)
-        .toBe('solid')
+      await expect.poll(() => getComputedStyle(cell).outlineStyle).toBe('solid')
       const style = getComputedStyle(cell)
       // Геометрия аутлайна — структурный контракт ядра; цвет — в TT-06.
       expect(style.outlineWidth).toBe('1px')
@@ -47,6 +45,8 @@ describe('Ядро на TanStack — визуальные состояния (с
       )
     })
     expect(rows.some(r => r.getAttribute('data-row-odd') === 'true')).toBe(true)
-    expect(rows.some(r => r.getAttribute('data-row-odd') === 'false')).toBe(true)
+    expect(rows.some(r => r.getAttribute('data-row-odd') === 'false')).toBe(
+      true,
+    )
   })
 })

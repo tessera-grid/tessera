@@ -1,6 +1,9 @@
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns'
 import { PluginOptions, RegistryEntry, ServiceColumn } from '../types'
-import { DEFAULT_ROW_ACTIONS_OPTIONS, getRowActionsColumn } from './rowActionsColumn'
+import {
+  DEFAULT_ROW_ACTIONS_OPTIONS,
+  getRowActionsColumn,
+} from './rowActionsColumn'
 
 export interface RowActionsPluginOptions extends PluginOptions {
   /** Ширина колонки действий, px (по умолчанию 120). */

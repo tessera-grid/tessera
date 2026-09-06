@@ -50,7 +50,8 @@ const renderedDataCells = (container: HTMLElement) =>
     )
 
 /** The leftmost rendered data column (always has room to grow to the right). */
-const firstDataCell = (container: HTMLElement) => renderedDataCells(container)[0]
+const firstDataCell = (container: HTMLElement) =>
+  renderedDataCells(container)[0]
 
 /** The resize grip inside a header cell. */
 const gripOf = (cell: HTMLElement) =>
@@ -153,7 +154,9 @@ describe('Column Resizing — setup guard', () => {
 
 describe('Column Resizing — requirements', () => {
   test('CR1: the plugin is inert without `enableColumnResizing`', async () => {
-    const container = await renderColumnResizing({ enableColumnResizing: false })
+    const container = await renderColumnResizing({
+      enableColumnResizing: false,
+    })
     // Feature off → getCanResize() is false → no grip and no resizable header.
     expect(container.querySelector(RESIZE_GRIP)).toBeNull()
     renderedDataCells(container).forEach(cell => {
@@ -206,7 +209,9 @@ describe('Column Resizing — requirements', () => {
     const grip = await revealGrip(cell)
     const { x0, y } = await beginResize(grip)
     fireMouse('mousemove', document, x0 + 160, y)
-    await expect.poll(() => widthOf(firstDataCell(container))).toBeGreaterThan(before)
+    await expect
+      .poll(() => widthOf(firstDataCell(container)))
+      .toBeGreaterThan(before)
     fireMouse('mouseup', document, x0 + 160, y)
   })
 
@@ -298,7 +303,9 @@ describe('Column Resizing — requirements', () => {
     expect(last.id).toBe(columnId)
     // Reported width is the widened size, and matches what's on screen.
     expect(last.width).toBeGreaterThan(before)
-    expect(Math.abs(last.width - widthOf(firstDataCell(container)))).toBeLessThan(2)
+    expect(
+      Math.abs(last.width - widthOf(firstDataCell(container))),
+    ).toBeLessThan(2)
   })
 
   test('CR11: double-clicking the grip resets the column and calls the hook', async () => {
@@ -345,7 +352,9 @@ describe('Column Resizing — requirements', () => {
 
     // A second extreme leftward drag can't push it any narrower.
     await resizeBy(gripOf(firstDataCell(container)), -2000)
-    expect(Math.abs(widthOf(firstDataCell(container)) - clamped)).toBeLessThan(1)
+    expect(Math.abs(widthOf(firstDataCell(container)) - clamped)).toBeLessThan(
+      1,
+    )
   })
 
   test('CR13: resizing one column does not change its siblings', async () => {
@@ -362,7 +371,9 @@ describe('Column Resizing — requirements', () => {
     expect(widthOf(renderedDataCells(container)[0])).toBeGreaterThan(
       widthOf(sibling),
     )
-    expect(Math.abs(widthOf(renderedDataCells(container)[1]) - siblingBefore)).toBeLessThan(1)
+    expect(
+      Math.abs(widthOf(renderedDataCells(container)[1]) - siblingBefore),
+    ).toBeLessThan(1)
   })
 
   test('CR14: the row-actions service column is not resizable', async () => {
@@ -388,9 +399,7 @@ describe('Column Resizing — requirements', () => {
   test('CR15: multi-level headers make group headers non-resizable, leaves resizable', async () => {
     const container = await renderColumnResizing({ showHeaderGroups: true })
 
-    const heads = Array.from(
-      container.querySelectorAll<HTMLElement>(HEAD_CELL),
-    )
+    const heads = Array.from(container.querySelectorAll<HTMLElement>(HEAD_CELL))
     // A group (spanning) header is not resizable and carries no grip…
     const groupHead = heads.find(
       cell => cell.getAttribute('data-column-resizable') === 'false',

@@ -41,7 +41,12 @@ const Grid = memo(({ colorMode }: { colorMode: ColorMode }) => {
   })
 
   return (
-    <DataGrid table={table} height={400} maxHeight={400} colorMode={colorMode} />
+    <DataGrid
+      table={table}
+      height={400}
+      maxHeight={400}
+      colorMode={colorMode}
+    />
   )
 })
 Grid.displayName = 'ThemeMatrixGrid'
@@ -159,9 +164,13 @@ describe('Theming matrix — DOM ↔ component token ↔ state (ADR 0019, эта
       const selectedRow = c.querySelector<HTMLElement>(
         ".data-grid__body-row[data-selected='true']:not([data-row-odd='true'])",
       )
-      await expect.poll(() => selectedRow ?? c.querySelector(
-        ".data-grid__body-row[data-selected='true']",
-      )).not.toBeNull()
+      await expect
+        .poll(
+          () =>
+            selectedRow ??
+            c.querySelector(".data-grid__body-row[data-selected='true']"),
+        )
+        .not.toBeNull()
       const row = c.querySelector<HTMLElement>(
         ".data-grid__body-row[data-selected='true']:not([data-row-odd='true'])",
       )!

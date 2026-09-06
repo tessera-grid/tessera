@@ -138,8 +138,9 @@ describe('Column Pinning — requirements', () => {
     const dataCells = renderedDataCells(container)
     expect(dataCells.length).toBeGreaterThan(0)
     // Every rendered data column carries exactly one pin toggle.
-    expect(container.querySelectorAll(`${DATA_HEAD_CELL} ${PIN_BUTTON}`).length)
-      .toBe(dataCells.length)
+    expect(
+      container.querySelectorAll(`${DATA_HEAD_CELL} ${PIN_BUTTON}`).length,
+    ).toBe(dataCells.length)
   })
 
   test('CP3: the pin icon is 16×16', async () => {
@@ -270,10 +271,11 @@ describe('Column Pinning — requirements', () => {
 
     // It stays glued to the left edge across a horizontal scroll.
     const leftBefore = bodyCell.getBoundingClientRect().left
-    scroller.scrollLeft = Math.min(600, scroller.scrollWidth - scroller.clientWidth)
-    await expect
-      .poll(() => scroller.scrollLeft)
-      .toBeGreaterThan(0)
+    scroller.scrollLeft = Math.min(
+      600,
+      scroller.scrollWidth - scroller.clientWidth,
+    )
+    await expect.poll(() => scroller.scrollLeft).toBeGreaterThan(0)
     expect(
       Math.abs(bodyCell.getBoundingClientRect().left - leftBefore),
     ).toBeLessThan(2)

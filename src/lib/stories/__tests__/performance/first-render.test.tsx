@@ -1,7 +1,12 @@
 import { cleanup } from 'vitest-browser-react'
 import { beforeAll, describe, expect, test } from 'vitest'
 
-import { headCells, measureRenderWork, recordPerf, renderGrid } from '../helpers'
+import {
+  headCells,
+  measureRenderWork,
+  recordPerf,
+  renderGrid,
+} from '../helpers'
 import {
   ALL_PLUGINS,
   CPU_THROTTLE_RATE,
@@ -88,12 +93,20 @@ describe('Производительность первой отрисовки',
           id: c.id,
           label: c.label,
           operation: 'render',
-          size: c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
+          size:
+            c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
           plugins: c.args.enableColumnSorting ? 'all' : 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
           knownShortfall: c.knownShortfall,
           metrics: [
-            { kind: 'load', metric: 'longest', valueMs: longestMs, budgetMs: LOAD_BUDGET_MS, pass, ...result },
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: longestMs,
+              budgetMs: LOAD_BUDGET_MS,
+              pass,
+              ...result,
+            },
           ],
         })
 

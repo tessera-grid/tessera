@@ -206,7 +206,7 @@ columnHelper.accessor(row => row[field.name], {
   enablePinning: true,
   // Включить возможность перетаскивания колонки
   enableDragging: true,
-    // Включить группировку данных по этой колонке
+  // Включить группировку данных по этой колонке
   enableGrouping: true,
 })
 ```
@@ -363,7 +363,11 @@ useCreateTable({
 ```tsx
 // Table.tsx
 
-import { useCreateTable, DataGrid, useRowSelectionState } from '@mstrvtt/tessera'
+import {
+  useCreateTable,
+  DataGrid,
+  useRowSelectionState,
+} from '@mstrvtt/tessera'
 import { rowSelection } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
@@ -472,7 +476,11 @@ useCreateTable({
 Для этого используйте функцию `useCreateHooks`:
 
 ```tsx
-import { useCreateTable, DataGrid, useRowSelectionState } from '@mstrvtt/tessera'
+import {
+  useCreateTable,
+  DataGrid,
+  useRowSelectionState,
+} from '@mstrvtt/tessera'
 import { rowSelection } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
@@ -646,7 +654,11 @@ RowDownloadComponent.displayName = 'RowDownloadComponent'
 ```tsx
 // MyTable.tsx
 
-import { useCreateTable, DataGrid, useRowSelectionState } from '@mstrvtt/tessera'
+import {
+  useCreateTable,
+  DataGrid,
+  useRowSelectionState,
+} from '@mstrvtt/tessera'
 import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
@@ -701,7 +713,11 @@ export const Table = () => {
 ```tsx
 // MyTable.tsx
 
-import { useCreateTable, DataGrid, useRowSelectionState } from '@mstrvtt/tessera'
+import {
+  useCreateTable,
+  DataGrid,
+  useRowSelectionState,
+} from '@mstrvtt/tessera'
 import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
@@ -766,10 +782,7 @@ import { RowDownloadButton } from './RowDownloadButton'
 
 // Кастомный слайс hooks компонент типизирует через THooks (3-й дженерик)
 export const RowDownloadComponent = memo(
-  ({
-    row,
-    table,
-  }: CellComponentProps<ItemType, unknown, MyTableHooks>) => {
+  ({ row, table }: CellComponentProps<ItemType, unknown, MyTableHooks>) => {
     const { onDownload } = table.getHooks().rowDownloadAction
 
     return <RowDownloadButton onClick={() => onDownload(row.original.id)} />

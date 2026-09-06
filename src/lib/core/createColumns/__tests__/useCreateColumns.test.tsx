@@ -3,8 +3,14 @@ import { renderHook } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { COLUMN_DRAGGING_ID, rowDragging } from '../../../plugins/rowDragging'
-import { COLUMN_EXPANDING_ID, rowExpanding } from '../../../plugins/rowExpanding'
-import { COLUMN_SELECTION_ID, rowSelection } from '../../../plugins/rowSelection'
+import {
+  COLUMN_EXPANDING_ID,
+  rowExpanding,
+} from '../../../plugins/rowExpanding'
+import {
+  COLUMN_SELECTION_ID,
+  rowSelection,
+} from '../../../plugins/rowSelection'
 import { getRowActionsColumn } from '../../../plugins/rowActions'
 import { ServiceColumn } from '../../../plugins/types'
 import { ROW_ACTIONS_COLUMN_ID } from '../index'

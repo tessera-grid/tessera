@@ -14,11 +14,11 @@
 (ADR [0019](../decisions/0019-token-architecture.md)); слой и шиппинг — ADR
 [0018](../decisions/0018-external-theming.md).
 
-| Уровень | Префикс | Что | Тема-зависим |
-| --- | --- | --- | --- |
-| Primitive | `--tsr-ref-*` | сырые шкалы (`neutral-50…950`, `blue-500`, `radius-md`) | нет |
-| Semantic | `--tsr-sys-*` | роли (`fg`/`surface`/`accent`/`overlay-*`) + мост к shadcn | **да** |
-| Component | `--tsr-comp-*` | токены части грида (`head-bg`/`row-*`/`checkbox-*`) | нет (из semantic) |
+| Уровень   | Префикс        | Что                                                        | Тема-зависим      |
+| --------- | -------------- | ---------------------------------------------------------- | ----------------- |
+| Primitive | `--tsr-ref-*`  | сырые шкалы (`neutral-50…950`, `blue-500`, `radius-md`)    | нет               |
+| Semantic  | `--tsr-sys-*`  | роли (`fg`/`surface`/`accent`/`overlay-*`) + мост к shadcn | **да**            |
+| Component | `--tsr-comp-*` | токены части грида (`head-bg`/`row-*`/`checkbox-*`)        | нет (из semantic) |
 
 - **Ссылки строго вниз:** `comp → sys → ref`. Component упоминает только
   `--tsr-sys-*`; primitive и shadcn там не встречаются.

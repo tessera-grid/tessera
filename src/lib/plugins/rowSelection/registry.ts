@@ -1,5 +1,8 @@
 import { PluginOptions, RegistryEntry, ServiceColumn } from '../types'
-import { COLUMN_SELECTION_ID, getRowSelectionColumn } from './rowSelectionColumn'
+import {
+  COLUMN_SELECTION_ID,
+  getRowSelectionColumn,
+} from './rowSelectionColumn'
 import { rowSelectionPlugin } from './rowSelectionPlugin'
 import type { RowSelectionPlugin } from './types'
 

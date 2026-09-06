@@ -143,7 +143,8 @@ export const useCreateState = <
   // выходе в TanStack (ADR 0010, R10). Так `when:'with-user'` считается по
   // реальным пользовательским пинам, а сервисные id не протекают в стор.
   const userColumnPinning = externalColumnPinning ?? columnPinning
-  const setUserColumnPinning = onColumnPinningExternalChange ?? onColumnPinningChange
+  const setUserColumnPinning =
+    onColumnPinningExternalChange ?? onColumnPinningChange
 
   const mergedColumnPinning = useMemo(
     () => mergeServiceColumnPinning(userColumnPinning, serviceColumns),
@@ -155,9 +156,7 @@ export const useCreateState = <
     [serviceColumns],
   )
 
-  const handleColumnPinningChange = useCallback<
-    OnChangeFn<ColumnPinningState>
-  >(
+  const handleColumnPinningChange = useCallback<OnChangeFn<ColumnPinningState>>(
     updater =>
       setUserColumnPinning(prev => {
         // prev — чистый пользовательский пиннинг; реконструируем отображаемый

@@ -4,7 +4,11 @@ import { dirname, resolve } from 'node:path'
 
 import type { BrowserCommand } from 'vitest/node'
 
-import { CPU_THROTTLE_RATE, FRAME_BUDGET_60FPS, LONG_TASK_MS } from './perf.constants'
+import {
+  CPU_THROTTLE_RATE,
+  FRAME_BUDGET_60FPS,
+  LONG_TASK_MS,
+} from './perf.constants'
 
 // Измерение плавности скролла через Playwright CDP `Tracing`. Трейс процессный,
 // поэтому ловит работу главного потока рендерера в iframe (где Vitest монтирует
@@ -76,7 +80,9 @@ export const perfTraceStart: BrowserCommand<[id: string]> = async (
   })
 
   // Троттлинг применяется только на измеряемое окно (сброс — в perfTraceStop).
-  await session.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE_RATE })
+  await session.send('Emulation.setCPUThrottlingRate', {
+    rate: CPU_THROTTLE_RATE,
+  })
 
   await session.send('Tracing.start', {
     transferMode: 'ReportEvents',
@@ -118,13 +124,19 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
   // загруженном из них.
   const rendererMains = new Set(
     events
-      .filter(e => e.name === 'thread_name' && e.args?.name === RENDERER_MAIN_THREAD)
+      .filter(
+        e => e.name === 'thread_name' && e.args?.name === RENDERER_MAIN_THREAD,
+      )
       .map(e => `${e.pid}:${e.tid}`),
   )
 
   const byThread = new Map<string, number[]>()
   for (const e of events) {
-    if (e.name !== RENDER_TASK_NAME || e.ph !== 'X' || typeof e.dur !== 'number') {
+    if (
+      e.name !== RENDER_TASK_NAME ||
+      e.ph !== 'X' ||
+      typeof e.dur !== 'number'
+    ) {
       continue
     }
     const key = `${e.pid}:${e.tid}`
@@ -144,7 +156,9 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
     }
   }
 
-  const substantial = all.filter(d => d >= SUBSTANTIAL_TASK_MS).sort((a, b) => a - b)
+  const substantial = all
+    .filter(d => d >= SUBSTANTIAL_TASK_MS)
+    .sort((a, b) => a - b)
   const n = substantial.length
   const percentile = (q: number) =>
     substantial[Math.max(0, Math.ceil(n * q) - 1)] ?? 0

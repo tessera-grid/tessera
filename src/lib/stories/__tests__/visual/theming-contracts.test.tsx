@@ -43,14 +43,57 @@ const noop = () => {}
 
 // F1 (icon-контролы) + F2 (action-кнопки): все на базе IconButton, кроме
 // DragHandler (кастомный div, но обязан делить disabled-цвет).
-type Member = { name: string; sel: string; node: (disabled: boolean) => ReactNode }
+type Member = {
+  name: string
+  sel: string
+  node: (disabled: boolean) => ReactNode
+}
 
 const BUTTON_FAMILY: Member[] = [
-  { name: 'IconButton', sel: 'button', node: d => <IconButton disabled={d}><span>x</span></IconButton> },
-  { name: 'SortButton', sel: '.column-sort__button', node: d => <SortButton operation={false} nextOperation="asc" onClick={noop} disabled={d} /> },
-  { name: 'PinButton', sel: '.column-pin__button', node: d => <PinButton isPinned={false} onClick={noop} disabled={d} /> },
-  { name: 'GroupButton', sel: '.column-group__button', node: d => <GroupButton isGrouped={false} onClick={noop} disabled={d} /> },
-  { name: 'RowButton', sel: 'button', node: d => <RowButton title="a" icon={<span>i</span>} onClick={noop} disabled={d} isVisible /> },
+  {
+    name: 'IconButton',
+    sel: 'button',
+    node: d => (
+      <IconButton disabled={d}>
+        <span>x</span>
+      </IconButton>
+    ),
+  },
+  {
+    name: 'SortButton',
+    sel: '.column-sort__button',
+    node: d => (
+      <SortButton
+        operation={false}
+        nextOperation="asc"
+        onClick={noop}
+        disabled={d}
+      />
+    ),
+  },
+  {
+    name: 'PinButton',
+    sel: '.column-pin__button',
+    node: d => <PinButton isPinned={false} onClick={noop} disabled={d} />,
+  },
+  {
+    name: 'GroupButton',
+    sel: '.column-group__button',
+    node: d => <GroupButton isGrouped={false} onClick={noop} disabled={d} />,
+  },
+  {
+    name: 'RowButton',
+    sel: 'button',
+    node: d => (
+      <RowButton
+        title="a"
+        icon={<span>i</span>}
+        onClick={noop}
+        disabled={d}
+        isVisible
+      />
+    ),
+  },
 ]
 
 const el = async (m: Member, disabled: boolean) =>
@@ -65,9 +108,11 @@ describe('Style contract by component family (ADR 0017)', () => {
       expect(read(node, 'color'), `${m.name} disabled color`).toBe(expected)
     }
     // DragHandler — кастомный контрол того же семейства, тот же disabled-цвет.
-    const dh = (await renderThemed(
-      <DragHandler id="c" type="column" disabled onClick={noop} />,
-    )).querySelector<HTMLElement>('.drag__handler--column')!
+    const dh = (
+      await renderThemed(
+        <DragHandler id="c" type="column" disabled onClick={noop} />,
+      )
+    ).querySelector<HTMLElement>('.drag__handler--column')!
     expect(read(dh, 'color'), 'DragHandler disabled color').toBe(expected)
   })
 
@@ -92,21 +137,25 @@ describe('Style contract by component family (ADR 0017)', () => {
   })
 
   test('TC-4 form controls share ONE disabled opacity = --tsr-comp-disabled-opacity', async () => {
-    const cb = (await renderThemed(
-      <SelectCheckbox selected={false} disabled onClick={noop} />,
-    )).querySelector<HTMLElement>('[role="checkbox"]')!
-    const sw = (await renderThemed(<Switch defaultChecked={false} disabled />))
-      .querySelector<HTMLElement>('[role="switch"]')!
+    const cb = (
+      await renderThemed(
+        <SelectCheckbox selected={false} disabled onClick={noop} />,
+      )
+    ).querySelector<HTMLElement>('[role="checkbox"]')!
+    const sw = (
+      await renderThemed(<Switch defaultChecked={false} disabled />)
+    ).querySelector<HTMLElement>('[role="switch"]')!
     expect(read(cb, 'opacity')).toBe('0.5')
     expect(read(sw, 'opacity')).toBe('0.5')
   })
 
   test('TC-5 form controls share ONE transition', async () => {
-    const cb = (await renderThemed(
-      <SelectCheckbox selected={false} onClick={noop} />,
-    )).querySelector<HTMLElement>('[role="checkbox"]')!
-    const sw = (await renderThemed(<Switch defaultChecked={false} />))
-      .querySelector<HTMLElement>('[role="switch"]')!
+    const cb = (
+      await renderThemed(<SelectCheckbox selected={false} onClick={noop} />)
+    ).querySelector<HTMLElement>('[role="checkbox"]')!
+    const sw = (
+      await renderThemed(<Switch defaultChecked={false} />)
+    ).querySelector<HTMLElement>('[role="switch"]')!
     const a = read(cb, 'transition')
     expect(a).toBeTruthy()
     expect(read(sw, 'transition')).toBe(a)

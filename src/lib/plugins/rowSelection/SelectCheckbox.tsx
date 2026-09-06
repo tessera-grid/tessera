@@ -16,7 +16,13 @@ export interface SelectCheckboxProps {
 }
 
 export const SelectCheckbox = memo(
-  ({ selected, indeterminate, disabled, label, onClick }: SelectCheckboxProps) => {
+  ({
+    selected,
+    indeterminate,
+    disabled,
+    label,
+    onClick,
+  }: SelectCheckboxProps) => {
     const {
       checkboxChecked: CheckedIcon,
       checkboxIndeterminate: IndeterminateIcon,

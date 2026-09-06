@@ -14,10 +14,7 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 
-import {
-  InferPluginHooks,
-  PluginEntryInput,
-} from '../pluginContract'
+import { InferPluginHooks, PluginEntryInput } from '../pluginContract'
 import { SkeletonOptions } from '../skeletonOverlay/types'
 
 export interface CreateDataGridHandlers<TData = any> {

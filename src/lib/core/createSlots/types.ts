@@ -40,11 +40,11 @@ export type CellSlot = RegisterSlotParams<CellComponentProps>[]
  */
 export type PluginSlot =
   | (RegisterSlotParams<HeaderComponentProps> & {
-    slot: 'leftHeaderSlot' | 'rightHeaderSlot'
-  })
+      slot: 'leftHeaderSlot' | 'rightHeaderSlot'
+    })
   | (RegisterSlotParams<CellComponentProps> & {
-    slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot'
-  })
+      slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot'
+    })
 
 export interface RenderSlots {
   /**

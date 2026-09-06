@@ -45,7 +45,9 @@ describe('Ядро на TanStack — раскладка при прокрутк�
     await nextFrame()
     await expect
       .poll(() =>
-        renderedRowIndexes().some(i => i > dataCount * 0.4 && i < dataCount * 0.6),
+        renderedRowIndexes().some(
+          i => i > dataCount * 0.4 && i < dataCount * 0.6,
+        ),
       )
       .toBe(true)
 

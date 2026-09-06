@@ -32,7 +32,7 @@ Tessera решает конкретный класс задач: **highload-та
 4. **Расширяемость снаружи** — командам нужны были действительно разные вещи:
    рендерить свои кнопки в строки, менять поведение таблицы в ответ на внешнее
    состояние и компоновать сложные структуры внутри таблицы. Модель plugin + slot
-   + `hooks` существует именно ради этого.
+   - `hooks` существует именно ради этого.
 
 ### Аудитория и охват
 
@@ -55,16 +55,16 @@ Tessera нацелена на **любую систему, которой нуж
 
 ## Документы
 
-| Документ                                                           | Охват                                                                                          |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [upstream-foundations.md](upstream-foundations.md)                 | Как работают TanStack Table / Virtual и dnd-kit и в какие точки расширения врезается Tessera    |
-| [table-assembly.md](table-assembly.md)                             | `useCreateTable`: столбцы, разделение состояния, hooks, слоты, инъекция плагинов                |
-| [plugins-and-slots.md](plugins-and-slots.md)                       | Жизненный цикл `TablePlugin` (TableFeature), регистрация слотов, render-слоты, `renderComponent` |
-| [reactivity.md](reactivity.md)                                     | Два механизма обновления: идентичность ссылки против Pub-Sub                                    |
-| [rendering.md](rendering.md)                                       | Пайплайн `DataGrid`: стек провайдеров, layout flex против grid, отрисовка, состояния загрузки   |
-| [virtualization.md](virtualization.md)                             | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк    |
-| [dnd.md](dnd.md)                                                   | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers       |
-| [theming-and-overrides.md](theming-and-overrides.md)               | Контракты переопределения: `colorMode` → CSS-переменные, иконки, локализация                    |
+| Документ                                             | Охват                                                                                            |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| [upstream-foundations.md](upstream-foundations.md)   | Как работают TanStack Table / Virtual и dnd-kit и в какие точки расширения врезается Tessera     |
+| [table-assembly.md](table-assembly.md)               | `useCreateTable`: столбцы, разделение состояния, hooks, слоты, инъекция плагинов                 |
+| [plugins-and-slots.md](plugins-and-slots.md)         | Жизненный цикл `TablePlugin` (TableFeature), регистрация слотов, render-слоты, `renderComponent` |
+| [reactivity.md](reactivity.md)                       | Два механизма обновления: идентичность ссылки против Pub-Sub                                     |
+| [rendering.md](rendering.md)                         | Пайплайн `DataGrid`: стек провайдеров, layout flex против grid, отрисовка, состояния загрузки    |
+| [virtualization.md](virtualization.md)               | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк     |
+| [dnd.md](dnd.md)                                     | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers       |
+| [theming-and-overrides.md](theming-and-overrides.md) | Контракты переопределения: `colorMode` → CSS-переменные, иконки, локализация                     |
 
 ## Слои
 

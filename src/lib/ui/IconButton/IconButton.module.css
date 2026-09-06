@@ -22,8 +22,7 @@
 }
 
 .iconButton:focus-visible {
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width)
-    var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }
 
 /* Единый disabled кнопок/иконок (F1/F2): гаснут цветом (не только курсором).

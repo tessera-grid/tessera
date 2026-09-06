@@ -159,7 +159,12 @@ describe('Theming matrix — form controls (ADR 0019, этап 2)', () => {
     // --- Action button (RowButton) --------------------------------------------
     test('TT-29 row action button base color+bg', async () => {
       const c = await renderThemed(
-        <RowButton title="a" icon={<span>i</span>} onClick={() => {}} isVisible />,
+        <RowButton
+          title="a"
+          icon={<span>i</span>}
+          onClick={() => {}}
+          isVisible
+        />,
         dark,
       )
       const btn = c.querySelector<HTMLElement>('button')!

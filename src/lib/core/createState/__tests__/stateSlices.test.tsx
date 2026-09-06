@@ -88,9 +88,7 @@ describe.each(uniformSlices)(
     test('onChange обновляет значение', async () => {
       const { result } = await renderHook(() => hook())
       ;(result.current as any)[changeKey](next)
-      await expect
-        .poll(() => (result.current as any)[valueKey])
-        .toEqual(next)
+      await expect.poll(() => (result.current as any)[valueKey]).toEqual(next)
     })
 
     test('ре-синхронизируется при смене начального значения', async () => {
@@ -101,9 +99,7 @@ describe.each(uniformSlices)(
       expect((result.current as any)[valueKey]).toEqual(initial)
 
       rerender(reseed as any)
-      await expect
-        .poll(() => (result.current as any)[valueKey])
-        .toEqual(reseed)
+      await expect.poll(() => (result.current as any)[valueKey]).toEqual(reseed)
     })
   },
 )
@@ -140,9 +136,7 @@ describe('state-слайс columnOrder — ре-сев только при см�
 
     // Длина изменилась (2 → 3) — состояние берёт новый порядок.
     rerender(['c', 'd', 'e'])
-    await expect
-      .poll(() => result.current.columnOrder)
-      .toEqual(['c', 'd', 'e'])
+    await expect.poll(() => result.current.columnOrder).toEqual(['c', 'd', 'e'])
   })
 })
 
