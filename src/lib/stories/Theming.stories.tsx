@@ -1,4 +1,4 @@
-import { CSSProperties, memo } from 'react'
+import { CSSProperties, memo, useLayoutEffect, useRef, useState } from 'react'
 
 import { Meta, StoryObj } from '@storybook/react'
 
@@ -574,4 +574,139 @@ export default meta
 
 export const Playground: StoryObj<ThemingArgs> = {
   name: 'Playground',
+}
+
+// ============================================================================
+// Палитра — свотч-борд токенов в обеих темах. Отдельная история: закруглённые
+// квадраты на нейтральном фоне (`--tsr-sys-bg`), под каждым — русская подпись
+// (роль токена), имя переменной и вычисленное значение цвета. Светлая и тёмная
+// колонки рендерятся рядом (каждая — свой скоуп `.data-grid-theme[.dark]`),
+// поэтому один и тот же токен резолвится в цвет своей темы.
+// ============================================================================
+
+// Группы палитры = те же массивы, что питают контролы Playground (от общего
+// уровня к частному, ADR 0019). Overlay-токены полупрозрачны, поэтому свотчам
+// даём рамку `--tsr-sys-border` — иначе на нейтральном фоне их не видно.
+const PALETTE_GROUPS: { title: string; tokens: TokenControl[] }[] = [
+  { title: 'Мост shadcn (broad)', tokens: PALETTE },
+  { title: 'Semantic (--tsr-sys-*)', tokens: SEMANTIC },
+  { title: 'Component (--tsr-comp-*)', tokens: GRID_TOKENS },
+]
+
+// Один свотч: цвет читаем со смонтированного элемента (getComputedStyle внутри
+// тематизированной колонки → значение именно этой темы, включая раскрытый
+// color-mix, который браузер отдаёт готовым rgb/rgba).
+const Swatch = ({ token, label, desc }: TokenControl) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [value, setValue] = useState('')
+
+  useLayoutEffect(() => {
+    if (ref.current) {
+      setValue(getComputedStyle(ref.current).backgroundColor)
+    }
+  }, [])
+
+  return (
+    <figure style={{ margin: 0, width: 168 }}>
+      <div
+        ref={ref}
+        style={{
+          height: 56,
+          borderRadius: 12,
+          background: `var(${token})`,
+          border: '1px solid var(--tsr-sys-border)',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
+        }}
+      />
+      <figcaption
+        style={{ marginTop: 8, fontSize: 12, lineHeight: 1.45, minWidth: 0 }}
+      >
+        <div style={{ fontWeight: 600 }}>{desc}</div>
+        <code
+          style={{
+            display: 'block',
+            marginTop: 2,
+            fontSize: 11,
+            opacity: 0.7,
+            wordBreak: 'break-all',
+          }}
+        >
+          {token}
+        </code>
+        <div style={{ fontSize: 11, opacity: 0.6 }}>
+          {label} · {value}
+        </div>
+      </figcaption>
+    </figure>
+  )
+}
+
+// Одна колонка = одна тема. Класс `.data-grid-theme[.dark]` открывает скоуп
+// токенов (dark-класс заодно активирует .dark-палитру shadcn из global.css).
+const PaletteColumn = ({ mode }: { mode: 'light' | 'dark' }) => (
+  <div
+    className={
+      mode === 'dark'
+        ? `${DATA_GRID_THEME_CLASS} dark`
+        : DATA_GRID_THEME_CLASS
+    }
+    style={{
+      flex: '1 1 380px',
+      minWidth: 340,
+      padding: 24,
+      borderRadius: 16,
+      background: 'var(--tsr-sys-bg)',
+      color: 'var(--tsr-sys-fg)',
+      border: '1px solid var(--tsr-sys-border)',
+    }}
+  >
+    <h3 style={{ margin: '0 0 20px', fontSize: 15 }}>
+      {mode === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
+    </h3>
+    {PALETTE_GROUPS.map(({ title, tokens }) => (
+      <section key={title} style={{ marginBottom: 24 }}>
+        <div
+          style={{
+            marginBottom: 12,
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: 0.5,
+            textTransform: 'uppercase',
+            opacity: 0.6,
+          }}
+        >
+          {title}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+          {tokens.map(t => (
+            <Swatch key={t.token} {...t} />
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+)
+
+const PaletteBoard = memo(() => (
+  <div
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 24,
+      alignItems: 'flex-start',
+      padding: 24,
+    }}
+  >
+    <PaletteColumn mode="light" />
+    <PaletteColumn mode="dark" />
+  </div>
+))
+
+PaletteBoard.displayName = 'PaletteBoard'
+
+export const Palette: StoryObj<ThemingArgs> = {
+  name: 'Палитра (свотчи)',
+  render: () => <PaletteBoard />,
+  // Контролы токенов относятся к Playground; для статичного борда прячем панель.
+  parameters: { controls: { disable: true } },
 }
