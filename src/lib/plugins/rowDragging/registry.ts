@@ -8,6 +8,10 @@ export const rowDragging = (
 ): RegistryEntry<RowDraggingPlugin> => ({
   id: 'rowDragging',
   enabled: opts.enabled,
+  // Фича вешает на строку getCanDrag, который реактивный UI (слот ручки,
+  // DraggableBodyRow) зовёт при live-включении. Держим её в _features всегда,
+  // иначе метода не будет на маунте с выключенным плагином.
+  keepFeatureWhenDisabled: true,
   feature: rowDraggingPlugin,
   column: {
     id: COLUMN_DRAGGING_ID,

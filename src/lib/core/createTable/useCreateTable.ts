@@ -79,6 +79,21 @@ export const useCreateTable = <
   // → `columns` → всю таблицу; иначе каждый такой тумблер даёт заметный лаг.
   const pluginSignature = activePlugins.map(plugin => plugin.id).join('|')
 
+  // Фичи для `_features` шире активного набора: плагины с `keepFeatureWhenDisabled`
+  // остаются здесь даже выключенными, потому что TanStack фиксирует `_features` на
+  // маунте и не перечитывает их — иначе методы фичи (напр. columnDragging
+  // `getCanDrag`/`getDraggableIndex`) не появятся при live-включении, и реактивный
+  // UI звал бы несуществующий метод. Методы инертны, пока опция плагина выключена.
+  const featurePlugins = useMemo(
+    () =>
+      (plugins.filter(Boolean) as RegistryEntry[]).filter(
+        plugin => plugin.enabled !== false || plugin.keepFeatureWhenDisabled,
+      ),
+    [plugins],
+  )
+
+  const featureSignature = featurePlugins.map(plugin => plugin.id).join('|')
+
   const columnSignature = activePlugins
     .filter(plugin => plugin.column)
     .map(
@@ -88,9 +103,9 @@ export const useCreateTable = <
     .join('|')
 
   const features = useMemo(
-    () => [commonPlugin, ...activePlugins.map(plugin => plugin.feature)],
+    () => [commonPlugin, ...featurePlugins.map(plugin => plugin.feature)],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора (фичи — синглтоны)
-    [pluginSignature],
+    [featureSignature],
   )
 
   const pluginColumns = useMemo<ServiceColumn[]>(

@@ -274,7 +274,10 @@ export const DraggableHeadCell = memo((props: TableHeadCellProps) => {
     data: {
       type: 'column',
       orderIndex: header.column.getIndex(),
-      draggableIndex: header.column.getDraggableIndex(),
+      // При presence-based композиции columnDragging может отсутствовать —
+      // тогда getDraggableIndex не определён (как и getCanDrag в
+      // getDisabledSortable), а сортировка всё равно заблокирована.
+      draggableIndex: header.column.getDraggableIndex?.() ?? -1,
       disabledSortable,
     },
     disabled: disabledSortable,

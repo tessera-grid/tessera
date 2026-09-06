@@ -15,8 +15,6 @@ export const rowDraggingPlugin: TablePlugin = {
     onRowDraggingChange: stateUpdater('rowDragging', table),
   }),
   createRow: (_staticRow, table) => {
-    const enableRowDragging = table.options.enableRowDragging
-
     _staticRow.getCanDrag = () => {
       if (
         table.getHeaderGroups().length !== 1 ||
@@ -24,6 +22,10 @@ export const rowDraggingPlugin: TablePlugin = {
       ) {
         return false
       }
+
+      // Опцию читаем в момент вызова (как columnDragging.getCanDrag), чтобы
+      // live-тумблер плагина срабатывал без пересоздания строк.
+      const enableRowDragging = table.options.enableRowDragging
 
       if (typeof enableRowDragging === 'function') {
         return enableRowDragging(_staticRow)
