@@ -20,6 +20,7 @@ export const getColumnDraggingEvents = (
       if (!over) {
         document.body.style.cursor = 'default'
         onColumnDraggingActiveIdChange?.(null)
+        return
       }
 
       const headers = table.getFlatHeaders()
@@ -32,10 +33,11 @@ export const getColumnDraggingEvents = (
       const activeOrderIndex = activeColumn?.getIndex()
       const activeDraggingIndex = activeColumn?.getDraggableIndex()
 
-      const overOrderIndex: number | null = over?.data.current?.orderIndex
+      const overOrderIndex: number | null =
+        over.data.current?.orderIndex ?? null
       const overDraggingIndex: number | null =
-        over?.data.current?.draggableIndex
-      const overIsDisabledSortable = !!over?.data.current?.disabledSortable
+        over.data.current?.draggableIndex ?? null
+      const overIsDisabledSortable = !!over.data.current?.disabledSortable
 
       const firstDraggableNotPinnedColumn = headers.find(
         header =>
@@ -61,20 +63,17 @@ export const getColumnDraggingEvents = (
         return
       }
 
-      if (activeColumn?.id === over?.id) {
+      if (activeColumn?.id === over.id) {
         return
       }
 
-      onColumnOrderChange?.(prev => {
-        if (!overIsDisabledSortable) {
-          onColumnDragEnd?.({
-            dragIndex: activeDraggingIndex,
-            hoverIndex: overDraggingIndex,
-          })
+      let targetOrderIndex: number
+      let hoverIndex: number
 
-          return arrayMove(prev, activeOrderIndex, overOrderIndex)
-        }
-
+      if (!overIsDisabledSortable) {
+        targetOrderIndex = overOrderIndex
+        hoverIndex = overDraggingIndex
+      } else {
         const dragIsOutOfRangeStart =
           overOrderIndex < firstDraggableNotPinnedColumn.getIndex()
 
@@ -82,18 +81,19 @@ export const getColumnDraggingEvents = (
           ? firstDraggableNotPinnedColumn
           : lastDraggableNotPinnedColumn
 
-        const firstOrLastDraggableIndex =
-          firstOrLastDraggableColumn.getDraggableIndex()
-        const firstOrLastIndex = firstOrLastDraggableColumn.getIndex()
-
         // TODO: мы должны отличать getIndex от getDraggableIndex, чтобы на сервере порядок колонок сохранялся
         //  правильным, то есть без учета локальных и хардкорных колонок внутри таблицы, например колонок с кнопками в начале списка
-        onColumnDragEnd?.({
-          dragIndex: activeDraggingIndex,
-          hoverIndex: firstOrLastDraggableIndex,
-        })
+        targetOrderIndex = firstOrLastDraggableColumn.getIndex()
+        hoverIndex = firstOrLastDraggableColumn.getDraggableIndex()
+      }
 
-        return arrayMove(prev, activeOrderIndex, firstOrLastIndex)
+      onColumnOrderChange?.(prev =>
+        arrayMove(prev, activeOrderIndex, targetOrderIndex),
+      )
+
+      onColumnDragEnd?.({
+        dragIndex: activeDraggingIndex,
+        hoverIndex,
       })
 
       document.body.style.cursor = 'default'
