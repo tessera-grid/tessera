@@ -10,7 +10,13 @@ import {
 import type { RowExpandingPlugin } from './types'
 
 export interface RowExpandingOptions extends PluginOptions {
-  /** Максимальная глубина раскрытия (по умолчанию DEFAULT_MAX_EXPANDING_DEPTH). */
+  /**
+   * Сколько уровней дерева раскрываемы, считая от корня, — это **число уровней**,
+   * а не индекс глубины: строка раскрываема, пока `row.depth < maxDepth`. По
+   * умолчанию `DEFAULT_MAX_EXPANDING_DEPTH` (1) — тоггл только у корней (depth 0);
+   * их дети (depth 1) видны, но глубже не раскрываются. Для дерева глубже подними
+   * значение: `maxDepth: 2` → раскрываемы depth 0 и 1.
+   */
   maxDepth?: number
 }
 

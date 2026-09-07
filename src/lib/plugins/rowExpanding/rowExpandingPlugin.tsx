@@ -25,6 +25,9 @@ export const rowExpandingPlugin: TablePlugin = {
         return originalGetCanExpand()
       }
 
+      // maxExpandingDepth — ЧИСЛО раскрываемых уровней от корня, не индекс
+      // глубины: раскрываемы уровни 0..maxExpandingDepth-1, поэтому строгое `<`.
+      // Дефолт 1 → только корни (depth 0).
       const accessDepth = _staticRow.depth < table.options.maxExpandingDepth
 
       return enableRowExpanding && accessDepth
