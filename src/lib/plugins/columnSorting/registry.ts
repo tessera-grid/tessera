@@ -27,7 +27,8 @@ export interface ColumnSortingOptions extends PluginOptions {
   /**
    * Мультисортировка. `true`/`undefined` — включена штатным жестом Shift+клик;
    * `false` — выключена (клик всегда заменяет сортировку); объект — тонкая
-   * настройка (`max` / `removal` / `event`).
+   * настройка (`max` / `event`). Снятие сортировки — общая опция верхнего уровня
+   * `removal` (делится с одиночной сортировкой), а не поле `multiSort`.
    */
   multiSort?: boolean | ColumnMultiSortOptions
 }

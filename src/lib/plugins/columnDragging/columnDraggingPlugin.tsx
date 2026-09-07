@@ -41,6 +41,12 @@ export const columnDraggingPlugin: TablePlugin = {
       return wantsDrag
     }
 
+    // Ключа `[_getVisibleLeafColumns(table)]` достаточно: `getVisibleLeafColumns`
+    // мемоизирован TanStack на составе листовых колонок и их видимости (порядок
+    // определения, НЕ пиннинг), а `getCanDrag` зависит от глубины шапки и флагов
+    // включения, но НЕ от пиннинга. Значит смена пиннинга не меняет ни ключ, ни
+    // значение индекса — залипания нет. Структурные правки колонок (в т.ч. глубина
+    // шапки) меняют состав листьев → ключ инвалидируется штатно.
     _staticColumn.getDraggableIndex = memo(
       () => [_getVisibleLeafColumns(table)],
       columns =>
