@@ -1,3 +1,4 @@
+import { devWarn } from '../../core/devWarn'
 import { TablePlugin } from '../types'
 import { RowExpandingComponent } from './RowExpandingComponent'
 import { COLUMN_EXPANDING_ID } from './rowExpandingColumn'
@@ -9,16 +10,22 @@ export const rowExpandingPlugin: TablePlugin = {
     const originalGetCanExpand = _staticRow.getCanExpand
 
     _staticRow.getCanExpand = () => {
-      if (table.options.enableGrouping) {
-        return originalGetCanExpand()
-      }
-
-      const accessDepth = _staticRow.depth < table.options.maxExpandingDepth
-
       const enableRowExpanding =
         typeof table.options.enableRowExpanding === 'function'
           ? table.options.enableRowExpanding(_staticRow)
           : !!table.options.enableRowExpanding
+
+      if (table.options.enableGrouping) {
+        if (enableRowExpanding) {
+          devWarn(
+            'rowExpanding:grouping',
+            'rowExpanding: при включённой группировке (enableGrouping) раскрытием владеет rowGrouping, а настройки rowExpanding (maxExpandingDepth, enableRowExpanding) игнорируются. См. ADR 0022.',
+          )
+        }
+        return originalGetCanExpand()
+      }
+
+      const accessDepth = _staticRow.depth < table.options.maxExpandingDepth
 
       return enableRowExpanding && accessDepth
     }

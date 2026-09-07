@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-table'
 
 import { stateUpdater } from '../../core/createState/stateUpdater'
+import { devWarn } from '../../core/devWarn'
 import { TablePlugin } from '../types'
 import { getColumnDraggingEvents } from './getColumnDraggingEvents'
 
@@ -23,14 +24,21 @@ export const columnDraggingPlugin: TablePlugin = {
   }),
   createColumn: (_staticColumn, table) => {
     _staticColumn.getCanDrag = () => {
+      const wantsDrag =
+        !!_staticColumn.columnDef.enableDragging &&
+        !!table.options.enableColumnDragging
+
       if (table.getHeaderGroups().length !== 1) {
+        if (wantsDrag) {
+          devWarn(
+            'columnDragging:multi-level-header',
+            'columnDragging: перетаскивание столбцов не работает при многоуровневой шапке (getHeaderGroups().length > 1) и отключено. См. ADR 0022.',
+          )
+        }
         return false
       }
 
-      return (
-        !!_staticColumn.columnDef.enableDragging &&
-        !!table.options.enableColumnDragging
-      )
+      return wantsDrag
     }
 
     _staticColumn.getDraggableIndex = memo(
