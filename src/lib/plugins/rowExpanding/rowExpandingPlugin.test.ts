@@ -1,7 +1,7 @@
 import { Table } from '@tanstack/react-table'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetDevWarn } from '../../core/devWarn'
+import { __resetLogger } from '../../core/logger'
 import { rowExpandingPlugin } from './rowExpandingPlugin'
 
 type TableStub = {
@@ -33,7 +33,7 @@ describe('rowExpandingPlugin · getCanExpand', () => {
   let warn: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    __resetDevWarn()
+    __resetLogger()
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 

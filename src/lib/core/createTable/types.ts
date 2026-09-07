@@ -14,6 +14,7 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 
+import { LogLevel } from '../logger'
 import { InferPluginHooks, PluginEntryInput } from '../pluginContract'
 import { SkeletonOptions } from '../skeletonOverlay/types'
 
@@ -70,5 +71,10 @@ export interface CreateDataGridParams<
   plugins?: TPlugins
 
   debug?: boolean
+  /**
+   * Порог логирования плагинов (ADR 0022): `silent | error | warn | info |
+   * debug`. Не задан — `'warn'` в dev / `'silent'` в проде.
+   */
+  logLevel?: LogLevel
   defaultColumn?: ColumnSizingColumnDef
 }

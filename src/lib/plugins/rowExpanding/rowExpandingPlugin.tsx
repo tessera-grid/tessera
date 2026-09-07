@@ -1,4 +1,4 @@
-import { devWarn } from '../../core/devWarn'
+import { logWarn } from '../../core/logger'
 import { TablePlugin } from '../types'
 import { RowExpandingComponent } from './RowExpandingComponent'
 import { COLUMN_EXPANDING_ID } from './rowExpandingColumn'
@@ -17,9 +17,10 @@ export const rowExpandingPlugin: TablePlugin = {
 
       if (table.options.enableGrouping) {
         if (enableRowExpanding) {
-          devWarn(
-            'rowExpanding:grouping',
+          logWarn(
+            table,
             'rowExpanding: при включённой группировке (enableGrouping) раскрытием владеет rowGrouping, а настройки rowExpanding (maxExpandingDepth, enableRowExpanding) игнорируются. См. ADR 0022.',
+            'rowExpanding:grouping',
           )
         }
         return originalGetCanExpand()

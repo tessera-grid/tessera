@@ -8,6 +8,7 @@ import {
 
 import { PluginsHooks } from '../lib/core/createHooks/types'
 import { RenderSlots } from '../lib/core/createSlots'
+import { LogLevel } from '../lib/core/logger'
 import { SkeletonOptions } from '../lib/core/skeletonOverlay/types'
 import { ColumnDraggingOptions } from '../lib/plugins/columnDragging'
 import { RowDraggingOptions } from '../lib/plugins/rowDragging'
@@ -26,6 +27,13 @@ export interface TableOptionsResolvedSDK<
 
   hooks: PluginsHooks & THooks
   slots: RenderSlots
+
+  /**
+   * Порог логирования плагинов (ADR 0022): `silent | error | warn | info |
+   * debug`. Через него течёт единый канал предупреждений о совместимости, ошибок
+   * и dev-инфо. Если не задан — `'warn'` в dev / `'silent'` в проде.
+   */
+  logLevel?: LogLevel
 
   enableSkeleton?: boolean
   enableLoading?: boolean

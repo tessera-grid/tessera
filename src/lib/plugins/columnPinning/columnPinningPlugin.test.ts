@@ -1,7 +1,7 @@
 import { Table } from '@tanstack/react-table'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetDevWarn } from '../../core/devWarn'
+import { __resetLogger } from '../../core/logger'
 import { columnPinningPlugin } from './columnPinningPlugin'
 
 const makeTable = (headerGroups: number) =>
@@ -22,7 +22,7 @@ describe('columnPinningPlugin · getCanPin', () => {
   let warn: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    __resetDevWarn()
+    __resetLogger()
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
@@ -36,7 +36,7 @@ describe('columnPinningPlugin · getCanPin', () => {
     expect(warn.mock.calls[0][0]).toContain('columnPinning')
 
     // Одноуровневая шапка — закрепление работает и молчит.
-    __resetDevWarn()
+    __resetLogger()
     warn.mockClear()
     const ok = setup(1, true)
     expect(ok.getCanPin()).toBe(true)

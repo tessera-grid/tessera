@@ -1,7 +1,7 @@
 import { Table } from '@tanstack/react-table'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetDevWarn } from '../../core/devWarn'
+import { __resetLogger } from '../../core/logger'
 import { columnDraggingPlugin } from './columnDraggingPlugin'
 
 const makeTable = (headerGroups: number, enableColumnDragging: boolean) =>
@@ -24,7 +24,7 @@ describe('columnDraggingPlugin · getCanDrag', () => {
   let warn: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    __resetDevWarn()
+    __resetLogger()
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
@@ -38,7 +38,7 @@ describe('columnDraggingPlugin · getCanDrag', () => {
     expect(warn.mock.calls[0][0]).toContain('columnDragging')
 
     // Одноуровневая шапка — фича работает и молчит.
-    __resetDevWarn()
+    __resetLogger()
     warn.mockClear()
     const ok = setup(1, true)
     expect(ok.getCanDrag()).toBe(true)

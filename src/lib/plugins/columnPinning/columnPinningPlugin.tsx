@@ -1,4 +1,4 @@
-import { devWarn } from '../../core/devWarn'
+import { logWarn } from '../../core/logger'
 import { TablePlugin } from '../types'
 
 /**
@@ -15,9 +15,10 @@ export const columnPinningPlugin: TablePlugin = {
     _staticColumn.getCanPin = () => {
       if (table.getHeaderGroups().length !== 1) {
         if (originalGetCanPin()) {
-          devWarn(
-            'columnPinning:multi-level-header',
+          logWarn(
+            table,
             'columnPinning: закрепление столбцов не работает при многоуровневой шапке (getHeaderGroups().length > 1) и отключено. См. ADR 0022.',
+            'columnPinning:multi-level-header',
           )
         }
         return false

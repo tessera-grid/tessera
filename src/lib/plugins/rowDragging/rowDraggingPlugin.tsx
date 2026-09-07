@@ -1,5 +1,5 @@
 import { stateUpdater } from '../../core/createState/stateUpdater'
-import { devWarn } from '../../core/devWarn'
+import { logWarn } from '../../core/logger'
 import { TablePlugin } from '../types'
 import { RowDraggingComponent } from './RowDraggingComponent'
 import { COLUMN_DRAGGING_ID } from './rowDraggingColumn'
@@ -32,25 +32,28 @@ export const rowDraggingPlugin: TablePlugin = {
       }
 
       if (table.getHeaderGroups().length !== 1) {
-        devWarn(
-          'rowDragging:multi-level-header',
+        logWarn(
+          table,
           'rowDragging: перетаскивание строк не работает при многоуровневой шапке (getHeaderGroups().length > 1) и отключено. См. ADR 0022.',
+          'rowDragging:multi-level-header',
         )
         return false
       }
 
       if (table.options.enableGrouping) {
-        devWarn(
-          'rowDragging:grouping',
+        logWarn(
+          table,
           'rowDragging: перетаскивание строк несовместимо с группировкой (enableGrouping) и отключено — раскладкой строк владеет rowGrouping. См. ADR 0022.',
+          'rowDragging:grouping',
         )
         return false
       }
 
       if ((table.getState().sorting?.length ?? 0) > 0) {
-        devWarn(
-          'rowDragging:sorting',
+        logWarn(
+          table,
           'rowDragging: перетаскивание строк несовместимо с активной сортировкой (ручной порядок против авто-упорядочивания) и отключено. Сбросьте сортировку, чтобы перетаскивать. См. ADR 0022.',
+          'rowDragging:sorting',
         )
         return false
       }

@@ -44,6 +44,7 @@ export const useCreateTable = <
   plugins = [] as unknown as TPlugins,
 
   debug = false,
+  logLevel,
 
   enableSkeleton = false,
   skeletonOptions = DEFAULT_SKELETON_OPTIONS,
@@ -207,6 +208,7 @@ export const useCreateTable = <
     slots,
 
     debugAll: debug,
+    logLevel,
 
     // Фичевые опции приходят из записей плагинов (presence-based).
     ...pluginOptions,
