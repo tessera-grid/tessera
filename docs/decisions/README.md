@@ -19,7 +19,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0010](0010-invert-core-plugins-registry.md)         | Инверсия core ↔ plugins: composable-плагины (presence-based)              | Принято    |
 | [0011](0011-column-pinning.md)                       | Закрепление столбцов: плагин columnPinning (CP1–CP15)                     | Принято    |
 | [0012](0012-column-sorting.md)                       | Сортировка столбцов: плагин columnSorting (CS1–CS13)                      | Принято    |
-| [0013](0013-column-sizing.md)                        | Изменение ширины столбцов: плагин columnSizing (CR1–CR15)                 | Принято    |
+| [0013](0013-column-sizing.md)                        | Изменение ширины столбцов: плагин columnSizing (CR1–CR17)                 | Принято    |
 | [0014](0014-row-selection.md)                        | Выбор строк: плагин rowSelection (RS1–RS18)                               | Принято    |
 | [0015](0015-row-expanding.md)                        | Раскрытие строк: плагин rowExpanding (RE1–RE11)                           | Принято    |
 | [0016](0016-row-grouping.md)                         | Группировка строк: плагин rowGrouping (RG1–RG11)                          | Принято    |

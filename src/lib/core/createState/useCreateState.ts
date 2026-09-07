@@ -16,6 +16,7 @@ import {
 import { useColumnSizingState } from './columnSizingState'
 import { useColumnSortingState } from './columnSortingState'
 import { useColumnVisibilityState } from './columnVisibilityState'
+import { mergeColumnSizing } from './mergeColumnSizing'
 import { useRowExpandingState } from './rowExpandingState'
 import { useRowGroupingState } from './rowGroupingState'
 import { useRowSelectionState } from './rowSelectionState'
@@ -130,9 +131,11 @@ export const useCreateState = <
 
   const { columnSizing, onColumnSizingChange } = useColumnSizingState()
 
-  const mergedColumnSizing = useMemo(() => {
-    return { ...(externalColumnSizing ?? columnSizing), ...columnAutoSizing }
-  }, [columnAutoSizing, columnSizing, externalColumnSizing])
+  const mergedColumnSizing = useMemo(
+    () =>
+      mergeColumnSizing(externalColumnSizing, columnSizing, columnAutoSizing),
+    [columnAutoSizing, columnSizing, externalColumnSizing],
+  )
 
   /** COLUMN PINNING */
 
