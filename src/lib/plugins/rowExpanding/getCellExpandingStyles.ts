@@ -1,6 +1,6 @@
 import { Column, Table } from '@tanstack/react-table'
 
-export const EXPANDING_DEPTH_OFFSET_PX = 32
+import { ROW_NESTING_INDENT_PX } from '../../core/rowNesting'
 
 export interface CellExpandingStylesParams {
   column: Column<any, unknown>
@@ -20,7 +20,7 @@ export const getCellExpandingStyles = ({
   )
 
   if (firstUserColumn?.id === column.id) {
-    return { paddingLeft: EXPANDING_DEPTH_OFFSET_PX * rowDepth }
+    return { paddingLeft: ROW_NESTING_INDENT_PX * rowDepth }
   }
 
   return { paddingLeft: undefined }

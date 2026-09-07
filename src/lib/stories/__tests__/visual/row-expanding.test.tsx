@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
+import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
 
 // Each Row Expanding requirement is its own named test, prefixed with its spec ID
@@ -27,8 +28,8 @@ const BODY_ROW = '.data-grid__body-row'
 const BODY_CELL = '.data-grid__body-cell'
 /** The row-expanding toggle (stable class on `ExpandButton`). */
 const TOGGLE = '.row-expand-button'
-/** Depth indent step per `getCellExpandingStyles` (`EXPANDING_DEPTH_OFFSET_PX`). */
-const DEPTH_OFFSET_PX = 32
+/** Depth indent step per `getCellExpandingStyles` (`ROW_NESTING_INDENT_PX`). */
+const DEPTH_OFFSET_PX = ROW_NESTING_INDENT_PX
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
