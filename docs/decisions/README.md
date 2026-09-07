@@ -15,7 +15,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0006](0006-dnd-with-dnd-kit.md)                     | Drag & drop через dnd-kit: плагины rowDragging + columnDragging (D1–D30) | Принято    |
 | [0007](0007-reactivity-pubsub.md)                    | Гранулярная реактивность на v8: Pub-Sub                                  | Принято    |
 | [0008](0008-fast-scroll.md)                          | Fast-scroll: скелетоны ячеек при быстрой прокрутке                       | Принято    |
-| [0009](0009-test-coverage-visual-and-performance.md) | Покрытие тестами: визуальные + перформанс                                | Принято    |
+| [0009](0009-test-coverage-visual-and-performance.md) | Покрытие тестами: визуальные + перформанс + модульные                    | Принято    |
 | [0010](0010-invert-core-plugins-registry.md)         | Инверсия core ↔ plugins: composable-плагины (presence-based)             | Принято    |
 | [0011](0011-column-pinning.md)                       | Закрепление столбцов: плагин columnPinning (CP1–CP15)                    | Принято    |
 | [0012](0012-column-sorting.md)                       | Сортировка столбцов: плагин columnSorting (CS1–CS13)                     | Принято    |
