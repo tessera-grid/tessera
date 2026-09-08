@@ -6,7 +6,7 @@ import { describe, expect, test, vi } from 'vitest'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Pinning requirement is its own named test, prefixed with its spec
-// ID (CP1–CP15 from the requirements table in docs/decisions/0011-column-pinning.md).
+// ID (CP1–CP19 from the requirements table in docs/decisions/0011-column-pinning.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -32,6 +32,14 @@ const SCROLLER = '.MuiTableContainer-root'
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 /** A head cell currently pinned to the left edge. */
 const LEFT_PINNED_HEAD = `${HEAD_CELL}[data-cell-pinned='left']`
+/** Head cells of the top (first) header row — top-level groups under nesting. */
+const FIRST_ROW_HEAD = `${HEAD_CELL}[data-first-headers-row='true']`
+/** Head cells of the bottom (last) header row — the leaf headers under nesting. */
+const LAST_ROW_HEAD = `${HEAD_CELL}[data-last-headers-row='true']`
+
+/** A head cell addressed by its column id (used for group/leaf headers). */
+const headCellById = (container: HTMLElement, id: string) =>
+  container.querySelector<HTMLElement>(`${HEAD_CELL}[data-column-id='${id}']`)!
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
@@ -49,6 +57,17 @@ async function renderColumnPinning(args: StoryArgs = {}) {
 /** The overflowing scroll container of the rendered grid. */
 const scrollerOf = (container: HTMLElement) =>
   container.querySelector<HTMLElement>(SCROLLER)!
+
+/** Render the nested-header pinning story and wait for its header rows. */
+async function renderHeaderGroupsPinning(args: StoryArgs = {}) {
+  const { container } = await render(
+    <composed.HeaderGroupsPinning {...args} />,
+  )
+  await expect
+    .poll(() => container.querySelectorAll(HEAD_CELL).length)
+    .toBeGreaterThan(3)
+  return container
+}
 
 /**
  * Wait until `text` appears anywhere in the document (Base UI tooltips render
@@ -302,25 +321,24 @@ describe('Column Pinning — requirements', () => {
     expect(parseFloat(border)).toBeGreaterThan(0)
   })
 
-  test('CP13: multi-level headers disable pinning (no pin button rendered)', async () => {
-    const container = await renderColumnPinning({ showHeaderGroups: true })
-    // Nested header groups → getCanPin() is false, so no toggle is rendered.
+  test('CP13: under nested headers a leaf under a group is not individually pinnable', async () => {
+    const container = await renderHeaderGroupsPinning()
+    // Leaf headers live in the last header row — none of them carries a pin
+    // toggle: only whole top-level groups are pinnable (ADR 0011/0022).
     expect(container.querySelectorAll(HEAD_CELL).length).toBeGreaterThan(1)
-    expect(container.querySelector(PIN_BUTTON)).toBeNull()
+    expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
   })
 
-  test('CP16: enabling the plugin after mount keeps multi-level headers unpinnable (matches a fresh mount)', async () => {
-    // Regression: the plugin's `feature.createColumn` wraps `getCanPin` to forbid
-    // pinning under nested headers (CP13). TanStack freezes `_features` at
-    // `createTable` (useReactTable never rebuilds the table), so a feature absent
-    // at mount never appears on a live toggle — the option flips and the reactive
-    // toggle slot reveals, but the wrapper stays missing, so `getCanPin` fell back
-    // to the base (always pinnable) and pin buttons wrongly showed on grouped
-    // headers, pinning a column out of its group and breaking the layout. The
-    // registry now keeps the pinning feature in `_features` even while disabled
-    // (inert until `enableColumnPinning`), so a live toggle matches a fresh mount.
+  test('CP16: enabling the plugin after mount reveals top-level group pinning under nested headers (matches a fresh mount)', async () => {
+    // Regression: the plugin's `feature.createColumn` wraps `getCanPin` to scope
+    // pinning to top-level groups under nested headers (CP17). TanStack freezes
+    // `_features` at `createTable` (useReactTable never rebuilds the table), so a
+    // feature absent at mount never appears on a live toggle. The registry keeps
+    // the pinning feature in `_features` even while disabled (inert until
+    // `enableColumnPinning`), so a live toggle matches a fresh mount — the top
+    // group buttons appear, and leaf headers stay button-free.
     const { container, rerender } = await render(
-      <composed.ColumnPinning showHeaderGroups enableColumnPinning={false} />,
+      <composed.HeaderGroupsPinning enableColumnPinning={false} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -328,16 +346,73 @@ describe('Column Pinning — requirements', () => {
     // Disabled: no toggles yet.
     expect(container.querySelector(PIN_BUTTON)).toBeNull()
 
-    // Toggle the plugin on without a remount — under nested headers `getCanPin()`
-    // must stay false, so no toggle appears (as CP13 guarantees on a fresh mount).
-    await rerender(
-      <composed.ColumnPinning showHeaderGroups enableColumnPinning />,
-    )
-    // Give the reactive slot a chance to render a (wrongly-revealed) button.
+    // Toggle the plugin on without a remount — top-level group headers reveal
+    // their pin toggle (as a fresh mount would), leaves stay button-free.
+    await rerender(<composed.HeaderGroupsPinning enableColumnPinning />)
     await expect
-      .poll(() => container.querySelectorAll(HEAD_CELL).length)
-      .toBeGreaterThan(1)
-    expect(container.querySelector(PIN_BUTTON)).toBeNull()
+      .poll(() => container.querySelector(PIN_BUTTON) !== null)
+      .toBe(true)
+    expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
+  })
+
+  test('CP17: under nested headers only top-level group headers get a pin button', async () => {
+    const container = await renderHeaderGroupsPinning()
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLElement>(PIN_BUTTON),
+    )
+    // There are pin toggles…
+    expect(buttons.length).toBeGreaterThan(0)
+    // …every one of them lives in a top (first-row) header cell…
+    expect(buttons.every(btn => btn.closest(FIRST_ROW_HEAD) !== null)).toBe(true)
+    // …and none in the leaf (last) header row.
+    expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
+  })
+
+  test('CP18: clicking a top-level group toggle pins the whole group (all its leaves)', async () => {
+    const container = await renderHeaderGroupsPinning()
+    // The `name` group spans the firstName + lastName leaves (see the mock).
+    const nameGroup = headCellById(container, 'name')
+    const button = await revealPin(nameGroup)
+    await userEvent.click(button)
+
+    // The group header itself goes sticky-left…
+    await expect
+      .poll(() => headCellById(container, 'name').getAttribute('data-cell-pinned'))
+      .toBe('left')
+
+    // …and every leaf of the group is left-pinned in the body.
+    for (const leaf of ['firstName', 'lastName']) {
+      // eslint-disable-next-line no-await-in-loop
+      await expect
+        .poll(
+          () =>
+            container.querySelector(
+              `${BODY_CELL}[data-column-id='${leaf}'][data-cell-pinned='left']`,
+            ) !== null,
+        )
+        .toBe(true)
+    }
+  })
+
+  test('CP19: a pinned group and its leaves stick to the left edge with the correct offset', async () => {
+    const container = await renderHeaderGroupsPinning()
+    const nameGroup = headCellById(container, 'name')
+    const button = await revealPin(nameGroup)
+    await userEvent.click(button)
+    await expect
+      .poll(() => headCellById(container, 'name').getAttribute('data-cell-pinned'))
+      .toBe('left')
+
+    // The group is the only left-pinned block, so its first leaf sits flush at
+    // the edge → the group header AND that leaf's body cell are sticky at 0px.
+    const groupHead = headCellById(container, 'name')
+    const firstLeafBody = container.querySelector<HTMLElement>(
+      `${BODY_CELL}[data-column-id='firstName']`,
+    )!
+    expect(getComputedStyle(groupHead).position).toBe('sticky')
+    expect(getComputedStyle(groupHead).left).toBe('0px')
+    expect(getComputedStyle(firstLeafBody).position).toBe('sticky')
+    expect(getComputedStyle(firstLeafBody).left).toBe('0px')
   })
 
   test('CP14: the row-actions column is auto-pinned right without any click', async () => {

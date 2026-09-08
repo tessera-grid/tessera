@@ -17,7 +17,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0008](0008-fast-scroll.md)                          | Fast-scroll: скелетоны ячеек при быстрой прокрутке                        | Принято    |
 | [0009](0009-test-coverage-visual-and-performance.md) | Покрытие тестами: визуальные + перформанс + модульные                     | Принято    |
 | [0010](0010-invert-core-plugins-registry.md)         | Инверсия core ↔ plugins: composable-плагины (presence-based)              | Принято    |
-| [0011](0011-column-pinning.md)                       | Закрепление столбцов: плагин columnPinning (CP1–CP15)                     | Принято    |
+| [0011](0011-column-pinning.md)                       | Закрепление столбцов: columnPinning (CP1–CP19) + reorder-out (LP1–LP6)    | Принято    |
 | [0012](0012-column-sorting.md)                       | Сортировка столбцов: плагин columnSorting (CS1–CS13)                      | Принято    |
 | [0013](0013-column-sizing.md)                        | Изменение ширины столбцов: плагин columnSizing (CR1–CR17)                 | Принято    |
 | [0014](0014-row-selection.md)                        | Выбор строк: плагин rowSelection (RS1–RS18)                               | Принято    |
@@ -29,6 +29,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0020](0020-accessibility.md)                        | Доступность (a11y): роли, имена, индексы, axe (A1–A5)                     | Принято    |
 | [0021](0021-keyboard-navigation.md)                  | Клавиатурная навигация: плагин `keyboardNavigation` (KN1–KN14)            | Предложено |
 | [0022](0022-plugin-compatibility-contract.md)        | Контракт совместимости плагинов: тихие отключения → dev-warning (PC1–PC8) | Принято    |
+| [0023](0023-cross-plugin-interactions.md)            | Сквозные (межплагинные) взаимодействия: слой тестов `X<n>`                | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

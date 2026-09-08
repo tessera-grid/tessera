@@ -35,6 +35,8 @@ export interface FeatureToggles {
   /** Тонкая настройка мультисорта (`max` / `removal` / `event`) для тестов/историй. */
   multiSortOptions?: ColumnMultiSortOptions
   enableColumnPinning?: boolean
+  /** PoC (ADR 0011): под вложенной шапкой пиннить отдельные листья (reorder-out). */
+  enableLeafPinning?: boolean
   enableColumnResizing?: boolean
   enableColumnDragging?: boolean
   enableGrouping?: boolean
@@ -62,7 +64,10 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     }),
     rowExpandingEntry,
     rowDragging({ enabled: !!o.enableRowDragging }),
-    columnPinning({ enabled: !!o.enableColumnPinning }),
+    columnPinning({
+      enabled: !!o.enableColumnPinning,
+      leafPinning: o.enableLeafPinning,
+    }),
     columnSizing({ enabled: !!o.enableColumnResizing }),
     columnSorting({
       enabled: !!o.enableColumnSorting,

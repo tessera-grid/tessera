@@ -641,6 +641,47 @@ export const HeaderGroups: StoryObj<StoryProps> = {
   },
 }
 
+export const HeaderGroupsPinning: StoryObj<StoryProps> = {
+  name: 'Header Groups Pinning',
+  args: {
+    // Вложенная шапка + пиннинг: закрепляется только группа верхнего уровня
+    // целиком (ADR 0011). Узкий вьюпорт по горизонтали, чтобы sticky-закрепление
+    // было видно при прокрутке.
+    showHeaderGroups: true,
+    enableColumnPinning: true,
+    dataCount: 40,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  parameters: {
+    controls: {
+      exclude: ['columnCount', 'page', 'recordsOnPage'],
+    },
+  },
+}
+
+export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
+  name: 'Header Groups Leaf Pinning',
+  args: {
+    // Reorder-out (ADR 0011): под вложенной шапкой можно пиннить любую единицу —
+    // лист или группу любого уровня; при закреплении листья цели вырываются к
+    // левому краю, а спанящие шапки родителей режутся на сегменты.
+    showHeaderGroups: true,
+    enableColumnPinning: true,
+    enableLeafPinning: true,
+    dataCount: 40,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  parameters: {
+    controls: {
+      exclude: ['columnCount', 'page', 'recordsOnPage'],
+    },
+  },
+}
+
 export const WithFooter: StoryObj<StoryProps> = {
   name: 'With Footer',
   args: {

@@ -79,12 +79,14 @@
 | ----------------------------------- | ---------------------------------------- | ------------------------------------------ |
 | rowExpanding × rowGrouping (B1)     | раскрытием владеет **rowGrouping**       | `maxExpandingDepth`, `enableRowExpanding`  |
 | rowDragging × rowGrouping (B2)      | раскладкой строк владеет **rowGrouping** | drag отключён                              |
-| multi-level header × 3 плагина (B4) | шапка (пока не поддержана drag/pin)      | columnDragging, columnPinning, rowDragging |
+| multi-level header × drag (B4)      | шапка (drag не поддержан)                | columnDragging, rowDragging                |
 | rowDragging × columnSorting (C3)    | порядком строк владеет **сортировка**    | drag отключён, пока сортировка активна     |
 
-Multi-level header (B4) — это **ограничение текущей реализации** (roadmap), а не
-вечный контракт: когда drag/pin научатся многоуровневой шапке, предупреждение
-уйдёт вместе с ограничением.
+Multi-level header × **pinning** больше не в этой таблице: закрепление под вложенной
+шапкой **поддержано** на уровне группы верхнего уровня
+([ADR 0011](0011-column-pinning.md), CP17–CP19). Осталось ограничение по drag (B4):
+перетаскивание столбцов/строк под вложенной шапкой выключено — потребности нет; это
+контракт, а не временный гейт.
 
 ### C3 — новое поведение: сортировка блокирует drag
 
@@ -124,7 +126,7 @@ co-located рядом с исходником.
 | ID   | Требование                                                                                                                       | Тест                                                 |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | PC1  | Многоуровневая шапка делает columnDragging инертным (`getCanDrag`→false) и предупреждает                                         | `columnDragging/columnDraggingPlugin.test.ts` `PC1:` |
-| PC2  | Многоуровневая шапка делает columnPinning инертным (`getCanPin`→false) и предупреждает                                           | `columnPinning/columnPinningPlugin.test.ts` `PC2:`   |
+| PC2  | Под вложенной шапкой пиннится только группа верхнего уровня; лист под группой инертен, при явном `enablePinning` — предупреждает | `columnPinning/columnPinningPlugin.test.ts` `PC2:`   |
 | PC3  | Многоуровневая шапка делает rowDragging инертным (`getCanDrag`→false) и предупреждает                                            | `rowDragging/rowDraggingPlugin.test.ts` `PC3:`       |
 | PC4  | Группировка (`enableGrouping`) делает rowDragging инертным и предупреждает                                                       | `rowDragging/rowDraggingPlugin.test.ts` `PC4:`       |
 | PC5  | При группировке rowExpanding делегирует раскрытие TanStack, `maxExpandingDepth`/`enableRowExpanding` игнорируются, предупреждает | `rowExpanding/rowExpandingPlugin.test.ts` `PC5:`     |

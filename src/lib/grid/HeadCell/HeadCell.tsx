@@ -13,7 +13,6 @@ import {
 import { RegisterSlotParams } from '../../core/createSlots'
 import { RenderSlot } from '../../core/renderSlots'
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
-import { useCellPinningParams } from '../../plugins/columnPinning'
 import { ItemDraggableWrapper } from '../dnd'
 import { CellWrapperContent, getAlignContent } from '../CellWrapperContent'
 import { CellWrapperTitle } from '../CellWrapperTitle'
@@ -57,13 +56,27 @@ const HeadCellView = ({
   disabledSortable,
   drag,
 }: HeadCellViewProps) => {
-  const {
-    isLeftPinned,
-    isRightPinned,
-    isLastLeftPinnedColumn,
-    getStartLeft,
-    getAfterRight,
-  } = useCellPinningParams({ column: header.column })
+  // Пиннинг считаем по листьям ЭТОЙ ячейки заголовка (`getLeafHeaders`), а не по
+  // самой `header.column`. Причина — reorder-out (ADR 0011): когда лист вырывается
+  // из группы влево, спанящая шапка группы режется на сегменты, и `header.column`
+  // (группа) агрегирует пиннинг по ВСЕМ листьям — поэтому центральный сегмент
+  // ошибочно считался бы закреплённым. Лист ячейки-сегмента даёт корректный ответ:
+  // сегмент закреплён, только если все его листья закреплены. Для листовой шапки
+  // getLeafHeaders() = [сама шапка], так что плоский путь не меняется.
+  const leafHeaderColumns = header.getLeafHeaders().map(h => h.column)
+  const firstLeafColumn = leafHeaderColumns[0] ?? header.column
+  const lastLeafColumn = leafHeaderColumns.at(-1) ?? header.column
+  const isLeftPinned =
+    leafHeaderColumns.length > 0 &&
+    leafHeaderColumns.every(column => column.getIsPinned() === 'left')
+  const isRightPinned =
+    leafHeaderColumns.length > 0 &&
+    leafHeaderColumns.every(column => column.getIsPinned() === 'right')
+  const headerPinned = isLeftPinned ? 'left' : isRightPinned ? 'right' : false
+  const getStartLeft = firstLeafColumn.getStart('left')
+  const getAfterRight = lastLeafColumn.getAfter('right')
+  const isLastLeftPinnedColumn =
+    isLeftPinned && lastLeafColumn.getIsLastColumn('left')
 
   const isActionsColumn = header.column.getIsActionsColumn()
   const enableResizingColumn = header.column.getCanResize()
@@ -182,7 +195,7 @@ const HeadCellView = ({
       aria-colindex={header.column.getIndex() + 1}
       aria-sort={ariaSort}
       data-column-id={header.column.id}
-      data-cell-pinned={header.column.getIsPinned()}
+      data-cell-pinned={headerPinned}
       data-cell-last-left-pinned={isLastLeftPinnedColumn}
       data-column-resizable={enableResizingColumn}
       data-column-resizing={header.column.getIsResizing()}

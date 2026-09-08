@@ -4,7 +4,7 @@ import { columnPinningPlugin } from './columnPinningPlugin'
 import type { ColumnPinningPlugin } from './types'
 
 export const columnPinning = (
-  opts: PluginOptions = {},
+  opts: PluginOptions & { leafPinning?: boolean } = {},
 ): RegistryEntry<ColumnPinningPlugin> => ({
   id: 'columnPinning',
   enabled: opts.enabled,
@@ -23,7 +23,10 @@ export const columnPinning = (
       component: ColumnPinningComponent,
     },
   ],
+  // `enableLeafPinning` — opt-in режим reorder-out (ADR 0011), не входит в
+  // TableOptionsResolved, поэтому проставляется через каст.
   options: {
     enableColumnPinning: true,
-  },
+    enableLeafPinning: !!opts.leafPinning,
+  } as RegistryEntry['options'],
 })

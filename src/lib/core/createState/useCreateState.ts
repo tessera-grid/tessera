@@ -76,10 +76,23 @@ export const useCreateState = <
 
   /** COLUMN ORDERING */
 
-  const initialColumnOrder = useMemo(
-    () => columns.map(column => column.id).filter((id): id is string => !!id),
-    [columns],
-  )
+  // Порядок сеем на уровне ЛИСТЬЕВ (разворачиваем группы), а не top-level: так
+  // `columnOrder` способен переупорядочивать листья — этого требует reorder-out
+  // пиннинга под вложенной шапкой (ADR 0011), где лист «вырывается» из группы. Для
+  // плоской таблицы листья и есть top-level, поэтому порядок и его длина не
+  // меняются (reset-эффект в useColumnOrderState сверяет длину).
+  const initialColumnOrder = useMemo(() => {
+    const collectLeafIds = (defs: readonly any[]): string[] =>
+      defs.flatMap(def =>
+        def?.columns?.length
+          ? collectLeafIds(def.columns)
+          : (() => {
+              const id = def?.id ?? def?.accessorKey
+              return id ? [String(id)] : []
+            })(),
+      )
+    return collectLeafIds(columns as readonly any[])
+  }, [columns])
 
   const { columnOrder, onColumnOrderChange } =
     useColumnOrderState(initialColumnOrder)
