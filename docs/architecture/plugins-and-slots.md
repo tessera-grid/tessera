@@ -54,6 +54,7 @@ flowchart TB
 
 - `table.getHooks()` → `table.options.hooks`
 - `table.getRenderSlots()` → `table.options.slots`
+- `table.getSlotActions()` → `table.options.slotActions` (дескрипторы действий, ADR 0024)
 - `table.setRenderSlot(params)` → `registerSlot({ ...params, table })`
 - плюс хелперы: `getHeaderGroups` (обёрнут флагами первой/последней группы),
   `getIsAnyColumnResizing` и хелперы на строку/заголовок/ячейку через остальные
@@ -73,13 +74,19 @@ flowchart TB
 ```ts
 createTable: table => {
   table.setRenderSlot({
-    id: 'columnPinningPlugin', // уникальный id — ключ дедупликации
+    id: 'myPlugin', // уникальный id — ключ дедупликации
     slot: 'rightHeaderSlot',
     order: 0, // число = индекс splice, 'last'/undefined = push
-    component: PinButton, // либо `render: (ctx) => ReactNode`
+    component: MyButton, // либо `render: (ctx) => ReactNode`
   })
 }
 ```
+
+> Слоты рендерят **опаковый** JSX. Кнопки-действия встроенных плагинов (пиннинг/
+> сортировка/группировка) на слотах больше **не** живут — они объявляются единым
+> дескриптором `slotActions` (см. ниже «Действия слота»); на слотах остаются
+> аффордансы (resize-грип `columnSizing`, ручка `columnDragging`) и произвольный
+> пользовательский JSX.
 
 `registerSlot` (`core/createSlots/registerSlot.ts`) **дедуплицирует по `id`**: если
 id уже существует в слоте, он обновляет `visible/render/component` на месте, иначе
@@ -88,12 +95,9 @@ id уже существует в слоте, он обновляет `visible/r
 
 ```mermaid
 flowchart LR
-    subgraph reg["регистрация (createTable, однократно)"]
-        P1["pinning → rightHeaderSlot"]
-        P2["sizing → rightHeaderSlot"]
-        P3["sorting → leftHeaderSlot"]
-        P4["dragging → leftHeaderSlot"]
-        P5["grouping → rightHeaderSlot"]
+    subgraph reg["регистрация слотов (опаковый JSX)"]
+        P2["sizing → rightHeaderSlot (resize-грип)"]
+        P4["dragging → leftHeaderSlot (ручка)"]
         CUST["кастомный плагин → любой слот"]
     end
     STORE["table.options.slots<br/>(registerSlot дедуплицирует по id)"]
@@ -121,10 +125,52 @@ createCell: cell => {
 встроенные сервисные столбцы (чекбокс выбора, expander) инъектируют свой UI и так
 `switchActionPlugin` из Guide подменяет рендерер ячейки столбца.
 
+## Действия слота (дескриптор) и кебаб-меню
+
+Кнопки-действия (пиннинг, сортировка, группировка, действия строки) объявляются не
+опаковым слот-компонентом, а **единым дескриптором `SlotAction`** — данными (ADR
+0024). Плагин кладёт их в `RegistryEntry.slotActions`; ядро сворачивает реактивно
+(как `slots`, маршрутизируя по `slot`) в `table.options.slotActions` и **само решает
+подачу**: инлайн иконка-кнопка или строка раскрывающегося кебаб-меню.
+
+```ts
+export const pinHeaderAction: HeaderAction = {
+  id: 'columnPinning',
+  slot: 'rightHeaderSlot',
+  order: 0,
+  visible: ({ column }) => column.getCanPin(), // применимость (и участие в пороге)
+  icon: () => <PinActionIcon />, // компонент — доступ к useIcons
+  label: (ctx, labels) => (isPinned(ctx) ? labels.unpin : labels.pin), // labels инъектируются
+  active: isPinned, // подсветка инлайн + галочка в меню
+  onSelect: togglePin,
+  subscribe: ({ column }) => [column.getIsPinned(), column.getCanPin()], // Pub-Sub ключи
+}
+```
+
+Дженерик по контексту: `HeaderAction = SlotAction<HeaderComponentProps>` (шапка),
+`RowAction = SlotAction<CellComponentProps, 'actionRowSlot'>` (строка). Один движок
+(`resolveActionLayout`) и рендереры (`ActionButton`, `ActionMenu`, `ActionsZone`)
+обслуживают оба; `ActionsZone` встроена в `HeadCell` (слоты шапки) и `BodyCell`
+(колонка действий строки).
+
+Схлопывание включает **плагин-меню** (`headerActionMenu` / `rowActionMenu`): он
+объявляет `RegistryEntry.actionMenu` (`{ slots, mode, threshold }`), ядро сворачивает
+декларации в карту `table.options.actionMenu` по слотам. Правило **all-or-nothing**:
+применимые действия слота либо все инлайн, либо (при достижении порога или
+`mode: 'always'`) все схлопнутых — в кебаб. Опаковые слот-компоненты не схлопываются
+(всегда инлайн), но учитываются в пороге; аффорданс с `countsAsHeaderAction: false`
+(resize-грип) — не учитывается. `menuItems` разворачивает одно действие в несколько
+пунктов меню (сортировка → asc/desc/сброс), `adornment` — довесок инлайн-кнопки
+(бейдж приоритета).
+
 ## Руководство для авторов
 
-- **Рендерить кнопку в каждой строке/ячейке/заголовке** → зарегистрируйте слот в
-  `createTable`.
+- **Действие-кнопка (пиннинг/сортировка/…), которое может уехать в кебаб-меню** →
+  объявите `slotActions: [SlotAction]` в записи реестра (данными), не опаковый
+  компонент.
+- **Рендерить произвольный JSX в каждой строке/ячейке/заголовке** → зарегистрируйте
+  слот в `createTable` (или декларативный `slots`); такой компонент кебаб не
+  схлопывает.
 - **Владеть ячейкой/заголовком всего столбца** → задайте `renderComponent` в
   `createCell`/`createHeader`, защитив по id столбца.
 - **Добавить кастомное состояние таблицы** → `getInitialState` + типизация через

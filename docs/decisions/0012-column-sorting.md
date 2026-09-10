@@ -2,6 +2,12 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** 2026-09-10 — affordance переведён с опакового слот-компонента
+  (`ColumnSortingComponent`→`SortButton`) на единый дескриптор `slotActions`
+  ([ADR 0024](0024-slot-action-descriptor-and-menu.md)): инлайн — прежняя циклящая
+  кнопка с бейджем приоритета (`adornment`); в кебаб-меню разворачивается в
+  отдельные пункты asc/desc/сброс (`menuItems`). `SortButton` остаётся публичным
+  примитивом.
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен как слот поверх
     штатной модели сортировки TanStack (`getSortedRowModel`, `column.getIsSorted`,

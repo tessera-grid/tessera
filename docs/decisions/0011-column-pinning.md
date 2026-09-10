@@ -2,6 +2,11 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-08-07
+- **Изменён:** 2026-09-10 — кнопка закрепления переведена с опакового слот-компонента
+  (`ColumnPinningComponent`→`PinButton`) на единый дескриптор `slotActions`
+  ([ADR 0024](0024-slot-action-descriptor-and-menu.md)): при подключённом
+  `headerActionMenu` уезжает в кебаб-меню. Инлайн-DOM (`column-pin__button`, иконка,
+  `data-button-active`) сохранён; `PinButton` остаётся публичным примитивом.
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен как TanStack
     `TableFeature` поверх штатной модели `columnPinning`.

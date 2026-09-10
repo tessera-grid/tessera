@@ -2,6 +2,11 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** 2026-09-10 — кнопка группировки переведена с опакового слот-компонента
+  (`RowGroupingComponent`→`GroupButton`) на единый дескриптор `slotActions`
+  ([ADR 0024](0024-slot-action-descriptor-and-menu.md)): при `headerActionMenu`
+  уезжает в кебаб-меню. Инлайн-DOM (`column-group__button`) сохранён; `GroupButton`
+  остаётся публичным примитивом.
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен на штатной
     модели группировки TanStack (`enableGrouping`, `getGroupedRowModel`, срез
