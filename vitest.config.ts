@@ -24,6 +24,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // Base UI `Menu` тянет `@base-ui/utils` (fastHooks), который иначе не попадает в
+  // авто-пребандл vitest browser mode и ломает ESM-interop React (`import * as
+  // React` → null). Пребандлим меню — esbuild собирает поддерево с единым React.
+  optimizeDeps: {
+    include: ['@base-ui/react/menu'],
+  },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./vitest.setup.ts'],

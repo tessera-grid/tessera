@@ -25,6 +25,17 @@ const composed = composeStories(stories)
 /** The row/header selection checkbox (stable class on `SelectCheckbox`). */
 const CHECKBOX = '.row-select-checkbox'
 
+const HEAD_CELL = '.data-grid__head-cell'
+const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
+const KEBAB = '[aria-label="Column options"]'
+const ACTION_CELL =
+  '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
+
+const menuTexts = () =>
+  Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).map(
+    i => i.textContent?.trim(),
+  )
+
 /** Body rows ordered by their virtual index. */
 const sortedRows = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>(ROW)).sort(sortByIndex)
@@ -99,5 +110,54 @@ describe('Cross-plugin — rowSelection × rowDragging', () => {
     expect(isRowSelected(moved)).toBe(true)
     // and the row now occupying slot 0 is NOT selected.
     expect(isRowSelected(sortedRows(container)[0])).toBe(false)
+  })
+})
+
+describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
+  test('X2: header and row kebabs collapse independently — both menus work (ADR 0024)', async () => {
+    const { container } = await render(
+      <composed.AllFeatures
+        enableColumnPinning
+        enableColumnSorting
+        enableGrouping
+        enableHeaderActionMenu
+        enableRowActions
+        enableRowActionMenu
+        dataCount={20}
+        containerHeight={500}
+        height={400}
+        maxHeight={400}
+      />,
+    )
+
+    // Header actions collapsed to per-column kebabs, no inline plugin buttons.
+    await expect
+      .poll(() => container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
+      .toBeGreaterThan(0)
+    expect(container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length).toBe(0)
+
+    // Row actions collapsed to a per-row kebab in the actions column.
+    const actionCell = container.querySelector<HTMLElement>(ACTION_CELL)!
+    expect(actionCell.querySelector(KEBAB)).toBeTruthy()
+
+    // Header kebab opens the column controls…
+    const headKebab = container.querySelector<HTMLElement>(`${DATA_HEAD_CELL} ${KEBAB}`)!
+    await userEvent.click(headKebab)
+    await expect
+      .poll(() => menuTexts())
+      .toEqual(expect.arrayContaining(['Pin column', 'Sort ascending', 'Group']))
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => menuTexts().length).toBe(0)
+
+    // …and the row kebab independently opens the row actions.
+    await userEvent.click(actionCell.querySelector<HTMLElement>(KEBAB)!)
+    await expect
+      .poll(() => menuTexts())
+      .toEqual(expect.arrayContaining(['Edit', 'Duplicate', 'Delete']))
+    await userEvent.keyboard('{Escape}')
+
+    // Header kebabs are untouched by the row menu interaction.
+    expect(container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
+      .toBeGreaterThan(0)
   })
 })
