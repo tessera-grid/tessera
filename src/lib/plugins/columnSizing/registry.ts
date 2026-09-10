@@ -15,6 +15,9 @@ export const columnSizing = (
       slot: 'rightHeaderSlot',
       order: 'last',
       component: ColumnSizingComponent,
+      // Resize-грип — кромочный аффорданс, а не иконка-кнопка: рисуется инлайн,
+      // но не учитывается в пороге схлопывания кебаба (иначе «крал» бы место).
+      countsAsHeaderAction: false,
     },
   ],
   options: {

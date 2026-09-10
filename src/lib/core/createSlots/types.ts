@@ -25,6 +25,13 @@ export interface RegisterSlotParams<TContext extends object> {
    * Компонент плагина
    */
   component?: (props: TContext) => any
+  /**
+   * Учитывать ли этот слот в пороге схлопывания кебаб-меню (`headerActionMenu`).
+   * `false` — слот-аффорданс (напр. resize-грип `columnSizing`), который не
+   * является иконкой-кнопкой и не должен «занимать место» в счётчике. По
+   * умолчанию учитывается.
+   */
+  countsAsHeaderAction?: boolean
 }
 
 export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]

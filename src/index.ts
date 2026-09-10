@@ -32,6 +32,19 @@ export type {
   CellComponentProps,
 } from './lib/plugins/types'
 
+// Единый дескриптор действия слота (кебаб-меню): плагины объявляют действия
+// данными, ядро решает подачу (инлайн-кнопка или строка меню). `SlotAction<TCtx>`
+// — обобщённый дескриптор; `HeaderAction`/`RowAction` — псевдонимы под контекст.
+export type {
+  SlotAction,
+  SlotName,
+  HeaderAction,
+  RowAction,
+  SlotActions,
+  HeaderActionSlot,
+  SlotMenuConfig,
+} from './lib/core/headerActions'
+
 export { DataGrid } from './lib/grid/DataGrid/DataGrid'
 export { type DataGridProps } from './lib/grid/DataGrid/types'
 

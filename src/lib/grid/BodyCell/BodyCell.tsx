@@ -7,6 +7,7 @@ import { getColumnSizeVariable } from '../../core/createColumns/calculateColumnS
 import { RegisterSlotParams } from '../../core/createSlots'
 import { useFastScrollSuppressed } from '../../core/fastScroll'
 import { RenderSlot } from '../../core/renderSlots'
+import { ActionsZone } from '../headerActions'
 import { useCellPinningParams } from '../../plugins/columnPinning'
 import { getCellExpandingStyles } from '../../plugins/rowExpanding'
 import { CellWrapperContent, getAlignContent } from '../CellWrapperContent'
@@ -97,7 +98,13 @@ export const BodyCell = memo(
       }
 
       if (isRowActionsColumn) {
-        return <RenderSlot slot={actionRowSlot} context={cell.getContext()} />
+        return (
+          <ActionsZone
+            slot="actionRowSlot"
+            opaqueSlot={actionRowSlot}
+            context={cell.getContext()}
+          />
+        )
       }
 
       if (isActionsColumn) {

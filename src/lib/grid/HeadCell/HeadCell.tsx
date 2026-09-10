@@ -11,8 +11,8 @@ import {
   getHeaderSizeVariable,
 } from '../../core/createColumns/calculateColumnSizes'
 import { RegisterSlotParams } from '../../core/createSlots'
-import { RenderSlot } from '../../core/renderSlots'
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
+import { ActionsZone } from '../headerActions'
 import { ItemDraggableWrapper } from '../dnd'
 import { CellWrapperContent, getAlignContent } from '../CellWrapperContent'
 import { CellWrapperTitle } from '../CellWrapperTitle'
@@ -164,11 +164,19 @@ const HeadCellView = ({
   const slots = (
     <>
       {canRenderSlots && (
-        <RenderSlot slot={leftHeaderSlot} context={header.getContext()} />
+        <ActionsZone
+          slot="leftHeaderSlot"
+          opaqueSlot={leftHeaderSlot}
+          context={header.getContext()}
+        />
       )}
       {render}
       {canRenderSlots && (
-        <RenderSlot slot={rightHeaderSlot} context={header.getContext()} />
+        <ActionsZone
+          slot="rightHeaderSlot"
+          opaqueSlot={rightHeaderSlot}
+          context={header.getContext()}
+        />
       )}
     </>
   )

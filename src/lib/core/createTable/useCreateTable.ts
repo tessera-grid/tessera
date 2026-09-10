@@ -20,6 +20,11 @@ import { useCreateColumns } from '../createColumns'
 import { DEFAULT_COLUMN } from '../createColumns/defaultColumnOptions'
 import { useCreateHooks } from '../createHooks'
 import { createEmptyRenderSlots, registerSlotInto } from '../createSlots'
+import {
+  SlotActionMenu,
+  createEmptySlotActions,
+  registerSlotActionInto,
+} from '../headerActions'
 import { useCreateState } from '../createState'
 import { DEFAULT_SKELETON_OPTIONS } from '../skeletonOverlay/options'
 import { FEATURE_OFF_BASELINE, foldPluginOptions } from './pluginOptions'
@@ -175,6 +180,52 @@ export const useCreateTable = <
     [pluginSignature],
   )
 
+  // Действия слотов сворачиваются реактивно так же, как слоты (ADR 0010): набор
+  // кебаб-действий следует за составом активных плагинов, а не застревает на
+  // составе, зафиксированном при конструировании таблицы. Маршрутизация по
+  // `action.slot` — шапка/ячейка/строка действий в одном канале.
+  const slotActions = useMemo(
+    () => {
+      const built = createEmptySlotActions()
+
+      activePlugins.forEach(plugin =>
+        plugin.slotActions?.forEach(action =>
+          registerSlotActionInto(built, action),
+        ),
+      )
+
+      return built
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
+    [pluginSignature],
+  )
+
+  // Конфиг кебаба сворачивается по слотам из деклараций активных плагинов-меню.
+  // Реактивная свёртка (а не shallow-spread опций) решает две задачи: разные
+  // плагины (заголовки/строки) не затирают чужие слоты, и отключение плагина
+  // убирает его слоты, не оставляя устаревший конфиг в `table.options`.
+  const actionMenu = useMemo<SlotActionMenu>(
+    () => {
+      const built: SlotActionMenu = {}
+
+      activePlugins.forEach(plugin => {
+        const decl = plugin.actionMenu
+
+        if (!decl) {
+          return
+        }
+
+        decl.slots.forEach(slot => {
+          built[slot] = { mode: decl.mode, threshold: decl.threshold }
+        })
+      })
+
+      return built
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
+    [pluginSignature],
+  )
+
   const table = useReactTable<
     TData,
     InferPluginHooks<TPlugins> & THooks,
@@ -206,6 +257,8 @@ export const useCreateTable = <
 
     hooks,
     slots,
+    slotActions,
+    actionMenu,
 
     debugAll: debug,
     logLevel,

@@ -49,7 +49,15 @@ export interface RegisterCellSlotParams<
  */
 export const registerSlotInto = (
   slots: RenderSlots,
-  { id, order, visible = true, slot, render, component }: PluginSlot,
+  {
+    id,
+    order,
+    visible = true,
+    slot,
+    render,
+    component,
+    countsAsHeaderAction,
+  }: PluginSlot,
 ) => {
   const currentSlot = slots[slot]
 
@@ -60,6 +68,7 @@ export const registerSlotInto = (
     currentSlot[pluginIndexInSlot].visible = visible
     currentSlot[pluginIndexInSlot].render = render
     currentSlot[pluginIndexInSlot].component = component
+    currentSlot[pluginIndexInSlot].countsAsHeaderAction = countsAsHeaderAction
 
     return
   }
@@ -69,6 +78,7 @@ export const registerSlotInto = (
     order,
     render,
     component,
+    countsAsHeaderAction,
   }
 
   if (order === undefined || order === 'last') {

@@ -1,6 +1,6 @@
-import { ColumnSortingComponent } from './ColumnSortingComponent'
 import { PluginOptions, RegistryEntry } from '../types'
 import { columnSortingPlugin } from './columnSortingPlugin'
+import { sortHeaderAction } from './sortHeaderAction'
 import type { ColumnSortingPlugin } from './types'
 
 /** Тонкая настройка мультисортировки (несколько столбцов одновременно). */
@@ -63,14 +63,9 @@ export const columnSorting = (
     id: 'columnSorting',
     enabled: opts.enabled,
     feature: columnSortingPlugin,
-    slots: [
-      {
-        id: 'columnSortingPlugin',
-        slot: 'rightHeaderSlot',
-        order: 1,
-        component: ColumnSortingComponent,
-      },
-    ],
+    // Единый дескриптор (ADR 0012): инлайн — циклящая кнопка с бейджем приоритета;
+    // в кебаб-меню — отдельные пункты asc/desc/сброс. Ядро решает подачу.
+    slotActions: [sortHeaderAction],
     options: {
       enableSorting: true,
       enableSortingRemoval: opts.removal ?? true,

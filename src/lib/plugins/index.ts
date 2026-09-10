@@ -28,3 +28,10 @@ export { columnSorting, type ColumnSortingOptions } from './columnSorting'
 export { columnPinning } from './columnPinning'
 export { columnSizing } from './columnSizing'
 export { columnDragging } from './columnDragging'
+
+export {
+  headerActionMenu,
+  type HeaderActionMenuOptions,
+} from './headerActionMenu'
+
+export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'

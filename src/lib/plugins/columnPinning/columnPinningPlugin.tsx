@@ -32,7 +32,7 @@ export const columnPinningPlugin: TablePlugin = {
       // Режим reorder-out (opt-in `enableLeafPinning`, ADR 0011): под вложенной
       // шапкой закрепляется ЛЮБАЯ единица — отдельный лист, промежуточная или
       // верхняя группа. Закрепление всегда работает по листьям цели: они едут
-      // влево сплошным блоком (см. ColumnPinningComponent), а спанящие шапки
+      // влево сплошным блоком (см. pinHeaderAction), а спанящие шапки
       // родителей режутся на сегменты. Кнопка — на каждом закрепляемом заголовке.
       const enableLeafPinning = (
         table.options as { enableLeafPinning?: boolean } | undefined

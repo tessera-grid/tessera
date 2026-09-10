@@ -35,6 +35,8 @@ export interface TableLabels {
   selectRow: string
   /** Доступное имя чекбокса выбора всех строк */
   selectAll: string
+  /** Доступное имя кебаб-кнопки меню действий заголовка (`aria-label`/тултип) */
+  headerMenu: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -51,6 +53,7 @@ export const DEFAULT_LABELS: TableLabels = {
   table: 'Data table',
   selectRow: 'Select row',
   selectAll: 'Select all rows',
+  headerMenu: 'Column options',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)

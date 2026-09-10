@@ -17,10 +17,16 @@ const rowActionsColumn = columnHelper.accessor(ROW_ACTIONS_COLUMN_ID, {
 
 export interface RowActionsOptions {
   width: number
+  /**
+   * Ширина колонки, когда действия строки схлопнуты в кебаб (`rowActionMenu`):
+   * нужен лишь один ⋮, поэтому колонка сужается. См. ADR 0024.
+   */
+  collapsedWidth: number
 }
 
 export const DEFAULT_ROW_ACTIONS_OPTIONS: RowActionsOptions = {
   width: 120,
+  collapsedWidth: 56,
 }
 
 export const getRowActionsColumn = (depth: number) => {

@@ -8,6 +8,7 @@ import {
 
 import { PluginsHooks } from '../lib/core/createHooks/types'
 import { RenderSlots } from '../lib/core/createSlots'
+import { SlotActions, SlotActionMenu } from '../lib/core/headerActions'
 import { LogLevel } from '../lib/core/logger'
 import { SkeletonOptions } from '../lib/core/skeletonOverlay/types'
 import { ColumnDraggingOptions } from '../lib/plugins/columnDragging'
@@ -27,6 +28,17 @@ export interface TableOptionsResolvedSDK<
 
   hooks: PluginsHooks & THooks
   slots: RenderSlots
+
+  /**
+   * Действия слотов, свёрнутые ядром из деклараций активных плагинов (аналог
+   * `slots`), по всем слотам. Источник для схлопывания в кебаб-меню.
+   */
+  slotActions: SlotActions
+  /**
+   * Карта конфигов схлопывания по слотам, свёрнутая из плагинов-меню. Ключ слота
+   * присутствует ⇒ кебаб для него включён; пустая карта ⇒ схлопывания нет.
+   */
+  actionMenu: SlotActionMenu
 
   /**
    * Порог логирования плагинов (ADR 0022): `silent | error | warn | info |

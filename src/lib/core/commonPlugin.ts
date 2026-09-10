@@ -39,6 +39,7 @@ export const commonPlugin: TablePlugin = {
     table.getHooks = () => table.options.hooks
 
     table.getRenderSlots = () => table.options.slots
+    table.getSlotActions = () => table.options.slotActions
     table.setRenderSlot = (
       props:
         | Omit<RegisterHeaderSlotParams, 'table'>

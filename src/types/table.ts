@@ -11,6 +11,7 @@ import {
   RegisterHeaderSlotParams,
   RenderSlots,
 } from '../lib/core/createSlots'
+import { SlotActions } from '../lib/core/headerActions'
 
 // Интерфейс глобальных методов таблицы
 export interface TableSDK<
@@ -33,6 +34,11 @@ export interface TableSDK<
    * Метод получения всех слотов таблицы и их содержимого
    */
   getRenderSlots: () => RenderSlots
+
+  /**
+   * Метод получения действий слотов, свёрнутых из деклараций активных плагинов
+   */
+  getSlotActions: () => SlotActions
 
   /**
    * Метод регистрации плагина в определенном слоте таблицы

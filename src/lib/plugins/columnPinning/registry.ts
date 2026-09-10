@@ -1,6 +1,6 @@
-import { ColumnPinningComponent } from './ColumnPinningComponent'
 import { PluginOptions, RegistryEntry } from '../types'
 import { columnPinningPlugin } from './columnPinningPlugin'
+import { pinHeaderAction } from './pinHeaderAction'
 import type { ColumnPinningPlugin } from './types'
 
 export const columnPinning = (
@@ -15,14 +15,10 @@ export const columnPinning = (
   // обёртка инертна.
   keepFeatureWhenDisabled: true,
   feature: columnPinningPlugin,
-  slots: [
-    {
-      id: 'columnPinningPlugin',
-      slot: 'rightHeaderSlot',
-      order: 0,
-      component: ColumnPinningComponent,
-    },
-  ],
+  // Единый дескриптор (ADR 0011): вместо опакового слот-компонента плагин
+  // объявляет действие данными — ядро решает подачу (инлайн-кнопка или строка
+  // кебаб-меню, если подключён `headerActionMenu`).
+  slotActions: [pinHeaderAction],
   // `enableLeafPinning` — opt-in режим reorder-out (ADR 0011), не входит в
   // TableOptionsResolved, поэтому проставляется через каст.
   options: {

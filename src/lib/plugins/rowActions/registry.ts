@@ -8,6 +8,11 @@ import {
 export interface RowActionsPluginOptions extends PluginOptions {
   /** Ширина колонки действий, px (по умолчанию 120). */
   width?: number
+  /**
+   * Ширина колонки, когда действия строки схлопнуты в кебаб плагином
+   * `rowActionMenu` (по умолчанию 56 — под один ⋮). См. ADR 0024.
+   */
+  collapsedWidth?: number
 }
 
 // rowActions полностью в плагине (ADR 0010): колонка, её опции и автосайз живут
@@ -20,6 +25,8 @@ export const rowActions = (
   opts: RowActionsPluginOptions = {},
 ): RegistryEntry => {
   const width = opts.width ?? DEFAULT_ROW_ACTIONS_OPTIONS.width
+  const collapsedWidth =
+    opts.collapsedWidth ?? DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth
 
   return {
     id: 'rowActions',
@@ -33,10 +40,17 @@ export const rowActions = (
       // Колонка действий закреплена всегда вправо — политику объявляет запись.
       pin: { side: 'right', when: 'always' },
     },
+    // Ширина следует за подачей действий: если `rowActionMenu` схлопывает
+    // `actionRowSlot` в кебаб — колонке нужен лишь один ⋮, поэтому сужаем её
+    // (иначе фиксированная ширина под ряд кнопок оставляла бы пустоту). `setup`
+    // перезапускается при смене активного набора, так что toggle меню меняет
+    // ширину без перезагрузки. Владелец ширины — плагин колонки; читаем лишь факт
+    // «слот схлопнут» из общей опции `actionMenu`, не внутренности соседа.
     setup: table => {
+      const isCollapsed = !!table.options.actionMenu?.actionRowSlot
       table.setColumnAutoSizing?.(prev => ({
         ...prev,
-        [ROW_ACTIONS_COLUMN_ID]: width,
+        [ROW_ACTIONS_COLUMN_ID]: isCollapsed ? collapsedWidth : width,
       }))
     },
   }
