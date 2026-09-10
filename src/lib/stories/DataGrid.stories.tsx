@@ -473,6 +473,9 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableRowActions: false,
     rowActionsOptions: DEFAULT_ROW_ACTIONS_OPTIONS,
 
+    enableHeaderActionMenu: false,
+    enableRowActionMenu: false,
+
     enableFooter: false,
   },
   argTypes: {
@@ -623,6 +626,42 @@ export const ColumnPinning: StoryObj<StoryProps> = {
     // Sized to overflow on both axes so the sticky requirements (CP10–CP12)
     // have real horizontal scroll distance to prove the pinned offset against.
     dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}
+
+export const HeaderActionMenu: StoryObj<StoryProps> = {
+  name: 'Header Action Menu',
+  args: {
+    // Три действия в правом слоте (пин + сортировка + группировка) — дескрипторы;
+    // достигают порога 3 → весь набор схлопывается в один кебаб (⋮), меню делится
+    // на подгруппы. Свич `enableColumnResizing` включает управление шириной: его
+    // resize-грип рисуется на кромке, но в порог схлопывания не входит
+    // (`countsAsHeaderAction: false`), поэтому кебаб от него не «толстеет».
+    enableHeaderActionMenu: true,
+    enableColumnPinning: true,
+    enableColumnSorting: true,
+    enableGrouping: true,
+    enableColumnResizing: true,
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}
+
+export const RowActionMenu: StoryObj<StoryProps> = {
+  name: 'Row Action Menu',
+  args: {
+    // Демо-производитель даёт три действия строки (Edit / Duplicate / Delete) как
+    // дескрипторы. Свич `enableRowActionMenu` (порог 2) схлопывает их в overflow-
+    // кебаб (⋮) в колонке действий; выключенным — три row-кнопки инлайн (ревил по
+    // hover строки). Колонка действий появляется по `enableRowActions`.
+    enableRowActions: true,
+    enableRowActionMenu: true,
+    dataCount: 30,
     containerHeight: 400,
     height: 300,
     maxHeight: 300,

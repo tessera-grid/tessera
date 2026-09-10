@@ -5,7 +5,9 @@ import {
   columnPinning,
   columnSizing,
   columnSorting,
+  headerActionMenu,
   type RegistryEntry,
+  rowActionMenu,
   rowActions,
   rowDragging,
   rowExpanding,
@@ -14,8 +16,7 @@ import {
 } from '../../../plugins'
 import type { ColumnMultiSortOptions } from '../../../plugins/columnSorting'
 import { RowActionsOptions } from '../../../plugins/rowActions'
-import { RowDeleteActionComponent } from '../plugins/rowDeleteAction/RowDeleteActionComponent'
-import { rowDeleteActionPlugin } from '../plugins/rowDeleteAction/rowDeleteActionPlugin'
+import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
 // Storybook через настоящие фабрики. Тумблер → `enabled` фабрики; ядро само
@@ -42,6 +43,10 @@ export interface FeatureToggles {
   enableGrouping?: boolean
   enableRowActions?: boolean
   rowActionsOptions?: RowActionsOptions
+  /** Схлопывать кнопки заголовка в кебаб-меню (по умолчанию порог 3). */
+  enableHeaderActionMenu?: boolean
+  /** Схлопывать действия строки в кебаб-меню (по умолчанию порог 2). */
+  enableRowActionMenu?: boolean
 }
 
 export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
@@ -83,18 +88,14 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
       enabled: !!o.enableRowActions,
       width: o.rowActionsOptions?.width,
     }),
-    // Демо-плагин внешнего действия (удаление строки) — фича + декларативный слот.
+    headerActionMenu({ enabled: !!o.enableHeaderActionMenu }),
+    rowActionMenu({ enabled: !!o.enableRowActionMenu }),
+    // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
+    // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
-      id: 'rowDeleteAction',
-      feature: rowDeleteActionPlugin,
-      slots: [
-        {
-          id: 'rowDeletePlugin',
-          order: 'last',
-          slot: 'actionRowSlot',
-          component: RowDeleteActionComponent,
-        },
-      ],
+      id: 'rowActionsDemo',
+      feature: {},
+      slotActions: rowActionsDemo,
     },
   ]
 }
