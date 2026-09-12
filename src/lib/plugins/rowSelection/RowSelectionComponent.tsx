@@ -14,9 +14,17 @@ export const RowSelectionComponent = memo(
       row.getIsSomeSelected(),
       row.getCanSelect(),
       row.getCanSelectSubRows(),
+      (table.getState().grouping?.length ?? 0) > 0,
       // TODO: перенести в state таблицы
       table.getHooks().rowSelection.isAllRowsSelected,
     ])
+
+    // Активная группировка делает выбор недоступным (ADR 0022): прячем чекбокс,
+    // как rowDragging прячет ручку. Само включение плагина группировки (без
+    // применения) выбор не трогает.
+    if ((table.getState().grouping?.length ?? 0) > 0) {
+      return null
+    }
 
     if (row.depth > 0 && !row.getCanSelectSubRows()) {
       return null

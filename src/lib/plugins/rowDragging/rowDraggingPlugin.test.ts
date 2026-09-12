@@ -6,21 +6,21 @@ import { rowDraggingPlugin } from './rowDraggingPlugin'
 
 type TableStub = {
   headerGroups?: number
-  enableGrouping?: boolean
+  grouping?: unknown[]
   enableRowDragging?: boolean | ((row: never) => boolean)
   sorting?: unknown[]
 }
 
 const makeTable = ({
   headerGroups = 1,
-  enableGrouping = false,
+  grouping = [],
   enableRowDragging = true,
   sorting = [],
 }: TableStub = {}) =>
   ({
     getHeaderGroups: () => new Array(headerGroups).fill({}),
-    getState: () => ({ sorting }),
-    options: { enableGrouping, enableRowDragging },
+    getState: () => ({ sorting, grouping }),
+    options: { enableRowDragging },
   }) as unknown as Table
 
 const setup = (stub?: TableStub) => {
@@ -48,12 +48,21 @@ describe('rowDraggingPlugin · getCanDrag', () => {
     expect(warn.mock.calls[0][0]).toContain('многоуровневой шапке')
   })
 
-  it('PC4: группировка делает rowDragging инертным и предупреждает', () => {
-    const row = setup({ enableGrouping: true })
+  it('PC4: активная группировка делает rowDragging инертным и предупреждает', () => {
+    const row = setup({ grouping: ['gender'] })
 
     expect(row.getCanDrag()).toBe(false)
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0][0]).toContain('группировкой')
+    expect(warn.mock.calls[0][0]).toContain('активной группиров')
+  })
+
+  it('PC4: само включение группировки (без применения) drag не трогает', () => {
+    // grouping-состояние пусто → плагин группировки может быть включён, но drag
+    // работает: инертность гейтится на активную группировку, а не на опцию.
+    const row = setup({ grouping: [] })
+
+    expect(row.getCanDrag()).toBe(true)
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('PC6: активная сортировка делает rowDragging инертным и предупреждает', () => {

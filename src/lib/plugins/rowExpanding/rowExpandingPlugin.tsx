@@ -15,11 +15,11 @@ export const rowExpandingPlugin: TablePlugin = {
           ? table.options.enableRowExpanding(_staticRow)
           : !!table.options.enableRowExpanding
 
-      if (table.options.enableGrouping) {
+      if ((table.getState().grouping?.length ?? 0) > 0) {
         if (enableRowExpanding) {
           logWarn(
             table,
-            'rowExpanding: при включённой группировке (enableGrouping) раскрытием владеет rowGrouping, а настройки rowExpanding (maxExpandingDepth, enableRowExpanding) игнорируются. См. ADR 0022.',
+            'rowExpanding: при активной группировке раскрытием владеет rowGrouping, а настройки rowExpanding (maxExpandingDepth, enableRowExpanding) игнорируются. Само включение плагина группировки rowExpanding не трогает. См. ADR 0022.',
             'rowExpanding:grouping',
           )
         }

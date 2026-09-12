@@ -40,10 +40,10 @@ export const rowDraggingPlugin: TablePlugin = {
         return false
       }
 
-      if (table.options.enableGrouping) {
+      if ((table.getState().grouping?.length ?? 0) > 0) {
         logWarn(
           table,
-          'rowDragging: перетаскивание строк несовместимо с группировкой (enableGrouping) и отключено — раскладкой строк владеет rowGrouping. См. ADR 0022.',
+          'rowDragging: перетаскивание строк несовместимо с активной группировкой и отключено — раскладкой строк владеет rowGrouping. Само включение плагина группировки drag не трогает. См. ADR 0022.',
           'rowDragging:grouping',
         )
         return false

@@ -13,9 +13,17 @@ export const HeadSelectionComponent = memo(({ table }: HeaderContext) => {
     table.getIsAllPageRowsSelected(),
     table.getIsSomePageRowsSelected(),
     table.getCanSomeRowsSelect(),
+    (table.getState().grouping?.length ?? 0) > 0,
     // TODO: перенести в state таблицы
     table.getHooks().rowSelection.isAllRowsSelected,
   ])
+
+  // Активная группировка делает выбор недоступным (ADR 0022): прячем «выбрать
+  // все», как прячется чекбокс строки. Пока группировка лишь включена, но не
+  // применена, «выбрать все» работает как обычно.
+  if ((table.getState().grouping?.length ?? 0) > 0) {
+    return null
+  }
 
   // TODO: перенести в state таблицы
   const { isAllRowsSelected } = table.getHooks().rowSelection
