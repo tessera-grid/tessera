@@ -14,6 +14,14 @@ export interface UseColumnRangeExtractorParams {
 export const useColumnRangeExtractor = ({
   table,
 }: UseColumnRangeExtractorParams) => {
+  // react-virtual мемоизирует `getIndexes` по паре `[range, rangeExtractor]`.
+  // При скролле меняется `range`, но закрепление столбца `range` не двигает, а
+  // ссылка на extractor стабильна (deps = [table]) — поэтому только что
+  // закреплённый столбец не попадал бы в окно до следующего скролла. Кладём
+  // `columnPinning` в deps: при смене закрепления идентичность extractor меняется,
+  // react-virtual сбрасывает кэш и пере-считает окно сразу (прибивая пиннутый).
+  const { columnPinning } = table.getState()
+
   return useCallback(
     (range: Range) => {
       const newIndexes = defaultRangeExtractor(range)
@@ -37,6 +45,10 @@ export const useColumnRangeExtractor = ({
         new Set([...leftPinnedIndexes, ...newIndexes, ...rightPinnedIndexes]),
       )
     },
-    [table],
+    // `columnPinning` не читается в теле напрямую (пиннинг берётся через `table`),
+    // но обязан быть в deps: смена идентичности extractor заставляет react-virtual
+    // пере-считать окно сразу при закреплении, а не со следующего скролла.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [table, columnPinning],
   )
 }
