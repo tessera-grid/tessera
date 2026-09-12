@@ -77,6 +77,8 @@ const HeadCellView = ({
   const getAfterRight = lastLeafColumn.getAfter('right')
   const isLastLeftPinnedColumn =
     isLeftPinned && lastLeafColumn.getIsLastColumn('left')
+  const isFirstRightPinnedColumn =
+    isRightPinned && firstLeafColumn.getIndex('right') === 0
 
   const isActionsColumn = header.column.getIsActionsColumn()
   const enableResizingColumn = header.column.getCanResize()
@@ -205,6 +207,7 @@ const HeadCellView = ({
       data-column-id={header.column.id}
       data-cell-pinned={headerPinned}
       data-cell-last-left-pinned={isLastLeftPinnedColumn}
+      data-cell-first-right-pinned={isFirstRightPinnedColumn}
       data-column-resizable={enableResizingColumn}
       data-column-resizing={header.column.getIsResizing()}
       data-actions-column-cell={isActionsColumn}

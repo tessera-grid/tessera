@@ -146,6 +146,7 @@ export const BodyCell = memo(
         data-column-id={cell.column.id}
         data-cell-pinned={cell.column.getIsPinned()}
         data-cell-odd-left-pinned={isLeftPinned && rowIndex % 2 !== 0}
+        data-cell-odd-right-pinned={isRightPinned && rowIndex % 2 !== 0}
         data-cell-last-left-pinned={isLastLeftPinnedColumn}
         data-cell-last-right-pinned={isLastRightPinnedColumn}
         data-cell-first-right-pinned={isFirstRightPinnedColumn}

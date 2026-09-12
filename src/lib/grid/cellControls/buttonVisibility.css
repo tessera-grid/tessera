@@ -39,6 +39,23 @@
   flex-shrink: 0;
 }
 
+/*
+ * Подложка кнопок действий строки. Колонка действий закреплена справа и по
+ * умолчанию ПРОЗРАЧНА, поэтому при горизонтальной прокрутке контент центра
+ * проходит под ней. Чтобы кнопки читались даже поверх текста, каждая — непрозрачный
+ * «чип» с тенью (паритет с легаси `.rowButton` до перевода действий строки на
+ * дескрипторы, ADR 0024). Стилизуем сам `<button>` (IconButton), а не обёртку
+ * видимости, чтобы фон совпал с круглой формой кнопки.
+ */
+.data-grid__body-row .row__button button {
+  background-color: var(--tsr-comp-action-button-bg);
+  box-shadow: var(--tsr-comp-shadow-action);
+}
+
+.data-grid__body-row .row__button button:hover {
+  background-color: var(--tsr-comp-action-button-hover-bg);
+}
+
 /* Скрытие hidden-кнопок строки */
 
 .data-grid__body-row .row__button--hidden {

@@ -201,6 +201,8 @@
   --tsr-comp-numeric-font-feature: tabular-nums;
   --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-sys-muted);
   --tsr-comp-cell-pinned-left-bg: var(--tsr-sys-bg);
+  --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-cell-odd-pinned-left-bg);
+  --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-cell-pinned-left-bg);
   --tsr-comp-cell-pinned-border-color: var(--tsr-sys-border);
 
   /* DnD строк */

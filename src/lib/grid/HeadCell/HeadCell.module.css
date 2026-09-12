@@ -35,6 +35,39 @@
     position: sticky;
   }
 
+  /*
+   * Sticky-ячейка и фон правозакреплённой ПОЛЬЗОВАТЕЛЬСКОЙ колонки. Служебную
+   * колонку действий НЕ трогаем: её заголовок позиционируется флексом (правило
+   * `data-actions-column-cell` ниже: flex-grow + flex-end), а не `position:sticky`,
+   * и по умолчанию без подложки. Sticky на нём сломал бы это флекс-позиционирование
+   * (колонка действий уехала бы из правого края).
+   */
+  &:is([data-cell-pinned='right']):not([data-actions-column-cell='true']) {
+    will-change: transform;
+    z-index: var(--tsr-comp-z-index-pinned);
+    opacity: var(--tsr-comp-opacity);
+    background-color: var(--tsr-comp-cell-pinned-right-bg);
+    position: sticky;
+  }
+
+  /*
+   * Заголовок колонки действий при наличии пользовательского правого пина
+   * (действия НЕ первые справа): становится sticky у правого края — как её тело и
+   * пользовательский правозакреплённый столбец, — с фоном, но без контента
+   * (`header: undefined`). `flex-grow: 0` отменяет заполняющее флекс-правило ниже
+   * (иначе шапка «растянулась» бы), `right`-офсет приходит инлайном из HeadCell.
+   * По умолчанию (действия единственные справа, `first-right`) правило не
+   * применяется — шапка остаётся флексовой (см. `service-columns`).
+   */
+  &[data-actions-column-cell='true'][data-cell-pinned='right']:not(
+      [data-cell-first-right-pinned='true']
+    ) {
+    background-color: var(--tsr-comp-cell-pinned-right-bg);
+    position: sticky;
+    z-index: var(--tsr-comp-z-index-pinned);
+    flex-grow: 0;
+  }
+
   /* Ширина и позиционирование контента последней ячейки действий в строке заголовков (заголовок колонки действий незакрепляемый!) */
 
   &:is([data-layout='flex']):is([data-actions-column-cell='true']):is(
@@ -48,6 +81,15 @@
 
   &:is([data-cell-last-left-pinned='true']) {
     border-right: 1px solid var(--tsr-comp-cell-pinned-border-color);
+  }
+
+  /* Бордер-разделитель для первой закрепленной колонки справа (зеркало левого);
+     служебной колонке действий разделитель не рисуем. */
+
+  &:is([data-cell-first-right-pinned='true']):not(
+      [data-actions-column-cell='true']
+    ) {
+    border-left: 1px solid var(--tsr-comp-cell-pinned-border-color);
   }
 
   /* Правый отступ для заголовков с ресайзером */

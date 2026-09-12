@@ -68,6 +68,47 @@
     position: sticky;
   }
 
+  /*
+   * Фон правого закрепления. Пользовательские правозакреплённые столбцы — всегда.
+   * Служебную колонку действий — только когда есть хотя бы один пользовательский
+   * правый пин: тогда действия входят в правозакреплённый блок и получают ту же
+   * подложку. «Пин есть» ⇔ действия НЕ первые справа (`data-cell-first-right-pinned`):
+   * колонка действий всегда самая правая, поэтому первой справа она бывает только
+   * когда одна (пользовательских правых пинов нет) — по умолчанию без подложки.
+   */
+  &:is([data-cell-pinned='right']):not([data-actions-column-cell='true']) {
+    background-color: var(--tsr-comp-cell-pinned-right-bg);
+  }
+
+  &[data-actions-column-cell='true'][data-cell-pinned='right']:not(
+      [data-cell-first-right-pinned='true']
+    ) {
+    background-color: var(--tsr-comp-cell-pinned-right-bg);
+  }
+
+  /* Бэкграунд ячейки нечетной строки (закрепление справа), та же логика действий */
+
+  &:is([data-cell-odd-right-pinned='true']):not(
+      [data-actions-column-cell='true']
+    ) {
+    background-color: var(--tsr-comp-cell-odd-pinned-right-bg) !important;
+  }
+
+  &[data-actions-column-cell='true'][data-cell-odd-right-pinned='true']:not(
+      [data-cell-first-right-pinned='true']
+    ) {
+    background-color: var(--tsr-comp-cell-odd-pinned-right-bg) !important;
+  }
+
+  /* Бордер-разделитель для первой закрепленной колонки справа (зеркало левого);
+     служебной колонке действий разделитель не рисуем. */
+
+  &:is([data-cell-first-right-pinned='true']):not(
+      [data-actions-column-cell='true']
+    ) {
+    border-left: 1px solid var(--tsr-comp-cell-pinned-border-color);
+  }
+
   /* Ширина и позиционирование контента первой либо единственной ячейки закрепленной справа колонки */
 
   &:is([data-cell-pinned='right']):is([data-cell-first-right-pinned='true']),
