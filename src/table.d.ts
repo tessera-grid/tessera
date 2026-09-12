@@ -1,5 +1,6 @@
-import { Table as TanstackTable } from '@tanstack/react-table'
+import { RowData, Table as TanstackTable } from '@tanstack/react-table'
 
+import type { PinSides } from './lib/plugins/columnPinning/types'
 import { CellContextSDK, CellSDK } from './types/cell'
 import {
   AccessorKeyColumnDefBaseSDK,
@@ -53,6 +54,18 @@ declare module '@tanstack/react-table' {
   /** Column * */
 
   interface Column extends ColumnSDK {}
+
+  // Индекс-сигнатура сохраняет исходную «свободную» семантику meta (в неё кладут
+  // произвольные поля, напр. FieldType в Guide), а типизированный `pinSides`
+  // добавляет опцию плагина columnPinning (ADR 0011): какие стороны закрепления
+  // предлагать в UI для столбца (`both` | `left` | `right`, по умолчанию `both`).
+  // Имена параметров (`TData`/`TValue`) обязаны совпадать с оригинальной
+  // ColumnMeta TanStack — иначе declaration merging не склеит augmentation.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    pinSides?: PinSides
+    [key: string]: unknown
+  }
 
   interface GroupingColumnDef extends GroupingColumnDefSDK {}
 

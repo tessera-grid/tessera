@@ -13,6 +13,10 @@ export interface TableLabels {
   pin: string
   /** Тултип кнопки открепления колонки */
   unpin: string
+  /** Пункт меню / тумблер «закрепить слева» */
+  pinLeft: string
+  /** Пункт меню / тумблер «закрепить справа» */
+  pinRight: string
   /** Тултип «сортировать по возрастанию» */
   sortAscending: string
   /** Тултип «сортировать по убыванию» */
@@ -44,6 +48,8 @@ export const DEFAULT_LABELS: TableLabels = {
   collapse: 'Collapse',
   pin: 'Pin column',
   unpin: 'Unpin column',
+  pinLeft: 'Pin left',
+  pinRight: 'Pin right',
   sortAscending: 'Sort ascending',
   sortDescending: 'Sort descending',
   clearSort: 'Clear sorting',

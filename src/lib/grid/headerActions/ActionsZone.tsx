@@ -10,6 +10,7 @@ import {
 } from '../../core/headerActions'
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
 import { ActionButton } from './ActionButton'
+import { ActionInlineMenu } from './ActionInlineMenu'
 import { ActionMenu } from './ActionMenu'
 
 interface ActionsZoneProps {
@@ -103,10 +104,15 @@ export const ActionsZone = memo(
     // остальные — по hover ячейки/заголовка (`cell__button`).
     const variant = slot === 'actionRowSlot' ? 'row' : 'cell'
 
+    // Инлайн-действие с `inlineAsMenu(ctx)` подаётся мини-меню (поповер) вместо
+    // кнопки-тумблера — когда клик неоднозначен и нужен выбор варианта (напр.
+    // закрепление при обеих доступных сторонах). Иначе — обычная кнопка.
     const inlineItems: ZoneItem[] = inline.map(action => ({
       rank: action.order,
       key: `action-${action.id}`,
-      node: (
+      node: action.inlineAsMenu?.(context) ? (
+        <ActionInlineMenu action={action} context={context} variant={variant} />
+      ) : (
         <ActionButton action={action} context={context} variant={variant} />
       ),
     }))

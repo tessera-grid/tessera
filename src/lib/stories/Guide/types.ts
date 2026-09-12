@@ -6,6 +6,9 @@ export interface FieldType {
   label: string
   width: number
   type: string
+  // Демо-`meta` кладут как FieldType в `columnDef.meta` (ColumnMeta несёт
+  // индекс-сигнатуру); зеркалим её здесь, чтобы присваивание типизировалось.
+  [key: string]: unknown
 }
 
 export interface ItemType {

@@ -632,6 +632,27 @@ export const ColumnPinning: StoryObj<StoryProps> = {
   },
 }
 
+export const ColumnPinningTwoSides: StoryObj<StoryProps> = {
+  name: 'Column Pinning (two-sided)',
+  args: {
+    // Двустороннее закрепление в UI (ADR 0011). Стороны задаёт
+    // `columnDef.meta.pinSides` (см. mock `columns.tsx`): `country` — только
+    // влево, `total` — только вправо (инлайн-тумблер без поповера), остальные —
+    // обе стороны (инлайн даёт поповер «Закрепить слева / справа»). Колонка
+    // действий (`enableRowActions`) авто-закреплена справа: пользовательский
+    // right-pin встаёт левее неё (с подложкой и разделителем). По умолчанию у
+    // колонки действий подложки нет; как только есть хотя бы один пользовательский
+    // правый пин — она входит в правозакреплённый блок и получает ту же подложку.
+    enableColumnPinning: true,
+    enableRowActions: true,
+    enableRowSelection: true,
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}
+
 export const HeaderActionMenu: StoryObj<StoryProps> = {
   name: 'Header Action Menu',
   args: {

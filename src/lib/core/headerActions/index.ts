@@ -9,6 +9,8 @@ export {
   type ResolveActionLayoutParams,
 } from './resolveActionLayout'
 
+export { resolveMenuItems } from './resolveMenuItems'
+
 export type {
   SlotAction,
   SlotName,

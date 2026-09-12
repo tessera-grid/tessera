@@ -20,6 +20,9 @@ export const columns: AccessorKeyColumnDef<any>[] = [
   columnHelper.accessor('country', {
     id: 'country',
     header: 'Country',
+    // Демо `pinSides` (ADR 0011): только левое закрепление — инлайн даёт прямой
+    // тумблер без поповера.
+    meta: { pinSides: 'left' },
     aggregatedCell: cell => {
       return cell.table.options.enableGrouping
         ? getNamesWithCounter(cell.row, 'country')
@@ -143,6 +146,9 @@ export const columns: AccessorKeyColumnDef<any>[] = [
   columnHelper.accessor('total', {
     id: 'total',
     header: 'Total',
+    // Демо `pinSides` (ADR 0011): только правое закрепление — инлайн даёт прямой
+    // тумблер без поповера.
+    meta: { pinSides: 'right' },
     aggregationFn: 'sum',
     // Сумма в сгруппированной строке (getValue() = агрегат), иначе исходное.
     cell: cell =>
