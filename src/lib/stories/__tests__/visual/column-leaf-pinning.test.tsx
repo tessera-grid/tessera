@@ -8,7 +8,7 @@ import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection'
 import { COLUMN_DRAGGING_ID } from '../../../plugins/rowDragging'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 
-// Reorder-out (ADR 0011, LP1–LP6): под вложенной шапкой за opt-in флагом
+// Reorder-out (ADR 0011, LP1–LP10): под вложенной шапкой за opt-in флагом
 // `enableLeafPinning` закрепляется любая единица — лист или группа любого уровня.
 // Отдельный файл + префикс `LP<n>`, отдельный от контракта группового пиннинга
 // (CP*). Механика: при закреплении листья цели «вырываются» к левому краю через
@@ -73,6 +73,26 @@ const revealLeafPin = async (cell: HTMLElement) => {
   return button
 }
 
+const menuItemByText = (text: string) =>
+  Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(
+    i => i.textContent?.trim() === text,
+  )
+
+/**
+ * Toggle a header's pinning via its inline popover. The leaf-pinning story's
+ * columns allow both sides (`pinSides` default `both`), so the inline pin button
+ * opens a mini-menu — reveal it, then choose «Pin left» / «Pin right» (clicking
+ * the same side again toggles it off).
+ */
+const pinLeafViaPopover = async (
+  cell: HTMLElement,
+  item: 'Pin left' | 'Pin right' = 'Pin left',
+) => {
+  await userEvent.click(await revealLeafPin(cell))
+  await expect.poll(() => menuItemByText(item)).toBeTruthy()
+  await userEvent.click(menuItemByText(item)!)
+}
+
 describe('Column Leaf Pinning (PoC) — reorder-out', () => {
   test('LP1: pin toggles appear on every pinnable header — leaves, top groups, and intermediate groups', async () => {
     const container = await renderLeafPinning()
@@ -93,8 +113,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     // header renders as a single cell.
     expect(headCellsById(container, 'name').length).toBe(1)
 
-    const button = await revealLeafPin(leafHeadCell(container, 'lastName'))
-    await userEvent.click(button)
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
 
     // The pinned leaf's body cell is now sticky at the left edge (getStart 0).
     await expect
@@ -119,14 +138,11 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
   test('LP3: unpinning the leaf returns it and merges the group header back', async () => {
     const container = await renderLeafPinning()
 
-    const button = await revealLeafPin(leafHeadCell(container, 'lastName'))
-    await userEvent.click(button)
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect.poll(() => headCellsById(container, 'name').length).toBe(2)
 
     // Unpin from the (now sticky) leaf header and the split heals.
-    const pinnedLeafHead = leafHeadCell(container, 'lastName')
-    const unpin = await revealLeafPin(pinnedLeafHead)
-    await userEvent.click(unpin)
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
 
     await expect.poll(() => headCellsById(container, 'name').length).toBe(1)
     await expect
@@ -141,8 +157,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     const groupHead = container.querySelector<HTMLElement>(
       `${FIRST_ROW_HEAD}[data-column-id='name']`,
     )!
-    const button = await revealLeafPin(groupHead)
-    await userEvent.click(button)
+    await pinLeafViaPopover(groupHead)
 
     // Both leaves of the group are pinned…
     for (const leaf of ['firstName', 'lastName']) {
@@ -166,13 +181,13 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     const groupHead = container.querySelector<HTMLElement>(
       `${FIRST_ROW_HEAD}[data-column-id='name']`,
     )!
-    await userEvent.click(await revealLeafPin(groupHead))
+    await pinLeafViaPopover(groupHead)
     await expect
       .poll(() => bodyCellsById(container, 'firstName')[0]?.getAttribute('data-cell-pinned'))
       .toBe('left')
 
     // …then unpin the `firstName` leaf from its own leaf header.
-    await userEvent.click(await revealLeafPin(leafHeadCell(container, 'firstName')))
+    await pinLeafViaPopover(leafHeadCell(container, 'firstName'))
 
     // The group header splits: `lastName` stays pinned, `firstName` returns.
     await expect.poll(() => headCellsById(container, 'name').length).toBe(2)
@@ -209,7 +224,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     const midGroup = container.querySelector<HTMLElement>(
       `${MIDDLE_ROW_HEAD}[data-column-id='more-info']`,
     )!
-    await userEvent.click(await revealLeafPin(midGroup))
+    await pinLeafViaPopover(midGroup)
 
     // Its leaves pin left as one block…
     for (const leaf of ['age', 'gender']) {
@@ -239,7 +254,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
       .toBe('right')
 
     // Pin a user leaf via reorder-out…
-    await userEvent.click(await revealLeafPin(leafHeadCell(container, 'lastName')))
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect
       .poll(() => bodyCellsById(container, 'lastName')[0]?.getAttribute('data-cell-pinned'))
       .toBe('left')
@@ -263,7 +278,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     expect(selectionPinned()).not.toBe('left')
 
     // Pinning a user leaf pulls the leading service column into the left block…
-    await userEvent.click(await revealLeafPin(leafHeadCell(container, 'lastName')))
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect.poll(() => selectionPinned()).toBe('left')
     // …and the selection column stays LEFT of the pinned user leaf (service keeps
     // the left edge — reorder-out inserts user pins after the leading service).
@@ -273,7 +288,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
 
     // Unpinning the last user leaf releases the leading service column (no leak of
     // service ids into the stored user pinning).
-    await userEvent.click(await revealLeafPin(leafHeadCell(container, 'lastName')))
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect.poll(() => selectionPinned()).not.toBe('left')
   })
 
@@ -296,7 +311,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     expect(pinnedOf(COLUMN_DRAGGING_ID)).not.toBe('left')
 
     // Pin a user leaf → BOTH leading service columns join the left block…
-    await userEvent.click(await revealLeafPin(leafHeadCell(container, 'lastName')))
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect.poll(() => pinnedOf(COLUMN_SELECTION_ID)).toBe('left')
     await expect.poll(() => pinnedOf(COLUMN_DRAGGING_ID)).toBe('left')
 
@@ -306,8 +321,43 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     expect(leftOf(COLUMN_DRAGGING_ID)).toBeLessThan(leafLeft)
 
     // Unpinning releases both leading service columns (no leak).
-    await userEvent.click(await revealLeafPin(leafHeadCell(container, 'lastName')))
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect.poll(() => pinnedOf(COLUMN_SELECTION_ID)).not.toBe('left')
     expect(pinnedOf(COLUMN_DRAGGING_ID)).not.toBe('left')
+  })
+
+  test('LP10: reorder-out pins a leaf to the RIGHT — it peels to the right edge before rowActions and splits its group header', async () => {
+    const container = await renderLeafPinning({ enableRowActions: true })
+
+    // Before pinning, the `name` group header is a single cell.
+    expect(headCellsById(container, 'name').length).toBe(1)
+
+    // Pin the `lastName` leaf RIGHT via its popover (symmetric to LP2's left pin).
+    await pinLeafViaPopover(leafHeadCell(container, 'lastName'), 'Pin right')
+
+    // The leaf's body cell is now sticky at the right edge.
+    await expect
+      .poll(() =>
+        bodyCellsById(container, 'lastName')[0]?.getAttribute('data-cell-pinned'),
+      )
+      .toBe('right')
+    expect(
+      getComputedStyle(bodyCellsById(container, 'lastName')[0]).position,
+    ).toBe('sticky')
+
+    // The `name` group header splits into two segments (the pinned-right leaf +
+    // the remaining `firstName` in the center), mirroring the left-pin split.
+    await expect.poll(() => headCellsById(container, 'name').length).toBe(2)
+
+    // The pinned user leaf sits to the LEFT of the trailing auto-pinned rowActions
+    // column — reorder-out inserts user right-pins before the trailing service.
+    const leafLeft = bodyCellsById(container, 'lastName')[0].getBoundingClientRect()
+      .left
+    const actionsLeft = container
+      .querySelector<HTMLElement>(
+        `${BODY_CELL}[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`,
+      )!
+      .getBoundingClientRect().left
+    expect(leafLeft).toBeLessThan(actionsLeft)
   })
 })

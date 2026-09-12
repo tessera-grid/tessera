@@ -3,10 +3,11 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Pinning requirement is its own named test, prefixed with its spec
-// ID (CP1–CP19 from the requirements table in docs/decisions/0011-column-pinning.md).
+// ID (CP1–CP25 from the requirements table in docs/decisions/0011-column-pinning.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -125,6 +126,25 @@ const pinFirstColumn = async (container: HTMLElement) => {
     .poll(() => container.querySelector(LEFT_PINNED_HEAD) !== null)
     .toBe(true)
   return container.querySelector<HTMLElement>(LEFT_PINNED_HEAD)!
+}
+
+/** Menu items of the currently open pin popover / kebab (role=menuitem). */
+const menuItems = () =>
+  Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+
+const menuItemByText = (text: string) =>
+  menuItems().find(i => i.textContent?.trim() === text)
+
+/**
+ * Pin a `both`-sided header via its inline popover: reveal the pin button, click
+ * it to open the mini-menu, then choose «Pin left» / «Pin right». One-sided
+ * columns (`pinSides`) pin directly on button click — use `revealPin` there.
+ */
+const pinViaPopover = async (cell: HTMLElement, item: 'Pin left' | 'Pin right') => {
+  const button = await revealPin(cell)
+  await userEvent.click(button)
+  await expect.poll(() => menuItemByText(item)).toBeTruthy()
+  await userEvent.click(menuItemByText(item)!)
 }
 
 // --- Setup guard --------------------------------------------------------------
@@ -371,9 +391,9 @@ describe('Column Pinning — requirements', () => {
   test('CP18: clicking a top-level group toggle pins the whole group (all its leaves)', async () => {
     const container = await renderHeaderGroupsPinning()
     // The `name` group spans the firstName + lastName leaves (see the mock).
+    // Group headers default to `both` sides → pin via the inline popover.
     const nameGroup = headCellById(container, 'name')
-    const button = await revealPin(nameGroup)
-    await userEvent.click(button)
+    await pinViaPopover(nameGroup, 'Pin left')
 
     // The group header itself goes sticky-left…
     await expect
@@ -397,8 +417,7 @@ describe('Column Pinning — requirements', () => {
   test('CP19: a pinned group and its leaves stick to the left edge with the correct offset', async () => {
     const container = await renderHeaderGroupsPinning()
     const nameGroup = headCellById(container, 'name')
-    const button = await revealPin(nameGroup)
-    await userEvent.click(button)
+    await pinViaPopover(nameGroup, 'Pin left')
     await expect
       .poll(() => headCellById(container, 'name').getAttribute('data-cell-pinned'))
       .toBe('left')
@@ -501,5 +520,164 @@ describe('Column Pinning — requirements', () => {
     // see `column-dragging.test.tsx` → D29 (docs/decisions/0006-dnd-with-dnd-kit.md).
     // Kept as a named marker so CP15 shows up in the requirement roll-call.
     expect(true).toBe(true)
+  })
+
+  test('CP20: a both-sided column opens a pin popover; a one-sided column toggles directly', async () => {
+    const container = await renderColumnPinning()
+
+    // `firstName` allows both sides (default) → its inline pin is a popover with
+    // two directional items, and clicking the trigger does not pin on its own.
+    const both = headCellById(container, 'firstName')
+    await userEvent.click(await revealPin(both))
+    await expect.poll(() => menuItemByText('Pin left')).toBeTruthy()
+    expect(menuItemByText('Pin right')).toBeTruthy()
+    expect(both.getAttribute('data-cell-pinned')).toBe('false')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => menuItems().length).toBe(0)
+
+    // `country` is `pinSides:'left'` (see the mock) → the inline pin is a direct
+    // toggle: clicking it pins left with no popover.
+    const oneSide = headCellById(container, 'country')
+    await userEvent.click(await revealPin(oneSide))
+    await expect
+      .poll(() => headCellById(container, 'country').getAttribute('data-cell-pinned'))
+      .toBe('left')
+    expect(menuItems().length).toBe(0)
+  })
+
+  test('CP21: choosing "Pin right" sticks the column to the right edge (mounted at scroll 0)', async () => {
+    const container = await renderColumnPinning()
+
+    // Pin a both-sided column right via the popover. It must render sticky at the
+    // right edge immediately — without scrolling — even under column virtualization
+    // (the range extractor re-windows on the pinning change).
+    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+
+    const rightHead = () =>
+      container.querySelector<HTMLElement>(
+        `${HEAD_CELL}[data-column-id='firstName'][data-cell-pinned='right']`,
+      )
+    await expect.poll(() => rightHead() !== null).toBe(true)
+    const head = rightHead()!
+    expect(getComputedStyle(head).position).toBe('sticky')
+    // Only right-pinned column → flush at the right edge (getAfter('right') === 0).
+    expect(getComputedStyle(head).right).toBe('0px')
+    // Its body cell mounts and is sticky too (proves it left the virtual window
+    // yet stays pinned).
+    const body = container.querySelector<HTMLElement>(
+      `${BODY_CELL}[data-column-id='firstName'][data-cell-pinned='right']`,
+    )!
+    expect(body).toBeTruthy()
+    expect(getComputedStyle(body).position).toBe('sticky')
+  })
+
+  test('CP22: a right-pinned column keeps a background and a left divider border', async () => {
+    const container = await renderColumnPinning()
+    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+
+    const body = container.querySelector<HTMLElement>(
+      `${BODY_CELL}[data-column-id='firstName'][data-cell-pinned='right']`,
+    )!
+    // Opaque background so scrolled content can't bleed through (mirror of left).
+    await expect
+      .poll(() => {
+        const bg = getComputedStyle(body).backgroundColor
+        return bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent'
+      })
+      .toBe(true)
+    // The first (leftmost) right-pinned column carries the divider on its left.
+    expect(body.getAttribute('data-cell-first-right-pinned')).toBe('true')
+    expect(parseFloat(getComputedStyle(body).borderLeftWidth)).toBeGreaterThan(0)
+  })
+
+  // --- Row-actions column (CP23–CP25) ----------------------------------------
+  // The trailing row-actions service column is auto-pinned right (CP14). These
+  // pin down how it looks in the two-sided world: transparent by default, but
+  // adopting the pinned backing once the user pins a data column right.
+
+  /** The auto-pinned row-actions column body/head cells. */
+  const actionsBody = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>(
+      `${BODY_CELL}[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`,
+    )!
+  const actionsHead = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>(
+      `${HEAD_CELL}[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`,
+    )!
+  /** A cell paints an opaque (non-transparent) background. */
+  const isOpaque = (el: HTMLElement) => {
+    const bg = getComputedStyle(el).backgroundColor
+    return bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent'
+  }
+
+  test('CP23: the row-actions column is transparent by default but adopts the pinned backing once a column is pinned right', async () => {
+    const container = await renderColumnPinning({ enableRowActions: true })
+
+    // Auto-pinned right (CP14) yet the SOLE right column → first-right, no backing.
+    await expect
+      .poll(() => actionsBody(container).getAttribute('data-cell-pinned'))
+      .toBe('right')
+    expect(actionsBody(container).getAttribute('data-cell-first-right-pinned')).toBe(
+      'true',
+    )
+    expect(isOpaque(actionsBody(container))).toBe(false)
+
+    // Pin a both-sided data column right → row-actions is no longer first-right
+    // and joins the pinned block with the same backing (body).
+    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+    await expect
+      .poll(() =>
+        actionsBody(container).getAttribute('data-cell-first-right-pinned'),
+      )
+      .toBe('false')
+    await expect.poll(() => isOpaque(actionsBody(container))).toBe(true)
+
+    // Its header adopts the backing too — sticky, aligned with its body, and with
+    // no content (the row-actions header is empty by design).
+    const head = actionsHead(container)
+    expect(isOpaque(head)).toBe(true)
+    expect(getComputedStyle(head).position).toBe('sticky')
+    expect(head.textContent).toBe('')
+    expect(Math.round(head.getBoundingClientRect().left)).toBe(
+      Math.round(actionsBody(container).getBoundingClientRect().left),
+    )
+  })
+
+  test('CP24: a user right-pin sits left of the row-actions column, which never carries a divider', async () => {
+    const container = await renderColumnPinning({ enableRowActions: true })
+    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+
+    const userPin = container.querySelector<HTMLElement>(
+      `${BODY_CELL}[data-column-id='firstName'][data-cell-pinned='right']`,
+    )!
+    const actions = actionsBody(container)
+
+    // User right-pin is to the LEFT of the trailing row-actions column.
+    await expect
+      .poll(() => userPin.getBoundingClientRect().left)
+      .toBeLessThan(actions.getBoundingClientRect().left)
+
+    // The user column is first in the right block → it carries the divider;
+    // the row-actions column never does (even though it is right-pinned).
+    expect(userPin.getAttribute('data-cell-first-right-pinned')).toBe('true')
+    expect(parseFloat(getComputedStyle(userPin).borderLeftWidth)).toBeGreaterThan(0)
+    expect(parseFloat(getComputedStyle(actions).borderLeftWidth)).toBe(0)
+  })
+
+  test('CP25: row-action buttons keep an opaque chip so they read over scrolled content', async () => {
+    const container = await renderColumnPinning({ enableRowActions: true })
+
+    // The row-actions column is sticky and transparent, so scrolled content can
+    // pass under it; each row-action button must stay an opaque chip (background
+    // + elevation) to remain legible. Buttons live in the row-actions cell,
+    // revealed on row hover.
+    const row = container.querySelector<HTMLElement>('.data-grid__body-row')!
+    await userEvent.hover(row)
+    const button = actionsBody(container).querySelector<HTMLElement>(
+      '.row__button button',
+    )!
+    expect(button).toBeTruthy()
+    expect(isOpaque(button)).toBe(true)
+    expect(getComputedStyle(button).boxShadow).not.toBe('none')
   })
 })
