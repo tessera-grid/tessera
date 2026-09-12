@@ -291,7 +291,8 @@ data-атрибуты (`data-cell-pinned`, `data-cell-last-left-pinned`,
 пользовательских кликов. `useColumnPinningInitialState`
 (`core/createState/columnPinningState.ts`) вычисляет их набор: **слева** —
 expander (`rowExpanding`), selection (`rowSelection`), drag-ручка
-(`rowDragging`); **справа** — столбец действий строки (`rowActions`).
+(`rowDragging`); **справа** — столбец действий строки (`rowActions`, сам плагин —
+[ADR 0025](0025-row-actions.md)).
 
 Как этот набор применяется, решает `mergedColumnPinning` в `useCreateState`
 (асимметрично, намеренно):

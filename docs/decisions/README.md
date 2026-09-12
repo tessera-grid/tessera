@@ -31,6 +31,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0022](0022-plugin-compatibility-contract.md)        | Контракт совместимости плагинов: тихие отключения → dev-warning (PC1–PC8) | Принято    |
 | [0023](0023-cross-plugin-interactions.md)            | Сквозные (межплагинные) взаимодействия: слой тестов `X<n>`                | Принято    |
 | [0024](0024-slot-action-descriptor-and-menu.md)      | Единый дескриптор действия слота + схлопывание в кебаб-меню (AM1–AM19)     | Принято    |
+| [0025](0025-row-actions.md)                          | Действия строки: плагин rowActions (RA1–RA2 + перекрёстные R/CP/AM/LP)     | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).
