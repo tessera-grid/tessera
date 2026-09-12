@@ -9,6 +9,8 @@ import clsx from 'clsx'
 import {
   getColumnSizeVariable,
   getHeaderSizeVariable,
+  getPinnedLeftOffset,
+  getPinnedRightOffset,
 } from '../../core/createColumns/calculateColumnSizes'
 import { RegisterSlotParams } from '../../core/createSlots'
 import { useSubscribeStore } from '../../core/subscribeStore/subscribeStore'
@@ -73,8 +75,13 @@ const HeadCellView = ({
     leafHeaderColumns.length > 0 &&
     leafHeaderColumns.every(column => column.getIsPinned() === 'right')
   const headerPinned = isLeftPinned ? 'left' : isRightPinned ? 'right' : false
-  const getStartLeft = firstLeafColumn.getStart('left')
-  const getAfterRight = lastLeafColumn.getAfter('right')
+  const table = header.getContext().table
+  const leftPinnedOffset = isLeftPinned
+    ? getPinnedLeftOffset(table, firstLeafColumn)
+    : undefined
+  const rightPinnedOffset = isRightPinned
+    ? getPinnedRightOffset(table, lastLeafColumn)
+    : undefined
   const isLastLeftPinnedColumn =
     isLeftPinned && lastLeafColumn.getIsLastColumn('left')
   const isFirstRightPinnedColumn =
@@ -137,8 +144,8 @@ const HeadCellView = ({
         header.column.getIsRowActionsColumn() && layout === 'grid'
           ? 'auto'
           : `var(${getColumnSizeVariable(header.id)})`,
-      left: isLeftPinned ? `${getStartLeft}px` : undefined,
-      right: isRightPinned ? `${getAfterRight}px` : undefined,
+      left: leftPinnedOffset,
+      right: rightPinnedOffset,
       opacity: isDragging ? 0 : 1,
       transform: disabledSortable
         ? 'none'
@@ -149,10 +156,8 @@ const HeadCellView = ({
       header.id,
       header.column,
       layout,
-      isLeftPinned,
-      getStartLeft,
-      isRightPinned,
-      getAfterRight,
+      leftPinnedOffset,
+      rightPinnedOffset,
       isDragging,
       disabledSortable,
       drag?.transformX,

@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
+import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection'
 import {
   HANDLE,
   ROW,
@@ -159,5 +160,310 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
     // Header kebabs are untouched by the row menu interaction.
     expect(container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
       .toBeGreaterThan(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Header-control seams (X3–X6). These drive two enabled plugins that share a
+// header cell, a sticky offset chain or the row model, and assert the seam in
+// real DOM. Selectors and choreography mirror the owning plugins' own specs
+// (column-pinning / column-resizing / column-sorting / column-dragging /
+// row-grouping / row-selection) so the cross-plugin tests read the same DOM
+// contract those suites do, not mock literals (ADR 0009 / 0023).
+// ---------------------------------------------------------------------------
+
+const BODY_ROW = '.data-grid__body-row'
+/** ColumnPinning pin toggle, per pinnable header. */
+const PIN_BUTTON = '.column-pin__button'
+/** ColumnSizing resize grip, per resizable header. */
+const RESIZE_GRIP = '.resize__handler--column'
+/** ColumnSorting sort toggle, per sortable header. */
+const SORT_BUTTON = '.column-sort__button'
+/** RowGrouping group toggle, per groupable header. */
+const GROUP_BUTTON = '.column-group__button'
+
+/** A header cell addressed by its logical column id. */
+const headCellById = (container: HTMLElement, id: string) =>
+  container.querySelector<HTMLElement>(`${HEAD_CELL}[data-column-id='${id}']`)!
+
+/** Rendered data-column header cells, in visual (left-to-right) order. */
+const renderedDataCells = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>(DATA_HEAD_CELL))
+    // real columns carry aria-colindex; virtualization padding divs do not
+    .filter(cell => cell.getAttribute('aria-colindex') !== null)
+    .sort(
+      (a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+    )
+
+/**
+ * The hover-hidden wrapper around a header control. It carries
+ * `data-button-active`, so it is found structurally regardless of the (hashed)
+ * module class — the element `buttonVisibility.css` toggles opacity on.
+ */
+const hiddenWrapperOf = (button: HTMLElement) =>
+  button.closest<HTMLElement>('[data-button-active]')!
+
+/** Hover a header to reveal one of its hover-hidden controls, then return it. */
+const revealControl = async (cell: HTMLElement, selector: string) => {
+  await userEvent.hover(cell)
+  const button = cell.querySelector<HTMLElement>(selector)!
+  await expect
+    .poll(() => getComputedStyle(hiddenWrapperOf(button)).opacity)
+    .toBe('1')
+  return button
+}
+
+/** Menu items of the currently open pin popover (role=menuitem). */
+const menuItemByText = (text: string) =>
+  Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(
+    item => item.textContent?.trim() === text,
+  )
+
+/** The header select-all checkbox, or null when it isn't rendered. */
+const headCheckbox = (container: HTMLElement) =>
+  container.querySelector<HTMLElement>(`${HEAD_CELL} ${CHECKBOX}`)
+
+/** Visible group rows, top-to-bottom (real rows only, skip padding). */
+const groupRows = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>(BODY_ROW))
+    .filter(
+      row =>
+        row.getAttribute('data-index') !== null &&
+        row.getAttribute('data-group-row') === 'true',
+    )
+    .sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    )
+
+// --- Synthetic mouse choreography for the resize grip -------------------------
+// TanStack's resize handler reads clientX off a mousedown, then off document
+// mousemoves, and ends on document mouseup (columnResizeMode 'onChange'), so the
+// pinned offset re-flows live. Mirrors column-resizing.test.tsx.
+const fireMouse = (
+  type: 'mousedown' | 'mousemove' | 'mouseup',
+  target: Element | Document,
+  x: number,
+  y: number,
+) => {
+  target.dispatchEvent(
+    new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      button: 0,
+      buttons: type === 'mouseup' ? 0 : 1,
+      clientX: x,
+      clientY: y,
+    }),
+  )
+}
+
+/** Full grip drag: press, move by `dx` px, release. */
+const resizeBy = async (grip: HTMLElement, dx: number) => {
+  const r = grip.getBoundingClientRect()
+  const x0 = r.left + r.width / 2
+  const y = r.top + r.height / 2
+  fireMouse('mousedown', grip, x0, y)
+  await nextFrame()
+  fireMouse('mousemove', document, x0 + dx, y)
+  await nextFrame()
+  await nextFrame()
+  fireMouse('mousemove', document, x0 + dx, y)
+  await nextFrame()
+  fireMouse('mouseup', document, x0 + dx, y)
+  await nextFrame()
+  await nextFrame()
+}
+
+// --- Column-drag choreography (horizontal activation, head-cell targets) ------
+// Mirrors column-dragging.test.tsx; the PointerEvent plumbing is the shared
+// rowDragging.dnd primitive, only the axis (horizontal) is column-specific.
+const beginColumnDrag = async (handle: HTMLElement) => {
+  const hr = handle.getBoundingClientRect()
+  const hx = hr.left + hr.width / 2
+  const hy = hr.top + hr.height / 2
+  firePointer('pointerdown', handle, hx, hy)
+  await nextFrame()
+  firePointer('pointermove', document, hx + 6, hy)
+  await nextFrame()
+  await nextFrame()
+  await nextFrame()
+  return { hx, hy }
+}
+
+/** Drag `source`'s header handle over `target`'s centre and drop. */
+const dragColumnOnto = async (source: HTMLElement, target: HTMLElement) => {
+  const handle = source.querySelector<HTMLElement>(HANDLE)!
+  const { hy } = await beginColumnDrag(handle)
+  const tr = target.getBoundingClientRect()
+  const tx = tr.left + tr.width / 2
+  firePointer('pointermove', document, tx, hy)
+  await nextFrame()
+  await nextFrame()
+  firePointer('pointermove', document, tx + 1, hy)
+  await nextFrame()
+  await nextFrame()
+  firePointer('pointerup', document, tx + 1, hy)
+}
+
+describe('Cross-plugin — columnPinning × columnSizing', () => {
+  test('X3: resizing a left-pinned column re-flows the next pinned column’s sticky offset', async () => {
+    const { container } = await render(
+      <composed.ColumnPinning enableColumnResizing dataCount={40} />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(3)
+
+    // Pin two data columns left: `country` is one-sided (direct toggle), while
+    // `firstName` is both-sided (pin via its inline popover). `country` is
+    // defined first, so it leads the left block and `firstName` chains after it.
+    await userEvent.click(await revealControl(headCellById(container, 'country'), PIN_BUTTON))
+    await expect
+      .poll(() => headCellById(container, 'country').getAttribute('data-cell-pinned'))
+      .toBe('left')
+
+    await userEvent.click(await revealControl(headCellById(container, 'firstName'), PIN_BUTTON))
+    await expect.poll(() => menuItemByText('Pin left')).toBeTruthy()
+    await userEvent.click(menuItemByText('Pin left')!)
+    await expect
+      .poll(() => headCellById(container, 'firstName').getAttribute('data-cell-pinned'))
+      .toBe('left')
+
+    // firstName sits to the right of country → its sticky offset is > 0 (chained
+    // behind the leading pinned column, not flush at the edge).
+    const secondBefore = parseFloat(
+      getComputedStyle(headCellById(container, 'firstName')).left,
+    )
+    expect(secondBefore).toBeGreaterThan(0)
+
+    // Widen the leading pinned column; the following pinned column's sticky
+    // `left` grows by the same delta — the offset chain runs through columnSizing.
+    await resizeBy(await revealControl(headCellById(container, 'country'), RESIZE_GRIP), 140)
+
+    await expect
+      .poll(() =>
+        parseFloat(getComputedStyle(headCellById(container, 'firstName')).left),
+      )
+      .toBeGreaterThan(secondBefore + 100)
+  })
+})
+
+describe('Cross-plugin — columnPinning × rowSelection', () => {
+  test('X4: the leading selection column joins the left-pinned block and offsets the user-pinned column', async () => {
+    const { container } = await render(
+      <composed.ColumnPinning enableRowSelection dataCount={40} />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(3)
+
+    const selectionHead = () => headCellById(container, COLUMN_SELECTION_ID)
+
+    // Before any user pin the leading selection service column is not left-pinned.
+    expect(selectionHead().getAttribute('data-cell-pinned')).not.toBe('left')
+
+    // Pin a data column left → the selection column joins the left block (CP14b).
+    await userEvent.click(await revealControl(headCellById(container, 'country'), PIN_BUTTON))
+    await expect
+      .poll(() => selectionHead().getAttribute('data-cell-pinned'))
+      .toBe('left')
+
+    // The selection column leads at the very edge (offset 0)…
+    expect(getComputedStyle(selectionHead()).position).toBe('sticky')
+    expect(getComputedStyle(selectionHead()).left).toBe('0px')
+
+    // …and the user-pinned data column stacks to its right, offset by exactly the
+    // selection column's width: the two plugins share ONE sticky offset chain.
+    const country = headCellById(container, 'country')
+    expect(getComputedStyle(country).position).toBe('sticky')
+    const countryLeft = parseFloat(getComputedStyle(country).left)
+    const selectionWidth = selectionHead().getBoundingClientRect().width
+    expect(countryLeft).toBeGreaterThan(0)
+    expect(Math.abs(countryLeft - selectionWidth)).toBeLessThan(2)
+  })
+})
+
+describe('Cross-plugin — columnDragging × columnSorting', () => {
+  test('X5: a header sorts on click and keeps its sort after being dragged to a new position', async () => {
+    const { container } = await render(
+      <composed.ColumnDragging enableColumnSorting dataCount={40} />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(3)
+
+    // A data header carries BOTH controls at once (drag handle in the gutter,
+    // sort toggle at the trailing edge) — the two plugins coexist in one cell.
+    const source = renderedDataCells(container)[1]
+    const sourceId = source.getAttribute('data-column-id')!
+    expect(source.querySelector(HANDLE)).not.toBeNull()
+    expect(source.querySelector(SORT_BUTTON)).not.toBeNull()
+
+    // Clicking the sort toggle sorts the column — the drag plugin does not
+    // swallow the click (the controls are spatially disjoint).
+    await userEvent.click(await revealControl(source, SORT_BUTTON))
+    await expect
+      .poll(() => headCellById(container, sourceId).getAttribute('aria-sort'))
+      .toBe('descending')
+
+    // Drag that same column onto a later one → the visible column order changes.
+    const before = renderedDataCells(container).map(c =>
+      c.getAttribute('data-column-id'),
+    )
+    const srcIdx = before.indexOf(sourceId)
+    const target =
+      renderedDataCells(container)
+        .slice(srcIdx + 1)
+        .find(c => c.getAttribute('data-column-id') !== sourceId) ??
+      renderedDataCells(container).at(-1)!
+    await dragColumnOnto(headCellById(container, sourceId), target)
+
+    await expect
+      .poll(
+        () =>
+          renderedDataCells(container)
+            .map(c => c.getAttribute('data-column-id'))
+            .join('¦') !== before.join('¦'),
+      )
+      .toBe(true)
+
+    // Sort is keyed to the column's identity, not its slot — the moved column
+    // stays sorted where it landed.
+    expect(headCellById(container, sourceId).getAttribute('aria-sort')).toBe(
+      'descending',
+    )
+  })
+})
+
+describe('Cross-plugin — rowSelection × rowGrouping', () => {
+  test('X6: row selection is inert only under ACTIVE grouping, not when the plugin is merely enabled', async () => {
+    const { container } = await render(
+      <composed.RowGrouping enableRowSelection />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(BODY_ROW).length)
+      .toBeGreaterThan(3)
+
+    // Grouping is enabled but NOT applied → selection works: the header select-all
+    // and per-row checkboxes are present. Presence of the grouping plugin alone
+    // must not disable another plugin (ADR 0022).
+    expect(headCheckbox(container)).not.toBeNull()
+    expect(
+      container.querySelectorAll(`${BODY_ROW} ${CHECKBOX}`).length,
+    ).toBeGreaterThan(0)
+
+    // Apply grouping by a low-cardinality column → the visible rows become groups.
+    await userEvent.click(await revealControl(headCellById(container, 'gender'), GROUP_BUTTON))
+    await expect.poll(() => groupRows(container).length).toBeGreaterThan(1)
+
+    // Under ACTIVE grouping selection is inert — owned by rowGrouping, since the
+    // aggregated row model is derived and temporary (synthetic group ids). No
+    // checkbox renders anywhere: neither per-row nor the header select-all.
+    await expect.poll(() => container.querySelectorAll(CHECKBOX).length).toBe(0)
+
+    // Ungroup → selection returns (the plugin presence never disabled it).
+    await userEvent.click(await revealControl(headCellById(container, 'gender'), GROUP_BUTTON))
+    await expect.poll(() => container.querySelector(CHECKBOX) !== null).toBe(true)
   })
 })

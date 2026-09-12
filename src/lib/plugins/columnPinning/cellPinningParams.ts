@@ -1,10 +1,16 @@
-import { Column } from '@tanstack/react-table'
+import { Column, Table } from '@tanstack/react-table'
+
+import {
+  getPinnedLeftOffset,
+  getPinnedRightOffset,
+} from '../../core/createColumns/calculateColumnSizes'
 
 export interface CellPinningParams {
+  table: Table<any>
   column: Column<any>
 }
 
-export const useCellPinningParams = ({ column }: CellPinningParams) => {
+export const useCellPinningParams = ({ table, column }: CellPinningParams) => {
   const isPinned = column.getIsPinned()
 
   const isLeftPinned = isPinned === 'left'
@@ -19,8 +25,14 @@ export const useCellPinningParams = ({ column }: CellPinningParams) => {
   const isFirstRightPinnedColumn =
     isRightPinned && column.getIndex('right') === 0
 
-  const getStartLeft = column.getStart('left')
-  const getAfterRight = column.getAfter('right')
+  // CSS-смещения через calc() от переменных ширины: пересчитываются браузером
+  // при ресайзе соседней закреплённой колонки (см. getPinnedLeftOffset).
+  const leftPinnedOffset = isLeftPinned
+    ? getPinnedLeftOffset(table, column)
+    : undefined
+  const rightPinnedOffset = isRightPinned
+    ? getPinnedRightOffset(table, column)
+    : undefined
 
   return {
     isLeftPinned,
@@ -29,7 +41,7 @@ export const useCellPinningParams = ({ column }: CellPinningParams) => {
     isLastRightPinnedColumn,
     isFirstRightPinnedColumn,
     isAloneRightPinnedColumn,
-    getStartLeft,
-    getAfterRight,
+    leftPinnedOffset,
+    rightPinnedOffset,
   }
 }

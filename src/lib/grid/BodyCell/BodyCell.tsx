@@ -55,9 +55,12 @@ export const BodyCell = memo(
       isLastRightPinnedColumn,
       isFirstRightPinnedColumn,
       isAloneRightPinnedColumn,
-      getStartLeft,
-      getAfterRight,
-    } = useCellPinningParams({ column: cell.column })
+      leftPinnedOffset,
+      rightPinnedOffset,
+    } = useCellPinningParams({
+      table: cell.getContext().table,
+      column: cell.column,
+    })
 
     const { paddingLeft } = getCellExpandingStyles({
       column: cell.column,
@@ -138,8 +141,8 @@ export const BodyCell = memo(
         style={{
           minWidth: `var(${getColumnSizeVariable(cell.column.id)})`,
           width: `var(${getColumnSizeVariable(cell.column.id)})`,
-          left: isLeftPinned ? `${getStartLeft}px` : undefined,
-          right: isRightPinned ? `${getAfterRight}px` : undefined,
+          left: leftPinnedOffset,
+          right: rightPinnedOffset,
           paddingLeft,
         }}
         aria-colindex={cell.column.getIndex() + 1}
