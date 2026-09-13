@@ -32,6 +32,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0023](0023-cross-plugin-interactions.md)            | Сквозные (межплагинные) взаимодействия: слой тестов `X<n>`                | Принято    |
 | [0024](0024-slot-action-descriptor-and-menu.md)      | Единый дескриптор действия слота + схлопывание в кебаб-меню (AM1–AM21)     | Принято    |
 | [0025](0025-row-actions.md)                          | Действия строки: плагин rowActions (RA1–RA2 + перекрёстные R/CP/AM/LP)     | Принято    |
+| [0026](0026-migrate-to-tanstack-v9.md)               | Миграция на TanStack Table v9 (V9-1–V9-3); отменяет ADR 0007              | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).
