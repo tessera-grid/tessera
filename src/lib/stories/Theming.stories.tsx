@@ -14,7 +14,7 @@ import {
   columnSorting,
   rowActions,
   rowSelection,
-} from '../plugins'
+} from '../../v9/plugins'
 import { useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
 
