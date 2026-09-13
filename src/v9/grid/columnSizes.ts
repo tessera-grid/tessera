@@ -1,0 +1,64 @@
+/**
+ * Cutover (grid-слой) — v9-порт calculateColumnSizes: CSS-переменные ширин и
+ * sticky-смещения закреплённых ячеек как `calc()` от `--col-<id>-size`.
+ *
+ * Отличия от v8:
+ *  - логическая сторона: getLeftVisibleLeafColumns/getRightVisibleLeafColumns →
+ *    getStartVisibleLeafColumns/getEndVisibleLeafColumns; getIndex('left'/'right') →
+ *    getIndex('start'/'end');
+ *  - React-хук со сбором `--*-size` живёт в grid-компоненте и берёт зависимости из
+ *    useSlice('columnSizing'/'columnResizing') — здесь только чистые функции.
+ */
+type SizedColumn = { id: string; getSize: () => number }
+type SizedHeader = { id: string; getSize: () => number; column: { id: string; getSize: () => number } }
+type SizedTable = {
+  getFlatHeaders: () => SizedHeader[]
+  getStartVisibleLeafColumns: () => SizedColumn[]
+  getEndVisibleLeafColumns: () => SizedColumn[]
+}
+
+export const getHeaderSizeVariable = (headerId: string) =>
+  `--header-${headerId.replace(/\./, '\\.')}-size`
+
+export const getColumnSizeVariable = (columnId: string) =>
+  `--col-${columnId.replace(/\./, '\\.')}-size`
+
+/** Сумма `--col-<id>-size` переменных как `calc(...)` (или '0px' для пустого набора). */
+const sumSizeVars = (columns: SizedColumn[]): string =>
+  columns.length === 0
+    ? '0px'
+    : `calc(${columns.map(column => `var(${getColumnSizeVariable(column.id)})`).join(' + ')})`
+
+/**
+ * Sticky-смещение слева: сумма размеров закреплённых листьев ДО текущего. Индекс
+ * считаем прямо в списке закреплённых-видимых листьев (без column.getIndex —
+ * он живёт в columnOrderingFeature, которого может не быть в наборе).
+ */
+export const getPinnedStartOffset = (table: SizedTable, column: SizedColumn): string => {
+  const pinned = table.getStartVisibleLeafColumns()
+  const index = pinned.findIndex(leaf => leaf.id === column.id)
+  return sumSizeVars(index <= 0 ? [] : pinned.slice(0, index))
+}
+
+/** Sticky-смещение справа: сумма размеров закреплённых листьев ПОСЛЕ текущего. */
+export const getPinnedEndOffset = (table: SizedTable, column: SizedColumn): string => {
+  const pinned = table.getEndVisibleLeafColumns()
+  const index = pinned.findIndex(leaf => leaf.id === column.id)
+  return sumSizeVars(index === -1 ? [] : pinned.slice(index + 1))
+}
+
+/**
+ * Карта CSS-переменных ширин заголовков/колонок (`--header-<id>-size` /
+ * `--col-<id>-size`). Чистая; grid-хук оборачивает её мемоизацией по срезам
+ * columnSizing/columnResizing (useSlice).
+ */
+export const buildColumnSizeVars = (table: SizedTable): Record<string, string> => {
+  const colSizes: Record<string, string> = {}
+
+  for (const header of table.getFlatHeaders()) {
+    colSizes[getHeaderSizeVariable(header.id)] = `${header.getSize()}px`
+    colSizes[getColumnSizeVariable(header.column.id)] = `${header.column.getSize()}px`
+  }
+
+  return colSizes
+}
