@@ -8,7 +8,12 @@
  * (+ commonFeature); рантайм-валидацию делает `tableFeatures()`. Типобезопасный
  * путь для фиксированного набора — литерал (см. использование в тестах).
  */
-import { columnOrderingFeature, tableFeatures } from '@tanstack/table-v9'
+import {
+  columnOrderingFeature,
+  columnPinningFeature,
+  columnVisibilityFeature,
+  tableFeatures,
+} from '@tanstack/table-v9'
 
 import { commonFeature } from './commonFeature'
 import type { ServiceColumn } from './createColumns'
@@ -130,6 +135,8 @@ type MergeSlots<T extends readonly TesseraFeatureEntry[]> = UnionToIntersection<
 export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   commonFeature: typeof commonFeature
   columnOrderingFeature: typeof columnOrderingFeature
+  columnVisibilityFeature: typeof columnVisibilityFeature
+  columnPinningFeature: typeof columnPinningFeature
 } & MergeSlots<T>
 
 /**
@@ -142,7 +149,12 @@ export const buildTesseraFeatures = <
 >(
   entries: T,
 ): TesseraFeatures<T> => {
-  const merged: Record<string, unknown> = { commonFeature, columnOrderingFeature }
+  const merged: Record<string, unknown> = {
+    commonFeature,
+    columnOrderingFeature,
+    columnVisibilityFeature,
+    columnPinningFeature,
+  }
 
   for (const entry of entries) {
     if (entry.enabled === false) {
