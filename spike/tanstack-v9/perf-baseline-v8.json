@@ -1,0 +1,269 @@
+{
+  "generatedAt": "2026-09-12T21:48:23.432Z",
+  "records": [
+    {
+      "id": "P2",
+      "label": "небольшая выборка, без плагинов",
+      "operation": "scroll",
+      "size": "30×500",
+      "plugins": "none",
+      "cpuThrottle": 4,
+      "knownShortfall": true,
+      "metrics": [
+        {
+          "axis": "y",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 17.816,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 116,
+          "longestMs": 21.252,
+          "tasksOverBudget": 12,
+          "longTasks": 0,
+          "tbtMs": 0,
+          "p95Ms": 17.816,
+          "p99Ms": 20.697
+        },
+        {
+          "axis": "x",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 47.058,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 57,
+          "longestMs": 140.403,
+          "tasksOverBudget": 28,
+          "longTasks": 2,
+          "tbtMs": 101.37199999999999,
+          "p95Ms": 47.058,
+          "p99Ms": 140.403
+        }
+      ]
+    },
+    {
+      "id": "P4",
+      "label": "большая выборка, без плагинов",
+      "operation": "scroll",
+      "size": "1000×1000",
+      "plugins": "none",
+      "cpuThrottle": 4,
+      "knownShortfall": true,
+      "metrics": [
+        {
+          "axis": "y",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 41.723,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 120,
+          "longestMs": 44.344,
+          "tasksOverBudget": 59,
+          "longTasks": 0,
+          "tbtMs": 0,
+          "p95Ms": 41.723,
+          "p99Ms": 43.239
+        },
+        {
+          "axis": "x",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 101.509,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 102,
+          "longestMs": 235.128,
+          "tasksOverBudget": 40,
+          "longTasks": 37,
+          "tbtMs": 1515.1160000000002,
+          "p95Ms": 101.509,
+          "p99Ms": 167.4
+        }
+      ]
+    },
+    {
+      "id": "P7",
+      "label": "небольшая выборка, все плагины",
+      "operation": "scroll",
+      "size": "30×500",
+      "plugins": "all",
+      "cpuThrottle": 4,
+      "knownShortfall": true,
+      "metrics": [
+        {
+          "axis": "y",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 95.417,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 129,
+          "longestMs": 321.578,
+          "tasksOverBudget": 59,
+          "longTasks": 45,
+          "tbtMs": 1814.1280000000002,
+          "p95Ms": 95.417,
+          "p99Ms": 164.113
+        },
+        {
+          "axis": "x",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 155.074,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 48,
+          "longestMs": 316.163,
+          "tasksOverBudget": 42,
+          "longTasks": 41,
+          "tbtMs": 2824.676999999999,
+          "p95Ms": 155.074,
+          "p99Ms": 316.163
+        }
+      ]
+    },
+    {
+      "id": "P8",
+      "label": "большая выборка, все плагины",
+      "operation": "scroll",
+      "size": "1000×1000",
+      "plugins": "all",
+      "cpuThrottle": 4,
+      "knownShortfall": true,
+      "metrics": [
+        {
+          "axis": "y",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 178.702,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 119,
+          "longestMs": 613.603,
+          "tasksOverBudget": 60,
+          "longTasks": 59,
+          "tbtMs": 6168.097000000002,
+          "p95Ms": 178.702,
+          "p99Ms": 296.6
+        },
+        {
+          "axis": "x",
+          "kind": "animation",
+          "metric": "p95",
+          "valueMs": 396.879,
+          "budgetMs": 16.666666666666668,
+          "pass": false,
+          "taskCount": 65,
+          "longestMs": 407.402,
+          "tasksOverBudget": 58,
+          "longTasks": 58,
+          "tbtMs": 13241.441000000004,
+          "p95Ms": 396.879,
+          "p99Ms": 407.402
+        }
+      ]
+    },
+    {
+      "id": "P1",
+      "label": "небольшая выборка, без плагинов",
+      "operation": "render",
+      "size": "30×500",
+      "plugins": "none",
+      "cpuThrottle": 4,
+      "knownShortfall": false,
+      "metrics": [
+        {
+          "kind": "load",
+          "metric": "longest",
+          "valueMs": 173.36,
+          "budgetMs": 1000,
+          "pass": true,
+          "taskCount": 1,
+          "longestMs": 173.36,
+          "tasksOverBudget": 1,
+          "longTasks": 1,
+          "tbtMs": 123.36000000000001,
+          "p95Ms": 173.36,
+          "p99Ms": 173.36
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "label": "большая выборка, без плагинов",
+      "operation": "render",
+      "size": "1000×1000",
+      "plugins": "none",
+      "cpuThrottle": 4,
+      "knownShortfall": false,
+      "metrics": [
+        {
+          "kind": "load",
+          "metric": "longest",
+          "valueMs": 358.668,
+          "budgetMs": 1000,
+          "pass": true,
+          "taskCount": 1,
+          "longestMs": 358.668,
+          "tasksOverBudget": 1,
+          "longTasks": 1,
+          "tbtMs": 308.668,
+          "p95Ms": 358.668,
+          "p99Ms": 358.668
+        }
+      ]
+    },
+    {
+      "id": "P5",
+      "label": "небольшая выборка, все плагины",
+      "operation": "render",
+      "size": "30×500",
+      "plugins": "all",
+      "cpuThrottle": 4,
+      "knownShortfall": false,
+      "metrics": [
+        {
+          "kind": "load",
+          "metric": "longest",
+          "valueMs": 659.917,
+          "budgetMs": 1000,
+          "pass": true,
+          "taskCount": 1,
+          "longestMs": 659.917,
+          "tasksOverBudget": 1,
+          "longTasks": 1,
+          "tbtMs": 609.917,
+          "p95Ms": 659.917,
+          "p99Ms": 659.917
+        }
+      ]
+    },
+    {
+      "id": "P6",
+      "label": "большая выборка, все плагины",
+      "operation": "render",
+      "size": "1000×1000",
+      "plugins": "all",
+      "cpuThrottle": 4,
+      "knownShortfall": true,
+      "metrics": [
+        {
+          "kind": "load",
+          "metric": "longest",
+          "valueMs": 2875.962,
+          "budgetMs": 1000,
+          "pass": false,
+          "taskCount": 1,
+          "longestMs": 2875.962,
+          "tasksOverBudget": 1,
+          "longTasks": 1,
+          "tbtMs": 2825.962,
+          "p95Ms": 2875.962,
+          "p99Ms": 2875.962
+        }
+      ]
+    }
+  ]
+}
