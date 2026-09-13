@@ -11,10 +11,14 @@
  */
 type SizedColumn = { id: string; getSize: () => number }
 type SizedHeader = { id: string; getSize: () => number; column: { id: string; getSize: () => number } }
-type SizedTable = {
-  getFlatHeaders: () => SizedHeader[]
+/** Для sticky-offset нужны только списки закреплённых-видимых листьев. */
+type PinnedLeavesTable = {
   getStartVisibleLeafColumns: () => SizedColumn[]
   getEndVisibleLeafColumns: () => SizedColumn[]
+}
+/** Для сбора --*-size переменных нужны плоские заголовки. */
+type FlatHeadersTable = {
+  getFlatHeaders: () => SizedHeader[]
 }
 
 export const getHeaderSizeVariable = (headerId: string) =>
@@ -34,14 +38,14 @@ const sumSizeVars = (columns: SizedColumn[]): string =>
  * считаем прямо в списке закреплённых-видимых листьев (без column.getIndex —
  * он живёт в columnOrderingFeature, которого может не быть в наборе).
  */
-export const getPinnedStartOffset = (table: SizedTable, column: SizedColumn): string => {
+export const getPinnedStartOffset = (table: PinnedLeavesTable, column: SizedColumn): string => {
   const pinned = table.getStartVisibleLeafColumns()
   const index = pinned.findIndex(leaf => leaf.id === column.id)
   return sumSizeVars(index <= 0 ? [] : pinned.slice(0, index))
 }
 
 /** Sticky-смещение справа: сумма размеров закреплённых листьев ПОСЛЕ текущего. */
-export const getPinnedEndOffset = (table: SizedTable, column: SizedColumn): string => {
+export const getPinnedEndOffset = (table: PinnedLeavesTable, column: SizedColumn): string => {
   const pinned = table.getEndVisibleLeafColumns()
   const index = pinned.findIndex(leaf => leaf.id === column.id)
   return sumSizeVars(index === -1 ? [] : pinned.slice(index + 1))
@@ -52,7 +56,7 @@ export const getPinnedEndOffset = (table: SizedTable, column: SizedColumn): stri
  * `--col-<id>-size`). Чистая; grid-хук оборачивает её мемоизацией по срезам
  * columnSizing/columnResizing (useSlice).
  */
-export const buildColumnSizeVars = (table: SizedTable): Record<string, string> => {
+export const buildColumnSizeVars = (table: FlatHeadersTable): Record<string, string> => {
   const colSizes: Record<string, string> = {}
 
   for (const header of table.getFlatHeaders()) {
