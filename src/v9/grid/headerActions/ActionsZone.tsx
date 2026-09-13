@@ -18,6 +18,8 @@ import type { RegisterSlotParams } from '../../core/createSlots'
 import { resolveActionLayout, type SlotAction, type SlotName } from '../../core/headerActions'
 import { useTableState } from '../../core/reactivity'
 import { ActionButton } from './ActionButton'
+import { ActionInlineMenu } from './ActionInlineMenu'
+import { ActionMenu } from './ActionMenu'
 
 interface ActionsZoneProps {
   slot: SlotName
@@ -61,11 +63,16 @@ export const ActionsZone = memo(({ slot, opaqueSlot, context }: ActionsZoneProps
     node: <RenderSlot slot={[entry]} context={context} />,
   }))
 
+  // Инлайн-действие с inlineAsMenu(ctx) подаётся мини-меню (поповер) вместо кнопки-
+  // тумблера — когда клик неоднозначен (напр. закрепление при обеих сторонах).
   const inlineItems: ZoneItem[] = inline.map(action => ({
     rank: action.order,
     key: `action-${action.id}`,
-    // inlineAsMenu (мини-поповер) — Base UI, портируется на cutover; пока кнопка.
-    node: <ActionButton action={action} context={context} variant={variant} />,
+    node: action.inlineAsMenu?.(context) ? (
+      <ActionInlineMenu action={action} context={context} variant={variant} />
+    ) : (
+      <ActionButton action={action} context={context} variant={variant} />
+    ),
   }))
 
   const orderedInline = [...opaqueItems, ...inlineItems].sort(byRank)
@@ -76,13 +83,7 @@ export const ActionsZone = memo(({ slot, opaqueSlot, context }: ActionsZoneProps
         <Fragment key={item.key}>{item.node}</Fragment>
       ))}
       {collapsed && menu.length > 0 && (
-        // TODO(cutover): Base UI кебаб-меню из menuItems. Пока — триггер-заглушка.
-        <button
-          type="button"
-          data-kebab-trigger
-          data-menu-count={menu.length}
-          aria-label="Действия"
-        />
+        <ActionMenu actions={menu} context={context} variant={variant} />
       )}
     </>
   )
