@@ -11,7 +11,7 @@
  *    columnPinning (пиннинг сервисных колонок) и columnSizing (авто-слайс), остальное
  *    прокидывается из state/handlers потребителя.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { functionalUpdate, useTable } from '@tanstack/table-v9'
 import type {
@@ -256,16 +256,29 @@ export const useCreateTable = <
     [signature, table],
   )
 
-  // Сброс выбора строк при смене опций выбора (ядровая логика, ADR 0010).
+  // Сброс выбора строк при смене опций выбора (ядровая логика, ADR 0010). Триггер
+  // ТОЛЬКО по изменению самих опций (через ref), а не по идентичности table — иначе
+  // нестабильный ref из useTable запускал бы reset каждый рендер (бесконечный цикл).
+  const enableRowSelection = (
+    table.options as { enableRowSelection?: unknown }
+  ).enableRowSelection
+  const enableSubRowSelection = (
+    table.options as { enableSubRowSelection?: unknown }
+  ).enableSubRowSelection
+  const prevSelectionOpts = useRef<string>()
+  const selectionOptsKey = JSON.stringify([
+    typeof enableRowSelection === 'function' ? 'fn' : enableRowSelection,
+    enableSubRowSelection,
+  ])
   useEffect(() => {
+    if (prevSelectionOpts.current === selectionOptsKey) {
+      return
+    }
+    prevSelectionOpts.current = selectionOptsKey
     ;(table as { resetRowSelection?: (defaultState?: boolean) => void })
       .resetRowSelection?.(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    table,
-    (table.options as { enableRowSelection?: unknown }).enableRowSelection,
-    (table.options as { enableSubRowSelection?: unknown }).enableSubRowSelection,
-  ])
+  }, [selectionOptsKey])
 
   return table
 }

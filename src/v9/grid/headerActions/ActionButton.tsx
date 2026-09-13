@@ -4,8 +4,6 @@
  * реактивность даёт родительская ActionsZone (подписка на состояние). Переиспурт
  * v8-независимые IconButton/Tooltip/localization.
  */
-import { memo } from 'react'
-
 import clsx from 'clsx'
 
 import { useLocalization } from '../../../lib/core/localization'
@@ -22,9 +20,15 @@ interface ActionButtonProps {
   variant?: 'cell' | 'row'
 }
 
-export const ActionButton = memo(
-  ({ action, context, variant = 'cell' }: ActionButtonProps) => {
-    const labels = useLocalization()
+// НЕ memo: реактивность даёт родительская ActionsZone (подписка на состояние).
+// Дескрипторы читают ЖИВЫЕ методы колонки/строки (getIsSorted и т.п.) через
+// `context`, чья ссылка может не меняться — memo по context заморозил бы иконку.
+export const ActionButton = ({
+  action,
+  context,
+  variant = 'cell',
+}: ActionButtonProps) => {
+  const labels = useLocalization()
 
     if (action.visible?.(context) === false) {
       return null
@@ -67,7 +71,6 @@ export const ActionButton = memo(
         </div>
       </Tooltip>
     )
-  },
-)
+}
 
 ActionButton.displayName = 'ActionButton'

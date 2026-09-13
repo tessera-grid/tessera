@@ -41,8 +41,12 @@ import {
  */
 export interface TesseraFeatureEntry<TSlot extends object = object> {
   id: string
-  /** Фрагмент для `tableFeatures({...})`, напр. `{ rowSortingFeature, sortedRowModel, sortFns }`. */
-  slot: TSlot
+  /**
+   * Фрагмент для `tableFeatures({...})`, напр. `{ rowSortingFeature, sortedRowModel,
+   * sortFns }`. Опционален: запись может нести только декларативные действия/меню
+   * (slotActions/actionMenu) без собственной фичи.
+   */
+  slot?: TSlot
   /** Наличие = включено (как `enabled` в текущем RegistryEntry). */
   enabled?: boolean
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
