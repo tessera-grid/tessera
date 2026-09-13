@@ -97,7 +97,16 @@
     сервисная колонка действий (trailing, pin end always) + `setup` (ширина через
     `setColumnAutoSizing`: сужается до collapsedWidth, когда `actionRowSlot` схлопнут).
     Тест `__tests__/actions.test.ts` (6/6).
-- **Фаза D — реактивность на `table.atoms`** — на cutover при подключении грида.
+- **Фаза D — реактивность на `table.atoms`** — ✅ ГОТОВО (слой утилит + доказательство).
+  - ✅ `core/reactivity.ts` — `useSlice(table, key)` (подписка на один срез) и
+    `useTableState(table, selector)` (проекция из store с shallow) — штатная замена
+    `useSubscribeStore(() => [primitives])` (ADR 0007). `shallowEqual` локальный.
+  - ✅ `__tests__/reactivity.dom.test.tsx` (happy-dom, 2/2): render-count доказывает
+    per-slice ре-рендеры — смена `sorting` перерисовывает только подписчика sorting,
+    смена `columnVisibility` — только его подписчика. Это React-уровень поверх
+    store-гранулярности из спайка (условие ADR 0026 V9-2).
+  - Ported-компоненты плагинов используют `useSelector(table.atoms.X)` напрямую (тот же
+    механизм); helper — для grid-компонентов на cutover (multi-slice).
 - **Cutover (финал)** — репойнт импортов на v9, удаление v8-слоя, перенос отложенных
   grid-кусков (cellPinningParams/sticky-offset, rowDragging offset/nesting-редьюсер,
   auto-sizing writer), прогон `perf` против базлайна (условие V9-1). См. чеклист ниже.
