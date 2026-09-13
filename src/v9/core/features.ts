@@ -8,7 +8,7 @@
  * (+ commonFeature); рантайм-валидацию делает `tableFeatures()`. Типобезопасный
  * путь для фиксированного набора — литерал (см. использование в тестах).
  */
-import { tableFeatures } from '@tanstack/table-v9'
+import { columnOrderingFeature, tableFeatures } from '@tanstack/table-v9'
 
 import { commonFeature } from './commonFeature'
 import type { ServiceColumn } from './createColumns'
@@ -122,21 +122,27 @@ type MergeSlots<T extends readonly TesseraFeatureEntry[]> = UnionToIntersection<
   T[number]['slot']
 >
 
-/** Тип набора фич: always-on commonFeature + слоты записей. */
+/**
+ * Тип набора фич: always-on `commonFeature` + `columnOrderingFeature` (порядок/
+ * индексы колонок нужны гриду всегда — getIndex/getIsFirstColumn/getIsLastColumn)
+ * + слоты записей.
+ */
 export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   commonFeature: typeof commonFeature
+  columnOrderingFeature: typeof columnOrderingFeature
 } & MergeSlots<T>
 
 /**
- * Собрать набор фич из записей. Отсеивает `enabled: false`, вклеивает
- * `commonFeature`, сливает слоты и прогоняет через `tableFeatures()`.
+ * Собрать набор фич из записей. Отсеивает `enabled: false`, вклеивает always-on
+ * `commonFeature` + `columnOrderingFeature`, сливает слоты и прогоняет через
+ * `tableFeatures()`.
  */
 export const buildTesseraFeatures = <
   const T extends readonly TesseraFeatureEntry[],
 >(
   entries: T,
 ): TesseraFeatures<T> => {
-  const merged: Record<string, unknown> = { commonFeature }
+  const merged: Record<string, unknown> = { commonFeature, columnOrderingFeature }
 
   for (const entry of entries) {
     if (entry.enabled === false) {
