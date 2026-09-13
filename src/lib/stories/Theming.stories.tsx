@@ -6,8 +6,8 @@ import { Card, CardContent, Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { useCreateHooks } from '../core/createHooks/useCreateHooks'
 import { useRowSelectionState } from '../core/createState/rowSelectionState'
-import { useCreateTable } from '../core/createTable'
-import { DataGrid } from '../grid/DataGrid/DataGrid'
+import { useCreateTable } from '../../v9/core/useCreateTable'
+import { DataGrid } from '../../v9/grid/DataGrid'
 import {
   columnPinning,
   columnSizing,

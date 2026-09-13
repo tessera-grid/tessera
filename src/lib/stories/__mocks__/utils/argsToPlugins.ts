@@ -1,4 +1,4 @@
-import type { Row } from '@tanstack/react-table'
+import type { Row } from '@tanstack/table-v9'
 
 import {
   columnDragging,
@@ -6,16 +6,18 @@ import {
   columnSizing,
   columnSorting,
   headerActionMenu,
-  type RegistryEntry,
   rowActionMenu,
   rowActions,
   rowDragging,
   rowExpanding,
   rowGrouping,
   rowSelection,
-} from '../../../plugins'
-import type { ColumnMultiSortOptions } from '../../../plugins/columnSorting'
-import { RowActionsOptions } from '../../../plugins/rowActions'
+  type ColumnMultiSortOptions,
+} from '../../../../v9/plugins'
+import type { TesseraFeatureEntry } from '../../../../v9/core/features'
+import type { RowActionsOptions } from '../../../../v9/plugins/rowActions/rowActionsColumn'
+
+type RegistryEntry = TesseraFeatureEntry
 import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
@@ -57,7 +59,7 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     ...expanding,
     options: {
       ...expanding.options,
-      enableRowExpanding: (row: Row<any>) =>
+      enableRowExpanding: (row: Row<any, any>) =>
         row.getIsGrouped() || !!row.original?.isGroup,
     },
   }
@@ -94,7 +96,6 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
       id: 'rowActionsDemo',
-      feature: {},
       slotActions: rowActionsDemo,
     },
   ]

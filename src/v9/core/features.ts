@@ -9,8 +9,10 @@
  * путь для фиксированного набора — литерал (см. использование в тестах).
  */
 import {
+  columnGroupingFeature,
   columnOrderingFeature,
   columnPinningFeature,
+  columnSizingFeature,
   columnVisibilityFeature,
   tableFeatures,
 } from '@tanstack/table-v9'
@@ -137,6 +139,8 @@ export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   columnOrderingFeature: typeof columnOrderingFeature
   columnVisibilityFeature: typeof columnVisibilityFeature
   columnPinningFeature: typeof columnPinningFeature
+  columnSizingFeature: typeof columnSizingFeature
+  columnGroupingFeature: typeof columnGroupingFeature
 } & MergeSlots<T>
 
 /**
@@ -154,6 +158,8 @@ export const buildTesseraFeatures = <
     columnOrderingFeature,
     columnVisibilityFeature,
     columnPinningFeature,
+    columnSizingFeature,
+    columnGroupingFeature,
   }
 
   for (const entry of entries) {

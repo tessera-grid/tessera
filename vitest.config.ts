@@ -28,7 +28,11 @@ export default defineConfig({
   // авто-пребандл vitest browser mode и ломает ESM-interop React (`import * as
   // React` → null). Пребандлим меню — esbuild собирает поддерево с единым React.
   optimizeDeps: {
-    include: ['@base-ui/react/menu'],
+    // Base UI `Menu` тянет `@base-ui/utils` (fastHooks), а `@tanstack/table-v9`
+    // (v9 под алиасом) — свой React через ESM-interop; без пребандла vitest browser
+    // mode ломает единый React (`import * as React` → null в useState). Пребандлим,
+    // чтобы esbuild собрал их поддеревья с единым React.
+    include: ['@base-ui/react/menu', '@tanstack/table-v9', '@tanstack/react-store'],
   },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
