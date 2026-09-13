@@ -3,7 +3,7 @@
  * первой пользовательской колонке. Логика идентична v8 (getVisibleLeafColumns +
  * getIsActionsColumn из commonFeature). Константа отступа переиспользуется из ядра.
  */
-import { ROW_NESTING_INDENT_PX } from '../../lib/core/rowNesting'
+import { ROW_NESTING_INDENT_PX } from '../core/rowNesting'
 
 type ExpandingColumn = { id: string; getIsActionsColumn: () => boolean }
 type ExpandingTable = {
