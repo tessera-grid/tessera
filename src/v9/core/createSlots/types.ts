@@ -1,0 +1,67 @@
+/**
+ * Фаза C — порт слот-машинерии на v9. Контракт совпадает с v8-версией
+ * ([src/lib/core/createSlots/types.ts]); отличия:
+ *  - контекст слота — v9 `HeaderContext`/`CellContext` (вместо v8 SDK-контекстов);
+ *  - поле `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь
+ *    рендера в v9 — рендер идёт через нативный `FlexRender` (см. `component`).
+ */
+import type { CellContext, ColumnDefTemplate, HeaderContext } from '../../types'
+
+/** Пропсы компонента слота заголовка — v9-контекст заголовка. */
+export type HeaderComponentProps = HeaderContext<any, any, any>
+/** Пропсы компонента слота ячейки/строки — v9-контекст ячейки. */
+export type CellComponentProps = CellContext<any, any, any>
+
+export interface RegisterSlotParams<TContext extends object> {
+  /** Уникальный идентификатор плагина (ключ не должен быть динамическим). */
+  id: string
+  /** Порядок относительно соседних плагинов в слоте. */
+  order?: number | 'last'
+  /**
+   * Внешний признак видимости.
+   * @deprecated Используйте условный рендеринг внутри `component`.
+   */
+  visible?: boolean
+  /**
+   * Функция отрисовки JSX.
+   * @deprecated В v9 рендер идёт через `FlexRender`; используйте `component`.
+   */
+  render?: ColumnDefTemplate<TContext>
+  /** Компонент плагина. */
+  component?: (props: TContext) => any
+  /**
+   * Учитывать ли слот в пороге схлопывания кебаб-меню. `false` — слот-аффорданс
+   * (напр. resize-грип), не занимающий место в счётчике. По умолчанию учитывается.
+   */
+  countsAsHeaderAction?: boolean
+}
+
+export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]
+
+export type CellSlot = RegisterSlotParams<CellComponentProps>[]
+
+/**
+ * Декларативное объявление слота плагином (ADR 0010). Ядро собирает слоты
+ * реактивно из активных плагинов — появление/исчезновение кнопки следует за
+ * наличием плагина.
+ */
+export type PluginSlot =
+  | (RegisterSlotParams<HeaderComponentProps> & {
+      slot: 'leftHeaderSlot' | 'rightHeaderSlot'
+    })
+  | (RegisterSlotParams<CellComponentProps> & {
+      slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot'
+    })
+
+export interface RenderSlots {
+  /** Место под плагин в заголовке колонки слева от текста. */
+  leftHeaderSlot: HeaderSlot
+  /** Место под плагин в заголовке колонки справа от текста. */
+  rightHeaderSlot: HeaderSlot
+  /** Место под плагин в ячейке слева от текста. */
+  leftCellSlot: CellSlot
+  /** Место под плагин в ячейке справа от текста. */
+  rightCellSlot: CellSlot
+  /** Место под кнопки действий над строками. */
+  actionRowSlot: CellSlot
+}

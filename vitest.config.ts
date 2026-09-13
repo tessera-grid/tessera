@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 import {
   perfRecord,
@@ -32,6 +32,9 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // v9-слой миграции гоняется отдельным node-конфигом (vitest.v9.config.ts),
+    // а не в браузере — исключаем его из основного прогона.
+    exclude: [...configDefaults.exclude, 'src/v9/**'],
     setupFiles: ['./vitest.setup.ts'],
     // Perf tests measure real main-thread work via process-wide CDP tracing;
     // parallel test files would contend for CPU and pollute each other's

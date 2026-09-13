@@ -1,0 +1,136 @@
+/**
+ * Фаза B — presence-based сборка набора фич v9 (аналог `_features` в v8-ядре,
+ * ADR 0010). Свёртка: always-on `commonFeature` + слоты активных записей →
+ * один объект → `tableFeatures()`.
+ *
+ * Компромисс по типам (вывод спайка, Q2): полностью динамический массив теряет
+ * статическую валидацию слотов v9. Здесь тип итога — пересечение слотов записей
+ * (+ commonFeature); рантайм-валидацию делает `tableFeatures()`. Типобезопасный
+ * путь для фиксированного набора — литерал (см. использование в тестах).
+ */
+import { tableFeatures } from '@tanstack/table-v9'
+
+import { commonFeature } from './commonFeature'
+import type { ServiceColumn } from './createColumns'
+import {
+  createEmptyRenderSlots,
+  registerSlotInto,
+  type PluginSlot,
+  type RenderSlots,
+} from './createSlots'
+import {
+  createEmptySlotActions,
+  registerSlotActionInto,
+  type ActionMenuDeclaration,
+  type SlotAction,
+  type SlotActionMenu,
+  type SlotActions,
+} from './headerActions'
+
+/**
+ * Запись фичи Tessera (v9-аналог RegistryEntry, ADR 0010): фрагмент карты фич +
+ * табличные опции + декларативные слоты/действия/меню. `slot` идёт в
+ * `tableFeatures()`; остальное сворачивается в опции таблицы (`foldEntries`).
+ */
+export interface TesseraFeatureEntry<TSlot extends object = object> {
+  id: string
+  /** Фрагмент для `tableFeatures({...})`, напр. `{ rowSortingFeature, sortedRowModel, sortFns }`. */
+  slot: TSlot
+  /** Наличие = включено (как `enabled` в текущем RegistryEntry). */
+  enabled?: boolean
+  /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
+  options?: Record<string, unknown>
+  /** Декларативные слоты плагина. */
+  slots?: PluginSlot[]
+  /** Декларативные действия слота (кебаб/инлайн). */
+  slotActions?: SlotAction[]
+  /** Декларация плагина-меню: на какие слоты распространить кебаб. */
+  actionMenu?: ActionMenuDeclaration
+  /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
+  column?: ServiceColumn
+}
+
+/** Свёрнутая из записей конфигурация — уходит в опции таблицы / сборку колонок. */
+export interface FoldedEntryConfig {
+  options: Record<string, unknown>
+  slots: RenderSlots
+  slotActions: SlotActions
+  actionMenu: SlotActionMenu
+  serviceColumns: ServiceColumn[]
+}
+
+const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
+
+/**
+ * Чистая свёртка активных записей в опции таблицы (аналог folding в v8-ядре).
+ * Порядок фолда = порядок записей, как в императивной регистрации. Используется и
+ * `useCreateTable`, и headless-тестами.
+ */
+export const foldEntries = (
+  entries: readonly TesseraFeatureEntry[],
+): FoldedEntryConfig => {
+  const options: Record<string, unknown> = {}
+  const slots = createEmptyRenderSlots()
+  const slotActions = createEmptySlotActions()
+  const actionMenu: SlotActionMenu = {}
+  const serviceColumns: ServiceColumn[] = []
+
+  for (const entry of entries) {
+    if (!isActive(entry)) {
+      continue
+    }
+
+    Object.assign(options, entry.options)
+    entry.slots?.forEach(slot => registerSlotInto(slots, slot))
+    entry.slotActions?.forEach(action => registerSlotActionInto(slotActions, action))
+
+    if (entry.column) {
+      serviceColumns.push(entry.column)
+    }
+
+    if (entry.actionMenu) {
+      const { slots: menuSlots, mode, threshold } = entry.actionMenu
+      menuSlots.forEach(slot => {
+        actionMenu[slot] = { mode, threshold }
+      })
+    }
+  }
+
+  return { options, slots, slotActions, actionMenu, serviceColumns }
+}
+
+type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (
+  x: infer I,
+) => void
+  ? I
+  : never
+
+type MergeSlots<T extends readonly TesseraFeatureEntry[]> = UnionToIntersection<
+  T[number]['slot']
+>
+
+/** Тип набора фич: always-on commonFeature + слоты записей. */
+export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
+  commonFeature: typeof commonFeature
+} & MergeSlots<T>
+
+/**
+ * Собрать набор фич из записей. Отсеивает `enabled: false`, вклеивает
+ * `commonFeature`, сливает слоты и прогоняет через `tableFeatures()`.
+ */
+export const buildTesseraFeatures = <
+  const T extends readonly TesseraFeatureEntry[],
+>(
+  entries: T,
+): TesseraFeatures<T> => {
+  const merged: Record<string, unknown> = { commonFeature }
+
+  for (const entry of entries) {
+    if (entry.enabled === false) {
+      continue
+    }
+    Object.assign(merged, entry.slot)
+  }
+
+  return tableFeatures(merged as never) as TesseraFeatures<T>
+}

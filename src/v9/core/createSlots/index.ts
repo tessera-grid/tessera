@@ -1,0 +1,83 @@
+/**
+ * Фаза C — порт слот-машинерии (сборка/регистрация). Логика идентична v8-версии
+ * ([src/lib/core/createSlots]); поменялся только тип таблицы у императивного
+ * `registerSlot` (v9). Чистые `createEmptyRenderSlots`/`registerSlotInto` —
+ * без изменений (реактивная свёртка слотов из активных плагинов, ADR 0010).
+ */
+import type {
+  PluginSlot,
+  RegisterSlotParams,
+  RenderSlots,
+} from './types'
+
+export type {
+  RenderSlots,
+  RegisterSlotParams,
+  HeaderSlot,
+  CellSlot,
+  PluginSlot,
+  HeaderComponentProps,
+  CellComponentProps,
+} from './types'
+
+/** Пустой набор слотов — база, в которую ядро сворачивает объявления плагинов. */
+export const createEmptyRenderSlots = (): RenderSlots => ({
+  leftHeaderSlot: [],
+  rightHeaderSlot: [],
+  leftCellSlot: [],
+  rightCellSlot: [],
+  actionRowSlot: [],
+})
+
+/**
+ * Регистрирует слот в переданный `RenderSlots` (чистая операция). Дедуплицирует
+ * по `id` в пределах слота: повторная регистрация обновляет запись на месте,
+ * иначе вставляет по `order` (число — индекс splice) или пушит в конец.
+ */
+export const registerSlotInto = (
+  slots: RenderSlots,
+  { id, order, visible = true, slot, render, component, countsAsHeaderAction }: PluginSlot,
+) => {
+  const currentSlot = slots[slot]
+
+  const pluginIndexInSlot = currentSlot.findIndex(plugin => plugin.id === id)
+
+  if (pluginIndexInSlot !== -1) {
+    currentSlot[pluginIndexInSlot].visible = visible
+    currentSlot[pluginIndexInSlot].render = render
+    currentSlot[pluginIndexInSlot].component = component
+    currentSlot[pluginIndexInSlot].countsAsHeaderAction = countsAsHeaderAction
+
+    return
+  }
+
+  const entry: RegisterSlotParams<any> = {
+    id,
+    order,
+    render,
+    component,
+    countsAsHeaderAction,
+  }
+
+  if (order === undefined || order === 'last') {
+    currentSlot.push(entry)
+  } else {
+    currentSlot.splice(order, 0, entry)
+  }
+}
+
+/**
+ * Императивная регистрация слота на инстансе таблицы (generic-escape для
+ * пользовательских плагинов). Реактивное появление слота обеспечивает
+ * декларативный `slots` записи реестра; это — не реактивный запасной путь.
+ */
+export const registerSlot = ({
+  table,
+  ...params
+}: PluginSlot & { table: { getRenderSlots: () => RenderSlots | undefined } }) => {
+  const slots = table.getRenderSlots()
+
+  if (slots) {
+    registerSlotInto(slots, params)
+  }
+}
