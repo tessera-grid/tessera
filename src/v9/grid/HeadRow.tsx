@@ -1,18 +1,14 @@
-// Cutover (grid) — v9-порт HeadRow: строка заголовка (заголовки группы → HeadCell).
-// DraggableHeadCell (drag через useSortable) не портирован — на cutover в браузере,
-// поэтому `enableColumnDragging` пока игнорируется (всегда HeadCell). Filler/Empty
-// колонки переиспортируются из v8-слоя (v8-независимы).
+// Cutover (grid) — v9-порт HeadRow: строка заголовка (заголовки группы → HeadCell/
+// DraggableHeadCell). При enableColumnDragging рисуется DraggableHeadCell
+// (useSortable под DndContext хедера), иначе обычная HeadCell.
 import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
-import {
-  LeftEmptyColumn,
-  RightEmptyColumn,
-} from '../../lib/grid/VirtualizePaddingColumns'
-import { RightFillerHeadColumn } from '../../lib/grid/HeadRow/RightFillerHeadColumn'
 import type { HeaderGroup } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
-import { HeadCell } from './HeadCell'
+import { DraggableHeadCell, HeadCell } from './HeadCell'
+import { LeftEmptyColumn, RightEmptyColumn } from './VirtualizePaddingColumns'
+import { RightFillerHeadColumn } from './RightFillerHeadColumn'
 
 import styles from '../../lib/grid/HeadRow/HeadRow.module.css'
 
@@ -24,7 +20,6 @@ interface TableHeadRowProps {
   leftHeaderSlot?: HeaderSlot
   rightHeaderSlot?: HeaderSlot
   isVirtualColumns: boolean
-  // TODO(cutover): при true рисовать DraggableHeadCell (useSortable/DndContext).
   enableColumnDragging?: boolean
 }
 
@@ -36,14 +31,17 @@ export const HeadRow = ({
   leftHeaderSlot,
   rightHeaderSlot,
   isVirtualColumns,
+  enableColumnDragging,
 }: TableHeadRowProps) => {
   const { headers } = headerGroup
+
+  const CellComponent = enableColumnDragging ? DraggableHeadCell : HeadCell
 
   if (!isVirtualColumns) {
     return (
       <div style={{ display: 'contents' }}>
         {headers.map(header => (
-          <HeadCell
+          <CellComponent
             key={header.id}
             layout={layout}
             header={header}
@@ -72,7 +70,7 @@ export const HeadRow = ({
       {virtualColumns.map(virtualColumn => {
         const header = headers[virtualColumn.index]
         return (
-          <HeadCell
+          <CellComponent
             key={header.id}
             layout={layout}
             header={header}

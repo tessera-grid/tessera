@@ -1,4 +1,5 @@
 /** Фаза E — типы плагина rowDragging (v9). */
+import type { Row } from '../../types'
 import type { DragOverlayState } from '../columnDragging/types'
 
 export interface RowDragOverlayState {
@@ -29,3 +30,9 @@ export type RowDraggingPlugin = Record<
   RowDraggingPluginScope,
   RowDraggingPluginParams
 >
+
+export interface RowSortableData {
+  virtualIndex: number
+  row: Row<any, any>
+  parentRow?: Row<any, any>
+}

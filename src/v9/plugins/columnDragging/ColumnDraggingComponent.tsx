@@ -6,7 +6,7 @@
 import { useSelector } from '@tanstack/react-store'
 
 import type { HeaderComponentProps } from '../../core/createSlots'
-import { DragHandler } from '../../../lib/grid/dnd'
+import { DragHandler } from '../../grid/dnd'
 
 export const ColumnDraggingComponent = ({ column, table }: HeaderComponentProps) => {
   // Всегда-присутствующий срез плагина (реактивность dnd). Тонкую подписку на

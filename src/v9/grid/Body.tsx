@@ -1,6 +1,7 @@
 // Cutover (grid) — v9-порт Body: контейнер тела. Виртуализация приходит пропсами
-// (virtualRows/virtualColumns считает DataGrid), Body лишь маппит строки в BodyRow.
-// DraggableBodyRow (drag) — на cutover; enableRowDragging пока игнорируется.
+// (virtualRows/virtualColumns считает DataGrid), Body лишь маппит строки в BodyRow/
+// DraggableBodyRow. При enableRowDragging рисуется DraggableBodyRow (useSortable под
+// DndContext тела), иначе обычная BodyRow.
 import { memo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -8,7 +9,7 @@ import clsx from 'clsx'
 
 import type { Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
-import { BodyRow } from './BodyRow'
+import { BodyRow, DraggableBodyRow } from './BodyRow'
 
 import styles from '../../lib/grid/Body/Body.module.css'
 
@@ -38,12 +39,16 @@ export const Body = ({
   actionRowSlot,
   headerRowCount,
   isVirtualColumns,
-}: TableBodyProps) => (
+  enableRowDragging,
+}: TableBodyProps) => {
+  const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
+
+  return (
   <div className={clsx('data-grid__body', styles.body)} role="rowgroup" data-layout={layout}>
     {virtualRows.map(virtualRow => {
       const row = rows[virtualRow.index]
       return (
-        <BodyRow
+        <RowComponent
           key={row.id}
           layout={layout}
           row={row}
@@ -60,7 +65,8 @@ export const Body = ({
       )
     })}
   </div>
-)
+  )
+}
 
 // Мемоизация активна только во время ресайза колонок (как в v8).
 export const MemoizedBody = memo(Body, (_, next) => next.isResizingColumns !== false)

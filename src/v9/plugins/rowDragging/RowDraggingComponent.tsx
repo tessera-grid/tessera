@@ -6,7 +6,7 @@
 import { useSelector } from '@tanstack/react-store'
 
 import type { CellComponentProps } from '../../core/createSlots'
-import { DragHandler } from '../../../lib/grid/dnd'
+import { DragHandler } from '../../grid/dnd'
 
 export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
   useSelector(
