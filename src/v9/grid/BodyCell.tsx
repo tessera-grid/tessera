@@ -10,6 +10,7 @@ import { flexRender } from '@tanstack/table-v9'
 import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../../lib/core/fastScroll'
+import { useTableState } from '../core/reactivity'
 import {
   CellWrapperContent,
   getAlignContent,
@@ -19,7 +20,7 @@ import { Skeleton } from '../../lib/ui/Skeleton'
 import type { Cell } from '../types'
 import { RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
-import { getCellPinningParams } from './cellPinningParams'
+import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getCellExpandingStyles } from './cellExpandingStyles'
 import { getColumnSizeVariable } from './columnSizes'
 
@@ -45,6 +46,12 @@ export const BodyCell = memo(
     interact = true,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
+
+    // Самоподписка: BodyCell — memo по стабильному `cell`, поэтому смена срезов
+    // (пиннинг/размеры/сортировка…) не приходит сверху новым пропом. Подписываемся
+    // на состояние сами (как HeadCell) — ре-рендер ячейки на смену пиннинга/размера.
+    // На скролле состояние таблицы не меняется → лишних ре-рендеров нет.
+    useTableState(table as never, (state: unknown) => state)
 
     const {
       isStartPinned,
@@ -97,7 +104,7 @@ export const BodyCell = memo(
         }}
         aria-colindex={cell.column.getIndex() + 1}
         data-column-id={cell.column.id}
-        data-cell-pinned={isPinnedColumn}
+        data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}
         data-cell-odd-right-pinned={isEndPinned && rowIndex % 2 !== 0}
         data-cell-last-left-pinned={isLastStartPinnedColumn}

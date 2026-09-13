@@ -6,6 +6,16 @@
  */
 import { getPinnedEndOffset, getPinnedStartOffset } from './columnSizes'
 
+/**
+ * v9 пиннинг оперирует `start`/`end`, но DOM-контракт грида (CSS-селекторы,
+ * визуальные тесты, потребительские стили) остался на `left`/`right` — маппим
+ * значение `data-cell-pinned` обратно, сохраняя контракт разметки.
+ */
+export const pinnedSideToDom = (
+  side: false | 'start' | 'end',
+): false | 'left' | 'right' =>
+  side === 'start' ? 'left' : side === 'end' ? 'right' : side
+
 type PinnedColumn = { id: string; getSize: () => number; getIsPinned: () => false | 'start' | 'end' }
 type PinningTable = {
   getStartVisibleLeafColumns: () => { id: string; getSize: () => number }[]

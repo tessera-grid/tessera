@@ -22,6 +22,7 @@ import { useTableState } from '../core/reactivity'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
+import { pinnedSideToDom } from './cellPinningParams'
 import {
   getColumnSizeVariable,
   getHeaderSizeVariable,
@@ -186,7 +187,7 @@ const HeadCellView = ({
       aria-colindex={header.column.getIndex() + 1}
       aria-sort={getAriaSort(header)}
       data-column-id={header.column.id}
-      data-cell-pinned={headerPinned}
+      data-cell-pinned={pinnedSideToDom(headerPinned)}
       data-cell-last-left-pinned={isLastStartPinnedColumn}
       data-cell-first-right-pinned={isFirstEndPinnedColumn}
       data-column-resizable={enableResizingColumn}
