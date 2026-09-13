@@ -70,7 +70,15 @@
     (countsAsHeaderAction: false); опции (enableColumnResizing/columnResizeMode)
     совпали с v8; state ресайза переименован columnSizingInfo→columnResizing
     (компонент читает методы колонки — на порт не влияет). Тест (3/3).
-  - ⬜ Дальше: columnPinning (start/end) → dragging → actions/menu.
+  - ✅ **columnPinning** (`plugins/columnPinning/**`, ADR 0011): встроенный
+    `columnPinningFeature` (state `{start,end}`); дескриптор `pinHeaderAction` с
+    reorder-out (`enableLeafPinning`). Логическая сторона `left/right`→`start/end`
+    по всему коду; состояние — `table.atoms.columnPinning`. Гранулярность под вложенной
+    шапкой перенесена в `visible` дескриптора (в v9 нет опции per-column canPin →
+    обёртка getCanPin и `keepFeatureWhenDisabled` не нужны). Тест (4/4).
+    ⚠️ `cellPinningParams`/sticky-offset (`calc()`) — это grid-рендер, портируется на
+    cutover (Фаза D/grid), не в плагине.
+  - ⬜ Дальше: dragging (column/row) → actions/menu (rowActions/headerActionMenu/rowActionMenu).
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 
