@@ -52,8 +52,14 @@
     без `createCell`); `getRowCanExpand` вместо обёртки `getCanExpand` (в v9 замещает
     дефолт → включает проверку subRows + гейт группировки ADR 0022 + глубину).
     `keepFeatureWhenDisabled` не нужен. Тест `__tests__/rowExpanding.test.ts` (7/7).
-  - ⬜ Дальше: rowSelection → rowGrouping → columnSizing → columnPinning (start/end)
-    → dragging → actions/menu.
+  - ✅ **rowSelection** (`plugins/rowSelection/**`, ADR 0014/0022): встроенный
+    `rowSelectionFeature` (row-модель не нужна); сервисная колонка выбора (header/cell
+    — компоненты напрямую); гейт группировки через функциональный `enableRowSelection`
+    (в v9 влияет и на агрегаты), а не обёртку `getCanSelect`; `enableRowRangeSelection:
+    false` для паритета (в v9 shift-range — дефолт); индетерминантность шапки исправлена
+    на `some && !all` (в v9 getIsSomePageRowsSelected true и при всех выбранных);
+    `getCanSomeRowsSelect` (в v9 нет) вычисляется инлайн. Тест (5/5).
+  - ⬜ Дальше: rowGrouping → columnSizing → columnPinning (start/end) → dragging → actions/menu.
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 
