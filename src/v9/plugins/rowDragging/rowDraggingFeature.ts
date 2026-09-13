@@ -1,0 +1,99 @@
+/**
+ * Фаза E — кастомная v9-фича rowDragging. Порт v8-плагина: слайс overlay-состояния
+ * `rowDragging` + updater и row-метод getCanDrag с гейтами (ADR 0022):
+ * многоуровневая шапка, активная группировка, активная сортировка — всё гасит drag.
+ *
+ * Отличия от v8: getInitialState/getDefaultOptions→getInitialState/
+ * getDefaultTableOptions (updater — makeStateUpdater); createRow→assignRowPrototype;
+ * grouping/sorting читаются из атомов (optional — фичи могут отсутствовать);
+ * dev-warn'ы — TODO (логгер), поведение сохранено.
+ */
+import { assignPrototypeAPIs, makeStateUpdater } from '@tanstack/table-v9'
+
+import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import {
+  DEFAULT_ROW_DRAG_OVERLAY_STATE,
+  type RowDragOverlayState,
+} from './types'
+
+interface RowDraggingStateSlice {
+  rowDragging: RowDragOverlayState
+}
+interface RowDraggingOptions {
+  enableRowDragging?: boolean | ((row: unknown) => boolean)
+  onRowDraggingChange?: (updater: Updater<RowDragOverlayState>) => void
+}
+interface RowDraggingRowAPI {
+  getCanDrag: () => boolean
+}
+
+declare module '@tanstack/table-v9' {
+  interface Plugins {
+    rowDraggingFeature: TableFeature
+  }
+  interface TableState_FeatureMap {
+    rowDraggingFeature: RowDraggingStateSlice
+  }
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    rowDraggingFeature: RowDraggingOptions
+  }
+  interface Row_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    rowDraggingFeature: RowDraggingRowAPI
+  }
+}
+
+type DraggableRow = {
+  table: {
+    options: { enableRowDragging?: boolean | ((row: unknown) => boolean) }
+    getHeaderGroups: () => unknown[]
+    atoms: {
+      grouping?: { get: () => unknown[] }
+      sorting?: { get: () => unknown[] }
+    }
+  }
+}
+
+const canDragRow = (row: DraggableRow): boolean => {
+  const enable = row.table.options.enableRowDragging
+  const wantsDrag = typeof enable === 'function' ? enable(row) : !!enable
+
+  if (!wantsDrag) {
+    return false
+  }
+  // Многоуровневая шапка / активная группировка / активная сортировка гасят drag
+  // (ADR 0022). TODO(логгер): dev-warn на каждый случай.
+  if (row.table.getHeaderGroups().length !== 1) {
+    return false
+  }
+  if ((row.table.atoms.grouping?.get() ?? []).length > 0) {
+    return false
+  }
+  if ((row.table.atoms.sorting?.get() ?? []).length > 0) {
+    return false
+  }
+
+  return true
+}
+
+export const rowDraggingFeature: TableFeature = {
+  getInitialState: state => ({
+    rowDragging: DEFAULT_ROW_DRAG_OVERLAY_STATE,
+    ...state,
+  }),
+  getDefaultTableOptions: table => ({
+    onRowDraggingChange: makeStateUpdater('rowDragging', table),
+  }),
+  assignRowPrototype: (prototype, table) => {
+    assignPrototypeAPIs('rowDraggingFeature', prototype, table, {
+      row_getCanDrag: {
+        fn: (row: DraggableRow) => canDragRow(row),
+      },
+    })
+  },
+}

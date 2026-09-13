@@ -86,7 +86,13 @@
     `_getVisibleLeafColumns`/`getMemoOptions`). dnd-события — `getColumnDraggingEvents`
     (грид вызывает на cutover), не пекутся в options. `keepFeatureWhenDisabled` не нужен.
     Тест (4/4).
-  - ⬜ Дальше: rowDragging → actions/menu (rowActions/headerActionMenu/rowActionMenu).
+  - ✅ **rowDragging** (`plugins/rowDragging/**`, ADR 0006/0022): кастомная v9-фича
+    `rowDraggingFeature` (слайс `rowDragging` + updater; row-метод getCanDrag с
+    гейтами: многоуровневая шапка / активная сортировка / активная группировка,
+    все читаются из атомов optional); сервисная колонка-ручка (cell — компонент
+    напрямую). dnd-редьюсер с геометрией offset/nesting — grid-слой, на cutover.
+    Тест (6/6, включая кросс-гейты sorting/grouping).
+  - ⬜ Дальше: actions/menu (rowActions/headerActionMenu/rowActionMenu) — последние.
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 
