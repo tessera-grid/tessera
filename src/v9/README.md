@@ -64,7 +64,13 @@
     + стандартный набор `aggregationFns` (в v8 шли внутри getGroupedRowModel); дескриптор
     `groupHeaderAction` (тумблер группировки). Это владелец гейта группировки, которому
     уступают rowExpanding/rowSelection (ADR 0022). Тест (3/3).
-  - ⬜ Дальше: columnSizing → columnPinning (start/end) → dragging → actions/menu.
+  - ✅ **columnSizing** (`plugins/columnSizing/**`, ADR 0013): в v9 sizing/resizing
+    РАЗДЕЛЕНЫ — слот несёт обе фичи (`columnSizingFeature` + `columnResizingFeature`,
+    prereq resizing→sizing проверяется типами); слот-грип `ColumnSizingComponent`
+    (countsAsHeaderAction: false); опции (enableColumnResizing/columnResizeMode)
+    совпали с v8; state ресайза переименован columnSizingInfo→columnResizing
+    (компонент читает методы колонки — на порт не влияет). Тест (3/3).
+  - ⬜ Дальше: columnPinning (start/end) → dragging → actions/menu.
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 
