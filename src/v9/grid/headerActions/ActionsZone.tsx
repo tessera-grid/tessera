@@ -42,7 +42,7 @@ export const ActionsZone = memo(({ slot, opaqueSlot, context }: ActionsZoneProps
   // Реактивность: перечитываем при любой смене состояния (TODO Phase D: сузить).
   useTableState(table, state => state)
 
-  const descriptors: SlotAction[] = table.getSlotActions()[slot]
+  const descriptors: SlotAction[] = table.getSlotActions()?.[slot] ?? []
   const opaque = opaqueSlot ?? []
   const opaqueCount = opaque.filter(entry => entry.countsAsHeaderAction !== false).length
 
