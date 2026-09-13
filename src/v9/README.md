@@ -78,7 +78,15 @@
     обёртка getCanPin и `keepFeatureWhenDisabled` не нужны). Тест (4/4).
     ⚠️ `cellPinningParams`/sticky-offset (`calc()`) — это grid-рендер, портируется на
     cutover (Фаза D/grid), не в плагине.
-  - ⬜ Дальше: dragging (column/row) → actions/menu (rowActions/headerActionMenu/rowActionMenu).
+  - ✅ **columnDragging** (`plugins/columnDragging/**`, ADR 0006/0022): первая
+    кастомная v9-фича после commonFeature — `columnDraggingFeature` (свой слайс
+    `columnDraggingActiveId` + updater через makeStateUpdater, column-методы
+    getCanDrag/getDraggableIndex через assignColumnPrototype); порядок — слот
+    `columnOrderingFeature`. getDraggableIndex считается напрямую (в v9 нет
+    `_getVisibleLeafColumns`/`getMemoOptions`). dnd-события — `getColumnDraggingEvents`
+    (грид вызывает на cutover), не пекутся в options. `keepFeatureWhenDisabled` не нужен.
+    Тест (4/4).
+  - ⬜ Дальше: rowDragging → actions/menu (rowActions/headerActionMenu/rowActionMenu).
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 
