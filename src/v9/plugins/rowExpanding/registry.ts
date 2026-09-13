@@ -1,0 +1,81 @@
+/**
+ * Фаза E — запись плагина rowExpanding для v9 (порт registry.ts, ADR 0015/0022).
+ *
+ * Отличия от v8:
+ *  - поведение даёт `rowExpandingFeature` + слот `expandedRowModel` (в v8 модель шла
+ *    опцией `getExpandedRowModel`);
+ *  - вместо обёртки `row.getCanExpand` в `createRow` — табличная опция
+ *    `getRowCanExpand` (в v9 она ПОЛНОСТЬЮ заменяет дефолт, поэтому включаем проверку
+ *    `subRows` сами); гейт группировки (ADR 0022) — там же;
+ *  - `keepFeatureWhenDisabled` не нужен: в v9 нет фиксации фич «на маунте».
+ */
+import { createExpandedRowModel, rowExpandingFeature } from '@tanstack/table-v9'
+
+import type { Row } from '../../types'
+import type { ServiceColumn } from '../../core/createColumns'
+import type { TesseraFeatureEntry } from '../../core/features'
+import { COLUMN_EXPANDING_ID, getRowExpandingColumn } from './rowExpandingColumn'
+
+export const DEFAULT_MAX_EXPANDING_DEPTH = 1
+
+export interface RowExpandingOptions {
+  /** `false` — плагин отключён. */
+  enabled?: boolean
+  /**
+   * Сколько уровней дерева раскрываемы от корня (ЧИСЛО уровней, не индекс): строка
+   * раскрываема, пока `row.depth < maxDepth`. По умолчанию 1 — тоггл только у корней.
+   */
+  maxDepth?: number
+}
+
+export const rowExpanding = (opts: RowExpandingOptions = {}) => {
+  const maxDepth = opts.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH
+
+  /**
+   * В v9 `getRowCanExpand` замещает дефолт целиком, поэтому воспроизводим его
+   * (`subRows.length > 0`) и добавляем ограничение по глубине. При активной
+   * группировке раскрытием владеет rowGrouping (ADR 0022): глубина игнорируется,
+   * возвращаем дефолтную раскрываемость.
+   */
+  const getRowCanExpand = (row: Row<any, any>): boolean => {
+    const canDefault = !!row.subRows.length
+
+    const groupingActive =
+      ((
+        (row.table as unknown as {
+          atoms: { grouping?: { get: () => unknown[] } }
+        }).atoms.grouping?.get() ?? []
+      ).length ?? 0) > 0
+
+    if (groupingActive) {
+      // TODO(rowGrouping): dev-warn об игнорировании maxExpandingDepth (ADR 0022).
+      return canDefault
+    }
+
+    return canDefault && row.depth < maxDepth
+  }
+
+  return {
+    id: 'rowExpanding',
+    enabled: opts.enabled,
+    slot: {
+      rowExpandingFeature,
+      expandedRowModel: createExpandedRowModel(),
+    },
+    column: {
+      id: COLUMN_EXPANDING_ID,
+      make: getRowExpandingColumn,
+      side: 'leading',
+      order: 2,
+      pin: { side: 'start', when: 'with-user' },
+    } satisfies ServiceColumn,
+    options: {
+      enableExpanding: true,
+      autoResetExpanded: false,
+      getRowCanExpand,
+    },
+  } satisfies TesseraFeatureEntry<{
+    rowExpandingFeature: typeof rowExpandingFeature
+    expandedRowModel: ReturnType<typeof createExpandedRowModel>
+  }>
+}
