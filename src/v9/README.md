@@ -35,11 +35,11 @@
   - ✅ `__tests__/slots.test.ts` — юнит-покрытие fold + резолверов (10/10).
   - Решения: поле `subscribe` (Pub-Sub) убрано → реактивность на `table.atoms` (фаза D);
     `render`/`ColumnDefTemplate` оставлено deprecated, рендер — нативный `FlexRender`.
-- **Фаза E — плагины по одному** — в работе.
+- **Фаза E — плагины по одному** — ✅ ГОТОВО (все 11).
   - ✅ Запись фичи расширена (`core/features.ts`): `TesseraFeatureEntry` несёт
-    `options`/`slots`/`slotActions`/`actionMenu`; чистая свёртка `foldEntries`
-    (опции плагинов + слоты/действия/меню → опции таблицы). `useCreateTable`
-    складывает их через `foldEntries`.
+    `options`/`slots`/`slotActions`/`actionMenu`/`column`/`setup`; чистая свёртка
+    `foldEntries` (→ опции/слоты/действия/меню/сервисные колонки/setups). `useCreateTable`
+    складывает их, инъектит сервисные колонки и прогоняет setups единым useEffect.
   - ✅ **columnSorting** (`plugins/columnSorting/**`, ADR 0012): `rowSortingFeature`
     + слот `sortedRowModel` + `sortFns`; дескриптор `sortHeaderAction` (v9-контекст,
     длина через `table.atoms.sorting`, без `subscribe`). Тест (5/5).
@@ -92,7 +92,15 @@
     все читаются из атомов optional); сервисная колонка-ручка (cell — компонент
     напрямую). dnd-редьюсер с геометрией offset/nesting — grid-слой, на cutover.
     Тест (6/6, включая кросс-гейты sorting/grouping).
-  - ⬜ Дальше: actions/menu (rowActions/headerActionMenu/rowActionMenu) — последние.
+  - ✅ **rowActions / headerActionMenu / rowActionMenu** (`plugins/**`, ADR 0024/0025):
+    menu-плагины — чистые декларации `actionMenu` (без фичи/слота); rowActions —
+    сервисная колонка действий (trailing, pin end always) + `setup` (ширина через
+    `setColumnAutoSizing`: сужается до collapsedWidth, когда `actionRowSlot` схлопнут).
+    Тест `__tests__/actions.test.ts` (6/6).
+- **Фаза D — реактивность на `table.atoms`** — на cutover при подключении грида.
+- **Cutover (финал)** — репойнт импортов на v9, удаление v8-слоя, перенос отложенных
+  grid-кусков (cellPinningParams/sticky-offset, rowDragging offset/nesting-редьюсер,
+  auto-sizing writer), прогон `perf` против базлайна (условие V9-1). См. чеклист ниже.
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 

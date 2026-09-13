@@ -11,7 +11,7 @@
  * На этом этапе хук проверяется компиляцией; в реальный `<DataGrid>` он
  * подключается на cutover.
  */
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { useTable } from '@tanstack/table-v9'
 
@@ -108,7 +108,22 @@ export const useCreateTable = <
   // ValidateFeatureSlots и производные опции фич, которых ждёт статическая
   // сигнатура useTable. Каст изолирован здесь; наружу отдаётся строго типизированный
   // ReactTable<TesseraFeatures<TEntries>, TData>.
-  return useTable(
+  const table = useTable(
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
   )
+
+  // Императивный сетап плагинов (generic-escape ADR 0010) — единым эффектом, чтобы
+  // число хуков не зависело от длины набора. Перезапуск при смене структуры набора.
+  useEffect(
+    () => {
+      const cleanups = folded.setups.map(setup => setup(table))
+      return () => {
+        cleanups.forEach(cleanup => cleanup?.())
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
+    [signature, table],
+  )
+
+  return table
 }

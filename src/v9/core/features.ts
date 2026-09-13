@@ -48,6 +48,13 @@ export interface TesseraFeatureEntry<TSlot extends object = object> {
   actionMenu?: ActionMenuDeclaration
   /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
   column?: ServiceColumn
+  /**
+   * Императивный сетап ПОСЛЕ создания таблицы (generic-escape, ADR 0010): побочный
+   * эффект, невыразимый через фичу/опции (напр. rowActions пишет авто-слайс ширины
+   * через table.setColumnAutoSizing). Ядро выполняет setups активных записей в
+   * едином useEffect; может вернуть cleanup.
+   */
+  setup?: (table: unknown) => void | (() => void)
 }
 
 /** Свёрнутая из записей конфигурация — уходит в опции таблицы / сборку колонок. */
@@ -57,6 +64,7 @@ export interface FoldedEntryConfig {
   slotActions: SlotActions
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
+  setups: NonNullable<TesseraFeatureEntry['setup']>[]
 }
 
 const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
@@ -74,6 +82,7 @@ export const foldEntries = (
   const slotActions = createEmptySlotActions()
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
+  const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
 
   for (const entry of entries) {
     if (!isActive(entry)) {
@@ -88,6 +97,10 @@ export const foldEntries = (
       serviceColumns.push(entry.column)
     }
 
+    if (entry.setup) {
+      setups.push(entry.setup)
+    }
+
     if (entry.actionMenu) {
       const { slots: menuSlots, mode, threshold } = entry.actionMenu
       menuSlots.forEach(slot => {
@@ -96,7 +109,7 @@ export const foldEntries = (
     }
   }
 
-  return { options, slots, slotActions, actionMenu, serviceColumns }
+  return { options, slots, slotActions, actionMenu, serviceColumns, setups }
 }
 
 type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (
