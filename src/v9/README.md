@@ -59,7 +59,12 @@
     false` для паритета (в v9 shift-range — дефолт); индетерминантность шапки исправлена
     на `some && !all` (в v9 getIsSomePageRowsSelected true и при всех выбранных);
     `getCanSomeRowsSelect` (в v9 нет) вычисляется инлайн. Тест (5/5).
-  - ⬜ Дальше: rowGrouping → columnSizing → columnPinning (start/end) → dragging → actions/menu.
+  - ✅ **rowGrouping** (`plugins/rowGrouping/**`, ADR 0016): `columnGroupingFeature` +
+    слот `groupedRowModel`; агрегация в v9 ОТДЕЛЕНА — добавлены `rowAggregationFeature`
+    + стандартный набор `aggregationFns` (в v8 шли внутри getGroupedRowModel); дескриптор
+    `groupHeaderAction` (тумблер группировки). Это владелец гейта группировки, которому
+    уступают rowExpanding/rowSelection (ADR 0022). Тест (3/3).
+  - ⬜ Дальше: columnSizing → columnPinning (start/end) → dragging → actions/menu.
 - **Фаза D — реактивность на `table.atoms`** — проявится на cutover (подписка грида);
   как утилитный слой не начата.
 
