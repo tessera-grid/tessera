@@ -24,6 +24,7 @@ import type {
 
 import type { RenderSlots } from './createSlots'
 import type { SlotActionMenu, SlotActions } from './headerActions'
+import type { SkeletonOptions } from './skeletonOptions'
 
 // --- Payload-типы контракта --------------------------------------------------
 /** Бизнес-контракт хуков (бывш. глобальный дженерик THooks). */
@@ -47,6 +48,7 @@ export interface CommonOptions {
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
+  skeletonOptions?: SkeletonOptions
   /** Writer авто-слайса размеров (generic-механизм ADR 0010). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
 }
