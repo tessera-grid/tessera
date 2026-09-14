@@ -4,12 +4,6 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import {
-  perfRecord,
-  perfTraceStart,
-  perfTraceStop,
-} from './src/lib/stories/__tests__/perf.commands'
-
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
 // timing — neither of which jsdom provides. This config is intentionally
@@ -36,25 +30,27 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    // v9-слой миграции гоняется отдельным node-конфигом (vitest.node.config.ts),
-    // а не в браузере — исключаем его из основного прогона.
-    exclude: [...configDefaults.exclude, 'src/lib/__tests__/**'],
+    // Исключаем из основного (dev) прогона: node-тесты логики (vitest.node.config.ts)
+    // и перф-тесты — последние меряются на PROD-сборке отдельным vitest.perf.config.ts
+    // (dev-сборка завышает работу кадра ~2×; бюджеты RAIL сверяются с прод-релизом).
+    exclude: [
+      ...configDefaults.exclude,
+      'src/lib/__tests__/**',
+      'src/lib/stories/__tests__/performance/**',
+    ],
     setupFiles: ['./vitest.setup.ts'],
-    // Perf tests measure real main-thread work via process-wide CDP tracing;
-    // parallel test files would contend for CPU and pollute each other's
-    // traces, so run files one at a time for stable, uncontended measurements.
+    // Файлы гоняются по одному: визуальные тесты сравнивают скриншоты реального
+    // layout, а параллельные браузерные вкладки конкурируют за ресурсы и делают
+    // рендер/тайминги нестабильными.
     fileParallelism: false,
     browser: {
       enabled: true,
       headless: true,
-      // Use the real Chromium headless channel for authentic frame timing —
-      // the performance tests rely on requestAnimationFrame running at the true
-      // display cadence.
+      // Реальный Chromium headless — визуальные тесты сверяют настоящий рендер.
       provider: playwright({
         launchOptions: { channel: 'chromium' },
       }),
       instances: [{ browser: 'chromium' }],
-      commands: { perfTraceStart, perfTraceStop, perfRecord },
     },
   },
 })

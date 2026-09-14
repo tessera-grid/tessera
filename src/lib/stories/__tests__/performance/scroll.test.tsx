@@ -22,9 +22,9 @@ import {
 // измеренный потолок, а цель из восприятия). Замер под ×4 CPU-троттлингом
 // (референс-девайс); каждый кейс меряет обе оси (вертикаль + горизонталь).
 //
-// Кейсы, не укладывающиеся под троттлингом, помечены `knownShortfall` и гоняются
-// через `test.fails` (xfail): сборка зелёная, но цель 60fps зафиксирована — когда
-// грид оптимизируют, `test.fails` покраснеет и напомнит снять метку.
+// Бюджет 60fps проверяется жёстко: кейс сверх бюджета падает (красный). Флаг
+// `knownShortfall` (→ `test.fails`, xfail) остаётся как механизм временно пометить
+// заведомый недостиг, но сейчас не используется — цель прокрутки под контролем.
 
 interface ScrollCase {
   id: string
@@ -33,33 +33,33 @@ interface ScrollCase {
   knownShortfall: boolean
 }
 
-// ×4 троттлинг (референс-девайс): под ним грид пока не держит 60fps ни в одном
-// режиме прокрутки — все кейсы помечены как известный недостиг (xfail). Цель 60fps
-// зафиксирована; когда прокрутка уложится в кадр, `test.fails` покраснеет.
+// Замер на PROD-сборке (vitest.perf.config.ts), ×4 троттлинг (референс-девайс):
+// все кейсы обязаны держать 60fps по обеим осям — превышение бюджета красит тест.
+// Сейчас Y укладывается почти везде, горизонталь (X) — открытая задача.
 const CASES: ScrollCase[] = [
   {
     id: 'P2',
     label: 'небольшая выборка, без плагинов',
     args: { ...SMALL, ...NO_PLUGINS },
-    knownShortfall: true,
+    knownShortfall: false,
   },
   {
     id: 'P4',
     label: 'большая выборка, без плагинов',
     args: { ...LARGE, ...NO_PLUGINS },
-    knownShortfall: true,
+    knownShortfall: false,
   },
   {
     id: 'P7',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    knownShortfall: true,
+    knownShortfall: false,
   },
   {
     id: 'P8',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    knownShortfall: true,
+    knownShortfall: false,
   },
 ]
 
@@ -112,11 +112,13 @@ describe('Производительность прокрутки', () => {
           ],
         })
 
-        expect(
+        // soft — обе оси репортятся независимо: где Y укладывается, а X нет
+        // (типично для прода), это видно сразу, без короткого замыкания на Y.
+        expect.soft(
           y.p95Ms,
           `Y p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms over-budget=${y.tasksOverBudget}/${y.taskCount}`,
         ).toBeLessThanOrEqual(ANIMATION_BUDGET_MS)
-        expect(
+        expect.soft(
           x.p95Ms,
           `X p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms over-budget=${x.tasksOverBudget}/${x.taskCount}`,
         ).toBeLessThanOrEqual(ANIMATION_BUDGET_MS)
