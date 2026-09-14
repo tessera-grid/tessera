@@ -20,6 +20,7 @@ import { Skeleton } from '../../lib/ui/Skeleton'
 import type { Cell } from '../types'
 import { RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
+import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getCellExpandingStyles } from './cellExpandingStyles'
 import { getColumnSizeVariable } from './columnSizes'
@@ -43,6 +44,7 @@ export const BodyCell = memo(
     rowIndex,
     leftCellSlot,
     rightCellSlot,
+    actionRowSlot,
     interact = true,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
@@ -72,6 +74,7 @@ export const BodyCell = memo(
 
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
+    const isRowActionsColumn = cell.column.getIsRowActionsColumn()
 
     const isSuppressed = useFastScrollSuppressed()
     const showSkeleton = isSuppressed && !isActionsColumn && !isPinnedColumn
@@ -85,11 +88,23 @@ export const BodyCell = memo(
         return null
       }
 
+      // Колонка действий строки — зона действий в слоте actionRowSlot (инлайн-кнопки
+      // + overflow-кебаб), а не flexRender контента.
+      if (isRowActionsColumn) {
+        return (
+          <ActionsZone
+            slot="actionRowSlot"
+            opaqueSlot={actionRowSlot}
+            context={cell.getContext()}
+          />
+        )
+      }
+
       const content = flexRender(cell.column.columnDef.cell, cell.getContext())
 
       // Сервисная колонка — контент без CellWrapperTitle.
       return isActionsColumn ? content : <CellWrapperTitle>{content}</CellWrapperTitle>
-    }, [cell, isActionsColumn, isSuppressed, showSkeleton])
+    }, [cell, isActionsColumn, isRowActionsColumn, actionRowSlot, isSuppressed, showSkeleton])
 
     return (
       <div
