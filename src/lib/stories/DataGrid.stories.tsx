@@ -342,7 +342,7 @@ export const StoryComponent = memo(
               />
             )}
             <DataGrid
-              table={table}
+              table={table as never}
               height={height}
               maxHeight={maxHeight}
               colorMode={colorMode}

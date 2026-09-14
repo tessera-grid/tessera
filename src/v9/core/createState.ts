@@ -22,7 +22,10 @@ import {
   type OnChangeFn,
   type RowSelectionState,
   type SortingState,
+  makeStateUpdater,
 } from '@tanstack/table-v9'
+
+import type { RowData, Table, TableFeatures, TableState } from '../types'
 
 // --- Пиннинг сервисных колонок (start/end) -----------------------------------
 
@@ -160,3 +163,18 @@ export const useRowGroupingState = (initial: GroupingState = []) => {
   const [grouping, onGroupingChange] = useControlledSlice(initial)
   return { grouping, onGroupingChange }
 }
+
+// --- Публичный stateUpdater (совместимость API) -------------------------------
+
+/**
+ * Обёртка для построения updater'а среза состояния (совместимость с v8-API). В v9
+ * состояние живёт в атомах — используем штатный `makeStateUpdater(key, table)`.
+ */
+export const stateUpdater = <
+  TFeatures extends TableFeatures,
+  TData extends RowData,
+  K extends keyof TableState<TFeatures> & string,
+>(
+  key: K,
+  table: Table<TFeatures, TData>,
+) => makeStateUpdater(key as never, table as never)

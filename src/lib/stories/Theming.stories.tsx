@@ -458,9 +458,11 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     useRowSelectionState()
 
   const table = useCreateTable({
-    columns,
+    // Демо-колонки строятся v8-хелпером (мок), таблица — v9: касты на границе
+    // снимают вариантность типов (рантайм совпадает, покрыт визуал-тестами).
+    columns: columns as never,
     data,
-    state: { rowSelection: selection },
+    state: { rowSelection: selection } as never,
     handlers: { onRowSelectionChange },
     hooks: useCreateHooks({
       rowSelection: {
@@ -496,7 +498,7 @@ const ThemingDemo = memo((args: ThemingArgs) => {
           style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
           <DataGrid
-            table={table}
+            table={table as never}
             height={400}
             maxHeight={400}
             colorMode={args.colorMode}

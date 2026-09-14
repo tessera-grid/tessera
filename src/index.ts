@@ -1,4 +1,4 @@
-export { useCreateTable } from './lib/core/createTable'
+export { useCreateTable } from './v9/core/useCreateTable'
 
 export {
   getActionColumnId,
@@ -7,12 +7,14 @@ export {
 } from './lib/core/createColumns/actionColumnParams'
 
 // ID встроенных сервисных колонок — чтобы кастомный плагин мог таргетить их по id
-export { COLUMN_SELECTION_ID } from './lib/plugins/rowSelection'
-export { COLUMN_EXPANDING_ID } from './lib/plugins/rowExpanding'
-export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
+export { COLUMN_SELECTION_ID } from './v9/plugins/rowSelection'
+export { COLUMN_EXPANDING_ID } from './v9/plugins/rowExpanding'
+export { COLUMN_DRAGGING_ID } from './v9/plugins/rowDragging'
 
-export { useSubscribeStore } from './lib/core/subscribeStore/subscribeStore'
-export { useCreateHooks, type PluginsHooks } from './lib/core/createHooks'
+// Реактивность v9 (ADR 0026, V9-2): собственный Pub-Sub (useSubscribeStore) убран —
+// подписки на состояние идут через атомы TanStack Store.
+export { useSlice, useTableState } from './v9/core/reactivity'
+export { useCreateHooks, type PluginsHooks } from './v9/core/createHooks'
 
 export {
   useColumnOrderState,
@@ -24,13 +26,14 @@ export {
   useColumnVisibilityState,
   useRowGroupingState,
   stateUpdater,
-} from './lib/core/createState'
+} from './v9/core/createState'
 
+// Запись фичи Tessera (v9-аналог TablePlugin/RegistryEntry, ADR 0010).
+export type { TesseraFeatureEntry as TablePlugin } from './v9/core/features'
 export type {
-  TablePlugin,
   HeaderComponentProps,
   CellComponentProps,
-} from './lib/plugins/types'
+} from './v9/core/createSlots'
 
 // Единый дескриптор действия слота (кебаб-меню): плагины объявляют действия
 // данными, ядро решает подачу (инлайн-кнопка или строка меню). `SlotAction<TCtx>`
@@ -43,10 +46,10 @@ export type {
   SlotActions,
   HeaderActionSlot,
   SlotMenuConfig,
-} from './lib/core/headerActions'
+} from './v9/core/headerActions'
 
-export { DataGrid } from './lib/grid/DataGrid/DataGrid'
-export { type DataGridProps } from './lib/grid/DataGrid/types'
+export { DataGrid } from './v9/grid/DataGrid'
+export { type DataGridProps } from './v9/grid/dataGridTypes'
 
 // Тема: якорь-класс с дефолтами токенов `--tsr-comp-*` (переопределяемых извне
 // обычным CSS) и тип цветовой схемы.
