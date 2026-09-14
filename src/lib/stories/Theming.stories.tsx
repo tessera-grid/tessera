@@ -4,17 +4,17 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import { Card, CardContent, Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
-import { useCreateHooks } from '../../v9/core/createHooks'
-import { useRowSelectionState } from '../../v9/core/createState'
-import { useCreateTable } from '../../v9/core/useCreateTable'
-import { DataGrid } from '../../v9/grid/DataGrid'
+import { useCreateHooks } from '../../lib/core/createHooks'
+import { useRowSelectionState } from '../../lib/core/createState'
+import { useCreateTable } from '../../lib/core/useCreateTable'
+import { DataGrid } from '../../lib/grid/DataGrid'
 import {
   columnPinning,
   columnSizing,
   columnSorting,
   rowActions,
   rowSelection,
-} from '../../v9/plugins'
+} from '../../lib/plugins'
 import { useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
 

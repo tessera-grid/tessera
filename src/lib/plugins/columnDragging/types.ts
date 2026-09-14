@@ -1,14 +1,10 @@
-import { UniqueIdentifier } from '@dnd-kit/core'
-import { Updater } from '@tanstack/react-table'
+/** Фаза E — типы плагина columnDragging (v9). */
+import type { UniqueIdentifier } from '@dnd-kit/core'
 
 export type DragOverlayState = UniqueIdentifier | null
 
 export interface ColumnDraggingState {
   columnDraggingActiveId: DragOverlayState
-}
-
-export interface ColumnDraggingOptions {
-  onColumnDraggingActiveIdChange: (updater: Updater<DragOverlayState>) => void
 }
 
 export type ColumnDraggingPluginScope = 'columnDragging'

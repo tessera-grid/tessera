@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
-import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../v9/plugins/rowActions'
+import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
 import * as stories from '../../DataGrid.stories'
 
 // Плагин rowActions (ADR 0025): служебная колонка действий строки. Здесь — только

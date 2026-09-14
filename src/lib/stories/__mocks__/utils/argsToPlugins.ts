@@ -13,9 +13,9 @@ import {
   rowGrouping,
   rowSelection,
   type ColumnMultiSortOptions,
-} from '../../../../v9/plugins'
-import type { TesseraFeatureEntry } from '../../../../v9/core/features'
-import type { RowActionsOptions } from '../../../../v9/plugins/rowActions/rowActionsColumn'
+} from '../../../../lib/plugins'
+import type { TesseraFeatureEntry } from '../../../../lib/core/features'
+import type { RowActionsOptions } from '../../../../lib/plugins/rowActions/rowActionsColumn'
 
 type RegistryEntry = TesseraFeatureEntry
 import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'

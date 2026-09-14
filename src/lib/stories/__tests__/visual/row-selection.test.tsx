@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
-import { COLUMN_SELECTION_ID } from '../../../../v9/plugins/rowSelection'
+import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 
 // Each Row Selection requirement is its own named test, prefixed with its spec ID
 // (RS1–RS18 from the requirements table in docs/decisions/0014-row-selection.md).

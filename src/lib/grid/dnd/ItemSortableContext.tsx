@@ -1,7 +1,7 @@
-import { PropsWithChildren, createContext, useContext, useMemo } from 'react'
+import { type PropsWithChildren, createContext, useContext, useMemo } from 'react'
 
-import { DraggableAttributes } from '@dnd-kit/core'
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
+import type { DraggableAttributes } from '@dnd-kit/core'
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 
 export interface ItemSortableContextProps {
   setActivatorNodeRef: (element: HTMLElement | null) => void

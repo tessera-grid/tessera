@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/v9/**/*.test.{ts,tsx}'],
+    include: ['src/lib/__tests__/**/*.test.{ts,tsx}'],
     // node по умолчанию; DOM-тесты реактивности задают happy-dom докблоком
     // `// @vitest-environment happy-dom` пофайлово.
     environment: 'node',

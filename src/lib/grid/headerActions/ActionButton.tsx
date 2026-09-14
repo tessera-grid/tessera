@@ -1,0 +1,76 @@
+/**
+ * Cutover (grid) — v9-порт ActionButton: инлайн-подача действия слота (иконка-кнопка
+ * с тултипом). Отличие от v8: поле `subscribe`/useSubscribeStore убрано —
+ * реактивность даёт родительская ActionsZone (подписка на состояние). Переиспурт
+ * v8-независимые IconButton/Tooltip/localization.
+ */
+import clsx from 'clsx'
+
+import { useLocalization } from '../../core/localization'
+import { IconButton } from '../../ui/IconButton'
+import { Tooltip } from '../../ui/Tooltip'
+import type { SlotAction } from '../../core/headerActions'
+
+import styles from '../../grid/headerActions/ActionButton.module.css'
+import '../../grid/cellControls/buttonVisibility.css'
+
+interface ActionButtonProps {
+  action: SlotAction
+  context: any
+  variant?: 'cell' | 'row'
+}
+
+// НЕ memo: реактивность даёт родительская ActionsZone (подписка на состояние).
+// Дескрипторы читают ЖИВЫЕ методы колонки/строки (getIsSorted и т.п.) через
+// `context`, чья ссылка может не меняться — memo по context заморозил бы иконку.
+export const ActionButton = ({
+  action,
+  context,
+  variant = 'cell',
+}: ActionButtonProps) => {
+  const labels = useLocalization()
+
+    if (action.visible?.(context) === false) {
+      return null
+    }
+
+    const disabled = action.disabled?.(context) ?? false
+    const active = action.active?.(context) ?? false
+    const label = action.label(context, labels)
+    const ariaLabel = action.ariaLabel?.(context, labels) ?? label
+    const adornment = action.adornment?.(context)
+
+    const button = (
+      <IconButton
+        className={action.className?.(context)}
+        onClick={event => action.onSelect(context, event)}
+        disabled={disabled}
+        aria-disabled={disabled}
+        aria-label={ariaLabel}
+      >
+        {action.icon(context)}
+      </IconButton>
+    )
+
+    const wrapperClassName =
+      variant === 'row'
+        ? clsx('row__button', 'row__button--hidden')
+        : clsx('cell__button', 'cell__button--hidden')
+
+    return (
+      <Tooltip title={label} disabled={disabled}>
+        <div className={wrapperClassName} data-button-active={active}>
+          {adornment ? (
+            <span className={styles.anchor}>
+              {button}
+              {adornment}
+            </span>
+          ) : (
+            button
+          )}
+        </div>
+      </Tooltip>
+    )
+}
+
+ActionButton.displayName = 'ActionButton'

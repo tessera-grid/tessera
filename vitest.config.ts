@@ -38,7 +38,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     // v9-слой миграции гоняется отдельным node-конфигом (vitest.v9.config.ts),
     // а не в браузере — исключаем его из основного прогона.
-    exclude: [...configDefaults.exclude, 'src/v9/**'],
+    exclude: [...configDefaults.exclude, 'src/lib/__tests__/**'],
     setupFiles: ['./vitest.setup.ts'],
     // Perf tests measure real main-thread work via process-wide CDP tracing;
     // parallel test files would contend for CPU and pollute each other's

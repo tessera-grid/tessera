@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 
-import { COLUMN_DRAGGING_ID } from '../../../../v9/plugins/rowDragging'
-import { COLUMN_EXPANDING_ID } from '../../../../v9/plugins/rowExpanding'
-import { COLUMN_SELECTION_ID } from '../../../../v9/plugins/rowSelection'
+import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
+import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
+import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import { renderGrid } from '../helpers'
 import { headCellsLeftRight, waitForGrid } from './core-helpers'

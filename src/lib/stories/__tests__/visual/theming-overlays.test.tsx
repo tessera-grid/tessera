@@ -4,10 +4,10 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import type { ColorMode } from '../../../core/themeVariables'
-import { useCreateTable } from '../../../../v9/core/useCreateTable'
-import { OverlayBodyRow } from '../../../../v9/grid/OverlayBodyRow'
-import { OverlayHeadCell } from '../../../../v9/grid/OverlayHeadCell'
-import { getRowDraggableStyles } from '../../../../v9/plugins/rowDragging/getRowDraggableStyles'
+import { useCreateTable } from '../../../../lib/core/useCreateTable'
+import { OverlayBodyRow } from '../../../../lib/grid/OverlayBodyRow'
+import { OverlayHeadCell } from '../../../../lib/grid/OverlayHeadCell'
+import { getRowDraggableStyles } from '../../../../lib/plugins/rowDragging/getRowDraggableStyles'
 import '../../../core/themeVariables/theme.css'
 
 // Простые колонки с ПЛОСКИМ `cell` (без useSubscribeStore) — оверлеи рендерятся

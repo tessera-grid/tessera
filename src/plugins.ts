@@ -3,4 +3,4 @@
 //
 //   import { rowSelection, columnSorting } from '@mstrvtt/tessera/plugins'
 //   useCreateTable({ columns, data, plugins: [rowSelection(), columnSorting()] })
-export * from './v9/plugins'
+export * from './lib/plugins'

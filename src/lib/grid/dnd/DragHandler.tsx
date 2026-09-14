@@ -1,12 +1,12 @@
-import { MouseEvent, PointerEvent, TouchEvent } from 'react'
+import type { MouseEvent, PointerEvent, TouchEvent } from 'react'
 
 import clsx from 'clsx'
 
 import { useItemSortableContext } from './ItemSortableContext'
 import { useIcons } from '../../ui/icons'
 
-import styles from './DragHandler.module.css'
-import '../cellControls/buttonVisibility.css'
+import styles from '../../grid/dnd/DragHandler.module.css'
+import '../../grid/cellControls/buttonVisibility.css'
 
 export interface DragHandlerProps {
   id: string

@@ -5,7 +5,7 @@ import { describe, expect, test, vi } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
-import { COLUMN_EXPANDING_ID } from '../../../../v9/plugins/rowExpanding'
+import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 
 // Each Row Expanding requirement is its own named test, prefixed with its spec ID
 // (RE1–RE11 from the requirements table in docs/decisions/0015-row-expanding.md).

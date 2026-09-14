@@ -1,3 +1,4 @@
+/** Фаза E — hook-слайс плагина columnPinning (v9) + стороны закрепления. */
 export type ColumnPinningPluginScope = 'columnPinning'
 
 export interface ColumnPinningPluginParams {
@@ -10,9 +11,10 @@ export type ColumnPinningPlugin = Record<
 >
 
 /**
- * Разрешённые стороны закрепления столбца в UI. `both` — доступны обе (инлайн
- * даёт поповер с выбором стороны); `left`/`right` — только одна (инлайн даёт
- * прямой тумблер без поповера). Задаётся по-колоночно через `columnDef.meta`,
- * по умолчанию `both` (ADR 0011).
+ * Разрешённые стороны закрепления столбца в UI. `both` — обе (инлайн даёт поповер
+ * выбора); `start`/`end` — только одна (прямой тумблер). Задаётся по-колоночно через
+ * `columnDef.meta.pinSides`, по умолчанию `both` (ADR 0011).
+ *
+ * v9: логическая сторона `start`/`end` вместо физических `left`/`right`.
  */
-export type PinSides = 'both' | 'left' | 'right'
+export type PinSides = 'both' | 'start' | 'end'
