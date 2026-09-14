@@ -2,9 +2,9 @@ import { fileURLToPath } from 'node:url'
 
 import { defineConfig } from 'vitest/config'
 
-// Конфиг node-тестов параллельного v9-слоя (src/v9/**). Отдельно от основного
+// Конфиг node-тестов логики (src/lib/__tests__/**). Отдельно от основного
 // браузерного прогона (vitest.config.ts). Запуск:
-//   npx vitest run --config vitest.v9.config.ts
+//   npx vitest run --config vitest.node.config.ts
 export default defineConfig({
   resolve: {
     alias: {

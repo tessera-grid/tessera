@@ -2,7 +2,7 @@
 /**
  * Cutover — render-тест v9 BodyCell (happy-dom): DOM-контракт ячейки — role, размеры
  * через CSS-переменные, пиннинг-атрибуты (start), контент через flexRender.
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'

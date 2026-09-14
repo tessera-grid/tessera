@@ -2,7 +2,7 @@
 /**
  * Cutover — render-тест v9 HeadCell (happy-dom): columnheader, aria-sort, контент
  * заголовка через flexRender, действия слота (pin+sort), пиннинг start.
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'

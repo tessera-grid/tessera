@@ -3,7 +3,7 @@
  * (`buildTesseraFeatures`) + рантайм `commonFeature` на headless-инстансе
  * (`constructTable` + `storeReactivityBindings`, без React).
  *
- * Запуск:  npx vitest run --config vitest.v9.config.ts
+ * Запуск:  npx vitest run --config vitest.node.config.ts
  */
 import {
   constructTable,

@@ -1,6 +1,6 @@
 /**
  * Фаза E — headless-проверка плагина columnPinning на v9-ядре (start/end).
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'

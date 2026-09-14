@@ -36,7 +36,7 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    // v9-слой миграции гоняется отдельным node-конфигом (vitest.v9.config.ts),
+    // v9-слой миграции гоняется отдельным node-конфигом (vitest.node.config.ts),
     // а не в браузере — исключаем его из основного прогона.
     exclude: [...configDefaults.exclude, 'src/lib/__tests__/**'],
     setupFiles: ['./vitest.setup.ts'],

@@ -3,7 +3,7 @@
  * Cutover — render-тест v9 ActionsZone (happy-dom): дескрипторы слота рисуются
  * инлайн-кнопками; при достижении порога — схлопывание в кебаб-триггер.
  * Base UI кебаб-попап — на cutover; здесь проверяем решение о подаче.
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'

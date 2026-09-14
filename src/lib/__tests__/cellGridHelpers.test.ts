@@ -1,6 +1,6 @@
 /**
  * Cutover — headless-проверка grid-хелперов ячейки: пиннинг-флаги (start/end) и
- * отступ вложенности. Запуск: npx vitest run --config vitest.v9.config.ts
+ * отступ вложенности. Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'

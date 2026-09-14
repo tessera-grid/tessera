@@ -3,7 +3,7 @@
  * Фаза D — ДОКАЗАТЕЛЬСТВО гранулярных ре-рендеров: `useSlice(table, key)` перерисовывает
  * компонент только при изменении СВОЕГО среза (замена Pub-Sub, ADR 0026 V9-2).
  * Это React-уровень поверх store-гранулярности, доказанной спайком.
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'

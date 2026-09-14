@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * Cutover — render-тест v9 HeadRow (happy-dom): заголовки группы → HeadCell.
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'

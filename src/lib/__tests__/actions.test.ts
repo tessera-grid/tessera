@@ -2,7 +2,7 @@
  * Фаза E — headless-проверка плагинов действий/меню (rowActions, headerActionMenu,
  * rowActionMenu). Это декларации + setup, поэтому проверяем свёртку foldEntries и
  * логику setup напрямую, без constructTable.
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, it, vi } from 'vitest'
 

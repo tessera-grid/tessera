@@ -1,6 +1,6 @@
 /**
  * Фаза C — юнит-покрытие портированной слот-машинерии (чистые функции).
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, it } from 'vitest'
 

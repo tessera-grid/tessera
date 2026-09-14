@@ -2,7 +2,7 @@
 /**
  * Cutover — render-тест v9 BodyRow (happy-dom, без drag): role=row, aria-rowindex,
  * ячейки строки, data-last-row. Виртуализация приходит пропсом (мок virtualRow).
- * Запуск: npx vitest run --config vitest.v9.config.ts
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'

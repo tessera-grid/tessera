@@ -2,7 +2,7 @@
 /**
  * Cutover — render-тест v9 контейнеров Body/Head (happy-dom): rowgroup + строки/
  * заголовки. Виртуализация подаётся мок-элементами (реальный virtualizer — DataGrid,
- * браузер на cutover). Запуск: npx vitest run --config vitest.v9.config.ts
+ * браузер на cutover). Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
