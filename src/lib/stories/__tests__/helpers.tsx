@@ -209,3 +209,32 @@ export async function measureRenderWork(
   await waitReady()
   return perfCommands.perfTraceStop(id)
 }
+
+/**
+ * Measure the REAL main-thread work an INTERACTION triggers (INP-style): the
+ * synchronous event-handler → React re-render → commit → layout blob, via CDP
+ * tracing. `trigger` performs one interaction (e.g. click select-all); it runs once
+ * untraced as warm-up, then again under the trace. Use with an interaction that
+ * changes ONE state slice without reordering rows/columns (row selection is ideal)
+ * so the metric reflects wasted re-renders, not legitimate layout work.
+ */
+export async function measureInteractionWork(
+  trigger: () => Promise<void>,
+  { settleFrames = 6 }: { settleFrames?: number } = {},
+): Promise<ScrollWorkResult> {
+  // Warm-up: одно взаимодействие вне трейса (JIT + первый переход состояния).
+  await trigger()
+  for (let i = 0; i < settleFrames; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await nextFrame()
+  }
+
+  const id = `inp-${traceSeq++}-${Date.now()}`
+  await perfCommands.perfTraceStart(id)
+  await trigger()
+  for (let i = 0; i < settleFrames; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await nextFrame()
+  }
+  return perfCommands.perfTraceStop(id)
+}

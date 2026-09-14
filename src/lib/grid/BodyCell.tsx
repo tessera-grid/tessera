@@ -49,11 +49,20 @@ export const BodyCell = memo(
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
 
-    // Самоподписка: BodyCell — memo по стабильному `cell`, поэтому смена срезов
-    // (пиннинг/размеры/сортировка…) не приходит сверху новым пропом. Подписываемся
-    // на состояние сами (как HeadCell) — ре-рендер ячейки на смену пиннинга/размера.
-    // На скролле состояние таблицы не меняется → лишних ре-рендеров нет.
-    useTableState(table as never, (state: unknown) => state)
+    // Самоподписка: BodyCell — memo по стабильному `cell`, поэтому смена срезов не
+    // приходит сверху новым пропом. Подписка сужена до срезов ФОРМЫ КОЛОНОК, от которых
+    // зависят атрибуты/офсеты ячейки (пиннинг/размеры/порядок/видимость) — на смену
+    // rowSelection/сортировки/раскрытия ячейка НЕ ре-рендерится (это лишняя работа;
+    // контент-реактивность несут сам плагин-компонент ячейки и его useSelector).
+    useTableState(table as never, (state: unknown) => {
+      const s = state as Record<string, unknown>
+      return {
+        columnPinning: s.columnPinning,
+        columnSizing: s.columnSizing,
+        columnOrder: s.columnOrder,
+        columnVisibility: s.columnVisibility,
+      }
+    })
 
     const {
       isStartPinned,

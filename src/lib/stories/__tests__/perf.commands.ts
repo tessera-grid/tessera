@@ -206,7 +206,7 @@ export interface PerfMetric {
 export interface PerfRecord {
   id: string
   label: string
-  operation: 'render' | 'scroll'
+  operation: 'render' | 'scroll' | 'interaction'
   /** Объём данных, напр. '30×500'. */
   size: string
   /** Режим плагинов. */

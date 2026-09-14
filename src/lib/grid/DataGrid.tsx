@@ -55,9 +55,18 @@ export const DataGrid = ({
   className,
   style,
 }: DataGridProps) => {
-  // Единая реактивная подписка корня: ре-рендер при изменении любого среза
-  // (shallow по top-level ключам store). Заменяет React-стейт v8-таблицы.
-  const state = useTableState(table, s => s) as Record<string, any>
+  // Реактивная подписка корня на СТРУКТУРНЫЕ срезы (всё, кроме rowSelection): смена
+  // выбора строк не перестраивает раскладку/модель — её несут сами строки и чекбоксы
+  // (useSelector в компонентах), поэтому корню на неё ре-рендериться незачем. Прочие
+  // срезы (пиннинг/порядок/сортировка/группировка/раскрытие/размеры…) меняют шапку/
+  // тело/модель — на них корень ре-рендерится (shallow по top-level ключам).
+  const state = useTableState(table, s => {
+    const { rowSelection: _rowSelection, ...rest } = s as unknown as Record<
+      string,
+      unknown
+    >
+    return rest
+  }) as Record<string, any>
 
   const headerGroups = table.getHeaderGroups()
   const leafColumns: Column<any, any, unknown>[] = table.getVisibleLeafColumns()

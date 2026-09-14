@@ -38,6 +38,28 @@ interface BodyRowCellsProps extends TableBodyRowProps {
   isRowInteract: boolean
 }
 
+/**
+ * Пер-строчная подписка на СВОИ срезы: строка ре-рендерится только когда меняется её
+ * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице) либо группировка.
+ * Раньше строки держали коарс-подписку на весь стейт — выбор одной строки ре-рендерил
+ * все смонтированные строки. `expanded` бывает `true` (все) или картой по id.
+ */
+const useRowStateSubscription = (row: Row<any, any>) => {
+  const table = (row as unknown as { table: never }).table
+  useTableState(table, (state: unknown) => {
+    const s = state as {
+      rowSelection?: Record<string, boolean>
+      expanded?: true | Record<string, boolean>
+      grouping?: unknown
+    }
+    return {
+      selected: s.rowSelection?.[row.id] ?? false,
+      expanded: s.expanded === true ? true : s.expanded?.[row.id] ?? false,
+      grouping: s.grouping,
+    }
+  })
+}
+
 const BodyRowCells = ({
   layout,
   row,
@@ -106,8 +128,7 @@ const BodyRowCells = ({
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, headerRowCount } = props
 
-  // Коарс-подписка (TODO Phase D: сузить до rowSelection/expanded).
-  useTableState((row as unknown as { table: never }).table, (state: unknown) => state)
+  useRowStateSubscription(row)
 
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
@@ -144,8 +165,7 @@ BodyRow.displayName = 'BodyRow'
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, headerRowCount } = props
 
-  // Коарс-подписка (TODO Phase D: сузить до selection/drag/expanded).
-  useTableState((row as unknown as { table: never }).table, (state: unknown) => state)
+  useRowStateSubscription(row)
 
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
