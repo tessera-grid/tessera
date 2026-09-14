@@ -4,8 +4,8 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import { Card, CardContent, Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
-import { useCreateHooks } from '../core/createHooks/useCreateHooks'
-import { useRowSelectionState } from '../core/createState/rowSelectionState'
+import { useCreateHooks } from '../../v9/core/createHooks'
+import { useRowSelectionState } from '../../v9/core/createState'
 import { useCreateTable } from '../../v9/core/useCreateTable'
 import { DataGrid } from '../../v9/grid/DataGrid'
 import {

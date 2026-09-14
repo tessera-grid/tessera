@@ -25,7 +25,7 @@ export type {
   TableState,
   Updater,
   OnChangeFn,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 // Контракт commonFeature (объявляет declaration merging при импорте типов файла).
 export type {

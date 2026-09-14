@@ -50,7 +50,7 @@
     "build-storybook": "storybook build"
   },
   "peerDependencies": {
-    "@tanstack/react-table": "^8",
+    "@tanstack/react-table": "^9",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },
@@ -76,8 +76,7 @@
     "@storybook/react": "^10.5.5",
     "@storybook/react-vite": "^10.5.5",
     "@tanstack/react-store": "^0.11.1",
-    "@tanstack/react-table": "^8.20.0",
-    "@tanstack/table-v9": "npm:@tanstack/react-table@^9.2.4",
+    "@tanstack/react-table": "^9.2.4",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

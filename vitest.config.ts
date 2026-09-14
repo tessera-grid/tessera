@@ -32,7 +32,7 @@ export default defineConfig({
     // (v9 под алиасом) — свой React через ESM-interop; без пребандла vitest browser
     // mode ломает единый React (`import * as React` → null в useState). Пребандлим,
     // чтобы esbuild собрал их поддеревья с единым React.
-    include: ['@base-ui/react/menu', '@tanstack/table-v9', '@tanstack/react-store'],
+    include: ['@base-ui/react/menu', '@tanstack/react-table', '@tanstack/react-store'],
   },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

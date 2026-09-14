@@ -10,10 +10,10 @@ import {
   createSortedRowModel,
   rowSortingFeature,
   sortFn_alphanumeric,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 // storeReactivityBindings не реэкспортится react-адаптером — прямой файловый путь
 // во вложенный core (приём тестов v9-слоя; в рантайме ядро даёт свой биндинг).
-import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-v9/node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
+import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { describe, expect, it } from 'vitest'
 
 import { buildTesseraFeatures } from '../core/features'

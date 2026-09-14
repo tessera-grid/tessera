@@ -9,7 +9,7 @@
  *  - state ресайза переименован columnSizingInfo→columnResizing (компонент читает
  *    методы колонки, поэтому на порт не влияет).
  */
-import { columnResizingFeature, columnSizingFeature } from '@tanstack/table-v9'
+import { columnResizingFeature, columnSizingFeature } from '@tanstack/react-table'
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { ColumnSizingComponent } from './ColumnSizingComponent'

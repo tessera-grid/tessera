@@ -18,7 +18,7 @@ import {
   assignTableAPIs,
   functionalUpdate,
   makeStateUpdater,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { DragOverlayState } from './types'
@@ -41,7 +41,7 @@ interface ColumnDraggingColumnAPI {
   getDraggableIndex: () => number
 }
 
-declare module '@tanstack/table-v9' {
+declare module '@tanstack/react-table' {
   interface Plugins {
     columnDraggingFeature: TableFeature
   }

@@ -14,8 +14,8 @@ import {
   rowSortingFeature,
   sortFn_alphanumeric,
   tableFeatures,
-} from '@tanstack/table-v9'
-import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-v9/node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
+} from '@tanstack/react-table'
+import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { commonFeature } from '../core/commonFeature'

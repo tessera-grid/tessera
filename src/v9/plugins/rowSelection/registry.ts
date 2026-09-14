@@ -10,7 +10,7 @@
  *    паритета с v8 (клик по чекбоксу не должен диапазонно выделять);
  *  - `keepFeatureWhenDisabled` не нужен (в v9 нет фиксации фич «на маунте»).
  */
-import { rowSelectionFeature } from '@tanstack/table-v9'
+import { rowSelectionFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import type { ServiceColumn } from '../../core/createColumns'

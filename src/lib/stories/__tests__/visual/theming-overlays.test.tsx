@@ -4,15 +4,15 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import type { ColorMode } from '../../../core/themeVariables'
-import { useCreateTable } from '../../../core/createTable'
-import { OverlayBodyRow } from '../../../grid/BodyRow/OverlayBodyRow'
-import { OverlayHeadCell } from '../../../grid/HeadCell/OverlayHeadCell'
-import { getRowDraggableStyles } from '../../../plugins/rowDragging/getRowDraggableStyles'
+import { useCreateTable } from '../../../../v9/core/useCreateTable'
+import { OverlayBodyRow } from '../../../../v9/grid/OverlayBodyRow'
+import { OverlayHeadCell } from '../../../../v9/grid/OverlayHeadCell'
+import { getRowDraggableStyles } from '../../../../v9/plugins/rowDragging/getRowDraggableStyles'
 import '../../../core/themeVariables/theme.css'
 
 // Простые колонки с ПЛОСКИМ `cell` (без useSubscribeStore) — оверлеи рендерятся
 // вне провайдеров грида, поэтому мок-ячейки с подпиской тут повисли бы.
-const ch = createColumnHelper<{ a: string; b: string }>()
+const ch = createColumnHelper<any, { a: string; b: string }>()
 const simpleColumns = [
   ch.accessor('a', { id: 'a', header: 'A', cell: c => c.getValue() }),
   ch.accessor('b', { id: 'b', header: 'B', cell: c => c.getValue() }),
@@ -50,7 +50,7 @@ const byDraggableOpacity = (root: ParentNode) =>
   )!
 
 const RowOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
-  const table = useCreateTable({ columns: simpleColumns, data: simpleData })
+  const table = useCreateTable({ columns: simpleColumns as never, data: simpleData }) as any
   const firstCell = table.getRowModel().rows[0].getVisibleCells()[0]
   return (
     <div className={themeClass(colorMode === 'dark')}>
@@ -60,7 +60,7 @@ const RowOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
 }
 
 const HeadOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
-  const table = useCreateTable({ columns: simpleColumns, data: simpleData })
+  const table = useCreateTable({ columns: simpleColumns as never, data: simpleData }) as any
   const header = table.getHeaderGroups()[0].headers[0]
   const { leftHeaderSlot, rightHeaderSlot } = table.getRenderSlots()
   return (

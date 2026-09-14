@@ -2,7 +2,7 @@
 // строки (первая ячейка + drag-ручка + счётчик подстрок). Контент через flexRender.
 import { memo } from 'react'
 
-import { flexRender } from '@tanstack/table-v9'
+import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { Bubble } from '../../lib/ui/Bubble'

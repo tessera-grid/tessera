@@ -6,7 +6,7 @@
 // rowActions-колонки (ActionsZone) портируется отдельно.
 import { memo, useMemo } from 'react'
 
-import { flexRender } from '@tanstack/table-v9'
+import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../../lib/core/fastScroll'

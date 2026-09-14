@@ -7,7 +7,7 @@
  *  - `keepFeatureWhenDisabled` не нужен (в v9 нет фиксации фич «на маунте»);
  *  - dnd-события — в getColumnDraggingEvents (грид вызывает на cutover).
  */
-import { columnOrderingFeature } from '@tanstack/table-v9'
+import { columnOrderingFeature } from '@tanstack/react-table'
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { ColumnDraggingComponent } from './ColumnDraggingComponent'

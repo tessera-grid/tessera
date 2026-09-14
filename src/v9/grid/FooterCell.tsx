@@ -1,5 +1,5 @@
 // Cutover (grid) — v9-порт FooterCell: ячейка футера (footer через flexRender).
-import { flexRender } from '@tanstack/table-v9'
+import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { CellWrapperContent } from '../../lib/grid/CellWrapperContent'

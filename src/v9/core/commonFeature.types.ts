@@ -20,7 +20,7 @@ import type {
   TableFeature,
   TableFeatures,
   Updater,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import type { RenderSlots } from './createSlots'
 import type { SlotActionMenu, SlotActions } from './headerActions'
@@ -67,6 +67,12 @@ export interface CommonColumnAPI {
   getIsRowActionsColumn: () => boolean
 }
 
+/** Кастомные поля columnDef Tessera (в v8 объявлялись в src/types/column.ts). */
+export interface CommonColumnDef {
+  /** Число строк вложенной шапки, которые перекрывает заголовок (grid-раскладка). */
+  rowSpan?: number
+}
+
 export interface CommonHeaderAPI {
   getIsFirstHeader: () => boolean
   getIsLastHeader: () => boolean
@@ -88,7 +94,7 @@ export interface CommonHeaderGroupAPI {
 // Ключ карты (`commonFeature`) = ключ фичи в `tableFeatures({ commonFeature })`.
 // Сигнатуры карт (имена/ограничения/вариантность `in out`) обязаны совпадать с
 // оригиналом v9 — иначе declaration merging не склеится.
-declare module '@tanstack/table-v9' {
+declare module '@tanstack/react-table' {
   interface Plugins {
     commonFeature: TableFeature
   }
@@ -109,6 +115,13 @@ declare module '@tanstack/table-v9' {
     in out TData extends RowData,
   > {
     commonFeature: CommonColumnAPI
+  }
+  interface ColumnDef_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+    in out TValue,
+  > {
+    commonFeature: CommonColumnDef
   }
   interface Header_FeatureMap {
     commonFeature: CommonHeaderAPI

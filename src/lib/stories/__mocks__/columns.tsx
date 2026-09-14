@@ -2,21 +2,18 @@ import { useMemo } from 'react'
 
 import { faker } from '@faker-js/faker'
 import {
-  AccessorKeyColumnDef,
-  GroupColumnDef,
-  Row,
   createColumnHelper,
 } from '@tanstack/react-table'
 
 const columnHelper = createColumnHelper()
 
-const getNamesWithCounter = (row: Row<any>, key: string) => {
-  const names = row.subRows.map(r => r.original[key])
+const getNamesWithCounter = (row: any, key: string) => {
+  const names = row.subRows.map((r: any) => r.original[key])
 
   return `${names.slice(0, 2).join(', ')} ${names.length > 2 ? `(and ${names.length - 2} more)` : `(${names.length} records)`}`
 }
 
-export const columns: AccessorKeyColumnDef<any>[] = [
+export const columns: any[] = [
   columnHelper.accessor('country', {
     id: 'country',
     header: 'Country',
@@ -133,7 +130,7 @@ export const columns: AccessorKeyColumnDef<any>[] = [
     // в обычной — исходное значение.
     cell: cell => cell.getValue(),
     footer: '15',
-    aggregationFn: 'sum',
+    aggregationFn: 'sum' as never,
     size: 150,
     minSize: 150,
     maxSize: 700,
@@ -149,7 +146,7 @@ export const columns: AccessorKeyColumnDef<any>[] = [
     // Демо `pinSides` (ADR 0011): только правое закрепление — инлайн даёт прямой
     // тумблер без поповера.
     meta: { pinSides: 'right' },
-    aggregationFn: 'sum',
+    aggregationFn: 'sum' as never,
     // Сумма в сгруппированной строке (getValue() = агрегат), иначе исходное.
     cell: cell =>
       cell.row.getIsGrouped() ? `${cell.getValue()}$` : cell.getValue(),
@@ -165,7 +162,7 @@ export const columns: AccessorKeyColumnDef<any>[] = [
   }),
 ]
 
-export const groupedColumns: GroupColumnDef<any>[] = [
+export const groupedColumns: any[] = [
   columnHelper.group({
     id: 'countryGroup',
     header: '',

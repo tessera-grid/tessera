@@ -1,6 +1,6 @@
 import { Copy, Pencil, Trash2 } from 'lucide-react'
 
-import { RowAction } from '../../../../core/headerActions'
+import { RowAction } from '../../../../../v9/core/headerActions'
 
 // Демо-набор действий строки как единые дескрипторы (`RowAction`). Инлайн — ряд
 // row-кнопок (ревил по hover строки); при подключённом `rowActionMenu` схлопываются

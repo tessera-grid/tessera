@@ -8,7 +8,7 @@ import { type CSSProperties, type ReactNode, memo, useMemo } from 'react'
 import type { DraggableAttributes } from '@dnd-kit/core'
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 import { useSortable } from '@dnd-kit/sortable'
-import { flexRender } from '@tanstack/table-v9'
+import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import {

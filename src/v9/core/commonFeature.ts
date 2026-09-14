@@ -9,7 +9,7 @@
  *    в v9 нет prototype-хука), а не монки-патчем `getHeaderGroups`;
  *  - `render`→`columnDef` НЕ портируется: в v9 рендер идёт через `FlexRender`.
  */
-import { assignPrototypeAPIs, assignTableAPIs, functionalUpdate } from '@tanstack/table-v9'
+import { assignPrototypeAPIs, assignTableAPIs, functionalUpdate } from '@tanstack/react-table'
 
 import {
   ROW_ACTIONS_COLUMN_ID,

@@ -9,7 +9,7 @@
  *    `subRows` сами); гейт группировки (ADR 0022) — там же;
  *  - `keepFeatureWhenDisabled` не нужен: в v9 нет фиксации фич «на маунте».
  */
-import { createExpandedRowModel, rowExpandingFeature } from '@tanstack/table-v9'
+import { createExpandedRowModel, rowExpandingFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import type { ServiceColumn } from '../../core/createColumns'

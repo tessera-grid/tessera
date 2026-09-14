@@ -21,8 +21,8 @@ export const useAllRowsSelect = ({
 
   const getSelectedData = useCallback(
     (selected = true) =>
-      dataIds.reduce<RowSelectionState>((acc, itemId) => {
-        return { ...acc, [itemId]: selected }
+      dataIds.reduce<RowSelectionState>((acc, itemId): RowSelectionState => {
+        return { ...acc, [itemId]: selected } as RowSelectionState
       }, {}),
     [dataIds],
   )

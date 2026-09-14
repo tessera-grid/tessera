@@ -2,7 +2,7 @@
 // перетаскивании колонки. Контент через flexRender (самописный header.render убран).
 import { type CSSProperties, memo, useMemo } from 'react'
 
-import { flexRender } from '@tanstack/table-v9'
+import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import {

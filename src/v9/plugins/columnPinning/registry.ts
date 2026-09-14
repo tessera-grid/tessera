@@ -8,7 +8,7 @@
  *    `keepFeatureWhenDisabled` больше не нужны;
  *  - `enableLeafPinning` (opt-in reorder-out, ADR 0011) — доп. табличная опция.
  */
-import { columnPinningFeature } from '@tanstack/table-v9'
+import { columnPinningFeature } from '@tanstack/react-table'
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { pinHeaderAction } from './pinHeaderAction'

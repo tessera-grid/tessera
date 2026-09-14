@@ -1,4 +1,4 @@
-import type { Row } from '@tanstack/table-v9'
+import type { Row } from '@tanstack/react-table'
 
 import {
   columnDragging,

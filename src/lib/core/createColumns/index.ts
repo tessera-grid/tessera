@@ -1,11 +1,3 @@
-export {
-  COLUMN_ACTIONS_PREFIX,
-  COLUMN_ACTIONS_SIZE,
-  ROW_ACTIONS_COLUMN_ID,
-  getActionColumnId,
-  checkIsActionColumn,
-} from './actionColumnParams'
-
-export { useCalculateColumnSizes } from './calculateColumnSizes'
-
-export { useCreateColumns } from './useCreateColumns'
+// Survivor-барель (v8 createColumns удалён на cutover): агностичные хелперы
+// id/размеров сервисных колонок остаются для публичного API и стори.
+export * from './actionColumnParams'

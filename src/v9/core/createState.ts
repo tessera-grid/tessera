@@ -10,7 +10,7 @@
  * прокидываются как есть из `state`/`handlers` потребителя. Публичные контролируемые
  * хуки (useRowSelectionState и т.д.) сохранены для совместимости API.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   type ColumnOrderState,
@@ -23,7 +23,7 @@ import {
   type RowSelectionState,
   type SortingState,
   makeStateUpdater,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import type { RowData, Table, TableFeatures, TableState } from '../types'
 
@@ -105,6 +105,12 @@ export const isSameColumnSizing = (
 
 // --- Публичные контролируемые стейт-хуки (совместимость API) ------------------
 
+/**
+ * Контролируемый срез. `initial` синхронизируется в состояние, НО только при смене
+ * ССЫЛКИ initial — поэтому дефолты хуков обязаны быть СТАБИЛЬНЫМИ модуль-константами
+ * (инлайн-литерал `{}`/`[]` в дефолте параметра создаёт новую ссылку каждый рендер →
+ * useEffect стреляет каждый рендер → setState → бесконечный цикл).
+ */
 const useControlledSlice = <T>(initial: T): [T, OnChangeFn<T>] => {
   const [value, setValue] = useState<T>(initial)
 
@@ -115,20 +121,28 @@ const useControlledSlice = <T>(initial: T): [T, OnChangeFn<T>] => {
   return [value, setValue as OnChangeFn<T>]
 }
 
-export const useColumnOrderState = (initial: ColumnOrderState = []) => {
+const EMPTY_ORDER: ColumnOrderState = []
+const EMPTY_VISIBILITY: ColumnVisibilityState = {}
+const EMPTY_SIZING: ColumnSizingState = {}
+const EMPTY_SORTING: SortingState = []
+const EMPTY_SELECTION: RowSelectionState = {}
+const EMPTY_EXPANDED: ExpandedState = {} as ExpandedState
+const EMPTY_GROUPING: GroupingState = []
+
+export const useColumnOrderState = (initial: ColumnOrderState = EMPTY_ORDER) => {
   const [columnOrder, onColumnOrderChange] = useControlledSlice(initial)
   return { columnOrder, onColumnOrderChange }
 }
 
 export const useColumnVisibilityState = (
-  initial: ColumnVisibilityState = {},
+  initial: ColumnVisibilityState = EMPTY_VISIBILITY,
 ) => {
   const [columnVisibility, onColumnVisibilityChange] =
     useControlledSlice(initial)
   return { columnVisibility, onColumnVisibilityChange }
 }
 
-export const useColumnSizingState = (initial: ColumnSizingState = {}) => {
+export const useColumnSizingState = (initial: ColumnSizingState = EMPTY_SIZING) => {
   const [columnSizing, onColumnSizingChange] = useControlledSlice(initial)
   return { columnSizing, onColumnSizingChange }
 }
@@ -136,30 +150,32 @@ export const useColumnSizingState = (initial: ColumnSizingState = {}) => {
 export const useColumnPinningState = (
   initial: ColumnPinningState = defaultColumnPinningState,
 ) => {
-  const [columnPinning, onColumnPinningChange] = useControlledSlice(
-    mergeColumnPinning(defaultColumnPinningState, initial),
+  const merged = useMemo(
+    () => mergeColumnPinning(defaultColumnPinningState, initial),
+    [initial],
   )
+  const [columnPinning, onColumnPinningChange] = useControlledSlice(merged)
   return { columnPinning, onColumnPinningChange }
 }
 
-export const useColumnSortingState = (initial: SortingState = []) => {
+export const useColumnSortingState = (initial: SortingState = EMPTY_SORTING) => {
   const [sorting, onColumnSortingChange] = useControlledSlice(initial)
   return { sorting, onColumnSortingChange }
 }
 
-export const useRowSelectionState = (initial: RowSelectionState = {}) => {
+export const useRowSelectionState = (
+  initial: RowSelectionState = EMPTY_SELECTION,
+) => {
   const [rowSelection, onRowSelectionChange] = useControlledSlice(initial)
   return { rowSelection, onRowSelectionChange }
 }
 
-export const useRowExpandingState = (
-  initial: ExpandedState = {} as ExpandedState,
-) => {
+export const useRowExpandingState = (initial: ExpandedState = EMPTY_EXPANDED) => {
   const [rowExpanded, onRowExpandedChange] = useControlledSlice(initial)
   return { rowExpanded, onRowExpandedChange }
 }
 
-export const useRowGroupingState = (initial: GroupingState = []) => {
+export const useRowGroupingState = (initial: GroupingState = EMPTY_GROUPING) => {
   const [grouping, onGroupingChange] = useControlledSlice(initial)
   return { grouping, onGroupingChange }
 }

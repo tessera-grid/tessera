@@ -4,8 +4,8 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
-import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection'
-import { COLUMN_DRAGGING_ID } from '../../../plugins/rowDragging'
+import { COLUMN_SELECTION_ID } from '../../../../v9/plugins/rowSelection'
+import { COLUMN_DRAGGING_ID } from '../../../../v9/plugins/rowDragging'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 
 // Reorder-out (ADR 0011, LP1–LP10): под вложенной шапкой за opt-in флагом

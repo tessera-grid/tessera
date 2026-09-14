@@ -13,12 +13,12 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { functionalUpdate, useTable } from '@tanstack/table-v9'
+import { functionalUpdate, useTable } from '@tanstack/react-table'
 import type {
   ColumnPinningState,
   ColumnSizingState,
   OnChangeFn,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import type {
   ColumnDef,
@@ -29,6 +29,7 @@ import type {
 import type { CommonHooks } from './commonFeature.types'
 import type { SkeletonOptions } from './skeletonOptions'
 import { useCreateHooks } from './createHooks'
+import { shallowEqual } from './reactivity'
 import {
   defaultColumnPinningState,
   isSameColumnSizing,
@@ -46,6 +47,18 @@ import {
 const DEFAULT_COLUMN = {
   minSize: 150,
   maxSize: 750,
+}
+
+/**
+ * Ядровые (не плагинные) опции DataGrid — совместимость с v8 `CreateDataGridOptions`
+ * (демо/стори типизируют ими свои args). Плагинные фичи включаются через `plugins`.
+ */
+export interface CreateDataGridOptions {
+  enableSkeleton?: boolean
+  enableLoading?: boolean
+  enableFooter?: boolean
+  skeletonOptions?: SkeletonOptions
+  handlers?: Record<string, unknown>
 }
 
 export interface UseCreateTableParams<
@@ -200,6 +213,22 @@ export const useCreateTable = <
 
   const resolvedHooks = useCreateHooks(hooks ?? {})
 
+  // Стабильная ссылка на контролируемый state: потребитель (стори) отдаёт свежий
+  // объект state каждый рендер, а v9 useTable публикует его в store в layout-эффекте
+  // (table_publishExternalState). При новой ссылке-но-том-же-контенте это давало
+  // бесконечный ре-рендер (единый @tanstack/store после свапа). Держим прежнюю
+  // ссылку, пока срезы shallow-равны.
+  const mergedState = {
+    ...restState,
+    columnPinning: displayedPinning,
+    columnSizing: displayedSizing,
+  }
+  const stateRef = useRef(mergedState)
+  if (!shallowEqual(stateRef.current, mergedState)) {
+    stateRef.current = mergedState
+  }
+  const stableState = stateRef.current
+
   const options = {
     features,
     columns: injectedColumns,
@@ -215,11 +244,7 @@ export const useCreateTable = <
     ...folded.options,
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
-    state: {
-      ...restState,
-      columnPinning: displayedPinning,
-      columnSizing: displayedSizing,
-    },
+    state: stableState,
     onColumnPinningChange,
     onColumnSizingChange: setUserSizing,
     onColumnAutoSizingChange,

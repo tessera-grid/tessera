@@ -16,7 +16,7 @@ import {
   sortFn_datetime,
   sortFn_text,
   sortFn_textCaseSensitive,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { sortHeaderAction } from './sortHeaderAction'

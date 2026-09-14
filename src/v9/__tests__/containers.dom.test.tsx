@@ -6,8 +6,8 @@
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { constructTable } from '@tanstack/table-v9'
-import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-v9/node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
+import { constructTable } from '@tanstack/react-table'
+import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { buildTesseraFeatures, foldEntries } from '../core/features'

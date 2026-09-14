@@ -37,7 +37,7 @@ interface ColumnSpec {
  * дефолтного мока: тест подаёт их через `columnsOverride` и сверяется с ними, а
  * не с литералами `__mocks__/columns` (ADR 0009 — запрет хардкода мок-данных).
  */
-export const buildColumns = (specs: ColumnSpec[]): ColumnDef<any>[] =>
+export const buildColumns = (specs: ColumnSpec[]): ColumnDef<any, any>[] =>
   specs.map(({ id, header, size, cell }) => ({
     id,
     accessorKey: id,

@@ -12,21 +12,21 @@ import { useArgs } from 'storybook/preview-api'
 import { expect, waitFor } from 'storybook/test'
 
 import { Card, CardContent, Grid, NoDataStub } from './_shims'
-import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../plugins/rowActions'
-import { useCreateHooks } from '../core/createHooks/useCreateHooks'
-import { useRowExpandingState } from '../core/createState/rowExpandingState'
-import { useRowSelectionState } from '../core/createState/rowSelectionState'
+import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../v9/plugins/rowActions'
+import { useCreateHooks } from '../../v9/core/createHooks'
+import { useRowExpandingState } from '../../v9/core/createState'
+import { useRowSelectionState } from '../../v9/core/createState'
 import { useCreateTable } from '../../v9/core/useCreateTable'
-import { CreateDataGridOptions } from '../core/createTable/types'
-import { DEFAULT_SKELETON_OPTIONS } from '../core/skeletonOverlay/options'
+import { CreateDataGridOptions } from '../../v9/core/useCreateTable'
+import { DEFAULT_SKELETON_OPTIONS } from '../../v9/core/skeletonOptions'
 import { DataGrid } from '../../v9/grid/DataGrid'
-import { DataGridProps } from '../grid/DataGrid/types'
+import { DataGridProps } from '../../v9/grid/dataGridTypes'
 import { BatchToolbar } from './BatchToolbar'
 import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
-import { RowExpandingPluginParams } from '../plugins/rowExpanding'
-import { RowSelectionPluginParams } from '../plugins/rowSelection'
+import { RowExpandingPluginParams } from '../../v9/plugins/rowExpanding'
+import { RowSelectionPluginParams } from '../../v9/plugins/rowSelection'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { FeatureToggles, argsToPlugins } from './__mocks__/utils/argsToPlugins'
 import { usePagination } from './__mocks__/usePagination'
@@ -87,7 +87,7 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * тестам seam, чтобы подать колонки с известными `header`/`size` и сверяться с
    * ними, а не с литералами дефолтного мока (ADR 0009 — запрет хардкода мок-данных).
    */
-  columnsOverride?: ColumnDef<any>[]
+  columnsOverride?: ColumnDef<any, any>[]
   /**
    * Начальный grouping-state (список колонок). Если задан — StoryComponent
    * контролирует grouping и прокидывает onGroupingChange (интерактивно).

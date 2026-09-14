@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
 
-import { DataGridProps } from '../grid/DataGrid/types'
+import { DataGridProps } from '../../v9/grid/dataGridTypes'
 import { StoryComponent } from './DataGrid.stories'
 import { makeData } from './__mocks__/data'
 import { columnCountType } from './__mocks__/utils/argTypes'

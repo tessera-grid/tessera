@@ -6,10 +6,10 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import { useCreateHooks } from '../../../core/createHooks/useCreateHooks'
 import { useRowSelectionState } from '../../../core/createState/rowSelectionState'
-import { useCreateTable } from '../../../core/createTable'
+import { useCreateTable } from '../../../../v9/core/useCreateTable'
 import type { ColorMode } from '../../../core/themeVariables'
-import { DataGrid } from '../../../grid/DataGrid/DataGrid'
-import { rowActions, rowSelection } from '../../../plugins'
+import { DataGrid } from '../../../../v9/grid/DataGrid'
+import { rowActions, rowSelection } from '../../../../v9/plugins'
 import { useColumns } from '../../__mocks__/columns'
 import { useData } from '../../__mocks__/data'
 
@@ -42,7 +42,7 @@ const Grid = memo(({ colorMode }: { colorMode: ColorMode }) => {
 
   return (
     <DataGrid
-      table={table}
+      table={table as never}
       height={400}
       maxHeight={400}
       colorMode={colorMode}

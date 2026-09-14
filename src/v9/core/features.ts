@@ -15,7 +15,7 @@ import {
   columnSizingFeature,
   columnVisibilityFeature,
   tableFeatures,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import { commonFeature } from './commonFeature'
 import type { ServiceColumn } from './createColumns'

@@ -2,8 +2,8 @@
  * Фаза E — headless-проверка инъекции сервисных колонок и плагина rowExpanding.
  * Запуск: npx vitest run --config vitest.v9.config.ts
  */
-import { constructTable } from '@tanstack/table-v9'
-import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-v9/node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
+import { constructTable } from '@tanstack/react-table'
+import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { describe, expect, it } from 'vitest'
 
 import { injectServiceColumns } from '../core/createColumns'

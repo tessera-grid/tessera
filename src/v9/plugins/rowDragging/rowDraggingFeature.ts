@@ -13,7 +13,7 @@ import {
   assignTableAPIs,
   functionalUpdate,
   makeStateUpdater,
-} from '@tanstack/table-v9'
+} from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import {
@@ -35,7 +35,7 @@ interface RowDraggingTableAPI {
   setRowDragging: (updater: Updater<RowDragOverlayState>) => void
 }
 
-declare module '@tanstack/table-v9' {
+declare module '@tanstack/react-table' {
   interface Plugins {
     rowDraggingFeature: TableFeature
   }
