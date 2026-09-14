@@ -126,13 +126,20 @@ export const BodyCell = memo(
         role="cell"
         className={clsx('data-grid__body-cell', styles.body__cell)}
         style={{
-          minWidth: `var(${getColumnSizeVariable(cell.column.id)})`,
           width: `var(${getColumnSizeVariable(cell.column.id)})`,
+          // Центральная виртуализированная ячейка — только динамический left инлайн;
+          // статичные position/top/height задаёт CSS по data-virtual-cell (меньше
+          // записей стиля на монтаж). Пиннутая/поточная — minWidth+sticky-офсеты.
           ...(absoluteLeft !== undefined
-            ? { position: 'absolute', left: absoluteLeft, top: 0, height: '100%' }
-            : { left: startPinnedOffset, right: endPinnedOffset }),
+            ? { left: absoluteLeft }
+            : {
+                minWidth: `var(${getColumnSizeVariable(cell.column.id)})`,
+                left: startPinnedOffset,
+                right: endPinnedOffset,
+              }),
           paddingLeft,
         }}
+        data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={cell.column.getIndex() + 1}
         data-column-id={cell.column.id}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}

@@ -24,10 +24,9 @@ export const FooterCell = ({ layout, header, absoluteLeft }: FooterCellProps) =>
       className={clsx('data-grid__footer-cell', styles.footer__cell)}
       style={{
         width: `var(${getHeaderSizeVariable(header.id)})`,
-        ...(absoluteLeft !== undefined
-          ? { position: 'absolute', left: absoluteLeft, top: 0, height: '100%' }
-          : null),
+        ...(absoluteLeft !== undefined ? { left: absoluteLeft } : null),
       }}
+      data-virtual-cell={absoluteLeft !== undefined || undefined}
       aria-colindex={header.column.getIndex() + 1}
       data-column-id={header.column.id}
       data-layout={layout}

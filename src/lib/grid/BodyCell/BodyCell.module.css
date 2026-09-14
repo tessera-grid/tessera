@@ -2,6 +2,14 @@
   contain: layout paint;
   display: flex;
   padding: 0;
+
+  /* Центральная виртуализированная ячейка вынесена из потока: статичное
+     позиционирование в CSS (инлайн только динамический left) — меньше записей стиля. */
+  &[data-virtual-cell] {
+    position: absolute;
+    top: 0;
+    height: 100%;
+  }
   /*
    * Отступ раскрытия вложенных строк приходит как padding-left на ячейку
    * (getCellExpandingStyles). Без border-box он прибавлялся бы к ширине и

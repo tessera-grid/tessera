@@ -129,14 +129,19 @@ const HeadCellView = ({
 
   const cellStyles: CSSProperties = {
     ...gridStyles,
-    minWidth: `var(${getHeaderSizeVariable(header.id)})`,
     width:
       header.column.getIsRowActionsColumn() && layout === 'grid'
         ? 'auto'
         : `var(${getColumnSizeVariable(header.id)})`,
+    // Центральный виртуализированный заголовок — только динамический left инлайн,
+    // статику position/top/height задаёт CSS по data-virtual-cell.
     ...(absoluteLeft !== undefined
-      ? { position: 'absolute', left: absoluteLeft, top: 0, height: '100%' }
-      : { left: startPinnedOffset, right: endPinnedOffset }),
+      ? { left: absoluteLeft }
+      : {
+          minWidth: `var(${getHeaderSizeVariable(header.id)})`,
+          left: startPinnedOffset,
+          right: endPinnedOffset,
+        }),
     opacity: isDragging ? 0 : 1,
     transform: disabledSortable
       ? 'none'
@@ -192,6 +197,7 @@ const HeadCellView = ({
       aria-colindex={header.column.getIndex() + 1}
       aria-sort={getAriaSort(header)}
       data-column-id={header.column.id}
+      data-virtual-cell={absoluteLeft !== undefined || undefined}
       data-cell-pinned={pinnedSideToDom(headerPinned)}
       data-cell-last-left-pinned={isLastStartPinnedColumn}
       data-cell-first-right-pinned={isFirstEndPinnedColumn}

@@ -2,6 +2,13 @@
   contain: paint;
   display: flex;
   padding: 0;
+
+  /* Центральная виртуализированная ячейка футера вне потока: статика в CSS. */
+  &[data-virtual-cell] {
+    position: absolute;
+    top: 0;
+    height: 100%;
+  }
   transition: var(--tsr-comp-row-transition);
 
   /* Бордеры для ячеек */
