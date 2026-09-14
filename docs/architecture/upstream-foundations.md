@@ -5,7 +5,7 @@ Tessera компонует три headless-библиотеки. Эта стра
 в которые Tessera врезается. За авторитетными деталями API обращайтесь к
 документации каждой библиотеки.
 
-## TanStack Table v8
+## TanStack Table v9
 
 TanStack Table — это **headless** ядро таблицы: оно вычисляет модели (строки,
 столбцы, заголовки, футеры) из `columns` + `data` + `state` и выдаёт инстанс с
@@ -13,38 +13,43 @@ TanStack Table — это **headless** ядро таблицы: оно вычи�
 
 Концепции, на которые опирается Tessera:
 
-- **Instance** — создаётся через `useReactTable(options)`; стабильный объект, чьи
-  методы (`getHeaderGroups`, `getRowModel`, `getState`, …) читаются во время
-  рендера.
+- **Instance** — создаётся через `useTable(options)`; стабильный объект, чьи методы
+  (`getHeaderGroups`, `getRowModel`, …) читаются во время рендера. Состояние живёт в
+  **TanStack Store**: `table.state` (снимок), `table.store` и слайс-атомы
+  `table.atoms.<slice>` (см. [reactivity.md](reactivity.md)).
 - **Модели мемоизированы.** Каждая модель (core row model, sorted, grouped,
-  expanded, header groups) — это мемоизированная функция, ключами которой служат
-  конкретные входы. Пересчёт происходит только когда эти входы меняют
-  идентичность. Tessera **заменяет** функцию core row model, чтобы расширить эти
-  ключи (см. [reactivity.md](reactivity.md)).
+  expanded, header groups) — мемоизированная функция от конкретных входов; пересчёт
+  только при смене их идентичности. В v9 состояние разложено по атомам, поэтому смена
+  одного среза не инвалидирует все модели — это и был мотив миграции с v8 (см.
+  [reactivity.md](reactivity.md)).
 - **Состояние controlled/uncontrolled по слайсам.** Вы можете передать `state.X` +
   `onXChange`, чтобы контролировать слайс, либо отдать его во владение таблице.
   Tessera формализует это в разделение core/external (см.
   [table-assembly.md](table-assembly.md)).
-- **`_features` (TableFeature[]).** API кастомных фич. Каждая фича может
-  подцепиться к жизненному циклу инстанса и каждого column/row/header/cell и может
-  вносить дефолтные опции и начальное состояние. **`TablePlugin` в Tessera — это в
-  точности `TableFeature`** с небольшим количеством добавленной конвенции.
+- **`features` (`tableFeatures({...})`).** API кастомных фич. В v9 набор фич —
+  типизированная карта, собираемая `tableFeatures()` (tree-shakeable). Фича вешает
+  методы на **прототипы** (`assign*Prototype`, используют `this`), кладёт мутабельные
+  данные на инстанс (`init*InstanceData`), аугментирует API таблицы
+  (`constructTableAPIs`) и вносит дефолтные опции/состояние. **Плагин Tessera строится
+  на этом `TableFeature`**; карту фич Tessera собирает из записей presence-based
+  (`buildTesseraFeatures`).
 - **`meta`** — произвольный контекстный «мешок» на столбец (`column.columnDef.meta`),
   используемый потребителями для переноса метаданных поля.
 
-Точки соприкосновения Tessera: нативный `getCoreRowModel`, нативный
-`getHeaderGroups` (обёрнутый `commonPlugin` для флагов первой/последней группы),
-список `_features` и аугментация инстанса через `createTable` фичи (добавляет
-`getHooks`, `getRenderSlots`, `setRenderSlot` и SDK-хелперы).
+Точки соприкосновения Tessera: ядровая row-модель включается автоматически (v9;
+прочие row-модели приходят слотами фич), `getHeaderGroups` с флагами первой/последней
+группы через `commonFeature`, карта `features` и аугментация инстанса через
+`constructTableAPIs` фичи `commonFeature` (добавляет `getHooks`, `getRenderSlots`,
+`setRenderSlot` и SDK-хелперы).
 
 ```mermaid
 flowchart LR
-    subgraph opts["опции useReactTable"]
+    subgraph opts["опции useTable"]
         C["columns"]
         D["data"]
         S["state + on*Change"]
-        F["_features (TablePlugin[])"]
-        M["нативный getCoreRowModel<br/>+ нативный getHeaderGroups<br/>(обёрнут для флагов first/last)"]
+        F["features (tableFeatures({...}))"]
+        M["ядровая row-модель — автоматически<br/>+ getHeaderGroups<br/>(обёрнут для флагов first/last)"]
     end
     INST["инстанс table"]
     RM["row model (мемоизирована)"]
@@ -97,24 +102,24 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
 flowchart TB
     subgraph tessera["Tessera"]
         PL["Слой Plugin + Slot"]
-        PS["Реактивность Pub-Sub"]
+        PS["Реактивность: TanStack Store (table.atoms)"]
         THEME["Темизация на CSS-переменных<br/>(Base UI + нативные контролы)"]
         UI["Пайплайн рендеринга DataGrid"]
     end
     subgraph up["Upstream (headless)"]
-        TT["TanStack Table<br/>(модель + _features)"]
+        TT["TanStack Table v9<br/>(модель + features)"]
         TV["TanStack Virtual<br/>(виртуализаторы строк/столбцов)"]
         DND["dnd-kit<br/>(DnD-контексты)"]
     end
     PL --> TT
-    PS -.->|читает getState/getHooks| TT
+    PS -.->|читает atoms/getHooks| TT
     UI --> TV
     UI --> DND
     UI --> TT
     THEME --> UI
 ```
 
-Практическое правило при чтении кодовой базы: всё, что названо `create*` на
-плагине, `_features`, `getRowModel`, `getState` — это **TanStack**; всё, что
-названо `setRenderSlot`, `getRenderSlots`, `getHooks`, `useSubscribeStore`,
-`renderComponent` — это расширение **самой Tessera**.
+Практическое правило при чтении кодовой базы: всё, что названо `assign*Prototype` /
+`init*InstanceData` на фиче, `features`, `getRowModel`, `table.atoms` / `table.store` —
+это **TanStack** (v9); всё, что названо `setRenderSlot`, `getRenderSlots`, `getHooks`,
+`useSlice` / `useTableState`, `TesseraFeatureEntry` — это расширение **самой Tessera**.

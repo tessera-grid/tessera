@@ -19,11 +19,14 @@ flowchart TB
     DG["DataGrid(props)"]
     IP["IconsProvider (переопределение иконок)"]
     LP["LocalizationProvider (переопределение подписей)"]
-    SSP["SubscriptionStoreProvider (Pub-Sub)"]
     FSP["FastScrollProvider (скелетон при быстром скролле)"]
     TREE["theme-обёртка (CSS-переменные)<br/>→ Head / Body / Footer"]
-    DG --> IP --> LP --> SSP --> FSP --> TREE
+    DG --> IP --> LP --> FSP --> TREE
 ```
+
+Отдельного провайдера реактивности нет (Pub-Sub снят при миграции на v9): корень
+`DataGrid` подписан на состояние единственным `useTableState(table, …)`, а компоненты —
+на свои срезы через `useSlice`/`useTableState` (см. [reactivity.md](reactivity.md)).
 
 `props`: `table`, `height`, `maxHeight`, `stub`, `colorMode`, `icons`,
 `localization`. `colorMode` управляет темой на CSS-переменных; `icons` и

@@ -1,28 +1,26 @@
 # Сборка таблицы — `useCreateTable`
 
-`useCreateTable<TData, THooks, TState, TOptions, TPlugins>` — единственная точка
-входа. Она превращает входы потребителя в сконфигурированный инстанс TanStack.
-Источник: `src/lib/core/createTable/useCreateTable.ts`.
+`useCreateTable<TData, const TEntries>` — единственная точка входа. Она превращает
+входы потребителя в сконфигурированный инстанс TanStack v9. Источник:
+`src/lib/core/useCreateTable.ts`.
 
 ## Дженерики
 
-| Дженерик   | Значение                                                        | По умолчанию                  |
-| ---------- | --------------------------------------------------------------- | ----------------------------- |
-| `TData`    | форма строки                                                    | `any`                         |
-| `THooks`   | **кастомные** хуки (контракты своих плагинов)                   | `any`                         |
-| `TState`   | кастомные слайсы состояния, влитые в `table.getState()`         | `any`                         |
-| `TOptions` | кастомные handlers/опции, влитые в `table.options`              | `any`                         |
-| `TPlugins` | кортеж записей `plugins` (`const`), из него выводится тип хуков | `readonly PluginEntryInput[]` |
+Сигнатура в v9 сжата до двух параметров:
 
-Хуки **встроенных** плагинов больше не входят в `THooks` (types-mode b, ADR 0010):
-их тип выводится из `TPlugins` через `InferPluginHooks<TPlugins>` и подставляется в
-параметр `hooks` (`Partial<InferPluginHooks<TPlugins>> & THooks`). `TPlugins`
-выводится только в вызове **без явных generic-аргументов**; при явных дженериках
-встроенные слайсы указывают через агрегат `BuiltinPluginsHooks` из
-`@mstrvtt/tessera/plugins`. См. [ADR 0010](../decisions/0010-invert-core-plugins-registry.md).
+| Дженерик   | Значение                                                              | По умолчанию                        |
+| ---------- | --------------------------------------------------------------------- | ----------------------------------- |
+| `TData`    | форма строки                                                          | —                                   |
+| `TEntries` | кортеж записей `plugins` (`const`) — набор фич выводится из него       | `readonly TesseraFeatureEntry[]`    |
 
-Дженерик `TValue` (значение ячейки) стоит **последним и опциональным** в
-`TablePlugin`, `HeaderComponentProps` и `CellComponentProps`.
+Из `TEntries` выводится набор фич `TesseraFeatures<TEntries>` (см.
+[features.ts](../../src/lib/core/features.ts)), который в v9 идёт **ведущим**
+дженериком `TFeatures` во все типы TanStack (`Table<TFeatures, TData>`,
+`ColumnDef<TFeatures, TData, TValue>`, …). `columns` и `state` потребителя типизируются
+через него: `ColumnDef<TesseraFeatures<TEntries>, TData, unknown>[]` и
+`Partial<TableState<TesseraFeatures<TEntries>>>`. Бизнес-`hooks` — опция always-on
+`commonFeature` (тип `CommonHooks`). Presence-based композиция и её обоснование —
+[ADR 0010](../decisions/0010-invert-core-plugins-registry.md).
 
 ## Пайплайн
 
@@ -30,93 +28,84 @@
 flowchart TB
     IN["useCreateTable(params)"]
 
-    COLS["useCreateColumns<br/>инъекция сервисных столбцов:<br/>selection · expanding · dragging · row-actions<br/>(когда в plugins передан плагин-владелец)"]
-    ST["useCreateState<br/>разделяет state/handlers на core против external<br/>сливает pinning + visibility сервисных столбцов"]
-    HK["useCreateHooks<br/>мемоизированный бизнес-контракт"]
-    SL["useCreateSlots<br/>пустые «корзины» слотов"]
-    PLG["useMemo features<br/>[commonPlugin, ...activePlugins.map(p =&gt; p.feature)]<br/>(стабильная ссылка по сигнатуре структуры)"]
+    SIG["signature = id|enabled активных записей<br/>(стабилизирует набор по составу, не по идентичности массива)"]
+    FEAT["buildTesseraFeatures(plugins)<br/>commonFeature + always-on grid-фичи + слоты записей → tableFeatures()"]
+    FOLD["foldEntries(plugins)<br/>{ options, slots, slotActions, actionMenu, serviceColumns, setups }"]
+    COLS["injectServiceColumns(columns, folded.serviceColumns)<br/>selection · expanding · dragging · row-actions"]
+    CTRL["контролируемые срезы:<br/>columnPinning (пиннинг сервисных колонок)<br/>columnSizing (ресайз + авто-слайс)"]
+    HK["useCreateHooks(hooks)"]
 
-    RT["useReactTable(...)<br/>state = {...coreState, ...externalState}<br/>handlers = {...coreHandlers, ...externalHandlers}<br/>getCoreRowModel = getCoreRowModel() (нативный)<br/>_features = plugins<br/>hooks, slots переданы как опции"]
+    RT["useTable(options)<br/>features, columns: injected, data<br/>...folded.options, state (стабилизирован ref+shallowEqual)<br/>hooks, slots, slotActions, actionMenu"]
 
     OUT["инстанс table"]
 
-    IN --> COLS --> ST --> HK --> SL --> PLG --> RT --> OUT
-    RT --> RESET["useRowSelectionReset<br/>useColumnActionsAutosize"]
+    IN --> SIG --> FEAT --> FOLD --> COLS --> CTRL --> HK --> RT --> OUT
+    RT --> EFF["useEffect: folded.setups(table)<br/>useEffect: resetRowSelection при смене опций выбора"]
 ```
 
-## Сервисные столбцы (`useCreateColumns`)
+## Сервисные столбцы (`injectServiceColumns`)
 
 Tessera инъектирует не-data столбцы на основе **наличия плагина** в `plugins`
-(presence-based, ADR 0010): плагин приносит свою сервисную колонку записью
-`ServiceColumn` (`rowSelection`, `rowExpanding`, `rowDragging`, `rowActions`).
-`useCreateColumns` раскладывает их по `side`/`order`, ядро плагинов не импортит.
-У колонок зарезервированные id, и они распознаются хелперами
-`checkIsActionColumn` / `column.getIsActionsColumn()`.
+(presence-based, ADR 0010): плагин приносит свою сервисную колонку в записи как
+`TesseraFeatureEntry.column` (`rowSelection`, `rowExpanding`, `rowDragging`,
+`rowActions`). `foldEntries` собирает их в `serviceColumns`, а `injectServiceColumns`
+раскладывает по `side`/`order`; ядро плагины не импортит. У колонок зарезервированные
+id, распознаются `column.getIsActionsColumn()` (метод от `commonFeature`).
 
-## Состояние: разделение core / external
+## Состояние: контролируемые срезы против pass-through
 
-`useCreateState` — сердце истории Tessera про controlled-состояние. Он разбивает
-`state` и `handlers` потребителя:
+В отличие от прочих срезов, которыми в v9 владеют сами фичи (uncontrolled), ядро
+перехватывает **два** среза, потому что они несут инъекцию сервисных колонок:
 
-- **Core state** — слайсы TanStack, которыми Tessera управляет сама
-  (`columnSizing`, `columnOrder`, `sorting`, `columnPinning`, `rowSelection`,
-  `columnVisibility`, `expanded`, `grouping`) плюс не-TanStack-экстра
-  (`columnDraggingActiveId`, `rowDragging`). Для каждого внешнее значение
-  побеждает, если передано (`external ?? internal`), а pinning/visibility
-  сервисных столбцов вливаются.
-- **External state** — всё прочее, что потребитель положил в `state` (кастомные
-  слайсы `TState`, например `hiddenCells`), пробрасывается напрямую в
-  `useReactTable`, так что оно живёт в `table.getState()` рядом со встроенным.
+- **`columnPinning`** — контролируемый: пользовательский пиннинг + пиннинг сервисных
+  колонок как **display-transform**. `mergeServiceColumnPinning` вклеивает сервисные
+  `start/end`, а `onColumnPinningChange` срезает их обратно, чтобы наружу уходил
+  чистый пользовательский пиннинг.
+- **`columnSizing`** — контролируемый: пользовательский ресайз (`mergeColumnSizing`) +
+  авто-слайс, который плагины пишут в `setup` через `table.setColumnAutoSizing`
+  (`onColumnAutoSizingChange` бейлит при равенстве, иначе цикл).
+
+Всё остальное `state`/`handlers` потребителя (включая кастомные слайсы и `onXChange`
+вроде `onExpandedChange`/`onRowSelectionChange`/`onGroupingChange`/`onRowOrderChange`)
+пробрасывается в `useTable` **как есть**. Ссылка на итоговый `state` стабилизируется
+через `ref` + `shallowEqual` (иначе свежий объект каждый рендер даёт бесконечный
+ре-рендер, см. [reactivity.md](reactivity.md)).
 
 ```mermaid
 flowchart LR
     subgraph input["params.state / params.handlers"]
-        K["известные слайсы TanStack"]
-        X["кастомные слайсы TState"]
+        P["columnPinning / columnSizing"]
+        R["все прочие срезы + onXChange"]
     end
-    K --> CORE["coreState / coreHandlers<br/>(управляемые + слиты сервисные столбцы)"]
-    X --> EXT["externalState / externalHandlers<br/>(pass-through)"]
-    CORE --> MERGE["state/handlers для useReactTable"]
-    EXT --> MERGE
+    P --> CTRL["перехват:<br/>сервисный пиннинг + авто-слайс"]
+    R --> PASS["pass-through в useTable"]
+    CTRL --> MERGE["options.state (стабилизирован ref+shallowEqual)"]
+    PASS --> MERGE
 ```
-
-> **Заметка для контрибьютора.** Поскольку кастомные ключи `TState`
-> распространяются в тот же объект, что и встроенное состояние TanStack, будущий
-> ключ состояния TanStack мог бы столкнуться с ключом потребителя. Это известный
-> острый угол (см. заметки проекта о будущих работах).
 
 ## Hooks — бизнес-контракт
 
-`hooks` — это типизированный объект бизнес-колбэков/значений (например,
-`rowSelection.onSelectRow`). Он прикрепляется как опция таблицы и читается через
-добавленный Tessera `table.getHooks()` (устанавливается `commonPlugin.createTable`).
-Чтение `getHooks()` **ни на что не подписывается** — hooks задуманы как точки
-входа для сайд-эффектов, а не как входы рендера. Динамические значения, которые
-должны управлять рендерингом, принадлежат `state` и потребляются через Pub-Sub
-([reactivity.md](reactivity.md)).
-
-**Типизация (types-mode b, ADR 0010).** Ядро не агрегирует хуки: `PluginsHooks` в
-`core/createHooks` пуст, импортов плагинов там нет. Тип хуков собирается
-**per-instance** из набора `plugins` (`InferPluginHooks<TPlugins>`), а таблица
-инстанцируется как `useReactTable<…, InferPluginHooks<TPlugins> & THooks, …>` —
-поэтому `table.getHooks()` у потребителя несёт выведенные слайсы. Именованный
-union всех встроенных слайсов вынесен во вход `/plugins` как `BuiltinPluginsHooks`
-(для вызовов с явными дженериками). `useCreateHooks` — тонкий generic-merge с
-always-on no-op дефолтами (значения-литералы в ядре, не импорт плагинов).
+`hooks` — типизированный объект бизнес-колбэков/значений (например,
+`rowSelection.onSelectRow`). `useCreateHooks` мемоизирует его; он прикрепляется опцией
+таблицы и читается через `table.getHooks()` (устанавливается `commonFeature`). Чтение
+`getHooks()` **ни на что не подписывается** — hooks задуманы как точки входа для
+сайд-эффектов, а не входы рендера. Динамические значения, которые должны управлять
+рендерингом, принадлежат `state` и потребляются через гранулярные подписки
+(`useSlice`/`useTableState`, [reactivity.md](reactivity.md)).
 
 ## Плагины
 
-Массив `_features` собирается presence-based (ADR 0010): `commonPlugin` всегда
-первым, затем фичи активных записей из `plugins` в порядке их следования
-(`[commonPlugin, ...activePlugins.map(p => p.feature)]`). Никакого центрального
-списка встроенных плагинов в ядре нет — набор определяет потребитель тем, что
-импортировал и передал; отфильтровываются falsy-записи и `enabled: false`.
+Набор фич собирается presence-based (ADR 0010): `buildTesseraFeatures` вклеивает
+always-on `commonFeature` + grid-инфраструктурные фичи (columnOrdering/Visibility/
+Pinning/Sizing/Grouping — их методы гриду нужны всегда), затем **фичи всех
+присутствующих записей** (в т.ч. `enabled: false`) и прогоняет через `tableFeatures()`.
+Почему всех: v9 фиксирует набор фич на маунте `useTable`, поэтому рантайм-включение
+плагина не добавило бы фичу — вместо этого фича всегда в наборе, а поведение гейтится
+`enable*`-опцией (фабрика отключённого плагина эмитит `enable*: false`; `foldEntries`
+берёт опции от всех записей, а слоты/колонки/setup — только от активных).
 
-Мемоизация удерживает ссылку `_features` стабильной **по сигнатуре структуры**
-(состав/порядок фич + id/side/order сервисных колонок), а не по идентичности
-массива `plugins` — поэтому свежий inline-массив с тем же составом не пересобирает
-таблицу (см. перф-ловушку в ADR 0010). `commonPlugin` обязан быть первым — он
-устанавливает `getHooks/getRenderSlots/setRenderSlot`, которые вызывают более
-поздние плагины.
+Мемоизация удерживает и `features`, и `folded` стабильными **по сигнатуре набора**
+(`id|enabled` активных записей), а не по идентичности массива `plugins` — поэтому
+свежий inline-массив с тем же составом не пересобирает таблицу.
 
-Про жизненный цикл см. [plugins-and-slots.md](plugins-and-slots.md).
+Про жизненный цикл фичи см. [plugins-and-slots.md](plugins-and-slots.md).

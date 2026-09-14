@@ -1,10 +1,12 @@
 # Tessera — архитектура
 
 `@mstrvtt/tessera` — это headless-first, plugin-driven таблица данных, построенная
-поверх **TanStack Table v8** (модель таблицы), **TanStack Virtual** (виртуализация
+поверх **TanStack Table v9** (модель таблицы), **TanStack Virtual** (виртуализация
 строк/столбцов) и **dnd-kit** (drag & drop). Tessera не форкает эти библиотеки —
-она их компонует и расширяет, добавляя слой рендеринга на плагинах/слотах,
-гранулярный механизм реактивности Pub-Sub и theme-agnostic UI на CSS-переменных.
+она их компонует и расширяет, добавляя слой рендеринга на плагинах/слотах и
+theme-agnostic UI на CSS-переменных. Гранулярная реактивность — штатная, на
+**TanStack Store** v9 (`table.atoms`; собственный Pub-Sub снят при миграции с v8,
+[ADR 0026](../decisions/0026-migrate-to-tanstack-v9.md)).
 
 > Эта база знаний написана для **контрибьюторов**. Она отражает текущий
 > исходный код (сверено с кодом, а не только с README). Там, где раздел описывает
@@ -59,8 +61,8 @@ Tessera нацелена на **любую систему, которой нуж
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | [upstream-foundations.md](upstream-foundations.md)   | Как работают TanStack Table / Virtual и dnd-kit и в какие точки расширения врезается Tessera     |
 | [table-assembly.md](table-assembly.md)               | `useCreateTable`: столбцы, разделение состояния, hooks, слоты, инъекция плагинов                 |
-| [plugins-and-slots.md](plugins-and-slots.md)         | Жизненный цикл `TablePlugin` (TableFeature), регистрация слотов, render-слоты, `renderComponent` |
-| [reactivity.md](reactivity.md)                       | Два механизма обновления: идентичность ссылки против Pub-Sub                                     |
+| [plugins-and-slots.md](plugins-and-slots.md)         | Жизненный цикл фичи (v9 `TableFeature`: `assign*Prototype`/`init*`), регистрация слотов, render-слоты |
+| [reactivity.md](reactivity.md)                       | Реактивность: идентичность ссылки против гранулярных подписок TanStack Store (`table.atoms`)      |
 | [rendering.md](rendering.md)                         | Пайплайн `DataGrid`: стек провайдеров, layout flex против grid, отрисовка, состояния загрузки    |
 | [virtualization.md](virtualization.md)               | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк     |
 | [dnd.md](dnd.md)                                     | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers       |
@@ -88,7 +90,7 @@ flowchart TB
         CS["useCreateState<br/>(разделение core против external)"]
         CH["useCreateHooks"]
         CSL["useCreateSlots"]
-        RT["useReactTable (TanStack)<br/>_features = commonPlugin + активные из plugins (presence-based)<br/>нативный getCoreRowModel"]
+        RT["useTable (TanStack v9)<br/>features = buildTesseraFeatures(commonFeature + активные, presence-based)<br/>ядровая row-модель включается автоматически"]
     end
 
     subgraph inst["Инстанс таблицы"]
@@ -96,10 +98,10 @@ flowchart TB
     end
 
     subgraph render["Рендеринг — <DataGrid/>"]
-        PROV["IconsProvider · LocalizationProvider<br/>SubscriptionStoreProvider · FastScrollProvider"]
+        PROV["IconsProvider · LocalizationProvider<br/>FastScrollProvider"]
         VIRT["виртуализаторы строк + столбцов (TanStack Virtual)"]
         DND["DnD-обёртки (dnd-kit)"]
-        UI["Head / Body / Footer → ячейки<br/>+ RenderSlot / renderComponent"]
+        UI["Head / Body / Footer → ячейки<br/>+ RenderSlot / FlexRender"]
     end
 
     COLS --> CC
@@ -138,8 +140,10 @@ flowchart TB
 - **Theme-agnostic.** Нет библиотеки компонентов в рантайме; темизация — это
   контракт на CSS-переменных, управляемый пропом `colorMode`. См. документ о
   рендеринге.
-- **Плагины — это TanStack-фичи.** `TablePlugin` _является_ TanStack
-  `TableFeature` с дополнительным сахаром жизненного цикла. См. документ о плагинах.
+- **Плагины — это TanStack-фичи.** Плагин Tessera строится на v9 `TableFeature`
+  (`assign*Prototype`/`init*InstanceData`/`constructTableAPIs`/`getDefaultTableOptions`),
+  доставляется записью `TesseraFeatureEntry` (presence-based), а `commonFeature`
+  добавляет общий сахар (`getHooks`/`getRenderSlots`/…). См. документ о плагинах.
 - **Каждый плагин и компонент покрыт тестами — визуальными и перформанс.** Каждый
   плагин и UI-компонент поставляется с обоими видами тестов — по одному на
   требование спецификации, самовосстанавливающимися, названными по спецификации.
