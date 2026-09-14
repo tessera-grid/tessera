@@ -19,20 +19,22 @@ import {
 
 // Производительность ПЕРВОЙ ОТРИСОВКИ (mount → первый кадр). Половина перф-матрицы
 // (ADR 0009): операция «отрисовка» × объём (небольшой/большой) × плагины (без/все).
-// Порог — абсолютный из RAIL: **Load < 1000мс** до интерактивности (не измеренный
-// потолок, а цель из восприятия). Дополнительно фиксируются long tasks (> 50мс) и
-// TBT — сигнал готовности к отзывчивости (CWV INP). Замер идёт под ×4 CPU-троттлингом
-// (референс-девайс), метрика — самая длинная задача монтирования (CDP-трейс).
+// Метрика — самая длинная задача монтирования (CDP-трейс), под ×4 CPU-троттлингом.
+// Дополнительно фиксируются long tasks (> 50мс) и TBT — сигнал готовности к INP.
 //
-// Кейсы, которые под троттлингом не укладываются в Load, помечены `knownShortfall`
-// и гоняются через `test.fails` (xfail): сборка зелёная, цель зафиксирована; когда
-// грид оптимизируют и кейс уложится — `test.fails` покраснеет и напомнит снять метку.
+// ПОЛИТИКА ПОРОГОВ (симметрично scroll, см. память perf-methodology):
+//  - БЕЗ плагинов (P1/P3) — абсолютный гейт RAIL Load: longest ≤ 1000мс.
+//  - СО всеми плагинами (P5/P6) — фиксируем + регресс-гейт: сверяемся с ПОТОЛКОМ
+//    (заметно выше текущего уровня, но много ниже 1000), чтобы ловить реальную
+//    деградацию, которую свободный Load-бюджет пропустил бы. Реальные значения пишутся
+//    в дашборд для наблюдения за трендом.
 
 interface RenderCase {
   id: string
   label: string
   args: Record<string, number | boolean>
-  knownShortfall: boolean
+  // Потолок регресс-гейта для фичастых кейсов. Нет → абсолютный Load-бюджет 1000мс.
+  regressionCeiling?: number
 }
 
 const CASES: RenderCase[] = [
@@ -40,28 +42,23 @@ const CASES: RenderCase[] = [
     id: 'P1',
     label: 'небольшая выборка, без плагинов',
     args: { ...SMALL, ...NO_PLUGINS },
-    knownShortfall: false,
   },
   {
     id: 'P3',
     label: 'большая выборка, без плагинов',
     args: { ...LARGE, ...NO_PLUGINS },
-    knownShortfall: false,
   },
   {
     id: 'P5',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    knownShortfall: false,
+    regressionCeiling: 350,
   },
   {
     id: 'P6',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    // Под TanStack v9 монтаж большой выборки со всеми плагинами укладывается в Load-
-    // бюджет (гранулярная реактивность вместо пересчёта всей модели, ADR 0026, V9-1) —
-    // прежний известный недостиг v8 снят.
-    knownShortfall: false,
+    regressionCeiling: 500,
   },
 ]
 
@@ -79,8 +76,7 @@ describe('Производительность первой отрисовки',
   })
 
   for (const c of CASES) {
-    const runner = c.knownShortfall ? test.fails : test
-    runner(
+    test(
       `${c.id}: ${c.label}`,
       async () => {
         const result = await measureRenderWork(
@@ -89,7 +85,8 @@ describe('Производительность первой отрисовки',
           { warmup: false },
         )
         const { longestMs, longTasks, tbtMs } = result
-        const pass = longestMs <= LOAD_BUDGET_MS
+        const budget = c.regressionCeiling ?? LOAD_BUDGET_MS
+        const pass = longestMs <= budget
 
         await recordPerf({
           id: c.id,
@@ -99,13 +96,14 @@ describe('Производительность первой отрисовки',
             c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
           plugins: c.args.enableColumnSorting ? 'all' : 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: c.knownShortfall,
+          // Фичастые кейсы сверяются с регресс-потолком, а не с абсолютным Load.
+          knownShortfall: c.regressionCeiling !== undefined,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: longestMs,
-              budgetMs: LOAD_BUDGET_MS,
+              budgetMs: budget,
               pass,
               ...result,
             },
@@ -114,8 +112,8 @@ describe('Производительность первой отрисовки',
 
         expect(
           longestMs,
-          `render longest=${longestMs.toFixed(1)}ms (Load-бюджет ${LOAD_BUDGET_MS}ms, ×${CPU_THROTTLE_RATE}) longTasks=${longTasks} tbt=${tbtMs.toFixed(1)}ms`,
-        ).toBeLessThanOrEqual(LOAD_BUDGET_MS)
+          `render longest=${longestMs.toFixed(1)}ms (limit ${budget}ms, ×${CPU_THROTTLE_RATE}) longTasks=${longTasks} tbt=${tbtMs.toFixed(1)}ms`,
+        ).toBeLessThanOrEqual(budget)
       },
       PERF_TIMEOUT,
     )
