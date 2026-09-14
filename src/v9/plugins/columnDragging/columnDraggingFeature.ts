@@ -13,7 +13,12 @@
  *  - dnd-события живут в getColumnDraggingEvents (грид вызывает на cutover), а не
  *    пекутся в options (v9 запрещает setOptions в constructTableAPIs).
  */
-import { assignPrototypeAPIs, makeStateUpdater } from '@tanstack/table-v9'
+import {
+  assignPrototypeAPIs,
+  assignTableAPIs,
+  functionalUpdate,
+  makeStateUpdater,
+} from '@tanstack/table-v9'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { DragOverlayState } from './types'
@@ -24,6 +29,9 @@ interface ColumnDraggingStateSlice {
 interface ColumnDraggingOptions {
   enableColumnDragging?: boolean
   onColumnDraggingActiveIdChange?: (updater: Updater<DragOverlayState>) => void
+}
+interface ColumnDraggingTableAPI {
+  setColumnDraggingActiveId: (updater: Updater<DragOverlayState>) => void
 }
 interface ColumnDraggingColumnDef {
   enableDragging?: boolean
@@ -59,6 +67,12 @@ declare module '@tanstack/table-v9' {
   > {
     columnDraggingFeature: ColumnDraggingColumnAPI
   }
+  interface Table_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    columnDraggingFeature: ColumnDraggingTableAPI
+  }
 }
 
 type DraggableColumn = {
@@ -92,6 +106,25 @@ export const columnDraggingFeature: TableFeature = {
   getDefaultTableOptions: table => ({
     onColumnDraggingActiveIdChange: makeStateUpdater('columnDraggingActiveId', table),
   }),
+  constructTableAPIs: table => {
+    // v9 useTable возвращает фасад с сырыми options (без фичевых defaults) — даём
+    // метод-сеттер overlay-id, бьющий по внутреннему default-updater/атому.
+    assignTableAPIs('columnDraggingFeature', table, {
+      table_setColumnDraggingActiveId: {
+        fn: (updater: Updater<DragOverlayState>) => {
+          const opts = table.options as {
+            onColumnDraggingActiveIdChange?: (u: Updater<DragOverlayState>) => void
+          }
+          if (opts.onColumnDraggingActiveIdChange) {
+            opts.onColumnDraggingActiveIdChange(updater)
+            return
+          }
+          const atom = (table as unknown as { atoms: { columnDraggingActiveId: { get: () => DragOverlayState; set: (v: DragOverlayState) => void } } }).atoms.columnDraggingActiveId
+          atom.set(functionalUpdate(updater, atom.get()))
+        },
+      },
+    })
+  },
   assignColumnPrototype: (prototype, table) => {
     assignPrototypeAPIs('columnDraggingFeature', prototype, table, {
       column_getCanDrag: {

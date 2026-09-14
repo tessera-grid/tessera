@@ -21,6 +21,7 @@ import {
 import type { Table } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
 import { useSlice } from '../core/reactivity'
+import { getColumnDraggingEvents } from '../plugins/columnDragging'
 import { Z_INDEX, autoScrollOnlyX } from './dnd/parameters'
 import { horizontalCollisionDetection } from './dnd/collisionDetection'
 import { OverlayHeadCell } from './OverlayHeadCell'
@@ -70,10 +71,11 @@ export const DndHeadWrapper = ({
 
   const columnDraggingActiveId = useSlice(table, 'columnDraggingActiveId' as never)
 
-  const { onColumnDragStart, onColumnDragEnd } = table.options as unknown as {
-    onColumnDragStart?: (event: unknown) => void
-    onColumnDragEnd?: (event: unknown) => void
-  }
+  // Редьюсер dnd-событий столбцов (меняет стейт методами таблицы — фасад useTable
+  // несёт сырые options без фичевых on*Change).
+  const { onColumnDragStart, onColumnDragEnd } = getColumnDraggingEvents(
+    table as never,
+  )
 
   const draggableHeader = useMemo(() => {
     return headers.find((header: any) => header.id === columnDraggingActiveId)

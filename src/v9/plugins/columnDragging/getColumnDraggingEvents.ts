@@ -8,11 +8,11 @@ import { arrayMove } from '@dnd-kit/sortable'
 import type { ColumnDraggingPlugin, DragOverlayState } from './types'
 
 // Табличный контракт, нужный редьюсеру (v9-методы + кастомные из columnDraggingFeature).
+// Изменения стейта — через МЕТОДЫ таблицы (setColumnDraggingActiveId/setColumnOrder):
+// v9 useTable возвращает фасад с сырыми options без фичевых on*Change-хендлеров.
 type DndTable = {
-  options: {
-    onColumnDraggingActiveIdChange?: (value: DragOverlayState) => void
-    onColumnOrderChange?: (updater: (prev: string[]) => string[]) => void
-  }
+  setColumnDraggingActiveId: (value: DragOverlayState) => void
+  setColumnOrder: (updater: (prev: string[]) => string[]) => void
   atoms: { columnDraggingActiveId: { get: () => DragOverlayState } }
   getHooks: () => ColumnDraggingPlugin
   getFlatHeaders: () => {
@@ -28,13 +28,12 @@ type DndTable = {
 }
 
 export const getColumnDraggingEvents = (table: DndTable) => {
-  const { onColumnDraggingActiveIdChange, onColumnOrderChange } = table.options
   const { onColumnDragEnd } = table.getHooks().columnDragging
 
   return {
     onColumnDragStart: (event: { active: { id: DragOverlayState } }) => {
       document.body.style.cursor = 'grabbing'
-      onColumnDraggingActiveIdChange?.(event.active.id)
+      table.setColumnDraggingActiveId(event.active.id)
     },
     onColumnDragEnd: (event: {
       over: { id: unknown; data: { current?: Record<string, unknown> } } | null
@@ -43,7 +42,7 @@ export const getColumnDraggingEvents = (table: DndTable) => {
 
       const reset = () => {
         document.body.style.cursor = 'default'
-        onColumnDraggingActiveIdChange?.(null)
+        table.setColumnDraggingActiveId(null)
       }
 
       if (!over) {
@@ -107,7 +106,7 @@ export const getColumnDraggingEvents = (table: DndTable) => {
         hoverIndex = edgeColumn.getDraggableIndex()
       }
 
-      onColumnOrderChange?.(prev =>
+      table.setColumnOrder(prev =>
         arrayMove(prev, activeOrderIndex, targetOrderIndex),
       )
       onColumnDragEnd?.({ dragIndex: activeDraggingIndex, hoverIndex })
