@@ -45,16 +45,23 @@ export const getRowDraggingEvents = (
     }
   ).atoms.rowDragging.get()
 
-  const { onRowDraggingChange, onRowOrderChange, onExpandedChange } =
-    table.options as unknown as {
-      onRowDraggingChange: (
+  // v9 useTable возвращает фасад с сырыми options (без фичевых defaults), поэтому
+  // overlay-состояние меняем методом table.setRowDragging (бьёт по внутреннему
+  // updater), а не через table.options.onRowDraggingChange. onRowOrderChange/
+  // onExpandedChange передаёт потребитель — они на возвращаемых options есть.
+  const onRowDraggingChange = (
+    table as unknown as {
+      setRowDragging: (
         updater: (prev: RowDragOverlayState) => RowDragOverlayState,
       ) => void
-      onRowOrderChange?: (updater: (prev: any[]) => any[]) => void
-      onExpandedChange?: (
-        updater: true | Record<string, boolean> | ((prev: any) => any),
-      ) => void
     }
+  ).setRowDragging
+  const { onRowOrderChange, onExpandedChange } = table.options as unknown as {
+    onRowOrderChange?: (updater: (prev: any[]) => any[]) => void
+    onExpandedChange?: (
+      updater: true | Record<string, boolean> | ((prev: any) => any),
+    ) => void
+  }
 
   /** Свернуть/развернуть группу до и после перетаскивания. */
   const expandGroup = (groupId: UniqueIdentifier, expanded: boolean) => {
@@ -127,8 +134,8 @@ export const getRowDraggingEvents = (
           ? 0
           : getOffsetLeftFromDepth(row.depth, constOffsetLeft),
         // Запомнить, была ли открыта группа до перетаскивания, чтобы свернуть её на
-        // время и после открыть вновь
-        isExpanded: row.getIsExpanded(),
+        // время и после открыть вновь (rowExpanding может отсутствовать → false).
+        isExpanded: row.getIsExpanded?.() ?? false,
         // Возможность переместить строку на данную вложенность (зависит от
         // ограничения по глубине вложенности)
         acceptable: true,
@@ -160,7 +167,7 @@ export const getRowDraggingEvents = (
         ...prev,
         offsetLeft: getOffsetLeftFromDepth(validDepth, constOffsetLeft),
         // Вложенность больше 1 сейчас не поддерживается.
-        acceptable: activeRow.getCanExpand() ? validDepth === 0 : true,
+        acceptable: (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true,
       }))
     },
     onRowDragEnd: ({ active, over }) => {

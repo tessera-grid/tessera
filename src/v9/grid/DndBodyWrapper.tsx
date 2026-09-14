@@ -118,7 +118,7 @@ export const DndBodyWrapper = ({
         {draggableRowCell && (
           <OverlayBodyRow
             firstCell={draggableRowCell}
-            withCount={draggableRow?.getCanExpand()}
+            withCount={draggableRow?.getCanExpand?.() ?? false}
             subRowsCount={draggableRow?.subRows.length}
           />
         )}

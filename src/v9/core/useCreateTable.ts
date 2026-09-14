@@ -265,7 +265,7 @@ export const useCreateTable = <
   const enableSubRowSelection = (
     table.options as { enableSubRowSelection?: unknown }
   ).enableSubRowSelection
-  const prevSelectionOpts = useRef<string>()
+  const prevSelectionOpts = useRef<string | undefined>(undefined)
   const selectionOptsKey = JSON.stringify([
     typeof enableRowSelection === 'function' ? 'fn' : enableRowSelection,
     enableSubRowSelection,
