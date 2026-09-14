@@ -16,6 +16,7 @@ import { columnSorting } from '../plugins/columnSorting'
 import { columnPinning } from '../plugins/columnPinning'
 import { headerActionMenu } from '../plugins/headerActionMenu'
 import { ActionsZone } from '../grid/headerActions/ActionsZone'
+import { DEFAULT_LABELS } from '../../lib/core/localization'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -75,8 +76,13 @@ describe('Cutover — ActionsZone (v9, happy-dom)', () => {
     act(() => {
       root.render(<ActionsZone slot="rightHeaderSlot" context={headerContext(table)} />)
     })
-    const kebab = container.querySelector('[data-kebab-trigger]')
+    // Схлопывание → реальный Base UI-кебаб (триггер-кнопка с aria-label headerMenu),
+    // инлайн-кнопки pin/sort ушли в меню (портал, до открытия не в DOM).
+    const kebab = container.querySelector(
+      `button[aria-label="${DEFAULT_LABELS.headerMenu}"]`,
+    )
     expect(kebab).toBeTruthy()
-    expect(kebab!.getAttribute('data-menu-count')).toBe('2')
+    // Инлайн-дескрипторов в зоне не осталось (только триггер кебаба).
+    expect(container.querySelectorAll('button[aria-label]').length).toBe(1)
   })
 })

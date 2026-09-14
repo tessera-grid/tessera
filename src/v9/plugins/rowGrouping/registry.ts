@@ -54,7 +54,7 @@ export const rowGrouping = (opts: RowGroupingOptions = {}) =>
     // Единый дескриптор (ADR 0016): ядро решает подачу (инлайн-кнопка / строка меню).
     slotActions: [groupHeaderAction],
     options: {
-      enableGrouping: true,
+      enableGrouping: opts.enabled !== false,
       groupedColumnMode: false,
     },
   }) satisfies TesseraFeatureEntry<{

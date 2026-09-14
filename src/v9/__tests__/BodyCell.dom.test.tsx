@@ -78,7 +78,9 @@ describe('Cutover — BodyCell (v9, happy-dom)', () => {
     })
 
     const cellEl = container.querySelector('[role="cell"]') as HTMLElement
-    expect(cellEl.getAttribute('data-cell-pinned')).toBe('start')
+    // DOM-контракт грида остался left/right (CSS/тесты/бейзлайны), хотя v9
+    // getIsPinned даёт start/end — маппинг pinnedSideToDom.
+    expect(cellEl.getAttribute('data-cell-pinned')).toBe('left')
     // Первая закреплённая слева → смещение 0px.
     expect(cellEl.style.left).toBe('0px')
   })

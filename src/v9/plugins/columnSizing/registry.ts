@@ -39,7 +39,7 @@ export const columnSizing = (opts: ColumnSizingOptions = {}) =>
       },
     ],
     options: {
-      enableColumnResizing: true,
+      enableColumnResizing: opts.enabled !== false,
       columnResizeMode: 'onChange',
     },
   }) satisfies TesseraFeatureEntry<{

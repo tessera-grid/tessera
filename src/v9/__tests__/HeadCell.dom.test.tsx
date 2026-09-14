@@ -80,6 +80,7 @@ describe('Cutover — HeadCell (v9, happy-dom)', () => {
       root.render(<HeadCell layout="flex" header={headerOf(table)} />)
     })
     const head = container.querySelector('[role="columnheader"]') as HTMLElement
-    expect(head.getAttribute('data-cell-pinned')).toBe('start')
+    // DOM-контракт грида — left/right (маппинг pinnedSideToDom из v9 start/end).
+    expect(head.getAttribute('data-cell-pinned')).toBe('left')
   })
 })

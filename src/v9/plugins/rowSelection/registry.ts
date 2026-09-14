@@ -48,7 +48,9 @@ export const rowSelection = (opts: RowSelectionOptions = {}) => {
       pin: { side: 'start', when: 'with-user' },
     } satisfies ServiceColumn,
     options: {
-      enableRowSelection,
+      // При disabled — жёстко false (иначе present-but-disabled фича активна:
+      // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).
+      enableRowSelection: opts.enabled === false ? false : enableRowSelection,
       enableSubRowSelection: opts.subRows ?? false,
       enableRowRangeSelection: false,
     },

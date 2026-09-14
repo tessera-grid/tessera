@@ -70,7 +70,7 @@ export const rowExpanding = (opts: RowExpandingOptions = {}) => {
       pin: { side: 'start', when: 'with-user' },
     } satisfies ServiceColumn,
     options: {
-      enableExpanding: true,
+      enableExpanding: opts.enabled !== false,
       autoResetExpanded: false,
       getRowCanExpand,
     },

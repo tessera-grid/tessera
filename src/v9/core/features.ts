@@ -96,11 +96,15 @@ export const foldEntries = (
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
 
   for (const entry of entries) {
+    // Опции берём от ВСЕХ присутствующих записей (в т.ч. enabled:false) — фабрика
+    // отключённого плагина эмитит enable*:false, гася свою (всегда-присутствующую в
+    // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
+    Object.assign(options, entry.options)
+
     if (!isActive(entry)) {
       continue
     }
 
-    Object.assign(options, entry.options)
     entry.slots?.forEach(slot => registerSlotInto(slots, slot))
     entry.slotActions?.forEach(action => registerSlotActionInto(slotActions, action))
 
@@ -166,10 +170,11 @@ export const buildTesseraFeatures = <
     columnGroupingFeature,
   }
 
+  // Фичи ВСЕХ присутствующих записей (в т.ч. enabled:false): v9 фиксирует набор фич
+  // на маунте useTable, поэтому рантайм-включение плагина не добавит фичу. Держим
+  // фичу всегда (как v8 keepFeatureWhenDisabled), а поведение гейтим опцией
+  // (enable*:false у отключённого плагина — foldEntries эмитит её от всех записей).
   for (const entry of entries) {
-    if (entry.enabled === false) {
-      continue
-    }
     Object.assign(merged, entry.slot)
   }
 

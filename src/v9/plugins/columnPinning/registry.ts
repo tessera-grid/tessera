@@ -30,7 +30,7 @@ export const columnPinning = (opts: ColumnPinningOptions = {}) =>
     // Единый дескриптор (ADR 0011/0024): ядро решает подачу (инлайн/кебаб).
     slotActions: [pinHeaderAction],
     options: {
-      enableColumnPinning: true,
+      enableColumnPinning: opts.enabled !== false,
       enableLeafPinning: !!opts.leafPinning,
     },
   }) satisfies TesseraFeatureEntry<{

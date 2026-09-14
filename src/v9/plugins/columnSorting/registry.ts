@@ -81,7 +81,7 @@ export const columnSorting = (opts: ColumnSortingOptions = {}) => {
     // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
     slotActions: [sortHeaderAction],
     options: {
-      enableSorting: true,
+      enableSorting: opts.enabled !== false,
       enableSortingRemoval: opts.removal ?? true,
       manualSorting: opts.server ?? false,
       sortDescFirst: true,

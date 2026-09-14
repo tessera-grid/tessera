@@ -36,7 +36,7 @@ export const rowDragging = (opts: RowDraggingOptions = {}) =>
       pin: { side: 'start', when: 'with-user' },
     } satisfies ServiceColumn,
     options: {
-      enableRowDragging: opts.enable ?? true,
+      enableRowDragging: opts.enabled === false ? false : (opts.enable ?? true),
     },
   }) satisfies TesseraFeatureEntry<{
     rowDraggingFeature: typeof rowDraggingFeature

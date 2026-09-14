@@ -35,7 +35,7 @@ export const columnDragging = (opts: ColumnDraggingOptions = {}) =>
       },
     ],
     options: {
-      enableColumnDragging: true,
+      enableColumnDragging: opts.enabled !== false,
     },
   }) satisfies TesseraFeatureEntry<{
     columnDraggingFeature: typeof columnDraggingFeature
