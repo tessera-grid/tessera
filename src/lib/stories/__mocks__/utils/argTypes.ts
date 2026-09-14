@@ -1,7 +1,7 @@
 import { ArgTypes, InputType } from 'storybook/internal/csf'
 
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../v9/plugins/rowActions'
-import { DEFAULT_SKELETON_OPTIONS } from '../../../core/skeletonOverlay/options'
+import { DEFAULT_SKELETON_OPTIONS } from '../../../../v9/core/skeletonOptions'
 
 export const columnCountType: ArgTypes = {
   control: { type: 'number', min: 1, max: 1000, step: 5 },
