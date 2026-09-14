@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import type { HeaderGroup } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
 import { DraggableHeadCell, HeadCell } from './HeadCell'
-import { LeftEmptyColumn, RightEmptyColumn } from './VirtualizePaddingColumns'
+import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerHeadColumn } from './RightFillerHeadColumn'
 
 import styles from '../grid/HeadRow/HeadRow.module.css'
@@ -60,26 +60,43 @@ export const HeadRow = ({
     )
   }
 
+  // Пиннутые заголовки — sticky в потоке; центральные — position:absolute по своему
+  // `left` (вне потока). Спейсер постоянной ширины держит поток. Симметрично телу.
+  const startHeaders: typeof headers = []
+  const endHeaders: typeof headers = []
+  const centerHeaders: { header: (typeof headers)[number]; start: number }[] = []
+  for (const virtualColumn of virtualColumns) {
+    const header = headers[virtualColumn.index]
+    const pinned = header.column.getIsPinned()
+    if (pinned === 'start') startHeaders.push(header)
+    else if (pinned === 'end') endHeaders.push(header)
+    else centerHeaders.push({ header, start: virtualColumn.start })
+  }
+
+  const cell = (
+    header: (typeof headers)[number],
+    absoluteLeft?: number,
+  ) => (
+    <CellComponent
+      key={header.id}
+      layout={layout}
+      header={header}
+      leftHeaderSlot={leftHeaderSlot}
+      rightHeaderSlot={rightHeaderSlot}
+      absoluteLeft={absoluteLeft}
+    />
+  )
+
   return (
     <div
       className={clsx('data-grid__head-row', styles.HeadRow)}
       role="row"
       aria-rowindex={headerGroup.depth + 1}
     >
-      <LeftEmptyColumn />
-      {virtualColumns.map(virtualColumn => {
-        const header = headers[virtualColumn.index]
-        return (
-          <CellComponent
-            key={header.id}
-            layout={layout}
-            header={header}
-            leftHeaderSlot={leftHeaderSlot}
-            rightHeaderSlot={rightHeaderSlot}
-          />
-        )
-      })}
-      <RightEmptyColumn />
+      {startHeaders.map(header => cell(header))}
+      <VirtualCenterSpacer />
+      {centerHeaders.map(({ header, start }) => cell(header, start))}
+      {endHeaders.map(header => cell(header))}
     </div>
   )
 }

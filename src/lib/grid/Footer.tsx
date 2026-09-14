@@ -4,9 +4,9 @@ import { memo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
 
-import type { HeaderGroup } from '../types'
+import type { Header, HeaderGroup } from '../types'
 import { FooterCell } from './FooterCell'
-import { LeftEmptyColumn, RightEmptyColumn } from './VirtualizePaddingColumns'
+import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 
 import footerStyles from '../grid/Footer/Footer.module.css'
@@ -37,17 +37,34 @@ export const Footer = ({
           собственного бокса, чтобы ячейки остались треками общей grid/flex-сетки. */}
       <div role="row" style={{ display: 'contents' }}>
         {isVirtualColumns ? (
-          <>
-            <LeftEmptyColumn />
-            {virtualColumns.map(virtualColumn => {
+          (() => {
+            // Симметрично Head/Body: пиннутые — в потоке, центральные — position:absolute
+            // по своему `left` (вне потока), между ними спейсер постоянной ширины.
+            const startH: Header<any, any, unknown>[] = []
+            const endH: Header<any, any, unknown>[] = []
+            const centerH: { header: Header<any, any, unknown>; start: number }[] = []
+            for (const virtualColumn of virtualColumns) {
               const header = headers[virtualColumn.index]
-
-              return (
-                <FooterCell key={header.id} layout={layout} header={header} />
-              )
-            })}
-            <RightEmptyColumn />
-          </>
+              const pinned = header.column.getIsPinned()
+              if (pinned === 'start') startH.push(header)
+              else if (pinned === 'end') endH.push(header)
+              else centerH.push({ header, start: virtualColumn.start })
+            }
+            return (
+              <>
+                {startH.map(h => (
+                  <FooterCell key={h.id} layout={layout} header={h} />
+                ))}
+                <VirtualCenterSpacer />
+                {centerH.map(({ header, start }) => (
+                  <FooterCell key={header.id} layout={layout} header={header} absoluteLeft={start} />
+                ))}
+                {endH.map(h => (
+                  <FooterCell key={h.id} layout={layout} header={h} />
+                ))}
+              </>
+            )
+          })()
         ) : (
           <>
             {headers.map(header => (

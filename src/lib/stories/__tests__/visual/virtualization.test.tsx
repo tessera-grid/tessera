@@ -28,17 +28,11 @@ const nextFrame = () =>
 const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
 
-/** CSS-переменная виртуального паддинга, вычисленная на узле `.MuiTable-root`. */
-const virtualPadding = (
-  name: '--virtual-padding-left' | '--virtual-padding-right',
-) => {
+/** Ширина спейсера центра (`--virtual-center-width`) на узле `.MuiTable-root`. */
+const centerWidth = () => {
   const table = document.querySelector<HTMLElement>('.MuiTable-root')!
-  return parseFloat(getComputedStyle(table).getPropertyValue(name)) || 0
+  return parseFloat(getComputedStyle(table).getPropertyValue('--virtual-center-width')) || 0
 }
-
-/** Суммарная ширина реально отрендеренных заголовков (без filler-паддингов). */
-const renderedHeadWidth = () =>
-  headCells().reduce((sum, h) => sum + h.getBoundingClientRect().width, 0)
 
 /** Head-ячейка колонки, закреплённая слева (после клика по кнопке пина). */
 const PINNED_HEAD = `${SEL.headCell}[data-cell-pinned='left']`
@@ -154,7 +148,7 @@ describe('Виртуализация — окно строк и столбцов
 // --- V8–V11: filler-паддинги и достижимость краёв -----------------------------
 
 describe('Виртуализация — filler-паддинги и достижимость', () => {
-  test('V7: левый/правый виртуальные отступы не «перепрыгивают» через значения', async () => {
+  test('V7: виртуальный экстент учитывает невидимые столбцы по их реальным размерам', async () => {
     renderGrid({ columnCount: 30, dataCount: 100 })
     await waitForGrid()
 
@@ -163,14 +157,10 @@ describe('Виртуализация — filler-паддинги и достиж
     await nextFrame()
     await nextFrame()
 
-    const left = virtualPadding('--virtual-padding-left')
-    const right = virtualPadding('--virtual-padding-right')
-    const content = left + renderedHeadWidth() + right
-
-    // Отступы точно учитывают невидимые столбцы по их реальным размерам: сумма
-    // сходится с полной шириной прокрутки. Если реальный размер разошёлся бы с
-    // виртуальным клоном, паддинг «перепрыгнул» бы и сумма поехала.
-    expect(Math.abs(content - scroller.scrollWidth)).toBeLessThan(1)
+    // Спейсер центра (сумма ВСЕХ центральных столбцов по реальным размерам) задаёт
+    // горизонтальный экстент — без пиннинга сходится со scrollWidth. Если бы размер
+    // невидимого столбца разошёлся с виртуальным клоном, экстент бы поехал.
+    expect(Math.abs(centerWidth() - scroller.scrollWidth)).toBeLessThan(1)
   })
 
   test('V8: строка достижима и рендерится в начале, середине и конце списка', async () => {
@@ -231,19 +221,20 @@ describe('Виртуализация — filler-паддинги и достиж
     expect(Math.max(...renderedColumnIndexes())).toBe(columnCount - 1)
   })
 
-  test('V10: при горизонтальном скролле left-padding растёт по мере ухода столбцов', async () => {
+  test('V10: при горизонтальном скролле окно колонок сдвигается — левые столбцы уходят', async () => {
     renderGrid({ columnCount: 30, dataCount: 100 })
     await waitForGrid()
 
     const scroller = getScroller()
     scroller.scrollLeft = 0
     await nextFrame()
-    const leftAtStart = virtualPadding('--virtual-padding-left')
+    const minAtStart = Math.min(...renderedColumnIndexes())
 
     await scrollToEnd('x')
-    const leftAtEnd = virtualPadding('--virtual-padding-left')
+    const minAtEnd = Math.min(...renderedColumnIndexes())
 
-    // У левого края отступ мал; после ухода столбцов за левый край — заметно больше.
-    expect(leftAtEnd).toBeGreaterThan(leftAtStart)
+    // У левого края в окне столбцы с нулевого; после прокрутки левые уходят —
+    // минимальный отрендеренный индекс заметно вырос.
+    expect(minAtEnd).toBeGreaterThan(minAtStart)
   })
 })

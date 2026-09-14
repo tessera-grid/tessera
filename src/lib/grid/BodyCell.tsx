@@ -35,6 +35,11 @@ interface TableBodyCellProps {
   rightCellSlot?: RegisterSlotParams<any>[]
   actionRowSlot?: RegisterSlotParams<any>[]
   interact?: boolean
+  // Абсолютная позиция центральной (непиннутой) виртуализированной ячейки: её `left`
+  // от левого края строки. Ячейка выносится из потока (position:absolute), чтобы её
+  // монтаж/демонтаж на границе окна не пере-раскладывал соседей. Для пиннутых и
+  // невиртуализированных ячеек не задаётся (обычный поток/sticky).
+  absoluteLeft?: number
 }
 
 export const BodyCell = memo(
@@ -46,6 +51,7 @@ export const BodyCell = memo(
     rightCellSlot,
     actionRowSlot,
     interact = true,
+    absoluteLeft,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
 
@@ -122,8 +128,9 @@ export const BodyCell = memo(
         style={{
           minWidth: `var(${getColumnSizeVariable(cell.column.id)})`,
           width: `var(${getColumnSizeVariable(cell.column.id)})`,
-          left: startPinnedOffset,
-          right: endPinnedOffset,
+          ...(absoluteLeft !== undefined
+            ? { position: 'absolute', left: absoluteLeft, top: 0, height: '100%' }
+            : { left: startPinnedOffset, right: endPinnedOffset }),
           paddingLeft,
         }}
         aria-colindex={cell.column.getIndex() + 1}

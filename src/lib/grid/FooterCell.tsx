@@ -12,9 +12,11 @@ import styles from '../grid/FooterCell/FooterCell.module.css'
 export interface FooterCellProps {
   layout: 'grid' | 'flex'
   header: Header<any, any, unknown>
+  // Абсолютная позиция центральной виртуализированной ячейки футера (симметрично телу).
+  absoluteLeft?: number
 }
 
-export const FooterCell = ({ layout, header }: FooterCellProps) => {
+export const FooterCell = ({ layout, header, absoluteLeft }: FooterCellProps) => {
   return (
     <div
       key={header.id}
@@ -22,7 +24,9 @@ export const FooterCell = ({ layout, header }: FooterCellProps) => {
       className={clsx('data-grid__footer-cell', styles.footer__cell)}
       style={{
         width: `var(${getHeaderSizeVariable(header.id)})`,
-        willChange: 'width',
+        ...(absoluteLeft !== undefined
+          ? { position: 'absolute', left: absoluteLeft, top: 0, height: '100%' }
+          : null),
       }}
       aria-colindex={header.column.getIndex() + 1}
       data-column-id={header.column.id}

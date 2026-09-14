@@ -37,6 +37,9 @@ interface TableHeadCellProps {
   header: Header<any, any, unknown>
   leftHeaderSlot?: RegisterSlotParams<any>[]
   rightHeaderSlot?: RegisterSlotParams<any>[]
+  // Абсолютная позиция центрального (непиннутого) виртуализированного заголовка —
+  // симметрично телу: вынос из потока, чтобы монтаж на границе окна не рефлоуил ряд.
+  absoluteLeft?: number
 }
 
 interface DragBindings {
@@ -80,6 +83,7 @@ const HeadCellView = ({
   rightHeaderSlot,
   disabledSortable,
   drag,
+  absoluteLeft,
 }: HeadCellViewProps) => {
   const table = header.getContext().table
 
@@ -130,8 +134,9 @@ const HeadCellView = ({
       header.column.getIsRowActionsColumn() && layout === 'grid'
         ? 'auto'
         : `var(${getColumnSizeVariable(header.id)})`,
-    left: startPinnedOffset,
-    right: endPinnedOffset,
+    ...(absoluteLeft !== undefined
+      ? { position: 'absolute', left: absoluteLeft, top: 0, height: '100%' }
+      : { left: startPinnedOffset, right: endPinnedOffset }),
     opacity: isDragging ? 0 : 1,
     transform: disabledSortable
       ? 'none'

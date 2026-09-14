@@ -11,6 +11,12 @@ interface ColumnVirtualizerScrollParams {
 }
 
 /**
+ * Горизонтальная виртуализация без layout-thrash: центральные (непиннутые) ячейки
+ * позиционируются АБСОЛЮТНО по своему `left` (вне потока) — добавление/удаление ячейки
+ * на границе окна не пере-раскладывает соседей и не заставляет чтение scrollLeft
+ * форсить reflow. Экстент потока держит ОДИН спейсер постоянной ширины
+ * `--virtual-center-width` (сумма всех центральных колонок) между блоками пиннинга —
+ * значение не зависит от прокрутки, поэтому не тришит layout.
  * @link https://tanstack.com/table/latest/docs/framework/react/examples/virtualized-columns
  */
 export const useColumnVirtualizerScroll = ({
@@ -18,51 +24,16 @@ export const useColumnVirtualizerScroll = ({
   virtualColumns,
   columnsTotalSize,
 }: ColumnVirtualizerScrollParams) => {
-  const visibleColumns = table.getVisibleLeafColumns()
-  const visibleColumnsCount = visibleColumns.length
-
   const startVisibleColumns = table.getStartVisibleLeafColumns()
   const endVisibleColumns = table.getEndVisibleLeafColumns()
 
-  const [startPinnedIndexes, endPinnedIndexes] = [
-    startVisibleColumns.map((c: any) => c.getPinnedIndex()),
-    endVisibleColumns
-      .map((column: any) => visibleColumnsCount - column.getPinnedIndex() - 1)
-      .sort((a: number, b: number) => a - b),
-  ]
-
-  const sizePinnedStart = startPinnedIndexes.length
-  const sizePinnedEnd = endPinnedIndexes.length
-  const sizeColumns = virtualColumns.length
-
-  let virtualPaddingLeft = 0
-  let virtualPaddingRight = 0
-
-  if (virtualColumns.length) {
-    if (sizeColumns) {
-      const startNonPinnedStart = virtualColumns[sizePinnedStart]?.start || 0
-      const startNonPinnedEnd =
-        virtualColumns[startPinnedIndexes.length - 1]?.end || 0
-
-      const endNonPinnedStart =
-        virtualColumns[sizeColumns - sizePinnedEnd]?.start || 0
-      const endNonPinnedEnd =
-        virtualColumns[sizeColumns - sizePinnedEnd - 1]?.end || 0
-
-      virtualPaddingLeft = startNonPinnedStart - startNonPinnedEnd
-
-      virtualPaddingRight =
-        columnsTotalSize -
-        endNonPinnedEnd -
-        (sizePinnedEnd ? columnsTotalSize - endNonPinnedStart : 0)
-    }
-  }
+  const pinnedWidth = [...startVisibleColumns, ...endVisibleColumns].reduce(
+    (sum: number, column: any) => sum + column.getSize(),
+    0,
+  )
+  const centerWidth = columnsTotalSize - pinnedWidth
 
   return {
-    '--virtual-padding-left': `${virtualPaddingLeft}px`,
-    '--virtual-padding-right': `${virtualPaddingRight}px`,
-    '--virtual-padding-right-display':
-      virtualPaddingRight > 0 ? 'flex' : 'none',
-    '--virtual-padding-left-display': virtualPaddingLeft > 0 ? 'flex' : 'none',
+    '--virtual-center-width': virtualColumns.length ? `${centerWidth}px` : undefined,
   } as CSSProperties
 }

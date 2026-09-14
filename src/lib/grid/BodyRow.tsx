@@ -15,7 +15,7 @@ import { useTableState } from '../core/reactivity'
 import { animateLayoutChanges } from '../plugins/rowDragging'
 import { ItemDraggableWrapper } from './dnd'
 import { BodyCell } from './BodyCell'
-import { LeftEmptyColumn, RightEmptyColumn } from './VirtualizePaddingColumns'
+import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
@@ -74,25 +74,38 @@ const BodyRowCells = ({
   isRowInteract,
 }: BodyRowCellsProps) => {
   if (isVirtualColumns) {
+    const cellProps = (cell: Cell<any, any, unknown>, absoluteLeft?: number) => ({
+      key: cell.id,
+      layout,
+      cell,
+      rowIndex: virtualRow?.index,
+      leftCellSlot,
+      rightCellSlot,
+      actionRowSlot,
+      interact: isRowInteract,
+      absoluteLeft,
+    })
+
+    // Пиннутые ячейки — sticky-сиблинги в потоке; центральные — position:absolute по
+    // своему `left` (вне потока), поэтому их монтаж на границе окна не рефлоуит строку.
+    // Спейсер постоянной ширины держит поток (экстент + отсутствие свободного места).
+    const startCells: Cell<any, any, unknown>[] = []
+    const endCells: Cell<any, any, unknown>[] = []
+    const centerCells: { cell: Cell<any, any, unknown>; start: number }[] = []
+    for (const virtualColumn of virtualColumns) {
+      const cell = visibleCells[virtualColumn.index]
+      const pinned = cell.column.getIsPinned()
+      if (pinned === 'start') startCells.push(cell)
+      else if (pinned === 'end') endCells.push(cell)
+      else centerCells.push({ cell, start: virtualColumn.start })
+    }
+
     return (
       <>
-        <LeftEmptyColumn />
-        {virtualColumns.map(virtualColumn => {
-          const cell = visibleCells[virtualColumn.index]
-          return (
-            <BodyCell
-              key={cell.id}
-              layout={layout}
-              cell={cell}
-              rowIndex={virtualRow?.index}
-              leftCellSlot={leftCellSlot}
-              rightCellSlot={rightCellSlot}
-              actionRowSlot={actionRowSlot}
-              interact={isRowInteract}
-            />
-          )
-        })}
-        <RightEmptyColumn />
+        {startCells.map(cell => <BodyCell {...cellProps(cell)} />)}
+        <VirtualCenterSpacer />
+        {centerCells.map(({ cell, start }) => <BodyCell {...cellProps(cell, start)} />)}
+        {endCells.map(cell => <BodyCell {...cellProps(cell)} />)}
       </>
     )
   }
