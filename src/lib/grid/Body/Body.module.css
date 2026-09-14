@@ -1,6 +1,5 @@
 .body {
   contain: strict;
-  will-change: transform;
   display: grid;
   position: relative;
   height: var(--tsr-comp-body-height);

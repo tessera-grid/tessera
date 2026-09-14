@@ -1,7 +1,6 @@
 .body__cell {
   contain: layout paint;
   display: flex;
-  will-change: width;
   padding: 0;
   /*
    * Отступ раскрытия вложенных строк приходит как padding-left на ячейку

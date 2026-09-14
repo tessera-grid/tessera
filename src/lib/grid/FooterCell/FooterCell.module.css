@@ -1,7 +1,6 @@
 .footer__cell {
   contain: paint;
   display: flex;
-  will-change: width;
   padding: 0;
   transition: var(--tsr-comp-row-transition);
 
