@@ -8,9 +8,9 @@
     `getExpandedRowModel`, срез `expanded`, `row.getIsExpanded` /
     `getCanExpand` / `getToggleExpandedHandler`, `getSubRows`, опция
     `maxExpandingDepth`).
-  - [ADR 0007](0007-reactivity-pubsub.md) — кнопка-тоггл и атрибуты раскрытия
-    строки подписаны на срез `expanded` через `useSubscribeStore`, а не на
-    глобальный ре-рендер.
+  - [ADR 0026](0026-migrate-to-tanstack-v9.md) — кнопка-тоггл и атрибуты раскрытия
+    строки подписаны на срез `expanded` через `useSelector` (TanStack Store), а не
+    на глобальный ре-рендер.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — покрытие
     визуальными + перформанс-тестами; требования (`RE<n>`) кодируются тестами, а
     состояние читается из контракта DOM (запрет хардкода мок-данных).
@@ -25,7 +25,10 @@
 > `plugins` (предел глубины — аргумент фабрики). Упомянутые ниже `enable*` остаются
 > TanStack-опциями, которые фабрика проставляет сама (`RegistryEntry.options`). Тип
 > хуков плагина (`rowExpanding`) выводится из набора `plugins` (`InferPluginHooks`).
-> Текст ниже отражает исходное решение и сохранён как история.
+>
+> **Механика ниже приведена к v9** ([ADR 0026](0026-migrate-to-tanstack-v9.md)): жизненный
+> цикл фичи — `constructTableAPIs`/`assign*Prototype`, реактивность — `useSelector`
+> (TanStack Store, `table.atoms`); раскрываемость — табличная опция `getRowCanExpand`.
 
 ## Контекст
 
@@ -35,8 +38,8 @@
 «раскрыто / свёрнуто» видно и снаружи (внешняя бизнес-логика, аналитика,
 доступность).
 
-TanStack Table v8 несёт готовую модель раскрытия: срез `expanded`,
-`getExpandedRowModel`, `getSubRows`, методы строки (`getIsExpanded`,
+TanStack Table v9 несёт готовую модель раскрытия: срез `expanded`, встроенная
+`rowExpandingFeature` + `createExpandedRowModel()`, `getSubRows`, методы строки (`getIsExpanded`,
 `getCanExpand`, `getToggleExpandedHandler`) и опцию `maxExpandingDepth`. Но она
 про **состояние раскрытия и модель развёрнутых строк**, а не про рендер: сам
 служебный столбец с тогглом, предикат «какая строка раскрываема», ограничение по
@@ -57,10 +60,10 @@ TanStack Table v8 несёт готовую модель раскрытия: с�
 состояния раскрытия — он читает `row.getIsExpanded()` / `getCanExpand()` и
 делегирует переключение `row.getToggleExpandedHandler()`. Раскрытие возвращается
 в дерево через штатный срез `expanded`
-(`core/createState/rowExpandingState.ts`), развёрнутые строки даёт
+(`core/createState.ts`), развёрнутые строки даёт
 `getExpandedRowModel()`, дерево — `getSubRows: row => row.subRows || []`.
 
-Опции таблицы (`core/createTable/useCreateTable.ts`):
+Опции таблицы (`core/useCreateTable.ts`):
 
 - **`enableRowExpanding`** — булев флаг **или предикат** `(row) => boolean`:
   какие строки раскрываемы. По умолчанию `false`.
@@ -74,30 +77,28 @@ TanStack Table v8 несёт готовую модель раскрытия: с�
 
 ### Форма плагина
 
-`rowExpandingPlugin` (`src/lib/plugins/rowExpanding/rowExpandingPlugin.tsx`) —
-всегда инъектируемая базовая фича (`TablePlugin`). У неё два хука жизненного
-цикла:
+`rowExpanding` (`src/lib/plugins/rowExpanding/registry.ts`) — фабрика записи
+`TesseraFeatureEntry`. Поведение даёт встроенная `rowExpandingFeature` + слот-модель
+`createExpandedRowModel()`. Раскрываемость задаётся табличной опцией
+**`getRowCanExpand`** (в v9 она заменяет дефолт целиком, поэтому проверка
+`subRows.length > 0` воспроизведена явно): при активной группировке раскрытием
+владеет rowGrouping (ADR 0022) — возвращается дефолтная раскрываемость; иначе строка
+раскрываема, пока её глубина ниже предела (`row.depth < maxDepth`). UI **не** вешается
+хуком жизненного цикла: `renderComponent = RowExpandingComponent` **запечён в
+дефиниции служебного столбца** (`getRowExpandingColumn`).
 
-- **`createRow`** — переопределяет `row.getCanExpand()`. Если включена
-  группировка (`enableGrouping`) — раскрываемость делегируется штатному
-  `getCanExpand` TanStack (сгруппированные строки). Иначе строка раскрываема,
-  когда `enableRowExpanding(row)` истинно **и** её глубина ниже предела
-  (`row.depth < maxExpandingDepth`).
-- **`createCell`** — на служебном столбце раскрытия (`COLUMN_EXPANDING_ID`)
-  ставит `renderComponent = RowExpandingComponent`.
-
-Служебный столбец раскрытия инъектируется **не** плагином, а сборкой колонок
-(`core/createColumns/useCreateColumns.ts`): когда `enableRowExpanding` включено,
-`getRowExpandingColumn(depth)` добавляется ведущим (`unshift`). Столбец
-служебный (`getActionColumnId('rowExpanding')`, `enablePinning: false`,
-`enableSorting: false`, `enableResizing: false`, `enableDragging: false`) и при
-многоуровневой шапке разворачивается в группу нужной глубины.
+Служебный столбец раскрытия инъектируется **не** плагином напрямую, а сборкой колонок
+(`injectServiceColumns`, `core/createColumns`): запись приносит столбец в
+`entry.column` (`getRowExpandingColumn`), а сборка раскладывает его ведущим (по
+`side`/`order`). Столбец служебный (`getActionColumnId('rowExpanding')`,
+`enablePinning: false`, `enableSorting: false`, `enableResizing: false`,
+`enableDragging: false`) и при многоуровневой шапке разворачивается в группу нужной глубины.
 
 ### Тоггл раскрытия
 
 `RowExpandingComponent` (ячейка) подписан на `getIsExpanded()`, `getCanExpand()`
-и `maxExpandingDepth` через `useSubscribeStore`
-([ADR 0007](0007-reactivity-pubsub.md)). Для нераскрываемой строки
+и `maxExpandingDepth` через `useSelector`
+(TanStack Store). Для нераскрываемой строки
 (`!getCanExpand()`) он не рендерит ничего — тоггл есть только там, где раскрытие
 имеет смысл. Клик зовёт `row.getToggleExpandedHandler()` и следом hook
 `onExpandRow(row, expanded)` со **следующим** состоянием.
@@ -109,7 +110,7 @@ TanStack Table v8 несёт готовую модель раскрытия: с�
 
 ### Отступ по глубине
 
-`getCellExpandingStyles` (`getCellExpandingStyles.ts`) отступает содержимое
+`getCellExpandingStyles` (`grid/cellExpandingStyles.ts`) отступает содержимое
 **первого пользовательского** столбца (первый видимый не-служебный) на
 `EXPANDING_DEPTH_OFFSET_PX × row.depth` (32px на уровень), задавая `paddingLeft`
 на ячейке в `BodyCell`. Служебные и прочие столбцы отступа не получают —
@@ -123,7 +124,7 @@ TanStack Table v8 несёт готовую модель раскрытия: с�
 литералов мока):
 
 - **`aria-expanded` и `data-expanded` на `role="row"`** (`BodyRow.tsx`) —
-  `row.getIsExpanded()`; реактивны (`useSubscribeStore`). Атрибуты
+  `row.getIsExpanded()`; реактивны (`useSelector`). Атрибуты
   проставляются **только** на раскрываемой строке (`getCanExpand()`): у листьев
   их нет — так контракт различает «свёрнута» (`false`) и «не раскрываема»
   (атрибута нет).
@@ -150,7 +151,7 @@ TanStack Table v8 несёт готовую модель раскрытия: с�
   колонок и `renderComponent`; тоггл — общий `IconButton` с переопределяемой
   иконкой.
 - **+** Реактивность гранулярна: тоггл и строка подписаны на срез `expanded`
-  через `useSubscribeStore`, а не перерисовываются глобально.
+  через `useSelector` (TanStack Store), а не перерисовываются глобально.
 - **+** Предикат `enableRowExpanding(row)` + `maxExpandingDepth` дают чистый шов
   для «какие строки и до какой глубины раскрываемы», не размазывая эту логику по
   рендеру.

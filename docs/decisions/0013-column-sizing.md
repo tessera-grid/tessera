@@ -12,9 +12,9 @@
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен как слот поверх
     штатной модели изменения размеров TanStack (`column.getCanResize`,
     `column.getIsResizing`, `column.getSize`, `column.resetSize`,
-    `header.getResizeHandler`, срез `columnSizing` / `columnSizingInfo`).
-  - [ADR 0007](0007-reactivity-pubsub.md) — affordance подписан на срез ресайза
-    столбца через `useSubscribeStore`, а не на глобальный ре-рендер.
+    `header.getResizeHandler`, срез `columnSizing` / `columnResizing`).
+  - [ADR 0026](0026-migrate-to-tanstack-v9.md) — affordance подписан на срез ресайза
+    столбца через `useSelector` (TanStack Store), а не на глобальный ре-рендер.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — покрытие
     визуальными + перформанс-тестами; требования (`CR<n>`) кодируются тестами, а
     состояние читается из контракта DOM (запрет хардкода мок-данных).
@@ -27,14 +27,19 @@
 > композицией: плагин включается фабрикой `columnSizing()` в массиве `plugins`.
 > Упомянутые ниже `enable*` остаются TanStack-опциями, которые фабрика проставляет
 > сама (`RegistryEntry.options`). Тип хуков плагина выводится из набора `plugins`
-> (`InferPluginHooks`). Текст ниже отражает исходное решение и сохранён как история.
+> (`InferPluginHooks`).
+>
+> **Механика ниже приведена к v9** ([ADR 0026](0026-migrate-to-tanstack-v9.md)): жизненный
+> цикл фичи — `constructTableAPIs`/`assign*Prototype`, реактивность — `useSelector`
+> (TanStack Store, `table.atoms`); в v9 sizing/resizing разделены на две фичи, а срез
+> ресайза называется `columnResizing` (v8: `columnSizingInfo`).
 
 ## Контекст
 
 Потребителям нужно менять ширину столбца прямо из шапки — тянуть за грип у
 правой границы заголовка, видеть ширину вживую при перетаскивании и сбрасывать её
-двойным кликом. TanStack Table v8 несёт готовую модель ресайза (`columnSizing`- и
-`columnSizingInfo`-state, `column.getCanResize()`, `column.getIsResizing()`,
+двойным кликом. TanStack Table v9 несёт готовую модель ресайза (`columnSizing`- и
+`columnResizing`-state, `column.getCanResize()`, `column.getIsResizing()`,
 `column.getSize()`, `column.resetSize()`, `header.getResizeHandler()`), но она про
 **состояние размеров и математику дельты**, а не про рендер: сам грип в шапке,
 видимость по наведению, живое применение ширины к ячейкам шапки/тела/футера и
@@ -55,11 +60,11 @@ affordance в шапке, живой режим применения, сброс
 состояние ширины — он читает `column.getCanResize()` / `column.getIsResizing()` /
 `column.getSize()` и делегирует перетаскивание `header.getResizeHandler()`, а
 сброс — `column.resetSize()`. Ширина возвращается в дерево через штатный срез
-`columnSizing` (`core/createState/columnSizingState.ts`); границы `[minSize,
+`columnSizing` (`core/createState.ts`); границы `[minSize,
 maxSize]` применяет сам TanStack в `column.getSize()`.
 
 Опции `useCreateTable` мапятся на штатные напрямую
-(`core/createTable/useCreateTable.ts`):
+(`core/useCreateTable.ts`):
 
 - **`enableColumnResizing`** → `enableColumnResizing` (по умолчанию `false`);
 - зафиксирован **`columnResizeMode: 'onChange'`** — ширина применяется вживую на
@@ -67,20 +72,25 @@ maxSize]` применяет сам TanStack в `column.getSize()`.
 
 ### Форма плагина
 
-`columnSizingPlugin` (`src/lib/plugins/columnSizing/columnSizingPlugin.tsx`) —
-всегда инъектируемая базовая фича (`TablePlugin`), построенная на конвенциях
-`TablePlugin` + слоты ([plugins-and-slots.md](../architecture/plugins-and-slots.md)).
-Единственный хук — **`createTable`**, регистрирующий UI-affordance слотом
+`columnSizing` (`src/lib/plugins/columnSizing/registry.ts`) — фабрика записи
+`TesseraFeatureEntry`, построенная на конвенциях фич + слоты
+([plugins-and-slots.md](../architecture/plugins-and-slots.md)). Поведение дают две
+встроенные фичи v9 (`columnSizingFeature` + `columnResizingFeature`); UI-affordance —
+декларативный слот записи
 `rightHeaderSlot` (`order: 'last'` — грип прижат к правой границе, за пином и
 сортировкой):
 
 ```ts
-table.setRenderSlot({
-  id: 'columnSizingPlugin',
-  slot: 'rightHeaderSlot',
-  order: 'last',
-  component: ColumnSizingComponent,
-})
+slots: [
+  {
+    id: 'columnSizingPlugin',
+    slot: 'rightHeaderSlot',
+    order: 'last',
+    component: ColumnSizingComponent,
+    // resize-грип — аффорданс, не кнопка: не учитывается в пороге кебаба (ADR 0024)
+    countsAsHeaderAction: false,
+  },
+]
 ```
 
 Плагин делает что-либо только когда столбец ресайзабелен: `ColumnSizingComponent`
@@ -90,8 +100,8 @@ table.setRenderSlot({
 ### Affordance в шапке
 
 `ColumnSizingComponent` (`ColumnSizingComponent.tsx`) — компонент слота. Он
-подписывается на срез ресайза столбца через `useSubscribeStore`
-([ADR 0007](0007-reactivity-pubsub.md)) — `getIsResizing()`, `getCanResize()`,
+подписывается на срез ресайза столбца через `useSelector`
+(TanStack Store) — `getIsResizing()`, `getCanResize()`,
 `enableColumnResizing` — и рендерит `ResizeHandler`:
 
 ```tsx
@@ -121,8 +131,8 @@ const onResetSize = () => {
 - **сброс двойным кликом**: `onDoubleClick` → `onResetSize`;
 - в состоянии ресайза грип несёт `data-button-active` = `true` — это
   реактивный сигнал активного ресайза: `ColumnSizingComponent` подписан на
-  `column.getIsResizing()` через `useSubscribeStore`
-  ([ADR 0007](0007-reactivity-pubsub.md));
+  `column.getIsResizing()` через `useSelector`
+  (TanStack Store);
 - **видимость только при наведении** — грип присутствует в DOM всегда, но скрыт
   `opacity: 0` до наведения на ячейку заголовка (общая конвенция
   `cell__button--hidden`, `grid/cellControls/buttonVisibility.css`). Пока идёт
@@ -141,8 +151,8 @@ const onResetSize = () => {
   т. ч. на служебном столбце и на групповых заголовках).
 - **`data-column-resizing` на `role="columnheader"`** — `column.getIsResizing()`:
   `true`, пока столбец тянут. Реактивен — `HeadCell` подписан на
-  `column.getIsResizing()` через `useSubscribeStore`
-  ([ADR 0007](0007-reactivity-pubsub.md)), поэтому атрибут обновляется при старте
+  `column.getIsResizing()` через `useSelector`
+  (TanStack Store), поэтому атрибут обновляется при старте
   и завершении ресайза; на нём же `buttonVisibility.css` подавляет hover-раскрытие
   соседних кнопок ячейки во время перетаскивания
   (`.data-grid__head-cell:not([data-column-resizing='true'])`).
@@ -153,7 +163,7 @@ const onResetSize = () => {
 - **`data-column-id`** — логический id столбца (`column.id`) на ячейках шапки,
   тела и футера; даёт тестам и потребителю адресовать столбец по стабильному id.
 - **ширина через CSS-переменные** `--col-<id>-size` / `--header-<id>-size`
-  (`createColumns/calculateColumnSizes.ts`), вычисляемые из `getSize()` на уровне
+  (`grid/useCalculateColumnSizes.ts`), вычисляемые из `getSize()` на уровне
   контейнера и читаемые ячейками шапки, тела и футера. Поэтому ширина шапки и тела
   столбца всегда синхронна, а границы `[minSize, maxSize]` соблюдаются штатным
   `getSize()`.
@@ -200,7 +210,7 @@ hover-состояния и не давало случайных кликов/с
 авто-слайс размеров через `setColumnAutoSizing` в `setup`
 ([ADR 0010](0010-invert-core-plugins-registry.md), generic-escape), а ядро в
 `useCreateState` сводит слои так, что авто-слайс идёт **последним** и побеждает и
-контролируемый, и внутренний `columnSizing` (`core/createState/mergeColumnSizing.ts`):
+контролируемый, и внутренний `columnSizing` (`mergeColumnSizing` в `core/createState.ts`):
 
 ```ts
 { ...(externalColumnSizing ?? columnSizing), ...columnAutoSizing }
@@ -272,11 +282,11 @@ Chromium), перформанс-покрытие даёт кейс ресайз�
 
 **Границы применимости**
 
-| ID   | Требование                                                                                                                             | Тест                                                   |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| CR14 | Служебный столбец действий не ресайзабелен (нет грипа, `data-column-resizable='false'`)                                                | ✔ `CR14: the row-actions column …`                     |
-| CR15 | При многоуровневой шапке групповые заголовки не ресайзабельны, а листовые столбцы — да                                                 | ✔ `CR15: multi-level headers …`                        |
-| CR17 | Ширина служебной колонки во владении плагина: авто-слайс побеждает контролируемый/внутренний `columnSizing` (модульный тест, ADR 0009) | ✔ `core/createState/mergeColumnSizing.test.ts` `CR17:` |
+| ID   | Требование                                                                                                                             | Тест                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| CR14 | Служебный столбец действий не ресайзабелен (нет грипа, `data-column-resizable='false'`)                                                | ✔ `CR14: the row-actions column …`                                                           |
+| CR15 | При многоуровневой шапке групповые заголовки не ресайзабельны, а листовые столбцы — да                                                 | ✔ `CR15: multi-level headers …`                                                              |
+| CR17 | Ширина служебной колонки во владении плагина: авто-слайс побеждает контролируемый/внутренний `columnSizing` (модульный тест, ADR 0009) | ⚠ пробел: логика в `core/createState.ts` (`mergeColumnSizing`), выделенного `CR17`-теста нет |
 
 См. [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм
 плагинов и слотов и [rendering.md](../architecture/rendering.md) про рендер ячеек.

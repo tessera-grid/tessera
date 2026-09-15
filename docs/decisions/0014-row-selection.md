@@ -9,8 +9,8 @@
     `getToggleSelectedHandler`, `table.getIsAllPageRowsSelected` /
     `getIsSomePageRowsSelected` / `getToggleAllPageRowsSelectedHandler`,
     `table.resetRowSelection`).
-  - [ADR 0007](0007-reactivity-pubsub.md) — чекбоксы шапки и строк подписаны на
-    срез выбора через `useSubscribeStore`, а не на глобальный ре-рендер.
+  - [ADR 0026](0026-migrate-to-tanstack-v9.md) — чекбоксы шапки и строк подписаны на
+    срез выбора через `useSelector` (TanStack Store), а не на глобальный ре-рендер.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — покрытие
     визуальными + перформанс-тестами; требования (`RS<n>`) кодируются тестами, а
     состояние читается из контракта DOM (запрет хардкода мок-данных).
@@ -25,7 +25,10 @@
 > `plugins`. Упомянутые ниже `enableRowSelection`/`enableSubRowSelection` остаются
 > TanStack-опциями, которые фабрика проставляет сама (`RegistryEntry.options`). Тип
 > хуков плагина (`rowSelection`) выводится из набора `plugins` (`InferPluginHooks`).
-> Текст ниже отражает исходное решение и сохранён как история.
+>
+> **Механика ниже приведена к v9** ([ADR 0026](0026-migrate-to-tanstack-v9.md)): жизненный
+> цикл фичи — `constructTableAPIs`/`assign*Prototype`, реактивность — `useSelector`
+> (TanStack Store, `table.atoms`); гейт группировки — функциональный `enableRowSelection`.
 
 ## Контекст
 
@@ -35,7 +38,7 @@
 частично) и отдавать наружу событие выбора для внешней бизнес-логики (панель
 пакетных действий, серверный «выбрать всё»).
 
-TanStack Table v8 несёт готовую модель выбора: срез `rowSelection`, опции
+TanStack Table v9 несёт готовую модель выбора: срез `rowSelection`, опции
 `enableRowSelection` / `enableSubRowSelection`, методы строки (`getIsSelected`,
 `getIsSomeSelected`, `getCanSelect`, `getCanSelectSubRows`,
 `getToggleSelectedHandler`) и таблицы (`getIsAllPageRowsSelected`,
@@ -62,7 +65,7 @@ TanStack Table v8 несёт готовую модель выбора: срез 
 `getCanSelect()` / `getCanSelectSubRows()` и делегирует переключение
 `row.getToggleSelectedHandler()`, а «выбрать все на странице» —
 `table.getToggleAllPageRowsSelectedHandler()`. Выбор возвращается в дерево через
-штатный срез `rowSelection` (`core/createState/rowSelectionState.ts`); каскад по
+штатный срез `rowSelection` (`core/createState.ts`); каскад по
 поддереву обеспечивает сам TanStack при `enableSubRowSelection`.
 
 Опции `useCreateTable` мапятся на штатные напрямую:
@@ -71,36 +74,34 @@ TanStack Table v8 несёт готовую модель выбора: срез 
 - **`enableSubRowSelection`** → `enableSubRowSelection` — включает выбор
   дочерних строк и каскад родитель ↔ потомки.
 
-При смене этих флагов выбор сбрасывается: `useRowSelectionReset`
-(`plugins/rowSelection/useRowSelectionReset.ts`) зовёт
-`table.resetRowSelection(true)` в эффекте по изменению
+При смене этих флагов выбор сбрасывается: `useCreateTable` (`core/useCreateTable.ts`)
+в `useEffect` зовёт `table.resetRowSelection(true)` по изменению
 `enableRowSelection` / `enableSubRowSelection` / `manualExpanding`.
 
 ### Форма плагина
 
-`rowSelectionPlugin` (`src/lib/plugins/rowSelection/rowSelectionPlugin.tsx`) —
-всегда инъектируемая базовая фича (`TablePlugin`). У неё три хука жизненного
-цикла:
+`rowSelection` (`src/lib/plugins/rowSelection/registry.ts`) — фабрика записи
+`TesseraFeatureEntry`. Поведение даёт встроенная `rowSelectionFeature`; гейт
+группировки (ADR 0022) — функциональный `enableRowSelection`. UI **не** вешается
+хуками жизненного цикла: `renderComponent` (`HeadSelectionComponent` для шапки,
+`RowSelectionComponent` для ячейки) **запечён в дефиниции служебного столбца**
+(`getRowSelectionColumn`). Признак «есть ли выбираемая строка» (для блокировки
+чекбокса шапки) в v9 даёт хелпер `getCanSomeRowsSelect(table)` (был Tessera-метод
+`table.getCanSomeRowsSelect`).
 
-- **`createTable`** — добавляет `table.getCanSomeRowsSelect()` (есть ли в модели
-  хоть одна выбираемая строка) — сигнал для блокировки чекбокса шапки;
-- **`createHeader`** — на служебном столбце выбора (`COLUMN_SELECTION_ID`) ставит
-  `renderComponent = HeadSelectionComponent`;
-- **`createCell`** — на нём же ставит `renderComponent = RowSelectionComponent`.
-
-Служебный столбец выбора инъектируется **не** плагином, а сборкой колонок
-(`core/createColumns/useCreateColumns.ts`): когда `enableRowSelection` включено,
-`getRowSelectionColumn(depth)` добавляется ведущим (`unshift`). Столбец
-служебный (`getActionColumnId('rowSelection')`, `enablePinning: false`,
-`enableSorting: false`, `enableResizing: false`, `enableDragging: false`) и при
-многоуровневой шапке разворачивается в группу нужной глубины.
+Служебный столбец выбора инъектируется **не** плагином напрямую, а сборкой колонок
+(`injectServiceColumns`, `core/createColumns`): запись приносит столбец в
+`entry.column` (`getRowSelectionColumn`), а сборка раскладывает его ведущим (по
+`side`/`order`). Столбец служебный (`getActionColumnId('rowSelection')`,
+`enablePinning: false`, `enableSorting: false`, `enableResizing: false`,
+`enableDragging: false`) и при многоуровневой шапке разворачивается в группу нужной глубины.
 
 ### Чекбоксы шапки и строки
 
 Оба построены на общем `SelectCheckbox` (`SelectCheckbox.tsx`, примитив Base UI
 `Checkbox`, иконки `checkboxChecked` / `checkboxIndeterminate` через `useIcons`
-— переопределяемы) и подписаны на срез выбора через `useSubscribeStore`
-([ADR 0007](0007-reactivity-pubsub.md)):
+— переопределяемы) и подписаны на срез выбора через `useSelector`
+(TanStack Store):
 
 - **`RowSelectionComponent`** (ячейка) — подписан на `getIsSelected()`,
   `getIsSomeSelected()`, `getCanSelect()`, `getCanSelectSubRows()`. Клик зовёт
@@ -129,7 +130,7 @@ Hook `isAllRowsSelected` — флаг режима «выбрано всё по�
 хардкода мок-данных: состояние читается из атрибутов, а не из литералов мока):
 
 - **`data-selected` на `role="row"`** (`BodyRow.tsx`) — `row.getIsSelected()`;
-  реактивен (`useSubscribeStore`). На нём `BodyRow.module.css` включает фон
+  реактивен (`useSelector`). На нём `BodyRow.module.css` включает фон
   выбранной строки (`--tsr-comp-row-selected-bg`, при наведении —
   `--tsr-comp-row-selected-hovered-bg`).
 - **`data-checked` / `data-indeterminate` / `data-unchecked` на чекбоксе**
@@ -159,7 +160,7 @@ Hook `isAllRowsSelected` — флаг режима «выбрано всё по�
 - **+** Служебный столбец переиспользует общий механизм инъекции служебных
   колонок и `renderComponent`; чекбокс — общий переопределяемый `SelectCheckbox`.
 - **+** Реактивность гранулярна: чекбоксы и строки подписаны на срез выбора через
-  `useSubscribeStore`, а не перерисовываются глобально.
+  `useSelector` (TanStack Store), а не перерисовываются глобально.
 - **+** Режим `isAllRowsSelected` даёт чистый шов для серверного «выбрать всё» без
   раздувания клиентского среза выбора.
 - **−** Флаг `isAllRowsSelected` пока живёт в `hooks`, а не в `state` таблицы

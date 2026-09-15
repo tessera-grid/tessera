@@ -245,10 +245,11 @@ Story-derived тесты (визуальные и перформанс) живу
   `first-render` (P1/P3/P5/P6 — работа монтирования) и `scroll` (P2/P4/P7/P8 —
   работа на кадр при прокрутке). Измерители — `measureRenderWork` и
   `measureScrollWork` через CDP-команды (`perf.commands.ts`).
-- **co-located (модульные):** тесты логики рядом с исходником плагина
-  (`src/lib/plugins/<плагин>/*.test.ts`), напр.
-  `getColumnDraggingEvents.test.ts` — drag-end: промах мимо цели и чистота
-  updater'а (регрессии `A1`/`A2`).
+- **модульные (логика):** тесты логики в `src/lib/__tests__/*.test.ts` (после
+  миграции на v9 консолидированы там, напр. `columnDragging.test.ts`,
+  `columnSizing.test.ts`, `core.test.ts`, `slots.test.ts`). Выделенный тест drag-end
+  (промах мимо цели / чистота updater'а, регрессии `A1`/`A2`) **пока не
+  восстановлен** — открытый пробел.
 
 **Перф-дашборд.** Каждый перф-кейс записывает свой результат (команда `perfRecord`)
 в `performance-results/latest.json` — хранится только последний прогон. Скрипт

@@ -12,8 +12,8 @@
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен как слот поверх
     штатной модели сортировки TanStack (`getSortedRowModel`, `column.getIsSorted`,
     `column.getToggleSortingHandler`).
-  - [ADR 0007](0007-reactivity-pubsub.md) — affordance подписан на срез сортировки
-    столбца через `useSubscribeStore`, а не на глобальный ре-рендер.
+  - [ADR 0026](0026-migrate-to-tanstack-v9.md) — affordance подписан на срез сортировки
+    столбца через `useSelector` (TanStack Store), а не на глобальный ре-рендер.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — покрытие
     визуальными + перформанс-тестами; требования (`CS<n>`) кодируются тестами.
   - [ADR 0011](0011-column-pinning.md) — общий с пиннингом контракт affordance в
@@ -26,15 +26,20 @@
 > массиве `plugins` (тонкие опции — аргумент фабрики). Упомянутые ниже `enable*`
 > остаются TanStack-опциями, которые фабрика проставляет сама
 > (`RegistryEntry.options`). Тип хуков плагина выводится из набора `plugins`
-> (`InferPluginHooks`). Текст ниже отражает исходное решение и сохранён как история.
+> (`InferPluginHooks`).
+>
+> **Механика ниже приведена к v9** ([ADR 0026](0026-migrate-to-tanstack-v9.md)): жизненный
+> цикл фичи — `constructTableAPIs`/`assign*Prototype`, реактивность — `useSelector`
+> (TanStack Store, `table.atoms`).
 
 ## Контекст
 
 Потребителям нужно сортировать грид по столбцу прямо из шапки — с понятным
 индикатором текущего направления и предсказуемым циклом переключения. TanStack
-Table v8 несёт готовую модель сортировки (`sorting`-state, `column.getIsSorted()`,
-`column.getNextSortingOrder()`, `column.getToggleSortingHandler()`,
-`getSortedRowModel`), но она про **состояние и модель строк**, а не про рендер:
+Table v9 несёт готовую модель сортировки (`sorting`-state, `column.getIsSorted()`,
+`column.getNextSortingOrder()`, `column.getToggleSortingHandler()`, встроенная
+`rowSortingFeature` + `createSortedRowModel()`), но она про **состояние и модель
+строк**, а не про рендер:
 affordance в шапке, иконку направления, тултип следующего действия и опциональную
 серверную сортировку надо построить поверх.
 
@@ -56,7 +61,7 @@ affordance в шапке, иконку направления, тултип сл
 штатный контракт `sorting` / `onSortingChange`.
 
 Опции `useCreateTable` мапятся на штатные напрямую
-(`core/createTable/useCreateTable.ts`):
+(`core/useCreateTable.ts`):
 
 - **`enableColumnSorting`** → `enableSorting` (по умолчанию `false`);
 - **`enableSortingRemoval`** → `enableSortingRemoval` (по умолчанию `true`);
@@ -66,43 +71,37 @@ affordance в шапке, иконку направления, тултип сл
 
 ### Форма плагина
 
-`columnSortingPlugin` (`src/lib/plugins/columnSorting/columnSortingPlugin.tsx`) —
-всегда инъектируемая базовая фича (`TablePlugin`), построенная на конвенциях
-`TablePlugin` + слоты ([plugins-and-slots.md](../architecture/plugins-and-slots.md)).
-Единственный хук — **`createTable`**, регистрирующий UI-affordance слотом
-`rightHeaderSlot` (`order: 1`, сразу за пиннингом — `order: 0`):
+`columnSorting` (`src/lib/plugins/columnSorting/registry.ts`) — фабрика записи
+`TesseraFeatureEntry`, построенная на конвенциях фич + слоты
+([plugins-and-slots.md](../architecture/plugins-and-slots.md)). Поведение даёт
+встроенная `rowSortingFeature` + слот-модель `createSortedRowModel()`; UI-affordance
+объявляется **дескриптором** `slotActions` (`sortHeaderAction`,
+[ADR 0024](0024-slot-action-descriptor-and-menu.md)) в `rightHeaderSlot` (`order: 1`,
+сразу за пиннингом — `order: 0`):
 
 ```ts
-table.setRenderSlot({
-  id: 'columnSortingPlugin',
-  slot: 'rightHeaderSlot',
-  order: 1,
-  component: ColumnSortingComponent,
-})
+slotActions: [sortHeaderAction] // ядро решает подачу: инлайн-кнопка или пункт кебаб-меню
 ```
 
-Плагин делает что-либо только когда столбец сортируем: `ColumnSortingComponent`
-рендерит **ничего**, если `column.getCanSort()` === `false` (в т. ч. когда
-`enableColumnSorting` выключено — тогда штатный `getCanSort()` = `false`).
+Дескриптор виден только на сортируемом столбце (`visible: ({ column }) =>
+column.getCanSort()`; при выключенном `enableColumnSorting` штатный `getCanSort()` =
+`false` — кнопки нет).
 
 ### Affordance в шапке
 
-`ColumnSortingComponent` (`ColumnSortingComponent.tsx`) — компонент слота. Он
-подписывается на срез сортировки столбца через `useSubscribeStore`
-([ADR 0007](0007-reactivity-pubsub.md)) — `getIsSorted()`,
-`getNextSortingOrder()`, `getCanSort()`, `enableSorting`,
-`enableSortingRemoval` — и рендерит `SortButton`:
+Кнопку описывает **дескриптор** `sortHeaderAction` (`sortHeaderAction.tsx`, ADR 0024) —
+данными; реактивность на срез сортировки (`getIsSorted()`, `getNextSortingOrder()`,
+`getCanSort()`) обеспечивает грид подпиской на `table.atoms.sorting`. Ядро подаёт его
+**инлайн** — циклящая иконка-кнопка `SortButton` с бейджем приоритета мультисорта
+(`adornment`) — либо строкой **кебаб-меню**, где `menuItems` разворачивает действие в
+пункты asc/desc/сброс. Инлайн-`onSelect` циклит сортировку:
 
-```tsx
-if (!column.getCanSort()) return null
-
-const operation = column.getIsSorted()
-const nextOperation = column.getNextSortingOrder()
-
-const onSort = event => {
+```ts
+onSelect: ({ column, table }, event) => {
   const { onToggleColumnSort } = table.getHooks().columnSorting
+  const next = column.getNextSortingOrder()
   column.getToggleSortingHandler()?.(event)
-  onToggleColumnSort(column.id, nextOperation)
+  onToggleColumnSort(column.id, next)
 }
 ```
 
@@ -140,7 +139,7 @@ const onSort = event => {
   проставляется только на сортируемом столбце: `ascending` / `descending` по
   текущему направлению, иначе `none`; на несортируемом столбце атрибут опускается.
   `HeadCell` подписан на `column.getIsSorted()` / `column.getCanSort()` через
-  `useSubscribeStore` ([ADR 0007](0007-reactivity-pubsub.md)), поэтому атрибут
+  `useSelector` (TanStack Store), поэтому атрибут
   обновляется реактивно при переключении.
 - **`data-column-id` на ячейках шапки, тела и футера** (`HeadCell` / `BodyCell` /
   `FooterCell`) — логический id столбца (`column.id`). Даёт тестам и потребителю
@@ -184,7 +183,7 @@ const onSort = event => {
   - Снятие столбца из мультисорта делит цикл с одиночной сортировкой
     (`enableSortingRemoval` / опция `removal`); отдельной опции нет, т.к. в
     TanStack 8.20 `enableMultiRemove` в affordance-цикле не задействован.
-- **Индикатор приоритета** — `ColumnSortingComponent` подписан на
+- **Индикатор приоритета** — `adornment` дескриптора читает
   `column.getSortIndex()` и длину среза `sorting`; при **двух и более**
   отсортированных столбцах `SortButton` показывает порядковый номер (1-based,
   `data-sort-priority`, класс `column-sort__priority`). Номер рисуется

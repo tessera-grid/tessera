@@ -12,9 +12,9 @@
     модели группировки TanStack (`enableGrouping`, `getGroupedRowModel`, срез
     `grouping`, `column.toggleGrouping` / `getIsGrouped` / `getCanGroup`,
     `aggregationFn`, `row.getIsGrouped`, опция `groupedColumnMode`).
-  - [ADR 0007](0007-reactivity-pubsub.md) — кнопка группировки подписана на
-    состояние группировки колонки через `useSubscribeStore`, а не на глобальный
-    ре-рендер.
+  - [ADR 0026](0026-migrate-to-tanstack-v9.md) — кнопка группировки подписана на
+    состояние группировки колонки через `useSelector` (TanStack Store), а не на
+    глобальный ре-рендер.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — покрытие
     визуальными + перформанс-тестами; требования (`RG<n>`) кодируются тестами, а
     состояние читается из контракта DOM (запрет хардкода мок-данных).
@@ -30,8 +30,12 @@
 > через флаг `enableGrouping` у `useCreateTable` заменена presence-based
 > композицией: плагин включается фабрикой `rowGrouping()` в массиве `plugins`.
 > Упомянутый ниже `enableGrouping` остаётся TanStack-опцией, которую фабрика
-> проставляет сама (`RegistryEntry.options`). Текст ниже отражает исходное решение
-> и сохранён как история.
+> проставляет сама (`RegistryEntry.options`).
+>
+> **Механика ниже приведена к v9** ([ADR 0026](0026-migrate-to-tanstack-v9.md)): жизненный
+> цикл фичи — `constructTableAPIs`/`assign*Prototype`, реактивность — `useSelector`
+> (TanStack Store, `table.atoms`); в v9 агрегация отделена от группировки
+> (`rowAggregationFeature`).
 
 ## Контекст
 
@@ -41,8 +45,8 @@
 шапке groupable-колонки, отражать текущее состояние (сгруппировано / нет) и не
 загромождать шапку в покое.
 
-TanStack Table v8 несёт готовую модель группировки: срез `grouping`,
-`getGroupedRowModel`, методы колонки (`toggleGrouping`, `getIsGrouped`,
+TanStack Table v9 несёт готовую модель группировки: срез `grouping`, встроенные
+`columnGroupingFeature`/`rowAggregationFeature` + `createGroupedRowModel()`, методы колонки (`toggleGrouping`, `getIsGrouped`,
 `getCanGroup`), строки (`getIsGrouped`), агрегацию (`aggregationFn`,
 `aggregatedCell`) и опцию `groupedColumnMode`. Но она про **состояние
 группировки и модель сгруппированных строк**, а не про рендер: саму
@@ -67,7 +71,7 @@ false` и контракт DOM, — плюс таблицу требований
 `getGroupedRowModel()`, агрегаты — `aggregationFn` колонок (`sum`, счётчик через
 `aggregatedCell`).
 
-Опции таблицы (`core/createTable/useCreateTable.ts`):
+Опции таблицы (`core/useCreateTable.ts`):
 
 - **`enableGrouping`** — включает группировку (по умолчанию `false`); участвует в
   `getCanGroup()` колонки.
@@ -78,21 +82,23 @@ false` и контракт DOM, — плюс таблицу требований
 
 ### Форма плагина
 
-`rowGroupingPlugin` (`src/lib/plugins/rowGrouping/rowGroupingPlugin.tsx`) —
-всегда инъектируемая базовая фича (`TablePlugin`) с единственным хуком
-`createTable`. В отличие от пиннинга / сортировки / выбора / раскрытия, плагин
-**не инъектирует служебный столбец** — афорданс живёт в шапке как слот
-([ADR 0010](0010-invert-core-plugins-registry.md)):
+`rowGrouping` (`src/lib/plugins/rowGrouping/registry.ts`) — фабрика записи
+`TesseraFeatureEntry`. Поведение дают встроенные `columnGroupingFeature` +
+`rowAggregationFeature` + слот-модель `createGroupedRowModel()`. В отличие от
+пиннинга / сортировки / выбора / раскрытия, плагин **не инъектирует служебный
+столбец** — афорданс группировки объявляется **дескриптором** `slotActions`
+(`groupHeaderAction`, [ADR 0024](0024-slot-action-descriptor-and-menu.md)) в
+`rightHeaderSlot` (`order: 2`):
 
-- **`createTable`** регистрирует `RowGroupingComponent` в `rightHeaderSlot`
-  (`setRenderSlot`, `order: 1`) — компонент рендерится в каждой шапке.
+```ts
+slotActions: [groupHeaderAction] // ядро подаёт инлайн-кнопкой или строкой кебаб-меню
+```
 
-`RowGroupingComponent` (`RowGroupingComponent.tsx`) подписан на
-`column.getIsGrouped()`, `getCanGroup()` и `enableGrouping` через
-`useSubscribeStore` ([ADR 0007](0007-reactivity-pubsub.md)). Для колонки, которую
-нельзя группировать (`!getCanGroup()` — служебная, `enableGrouping: false` или
-выключенная группировка), он не рендерит ничего. Иначе рендерит `GroupButton`,
-клик по которой зовёт `column.toggleGrouping()`.
+Дескриптор виден только на группируемой колонке (`visible: ({ column }) =>
+column.getCanGroup()`; на служебной, при `enableGrouping: false` или выключенной
+группировке `getCanGroup()` = `false` — кнопки нет). Инлайн ядро рендерит его
+кнопкой-тумблером `GroupButton`, `onSelect` зовёт `column.toggleGrouping()`;
+реактивность на срез `grouping` обеспечивает грид (`useSelector`, TanStack Store).
 
 ### Кнопка группировки
 
@@ -137,7 +143,7 @@ false` и контракт DOM, — плюс таблицу требований
 - **+** Афорданс — слот шапки, а не служебный столбец: группировка не тратит
   ведущую колонку и переиспользует общий контракт видимости hoverable-кнопок.
 - **+** Реактивность гранулярна: кнопка подписана на состояние группировки
-  колонки через `useSubscribeStore`, а не перерисовывается глобально.
+  колонки через `useSelector` (TanStack Store), а не перерисовывается глобально.
 - **+** `groupedColumnMode: false` сохраняет раскладку колонок при группировке —
   никакого скачка/выноса колонки.
 - **−** Раскрытие групп (открыть строку-группу и увидеть её членов) обеспечивает

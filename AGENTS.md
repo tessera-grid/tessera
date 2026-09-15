@@ -29,14 +29,14 @@
 **Headless, plugin-driven data grid** для React, скомпонованный поверх трёх
 upstream-библиотек headless-ядра — он никогда их не форкает:
 
-- **TanStack Table v8** — модель таблицы, состояние и слот расширения `_features`.
+- **TanStack Table v9** — модель таблицы, состояние (TanStack Store) и композиция фич через `tableFeatures()`.
 - **TanStack Virtual** — виртуализация строк (всегда) и колонок (только плоские заголовки).
 - **dnd-kit** — контексты drag-and-drop для колонок и строк.
 
 Публичная поверхность — два вызова: `useCreateTable(...)` строит сконфигурированный
 экземпляр таблицы; `<DataGrid table={...} />` его рендерит. Контролы построены на
 примитивах **Base UI** (фундамент shadcn) со стилизацией **Tailwind v4 + cva**, а
-раскладка и тема грида — на **CSS Modules** поверх кастомных свойств `--data-grid-*`.
+раскладка и тема грида — на **CSS Modules** поверх кастомных свойств `--tsr-comp-*`.
 
 > **Полный технический стек — источник правды: [ADR 0003](docs/decisions/0003-formalize-tech-stack.md).**
 > Там перечислены все слои (peer, headless-ядро, примитивы Base UI, Tailwind/shadcn,
@@ -52,14 +52,14 @@ upstream-библиотек headless-ядра — он никогда их не 
 `docs/architecture/` — это же и есть порядок чтения. **Реактивность — не отдельный слой,
 а сквозной механизм**: она пронизывает слои L1–L4, а не стоит ступенью над ними.
 
-| #   | Слой                        | Где / документ                                                                                            | Что делает                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| --- | --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| L0  | Основание (upstream)        | `upstream-foundations.md`                                                                                 | TanStack Table v8 (модель + слот `_features`), TanStack Virtual (виртуализация), dnd-kit (DnD-контексты). Фундамент, на котором стоит всё остальное. **Компонуй, не форкай.**                                                                                                                                                                                                                                                                     |
-| L1  | Контракт                    | входы `useCreateTable` + пропы `<DataGrid>`                                                               | Публичная поверхность: `columns`, `data`, `state`+handlers, `hooks`, `plugins` (presence-based, ADR 0010), ядровые `enableSkeleton`/`enableLoading`/`enableFooter`, `icons`, `localization`, `colorMode`. Тип `hooks` выводится из `plugins` (`InferPluginHooks`); агрегат встроенных слайсов — `BuiltinPluginsHooks` из `/plugins`. Канал вниз/вверх: `hooks` = бизнес-контракт (не рендерит), `state` = динамика (рендерит через реактивность). |
-| L2  | Сборка (ядро)               | `core/createTable/useCreateTable.ts` · `table-assembly.md`                                                | `useCreateColumns` (инъекция служебных колонок) → `useCreateState` (core/external split) → `useCreateHooks` → `useCreateSlots` → мемоизированный `_features` → `useReactTable` + нативный `getCoreRowModel`.                                                                                                                                                                                                                                      |
-| L3  | Расширение (плагины+слоты)  | `plugins/common`, `plugins/types.ts` · `plugins-and-slots.md`                                             | `TablePlugin` = TanStack `TableFeature` с хуками жизненного цикла. `commonPlugin` (первым) ставит `getHooks/getRenderSlots/setRenderSlot` + помощники строк/заголовков. Расширение UI: слот (`setRenderSlot`) или `renderComponent`.                                                                                                                                                                                                              |
-| L4  | Рендеринг                   | `ui/DataGrid/DataGrid.tsx` · `rendering.md` (+ `virtualization.md`, `dnd.md`, `theming-and-overrides.md`) | Провайдеры (Icons/Localization/SubscriptionStore/FastScroll) → виртуализаторы → DnD-обёртки → Head/Body/Footer; `RenderSlot` + `renderComponent`. Механики рендер-слоя разнесены по отдельным докам.                                                                                                                                                                                                                                              |
-| ↕   | **Реактивность (сквозная)** | `subscribeStore` · `reactivity.md`                                                                        | Пронизывает L1–L4: идентичность ссылок (широкий радиус) + Pub-Sub (гранулярно). Определяет, что именно перерисуется при изменении входов/состояния. Подробно ниже.                                                                                                                                                                                                                                                                                |
+| #   | Слой                        | Где / документ                                                                                     | Что делает                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --- | --------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L0  | Основание (upstream)        | `upstream-foundations.md`                                                                          | TanStack Table v9 (модель + композиция фич `tableFeatures()`), TanStack Virtual (виртуализация), dnd-kit (DnD-контексты). Фундамент, на котором стоит всё остальное. **Компонуй, не форкай.**                                                                                                                                                                                                                                                     |
+| L1  | Контракт                    | входы `useCreateTable` + пропы `<DataGrid>`                                                        | Публичная поверхность: `columns`, `data`, `state`+handlers, `hooks`, `plugins` (presence-based, ADR 0010), ядровые `enableSkeleton`/`enableLoading`/`enableFooter`, `icons`, `localization`, `colorMode`. Тип `hooks` выводится из `plugins` (`InferPluginHooks`); агрегат встроенных слайсов — `BuiltinPluginsHooks` из `/plugins`. Канал вниз/вверх: `hooks` = бизнес-контракт (не рендерит), `state` = динамика (рендерит через реактивность). |
+| L2  | Сборка (ядро)               | `core/useCreateTable.ts` · `table-assembly.md`                                                     | `buildTesseraFeatures` (`tableFeatures()`) → `foldEntries` (опции/слоты/сервисные колонки/setups) → `injectServiceColumns` → контролируемые срезы (pinning/sizing) → `useCreateHooks` → `useTable`.                                                                                                                                                                                                                                               |
+| L3  | Расширение (плагины+слоты)  | `core/features.ts`, `core/commonFeature.ts` · `plugins-and-slots.md`                               | Плагин = запись `TesseraFeatureEntry` (presence-based, ADR 0010) поверх v9 `TableFeature`. `commonFeature` (always-on) в `constructTableAPIs` ставит `getHooks/getRenderSlots/setRenderSlot` + помощники строк/заголовков. Расширение UI: слот (`setRenderSlot`) или `renderComponent`.                                                                                                                                                           |
+| L4  | Рендеринг                   | `grid/DataGrid.tsx` · `rendering.md` (+ `virtualization.md`, `dnd.md`, `theming-and-overrides.md`) | Провайдеры (Icons/Localization/FastScroll) → виртуализаторы → DnD-обёртки → Head/Body/Footer; `RenderSlot` + `renderComponent`. Механики рендер-слоя разнесены по отдельным докам.                                                                                                                                                                                                                                                                |
+| ↕   | **Реактивность (сквозная)** | `core/reactivity.ts` · `reactivity.md`                                                             | Пронизывает L1–L4: идентичность ссылок (широкий радиус) + TanStack Store (`table.atoms`, гранулярно). Определяет, что именно перерисуется при изменении входов/состояния. Подробно ниже.                                                                                                                                                                                                                                                          |
 
 > **Где проходят швы.** L1↔L2 — граница публичного API (входы против внутренней сборки).
 > L2↔L3 — сборка плюмбинга против модели расширения (плагины/слоты — это _как_ фичи
@@ -69,35 +69,44 @@ upstream-библиотек headless-ядра — он никогда их не 
 ### Сквозная реактивность: два механизма (знайте, какой из них Вы запускаете)
 
 1. **Идентичность ссылок** (нативно для TanStack) — новая идентичность `columns`/`data`
-   перестраивает всю модель. Самый широкий радиус поражения. Потребители обязаны мемоизировать оба.
-2. **Pub-Sub** (`useSubscribeStore`) — **единственный** механизм реакции на внешнее
-   состояние: гранулярный ре-рендер отдельной ячейки через `useSyncExternalStore` и
-   снимок из объединённых примитивов. `notify()` рассылает всем подписчикам; фильтрация —
-   это React bail-out, а не адресная доставка.
+   перестраивает row-модели. Самый широкий радиус поражения. Потребители обязаны мемоизировать оба.
+   (В v9 незатронутые срезы состояния сохраняют референс-идентичность — смена одного слайса
+   больше не перестраивает всю модель.)
+2. **TanStack Store** (`table.atoms`/`table.store`) — **единственный** механизм реакции на
+   состояние: гранулярный ре-рендер по срезу через `useSelector`. Тонкая обёртка Tessera —
+   [`core/reactivity.ts`](src/lib/core/reactivity.ts): `useSlice(table, key)` (один атом) и
+   `useTableState(table, selector)` (проекция из общего store с shallow-сравнением).
+   Собственный Pub-Sub удалён (ADR 0026).
 
 ### Плагины и слоты (модель расширения)
 
-Плагин — это TanStack `TableFeature` (`plugins/types.ts` → `TablePlugin`) с
-хуками жизненного цикла. `createTable/getDefaultOptions/getInitialState` выполняются
-**один раз** — `createColumn/Header/Row/Cell` выполняются при каждом (пере)создании,
-поэтому держите их дешёвыми. Расширяйте UI двумя способами: **зарегистрируйте слот**
-(`setRenderSlot` в `createTable`, дедуплицируется по `id`) для контрола в каждой
-ячейке/заголовке, либо задайте **`renderComponent`** в `createCell/createHeader`, чтобы
+Плагин — это фабрика, возвращающая запись `TesseraFeatureEntry`
+([`core/features.ts`](src/lib/core/features.ts), presence-based, ADR 0010): фрагмент карты
+фич в `slot`, а сервисная колонка, тонкие опции, слоты/действия и императивный `setup` —
+в остальных полях. Под записью лежит v9 `TableFeature`:
+`constructTableAPIs/getDefaultTableOptions/getInitialState` выполняются **один раз**; методы
+вешаются на прототипы через `assign*Prototype`, а данные объекта модели — через
+`init*InstanceData` при каждом (пере)создании, поэтому держите их дешёвыми (полный жизненный
+цикл — [plugins-and-slots.md](docs/architecture/plugins-and-slots.md)). Расширяйте UI двумя
+способами: **зарегистрируйте слот** (`setRenderSlot` в `constructTableAPIs`, дедуплицируется
+по `id`) для контрола в каждой ячейке/заголовке, либо задайте **`renderComponent`**, чтобы
 владеть содержимым целой колонки.
 
 ### Карта репозитория
 
 ```
 src/lib/
-  core/       createTable (useCreateTable, useCreateState/Hooks/Slots),
-              subscribeStore (Pub-Sub), themeVariables (colorMode → CSS vars),
-              localization, createSlots
-  plugins/    common (bootstrap) + rowSelection, rowExpanding, columnPinning,
-              columnSizing, columnSorting, columnDragging, rowDragging, rowGrouping
-  ui/         DataGrid, icons (overridable SVGs), IconButton, Tooltip, Skeleton
+  core/       useCreateTable + features/foldEntries (composition), commonFeature (bootstrap),
+              reactivity (TanStack Store subscriptions), themeVariables (colorMode → CSS vars),
+              createColumns/State/Hooks/Slots, localization, virtualization, fastScroll
+  plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions,
+              columnPinning, columnSizing, columnSorting, columnDragging, header/rowActionMenu
+  grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
+  ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, icons
   stories/    Storybook stories + neutral _shims (no external UI deps)
               __tests__/  Vitest browser tests (reuse stories via composeStories)
-  table.d.ts  global TanStack type augmentation (hooks, slots, renderComponent…)
+  types.ts    ре-экспорт v9-типов TanStack (параметризованных TFeatures)
+              (аугментация @tanstack/react-table — в commonFeature.types.ts + per-plugin *Feature.ts)
 docs/architecture/   contributor deep-dive (source of truth — see below)
 ```
 
@@ -416,25 +425,27 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
   stories, документация, README. Дефолтные подписи — на английском через проп `localization`.
 - **Только утверждённый стек контролов ([ADR 0003](docs/decisions/0003-formalize-tech-stack.md)).**
   Контролы — примитивы **Base UI** (фундамент shadcn) со стилизацией **Tailwind v4 + cva**;
-  раскладка и тема грида — **CSS Modules** поверх `--data-grid-*`, выведенных из токенов
+  раскладка и тема грида — **CSS Modules** поверх `--tsr-comp-*`, выведенных из токенов
   shadcn. Не добавляйте сторонние UI-kit'ы и не вводите CSS-in-JS: стилизация — только
   Tailwind и CSS Modules, тема — только переопределяемые CSS-переменные.
 - **Компонуйте upstream, никогда не форкайте.** TanStack Table/Virtual и dnd-kit — это
-  зависимости, а не вендоренный код. Расширяйте через `_features`/плагины, а не патчами.
+  зависимости, а не вендоренный код. Расширяйте через фичи (`tableFeatures()`)/плагины, а не патчами.
 - **Сохраняйте контракты переопределения:** иконки через `icons` (IconsContext), подписи
   через `localization` (LocalizationProvider), тема через `colorMode` + переопределяемые
   CSS-переменные. Не хардкодьте то, что они делают переопределяемым.
 
 ### Архитектурная дисциплина
 
-- **Реагируйте на внешнее состояние только через Pub-Sub** (`useSubscribeStore`) — это
-  единственный механизм; не вводите перестройки модели, управляемые зависимостями
-  ([reactivity.md](docs/architecture/reactivity.md)).
-- **Держите `createColumn/Header/Row/Cell` дешёвыми** — они выполняются при каждом
-  (пере)создании. Одноразовая работа принадлежит `createTable`/`getDefaultOptions`/`getInitialState`.
-- **Регистрируйте слоты в `createTable`**, дедуплицируя по уникальному `id`.
-- **Держите `src/table.d.ts` синхронным**, когда меняете дополненную поверхность экземпляра
-  (`hooks`, `slots`, `renderComponent`, помощники жизненного цикла).
+- **Реагируйте на состояние только через TanStack Store** (`table.atoms`/`table.store`,
+  обёртки `useSlice`/`useTableState`) — это единственный механизм; не вводите перестройки
+  модели, управляемые зависимостями ([reactivity.md](docs/architecture/reactivity.md)).
+- **Держите `init*InstanceData` и методы `assign*Prototype` дешёвыми** — они бегут при
+  каждом (пере)создании объекта модели. Одноразовая работа принадлежит
+  `constructTableAPIs`/`getDefaultTableOptions`/`getInitialState`.
+- **Регистрируйте слоты в `constructTableAPIs`**, дедуплицируя по уникальному `id`.
+- **Держите аугментацию типов синхронной** (`commonFeature.types.ts` + per-plugin
+  `*Feature.ts`), когда меняете дополненную поверхность экземпляра (`hooks`, `slots`,
+  `renderComponent`, помощники жизненного цикла).
 - **Не «чините» походя известные края** (захардкоженный `getRowId`, коллизия ключей
   `externalState`, раздвоение раскладки вложенных заголовков). Это намеренная проектная
   работа — трогайте их только когда это _и есть_ задача.
@@ -468,7 +479,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
 ### Публичный API — до 1.0, ломать, но флагать
 
 Ломающие изменения публичной поверхности (`useCreateTable`, пропы `<DataGrid>`, контракт
-`TablePlugin`) допустимы, пока до 1.0, но каждое должно быть **явно названо в отчёте и
+`TesseraFeatureEntry`) допустимы, пока до 1.0, но каждое должно быть **явно названо в отчёте и
 задокументировано** (ADR в `docs/decisions/` и обновление соответствующего
 `docs/architecture/`). Никаких тихих поломок.
 

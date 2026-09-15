@@ -9,7 +9,10 @@
 > presence-based композицией: плагины включаются фабриками `rowDragging()` /
 > `columnDragging()` в массиве `plugins`. Упомянутые ниже имена `enable*` остаются
 > TanStack-опциями, которые фабрика проставляет сама (`RegistryEntry.options`).
-> Текст ниже отражает исходное решение и сохранён как история.
+>
+> **Механика ниже приведена к v9** ([ADR 0026](0026-migrate-to-tanstack-v9.md)): методы
+> фич вешаются через `assign*Prototype`, реактивность — на `useSelector` (TanStack Store,
+> `table.atoms`); фичи — `rowDraggingFeature` / `columnDraggingFeature`.
 
 ## Контекст
 
@@ -36,11 +39,10 @@ drag & drop как колонок, так и строк, включая пере
 
 ### Общая механика (единая для строк и столбцов)
 
-Оба плагина — всегда инъектируемые базовые фичи, построенные на конвенциях
-`TablePlugin` + слоты ([plugins-and-slots.md](../architecture/plugins-and-slots.md))
-поверх слоя перетаскивания dnd-kit ([dnd.md](../architecture/dnd.md)). Они делят
-одну и ту же механику; отличия — следствие того, что перетаскивается строка против
-столбца.
+Оба плагина — v9-фичи (записи `TesseraFeatureEntry`), построенные на конвенциях фич и
+слотов ([plugins-and-slots.md](../architecture/plugins-and-slots.md)) поверх слоя
+перетаскивания dnd-kit ([dnd.md](../architecture/dnd.md)). Они делят одну и ту же
+механику; отличия — следствие того, что перетаскивается строка против столбца.
 
 - **`DragHandler`-активатор.** Ручку рендерит общий компонент `DragHandler` — это
   узел-**активатор** dnd-kit: он читает `setActivatorNodeRef` / `attributes` /
@@ -79,7 +81,7 @@ drag & drop как колонок, так и строк, включая пере
 
 ### Активация
 
-Плагин (`rowDraggingPlugin`, `src/lib/plugins/rowDragging/rowDraggingPlugin.tsx`)
+Плагин (`rowDragging` — `src/lib/plugins/rowDragging/registry.ts` + `rowDraggingFeature.ts`)
 делает что-либо только после того, как потребитель включит его через опцию
 **`enableRowDragging`** у `useCreateTable`:
 
@@ -94,37 +96,43 @@ enableRowDragging?: boolean | ((row: Row<TData>) => boolean)
 
 #### `row.getCanDrag()`
 
-Плагин определяет `row.getCanDrag()` в своём хуке `createRow`. Это единственный
-источник истины, который читает UI, чтобы решить, рендерить ли ручку для строки:
+Плагин определяет `row.getCanDrag()` через `assignRowPrototype` (`row_getCanDrag`). Это
+единственный источник истины, который читает UI, чтобы решить, рендерить ли ручку для строки:
 
 ```ts
-createRow: (row, table) => {
-  row.getCanDrag = () => {
-    // перетаскивание не поддерживается с многоуровневыми заголовками или группировкой
-    if (table.getHeaderGroups().length !== 1 || table.options.enableGrouping) {
-      return false
-    }
-    const flag = table.options.enableRowDragging
-    return typeof flag === 'function' ? flag(row) : !!flag
-  }
+assignRowPrototype: (prototype, table) => {
+  assignPrototypeAPIs('rowDraggingFeature', prototype, table, {
+    row_getCanDrag: {
+      fn: row => {
+        const enable = row.table.options.enableRowDragging
+        const wants = typeof enable === 'function' ? enable(row) : !!enable
+        if (!wants) return false
+        // гасят drag: многоуровневая шапка / активная группировка / активная сортировка
+        if (row.table.getHeaderGroups().length !== 1) return false
+        if ((row.table.atoms.grouping?.get() ?? []).length > 0) return false
+        if ((row.table.atoms.sorting?.get() ?? []).length > 0) return false
+        return true
+      },
+    },
+  })
 }
 ```
 
-Два жёстких гейта вшиты и не могут быть переопределены потребителем:
+Жёсткие гейты вшиты и не могут быть переопределены потребителем:
 
 - **многоуровневые (вложенные) заголовки** — `getHeaderGroups().length !== 1`
   отключает перетаскивание;
-- **группировка** — `enableGrouping` отключает перетаскивание.
+- **активная группировка** и **активная сортировка** — отключают перетаскивание
+  (читаются из атомов состояния).
 
 Оба — известные, намеренные ограничения (см. [Известные ограничения](#известные-ограничения)).
 
 ### Сервисный столбец
 
-Когда `enableRowDragging` истинно, `useCreateColumns`
-(`src/lib/core/createColumns/useCreateColumns.ts`) **unshift-ит** выделенный
-сервисный столбец в **начало** списка столбцов (`temp.unshift(...)` — он
-оказывается перед selection/expander, потому что unshift-ится последним), так что
-drag-ручка сидит в своём крайнем левом столбце.
+Когда плагин `rowDragging` подключён, `injectServiceColumns`
+(`src/lib/core/createColumns`) раскладывает выделенный сервисный столбец **слева**
+(по `side`/`order`), перед selection/expander, так что drag-ручка сидит в своём
+крайнем левом столбце.
 
 Столбец строится через `getRowDraggingColumn(depth)`
 (`rowDraggingColumn.ts`). Ключевые факты:
@@ -143,15 +151,15 @@ drag-ручка сидит в своём крайнем левом столбц�
 
 `RowDraggingComponent` (`RowDraggingComponent.tsx`) владеет ячейкой сервисного
 столбца (через `cell.renderComponent`, защищённую по id столбца). Она
-подписывается на `row.getCanDrag()` и рендерит **ничего**, когда строка не
-перетаскиваемая, иначе — `DragHandler`:
+подписывается на срез `rowDragging` (`useSelector(table.atoms.rowDragging)`) и рендерит
+**ничего**, когда строка не перетаскиваемая, иначе — `DragHandler`:
 
 ```tsx
-const RowDraggingComponent = memo(({ row }) => {
-  useSubscribeStore(() => [row.getCanDrag()])
+const RowDraggingComponent = ({ row, table }) => {
+  useSelector(table.atoms.rowDragging)
   if (!row.getCanDrag()) return null
   return <DragHandler id={row.id} type="row" />
-})
+}
 ```
 
 `DragHandler` (`src/lib/plugins/ui/DragHandler.tsx`) — общий активатор (см.
@@ -313,8 +321,8 @@ acceptable }`, управляется через `onRowDraggingChange`.
 
 ### Активация
 
-Плагин (`columnDraggingPlugin`,
-`src/lib/plugins/columnDragging/columnDraggingPlugin.tsx`) делает что-либо только
+Плагин (`columnDragging` —
+`src/lib/plugins/columnDragging/registry.ts` + `columnDraggingFeature.ts`) делает что-либо только
 после **двух** совпавших условий — глобального включения и opt-in на конкретный
 столбец:
 
@@ -335,22 +343,24 @@ sortable.
 
 #### `column.getCanDrag()`
 
-Плагин определяет `column.getCanDrag()` в своём хуке `createColumn`. Это
-единственный источник истины, который читает UI, чтобы решить, рендерить ли ручку
-и делать ли ячейку заголовка перетаскиваемой:
+Плагин определяет `column.getCanDrag()` через `assignColumnPrototype`
+(`column_getCanDrag`). Это единственный источник истины, который читает UI, чтобы
+решить, рендерить ли ручку и делать ли ячейку заголовка перетаскиваемой:
 
 ```ts
-createColumn: (_staticColumn, table) => {
-  _staticColumn.getCanDrag = () => {
-    // перетаскивание не поддерживается с многоуровневыми заголовками
-    if (table.getHeaderGroups().length !== 1) {
-      return false
-    }
-    return (
-      !!_staticColumn.columnDef.enableDragging &&
-      !!table.options.enableColumnDragging
-    )
-  }
+assignColumnPrototype: (prototype, table) => {
+  assignPrototypeAPIs('columnDraggingFeature', prototype, table, {
+    column_getCanDrag: {
+      fn: column => {
+        // многоуровневая шапка гасит перетаскивание столбцов
+        if (column.table.getHeaderGroups().length !== 1) return false
+        return (
+          !!column.columnDef.enableDragging &&
+          !!column.table.options.enableColumnDragging
+        )
+      },
+    },
+  })
 }
 ```
 
@@ -363,18 +373,18 @@ createColumn: (_staticColumn, table) => {
 
 #### `column.getDraggableIndex()`
 
-Плагин также определяет мемоизированный `column.getDraggableIndex()` — индекс
+Плагин также определяет `column.getDraggableIndex()` — индекс
 столбца **среди только перетаскиваемых** столбцов:
 
 ```ts
-_staticColumn.getDraggableIndex = memo(
-  () => [_getVisibleLeafColumns(table)],
-  columns =>
-    columns
-      .filter(column => column.getCanDrag())
-      .findIndex(d => d.id === _staticColumn.id),
-  getMemoOptions(table.options, 'debugColumns', 'getDraggableIndex'),
-)
+column_getDraggableIndex: {
+  // индекс среди перетаскиваемых листьев (порядок определения листьев)
+  fn: column =>
+    column.table
+      .getAllLeafColumns()
+      .filter(leaf => leaf.getCanDrag())
+      .findIndex(leaf => leaf.id === column.id),
+}
 ```
 
 Он намеренно отличается от штатного `column.getIndex()` (позиция среди **всех**
@@ -388,36 +398,35 @@ _staticColumn.getDraggableIndex = memo(
 
 Ключевое отличие от `rowDragging`: **выделенного сервисного столбца нет.** Ручку
 некуда «повесить сбоку» — единица перетаскивания сама и есть заголовок. Поэтому
-`columnDraggingPlugin` регистрирует свой UI **слотом** в существующую ячейку
-заголовка:
+плагин `columnDragging` объявляет свой UI **декларативным слотом записи**
+(`RegistryEntry.slots`) в существующую ячейку заголовка:
 
 ```ts
-table.setRenderSlot({
-  id: 'columnDraggingPlugin',
-  slot: 'leftHeaderSlot',
-  order: 0,
-  component: ColumnDraggingComponent,
-})
+slots: [
+  {
+    id: 'columnDraggingPlugin',
+    slot: 'leftHeaderSlot',
+    order: 0,
+    component: ColumnDraggingComponent,
+  },
+]
 ```
 
 `HeadCell` рендерит `leftHeaderSlot` внутри контента ячейки (перед заголовком),
 так что ручка оказывается в левой части каждой перетаскиваемой ячейки заголовка.
-`useCreateColumns` для этого плагина **ничего не unshift-ит** — список столбцов не
+`injectServiceColumns` для этого плагина **ничего не добавляет** — список столбцов не
 меняется.
 
 ### Drag-ручка
 
 `ColumnDraggingComponent` (`ColumnDraggingComponent.tsx`) — компонент слота. Он
-подписывается на `column.getCanDrag()` (и на состояние закрепления) и рендерит
-**ничего**, когда столбец не перетаскиваемый, иначе — `DragHandler`:
+подписывается на срез `columnDraggingActiveId` и рендерит **ничего**, когда столбец
+не перетаскиваемый, иначе — `DragHandler`:
 
 ```tsx
-export const ColumnDraggingComponent = memo(({ column, table }) => {
-  useSubscribeStore(() => [
-    column.getCanDrag(),
-    column.getCanPin(),
-    table.options.enableColumnDragging,
-  ])
+export const ColumnDraggingComponent = ({ column, table }) => {
+  // всегда-присутствующий срез плагина (реактивность dnd)
+  useSelector(table.atoms.columnDraggingActiveId)
   if (!column.getCanDrag()) return null
   return (
     <DragHandler
@@ -426,7 +435,7 @@ export const ColumnDraggingComponent = memo(({ column, table }) => {
       disabled={column.getIsPinned() !== false}
     />
   )
-})
+}
 ```
 
 `DragHandler` (`src/lib/grid/dnd/DragHandler.tsx`) — тот же общий активатор, что и
