@@ -2,8 +2,6 @@
 // (поповер) — сама иконка-кнопка служит триггером, раскрывая menuItems тем же
 // телом, что и кебаб. Применяется при неоднозначном инлайн-клике (закрепление при
 // обеих сторонах, inlineAsMenu). useSubscribeStore убран (реактивность — ActionsZone).
-import { useState } from 'react'
-
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
@@ -15,20 +13,22 @@ import { ActionMenuPopup } from './ActionMenuPopup'
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
-interface ActionInlineMenuProps {
+export interface ActionInlineMenuProps {
   action: SlotAction
   context: any
   variant?: 'cell' | 'row'
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export const ActionInlineMenu = ({
   action,
   context,
   variant = 'cell',
+  open,
+  onOpenChange,
 }: ActionInlineMenuProps) => {
   const labels = useLocalization()
-
-  const [open, setOpen] = useState(false)
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
@@ -50,7 +50,7 @@ export const ActionInlineMenu = ({
   const wrapperBase = variant === 'row' ? 'row__button' : 'cell__button'
 
   return (
-    <Menu.Root onOpenChange={setOpen}>
+    <Menu.Root open={open} onOpenChange={onOpenChange}>
       <div
         className={clsx(wrapperBase, !open && hiddenClass)}
         data-button-active={active}

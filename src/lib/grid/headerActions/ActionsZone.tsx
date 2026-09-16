@@ -18,8 +18,7 @@ import type { RegisterSlotParams } from '../../core/createSlots'
 import { resolveActionLayout, type SlotAction, type SlotName } from '../../core/headerActions'
 import { useTableState } from '../../core/reactivity'
 import { ActionButton } from './ActionButton'
-import { ActionInlineMenu } from './ActionInlineMenu'
-import { ActionMenu } from './ActionMenu'
+import { ActionInlineMenu, ActionMenu } from './ActionMenu.lazy'
 
 interface ActionsZoneProps {
   slot: SlotName
