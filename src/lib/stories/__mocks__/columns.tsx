@@ -333,13 +333,15 @@ export const useColumns = (count: number) => {
       count >= columns.length
         ? [
             ...columns,
-            ...Array.from({ length: count - columns.length }, (_, i) =>
-              columnHelper.accessor(`col_${i}`, {
+            ...Array.from({ length: count - columns.length }, (_, i) => {
+              // Имя вычисляем ОДИН раз при создании колонки, а не в render-функции:
+              // иначе faker выдаёт новое значение на каждый ре-рендер и текст
+              // заголовка «плывёт» (тесты, читающие колонки по тексту, ложно зелены).
+              const animal = faker.animal.type()
+              return columnHelper.accessor(`col_${i}`, {
                 id: `col_${i}`,
                 header: () => (
-                  <span style={{ lineHeight: '1rem' }}>
-                    {faker.animal.type()}
-                  </span>
+                  <span style={{ lineHeight: '1rem' }}>{animal}</span>
                 ),
                 size: 150,
                 minSize: 150,
@@ -349,8 +351,8 @@ export const useColumns = (count: number) => {
                 enableSorting: true,
                 enablePinning: true,
                 enableDragging: true,
-              }),
-            ),
+              })
+            }),
           ]
         : columns.slice(0, count < 0 ? 0 : count),
     [count],

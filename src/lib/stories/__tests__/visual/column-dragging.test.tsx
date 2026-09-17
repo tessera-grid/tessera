@@ -68,9 +68,45 @@ const renderedCells = (container: HTMLElement) =>
 
 const textOf = (cell: HTMLElement) => cell.textContent?.trim() ?? ''
 
-/** Visible column order keyed by header text. */
-const columnOrder = (container: HTMLElement) =>
-  renderedCells(container).map(textOf)
+/**
+ * Visible column order keyed by STABLE `data-column-id` (not header text). Reorder
+ * assertions must use this: header text is mock-generated and can repeat, and only
+ * the virtualization window is in the DOM — comparing text/whole-window signatures
+ * lets a test pass on a window shift instead of a real reorder.
+ */
+const columnIdOrder = (container: HTMLElement) =>
+  renderedCells(container).map(c => c.getAttribute('data-column-id'))
+
+/**
+ * Assert `source` actually moved to the OTHER side of `target` (a real reorder),
+ * robust to virtualization/auto-scroll: both stay in the window (local move), so
+ * their relative order by id flips iff the columns truly reordered. Reads the
+ * post-drop order at the pre-drag scroll position to keep the same window visible.
+ */
+const expectMovedPast = async (
+  container: HTMLElement,
+  source: HTMLElement,
+  target: HTMLElement,
+) => {
+  const sourceId = source.getAttribute('data-column-id')
+  const targetId = target.getAttribute('data-column-id')
+  const before = columnIdOrder(container)
+  expect(before.indexOf(sourceId)).toBeLessThan(before.indexOf(targetId))
+
+  const scroller = scrollerOf(container)
+  const preScroll = scroller.scrollLeft
+  await dragColumnOnto(source, target)
+  scroller.scrollLeft = preScroll
+
+  await expect
+    .poll(() => {
+      const after = columnIdOrder(container)
+      const si = after.indexOf(sourceId)
+      const ti = after.indexOf(targetId)
+      return si !== -1 && ti !== -1 && si > ti
+    })
+    .toBe(true)
+}
 
 /** Translate-X (px) baked into an element's computed transform. */
 const translateX = (el: HTMLElement) => {
@@ -280,22 +316,10 @@ describe('Column Dragging — requirements', () => {
 
   test('D24: on drop the columnOrder changes → columns reorder', async () => {
     const container = await renderColumnDragging()
-    const before = columnOrder(container)
     const { source, target } = pickSourceTarget(container)
 
-    await dragColumnOnto(source, target)
-
-    // The dropped column took a new position → the visible order differs, but no
-    // column was lost (every prior header is still present, just reordered).
-    await expect
-      .poll(() => {
-        const after = columnOrder(container)
-        return (
-          after.join('¦') !== before.join('¦') &&
-          before.every(text => after.includes(text))
-        )
-      })
-      .toBe(true)
+    // Честно: source реально уходит за target по data-column-id (не по тексту).
+    await expectMovedPast(container, source, target)
   })
 
   test('D25: after drop the overlay is gone and the column re-renders in place', async () => {
@@ -357,14 +381,10 @@ describe('Column Dragging — requirements', () => {
       await nextFrame()
     }
 
-    const before = columnOrder(container)
+    // Честно: source (столбец из середины после скролла) реально уходит за target
+    // по data-column-id. expectMovedPast читает порядок на пред-драг скролле.
     const { source, target } = pickSourceTarget(container)
-
-    await dragColumnOnto(source, target)
-
-    await expect
-      .poll(() => columnOrder(container).join('¦') !== before.join('¦'))
-      .toBe(true)
+    await expectMovedPast(container, source, target)
   })
 
   test('D28: dragging near the bottom edge never scrolls vertically', async () => {
@@ -438,25 +458,33 @@ describe('Column Dragging — requirements', () => {
       )
       .toBe(true)
 
-    const before = columnOrder(container)
     const pinnedCell = container.querySelector<HTMLElement>(
       `${HEAD_CELL}[data-cell-pinned='left']`,
     )!
+    const pinnedId = pinnedCell.getAttribute('data-column-id')
     // Drag a non-adjacent draggable column toward the pinned one and drop on it.
     const source = renderedCells(container)[2]
-    await dragColumnOnto(source, pinnedCell)
+    const sourceId = source.getAttribute('data-column-id')
+    const beforeIdx = columnIdOrder(container).indexOf(sourceId)
 
-    // The drop commits a reorder (something moved), yet the pinned column stays
-    // leftmost — a dropped column is clamped out of the pinned zone.
+    const scroller = scrollerOf(container)
+    const preScroll = scroller.scrollLeft
+    await dragColumnOnto(source, pinnedCell)
+    scroller.scrollLeft = preScroll
+
+    // Честно по id: source реально сместился (реордер committed), но пиннутая
+    // колонка осталась крайней слева — дропнутая не заходит в пиннутую зону.
     await expect
       .poll(() => {
         const cells = renderedCells(container)
-        const orderChanged =
-          columnOrder(container).join('¦') !== before.join('¦')
+        const sourceMoved =
+          columnIdOrder(container).indexOf(sourceId) !== beforeIdx
         const pinnedStillFirst =
+          cells[0]?.getAttribute('data-column-id') === pinnedId &&
           cells[0]?.getAttribute('data-cell-pinned') === 'left'
-        return orderChanged && pinnedStillFirst
+        return sourceMoved && pinnedStillFirst
       })
       .toBe(true)
   })
+
 })

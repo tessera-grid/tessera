@@ -25,6 +25,7 @@ type DndTable = {
       getIsPinned: () => false | 'start' | 'end'
     }
   }[]
+  getVisibleLeafColumns: () => { id: string }[]
 }
 
 export const getColumnDraggingEvents = (table: DndTable) => {
@@ -106,9 +107,14 @@ export const getColumnDraggingEvents = (table: DndTable) => {
         hoverIndex = edgeColumn.getDraggableIndex()
       }
 
-      table.setColumnOrder(prev =>
-        arrayMove(prev, activeOrderIndex, targetOrderIndex),
-      )
+      // columnOrder по умолчанию пуст ([]) — визуальный порядок тогда задают сами
+      // columnDef. Чтобы arrayMove не вернул [null], сидируем базу текущим порядком
+      // видимых колонок, когда состояние ещё пустое.
+      table.setColumnOrder(prev => {
+        const base =
+          prev.length > 0 ? prev : table.getVisibleLeafColumns().map(c => c.id)
+        return arrayMove(base, activeOrderIndex, targetOrderIndex)
+      })
       onColumnDragEnd?.({ dragIndex: activeDraggingIndex, hoverIndex })
 
       reset()
