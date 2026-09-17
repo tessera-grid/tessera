@@ -155,6 +155,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
       data-index={virtualRow.index}
+      data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
@@ -224,6 +225,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
       data-index={virtualRow.index}
+      data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}

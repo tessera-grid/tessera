@@ -14,9 +14,10 @@ import {
   SCROLLER,
   USER_CELL,
   beginDrag,
+  dragRowOnto,
   firePointer,
   nextFrame,
-  rowSignatures,
+  rowIdOrder,
   sortedRows,
 } from '../../rowDragging.dnd'
 
@@ -46,6 +47,18 @@ async function renderRowDragging() {
 /** The overflowing scroll container of the rendered grid. */
 const scrollerOf = (container: HTMLElement) =>
   container.querySelector<HTMLElement>(SCROLLER)!
+
+/** True once `sourceId` sits BELOW `targetId` in the visible id-order (real move). */
+const movedBelow = (
+  container: HTMLElement,
+  sourceId: string | null,
+  targetId: string | null,
+) => {
+  const after = rowIdOrder(container)
+  const si = after.indexOf(sourceId)
+  const ti = after.indexOf(targetId)
+  return si !== -1 && ti !== -1 && si > ti
+}
 
 // --- Setup guard --------------------------------------------------------------
 // Not a requirement itself; it protects the auto-scroll requirements (D12–D14)
@@ -172,33 +185,21 @@ describe('Row Dragging — requirements', () => {
 
   test('D10: on drop the row takes a new index → order changes', async () => {
     const container = await renderRowDragging()
-    const before = rowSignatures(container)
+    const scroller = scrollerOf(container)
     const rows = sortedRows(container)
-    const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
-    const target = rows[3]
+    const sourceId = rows[0].getAttribute('data-row-id')
+    const targetId = rows[3].getAttribute('data-row-id')
 
-    const { hx } = await beginDrag(handle)
-    const tr = target.getBoundingClientRect()
-    const ty = tr.top + tr.height / 2
-    firePointer('pointermove', document, hx, ty)
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointermove', document, hx, ty + 1)
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointerup', document, hx, ty + 1)
+    const before = rowIdOrder(container)
+    expect(before.indexOf(sourceId)).toBeLessThan(before.indexOf(targetId))
 
-    // The dragged row got a new index → the visible order differs, but no row
-    // was lost (the dragged signature is still present, just lower down).
+    await dragRowOnto(rows[0], rows[3])
+    scroller.scrollTop = 0
+
+    // Честно по data-row-id: перетащенная строка реально ушла НИЖЕ цели — не по
+    // тексту ячеек и не за счёт сдвига окна виртуализации.
     await expect
-      .poll(() => {
-        const after = rowSignatures(container)
-        return (
-          after.join('¦') !== before.join('¦') &&
-          after[0] !== before[0] &&
-          after.includes(before[0])
-        )
-      })
+      .poll(() => movedBelow(container, sourceId, targetId))
       .toBe(true)
   })
 
@@ -265,25 +266,23 @@ describe('Row Dragging — requirements', () => {
       await nextFrame()
     }
 
+    const preScroll = scroller.scrollTop
     const rows = sortedRows(container)
     const source = rows[1]
     const target = rows[4]
-    const beforeScroll = rowSignatures(container)
+    const sourceId = source.getAttribute('data-row-id')
+    const targetId = target.getAttribute('data-row-id')
 
-    const { hx } = await beginDrag(source.querySelector<HTMLElement>(HANDLE)!)
-    const tr = target.getBoundingClientRect()
-    const ty = tr.top + tr.height / 2
+    const before = rowIdOrder(container)
+    expect(before.indexOf(sourceId)).toBeLessThan(before.indexOf(targetId))
+
     // Mid-container target (no edge → no auto-scroll): the reorder is what moves.
-    firePointer('pointermove', document, hx, ty)
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointermove', document, hx, ty + 1)
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointerup', document, hx, ty + 1)
+    await dragRowOnto(source, target)
+    scroller.scrollTop = preScroll
 
+    // Честно по data-row-id (после вертикального скролла): строка ушла ниже цели.
     await expect
-      .poll(() => rowSignatures(container).join('¦') !== beforeScroll.join('¦'))
+      .poll(() => movedBelow(container, sourceId, targetId))
       .toBe(true)
   })
 
@@ -314,6 +313,59 @@ describe('Row Dragging — requirements', () => {
       firePointer('pointerup', document, hx, hy)
     }
     await nextFrame()
+  })
+})
+
+// --- Nested rows (subrows) ----------------------------------------------------
+// Вложенный drag реализован в reducer'е (splice по subRows/parentRow, depth), но
+// каноническая RowDragging-история плоская — здесь он проверяется на дереве.
+// Раскрытое дерево hierarchyData: item-id-0 (root) → [item-id-1, item-id-2 →
+// item-id-3], затем item-id-4. Проверка по стабильному data-row-id.
+
+describe('Row Dragging — nested rows (subrows)', () => {
+  async function renderNested() {
+    const { container } = await render(
+      <composed.RowDragging dataMode="hierarchy" enableRowExpanding />,
+    )
+    await expect
+      .poll(() => container.querySelectorAll(ROW).length)
+      .toBeGreaterThan(2)
+    return container
+  }
+  const rowById = (container: HTMLElement, id: string) =>
+    container.querySelector<HTMLElement>(`[data-row-id="${id}"]`)!
+
+  test('DN1: expanded tree renders its subrows (nested drag has targets)', async () => {
+    const container = await renderNested()
+    const ids = rowIdOrder(container)
+    // Родитель и обе его субстроки присутствуют одновременно.
+    expect(ids).toContain('item-id-0')
+    expect(ids).toContain('item-id-1')
+    expect(ids).toContain('item-id-2')
+  })
+
+  test('DN2: a subrow reorders among its siblings, losing no row', async () => {
+    const container = await renderNested()
+
+    const before = rowIdOrder(container)
+    // item-id-1 и item-id-2 — сиблинги-субстроки под item-id-0.
+    expect(before.indexOf('item-id-1')).toBeLessThan(
+      before.indexOf('item-id-2'),
+    )
+
+    await dragRowOnto(rowById(container, 'item-id-1'), rowById(container, 'item-id-2'))
+
+    // Честно по data-row-id: субстрока реально ушла за сиблинга, и ни одна строка
+    // дерева не пропала.
+    await expect
+      .poll(() => {
+        const after = rowIdOrder(container)
+        return (
+          movedBelow(container, 'item-id-1', 'item-id-2') &&
+          before.every(id => after.includes(id))
+        )
+      })
+      .toBe(true)
   })
 })
 

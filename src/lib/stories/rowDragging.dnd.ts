@@ -61,6 +61,15 @@ export const rowSignatures = (canvas: HTMLElement) =>
       .join('|'),
   )
 
+/**
+ * Visible row order keyed by STABLE `data-row-id` (row identity), not by cell text.
+ * Reorder assertions must use this: only the virtualization window is in the DOM,
+ * so a text/whole-window signature can differ on a window shift (auto-scroll) rather
+ * than a real reorder. Row id follows the row across a move.
+ */
+export const rowIdOrder = (canvas: HTMLElement) =>
+  sortedRows(canvas).map(row => row.getAttribute('data-row-id'))
+
 /** Press on a row handle and pass the activation move; pointer stays down. */
 export const beginDrag = async (handle: HTMLElement) => {
   const hr = handle.getBoundingClientRect()
@@ -73,4 +82,22 @@ export const beginDrag = async (handle: HTMLElement) => {
   await nextFrame()
   await nextFrame()
   return { hx, hy }
+}
+
+/** Drag `sourceRow`'s handle onto `targetRow`'s vertical centre and drop. */
+export const dragRowOnto = async (
+  sourceRow: HTMLElement,
+  targetRow: HTMLElement,
+) => {
+  const handle = sourceRow.querySelector<HTMLElement>(HANDLE)!
+  const { hx } = await beginDrag(handle)
+  const tr = targetRow.getBoundingClientRect()
+  const ty = tr.top + tr.height / 2
+  firePointer('pointermove', document, hx, ty)
+  await nextFrame()
+  await nextFrame()
+  firePointer('pointermove', document, hx, ty + 1)
+  await nextFrame()
+  await nextFrame()
+  firePointer('pointerup', document, hx, ty + 1)
 }
