@@ -102,7 +102,7 @@ src/lib/
   plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions,
               columnPinning, columnSizing, columnSorting, columnDragging, header/rowActionMenu
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
-  ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, icons
+  ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons
   stories/    Storybook stories + neutral _shims (no external UI deps)
               __tests__/  Vitest browser tests (reuse stories via composeStories)
   types.ts    ре-экспорт v9-типов TanStack (параметризованных TFeatures)
@@ -148,6 +148,7 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Задача                    | Команда                   | Примечания                                                         |
 | ------------------------- | ------------------------- | ------------------------------------------------------------------ |
 | Сборка библиотеки         | `npm run build`           | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).       |
+| Инварианты темы в `dist`  | `npm run check:theme`     | После `build`: проверяет `dist/style.css` (ADR 0018/0019).         |
 | Пересборка при правках    | `npm run dev`             | `vite build --watch`. Долгоживущая — запускать в фоне.             |
 | Проверка типов            | `npm run typecheck`       | `tsc --noEmit`. **Включает stories.** Первый барьер.               |
 | Линт                      | `npm run lint`            | Плоский конфиг ESLint.                                             |
@@ -157,6 +158,8 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Storybook (сборка)        | `npm run build-storybook` | Статическая сборка; хороший headless smoke-тест.                   |
 | Тесты                     | `npm test`                | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка. |
 | Тесты (watch)             | `npm run test:watch`      | Vitest watch mode.                                                 |
+| Перф-матрица + дашборд    | `npm run perf`            | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
+| Перф-дашборд (пересбор)   | `npm run perf:report`     | Пересобирает борд из `latest.json` без прогона.                    |
 
 Тесты выполняются в **реальном браузере**, а не в jsdom — см. [Проверки](#4-checks).
 
@@ -236,17 +239,22 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 сначала самый дешёвый и быстрый сигнал — и исправляйте то, что выявляет каждый шаг, прежде
 чем двигаться дальше:
 
-| #   | Барьер            | Команда                | Блокирующий?            |
-| --- | ----------------- | ---------------------- | ----------------------- |
-| 1   | Формат            | `npm run format:check` | да                      |
-| 2   | Линт              | `npm run lint`         | да                      |
-| 3   | Типы              | `npm run typecheck`    | да                      |
-| 4   | Тесты             | `npm test` _(vitest)_  | да — **см. примечание** |
-| 5   | Сборка библиотеки | `npm run build`        | да                      |
+| #   | Барьер            | Команда                | Блокирующий?              |
+| --- | ----------------- | ---------------------- | ------------------------- |
+| 1   | Формат            | `npm run format:check` | да                        |
+| 2   | Линт              | `npm run lint`         | да                        |
+| 3   | Типы              | `npm run typecheck`    | да                        |
+| 4   | Тесты             | `npm test` _(vitest)_  | да — **см. примечание**   |
+| 5   | Сборка библиотеки | `npm run build`        | да                        |
+| 6   | Инварианты темы   | `npm run check:theme`  | да — **при правках темы** |
 
-Это весь барьер: **format · lint · ts · tests · build**. Storybook — инструмент отладки,
-а не шаг проверки: корректность UI гарантируют visual-тесты
-([про тесты — ниже](#тесты--раннер-и-как-они-работают)), а не ручной осмотр в браузере.
+Это весь барьер: **format · lint · ts · tests · build**. Шаг 6 (`check:theme`) —
+пост-build-страж: он проверяет собранный `dist/style.css` (нехешированные классы
+темы, три уровня токенов — ADR 0018/0019), чего браузерные тесты по исходникам не
+видят; запускайте его после `build`, когда изменение задевает тему, токены или
+CSS-модули. Storybook — инструмент отладки, а не шаг проверки: корректность UI
+гарантируют visual-тесты ([про тесты — ниже](#тесты--раннер-и-как-они-работают)),
+а не ручной осмотр в браузере.
 
 ### Тесты — раннер и как они работают
 
@@ -273,25 +281,54 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
   longest/над-бюджетом); `npm run perf:report` пересобирает борд из последнего
   `performance-results/latest.json` без прогона. Каталог в `.gitignore`.
 - Наборы разложены по виду в две папки под `src/lib/stories/__tests__/` (см.
-  [ADR 0009](docs/decisions/0009-test-coverage-visual-and-performance.md)): **`visual/`** —
-  `core-*` (требования ядра R1–R18 из
-  [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) — структура, размеры, роли,
-  визуальные состояния, раскладка), `virtualization`, `row-dragging`, `column-dragging`,
-  `column-pinning` (CP1–CP15, [ADR 0011](docs/decisions/0011-column-pinning.md)),
-  `column-sorting` (CS1–CS14, [ADR 0012](docs/decisions/0012-column-sorting.md)),
-  `column-resizing` (CR1–CR15, [ADR 0013](docs/decisions/0013-column-sizing.md)),
-  `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md)),
-  `row-expanding` (RE1–RE11, [ADR 0015](docs/decisions/0015-row-expanding.md)),
-  `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
-  `ui-components` (IB/TT/SW/SK/LP/IC, [ADR 0017](docs/decisions/0017-ui-components.md) —
-  `IconButton`, `Tooltip`, `Switch`, `Skeleton`, `LinearProgress`, иконки);
-  **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500/1000×1000 × плагины,
-  требования P1–P8 из [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md)):
-  `first-render` (стоимость монтирования) и `scroll` (работа на кадр). Общие
-  `helpers.tsx`, `perf.commands.ts`, `perf.constants.ts` — в корне `__tests__/`.
+  [ADR 0009](docs/decisions/0009-test-coverage-visual-and-performance.md)). Общие
+  `helpers.tsx`, `perf.commands.ts`, `perf.constants.ts` — в корне `__tests__/`;
+  оси перф-матрицы — в `performance/perf-cases.ts`. Один тест = одно требование,
+  назван по его коду (`R<n>`/`CP<n>`/…). Каждый набор восходит к своему ADR:
+  - **`visual/`** — внешний вид, вёрстка, роли, поведение UI:
+    - _Ядро:_ `core-structure`, `core-sizing`, `core-roles`, `core-visual-states`,
+      `core-scroll` (R1–R19, [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) —
+      структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
+      `service-columns` (R6/R8/R10 — сервисные колонки).
+    - _Виртуализация:_ `virtualization` (V1–V11).
+    - _Колонки:_ `column-pinning` (CP1–CP25, [ADR 0011](docs/decisions/0011-column-pinning.md)),
+      `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
+      [ADR 0011](docs/decisions/0011-column-pinning.md)),
+      `column-sorting` (CS1–CS23, [ADR 0012](docs/decisions/0012-column-sorting.md)),
+      `column-resizing` (CR1–CR16, [ADR 0013](docs/decisions/0013-column-sizing.md)),
+      `column-dragging` (D14–D30, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)).
+    - _Строки:_ `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md)),
+      `row-expanding` (RE1–RE11, [ADR 0015](docs/decisions/0015-row-expanding.md)),
+      `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
+      `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
+      `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
+    - _Меню действий:_ `action-menu` (AM10–AM19 — kebab заголовка и строки,
+      [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md)).
+    - _Тема и токены:_ `theming` (TH1–TH9,
+      [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
+      матрица `theming-matrix` / `theming-controls` / `theming-header-controls` /
+      `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
+      (TI-05… — статические инварианты токенов) —
+      [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
+      (TC-1…TC-5 — единые контракты по семействам,
+      [ADR 0017](docs/decisions/0017-ui-components.md)).
+    - _Доступность:_ `a11y` (A1–A5, прогон axe-core,
+      [ADR 0020](docs/decisions/0020-accessibility.md)).
+    - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
+      [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md)).
+    - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
+      перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
+    - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,
+      [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
+      `Switch`, `Skeleton`, `LinearProgress`, иконки).
+  - **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500 / 1000×1000 ×
+    плагины, требования P1–P8 из [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md)):
+    `first-render` (стоимость монтирования → Load) и `scroll` (работа на кадр →
+    Animation); плюс `interaction` (INP: I1 — раскрытие, I2 — «select all» →
+    Interaction).
 - **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →
-  Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс). Замер под **×4
-  CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается
+  Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс), взаимодействие →
+  Response/INP (≤ 100мс). Замер под **×4 CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается
   `knownShortfall` и гоняется как **xfail** (`test.fails`) — сборка зелёная, цель
   зафиксирована; когда уложится, xfail покраснеет. Неожиданный выход за порог —
   красная регрессия. Не подгоняйте пороги под «зелёно» — это цели, а не хардкод.
