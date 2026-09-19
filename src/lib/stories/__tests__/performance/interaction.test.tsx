@@ -6,7 +6,13 @@ import {
   recordPerf,
   renderGrid,
 } from '../helpers'
-import { ALL_PLUGINS, CPU_THROTTLE_RATE, LARGE, PERF_TIMEOUT, SMALL } from './perf-cases'
+import {
+  ALL_PLUGINS,
+  CPU_THROTTLE_RATE,
+  LARGE,
+  PERF_TIMEOUT,
+  SMALL,
+} from './perf-cases'
 import { INTERACTION_BUDGET_MS } from '../perf.constants'
 
 // Отзывчивость на ВЗАИМОДЕЙСТВИЕ (INP, ADR 0009): выбор ОДНОЙ строки меняет только
@@ -31,8 +37,16 @@ interface InteractionCase {
 }
 
 const CASES: InteractionCase[] = [
-  { id: 'I1', label: 'выбор строки, небольшая выборка, все плагины', args: { ...SMALL, ...ALL_PLUGINS } },
-  { id: 'I2', label: 'выбор строки, большая выборка, все плагины', args: { ...LARGE, ...ALL_PLUGINS } },
+  {
+    id: 'I1',
+    label: 'выбор строки, небольшая выборка, все плагины',
+    args: { ...SMALL, ...ALL_PLUGINS },
+  },
+  {
+    id: 'I2',
+    label: 'выбор строки, большая выборка, все плагины',
+    args: { ...LARGE, ...ALL_PLUGINS },
+  },
 ]
 
 describe('Отзывчивость взаимодействий (INP)', () => {
@@ -54,7 +68,8 @@ describe('Отзывчивость взаимодействий (INP)', () => {
           id: c.id,
           label: c.label,
           operation: 'interaction',
-          size: c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
+          size:
+            c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
           knownShortfall: false,

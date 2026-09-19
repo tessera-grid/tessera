@@ -34,6 +34,8 @@ export const useColumnVirtualizerScroll = ({
   const centerWidth = columnsTotalSize - pinnedWidth
 
   return {
-    '--virtual-center-width': virtualColumns.length ? `${centerWidth}px` : undefined,
+    '--virtual-center-width': virtualColumns.length
+      ? `${centerWidth}px`
+      : undefined,
   } as CSSProperties
 }

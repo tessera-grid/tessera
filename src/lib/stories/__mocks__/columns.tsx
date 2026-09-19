@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
 
 import { faker } from '@faker-js/faker'
-import {
-  createColumnHelper,
-} from '@tanstack/react-table'
+import { createColumnHelper } from '@tanstack/react-table'
 
 const columnHelper = createColumnHelper()
 

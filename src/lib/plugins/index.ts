@@ -28,9 +28,7 @@ export {
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 
 // Контракт хуков для потребителя (types-mode b, ADR 0010): слайсы как примитивы.
-export type {
-  ColumnDraggingPlugin,
-} from './columnDragging/types'
+export type { ColumnDraggingPlugin } from './columnDragging/types'
 export type { ColumnPinningPlugin } from './columnPinning/types'
 export type { ColumnSizingPlugin } from './columnSizing/types'
 export type { ColumnSortingPlugin } from './columnSorting/types'

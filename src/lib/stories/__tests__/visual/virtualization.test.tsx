@@ -31,7 +31,11 @@ const waitForGrid = () =>
 /** Ширина спейсера центра (`--virtual-center-width`) на узле `.MuiTable-root`. */
 const centerWidth = () => {
   const table = document.querySelector<HTMLElement>('.MuiTable-root')!
-  return parseFloat(getComputedStyle(table).getPropertyValue('--virtual-center-width')) || 0
+  return (
+    parseFloat(
+      getComputedStyle(table).getPropertyValue('--virtual-center-width'),
+    ) || 0
+  )
 }
 
 /** Head-ячейка колонки, закреплённая слева (после клика по кнопке пина). */

@@ -20,7 +20,9 @@ const BY_ACTIONS = `[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`
 
 describe('Row actions — служебная колонка действий (ADR 0025)', () => {
   test('RA1: под вложенной шапкой колонка действий замыкает ряд и присутствует в шапке', async () => {
-    const { container } = await render(<composed.HeaderGroups enableRowActions />)
+    const { container } = await render(
+      <composed.HeaderGroups enableRowActions />,
+    )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)
@@ -73,9 +75,13 @@ describe('Row actions — служебная колонка действий (AD
       .toBe(DEFAULT_ROW_ACTIONS_OPTIONS.width)
 
     // Схлопнуто в кебаб (rowActionMenu включён) → суженная `collapsedWidth`.
-    const collapsed = await render(<composed.RowActionMenu enableRowActionMenu />)
+    const collapsed = await render(
+      <composed.RowActionMenu enableRowActionMenu />,
+    )
     await expect
-      .poll(() => collapsed.container.querySelector(`${BODY_CELL}${BY_ACTIONS}`))
+      .poll(() =>
+        collapsed.container.querySelector(`${BODY_CELL}${BY_ACTIONS}`),
+      )
       .not.toBeNull()
     await expect
       .poll(() => widthOf(collapsed.container))

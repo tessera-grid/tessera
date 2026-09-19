@@ -486,5 +486,4 @@ describe('Column Dragging — requirements', () => {
       })
       .toBe(true)
   })
-
 })

@@ -61,9 +61,7 @@ const scrollerOf = (container: HTMLElement) =>
 
 /** Render the nested-header pinning story and wait for its header rows. */
 async function renderHeaderGroupsPinning(args: StoryArgs = {}) {
-  const { container } = await render(
-    <composed.HeaderGroupsPinning {...args} />,
-  )
+  const { container } = await render(<composed.HeaderGroupsPinning {...args} />)
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)
@@ -140,7 +138,10 @@ const menuItemByText = (text: string) =>
  * it to open the mini-menu, then choose «Pin left» / «Pin right». One-sided
  * columns (`pinSides`) pin directly on button click — use `revealPin` there.
  */
-const pinViaPopover = async (cell: HTMLElement, item: 'Pin left' | 'Pin right') => {
+const pinViaPopover = async (
+  cell: HTMLElement,
+  item: 'Pin left' | 'Pin right',
+) => {
   const button = await revealPin(cell)
   await userEvent.click(button)
   await expect.poll(() => menuItemByText(item)).toBeTruthy()
@@ -383,7 +384,9 @@ describe('Column Pinning — requirements', () => {
     // There are pin toggles…
     expect(buttons.length).toBeGreaterThan(0)
     // …every one of them lives in a top (first-row) header cell…
-    expect(buttons.every(btn => btn.closest(FIRST_ROW_HEAD) !== null)).toBe(true)
+    expect(buttons.every(btn => btn.closest(FIRST_ROW_HEAD) !== null)).toBe(
+      true,
+    )
     // …and none in the leaf (last) header row.
     expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
   })
@@ -397,7 +400,9 @@ describe('Column Pinning — requirements', () => {
 
     // The group header itself goes sticky-left…
     await expect
-      .poll(() => headCellById(container, 'name').getAttribute('data-cell-pinned'))
+      .poll(() =>
+        headCellById(container, 'name').getAttribute('data-cell-pinned'),
+      )
       .toBe('left')
 
     // …and every leaf of the group is left-pinned in the body.
@@ -419,7 +424,9 @@ describe('Column Pinning — requirements', () => {
     const nameGroup = headCellById(container, 'name')
     await pinViaPopover(nameGroup, 'Pin left')
     await expect
-      .poll(() => headCellById(container, 'name').getAttribute('data-cell-pinned'))
+      .poll(() =>
+        headCellById(container, 'name').getAttribute('data-cell-pinned'),
+      )
       .toBe('left')
 
     // The group is the only left-pinned block, so its first leaf sits flush at
@@ -540,7 +547,9 @@ describe('Column Pinning — requirements', () => {
     const oneSide = headCellById(container, 'country')
     await userEvent.click(await revealPin(oneSide))
     await expect
-      .poll(() => headCellById(container, 'country').getAttribute('data-cell-pinned'))
+      .poll(() =>
+        headCellById(container, 'country').getAttribute('data-cell-pinned'),
+      )
       .toBe('left')
     expect(menuItems().length).toBe(0)
   })
@@ -587,7 +596,9 @@ describe('Column Pinning — requirements', () => {
       .toBe(true)
     // The first (leftmost) right-pinned column carries the divider on its left.
     expect(body.getAttribute('data-cell-first-right-pinned')).toBe('true')
-    expect(parseFloat(getComputedStyle(body).borderLeftWidth)).toBeGreaterThan(0)
+    expect(parseFloat(getComputedStyle(body).borderLeftWidth)).toBeGreaterThan(
+      0,
+    )
   })
 
   // --- Row-actions column (CP23–CP25) ----------------------------------------
@@ -617,9 +628,9 @@ describe('Column Pinning — requirements', () => {
     await expect
       .poll(() => actionsBody(container).getAttribute('data-cell-pinned'))
       .toBe('right')
-    expect(actionsBody(container).getAttribute('data-cell-first-right-pinned')).toBe(
-      'true',
-    )
+    expect(
+      actionsBody(container).getAttribute('data-cell-first-right-pinned'),
+    ).toBe('true')
     expect(isOpaque(actionsBody(container))).toBe(false)
 
     // Pin a both-sided data column right → row-actions is no longer first-right
@@ -660,7 +671,9 @@ describe('Column Pinning — requirements', () => {
     // The user column is first in the right block → it carries the divider;
     // the row-actions column never does (even though it is right-pinned).
     expect(userPin.getAttribute('data-cell-first-right-pinned')).toBe('true')
-    expect(parseFloat(getComputedStyle(userPin).borderLeftWidth)).toBeGreaterThan(0)
+    expect(
+      parseFloat(getComputedStyle(userPin).borderLeftWidth),
+    ).toBeGreaterThan(0)
     expect(parseFloat(getComputedStyle(actions).borderLeftWidth)).toBe(0)
   })
 

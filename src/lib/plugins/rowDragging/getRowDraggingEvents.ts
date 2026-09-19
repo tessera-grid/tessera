@@ -103,8 +103,7 @@ export const getRowDraggingEvents = (
     const prevItem = rows[overVirtualIndex - 1]
     const nextItem = rows[overVirtualIndex + 1]
     const targetItem = (isDownMove ? overItem : prevItem) as
-      | Row<any, any>
-      | undefined
+      Row<any, any> | undefined
 
     return { targetItem, prevItem, nextItem, isDownMove }
   }
@@ -167,7 +166,8 @@ export const getRowDraggingEvents = (
         ...prev,
         offsetLeft: getOffsetLeftFromDepth(validDepth, constOffsetLeft),
         // Вложенность больше 1 сейчас не поддерживается.
-        acceptable: (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true,
+        acceptable:
+          (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true,
       }))
     },
     onRowDragEnd: ({ active, over }) => {

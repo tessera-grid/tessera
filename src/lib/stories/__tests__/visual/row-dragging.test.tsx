@@ -353,7 +353,10 @@ describe('Row Dragging — nested rows (subrows)', () => {
       before.indexOf('item-id-2'),
     )
 
-    await dragRowOnto(rowById(container, 'item-id-1'), rowById(container, 'item-id-2'))
+    await dragRowOnto(
+      rowById(container, 'item-id-1'),
+      rowById(container, 'item-id-2'),
+    )
 
     // Честно по data-row-id: субстрока реально ушла за сиблинга, и ни одна строка
     // дерева не пропала.

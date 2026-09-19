@@ -83,7 +83,10 @@ export function SpikeTable() {
           {table.getHeaderGroups().map(hg => (
             <tr key={hg.id}>
               {hg.headers.map(header => (
-                <th key={header.id} onClick={header.column.getToggleSortingHandler()}>
+                <th
+                  key={header.id}
+                  onClick={header.column.getToggleSortingHandler()}
+                >
                   <table.FlexRender header={header} />
                 </th>
               ))}
@@ -110,7 +113,11 @@ export function SpikeTable() {
  * Гранулярный подписчик: ре-рендерится ТОЛЬКО при смене среза `sorting`.
  * Это прямой аналог нашего `useSubscribeStore(() => [primitives])`, но штатный.
  */
-function SortingBadge({ table }: { table: ReturnType<typeof useTable<typeof features, Person, object>> }) {
+function SortingBadge({
+  table,
+}: {
+  table: ReturnType<typeof useTable<typeof features, Person, object>>
+}) {
   const sorting = useSelector(table.atoms.sorting, s => s)
   return <span>Сортировок активно: {sorting?.length ?? 0}</span>
 }

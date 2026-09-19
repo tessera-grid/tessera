@@ -3,7 +3,7 @@
  * плагинов: размещение задаёт `side`, порядок — `order`. Чистая функция —
  * используется и `useCreateTable`, и тестами.
  */
-import type { ColumnDef, RowData } from '../../types'
+import type { ColumnDef } from '../../types'
 
 /**
  * Привязка сервисной колонки плагина к сборке колонок (pre-table инъекция).

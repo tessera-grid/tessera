@@ -6,7 +6,4 @@ export {
 
 export { sortHeaderAction } from './sortHeaderAction'
 
-export type {
-  ColumnSortingPlugin,
-  ColumnSortingPluginParams,
-} from './types'
+export type { ColumnSortingPlugin, ColumnSortingPluginParams } from './types'

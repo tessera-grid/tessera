@@ -125,14 +125,18 @@ describe('Производительность прокрутки', () => {
 
         // soft — обе оси репортятся независимо; сверяем с регресс-потолком кейса
         // (жёсткого 60fps-гейта нет, см. политику в шапке файла).
-        expect.soft(
-          y.p95Ms,
-          `Y p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms over-budget=${y.tasksOverBudget}/${y.taskCount} (limit ${budgetY})`,
-        ).toBeLessThanOrEqual(budgetY)
-        expect.soft(
-          x.p95Ms,
-          `X p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms over-budget=${x.tasksOverBudget}/${x.taskCount} (limit ${budgetX})`,
-        ).toBeLessThanOrEqual(budgetX)
+        expect
+          .soft(
+            y.p95Ms,
+            `Y p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms over-budget=${y.tasksOverBudget}/${y.taskCount} (limit ${budgetY})`,
+          )
+          .toBeLessThanOrEqual(budgetY)
+        expect
+          .soft(
+            x.p95Ms,
+            `X p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms over-budget=${x.tasksOverBudget}/${x.taskCount} (limit ${budgetX})`,
+          )
+          .toBeLessThanOrEqual(budgetX)
       },
       PERF_TIMEOUT,
     )

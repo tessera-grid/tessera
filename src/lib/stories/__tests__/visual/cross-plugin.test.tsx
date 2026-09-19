@@ -133,20 +133,28 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
 
     // Header actions collapsed to per-column kebabs, no inline plugin buttons.
     await expect
-      .poll(() => container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
+      .poll(
+        () => container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length,
+      )
       .toBeGreaterThan(0)
-    expect(container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length).toBe(0)
+    expect(
+      container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length,
+    ).toBe(0)
 
     // Row actions collapsed to a per-row kebab in the actions column.
     const actionCell = container.querySelector<HTMLElement>(ACTION_CELL)!
     expect(actionCell.querySelector(KEBAB)).toBeTruthy()
 
     // Header kebab opens the column controls…
-    const headKebab = container.querySelector<HTMLElement>(`${DATA_HEAD_CELL} ${KEBAB}`)!
+    const headKebab = container.querySelector<HTMLElement>(
+      `${DATA_HEAD_CELL} ${KEBAB}`,
+    )!
     await userEvent.click(headKebab)
     await expect
       .poll(() => menuTexts())
-      .toEqual(expect.arrayContaining(['Pin column', 'Sort ascending', 'Group']))
+      .toEqual(
+        expect.arrayContaining(['Pin column', 'Sort ascending', 'Group']),
+      )
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => menuTexts().length).toBe(0)
 
@@ -158,8 +166,9 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
     await userEvent.keyboard('{Escape}')
 
     // Header kebabs are untouched by the row menu interaction.
-    expect(container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
-      .toBeGreaterThan(0)
+    expect(
+      container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length,
+    ).toBeGreaterThan(0)
   })
 })
 
@@ -318,16 +327,24 @@ describe('Cross-plugin — columnPinning × columnSizing', () => {
     // Pin two data columns left: `country` is one-sided (direct toggle), while
     // `firstName` is both-sided (pin via its inline popover). `country` is
     // defined first, so it leads the left block and `firstName` chains after it.
-    await userEvent.click(await revealControl(headCellById(container, 'country'), PIN_BUTTON))
+    await userEvent.click(
+      await revealControl(headCellById(container, 'country'), PIN_BUTTON),
+    )
     await expect
-      .poll(() => headCellById(container, 'country').getAttribute('data-cell-pinned'))
+      .poll(() =>
+        headCellById(container, 'country').getAttribute('data-cell-pinned'),
+      )
       .toBe('left')
 
-    await userEvent.click(await revealControl(headCellById(container, 'firstName'), PIN_BUTTON))
+    await userEvent.click(
+      await revealControl(headCellById(container, 'firstName'), PIN_BUTTON),
+    )
     await expect.poll(() => menuItemByText('Pin left')).toBeTruthy()
     await userEvent.click(menuItemByText('Pin left')!)
     await expect
-      .poll(() => headCellById(container, 'firstName').getAttribute('data-cell-pinned'))
+      .poll(() =>
+        headCellById(container, 'firstName').getAttribute('data-cell-pinned'),
+      )
       .toBe('left')
 
     // firstName sits to the right of country → its sticky offset is > 0 (chained
@@ -339,7 +356,10 @@ describe('Cross-plugin — columnPinning × columnSizing', () => {
 
     // Widen the leading pinned column; the following pinned column's sticky
     // `left` grows by the same delta — the offset chain runs through columnSizing.
-    await resizeBy(await revealControl(headCellById(container, 'country'), RESIZE_GRIP), 140)
+    await resizeBy(
+      await revealControl(headCellById(container, 'country'), RESIZE_GRIP),
+      140,
+    )
 
     await expect
       .poll(() =>
@@ -364,7 +384,9 @@ describe('Cross-plugin — columnPinning × rowSelection', () => {
     expect(selectionHead().getAttribute('data-cell-pinned')).not.toBe('left')
 
     // Pin a data column left → the selection column joins the left block (CP14b).
-    await userEvent.click(await revealControl(headCellById(container, 'country'), PIN_BUTTON))
+    await userEvent.click(
+      await revealControl(headCellById(container, 'country'), PIN_BUTTON),
+    )
     await expect
       .poll(() => selectionHead().getAttribute('data-cell-pinned'))
       .toBe('left')
@@ -454,7 +476,9 @@ describe('Cross-plugin — rowSelection × rowGrouping', () => {
     ).toBeGreaterThan(0)
 
     // Apply grouping by a low-cardinality column → the visible rows become groups.
-    await userEvent.click(await revealControl(headCellById(container, 'gender'), GROUP_BUTTON))
+    await userEvent.click(
+      await revealControl(headCellById(container, 'gender'), GROUP_BUTTON),
+    )
     await expect.poll(() => groupRows(container).length).toBeGreaterThan(1)
 
     // Under ACTIVE grouping selection is inert — owned by rowGrouping, since the
@@ -463,7 +487,11 @@ describe('Cross-plugin — rowSelection × rowGrouping', () => {
     await expect.poll(() => container.querySelectorAll(CHECKBOX).length).toBe(0)
 
     // Ungroup → selection returns (the plugin presence never disabled it).
-    await userEvent.click(await revealControl(headCellById(container, 'gender'), GROUP_BUTTON))
-    await expect.poll(() => container.querySelector(CHECKBOX) !== null).toBe(true)
+    await userEvent.click(
+      await revealControl(headCellById(container, 'gender'), GROUP_BUTTON),
+    )
+    await expect
+      .poll(() => container.querySelector(CHECKBOX) !== null)
+      .toBe(true)
   })
 })

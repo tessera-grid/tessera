@@ -12,7 +12,7 @@
 ```ts
 interface TableFeature {
   // однократно, при конструировании инстанса
-  constructTableAPIs?(table): void            // методы таблицы (getHooks, setRenderSlot, …)
+  constructTableAPIs?(table): void // методы таблицы (getHooks, setRenderSlot, …)
   getDefaultTableOptions?(table): Partial<TableOptions>
   getDefaultColumnDef?(): Partial<ColumnDef>
   getInitialState?(initialState?): TableState

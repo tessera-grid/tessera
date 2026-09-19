@@ -29,14 +29,20 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['@base-ui/react/menu', '@tanstack/react-table', '@tanstack/react-store'],
+    include: [
+      '@base-ui/react/menu',
+      '@tanstack/react-table',
+      '@tanstack/react-store',
+    ],
     // Прод-пребандл: esbuild режет dev-ветки React (NODE_ENV) → production-рантайм.
     esbuildOptions: {
       define: { 'process.env.NODE_ENV': '"production"' },
     },
   },
   test: {
-    include: ['src/lib/stories/__tests__/performance/**/*.{test,spec}.{ts,tsx}'],
+    include: [
+      'src/lib/stories/__tests__/performance/**/*.{test,spec}.{ts,tsx}',
+    ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,
     browser: {

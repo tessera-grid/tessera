@@ -12,6 +12,7 @@ export default tseslint.config(
       'storybook-static',
       'coverage',
       '.claude',
+      'spike',
     ],
   },
   js.configs.recommended,
@@ -34,6 +35,12 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/no-explicit-any': 'off',
+      // `interface X extends Y {}` — легитимный паттерн (declaration merging,
+      // номинальные псевдонимы), пустое тело здесь не ошибка.
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        { allowInterfaces: 'with-single-extends' },
+      ],
       '@typescript-eslint/no-unused-vars': [
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },

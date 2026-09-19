@@ -11,7 +11,10 @@ export const getMinDepth = (
   if (!targetItem) return 0
 
   // Минимальная вложенность = 1, если роняем элемент на первое место раскрытой группы, и если это не единственный элемент в группе
-  if ((targetItem.getIsExpanded?.() ?? false) && targetItem.subRows.length > 1) {
+  if (
+    (targetItem.getIsExpanded?.() ?? false) &&
+    targetItem.subRows.length > 1
+  ) {
     return targetItem.depth + 1
   }
 
@@ -38,7 +41,9 @@ export const getMaxDepth = (targetItem: Row<any, any> | undefined) => {
   if (!targetItem) return 0
 
   // Минимальная вложенность + 1, если целевой элемент - это группа, либо минимальная вложенность равняется изначальной вложенности целевого элемента
-  return (targetItem.getCanExpand?.() ?? false) ? targetItem.depth + 1 : targetItem.depth
+  return (targetItem.getCanExpand?.() ?? false)
+    ? targetItem.depth + 1
+    : targetItem.depth
 }
 
 export const getValidDepth = (

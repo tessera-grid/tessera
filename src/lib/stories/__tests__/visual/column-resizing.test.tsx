@@ -425,7 +425,8 @@ describe('Column Resizing — requirements', () => {
 
     // The scroll container carries the `data-resizing` seam CSS gates the
     // interactive-isolation on (`columnSizingInfo.isResizingColumn !== false`).
-    const scroll = () => container.querySelector<HTMLElement>('[data-resizing]')!
+    const scroll = () =>
+      container.querySelector<HTMLElement>('[data-resizing]')!
     expect(scroll().getAttribute('data-resizing')).toBe('false')
 
     // Press the grip and pass a move so the drag is in flight.
@@ -437,9 +438,9 @@ describe('Column Resizing — requirements', () => {
     await expect.poll(() => scroll().getAttribute('data-resizing')).toBe('true')
     // …neighbouring header and body cells are inert to the pointer, so the
     // cursor drifting onto them raises no hover / click / sort…
-    expect(getComputedStyle(renderedDataCells(container)[1]).pointerEvents).toBe(
-      'none',
-    )
+    expect(
+      getComputedStyle(renderedDataCells(container)[1]).pointerEvents,
+    ).toBe('none')
     expect(
       getComputedStyle(bodyCellAt(container, siblingColIndex)).pointerEvents,
     ).toBe('none')
@@ -456,7 +457,9 @@ describe('Column Resizing — requirements', () => {
     fireMouse('mouseup', document, x0 + 120, y)
 
     // Release lifts the isolation: container is unmarked and cells interact again.
-    await expect.poll(() => scroll().getAttribute('data-resizing')).toBe('false')
+    await expect
+      .poll(() => scroll().getAttribute('data-resizing'))
+      .toBe('false')
     expect(
       getComputedStyle(renderedDataCells(container)[1]).pointerEvents,
     ).not.toBe('none')

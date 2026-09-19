@@ -65,17 +65,17 @@
 
 ## 3. Что такое TanStack Table v9
 
-| Аспект | v8 (сейчас) | v9 |
-|---|---|---|
-| Статус | стабильно, у нас `^8.20` | **стабильно (4 авг 2026)** |
-| Стейт | внутренний, `getState()`, `on*Change` | **TanStack Store** (атомы), `table.state` / `table.store` / `table.atoms.<slice>` |
-| Ре-рендеры | всё или ничего (отсюда наш Pub-Sub) | **гранулярные подписки** (`table.Subscribe`, `useSelector(atom)`) |
-| Фичи | все включены всегда | **opt-in, tree-shakeable** через `tableFeatures({...})` |
-| Row-модели | `getSortedRowModel()` и т.п. как опции | слоты `tableFeatures({ sortedRowModel: createSortedRowModel() })`, ядровая модель автоматически |
-| Хук | `useReactTable` | `useTable` |
-| Методы инстансов | замыкают инстанс (можно деструктурировать) | живут на **прототипах**, используют `this` — **деструктуризация ломается** |
-| Сборка | CJS + ESM + UMD | **ESM-only, ES2022** |
-| Мост совместимости | — | `useLegacyTable` из `@tanstack/react-table/legacy` (deprecated) |
+| Аспект             | v8 (сейчас)                                | v9                                                                                              |
+| ------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Статус             | стабильно, у нас `^8.20`                   | **стабильно (4 авг 2026)**                                                                      |
+| Стейт              | внутренний, `getState()`, `on*Change`      | **TanStack Store** (атомы), `table.state` / `table.store` / `table.atoms.<slice>`               |
+| Ре-рендеры         | всё или ничего (отсюда наш Pub-Sub)        | **гранулярные подписки** (`table.Subscribe`, `useSelector(atom)`)                               |
+| Фичи               | все включены всегда                        | **opt-in, tree-shakeable** через `tableFeatures({...})`                                         |
+| Row-модели         | `getSortedRowModel()` и т.п. как опции     | слоты `tableFeatures({ sortedRowModel: createSortedRowModel() })`, ядровая модель автоматически |
+| Хук                | `useReactTable`                            | `useTable`                                                                                      |
+| Методы инстансов   | замыкают инстанс (можно деструктурировать) | живут на **прототипах**, используют `this` — **деструктуризация ломается**                      |
+| Сборка             | CJS + ESM + UMD                            | **ESM-only, ES2022**                                                                            |
+| Мост совместимости | —                                          | `useLegacyTable` из `@tanstack/react-table/legacy` (deprecated)                                 |
 
 Новое в v9, потенциально полезное Tessera: `cellSelectionFeature` (диапазоны ячеек),
 `cellSpanningFeature` (объединение ячеек), расширенные aggregation/pinning/resizing,
@@ -88,6 +88,7 @@
 Это центральный раздел — ради него всё и затевается.
 
 **v9 из коробки:**
+
 ```tsx
 // Узкий ре-рендер: компонент подписан только на свой срез
 import { useSelector } from '@tanstack/react-store'
@@ -122,24 +123,24 @@ const pagination = useSelector(table.atoms.pagination) // рендер толь�
 
 ## 5. Матрица breaking changes → проекция на Tessera
 
-| Изменение v9 | Что ломает у нас | Файлы / ADR | Усилие |
-|---|---|---|---|
-| `useReactTable` → `useTable` | augmentation `useReactTable` в типах, вызов в ядре | [table.d.ts](../../src/table.d.ts), [useCreateTable.ts](../../src/lib/core/createTable/useCreateTable.ts) | S |
-| `_features: [...]` → `features: tableFeatures({...})` | вся presence-based композиция фич | `useCreateTable.ts`, [pluginContract.ts](../../src/lib/core/pluginContract.ts) | **L** |
-| Row-модели в слоты `tableFeatures` | `getCoreRowModel/getGroupedRowModel/getExpandedRowModel/getSortedRowModel` в ядре | `useCreateTable.ts:243-247` | S |
-| `TableFeature`: `create*` → `assign*Prototype`/`init*InstanceData`/`constructTableAPIs`/`getDefaultTableOptions` | **все 9 плагинов + `commonPlugin`** | `pluginContract.ts`, `src/lib/plugins/*`, [commonPlugin.ts](../../src/lib/core/commonPlugin.ts) | **XL** |
-| Ведущий дженерик `TFeatures` во всех типах | сквозной контракт `<TData,THooks,TState,TOptions>` | [table.d.ts](../../src/table.d.ts), `src/types/*` | **XL** |
-| Declaration merging: `Table_FeatureMap`/`TableState_FeatureMap`/`TableOptions_FeatureMap`/`Plugins` вместо прямого augmentation `Table`/`Column`/... | наш `declare module` целиком | `table.d.ts` | **L** |
-| Методы инстансов на прототипах (нельзя деструктурировать) | места, где деструктурируем методы row/cell/column/header | аудит по `src/lib/grid/*`, компоненты плагинов | M |
-| Pinning `left`/`right` → `start`/`end` | плагин пиннинга, sticky-offset, тесты | [columnPinning](../../src/lib/plugins/columnPinning/) (~264 упоминаний left/right в 57 файлах), [ADR 0011](../decisions/0011-column-pinning.md) | **L** |
-| `enablePinning` → `enableColumnPinning`/`enableRowPinning` | опции пиннинга | columnPinning, `createState` | S |
-| Сплит `columnSizing`/`columnResizing`; `columnSizingInfo`→`columnResizing` | плагин размеров | [columnSizing](../../src/lib/plugins/columnSizing/), [ADR 0013](../decisions/0013-column-sizing.md) | M |
-| `sortingFn`→`sortFn`, `getSortingFn`→`getSortFn`, `sortingFns`→`sortFns` | плагин сортировки | [columnSorting](../../src/lib/plugins/columnSorting/), [ADR 0012](../decisions/0012-column-sorting.md) | S |
-| RowSelection: shift-range по умолчанию; `getIsSomeRowsSelected` семантика | плагин выбора, кросс-плагин тесты | [rowSelection](../../src/lib/plugins/rowSelection/), [ADR 0014](../decisions/0014-row-selection.md), [cross-plugin](../decisions/0023-cross-plugin-interactions.md) | M |
-| Aggregation отделена от grouping, контекстный API | плагин группировки | [rowGrouping](../decisions/0016-row-grouping.md) | M |
-| Стейт: `getState()` → `table.state`/`store`/`atoms`; `onStateChange` убран | реактивность, `createState` | [subscribeStore](../../src/lib/core/subscribeStore/), [createState](../../src/lib/core/createState/) | **L** |
-| `createColumnHelper<TData>` → `createColumnHelper<TFeatures,TData>` | хелперы колонок, стори, тесты | `src/types/column.ts`, stories | S |
-| ESM-only, ES2022, без CJS/UMD | наш дуальный дистрибутив CJS+ESM | [package.json](../../package.json) `exports`, `main` | M |
+| Изменение v9                                                                                                                                         | Что ломает у нас                                                                  | Файлы / ADR                                                                                                                                                         | Усилие |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `useReactTable` → `useTable`                                                                                                                         | augmentation `useReactTable` в типах, вызов в ядре                                | [table.d.ts](../../src/table.d.ts), [useCreateTable.ts](../../src/lib/core/createTable/useCreateTable.ts)                                                           | S      |
+| `_features: [...]` → `features: tableFeatures({...})`                                                                                                | вся presence-based композиция фич                                                 | `useCreateTable.ts`, [pluginContract.ts](../../src/lib/core/pluginContract.ts)                                                                                      | **L**  |
+| Row-модели в слоты `tableFeatures`                                                                                                                   | `getCoreRowModel/getGroupedRowModel/getExpandedRowModel/getSortedRowModel` в ядре | `useCreateTable.ts:243-247`                                                                                                                                         | S      |
+| `TableFeature`: `create*` → `assign*Prototype`/`init*InstanceData`/`constructTableAPIs`/`getDefaultTableOptions`                                     | **все 9 плагинов + `commonPlugin`**                                               | `pluginContract.ts`, `src/lib/plugins/*`, [commonPlugin.ts](../../src/lib/core/commonPlugin.ts)                                                                     | **XL** |
+| Ведущий дженерик `TFeatures` во всех типах                                                                                                           | сквозной контракт `<TData,THooks,TState,TOptions>`                                | [table.d.ts](../../src/table.d.ts), `src/types/*`                                                                                                                   | **XL** |
+| Declaration merging: `Table_FeatureMap`/`TableState_FeatureMap`/`TableOptions_FeatureMap`/`Plugins` вместо прямого augmentation `Table`/`Column`/... | наш `declare module` целиком                                                      | `table.d.ts`                                                                                                                                                        | **L**  |
+| Методы инстансов на прототипах (нельзя деструктурировать)                                                                                            | места, где деструктурируем методы row/cell/column/header                          | аудит по `src/lib/grid/*`, компоненты плагинов                                                                                                                      | M      |
+| Pinning `left`/`right` → `start`/`end`                                                                                                               | плагин пиннинга, sticky-offset, тесты                                             | [columnPinning](../../src/lib/plugins/columnPinning/) (~264 упоминаний left/right в 57 файлах), [ADR 0011](../decisions/0011-column-pinning.md)                     | **L**  |
+| `enablePinning` → `enableColumnPinning`/`enableRowPinning`                                                                                           | опции пиннинга                                                                    | columnPinning, `createState`                                                                                                                                        | S      |
+| Сплит `columnSizing`/`columnResizing`; `columnSizingInfo`→`columnResizing`                                                                           | плагин размеров                                                                   | [columnSizing](../../src/lib/plugins/columnSizing/), [ADR 0013](../decisions/0013-column-sizing.md)                                                                 | M      |
+| `sortingFn`→`sortFn`, `getSortingFn`→`getSortFn`, `sortingFns`→`sortFns`                                                                             | плагин сортировки                                                                 | [columnSorting](../../src/lib/plugins/columnSorting/), [ADR 0012](../decisions/0012-column-sorting.md)                                                              | S      |
+| RowSelection: shift-range по умолчанию; `getIsSomeRowsSelected` семантика                                                                            | плагин выбора, кросс-плагин тесты                                                 | [rowSelection](../../src/lib/plugins/rowSelection/), [ADR 0014](../decisions/0014-row-selection.md), [cross-plugin](../decisions/0023-cross-plugin-interactions.md) | M      |
+| Aggregation отделена от grouping, контекстный API                                                                                                    | плагин группировки                                                                | [rowGrouping](../decisions/0016-row-grouping.md)                                                                                                                    | M      |
+| Стейт: `getState()` → `table.state`/`store`/`atoms`; `onStateChange` убран                                                                           | реактивность, `createState`                                                       | [subscribeStore](../../src/lib/core/subscribeStore/), [createState](../../src/lib/core/createState/)                                                                | **L**  |
+| `createColumnHelper<TData>` → `createColumnHelper<TFeatures,TData>`                                                                                  | хелперы колонок, стори, тесты                                                     | `src/types/column.ts`, stories                                                                                                                                      | S      |
+| ESM-only, ES2022, без CJS/UMD                                                                                                                        | наш дуальный дистрибутив CJS+ESM                                                  | [package.json](../../package.json) `exports`, `main`                                                                                                                | M      |
 
 Легенда усилия: S — часы, M — день-два, L — несколько дней, XL — недели.
 
@@ -150,8 +151,12 @@ const pagination = useSelector(table.atoms.pagination) // рендер толь�
 ### 6.1. Ядро сборки (`useCreateTable`)
 
 Сейчас ([useCreateTable.ts](../../src/lib/core/createTable/useCreateTable.ts)):
+
 ```tsx
-const features = useMemo(() => [commonPlugin, ...featurePlugins.map(p => p.feature)], [featureSignature])
+const features = useMemo(
+  () => [commonPlugin, ...featurePlugins.map(p => p.feature)],
+  [featureSignature],
+)
 const table = useReactTable({
   getCoreRowModel: getCoreRowModel(),
   getGroupedRowModel: getGroupedRowModel(),
@@ -163,16 +168,19 @@ const table = useReactTable({
 ```
 
 В v9:
+
 ```tsx
 const features = tableFeatures({
-  commonFeature,           // наш бывший commonPlugin
-  rowSortingFeature, rowExpandingFeature, columnGroupingFeature, /* ... */
+  commonFeature, // наш бывший commonPlugin
+  rowSortingFeature,
+  rowExpandingFeature,
+  columnGroupingFeature /* ... */,
   sortedRowModel: createSortedRowModel(),
   groupedRowModel: createGroupedRowModel(),
   expandedRowModel: createExpandedRowModel(),
   // ядровая модель — автоматически, getCoreRowModel не нужен
 })
-const table = useTable({ features, columns, data, /* state/options */ })
+const table = useTable({ features, columns, data /* state/options */ })
 ```
 
 Тонкость: `tableFeatures({...})` — это **объект-карта**, а не массив. Наша
@@ -189,16 +197,16 @@ presence-based композиция из массива записей (`Registr
 
 Соответствие v9:
 
-| v8 (наш `TablePlugin`) | v9 `TableFeature` |
-|---|---|
-| `createTable(table)` — вешает методы на инстанс | `constructTableAPIs(table)` (через `assignTableAPIs`) |
-| `createColumn(col, table)` — методы колонки | `assignColumnPrototype(proto, table)` + `initColumnInstanceData(col)` |
-| `createHeader(hdr, table)` | `assignHeaderPrototype(...)` + `initHeaderInstanceData(hdr)` + `initHeaderGroupInstanceData(hg)` |
-| `createRow(row, table)` | `assignRowPrototype(...)` + `initRowInstanceData(row)` |
-| `createCell(cell, ...)` | `assignCellPrototype(...)` + `initCellInstanceData(cell)` |
-| `getInitialState(init)` | `getInitialState(init)` — **имя совпало** |
-| `getDefaultOptions(table)` | `getDefaultTableOptions(table)` |
-| `getDefaultColumnDef()` | `getDefaultColumnDef()` — **имя совпало** |
+| v8 (наш `TablePlugin`)                          | v9 `TableFeature`                                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `createTable(table)` — вешает методы на инстанс | `constructTableAPIs(table)` (через `assignTableAPIs`)                                            |
+| `createColumn(col, table)` — методы колонки     | `assignColumnPrototype(proto, table)` + `initColumnInstanceData(col)`                            |
+| `createHeader(hdr, table)`                      | `assignHeaderPrototype(...)` + `initHeaderInstanceData(hdr)` + `initHeaderGroupInstanceData(hg)` |
+| `createRow(row, table)`                         | `assignRowPrototype(...)` + `initRowInstanceData(row)`                                           |
+| `createCell(cell, ...)`                         | `assignCellPrototype(...)` + `initCellInstanceData(cell)`                                        |
+| `getInitialState(init)`                         | `getInitialState(init)` — **имя совпало**                                                        |
+| `getDefaultOptions(table)`                      | `getDefaultTableOptions(table)`                                                                  |
+| `getDefaultColumnDef()`                         | `getDefaultColumnDef()` — **имя совпало**                                                        |
 
 **Принципиальный сдвиг:** v8 мутирует **конкретный** инстанс (метод замыкает `col`),
 v9 кладёт метод на **общий прототип**, метод обращается к `this`. Плюс `init*InstanceData`
@@ -237,6 +245,7 @@ v9 кладёт метод на **общий прототип**, метод об
 ### 6.4. Типы и дженерики — вероятно, самый дорогой пункт
 
 В v9 **все** публичные типы получили **ведущий** параметр `TFeatures`:
+
 ```ts
 // v8:  Table<TData>            Column<TData>            ColumnDef<TData>
 // v9:  Table<TFeatures,TData>  Column<TFeatures,TData,TValue>  ColumnDef<TFeatures,TData,TValue>
@@ -312,12 +321,14 @@ dist/index.cjs`, `exports["."].require`. Если наш CJS-бандл во в�
 ## 7. Стратегии перехода
 
 ### A. Big-bang (полное переписывание ядра под нативный v9)
+
 - **Плюс:** сразу получаем весь выигрыш (store, tree-shaking, перф), чистый код без
   легаси.
 - **Минус:** большой неделимый PR; долго держать ветку зелёной; риск регрессий по
   всем ADR-контрактам одновременно.
 
 ### B. Мост `useLegacyTable` (инкрементально)
+
 - `@tanstack/react-table/legacy` принимает **v8-образный API поверх v9-внутренностей**.
 - **Плюс:** можно получить v9-ядро (в т.ч. store-перф) при минимальных правках вызова.
 - **Минусы:** (1) **deprecated** с самого начала — тупик, не цель; (2) тянет **все
@@ -327,8 +338,10 @@ dist/index.cjs`, `exports["."].require`. Если наш CJS-бандл во в�
   временный шаг для core-вызова, не для плагинов.
 
 ### C. Гибрид (рекомендуемый вектор исследования)
+
 Разнести миграцию на срезы, защищённые тестами (ADR 0009 + safety-net
 [ADR 0010](../decisions/0010-invert-core-plugins-registry.md)):
+
 1. **Стейт/реактивность:** заменить наш Pub-Sub на store v9 — самый ценный и
    относительно изолированный срез.
 2. **Ядро сборки:** `useTable` + `tableFeatures` + row-модели в слотах.

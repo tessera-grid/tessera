@@ -648,9 +648,7 @@ const Swatch = ({ token, label, desc }: TokenControl) => {
 const PaletteColumn = ({ mode }: { mode: 'light' | 'dark' }) => (
   <div
     className={
-      mode === 'dark'
-        ? `${DATA_GRID_THEME_CLASS} dark`
-        : DATA_GRID_THEME_CLASS
+      mode === 'dark' ? `${DATA_GRID_THEME_CLASS} dark` : DATA_GRID_THEME_CLASS
     }
     style={{
       flex: '1 1 380px',

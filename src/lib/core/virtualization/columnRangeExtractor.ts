@@ -40,7 +40,9 @@ export const useColumnRangeExtractor = ({
 
       const endPinnedIndexes = table
         .getEndVisibleLeafColumns()
-        .map((column: any) => visibleColumns.length - column.getPinnedIndex() - 1)
+        .map(
+          (column: any) => visibleColumns.length - column.getPinnedIndex() - 1,
+        )
         .sort((a: number, b: number) => a - b)
 
       return Array.from(

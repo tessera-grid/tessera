@@ -101,9 +101,13 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
       container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`),
     ).not.toBeNull()
     // …top-level group headers (first row)…
-    expect(container.querySelector(`${FIRST_ROW_HEAD} ${PIN_BUTTON}`)).not.toBeNull()
+    expect(
+      container.querySelector(`${FIRST_ROW_HEAD} ${PIN_BUTTON}`),
+    ).not.toBeNull()
     // …and intermediate group headers — pinning works at any depth.
-    expect(container.querySelector(`${MIDDLE_ROW_HEAD} ${PIN_BUTTON}`)).not.toBeNull()
+    expect(
+      container.querySelector(`${MIDDLE_ROW_HEAD} ${PIN_BUTTON}`),
+    ).not.toBeNull()
   })
 
   test('LP2: pinning a leaf peels it to the left edge and splits its group header', async () => {
@@ -117,7 +121,11 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
 
     // The pinned leaf's body cell is now sticky at the left edge (getStart 0).
     await expect
-      .poll(() => bodyCellsById(container, 'lastName')[0]?.getAttribute('data-cell-pinned'))
+      .poll(() =>
+        bodyCellsById(container, 'lastName')[0]?.getAttribute(
+          'data-cell-pinned',
+        ),
+      )
       .toBe('left')
     const lastNameBody = bodyCellsById(container, 'lastName')[0]
     expect(getComputedStyle(lastNameBody).position).toBe('sticky')
@@ -125,9 +133,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
 
     // The `name` group header split into two cells: the left segment (over the
     // pinned leaf) and the center segment (over the remaining leaf).
-    await expect
-      .poll(() => headCellsById(container, 'name').length)
-      .toBe(2)
+    await expect.poll(() => headCellsById(container, 'name').length).toBe(2)
     const pinnedStates = headCellsById(container, 'name').map(cell =>
       cell.getAttribute('data-cell-pinned'),
     )
@@ -146,7 +152,11 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
 
     await expect.poll(() => headCellsById(container, 'name').length).toBe(1)
     await expect
-      .poll(() => bodyCellsById(container, 'lastName')[0]?.getAttribute('data-cell-pinned'))
+      .poll(() =>
+        bodyCellsById(container, 'lastName')[0]?.getAttribute(
+          'data-cell-pinned',
+        ),
+      )
       .toBe('false')
   })
 
@@ -163,15 +173,17 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     for (const leaf of ['firstName', 'lastName']) {
       // eslint-disable-next-line no-await-in-loop
       await expect
-        .poll(() => bodyCellsById(container, leaf)[0]?.getAttribute('data-cell-pinned'))
+        .poll(() =>
+          bodyCellsById(container, leaf)[0]?.getAttribute('data-cell-pinned'),
+        )
         .toBe('left')
     }
     // …and the group header stays a SINGLE sticky cell (no split — the leaves
     // moved left together as one contiguous block).
     await expect.poll(() => headCellsById(container, 'name').length).toBe(1)
-    expect(headCellsById(container, 'name')[0].getAttribute('data-cell-pinned')).toBe(
-      'left',
-    )
+    expect(
+      headCellsById(container, 'name')[0].getAttribute('data-cell-pinned'),
+    ).toBe('left')
   })
 
   test('LP5: unpinning one leaf of a pinned group leaves the split segment over it inactive', async () => {
@@ -183,7 +195,11 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     )!
     await pinLeafViaPopover(groupHead)
     await expect
-      .poll(() => bodyCellsById(container, 'firstName')[0]?.getAttribute('data-cell-pinned'))
+      .poll(() =>
+        bodyCellsById(container, 'firstName')[0]?.getAttribute(
+          'data-cell-pinned',
+        ),
+      )
       .toBe('left')
 
     // …then unpin the `firstName` leaf from its own leaf header.
@@ -230,11 +246,15 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     for (const leaf of ['age', 'gender']) {
       // eslint-disable-next-line no-await-in-loop
       await expect
-        .poll(() => bodyCellsById(container, leaf)[0]?.getAttribute('data-cell-pinned'))
+        .poll(() =>
+          bodyCellsById(container, leaf)[0]?.getAttribute('data-cell-pinned'),
+        )
         .toBe('left')
     }
     // …the intermediate group header stays a single (sticky) cell…
-    await expect.poll(() => headCellsById(container, 'more-info').length).toBe(1)
+    await expect
+      .poll(() => headCellsById(container, 'more-info').length)
+      .toBe(1)
     expect(
       headCellsById(container, 'more-info')[0].getAttribute('data-cell-pinned'),
     ).toBe('left')
@@ -250,18 +270,28 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
 
     // The row-actions service column is auto-pinned right from the start.
     await expect
-      .poll(() => serviceHeadCell(container, ROW_ACTIONS_COLUMN_ID)?.getAttribute('data-cell-pinned'))
+      .poll(() =>
+        serviceHeadCell(container, ROW_ACTIONS_COLUMN_ID)?.getAttribute(
+          'data-cell-pinned',
+        ),
+      )
       .toBe('right')
 
     // Pin a user leaf via reorder-out…
     await pinLeafViaPopover(leafHeadCell(container, 'lastName'))
     await expect
-      .poll(() => bodyCellsById(container, 'lastName')[0]?.getAttribute('data-cell-pinned'))
+      .poll(() =>
+        bodyCellsById(container, 'lastName')[0]?.getAttribute(
+          'data-cell-pinned',
+        ),
+      )
       .toBe('left')
 
     // …the row-actions column is STILL pinned right (not disturbed by the reorder).
     expect(
-      serviceHeadCell(container, ROW_ACTIONS_COLUMN_ID)?.getAttribute('data-cell-pinned'),
+      serviceHeadCell(container, ROW_ACTIONS_COLUMN_ID)?.getAttribute(
+        'data-cell-pinned',
+      ),
     ).toBe('right')
   })
 
@@ -272,7 +302,9 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     })
 
     const selectionPinned = () =>
-      serviceHeadCell(container, COLUMN_SELECTION_ID)?.getAttribute('data-cell-pinned')
+      serviceHeadCell(container, COLUMN_SELECTION_ID)?.getAttribute(
+        'data-cell-pinned',
+      )
 
     // Before any user pin the leading selection column is not left-pinned.
     expect(selectionPinned()).not.toBe('left')
@@ -282,8 +314,14 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     await expect.poll(() => selectionPinned()).toBe('left')
     // …and the selection column stays LEFT of the pinned user leaf (service keeps
     // the left edge — reorder-out inserts user pins after the leading service).
-    const selLeft = serviceHeadCell(container, COLUMN_SELECTION_ID)!.getBoundingClientRect().left
-    const leafLeft = bodyCellsById(container, 'lastName')[0].getBoundingClientRect().left
+    const selLeft = serviceHeadCell(
+      container,
+      COLUMN_SELECTION_ID,
+    )!.getBoundingClientRect().left
+    const leafLeft = bodyCellsById(
+      container,
+      'lastName',
+    )[0].getBoundingClientRect().left
     expect(selLeft).toBeLessThan(leafLeft)
 
     // Unpinning the last user leaf releases the leading service column (no leak of
@@ -316,7 +354,10 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     await expect.poll(() => pinnedOf(COLUMN_DRAGGING_ID)).toBe('left')
 
     // …and both stay to the LEFT of the pinned user leaf (service keeps the edge).
-    const leafLeft = bodyCellsById(container, 'lastName')[0].getBoundingClientRect().left
+    const leafLeft = bodyCellsById(
+      container,
+      'lastName',
+    )[0].getBoundingClientRect().left
     expect(leftOf(COLUMN_SELECTION_ID)).toBeLessThan(leafLeft)
     expect(leftOf(COLUMN_DRAGGING_ID)).toBeLessThan(leafLeft)
 
@@ -338,7 +379,9 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     // The leaf's body cell is now sticky at the right edge.
     await expect
       .poll(() =>
-        bodyCellsById(container, 'lastName')[0]?.getAttribute('data-cell-pinned'),
+        bodyCellsById(container, 'lastName')[0]?.getAttribute(
+          'data-cell-pinned',
+        ),
       )
       .toBe('right')
     expect(
@@ -351,8 +394,10 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
 
     // The pinned user leaf sits to the LEFT of the trailing auto-pinned rowActions
     // column — reorder-out inserts user right-pins before the trailing service.
-    const leafLeft = bodyCellsById(container, 'lastName')[0].getBoundingClientRect()
-      .left
+    const leafLeft = bodyCellsById(
+      container,
+      'lastName',
+    )[0].getBoundingClientRect().left
     const actionsLeft = container
       .querySelector<HTMLElement>(
         `${BODY_CELL}[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`,

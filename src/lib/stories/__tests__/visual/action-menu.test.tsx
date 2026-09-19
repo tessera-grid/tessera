@@ -15,7 +15,8 @@ const HEAD_CELL = '.data-grid__head-cell'
 /** Заголовки реальных (не сервисных) колонок. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 const KEBAB = '[aria-label="Column options"]'
-const ACTION_CELL = '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
+const ACTION_CELL =
+  '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
 
 const dataHeadCells = (c: HTMLElement) =>
   Array.from(c.querySelectorAll<HTMLElement>(DATA_HEAD_CELL)).filter(
@@ -35,13 +36,17 @@ const closeMenu = async () => {
 
 async function renderHeaderMenu(args: Record<string, unknown> = {}) {
   const view = await render(<composed.HeaderActionMenu {...args} />)
-  await expect.poll(() => dataHeadCells(view.container).length).toBeGreaterThan(3)
+  await expect
+    .poll(() => dataHeadCells(view.container).length)
+    .toBeGreaterThan(3)
   return view
 }
 
 async function renderRowMenu(args: Record<string, unknown> = {}) {
   const view = await render(<composed.RowActionMenu {...args} />)
-  await expect.poll(() => view.container.querySelector(ACTION_CELL)).not.toBeNull()
+  await expect
+    .poll(() => view.container.querySelector(ACTION_CELL))
+    .not.toBeNull()
   return view
 }
 
@@ -54,22 +59,34 @@ describe('Action menu — header (ADR 0024)', () => {
 
     expect(kebabs.length).toBe(columns.length)
     // Инлайн-кнопки мигрированных плагинов уехали в меню.
-    expect(container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length).toBe(0)
-    expect(container.querySelectorAll(`${HEAD_CELL} .column-sort__button`).length).toBe(0)
-    expect(container.querySelectorAll(`${HEAD_CELL} .column-group__button`).length).toBe(0)
+    expect(
+      container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length,
+    ).toBe(0)
+    expect(
+      container.querySelectorAll(`${HEAD_CELL} .column-sort__button`).length,
+    ).toBe(0)
+    expect(
+      container.querySelectorAll(`${HEAD_CELL} .column-group__button`).length,
+    ).toBe(0)
   })
 
   test('AM11: меню делится на подгруппы; сортировка развёрнута в asc/desc/сброс', async () => {
     const { container } = await renderHeaderMenu()
 
-    await userEvent.click(dataHeadCells(container)[0].querySelector<HTMLElement>(KEBAB)!)
+    await userEvent.click(
+      dataHeadCells(container)[0].querySelector<HTMLElement>(KEBAB)!,
+    )
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
 
     const labels = menuItems().map(i => i.textContent?.trim())
     // Три подгруппы: пиннинг | сортировка (3 пункта) | группировка.
     expect(document.querySelectorAll('[role="group"]').length).toBe(3)
     expect(labels).toEqual(
-      expect.arrayContaining(['Sort ascending', 'Sort descending', 'Clear sorting']),
+      expect.arrayContaining([
+        'Sort ascending',
+        'Sort descending',
+        'Clear sorting',
+      ]),
     )
 
     await closeMenu()
@@ -79,16 +96,25 @@ describe('Action menu — header (ADR 0024)', () => {
     const view = await renderHeaderMenu({ enableHeaderActionMenu: false })
 
     // Меню выключено: три инлайн-кнопки, кебаба нет.
-    expect(view.container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length)
-      .toBeGreaterThan(0)
-    expect(view.container.querySelectorAll(`${HEAD_CELL} ${KEBAB}`).length).toBe(0)
+    expect(
+      view.container.querySelectorAll(`${HEAD_CELL} .column-pin__button`)
+        .length,
+    ).toBeGreaterThan(0)
+    expect(
+      view.container.querySelectorAll(`${HEAD_CELL} ${KEBAB}`).length,
+    ).toBe(0)
 
     // Тот же инстанс, включаем меню → схлопывание.
     view.rerender(<composed.HeaderActionMenu enableHeaderActionMenu />)
     await expect
-      .poll(() => view.container.querySelectorAll(`${HEAD_CELL} ${KEBAB}`).length)
+      .poll(
+        () => view.container.querySelectorAll(`${HEAD_CELL} ${KEBAB}`).length,
+      )
       .toBeGreaterThan(0)
-    expect(view.container.querySelectorAll(`${HEAD_CELL} .column-pin__button`).length).toBe(0)
+    expect(
+      view.container.querySelectorAll(`${HEAD_CELL} .column-pin__button`)
+        .length,
+    ).toBe(0)
   })
 
   test('AM13: пункт меню исполняет действие — пиннинг из меню закрепляет столбец, label реактивен', async () => {
@@ -102,7 +128,9 @@ describe('Action menu — header (ADR 0024)', () => {
     await userEvent.click(menuItemByText('Pin column')!)
 
     const pinnedCell = () =>
-      container.querySelector<HTMLElement>(`${HEAD_CELL}[data-column-id='${colId}']`)
+      container.querySelector<HTMLElement>(
+        `${HEAD_CELL}[data-column-id='${colId}']`,
+      )
     await expect
       .poll(() => pinnedCell()?.getAttribute('data-cell-pinned'))
       .toBe('left')
@@ -117,26 +145,37 @@ describe('Action menu — header (ADR 0024)', () => {
   test('AM14: resize-грип (countsAsHeaderAction:false) не влияет на порог кебаба', async () => {
     // Story включает ресайз; действия те же три → всё равно схлопнуто.
     const withResize = await renderHeaderMenu({ enableColumnResizing: true })
-    expect(withResize.container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
-      .toBe(dataHeadCells(withResize.container).length)
     expect(
-      withResize.container.querySelectorAll(`${HEAD_CELL}[data-column-resizable='true']`).length,
+      withResize.container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`)
+        .length,
+    ).toBe(dataHeadCells(withResize.container).length)
+    expect(
+      withResize.container.querySelectorAll(
+        `${HEAD_CELL}[data-column-resizable='true']`,
+      ).length,
     ).toBeGreaterThan(0)
 
     // Без ресайза схлопывание такое же — грип не менял решение.
     const noResize = await renderHeaderMenu({ enableColumnResizing: false })
-    expect(noResize.container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length)
-      .toBe(dataHeadCells(noResize.container).length)
+    expect(
+      noResize.container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length,
+    ).toBe(dataHeadCells(noResize.container).length)
   })
 
   test('AM18: инлайн-паритет — мигрированная кнопка сохраняет DOM опаковой (класс/иконка/aria)', async () => {
-    const { container } = await renderHeaderMenu({ enableHeaderActionMenu: false })
+    const { container } = await renderHeaderMenu({
+      enableHeaderActionMenu: false,
+    })
 
-    const pin = container.querySelector<HTMLElement>(`${HEAD_CELL} .column-pin__button`)!
+    const pin = container.querySelector<HTMLElement>(
+      `${HEAD_CELL} .column-pin__button`,
+    )!
     expect(pin).toBeTruthy()
     expect(pin.getAttribute('aria-label')).toBe('Pin column')
     expect(pin.querySelector('svg')).toBeTruthy()
-    expect(pin.closest('.cell__button')?.getAttribute('data-button-active')).toBe('false')
+    expect(
+      pin.closest('.cell__button')?.getAttribute('data-button-active'),
+    ).toBe('false')
   })
 })
 
@@ -168,8 +207,9 @@ describe('Action menu — row (ADR 0024)', () => {
   test('AM19: ширина колонки действий сужается при схлопывании, растёт при инлайне', async () => {
     const view = await renderRowMenu({ enableRowActionMenu: true })
     const cellWidth = () =>
-      view.container.querySelector<HTMLElement>(ACTION_CELL)!.getBoundingClientRect()
-        .width
+      view.container
+        .querySelector<HTMLElement>(ACTION_CELL)!
+        .getBoundingClientRect().width
 
     const collapsed = cellWidth()
 

@@ -57,16 +57,16 @@ Tessera нацелена на **любую систему, которой нуж
 
 ## Документы
 
-| Документ                                             | Охват                                                                                            |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [upstream-foundations.md](upstream-foundations.md)   | Как работают TanStack Table / Virtual и dnd-kit и в какие точки расширения врезается Tessera     |
-| [table-assembly.md](table-assembly.md)               | `useCreateTable`: столбцы, разделение состояния, hooks, слоты, инъекция плагинов                 |
+| Документ                                             | Охват                                                                                                 |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| [upstream-foundations.md](upstream-foundations.md)   | Как работают TanStack Table / Virtual и dnd-kit и в какие точки расширения врезается Tessera          |
+| [table-assembly.md](table-assembly.md)               | `useCreateTable`: столбцы, разделение состояния, hooks, слоты, инъекция плагинов                      |
 | [plugins-and-slots.md](plugins-and-slots.md)         | Жизненный цикл фичи (v9 `TableFeature`: `assign*Prototype`/`init*`), регистрация слотов, render-слоты |
-| [reactivity.md](reactivity.md)                       | Реактивность: идентичность ссылки против гранулярных подписок TanStack Store (`table.atoms`)      |
-| [rendering.md](rendering.md)                         | Пайплайн `DataGrid`: стек провайдеров, layout flex против grid, отрисовка, состояния загрузки    |
-| [virtualization.md](virtualization.md)               | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк     |
-| [dnd.md](dnd.md)                                     | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers       |
-| [theming-and-overrides.md](theming-and-overrides.md) | Контракты переопределения: `colorMode` → CSS-переменные, иконки, локализация                     |
+| [reactivity.md](reactivity.md)                       | Реактивность: идентичность ссылки против гранулярных подписок TanStack Store (`table.atoms`)          |
+| [rendering.md](rendering.md)                         | Пайплайн `DataGrid`: стек провайдеров, layout flex против grid, отрисовка, состояния загрузки         |
+| [virtualization.md](virtualization.md)               | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк          |
+| [dnd.md](dnd.md)                                     | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers            |
+| [theming-and-overrides.md](theming-and-overrides.md) | Контракты переопределения: `colorMode` → CSS-переменные, иконки, локализация                          |
 
 ## Слои
 

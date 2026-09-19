@@ -31,6 +31,8 @@ interface RowDraggingTableAPI {
   setRowDragging: (updater: Updater<RowDragOverlayState>) => void
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
 declare module '@tanstack/react-table' {
   interface Plugins {
     rowDraggingFeature: TableFeature
@@ -57,6 +59,7 @@ declare module '@tanstack/react-table' {
     rowDraggingFeature: RowDraggingTableAPI
   }
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 type DraggableRow = {
   table: {

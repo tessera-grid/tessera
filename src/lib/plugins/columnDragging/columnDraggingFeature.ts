@@ -35,6 +35,8 @@ interface ColumnDraggingColumnAPI {
   getDraggableIndex: () => number
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
 declare module '@tanstack/react-table' {
   interface Plugins {
     columnDraggingFeature: TableFeature
@@ -68,6 +70,7 @@ declare module '@tanstack/react-table' {
     columnDraggingFeature: ColumnDraggingTableAPI
   }
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 type DraggableColumn = {
   id: string

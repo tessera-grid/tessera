@@ -6,7 +6,11 @@ import { memo } from 'react'
 export const VirtualCenterSpacer = memo(() => (
   <div
     aria-hidden
-    style={{ width: 'var(--virtual-center-width, 0px)', flexShrink: 0, alignSelf: 'stretch' }}
+    style={{
+      width: 'var(--virtual-center-width, 0px)',
+      flexShrink: 0,
+      alignSelf: 'stretch',
+    }}
   />
 ))
 

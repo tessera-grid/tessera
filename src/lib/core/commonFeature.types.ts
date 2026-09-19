@@ -88,6 +88,8 @@ export interface CommonHeaderGroupAPI {
 // Ключ карты (`commonFeature`) = ключ фичи в `tableFeatures({ commonFeature })`.
 // Сигнатуры карт (имена/ограничения/вариантность `in out`) обязаны совпадать с
 // оригиналом v9 — иначе declaration merging не склеится.
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9 (см. выше), иначе declaration merging не склеится */
 declare module '@tanstack/react-table' {
   interface Plugins {
     commonFeature: TableFeature
@@ -132,3 +134,4 @@ declare module '@tanstack/react-table' {
     in out TData extends RowData,
   > extends CommonHeaderGroupAPI {}
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */

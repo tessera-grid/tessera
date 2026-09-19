@@ -22,12 +22,12 @@ npx tsc --noEmit -p spike/tanstack-v9/tsconfig.json
 
 ## Файлы
 
-| Файл | Что показывает |
-|---|---|
+| Файл                 | Что показывает                                                                                                                                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `reactivity.test.ts` | ЗАПУСКАЕМОЕ доказательство: смена среза `sorting` не меняет идентичность `columnVisibility`; per-slice атом нотифицирует только свой срез; сортировка реально переупорядочивает модель. Таблица собрана headless через `constructTable` + `storeReactivityBindings()`. |
-| `commonFeature.ts` | Порт среза `commonPlugin` как v9-фичи: `getHooks`/`getRenderSlots` → `constructTableAPIs`; `getIsFirstRow` → `assignRowPrototype`; `hooks`/`slots` → опции фичи через `*_FeatureMap`. |
-| `registry.ts` | Presence-based сборка `tableFeatures()` из динамического массива записей (наш DX `plugins={[...]}`). |
-| `prototype.tsx` | `useTable` + `tableFeatures` + `createColumnHelper` + гранулярная подписка `useSelector(table.atoms.sorting)` + нативный `table.FlexRender`. Компилируется. |
+| `commonFeature.ts`   | Порт среза `commonPlugin` как v9-фичи: `getHooks`/`getRenderSlots` → `constructTableAPIs`; `getIsFirstRow` → `assignRowPrototype`; `hooks`/`slots` → опции фичи через `*_FeatureMap`.                                                                                  |
+| `registry.ts`        | Presence-based сборка `tableFeatures()` из динамического массива записей (наш DX `plugins={[...]}`).                                                                                                                                                                   |
+| `prototype.tsx`      | `useTable` + `tableFeatures` + `createColumnHelper` + гранулярная подписка `useSelector(table.atoms.sorting)` + нативный `table.FlexRender`. Компилируется.                                                                                                            |
 
 ## Выводы по 5 открытым вопросам плана (§7)
 
