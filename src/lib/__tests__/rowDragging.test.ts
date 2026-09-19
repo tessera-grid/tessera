@@ -1,6 +1,6 @@
 /**
- * Фаза E — headless-проверка плагина rowDragging на v9-ядре, включая гейты
- * (многоуровневая шапка / сортировка / группировка, ADR 0022).
+ * Headless-проверка плагина rowDragging, включая гейты (многоуровневая шапка /
+ * сортировка / группировка, ADR 0022).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -15,7 +15,10 @@ import { COLUMN_DRAGGING_ID, rowDragging } from '../plugins/rowDragging'
 
 const build = (extraEntries: any[], dragOpts = {}) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     ...extraEntries,
     rowDragging(dragOpts),
   ]
@@ -41,7 +44,7 @@ const build = (extraEntries: any[], dragOpts = {}) => {
   return { table, folded }
 }
 
-describe('Фаза E — rowDragging на v9', () => {
+describe('rowDragging', () => {
   it('foldEntries: опция + сервисная колонка-ручка (order 0)', () => {
     const { folded } = build([])
     expect(folded.options).toMatchObject({ enableRowDragging: true })
@@ -55,15 +58,25 @@ describe('Фаза E — rowDragging на v9', () => {
 
   it('состояние: rowDragging по умолчанию, updater пишет в атом', () => {
     const { table } = build([])
-    expect(table.atoms.rowDragging.get()).toMatchObject({ activeId: null, acceptable: true })
+    expect(table.atoms.rowDragging.get()).toMatchObject({
+      activeId: null,
+      acceptable: true,
+    })
 
-    table.options.onRowDraggingChange({ activeId: '1', offsetLeft: 0, isExpanded: false, acceptable: true })
+    table.options.onRowDraggingChange({
+      activeId: '1',
+      offsetLeft: 0,
+      isExpanded: false,
+      acceptable: true,
+    })
     expect(table.atoms.rowDragging.get().activeId).toBe('1')
   })
 
   it('getCanDrag: плоская шапка и enable=true → true; enable=false → false', () => {
     expect(build([]).table.getRowModel().rows[0].getCanDrag()).toBe(true)
-    expect(build([], { enable: false }).table.getRowModel().rows[0].getCanDrag()).toBe(false)
+    expect(
+      build([], { enable: false }).table.getRowModel().rows[0].getCanDrag(),
+    ).toBe(false)
   })
 
   it('гейт сортировки: активная сортировка отключает drag (ADR 0022)', () => {

@@ -1,12 +1,8 @@
 /**
- * Фаза E — кастомная v9-фича rowDragging. Порт v8-плагина: слайс overlay-состояния
- * `rowDragging` + updater и row-метод getCanDrag с гейтами (ADR 0022):
- * многоуровневая шапка, активная группировка, активная сортировка — всё гасит drag.
- *
- * Отличия от v8: getInitialState/getDefaultOptions→getInitialState/
- * getDefaultTableOptions (updater — makeStateUpdater); createRow→assignRowPrototype;
- * grouping/sorting читаются из атомов (optional — фичи могут отсутствовать);
- * dev-warn'ы — TODO (логгер), поведение сохранено.
+ * Кастомная фича rowDragging. Слайс overlay-состояния `rowDragging` + updater и
+ * row-метод getCanDrag с гейтами (ADR 0022): многоуровневая шапка, активная
+ * группировка, активная сортировка — всё гасит drag. grouping/sorting читаются из
+ * атомов (optional — фичи могут отсутствовать); dev-warn'ы — TODO (логгер).
  */
 import {
   assignPrototypeAPIs,
@@ -118,7 +114,16 @@ export const rowDraggingFeature: TableFeature = {
             return
           }
           // Фолбэк: пишем атом напрямую (если default по какой-то причине отсутствует).
-          const atom = (table as unknown as { atoms: { rowDragging: { get: () => RowDragOverlayState; set: (v: RowDragOverlayState) => void } } }).atoms.rowDragging
+          const atom = (
+            table as unknown as {
+              atoms: {
+                rowDragging: {
+                  get: () => RowDragOverlayState
+                  set: (v: RowDragOverlayState) => void
+                }
+              }
+            }
+          ).atoms.rowDragging
           atom.set(functionalUpdate(updater, atom.get()))
         },
       },

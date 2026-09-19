@@ -1,4 +1,4 @@
-/** Фаза E — типы плагина rowDragging (v9). */
+/** Типы плагина rowDragging. */
 import type { Row } from '../../types'
 import type { DragOverlayState } from '../columnDragging/types'
 

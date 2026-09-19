@@ -1,20 +1,21 @@
 /**
- * Фаза E — запись плагина rowExpanding для v9 (порт registry.ts, ADR 0015/0022).
- *
- * Отличия от v8:
- *  - поведение даёт `rowExpandingFeature` + слот `expandedRowModel` (в v8 модель шла
- *    опцией `getExpandedRowModel`);
- *  - вместо обёртки `row.getCanExpand` в `createRow` — табличная опция
- *    `getRowCanExpand` (в v9 она ПОЛНОСТЬЮ заменяет дефолт, поэтому включаем проверку
- *    `subRows` сами); гейт группировки (ADR 0022) — там же;
- *  - `keepFeatureWhenDisabled` не нужен: в v9 нет фиксации фич «на маунте».
+ * Запись плагина rowExpanding (ADR 0015/0022). Поведение даёт `rowExpandingFeature`
+ * + слот `expandedRowModel`. Табличная опция `getRowCanExpand` ПОЛНОСТЬЮ заменяет
+ * дефолт, поэтому проверку `subRows` включаем сами; гейт группировки (ADR 0022) —
+ * там же.
  */
-import { createExpandedRowModel, rowExpandingFeature } from '@tanstack/react-table'
+import {
+  createExpandedRowModel,
+  rowExpandingFeature,
+} from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import type { ServiceColumn } from '../../core/createColumns'
 import type { TesseraFeatureEntry } from '../../core/features'
-import { COLUMN_EXPANDING_ID, getRowExpandingColumn } from './rowExpandingColumn'
+import {
+  COLUMN_EXPANDING_ID,
+  getRowExpandingColumn,
+} from './rowExpandingColumn'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
 
@@ -42,9 +43,11 @@ export const rowExpanding = (opts: RowExpandingOptions = {}) => {
 
     const groupingActive =
       ((
-        (row.table as unknown as {
-          atoms: { grouping?: { get: () => unknown[] } }
-        }).atoms.grouping?.get() ?? []
+        (
+          row.table as unknown as {
+            atoms: { grouping?: { get: () => unknown[] } }
+          }
+        ).atoms.grouping?.get() ?? []
       ).length ?? 0) > 0
 
     if (groupingActive) {

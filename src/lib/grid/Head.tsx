@@ -1,6 +1,5 @@
-// Cutover (grid) — v9-порт Head: контейнер заголовка (headerGroups → HeadRow).
-// Виртуализация приходит пропсом. DnD-обвязка (enableColumnDragging→DraggableHeadCell)
-// внутри HeadRow — на cutover.
+// Head: контейнер заголовка (headerGroups → HeadRow). Виртуализация приходит
+// пропсом. DnD-обвязка (enableColumnDragging→DraggableHeadCell) внутри HeadRow.
 import { type CSSProperties, memo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -56,6 +55,9 @@ export const Head = ({
   </div>
 )
 
-// Мемоизация активна только во время ресайза колонок (как в v8).
-export const MemoizedHead = memo(Head, (_, next) => next.isResizingColumns !== false)
+// Мемоизация активна только во время ресайза колонок.
+export const MemoizedHead = memo(
+  Head,
+  (_, next) => next.isResizingColumns !== false,
+)
 MemoizedHead.displayName = 'MemoizedHead'

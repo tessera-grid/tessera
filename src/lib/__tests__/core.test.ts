@@ -1,7 +1,7 @@
 /**
- * Фаза B — запускаемая проверка v9-ядра: presence-based сборка
- * (`buildTesseraFeatures`) + рантайм `commonFeature` на headless-инстансе
- * (`constructTable` + `storeReactivityBindings`, без React).
+ * Запускаемая проверка ядра: presence-based сборка (`buildTesseraFeatures`) +
+ * рантайм `commonFeature` на headless-инстансе (`constructTable` +
+ * `storeReactivityBindings`, без React).
  *
  * Запуск:  npx vitest run --config vitest.node.config.ts
  */
@@ -25,7 +25,10 @@ interface Person {
 
 const makeTable = () => {
   const features = buildTesseraFeatures([
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     {
       id: 'columnSorting',
       slot: {

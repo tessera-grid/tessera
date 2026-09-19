@@ -1,7 +1,6 @@
-// Cutover (grid) — v9-порт ActionInlineMenu: инлайн-действие как мини-меню
-// (поповер) — сама иконка-кнопка служит триггером, раскрывая menuItems тем же
-// телом, что и кебаб. Применяется при неоднозначном инлайн-клике (закрепление при
-// обеих сторонах, inlineAsMenu). useSubscribeStore убран (реактивность — ActionsZone).
+// ActionInlineMenu: инлайн-действие как мини-меню (поповер) — сама иконка-кнопка
+// служит триггером, раскрывая menuItems тем же телом, что и кебаб. Применяется при
+// неоднозначном инлайн-клике (закрепление при обеих сторонах, inlineAsMenu).
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
@@ -38,7 +37,10 @@ export const ActionInlineMenu = ({
   const button = (
     <Menu.Trigger
       render={
-        <IconButton className={action.className?.(context)} aria-label={ariaLabel}>
+        <IconButton
+          className={action.className?.(context)}
+          aria-label={ariaLabel}
+        >
           {action.icon(context)}
         </IconButton>
       }

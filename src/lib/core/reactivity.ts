@@ -1,12 +1,11 @@
 /**
- * Фаза D — реактивность v9-слоя: гранулярные подписки на состояние таблицы через
- * TanStack Store, замена собственного Pub-Sub (useSubscribeStore, ADR 0007).
+ * Реактивность: гранулярные подписки на состояние таблицы через TanStack Store.
  *
  * Компоненты грида/плагинов подписываются на СВОЙ срез — ре-рендер только при его
- * изменении (то же, ради чего существовал Pub-Sub, но штатно):
+ * изменении:
  *  - `useSlice(table, 'sorting')` — один атом состояния (самая узкая подписка);
- *  - `useTableState(table, s => ({...}))` — проекция из общего store с shallow-сравнением
- *    (аналог `useSubscribeStore(() => [primitives])`).
+ *  - `useTableState(table, s => ({...}))` — проекция из общего store с
+ *    shallow-сравнением.
  */
 import { useSelector } from '@tanstack/react-store'
 
@@ -17,7 +16,12 @@ export const shallowEqual = (a: unknown, b: unknown): boolean => {
   if (Object.is(a, b)) {
     return true
   }
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+  if (
+    typeof a !== 'object' ||
+    a === null ||
+    typeof b !== 'object' ||
+    b === null
+  ) {
     return false
   }
   const aKeys = Object.keys(a as object)
@@ -26,7 +30,10 @@ export const shallowEqual = (a: unknown, b: unknown): boolean => {
     return false
   }
   return aKeys.every(key =>
-    Object.is((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]),
+    Object.is(
+      (a as Record<string, unknown>)[key],
+      (b as Record<string, unknown>)[key],
+    ),
   )
 }
 
@@ -37,8 +44,7 @@ type SliceSource<T> = {
 
 /**
  * Подписка на ОДИН срез состояния (`table.atoms[key]`). Компонент ре-рендерится
- * только при изменении этого среза — прямая замена
- * `useSubscribeStore(() => [table.getState().<key>...])`.
+ * только при изменении этого среза.
  */
 export const useSlice = <
   TFeatures extends TableFeatures,
@@ -57,7 +63,7 @@ export const useSlice = <
 
 /**
  * Подписка на ПРОЕКЦИЮ из общего store с shallow-сравнением. Для компонентов,
- * которым нужно несколько срезов сразу (как список примитивов в старом Pub-Sub).
+ * которым нужно несколько срезов сразу.
  */
 export const useTableState = <
   TFeatures extends TableFeatures,

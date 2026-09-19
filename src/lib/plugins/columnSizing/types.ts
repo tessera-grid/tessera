@@ -1,4 +1,4 @@
-/** Фаза E — hook-слайс плагина columnSizing (v9). Идентичен v8-контракту. */
+/** Hook-слайс плагина columnSizing. */
 export type ColumnSizingPluginScope = 'columnSizing'
 
 export interface ColumnSizingPluginParams {

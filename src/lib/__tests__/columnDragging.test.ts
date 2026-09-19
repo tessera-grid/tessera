@@ -1,5 +1,5 @@
 /**
- * Фаза E — headless-проверка плагина columnDragging на v9-ядре.
+ * Headless-проверка плагина columnDragging.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -11,7 +11,10 @@ import { columnDragging } from '../plugins/columnDragging'
 
 const makeTable = (columns: any[]) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnDragging(),
   ]
   const features = buildTesseraFeatures(entries as never)
@@ -33,14 +36,20 @@ const flatCols = [
   { id: 'b', accessorKey: 'b', enableDragging: false },
 ]
 const nestedCols = [
-  { id: 'grp', header: 'G', columns: [{ id: 'a', accessorKey: 'a', enableDragging: true }] },
+  {
+    id: 'grp',
+    header: 'G',
+    columns: [{ id: 'a', accessorKey: 'a', enableDragging: true }],
+  },
 ]
 
-describe('Фаза E — columnDragging на v9', () => {
+describe('columnDragging', () => {
   it('foldEntries: опция и слот-ручка в leftHeaderSlot', () => {
     const { folded } = makeTable(flatCols)
     expect(folded.options).toMatchObject({ enableColumnDragging: true })
-    expect(folded.slots.leftHeaderSlot.map(s => s.id)).toContain('columnDraggingPlugin')
+    expect(folded.slots.leftHeaderSlot.map(s => s.id)).toContain(
+      'columnDraggingPlugin',
+    )
   })
 
   it('состояние: columnDraggingActiveId по умолчанию null, updater пишет в атом', () => {

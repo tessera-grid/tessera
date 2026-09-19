@@ -1,5 +1,5 @@
 /**
- * Cutover — headless-проверка getGridLayout (CSS grid template) на v9-ядре.
+ * Headless-проверка getGridLayout (CSS grid template).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -13,7 +13,10 @@ import { getGridLayout } from '../grid/layout'
 
 const makeTable = (withRowActions: boolean) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     ...(withRowActions ? [rowActions()] : []),
   ]
   const features = buildTesseraFeatures(entries as never)
@@ -34,7 +37,7 @@ const makeTable = (withRowActions: boolean) => {
   } as never) as any
 }
 
-describe('Cutover — getGridLayout', () => {
+describe('getGridLayout', () => {
   it('flex → undefined', () => {
     const table = makeTable(false)
     expect(

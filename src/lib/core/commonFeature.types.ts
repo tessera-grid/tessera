@@ -1,17 +1,11 @@
 /**
- * Фаза A (типовой фундамент) — тип-контракт `commonFeature`: v9-порт always-on
- * `commonPlugin` ([src/lib/core/commonPlugin.ts]).
+ * Тип-контракт `commonFeature` (always-on). Здесь ТОЛЬКО типы (declaration merging
+ * в feature-карты v9 + интерфейсы API); рантайм-реализация — `commonFeature.ts`.
  *
- * Здесь ТОЛЬКО типы (declaration merging в feature-карты v9 + интерфейсы API).
- * Рантайм-реализация — фаза C (`commonFeature.ts`). Value-типы контракта Tessera
- * (`hooks`/`slots`/`slotActions`/`actionMenu`) на этом этапе минимальны: их
- * машинерия (`createSlots`/`headerActions`) сейчас связана с v8, поэтому детальный
- * порт откладывается — см. TODO(фаза C).
- *
- * Почему через `*_FeatureMap`, а не прямым расширением `Table`/`Column` (как в v8
- * `src/table.d.ts`): в v9 API фичи объявляются в её карте под ключом фичи, что
- * даёт feature-gated типы (метод существует в типах ровно когда фича включена).
- * Для `HeaderGroup` карты нет — используем прямой merge интерфейса (эскейп).
+ * Почему через `*_FeatureMap`, а не прямым расширением `Table`/`Column`: в v9 API
+ * фичи объявляются в её карте под ключом фичи, что даёт feature-gated типы (метод
+ * существует в типах ровно когда фича включена). Для `HeaderGroup` карты нет —
+ * используем прямой merge интерфейса (эскейп).
  */
 import type {
   ColumnSizingState,
@@ -27,18 +21,18 @@ import type { SlotActionMenu, SlotActions } from './headerActions'
 import type { SkeletonOptions } from './skeletonOptions'
 
 // --- Payload-типы контракта --------------------------------------------------
-/** Бизнес-контракт хуков (бывш. глобальный дженерик THooks). */
+/** Бизнес-контракт хуков. */
 export type CommonHooks = Record<string, unknown>
-/** Слоты рендера (порт фазы C). Псевдоним сохранён для стабильности импортов. */
+/** Слоты рендера. Псевдоним сохранён для стабильности импортов. */
 export type RenderSlotsV9 = RenderSlots
-/** Действия слотов (порт фазы C). */
+/** Действия слотов. */
 export type SlotActionsV9 = SlotActions
-/** Карта конфигов схлопывания по слотам (порт фазы C). */
+/** Карта конфигов схлопывания по слотам. */
 export type SlotActionMenuV9 = SlotActionMenu
 
 export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'
 
-// --- Опции фичи (бывш. кастомные поля TableOptionsResolved + THooks) ----------
+// --- Опции фичи --------------------------------------------------------------
 export interface CommonOptions {
   hooks?: CommonHooks
   slots?: RenderSlotsV9
@@ -53,7 +47,7 @@ export interface CommonOptions {
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
 }
 
-// --- Публичные API по объектам таблицы (бывш. методы из commonPlugin) ---------
+// --- Публичные API по объектам таблицы ---------------------------------------
 export interface CommonTableAPI {
   getHooks: () => CommonHooks | undefined
   getRenderSlots: () => RenderSlotsV9 | undefined
@@ -67,7 +61,7 @@ export interface CommonColumnAPI {
   getIsRowActionsColumn: () => boolean
 }
 
-/** Кастомные поля columnDef Tessera (в v8 объявлялись в src/types/column.ts). */
+/** Кастомные поля columnDef Tessera. */
 export interface CommonColumnDef {
   /** Число строк вложенной шапки, которые перекрывает заголовок (grid-раскладка). */
   rowSpan?: number

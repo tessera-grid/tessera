@@ -1,5 +1,5 @@
 /**
- * Фаза A — компайл-тайм проверка контракта `commonFeature` (не рантайм-тест).
+ * Компайл-тайм проверка контракта `commonFeature` (не рантайм-тест).
  * Убеждаемся, что declaration merging действительно проступает на объектах v9,
  * когда `commonFeature` присутствует в наборе фич. Файл существует ради `tsc`:
  * если merge сломается, здесь появится ошибка типов. Значений не экспортирует.
@@ -36,7 +36,10 @@ type _O1 = Expect<boolean | undefined, TableOptions<F, Data>['enableFooter']>
 
 // --- Column / Header / Row / HeaderGroup / Cell ------------------------------
 type _C1 = Expect<() => boolean, Column<F, Data>['getIsActionsColumn']>
-type _H1 = Expect<() => boolean, Header<F, Data, unknown>['getIsFullHeightHeader']>
+type _H1 = Expect<
+  () => boolean,
+  Header<F, Data, unknown>['getIsFullHeightHeader']
+>
 type _R1 = Expect<() => boolean, Row<F, Data>['getIsLastSubRow']>
 type _G1 = Expect<() => boolean, HeaderGroup<F, Data>['getIsFirstGroup']>
 // Cell в commonFeature API не добавляет (render→columnDef заменён на FlexRender):

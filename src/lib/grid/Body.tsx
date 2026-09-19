@@ -1,7 +1,7 @@
-// Cutover (grid) — v9-порт Body: контейнер тела. Виртуализация приходит пропсами
-// (virtualRows/virtualColumns считает DataGrid), Body лишь маппит строки в BodyRow/
-// DraggableBodyRow. При enableRowDragging рисуется DraggableBodyRow (useSortable под
-// DndContext тела), иначе обычная BodyRow.
+// Body: контейнер тела. Виртуализация приходит пропсами (virtualRows/virtualColumns
+// считает DataGrid), Body лишь маппит строки в BodyRow/DraggableBodyRow. При
+// enableRowDragging рисуется DraggableBodyRow (useSortable под DndContext тела),
+// иначе обычная BodyRow.
 import { memo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -44,30 +44,37 @@ export const Body = ({
   const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
 
   return (
-  <div className={clsx('data-grid__body', styles.body)} role="rowgroup" data-layout={layout}>
-    {virtualRows.map(virtualRow => {
-      const row = rows[virtualRow.index]
-      return (
-        <RowComponent
-          key={row.id}
-          layout={layout}
-          row={row}
-          virtualRow={virtualRow}
-          visibleCells={row.getVisibleCells()}
-          virtualColumns={virtualColumns}
-          leafColumns={leafColumns}
-          leftCellSlot={leftCellSlot}
-          rightCellSlot={rightCellSlot}
-          actionRowSlot={actionRowSlot}
-          headerRowCount={headerRowCount}
-          isVirtualColumns={isVirtualColumns}
-        />
-      )
-    })}
-  </div>
+    <div
+      className={clsx('data-grid__body', styles.body)}
+      role="rowgroup"
+      data-layout={layout}
+    >
+      {virtualRows.map(virtualRow => {
+        const row = rows[virtualRow.index]
+        return (
+          <RowComponent
+            key={row.id}
+            layout={layout}
+            row={row}
+            virtualRow={virtualRow}
+            visibleCells={row.getVisibleCells()}
+            virtualColumns={virtualColumns}
+            leafColumns={leafColumns}
+            leftCellSlot={leftCellSlot}
+            rightCellSlot={rightCellSlot}
+            actionRowSlot={actionRowSlot}
+            headerRowCount={headerRowCount}
+            isVirtualColumns={isVirtualColumns}
+          />
+        )
+      })}
+    </div>
   )
 }
 
-// Мемоизация активна только во время ресайза колонок (как в v8).
-export const MemoizedBody = memo(Body, (_, next) => next.isResizingColumns !== false)
+// Мемоизация активна только во время ресайза колонок.
+export const MemoizedBody = memo(
+  Body,
+  (_, next) => next.isResizingColumns !== false,
+)
 MemoizedBody.displayName = 'MemoizedBody'

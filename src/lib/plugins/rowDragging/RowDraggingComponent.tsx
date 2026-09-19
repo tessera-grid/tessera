@@ -1,7 +1,6 @@
 /**
- * Фаза E — ячейка-ручка перетаскивания строки (v9-порт). Реактивность на
- * всегда-присутствующий срез `rowDragging` вместо useSubscribeStore.
- * Переиспользуем grid-компонент DragHandler.
+ * Ячейка-ручка перетаскивания строки. Реактивность на всегда-присутствующий срез
+ * `rowDragging`. Переиспользуем grid-компонент DragHandler.
  */
 import { useSelector } from '@tanstack/react-store'
 
@@ -10,7 +9,8 @@ import { DragHandler } from '../../grid/dnd'
 
 export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
   useSelector(
-    (table as unknown as { atoms: { rowDragging: unknown } }).atoms.rowDragging as never,
+    (table as unknown as { atoms: { rowDragging: unknown } }).atoms
+      .rowDragging as never,
   )
 
   if (!row.getCanDrag()) {

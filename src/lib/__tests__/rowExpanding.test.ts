@@ -1,5 +1,5 @@
 /**
- * Фаза E — headless-проверка инъекции сервисных колонок и плагина rowExpanding.
+ * Headless-проверка инъекции сервисных колонок и плагина rowExpanding.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -18,7 +18,10 @@ interface Person {
 
 const makeTable = (opts = {}) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     rowExpanding(opts),
   ]
 
@@ -49,21 +52,36 @@ describe('injectServiceColumns', () => {
   it('leading сервисная колонка встаёт первой, пользовательские следом', () => {
     const columns = injectServiceColumns(
       [{ id: 'name' }, { id: 'age' }],
-      [{ id: 'svc', make: () => ({ id: 'svc' }) as never, side: 'leading', order: 2 }],
+      [
+        {
+          id: 'svc',
+          make: () => ({ id: 'svc' }) as never,
+          side: 'leading',
+          order: 2,
+        },
+      ],
     )
     expect(columns.map((c: any) => c.id)).toEqual(['svc', 'name', 'age'])
   })
 
   it('пустой набор пользовательских колонок → пусто', () => {
     expect(
-      injectServiceColumns([], [
-        { id: 'svc', make: () => ({ id: 'svc' }) as never, side: 'leading', order: 0 },
-      ]),
+      injectServiceColumns(
+        [],
+        [
+          {
+            id: 'svc',
+            make: () => ({ id: 'svc' }) as never,
+            side: 'leading',
+            order: 0,
+          },
+        ],
+      ),
     ).toEqual([])
   })
 })
 
-describe('Фаза E — rowExpanding на v9', () => {
+describe('rowExpanding', () => {
   it('foldEntries даёт опции раскрытия и сервисную колонку', () => {
     const { folded } = makeTable()
     expect(folded.options).toMatchObject({

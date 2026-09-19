@@ -1,7 +1,7 @@
 /**
- * Фаза E — редьюсер dnd-событий перетаскивания столбцов (v9-порт).
- * Отличие от v8: активный id читается из `table.atoms.columnDraggingActiveId`
- * (в v9 нет getState). Грид вызывает этот хелпер при wiring DndContext (cutover).
+ * Редьюсер dnd-событий перетаскивания столбцов. Активный id читается из
+ * `table.atoms.columnDraggingActiveId`. Грид вызывает этот хелпер при wiring
+ * DndContext.
  */
 import { arrayMove } from '@dnd-kit/sortable'
 

@@ -1,15 +1,19 @@
 /**
- * Фаза B/C — рантайм always-on фичи `commonFeature` (v9-порт commonPlugin).
- * Тип-контракт и declaration merging — в [commonFeature.types.ts].
+ * Рантайм always-on фичи `commonFeature`. Тип-контракт и declaration merging —
+ * в [commonFeature.types.ts].
  *
- * Отличия от v8-версии (осознанно):
+ * Ключевые идиомы:
  *  - методы объектов ставятся на ОБЩИЙ прототип (`assign*Prototype`) и работают
- *    через переданный первым аргументом объект, а не через замыкание (v9-идиома);
+ *    через переданный первым аргументом объект;
  *  - флаги групп заголовков — через `initHeaderGroupInstanceData` (для HeaderGroup
- *    в v9 нет prototype-хука), а не монки-патчем `getHeaderGroups`;
- *  - `render`→`columnDef` НЕ портируется: в v9 рендер идёт через `FlexRender`.
+ *    нет prototype-хука);
+ *  - рендер идёт через `FlexRender`.
  */
-import { assignPrototypeAPIs, assignTableAPIs, functionalUpdate } from '@tanstack/react-table'
+import {
+  assignPrototypeAPIs,
+  assignTableAPIs,
+  functionalUpdate,
+} from '@tanstack/react-table'
 
 import {
   ROW_ACTIONS_COLUMN_ID,
@@ -60,7 +64,8 @@ export const commonFeature: TableFeature = {
         fn: (column: { id: string }) => checkIsActionColumn(column.id),
       },
       column_getIsRowActionsColumn: {
-        fn: (column: { id: string }) => column.id.includes(ROW_ACTIONS_COLUMN_ID),
+        fn: (column: { id: string }) =>
+          column.id.includes(ROW_ACTIONS_COLUMN_ID),
       },
     })
   },
@@ -84,7 +89,8 @@ export const commonFeature: TableFeature = {
           column: { columnDef: { rowSpan?: number } }
           table: { getHeaderGroups: () => unknown[] }
         }) =>
-          header.column.columnDef.rowSpan === header.table.getHeaderGroups().length,
+          header.column.columnDef.rowSpan ===
+          header.table.getHeaderGroups().length,
       },
     })
   },

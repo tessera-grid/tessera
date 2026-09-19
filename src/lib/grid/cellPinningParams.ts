@@ -1,8 +1,8 @@
 /**
- * Cutover (grid-слой) — v9-порт useCellPinningParams: флаги закреплённой ячейки +
- * sticky-смещения. Логическая сторона start/end (v8 left/right). Крайние/первые
- * флаги считаются в списках getStart/EndVisibleLeafColumns (без column.getIndex/
- * getIsLastColumn — они из columnOrderingFeature, не всегда в наборе).
+ * useCellPinningParams: флаги закреплённой ячейки + sticky-смещения (сторона
+ * start/end). Крайние/первые флаги считаются в списках getStart/EndVisibleLeafColumns
+ * (без column.getIndex/getIsLastColumn — они из columnOrderingFeature, не всегда в
+ * наборе).
  */
 import { getPinnedEndOffset, getPinnedStartOffset } from './columnSizes'
 
@@ -16,7 +16,11 @@ export const pinnedSideToDom = (
 ): false | 'left' | 'right' =>
   side === 'start' ? 'left' : side === 'end' ? 'right' : side
 
-type PinnedColumn = { id: string; getSize: () => number; getIsPinned: () => false | 'start' | 'end' }
+type PinnedColumn = {
+  id: string
+  getSize: () => number
+  getIsPinned: () => false | 'start' | 'end'
+}
 type PinningTable = {
   getStartVisibleLeafColumns: () => { id: string; getSize: () => number }[]
   getEndVisibleLeafColumns: () => { id: string; getSize: () => number }[]
@@ -53,7 +57,11 @@ export const getCellPinningParams = (
     isLastEndPinnedColumn: isEndPinned && endIndex === end.length - 1,
     isFirstEndPinnedColumn: isEndPinned && endIndex === 0,
     isAloneEndPinnedColumn: isEndPinned && end.length === 1,
-    startPinnedOffset: isStartPinned ? getPinnedStartOffset(table, column) : undefined,
-    endPinnedOffset: isEndPinned ? getPinnedEndOffset(table, column) : undefined,
+    startPinnedOffset: isStartPinned
+      ? getPinnedStartOffset(table, column)
+      : undefined,
+    endPinnedOffset: isEndPinned
+      ? getPinnedEndOffset(table, column)
+      : undefined,
   }
 }

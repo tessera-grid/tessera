@@ -1,11 +1,8 @@
 /**
- * Фаза E — запись плагина columnPinning для v9 (порт registry.ts, ADR 0011).
- *
- * Отличия от v8:
- *  - поведение даёт встроенный `columnPinningFeature` (state {start,end});
- *  - гранулярность под вложенной шапкой перенесена в `visible` дескриптора
- *    (в v9 нет опции per-column canPin), поэтому обёртка getCanPin в createColumn и
- *    `keepFeatureWhenDisabled` больше не нужны;
+ * Запись плагина columnPinning (ADR 0011). Поведение даёт встроенный
+ * `columnPinningFeature` (state {start,end}).
+ *  - гранулярность под вложенной шапкой — в `visible` дескриптора (нет опции
+ *    per-column canPin);
  *  - `enableLeafPinning` (opt-in reorder-out, ADR 0011) — доп. табличная опция.
  */
 import { columnPinningFeature } from '@tanstack/react-table'

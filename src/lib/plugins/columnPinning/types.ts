@@ -1,4 +1,4 @@
-/** Фаза E — hook-слайс плагина columnPinning (v9) + стороны закрепления. */
+/** Hook-слайс плагина columnPinning + стороны закрепления. */
 export type ColumnPinningPluginScope = 'columnPinning'
 
 export interface ColumnPinningPluginParams {

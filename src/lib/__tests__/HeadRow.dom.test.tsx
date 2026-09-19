@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Cutover — render-тест v9 HeadRow (happy-dom): заголовки группы → HeadCell.
+ * Render-тест HeadRow (happy-dom): заголовки группы → HeadCell.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -13,11 +13,16 @@ import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnSizing } from '../plugins/columnSizing'
 import { HeadRow } from '../grid/HeadRow'
 
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnSizing(),
   ]
   const features = buildTesseraFeatures(entries as never)
@@ -46,7 +51,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Cutover — HeadRow (v9, happy-dom)', () => {
+describe('HeadRow (happy-dom)', () => {
   it('рисует HeadCell на каждый заголовок группы', () => {
     const table = makeTable()
     act(() => {

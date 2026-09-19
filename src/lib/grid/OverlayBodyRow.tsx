@@ -1,5 +1,5 @@
-// Cutover (grid) — v9-порт OverlayBodyRow: строка в DragOverlay при перетаскивании
-// строки (первая ячейка + drag-ручка + счётчик подстрок). Контент через flexRender.
+// OverlayBodyRow: строка в DragOverlay при перетаскивании строки (первая ячейка +
+// drag-ручка + счётчик подстрок). Контент через flexRender.
 import { memo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
@@ -32,7 +32,10 @@ export const OverlayBodyRow = memo(
           <CellWrapperContent noPadding>
             <DragHandler id="" type="row" />
             <CellWrapperTitle>
-              {flexRender(firstCell.column.columnDef.cell, firstCell.getContext())}
+              {flexRender(
+                firstCell.column.columnDef.cell,
+                firstCell.getContext(),
+              )}
             </CellWrapperTitle>
           </CellWrapperContent>
         </div>

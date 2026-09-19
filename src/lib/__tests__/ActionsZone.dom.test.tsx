@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Cutover — render-тест v9 ActionsZone (happy-dom): дескрипторы слота рисуются
- * инлайн-кнопками; при достижении порога — схлопывание в кебаб-триггер.
- * Base UI кебаб-попап — на cutover; здесь проверяем решение о подаче.
+ * Render-тест ActionsZone (happy-dom): дескрипторы слота рисуются инлайн-кнопками;
+ * при достижении порога — схлопывание в кебаб-триггер. Здесь проверяем решение о
+ * подаче.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -18,11 +18,16 @@ import { headerActionMenu } from '../plugins/headerActionMenu'
 import { ActionsZone } from '../grid/headerActions/ActionsZone'
 import { DEFAULT_LABELS } from '../core/localization'
 
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
 const makeTable = (extra: any[] = []) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnSorting(),
     columnPinning(),
     ...extra,
@@ -32,7 +37,13 @@ const makeTable = (extra: any[] = []) => {
   return constructTable({
     features,
     data: [{ id: '1', name: 'X' }],
-    columns: [{ id: 'name', accessorKey: 'name', cell: (i: any) => String(i.getValue()) }],
+    columns: [
+      {
+        id: 'name',
+        accessorKey: 'name',
+        cell: (i: any) => String(i.getValue()),
+      },
+    ],
     getRowId: (row: any) => row.id,
     hooks: {
       columnSorting: { onToggleColumnSort: () => {} },
@@ -60,11 +71,13 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Cutover — ActionsZone (v9, happy-dom)', () => {
+describe('ActionsZone (happy-dom)', () => {
   it('без плагина-меню: дескрипторы (pin, sort) рисуются инлайн', () => {
     const table = makeTable()
     act(() => {
-      root.render(<ActionsZone slot="rightHeaderSlot" context={headerContext(table)} />)
+      root.render(
+        <ActionsZone slot="rightHeaderSlot" context={headerContext(table)} />,
+      )
     })
     // Две инлайн-кнопки (pin + sort), кебаба нет.
     expect(container.querySelectorAll('button[aria-label]').length).toBe(2)
@@ -74,7 +87,9 @@ describe('Cutover — ActionsZone (v9, happy-dom)', () => {
   it('порог достигнут (headerActionMenu threshold 2): схлопывание в кебаб', () => {
     const table = makeTable([headerActionMenu({ threshold: 2 })])
     act(() => {
-      root.render(<ActionsZone slot="rightHeaderSlot" context={headerContext(table)} />)
+      root.render(
+        <ActionsZone slot="rightHeaderSlot" context={headerContext(table)} />,
+      )
     })
     // Схлопывание → реальный Base UI-кебаб (триггер-кнопка с aria-label headerMenu),
     // инлайн-кнопки pin/sort ушли в меню (портал, до открытия не в DOM).

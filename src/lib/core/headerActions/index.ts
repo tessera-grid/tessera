@@ -1,8 +1,7 @@
 /**
- * Фаза C — порт машинерии действий слота: сборка (`createEmptySlotActions`/
+ * Машинерия действий слота: сборка (`createEmptySlotActions`/
  * `registerSlotActionInto`) и чистые резолверы раскладки (`resolveActionLayout`)
- * и пунктов меню (`resolveMenuItems`). Логика идентична v8-версии
- * ([src/lib/core/headerActions]) — здесь только типы стали v9-контекстными.
+ * и пунктов меню (`resolveMenuItems`).
  */
 import type { TableLabels } from '../../core/localization'
 import type {

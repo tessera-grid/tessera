@@ -1,9 +1,7 @@
 /**
- * Фаза C — порт слот-машинерии на v9. Контракт совпадает с v8-версией
- * ([src/lib/core/createSlots/types.ts]); отличия:
- *  - контекст слота — v9 `HeaderContext`/`CellContext` (вместо v8 SDK-контекстов);
- *  - поле `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь
- *    рендера в v9 — рендер идёт через нативный `FlexRender` (см. `component`).
+ * Типы слот-машинерии. Контекст слота — `HeaderContext`/`CellContext`; поле
+ * `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь рендера —
+ * рендер идёт через нативный `FlexRender` (см. `component`).
  */
 import type { CellContext, ColumnDefTemplate, HeaderContext } from '../../types'
 

@@ -1,5 +1,5 @@
 /**
- * Фаза E — headless-проверка плагина columnSizing на v9-ядре.
+ * Headless-проверка плагина columnSizing.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -16,7 +16,10 @@ interface Person {
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnSizing(),
   ]
 
@@ -35,14 +38,16 @@ const makeTable = () => {
   return { table, folded }
 }
 
-describe('Фаза E — columnSizing на v9', () => {
+describe('columnSizing', () => {
   it('foldEntries даёт опции ресайза и слот-грип (не считается в пороге)', () => {
     const { folded } = makeTable()
     expect(folded.options).toMatchObject({
       enableColumnResizing: true,
       columnResizeMode: 'onChange',
     })
-    const grip = folded.slots.rightHeaderSlot.find(s => s.id === 'columnSizingPlugin')
+    const grip = folded.slots.rightHeaderSlot.find(
+      s => s.id === 'columnSizingPlugin',
+    )
     expect(grip).toBeTruthy()
     expect(grip!.countsAsHeaderAction).toBe(false)
   })

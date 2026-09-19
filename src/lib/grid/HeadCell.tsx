@@ -1,8 +1,8 @@
-// Cutover (grid) — v9-порт HeadCell: обычная ячейка заголовка (HeadCell) и
-// перетаскиваемая (DraggableHeadCell, useSortable + SortableContext). Пиннинг
-// start/end по листьям ячейки-заголовка; контент через flexRender (самописный
-// renderComponent убран); действия слотов — ActionsZone. Опциональные методы
-// фич (sort/resize/drag) вызываются через ?. — плагина может не быть в наборе.
+// HeadCell: обычная ячейка заголовка (HeadCell) и перетаскиваемая
+// (DraggableHeadCell, useSortable + SortableContext). Пиннинг start/end по листьям
+// ячейки-заголовка; контент через flexRender; действия слотов — ActionsZone.
+// Опциональные методы фич (sort/resize/drag) вызываются через ?. — плагина может
+// не быть в наборе.
 import { type CSSProperties, type ReactNode, memo, useMemo } from 'react'
 
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -11,10 +11,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
-import {
-  CellWrapperContent,
-  getAlignContent,
-} from '../grid/CellWrapperContent'
+import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
@@ -101,7 +98,9 @@ const HeadCellView = ({
     leafCols.length > 0 && leafCols.every(c => c.getIsPinned() === 'end')
   const headerPinned = isStartPinned ? 'start' : isEndPinned ? 'end' : false
 
-  const startCols = (table as any).getStartVisibleLeafColumns() as { id: string }[]
+  const startCols = (table as any).getStartVisibleLeafColumns() as {
+    id: string
+  }[]
   const endCols = (table as any).getEndVisibleLeafColumns() as { id: string }[]
   const isLastStartPinnedColumn =
     isStartPinned && startCols.at(-1)?.id === lastLeaf.id
@@ -121,8 +120,15 @@ const HeadCellView = ({
   const isDragging = drag?.isDragging ?? false
 
   const render = useMemo(() => {
-    const content = flexRender(header.column.columnDef.header, header.getContext())
-    return isActionsColumn ? content : <CellWrapperTitle>{content}</CellWrapperTitle>
+    const content = flexRender(
+      header.column.columnDef.header,
+      header.getContext(),
+    )
+    return isActionsColumn ? (
+      content
+    ) : (
+      <CellWrapperTitle>{content}</CellWrapperTitle>
+    )
   }, [header, isActionsColumn])
 
   const gridStyles = useGridStyles(header)

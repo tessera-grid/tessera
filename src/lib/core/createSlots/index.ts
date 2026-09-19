@@ -1,14 +1,8 @@
 /**
- * Фаза C — порт слот-машинерии (сборка/регистрация). Логика идентична v8-версии
- * ([src/lib/core/createSlots]); поменялся только тип таблицы у императивного
- * `registerSlot` (v9). Чистые `createEmptyRenderSlots`/`registerSlotInto` —
- * без изменений (реактивная свёртка слотов из активных плагинов, ADR 0010).
+ * Слот-машинерия (сборка/регистрация). Чистые `createEmptyRenderSlots`/
+ * `registerSlotInto` — реактивная свёртка слотов из активных плагинов (ADR 0010).
  */
-import type {
-  PluginSlot,
-  RegisterSlotParams,
-  RenderSlots,
-} from './types'
+import type { PluginSlot, RegisterSlotParams, RenderSlots } from './types'
 
 export type {
   RenderSlots,
@@ -36,7 +30,15 @@ export const createEmptyRenderSlots = (): RenderSlots => ({
  */
 export const registerSlotInto = (
   slots: RenderSlots,
-  { id, order, visible = true, slot, render, component, countsAsHeaderAction }: PluginSlot,
+  {
+    id,
+    order,
+    visible = true,
+    slot,
+    render,
+    component,
+    countsAsHeaderAction,
+  }: PluginSlot,
 ) => {
   const currentSlot = slots[slot]
 
@@ -74,7 +76,9 @@ export const registerSlotInto = (
 export const registerSlot = ({
   table,
   ...params
-}: PluginSlot & { table: { getRenderSlots: () => RenderSlots | undefined } }) => {
+}: PluginSlot & {
+  table: { getRenderSlots: () => RenderSlots | undefined }
+}) => {
   const slots = table.getRenderSlots()
 
   if (slots) {

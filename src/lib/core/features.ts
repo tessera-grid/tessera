@@ -1,12 +1,11 @@
 /**
- * Фаза B — presence-based сборка набора фич v9 (аналог `_features` в v8-ядре,
- * ADR 0010). Свёртка: always-on `commonFeature` + слоты активных записей →
- * один объект → `tableFeatures()`.
+ * Presence-based сборка набора фич v9 (ADR 0010). Свёртка: always-on
+ * `commonFeature` + слоты активных записей → один объект → `tableFeatures()`.
  *
- * Компромисс по типам (вывод спайка, Q2): полностью динамический массив теряет
- * статическую валидацию слотов v9. Здесь тип итога — пересечение слотов записей
- * (+ commonFeature); рантайм-валидацию делает `tableFeatures()`. Типобезопасный
- * путь для фиксированного набора — литерал (см. использование в тестах).
+ * Компромисс по типам: полностью динамический массив теряет статическую валидацию
+ * слотов v9. Здесь тип итога — пересечение слотов записей (+ commonFeature);
+ * рантайм-валидацию делает `tableFeatures()`. Типобезопасный путь для
+ * фиксированного набора — литерал (см. использование в тестах).
  */
 import {
   columnGroupingFeature,
@@ -81,9 +80,9 @@ export interface FoldedEntryConfig {
 const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
 
 /**
- * Чистая свёртка активных записей в опции таблицы (аналог folding в v8-ядре).
- * Порядок фолда = порядок записей, как в императивной регистрации. Используется и
- * `useCreateTable`, и headless-тестами.
+ * Чистая свёртка активных записей в опции таблицы. Порядок фолда = порядок
+ * записей, как в императивной регистрации. Используется и `useCreateTable`, и
+ * headless-тестами.
  */
 export const foldEntries = (
   entries: readonly TesseraFeatureEntry[],
@@ -106,7 +105,9 @@ export const foldEntries = (
     }
 
     entry.slots?.forEach(slot => registerSlotInto(slots, slot))
-    entry.slotActions?.forEach(action => registerSlotActionInto(slotActions, action))
+    entry.slotActions?.forEach(action =>
+      registerSlotActionInto(slotActions, action),
+    )
 
     if (entry.column) {
       serviceColumns.push(entry.column)
@@ -127,9 +128,9 @@ export const foldEntries = (
   return { options, slots, slotActions, actionMenu, serviceColumns, setups }
 }
 
-type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (
-  x: infer I,
-) => void
+type UnionToIntersection<U> = (
+  U extends unknown ? (x: U) => void : never
+) extends (x: infer I) => void
   ? I
   : never
 

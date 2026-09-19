@@ -14,7 +14,6 @@ export interface SkeletonProps {
 
 /**
  * Плейсхолдер-скелетон для загрузки данных.
- * Заменяет прежний Skeleton из внешней UI-библиотеки.
  */
 export const Skeleton = memo(
   ({ width, height, animation = 'wave', className, style }: SkeletonProps) => (

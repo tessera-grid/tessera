@@ -1,8 +1,5 @@
 /**
- * Фаза E — ручка ресайза колонки (v9-порт ColumnSizingComponent).
- * Реактивность на `useSelector(table.atoms.columnResizing)` (в v9 state ресайза
- * переименован columnSizingInfo→columnResizing) вместо useSubscribeStore.
- * Методы колонки/заголовка в v9 те же имена.
+ * Ручка ресайза колонки: реактивность через `useSelector(table.atoms.columnResizing)`.
  */
 import { useSelector } from '@tanstack/react-store'
 
@@ -15,7 +12,10 @@ export const ColumnSizingComponent = ({
   column,
   table,
 }: HeaderComponentProps) => {
-  useSelector((table as unknown as { atoms: { columnResizing: unknown } }).atoms.columnResizing as never)
+  useSelector(
+    (table as unknown as { atoms: { columnResizing: unknown } }).atoms
+      .columnResizing as never,
+  )
 
   if (!column.getCanResize()) {
     return null

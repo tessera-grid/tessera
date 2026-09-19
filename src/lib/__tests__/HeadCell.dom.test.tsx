@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * Cutover — render-тест v9 HeadCell (happy-dom): columnheader, aria-sort, контент
- * заголовка через flexRender, действия слота (pin+sort), пиннинг start.
+ * Render-тест HeadCell (happy-dom): columnheader, aria-sort, контент заголовка
+ * через flexRender, действия слота (pin+sort), пиннинг start.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -16,11 +16,16 @@ import { columnPinning } from '../plugins/columnPinning'
 import { columnSizing } from '../plugins/columnSizing'
 import { HeadCell } from '../grid/HeadCell'
 
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnSorting(),
     columnPinning(),
     columnSizing(),
@@ -57,7 +62,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Cutover — HeadCell (v9, happy-dom)', () => {
+describe('HeadCell (happy-dom)', () => {
   it('DOM-контракт: columnheader, aria-sort none, контент, действия слота', () => {
     const table = makeTable()
     act(() => {

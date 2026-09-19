@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Фаза D — ДОКАЗАТЕЛЬСТВО гранулярных ре-рендеров: `useSlice(table, key)` перерисовывает
- * компонент только при изменении СВОЕГО среза (замена Pub-Sub, ADR 0026 V9-2).
- * Это React-уровень поверх store-гранулярности, доказанной спайком.
+ * ДОКАЗАТЕЛЬСТВО гранулярных ре-рендеров: `useSlice(table, key)` перерисовывает
+ * компонент только при изменении СВОЕГО среза. Это React-уровень поверх
+ * store-гранулярности.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -22,7 +22,9 @@ import { commonFeature } from '../core/commonFeature'
 import { useSlice } from '../core/reactivity'
 
 // act без предупреждений.
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
 const makeTable = () => {
   const features = tableFeatures({
@@ -71,7 +73,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Фаза D — гранулярные ре-рендеры на table.atoms (замена Pub-Sub)', () => {
+describe('Гранулярные ре-рендеры на table.atoms', () => {
   it('смена sorting перерисовывает только подписчика sorting', () => {
     const table = makeTable()
     act(() => {

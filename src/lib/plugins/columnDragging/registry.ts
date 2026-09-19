@@ -1,11 +1,8 @@
 /**
- * Фаза E — запись плагина columnDragging для v9 (порт registry.ts, ADR 0006/0022).
- *
- * Отличия от v8:
- *  - кастомная фича columnDraggingFeature (свой слайс состояния + column-методы);
- *    порядок колонок обеспечивает `columnOrderingFeature` (слот);
- *  - `keepFeatureWhenDisabled` не нужен (в v9 нет фиксации фич «на маунте»);
- *  - dnd-события — в getColumnDraggingEvents (грид вызывает на cutover).
+ * Запись плагина columnDragging (ADR 0006/0022). Кастомная фича
+ * columnDraggingFeature (свой слайс состояния + column-методы); порядок колонок
+ * обеспечивает `columnOrderingFeature` (слот). dnd-события — в
+ * getColumnDraggingEvents (грид вызывает их).
  */
 import { columnOrderingFeature } from '@tanstack/react-table'
 

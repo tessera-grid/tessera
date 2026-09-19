@@ -1,14 +1,14 @@
 /**
- * Cutover (grid-слой) — v9-порт getCellExpandingStyles: отступ вложенности на
- * первой пользовательской колонке. Логика идентична v8 (getVisibleLeafColumns +
- * getIsActionsColumn из commonFeature). Константа отступа переиспользуется из ядра.
+ * getCellExpandingStyles: отступ вложенности на первой пользовательской колонке
+ * (getVisibleLeafColumns + getIsActionsColumn из commonFeature). Константа отступа
+ * переиспользуется из ядра.
  */
 import { ROW_NESTING_INDENT_PX } from '../core/rowNesting'
 
 type ExpandingColumn = { id: string; getIsActionsColumn: () => boolean }
 type ExpandingTable = {
   // getAllLeafColumns — ядровый (getVisibleLeafColumns из columnVisibilityFeature,
-  // не всегда в наборе). Видимость учтём на cutover, если понадобится.
+  // не всегда в наборе). Видимость учтём, если понадобится.
   getAllLeafColumns: () => ExpandingColumn[]
 }
 

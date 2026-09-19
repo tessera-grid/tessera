@@ -1,17 +1,11 @@
 /**
- * Фаза E — кастомная v9-фича columnDragging (первая после commonFeature).
- *
- * Порт v8-плагина: собственный слайс overlay-состояния (columnDraggingActiveId) +
- * его updater, и column-методы getCanDrag/getDraggableIndex. Отличия:
- *  - getInitialState/getDefaultOptions → getInitialState/getDefaultTableOptions;
- *    updater — через makeStateUpdater (в v8 был самописный stateUpdater);
- *  - createColumn → assignColumnPrototype (методы через this-объект);
- *  - getDraggableIndex считается напрямую (в v9 нет `_getVisibleLeafColumns`/
- *    `getMemoOptions`); учитывает порядок листьев, не видимость — достаточно для
- *    dnd-индекса (перф-мемоизация — при необходимости позже);
- *  - dev-warn многоуровневой шапки — TODO (логгер), поведение сохранено;
- *  - dnd-события живут в getColumnDraggingEvents (грид вызывает на cutover), а не
- *    пекутся в options (v9 запрещает setOptions в constructTableAPIs).
+ * Кастомная фича columnDragging. Собственный слайс overlay-состояния
+ * (columnDraggingActiveId) + его updater, и column-методы getCanDrag/getDraggableIndex.
+ *  - getDraggableIndex считается напрямую (учитывает порядок листьев, не видимость —
+ *    достаточно для dnd-индекса);
+ *  - dev-warn многоуровневой шапки — TODO (логгер);
+ *  - dnd-события живут в getColumnDraggingEvents (грид вызывает их), а не пекутся в
+ *    options (v9 запрещает setOptions в constructTableAPIs).
  */
 import {
   assignPrototypeAPIs,
@@ -87,7 +81,8 @@ type DraggableColumn = {
 
 const canDrag = (column: DraggableColumn): boolean => {
   const wantsDrag =
-    !!column.columnDef.enableDragging && !!column.table.options.enableColumnDragging
+    !!column.columnDef.enableDragging &&
+    !!column.table.options.enableColumnDragging
 
   // Многоуровневая шапка гасит перетаскивание столбцов (ADR 0022).
   // TODO(логгер): dev-warn при wantsDrag под вложенной шапкой.
@@ -104,7 +99,10 @@ export const columnDraggingFeature: TableFeature = {
     ...state,
   }),
   getDefaultTableOptions: table => ({
-    onColumnDraggingActiveIdChange: makeStateUpdater('columnDraggingActiveId', table),
+    onColumnDraggingActiveIdChange: makeStateUpdater(
+      'columnDraggingActiveId',
+      table,
+    ),
   }),
   constructTableAPIs: table => {
     // v9 useTable возвращает фасад с сырыми options (без фичевых defaults) — даём
@@ -113,13 +111,24 @@ export const columnDraggingFeature: TableFeature = {
       table_setColumnDraggingActiveId: {
         fn: (updater: Updater<DragOverlayState>) => {
           const opts = table.options as {
-            onColumnDraggingActiveIdChange?: (u: Updater<DragOverlayState>) => void
+            onColumnDraggingActiveIdChange?: (
+              u: Updater<DragOverlayState>,
+            ) => void
           }
           if (opts.onColumnDraggingActiveIdChange) {
             opts.onColumnDraggingActiveIdChange(updater)
             return
           }
-          const atom = (table as unknown as { atoms: { columnDraggingActiveId: { get: () => DragOverlayState; set: (v: DragOverlayState) => void } } }).atoms.columnDraggingActiveId
+          const atom = (
+            table as unknown as {
+              atoms: {
+                columnDraggingActiveId: {
+                  get: () => DragOverlayState
+                  set: (v: DragOverlayState) => void
+                }
+              }
+            }
+          ).atoms.columnDraggingActiveId
           atom.set(functionalUpdate(updater, atom.get()))
         },
       },

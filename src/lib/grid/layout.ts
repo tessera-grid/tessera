@@ -1,8 +1,7 @@
 /**
- * Cutover (grid-слой) — v9-порт grid-раскладки: getGridLayout (CSS grid template
- * для вложенной шапки) и useGridStyles (grid-позиция ячейки заголовка).
- * Логика идентична v8; поменялись только типы (v9) — getIsRowActionsColumn даёт
- * commonFeature. `getTableHeight` v8-независим и переиспользуется как есть.
+ * grid-раскладка: getGridLayout (CSS grid template для вложенной шапки) и
+ * useGridStyles (grid-позиция ячейки заголовка); getIsRowActionsColumn даёт
+ * commonFeature.
  */
 import { useMemo } from 'react'
 
@@ -33,9 +32,10 @@ export const getGridLayout = ({
   const track = (column: Column<any, any, unknown>) =>
     isRowActions(column) ? '1fr' : 'auto'
 
-  const gridTemplateColumns = leafColumns.at(-1) && isRowActions(leafColumns.at(-1)!)
-    ? leafColumns.map(track).join(' ')
-    : leafColumns.map(track).concat('1fr').join(' ')
+  const gridTemplateColumns =
+    leafColumns.at(-1) && isRowActions(leafColumns.at(-1)!)
+      ? leafColumns.map(track).join(' ')
+      : leafColumns.map(track).concat('1fr').join(' ')
 
   return { gridTemplateRows, gridTemplateColumns }
 }

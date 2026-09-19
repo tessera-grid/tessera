@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * Cutover — render-тест v9 BodyCell (happy-dom): DOM-контракт ячейки — role, размеры
- * через CSS-переменные, пиннинг-атрибуты (start), контент через flexRender.
+ * Render-тест BodyCell (happy-dom): DOM-контракт ячейки — role, размеры через
+ * CSS-переменные, пиннинг-атрибуты (start), контент через flexRender.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -15,11 +15,16 @@ import { columnPinning } from '../plugins/columnPinning'
 import { columnSizing } from '../plugins/columnSizing'
 import { BodyCell } from '../grid/BodyCell'
 
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnPinning(),
     columnSizing(),
   ]
@@ -29,7 +34,12 @@ const makeTable = () => {
     features,
     data: [{ id: '1', name: 'Xenia' }],
     columns: [
-      { id: 'name', accessorKey: 'name', size: 120, cell: (info: any) => String(info.getValue()) },
+      {
+        id: 'name',
+        accessorKey: 'name',
+        size: 120,
+        cell: (info: any) => String(info.getValue()),
+      },
     ],
     getRowId: (row: any) => row.id,
     ...folded.options,
@@ -37,7 +47,10 @@ const makeTable = () => {
 }
 
 const cellOf = (table: any) =>
-  table.getRowModel().rows[0].getAllCells().find((c: any) => c.column.id === 'name')
+  table
+    .getRowModel()
+    .rows[0].getAllCells()
+    .find((c: any) => c.column.id === 'name')
 
 let container: HTMLElement
 let root: ReturnType<typeof createRoot>
@@ -52,7 +65,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Cutover — BodyCell (v9, happy-dom)', () => {
+describe('BodyCell (happy-dom)', () => {
   it('DOM-контракт: role, aria-colindex, размер-переменная, контент', () => {
     const table = makeTable()
     act(() => {

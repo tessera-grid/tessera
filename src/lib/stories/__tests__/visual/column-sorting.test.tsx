@@ -408,11 +408,9 @@ describe('Column Sorting — requirements', () => {
   })
 
   test('CS15: enabling the plugin after mount reveals the sort button (presence-based slots are reactive)', async () => {
-    // Regression: slots used to be registered imperatively in `feature.createTable`,
-    // which TanStack runs only once at construction, so a plugin toggled on AFTER
-    // mount never registered its header slot and the button never appeared. Slots
-    // are now declared on the registry entry and folded reactively from the active
-    // plugin set, so toggling presence must add the button.
+    // Guards the presence-based slot contract: slots are declared on the registry
+    // entry and folded reactively from the active plugin set, so toggling a plugin
+    // on AFTER mount must register its header slot and reveal the button.
     const { container, rerender } = await render(
       <composed.ColumnSorting enableColumnSorting={false} />,
     )

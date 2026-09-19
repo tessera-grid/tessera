@@ -1,8 +1,6 @@
 /**
- * Фаза E — сервисная колонка раскрытия (v9-порт rowExpandingColumn).
- * Отличие от v8: `cell` — компонент напрямую (нативный FlexRender), без
- * `createCell`+`renderComponent`. Под вложенной шапкой (depth>1) строит группы с
- * rowSpan, как в v8.
+ * Сервисная колонка раскрытия. `cell` — компонент напрямую (нативный FlexRender).
+ * Под вложенной шапкой (depth>1) строит группы с rowSpan.
  */
 import {
   COLUMN_ACTIONS_SIZE,
@@ -24,12 +22,16 @@ const leafColumn = {
   cell: RowExpandingComponent,
 } as unknown as ColumnDef<any, any, any>
 
-export const getRowExpandingColumn = (depth: number): ColumnDef<any, any, any> => {
+export const getRowExpandingColumn = (
+  depth: number,
+): ColumnDef<any, any, any> => {
   if (depth <= 1) {
     return leafColumn
   }
 
-  return Array.from({ length: depth - 1 }).reduceRight<ColumnDef<any, any, any>>(
+  return Array.from({ length: depth - 1 }).reduceRight<
+    ColumnDef<any, any, any>
+  >(
     (currentChild, _, index) =>
       ({
         id: `${COLUMN_EXPANDING_ID}-group-level-${index}`,

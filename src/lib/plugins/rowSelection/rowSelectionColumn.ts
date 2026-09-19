@@ -1,7 +1,6 @@
 /**
- * Фаза E — сервисная колонка выбора (v9-порт rowSelectionColumn).
- * Отличие от v8: `header`/`cell` — компоненты напрямую (нативный FlexRender), без
- * `createHeader`/`createCell`+`renderComponent`.
+ * Сервисная колонка выбора. `header`/`cell` — компоненты напрямую (нативный
+ * FlexRender).
  */
 import {
   COLUMN_ACTIONS_SIZE,
@@ -24,12 +23,16 @@ const leafColumn = {
   cell: RowSelectionComponent,
 } as unknown as ColumnDef<any, any, any>
 
-export const getRowSelectionColumn = (depth: number): ColumnDef<any, any, any> => {
+export const getRowSelectionColumn = (
+  depth: number,
+): ColumnDef<any, any, any> => {
   if (depth <= 1) {
     return leafColumn
   }
 
-  return Array.from({ length: depth - 1 }).reduceRight<ColumnDef<any, any, any>>(
+  return Array.from({ length: depth - 1 }).reduceRight<
+    ColumnDef<any, any, any>
+  >(
     (currentChild, _, index) =>
       ({
         id: `${COLUMN_SELECTION_ID}-group-level-${index}`,

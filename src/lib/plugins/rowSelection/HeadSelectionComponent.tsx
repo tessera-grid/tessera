@@ -1,11 +1,8 @@
 /**
- * Фаза E — «выбрать все» в шапке колонки выбора (v9-порт HeadSelectionComponent).
- *
- * Отличия от v8:
- *  - реактивность `useSelector(table.atoms.rowSelection)` вместо useSubscribeStore;
- *  - группировка/«можно выбрать» — через хелперы (в v9 нет getState/getCanSomeRowsSelect);
- *  - индетерминантность = some && !all: в v9 getIsSomePageRowsSelected стал true и
- *    когда выбраны ВСЕ, поэтому исключаем all явно.
+ * «Выбрать все» в шапке колонки выбора. Реактивность
+ * `useSelector(table.atoms.rowSelection)`; группировка/«можно выбрать» — через
+ * хелперы. Индетерминантность = some && !all: getIsSomePageRowsSelected возвращает
+ * true и когда выбраны ВСЕ, поэтому исключаем all явно.
  */
 import { useSelector } from '@tanstack/react-store'
 
@@ -18,7 +15,10 @@ import type { RowSelectionPlugin } from './types'
 export const HeadSelectionComponent = ({ table }: HeaderComponentProps) => {
   const labels = useLocalization()
 
-  useSelector((table as unknown as { atoms: { rowSelection: unknown } }).atoms.rowSelection as never)
+  useSelector(
+    (table as unknown as { atoms: { rowSelection: unknown } }).atoms
+      .rowSelection as never,
+  )
 
   // Активная группировка делает выбор недоступным (ADR 0022): прячем «выбрать все».
   if (isGroupingActive(table)) {

@@ -1,6 +1,6 @@
-// Cutover (grid) — v9-порт DnD-обвязки хедера. HeadDndBoundary монтирует DndContext
-// + SortableContext только при enableColumnDragging (иначе цена useSortable платится
-// на каждую ячейку). Состояние overlay читается из атома columnDraggingActiveId.
+// DnD-обвязка хедера. HeadDndBoundary монтирует DndContext + SortableContext только
+// при enableColumnDragging (иначе цена useSortable платится на каждую ячейку).
+// Состояние overlay читается из атома columnDraggingActiveId.
 import { type PropsWithChildren, useMemo } from 'react'
 
 import {
@@ -69,7 +69,10 @@ export const DndHeadWrapper = ({
 }: PropsWithChildren<DndHeadWrapperProps>) => {
   const headers = table.getFlatHeaders()
 
-  const columnDraggingActiveId = useSlice(table, 'columnDraggingActiveId' as never)
+  const columnDraggingActiveId = useSlice(
+    table,
+    'columnDraggingActiveId' as never,
+  )
 
   // Редьюсер dnd-событий столбцов (меняет стейт методами таблицы — фасад useTable
   // несёт сырые options без фичевых on*Change).

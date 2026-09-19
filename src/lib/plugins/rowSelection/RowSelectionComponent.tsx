@@ -1,6 +1,6 @@
 /**
- * Фаза E — чекбокс выбора строки (v9-порт RowSelectionComponent).
- * Реактивность на `useSelector(table.atoms.rowSelection)`; группировка — хелпер.
+ * Чекбокс выбора строки. Реактивность на `useSelector(table.atoms.rowSelection)`;
+ * группировка — хелпер.
  */
 import { useSelector } from '@tanstack/react-store'
 
@@ -13,7 +13,10 @@ import type { RowSelectionPlugin } from './types'
 export const RowSelectionComponent = ({ row, table }: CellComponentProps) => {
   const labels = useLocalization()
 
-  useSelector((table as unknown as { atoms: { rowSelection: unknown } }).atoms.rowSelection as never)
+  useSelector(
+    (table as unknown as { atoms: { rowSelection: unknown } }).atoms
+      .rowSelection as never,
+  )
 
   // Активная группировка делает выбор недоступным (ADR 0022): прячем чекбокс.
   if (isGroupingActive(table)) {

@@ -1,7 +1,6 @@
 /**
- * Единый импорт-слой типов TanStack Table v9. Весь `src/lib/**` берёт типы ОТСЮДА.
- * Cutover выполнен: источник — `@tanstack/react-table` (v9 под настоящим именем),
- * прежний алиас `@tanstack/table-v9` удалён (ADR 0026).
+ * Единый импорт-слой типов TanStack Table v9 из `@tanstack/react-table`. Весь
+ * `src/lib/**` берёт типы ОТСЮДА.
  */
 export type {
   Cell,

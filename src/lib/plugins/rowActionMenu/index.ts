@@ -1,6 +1,6 @@
 /**
- * Фаза E — плагин схлопывания действий СТРОКИ (`actionRowSlot`) в кебаб-меню
- * (v9-порт, ADR 0024). Как headerActionMenu — только декларация `actionMenu`.
+ * Плагин схлопывания действий СТРОКИ (`actionRowSlot`) в кебаб-меню (ADR 0024).
+ * Как headerActionMenu — только декларация `actionMenu`.
  */
 import type { ActionMenuDeclaration } from '../../core/headerActions'
 import type { TesseraFeatureEntry } from '../../core/features'

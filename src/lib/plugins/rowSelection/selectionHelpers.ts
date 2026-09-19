@@ -1,7 +1,6 @@
 /**
- * Фаза E — общие хелперы rowSelection для v9.
- * В v9 нет `getState` и нет табличного `getCanSomeRowsSelect` (был Tessera-метод) —
- * читаем группировку из атома и считаем «есть ли выбираемые строки» инлайн.
+ * Общие хелперы rowSelection. Табличного `getCanSomeRowsSelect` нет — читаем
+ * группировку из атома и считаем «есть ли выбираемые строки» инлайн.
  */
 type MinimalTable = {
   atoms: { grouping?: { get: () => unknown[] } }

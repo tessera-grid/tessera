@@ -1,12 +1,8 @@
 /**
- * Фаза E — запись плагина rowDragging для v9 (порт registry.ts, ADR 0006/0022).
- *
- * Отличия от v8:
- *  - кастомная фича rowDraggingFeature (слайс состояния + row-метод getCanDrag);
- *  - сервисная колонка-ручка (cell — компонент напрямую, без createCell);
- *  - `keepFeatureWhenDisabled` не нужен;
- *  - dnd-редьюсер (getRowDraggingEvents) с геометрией offset/nesting — grid-слой,
- *    портируется на cutover, не в плагине.
+ * Запись плагина rowDragging (ADR 0006/0022). Кастомная фича rowDraggingFeature
+ * (слайс состояния + row-метод getCanDrag) и сервисная колонка-ручка (cell —
+ * компонент напрямую). dnd-редьюсер (getRowDraggingEvents) с геометрией
+ * offset/nesting — grid-слой.
  */
 import type { Row } from '../../types'
 import type { ServiceColumn } from '../../core/createColumns'

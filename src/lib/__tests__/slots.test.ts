@@ -1,13 +1,10 @@
 /**
- * Фаза C — юнит-покрытие портированной слот-машинерии (чистые функции).
+ * Юнит-покрытие слот-машинерии (чистые функции).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, it } from 'vitest'
 
-import {
-  createEmptyRenderSlots,
-  registerSlotInto,
-} from '../core/createSlots'
+import { createEmptyRenderSlots, registerSlotInto } from '../core/createSlots'
 import {
   createEmptySlotActions,
   registerSlotActionInto,
@@ -16,7 +13,9 @@ import {
 } from '../core/headerActions'
 import type { SlotAction } from '../core/headerActions'
 
-const action = (over: Partial<SlotAction> & Pick<SlotAction, 'id'>): SlotAction => ({
+const action = (
+  over: Partial<SlotAction> & Pick<SlotAction, 'id'>,
+): SlotAction => ({
   slot: 'rightHeaderSlot',
   icon: () => null,
   label: () => over.id,
@@ -27,14 +26,28 @@ const action = (over: Partial<SlotAction> & Pick<SlotAction, 'id'>): SlotAction 
 describe('createSlots: registerSlotInto', () => {
   it('пустой набор содержит все пять слотов', () => {
     expect(Object.keys(createEmptyRenderSlots()).sort()).toEqual(
-      ['actionRowSlot', 'leftCellSlot', 'leftHeaderSlot', 'rightCellSlot', 'rightHeaderSlot'].sort(),
+      [
+        'actionRowSlot',
+        'leftCellSlot',
+        'leftHeaderSlot',
+        'rightCellSlot',
+        'rightHeaderSlot',
+      ].sort(),
     )
   })
 
   it('дедуплицирует по id в пределах слота (обновление на месте)', () => {
     const slots = createEmptyRenderSlots()
-    registerSlotInto(slots, { id: 'a', slot: 'rightHeaderSlot', component: () => null })
-    registerSlotInto(slots, { id: 'a', slot: 'rightHeaderSlot', visible: false })
+    registerSlotInto(slots, {
+      id: 'a',
+      slot: 'rightHeaderSlot',
+      component: () => null,
+    })
+    registerSlotInto(slots, {
+      id: 'a',
+      slot: 'rightHeaderSlot',
+      visible: false,
+    })
     expect(slots.rightHeaderSlot).toHaveLength(1)
     expect(slots.rightHeaderSlot[0].visible).toBe(false)
   })
@@ -56,7 +69,9 @@ describe('headerActions: registerSlotActionInto', () => {
     registerSlotActionInto(actions, action({ id: 'c', order: 0 }))
     registerSlotActionInto(actions, action({ id: 'a', disabled: () => true }))
     expect(actions.rightHeaderSlot.map(a => a.id)).toEqual(['c', 'a', 'b'])
-    expect(actions.rightHeaderSlot.find(a => a.id === 'a')?.disabled?.({})).toBe(true)
+    expect(
+      actions.rightHeaderSlot.find(a => a.id === 'a')?.disabled?.({}),
+    ).toBe(true)
   })
 })
 
@@ -85,7 +100,10 @@ describe('headerActions: resolveActionLayout', () => {
 
   it('collapsible:false остаётся инлайн при схлопывании', () => {
     const layout = resolveActionLayout({
-      actions: [action({ id: 'a' }), action({ id: 'grip', collapsible: false })],
+      actions: [
+        action({ id: 'a' }),
+        action({ id: 'grip', collapsible: false }),
+      ],
       opaqueCount: 0,
       config: { mode: 'always', threshold: 0 },
       ctx: {},
@@ -108,7 +126,11 @@ describe('headerActions: resolveActionLayout', () => {
 
 describe('headerActions: resolveMenuItems', () => {
   it('без menuItems — одна строка из полей дескриптора', () => {
-    const items = resolveMenuItems(action({ id: 'a', active: () => true }), {}, {} as never)
+    const items = resolveMenuItems(
+      action({ id: 'a', active: () => true }),
+      {},
+      {} as never,
+    )
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({ id: 'a', active: true })
   })

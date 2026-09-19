@@ -1,11 +1,7 @@
 /**
- * Фаза E — запись плагина rowGrouping для v9 (порт registry.ts, ADR 0016).
- *
- * Отличия от v8:
- *  - поведение даёт `columnGroupingFeature` + слот `groupedRowModel`; агрегация в v9
- *    ОТДЕЛЕНА от группировки — добавляем `rowAggregationFeature` + стандартный набор
- *    `aggregationFns` (в v8 агрегаты шли внутри getGroupedRowModel);
- *  - имена опций (enableGrouping/groupedColumnMode) совпали с v8.
+ * Запись плагина rowGrouping (ADR 0016). Поведение даёт `columnGroupingFeature` +
+ * слот `groupedRowModel`; агрегация отделена от группировки — добавляем
+ * `rowAggregationFeature` + стандартный набор `aggregationFns`.
  */
 import {
   aggregationFn_count,
@@ -24,7 +20,7 @@ import {
 import type { TesseraFeatureEntry } from '../../core/features'
 import { groupHeaderAction } from './groupHeaderAction'
 
-/** Стандартный набор агрегаций (паритет со встроенными v8). */
+/** Стандартный набор агрегаций. */
 const aggregationFns = {
   sum: aggregationFn_sum,
   count: aggregationFn_count,

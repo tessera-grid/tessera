@@ -10,7 +10,7 @@ import { OverlayHeadCell } from '../../../../lib/grid/OverlayHeadCell'
 import { getRowDraggableStyles } from '../../../../lib/plugins/rowDragging/getRowDraggableStyles'
 import '../../../core/themeVariables/theme.css'
 
-// Простые колонки с ПЛОСКИМ `cell` (без useSubscribeStore) — оверлеи рендерятся
+// Простые колонки с ПЛОСКИМ `cell` (без подписок на store) — оверлеи рендерятся
 // вне провайдеров грида, поэтому мок-ячейки с подпиской тут повисли бы.
 const ch = createColumnHelper<any, { a: string; b: string }>()
 const simpleColumns = [
@@ -50,7 +50,10 @@ const byDraggableOpacity = (root: ParentNode) =>
   )!
 
 const RowOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
-  const table = useCreateTable({ columns: simpleColumns as never, data: simpleData }) as any
+  const table = useCreateTable({
+    columns: simpleColumns as never,
+    data: simpleData,
+  }) as any
   const firstCell = table.getRowModel().rows[0].getVisibleCells()[0]
   return (
     <div className={themeClass(colorMode === 'dark')}>
@@ -60,7 +63,10 @@ const RowOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
 }
 
 const HeadOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
-  const table = useCreateTable({ columns: simpleColumns as never, data: simpleData }) as any
+  const table = useCreateTable({
+    columns: simpleColumns as never,
+    data: simpleData,
+  }) as any
   const header = table.getHeaderGroups()[0].headers[0]
   const { leftHeaderSlot, rightHeaderSlot } = table.getRenderSlots()
   return (

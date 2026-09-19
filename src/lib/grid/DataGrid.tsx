@@ -1,17 +1,13 @@
-// Cutover (grid) — v9-порт корневого DataGrid. Ключевое отличие от v8:
-// SubscriptionStoreProvider удалён (ADR 0026, V9-2) — реактивность штатная, через
-// table.atoms/store (useTableState/useSlice в компонентах). Стейт-снимки
-// (isResizingColumns/rowDragging) читаются реактивно из общего store.
+// Корневой DataGrid: реактивность через table.atoms/store (useTableState/useSlice
+// в компонентах). Стейт-снимки (isResizingColumns/rowDragging) читаются реактивно
+// из общего store.
 import { type CSSProperties, useCallback, useMemo, useRef } from 'react'
 
 import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
-import {
-  DEFAULT_LABELS,
-  LocalizationProvider,
-} from '../core/localization'
+import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
 import type { Column } from '../types'

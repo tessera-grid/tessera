@@ -1,4 +1,4 @@
-// Cutover (grid) — v9-порт FooterCell: ячейка футера (footer через flexRender).
+// FooterCell: ячейка футера (footer через flexRender).
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
@@ -16,7 +16,11 @@ export interface FooterCellProps {
   absoluteLeft?: number
 }
 
-export const FooterCell = ({ layout, header, absoluteLeft }: FooterCellProps) => {
+export const FooterCell = ({
+  layout,
+  header,
+  absoluteLeft,
+}: FooterCellProps) => {
   return (
     <div
       key={header.id}

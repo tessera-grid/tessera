@@ -1,14 +1,9 @@
 /**
- * Фаза E — дескриптор закрепления столбца (v9-порт pinHeaderAction, ADR 0011/0024).
- *
- * Отличия от v8:
- *  - логическая сторона `start`/`end` вместо `left`/`right` (getIsPinned/pin/state);
- *  - состояние пиннинга читается из `table.atoms.columnPinning` (в v9 нет getState);
- *  - гранулярность под вложенной шапкой перенесена в `visible` (в v9 нет опции
- *    per-column canPin, а переопределять прототип getCanPin не нужно): плоская шапка
- *    — любая закрепляемая; reorder-out (`enableLeafPinning`) — любая единица; иначе
- *    только группа верхнего уровня (`depth === 0`);
- *  - поле `subscribe` убрано (реактивность — на уровне грида через атомы).
+ * Дескриптор закрепления столбца (ADR 0011/0024). Логическая сторона `start`/`end`
+ * (getIsPinned/pin/state); состояние пиннинга читается из
+ * `table.atoms.columnPinning`. Гранулярность под вложенной шапкой — в `visible`:
+ * плоская шапка — любая закрепляемая; reorder-out (`enableLeafPinning`) — любая
+ * единица; иначе только группа верхнего уровня (`depth === 0`).
  */
 import clsx from 'clsx'
 
@@ -26,15 +21,18 @@ type PinningState = { start: string[]; end: string[] }
 
 /** Разрешённые стороны из `columnDef.meta.pinSides` (по умолчанию `both`). */
 const getPinSides = (column: Column<any, any>): PinSides =>
-  (column.columnDef.meta as { pinSides?: PinSides } | undefined)?.pinSides ?? 'both'
+  (column.columnDef.meta as { pinSides?: PinSides } | undefined)?.pinSides ??
+  'both'
 
 const isLeafPinningEnabled = (table: HeaderComponentProps['table']): boolean =>
   !!(table.options as { enableLeafPinning?: boolean }).enableLeafPinning
 
 const getPinningState = (table: HeaderComponentProps['table']): PinningState =>
-  ((table as unknown as {
-    atoms: { columnPinning: { get: () => PinningState } }
-  }).atoms.columnPinning.get() as PinningState) ?? { start: [], end: [] }
+  ((
+    table as unknown as {
+      atoms: { columnPinning: { get: () => PinningState } }
+    }
+  ).atoms.columnPinning.get() as PinningState) ?? { start: [], end: [] }
 
 /** Листья сегмента: под reorder-out — листья ячейки заголовка, иначе сама колонка. */
 const getSegmentLeafColumns = ({
@@ -88,8 +86,9 @@ const PinActionIcon = () => {
   return <PinIcon width={16} height={16} />
 }
 
-const pinningHooks = (table: HeaderComponentProps['table']): ColumnPinningPlugin =>
-  table.getHooks() as ColumnPinningPlugin
+const pinningHooks = (
+  table: HeaderComponentProps['table'],
+): ColumnPinningPlugin => table.getHooks() as ColumnPinningPlugin
 
 /**
  * Переключение закрепления сегмента на сторону `side` (тумблер). Штатный путь —
@@ -163,7 +162,9 @@ export const pinHeaderAction: HeaderAction = {
   visible: canPin,
   icon: () => <PinActionIcon />,
   label: (ctx, labels) =>
-    getSegmentPinnedSide(getSegmentLeafColumns(ctx)) ? labels.unpin : labels.pin,
+    getSegmentPinnedSide(getSegmentLeafColumns(ctx))
+      ? labels.unpin
+      : labels.pin,
   active: ctx => !!getSegmentPinnedSide(getSegmentLeafColumns(ctx)),
   className: ctx =>
     clsx('column-pin__button', styles.root, {

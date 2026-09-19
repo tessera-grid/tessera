@@ -1,10 +1,7 @@
 /**
- * Фаза C — порт контракта действий слота (кебаб-меню) на v9. Совпадает с v8
- * ([src/lib/core/headerActions/types.ts]); отличия:
- *  - контекст — v9 `HeaderComponentProps`/`CellComponentProps` (из ./createSlots);
- *  - УБРАНО поле `subscribe` (ключи Pub-Sub): в v9 гранулярная реактивность —
- *    через `useSelector(table.atoms.<slice>)` на уровне компонента (фаза D), а не
- *    декларацией примитивов на действии.
+ * Контракт действий слота (кебаб-меню). Контекст — `HeaderComponentProps`/
+ * `CellComponentProps` (из ./createSlots); гранулярная реактивность — через
+ * `useSelector(table.atoms.<slice>)` на уровне компонента.
  */
 import type { MouseEvent, ReactNode } from 'react'
 

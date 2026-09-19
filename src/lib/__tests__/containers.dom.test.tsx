@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Cutover — render-тест v9 контейнеров Body/Head (happy-dom): rowgroup + строки/
- * заголовки. Виртуализация подаётся мок-элементами (реальный virtualizer — DataGrid,
- * браузер на cutover). Запуск: npx vitest run --config vitest.node.config.ts
+ * Render-тест контейнеров Body/Head (happy-dom): rowgroup + строки/заголовки.
+ * Виртуализация подаётся мок-элементами (реальный virtualizer — DataGrid).
+ * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -15,14 +15,26 @@ import { columnSizing } from '../plugins/columnSizing'
 import { Body } from '../grid/Body'
 import { Head } from '../grid/Head'
 
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
 const vRow = (index: number) =>
-  ({ index, start: index * 40, size: 40, end: (index + 1) * 40, key: index, lane: 0 } as any)
+  ({
+    index,
+    start: index * 40,
+    size: 40,
+    end: (index + 1) * 40,
+    key: index,
+    lane: 0,
+  }) as any
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnSizing(),
   ]
   const features = buildTesseraFeatures(entries as never)
@@ -33,7 +45,14 @@ const makeTable = () => {
       { id: '1', a: 'A1' },
       { id: '2', a: 'A2' },
     ],
-    columns: [{ id: 'a', accessorKey: 'a', header: 'A', cell: (i: any) => String(i.getValue()) }],
+    columns: [
+      {
+        id: 'a',
+        accessorKey: 'a',
+        header: 'A',
+        cell: (i: any) => String(i.getValue()),
+      },
+    ],
     getRowId: (row: any) => row.id,
     ...folded.options,
   } as never) as any
@@ -51,7 +70,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Cutover — Body/Head контейнеры (v9, happy-dom)', () => {
+describe('Body/Head контейнеры (happy-dom)', () => {
   it('Body: rowgroup + строка на каждый virtualRow', () => {
     const table = makeTable()
     const rows = table.getRowModel().rows

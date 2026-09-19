@@ -1,5 +1,5 @@
-// Cutover (grid) — v9-порт Footer: контейнер футера (rowgroup→row→cell), с той же
-// логикой column-виртуализации, что Head/Body. Мемоизация активна только при ресайзе.
+// Footer: контейнер футера (rowgroup→row→cell), с той же логикой
+// column-виртуализации, что Head/Body. Мемоизация активна только при ресайзе.
 import { memo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -42,7 +42,10 @@ export const Footer = ({
             // по своему `left` (вне потока), между ними спейсер постоянной ширины.
             const startH: Header<any, any, unknown>[] = []
             const endH: Header<any, any, unknown>[] = []
-            const centerH: { header: Header<any, any, unknown>; start: number }[] = []
+            const centerH: {
+              header: Header<any, any, unknown>
+              start: number
+            }[] = []
             for (const virtualColumn of virtualColumns) {
               const header = headers[virtualColumn.index]
               const pinned = header.column.getIsPinned()
@@ -57,7 +60,12 @@ export const Footer = ({
                 ))}
                 <VirtualCenterSpacer />
                 {centerH.map(({ header, start }) => (
-                  <FooterCell key={header.id} layout={layout} header={header} absoluteLeft={start} />
+                  <FooterCell
+                    key={header.id}
+                    layout={layout}
+                    header={header}
+                    absoluteLeft={start}
+                  />
                 ))}
                 {endH.map(h => (
                   <FooterCell key={h.id} layout={layout} header={h} />

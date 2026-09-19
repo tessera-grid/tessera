@@ -1,6 +1,6 @@
 /**
- * Cutover — headless-проверка grid-хелперов ячейки: пиннинг-флаги (start/end) и
- * отступ вложенности. Запуск: npx vitest run --config vitest.node.config.ts
+ * Headless-проверка grid-хелперов ячейки: пиннинг-флаги (start/end) и отступ
+ * вложенности. Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
@@ -16,7 +16,10 @@ import { getCellExpandingStyles } from '../grid/cellExpandingStyles'
 
 const build = (entries: any[], userCols: any[]) => {
   const all = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     ...entries,
   ]
   const features = buildTesseraFeatures(all as never)
@@ -32,8 +35,12 @@ const build = (entries: any[], userCols: any[]) => {
   } as never) as any
 }
 
-describe('Cutover — getCellPinningParams (start/end)', () => {
-  const cols = ['a', 'b', 'c', 'd'].map(id => ({ id, accessorKey: id, size: 100 }))
+describe('getCellPinningParams (start/end)', () => {
+  const cols = ['a', 'b', 'c', 'd'].map(id => ({
+    id,
+    accessorKey: id,
+    size: 100,
+  }))
 
   it('start-блок: первая и последняя закреплённые', () => {
     const table = build([columnPinning(), columnSizing()], cols)
@@ -73,17 +80,28 @@ describe('Cutover — getCellPinningParams (start/end)', () => {
   })
 })
 
-describe('Cutover — getCellExpandingStyles', () => {
+describe('getCellExpandingStyles', () => {
   it('отступ вложенности на первой пользовательской колонке (не сервисной)', () => {
-    const table = build([rowExpanding()], [
-      { id: 'a', accessorKey: 'a' },
-      { id: 'b', accessorKey: 'b' },
-    ])
+    const table = build(
+      [rowExpanding()],
+      [
+        { id: 'a', accessorKey: 'a' },
+        { id: 'b', accessorKey: 'b' },
+      ],
+    )
 
-    const first = getCellExpandingStyles({ column: table.getColumn('a'), rowDepth: 2, table })
+    const first = getCellExpandingStyles({
+      column: table.getColumn('a'),
+      rowDepth: 2,
+      table,
+    })
     expect(first.paddingLeft).toBe(64) // 32 * 2
 
-    const second = getCellExpandingStyles({ column: table.getColumn('b'), rowDepth: 2, table })
+    const second = getCellExpandingStyles({
+      column: table.getColumn('b'),
+      rowDepth: 2,
+      table,
+    })
     expect(second.paddingLeft).toBeUndefined()
   })
 })

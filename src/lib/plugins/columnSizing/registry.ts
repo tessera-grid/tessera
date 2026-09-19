@@ -1,15 +1,12 @@
 /**
- * Фаза E — запись плагина columnSizing для v9 (порт registry.ts, ADR 0013).
- *
- * Отличия от v8:
- *  - в v9 sizing/resizing РАЗДЕЛЕНЫ на две фичи; ресайз требует размеров, поэтому
- *    слот несёт обе: `columnSizingFeature` + `columnResizingFeature`
- *    (prereq columnResizingFeature → columnSizingFeature проверяется типами);
- *  - имена опций (enableColumnResizing/columnResizeMode) совпали с v8;
- *  - state ресайза переименован columnSizingInfo→columnResizing (компонент читает
- *    методы колонки, поэтому на порт не влияет).
+ * Запись плагина columnSizing (ADR 0013). Sizing и resizing — две отдельные фичи
+ * ядра; ресайз требует размеров, поэтому слот несёт обе: `columnSizingFeature` +
+ * `columnResizingFeature` (prereq проверяется типами).
  */
-import { columnResizingFeature, columnSizingFeature } from '@tanstack/react-table'
+import {
+  columnResizingFeature,
+  columnSizingFeature,
+} from '@tanstack/react-table'
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { ColumnSizingComponent } from './ColumnSizingComponent'

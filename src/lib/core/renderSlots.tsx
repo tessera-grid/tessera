@@ -1,7 +1,6 @@
 /**
- * Cutover — v9-порт RenderSlot: рисует компоненты слота (плагины) в переданном
- * контексте. Логика идентична v8; контекст теперь v9 (типизирован как unknown —
- * слот-компоненты принимают HeaderContext/CellContext v9).
+ * RenderSlot: рисует компоненты слота (плагины) в переданном контексте
+ * (типизирован как unknown — слот-компоненты принимают HeaderContext/CellContext).
  */
 import { Fragment } from 'react'
 

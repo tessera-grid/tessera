@@ -1,7 +1,7 @@
 /**
- * Фаза E — сервисная колонка действий строки (v9-порт). Колонка-контейнер: сами
- * действия рисуются гридом в слот `actionRowSlot` (на cutover). Ширина задаётся
- * авто-слайсом через setup плагина (ADR 0024).
+ * Сервисная колонка действий строки. Колонка-контейнер: сами действия рисуются
+ * гридом в слот `actionRowSlot`. Ширина задаётся авто-слайсом через setup плагина
+ * (ADR 0024).
  */
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
 import type { ColumnDef } from '../../types'
@@ -27,12 +27,16 @@ const leafColumn = {
   enableResizing: false,
 } as unknown as ColumnDef<any, any, any>
 
-export const getRowActionsColumn = (depth: number): ColumnDef<any, any, any> => {
+export const getRowActionsColumn = (
+  depth: number,
+): ColumnDef<any, any, any> => {
   if (depth <= 1) {
     return leafColumn
   }
 
-  return Array.from({ length: depth - 1 }).reduceRight<ColumnDef<any, any, any>>(
+  return Array.from({ length: depth - 1 }).reduceRight<
+    ColumnDef<any, any, any>
+  >(
     (currentChild, _, index) =>
       ({
         id: `${ROW_ACTIONS_COLUMN_ID}-group-level-${index}`,

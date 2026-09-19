@@ -1,6 +1,6 @@
-// Cutover (grid) — v9-порт ActionMenuPopup: тело меню действий (Base UI portal +
-// popup). Каждое действие — подгруппа (menuItems или одна строка). Общая часть
-// кебаба (ActionMenu) и инлайн-поповера (ActionInlineMenu).
+// ActionMenuPopup: тело меню действий (Base UI portal + popup). Каждое действие —
+// подгруппа (menuItems или одна строка). Общая часть кебаба (ActionMenu) и
+// инлайн-поповера (ActionInlineMenu).
 import { Menu } from '@base-ui/react/menu'
 import { Check } from 'lucide-react'
 import clsx from 'clsx'

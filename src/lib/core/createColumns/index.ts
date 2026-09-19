@@ -1,7 +1,7 @@
 /**
- * Фаза E — инъекция сервисных колонок плагинов (v9-порт useCreateColumns, ADR 0010).
- * Ядро не знает конкретных плагинов: размещение задаёт `side`, порядок — `order`.
- * Чистая функция (в отличие от v8-хука) — используется и `useCreateTable`, и тестами.
+ * Инъекция сервисных колонок плагинов (ADR 0010). Ядро не знает конкретных
+ * плагинов: размещение задаёт `side`, порядок — `order`. Чистая функция —
+ * используется и `useCreateTable`, и тестами.
  */
 import type { ColumnDef, RowData } from '../../types'
 
@@ -28,7 +28,9 @@ export interface ServiceColumn {
 }
 
 /** Максимальная глубина вложенности шапки (число уровней). */
-export const getMaxColumnsDepth = (columns: ColumnDef<any, any, any>[]): number => {
+export const getMaxColumnsDepth = (
+  columns: ColumnDef<any, any, any>[],
+): number => {
   if (!columns || columns.length === 0) {
     return 0
   }
@@ -86,7 +88,9 @@ export const injectServiceColumns = <TColumn>(
   const depth = getMaxColumnsDepth(initialColumns as ColumnDef<any, any, any>[])
 
   const leading = serviceColumns.filter(c => c.side === 'leading').sort(byOrder)
-  const trailing = serviceColumns.filter(c => c.side === 'trailing').sort(byOrder)
+  const trailing = serviceColumns
+    .filter(c => c.side === 'trailing')
+    .sort(byOrder)
 
   const make = (column: ServiceColumn) => column.make(depth) as TColumn
 

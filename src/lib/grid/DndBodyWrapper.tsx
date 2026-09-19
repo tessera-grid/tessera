@@ -1,7 +1,7 @@
-// Cutover (grid) — v9-порт DnD-обвязки тела. BodyDndBoundary монтирует DndContext
-// + SortableContext только при enableRowDragging (иначе цена useSortable платится
-// на каждый смонтированный ряд). Состояние overlay читается из атома rowDragging;
-// геометрия переупорядочивания — getRowDraggingEvents.
+// DnD-обвязка тела. BodyDndBoundary монтирует DndContext + SortableContext только
+// при enableRowDragging (иначе цена useSortable платится на каждый смонтированный
+// ряд). Состояние overlay читается из атома rowDragging; геометрия
+// переупорядочивания — getRowDraggingEvents.
 import { type PropsWithChildren, useMemo } from 'react'
 
 import {

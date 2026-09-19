@@ -1,8 +1,8 @@
 /**
- * Cutover — управление состоянием v9-таблицы. В v9 бо́льшую часть срезов держат
- * сами фичи (uncontrolled через getInitialState), поэтому ядро контролирует только:
+ * Управление состоянием таблицы. Бо́льшую часть срезов держат сами фичи
+ * (uncontrolled через getInitialState), поэтому ядро контролирует только:
  *  - columnPinning — чтобы применить пиннинг сервисных колонок (display-transform,
- *    ADR 0010 R10): политику объявляет плагин (`pin`), ядро исполняет; start/end (v9);
+ *    ADR 0010 R10): политику объявляет плагин (`pin`), ядро исполняет;
  *  - columnSizing — чтобы слить пользовательский ресайз с авто-слайсом плагинов
  *    (ширины служебных колонок, generic-escape ADR 0010).
  *
@@ -129,7 +129,9 @@ const EMPTY_SELECTION: RowSelectionState = {}
 const EMPTY_EXPANDED: ExpandedState = {} as ExpandedState
 const EMPTY_GROUPING: GroupingState = []
 
-export const useColumnOrderState = (initial: ColumnOrderState = EMPTY_ORDER) => {
+export const useColumnOrderState = (
+  initial: ColumnOrderState = EMPTY_ORDER,
+) => {
   const [columnOrder, onColumnOrderChange] = useControlledSlice(initial)
   return { columnOrder, onColumnOrderChange }
 }
@@ -142,7 +144,9 @@ export const useColumnVisibilityState = (
   return { columnVisibility, onColumnVisibilityChange }
 }
 
-export const useColumnSizingState = (initial: ColumnSizingState = EMPTY_SIZING) => {
+export const useColumnSizingState = (
+  initial: ColumnSizingState = EMPTY_SIZING,
+) => {
   const [columnSizing, onColumnSizingChange] = useControlledSlice(initial)
   return { columnSizing, onColumnSizingChange }
 }
@@ -158,7 +162,9 @@ export const useColumnPinningState = (
   return { columnPinning, onColumnPinningChange }
 }
 
-export const useColumnSortingState = (initial: SortingState = EMPTY_SORTING) => {
+export const useColumnSortingState = (
+  initial: SortingState = EMPTY_SORTING,
+) => {
   const [sorting, onColumnSortingChange] = useControlledSlice(initial)
   return { sorting, onColumnSortingChange }
 }
@@ -170,21 +176,25 @@ export const useRowSelectionState = (
   return { rowSelection, onRowSelectionChange }
 }
 
-export const useRowExpandingState = (initial: ExpandedState = EMPTY_EXPANDED) => {
+export const useRowExpandingState = (
+  initial: ExpandedState = EMPTY_EXPANDED,
+) => {
   const [rowExpanded, onRowExpandedChange] = useControlledSlice(initial)
   return { rowExpanded, onRowExpandedChange }
 }
 
-export const useRowGroupingState = (initial: GroupingState = EMPTY_GROUPING) => {
+export const useRowGroupingState = (
+  initial: GroupingState = EMPTY_GROUPING,
+) => {
   const [grouping, onGroupingChange] = useControlledSlice(initial)
   return { grouping, onGroupingChange }
 }
 
-// --- Публичный stateUpdater (совместимость API) -------------------------------
+// --- Публичный stateUpdater ---------------------------------------------------
 
 /**
- * Обёртка для построения updater'а среза состояния (совместимость с v8-API). В v9
- * состояние живёт в атомах — используем штатный `makeStateUpdater(key, table)`.
+ * Обёртка для построения updater'а среза состояния. Состояние живёт в атомах —
+ * используем штатный `makeStateUpdater(key, table)`.
  */
 export const stateUpdater = <
   TFeatures extends TableFeatures,

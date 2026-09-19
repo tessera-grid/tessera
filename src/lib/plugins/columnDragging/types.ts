@@ -1,4 +1,4 @@
-/** Фаза E — типы плагина columnDragging (v9). */
+/** Типы плагина columnDragging. */
 import type { UniqueIdentifier } from '@dnd-kit/core'
 
 export type DragOverlayState = UniqueIdentifier | null

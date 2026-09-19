@@ -1,14 +1,8 @@
 /**
- * Фаза E — дескриптор действия сортировки (v9-порт sortHeaderAction, ADR 0012).
- * Инлайн — циклящая иконка-кнопка с бейджем приоритета мультисорта; в кебаб-меню —
- * пункты asc/desc/сброс. DOM/классы совпадают с v8 (переиспользуем те же CSS/UI),
- * чтобы визуальные тесты прошли на cutover.
- *
- * Отличия от v8:
- *  - контекст — v9 `HeaderComponentProps`; методы сортировки в v9 те же имена;
- *  - длина сортировки читается через `table.atoms.sorting.get()` (в v9 нет `getState`);
- *  - поле `subscribe` убрано — реактивность обеспечивает грид подпиской на
- *    `table.atoms.sorting` (фаза D), а не декларация примитивов.
+ * Дескриптор действия сортировки (ADR 0012). Инлайн — циклящая иконка-кнопка с
+ * бейджем приоритета мультисорта; в кебаб-меню — пункты asc/desc/сброс. Длина
+ * сортировки читается через `table.atoms.sorting.get()`; реактивность обеспечивает
+ * грид подпиской на `table.atoms.sorting`.
  */
 import type { MouseEvent } from 'react'
 
@@ -29,15 +23,17 @@ type SortDir = 'asc' | 'desc' | 'none'
 /** Тематизируемая иконка направления сортировки (читает `useIcons`). */
 const SortActionIcon = ({ direction }: { direction: SortDir }) => {
   const { sort, sortAsc, sortDesc } = useIcons()
-  const Icon = direction === 'asc' ? sortAsc : direction === 'desc' ? sortDesc : sort
+  const Icon =
+    direction === 'asc' ? sortAsc : direction === 'desc' ? sortDesc : sort
 
   return <Icon width={16} height={16} />
 }
 
 /** Число сортируемых столбцов (в v9 читаем из атома, не из getState). */
 const getSortingCount = (table: HeaderComponentProps['table']): number =>
-  (table as unknown as { atoms: { sorting: { get: () => unknown[] } } }).atoms.sorting.get()
-    .length
+  (
+    table as unknown as { atoms: { sorting: { get: () => unknown[] } } }
+  ).atoms.sorting.get().length
 
 /** Позиция столбца в мультисортировке (1-based) или `null`. */
 const getMultiSortPosition = ({
@@ -51,11 +47,15 @@ const getMultiSortPosition = ({
 }
 
 /** Хуки плагина из общего контракта хуков таблицы. */
-const sortingHooks = (table: HeaderComponentProps['table']): ColumnSortingPlugin =>
-  table.getHooks() as ColumnSortingPlugin
+const sortingHooks = (
+  table: HeaderComponentProps['table'],
+): ColumnSortingPlugin => table.getHooks() as ColumnSortingPlugin
 
 /** Тултип (без приоритета): по СЛЕДУЮЩЕЙ операции. */
-const getTitle = ({ column }: HeaderComponentProps, labels: TableLabels): string => {
+const getTitle = (
+  { column }: HeaderComponentProps,
+  labels: TableLabels,
+): string => {
   const operation = column.getIsSorted()
   const next = column.getNextSortingOrder()
 
@@ -75,7 +75,9 @@ export const sortHeaderAction: HeaderAction = {
   slot: 'rightHeaderSlot',
   order: 1,
   visible: ({ column }) => column.getCanSort(),
-  icon: ctx => <SortActionIcon direction={ctx.column.getIsSorted() || 'none'} />,
+  icon: ctx => (
+    <SortActionIcon direction={ctx.column.getIsSorted() || 'none'} />
+  ),
   label: getTitle,
   ariaLabel: (ctx, labels) => {
     const title = getTitle(ctx, labels)
@@ -142,7 +144,9 @@ export const sortHeaderAction: HeaderAction = {
       },
     ]
 
-    if ((table.options as { enableSortingRemoval?: boolean }).enableSortingRemoval) {
+    if (
+      (table.options as { enableSortingRemoval?: boolean }).enableSortingRemoval
+    ) {
       items.push({
         id: 'clear',
         label: labels.clearSort,

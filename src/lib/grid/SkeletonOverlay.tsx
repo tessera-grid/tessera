@@ -1,5 +1,5 @@
-// Cutover (grid) — v9-порт SkeletonOverlay: упрощённые Head/Body только для
-// скелетонов первой загрузки. Параметры (кол-во/раскладка/ширины) — useSkeletonParams.
+// SkeletonOverlay: упрощённые Head/Body только для скелетонов первой загрузки.
+// Параметры (кол-во/раскладка/ширины) — useSkeletonParams.
 import { type PropsWithChildren, memo } from 'react'
 
 import clsx from 'clsx'
@@ -54,7 +54,12 @@ interface SkeletonHeadProps {
 }
 
 const SkeletonHead = memo(
-  ({ layout, calculateSize, columnsId = [], columnsCount }: SkeletonHeadProps) => {
+  ({
+    layout,
+    calculateSize,
+    columnsId = [],
+    columnsCount,
+  }: SkeletonHeadProps) => {
     return (
       <div className="data-grid__head--skeleton" style={{ display: 'grid' }}>
         <div
@@ -77,7 +82,8 @@ const SkeletonHead = memo(
                 : {
                     flex: 1,
                     minWidth: SKELETON_MIN_WIDTH,
-                    maxWidth: layout === 'grid' ? SKELETON_MAX_WIDTH : undefined,
+                    maxWidth:
+                      layout === 'grid' ? SKELETON_MAX_WIDTH : undefined,
                   }
 
             return (
@@ -122,7 +128,10 @@ const SkeletonBody = memo(
         style={{ display: 'grid', position: 'relative' }}
       >
         {new Array(rowsCount).fill(null).map((_, rowIndex) => (
-          <BackgroundRow key={`body-row--skeleton-${rowIndex}`} rowIndex={rowIndex}>
+          <BackgroundRow
+            key={`body-row--skeleton-${rowIndex}`}
+            rowIndex={rowIndex}
+          >
             {new Array(columnsCount).fill(null).map((__, colIndex) => {
               const widthStyles =
                 calculateSize && Array.isArray(columnsId)

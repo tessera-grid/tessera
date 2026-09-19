@@ -1,9 +1,6 @@
 /**
- * Cutover — v9-ядро сборки таблицы (порт src/lib/core/createTable/useCreateTable).
- *
- * Presence-based композиция (ADR 0010): фичи/сервисные колонки/опции выводятся из
- * набора plugins. Отличия от v8:
- *  - `useReactTable`→`useTable`; `_features:[…]`→`features: buildTesseraFeatures(…)`;
+ * Ядро сборки таблицы. Presence-based композиция (ADR 0010): фичи/сервисные
+ * колонки/опции выводятся из набора plugins.
  *  - row-модели не передаются опциями — ядровая включается автоматически, остальные
  *    приходят слотами записей;
  *  - hooks/slots/… — опции always-on commonFeature;
@@ -20,12 +17,7 @@ import type {
   OnChangeFn,
 } from '@tanstack/react-table'
 
-import type {
-  ColumnDef,
-  RowData,
-  TableOptions,
-  TableState,
-} from '../types'
+import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { CommonHooks } from './commonFeature.types'
 import type { SkeletonOptions } from './skeletonOptions'
 import { useCreateHooks } from './createHooks'
@@ -50,8 +42,8 @@ const DEFAULT_COLUMN = {
 }
 
 /**
- * Ядровые (не плагинные) опции DataGrid — совместимость с v8 `CreateDataGridOptions`
- * (демо/стори типизируют ими свои args). Плагинные фичи включаются через `plugins`.
+ * Ядровые (не плагинные) опции DataGrid (демо/стори типизируют ими свои args).
+ * Плагинные фичи включаются через `plugins`.
  */
 export interface CreateDataGridOptions {
   enableSkeleton?: boolean
@@ -176,8 +168,12 @@ export const useCreateTable = <
         const displayed = mergeServiceColumnPinning(prev, servicePins)
         const next = functionalUpdate(updater, displayed)
         return {
-          start: (next.start ?? []).filter((id: string) => !serviceIds.includes(id)),
-          end: (next.end ?? []).filter((id: string) => !serviceIds.includes(id)),
+          start: (next.start ?? []).filter(
+            (id: string) => !serviceIds.includes(id),
+          ),
+          end: (next.end ?? []).filter(
+            (id: string) => !serviceIds.includes(id),
+          ),
         }
       }),
     [setUserPinning, servicePins, serviceIds],
@@ -284,9 +280,8 @@ export const useCreateTable = <
   // Сброс выбора строк при смене опций выбора (ядровая логика, ADR 0010). Триггер
   // ТОЛЬКО по изменению самих опций (через ref), а не по идентичности table — иначе
   // нестабильный ref из useTable запускал бы reset каждый рендер (бесконечный цикл).
-  const enableRowSelection = (
-    table.options as { enableRowSelection?: unknown }
-  ).enableRowSelection
+  const enableRowSelection = (table.options as { enableRowSelection?: unknown })
+    .enableRowSelection
   const enableSubRowSelection = (
     table.options as { enableSubRowSelection?: unknown }
   ).enableSubRowSelection
@@ -300,8 +295,9 @@ export const useCreateTable = <
       return
     }
     prevSelectionOpts.current = selectionOptsKey
-    ;(table as { resetRowSelection?: (defaultState?: boolean) => void })
-      .resetRowSelection?.(true)
+    ;(
+      table as { resetRowSelection?: (defaultState?: boolean) => void }
+    ).resetRowSelection?.(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionOptsKey])
 

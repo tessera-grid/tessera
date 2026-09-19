@@ -1,11 +1,7 @@
 /**
- * Фаза E — запись плагина columnSorting для v9 (порт registry.ts, ADR 0012).
- *
- * Отличия от v8:
- *  - поведение даёт `rowSortingFeature` + слот `sortedRowModel` (в v8 модель шла
- *    опцией `getSortedRowModel`), а функции сортировки регистрируются явно
- *    (`sortFns`, tree-shakeable) — здесь стандартный набор для паритета с v8;
- *  - имена опций сортировки в v9 совпали с v8 (без переименований).
+ * Запись плагина columnSorting (ADR 0012). Поведение даёт `rowSortingFeature` +
+ * слот `sortedRowModel`; функции сортировки регистрируются явно (`sortFns`,
+ * tree-shakeable) — здесь стандартный набор.
  */
 import {
   createSortedRowModel,
@@ -43,7 +39,7 @@ export interface ColumnSortingOptions {
   multiSort?: boolean | ColumnMultiSortOptions
 }
 
-/** Стандартный набор функций сортировки (паритет с встроенными v8). */
+/** Стандартный набор функций сортировки. */
 const sortFns = {
   alphanumeric: sortFn_alphanumeric,
   alphanumericCaseSensitive: sortFn_alphanumericCaseSensitive,

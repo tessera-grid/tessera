@@ -1,21 +1,20 @@
 /**
- * Фаза E — запись плагина rowSelection для v9 (порт registry.ts, ADR 0014/0022).
- *
- * Отличия от v8:
- *  - поведение даёт встроенный `rowSelectionFeature` (row-модель не нужна);
- *  - гейт группировки (ADR 0022) — через функциональный `enableRowSelection`
- *    (в v9 он влияет и на агрегаты getIsAll/SomePageRowsSelected), а не обёрткой
- *    `getCanSelect` в createRow;
- *  - `enableRowRangeSelection: false` — в v9 shift-range стал дефолтом, гасим для
- *    паритета с v8 (клик по чекбоксу не должен диапазонно выделять);
- *  - `keepFeatureWhenDisabled` не нужен (в v9 нет фиксации фич «на маунте»).
+ * Запись плагина rowSelection (ADR 0014/0022). Поведение даёт встроенный
+ * `rowSelectionFeature` (row-модель не нужна).
+ *  - гейт группировки (ADR 0022) — через функциональный `enableRowSelection` (влияет
+ *    и на агрегаты getIsAll/SomePageRowsSelected);
+ *  - `enableRowRangeSelection: false` — гасим shift-range (клик по чекбоксу не должен
+ *    диапазонно выделять).
  */
 import { rowSelectionFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import type { ServiceColumn } from '../../core/createColumns'
 import type { TesseraFeatureEntry } from '../../core/features'
-import { COLUMN_SELECTION_ID, getRowSelectionColumn } from './rowSelectionColumn'
+import {
+  COLUMN_SELECTION_ID,
+  getRowSelectionColumn,
+} from './rowSelectionColumn'
 import { isGroupingActive } from './selectionHelpers'
 
 export interface RowSelectionOptions {

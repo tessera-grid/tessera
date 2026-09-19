@@ -1,5 +1,5 @@
 /**
- * Фаза E — headless-проверка плагина columnPinning на v9-ядре (start/end).
+ * Headless-проверка плагина columnPinning (start/end).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -11,7 +11,10 @@ import { columnPinning, pinHeaderAction } from '../plugins/columnPinning'
 
 const makeTable = (columns: any[], opts = {}) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnPinning(opts),
   ]
   const features = buildTesseraFeatures(entries as never)
@@ -35,23 +38,29 @@ const flatCols = [
 ]
 
 const nestedCols = [
-  { id: 'grp', header: 'G', columns: [
-    { id: 'a', accessorKey: 'a' },
-    { id: 'b', accessorKey: 'b' },
-  ] },
+  {
+    id: 'grp',
+    header: 'G',
+    columns: [
+      { id: 'a', accessorKey: 'a' },
+      { id: 'b', accessorKey: 'b' },
+    ],
+  },
 ]
 
 const ctxOf = (table: any, groupIndex: number, headerIndex: number) =>
   table.getHeaderGroups()[groupIndex].headers[headerIndex].getContext()
 
-describe('Фаза E — columnPinning на v9', () => {
+describe('columnPinning', () => {
   it('foldEntries даёт опции пиннинга и дескриптор (order 0)', () => {
     const { folded } = makeTable(flatCols)
     expect(folded.options).toMatchObject({
       enableColumnPinning: true,
       enableLeafPinning: false,
     })
-    const pin = folded.slotActions.rightHeaderSlot.find(a => a.id === 'columnPinning')
+    const pin = folded.slotActions.rightHeaderSlot.find(
+      a => a.id === 'columnPinning',
+    )
     expect(pin).toBeTruthy()
     expect(pin!.order).toBe(0)
   })

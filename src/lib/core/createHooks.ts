@@ -1,7 +1,7 @@
 /**
- * Cutover — v9-порт useCreateHooks: always-on no-op дефолты бизнес-контракта
- * хуков (ADR 0010). Гарантируют, что чтение любого встроенного слайса хуков не
- * упадёт, даже если потребитель его не передал. Литералы, а не импорт плагинов.
+ * Always-on no-op дефолты бизнес-контракта хуков (ADR 0010). Гарантируют, что
+ * чтение любого встроенного слайса хуков не упадёт, даже если потребитель его не
+ * передал. Литералы, а не импорт плагинов.
  */
 import { useMemo } from 'react'
 
@@ -25,5 +25,4 @@ export type PluginsHooks = typeof defaultHooks
 
 export const useCreateHooks = <THooks extends object = Record<never, never>>(
   hooks: Partial<THooks> = {},
-): THooks =>
-  useMemo(() => ({ ...defaultHooks, ...hooks }) as THooks, [hooks])
+): THooks => useMemo(() => ({ ...defaultHooks, ...hooks }) as THooks, [hooks])

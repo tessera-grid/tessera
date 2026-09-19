@@ -1,8 +1,6 @@
 /**
- * Cutover (grid) — v9-порт ActionButton: инлайн-подача действия слота (иконка-кнопка
- * с тултипом). Отличие от v8: поле `subscribe`/useSubscribeStore убрано —
- * реактивность даёт родительская ActionsZone (подписка на состояние). Переиспурт
- * v8-независимые IconButton/Tooltip/localization.
+ * ActionButton: инлайн-подача действия слота (иконка-кнопка с тултипом).
+ * Реактивность даёт родительская ActionsZone (подписка на состояние).
  */
 import clsx from 'clsx'
 
@@ -30,47 +28,47 @@ export const ActionButton = ({
 }: ActionButtonProps) => {
   const labels = useLocalization()
 
-    if (action.visible?.(context) === false) {
-      return null
-    }
+  if (action.visible?.(context) === false) {
+    return null
+  }
 
-    const disabled = action.disabled?.(context) ?? false
-    const active = action.active?.(context) ?? false
-    const label = action.label(context, labels)
-    const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-    const adornment = action.adornment?.(context)
+  const disabled = action.disabled?.(context) ?? false
+  const active = action.active?.(context) ?? false
+  const label = action.label(context, labels)
+  const ariaLabel = action.ariaLabel?.(context, labels) ?? label
+  const adornment = action.adornment?.(context)
 
-    const button = (
-      <IconButton
-        className={action.className?.(context)}
-        onClick={event => action.onSelect(context, event)}
-        disabled={disabled}
-        aria-disabled={disabled}
-        aria-label={ariaLabel}
-      >
-        {action.icon(context)}
-      </IconButton>
-    )
+  const button = (
+    <IconButton
+      className={action.className?.(context)}
+      onClick={event => action.onSelect(context, event)}
+      disabled={disabled}
+      aria-disabled={disabled}
+      aria-label={ariaLabel}
+    >
+      {action.icon(context)}
+    </IconButton>
+  )
 
-    const wrapperClassName =
-      variant === 'row'
-        ? clsx('row__button', 'row__button--hidden')
-        : clsx('cell__button', 'cell__button--hidden')
+  const wrapperClassName =
+    variant === 'row'
+      ? clsx('row__button', 'row__button--hidden')
+      : clsx('cell__button', 'cell__button--hidden')
 
-    return (
-      <Tooltip title={label} disabled={disabled}>
-        <div className={wrapperClassName} data-button-active={active}>
-          {adornment ? (
-            <span className={styles.anchor}>
-              {button}
-              {adornment}
-            </span>
-          ) : (
-            button
-          )}
-        </div>
-      </Tooltip>
-    )
+  return (
+    <Tooltip title={label} disabled={disabled}>
+      <div className={wrapperClassName} data-button-active={active}>
+        {adornment ? (
+          <span className={styles.anchor}>
+            {button}
+            {adornment}
+          </span>
+        ) : (
+          button
+        )}
+      </div>
+    </Tooltip>
+  )
 }
 
 ActionButton.displayName = 'ActionButton'

@@ -1,9 +1,6 @@
-// Cutover (grid) — v9-порт BodyCell. Ячейка тела: пиннинг-стили/атрибуты (start/end),
-// skeleton при fast-scroll, слоты, контент через нативный flexRender.
-// Отличия от v8: самописный cell.renderComponent убран (контент рисует flexRender от
-// columnDef.cell); пиннинг start/end через getCellPinningParams; переиспользуем
-// v8-независимые CellWrapper/Skeleton/fastScroll. TODO(cutover): ветка
-// rowActions-колонки (ActionsZone) портируется отдельно.
+// BodyCell. Ячейка тела: пиннинг-стили/атрибуты (start/end) через
+// getCellPinningParams, skeleton при fast-scroll, слоты, контент через flexRender
+// от columnDef.cell.
 import { memo, useMemo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
@@ -11,10 +8,7 @@ import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../core/fastScroll'
 import { useTableState } from '../core/reactivity'
-import {
-  CellWrapperContent,
-  getAlignContent,
-} from '../grid/CellWrapperContent'
+import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import { Skeleton } from '../ui/Skeleton'
 import type { Cell } from '../types'
@@ -118,8 +112,19 @@ export const BodyCell = memo(
       const content = flexRender(cell.column.columnDef.cell, cell.getContext())
 
       // Сервисная колонка — контент без CellWrapperTitle.
-      return isActionsColumn ? content : <CellWrapperTitle>{content}</CellWrapperTitle>
-    }, [cell, isActionsColumn, isRowActionsColumn, actionRowSlot, isSuppressed, showSkeleton])
+      return isActionsColumn ? (
+        content
+      ) : (
+        <CellWrapperTitle>{content}</CellWrapperTitle>
+      )
+    }, [
+      cell,
+      isActionsColumn,
+      isRowActionsColumn,
+      actionRowSlot,
+      isSuppressed,
+      showSkeleton,
+    ])
 
     return (
       <div

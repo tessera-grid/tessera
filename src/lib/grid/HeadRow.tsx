@@ -1,6 +1,6 @@
-// Cutover (grid) — v9-порт HeadRow: строка заголовка (заголовки группы → HeadCell/
-// DraggableHeadCell). При enableColumnDragging рисуется DraggableHeadCell
-// (useSortable под DndContext хедера), иначе обычная HeadCell.
+// HeadRow: строка заголовка (заголовки группы → HeadCell/DraggableHeadCell). При
+// enableColumnDragging рисуется DraggableHeadCell (useSortable под DndContext
+// хедера), иначе обычная HeadCell.
 import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
@@ -64,7 +64,8 @@ export const HeadRow = ({
   // `left` (вне потока). Спейсер постоянной ширины держит поток. Симметрично телу.
   const startHeaders: typeof headers = []
   const endHeaders: typeof headers = []
-  const centerHeaders: { header: (typeof headers)[number]; start: number }[] = []
+  const centerHeaders: { header: (typeof headers)[number]; start: number }[] =
+    []
   for (const virtualColumn of virtualColumns) {
     const header = headers[virtualColumn.index]
     const pinned = header.column.getIsPinned()
@@ -73,10 +74,7 @@ export const HeadRow = ({
     else centerHeaders.push({ header, start: virtualColumn.start })
   }
 
-  const cell = (
-    header: (typeof headers)[number],
-    absoluteLeft?: number,
-  ) => (
+  const cell = (header: (typeof headers)[number], absoluteLeft?: number) => (
     <CellComponent
       key={header.id}
       layout={layout}

@@ -1,8 +1,8 @@
-// Cutover (grid) — v9-порт BodyRow: обычный ряд (BodyRow) и перетаскиваемый
-// (DraggableBodyRow, useSortable + SortableContext). Виртуализация приходит
-// пропсами virtualRow/virtualColumns. Реактивность через useTableState (в v8 —
-// useSubscribeStore). Row-методы фич (getIsSelected/getIsExpanded/getCanDrag)
-// вызываются через ?. — плагина может не быть в наборе.
+// BodyRow: обычный ряд (BodyRow) и перетаскиваемый (DraggableBodyRow,
+// useSortable + SortableContext). Виртуализация приходит пропсами
+// virtualRow/virtualColumns. Реактивность через useTableState. Row-методы фич
+// (getIsSelected/getIsExpanded/getCanDrag) вызываются через ?. — плагина может
+// не быть в наборе.
 import { memo, useMemo } from 'react'
 
 import { useSortable } from '@dnd-kit/sortable'
@@ -41,8 +41,7 @@ interface BodyRowCellsProps extends TableBodyRowProps {
 /**
  * Пер-строчная подписка на СВОИ срезы: строка ре-рендерится только когда меняется её
  * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице) либо группировка.
- * Раньше строки держали коарс-подписку на весь стейт — выбор одной строки ре-рендерил
- * все смонтированные строки. `expanded` бывает `true` (все) или картой по id.
+ * `expanded` бывает `true` (все) или картой по id.
  */
 const useRowStateSubscription = (row: Row<any, any>) => {
   const table = (row as unknown as { table: never }).table
@@ -54,7 +53,7 @@ const useRowStateSubscription = (row: Row<any, any>) => {
     }
     return {
       selected: s.rowSelection?.[row.id] ?? false,
-      expanded: s.expanded === true ? true : s.expanded?.[row.id] ?? false,
+      expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
       grouping: s.grouping,
     }
   })
@@ -74,7 +73,10 @@ const BodyRowCells = ({
   isRowInteract,
 }: BodyRowCellsProps) => {
   if (isVirtualColumns) {
-    const cellProps = (cell: Cell<any, any, unknown>, absoluteLeft?: number) => ({
+    const cellProps = (
+      cell: Cell<any, any, unknown>,
+      absoluteLeft?: number,
+    ) => ({
       key: cell.id,
       layout,
       cell,
@@ -102,10 +104,16 @@ const BodyRowCells = ({
 
     return (
       <>
-        {startCells.map(cell => <BodyCell {...cellProps(cell)} />)}
+        {startCells.map(cell => (
+          <BodyCell {...cellProps(cell)} />
+        ))}
         <VirtualCenterSpacer />
-        {centerCells.map(({ cell, start }) => <BodyCell {...cellProps(cell, start)} />)}
-        {endCells.map(cell => <BodyCell {...cellProps(cell)} />)}
+        {centerCells.map(({ cell, start }) => (
+          <BodyCell {...cellProps(cell, start)} />
+        ))}
+        {endCells.map(cell => (
+          <BodyCell {...cellProps(cell)} />
+        ))}
       </>
     )
   }
@@ -128,7 +136,10 @@ const BodyRowCells = ({
         )
       })}
       {!row.getVisibleCells().at(-1)?.column.getIsActionsColumn() && (
-        <RightFillerBodyColumn hasBorderTop={!row.getIsFirstRow()} hasBorderRight />
+        <RightFillerBodyColumn
+          hasBorderTop={!row.getIsFirstRow()}
+          hasBorderRight
+        />
       )}
     </>
   )
@@ -146,7 +157,10 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
 
-  const rowStyles = useMemo(() => ({ top: virtualRow.start }), [virtualRow.start])
+  const rowStyles = useMemo(
+    () => ({ top: virtualRow.start }),
+    [virtualRow.start],
+  )
 
   return (
     <div

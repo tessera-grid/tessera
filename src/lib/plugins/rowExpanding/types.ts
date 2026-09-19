@@ -1,4 +1,4 @@
-/** Фаза E — hook-слайс плагина rowExpanding (v9). Идентичен v8-контракту. */
+/** Hook-слайс плагина rowExpanding. */
 import type { Row } from '../../types'
 
 export type RowExpandingPluginScope = 'rowExpanding'

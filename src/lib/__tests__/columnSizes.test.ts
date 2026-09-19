@@ -1,5 +1,5 @@
 /**
- * Cutover — headless-проверка grid-хелперов ширин/sticky-offset (start/end).
+ * Headless-проверка grid-хелперов ширин/sticky-offset (start/end).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -17,7 +17,10 @@ import {
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnPinning(),
     columnSizing(),
   ]
@@ -37,7 +40,7 @@ const makeTable = () => {
   return table
 }
 
-describe('Cutover — columnSizes (start/end sticky-offset)', () => {
+describe('columnSizes (start/end sticky-offset)', () => {
   it('buildColumnSizeVars отдаёт --col-/-header- переменные', () => {
     const vars = buildColumnSizeVars(makeTable())
     expect(vars[getColumnSizeVariable('a')]).toBe('150px')
@@ -48,7 +51,10 @@ describe('Cutover — columnSizes (start/end sticky-offset)', () => {
     const table = makeTable()
     table.setColumnPinning({ start: ['a', 'b'], end: [] })
 
-    expect(table.getStartVisibleLeafColumns().map((c: any) => c.id)).toEqual(['a', 'b'])
+    expect(table.getStartVisibleLeafColumns().map((c: any) => c.id)).toEqual([
+      'a',
+      'b',
+    ])
 
     // Первая закреплённая — смещение 0.
     expect(getPinnedStartOffset(table, table.getColumn('a'))).toBe('0px')

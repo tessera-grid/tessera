@@ -1,5 +1,5 @@
 /**
- * Фаза E — headless-проверка плагина rowSelection на v9-ядре.
+ * Headless-проверка плагина rowSelection.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -18,7 +18,10 @@ interface Person {
 
 const makeTable = (opts = {}) => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     rowSelection(opts),
   ]
 
@@ -44,7 +47,7 @@ const makeTable = (opts = {}) => {
   return { table, folded, columns }
 }
 
-describe('Фаза E — rowSelection на v9', () => {
+describe('rowSelection', () => {
   it('foldEntries даёт опции выбора и сервисную колонку', () => {
     const { folded } = makeTable({ subRows: true })
     expect(folded.options).toMatchObject({
@@ -84,7 +87,9 @@ describe('Фаза E — rowSelection на v9', () => {
 
     // Активная группировка → выбор недоступен.
     expect(
-      enableRowSelection({ table: { atoms: { grouping: { get: () => ['name'] } } } }),
+      enableRowSelection({
+        table: { atoms: { grouping: { get: () => ['name'] } } },
+      }),
     ).toBe(false)
     // Без группировки (атома нет) → доступен.
     expect(enableRowSelection({ table: { atoms: {} } })).toBe(true)

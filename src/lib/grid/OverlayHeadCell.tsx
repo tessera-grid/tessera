@@ -1,14 +1,11 @@
-// Cutover (grid) — v9-порт OverlayHeadCell: ячейка заголовка в DragOverlay при
-// перетаскивании колонки. Контент через flexRender (самописный header.render убран).
+// OverlayHeadCell: ячейка заголовка в DragOverlay при перетаскивании колонки.
+// Контент через flexRender.
 import { type CSSProperties, memo, useMemo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
-import {
-  CellWrapperContent,
-  getAlignContent,
-} from '../grid/CellWrapperContent'
+import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'

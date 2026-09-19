@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * Cutover — render-тест v9 BodyRow (happy-dom, без drag): role=row, aria-rowindex,
- * ячейки строки, data-last-row. Виртуализация приходит пропсом (мок virtualRow).
+ * Render-тест BodyRow (happy-dom, без drag): role=row, aria-rowindex, ячейки
+ * строки, data-last-row. Виртуализация приходит пропсом (мок virtualRow).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -14,13 +14,25 @@ import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnSizing } from '../plugins/columnSizing'
 import { BodyRow } from '../grid/BodyRow'
 
-;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+;(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true
 
-const virtualRow = { index: 0, start: 0, size: 40, end: 40, key: 0, lane: 0 } as any
+const virtualRow = {
+  index: 0,
+  start: 0,
+  size: 40,
+  end: 40,
+  key: 0,
+  lane: 0,
+} as any
 
 const makeTable = () => {
   const entries = [
-    { id: 'reactivity', slot: { coreReactivityFeature: storeReactivityBindings() } },
+    {
+      id: 'reactivity',
+      slot: { coreReactivityFeature: storeReactivityBindings() },
+    },
     columnSizing(),
   ]
   const features = buildTesseraFeatures(entries as never)
@@ -29,8 +41,18 @@ const makeTable = () => {
     features,
     data: [{ id: '1', a: 'A', b: 'B' }],
     columns: [
-      { id: 'a', accessorKey: 'a', size: 100, cell: (i: any) => String(i.getValue()) },
-      { id: 'b', accessorKey: 'b', size: 100, cell: (i: any) => String(i.getValue()) },
+      {
+        id: 'a',
+        accessorKey: 'a',
+        size: 100,
+        cell: (i: any) => String(i.getValue()),
+      },
+      {
+        id: 'b',
+        accessorKey: 'b',
+        size: 100,
+        cell: (i: any) => String(i.getValue()),
+      },
     ],
     getRowId: (row: any) => row.id,
     ...folded.options,
@@ -49,7 +71,7 @@ afterEach(() => {
   container.remove()
 })
 
-describe('Cutover — BodyRow (v9, happy-dom)', () => {
+describe('BodyRow (happy-dom)', () => {
   it('DOM-контракт: role=row, aria-rowindex, ячейки, last-row', () => {
     const table = makeTable()
     const row = table.getRowModel().rows[0]

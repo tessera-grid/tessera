@@ -1,11 +1,8 @@
 /**
- * Фаза E — запись плагина rowActions для v9 (порт registry.ts, ADR 0025/0010).
- *
- * Отличия от v8:
- *  - сервисная колонка действий закреплена вправо: pin side `right`→`end`;
- *  - `setup` (generic-escape) сохранён: ширина колонки следует за подачей действий
- *    (схлопнуты в кебаб rowActionMenu → collapsedWidth) через table.setColumnAutoSizing;
- *    читаем факт «слот схлопнут» из общей опции actionMenu.
+ * Запись плагина rowActions (ADR 0025/0010). Сервисная колонка действий закреплена
+ * вправо (pin side `end`). `setup` (generic-escape): ширина колонки следует за
+ * подачей действий (схлопнуты в кебаб rowActionMenu → collapsedWidth) через
+ * table.setColumnAutoSizing; факт «слот схлопнут» читаем из общей опции actionMenu.
  */
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
 import type { ServiceColumn } from '../../core/createColumns'
