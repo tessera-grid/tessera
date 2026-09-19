@@ -2,9 +2,6 @@
 <table align="center" style="max-width: 800px; margin: 8px auto"><tbody><tr><td width="800">
 
 <a name="page-start" href="#"></a>
-<center>
-  <img src="docs/show-cases.png" width="600" style="border-radius: 16px;">
-</center>
 
 # Tessera
 
@@ -28,10 +25,10 @@
 - [6. Использование плагинов](#usage_plugins)
 - [7. Реализация бизнес-логики для плагинов](#business_plugins)
 - [8. Реактивность обновления данных](#reactivity)
-- [9. Создание своего плагина](#creation_plugin)
+- [9. Создание своего плагина](#custom_plugin)
   - [9.1. Гайд 1. Нарисовать кнопку "скачать файл" в каждой строке](#custom_plugin_example_1)
   - [9.2. Гайд 2. Кнопка "скрыть значение" в ячейках](#custom_plugin_example_2)
-  - [9.3. Гайд 3. Создать новую колонку с кастомным чекбоксом](#custom_plugin_example_3)
+  - [9.3. Гайд 3. Создать новую колонку с кастомным Switch](#custom_plugin_example_3)
 - [10. Best Practices](#best_practices)
 
 <a name="intro" id="intro"></a>
@@ -58,20 +55,45 @@
 
 Давайте их создадим!
 
+Сначала опишем типы данных в отдельном модуле `types.ts` — их будут импортировать все примеры ниже:
+
+```ts
+// types.ts
+
+// Тип строки данных таблицы. Индексная сигнатура нужна, т.к. колонки строятся
+// динамически по списку полей (row[field.name]).
+export interface ItemType {
+  id: string
+  name: string
+  description: string
+  price: number
+  [key: string]: unknown
+}
+
+// Описание поля-колонки (используется как meta-контекст колонки)
+export interface FieldType {
+  id: string
+  name: string
+  label: string
+  width: number
+  type: string
+}
+```
+
 ```ts
 // useColumns.tsx
 
 import { useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Cell } from './Cell'
-import { formatMeta } from './getMeta'
 import { FieldType, ItemType } from './types'
 
 interface UseColumnsParams {
   fields: FieldType[]
 }
 
-const columnHelper = createColumnHelper<ItemType>()
+// TFeatures у потребителя — any (набор фич собирает useCreateTable из plugins),
+// второй генерик — тип строки данных.
+const columnHelper = createColumnHelper<any, ItemType>()
 
 export const useColumns = ({ fields }: UseColumnsParams) => {
   return useMemo(
@@ -80,7 +102,7 @@ export const useColumns = ({ fields }: UseColumnsParams) => {
         return columnHelper.accessor(row => row[field.name], {
           id: field.id,
           header: field.label,
-          cell: cell => cell.getValue(),
+          cell: cell => String(cell.getValue() ?? ''),
           size: field.width,
         })
       }),
@@ -94,7 +116,7 @@ export const useColumns = ({ fields }: UseColumnsParams) => {
 
 import { useMemo } from 'react'
 
-import { FieldType } from './useColumns'
+import { FieldType } from './types'
 
 export const useFields = (): FieldType[] => {
   return useMemo(
@@ -138,7 +160,7 @@ export const useFields = (): FieldType[] => {
 
 > ⚠️ Мы настоятельно рекомендуем избегать прямых внешних зависимостей для рендера заголовков и колонок.
 >
-> Если Вы беспокоитесь об обновлении содержимого ячеек, то в следующих главах мы поговорим о `Pub-Sub` в `Tessera`.
+> Если Вы беспокоитесь об обновлении содержимого ячеек, то в следующих главах мы поговорим о точечных подписках на состояние в `Tessera`.
 
 <a name="get_object_column" id="get_object_column"></a>
 
@@ -154,7 +176,7 @@ columnHelper.accessor(row => row[field.name], {
   header: field.label,
   cell: cell => cell.getValue(),
   // Параметр meta используется как произвольный контекст колонки и доступен через column.columnDef.meta
-  meta: formatMeta(field),
+  meta: setMeta(field),
   size: field.width,
 })
 ```
@@ -226,7 +248,7 @@ columnHelper.accessor(row => row[field.name], {
 
 import { useMemo } from 'react'
 
-import { ItemType } from './useColumns'
+import { ItemType } from './types'
 
 // Выдуманный эндпоинт, возвращающий стабильные данные определенного типа
 const useDataQuery = (): ItemType[] => {
@@ -260,7 +282,7 @@ export const useData = () => {
 
 > ⚠️⚠️⚠️ **Обязательно используйте стабильные ссылки на данные, чтобы избежать непредвиденной или бесконечной перерисовки всей таблицы!**
 >
-> **Подробнее читайте здесь: https://tanstack.com/table/latest/docs/guide/data**
+> **Подробнее читайте здесь:** https://tanstack.com/table/latest/docs/guide/data
 
 ---
 
@@ -279,14 +301,13 @@ import { useCreateTable, DataGrid } from '@mstrvtt/tessera'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType } from './types'
 
 export const Table = () => {
   const fields = useFields()
   const columns = useColumns({ fields })
   const data = useData()
 
-  const table = useCreateTable<ItemType>({
+  const table = useCreateTable({
     columns,
     data,
   })
@@ -297,36 +318,25 @@ export const Table = () => {
 
 Отлично! Вы только что создали свою таблицу!
 
-> ⚠️ Функция `useCreateTable` имеет гибкую типизацию: `useCreateTable<TData, THooks, TState, TOptions>`
+> ⚠️ В большинстве случаев `useCreateTable` **не требует явных дженериков** — типы
+> выводятся из аргументов:
 >
-> Что это значит и когда нужно типизировать?
+> - `TData` (тип данных) — из `columns` и `data`;
+> - набор плагинов — из массива `plugins` (кортеж выводится как есть, поэтому
+>   доступны ровно те плагины, что вы передали).
 >
-> Данные 4 дженерика соответствуют параметрам таблицы:
->
-> - `TData` - тип данных таблицы
-> - `THooks` - тип **кастомных** хуков (контракты ваших собственных плагинов)
-> - `TState` - тип состояния таблицы
-> - `TOptions` - тип хендлеров состояния таблицы
->
-> Хуки **встроенных** плагинов больше не входят в `THooks` — их тип выводится из
-> переданного набора `plugins` (presence-based, ADR 0010). Есть два режима:
->
-> - **Без явных дженериков** (рекомендуется): `useCreateTable({ plugins: [...], hooks })` —
->   тип `hooks` автоматически выводится из плагинов в `plugins`, а `TData`/`TState`/`TOptions`
->   — из `columns`/`data`/`state`/`handlers`.
-> - **С явными дженериками** (когда нужны кастомные `TState`/`TOptions`): вывод из
->   кортежа отключается, поэтому встроенные слайсы указывают через агрегат
->   `BuiltinPluginsHooks` из `@mstrvtt/tessera/plugins`:
->   `useCreateTable<TData, BuiltinPluginsHooks & MyHooks, TState, TOptions>({ ... })`.
->
-> Позже мы рассмотрим оба режима на примерах.
+> Состояние, хендлеры и хуки — это обычные аргументы (`state` / `handlers` / `hooks`),
+> а **не дженерики**: их типы определяются формой передаваемых объектов. Контракты
+> хуков встроенных плагинов экспортируются из `@mstrvtt/tessera/plugins`
+> (`RowSelectionPlugin` и т.п.); свои хуки и состояния добавляете к ним пересечением.
+> Как это выглядит на практике — в главах ниже.
 
 <a name="configure_table" id="configure_table"></a>
 
 ### Конфигурация таблицы
 
-`Tessera` включает поведение таблицы через **композицию плагинов** (presence-based,
-ADR 0010): наличие фабрики плагина в массиве `plugins` = фича включена.
+`Tessera` включает поведение таблицы через **композицию плагинов** (presence-based):
+наличие фабрики плагина в массиве `plugins` = фича включена.
 
 Например, чтобы включить сортировку и изменение ширины для всех колонок, импортируйте
 соответствующие плагины из `@mstrvtt/tessera/plugins` и передайте их фабрики:
@@ -372,7 +382,6 @@ import { rowSelection } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType } from './types'
 
 export const Table = () => {
   const fields = useFields()
@@ -407,54 +416,32 @@ export const Table = () => {
 
 ### Использование плагинов
 
-Набор базовых плагинов поставляется отдельным входом `@mstrvtt/tessera/plugins`:
+Набор базовых плагинов поставляется отдельным входом `@mstrvtt/tessera/plugins`.
+Каждый включается добавлением своей фабрики в массив `plugins`:
 
-> `ColumnDragging` - перетаскивание колонок (отображение индикатора в заголовке)
->
-> `ColumnPinning`
->
-> - закрепление колонок слева (отображение кнопки в заголовке)
-> - закрепление колонок справа (официальной поддержки пока нет, работает только для кнопок действий)
->
-> `ColumnSizing` - ресайз колонок (отображение хендлера в заголовке)
->
-> `ColumnSorting`
->
-> - сортировка данных DESC/ASC (отображение кнопки в заголовке)
-> - поддерживает клиентскую и серверную сортировку
->
-> `RowSelection` - выбор строк (отображение колонки с чекбоксами)
->
-> `RowExpanding`
->
-> - разворачивание/сворачивание строк (отображение колонки с кнопкой)
-> - поддерживает клиентское и серверное разворачивание строк
->
-> `RowDragging`
->
-> - перетаскивание групп и строк (отображение колонки с хендлером)
-> - поддерживает иерархию данных
->
-> `Grouping`
->
-> - группировка данных по выбранным колонкам
-> - не работает вместе с RowDragging
-> - в режиме вложенных заголовков таблицы не работает с ColumnPinning и ColumnDragging
+| Фабрика | Что делает | UI | Ограничения / примечания |
+| --- | --- | --- | --- |
+| `columnSorting()` | Сортировка данных DESC/ASC | кнопка в заголовке | клиентская и серверная; требует `enableSorting` в колонке |
+| `columnSizing()` | Ресайз колонок | хендлер в заголовке | требует `enableResizing` в колонке |
+| `columnPinning()` | Закрепление колонок слева/справа | кнопка в заголовке | работает и под многоуровневой шапкой (групповой пин + вынос отдельных листьев/групп) |
+| `columnDragging()` | Перетаскивание колонок | индикатор в заголовке | требует `enableDragging` в колонке; не работает под многоуровневой (сгруппированной) шапкой |
+| `rowSelection()` | Выбор строк | колонка с чекбоксами | скрывается при активной группировке |
+| `rowExpanding()` | Разворачивание/сворачивание строк | колонка с кнопкой | клиентское и серверное; поддерживает иерархию (`getSubRows`) |
+| `rowDragging()` | Перетаскивание строк и групп | колонка с хендлером | поддерживает иерархию; отключается при активной группировке |
+| `rowGrouping()` | Группировка данных по колонкам | кнопка/пункт меню в заголовке | при активной группировке отключает `rowDragging` и `rowSelection`; под вложенной шапкой несовместима с `columnDragging` |
+| `rowActions()` | Колонка кнопок действий над строкой | колонка, закреплённая справа | ширина `width` (px, по умолч. 120) и `collapsedWidth` (56) при схлопывании действий |
+| `headerActionMenu()` | Схлопывает кнопки заголовка в кебаб-меню «⋯» | меню в заголовке | `mode`: `auto` (по порогу) / `always`; `threshold` (по умолч. 3). Своей колонки/фичи не вносит |
+| `rowActionMenu()` | Схлопывает действия строки в кебаб-меню «⋯» | меню в колонке действий строки | `mode`: `auto` / `always`; `threshold` (по умолч. 2). Работает поверх `rowActions()` |
 
-Каждый плагин импортируется из `@mstrvtt/tessera/plugins` и включается добавлением
-его фабрики в массив `plugins` (наличие = включено, ADR 0010):
+> ⚠️ Плагин включает механику на уровне таблицы, а колонка — **разрешает её для себя**
+> соответствующим флагом в определении (`enableSorting`, `enableResizing`,
+> `enablePinning`, `enableDragging`, `enableGrouping`).
+
+Импортируйте нужные фабрики из `@mstrvtt/tessera/plugins` и передайте их вызовы в
+`plugins` (наличие в массиве = плагин включён):
 
 ```tsx
-import {
-  rowSelection,
-  rowExpanding,
-  columnSorting,
-  columnPinning,
-  columnSizing,
-  columnDragging,
-  rowDragging,
-  rowGrouping,
-} from '@mstrvtt/tessera/plugins'
+import { rowSelection, columnSorting, columnSizing } from '@mstrvtt/tessera/plugins'
 
 useCreateTable({
   columns,
@@ -480,12 +467,12 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
+  useCreateHooks,
 } from '@mstrvtt/tessera'
-import { rowSelection } from '@mstrvtt/tessera/plugins'
+import { rowSelection, type RowSelectionPlugin } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType } from './types'
 
 export const Table = () => {
   const fields = useFields()
@@ -494,6 +481,19 @@ export const Table = () => {
 
   const { rowSelection: rowSelectionState, onRowSelectionChange } =
     useRowSelectionState()
+
+  // Тип контракта плагина (RowSelectionPlugin) даёт контекстную типизацию
+  // параметров колбэков; useCreateHooks подкладывает no-op дефолты, поэтому чтение
+  // любого слайса не упадёт.
+  const hooks = useCreateHooks<RowSelectionPlugin>({
+    rowSelection: {
+      // Подписываемся на callbacks плагина выбора строк
+      onSelectRow: (row, selected) => console.info(row.id, selected),
+      onSelectAllRowsOnPage: selected => console.info('all', selected),
+      // Для динамических признаков используйте state, данный пример временный
+      isAllRowsSelected: false,
+    },
+  })
 
   const table = useCreateTable({
     columns,
@@ -504,17 +504,7 @@ export const Table = () => {
     handlers: {
       onRowSelectionChange,
     },
-    // Тип hooks выводится из plugins (без явных дженериков): здесь известен
-    // слайс rowSelection, потому что передан плагин rowSelection().
-    hooks: {
-      rowSelection: {
-        // Подписываемся на callbacks плагина выбора строк
-        onSelectRow: (row, selected) => console.info(row.id, selected),
-        onSelectAllRowsOnPage: selected => console.info('all', selected),
-        // Для динамических признаков используйте state, данный пример временный
-        isAllRowsSelected: false,
-      },
-    },
+    hooks,
     plugins: [rowSelection()],
   })
 
@@ -522,54 +512,53 @@ export const Table = () => {
 }
 ```
 
-Обратите внимание, что тип объекта `hooks` выводится из набора `plugins`: доступны
-слайсы ровно тех плагинов, что вы передали. Если предпочитаете собирать `hooks`
-отдельно, используйте `useCreateHooks` (он подкладывает always-on no-op дефолты).
+Контракты хуков встроенных плагинов экспортируются из `@mstrvtt/tessera/plugins`
+(`RowSelectionPlugin`, `ColumnSortingPlugin`, `ColumnPinningPlugin` и т.п.). Соберите
+`hooks` функцией `useCreateHooks<RowSelectionPlugin & MyHooks>(...)`: она типизирует
+колбэки и подкладывает no-op дефолты, поэтому чтение любого слайса не упадёт, даже
+если вы его не передали.
 
 > ❗ Что такое объект `hooks`?
 >
 > `hooks` - это API-контракт, который используется для взаимодействия с плагинами таблицы.
 > Это помогает снизить связанность кода, отделяя бизнес-логику от технической реализации таблицы.
 
-> ⚠️ Обязательно передавайте в него **мемоизированное значение**, если Вы не используйте `Pub-Sub`! Мы обязательно вернемся к нему.
+> ⚠️ `hooks` — это контекст для бизнес-функций; передавайте в него **стабильное
+> (мемоизированное)** значение. Для динамических признаков, влияющих на рендер,
+> используйте `state` и точечные подписки (см. следующую главу).
 
 <a name="reactivity" id="reactivity"></a>
 
 ### Реактивность обновления данных
 
-Стоит рассказать о том, по какому механизму в Tessera обновляется содержимое той или иной ячейки, колонки, строки или всей таблицы в целом.
+Разберёмся, как в Tessera обновляется содержимое отдельной ячейки, строки, заголовка или всей таблицы.
 
-1. Первым признаком является обновление ссылок на `columns` и `data`. При их изменении `Tanstack Table` пересоздаст таблицу целиком с нуля.
+1. **Полное пересоздание.** При изменении ссылок на `columns` или `data` `TanStack Table` пересоздаёт таблицу целиком. Поэтому держите эти ссылки **стабильными** (мемоизация).
 
-2. Для гранулированного обновления конкретных ячеек, строк и заголовков `Tanstack Table` не предоставляет API. Специально для этого мы реализовали механизм `Pub-Sub` — именно он отвечает за реакцию на внешние состояния.
-
-Далее, рассмотрим `Pub-Sub` и как с ним работать.
+2. **Гранулярные подписки.** Состояние таблицы живёт в TanStack Store: каждый слайс — это атом, на который компонент подписывается точечно и ре-рендерится только при изменении именно этого слайса. Ручного механизма подписки больше нет — точечные подписки идут через хелперы `useSlice` и `useTableState`, экспортируемые из `@mstrvtt/tessera`.
 
 <a name="reactivity_methods" id="reactivity_methods"></a>
 
-### Pub-Sub — гранулированная реактивность
+#### Точечные подписки: `useSlice` и `useTableState`
 
-`Pub-Sub` — это механизм точечного обновления содержимого ячеек, строк и заголовков в ответ на внешние состояния.
-
-Чтобы подписать компонент таблицы на обновление внешнего/внутреннего состояния или параметра, используйте хук `useSubscribeStore`.
-Таким образом Вы можете выборочно делать некоторые части таблицы интерактивными без потери производительности!
+- `useSlice(table, 'rowSelection')` — подписка на **один** встроенный слайс состояния (самая узкая: ре-рендер только при изменении этого слайса).
+- `useTableState(table, s => ...)` — подписка на **проекцию** из общего состояния с shallow-сравнением; нужна, когда требуется несколько срезов сразу или собственный ключ состояния.
 
 ```tsx
-export const PluginComponent = memo(
-  ({ row, table }: CellComponentProps) => {
-    useSubscribeStore(() => [
-      row.getIsSelected(),
-      table.getState().customState,
-    ])
+import { memo } from 'react'
+import { useSlice, type CellComponentProps } from '@mstrvtt/tessera'
 
-  ...
-  })
+export const PluginComponent = memo(({ row, table }: CellComponentProps) => {
+  // Узкая подписка на встроенный слайс: компонент реагирует только на выбор строк.
+  useSlice(table, 'rowSelection')
+
+  const selected = row.getIsSelected()
+
+  // ...
+})
 ```
 
-Например, этот компонент плагина подписывается только на то, выбрана ли текущая строка, и на кастомное состояние таблицы, которое Вы сами можете реализовать.
-Это означает, что Ваш плагин с этим содержимым обновится только в тех местах таблицы, где он рисуется, не задев остальные компоненты таблицы.
-
-Примеры реализации плагинов и реактивных ячеек будут рассмотрены далее.
+Так вы делаете интерактивными только нужные части таблицы, не задевая остальные компоненты. Для подписки на **собственное** состояние используйте `useTableState` с проекцией (пример — в гайде 2 ниже).
 
 <a name="custom_plugin" id="custom_plugin"></a>
 
@@ -582,32 +571,48 @@ export const PluginComponent = memo(
 Для начала разберемся в том, что умеет плагин:
 
 ```tsx
+// Плагин — это запись фичи (TablePlugin = TesseraFeatureEntry).
+// Обязателен только id; остальные поля добавляют нужное поведение.
 const myPlugin: TablePlugin = {
-  createCell: (cell, _, _, table) => void
-  createColumn: (column, table) => void
-  createHeader: (header, table) => void
-  createRow: (row, table) => void
-  createTable: (table) => void
-  getDefaultOptions: (table) => table.options
-  getInitialState: (initialState) => initialState
+  id: 'myPlugin', // уникальный идентификатор
+  enabled: true, // наличие в plugins = включён; enabled:false — выключить, не убирая
+  slot: {
+    /* фрагмент фич TanStack: rowSortingFeature, filteredRowModel и т.п. */
+  },
+  options: {
+    /* табличные опции фичи, напр. { enableSorting: true } */
+  },
+  slots: [
+    /* что рисуем в ячейках/строках/заголовках (см. ниже) */
+  ],
+  slotActions: [
+    /* действия для кебаб-меню заголовка/строки */
+  ],
+  column: {
+    /* сервисная колонка плагина (напр. колонка чекбоксов) */
+  },
+  setup: table => {
+    /* императивный сетап после создания таблицы; может вернуть cleanup */
+  },
 }
 ```
 
-Через интерфейс плагина мы можем подписываться на жизненный цикл создания таблицы.
-Это подойдет для реализации различных бизнес-кейсов, отображения произвольного контента и специфичного поведения таблицы.
+Плагин **декларативно** описывает, что добавить в таблицу; ядро собирает активные плагины реактивно — появление/исчезновение UI следует за наличием плагина в массиве `plugins`.
 
-> Какой метод использовать?
+> Какое поле использовать?
 
-- Для инициализации кастомных параметров таблицы - `createTable`, `getDefaultOptions`.
-- Для инициализации кастомного состояния таблицы - `getInitialState`.
-- Если Вам нужно добавить кастомные методы для колонки, заголовка, строки или ячейки - используйте любой из соответствующих методов.
-- Чтобы отрисовать кастомный плагин - используйте `createСell` или `createHeader` для рендера компонента в ячейке, либо `createTable` для рендера компонента в слоте.
+- **Отрисовать контент** в ячейке/строке/заголовке — `slots` (место задаётся полем `slot`: `leftCellSlot` / `rightCellSlot` / `actionRowSlot` / `leftHeaderSlot` / `rightHeaderSlot`).
+- **Добавить свою колонку** — `column` (сервисная колонка со своими `header`/`cell`).
+- **Добавить действие в кебаб-меню** — `slotActions`.
+- **Включить поведение TanStack Table** (сортировка, фильтрация и т.п.) — `slot` (фрагмент фич) + `options`.
+- **Побочный эффект после создания таблицы** — `setup`.
 
 > ⚠️ Важно!
 >
-> Учтите, что все методы, кроме `createRow`, `createHeader` и `createCell` вызываются только **один раз** при инициализации таблицы.
->
-> Не используйте `createCell` для сложных вычислений и отрисовки плагинов, данный метод вызывается при каждом создании ячейки.
+> Компоненты слотов (`component`) получают контекст ячейки/заголовка
+> (`CellComponentProps` / `HeaderComponentProps`) и рендерятся часто — не кладите в них
+> тяжёлые вычисления, оборачивайте в `memo` и подписывайтесь точечно
+> (`useSlice` / `useTableState`).
 
 <a name="custom_plugin_example_1" id="custom_plugin_example_1"></a>
 
@@ -621,17 +626,19 @@ const myPlugin: TablePlugin = {
 import { type TablePlugin } from '@mstrvtt/tessera'
 import { RowDownloadComponent } from './RowDownloadComponent'
 
+// Плагин = запись фичи. Рисуем кнопку в слоте действий каждой строки.
 export const rowDownloadActionPlugin: TablePlugin = {
-  createTable: table => {
-    table.setRenderSlot({
-      // id должен быть уникальным, иначе это может привести к коллизии плагинов
-      id: 'rowDownloadActionPlugin',
+  // id должен быть уникальным, иначе это может привести к коллизии плагинов
+  id: 'rowDownloadAction',
+  slots: [
+    {
+      id: 'rowDownloadAction',
+      slot: 'actionRowSlot',
       // Кнопка будет первой по списку (если есть другие кнопки) в конце каждой строки
       order: 0,
-      slot: 'actionRowSlot',
       component: RowDownloadComponent,
-    })
-  },
+    },
+  ],
 }
 ```
 
@@ -640,9 +647,8 @@ export const rowDownloadActionPlugin: TablePlugin = {
 
 import { memo } from 'react'
 import { RowDownloadButton } from './RowDownloadButton'
-import { CellComponentProps } from '@mstrvtt/tessera'
 
-export const RowDownloadComponent = memo((props: CellComponentProps) => {
+export const RowDownloadComponent = memo(() => {
   return <RowDownloadButton />
 })
 
@@ -658,12 +664,16 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
+  useCreateHooks,
 } from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+import {
+  rowSelection,
+  rowActions,
+  type RowSelectionPlugin,
+} from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType } from './types'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
 
 export const Table = () => {
@@ -674,6 +684,14 @@ export const Table = () => {
   const { rowSelection: rowSelectionState, onRowSelectionChange } =
     useRowSelectionState()
 
+  const hooks = useCreateHooks<RowSelectionPlugin>({
+    rowSelection: {
+      onSelectRow: (row, selected) => console.info(row.id, selected),
+      onSelectAllRowsOnPage: selected => console.info('all', selected),
+      isAllRowsSelected: false,
+    },
+  })
+
   const table = useCreateTable({
     columns,
     data,
@@ -683,19 +701,13 @@ export const Table = () => {
     handlers: {
       onRowSelectionChange,
     },
-    hooks: {
-      rowSelection: {
-        onSelectRow: (row, selected) => console.info(row.id, selected),
-        onSelectAllRowsOnPage: selected => console.info('all', selected),
-        isAllRowsSelected: false,
-      },
-    },
+    hooks,
     // Встроенные плагины — фабриками; колонка действий — rowActions({ width });
     // пользовательский плагин приносит свою фичу записью реестра.
     plugins: [
       rowSelection(),
       rowActions({ width: 40 }),
-      { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
+      rowDownloadActionPlugin,
     ],
   })
 
@@ -703,12 +715,21 @@ export const Table = () => {
 }
 ```
 
-Отлично! Теперь, нам нужно сделать так, чтобы что-то происходило, когда мы нажимаем на эту кнопку, верно? Давайте это сделаем!
+Отлично! Теперь нужно сделать так, чтобы при нажатии на кнопку что-то происходило. Давайте это сделаем!
 
-Как мы уже знаем, мы можем взаимодействовать с плагинами через объект `hooks`,
-но изначально таблица ничего не знает про хук нашего плагина `rowDownloadAction`.
-Кастомные хуки объявляются интерфейсом и проходят через `hooks` без явных
-дженериков — они «поглощаются» выводом наравне с выведенными встроенными слайсами:
+Мы взаимодействуем с плагинами через объект `hooks`, но изначально таблица ничего не
+знает про хук нашего плагина `rowDownloadAction`. Опишем его контракт в `types.ts`:
+
+```ts
+// types.ts (добавляем к уже описанным ItemType/FieldType)
+
+// Контракт кастомного хука нашего плагина
+export interface MyTableHooks {
+  rowDownloadAction: { onDownload: (fileId: string) => void }
+}
+```
+
+Добавим слайс в `hooks` (в компоненте прочитаем его через `table.getHooks()`):
 
 ```tsx
 // MyTable.tsx
@@ -717,18 +738,18 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
+  useCreateHooks,
 } from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+import {
+  rowSelection,
+  rowActions,
+  type RowSelectionPlugin,
+} from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType } from './types'
+import { MyTableHooks } from './types'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
-
-// Контракт кастомного хука нашего плагина (из types.ts)
-export interface MyTableHooks {
-  rowDownloadAction: { onDownload: (fileId: string) => void }
-}
 
 export const Table = () => {
   const fields = useFields()
@@ -737,6 +758,19 @@ export const Table = () => {
 
   const { rowSelection: rowSelectionState, onRowSelectionChange } =
     useRowSelectionState()
+
+  // Пересечение контракта плагина и нашего хука: типизированы и встроенные колбэки,
+  // и кастомный onDownload.
+  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
+    rowSelection: {
+      onSelectRow: (row, selected) => console.info(row.id, selected),
+      onSelectAllRowsOnPage: selected => console.info('all', selected),
+      isAllRowsSelected: false,
+    },
+    rowDownloadAction: {
+      onDownload: fileId => console.info('download', fileId),
+    },
+  })
 
   const table = useCreateTable({
     columns,
@@ -747,22 +781,11 @@ export const Table = () => {
     handlers: {
       onRowSelectionChange,
     },
-    hooks: {
-      // Встроенный слайс — выведен из плагина rowSelection()
-      rowSelection: {
-        onSelectRow: (row, selected) => console.info(row.id, selected),
-        onSelectAllRowsOnPage: selected => console.info('all', selected),
-        isAllRowsSelected: false,
-      },
-      // Кастомный хук нашего плагина — проходит через вывод
-      rowDownloadAction: {
-        onDownload: (fileId: string) => console.info('download', fileId),
-      },
-    },
+    hooks,
     plugins: [
       rowSelection(),
       rowActions({ width: 40 }),
-      { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
+      rowDownloadActionPlugin,
     ],
   })
 
@@ -776,23 +799,22 @@ export const Table = () => {
 // RowDownloadComponent.tsx
 
 import { memo } from 'react'
-import { CellComponentProps } from '@mstrvtt/tessera'
-import { ItemType, MyTableHooks } from './types'
+import { type CellComponentProps } from '@mstrvtt/tessera'
+import { MyTableHooks } from './types'
 import { RowDownloadButton } from './RowDownloadButton'
 
-// Кастомный слайс hooks компонент типизирует через THooks (3-й дженерик)
-export const RowDownloadComponent = memo(
-  ({ row, table }: CellComponentProps<ItemType, unknown, MyTableHooks>) => {
-    const { onDownload } = table.getHooks().rowDownloadAction
+// Кастомный слайс hooks читаем через table.getHooks() с приведением к своему типу
+export const RowDownloadComponent = memo(({ row, table }: CellComponentProps) => {
+  const { onDownload } = (table.getHooks() as MyTableHooks).rowDownloadAction
 
-    return <RowDownloadButton onClick={() => onDownload(row.original.id)} />
-  },
-)
+  return <RowDownloadButton onClick={() => onDownload(row.original.id)} />
+})
 
 RowDownloadComponent.displayName = 'RowDownloadComponent'
 ```
 
-И обязательно типизацию самого плагина:
+Сам плагин дополнительной типизации не требует — это тот же объект `TablePlugin`
+из начала гайда (тип hooks мы уточнили внутри компонента):
 
 ```tsx
 // rowDownloadActionPlugin.tsx
@@ -800,18 +822,16 @@ RowDownloadComponent.displayName = 'RowDownloadComponent'
 import { type TablePlugin } from '@mstrvtt/tessera'
 import { RowDownloadComponent } from './RowDownloadComponent'
 
-// Уточняем типизацию hooks с помощью дженериков
-export const rowDownloadActionPlugin: TablePlugin<ItemType, MyTableHooks> = {
-  createRow: (_, table) => {
-    table.setRenderSlot({
-      // id должен быть уникальным, иначе это может привести к коллизии плагинов
-      id: 'rowDownloadActionPlugin',
-      // Кнопка будет первой по списку (если есть другие кнопки) в конце каждой строки
-      order: 0,
+export const rowDownloadActionPlugin: TablePlugin = {
+  id: 'rowDownloadAction',
+  slots: [
+    {
+      id: 'rowDownloadAction',
       slot: 'actionRowSlot',
+      order: 0,
       component: RowDownloadComponent,
-    })
-  },
+    },
+  ],
 }
 ```
 
@@ -827,37 +847,48 @@ export const rowDownloadActionPlugin: TablePlugin<ItemType, MyTableHooks> = {
 
 `Tessera` позволяет использовать как базовые состояния таблицы, так и расширять их список специфичными состояниями для разных бизнес-кейсов.
 
-Давайте создадим состояние, которое будет хранить `id` скрытых ячеек:
+Давайте создадим состояние, которое будет хранить `id` скрытых ячеек. Опишем его типы в `types.ts`:
+
+```ts
+// types.ts (добавляем к предыдущим типам)
+
+import type { OnChangeFn } from '@tanstack/react-table'
+
+// Кастомное состояние таблицы
+export interface MyTableState {
+  hiddenCells: Record<string, boolean>
+}
+
+// Кастомные хендлеры состояния
+export interface MyTableOptions {
+  onChangeHiddenCells: OnChangeFn<MyTableState['hiddenCells']>
+}
+```
+
+Заведём состояние и передадим его в таблицу:
 
 ```tsx
 // MyTable.tsx
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
   useCreateHooks,
 } from '@mstrvtt/tessera'
-import type { BuiltinPluginsHooks } from '@mstrvtt/tessera/plugins'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+import {
+  rowSelection,
+  rowActions,
+  type RowSelectionPlugin,
+} from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType, MyTableHooks } from './types'
+import { MyTableHooks, MyTableState } from './types'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
 
-// Интерфейс состояния таблицы (из types.ts)
-export interface MyTableState {
-  hiddenCells: Record<string, boolean>
-}
-
-// Интерфейс хендлеров таблицы (из types.ts)
-export interface MyTableOptions {
-  onChangeHiddenCells: OnChangeFn<MyTableState['hiddenCells']>
-}
-
-const hiddenCellsInitialState = {}
+const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
 
 export const Table = () => {
   const fields = useFields()
@@ -870,26 +901,18 @@ export const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<BuiltinPluginsHooks & MyTableHooks>({
+  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
     rowSelection: {
-      onSelectRow: (row: Row<any>, selected: boolean) =>
-        console.info(row.id, selected),
-      onSelectAllRowsOnPage: (selected: boolean) =>
-        console.info('all', selected),
+      onSelectRow: (row, selected) => console.info(row.id, selected),
+      onSelectAllRowsOnPage: selected => console.info('all', selected),
       isAllRowsSelected: false,
     },
     rowDownloadAction: {
-      onDownload: (fileId: string) => console.info('download', fileId),
+      onDownload: fileId => console.info('download', fileId),
     },
   })
 
-  // Уточним дженерики
-  const table = useCreateTable<
-    ItemType,
-    BuiltinPluginsHooks & MyTableHooks,
-    MyTableState,
-    MyTableOptions
-  >({
+  const table = useCreateTable({
     columns,
     data,
     state: {
@@ -906,7 +929,7 @@ export const Table = () => {
     plugins: [
       rowSelection(),
       rowActions({ width: 40 }),
-      { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
+      rowDownloadActionPlugin,
     ],
   })
 
@@ -921,22 +944,17 @@ export const Table = () => {
 
 import { type TablePlugin } from '@mstrvtt/tessera'
 import { CellHiddenComponent } from './CellHiddenComponent'
-import { ItemType, MyTableHooks, MyTableOptions, MyTableState } from './types'
 
-export const cellHiddenActionPlugin: TablePlugin<
-  ItemType,
-  MyTableHooks,
-  MyTableState,
-  MyTableOptions
-> = {
-  createTable: table => {
-    table.setRenderSlot({
-      id: 'cellHiddenActionPlugin',
+export const cellHiddenActionPlugin: TablePlugin = {
+  id: 'cellHiddenAction',
+  slots: [
+    {
+      id: 'cellHiddenAction',
       slot: 'rightCellSlot',
       order: 0,
       component: CellHiddenComponent,
-    })
-  },
+    },
+  ],
 }
 ```
 
@@ -946,40 +964,31 @@ export const cellHiddenActionPlugin: TablePlugin<
 // CellHiddenComponent.tsx
 
 import { memo } from 'react'
-import { CellComponentProps, useSubscribeStore } from '@mstrvtt/tessera'
+import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
 import { CellHiddenButton } from './CellHiddenButton'
-import { ItemType, MyTableHooks, MyTableOptions, MyTableState } from './types'
+import { MyTableOptions, MyTableState } from './types'
 
-export const CellHiddenComponent = memo(
-  ({
-    cell,
+export const CellHiddenComponent = memo(({ cell, table }: CellComponentProps) => {
+  // Точечная подписка на СВОЙ ключ состояния: ре-рендер только при смене признака
+  // именно этой ячейки (кастомные ключи читаем через приведение типа).
+  const isHidden = useTableState(
     table,
-  }: CellComponentProps<
-    ItemType,
-    unknown,
-    MyTableHooks,
-    MyTableState,
-    MyTableOptions
-  >) => {
-    // Подписываем компонент плагина обновляться только тогда, когда меняется его признак из hiddenCells
-    useSubscribeStore(() => [table.getState().hiddenCells[cell.id]])
+    s => (s as unknown as MyTableState).hiddenCells[cell.id],
+  )
+  const { onChangeHiddenCells } = table.options as unknown as MyTableOptions
 
-    const isHidden = table.getState().hiddenCells[cell.id]
-    const { onChangeHiddenCells } = table.options
-
-    return (
-      <CellHiddenButton
-        active={isHidden}
-        onClick={() => {
-          onChangeHiddenCells(prev => ({
-            ...prev,
-            [cell.id]: !prev[cell.id],
-          }))
-        }}
-      />
-    )
-  },
-)
+  return (
+    <CellHiddenButton
+      active={isHidden}
+      onClick={() => {
+        onChangeHiddenCells(prev => ({
+          ...prev,
+          [cell.id]: !prev[cell.id],
+        }))
+      }}
+    />
+  )
+})
 
 CellHiddenComponent.displayName = 'CellHiddenComponent'
 ```
@@ -989,23 +998,26 @@ CellHiddenComponent.displayName = 'CellHiddenComponent'
 ```tsx
 // MyTable.tsx
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
   useCreateHooks,
 } from '@mstrvtt/tessera'
-import type { BuiltinPluginsHooks } from '@mstrvtt/tessera/plugins'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+import {
+  rowSelection,
+  rowActions,
+  type RowSelectionPlugin,
+} from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType, MyTableHooks, MyTableState, MyTableOptions } from './types'
+import { MyTableHooks, MyTableState } from './types'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
 
-const hiddenCellsInitialState = {}
+const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
 
 const Table = () => {
   const fields = useFields()
@@ -1018,25 +1030,18 @@ const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<BuiltinPluginsHooks & MyTableHooks>({
+  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
     rowSelection: {
-      onSelectRow: (row: Row<any>, selected: boolean) =>
-        console.info(row.id, selected),
-      onSelectAllRowsOnPage: (selected: boolean) =>
-        console.info('all', selected),
+      onSelectRow: (row, selected) => console.info(row.id, selected),
+      onSelectAllRowsOnPage: selected => console.info('all', selected),
       isAllRowsSelected: false,
     },
     rowDownloadAction: {
-      onDownload: (fileId: string) => console.info('download', fileId),
+      onDownload: fileId => console.info('download', fileId),
     },
   })
 
-  const table = useCreateTable<
-    ItemType,
-    BuiltinPluginsHooks & MyTableHooks,
-    MyTableState,
-    MyTableOptions
-  >({
+  const table = useCreateTable({
     columns,
     data,
     state: {
@@ -1051,8 +1056,8 @@ const Table = () => {
     plugins: [
       rowSelection(),
       rowActions({ width: 40 }),
-      { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
-      { id: 'cellHiddenAction', feature: cellHiddenActionPlugin },
+      rowDownloadActionPlugin,
+      cellHiddenActionPlugin,
     ],
   })
 
@@ -1066,34 +1071,25 @@ const Table = () => {
 ```tsx
 // Cell.tsx
 
-import { type CellComponentProps, useSubscribeStore } from '@mstrvtt/tessera'
-import { ItemType, MyTableHooks, MyTableState, MyTableOptions } from './types'
+import { memo } from 'react'
+import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
+import { MyTableState } from './types'
 import { getMeta } from './getMeta'
 
-export const Cell = memo(
-  ({
-    cell,
-    row,
-    column,
+export const Cell = memo(({ cell, row, column, table }: CellComponentProps) => {
+  const isHidden = useTableState(
     table,
-  }: CellComponentProps<
-    ItemType,
-    unknown,
-    MyTableHooks,
-    MyTableState,
-    MyTableOptions
-  >) => {
-    useSubscribeStore(() => [table.getState().hiddenCells[cell.id]])
+    s => (s as unknown as MyTableState).hiddenCells[cell.id],
+  )
 
-    if (table.getState().hiddenCells[cell.id]) {
-      return 'Содержимое скрыто'
-    }
+  if (isHidden) {
+    return 'Содержимое скрыто'
+  }
 
-    const { fieldName } = getMeta(column.columnDef.meta)
+  const { name } = getMeta(column.columnDef.meta)
 
-    return row.original[fieldName]
-  },
-)
+  return String(row.original[name] ?? '')
+})
 
 Cell.displayName = 'Cell'
 ```
@@ -1107,25 +1103,17 @@ columnHelper.accessor(row => row[field.name], {
   id: field.id,
   header: field.label,
   cell: Cell,
-  meta: formatMeta(field),
+  meta: setMeta(field),
   size: field.width,
   enableSorting: true,
   enableResizing: true,
 })
 ```
 
-И не забудьте обновить типизацию функции создания колонок:
-
-```tsx
-// useColumns.tsx
-
-const columnHelper = createColumnHelper<
-  ItemType,
-  MyTableHooks,
-  MyTableState,
-  MyTableOptions
->()
-```
+> ⚠️ Дополнительная типизация `createColumnHelper` не нужна — он остаётся
+> `createColumnHelper<any, ItemType>()` из главы «Создание колонок». Кастомные
+> состояние и хуки не проходят через дженерики хелпера: их читают в компонентах через
+> `table.getState()` / `table.getHooks()` (с приведением к своим типам, как выше).
 
 <a name="custom_plugin_example_3" id="custom_plugin_example_3"></a>
 
@@ -1133,145 +1121,94 @@ const columnHelper = createColumnHelper<
 
 Представим, что мы хотим отрисовать еще одну колонку в конце таблицы с кастомным Switch-компонентом.
 
-Для начала давайте создадим ее:
-
-```ts
-// switchActionColumn.ts
-
-import { createColumnHelper } from '@tanstack/react-table'
-
-import { ItemType, MyTableHooks, MyTableState, MyTableOptions } from './types'
-
-const columnHelper = createColumnHelper<
-  ItemType,
-  MyTableHooks,
-  MyTableState,
-  MyTableOptions
->()
-
-export const SWITCH_ACTION_COLUMN_ID = 'switchActionColumn'
-
-export const switchActionColumn = columnHelper.accessor('id', {
-  id: SWITCH_ACTION_COLUMN_ID,
-  minSize: 150,
-  size: 150,
-  header: 'Checked',
-  enablePinning: false,
-  enableSorting: false,
-  enableResizing: false,
-  enableDragging: false,
-})
-```
-
-Далее, добавим ее в массив колонок, которые будут отрисованы в таблице:
-
-```tsx
-// useColumns.tsx
-
-import { switchActionColumn } from './switchActionColumn'
-
-...
-
-const useColumns = ({ fields }: UseColumnsParams) => {
-  const columns = useMemo(
-    () =>
-      fields.map((field: FieldType) => {
-        return columnHelper.accessor(row => row[field.name], {
-          id: field.id,
-          header: field.label,
-          cell: Cell,
-          meta: formatMeta(field),
-          size: field.width,
-          enableSorting: true,
-          enableResizing: true,
-        })
-      }),
-    [fields],
-  )
-
-  return useMemo(
-    () => (columns.length > 0 ? [...columns, switchActionColumn] : []),
-    [columns],
-  )
-}
-```
-
-Теперь, мы можем создать плагин для отрисовки и поведения чекбоксов в этой колонке:
+В v9 плагин может принести **свою колонку** сам — через поле `column` (как это делают
+встроенные `rowSelection` / `rowExpanding`). Отдельно добавлять колонку в `useColumns`
+не нужно.
 
 ```tsx
 // switchActionPlugin.tsx
 
 import { type TablePlugin } from '@mstrvtt/tessera'
-import { SWITCH_ACTION_COLUMN_ID } from './switchActionColumn'
-import { CustomCheckboxComponent } from './CustomCheckboxComponent'
-import { ItemType, MyTableHooks, MyTableOptions, MyTableState } from './types'
+import { SwitchActionComponent } from './SwitchActionComponent'
 
-export const switchActionPlugin: TablePlugin<
-  ItemType,
-  MyTableHooks,
-  MyTableState,
-  MyTableOptions
-> = {
-  createCell: (_staticCell, _staticColumn) => {
-    if (_staticColumn.id !== SWITCH_ACTION_COLUMN_ID) return
+export const SWITCH_ACTION_COLUMN_ID = 'switchActionColumn'
 
-    _staticCell.renderComponent = SwitchActionComponent
+// Сервисная колонка плагина: ставится справа (side: 'trailing'), ячейки рисует
+// SwitchActionComponent. make(depth) строит ColumnDef; для плоской колонки depth не нужен.
+export const switchActionPlugin: TablePlugin = {
+  id: 'switchAction',
+  column: {
+    id: SWITCH_ACTION_COLUMN_ID,
+    side: 'trailing',
+    order: 0,
+    make: () => ({
+      id: SWITCH_ACTION_COLUMN_ID,
+      size: 150,
+      minSize: 150,
+      header: 'Checked',
+      cell: SwitchActionComponent,
+      enablePinning: false,
+      enableSorting: false,
+      enableResizing: false,
+    }),
   },
 }
 ```
+
+Компонент ячейки со Switch (подписку на скрытие значения из прошлого гайда сохраняем):
 
 ```tsx
 // SwitchActionComponent.tsx
 
 import { memo } from 'react'
-import { useSubscribeStore, CellComponentProps } from '@mstrvtt/tessera'
+import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
 import { Switch } from './Switch'
-import { ItemType, MyTableHooks, MyTableState } from './types'
+import { MyTableState } from './types'
 
-export const SwitchActionComponent = memo(
-  ({
-    cell,
+export const SwitchActionComponent = memo(({ cell, table }: CellComponentProps) => {
+  const isHidden = useTableState(
     table,
-  }: CellComponentProps<ItemType, unknown, MyTableHooks, MyTableState>) => {
-    // Не забываем про подписку скрытия значения ячеек из предыдущего плагина!
-    useSubscribeStore(() => [table.getState().hiddenCells[cell.id]])
+    s => (s as unknown as MyTableState).hiddenCells[cell.id],
+  )
 
-    if (table.getState().hiddenCells[cell.id]) {
-      return 'Содержимое скрыто'
-    }
+  if (isHidden) {
+    return 'Содержимое скрыто'
+  }
 
-    return <Switch />
-  },
-)
+  return <Switch />
+})
 
 SwitchActionComponent.displayName = 'SwitchActionComponent'
 ```
 
-Для необходимости, Вы сможете также добавить в этот плагин кастомные хуки и состояния, как мы это делали в предыдущих гайдах.
+При необходимости в этот плагин можно так же добавить кастомные хуки и состояния, как мы это делали в предыдущих гайдах.
 
 Подключим плагин:
 
 ```tsx
 // MyTable.tsx
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
   useCreateHooks,
 } from '@mstrvtt/tessera'
-import type { BuiltinPluginsHooks } from '@mstrvtt/tessera/plugins'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+import {
+  rowSelection,
+  rowActions,
+  type RowSelectionPlugin,
+} from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { ItemType, MyTableHooks, MyTableState, MyTableOptions } from './types'
+import { MyTableHooks, MyTableState } from './types'
 import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
 import { switchActionPlugin } from './switchActionPlugin'
 
-const hiddenCellsInitialState = {}
+const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
 
 const Table = () => {
   const fields = useFields()
@@ -1284,25 +1221,18 @@ const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<BuiltinPluginsHooks & MyTableHooks>({
+  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
     rowSelection: {
-      onSelectRow: (row: Row<any>, selected: boolean) =>
-        console.info(row.id, selected),
-      onSelectAllRowsOnPage: (selected: boolean) =>
-        console.info('all', selected),
+      onSelectRow: (row, selected) => console.info(row.id, selected),
+      onSelectAllRowsOnPage: selected => console.info('all', selected),
       isAllRowsSelected: false,
     },
     rowDownloadAction: {
-      onDownload: (fileId: string) => console.info('download', fileId),
+      onDownload: fileId => console.info('download', fileId),
     },
   })
 
-  const table = useCreateTable<
-    ItemType,
-    BuiltinPluginsHooks & MyTableHooks,
-    MyTableState,
-    MyTableOptions
-  >({
+  const table = useCreateTable({
     columns,
     data,
     state: {
@@ -1317,9 +1247,9 @@ const Table = () => {
     plugins: [
       rowSelection(),
       rowActions({ width: 40 }),
-      { id: 'rowDownloadAction', feature: rowDownloadActionPlugin },
-      { id: 'cellHiddenAction', feature: cellHiddenActionPlugin },
-      { id: 'switchAction', feature: switchActionPlugin },
+      rowDownloadActionPlugin,
+      cellHiddenActionPlugin,
+      switchActionPlugin,
     ],
   })
 
