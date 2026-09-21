@@ -302,7 +302,7 @@ export const StoryComponent = memo(
           id: 'demoHooks',
           // Пустой slot — запись не несёт фич, только hook-слайс (сохраняет вывод
           // типа набора фич при слиянии слотов).
-          slot: {},
+          features: {},
           hooks: {
             rowSelection: {
               onSelectRow: onSelectRow ?? ((): null => null),

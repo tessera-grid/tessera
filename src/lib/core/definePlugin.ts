@@ -138,7 +138,7 @@ export const definePlugin =
       }
 
       if (config.features) {
-        entry.slot = config.features
+        entry.features = config.features
       }
       if (config.options) {
         entry.options = config.options(opts)

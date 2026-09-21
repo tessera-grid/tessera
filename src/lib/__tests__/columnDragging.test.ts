@@ -13,7 +13,7 @@ const makeTable = (columns: any[]) => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     columnDragging(),
   ]

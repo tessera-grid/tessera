@@ -27,11 +27,11 @@ const makeTable = () => {
   const features = buildTesseraFeatures([
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     {
       id: 'columnSorting',
-      slot: {
+      features: {
         rowSortingFeature,
         sortedRowModel: createSortedRowModel(),
         sortFns: { alphanumeric: sortFn_alphanumeric },

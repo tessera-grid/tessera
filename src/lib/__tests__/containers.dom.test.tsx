@@ -33,7 +33,7 @@ const makeTable = () => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     columnSizing(),
   ]

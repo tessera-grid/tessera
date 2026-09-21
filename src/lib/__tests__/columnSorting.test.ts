@@ -25,7 +25,7 @@ const makeTable = (onToggleColumnSort = vi.fn()) => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     columnSorting(),
   ]

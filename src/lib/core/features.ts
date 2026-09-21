@@ -35,17 +35,17 @@ import {
 
 /**
  * Запись фичи Tessera (v9-аналог RegistryEntry, ADR 0010): фрагмент карты фич +
- * табличные опции + декларативные слоты/действия/меню. `slot` идёт в
+ * табличные опции + декларативные слоты/действия/меню. `features` идёт в
  * `tableFeatures()`; остальное сворачивается в опции таблицы (`foldEntries`).
  */
-export interface TesseraFeatureEntry<TSlot extends object = object> {
+export interface TesseraFeatureEntry<TFeatures extends object = object> {
   id: string
   /**
    * Фрагмент для `tableFeatures({...})`, напр. `{ rowSortingFeature, sortedRowModel,
    * sortFns }`. Опционален: запись может нести только декларативные действия/меню
    * (slotActions/actionMenu) без собственной фичи.
    */
-  slot?: TSlot
+  features?: TFeatures
   /** Наличие = включено (как `enabled` в текущем RegistryEntry). */
   enabled?: boolean
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
@@ -159,9 +159,8 @@ type UnionToIntersection<U> = (
   ? I
   : never
 
-type MergeSlots<T extends readonly TesseraFeatureEntry[]> = UnionToIntersection<
-  T[number]['slot']
->
+type MergeFeatures<T extends readonly TesseraFeatureEntry[]> =
+  UnionToIntersection<T[number]['features']>
 
 /**
  * Тип набора фич: always-on `commonFeature` + `columnOrderingFeature` (порядок/
@@ -175,7 +174,7 @@ export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   columnPinningFeature: typeof columnPinningFeature
   columnSizingFeature: typeof columnSizingFeature
   columnGroupingFeature: typeof columnGroupingFeature
-} & MergeSlots<T>
+} & MergeFeatures<T>
 
 /**
  * Собрать набор фич из записей. Отсеивает `enabled: false`, вклеивает always-on
@@ -201,7 +200,7 @@ export const buildTesseraFeatures = <
   // фичу всегда (как v8 keepFeatureWhenDisabled), а поведение гейтим опцией
   // (enable*:false у отключённого плагина — foldEntries эмитит её от всех записей).
   for (const entry of entries) {
-    Object.assign(merged, entry.slot)
+    Object.assign(merged, entry.features)
   }
 
   return tableFeatures(merged as never) as TesseraFeatures<T>

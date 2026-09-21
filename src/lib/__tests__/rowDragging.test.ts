@@ -17,7 +17,7 @@ const build = (extraEntries: any[], dragOpts = {}) => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     ...extraEntries,
     rowDragging(dragOpts),

@@ -18,7 +18,7 @@ const build = (entries: any[], userCols: any[]) => {
   const all = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     ...entries,
   ]

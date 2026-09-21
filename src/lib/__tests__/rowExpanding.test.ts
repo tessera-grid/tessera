@@ -20,7 +20,7 @@ const makeTable = (opts = {}) => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     rowExpanding(opts),
   ]

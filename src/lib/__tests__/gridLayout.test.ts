@@ -15,7 +15,7 @@ const makeTable = (withRowActions: boolean) => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     ...(withRowActions ? [rowActions()] : []),
   ]

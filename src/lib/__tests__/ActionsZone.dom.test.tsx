@@ -26,7 +26,7 @@ const makeTable = (extra: any[] = []) => {
   const entries = [
     {
       id: 'reactivity',
-      slot: { coreReactivityFeature: storeReactivityBindings() },
+      features: { coreReactivityFeature: storeReactivityBindings() },
     },
     columnSorting(),
     columnPinning(),
