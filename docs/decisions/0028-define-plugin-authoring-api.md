@@ -438,21 +438,26 @@ collision-prone ключ.
 - `definePlugin` **аддитивен**: цель компиляции — та же `TesseraFeatureEntry`, ручная
   форма записи остаётся валидной. Публичного слома для потребителя нет — сигнатуры
   плагинов те же.
-- **Прототип — `rowSelection` на `definePlugin` (сделано).** `definePlugin`
-  ([definePlugin.ts](../../src/lib/core/definePlugin.ts)) — каррированный (DP12); реестр
-  на нём; компоненты (`RowSelectionComponent`/`HeadSelectionComponent`) — на
-  `PluginCellProps`/`PluginHeaderProps` вместо кастов (`table.getHooks() as …`,
-  `table.atoms.… as never`); нативный срез — через `useSlice`. `rowSelection` рендерится
-  **сервисной колонкой**, поэтому `hooks` инъектируются на её `header`/`cell` через
-  `readPluginHooks` (у слот-плагинов инъекцию даёт авто-обёртка `definePlugin`).
-- **Границы прототипа (пока не по ADR, осознанно).** Скоуп хуков — по `id`, не по
-  Symbol-токену (переиспользуем существующий `getHooks`/`foldHooks`); каналы
-  `state`/`options` в `PluginCellProps` не реализованы (у `rowSelection` их нет — идут с
-  плагином на локальном состоянии); поле записи пока `slot`, а не `features` (алиас-период
-  DP10). Проверено: `tsc`, node-тесты `rowSelection`/`plugin-hooks`, lint — зелёные.
-- Затем — канал `state`/`options` (плагин с локальным состоянием), остальные плагины;
-  Symbol-токен; переименование `slot→features` (с алиасом); дев-варн на коллизию ключей
-  общего состояния; раздел README «Как написать свой плагин».
+- **Раскатано на все 11 плагинов (сделано).** `definePlugin`
+  ([definePlugin.ts](../../src/lib/core/definePlugin.ts)) — каррированный (DP12), поля
+  `options`/`hooks`/`features`/`column`/`slots`/`slotActions`/`actionMenu`/`setup`; все
+  реестры и плагины-меню на нём (ушла ручная раскладка hook-слайса, `satisfies`,
+  boilerplate). row-модели создаются один раз (мемо per-table в v9).
+- **Чтение хуков — без кастов (сделано).** Компоненты, читающие хуки
+  (`RowSelectionComponent`/`HeadSelection`, `ColumnSizingComponent`,
+  `RowExpandingComponent`), — на `PluginCellProps`/`PluginHeaderProps`; hooks приходят
+  пропсом через `injectCellHooks`/`injectHeaderHooks` (на колонке или слоте); нативный срез
+  — через `useSlice`. Дескрипторы действий (`sortHeaderAction`/`pinHeaderAction`) и
+  императивные dnd-события (`getColumnDraggingEvents`) — не компоненты, читают свой слайс
+  типизированным `readPluginHooks<XHooks>(table, 'x')`. В `src` не осталось ни `getHooks() as`,
+  ни `atoms … as never`; публичный контракт хуков — единообразно интерфейсы `*Hooks` (Record-типы
+  `*Plugin` удалены).
+- **Остаётся (пока не по ADR, осознанно).** Скоуп хуков — по `id`, не по Symbol-токену
+  (переиспользуем существующий `getHooks`/`foldHooks`); каналы `state`/`options` в
+  `PluginCellProps` не реализованы (нужен плагин с локальным состоянием); поле записи пока
+  `slot`, а не `features` (алиас-период DP10); дев-варн на коллизию ключей общего состояния
+  (DP5); раздел README «Как написать свой плагин». Проверено на каждом шаге: `tsc`, node-набор
+  (97), `eslint`, `prettier` — зелёные.
 
 ## Рассмотренные альтернативы
 
