@@ -34,6 +34,19 @@ export type {
   CellComponentProps,
 } from './lib/core/createSlots'
 
+// Авторский API плагина (ADR 0028): definePlugin + инъекторы каналов (hooks/state) +
+// типы пропсов компонентов. Каналы приходят в компонент пропсами, без кастов.
+export {
+  definePlugin,
+  readPluginHooks,
+  injectCellHooks,
+  injectHeaderHooks,
+  injectCellState,
+  type PluginCellProps,
+  type PluginHeaderProps,
+  type PluginCellStateProps,
+} from './lib/core/definePlugin'
+
 // Единый дескриптор действия слота (кебаб-меню): плагины объявляют действия
 // данными, ядро решает подачу (инлайн-кнопка или строка меню). `SlotAction<TCtx>`
 // — обобщённый дескриптор; `HeaderAction`/`RowAction` — псевдонимы под контекст.
