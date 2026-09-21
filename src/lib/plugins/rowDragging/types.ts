@@ -20,16 +20,9 @@ export interface RowDraggingState {
   rowDragging: RowDragOverlayState
 }
 
-export type RowDraggingPluginScope = 'rowDragging'
-
-export interface RowDraggingPluginParams {
+export interface RowDraggingHooks {
   onRowDragEnd: (props: { dragIndex: number; hoverIndex: number }) => void
 }
-
-export type RowDraggingPlugin = Record<
-  RowDraggingPluginScope,
-  RowDraggingPluginParams
->
 
 export interface RowSortableData {
   virtualIndex: number

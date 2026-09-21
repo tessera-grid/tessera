@@ -13,7 +13,8 @@ import { Bubble } from '../../ui/Bubble'
 import { useIcons } from '../../ui/icons'
 import type { HeaderAction, HeaderMenuItem } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
-import type { ColumnSortingPlugin } from './types'
+import { readPluginHooks } from '../../core/definePlugin'
+import type { ColumnSortingHooks } from './types'
 
 import styles from '../../plugins/columnSorting/SortButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -45,11 +46,6 @@ const getMultiSortPosition = ({
 
   return total > 1 && index >= 0 ? { position: index + 1, total } : null
 }
-
-/** Хуки плагина из общего контракта хуков таблицы. */
-const sortingHooks = (
-  table: HeaderComponentProps['table'],
-): ColumnSortingPlugin => table.getHooks() as ColumnSortingPlugin
 
 /** Тултип (без приоритета): по СЛЕДУЮЩЕЙ операции. */
 const getTitle = (
@@ -111,14 +107,20 @@ export const sortHeaderAction: HeaderAction = {
     )
   },
   onSelect: ({ column, table }, event?: MouseEvent<HTMLButtonElement>) => {
-    const { onToggleColumnSort } = sortingHooks(table).columnSorting
+    const { onToggleColumnSort } = readPluginHooks<ColumnSortingHooks>(
+      table,
+      'columnSorting',
+    )
     const next = column.getNextSortingOrder()
 
     column.getToggleSortingHandler()?.(event)
     onToggleColumnSort(column.id, next)
   },
   menuItems: ({ column, table }, labels): HeaderMenuItem[] => {
-    const { onToggleColumnSort } = sortingHooks(table).columnSorting
+    const { onToggleColumnSort } = readPluginHooks<ColumnSortingHooks>(
+      table,
+      'columnSorting',
+    )
     const current = column.getIsSorted()
 
     const setDirection = (desc: boolean, dir: 'asc' | 'desc') => {

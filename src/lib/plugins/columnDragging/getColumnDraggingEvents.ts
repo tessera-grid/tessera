@@ -5,7 +5,8 @@
  */
 import { arrayMove } from '@dnd-kit/sortable'
 
-import type { ColumnDraggingPlugin, DragOverlayState } from './types'
+import { readPluginHooks } from '../../core/definePlugin'
+import type { ColumnDraggingHooks, DragOverlayState } from './types'
 
 // Табличный контракт, нужный редьюсеру (v9-методы + кастомные из columnDraggingFeature).
 // Изменения стейта — через МЕТОДЫ таблицы (setColumnDraggingActiveId/setColumnOrder):
@@ -14,7 +15,7 @@ type DndTable = {
   setColumnDraggingActiveId: (value: DragOverlayState) => void
   setColumnOrder: (updater: (prev: string[]) => string[]) => void
   atoms: { columnDraggingActiveId: { get: () => DragOverlayState } }
-  getHooks: () => ColumnDraggingPlugin
+  getHooks: () => unknown
   getFlatHeaders: () => {
     id: string
     column: {
@@ -29,7 +30,10 @@ type DndTable = {
 }
 
 export const getColumnDraggingEvents = (table: DndTable) => {
-  const { onColumnDragEnd } = table.getHooks().columnDragging
+  const { onColumnDragEnd } = readPluginHooks<ColumnDraggingHooks>(
+    table,
+    'columnDragging',
+  )
 
   return {
     onColumnDragStart: (event: { active: { id: DragOverlayState } }) => {

@@ -8,7 +8,7 @@ import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
 import { COLUMN_DRAGGING_ID, getRowDraggingColumn } from './rowDraggingColumn'
 import { rowDraggingFeature } from './rowDraggingFeature'
-import type { RowDraggingPluginParams } from './types'
+import type { RowDraggingHooks } from './types'
 
 export interface RowDraggingOptions {
   /** `false` — плагин отключён. */
@@ -16,7 +16,7 @@ export interface RowDraggingOptions {
   /** Разрешить перетаскивание строк: булево или предикат по строке. */
   enable?: boolean | ((row: Row<any, any>) => boolean)
   /** Бизнес-колбэк окончания переноса строки (аргумент фабрики, ADR 0027). */
-  onRowDragEnd?: RowDraggingPluginParams['onRowDragEnd']
+  onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
 }
 
 export const rowDragging = definePlugin<RowDraggingOptions>()({

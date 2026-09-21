@@ -28,10 +28,10 @@ export {
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 
 // Контракт хуков для потребителя (types-mode b, ADR 0010): слайсы как примитивы.
-export type { ColumnDraggingPlugin } from './columnDragging/types'
-export type { ColumnPinningPlugin } from './columnPinning/types'
+export type { ColumnDraggingHooks } from './columnDragging/types'
+export type { ColumnPinningHooks } from './columnPinning/types'
 export type { ColumnSizingHooks } from './columnSizing/types'
-export type { ColumnSortingPlugin } from './columnSorting/types'
-export type { RowDraggingPlugin } from './rowDragging/types'
+export type { ColumnSortingHooks } from './columnSorting/types'
+export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'

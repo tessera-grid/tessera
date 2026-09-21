@@ -16,7 +16,7 @@ import {
 
 import { definePlugin } from '../../core/definePlugin'
 import { sortHeaderAction } from './sortHeaderAction'
-import type { ColumnSortingPluginParams } from './types'
+import type { ColumnSortingHooks } from './types'
 
 /** Тонкая настройка мультисортировки. */
 export interface ColumnMultiSortOptions {
@@ -39,7 +39,7 @@ export interface ColumnSortingOptions {
   /** Мультисортировка: `true`/`undefined` — Shift+клик; `false` — выкл; объект — тонко. */
   multiSort?: boolean | ColumnMultiSortOptions
   /** Бизнес-колбэк сортировки (аргумент фабрики, ADR 0027); читается живо. */
-  onToggleColumnSort?: ColumnSortingPluginParams['onToggleColumnSort']
+  onToggleColumnSort?: ColumnSortingHooks['onToggleColumnSort']
 }
 
 /** Стандартный набор функций сортировки. */

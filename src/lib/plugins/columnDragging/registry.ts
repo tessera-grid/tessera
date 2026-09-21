@@ -9,13 +9,13 @@ import { columnOrderingFeature } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { columnDraggingFeature } from './columnDraggingFeature'
-import type { ColumnDraggingPluginParams } from './types'
+import type { ColumnDraggingHooks } from './types'
 
 export interface ColumnDraggingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /** Бизнес-колбэк окончания переноса колонки (аргумент фабрики, ADR 0027). */
-  onColumnDragEnd?: ColumnDraggingPluginParams['onColumnDragEnd']
+  onColumnDragEnd?: ColumnDraggingHooks['onColumnDragEnd']
 }
 
 export const columnDragging = definePlugin<ColumnDraggingOptions>()({

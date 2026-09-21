@@ -5,8 +5,7 @@ export { ColumnDraggingComponent } from './ColumnDraggingComponent'
 export { getColumnDraggingEvents } from './getColumnDraggingEvents'
 
 export type {
-  ColumnDraggingPlugin,
-  ColumnDraggingPluginParams,
+  ColumnDraggingHooks,
   ColumnDraggingState,
   DragOverlayState,
 } from './types'

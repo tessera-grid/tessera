@@ -11,7 +11,8 @@ import type { Column } from '../../types'
 import type { HeaderAction, HeaderMenuItem } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
-import type { ColumnPinningPlugin, PinSides } from './types'
+import { readPluginHooks } from '../../core/definePlugin'
+import type { ColumnPinningHooks, PinSides } from './types'
 
 import styles from '../../plugins/columnPinning/PinButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -86,10 +87,6 @@ const PinActionIcon = () => {
   return <PinIcon width={16} height={16} />
 }
 
-const pinningHooks = (
-  table: HeaderComponentProps['table'],
-): ColumnPinningPlugin => table.getHooks() as ColumnPinningPlugin
-
 /**
  * Переключение закрепления сегмента на сторону `side` (тумблер). Штатный путь —
  * `column.pin`; reorder-out точечно двигает листья сегмента и переупорядочивает
@@ -101,7 +98,10 @@ const togglePin = (ctx: HeaderComponentProps, side: PinSide) => {
   const currentSide = getSegmentPinnedSide(segmentLeafColumns)
   const nextPinned: PinSide | false = currentSide === side ? false : side
 
-  const { onTogglePin } = pinningHooks(table).columnPinning
+  const { onTogglePin } = readPluginHooks<ColumnPinningHooks>(
+    table,
+    'columnPinning',
+  )
 
   if (!isLeafPinningEnabled(table)) {
     ctx.column.pin(nextPinned)

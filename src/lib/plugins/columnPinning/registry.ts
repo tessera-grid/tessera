@@ -9,7 +9,7 @@ import { columnPinningFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { pinHeaderAction } from './pinHeaderAction'
-import type { ColumnPinningPluginParams } from './types'
+import type { ColumnPinningHooks } from './types'
 
 export interface ColumnPinningOptions {
   /** `false` — плагин отключён. */
@@ -17,7 +17,7 @@ export interface ColumnPinningOptions {
   /** Режим reorder-out: закрепление любой единицы под вложенной шапкой (ADR 0011). */
   leafPinning?: boolean
   /** Бизнес-колбэк закрепления (аргумент фабрики, ADR 0027); читается живо. */
-  onTogglePin?: ColumnPinningPluginParams['onTogglePin']
+  onTogglePin?: ColumnPinningHooks['onTogglePin']
 }
 
 export const columnPinning = definePlugin<ColumnPinningOptions>()({

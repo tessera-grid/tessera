@@ -7,13 +7,6 @@ export interface ColumnDraggingState {
   columnDraggingActiveId: DragOverlayState
 }
 
-export type ColumnDraggingPluginScope = 'columnDragging'
-
-export interface ColumnDraggingPluginParams {
+export interface ColumnDraggingHooks {
   onColumnDragEnd: (props: { dragIndex: number; hoverIndex: number }) => void
 }
-
-export type ColumnDraggingPlugin = Record<
-  ColumnDraggingPluginScope,
-  ColumnDraggingPluginParams
->

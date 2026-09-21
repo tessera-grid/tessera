@@ -1,14 +1,7 @@
 /** Hook-слайс плагина columnPinning + стороны закрепления. */
-export type ColumnPinningPluginScope = 'columnPinning'
-
-export interface ColumnPinningPluginParams {
+export interface ColumnPinningHooks {
   onTogglePin: (pinned: boolean) => void
 }
-
-export type ColumnPinningPlugin = Record<
-  ColumnPinningPluginScope,
-  ColumnPinningPluginParams
->
 
 /**
  * Разрешённые стороны закрепления столбца в UI. `both` — обе (инлайн даёт поповер

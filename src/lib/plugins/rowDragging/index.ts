@@ -10,8 +10,7 @@ export { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 export { animateLayoutChanges } from './animationHelpers'
 
 export type {
-  RowDraggingPlugin,
-  RowDraggingPluginParams,
+  RowDraggingHooks,
   RowDraggingState,
   RowDragOverlayState,
 } from './types'

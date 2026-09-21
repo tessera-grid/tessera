@@ -1,13 +1,6 @@
 /** Hook-слайс плагина columnSorting. */
 import type { SortDirection } from '@tanstack/react-table'
 
-export type ColumnSortingPluginScope = 'columnSorting'
-
-export interface ColumnSortingPluginParams {
+export interface ColumnSortingHooks {
   onToggleColumnSort: (id: string, sortDirection: SortDirection | false) => void
 }
-
-export type ColumnSortingPlugin = Record<
-  ColumnSortingPluginScope,
-  ColumnSortingPluginParams
->
