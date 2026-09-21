@@ -34,7 +34,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0025](0025-row-actions.md)                          | Действия строки: плагин rowActions (RA1–RA2 + перекрёстные R/CP/AM/LP)                                            | Принято    |
 | [0026](0026-migrate-to-tanstack-v9.md)               | Миграция на TanStack Table v9 (V9-1–V9-3); отменяет ADR 0007                                                      | Принято    |
 | [0027](0027-plugin-hooks-in-factory-args.md)         | Бизнес-хуки в аргументах фабрики плагина (H1–H6, все 7 плагинов); верхний `hooks` удалён                          | Принято    |
-| [0028](0028-define-plugin-authoring-api.md)          | `definePlugin`: эргономичный API написания плагина (DP1–DP11); типобезопасные `PluginCellProps`, инъекция пропсов | Предложено |
+| [0028](0028-define-plugin-authoring-api.md)          | `definePlugin`: эргономичный API написания плагина (DP1–DP12); типобезопасные `PluginCellProps`, инъекция пропсов | Предложено |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

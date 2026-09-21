@@ -96,12 +96,13 @@ function FavoriteCell({
   // ...
 }
 
-export const rowFavorite = definePlugin({
+// TOptions (FavoriteOptions) задаётся ОДИН раз — явным дженериком; o в полях выводится.
+export const rowFavorite = definePlugin<FavoriteOptions>()({
   id: 'rowFavorite', // debug-лейбл; identity локального скоупа — токен (внутр.)
-  options: (o: FavoriteOptions): FavoriteResolvedOptions => ({
+  options: (o): FavoriteResolvedOptions => ({
     maxFavorites: o.maxFavorites ?? Infinity,
   }),
-  hooks: (o: FavoriteOptions): FavoriteHooks => ({
+  hooks: (o): FavoriteHooks => ({
     onToggleFavorite: o.onToggleFavorite ?? (() => {}),
   }),
   // ЛОКАЛЬНЫЙ слайс: только ДЕФОЛТ (тип из аннотации возврата, без каста).
@@ -156,15 +157,17 @@ type SlotDecl<TProps> = {
   component: (props: TProps) => ReactNode
 }
 
-export function definePlugin<TOptions, TResolved, THooks, TState>(config: {
+// TOptions — явным дженериком ОДИН раз (каррированная форма); TResolved/THooks/TState
+// выводятся из деклараций конфига. `o` в options/hooks выводится как TOptions.
+export function definePlugin<TOptions>(): <TResolved, THooks, TState>(config: {
   id: string
-  options: (o: TOptions) => TResolved
+  options: (o: TOptions) => TResolved // o = TOptions по инференсу — без повторной аннотации
   hooks: (o: TOptions) => THooks
   state: () => TState
   // компонент констрейнится ВЫВЕДЕННЫМИ типами плагина (hooks-first):
   slots: SlotDecl<PluginCellProps<THooks, TState, TResolved>>[]
   // ...features/column/setup
-}): (opts?: TOptions) => TesseraFeatureEntry
+}) => (opts?: TOptions) => TesseraFeatureEntry
 ```
 
 Что это гарантирует:
@@ -225,8 +228,11 @@ export const RowSelectionComponent = ({ row, table }: CellComponentProps) => {
 // СТАЛО: тот же компонент под definePlugin.
 // rowSelection использует ТОЛЬКО hooks (локального state нет, опции компонент не читает) →
 // один аргумент; state/options берут дефолт от таблицы, ничего выдумывать не нужно.
-type SelectionCellProps = PluginCellProps<RowSelectionHooks>
-const RowSelectionComponent = ({ row, table, hooks }: SelectionCellProps) => {
+const RowSelectionComponent = ({
+  row,
+  table,
+  hooks,
+}: PluginCellProps<RowSelectionHooks>) => {
   useSlice(table, 'rowSelection') // ← нативный слайс через table, типизировано, без каста
   const { isAllRowsSelected, onSelectRow } = hooks // ← пропс, типизировано, без каста
   // ...
@@ -261,19 +267,19 @@ export const rowSelection = (opts: RowSelectionOptions = {}) => {
   }>
 }
 
-// СТАЛО: definePlugin
-export const rowSelection = definePlugin({
+// СТАЛО: definePlugin (TOptions задан ОДИН раз дженериком; o в полях выводится)
+export const rowSelection = definePlugin<RowSelectionOptions>()({
   id: 'rowSelection',
   features: { rowSelectionFeature }, // фрагмент стоковой фичи v9
-  options: (o: RowSelectionOptions) => ({
+  options: o => ({
     enableRowSelection: o.enabled === false ? false : enableRowSelection,
     enableSubRowSelection: o.subRows ?? false,
     enableRowRangeSelection: false,
   }),
-  hooks: (o: RowSelectionOptions): RowSelectionHooks => ({
-    onSelectRow: o.onSelectRow ?? (() => {}),
-    onSelectAllRowsOnPage: o.onSelectAllRowsOnPage ?? (() => {}),
-    isAllRowsSelected: o.isAllRowsSelected ?? false,
+  hooks: o => ({
+    onSelectRow: o.onSelectRow,
+    onSelectAllRowsOnPage: o.onSelectAllRowsOnPage,
+    isAllRowsSelected: o.isAllRowsSelected, // undefined-ключи отбросит definePlugin
   }),
   column: {/* … */},
 })
@@ -399,10 +405,12 @@ collision-prone ключ.
   аугментации, ни коллизий. Общее состояние/хендлеры
   читают **все** плагины, поэтому объявляются **глобально** (`TableState`/`TableOptions`
   через declaration merging) — как встроенные слайсы TanStack.
-- Один входной тип на плагин (`TOptions`); read-типы (`state`-value, резолвнутые `options`,
-  `hooks`) **выводятся** из возвратов деклараций. Расширение = дописать поле, места чтения
-  перетипизируются сами. Явные дженерики (`definePlugin<TOptions, TResolved, THooks, TState>`)
-  — опционально, чтобы запиннить типы.
+- Один входной тип на плагин (`TOptions`) — задаётся **один раз явным дженериком**
+  (`definePlugin<TOptions>()(...)`, каррированная форма): `o` в `options`/`hooks` выводится
+  как `TOptions`, повторная аннотация полей не нужна. TS не выводит общий входной тип из
+  нескольких соседних полей-функций — отсюда явный дженерик (не декоративный, а несущий).
+  Read-типы (резолвнутые `options`, `hooks`, `state`-value) **выводятся** из возвратов
+  деклараций; расширение = дописать поле, места чтения перетипизируются сами.
 - **Начальное состояние типобезопасно — проверяется, а не кастуется.** Тип слайса задаётся
   **аннотацией возврата** `state(): S` (или дженериком), поэтому `{}`-seed **валидируется**
   против `S`, а не утверждается. Каст `{} as Record<…>` — анти-паттерн (маскирует опечатку в
@@ -412,7 +420,7 @@ collision-prone ключ.
 
 | ID     | Требование                                                                                                                                                                                                                                                                                        | Тест                                            |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `DP1`  | `definePlugin(def)` возвращает фабрику `(opts?) => TesseraFeatureEntry`; произведённая запись по форме идентична ручной (сахар, без нового рантайм-пути)                                                                                                                                          | headless                                        |
+| `DP1`  | `definePlugin<TOptions>()(def)` возвращает фабрику `(opts?) => TesseraFeatureEntry`; произведённая запись по форме идентична ручной (сахар, без нового рантайм-пути)                                                                                                                              | headless                                        |
 | `DP2`  | Граница «мемо/живо» фиксирована по полю: `options`/`state`/`features`/`column`/`slots`/`setup` — стабильны; `hooks` — живо                                                                                                                                                                        | headless (живость `hooks`, заморозка `options`) |
 | `DP3`  | `hooks`-слайс: `undefined`-ключи отбрасываются; namespace = токен проставляется автоматически                                                                                                                                                                                                     | headless                                        |
 | `DP4`  | Локальные каналы неймспейсятся токеном → пропс отдаёт свой слайс без коллизий; при этом `getHooks`/`getState` остаются публичными общими аксессорами (изоляция хуков — не цель); приватен только локальный `state` (токен-атом, не в `getState`)                                                  | headless                                        |
@@ -423,19 +431,28 @@ collision-prone ключ.
 | `DP9`  | Локальный канал (`state`/`options`/`hooks`) приходит в слот-компонент **пропсом** (без импорта плагина и без кастов); запись слайса — одним сеттером из пары `state`                                                                                                                              | DOM/visual                                      |
 | `DP10` | Поле фич записи переименовано `slot` → `features` (алиас `slot` сохранён на переходный период)                                                                                                                                                                                                    | headless/`tsc`                                  |
 | `DP11` | Локальные `state`/`hooks` типизированы **только** для слот-компонентов плагина (без глоб. аугментации); общее состояние типизируется глобально (`TableState`/`TableOptions`)                                                                                                                      | type-level (`tsc`/expect-type)                  |
+| `DP12` | Входной тип `TOptions` задаётся **один раз** явным дженериком (каррированная форма `definePlugin<TOptions>()(...)`); `o` в `options`/`hooks` выводится как `TOptions` без повторной аннотации; `features`/резолв-`options`/`hooks`/`state` выводятся из конфига                                   | type-level (`tsc`/expect-type)                  |
 
 ## Совместимость и миграция
 
 - `definePlugin` **аддитивен**: цель компиляции — та же `TesseraFeatureEntry`, ручная
   форма записи остаётся валидной. Публичного слома для потребителя нет — сигнатуры
   плагинов те же.
-- Прототип — `rowSelection` на `definePlugin`: слот-компоненты (`RowSelectionComponent`,
-  `HeadSelectionComponent`) переводятся на `PluginCellProps`/`PluginHeaderProps` вместо
-  кастов `table.getHooks() as …` / `table.atoms.… as never`; проверяется, что **общее**
-  controlled-состояние выбора через `useCreateTable` продолжает работать.
-- Затем — остальные плагины; переименование `slot→features` (с алиасом); дев-варн на
-  коллизию ключей общего состояния; раздел README «Как написать свой плагин» (с разбором
-  общее vs локальное состояние и обязательной типизацией слотов).
+- **Прототип — `rowSelection` на `definePlugin` (сделано).** `definePlugin`
+  ([definePlugin.ts](../../src/lib/core/definePlugin.ts)) — каррированный (DP12); реестр
+  на нём; компоненты (`RowSelectionComponent`/`HeadSelectionComponent`) — на
+  `PluginCellProps`/`PluginHeaderProps` вместо кастов (`table.getHooks() as …`,
+  `table.atoms.… as never`); нативный срез — через `useSlice`. `rowSelection` рендерится
+  **сервисной колонкой**, поэтому `hooks` инъектируются на её `header`/`cell` через
+  `readPluginHooks` (у слот-плагинов инъекцию даёт авто-обёртка `definePlugin`).
+- **Границы прототипа (пока не по ADR, осознанно).** Скоуп хуков — по `id`, не по
+  Symbol-токену (переиспользуем существующий `getHooks`/`foldHooks`); каналы
+  `state`/`options` в `PluginCellProps` не реализованы (у `rowSelection` их нет — идут с
+  плагином на локальном состоянии); поле записи пока `slot`, а не `features` (алиас-период
+  DP10). Проверено: `tsc`, node-тесты `rowSelection`/`plugin-hooks`, lint — зелёные.
+- Затем — канал `state`/`options` (плагин с локальным состоянием), остальные плагины;
+  Symbol-токен; переименование `slot→features` (с алиасом); дев-варн на коллизию ключей
+  общего состояния; раздел README «Как написать свой плагин».
 
 ## Рассмотренные альтернативы
 

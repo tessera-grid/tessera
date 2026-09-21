@@ -25,7 +25,7 @@ import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
 import { RowExpandingPluginParams } from '../../lib/plugins/rowExpanding'
-import { RowSelectionPluginParams } from '../../lib/plugins/rowSelection'
+import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { FeatureToggles, argsToPlugins } from './__mocks__/utils/argsToPlugins'
 import { usePagination } from './__mocks__/usePagination'
@@ -142,8 +142,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * вызов hook при переключении строки и «выбрать все на странице» (см. ADR
    * 0014, RS6/RS11); в обычных историях не задаются (дефолт — no-op).
    */
-  onSelectRow?: RowSelectionPluginParams['onSelectRow']
-  onSelectAllRowsOnPage?: RowSelectionPluginParams['onSelectAllRowsOnPage']
+  onSelectRow?: RowSelectionHooks['onSelectRow']
+  onSelectAllRowsOnPage?: RowSelectionHooks['onSelectAllRowsOnPage']
 
   /**
    * Проброс hook раскрытия строки (`rowExpanding.onExpandRow`) наружу. Нужен

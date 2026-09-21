@@ -1,33 +1,30 @@
 /**
- * «Выбрать все» в шапке колонки выбора. Реактивность
- * `useSelector(table.atoms.rowSelection)`; группировка/«можно выбрать» — через
+ * «Выбрать все» в шапке колонки выбора. Реактивность на срезе `rowSelection`
+ * (`useSlice`); бизнес-колбэки — из пропса `hooks`; группировка/«можно выбрать» —
  * хелперы. Индетерминантность = some && !all: getIsSomePageRowsSelected возвращает
  * true и когда выбраны ВСЕ, поэтому исключаем all явно.
  */
-import { useSelector } from '@tanstack/react-store'
-
-import type { HeaderComponentProps } from '../../core/createSlots'
+import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
+import { useSlice } from '../../core/reactivity'
 import { SelectCheckbox } from '../../plugins/rowSelection/SelectCheckbox'
 import { getCanSomeRowsSelect, isGroupingActive } from './selectionHelpers'
-import type { RowSelectionPlugin } from './types'
+import type { RowSelectionHooks } from './types'
 
-export const HeadSelectionComponent = ({ table }: HeaderComponentProps) => {
+export const HeadSelectionComponent = ({
+  table,
+  hooks,
+}: PluginHeaderProps<RowSelectionHooks>) => {
   const labels = useLocalization()
 
-  useSelector(
-    (table as unknown as { atoms: { rowSelection: unknown } }).atoms
-      .rowSelection as never,
-  )
+  useSlice(table, 'rowSelection')
 
   // Активная группировка делает выбор недоступным (ADR 0022): прячем «выбрать все».
   if (isGroupingActive(table)) {
     return null
   }
 
-  const { isAllRowsSelected, onSelectAllRowsOnPage } = (
-    table.getHooks() as RowSelectionPlugin
-  ).rowSelection
+  const { isAllRowsSelected, onSelectAllRowsOnPage } = hooks
 
   const selected = table.getIsAllPageRowsSelected()
   const indeterminate =

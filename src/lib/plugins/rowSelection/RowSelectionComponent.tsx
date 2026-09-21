@@ -1,22 +1,22 @@
 /**
- * Чекбокс выбора строки. Реактивность на `useSelector(table.atoms.rowSelection)`;
- * группировка — хелпер.
+ * Чекбокс выбора строки. Реактивность на срезе `rowSelection` (`useSlice`);
+ * бизнес-колбэки — из пропса `hooks` (инъекция definePlugin); группировка — хелпер.
  */
-import { useSelector } from '@tanstack/react-store'
-
-import type { CellComponentProps } from '../../core/createSlots'
+import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
+import { useSlice } from '../../core/reactivity'
 import { SelectCheckbox } from '../../plugins/rowSelection/SelectCheckbox'
 import { isGroupingActive } from './selectionHelpers'
-import type { RowSelectionPlugin } from './types'
+import type { RowSelectionHooks } from './types'
 
-export const RowSelectionComponent = ({ row, table }: CellComponentProps) => {
+export const RowSelectionComponent = ({
+  row,
+  table,
+  hooks,
+}: PluginCellProps<RowSelectionHooks>) => {
   const labels = useLocalization()
 
-  useSelector(
-    (table as unknown as { atoms: { rowSelection: unknown } }).atoms
-      .rowSelection as never,
-  )
+  useSlice(table, 'rowSelection')
 
   // Активная группировка делает выбор недоступным (ADR 0022): прячем чекбокс.
   if (isGroupingActive(table)) {
@@ -27,9 +27,7 @@ export const RowSelectionComponent = ({ row, table }: CellComponentProps) => {
     return null
   }
 
-  const { isAllRowsSelected, onSelectRow } = (
-    table.getHooks() as RowSelectionPlugin
-  ).rowSelection
+  const { isAllRowsSelected, onSelectRow } = hooks
 
   const canSelect = row.getCanSelect()
   const selected = row.getIsSelected()

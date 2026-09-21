@@ -1,6 +1,6 @@
 /**
- * Запись плагина rowSelection (ADR 0014/0022). Поведение даёт встроенный
- * `rowSelectionFeature` (row-модель не нужна).
+ * Запись плагина rowSelection (ADR 0014/0022) на `definePlugin` (ADR 0028).
+ * Поведение даёт встроенный `rowSelectionFeature` (row-модель не нужна).
  *  - гейт группировки (ADR 0022) — через функциональный `enableRowSelection` (влияет
  *    и на агрегаты getIsAll/SomePageRowsSelected);
  *  - `enableRowRangeSelection: false` — гасим shift-range (клик по чекбоксу не должен
@@ -9,14 +9,13 @@
 import { rowSelectionFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
-import type { ServiceColumn } from '../../core/createColumns'
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import {
   COLUMN_SELECTION_ID,
   getRowSelectionColumn,
 } from './rowSelectionColumn'
 import { isGroupingActive } from './selectionHelpers'
-import type { RowSelectionPluginParams } from './types'
+import type { RowSelectionHooks } from './types'
 
 export interface RowSelectionOptions {
   /** `false` — плагин отключён. */
@@ -25,58 +24,42 @@ export interface RowSelectionOptions {
   subRows?: boolean
   /**
    * Бизнес-колбэки плагина, задаются прямо в аргументах фабрики. Читаются живо через
-   * `table.getHooks()` (замена верхнего параметра `hooks`, прототип). Частичный набор
-   * дополняется no-op дефолтами.
+   * `table.getHooks()`. Частичный набор дополняется no-op дефолтами (`resolveHooks`).
    */
-  onSelectRow?: RowSelectionPluginParams['onSelectRow']
-  onSelectAllRowsOnPage?: RowSelectionPluginParams['onSelectAllRowsOnPage']
-  isAllRowsSelected?: RowSelectionPluginParams['isAllRowsSelected']
+  onSelectRow?: RowSelectionHooks['onSelectRow']
+  onSelectAllRowsOnPage?: RowSelectionHooks['onSelectAllRowsOnPage']
+  isAllRowsSelected?: RowSelectionHooks['isAllRowsSelected']
 }
 
-export const rowSelection = (opts: RowSelectionOptions = {}) => {
-  /**
-   * Выбор недоступен при АКТИВНОЙ группировке (ADR 0022): сгруппированная модель
-   * производна, выбором владеет rowGrouping. Функциональный `enableRowSelection`
-   * согласует и агрегаты (getIsAllPageRowsSelected и т.п.).
-   */
-  const enableRowSelection = (row: Row<any, any>): boolean =>
-    !isGroupingActive(row.table)
+/**
+ * Выбор недоступен при АКТИВНОЙ группировке (ADR 0022): сгруппированная модель
+ * производна, выбором владеет rowGrouping. Функциональный `enableRowSelection`
+ * согласует и агрегаты (getIsAllPageRowsSelected и т.п.).
+ */
+const enableRowSelection = (row: Row<any, any>): boolean =>
+  !isGroupingActive(row.table)
 
-  // Слайс бизнес-хуков из аргументов фабрики (только заданные ключи — остальные
-  // дополнит resolveHooks no-op дефолтами).
-  const hookSlice: Partial<RowSelectionPluginParams> = {}
-  if (opts.onSelectRow) {
-    hookSlice.onSelectRow = opts.onSelectRow
-  }
-  if (opts.onSelectAllRowsOnPage) {
-    hookSlice.onSelectAllRowsOnPage = opts.onSelectAllRowsOnPage
-  }
-  if (opts.isAllRowsSelected !== undefined) {
-    hookSlice.isAllRowsSelected = opts.isAllRowsSelected
-  }
-
-  return {
-    id: 'rowSelection',
-    enabled: opts.enabled,
-    slot: {
-      rowSelectionFeature,
-    },
-    hooks: { rowSelection: hookSlice },
-    column: {
-      id: COLUMN_SELECTION_ID,
-      make: getRowSelectionColumn,
-      side: 'leading',
-      order: 1,
-      pin: { side: 'start', when: 'with-user' },
-    } satisfies ServiceColumn,
-    options: {
-      // При disabled — жёстко false (иначе present-but-disabled фича активна:
-      // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).
-      enableRowSelection: opts.enabled === false ? false : enableRowSelection,
-      enableSubRowSelection: opts.subRows ?? false,
-      enableRowRangeSelection: false,
-    },
-  } satisfies TesseraFeatureEntry<{
-    rowSelectionFeature: typeof rowSelectionFeature
-  }>
-}
+// TOptions (RowSelectionOptions) задаётся ОДИН раз дженериком; `o` в полях выводится.
+export const rowSelection = definePlugin<RowSelectionOptions>()({
+  id: 'rowSelection',
+  features: { rowSelectionFeature },
+  options: o => ({
+    // При disabled — жёстко false (иначе present-but-disabled фича активна:
+    // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).
+    enableRowSelection: o.enabled === false ? false : enableRowSelection,
+    enableSubRowSelection: o.subRows ?? false,
+    enableRowRangeSelection: false,
+  }),
+  hooks: o => ({
+    onSelectRow: o.onSelectRow,
+    onSelectAllRowsOnPage: o.onSelectAllRowsOnPage,
+    isAllRowsSelected: o.isAllRowsSelected, // undefined-ключи отбросит definePlugin
+  }),
+  column: {
+    id: COLUMN_SELECTION_ID,
+    make: getRowSelectionColumn,
+    side: 'leading',
+    order: 1,
+    pin: { side: 'start', when: 'with-user' },
+  },
+})
