@@ -3,15 +3,19 @@
  * (ADR 0028). Принимает декларации по полям, возвращает фабрику
  * `(opts?) => TesseraFeatureEntry`. Прячет раскладку: `options` → опции таблицы,
  * `hooks` → живой слайс записи под ключом `id` (undefined-ключи отброшены),
- * `features` → фрагмент фич v9, `column`/`slots`/`setup` — как есть.
+ * `features` → фрагмент фич v9, `state` → сгенерированная v9-фича локального слайса
+ * под ключом `id`, `column`/`slots`/`setup` — как есть.
  *
- * Границы прототипа: инъекция локального канала в компоненты реализована для
- * `hooks` (пропс через `readPluginHooks`); каналы `state`/`options` в
- * `PluginCellProps` — следующий инкремент (нужны плагину с локальным состоянием,
- * у `rowSelection` их нет).
+ * Каналы в компонент: `hooks` — пропсом через `injectCellHooks`/`injectHeaderHooks`;
+ * локальный `state` — пропсом `[value, setter]` через `injectCellState`. Резолвнутые
+ * `options`-как-пропс (компонент-facing конфиг) отдельным каналом не выделены —
+ * компонент-facing конфиг (напр. предикат `canEdit`) кладут в `hooks` (живой слайс).
  */
 import { createElement, type ReactNode } from 'react'
 
+import { makeStateUpdater } from '@tanstack/react-table'
+
+import type { TableFeature } from '../types'
 import type { ServiceColumn } from './createColumns'
 import type {
   CellComponentProps,
@@ -20,6 +24,7 @@ import type {
 } from './createSlots'
 import type { TesseraFeatureEntry } from './features'
 import type { ActionMenuDeclaration, SlotAction } from './headerActions'
+import { useSlice } from './reactivity'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
 export interface PluginCellProps<THooks = never> extends CellComponentProps {
@@ -74,6 +79,75 @@ export const injectHeaderHooks =
       hooks: readPluginHooks<THooks>(ctx.table, scope),
     })
 
+/**
+ * Пропсы компонента ячейки плагина с ЛОКАЛЬНЫМ состоянием: hooks-слайс + пара
+ * `state: [value, setter]`. `TState` выводится из декларации `state` плагина;
+ * состояние приватно (читается пропсом, а не общим `getState`).
+ */
+export interface PluginCellStateProps<
+  THooks,
+  TState,
+> extends PluginCellProps<THooks> {
+  state: [TState, (next: TState) => void]
+}
+
+/** Имя опции-updater'а слайса (конвенция v9: `on<Key>Change`). */
+const stateChangeOption = (id: string): string =>
+  `on${id.charAt(0).toUpperCase()}${id.slice(1)}Change`
+
+/**
+ * Запись значения в локальный слайс плагина: через штатный updater-опцию
+ * `on<Key>Change` (makeStateUpdater), с фолбэком на прямую запись атома.
+ */
+const setLocalState = (table: unknown, id: string, next: unknown): void => {
+  const t = table as {
+    options?: Record<string, ((v: unknown) => void) | undefined>
+    atoms?: Record<string, { set: (v: unknown) => void } | undefined>
+  }
+  const updater = t.options?.[stateChangeOption(id)]
+  if (updater) {
+    updater(next)
+    return
+  }
+  t.atoms?.[id]?.set(next)
+}
+
+/**
+ * Обёртка колонки/слота для плагина с локальным состоянием: реактивно читает слайс
+ * `id` (`useSlice`) и подмешивает `state: [value, setter]` + hooks в компонент.
+ * Рендерится как компонент (RenderSlot/FlexRender → createElement), поэтому вызов
+ * хука внутри легален.
+ */
+export const injectCellState =
+  <THooks, TState>(
+    Component: (props: PluginCellStateProps<THooks, TState>) => ReactNode,
+    id: string,
+  ) =>
+  (ctx: CellComponentProps): ReactNode => {
+    const value = useSlice(ctx.table as never, id as never) as TState
+    const setter = (next: TState) => setLocalState(ctx.table, id, next)
+    return createElement(Component, {
+      ...ctx,
+      hooks: readPluginHooks<THooks>(ctx.table, id),
+      state: [value, setter],
+    })
+  }
+
+/**
+ * Минимальная v9-фича локального состояния плагина: seed слайса под ключом `id` из
+ * дефолта `getDefault()`. Store сам создаёт атом `table.atoms[id]`; чтение/запись —
+ * через инъектированный пропс `state` (`injectCellState`), не через общий `getState`.
+ */
+const makeLocalStateFeature = (
+  id: string,
+  getDefault: () => unknown,
+): TableFeature => ({
+  getInitialState: state => ({ [id]: getDefault(), ...state }),
+  getDefaultTableOptions: table => ({
+    [stateChangeOption(id)]: makeStateUpdater(id as never, table),
+  }),
+})
+
 const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(slice)) {
@@ -89,8 +163,9 @@ interface DefinePluginConfig<
   TFeatures extends object,
   TResolved extends Record<string, unknown>,
   THooks extends object,
+  TState,
 > {
-  /** Идентификатор плагина; служит и ключом scope для hook-слайса. */
+  /** Идентификатор плагина; служит и ключом scope для hook-слайса и локального state. */
   id: string
   /** Фрагмент стоковых фич TanStack v9 (→ `tableFeatures`). */
   features?: TFeatures
@@ -98,6 +173,12 @@ interface DefinePluginConfig<
   options?: (opts: TOptions) => TResolved
   /** Живой слайс бизнес-колбэков; undefined-ключи отбрасываются. */
   hooks?: (opts: TOptions) => THooks
+  /**
+   * Дефолт ЛОКАЛЬНОГО состояния плагина (значение слайса). definePlugin генерирует
+   * v9-фичу, seed'ящую слайс под ключом `id`; компонент читает/пишет его через пропс
+   * `state: [value, setter]` (`injectCellState`), приватно от общего `getState`.
+   */
+  state?: () => TState
   /** Сервисная колонка плагина. */
   column?: ServiceColumn
   /** Декларативные слоты плагина (UI-компоненты в местах рендера). */
@@ -126,8 +207,9 @@ export const definePlugin =
     TFeatures extends object = object,
     TResolved extends Record<string, unknown> = Record<string, unknown>,
     THooks extends object = Record<never, never>,
+    TState = never,
   >(
-    config: DefinePluginConfig<TOptions, TFeatures, TResolved, THooks>,
+    config: DefinePluginConfig<TOptions, TFeatures, TResolved, THooks, TState>,
   ) => {
     return (
       opts: TOptions = {} as TOptions,
@@ -137,8 +219,17 @@ export const definePlugin =
         enabled: opts.enabled,
       }
 
-      if (config.features) {
-        entry.features = config.features
+      // features = стоковый фрагмент + (если объявлен state) сгенерированная фича
+      // локального состояния, seed'ящая слайс под ключом id.
+      if (config.features || config.state) {
+        const merged: Record<string, unknown> = { ...config.features }
+        if (config.state) {
+          merged[`${config.id}StateFeature`] = makeLocalStateFeature(
+            config.id,
+            config.state,
+          )
+        }
+        entry.features = merged as TFeatures
       }
       if (config.options) {
         entry.options = config.options(opts)

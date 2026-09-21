@@ -11,6 +11,7 @@ export {
 export { rowDragging, type RowDraggingOptions } from './rowDragging'
 export { rowGrouping, type RowGroupingOptions } from './rowGrouping'
 export { rowActions, type RowActionsPluginOptions } from './rowActions'
+export { cellEditing, type CellEditingOptions } from './cellEditing'
 
 export {
   columnSorting,
@@ -35,3 +36,4 @@ export type { ColumnSortingHooks } from './columnSorting/types'
 export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'
+export type { CellEditingHooks } from './cellEditing/types'

@@ -15,6 +15,7 @@ import {
   GripVertical,
   Minus,
   MoreVertical,
+  Pencil,
   Pin,
   PinOff,
 } from 'lucide-react'
@@ -62,6 +63,8 @@ export interface TableIcons {
   checkboxIndeterminate: IconComponent
   /** Кебаб-кнопка меню действий заголовка */
   menu: IconComponent
+  /** Редактирование ячейки */
+  edit: IconComponent
 }
 
 export const DEFAULT_ICONS: TableIcons = {
@@ -78,6 +81,7 @@ export const DEFAULT_ICONS: TableIcons = {
   checkboxChecked: Check,
   checkboxIndeterminate: Minus,
   menu: MoreVertical,
+  edit: Pencil,
 }
 
 const IconsContext = createContext<TableIcons>(DEFAULT_ICONS)
