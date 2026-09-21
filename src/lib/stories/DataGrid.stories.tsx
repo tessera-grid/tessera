@@ -13,7 +13,6 @@ import { expect, waitFor } from 'storybook/test'
 
 import { Card, CardContent, Grid, NoDataStub } from './_shims'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../lib/plugins/rowActions'
-import { useCreateHooks } from '../../lib/core/createHooks'
 import { useRowExpandingState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
 import { useCreateTable } from '../../lib/core/useCreateTable'
@@ -289,27 +288,39 @@ export const StoryComponent = memo(
             }
           : {}),
       },
-      hooks: useCreateHooks({
-        rowSelection: {
-          onSelectRow: onSelectRow ?? ((): null => null),
-          onSelectAllRowsOnPage: onSelectAllRowsOnPage ?? ((): null => null),
-          isAllRowsSelected,
-        },
-        ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
-        ...(onToggleColumnSort
-          ? { columnSorting: { onToggleColumnSort } }
-          : {}),
-        ...(onColumnResizeEnd ? { columnSizing: { onColumnResizeEnd } } : {}),
-        ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
-      }),
       // Ядровые (не плагинные) опции остаются флагами.
       enableSkeleton: options.enableSkeleton,
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
       enableFooter: options.enableFooter,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
-      // настоящие фабрики.
-      plugins: argsToPlugins(options),
+      // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
+      // записи (ADR 0027), без верхнего параметра hooks.
+      plugins: [
+        ...argsToPlugins(options),
+        {
+          id: 'demoHooks',
+          // Пустой slot — запись не несёт фич, только hook-слайс (сохраняет вывод
+          // типа набора фич при слиянии слотов).
+          slot: {},
+          hooks: {
+            rowSelection: {
+              onSelectRow: onSelectRow ?? ((): null => null),
+              onSelectAllRowsOnPage:
+                onSelectAllRowsOnPage ?? ((): null => null),
+              isAllRowsSelected,
+            },
+            ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
+            ...(onToggleColumnSort
+              ? { columnSorting: { onToggleColumnSort } }
+              : {}),
+            ...(onColumnResizeEnd
+              ? { columnSizing: { onColumnResizeEnd } }
+              : {}),
+            ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
+          },
+        },
+      ],
     })
 
     return (

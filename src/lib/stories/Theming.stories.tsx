@@ -4,7 +4,6 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import { Card, CardContent, Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
-import { useCreateHooks } from '../../lib/core/createHooks'
 import { useRowSelectionState } from '../../lib/core/createState'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { DataGrid } from '../../lib/grid/DataGrid'
@@ -464,13 +463,6 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     data,
     state: { rowSelection: selection } as never,
     handlers: { onRowSelectionChange },
-    hooks: useCreateHooks({
-      rowSelection: {
-        onSelectRow: () => null,
-        onSelectAllRowsOnPage: () => null,
-        isAllRowsSelected: false,
-      },
-    }),
     enableLoading: args.enableLoading,
     // Набор фич подобран так, чтобы витрина задействовала как можно больше
     // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing) и

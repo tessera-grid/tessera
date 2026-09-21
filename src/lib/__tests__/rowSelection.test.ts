@@ -4,10 +4,11 @@
  */
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { injectServiceColumns } from '../core/createColumns'
-import { buildTesseraFeatures, foldEntries } from '../core/features'
+import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
+import { resolveHooks } from '../core/createHooks'
 import { COLUMN_SELECTION_ID, rowSelection } from '../plugins/rowSelection'
 import { getCanSomeRowsSelect } from '../plugins/rowSelection/selectionHelpers'
 
@@ -42,6 +43,8 @@ const makeTable = (opts = {}) => {
     columns,
     getRowId: (row: Person) => row.id,
     ...folded.options,
+    // Живая свёртка бизнес-хуков из аргументов фабрик (как в useCreateTable).
+    hooks: resolveHooks(foldHooks(entries)),
   } as never) as any
 
   return { table, folded, columns }
@@ -79,6 +82,40 @@ describe('rowSelection', () => {
   it('getCanSomeRowsSelect: строки выбираемы вне группировки', () => {
     const { table } = makeTable()
     expect(getCanSomeRowsSelect(table)).toBe(true)
+  })
+
+  it('бизнес-колбэки из аргументов фабрики попадают в hook-слайс записи', () => {
+    const onSelectRow = vi.fn()
+    const entry = rowSelection({ onSelectRow })
+    expect(entry.hooks?.rowSelection).toMatchObject({ onSelectRow })
+  })
+
+  it('foldHooks + resolveHooks: колбэк доступен, отсутствующие ключи — no-op дефолты', () => {
+    const onSelectRow = vi.fn()
+    const resolved = resolveHooks(
+      foldHooks([rowSelection({ onSelectRow })] as never),
+    ) as any
+    expect(resolved.rowSelection.onSelectRow).toBe(onSelectRow)
+    // Незаданные ключи scope дополнены дефолтами, а не затёрты частичным слайсом.
+    expect(typeof resolved.rowSelection.onSelectAllRowsOnPage).toBe('function')
+    expect(resolved.rowSelection.isAllRowsSelected).toBe(false)
+  })
+
+  it('table.getHooks() читает колбэк, заданный в аргументах фабрики, живо', () => {
+    const onSelectRow = vi.fn()
+    const { table } = makeTable({ onSelectRow })
+    const hooks = table.getHooks() as any
+    expect(hooks.rowSelection.onSelectRow).toBe(onSelectRow)
+    // Дефолты остального scope на месте.
+    expect(typeof hooks.rowSelection.onSelectAllRowsOnPage).toBe('function')
+  })
+
+  it('foldHooks игнорирует отключённые записи (enabled: false)', () => {
+    const onSelectRow = vi.fn()
+    const folded = foldHooks([
+      rowSelection({ onSelectRow, enabled: false }),
+    ] as never)
+    expect(folded).toEqual({})
   })
 
   it('гейт группировки: enableRowSelection false при активной группировке (ADR 0022)', () => {

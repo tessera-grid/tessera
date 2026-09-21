@@ -9,12 +9,15 @@ import { columnPinningFeature } from '@tanstack/react-table'
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { pinHeaderAction } from './pinHeaderAction'
+import type { ColumnPinningPluginParams } from './types'
 
 export interface ColumnPinningOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /** Режим reorder-out: закрепление любой единицы под вложенной шапкой (ADR 0011). */
   leafPinning?: boolean
+  /** Бизнес-колбэк закрепления (аргумент фабрики, ADR 0027); читается живо. */
+  onTogglePin?: ColumnPinningPluginParams['onTogglePin']
 }
 
 export const columnPinning = (opts: ColumnPinningOptions = {}) =>
@@ -23,6 +26,9 @@ export const columnPinning = (opts: ColumnPinningOptions = {}) =>
     enabled: opts.enabled,
     slot: {
       columnPinningFeature,
+    },
+    hooks: {
+      columnPinning: opts.onTogglePin ? { onTogglePin: opts.onTogglePin } : {},
     },
     // Единый дескриптор (ADR 0011/0024): ядро решает подачу (инлайн/кебаб).
     slotActions: [pinHeaderAction],

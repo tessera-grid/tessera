@@ -14,7 +14,6 @@ export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
 // Реактивность v9 (ADR 0026, V9-2): собственный Pub-Sub (useSubscribeStore) убран —
 // подписки на состояние идут через атомы TanStack Store.
 export { useSlice, useTableState } from './lib/core/reactivity'
-export { useCreateHooks, type PluginsHooks } from './lib/core/createHooks'
 
 export {
   useColumnOrderState,

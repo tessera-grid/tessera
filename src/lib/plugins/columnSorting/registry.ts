@@ -16,6 +16,7 @@ import {
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { sortHeaderAction } from './sortHeaderAction'
+import type { ColumnSortingPluginParams } from './types'
 
 /** Тонкая настройка мультисортировки. */
 export interface ColumnMultiSortOptions {
@@ -37,6 +38,8 @@ export interface ColumnSortingOptions {
   server?: boolean
   /** Мультисортировка: `true`/`undefined` — Shift+клик; `false` — выкл; объект — тонко. */
   multiSort?: boolean | ColumnMultiSortOptions
+  /** Бизнес-колбэк сортировки (аргумент фабрики, ADR 0027); читается живо. */
+  onToggleColumnSort?: ColumnSortingPluginParams['onToggleColumnSort']
 }
 
 /** Стандартный набор функций сортировки. */
@@ -72,6 +75,11 @@ export const columnSorting = (opts: ColumnSortingOptions = {}) => {
       rowSortingFeature,
       sortedRowModel: createSortedRowModel(),
       sortFns,
+    },
+    hooks: {
+      columnSorting: opts.onToggleColumnSort
+        ? { onToggleColumnSort: opts.onToggleColumnSort }
+        : {},
     },
     // Единый дескриптор (ADR 0012): инлайн — циклящая кнопка с бейджем приоритета;
     // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.

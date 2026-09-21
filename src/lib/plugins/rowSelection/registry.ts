@@ -16,12 +16,21 @@ import {
   getRowSelectionColumn,
 } from './rowSelectionColumn'
 import { isGroupingActive } from './selectionHelpers'
+import type { RowSelectionPluginParams } from './types'
 
 export interface RowSelectionOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /** Разрешить выбор дочерних строк (каскад на поддерево). */
   subRows?: boolean
+  /**
+   * Бизнес-колбэки плагина, задаются прямо в аргументах фабрики. Читаются живо через
+   * `table.getHooks()` (замена верхнего параметра `hooks`, прототип). Частичный набор
+   * дополняется no-op дефолтами.
+   */
+  onSelectRow?: RowSelectionPluginParams['onSelectRow']
+  onSelectAllRowsOnPage?: RowSelectionPluginParams['onSelectAllRowsOnPage']
+  isAllRowsSelected?: RowSelectionPluginParams['isAllRowsSelected']
 }
 
 export const rowSelection = (opts: RowSelectionOptions = {}) => {
@@ -33,12 +42,26 @@ export const rowSelection = (opts: RowSelectionOptions = {}) => {
   const enableRowSelection = (row: Row<any, any>): boolean =>
     !isGroupingActive(row.table)
 
+  // Слайс бизнес-хуков из аргументов фабрики (только заданные ключи — остальные
+  // дополнит resolveHooks no-op дефолтами).
+  const hookSlice: Partial<RowSelectionPluginParams> = {}
+  if (opts.onSelectRow) {
+    hookSlice.onSelectRow = opts.onSelectRow
+  }
+  if (opts.onSelectAllRowsOnPage) {
+    hookSlice.onSelectAllRowsOnPage = opts.onSelectAllRowsOnPage
+  }
+  if (opts.isAllRowsSelected !== undefined) {
+    hookSlice.isAllRowsSelected = opts.isAllRowsSelected
+  }
+
   return {
     id: 'rowSelection',
     enabled: opts.enabled,
     slot: {
       rowSelectionFeature,
     },
+    hooks: { rowSelection: hookSlice },
     column: {
       id: COLUMN_SELECTION_ID,
       make: getRowSelectionColumn,

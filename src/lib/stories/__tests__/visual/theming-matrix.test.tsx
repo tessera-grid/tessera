@@ -4,7 +4,6 @@ import { userEvent } from '@vitest/browser/context'
 import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
-import { useCreateHooks } from '../../../../lib/core/createHooks'
 import { useRowSelectionState } from '../../../../lib/core/createState'
 import { useCreateTable } from '../../../../lib/core/useCreateTable'
 import type { ColorMode } from '../../../core/themeVariables'
@@ -30,13 +29,6 @@ const Grid = memo(({ colorMode }: { colorMode: ColorMode }) => {
     data,
     state: { rowSelection: selection },
     handlers: { onRowSelectionChange },
-    hooks: useCreateHooks({
-      rowSelection: {
-        onSelectRow: () => null,
-        onSelectAllRowsOnPage: () => null,
-        isAllRowsSelected: false,
-      },
-    }),
     plugins: [rowSelection(), rowActions({ width: 40 })],
   })
 

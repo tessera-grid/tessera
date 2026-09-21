@@ -1,10 +1,8 @@
 /**
  * Always-on no-op дефолты бизнес-контракта хуков (ADR 0010). Гарантируют, что
- * чтение любого встроенного слайса хуков не упадёт, даже если потребитель его не
- * передал. Литералы, а не импорт плагинов.
+ * чтение любого встроенного слайса хуков не упадёт, даже если плагин его не задал.
+ * Литералы, а не импорт плагинов.
  */
-import { useMemo } from 'react'
-
 const defaultHooks = {
   columnDragging: { onColumnDragEnd: () => null },
   columnPinning: { onTogglePin: () => null },
@@ -23,6 +21,26 @@ const defaultHooks = {
 
 export type PluginsHooks = typeof defaultHooks
 
-export const useCreateHooks = <THooks extends object = Record<never, never>>(
+/**
+ * Чистое разрешение бизнес-контракта хуков: слияние с no-op дефолтами ПО SCOPE
+ * (не поверхностное сверху), чтобы частичный слайс (напр. только `onSelectRow` из
+ * аргументов фабрики плагина) дополнялся дефолтами остальных ключей scope, а не
+ * затирал их. Кастомные scope без дефолта берутся как есть.
+ */
+export const resolveHooks = <THooks extends object = Record<never, never>>(
   hooks: Partial<THooks> = {},
-): THooks => useMemo(() => ({ ...defaultHooks, ...hooks }) as THooks, [hooks])
+): THooks => {
+  const provided = hooks as Record<string, Record<string, unknown> | undefined>
+  const merged: Record<string, unknown> = {}
+  const scopes = new Set([
+    ...Object.keys(defaultHooks),
+    ...Object.keys(provided),
+  ])
+  for (const scope of scopes) {
+    merged[scope] = {
+      ...(defaultHooks as Record<string, object>)[scope],
+      ...provided[scope],
+    }
+  }
+  return merged as THooks
+}

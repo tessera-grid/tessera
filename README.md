@@ -325,11 +325,11 @@ export const Table = () => {
 > - набор плагинов — из массива `plugins` (кортеж выводится как есть, поэтому
 >   доступны ровно те плагины, что вы передали).
 >
-> Состояние, хендлеры и хуки — это обычные аргументы (`state` / `handlers` / `hooks`),
-> а **не дженерики**: их типы определяются формой передаваемых объектов. Контракты
-> хуков встроенных плагинов экспортируются из `@mstrvtt/tessera/plugins`
-> (`RowSelectionPlugin` и т.п.); свои хуки и состояния добавляете к ним пересечением.
-> Как это выглядит на практике — в главах ниже.
+> Состояние и хендлеры — это обычные аргументы (`state` / `handlers`), а **не
+> дженерики**: их типы определяются формой передаваемых объектов. Бизнес-логика
+> (колбэки плагинов) задаётся **прямо в аргументах фабрики плагина**
+> (`rowSelection({ onSelectRow })`) — отдельного параметра `hooks` нет. Как это
+> выглядит на практике — в главах ниже.
 
 <a name="configure_table" id="configure_table"></a>
 
@@ -419,19 +419,19 @@ export const Table = () => {
 Набор базовых плагинов поставляется отдельным входом `@mstrvtt/tessera/plugins`.
 Каждый включается добавлением своей фабрики в массив `plugins`:
 
-| Фабрика | Что делает | UI | Ограничения / примечания |
-| --- | --- | --- | --- |
-| `columnSorting()` | Сортировка данных DESC/ASC | кнопка в заголовке | клиентская и серверная; требует `enableSorting` в колонке |
-| `columnSizing()` | Ресайз колонок | хендлер в заголовке | требует `enableResizing` в колонке |
-| `columnPinning()` | Закрепление колонок слева/справа | кнопка в заголовке | работает и под многоуровневой шапкой (групповой пин + вынос отдельных листьев/групп) |
-| `columnDragging()` | Перетаскивание колонок | индикатор в заголовке | требует `enableDragging` в колонке; не работает под многоуровневой (сгруппированной) шапкой |
-| `rowSelection()` | Выбор строк | колонка с чекбоксами | скрывается при активной группировке |
-| `rowExpanding()` | Разворачивание/сворачивание строк | колонка с кнопкой | клиентское и серверное; поддерживает иерархию (`getSubRows`) |
-| `rowDragging()` | Перетаскивание строк и групп | колонка с хендлером | поддерживает иерархию; отключается при активной группировке |
-| `rowGrouping()` | Группировка данных по колонкам | кнопка/пункт меню в заголовке | при активной группировке отключает `rowDragging` и `rowSelection`; под вложенной шапкой несовместима с `columnDragging` |
-| `rowActions()` | Колонка кнопок действий над строкой | колонка, закреплённая справа | ширина `width` (px, по умолч. 120) и `collapsedWidth` (56) при схлопывании действий |
-| `headerActionMenu()` | Схлопывает кнопки заголовка в кебаб-меню «⋯» | меню в заголовке | `mode`: `auto` (по порогу) / `always`; `threshold` (по умолч. 3). Своей колонки/фичи не вносит |
-| `rowActionMenu()` | Схлопывает действия строки в кебаб-меню «⋯» | меню в колонке действий строки | `mode`: `auto` / `always`; `threshold` (по умолч. 2). Работает поверх `rowActions()` |
+| Фабрика              | Что делает                                   | UI                             | Ограничения / примечания                                                                                                |
+| -------------------- | -------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `columnSorting()`    | Сортировка данных DESC/ASC                   | кнопка в заголовке             | клиентская и серверная; требует `enableSorting` в колонке                                                               |
+| `columnSizing()`     | Ресайз колонок                               | хендлер в заголовке            | требует `enableResizing` в колонке                                                                                      |
+| `columnPinning()`    | Закрепление колонок слева/справа             | кнопка в заголовке             | работает и под многоуровневой шапкой (групповой пин + вынос отдельных листьев/групп)                                    |
+| `columnDragging()`   | Перетаскивание колонок                       | индикатор в заголовке          | требует `enableDragging` в колонке; не работает под многоуровневой (сгруппированной) шапкой                             |
+| `rowSelection()`     | Выбор строк                                  | колонка с чекбоксами           | скрывается при активной группировке                                                                                     |
+| `rowExpanding()`     | Разворачивание/сворачивание строк            | колонка с кнопкой              | клиентское и серверное; поддерживает иерархию (`getSubRows`)                                                            |
+| `rowDragging()`      | Перетаскивание строк и групп                 | колонка с хендлером            | поддерживает иерархию; отключается при активной группировке                                                             |
+| `rowGrouping()`      | Группировка данных по колонкам               | кнопка/пункт меню в заголовке  | при активной группировке отключает `rowDragging` и `rowSelection`; под вложенной шапкой несовместима с `columnDragging` |
+| `rowActions()`       | Колонка кнопок действий над строкой          | колонка, закреплённая справа   | ширина `width` (px, по умолч. 120) и `collapsedWidth` (56) при схлопывании действий                                     |
+| `headerActionMenu()` | Схлопывает кнопки заголовка в кебаб-меню «⋯» | меню в заголовке               | `mode`: `auto` (по порогу) / `always`; `threshold` (по умолч. 3). Своей колонки/фичи не вносит                          |
+| `rowActionMenu()`    | Схлопывает действия строки в кебаб-меню «⋯»  | меню в колонке действий строки | `mode`: `auto` / `always`; `threshold` (по умолч. 2). Работает поверх `rowActions()`                                    |
 
 > ⚠️ Плагин включает механику на уровне таблицы, а колонка — **разрешает её для себя**
 > соответствующим флагом в определении (`enableSorting`, `enableResizing`,
@@ -441,7 +441,11 @@ export const Table = () => {
 `plugins` (наличие в массиве = плагин включён):
 
 ```tsx
-import { rowSelection, columnSorting, columnSizing } from '@mstrvtt/tessera/plugins'
+import {
+  rowSelection,
+  columnSorting,
+  columnSizing,
+} from '@mstrvtt/tessera/plugins'
 
 useCreateTable({
   columns,
@@ -458,18 +462,16 @@ useCreateTable({
 
 ### Реализация бизнес-логики для плагинов
 
-Каждый плагин предоставляет типизированный API для взаимодействия с ним и реализации специфичной бизнес-логики.
-
-Для этого используйте функцию `useCreateHooks`:
+Бизнес-логика плагина (колбэки) задаётся **прямо в аргументах его фабрики** —
+параметры типизируются нативно из сигнатуры плагина, отдельного объекта `hooks` нет:
 
 ```tsx
 import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-  useCreateHooks,
 } from '@mstrvtt/tessera'
-import { rowSelection, type RowSelectionPlugin } from '@mstrvtt/tessera/plugins'
+import { rowSelection } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -482,19 +484,6 @@ export const Table = () => {
   const { rowSelection: rowSelectionState, onRowSelectionChange } =
     useRowSelectionState()
 
-  // Тип контракта плагина (RowSelectionPlugin) даёт контекстную типизацию
-  // параметров колбэков; useCreateHooks подкладывает no-op дефолты, поэтому чтение
-  // любого слайса не упадёт.
-  const hooks = useCreateHooks<RowSelectionPlugin>({
-    rowSelection: {
-      // Подписываемся на callbacks плагина выбора строк
-      onSelectRow: (row, selected) => console.info(row.id, selected),
-      onSelectAllRowsOnPage: selected => console.info('all', selected),
-      // Для динамических признаков используйте state, данный пример временный
-      isAllRowsSelected: false,
-    },
-  })
-
   const table = useCreateTable({
     columns,
     data,
@@ -504,28 +493,27 @@ export const Table = () => {
     handlers: {
       onRowSelectionChange,
     },
-    hooks,
-    plugins: [rowSelection()],
+    plugins: [
+      // Колбэки — в аргументах фабрики; параметры типизированы, задавать все не нужно.
+      rowSelection({
+        onSelectRow: (row, selected) => console.info(row.id, selected),
+        onSelectAllRowsOnPage: selected => console.info('all', selected),
+      }),
+    ],
   })
 
   return <DataGrid table={table} />
 }
 ```
 
-Контракты хуков встроенных плагинов экспортируются из `@mstrvtt/tessera/plugins`
-(`RowSelectionPlugin`, `ColumnSortingPlugin`, `ColumnPinningPlugin` и т.п.). Соберите
-`hooks` функцией `useCreateHooks<RowSelectionPlugin & MyHooks>(...)`: она типизирует
-колбэки и подкладывает no-op дефолты, поэтому чтение любого слайса не упадёт, даже
-если вы его не передали.
+Колбэки читаются **живо** через `table.getHooks()` в момент вызова, поэтому
+передавайте обычные (в т.ч. инлайновые) функции — мемоизировать их не нужно.
+Незаданные колбэки дополняются no-op дефолтами, так что чтение любого слайса
+не упадёт.
 
-> ❗ Что такое объект `hooks`?
->
-> `hooks` - это API-контракт, который используется для взаимодействия с плагинами таблицы.
-> Это помогает снизить связанность кода, отделяя бизнес-логику от технической реализации таблицы.
-
-> ⚠️ `hooks` — это контекст для бизнес-функций; передавайте в него **стабильное
-> (мемоизированное)** значение. Для динамических признаков, влияющих на рендер,
-> используйте `state` и точечные подписки (см. следующую главу).
+> ⚠️ Колбэки — контекст для бизнес-функций, а не для динамических признаков рендера.
+> Для значений, влияющих на отрисовку, используйте `state` и точечные подписки
+> (см. следующую главу).
 
 <a name="reactivity" id="reactivity"></a>
 
@@ -579,18 +567,10 @@ const myPlugin: TablePlugin = {
   slot: {
     /* фрагмент фич TanStack: rowSortingFeature, filteredRowModel и т.п. */
   },
-  options: {
-    /* табличные опции фичи, напр. { enableSorting: true } */
-  },
-  slots: [
-    /* что рисуем в ячейках/строках/заголовках (см. ниже) */
-  ],
-  slotActions: [
-    /* действия для кебаб-меню заголовка/строки */
-  ],
-  column: {
-    /* сервисная колонка плагина (напр. колонка чекбоксов) */
-  },
+  options: {/* табличные опции фичи, напр. { enableSorting: true } */},
+  slots: [/* что рисуем в ячейках/строках/заголовках (см. ниже) */],
+  slotActions: [/* действия для кебаб-меню заголовка/строки */],
+  column: {/* сервисная колонка плагина (напр. колонка чекбоксов) */},
   setup: table => {
     /* императивный сетап после создания таблицы; может вернуть cleanup */
   },
@@ -664,13 +644,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-  useCreateHooks,
 } from '@mstrvtt/tessera'
-import {
-  rowSelection,
-  rowActions,
-  type RowSelectionPlugin,
-} from '@mstrvtt/tessera/plugins'
+import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -684,14 +659,6 @@ export const Table = () => {
   const { rowSelection: rowSelectionState, onRowSelectionChange } =
     useRowSelectionState()
 
-  const hooks = useCreateHooks<RowSelectionPlugin>({
-    rowSelection: {
-      onSelectRow: (row, selected) => console.info(row.id, selected),
-      onSelectAllRowsOnPage: selected => console.info('all', selected),
-      isAllRowsSelected: false,
-    },
-  })
-
   const table = useCreateTable({
     columns,
     data,
@@ -701,11 +668,12 @@ export const Table = () => {
     handlers: {
       onRowSelectionChange,
     },
-    hooks,
-    // Встроенные плагины — фабриками; колонка действий — rowActions({ width });
-    // пользовательский плагин приносит свою фичу записью реестра.
+    // Встроенные плагины — фабриками (колбэки в их аргументах); колонка действий —
+    // rowActions({ width }); пользовательский плагин — записью реестра.
     plugins: [
-      rowSelection(),
+      rowSelection({
+        onSelectRow: (row, selected) => console.info(row.id, selected),
+      }),
       rowActions({ width: 40 }),
       rowDownloadActionPlugin,
     ],
@@ -717,8 +685,8 @@ export const Table = () => {
 
 Отлично! Теперь нужно сделать так, чтобы при нажатии на кнопку что-то происходило. Давайте это сделаем!
 
-Мы взаимодействуем с плагинами через объект `hooks`, но изначально таблица ничего не
-знает про хук нашего плагина `rowDownloadAction`. Опишем его контракт в `types.ts`:
+Чтобы кнопка что-то делала, дадим плагину **свой колбэк**. Сначала опишем его
+контракт в `types.ts`:
 
 ```ts
 // types.ts (добавляем к уже описанным ItemType/FieldType)
@@ -729,71 +697,35 @@ export interface MyTableHooks {
 }
 ```
 
-Добавим слайс в `hooks` (в компоненте прочитаем его через `table.getHooks()`):
+Переведём плагин на **фабрику**, принимающую колбэк (как встроенные плагины), и
+положим его в hook-слайс записи:
 
 ```tsx
-// MyTable.tsx
+// rowDownloadActionPlugin.tsx
 
-import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-  useCreateHooks,
-} from '@mstrvtt/tessera'
-import {
-  rowSelection,
-  rowActions,
-  type RowSelectionPlugin,
-} from '@mstrvtt/tessera/plugins'
-import { useColumns } from './useColumns'
-import { useData } from './useData'
-import { useFields } from './useFields'
-import { MyTableHooks } from './types'
-import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
+import { type TablePlugin } from '@mstrvtt/tessera'
+import { RowDownloadComponent } from './RowDownloadComponent'
+import type { MyTableHooks } from './types'
 
-export const Table = () => {
-  const fields = useFields()
-  const columns = useColumns({ fields })
-  const data = useData()
-
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
-
-  // Пересечение контракта плагина и нашего хука: типизированы и встроенные колбэки,
-  // и кастомный onDownload.
-  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
-    rowSelection: {
-      onSelectRow: (row, selected) => console.info(row.id, selected),
-      onSelectAllRowsOnPage: selected => console.info('all', selected),
-      isAllRowsSelected: false,
+// Фабрика пользовательского плагина: принимает свой колбэк и кладёт его в hook-слайс
+// записи — он читается живо через table.getHooks().
+export const rowDownloadAction = (
+  opts: Partial<MyTableHooks['rowDownloadAction']> = {},
+): TablePlugin => ({
+  id: 'rowDownloadAction',
+  slots: [
+    {
+      id: 'rowDownloadAction',
+      slot: 'actionRowSlot',
+      order: 0,
+      component: RowDownloadComponent,
     },
-    rowDownloadAction: {
-      onDownload: fileId => console.info('download', fileId),
-    },
-  })
-
-  const table = useCreateTable({
-    columns,
-    data,
-    state: {
-      rowSelection: rowSelectionState,
-    },
-    handlers: {
-      onRowSelectionChange,
-    },
-    hooks,
-    plugins: [
-      rowSelection(),
-      rowActions({ width: 40 }),
-      rowDownloadActionPlugin,
-    ],
-  })
-
-  return <DataGrid table={table} />
-}
+  ],
+  hooks: { rowDownloadAction: opts },
+})
 ```
 
-Обновим компонент плагина:
+Компонент читает колбэк через `table.getHooks()` с приведением к своему типу:
 
 ```tsx
 // RowDownloadComponent.tsx
@@ -804,34 +736,63 @@ import { MyTableHooks } from './types'
 import { RowDownloadButton } from './RowDownloadButton'
 
 // Кастомный слайс hooks читаем через table.getHooks() с приведением к своему типу
-export const RowDownloadComponent = memo(({ row, table }: CellComponentProps) => {
-  const { onDownload } = (table.getHooks() as MyTableHooks).rowDownloadAction
+export const RowDownloadComponent = memo(
+  ({ row, table }: CellComponentProps) => {
+    const { onDownload } = (table.getHooks() as MyTableHooks).rowDownloadAction
 
-  return <RowDownloadButton onClick={() => onDownload(row.original.id)} />
-})
+    return <RowDownloadButton onClick={() => onDownload(row.original.id)} />
+  },
+)
 
 RowDownloadComponent.displayName = 'RowDownloadComponent'
 ```
 
-Сам плагин дополнительной типизации не требует — это тот же объект `TablePlugin`
-из начала гайда (тип hooks мы уточнили внутри компонента):
+Подключаем плагин фабрикой и передаём колбэк в её аргументах:
 
 ```tsx
-// rowDownloadActionPlugin.tsx
+// MyTable.tsx
 
-import { type TablePlugin } from '@mstrvtt/tessera'
-import { RowDownloadComponent } from './RowDownloadComponent'
+import {
+  useCreateTable,
+  DataGrid,
+  useRowSelectionState,
+} from '@mstrvtt/tessera'
+import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+import { useColumns } from './useColumns'
+import { useData } from './useData'
+import { useFields } from './useFields'
+import { rowDownloadAction } from './rowDownloadActionPlugin'
 
-export const rowDownloadActionPlugin: TablePlugin = {
-  id: 'rowDownloadAction',
-  slots: [
-    {
-      id: 'rowDownloadAction',
-      slot: 'actionRowSlot',
-      order: 0,
-      component: RowDownloadComponent,
+export const Table = () => {
+  const fields = useFields()
+  const columns = useColumns({ fields })
+  const data = useData()
+
+  const { rowSelection: rowSelectionState, onRowSelectionChange } =
+    useRowSelectionState()
+
+  const table = useCreateTable({
+    columns,
+    data,
+    state: {
+      rowSelection: rowSelectionState,
     },
-  ],
+    handlers: {
+      onRowSelectionChange,
+    },
+    plugins: [
+      rowSelection({
+        onSelectRow: (row, selected) => console.info(row.id, selected),
+      }),
+      rowActions({ width: 40 }),
+      // Колбэк нашего плагина — в его же аргументах.
+      rowDownloadAction({
+        onDownload: fileId => console.info('download', fileId),
+      }),
+    ],
+  })
+
+  return <DataGrid table={table} />
 }
 ```
 
@@ -875,18 +836,13 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-  useCreateHooks,
 } from '@mstrvtt/tessera'
-import {
-  rowSelection,
-  rowActions,
-  type RowSelectionPlugin,
-} from '@mstrvtt/tessera/plugins'
+import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { MyTableHooks, MyTableState } from './types'
-import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
+import { MyTableState } from './types'
+import { rowDownloadAction } from './rowDownloadActionPlugin'
 
 const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
 
@@ -901,17 +857,6 @@ export const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
-    rowSelection: {
-      onSelectRow: (row, selected) => console.info(row.id, selected),
-      onSelectAllRowsOnPage: selected => console.info('all', selected),
-      isAllRowsSelected: false,
-    },
-    rowDownloadAction: {
-      onDownload: fileId => console.info('download', fileId),
-    },
-  })
-
   const table = useCreateTable({
     columns,
     data,
@@ -925,11 +870,14 @@ export const Table = () => {
       // И хендлер
       onChangeHiddenCells: setHiddenCells,
     },
-    hooks,
     plugins: [
-      rowSelection(),
+      rowSelection({
+        onSelectRow: (row, selected) => console.info(row.id, selected),
+      }),
       rowActions({ width: 40 }),
-      rowDownloadActionPlugin,
+      rowDownloadAction({
+        onDownload: fileId => console.info('download', fileId),
+      }),
     ],
   })
 
@@ -968,27 +916,29 @@ import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
 import { CellHiddenButton } from './CellHiddenButton'
 import { MyTableOptions, MyTableState } from './types'
 
-export const CellHiddenComponent = memo(({ cell, table }: CellComponentProps) => {
-  // Точечная подписка на СВОЙ ключ состояния: ре-рендер только при смене признака
-  // именно этой ячейки (кастомные ключи читаем через приведение типа).
-  const isHidden = useTableState(
-    table,
-    s => (s as unknown as MyTableState).hiddenCells[cell.id],
-  )
-  const { onChangeHiddenCells } = table.options as unknown as MyTableOptions
+export const CellHiddenComponent = memo(
+  ({ cell, table }: CellComponentProps) => {
+    // Точечная подписка на СВОЙ ключ состояния: ре-рендер только при смене признака
+    // именно этой ячейки (кастомные ключи читаем через приведение типа).
+    const isHidden = useTableState(
+      table,
+      s => (s as unknown as MyTableState).hiddenCells[cell.id],
+    )
+    const { onChangeHiddenCells } = table.options as unknown as MyTableOptions
 
-  return (
-    <CellHiddenButton
-      active={isHidden}
-      onClick={() => {
-        onChangeHiddenCells(prev => ({
-          ...prev,
-          [cell.id]: !prev[cell.id],
-        }))
-      }}
-    />
-  )
-})
+    return (
+      <CellHiddenButton
+        active={isHidden}
+        onClick={() => {
+          onChangeHiddenCells(prev => ({
+            ...prev,
+            [cell.id]: !prev[cell.id],
+          }))
+        }}
+      />
+    )
+  },
+)
 
 CellHiddenComponent.displayName = 'CellHiddenComponent'
 ```
@@ -1003,18 +953,13 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-  useCreateHooks,
 } from '@mstrvtt/tessera'
-import {
-  rowSelection,
-  rowActions,
-  type RowSelectionPlugin,
-} from '@mstrvtt/tessera/plugins'
+import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { MyTableHooks, MyTableState } from './types'
-import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
+import { MyTableState } from './types'
+import { rowDownloadAction } from './rowDownloadActionPlugin'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
 
 const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
@@ -1030,17 +975,6 @@ const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
-    rowSelection: {
-      onSelectRow: (row, selected) => console.info(row.id, selected),
-      onSelectAllRowsOnPage: selected => console.info('all', selected),
-      isAllRowsSelected: false,
-    },
-    rowDownloadAction: {
-      onDownload: fileId => console.info('download', fileId),
-    },
-  })
-
   const table = useCreateTable({
     columns,
     data,
@@ -1052,11 +986,14 @@ const Table = () => {
       onRowSelectionChange,
       onChangeHiddenCells: setHiddenCells,
     },
-    hooks,
     plugins: [
-      rowSelection(),
+      rowSelection({
+        onSelectRow: (row, selected) => console.info(row.id, selected),
+      }),
       rowActions({ width: 40 }),
-      rowDownloadActionPlugin,
+      rowDownloadAction({
+        onDownload: fileId => console.info('download', fileId),
+      }),
       cellHiddenActionPlugin,
     ],
   })
@@ -1165,18 +1102,20 @@ import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
 import { Switch } from './Switch'
 import { MyTableState } from './types'
 
-export const SwitchActionComponent = memo(({ cell, table }: CellComponentProps) => {
-  const isHidden = useTableState(
-    table,
-    s => (s as unknown as MyTableState).hiddenCells[cell.id],
-  )
+export const SwitchActionComponent = memo(
+  ({ cell, table }: CellComponentProps) => {
+    const isHidden = useTableState(
+      table,
+      s => (s as unknown as MyTableState).hiddenCells[cell.id],
+    )
 
-  if (isHidden) {
-    return 'Содержимое скрыто'
-  }
+    if (isHidden) {
+      return 'Содержимое скрыто'
+    }
 
-  return <Switch />
-})
+    return <Switch />
+  },
+)
 
 SwitchActionComponent.displayName = 'SwitchActionComponent'
 ```
@@ -1193,18 +1132,13 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-  useCreateHooks,
 } from '@mstrvtt/tessera'
-import {
-  rowSelection,
-  rowActions,
-  type RowSelectionPlugin,
-} from '@mstrvtt/tessera/plugins'
+import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { MyTableHooks, MyTableState } from './types'
-import { rowDownloadActionPlugin } from './rowDownloadActionPlugin'
+import { MyTableState } from './types'
+import { rowDownloadAction } from './rowDownloadActionPlugin'
 import { cellHiddenActionPlugin } from './cellHiddenActionPlugin'
 import { switchActionPlugin } from './switchActionPlugin'
 
@@ -1221,17 +1155,6 @@ const Table = () => {
     hiddenCellsInitialState,
   )
 
-  const hooks = useCreateHooks<RowSelectionPlugin & MyTableHooks>({
-    rowSelection: {
-      onSelectRow: (row, selected) => console.info(row.id, selected),
-      onSelectAllRowsOnPage: selected => console.info('all', selected),
-      isAllRowsSelected: false,
-    },
-    rowDownloadAction: {
-      onDownload: fileId => console.info('download', fileId),
-    },
-  })
-
   const table = useCreateTable({
     columns,
     data,
@@ -1243,11 +1166,14 @@ const Table = () => {
       onRowSelectionChange,
       onChangeHiddenCells: setHiddenCells,
     },
-    hooks,
     plugins: [
-      rowSelection(),
+      rowSelection({
+        onSelectRow: (row, selected) => console.info(row.id, selected),
+      }),
       rowActions({ width: 40 }),
-      rowDownloadActionPlugin,
+      rowDownloadAction({
+        onDownload: fileId => console.info('download', fileId),
+      }),
       cellHiddenActionPlugin,
       switchActionPlugin,
     ],

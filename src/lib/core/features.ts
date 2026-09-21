@@ -50,6 +50,13 @@ export interface TesseraFeatureEntry<TSlot extends object = object> {
   enabled?: boolean
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
   options?: Record<string, unknown>
+  /**
+   * Живой слайс бизнес-хуков плагина (колбэки/флаги), читается через
+   * `table.getHooks()`. В отличие от `options`/`slots`, НЕ мемоизируется по сигнатуре
+   * набора — сворачивается каждый рендер (`foldHooks`), чтобы колбэки оставались
+   * актуальными на момент вызова. Ключ верхнего уровня — scope плагина.
+   */
+  hooks?: Record<string, unknown>
   /** Декларативные слоты плагина. */
   slots?: PluginSlot[]
   /** Декларативные действия слота (кебаб/инлайн). */
@@ -126,6 +133,24 @@ export const foldEntries = (
   }
 
   return { options, slots, slotActions, actionMenu, serviceColumns, setups }
+}
+
+/**
+ * Живая свёртка hook-слайсов активных записей. В отличие от `foldEntries`,
+ * вызывается КАЖДЫЙ рендер (не мемоизируется по сигнатуре набора): бизнес-колбэки
+ * должны быть актуальны на момент вызова через `table.getHooks()`. No-op дефолты и
+ * дедуп по scope подкладывает `resolveHooks`.
+ */
+export const foldHooks = (
+  entries: readonly TesseraFeatureEntry[],
+): Record<string, unknown> => {
+  const hooks: Record<string, unknown> = {}
+  for (const entry of entries) {
+    if (isActive(entry) && entry.hooks) {
+      Object.assign(hooks, entry.hooks)
+    }
+  }
+  return hooks
 }
 
 type UnionToIntersection<U> = (

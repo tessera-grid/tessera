@@ -18,9 +18,8 @@ import type {
 } from '@tanstack/react-table'
 
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
-import type { CommonHooks } from './commonFeature.types'
 import type { SkeletonOptions } from './skeletonOptions'
-import { useCreateHooks } from './createHooks'
+import { resolveHooks } from './createHooks'
 import { shallowEqual } from './reactivity'
 import {
   defaultColumnPinningState,
@@ -32,6 +31,7 @@ import { injectServiceColumns } from './createColumns'
 import {
   buildTesseraFeatures,
   foldEntries,
+  foldHooks,
   type TesseraFeatureEntry,
   type TesseraFeatures,
 } from './features'
@@ -68,8 +68,6 @@ export interface UseCreateTableParams<
   /** Контролируемые onXChange потребителя (прокидываются в опции v9 как есть). */
   handlers?: Record<string, unknown>
 
-  // Бизнес-контракт хуков (опция always-on commonFeature).
-  hooks?: CommonHooks
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
@@ -90,7 +88,6 @@ export const useCreateTable = <
   getSubRows,
   state,
   handlers,
-  hooks,
   enableSkeleton,
   enableLoading,
   enableFooter,
@@ -207,7 +204,11 @@ export const useCreateTable = <
     [],
   )
 
-  const resolvedHooks = useCreateHooks(hooks ?? {})
+  // Бизнес-хуки из аргументов фабрик плагинов (напр. rowSelection({ onSelectRow }))
+  // и из hook-слайсов пользовательских записей сворачиваются ЖИВО каждый рендер:
+  // колбэки читаются через table.getHooks() на момент вызова, поэтому не
+  // мемоизируются по сигнатуре набора. resolveHooks подкладывает no-op дефолты.
+  const resolvedHooks = resolveHooks(foldHooks(plugins))
 
   // Стабильная ссылка на контролируемый state: потребитель (стори) отдаёт свежий
   // объект state каждый рендер, а v9 useTable публикует его в store в layout-эффекте

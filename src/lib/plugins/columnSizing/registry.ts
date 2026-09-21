@@ -10,10 +10,13 @@ import {
 
 import type { TesseraFeatureEntry } from '../../core/features'
 import { ColumnSizingComponent } from './ColumnSizingComponent'
+import type { ColumnSizingPluginParams } from './types'
 
 export interface ColumnSizingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
+  /** Бизнес-колбэк окончания ресайза (аргумент фабрики, ADR 0027); читается живо. */
+  onColumnResizeEnd?: ColumnSizingPluginParams['onColumnResizeEnd']
 }
 
 export const columnSizing = (opts: ColumnSizingOptions = {}) =>
@@ -23,6 +26,11 @@ export const columnSizing = (opts: ColumnSizingOptions = {}) =>
     slot: {
       columnSizingFeature,
       columnResizingFeature,
+    },
+    hooks: {
+      columnSizing: opts.onColumnResizeEnd
+        ? { onColumnResizeEnd: opts.onColumnResizeEnd }
+        : {},
     },
     slots: [
       {

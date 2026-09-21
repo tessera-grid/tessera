@@ -16,6 +16,7 @@ import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
 } from './rowExpandingColumn'
+import type { RowExpandingPluginParams } from './types'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
 
@@ -27,6 +28,8 @@ export interface RowExpandingOptions {
    * раскрываема, пока `row.depth < maxDepth`. По умолчанию 1 — тоггл только у корней.
    */
   maxDepth?: number
+  /** Бизнес-колбэк раскрытия строки (аргумент фабрики, ADR 0027); читается живо. */
+  onExpandRow?: RowExpandingPluginParams['onExpandRow']
 }
 
 export const rowExpanding = (opts: RowExpandingOptions = {}) => {
@@ -64,6 +67,9 @@ export const rowExpanding = (opts: RowExpandingOptions = {}) => {
     slot: {
       rowExpandingFeature,
       expandedRowModel: createExpandedRowModel(),
+    },
+    hooks: {
+      rowExpanding: opts.onExpandRow ? { onExpandRow: opts.onExpandRow } : {},
     },
     column: {
       id: COLUMN_EXPANDING_ID,
