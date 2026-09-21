@@ -1,13 +1,10 @@
 /**
- * Плагин схлопывания кнопок заголовка в кебаб-меню (ADR 0024). Не вносит фичи/слота
- * — лишь объявляет `actionMenu` для слотов заголовка; зона действий грида решает
- * подачу (инлайн/кебаб) поверх дескрипторов SlotAction.
+ * Плагин схлопывания кнопок заголовка в кебаб-меню (ADR 0024) на `definePlugin`. Не
+ * вносит фичи/слота — лишь объявляет `actionMenu` для слотов заголовка; зона действий
+ * грида решает подачу (инлайн/кебаб) поверх дескрипторов SlotAction.
  */
-import type {
-  ActionMenuDeclaration,
-  HeaderActionSlot,
-} from '../../core/headerActions'
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
+import type { HeaderActionSlot } from '../../core/headerActions'
 
 export interface HeaderActionMenuOptions {
   enabled?: boolean
@@ -19,14 +16,12 @@ export interface HeaderActionMenuOptions {
   slots?: HeaderActionSlot[]
 }
 
-export const headerActionMenu = (opts: HeaderActionMenuOptions = {}) =>
-  ({
-    id: 'headerActionMenu',
-    enabled: opts.enabled,
-    slot: {},
-    actionMenu: {
-      mode: opts.mode ?? 'auto',
-      threshold: opts.threshold ?? 3,
-      slots: opts.slots ?? ['rightHeaderSlot'],
-    } satisfies ActionMenuDeclaration,
-  }) satisfies TesseraFeatureEntry
+export const headerActionMenu = definePlugin<HeaderActionMenuOptions>()({
+  id: 'headerActionMenu',
+  features: {},
+  actionMenu: o => ({
+    mode: o.mode ?? 'auto',
+    threshold: o.threshold ?? 3,
+    slots: o.slots ?? ['rightHeaderSlot'],
+  }),
+})

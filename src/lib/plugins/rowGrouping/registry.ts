@@ -1,7 +1,7 @@
 /**
- * Запись плагина rowGrouping (ADR 0016). Поведение даёт `columnGroupingFeature` +
- * слот `groupedRowModel`; агрегация отделена от группировки — добавляем
- * `rowAggregationFeature` + стандартный набор `aggregationFns`.
+ * Запись плагина rowGrouping (ADR 0016) на `definePlugin`. Поведение даёт
+ * `columnGroupingFeature` + `groupedRowModel`; агрегация отделена от группировки —
+ * добавляем `rowAggregationFeature` + стандартный набор `aggregationFns`.
  */
 import {
   aggregationFn_count,
@@ -17,7 +17,7 @@ import {
   rowAggregationFeature,
 } from '@tanstack/react-table'
 
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import { groupHeaderAction } from './groupHeaderAction'
 
 /** Стандартный набор агрегаций. */
@@ -37,25 +37,18 @@ export interface RowGroupingOptions {
   enabled?: boolean
 }
 
-export const rowGrouping = (opts: RowGroupingOptions = {}) =>
-  ({
-    id: 'rowGrouping',
-    enabled: opts.enabled,
-    slot: {
-      columnGroupingFeature,
-      rowAggregationFeature,
-      groupedRowModel: createGroupedRowModel(),
-      aggregationFns,
-    },
-    // Единый дескриптор (ADR 0016): ядро решает подачу (инлайн-кнопка / строка меню).
-    slotActions: [groupHeaderAction],
-    options: {
-      enableGrouping: opts.enabled !== false,
-      groupedColumnMode: false,
-    },
-  }) satisfies TesseraFeatureEntry<{
-    columnGroupingFeature: typeof columnGroupingFeature
-    rowAggregationFeature: typeof rowAggregationFeature
-    groupedRowModel: ReturnType<typeof createGroupedRowModel>
-    aggregationFns: typeof aggregationFns
-  }>
+export const rowGrouping = definePlugin<RowGroupingOptions>()({
+  id: 'rowGrouping',
+  features: {
+    columnGroupingFeature,
+    rowAggregationFeature,
+    groupedRowModel: createGroupedRowModel(),
+    aggregationFns,
+  },
+  // Единый дескриптор (ADR 0016): ядро решает подачу (инлайн-кнопка / строка меню).
+  slotActions: [groupHeaderAction],
+  options: o => ({
+    enableGrouping: o.enabled !== false,
+    groupedColumnMode: false,
+  }),
+})

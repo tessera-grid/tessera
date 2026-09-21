@@ -1,9 +1,8 @@
 /**
- * Плагин схлопывания действий СТРОКИ (`actionRowSlot`) в кебаб-меню (ADR 0024).
- * Как headerActionMenu — только декларация `actionMenu`.
+ * Плагин схлопывания действий СТРОКИ (`actionRowSlot`) в кебаб-меню (ADR 0024) на
+ * `definePlugin`. Как headerActionMenu — только декларация `actionMenu`.
  */
-import type { ActionMenuDeclaration } from '../../core/headerActions'
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 
 export interface RowActionMenuOptions {
   enabled?: boolean
@@ -13,14 +12,12 @@ export interface RowActionMenuOptions {
   threshold?: number
 }
 
-export const rowActionMenu = (opts: RowActionMenuOptions = {}) =>
-  ({
-    id: 'rowActionMenu',
-    enabled: opts.enabled,
-    slot: {},
-    actionMenu: {
-      mode: opts.mode ?? 'auto',
-      threshold: opts.threshold ?? 2,
-      slots: ['actionRowSlot'],
-    } satisfies ActionMenuDeclaration,
-  }) satisfies TesseraFeatureEntry
+export const rowActionMenu = definePlugin<RowActionMenuOptions>()({
+  id: 'rowActionMenu',
+  features: {},
+  actionMenu: o => ({
+    mode: o.mode ?? 'auto',
+    threshold: o.threshold ?? 2,
+    slots: ['actionRowSlot'],
+  }),
+})

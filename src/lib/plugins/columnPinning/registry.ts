@@ -1,5 +1,5 @@
 /**
- * Запись плагина columnPinning (ADR 0011). Поведение даёт встроенный
+ * Запись плагина columnPinning (ADR 0011) на `definePlugin`. Поведение даёт встроенный
  * `columnPinningFeature` (state {start,end}).
  *  - гранулярность под вложенной шапкой — в `visible` дескриптора (нет опции
  *    per-column canPin);
@@ -7,7 +7,7 @@
  */
 import { columnPinningFeature } from '@tanstack/react-table'
 
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import { pinHeaderAction } from './pinHeaderAction'
 import type { ColumnPinningPluginParams } from './types'
 
@@ -20,22 +20,14 @@ export interface ColumnPinningOptions {
   onTogglePin?: ColumnPinningPluginParams['onTogglePin']
 }
 
-export const columnPinning = (opts: ColumnPinningOptions = {}) =>
-  ({
-    id: 'columnPinning',
-    enabled: opts.enabled,
-    slot: {
-      columnPinningFeature,
-    },
-    hooks: {
-      columnPinning: opts.onTogglePin ? { onTogglePin: opts.onTogglePin } : {},
-    },
-    // Единый дескриптор (ADR 0011/0024): ядро решает подачу (инлайн/кебаб).
-    slotActions: [pinHeaderAction],
-    options: {
-      enableColumnPinning: opts.enabled !== false,
-      enableLeafPinning: !!opts.leafPinning,
-    },
-  }) satisfies TesseraFeatureEntry<{
-    columnPinningFeature: typeof columnPinningFeature
-  }>
+export const columnPinning = definePlugin<ColumnPinningOptions>()({
+  id: 'columnPinning',
+  features: { columnPinningFeature },
+  hooks: o => ({ onTogglePin: o.onTogglePin }),
+  // Единый дескриптор (ADR 0011/0024): ядро решает подачу (инлайн/кебаб).
+  slotActions: [pinHeaderAction],
+  options: o => ({
+    enableColumnPinning: o.enabled !== false,
+    enableLeafPinning: !!o.leafPinning,
+  }),
+})

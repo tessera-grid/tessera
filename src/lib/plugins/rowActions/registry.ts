@@ -1,12 +1,12 @@
 /**
- * Запись плагина rowActions (ADR 0025/0010). Сервисная колонка действий закреплена
- * вправо (pin side `end`). `setup` (generic-escape): ширина колонки следует за
- * подачей действий (схлопнуты в кебаб rowActionMenu → collapsedWidth) через
- * table.setColumnAutoSizing; факт «слот схлопнут» читаем из общей опции actionMenu.
+ * Запись плагина rowActions (ADR 0025/0010) на `definePlugin`. Сервисная колонка
+ * действий закреплена вправо (pin side `end`). `setup` (generic-escape): ширина
+ * колонки следует за подачей действий (схлопнуты в кебаб rowActionMenu →
+ * collapsedWidth) через `table.setColumnAutoSizing`; факт «слот схлопнут» читаем из
+ * общей опции actionMenu.
  */
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
-import type { ServiceColumn } from '../../core/createColumns'
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import type { SlotActionMenu } from '../../core/headerActions'
 import type { ColumnSizingState, Updater } from '../../types'
 import {
@@ -28,30 +28,26 @@ type RowActionsTable = {
   setColumnAutoSizing?: (updater: Updater<ColumnSizingState>) => void
 }
 
-export const rowActions = (opts: RowActionsPluginOptions = {}) => {
-  const width = opts.width ?? DEFAULT_ROW_ACTIONS_OPTIONS.width
-  const collapsedWidth =
-    opts.collapsedWidth ?? DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth
-
-  return {
-    id: 'rowActions',
-    enabled: opts.enabled,
-    slot: {},
-    column: {
-      id: ROW_ACTIONS_COLUMN_ID,
-      make: getRowActionsColumn,
-      side: 'trailing',
-      order: 0,
-      // Колонка действий закреплена всегда справа (логическая сторона end в v9).
-      pin: { side: 'end', when: 'always' },
-    } satisfies ServiceColumn,
-    setup: (table: unknown) => {
-      const t = table as RowActionsTable
-      const isCollapsed = !!t.options.actionMenu?.actionRowSlot
-      t.setColumnAutoSizing?.(prev => ({
-        ...prev,
-        [ROW_ACTIONS_COLUMN_ID]: isCollapsed ? collapsedWidth : width,
-      }))
-    },
-  } satisfies TesseraFeatureEntry
-}
+export const rowActions = definePlugin<RowActionsPluginOptions>()({
+  id: 'rowActions',
+  features: {},
+  column: {
+    id: ROW_ACTIONS_COLUMN_ID,
+    make: getRowActionsColumn,
+    side: 'trailing',
+    order: 0,
+    // Колонка действий закреплена всегда справа (логическая сторона end в v9).
+    pin: { side: 'end', when: 'always' },
+  },
+  setup: o => table => {
+    const width = o.width ?? DEFAULT_ROW_ACTIONS_OPTIONS.width
+    const collapsedWidth =
+      o.collapsedWidth ?? DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth
+    const t = table as RowActionsTable
+    const isCollapsed = !!t.options.actionMenu?.actionRowSlot
+    t.setColumnAutoSizing?.(prev => ({
+      ...prev,
+      [ROW_ACTIONS_COLUMN_ID]: isCollapsed ? collapsedWidth : width,
+    }))
+  },
+})

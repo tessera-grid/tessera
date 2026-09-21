@@ -1,12 +1,12 @@
 /**
- * Запись плагина columnDragging (ADR 0006/0022). Кастомная фича
- * columnDraggingFeature (свой слайс состояния + column-методы); порядок колонок
- * обеспечивает `columnOrderingFeature` (слот). dnd-события — в
- * getColumnDraggingEvents (грид вызывает их).
+ * Запись плагина columnDragging (ADR 0006/0022) на `definePlugin`. Кастомная фича
+ * `columnDraggingFeature` (свой слайс состояния + column-методы); порядок колонок
+ * обеспечивает `columnOrderingFeature`. dnd-события — в getColumnDraggingEvents
+ * (грид вызывает их).
  */
 import { columnOrderingFeature } from '@tanstack/react-table'
 
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { columnDraggingFeature } from './columnDraggingFeature'
 import type { ColumnDraggingPluginParams } from './types'
@@ -18,31 +18,17 @@ export interface ColumnDraggingOptions {
   onColumnDragEnd?: ColumnDraggingPluginParams['onColumnDragEnd']
 }
 
-export const columnDragging = (opts: ColumnDraggingOptions = {}) =>
-  ({
-    id: 'columnDragging',
-    enabled: opts.enabled,
-    slot: {
-      columnDraggingFeature,
-      columnOrderingFeature,
+export const columnDragging = definePlugin<ColumnDraggingOptions>()({
+  id: 'columnDragging',
+  features: { columnDraggingFeature, columnOrderingFeature },
+  hooks: o => ({ onColumnDragEnd: o.onColumnDragEnd }),
+  slots: [
+    {
+      id: 'columnDraggingPlugin',
+      slot: 'leftHeaderSlot',
+      order: 0,
+      component: ColumnDraggingComponent,
     },
-    hooks: {
-      columnDragging: opts.onColumnDragEnd
-        ? { onColumnDragEnd: opts.onColumnDragEnd }
-        : {},
-    },
-    slots: [
-      {
-        id: 'columnDraggingPlugin',
-        slot: 'leftHeaderSlot',
-        order: 0,
-        component: ColumnDraggingComponent,
-      },
-    ],
-    options: {
-      enableColumnDragging: opts.enabled !== false,
-    },
-  }) satisfies TesseraFeatureEntry<{
-    columnDraggingFeature: typeof columnDraggingFeature
-    columnOrderingFeature: typeof columnOrderingFeature
-  }>
+  ],
+  options: o => ({ enableColumnDragging: o.enabled !== false }),
+})

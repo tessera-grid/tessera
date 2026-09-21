@@ -1,12 +1,11 @@
 /**
- * Запись плагина rowDragging (ADR 0006/0022). Кастомная фича rowDraggingFeature
- * (слайс состояния + row-метод getCanDrag) и сервисная колонка-ручка (cell —
- * компонент напрямую). dnd-редьюсер (getRowDraggingEvents) с геометрией
- * offset/nesting — grid-слой.
+ * Запись плагина rowDragging (ADR 0006/0022) на `definePlugin`. Кастомная фича
+ * `rowDraggingFeature` (слайс состояния + row-метод getCanDrag) и сервисная
+ * колонка-ручка. dnd-редьюсер (getRowDraggingEvents) с геометрией offset/nesting —
+ * grid-слой.
  */
 import type { Row } from '../../types'
-import type { ServiceColumn } from '../../core/createColumns'
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import { COLUMN_DRAGGING_ID, getRowDraggingColumn } from './rowDraggingColumn'
 import { rowDraggingFeature } from './rowDraggingFeature'
 import type { RowDraggingPluginParams } from './types'
@@ -20,26 +19,18 @@ export interface RowDraggingOptions {
   onRowDragEnd?: RowDraggingPluginParams['onRowDragEnd']
 }
 
-export const rowDragging = (opts: RowDraggingOptions = {}) =>
-  ({
-    id: 'rowDragging',
-    enabled: opts.enabled,
-    slot: {
-      rowDraggingFeature,
-    },
-    hooks: {
-      rowDragging: opts.onRowDragEnd ? { onRowDragEnd: opts.onRowDragEnd } : {},
-    },
-    column: {
-      id: COLUMN_DRAGGING_ID,
-      make: getRowDraggingColumn,
-      side: 'leading',
-      order: 0,
-      pin: { side: 'start', when: 'with-user' },
-    } satisfies ServiceColumn,
-    options: {
-      enableRowDragging: opts.enabled === false ? false : (opts.enable ?? true),
-    },
-  }) satisfies TesseraFeatureEntry<{
-    rowDraggingFeature: typeof rowDraggingFeature
-  }>
+export const rowDragging = definePlugin<RowDraggingOptions>()({
+  id: 'rowDragging',
+  features: { rowDraggingFeature },
+  hooks: o => ({ onRowDragEnd: o.onRowDragEnd }),
+  column: {
+    id: COLUMN_DRAGGING_ID,
+    make: getRowDraggingColumn,
+    side: 'leading',
+    order: 0,
+    pin: { side: 'start', when: 'with-user' },
+  },
+  options: o => ({
+    enableRowDragging: o.enabled === false ? false : (o.enable ?? true),
+  }),
+})

@@ -1,7 +1,7 @@
 /**
- * Запись плагина columnSorting (ADR 0012). Поведение даёт `rowSortingFeature` +
- * слот `sortedRowModel`; функции сортировки регистрируются явно (`sortFns`,
- * tree-shakeable) — здесь стандартный набор.
+ * Запись плагина columnSorting (ADR 0012) на `definePlugin`. Поведение даёт
+ * `rowSortingFeature` + `sortedRowModel`; функции сортировки регистрируются явно
+ * (`sortFns`, tree-shakeable) — здесь стандартный набор.
  */
 import {
   createSortedRowModel,
@@ -14,7 +14,7 @@ import {
   sortFn_textCaseSensitive,
 } from '@tanstack/react-table'
 
-import type { TesseraFeatureEntry } from '../../core/features'
+import { definePlugin } from '../../core/definePlugin'
 import { sortHeaderAction } from './sortHeaderAction'
 import type { ColumnSortingPluginParams } from './types'
 
@@ -64,40 +64,30 @@ const resolveMultiSortEvent = (
 ): ((event: unknown) => boolean) | undefined =>
   typeof event === 'function' ? event : undefined
 
-export const columnSorting = (opts: ColumnSortingOptions = {}) => {
-  const multi = resolveMultiSort(opts.multiSort)
-  const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)
-
-  return {
-    id: 'columnSorting',
-    enabled: opts.enabled,
-    slot: {
-      rowSortingFeature,
-      sortedRowModel: createSortedRowModel(),
-      sortFns,
-    },
-    hooks: {
-      columnSorting: opts.onToggleColumnSort
-        ? { onToggleColumnSort: opts.onToggleColumnSort }
-        : {},
-    },
-    // Единый дескриптор (ADR 0012): инлайн — циклящая кнопка с бейджем приоритета;
-    // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
-    slotActions: [sortHeaderAction],
-    options: {
-      enableSorting: opts.enabled !== false,
-      enableSortingRemoval: opts.removal ?? true,
-      manualSorting: opts.server ?? false,
+export const columnSorting = definePlugin<ColumnSortingOptions>()({
+  id: 'columnSorting',
+  features: {
+    rowSortingFeature,
+    sortedRowModel: createSortedRowModel(),
+    sortFns,
+  },
+  hooks: o => ({ onToggleColumnSort: o.onToggleColumnSort }),
+  // Единый дескриптор (ADR 0012): инлайн — циклящая кнопка с бейджем приоритета;
+  // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
+  slotActions: [sortHeaderAction],
+  options: o => {
+    const multi = resolveMultiSort(o.multiSort)
+    const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)
+    return {
+      enableSorting: o.enabled !== false,
+      enableSortingRemoval: o.removal ?? true,
+      manualSorting: o.server ?? false,
       sortDescFirst: true,
       enableMultiSort: multi.enabled,
       ...(multi.opts.max !== undefined
         ? { maxMultiSortColCount: multi.opts.max }
         : {}),
       ...(isMultiSortEvent ? { isMultiSortEvent } : {}),
-    },
-  } satisfies TesseraFeatureEntry<{
-    rowSortingFeature: typeof rowSortingFeature
-    sortedRowModel: ReturnType<typeof createSortedRowModel>
-    sortFns: typeof sortFns
-  }>
-}
+    }
+  },
+})

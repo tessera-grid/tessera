@@ -17,6 +17,7 @@ import type {
   PluginSlot,
 } from './createSlots'
 import type { TesseraFeatureEntry } from './features'
+import type { ActionMenuDeclaration, SlotAction } from './headerActions'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
 export interface PluginCellProps<THooks = never> extends CellComponentProps {
@@ -69,10 +70,17 @@ interface DefinePluginConfig<
   hooks?: (opts: TOptions) => THooks
   /** Сервисная колонка плагина. */
   column?: ServiceColumn
-  /** Декларативные слоты плагина. */
+  /** Декларативные слоты плагина (UI-компоненты в местах рендера). */
   slots?: PluginSlot[]
-  /** Императивный сетап после создания таблицы; может вернуть cleanup. */
-  setup?: (table: unknown) => void | (() => void)
+  /** Декларативные действия слота (инлайн-кнопка / пункт кебаб-меню). */
+  slotActions?: SlotAction[]
+  /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
+  actionMenu?: (opts: TOptions) => ActionMenuDeclaration
+  /**
+   * Императивный сетап после создания таблицы (фабрика от opts → эффект над table;
+   * может вернуть cleanup). Через opts сетап видит аргументы фабрики.
+   */
+  setup?: (opts: TOptions) => (table: unknown) => void | (() => void)
 }
 
 /**
@@ -114,8 +122,14 @@ export const definePlugin =
       if (config.slots) {
         entry.slots = config.slots
       }
+      if (config.slotActions) {
+        entry.slotActions = config.slotActions
+      }
+      if (config.actionMenu) {
+        entry.actionMenu = config.actionMenu(opts)
+      }
       if (config.setup) {
-        entry.setup = config.setup
+        entry.setup = config.setup(opts)
       }
 
       return entry
