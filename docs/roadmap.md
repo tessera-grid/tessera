@@ -17,6 +17,13 @@
   V9-1 (перф не хуже v8-базлайна) подтверждено. RnD, план и спайк —
   [docs/research/](research/), [spike/tanstack-v9/](../spike/tanstack-v9/).
 
+- **Упаковочные фиксы перед публичным релизом — завершены.**
+  `@tanstack/react-store` (рантайм-зависимость `src/lib/core/reactivity.ts`)
+  перенесён в `dependencies` — у потребителя импорт больше не упадёт.
+  `tailwindcss` / `@tailwindcss/vite` уехали в `devDependencies`, `motion` из
+  зависимостей убран (в рантайм-JS не шли) — чище install-вес. `@tanstack/react-table`
+  вынесен в `peerDependencies ^9`; пакет опубликован как `@mstrvtt/tessera`.
+
 ## Запланировано
 
 - **Полная поддержка сводных таблиц (pivot).** Первоклассный режим pivot, со **всеми
@@ -63,12 +70,6 @@
   меню), затем зафиксировать бюджет по gzip как перф-гейт (в духе
   [ADR 0009](decisions/0009-test-coverage-visual-and-performance.md)). `motion` в
   рантайм-бандл не попадает (tree-shaken) — весом не считается.
-- **Упаковочные фиксы перед публичным релизом.** (1) `@tanstack/react-store`
-  используется в рантайме (`src/lib/core/reactivity.ts`) и вынесен в external, но
-  лежит только в `devDependencies` — у потребителя его не окажется, импорт упадёт;
-  перенести в `dependencies` (или `peerDependencies`). (2) `tailwindcss` /
-  `@tailwindcss/vite` / `motion` стоят в `dependencies`, хотя в рантайм-JS не идут —
-  перенести в `devDependencies` (чистит install-вес).
 
 ## Паритет с рынком (конкурентные пробелы)
 
