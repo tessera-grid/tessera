@@ -1,11 +1,10 @@
 /**
- * Слот-ручка перетаскивания столбца. Реактивность на
- * `useSelector(table.atoms.columnDraggingActiveId)`; ручка гаснет у закреплённых
- * (`getIsPinned`). Переиспользуем grid-компонент DragHandler.
+ * Слот-ручка перетаскивания столбца. Реактивность на срезе `columnDraggingActiveId`
+ * (`useSlice`); ручка гаснет у закреплённых (`getIsPinned`). Переиспользуем
+ * grid-компонент DragHandler. Хуки не читает — колбэк живёт в dnd-редьюсере.
  */
-import { useSelector } from '@tanstack/react-store'
-
 import type { HeaderComponentProps } from '../../core/createSlots'
+import { useSlice } from '../../core/reactivity'
 import { DragHandler } from '../../grid/dnd'
 
 export const ColumnDraggingComponent = ({
@@ -13,10 +12,7 @@ export const ColumnDraggingComponent = ({
   table,
 }: HeaderComponentProps) => {
   // Всегда-присутствующий срез плагина (реактивность dnd).
-  useSelector(
-    (table as unknown as { atoms: { columnDraggingActiveId: unknown } }).atoms
-      .columnDraggingActiveId as never,
-  )
+  useSlice(table, 'columnDraggingActiveId')
 
   if (!column.getCanDrag()) {
     return null

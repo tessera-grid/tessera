@@ -1,27 +1,23 @@
 /**
- * Ручка ресайза колонки: реактивность через `useSelector(table.atoms.columnResizing)`.
+ * Ручка ресайза колонки: реактивность на срезе `columnResizing` (`useSlice`);
+ * бизнес-колбэк — из пропса `hooks` (инъекция definePlugin).
  */
-import { useSelector } from '@tanstack/react-store'
-
-import type { HeaderComponentProps } from '../../core/createSlots'
+import type { PluginHeaderProps } from '../../core/definePlugin'
+import { useSlice } from '../../core/reactivity'
 import { ResizeHandler } from '../../plugins/columnSizing/ResizeHandler'
-import type { ColumnSizingPlugin } from './types'
+import type { ColumnSizingHooks } from './types'
 
 export const ColumnSizingComponent = ({
   header,
   column,
   table,
-}: HeaderComponentProps) => {
-  useSelector(
-    (table as unknown as { atoms: { columnResizing: unknown } }).atoms
-      .columnResizing as never,
-  )
+  hooks,
+}: PluginHeaderProps<ColumnSizingHooks>) => {
+  useSlice(table, 'columnResizing')
 
   if (!column.getCanResize()) {
     return null
   }
-
-  const hooks = () => (table.getHooks() as ColumnSizingPlugin).columnSizing
 
   const onResetSize = () => {
     const { minSize, size, maxSize } = column.columnDef
@@ -33,11 +29,11 @@ export const ColumnSizingComponent = ({
       maxSize ?? Number.MAX_SAFE_INTEGER,
     )
 
-    hooks().onColumnResizeEnd?.({ id: column.id, width })
+    hooks.onColumnResizeEnd({ id: column.id, width })
   }
 
   const onResizeEnd = () => {
-    hooks().onColumnResizeEnd?.({ id: column.id, width: column.getSize() })
+    hooks.onColumnResizeEnd({ id: column.id, width: column.getSize() })
   }
 
   return (

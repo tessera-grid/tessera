@@ -1,27 +1,18 @@
 /**
- * Сервисная колонка выбора. `header`/`cell` — обёртки, инъектирующие слайс хуков
- * плагина в компонент типизированным пропсом (нативный FlexRender рендерит обёртку).
+ * Сервисная колонка выбора. `header`/`cell` — обёртки `injectHeaderHooks`/
+ * `injectCellHooks`: подмешивают hook-слайс плагина в компонент типизированным
+ * пропсом (нативный FlexRender рендерит обёртку).
  */
-import { createElement } from 'react'
-
 import {
   COLUMN_ACTIONS_SIZE,
   getActionColumnId,
 } from '../../core/createColumns/actionColumnParams'
-import type {
-  CellComponentProps,
-  HeaderComponentProps,
-} from '../../core/createSlots'
-import { readPluginHooks } from '../../core/definePlugin'
+import { injectCellHooks, injectHeaderHooks } from '../../core/definePlugin'
 import type { ColumnDef } from '../../types'
 import { HeadSelectionComponent } from './HeadSelectionComponent'
 import { RowSelectionComponent } from './RowSelectionComponent'
-import type { RowSelectionHooks } from './types'
 
 export const COLUMN_SELECTION_ID = getActionColumnId('rowSelection')
-
-const readHooks = (table: { getHooks: () => unknown }) =>
-  readPluginHooks<RowSelectionHooks>(table, 'rowSelection')
 
 const leafColumn = {
   id: COLUMN_SELECTION_ID,
@@ -30,16 +21,8 @@ const leafColumn = {
   size: COLUMN_ACTIONS_SIZE,
   enableSorting: false,
   enableResizing: false,
-  header: (ctx: HeaderComponentProps) =>
-    createElement(HeadSelectionComponent, {
-      ...ctx,
-      hooks: readHooks(ctx.table),
-    }),
-  cell: (ctx: CellComponentProps) =>
-    createElement(RowSelectionComponent, {
-      ...ctx,
-      hooks: readHooks(ctx.table),
-    }),
+  header: injectHeaderHooks(HeadSelectionComponent, 'rowSelection'),
+  cell: injectCellHooks(RowSelectionComponent, 'rowSelection'),
 } as unknown as ColumnDef<any, any, any>
 
 export const getRowSelectionColumn = (

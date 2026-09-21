@@ -6,6 +6,7 @@ import {
   COLUMN_ACTIONS_SIZE,
   getActionColumnId,
 } from '../../core/createColumns/actionColumnParams'
+import { injectCellHooks } from '../../core/definePlugin'
 import type { ColumnDef } from '../../types'
 import { RowExpandingComponent } from './RowExpandingComponent'
 
@@ -19,7 +20,7 @@ const leafColumn = {
   header: undefined,
   enableSorting: false,
   enableResizing: false,
-  cell: RowExpandingComponent,
+  cell: injectCellHooks(RowExpandingComponent, 'rowExpanding'),
 } as unknown as ColumnDef<any, any, any>
 
 export const getRowExpandingColumn = (

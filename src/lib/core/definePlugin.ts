@@ -10,6 +10,8 @@
  * `PluginCellProps` — следующий инкремент (нужны плагину с локальным состоянием,
  * у `rowSelection` их нет).
  */
+import { createElement, type ReactNode } from 'react'
+
 import type { ServiceColumn } from './createColumns'
 import type {
   CellComponentProps,
@@ -43,6 +45,34 @@ export const readPluginHooks = <THooks>(
   const all = (table.getHooks() ?? {}) as Record<string, unknown>
   return (all[scope] ?? {}) as THooks
 }
+
+/**
+ * Обёртка колонки/слота: подмешивает hook-слайс плагина (по `scope`) в компонент
+ * ячейки типизированным пропсом `hooks`. Компонент — чистая функция `PluginCellProps`,
+ * без кастов и импорта плагина.
+ */
+export const injectCellHooks =
+  <THooks>(
+    Component: (props: PluginCellProps<THooks>) => ReactNode,
+    scope: string,
+  ) =>
+  (ctx: CellComponentProps): ReactNode =>
+    createElement(Component, {
+      ...ctx,
+      hooks: readPluginHooks<THooks>(ctx.table, scope),
+    })
+
+/** Аналог `injectCellHooks` для слота/колонки заголовка (`PluginHeaderProps`). */
+export const injectHeaderHooks =
+  <THooks>(
+    Component: (props: PluginHeaderProps<THooks>) => ReactNode,
+    scope: string,
+  ) =>
+  (ctx: HeaderComponentProps): ReactNode =>
+    createElement(Component, {
+      ...ctx,
+      hooks: readPluginHooks<THooks>(ctx.table, scope),
+    })
 
 const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   const out: Record<string, unknown> = {}

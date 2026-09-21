@@ -1,11 +1,4 @@
 /** Hook-слайс плагина columnSizing. */
-export type ColumnSizingPluginScope = 'columnSizing'
-
-export interface ColumnSizingPluginParams {
+export interface ColumnSizingHooks {
   onColumnResizeEnd: (props: { id: string; width: number }) => void
 }
-
-export type ColumnSizingPlugin = Record<
-  ColumnSizingPluginScope,
-  ColumnSizingPluginParams
->

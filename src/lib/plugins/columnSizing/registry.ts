@@ -8,15 +8,15 @@ import {
   columnSizingFeature,
 } from '@tanstack/react-table'
 
-import { definePlugin } from '../../core/definePlugin'
+import { definePlugin, injectHeaderHooks } from '../../core/definePlugin'
 import { ColumnSizingComponent } from './ColumnSizingComponent'
-import type { ColumnSizingPluginParams } from './types'
+import type { ColumnSizingHooks } from './types'
 
 export interface ColumnSizingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /** Бизнес-колбэк окончания ресайза (аргумент фабрики, ADR 0027); читается живо. */
-  onColumnResizeEnd?: ColumnSizingPluginParams['onColumnResizeEnd']
+  onColumnResizeEnd?: ColumnSizingHooks['onColumnResizeEnd']
 }
 
 export const columnSizing = definePlugin<ColumnSizingOptions>()({
@@ -28,7 +28,7 @@ export const columnSizing = definePlugin<ColumnSizingOptions>()({
       id: 'columnSizingPlugin',
       slot: 'rightHeaderSlot',
       order: 'last',
-      component: ColumnSizingComponent,
+      component: injectHeaderHooks(ColumnSizingComponent, 'columnSizing'),
       // Resize-грип — кромочный аффорданс, а не иконка-кнопка: инлайн, но НЕ
       // учитывается в пороге схлопывания кебаба (иначе «крал» бы место).
       countsAsHeaderAction: false,

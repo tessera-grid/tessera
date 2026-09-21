@@ -24,7 +24,7 @@ import { BatchToolbar } from './BatchToolbar'
 import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
-import { RowExpandingPluginParams } from '../../lib/plugins/rowExpanding'
+import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
 import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { FeatureToggles, argsToPlugins } from './__mocks__/utils/argsToPlugins'
@@ -150,7 +150,7 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * визуальным тестам, чтобы наблюдать вызов hook при тоггле раскрытия (см. ADR
    * 0015, RE6); в обычных историях не задаётся (дефолт — no-op).
    */
-  onExpandRow?: RowExpandingPluginParams['onExpandRow']
+  onExpandRow?: RowExpandingHooks['onExpandRow']
 
   updateArgs: (
     args: Partial<

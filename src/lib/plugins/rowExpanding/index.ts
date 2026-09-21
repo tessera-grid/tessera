@@ -6,4 +6,4 @@ export {
 
 export { COLUMN_EXPANDING_ID } from './rowExpandingColumn'
 
-export type { RowExpandingPlugin, RowExpandingPluginParams } from './types'
+export type { RowExpandingHooks } from './types'

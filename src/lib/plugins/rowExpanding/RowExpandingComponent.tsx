@@ -1,28 +1,26 @@
 /**
- * Ячейка колонки раскрытия. Реактивность на `useSelector(table.atoms.expanded)`.
+ * Ячейка колонки раскрытия. Реактивность на срезе `expanded` (`useSlice`);
+ * бизнес-колбэк — из пропса `hooks` (инъекция definePlugin).
  */
-import { useSelector } from '@tanstack/react-store'
-
-import type { CellComponentProps } from '../../core/createSlots'
+import type { PluginCellProps } from '../../core/definePlugin'
+import { useSlice } from '../../core/reactivity'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
-import type { RowExpandingPlugin } from './types'
+import type { RowExpandingHooks } from './types'
 
-export const RowExpandingComponent = ({ row, table }: CellComponentProps) => {
-  // Подписка на срез раскрытия.
-  useSelector(
-    (table as unknown as { atoms: { expanded: unknown } }).atoms
-      .expanded as never,
-  )
+export const RowExpandingComponent = ({
+  row,
+  table,
+  hooks,
+}: PluginCellProps<RowExpandingHooks>) => {
+  useSlice(table, 'expanded')
 
   if (!row.getCanExpand()) {
     return null
   }
 
-  const { onExpandRow } = (table.getHooks() as RowExpandingPlugin).rowExpanding
-
   const onExpand = () => {
     row.getToggleExpandedHandler()()
-    onExpandRow(row, !row.getIsExpanded())
+    hooks.onExpandRow(row, !row.getIsExpanded())
   }
 
   return <ExpandButton expanded={row.getIsExpanded()} onClick={onExpand} />
