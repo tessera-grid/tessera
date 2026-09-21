@@ -87,6 +87,25 @@ export interface FoldedEntryConfig {
 const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
 
 /**
+ * Дубли `id` среди записей. `id` — единый ключ scope: hook-слайс, локальный state-слайс,
+ * генерируемая state-фича и id слотов. Дубль молча перезаписывает их («последний
+ * победил»), поэтому ядро дев-варнит (DP5).
+ */
+export const findDuplicatePluginIds = (
+  entries: readonly TesseraFeatureEntry[],
+): string[] => {
+  const seen = new Set<string>()
+  const duplicates = new Set<string>()
+  for (const entry of entries) {
+    if (seen.has(entry.id)) {
+      duplicates.add(entry.id)
+    }
+    seen.add(entry.id)
+  }
+  return [...duplicates]
+}
+
+/**
  * Чистая свёртка активных записей в опции таблицы. Порядок фолда = порядок
  * записей, как в императивной регистрации. Используется и `useCreateTable`, и
  * headless-тестами.

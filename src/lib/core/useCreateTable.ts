@@ -30,11 +30,13 @@ import {
 import { injectServiceColumns } from './createColumns'
 import {
   buildTesseraFeatures,
+  findDuplicatePluginIds,
   foldEntries,
   foldHooks,
   type TesseraFeatureEntry,
   type TesseraFeatures,
 } from './features'
+import { logWarn } from './logger'
 
 const DEFAULT_COLUMN = {
   minSize: 150,
@@ -277,6 +279,24 @@ export const useCreateTable = <
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature, table],
   )
+
+  // Дев-варн на коллизию id плагинов (DP5): id ключует hooks-scope, локальный state и
+  // генерируемую фичу — дубль молча перезапишет их. Печатается один раз на набор.
+  const duplicateIds = useMemo(
+    () => findDuplicatePluginIds(plugins),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по полному набору id
+    [plugins.map(entry => entry.id).join('|')],
+  )
+  useEffect(() => {
+    if (duplicateIds.length === 0) {
+      return
+    }
+    logWarn(
+      table,
+      `дублирующиеся id плагинов: ${duplicateIds.join(', ')} — id ключует hooks-scope, локальный state и генерируемую фичу; коллизия перезапишет их (последний победил)`,
+      `dup-plugin-id:${duplicateIds.join(',')}`,
+    )
+  }, [duplicateIds, table])
 
   // Сброс выбора строк при смене опций выбора (ядровая логика, ADR 0010). Триггер
   // ТОЛЬКО по изменению самих опций (через ref), а не по идентичности table — иначе
