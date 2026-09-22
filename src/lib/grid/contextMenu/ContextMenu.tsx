@@ -32,6 +32,7 @@ interface ContextMenuTable {
       column: { id: string }
       getContext: () => ContextMenuContext
       getIsSelected?: () => boolean
+      getCanSelect?: () => boolean
     }[]
   }
   setFocusedCell?: (rowId: string, columnId: string) => void
@@ -39,8 +40,13 @@ interface ContextMenuTable {
 }
 
 /**
- * Строит контекст пункта: контекст ячейки под курсором + сводка выбора. CM7: правый
- * клик по невыделенной ячейке сначала выделяет её (по presence фичи cellSelection).
+ * Строит контекст пункта: контекст ячейки под курсором + сводка выбора.
+ *
+ * Выбираемость ячейки решает сама фича (`getCanSelect`): сервисные колонки
+ * (чекбокс/действия) невыбираемы, поэтому их правый клик НЕ трогает выделение и
+ * `isInSelection=false` — пункты, гейтящиеся на выделении (напр. «Копировать»),
+ * там не показываются, и меню уступает нативному (CM5/CM10). CM7: правый клик по
+ * выбираемой, но невыделенной ячейке сначала выделяет её.
  */
 const buildContext = (
   t: ContextMenuTable,
@@ -54,23 +60,28 @@ const buildContext = (
   if (!cell) {
     return null
   }
-  const canSelect = typeof cell.getIsSelected === 'function'
-  const wasSelected = canSelect ? cell.getIsSelected!() : false
+  const featureOn = typeof cell.getIsSelected === 'function'
+  const canSelect = featureOn && (cell.getCanSelect?.() ?? true)
+  const wasSelected = featureOn ? cell.getIsSelected!() : false
   if (canSelect && !wasSelected && typeof t.setFocusedCell === 'function') {
     t.setFocusedCell(rowId, columnId)
   }
+  // Выбираемая ячейка после авто-выделения входит в выделение; сервисная — нет.
+  const isInSelection = canSelect ? true : wasSelected
   const count = canSelect
     ? wasSelected
       ? (t.getSelectedCellCount?.() ?? 1)
       : 1
-    : 0
+    : featureOn
+      ? (t.getSelectedCellCount?.() ?? 0)
+      : 0
   return {
     ...cell.getContext(),
     selection: {
       count,
       isSingle: count === 1,
       isMultiple: count > 1,
-      isInSelection: canSelect,
+      isInSelection,
     },
   }
 }

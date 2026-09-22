@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
+import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 
 // Каждое требование contextMenu — свой именованный тест `CM<n>` (ADR 0030).
 // Гоняет историю `ContextMenu` (contextMenu + cellSelection). Меню портируется в
@@ -137,6 +138,19 @@ describe('Context Menu', () => {
     const event = rightClick(cellAt(container, 1, 0))
     expect(event.defaultPrevented).toBe(false)
     // Give a lazy popup no chance to appear.
+    await new Promise(r => setTimeout(r, 200))
+    expect(menuEl()).toBeNull()
+  })
+
+  test('CM10: right-click on a service column falls through to the native menu', async () => {
+    // Service (selection) column is not selectable → no applicable item → native.
+    const container = await renderContextMenu({ enableRowSelection: true })
+    const serviceCell = container.querySelector<HTMLElement>(
+      `${BODY_CELL}[data-column-id='${COLUMN_SELECTION_ID}']`,
+    )
+    expect(serviceCell).not.toBeNull()
+    const event = rightClick(serviceCell!)
+    expect(event.defaultPrevented).toBe(false)
     await new Promise(r => setTimeout(r, 200))
     expect(menuEl()).toBeNull()
   })

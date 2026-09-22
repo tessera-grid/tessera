@@ -118,9 +118,17 @@ describe('contextMenu — гейтинг по выбору (CM3)', () => {
 describe('cellSelection — пункт «Копировать» (CM4)', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('CM4: visible только при непустом выборе', () => {
-    expect(copyContextAction.visible?.(ctxWith({ count: 0 }))).toBe(false)
-    expect(copyContextAction.visible?.(ctxWith({ count: 1 }))).toBe(true)
+  it('CM4/CM10: visible, когда ячейка под курсором в выделении; иначе (в т.ч. сервисные) — нет', () => {
+    expect(
+      copyContextAction.visible?.(ctxWith({ count: 0, isInSelection: false })),
+    ).toBe(false)
+    // Сервисная ячейка: выбор где-то есть (count>0), но сама она не в выделении.
+    expect(
+      copyContextAction.visible?.(ctxWith({ count: 3, isInSelection: false })),
+    ).toBe(false)
+    expect(
+      copyContextAction.visible?.(ctxWith({ count: 1, isInSelection: true })),
+    ).toBe(true)
   })
 
   it('CM4: onSelect сериализует выделение в буфер (TSV-фолбэк)', async () => {

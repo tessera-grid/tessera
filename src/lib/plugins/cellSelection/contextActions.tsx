@@ -43,8 +43,10 @@ export const copyContextAction: ContextMenuAction = {
   order: 0,
   icon: () => <Copy width={16} height={16} />,
   label: (_ctx, labels) => labels.copy,
-  // Доступно и для одной, и для нескольких выделенных ячеек; без выделения — скрыто.
-  visible: ctx => ctx.selection.count > 0,
+  // Показываем, когда ячейка под курсором входит в выделение (для одной и для
+  // многих). На невыбираемых сервисных колонках isInSelection=false → пункт скрыт,
+  // меню там уступает нативному (ADR 0030, CM10).
+  visible: ctx => ctx.selection.isInSelection,
   onSelect: ctx => {
     const table = ctx.table as {
       getSelectedCellRangesData?: () => unknown[][][]
