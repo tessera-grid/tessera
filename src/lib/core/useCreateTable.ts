@@ -255,6 +255,7 @@ export const useCreateTable = <
     slots: folded.slots,
     slotActions: folded.slotActions,
     contextMenuActions: folded.contextMenuActions,
+    keyboardActions: folded.keyboardActions,
     actionMenu: folded.actionMenu,
     enableSkeleton,
     enableLoading,

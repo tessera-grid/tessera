@@ -22,6 +22,7 @@ import type {
   SlotActionMenu,
   SlotActions,
 } from './headerActions'
+import type { KeyboardAction } from './keyboardActions'
 import type { SkeletonOptions } from './skeletonOptions'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -42,6 +43,7 @@ export interface CommonOptions {
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9
   contextMenuActions?: ContextMenuAction[]
+  keyboardActions?: KeyboardAction[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
   enableSkeleton?: boolean
@@ -58,6 +60,7 @@ export interface CommonTableAPI {
   getRenderSlots: () => RenderSlotsV9 | undefined
   getSlotActions: () => SlotActionsV9 | undefined
   getContextMenuActions: () => ContextMenuAction[] | undefined
+  getKeyboardActions: () => KeyboardAction[] | undefined
   getIsAnyColumnResizing: () => boolean
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
 }

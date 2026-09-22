@@ -8,6 +8,10 @@
  * фиксированного набора — литерал (см. использование в тестах).
  */
 import {
+  type KeyboardAction,
+  registerKeyboardActionsInto,
+} from './keyboardActions'
+import {
   columnGroupingFeature,
   columnOrderingFeature,
   columnPinningFeature,
@@ -64,6 +68,8 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   slotActions?: SlotAction[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
+  /** Клавиатурные действия на ячейках (ADR 0021). */
+  keyboardActions?: KeyboardAction[]
   /** Декларация плагина-меню: на какие слоты распространить кебаб. */
   actionMenu?: ActionMenuDeclaration
   /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
@@ -83,6 +89,7 @@ export interface FoldedEntryConfig {
   slots: RenderSlots
   slotActions: SlotActions
   contextMenuActions: ContextMenuAction[]
+  keyboardActions: KeyboardAction[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
   setups: NonNullable<TesseraFeatureEntry['setup']>[]
@@ -121,6 +128,7 @@ export const foldEntries = (
   const slots = createEmptyRenderSlots()
   const slotActions = createEmptySlotActions()
   const contextMenuActions: ContextMenuAction[] = []
+  const keyboardActions: KeyboardAction[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
@@ -150,6 +158,8 @@ export const foldEntries = (
       }
     })
 
+    registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
+
     if (entry.column) {
       serviceColumns.push(entry.column)
     }
@@ -171,6 +181,7 @@ export const foldEntries = (
     slots,
     slotActions,
     contextMenuActions,
+    keyboardActions,
     actionMenu,
     serviceColumns,
     setups,

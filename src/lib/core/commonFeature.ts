@@ -39,6 +39,7 @@ export const commonFeature: TableFeature = {
       table_getRenderSlots: { fn: () => options().slots },
       table_getSlotActions: { fn: () => options().slotActions },
       table_getContextMenuActions: { fn: () => options().contextMenuActions },
+      table_getKeyboardActions: { fn: () => options().keyboardActions },
       table_getIsAnyColumnResizing: {
         fn: () =>
           // getAllLeafColumns — ядровый метод (не зависит от columnVisibilityFeature).

@@ -28,6 +28,7 @@ import type {
   ContextMenuAction,
   SlotAction,
 } from './headerActions'
+import type { KeyboardAction } from './keyboardActions'
 import { useSlice } from './reactivity'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
@@ -236,6 +237,8 @@ interface DefinePluginConfig<
   slotActions?: SlotAction[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
+  /** Клавиатурные действия на ячейках (ADR 0021). */
+  keyboardActions?: KeyboardAction[]
   /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
   actionMenu?: (opts: TOptions) => ActionMenuDeclaration
   /**
@@ -299,6 +302,9 @@ export const definePlugin =
       }
       if (config.contextMenuActions) {
         entry.contextMenuActions = config.contextMenuActions
+      }
+      if (config.keyboardActions) {
+        entry.keyboardActions = config.keyboardActions
       }
       if (config.actionMenu) {
         entry.actionMenu = config.actionMenu(opts)
