@@ -111,21 +111,31 @@ export interface PluginCellOwnerProps<
 const stateChangeOption = (id: string): string =>
   `on${id.charAt(0).toUpperCase()}${id.slice(1)}Change`
 
+type WritableAtom = { set: (v: unknown) => void }
+
 /**
  * Запись значения в локальный слайс плагина: через штатный updater-опцию
- * `on<Key>Change` (makeStateUpdater), с фолбэком на прямую запись атома.
+ * `on<Key>Change` (makeStateUpdater), с фолбэком на запись атома тем же путём, что и
+ * makeStateUpdater: внешний `options.atoms[id]`, иначе `baseAtoms[id]` (`table.atoms`
+ * в v9 — производные, только для чтения).
  */
-const setLocalState = (table: unknown, id: string, next: unknown): void => {
+export const setPluginState = (
+  table: unknown,
+  id: string,
+  next: unknown,
+): void => {
   const t = table as {
-    options?: Record<string, ((v: unknown) => void) | undefined>
-    atoms?: Record<string, { set: (v: unknown) => void } | undefined>
+    options?: Record<string, unknown> & {
+      atoms?: Record<string, WritableAtom | undefined>
+    }
+    baseAtoms?: Record<string, WritableAtom | undefined>
   }
   const updater = t.options?.[stateChangeOption(id)]
-  if (updater) {
+  if (typeof updater === 'function') {
     updater(next)
     return
   }
-  t.atoms?.[id]?.set(next)
+  ;(t.options?.atoms?.[id] ?? t.baseAtoms?.[id])?.set(next)
 }
 
 /**
@@ -141,7 +151,7 @@ export const injectCellState =
   ) =>
   (ctx: CellComponentProps): ReactNode => {
     const value = useSlice(ctx.table as never, id as never) as TState
-    const setter = (next: TState) => setLocalState(ctx.table, id, next)
+    const setter = (next: TState) => setPluginState(ctx.table, id, next)
     return createElement(Component, {
       ...ctx,
       hooks: readPluginHooks<THooks>(ctx.table, id),
@@ -163,7 +173,7 @@ export const injectCellOwner =
   // `content` кладёт RenderCellSlot в рантайме (для cellSlot он всегда есть).
   (ctx: CellComponentProps): ReactNode => {
     const value = useSlice(ctx.table as never, id as never) as TState
-    const setter = (next: TState) => setLocalState(ctx.table, id, next)
+    const setter = (next: TState) => setPluginState(ctx.table, id, next)
     return createElement(Component, {
       ...ctx,
       content: (ctx as { content?: ReactNode }).content,
