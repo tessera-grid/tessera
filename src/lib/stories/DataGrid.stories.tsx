@@ -26,6 +26,8 @@ import { groupedColumns, useColumns } from './__mocks__/columns'
 import { makeData, useData } from './__mocks__/data'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
 import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
+import type { CellEditCommit } from '../../lib/plugins/cellEditing/types'
+import type { CellComponentProps } from '../../lib/core/createSlots'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { FeatureToggles, argsToPlugins } from './__mocks__/utils/argsToPlugins'
 import { usePagination } from './__mocks__/usePagination'
@@ -42,6 +44,7 @@ import {
   columnCountType,
   containerHeightType,
   dataCountType,
+  enableCellEditingType,
   enableColumnDraggingType,
   enableColumnPinningType,
   enableColumnResizingType,
@@ -160,6 +163,11 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
 }
 
 const expandingInitialState = {}
+
+// Демо cellEditing: показ кнопки разрешён только на этих колонках (требование
+// «условие показа по контексту ячейки»). Коммит пишет значение в мок-данные —
+// изменение видно сразу в ячейке.
+const CELL_EDITABLE_COLUMNS = ['age', 'visits', 'gender']
 
 // Детерминированное дерево для истории SubRow Selection (генератор, а не
 // захардкоженные данные) — 4 родителя × 3 ребёнка, наглядный каскад выбора.
@@ -318,6 +326,22 @@ export const StoryComponent = memo(
               ? { columnSizing: { onColumnResizeEnd } }
               : {}),
             ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
+            ...(options.enableCellEditing
+              ? {
+                  cellEditing: {
+                    canEdit: (ctx: CellComponentProps) =>
+                      CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
+                    onCellEdit: ({ rowId, columnId, value }: CellEditCommit) =>
+                      setData(prev =>
+                        prev.map(row =>
+                          row.id === rowId
+                            ? { ...row, [columnId]: value }
+                            : row,
+                        ),
+                      ),
+                  },
+                }
+              : {}),
           },
         },
       ],
@@ -487,6 +511,8 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableHeaderActionMenu: false,
     enableRowActionMenu: false,
 
+    enableCellEditing: false,
+
     enableFooter: false,
   },
   argTypes: {
@@ -523,6 +549,8 @@ export const AllFeatures: StoryObj<StoryProps> = {
 
     enableRowActions: enableRowActionsType,
     rowActionsOptions: rowActionsOptionsType,
+
+    enableCellEditing: enableCellEditingType,
 
     enableFooter: enableFooterType,
   },
@@ -886,5 +914,32 @@ export const RowActions: StoryObj<StoryProps> = {
   name: 'Row Actions',
   args: {
     enableRowActions: true,
+  },
+}
+
+export const CellEditing: StoryObj<StoryProps> = {
+  name: 'Cell Editing',
+  args: {
+    enableCellEditing: true,
+    // Немного колонок/строк без виртуализации: кнопка редактирования появляется в
+    // правом слоте по hover, а редактируемость гейтит канредактируемые колонки
+    // (age/visits/gender — CELL_EDITABLE_COLUMNS). Коммит по Enter пишет значение
+    // в мок-данные и сразу виден в ячейке.
+    columnCount: 6,
+    dataCount: 10,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+  parameters: {
+    controls: {
+      exclude: [
+        'columnCount',
+        'dataCount',
+        'page',
+        'recordsOnPage',
+        'dataMode',
+      ],
+    },
   },
 }

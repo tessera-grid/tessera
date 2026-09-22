@@ -1,6 +1,7 @@
 import type { Row } from '@tanstack/react-table'
 
 import {
+  cellEditing,
   columnDragging,
   columnPinning,
   columnSizing,
@@ -49,6 +50,8 @@ export interface FeatureToggles {
   enableHeaderActionMenu?: boolean
   /** Схлопывать действия строки в кебаб-меню (по умолчанию порог 2). */
   enableRowActionMenu?: boolean
+  /** Инлайн-редактирование ячейки (кнопка в правом слоте по hover). */
+  enableCellEditing?: boolean
 }
 
 export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
@@ -92,6 +95,10 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     }),
     headerActionMenu({ enabled: !!o.enableHeaderActionMenu }),
     rowActionMenu({ enabled: !!o.enableRowActionMenu }),
+    // Фича/слот/локальный state включаются тумблером; бизнес-хуки (canEdit/
+    // onCellEdit) демо кладёт в hook-слайс записи `demoHooks` (StoryComponent),
+    // как и для остальных плагинов.
+    cellEditing({ enabled: !!o.enableCellEditing }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
