@@ -943,3 +943,23 @@ export const CellEditing: StoryObj<StoryProps> = {
     },
   },
 }
+
+export const CellSelection: StoryObj<StoryProps> = {
+  name: 'Cell Selection',
+  args: {
+    enableCellSelection: true,
+    // Умеренный грид (обе оси в окне): клик выделяет ячейку, shift-клик/drag —
+    // прямоугольный диапазон, ctrl/cmd-клик — мульти-диапазон, Ctrl/Cmd+C копирует
+    // выделение в буфер (TSV + HTML). См. ADR 0029.
+    columnCount: 8,
+    dataCount: 40,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+  parameters: {
+    controls: {
+      exclude: ['page', 'recordsOnPage', 'dataMode'],
+    },
+  },
+}

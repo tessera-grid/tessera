@@ -31,6 +31,7 @@ export const ALL_PLUGINS: Record<string, boolean> = {
   enableRowSelection: true,
   enableRowDragging: true,
   enableRowActions: true,
+  enableCellSelection: true,
   enableFooter: true,
 }
 

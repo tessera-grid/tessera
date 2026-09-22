@@ -44,6 +44,46 @@
     outline-offset: -1px;
   }
 
+  /* Выделение диапазона ячеек (плагин cellSelection). */
+
+  /* Ячейки получают roving tabindex и DOM-фокус (чтобы всплывало copy-событие);
+     нативный контур гасим — свой индикатор несёт data-cell-focused (anchor). */
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+
+  /* При активном cellSelection (ячейка выбираема ⇔ несёт roving tabindex) гасим
+     нативное выделение текста: клик/shift/drag должны выделять ЯЧЕЙКИ, а не текст.
+     Без плагина tabindex нет — текст выделяется как обычно. */
+  &[tabindex] {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  &[data-cell-selected='true'] {
+    /* Тинт поверх любого фона (в т.ч. sticky-подложки закреплённых ячеек):
+       background-image рисуется над background-color, не затирая его. */
+    background-image: linear-gradient(
+      var(--tsr-comp-cell-selected-bg),
+      var(--tsr-comp-cell-selected-bg)
+    );
+    /* Кромки по внешней границе выделения — inset box-shadow (без сдвига модели
+       бокса); цвет стороны приходит инлайн-переменной, transparent для внутренних. */
+    box-shadow:
+      inset 0 2px 0 0 var(--tsr-sel-edge-top, transparent),
+      inset -2px 0 0 0 var(--tsr-sel-edge-right, transparent),
+      inset 0 -2px 0 0 var(--tsr-sel-edge-bottom, transparent),
+      inset 2px 0 0 0 var(--tsr-sel-edge-left, transparent);
+  }
+
+  /* Активная (anchor) ячейка — как в Excel/Sheets: НЕ заливается тинтом (виден фон
+     ячейки), отдельной обводки нет. Рамка одна — кромки box-shadow общего диапазона
+     (у anchor-угла остаются его внешние стороны). */
+  &[data-cell-selected='true'][data-cell-focused='true'] {
+    background-image: none;
+  }
+
   /* Sticky-ячейка закрепленной колонки слева */
 
   &:is([data-cell-pinned='left']) {

@@ -1,11 +1,23 @@
 // Корневой DataGrid: реактивность через table.atoms/store (useTableState/useSlice
 // в компонентах). Стейт-снимки (isResizingColumns/rowDragging) читаются реактивно
 // из общего store.
-import { type CSSProperties, useCallback, useMemo, useRef } from 'react'
+import {
+  type ClipboardEvent as ReactClipboardEvent,
+  type CSSProperties,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react'
 
 import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
+import {
+  cellRangesToHtml,
+  cellRangesToTsv,
+  hasSelectedCells,
+} from '../core/clipboard'
+import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { IconsProvider } from '../ui/icons'
@@ -57,10 +69,11 @@ export const DataGrid = ({
   // срезы (пиннинг/порядок/сортировка/группировка/раскрытие/размеры…) меняют шапку/
   // тело/модель — на них корень ре-рендерится (shallow по top-level ключам).
   const state = useTableState(table, s => {
-    const { rowSelection: _rowSelection, ...rest } = s as unknown as Record<
-      string,
-      unknown
-    >
+    const {
+      rowSelection: _rowSelection,
+      cellSelection: _cellSelection,
+      ...rest
+    } = s as unknown as Record<string, unknown>
     return rest
   }) as Record<string, any>
 
@@ -81,6 +94,37 @@ export const DataGrid = ({
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const getScrollElement = useCallback(() => scrollableNodeRef.current, [])
+
+  // Авто-прокрутка при drag-выделении ячеек у края/за пределами таблицы (инертно
+  // без плагина cellSelection). См. core/cellSelectionAutoScroll.
+  useCellSelectionAutoScroll(table, getScrollElement)
+
+  // Копирование выделения ячеек в буфер. Инертно без плагина cellSelection:
+  // getSelectedCellRangesData есть только когда зарегистрирована stock-фича
+  // (ядро плагин не импортит — читаем duck-typed, ADR 0029). Нативное copy-событие
+  // всплывает от сфокусированной ячейки; текстовое выделение пользователя не трогаем.
+  const getRanges = (table as any).getSelectedCellRangesData as
+    | (() => unknown[][][])
+    | undefined
+  const handleCopy = useCallback(
+    (event: ReactClipboardEvent<HTMLDivElement>) => {
+      if (typeof getRanges !== 'function') {
+        return
+      }
+      const textSelection = window.getSelection?.()
+      if (textSelection && !textSelection.isCollapsed && textSelection.toString()) {
+        return
+      }
+      const regions = getRanges()
+      if (!hasSelectedCells(regions)) {
+        return
+      }
+      event.preventDefault()
+      event.clipboardData.setData('text/plain', cellRangesToTsv(regions))
+      event.clipboardData.setData('text/html', cellRangesToHtml(regions))
+    },
+    [getRanges],
+  )
 
   const columnSizes = useCalculateColumnSizes({ table })
 
@@ -208,6 +252,7 @@ export const DataGrid = ({
               )}
               ref={scrollableNodeRef}
               data-resizing={isResizingColumns !== false}
+              onCopy={handleCopy}
             >
               {showSkeletonOverlay ? (
                 <SkeletonOverlay table={table} columnSizes={columnSizes} />

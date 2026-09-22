@@ -178,6 +178,18 @@
 
   /* Ячейки / закрепление */
   --tsr-comp-cell-outline-color: var(--tsr-sys-accent);
+  /* Выделение диапазона ячеек (плагин cellSelection). Тинт полупрозрачен —
+     накладывается поверх фона, не затирая подложку закреплённых ячеек. */
+  --tsr-comp-cell-selected-bg: color-mix(
+    in srgb,
+    var(--tsr-sys-info) 14%,
+    transparent
+  );
+  --tsr-comp-cell-selected-border-color: color-mix(
+    in srgb,
+    var(--tsr-sys-info) 55%,
+    transparent
+  );
   --tsr-comp-cell-pinned-bg: var(--tsr-sys-muted);
   --tsr-comp-cell-pinned-hovered-bg: color-mix(
     in oklch,

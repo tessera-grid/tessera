@@ -12,6 +12,13 @@ export { rowDragging, type RowDraggingOptions } from './rowDragging'
 export { rowGrouping, type RowGroupingOptions } from './rowGrouping'
 export { rowActions, type RowActionsPluginOptions } from './rowActions'
 export { cellEditing, type CellEditingOptions } from './cellEditing'
+export {
+  cellSelection,
+  type CellSelectionOptions,
+  cellRangesToTsv,
+  cellRangesToHtml,
+  hasSelectedCells,
+} from './cellSelection'
 
 export {
   columnSorting,

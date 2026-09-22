@@ -1,12 +1,13 @@
 // BodyCell. Ячейка тела: пиннинг-стили/атрибуты (start/end) через
 // getCellPinningParams, skeleton при fast-scroll, слоты, контент через flexRender
 // от columnDef.cell.
-import { memo, useMemo } from 'react'
+import { memo, useMemo, type CSSProperties } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../core/fastScroll'
+import { useCellSelection } from '../core/cellSelection'
 import { useTableState } from '../core/reactivity'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -91,6 +92,23 @@ export const BodyCell = memo(
     const showSkeleton = isSuppressed && !isActionsColumn && !isPinnedColumn
     const canRenderSlots = !isActionsColumn && !showSkeleton
 
+    // Выделение ячеек (плагин cellSelection): гранулярная подписка, `null` без
+    // плагина/для невыбираемых ячеек — тогда ниже не вешаем ни атрибутов, ни
+    // обработчиков, ни tabindex (шов инертен, см. ADR 0029).
+    const cellSel = useCellSelection(cell)
+    const edgeColor = (on: boolean) =>
+      on ? 'var(--tsr-comp-cell-selected-border-color)' : 'transparent'
+    const selectionStyle = (
+      cellSel?.isSelected
+        ? {
+            '--tsr-sel-edge-top': edgeColor(cellSel.edgeTop),
+            '--tsr-sel-edge-right': edgeColor(cellSel.edgeRight),
+            '--tsr-sel-edge-bottom': edgeColor(cellSel.edgeBottom),
+            '--tsr-sel-edge-left': edgeColor(cellSel.edgeLeft),
+          }
+        : undefined
+    ) as CSSProperties | undefined
+
     const render = useMemo(() => {
       if (showSkeleton) {
         return <Skeleton width="50%" height={16} animation={false} />
@@ -145,7 +163,21 @@ export const BodyCell = memo(
                 right: endPinnedOffset,
               }),
           paddingLeft,
+          ...selectionStyle,
         }}
+        tabIndex={cellSel?.tabIndex}
+        onMouseDown={
+          cellSel
+            ? event => {
+                cellSel.onMouseDown(event)
+                // Фокус на ячейку — чтобы нативное copy-событие всплыло сюда.
+                event.currentTarget.focus()
+              }
+            : undefined
+        }
+        onMouseEnter={cellSel ? cellSel.onMouseEnter : undefined}
+        data-cell-selected={cellSel?.isSelected || undefined}
+        data-cell-focused={cellSel?.isFocused || undefined}
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={cell.column.getIndex() + 1}
         data-column-id={cell.column.id}

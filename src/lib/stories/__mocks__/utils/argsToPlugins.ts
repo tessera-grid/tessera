@@ -2,6 +2,7 @@ import type { Row } from '@tanstack/react-table'
 
 import {
   cellEditing,
+  cellSelection,
   columnDragging,
   columnPinning,
   columnSizing,
@@ -52,6 +53,8 @@ export interface FeatureToggles {
   enableRowActionMenu?: boolean
   /** Инлайн-редактирование ячейки (кнопка в правом слоте по hover). */
   enableCellEditing?: boolean
+  /** Выделение диапазона ячеек мышью + копирование (Ctrl/Cmd+C). */
+  enableCellSelection?: boolean
 }
 
 export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
@@ -99,6 +102,7 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     // onCellEdit) демо кладёт в hook-слайс записи `demoHooks` (StoryComponent),
     // как и для остальных плагинов.
     cellEditing({ enabled: !!o.enableCellEditing }),
+    cellSelection({ enabled: !!o.enableCellSelection }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

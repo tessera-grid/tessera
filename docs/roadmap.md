@@ -24,6 +24,14 @@
   зависимостей убран (в рантайм-JS не шли) — чище install-вес. `@tanstack/react-table`
   вынесен в `peerDependencies ^9`; пакет опубликован как `@mstrvtt/tessera`.
 
+- **Выделение диапазона ячеек + копирование в буфер — завершено.** Плагин
+  `cellSelection` ([ADR 0029](decisions/0029-cell-range-selection.md)) на стоковой
+  v9-фиче `cellSelectionFeature`: клик / shift-клик / drag / ctrl-cmd-мульти
+  мышью, spreadsheet-контур по границе выделения, `Ctrl/Cmd+C` копирует выделение
+  как TSV (`text/plain`) и HTML-таблицу (`text/html`). Presence-based и
+  tree-shakeable; выделение хранится в модельных id (переживает виртуализацию).
+  Клавиатурное перемещение стрелками и **вставка** — вынесены в планы (ниже).
+
 ## Запланировано
 
 - **Полная поддержка сводных таблиц (pivot).** Первоклассный режим pivot, со **всеми
@@ -96,9 +104,14 @@ Tessera затевалась (highload-CRM-таблицы), — поэтому �
   full-row/bulk.
 - **Экспорт CSV/Excel.** Частый enterprise-запрос; CSV дёшев, Excel дороже.
 
-Далее по этой же линии (важное, но не критичное): **range/cell-selection + clipboard**
-(в v9 дёшево — есть `cellSelectionFeature`), **pagination**, **tree data**,
-**master-detail-контент** (у нас есть `rowExpanding`, нет detail-контента).
+Далее по этой же линии (важное, но не критичное): ~~**range/cell-selection +
+clipboard**~~ — **сделано** (плагин `cellSelection`, копирование;
+[ADR 0029](decisions/0029-cell-range-selection.md)); осталось **клавиатурное
+перемещение/расширение стрелками** (общий владелец — будущий `keyboardNavigation`,
+[ADR 0021](decisions/0021-keyboard-navigation.md)) и **вставка из буфера**
+(`Ctrl/Cmd+V` → запись в ячейки через `cellEditing`, с валидацией/bulk-edit).
+Ещё по линии: **pagination**, **tree data**, **master-detail-контент** (у нас есть
+`rowExpanding`, нет detail-контента).
 
 ### Менее критично, но в планах — «продуктовость»
 
