@@ -36,7 +36,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0027](0027-plugin-hooks-in-factory-args.md)         | Бизнес-хуки в аргументах фабрики плагина (H1–H6, все 7 плагинов); верхний `hooks` удалён                          | Принято    |
 | [0028](0028-define-plugin-authoring-api.md)          | `definePlugin`: эргономичный API написания плагина (DP1–DP12); типобезопасные `PluginCellProps`, инъекция пропсов | Принято    |
 | [0029](0029-cell-range-selection.md)                 | Выделение диапазона ячеек + копирование в буфер: плагин cellSelection (CR1–CR16)                                  | Принято    |
-| [0030](0030-context-menu.md)                         | Контекстное меню: плагин contextMenu, действия-контрибуции + гейтинг по выбору (CM1–CM8)                          | Принято    |
+| [0030](0030-context-menu.md)                         | Контекстное меню: плагин contextMenu, действия-контрибуции + гейтинг по выбору (CM1–CM9)                          | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

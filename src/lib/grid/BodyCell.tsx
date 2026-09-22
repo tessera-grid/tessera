@@ -169,6 +169,13 @@ export const BodyCell = memo(
         onMouseDown={
           cellSel
             ? event => {
+                // Начинаем/сбрасываем выделение только ЛЕВОЙ кнопкой. Правый клик
+                // (button 2) шлёт mousedown до contextmenu — не должен рвать
+                // мультивыбор; выделением target'а по правому клику владеет
+                // контекстное меню (setFocusedCell, ADR 0030).
+                if (event.button !== 0) {
+                  return
+                }
                 cellSel.onMouseDown(event)
                 // Фокус на ячейку — чтобы нативное copy-событие всплыло сюда.
                 event.currentTarget.focus()

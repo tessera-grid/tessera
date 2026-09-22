@@ -30,18 +30,42 @@ const cellsLeftRight = (row: HTMLElement) =>
 const cellAt = (container: HTMLElement, r: number, c: number) =>
   cellsLeftRight(rowsTopDown(container)[r])[c]
 
-/** Dispatch a right-click at the element's centre; returns the event (for defaultPrevented). */
-const rightClick = (el: Element) => {
+const centre = (el: Element) => {
   const rect = el.getBoundingClientRect()
-  const event = new MouseEvent('contextmenu', {
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+}
+
+const fireMouseAt = (el: Element, type: string, init: MouseEventInit = {}) => {
+  const { x, y } = centre(el)
+  const event = new MouseEvent(type, {
     bubbles: true,
     cancelable: true,
-    clientX: rect.left + rect.width / 2,
-    clientY: rect.top + rect.height / 2,
+    clientX: x,
+    clientY: y,
+    ...init,
   })
   el.dispatchEvent(event)
   return event
 }
+
+/** Left-button click that (de)selects a single cell. */
+const leftClick = (el: Element, init: MouseEventInit = {}) => {
+  fireMouseAt(el, 'mousedown', { button: 0, ...init })
+  document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+}
+
+/**
+ * Realistic right-click: the browser fires `mousedown` (button 2) BEFORE
+ * `contextmenu`. Returns the contextmenu event (for defaultPrevented).
+ */
+const rightClick = (el: Element) => {
+  fireMouseAt(el, 'mousedown', { button: 2 })
+  const event = fireMouseAt(el, 'contextmenu', { button: 2 })
+  return event
+}
+
+const selectedCount = (container: HTMLElement) =>
+  container.querySelectorAll(`${BODY_CELL}[data-cell-selected='true']`).length
 
 const menuEl = () => document.querySelector('[role="menu"]')
 const menuItems = () =>
@@ -81,6 +105,20 @@ describe('Context Menu', () => {
       .poll(() => cellAt(container, 4, 2).getAttribute('data-cell-selected'))
       .toBe('true')
     expect(menuEl()).not.toBeNull()
+  })
+
+  test('CM9: right-clicking inside a multi-selection preserves it (no reset)', async () => {
+    const container = await renderContextMenu()
+    // Multi-select a 2×2 block (rows 0–1 × cols 0–1).
+    leftClick(cellAt(container, 0, 0))
+    leftClick(cellAt(container, 1, 1), { shiftKey: true })
+    await expect.poll(() => selectedCount(container)).toBe(4)
+
+    // Right-click a cell INSIDE the selection — the preceding button-2 mousedown
+    // must not reset the multi-selection.
+    rightClick(cellAt(container, 1, 1))
+    await expect.poll(() => menuEl()).not.toBeNull()
+    expect(selectedCount(container)).toBe(4)
   })
 
   test('CM6: Escape closes the menu', async () => {
