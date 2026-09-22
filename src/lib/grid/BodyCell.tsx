@@ -12,7 +12,7 @@ import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import { Skeleton } from '../ui/Skeleton'
 import type { Cell } from '../types'
-import { RenderSlot } from '../core/renderSlots'
+import { RenderCellSlot, RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
@@ -27,6 +27,7 @@ interface TableBodyCellProps {
   rowIndex: number
   leftCellSlot?: RegisterSlotParams<any>[]
   rightCellSlot?: RegisterSlotParams<any>[]
+  cellSlot?: RegisterSlotParams<any>[]
   actionRowSlot?: RegisterSlotParams<any>[]
   interact?: boolean
   // Абсолютная позиция центральной (непиннутой) виртуализированной ячейки: её `left`
@@ -43,6 +44,7 @@ export const BodyCell = memo(
     rowIndex,
     leftCellSlot,
     rightCellSlot,
+    cellSlot,
     actionRowSlot,
     interact = true,
     absoluteLeft,
@@ -172,7 +174,15 @@ export const BodyCell = memo(
           {canRenderSlots && (
             <RenderSlot slot={leftCellSlot} context={cell.getContext()} />
           )}
-          {render}
+          {canRenderSlots ? (
+            <RenderCellSlot
+              slot={cellSlot}
+              context={cell.getContext()}
+              content={render}
+            />
+          ) : (
+            render
+          )}
           {canRenderSlots && (
             <RenderSlot slot={rightCellSlot} context={cell.getContext()} />
           )}

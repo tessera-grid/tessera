@@ -132,6 +132,7 @@ export const DataGrid = ({
     rightHeaderSlot,
     leftCellSlot,
     rightCellSlot,
+    cellSlot,
     actionRowSlot,
   } = table.getRenderSlots() ?? {}
 
@@ -252,6 +253,7 @@ export const DataGrid = ({
                       leafColumns={leafColumns}
                       leftCellSlot={leftCellSlot}
                       rightCellSlot={rightCellSlot}
+                      cellSlot={cellSlot}
                       actionRowSlot={actionRowSlot}
                       headerRowCount={headerGroupsDepth}
                       isResizingColumns={isResizingColumns}

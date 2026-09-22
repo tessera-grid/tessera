@@ -42,9 +42,11 @@ export {
   injectCellHooks,
   injectHeaderHooks,
   injectCellState,
+  injectCellOwner,
   type PluginCellProps,
   type PluginHeaderProps,
   type PluginCellStateProps,
+  type PluginCellOwnerProps,
 } from './lib/core/definePlugin'
 
 // Единый дескриптор действия слота (кебаб-меню): плагины объявляют действия

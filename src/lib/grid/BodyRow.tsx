@@ -29,6 +29,7 @@ interface TableBodyRowProps {
   leafColumns: Column<any, any, unknown>[]
   leftCellSlot?: CellSlot
   rightCellSlot?: CellSlot
+  cellSlot?: CellSlot
   actionRowSlot?: CellSlot
   headerRowCount: number
   isVirtualColumns: boolean
@@ -68,6 +69,7 @@ const BodyRowCells = ({
   leafColumns,
   leftCellSlot,
   rightCellSlot,
+  cellSlot,
   actionRowSlot,
   isVirtualColumns,
   isRowInteract,
@@ -83,6 +85,7 @@ const BodyRowCells = ({
       rowIndex: virtualRow?.index,
       leftCellSlot,
       rightCellSlot,
+      cellSlot,
       actionRowSlot,
       interact: isRowInteract,
       absoluteLeft,
@@ -130,6 +133,7 @@ const BodyRowCells = ({
             rowIndex={virtualRow?.index}
             leftCellSlot={leftCellSlot}
             rightCellSlot={rightCellSlot}
+            cellSlot={cellSlot}
             actionRowSlot={actionRowSlot}
             interact={isRowInteract}
           />

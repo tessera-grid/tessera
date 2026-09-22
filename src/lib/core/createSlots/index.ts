@@ -20,6 +20,7 @@ export const createEmptyRenderSlots = (): RenderSlots => ({
   rightHeaderSlot: [],
   leftCellSlot: [],
   rightCellSlot: [],
+  cellSlot: [],
   actionRowSlot: [],
 })
 

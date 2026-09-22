@@ -91,6 +91,18 @@ export interface PluginCellStateProps<
   state: [TState, (next: TState) => void]
 }
 
+/**
+ * Пропсы компонента-владельца ячейки (`cellSlot`): к hooks + локальному `state`
+ * добавляется `content` — собственный рендер ячейки. Владелец рантайм решает,
+ * показать его (`{content}`) или заместить своим UI (напр. инлайн-редактором).
+ */
+export interface PluginCellOwnerProps<
+  THooks,
+  TState,
+> extends PluginCellStateProps<THooks, TState> {
+  content: ReactNode
+}
+
 /** Имя опции-updater'а слайса (конвенция v9: `on<Key>Change`). */
 const stateChangeOption = (id: string): string =>
   `on${id.charAt(0).toUpperCase()}${id.slice(1)}Change`
@@ -128,6 +140,29 @@ export const injectCellState =
     const setter = (next: TState) => setLocalState(ctx.table, id, next)
     return createElement(Component, {
       ...ctx,
+      hooks: readPluginHooks<THooks>(ctx.table, id),
+      state: [value, setter],
+    })
+  }
+
+/**
+ * Обёртка слота-владельца ячейки (`cellSlot`) с локальным состоянием: как
+ * `injectCellState`, но прокидывает ещё `content` (собственный рендер ячейки,
+ * приходит от `RenderCellSlot`) в компонент типизированным пропсом.
+ */
+export const injectCellOwner =
+  <THooks, TState>(
+    Component: (props: PluginCellOwnerProps<THooks, TState>) => ReactNode,
+    id: string,
+  ) =>
+  // Тип параметра — стоковый CellComponentProps (совместимость с сигнатурой слота);
+  // `content` кладёт RenderCellSlot в рантайме (для cellSlot он всегда есть).
+  (ctx: CellComponentProps): ReactNode => {
+    const value = useSlice(ctx.table as never, id as never) as TState
+    const setter = (next: TState) => setLocalState(ctx.table, id, next)
+    return createElement(Component, {
+      ...ctx,
+      content: (ctx as { content?: ReactNode }).content,
       hooks: readPluginHooks<THooks>(ctx.table, id),
       state: [value, setter],
     })

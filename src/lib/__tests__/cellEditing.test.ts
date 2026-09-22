@@ -1,8 +1,8 @@
 /**
  * Headless-проверка плагина cellEditing (ADR 0028) — носителя ЛОКАЛЬНОГО состояния.
  * Проверяет: сгенерированная из `state` v9-фича seed'ит слайс под ключом `cellEditing`
- * и он записываем; слот кнопки регистрируется в rightCellSlot; хуки canEdit/onCellEdit
- * из аргументов фабрики читаются живо с дефолтами.
+ * и он записываем; кнопка регистрируется в rightCellSlot, владелец-редактор — в
+ * cellSlot; хуки canEdit/onCellEdit/editor из аргументов фабрики читаются живо с дефолтами.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -57,6 +57,24 @@ describe('cellEditing', () => {
   it('кнопка регистрируется в правом слоте ячейки', () => {
     const { folded } = makeTable()
     expect(folded.slots.rightCellSlot.map(s => s.id)).toContain('cellEditing')
+  })
+
+  it('владелец контента регистрируется в cellSlot (замещение рендера в правке)', () => {
+    const { folded } = makeTable()
+    expect(folded.slots.cellSlot.map(s => s.id)).toContain('cellEditing')
+  })
+
+  it('editor (BYO) из аргументов фабрики читается живо; не задан — отсутствует в слайсе', () => {
+    const editor = () => null
+    const withEditor = resolveHooks(
+      foldHooks([cellEditing({ editor })] as never),
+    ) as any
+    expect(withEditor.cellEditing.editor).toBe(editor)
+
+    const withoutEditor = resolveHooks(
+      foldHooks([cellEditing()] as never),
+    ) as any
+    expect(withoutEditor.cellEditing.editor).toBeUndefined()
   })
 
   it('хуки canEdit/onCellEdit из аргументов фабрики читаются живо; дефолты — no-op/true', () => {

@@ -21,6 +21,7 @@ interface TableBodyProps {
   leafColumns: Column<any, any, unknown>[]
   leftCellSlot?: CellSlot
   rightCellSlot?: CellSlot
+  cellSlot?: CellSlot
   actionRowSlot?: CellSlot
   headerRowCount: number
   isResizingColumns: false | string
@@ -36,6 +37,7 @@ export const Body = ({
   leafColumns,
   leftCellSlot,
   rightCellSlot,
+  cellSlot,
   actionRowSlot,
   headerRowCount,
   isVirtualColumns,
@@ -62,6 +64,7 @@ export const Body = ({
             leafColumns={leafColumns}
             leftCellSlot={leftCellSlot}
             rightCellSlot={rightCellSlot}
+            cellSlot={cellSlot}
             actionRowSlot={actionRowSlot}
             headerRowCount={headerRowCount}
             isVirtualColumns={isVirtualColumns}

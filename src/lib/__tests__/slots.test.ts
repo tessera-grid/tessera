@@ -24,10 +24,11 @@ const action = (
 })
 
 describe('createSlots: registerSlotInto', () => {
-  it('пустой набор содержит все пять слотов', () => {
+  it('пустой набор содержит все шесть слотов', () => {
     expect(Object.keys(createEmptyRenderSlots()).sort()).toEqual(
       [
         'actionRowSlot',
+        'cellSlot',
         'leftCellSlot',
         'leftHeaderSlot',
         'rightCellSlot',
@@ -58,6 +59,23 @@ describe('createSlots: registerSlotInto', () => {
     registerSlotInto(slots, { id: 'b', slot: 'rightHeaderSlot' })
     registerSlotInto(slots, { id: 'c', slot: 'rightHeaderSlot', order: 0 })
     expect(slots.rightHeaderSlot.map(s => s.id)).toEqual(['c', 'a', 'b'])
+  })
+
+  // cellSlot — владелец контента ячейки, владение эксклюзивно. Дев-варн ядра
+  // (useCreateTable) сигналит по числу владельцев ПОСЛЕ дедупа по id: разные id —
+  // конфликт (вкладываются), одинаковый id — схлопнут (не конфликт).
+  it('cellSlot: разные id владельцев сосуществуют (сигнал конфликта для дев-варна)', () => {
+    const slots = createEmptyRenderSlots()
+    registerSlotInto(slots, { id: 'a', slot: 'cellSlot' })
+    registerSlotInto(slots, { id: 'b', slot: 'cellSlot' })
+    expect(slots.cellSlot.map(s => s.id)).toEqual(['a', 'b'])
+  })
+
+  it('cellSlot: одинаковый id владельца дедуплицируется (не конфликт)', () => {
+    const slots = createEmptyRenderSlots()
+    registerSlotInto(slots, { id: 'x', slot: 'cellSlot' })
+    registerSlotInto(slots, { id: 'x', slot: 'cellSlot' })
+    expect(slots.cellSlot).toHaveLength(1)
   })
 })
 

@@ -48,7 +48,7 @@ export type PluginSlot =
       slot: 'leftHeaderSlot' | 'rightHeaderSlot'
     })
   | (RegisterSlotParams<CellComponentProps> & {
-      slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot'
+      slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot' | 'cellSlot'
     })
 
 export interface RenderSlots {
@@ -60,6 +60,12 @@ export interface RenderSlots {
   leftCellSlot: CellSlot
   /** Место под плагин в ячейке справа от текста. */
   rightCellSlot: CellSlot
+  /**
+   * Владелец контента ячейки: компонент получает собственный рендер ячейки пропсом
+   * `content` и рантайм решает — показать его как есть или заместить своим (напр.
+   * инлайн-редактор cellEditing). Единственный канал, подавляющий `{render}`.
+   */
+  cellSlot: CellSlot
   /** Место под кнопки действий над строками. */
   actionRowSlot: CellSlot
 }
