@@ -6,6 +6,7 @@
 import type { TableLabels } from '../../core/localization'
 import type {
   HeaderMenuItem,
+  MenuAction,
   SlotAction,
   SlotActions,
   SlotMenuConfig,
@@ -14,6 +15,7 @@ import type {
 export type {
   SlotName,
   HeaderActionSlot,
+  MenuAction,
   SlotAction,
   HeaderAction,
   RowAction,
@@ -22,6 +24,9 @@ export type {
   SlotMenuConfig,
   SlotActionMenu,
   ActionMenuDeclaration,
+  ContextMenuAction,
+  ContextMenuContext,
+  CellSelectionSummary,
 } from './types'
 
 /** Пустой набор действий по всем слотам — база для реактивной свёртки плагинов. */
@@ -78,8 +83,10 @@ export interface ActionLayout {
   menu: SlotAction[]
 }
 
-const sortByOrder = (actions: SlotAction[]): SlotAction[] => {
-  const toRank = (order: SlotAction['order']): number =>
+const sortByOrder = <A extends { order?: number | 'last' }>(
+  actions: A[],
+): A[] => {
+  const toRank = (order: A['order']): number =>
     typeof order === 'number' ? order : Number.POSITIVE_INFINITY
 
   return actions
@@ -90,6 +97,16 @@ const sortByOrder = (actions: SlotAction[]): SlotAction[] => {
     )
     .map(entry => entry.action)
 }
+
+/**
+ * Применимые действия меню в контексте, отсортированные по `order`. Общий резолвер
+ * для поверхностей без схлопывания (контекстное меню, ADR 0030): фильтр `visible` +
+ * порядок. `resolveActionLayout` — для слотов с кебабом.
+ */
+export const resolveVisibleActions = <TCtx, A extends MenuAction<TCtx>>(
+  actions: A[],
+  ctx: TCtx,
+): A[] => sortByOrder(actions.filter(action => action.visible?.(ctx) !== false))
 
 /**
  * Чистое решение раскладки действий слота (all-or-nothing). Применимые действия
@@ -132,7 +149,7 @@ export const resolveActionLayout = ({
  * строка из полей дескриптора. Чистая: поля уже вычислены с учётом `ctx`/`labels`.
  */
 export const resolveMenuItems = (
-  action: SlotAction,
+  action: MenuAction,
   context: unknown,
   labels: TableLabels,
 ): HeaderMenuItem[] => {

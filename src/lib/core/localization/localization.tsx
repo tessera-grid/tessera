@@ -41,6 +41,10 @@ export interface TableLabels {
   selectAll: string
   /** Доступное имя кебаб-кнопки меню действий заголовка (`aria-label`/тултип) */
   headerMenu: string
+  /** Доступное имя контекстного меню (`aria-label` на `role="menu"`) */
+  contextMenu: string
+  /** Пункт «Копировать» (контекстное меню / действия выделения) */
+  copy: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -60,6 +64,8 @@ export const DEFAULT_LABELS: TableLabels = {
   selectRow: 'Select row',
   selectAll: 'Select all rows',
   headerMenu: 'Column options',
+  contextMenu: 'Context menu',
+  copy: 'Copy',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)

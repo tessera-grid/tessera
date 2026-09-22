@@ -944,6 +944,25 @@ export const CellEditing: StoryObj<StoryProps> = {
   },
 }
 
+export const ContextMenu: StoryObj<StoryProps> = {
+  name: 'Context Menu',
+  args: {
+    // Контекстное меню по правому клику; cellSelection контрибьютит «Копировать».
+    enableContextMenu: true,
+    enableCellSelection: true,
+    columnCount: 8,
+    dataCount: 40,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+  parameters: {
+    controls: {
+      exclude: ['page', 'recordsOnPage', 'dataMode'],
+    },
+  },
+}
+
 export const CellSelection: StoryObj<StoryProps> = {
   name: 'Cell Selection',
   args: {

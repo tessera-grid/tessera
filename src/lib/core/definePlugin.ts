@@ -23,7 +23,11 @@ import type {
   PluginSlot,
 } from './createSlots'
 import type { TesseraFeatureEntry } from './features'
-import type { ActionMenuDeclaration, SlotAction } from './headerActions'
+import type {
+  ActionMenuDeclaration,
+  ContextMenuAction,
+  SlotAction,
+} from './headerActions'
 import { useSlice } from './reactivity'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
@@ -220,6 +224,8 @@ interface DefinePluginConfig<
   slots?: PluginSlot[]
   /** Декларативные действия слота (инлайн-кнопка / пункт кебаб-меню). */
   slotActions?: SlotAction[]
+  /** Декларативные пункты контекстного меню (ADR 0030). */
+  contextMenuActions?: ContextMenuAction[]
   /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
   actionMenu?: (opts: TOptions) => ActionMenuDeclaration
   /**
@@ -280,6 +286,9 @@ export const definePlugin =
       }
       if (config.slotActions) {
         entry.slotActions = config.slotActions
+      }
+      if (config.contextMenuActions) {
+        entry.contextMenuActions = config.contextMenuActions
       }
       if (config.actionMenu) {
         entry.actionMenu = config.actionMenu(opts)

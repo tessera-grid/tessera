@@ -20,44 +20,77 @@ export type SlotName =
 export type HeaderActionSlot = 'leftHeaderSlot' | 'rightHeaderSlot'
 
 /**
- * Декларативное действие слота — единственный источник правды для кнопки: иконка/
- * подпись/обработчик и признаки. Ядро решает подачу (инлайн иконка-кнопка или
- * строка кебаб-меню), поэтому плагин описывает действие данными, а не JSX.
+ * Действие-как-данные для строки МЕНЮ — общий контракт кебаб-меню (ADR 0024) и
+ * контекстного меню (ADR 0030). Достаточно для `resolveMenuItems`; инлайн-подача
+ * (кнопка в слоте) и `slot` живут в наследнике `SlotAction`.
  */
-export interface SlotAction<TCtx = any, TSlot extends SlotName = SlotName> {
+export interface MenuAction<TCtx = any> {
   /** Уникальный id действия — ключ дедупликации при сборке. */
   id: string
-  /** Слот, в котором отрисовывается действие. */
-  slot: TSlot
   /** Порядок: число — индекс вставки, `'last'`/`undefined` — в конец. */
   order?: number | 'last'
   /** Иконка действия (инлайн-кнопка и строка меню). */
   icon: (ctx: TCtx) => ReactNode
   /** Подпись: `aria-label`/тултип инлайн-кнопки и текст строки меню. */
   label: (ctx: TCtx, labels: TableLabels) => string
-  /** Доступное имя ИНЛАЙН-кнопки, если отличается от тултипа `label`. */
-  ariaLabel?: (ctx: TCtx, labels: TableLabels) => string
-  /** Обработчик выбора (клик по инлайн-кнопке). `event` — для действий с модификаторами. */
+  /** Обработчик выбора (клик по инлайн-кнопке/пункту). `event` — для модификаторов. */
   onSelect: (ctx: TCtx, event?: MouseEvent<HTMLButtonElement>) => void
-  /** Применимо ли действие к этой колонке (`false` убирает целиком). */
+  /** Применимо ли действие в этом контексте (`false` убирает целиком). */
   visible?: (ctx: TCtx) => boolean
-  /** Заблокировано ли действие (кнопка/пункт неактивны, но видимы). */
+  /** Заблокировано ли действие (пункт неактивен, но видим). */
   disabled?: (ctx: TCtx) => boolean
   /** Состояние-тумблер (закреплено/отсортировано/сгруппировано). */
   active?: (ctx: TCtx) => boolean
+  /** Разворот действия в НЕСКОЛЬКО пунктов меню (напр. сортировка asc/desc/сброс). */
+  menuItems?: (ctx: TCtx, labels: TableLabels) => HeaderMenuItem[]
+  /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */
+  menuGroupLabel?: (labels: TableLabels) => string
+}
+
+/**
+ * Декларативное действие слота — единственный источник правды для кнопки: иконка/
+ * подпись/обработчик и признаки. Ядро решает подачу (инлайн иконка-кнопка или
+ * строка кебаб-меню), поэтому плагин описывает действие данными, а не JSX.
+ */
+export interface SlotAction<TCtx = any, TSlot extends SlotName = SlotName>
+  extends MenuAction<TCtx> {
+  /** Слот, в котором отрисовывается действие. */
+  slot: TSlot
+  /** Доступное имя ИНЛАЙН-кнопки, если отличается от тултипа `label`. */
+  ariaLabel?: (ctx: TCtx, labels: TableLabels) => string
   /** Может ли действие уезжать в кебаб при схлопывании. По умолчанию `true`. */
   collapsible?: boolean
   /** Класс инлайн-кнопки — escape для плагин-специфичной подачи. */
   className?: (ctx: TCtx) => string | undefined
   /** Довесок ИНЛАЙН-кнопки (бейдж и т.п.), рядом с иконкой. */
   adornment?: (ctx: TCtx) => ReactNode
-  /** Разворот действия в НЕСКОЛЬКО пунктов меню (напр. сортировка asc/desc/сброс). */
-  menuItems?: (ctx: TCtx, labels: TableLabels) => HeaderMenuItem[]
   /** Показывать ли ИНЛАЙН-подачу как мини-меню (поповер) из `menuItems`. */
   inlineAsMenu?: (ctx: TCtx) => boolean
-  /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */
-  menuGroupLabel?: (labels: TableLabels) => string
 }
+
+/**
+ * Сводка выделения ячеек для контекстного меню (ADR 0030). Позволяет пункту
+ * гейтить себя по одиночному/множественному выбору без развилки «меню A vs B».
+ */
+export interface CellSelectionSummary {
+  /** Сколько ячеек выделено. */
+  count: number
+  /** Ровно одна выделенная ячейка. */
+  isSingle: boolean
+  /** Выделено больше одной. */
+  isMultiple: boolean
+  /** Ячейка под курсором входит в выделение. */
+  isInSelection: boolean
+}
+
+/** Контекст пункта контекстного меню: контекст ячейки под курсором + сводка выбора. */
+export interface ContextMenuContext extends CellComponentProps {
+  /** Сводка текущего выделения ячеек (пусто, если cellSelection не подключён). */
+  selection: CellSelectionSummary
+}
+
+/** Действие контекстного меню (ADR 0030): дескриптор меню без слота/инлайн-подачи. */
+export type ContextMenuAction = MenuAction<ContextMenuContext>
 
 /** Действие в слоте ЗАГОЛОВКА колонки. */
 export type HeaderAction = SlotAction<HeaderComponentProps, HeaderActionSlot>

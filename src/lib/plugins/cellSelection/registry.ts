@@ -13,6 +13,7 @@
 import { cellSelectionFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { copyContextAction } from './contextActions'
 import type {
   CellSelectionOptions,
   CellSelectionPredicateCell,
@@ -40,4 +41,7 @@ export const cellSelection = definePlugin<CellSelectionOptions>()({
       enableMultiCellRangeSelection: off ? false : (o.multiRange ?? true),
     }
   },
+  // Вклад в контекстное меню (ADR 0030): «Копировать». Показывается только при
+  // активном плагине contextMenu; отключённый cellSelection пунктов не даёт.
+  contextMenuActions: [copyContextAction],
 })

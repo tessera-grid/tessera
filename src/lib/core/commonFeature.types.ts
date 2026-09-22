@@ -17,7 +17,11 @@ import type {
 } from '@tanstack/react-table'
 
 import type { RenderSlots } from './createSlots'
-import type { SlotActionMenu, SlotActions } from './headerActions'
+import type {
+  ContextMenuAction,
+  SlotActionMenu,
+  SlotActions,
+} from './headerActions'
 import type { SkeletonOptions } from './skeletonOptions'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -37,6 +41,7 @@ export interface CommonOptions {
   hooks?: CommonHooks
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9
+  contextMenuActions?: ContextMenuAction[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
   enableSkeleton?: boolean
@@ -52,6 +57,7 @@ export interface CommonTableAPI {
   getHooks: () => CommonHooks | undefined
   getRenderSlots: () => RenderSlotsV9 | undefined
   getSlotActions: () => SlotActionsV9 | undefined
+  getContextMenuActions: () => ContextMenuAction[] | undefined
   getIsAnyColumnResizing: () => boolean
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
 }

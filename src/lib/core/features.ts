@@ -28,6 +28,7 @@ import {
   createEmptySlotActions,
   registerSlotActionInto,
   type ActionMenuDeclaration,
+  type ContextMenuAction,
   type SlotAction,
   type SlotActionMenu,
   type SlotActions,
@@ -61,6 +62,8 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   slots?: PluginSlot[]
   /** Декларативные действия слота (кебаб/инлайн). */
   slotActions?: SlotAction[]
+  /** Декларативные пункты контекстного меню (ADR 0030). */
+  contextMenuActions?: ContextMenuAction[]
   /** Декларация плагина-меню: на какие слоты распространить кебаб. */
   actionMenu?: ActionMenuDeclaration
   /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
@@ -79,6 +82,7 @@ export interface FoldedEntryConfig {
   options: Record<string, unknown>
   slots: RenderSlots
   slotActions: SlotActions
+  contextMenuActions: ContextMenuAction[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
   setups: NonNullable<TesseraFeatureEntry['setup']>[]
@@ -116,6 +120,7 @@ export const foldEntries = (
   const options: Record<string, unknown> = {}
   const slots = createEmptyRenderSlots()
   const slotActions = createEmptySlotActions()
+  const contextMenuActions: ContextMenuAction[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
@@ -134,6 +139,16 @@ export const foldEntries = (
     entry.slotActions?.forEach(action =>
       registerSlotActionInto(slotActions, action),
     )
+    // Пункты контекстного меню собираем в общий список (дедуп по id — последний
+    // побеждает); порядок/видимость резолвятся при открытии (resolveVisibleActions).
+    entry.contextMenuActions?.forEach(action => {
+      const index = contextMenuActions.findIndex(a => a.id === action.id)
+      if (index === -1) {
+        contextMenuActions.push(action)
+      } else {
+        contextMenuActions[index] = action
+      }
+    })
 
     if (entry.column) {
       serviceColumns.push(entry.column)
@@ -151,7 +166,15 @@ export const foldEntries = (
     }
   }
 
-  return { options, slots, slotActions, actionMenu, serviceColumns, setups }
+  return {
+    options,
+    slots,
+    slotActions,
+    contextMenuActions,
+    actionMenu,
+    serviceColumns,
+    setups,
+  }
 }
 
 /**

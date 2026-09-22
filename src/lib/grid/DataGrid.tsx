@@ -18,6 +18,7 @@ import {
   hasSelectedCells,
 } from '../core/clipboard'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
+import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { IconsProvider } from '../ui/icons'
@@ -90,6 +91,7 @@ export const DataGrid = ({
 
   const enableRowDragging = !!(table.options as any).enableRowDragging
   const enableColumnDragging = !!(table.options as any).enableColumnDragging
+  const enableContextMenu = !!(table.options as any).enableContextMenu
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -240,6 +242,9 @@ export const DataGrid = ({
             style={wrapperStyles}
           >
             {showLinearProgress && <LinearProgress />}
+            {enableContextMenu && (
+              <ContextMenu table={table} getScrollElement={getScrollElement} />
+            )}
             <div
               className={clsx(
                 'MuiPaper-root',

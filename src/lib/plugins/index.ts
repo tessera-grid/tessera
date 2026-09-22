@@ -19,6 +19,7 @@ export {
   cellRangesToHtml,
   hasSelectedCells,
 } from './cellSelection'
+export { contextMenu, type ContextMenuOptions } from './contextMenu'
 
 export {
   columnSorting,

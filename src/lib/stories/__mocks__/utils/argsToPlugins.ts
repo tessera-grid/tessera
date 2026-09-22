@@ -3,6 +3,7 @@ import type { Row } from '@tanstack/react-table'
 import {
   cellEditing,
   cellSelection,
+  contextMenu,
   columnDragging,
   columnPinning,
   columnSizing,
@@ -55,6 +56,8 @@ export interface FeatureToggles {
   enableCellEditing?: boolean
   /** Выделение диапазона ячеек мышью + копирование (Ctrl/Cmd+C). */
   enableCellSelection?: boolean
+  /** Контекстное меню по правому клику (пункты контрибьютят плагины). */
+  enableContextMenu?: boolean
 }
 
 export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
@@ -103,6 +106,7 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
     // как и для остальных плагинов.
     cellEditing({ enabled: !!o.enableCellEditing }),
     cellSelection({ enabled: !!o.enableCellSelection }),
+    contextMenu({ enabled: !!o.enableContextMenu }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
