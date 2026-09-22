@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
 import type { ColumnSortingHooks } from './types'
 
@@ -75,6 +76,7 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   // Единый дескриптор: инлайн — циклящая кнопка с бейджем приоритета;
   // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
   slotActions: [sortHeaderAction],
+  keyboardActions: [sortKeyboardAction],
   options: o => {
     const multi = resolveMultiSort(o.multiSort)
     const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)

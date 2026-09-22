@@ -19,6 +19,7 @@ import {
 } from '../../core/definePlugin'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
+import { editCellKeyboardAction } from './keyboardActions'
 import type { CellComponentProps } from '../../core/createSlots'
 import type { CellEditingHooks, EditingCell } from './types'
 
@@ -42,6 +43,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     onCellEdit: o.onCellEdit ?? (() => {}),
     editor: o.editor,
   }),
+  keyboardActions: [editCellKeyboardAction],
   slots: [
     {
       id: 'cellEditing',

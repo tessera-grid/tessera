@@ -11,6 +11,7 @@ import {
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import { toggleExpandedKeyboardAction } from './keyboardActions'
 import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
@@ -38,6 +39,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     expandedRowModel: createExpandedRowModel(),
   },
   hooks: o => ({ onExpandRow: o.onExpandRow }),
+  keyboardActions: [toggleExpandedKeyboardAction],
   column: {
     id: COLUMN_EXPANDING_ID,
     make: getRowExpandingColumn,

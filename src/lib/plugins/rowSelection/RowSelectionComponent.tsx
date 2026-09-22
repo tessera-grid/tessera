@@ -6,6 +6,7 @@ import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSlice } from '../../core/reactivity'
 import { SelectCheckbox } from '../../plugins/rowSelection/SelectCheckbox'
+import { toggleRowSelection } from './keyboardActions'
 import { isGroupingActive } from './selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
@@ -27,16 +28,14 @@ export const RowSelectionComponent = ({
     return null
   }
 
-  const { isAllRowsSelected, onSelectRow } = hooks
+  const { isAllRowsSelected } = hooks
 
   const canSelect = row.getCanSelect()
   const selected = row.getIsSelected()
   const indeterminate = row.getIsSomeSelected()
 
-  const handleSelectRow = (event: unknown) => {
-    row.getToggleSelectedHandler()(event)
-    onSelectRow(row, !row.getIsSelected())
-  }
+  const handleSelectRow = (event: unknown) =>
+    toggleRowSelection(row, hooks, event)
 
   return (
     <SelectCheckbox

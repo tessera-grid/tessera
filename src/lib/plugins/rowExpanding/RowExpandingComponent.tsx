@@ -5,6 +5,7 @@
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useSlice } from '../../core/reactivity'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
+import { toggleRowExpanded } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
 
 export const RowExpandingComponent = ({
@@ -18,10 +19,7 @@ export const RowExpandingComponent = ({
     return null
   }
 
-  const onExpand = () => {
-    row.getToggleExpandedHandler()()
-    hooks.onExpandRow(row, !row.getIsExpanded())
-  }
+  const onExpand = () => toggleRowExpanded(row, hooks)
 
   return <ExpandButton expanded={row.getIsExpanded()} onClick={onExpand} />
 }

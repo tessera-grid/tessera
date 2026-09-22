@@ -10,6 +10,7 @@ import { rowSelectionFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import { toggleRowKeyboardAction } from './keyboardActions'
 import {
   COLUMN_SELECTION_ID,
   getRowSelectionColumn,
@@ -55,6 +56,7 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
     onSelectAllRowsOnPage: o.onSelectAllRowsOnPage,
     isAllRowsSelected: o.isAllRowsSelected, // undefined-ключи отбросит definePlugin
   }),
+  keyboardActions: [toggleRowKeyboardAction],
   column: {
     id: COLUMN_SELECTION_ID,
     make: getRowSelectionColumn,
