@@ -79,7 +79,6 @@ const BodyRowCells = ({
       cell: Cell<any, any, unknown>,
       absoluteLeft?: number,
     ) => ({
-      key: cell.id,
       layout,
       cell,
       rowIndex: virtualRow?.index,
@@ -108,14 +107,14 @@ const BodyRowCells = ({
     return (
       <>
         {startCells.map(cell => (
-          <BodyCell {...cellProps(cell)} />
+          <BodyCell key={cell.id} {...cellProps(cell)} />
         ))}
         <VirtualCenterSpacer />
         {centerCells.map(({ cell, start }) => (
-          <BodyCell {...cellProps(cell, start)} />
+          <BodyCell key={cell.id} {...cellProps(cell, start)} />
         ))}
         {endCells.map(cell => (
-          <BodyCell {...cellProps(cell)} />
+          <BodyCell key={cell.id} {...cellProps(cell)} />
         ))}
       </>
     )
