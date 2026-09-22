@@ -45,6 +45,8 @@ export interface TableLabels {
   contextMenu: string
   /** Пункт «Копировать» (контекстное меню / действия выделения) */
   copy: string
+  /** Тултип и доступное имя кнопки правки ячейки (`cellEditing`) */
+  editCell: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -66,6 +68,7 @@ export const DEFAULT_LABELS: TableLabels = {
   headerMenu: 'Column options',
   contextMenu: 'Context menu',
   copy: 'Copy',
+  editCell: 'Edit cell',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)

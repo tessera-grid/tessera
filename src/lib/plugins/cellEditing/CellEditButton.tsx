@@ -6,6 +6,7 @@
  * приходит пропсом `state`, предикат — пропсом `hooks`; импорта плагина нет.
  */
 import type { PluginCellStateProps } from '../../core/definePlugin'
+import { useLocalization } from '../../core/localization'
 import { CellButton } from '../../grid/Actions/CellButton'
 import { useIcons } from '../../ui/icons'
 import type { CellEditingHooks, EditingCell } from './types'
@@ -20,6 +21,7 @@ export const CellEditButton = (
     hooks,
   } = props
   const { edit: EditIcon } = useIcons()
+  const labels = useLocalization()
   const key = `${row.id}:${column.id}`
 
   // Эта ячейка уже редактируется — кнопка не нужна.
@@ -34,7 +36,7 @@ export const CellEditButton = (
 
   return (
     <CellButton
-      title="Edit cell"
+      title={labels.editCell}
       icon={<EditIcon width={16} height={16} />}
       onClick={() => setEditingCell(key)}
     />

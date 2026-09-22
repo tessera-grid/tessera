@@ -9,6 +9,7 @@ import { useCellButtonStyles } from './styles'
 import '../cellControls/buttonVisibility.css'
 
 export interface CellEditButtonProps {
+  /** Тултип и доступное имя кнопки (`aria-label`). */
   title: string
   icon: ReactNode
   onClick: (event: MouseEvent<HTMLButtonElement>) => void
@@ -42,6 +43,7 @@ export const CellButton = memo(
             className={styles.root}
             disabledClassName={styles.disabled}
             disabled={disabled}
+            aria-label={title}
             onClick={onClick}
           >
             {icon}

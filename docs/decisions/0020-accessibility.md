@@ -80,12 +80,14 @@
 - **Таблица** — `aria-label` из ключа `table` (дефолт `Data table`).
 - **Icon-кнопки** — `aria-label` из существующих ключей (`sortAscending`/
   `sortDescending`/`clearSort`, `pin`/`unpin`, `group`/`ungroup`,
-  `expand`/`collapse`), то есть тот же текст, что и в тултипе.
+  `expand`/`collapse`, `editCell` — кнопка правки `cellEditing`), то есть тот же
+  текст, что и в тултипе. Ячеечные кнопки (`CellButton`) ставят `aria-label` из
+  той же подписи, что и тултип, — хардкод английского текста в плагинах недопустим.
 - **Чекбоксы выбора** — `aria-label` из новых ключей `selectRow`/`selectAll`,
   проброшенных пропом `label` в `SelectCheckbox` (Base UI `Checkbox.Root`
   прокидывает `aria-label` на корневой контрол).
 
-Новые ключи `TableLabels`: `table`, `selectRow`, `selectAll`.
+Новые ключи `TableLabels`: `table`, `selectRow`, `selectAll`, `editCell`.
 
 ### Enforcement — axe в реальном Chromium
 
@@ -149,6 +151,7 @@ contents` (семантика без бокса); опирается на то, 
 | A5  | Грид со всеми (совместимыми) фичами не имеет нарушений axe                                                                                        | ✔ `A5: грид со всеми (совместимыми) фичами … axe`                   |
 | A6  | `aria-colindex` следует порядку отображения: слева направо строго возрастает, колонка, закреплённая справа, несёт `aria-colindex = aria-colcount` | ✔ `A6: aria-colindex следует порядку отображения …`                 |
 | A7  | С `keyboardNavigation` грид со всеми (совместимыми) фичами не имеет нарушений axe, **включая** `scrollable-region-focusable`                      | ✔ `A7: с клавиатурной навигацией — без нарушений axe …`             |
+| A8  | Кнопка правки `cellEditing` имеет доступное имя из локализации (`editCell`, переопределяемо): axe `button-name` чисто                             | ✔ `A8: кнопка правки cellEditing имеет доступное имя …`             |
 
 Базовые роли и позиционные индексы дополнительно закреплены тестами ядра:
 `R10`/`R11` ([core-roles](../../src/lib/stories/__tests__/visual/core-roles.test.tsx)),

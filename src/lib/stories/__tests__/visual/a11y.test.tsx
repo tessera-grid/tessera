@@ -2,10 +2,11 @@ import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
+import { DEFAULT_LABELS } from '../../../core/localization'
 import { bodyRows, headCells, renderGrid } from '../helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
 
-// A1–A7: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
+// A1–A8: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
 // vitest.config.ts). Каждое требование — отдельный именованный тест `A<n>`
 // (docs/decisions/0009-test-coverage-visual-and-performance.md).
 //
@@ -181,5 +182,19 @@ describe('Доступность (a11y)', () => {
       },
     })
     expect(violations).toEqual([])
+  })
+
+  test('A8: кнопка правки cellEditing имеет доступное имя из локализации (axe button-name)', async () => {
+    renderGrid({ columnCount: 6, dataCount: 5, enableCellEditing: true })
+    await waitForGrid()
+
+    const buttons = gridRoot().querySelectorAll(
+      '.data-grid__body-cell .cell__button button',
+    )
+    expect(buttons.length).toBeGreaterThan(0)
+    buttons.forEach(button =>
+      expect(button.getAttribute('aria-label')).toBe(DEFAULT_LABELS.editCell),
+    )
+    expect(byRule(await violations(), 'button-name')).toEqual([])
   })
 })
