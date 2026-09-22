@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
 import type { Table } from '../../types'
+import { useActiveCellIndex } from '../keyboardNavigation'
 import { useTableState } from '../reactivity'
 import { ESTIMATE_SIZE } from './measureRows'
 import { rowMeasureElement } from './rowMeasureElement'
@@ -48,7 +49,12 @@ export const useRowVirtualizer = ({
     [],
   )
 
-  const rangeExtractor = useRowRangeExtractor({ rowDraggingIndex })
+  const activeRowIndex = useActiveCellIndex(table, 'rowIndex')
+
+  const rangeExtractor = useRowRangeExtractor({
+    rowDraggingIndex,
+    activeRowIndex,
+  })
 
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: rowsRef.current.length,

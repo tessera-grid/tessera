@@ -982,3 +982,27 @@ export const CellSelection: StoryObj<StoryProps> = {
     },
   },
 }
+
+export const KeyboardNavigation: StoryObj<StoryProps> = {
+  name: 'Keyboard Navigation',
+  args: {
+    // Стрелки/Home/End/PageUp-Down двигают активную ячейку (roving tabindex), в т.ч.
+    // по заголовку и сервисным колонкам; с cellSelection стрелка схлопывает
+    // выделение, Shift+стрелка расширяет диапазон. Много строк/колонок — чтобы
+    // переход за окно виртуализации доводил ячейку в вид. См. ADR 0021.
+    enableKeyboardNavigation: true,
+    enableCellSelection: true,
+    enableRowSelection: true,
+    enableColumnPinning: true,
+    columnCount: 40,
+    dataCount: 500,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+  parameters: {
+    controls: {
+      exclude: ['page', 'recordsOnPage', 'dataMode'],
+    },
+  },
+}

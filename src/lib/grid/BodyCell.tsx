@@ -9,6 +9,10 @@ import clsx from 'clsx'
 import { useFastScrollSuppressed } from '../core/fastScroll'
 import { useCellSelection } from '../core/cellSelection'
 import { getDisplayColumnIndex } from '../core/displayColumns'
+import {
+  NAV_CELL_ATTR,
+  useKeyboardNavigationCell,
+} from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -97,6 +101,9 @@ export const BodyCell = memo(
     // плагина/для невыбираемых ячеек — тогда ниже не вешаем ни атрибутов, ни
     // обработчиков, ни tabindex (шов инертен, см. ADR 0029).
     const cellSel = useCellSelection(cell)
+    // Клавиатурная навигация (плагин keyboardNavigation): при наличии владеет
+    // roving tabindex ячейки; `null` без плагина.
+    const nav = useKeyboardNavigationCell(table, rowIndex, cell.column.id)
     const edgeColor = (on: boolean) =>
       on ? 'var(--tsr-comp-cell-selected-border-color)' : 'transparent'
     const selectionStyle = (
@@ -149,7 +156,8 @@ export const BodyCell = memo(
 
     return (
       <div
-        role="cell"
+        ref={nav?.ref}
+        role={nav ? 'gridcell' : 'cell'}
         className={clsx('data-grid__body-cell', styles.body__cell)}
         style={{
           width: `var(${getColumnSizeVariable(cell.column.id)})`,
@@ -166,7 +174,12 @@ export const BodyCell = memo(
           paddingLeft,
           ...selectionStyle,
         }}
-        tabIndex={cellSel?.tabIndex}
+        tabIndex={nav ? nav.tabIndex : cellSel?.tabIndex}
+        onFocus={nav?.onFocus}
+        onBlur={nav?.onBlur}
+        {...(nav && { [NAV_CELL_ATTR]: '' })}
+        data-kn-active={nav?.isActive || undefined}
+        data-cell-selectable={cellSel ? true : undefined}
         onMouseDown={
           cellSel
             ? event => {

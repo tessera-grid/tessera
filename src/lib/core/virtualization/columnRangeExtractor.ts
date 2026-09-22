@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import { type Range, defaultRangeExtractor } from '@tanstack/react-virtual'
 
 import type { Table } from '../../types'
+import { useActiveCellIndex } from '../keyboardNavigation'
 import { useSlice } from '../reactivity'
 
 export interface UseColumnRangeExtractorParams {
@@ -23,13 +24,23 @@ export const useColumnRangeExtractor = ({
   // `columnPinning` в deps: при смене закрепления идентичность extractor меняется,
   // react-virtual сбрасывает кэш и пере-считает окно сразу (прибивая пиннутый).
   const columnPinning = useSlice(table, 'columnPinning')
+  // Активная колонка клавиатурной навигации держится в окне (фокус не размонтируется).
+  const activeColumnIndex = useActiveCellIndex(table, 'columnIndex')
 
   return useCallback(
     (range: Range) => {
       const newIndexes = defaultRangeExtractor(range)
+      const activeIndexes =
+        activeColumnIndex !== undefined && activeColumnIndex < range.count
+          ? [activeColumnIndex]
+          : []
 
       if (!table.getIsSomeColumnsPinned()) {
-        return newIndexes
+        return activeIndexes.length === 0
+          ? newIndexes
+          : Array.from(new Set([...activeIndexes, ...newIndexes])).sort(
+              (a, b) => a - b,
+            )
       }
 
       const visibleColumns = table.getVisibleLeafColumns()
@@ -46,13 +57,18 @@ export const useColumnRangeExtractor = ({
         .sort((a: number, b: number) => a - b)
 
       return Array.from(
-        new Set([...startPinnedIndexes, ...newIndexes, ...endPinnedIndexes]),
-      )
+        new Set([
+          ...startPinnedIndexes,
+          ...newIndexes,
+          ...activeIndexes,
+          ...endPinnedIndexes,
+        ]),
+      ).sort((a, b) => a - b)
     },
     // `columnPinning` не читается в теле напрямую (пиннинг берётся через `table`),
     // но обязан быть в deps: смена идентичности extractor заставляет react-virtual
     // пере-считать окно сразу при закреплении, а не со следующего скролла.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [table, columnPinning],
+    [table, columnPinning, activeColumnIndex],
   )
 }

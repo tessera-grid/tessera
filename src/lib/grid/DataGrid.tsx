@@ -18,6 +18,7 @@ import {
   hasSelectedCells,
 } from '../core/clipboard'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
+import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
@@ -73,6 +74,7 @@ export const DataGrid = ({
     const {
       rowSelection: _rowSelection,
       cellSelection: _cellSelection,
+      keyboardNavigation: _keyboardNavigation,
       ...rest
     } = s as unknown as Record<string, unknown>
     return rest
@@ -106,15 +108,18 @@ export const DataGrid = ({
   // (ядро плагин не импортит — читаем duck-typed, ADR 0029). Нативное copy-событие
   // всплывает от сфокусированной ячейки; текстовое выделение пользователя не трогаем.
   const getRanges = (table as any).getSelectedCellRangesData as
-    | (() => unknown[][][])
-    | undefined
+    (() => unknown[][][]) | undefined
   const handleCopy = useCallback(
     (event: ReactClipboardEvent<HTMLDivElement>) => {
       if (typeof getRanges !== 'function') {
         return
       }
       const textSelection = window.getSelection?.()
-      if (textSelection && !textSelection.isCollapsed && textSelection.toString()) {
+      if (
+        textSelection &&
+        !textSelection.isCollapsed &&
+        textSelection.toString()
+      ) {
         return
       }
       const regions = getRanges()
@@ -127,6 +132,10 @@ export const DataGrid = ({
     },
     [getRanges],
   )
+
+  // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
+  // на корне. `null` без плагина — остаётся role=table без обработчиков.
+  const keyboardNavigation = useKeyboardNavigationGrid(table, getScrollElement)
 
   const columnSizes = useCalculateColumnSizes({ table })
 
@@ -263,11 +272,12 @@ export const DataGrid = ({
                 <SkeletonOverlay table={table} columnSizes={columnSizes} />
               ) : (
                 <div
-                  role="table"
+                  role={keyboardNavigation ? 'grid' : 'table'}
                   aria-label={tableLabel}
                   aria-rowcount={headerGroupsDepth + rows.length}
                   aria-colcount={leafColumns.length}
                   className={clsx('MuiTable-root', dataGridStyles.table)}
+                  onKeyDown={keyboardNavigation?.onKeyDown}
                   style={{
                     ...columnSizes,
                     ...virtualPaddingStyles,

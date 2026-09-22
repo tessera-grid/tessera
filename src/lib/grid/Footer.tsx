@@ -3,6 +3,7 @@
 import { memo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
+import clsx from 'clsx'
 
 import type { Header, HeaderGroup } from '../types'
 import { FooterCell } from './FooterCell'
@@ -32,7 +33,11 @@ export const Footer = ({
   const { headers } = footerGroup
 
   return (
-    <div role="rowgroup" className={footerStyles.footer} data-layout={layout}>
+    <div
+      role="rowgroup"
+      className={clsx('data-grid__footer', footerStyles.footer)}
+      data-layout={layout}
+    >
       {/* display:contents — семантическая строка (rowgroup→row→cell) без
           собственного бокса, чтобы ячейки остались треками общей grid/flex-сетки. */}
       <div role="row" style={{ display: 'contents' }}>

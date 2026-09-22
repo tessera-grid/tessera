@@ -14,6 +14,16 @@
     height: 100%;
   }
 
+  /* Активная ячейка клавиатурной навигации: контур фокуса при :focus-visible. */
+  &:focus {
+    outline: none;
+  }
+
+  &[data-kn-cell][data-kn-active='true']:focus-visible {
+    outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
+    outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
+  }
+
   /* Бордеры для ячеек заголовков */
 
   &:is([data-layout='grid']) {

@@ -100,6 +100,7 @@ src/lib/
               reactivity (TanStack Store subscriptions), themeVariables (colorMode → CSS vars),
               createColumns/State/Hooks/Slots, localization, virtualization, fastScroll
   plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions, cellEditing,
+              cellSelection, contextMenu, keyboardNavigation,
               columnPinning, columnSizing, columnSorting, columnDragging, header/rowActionMenu
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
   ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons
@@ -302,6 +303,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
+    - _Клавиатура:_ `keyboard-navigation` (KN1–KN19 — роль grid, roving tabindex,
+      стрелки/Home/End/Page, пиновка под виртуализацией,
+      [ADR 0021](docs/decisions/0021-keyboard-navigation.md)).
     - _Меню действий:_ `action-menu` (AM10–AM19 — kebab заголовка и строки,
       [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md)).
     - _Тема и токены:_ `theming` (TH1–TH9,

@@ -20,6 +20,10 @@ export {
   hasSelectedCells,
 } from './cellSelection'
 export { contextMenu, type ContextMenuOptions } from './contextMenu'
+export {
+  keyboardNavigation,
+  type KeyboardNavigationOptions,
+} from './keyboardNavigation'
 
 export {
   columnSorting,

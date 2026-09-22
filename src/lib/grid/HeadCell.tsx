@@ -3,7 +3,13 @@
 // ячейки-заголовка; контент через flexRender; действия слотов — ActionsZone.
 // Опциональные методы фич (sort/resize/drag) вызываются через ?. — плагина может
 // не быть в наборе.
-import { type CSSProperties, type ReactNode, memo, useMemo } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  memo,
+  useCallback,
+  useMemo,
+} from 'react'
 
 import type { DraggableAttributes } from '@dnd-kit/core'
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
@@ -16,6 +22,11 @@ import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { getDisplayColumnIndex } from '../core/displayColumns'
+import {
+  HEADER_ROW_INDEX,
+  NAV_CELL_ATTR,
+  useKeyboardNavigationCell,
+} from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ItemDraggableWrapper } from './dnd'
@@ -134,6 +145,26 @@ const HeadCellView = ({
 
   const gridStyles = useGridStyles(header)
 
+  // Клавиатурная навигация: в строке заголовка участвуют только листовые заголовки
+  // (групповые строки вложенной шапки — вне модели навигации).
+  const nav = useKeyboardNavigationCell(
+    table,
+    HEADER_ROW_INDEX,
+    header.column.id,
+    header.subHeaders.length === 0 && !header.isPlaceholder,
+  )
+  const setDragNodeRef = drag?.setNodeRef
+  const navRef = nav?.ref
+  const setNodeRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setDragNodeRef?.(node)
+      if (navRef) {
+        navRef.current = node
+      }
+    },
+    [setDragNodeRef, navRef],
+  )
+
   const cellStyles: CSSProperties = {
     ...gridStyles,
     width:
@@ -197,7 +228,12 @@ const HeadCellView = ({
 
   return (
     <div
-      ref={drag?.setNodeRef}
+      ref={setNodeRef}
+      tabIndex={nav?.tabIndex}
+      onFocus={nav?.onFocus}
+      onBlur={nav?.onBlur}
+      {...(nav && { [NAV_CELL_ATTR]: '' })}
+      data-kn-active={nav?.isActive || undefined}
       style={cellStyles}
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
       role="columnheader"
