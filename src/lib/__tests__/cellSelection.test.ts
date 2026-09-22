@@ -70,7 +70,9 @@ describe('cellSelection — сериализация буфера (CR8)', () => 
 
 describe('cellSelection — гейтинг и предикат (CR10/CR11)', () => {
   it('CR10: enabled:false → все enable* жёстко false (present-but-disabled)', () => {
-    const { options } = foldEntries([cellSelection({ enabled: false })] as never)
+    const { options } = foldEntries([
+      cellSelection({ enabled: false }),
+    ] as never)
     expect(options.enableCellSelection).toBe(false)
     expect(options.enableCellRangeSelection).toBe(false)
     expect(options.enableCellSelectionDrag).toBe(false)

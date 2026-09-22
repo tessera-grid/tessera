@@ -65,7 +65,10 @@ export const ContextMenuPopup = ({
               return (
                 <Menu.Group
                   key={action.id}
-                  className={clsx(menuStyles.group, index > 0 && menuStyles.divided)}
+                  className={clsx(
+                    menuStyles.group,
+                    index > 0 && menuStyles.divided,
+                  )}
                 >
                   {groupLabel && (
                     <Menu.GroupLabel className={menuStyles.groupLabel}>

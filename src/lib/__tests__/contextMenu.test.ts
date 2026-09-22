@@ -30,9 +30,9 @@ const ctxWith = (
 
 describe('contextMenu — плагин и канал', () => {
   it('CM8: enabled по умолчанию → enableContextMenu true; enabled:false → false', () => {
-    expect(foldEntries([contextMenu()] as never).options.enableContextMenu).toBe(
-      true,
-    )
+    expect(
+      foldEntries([contextMenu()] as never).options.enableContextMenu,
+    ).toBe(true)
     expect(
       foldEntries([contextMenu({ enabled: false })] as never).options
         .enableContextMenu,

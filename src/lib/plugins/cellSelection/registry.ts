@@ -14,10 +14,7 @@ import { cellSelectionFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { copyContextAction } from './contextActions'
-import type {
-  CellSelectionOptions,
-  CellSelectionPredicateCell,
-} from './types'
+import type { CellSelectionOptions, CellSelectionPredicateCell } from './types'
 
 /** По умолчанию сервисные колонки (действия) невыбираемы. */
 const defaultCanSelect = (cell: CellSelectionPredicateCell): boolean =>

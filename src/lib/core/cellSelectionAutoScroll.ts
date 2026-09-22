@@ -21,8 +21,7 @@ interface AutoScrollTable {
   getSelectedCellRangesData?: () => unknown
   _isSelectingCells?: boolean
   getFocusedCell?: () =>
-    | { row: { id: string }; column: { id: string } }
-    | undefined
+    { row: { id: string }; column: { id: string } } | undefined
   selectCellRange?: (range: {
     anchorRowId: string
     anchorColumnId: string
@@ -41,7 +40,8 @@ const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
 
 /** Скорость пропорциональна заходу в краевую зону, за краем — потолок. */
-const speed = (penetration: number) => clamp(penetration / EDGE, 0, 1) * MAX_SPEED
+const speed = (penetration: number) =>
+  clamp(penetration / EDGE, 0, 1) * MAX_SPEED
 
 export const useCellSelectionAutoScroll = (
   table: unknown,
@@ -133,9 +133,9 @@ export const useCellSelectionAutoScroll = (
       }
       const cx = clamp(pointer.x, r.left + 1, r.right - 1)
       const cy = clamp(pointer.y, r.top + 1, r.bottom - 1)
-      const cell = (document.elementFromPoint(cx, cy) as Element | null)?.closest?.(
-        CELL,
-      )
+      const cell = (
+        document.elementFromPoint(cx, cy) as Element | null
+      )?.closest?.(CELL)
       const rowEl = cell?.closest?.('[data-row-id]')
       const focusRowId = rowEl?.getAttribute('data-row-id')
       const focusColumnId = cell?.getAttribute('data-column-id')

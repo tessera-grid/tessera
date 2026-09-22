@@ -80,9 +80,9 @@ ContextMenuAction[]`, где `ContextMenuAction = MenuAction<ContextMenuContext>
 ```ts
 interface ContextMenuContext extends CellComponentProps {
   selection: {
-    count: number        // сколько ячеек выделено
-    isSingle: boolean    // ровно одна
-    isMultiple: boolean  // > 1
+    count: number // сколько ячеек выделено
+    isSingle: boolean // ровно одна
+    isMultiple: boolean // > 1
     isInSelection: boolean // ячейка под курсором входит в выделение
   }
 }
@@ -152,17 +152,17 @@ interface ContextMenuContext extends CellComponentProps {
 именованный тест `CM<n>` в `visual/context-menu.test.tsx` (vitest-browser) и
 unit-логика в `__tests__/contextMenu.test.ts`.
 
-| ID  | Требование                                                                                     | Тест     |
-| --- | --------------------------------------------------------------------------------------------- | -------- |
-| CM1 | Любой активный плагин добавляет пункт (`contextMenuActions`); disabled — не даёт                | ☑ unit+visual |
-| CM2 | Правый клик (`contextmenu`) в теле грида открывает меню у курсора; нативное меню подавлено      | ☑ visual |
-| CM3 | Пункты гейтятся контекстом выбора: `visible` по `isSingle`/`isMultiple`/`count`                 | ☑ unit   |
-| CM4 | `cellSelection` контрибьютит «Копировать»; `onSelect` кладёт выделение в буфер (TSV+HTML)       | ☑ unit   |
-| CM5 | Пустое меню (нет применимых пунктов) не открывается — уступает нативному                        | ☑ visual |
-| CM6 | `Escape` закрывает меню; фокус/`role="menu"` (Base UI, a11y)                                    | ☑ visual |
-| CM7 | Правый клик по ячейке вне выделения выделяет её (target выбран) до открытия меню                | ☑ visual |
-| CM8 | Плагин инертен без импорта/при `enabled:false`: правый клик даёт нативное меню браузера         | ☑ unit+visual |
-| CM9 | Правый клик по ячейке ВНУТРИ мультивыбора его сохраняет (правая кнопка не стартует выделение)   | ☑ visual |
+| ID   | Требование                                                                                      | Тест          |
+| ---- | ----------------------------------------------------------------------------------------------- | ------------- |
+| CM1  | Любой активный плагин добавляет пункт (`contextMenuActions`); disabled — не даёт                | ☑ unit+visual |
+| CM2  | Правый клик (`contextmenu`) в теле грида открывает меню у курсора; нативное меню подавлено      | ☑ visual      |
+| CM3  | Пункты гейтятся контекстом выбора: `visible` по `isSingle`/`isMultiple`/`count`                 | ☑ unit        |
+| CM4  | `cellSelection` контрибьютит «Копировать»; `onSelect` кладёт выделение в буфер (TSV+HTML)       | ☑ unit        |
+| CM5  | Пустое меню (нет применимых пунктов) не открывается — уступает нативному                        | ☑ visual      |
+| CM6  | `Escape` закрывает меню; фокус/`role="menu"` (Base UI, a11y)                                    | ☑ visual      |
+| CM7  | Правый клик по ячейке вне выделения выделяет её (target выбран) до открытия меню                | ☑ visual      |
+| CM8  | Плагин инертен без импорта/при `enabled:false`: правый клик даёт нативное меню браузера         | ☑ unit+visual |
+| CM9  | Правый клик по ячейке ВНУТРИ мультивыбора его сохраняет (правая кнопка не стартует выделение)   | ☑ visual      |
 | CM10 | Правый клик по сервисной колонке (невыбираемой) уступает нативному меню; выделение не трогается | ☑ unit+visual |
 
 **Перф.** Отдельного кейса не требует: свёртка `contextMenuActions` мемоизирована по

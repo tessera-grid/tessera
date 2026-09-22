@@ -166,7 +166,9 @@ describe('Cell Selection — mouse', () => {
         clientY: rect.bottom + 60,
       }),
     )
-    await expect.poll(() => scroller.scrollTop, { timeout: 2000 }).toBeGreaterThan(0)
+    await expect
+      .poll(() => scroller.scrollTop, { timeout: 2000 })
+      .toBeGreaterThan(0)
     await expect.poll(() => selectedCount(container)).toBeGreaterThan(1)
     fireMouse(document, 'mouseup')
   })
@@ -273,7 +275,9 @@ describe('Cell Selection — virtualization', () => {
     scroller.scrollTop = scroller.scrollHeight
     scroller.dispatchEvent(new Event('scroll'))
     await expect
-      .poll(() => container.querySelector(`${BODY_ROW}[data-row-id='${rowId}']`))
+      .poll(() =>
+        container.querySelector(`${BODY_ROW}[data-row-id='${rowId}']`),
+      )
       .toBeNull()
 
     // Scroll back — the cell remounts and is still selected (id-based, not window).

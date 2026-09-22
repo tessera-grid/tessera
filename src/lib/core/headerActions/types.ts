@@ -52,8 +52,10 @@ export interface MenuAction<TCtx = any> {
  * подпись/обработчик и признаки. Ядро решает подачу (инлайн иконка-кнопка или
  * строка кебаб-меню), поэтому плагин описывает действие данными, а не JSX.
  */
-export interface SlotAction<TCtx = any, TSlot extends SlotName = SlotName>
-  extends MenuAction<TCtx> {
+export interface SlotAction<
+  TCtx = any,
+  TSlot extends SlotName = SlotName,
+> extends MenuAction<TCtx> {
   /** Слот, в котором отрисовывается действие. */
   slot: TSlot
   /** Доступное имя ИНЛАЙН-кнопки, если отличается от тултипа `label`. */

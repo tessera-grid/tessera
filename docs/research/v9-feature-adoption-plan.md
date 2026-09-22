@@ -19,7 +19,7 @@
 нуля» в режим **«подключить стоковую фичу + собрать UI-слой + контракт совместимости
 (ADR 0022) + тесты (ADR 0009)»**.
 
-Наш core уже мигрирован *чисто*: он корректно опирается на разделённые фичи v9
+Наш core уже мигрирован _чисто_: он корректно опирается на разделённые фичи v9
 (в v8 они были слиты) — `rowGrouping` использует `rowAggregationFeature`,
 `columnSizing` — `columnResizingFeature`, `columnSorting` — `rowSortingFeature`.
 Поэтому «переписать дубли» — тонкий слой; основной рычаг — освоение дремлющих фич.
@@ -30,24 +30,24 @@
 
 Полный список стоковых фич — `dist/features/stockFeatures.d.ts`.
 
-| v9-фича | У нас | Статус |
-| --- | --- | --- |
-| `rowSortingFeature` | columnSorting | ✅ используется |
-| `columnGroupingFeature` + `rowAggregationFeature` | rowGrouping | ✅ используется |
-| `columnPinningFeature` | columnPinning (always-on) | ✅ |
-| `columnSizingFeature` + `columnResizingFeature` | columnSizing | ✅ |
-| `columnOrderingFeature` | columnDragging (+dnd-kit) | ✅ |
-| `columnVisibilityFeature` | always-on в `core/features.ts` | ✅ фича есть, UI-плагина нет |
-| `rowSelectionFeature` | rowSelection | ✅ |
-| `rowExpandingFeature` | rowExpanding | ✅ |
-| — (нет фичи v9) | rowDragging | ✅ обоснованно кастомный (порядок строк) |
-| **`columnFilteringFeature`** | — | 🔴 дремлет → «Разрыв №1» |
-| **`globalFilteringFeature`** | — | 🔴 дремлет → quick-search |
-| **`columnFacetingFeature`** | — | 🔴 дремлет → set-фильтры/диапазоны |
-| **`rowPaginationFeature`** | — | 🔴 дремлет → pagination |
-| **`rowPinningFeature`** | — | 🔴 дремлет → закреп строк top/bottom |
-| **`cellSelectionFeature`** | — | 🔴 дремлет → range-выбор/clipboard |
-| **`cellSpanningFeature`** | — | 🔴 дремлет → объединение ячеек |
+| v9-фича                                           | У нас                          | Статус                                   |
+| ------------------------------------------------- | ------------------------------ | ---------------------------------------- |
+| `rowSortingFeature`                               | columnSorting                  | ✅ используется                          |
+| `columnGroupingFeature` + `rowAggregationFeature` | rowGrouping                    | ✅ используется                          |
+| `columnPinningFeature`                            | columnPinning (always-on)      | ✅                                       |
+| `columnSizingFeature` + `columnResizingFeature`   | columnSizing                   | ✅                                       |
+| `columnOrderingFeature`                           | columnDragging (+dnd-kit)      | ✅                                       |
+| `columnVisibilityFeature`                         | always-on в `core/features.ts` | ✅ фича есть, UI-плагина нет             |
+| `rowSelectionFeature`                             | rowSelection                   | ✅                                       |
+| `rowExpandingFeature`                             | rowExpanding                   | ✅                                       |
+| — (нет фичи v9)                                   | rowDragging                    | ✅ обоснованно кастомный (порядок строк) |
+| **`columnFilteringFeature`**                      | —                              | 🔴 дремлет → «Разрыв №1»                 |
+| **`globalFilteringFeature`**                      | —                              | 🔴 дремлет → quick-search                |
+| **`columnFacetingFeature`**                       | —                              | 🔴 дремлет → set-фильтры/диапазоны       |
+| **`rowPaginationFeature`**                        | —                              | 🔴 дремлет → pagination                  |
+| **`rowPinningFeature`**                           | —                              | 🔴 дремлет → закреп строк top/bottom     |
+| **`cellSelectionFeature`**                        | —                              | 🔴 дремлет → range-выбор/clipboard       |
+| **`cellSpanningFeature`**                         | —                              | 🔴 дремлет → объединение ячеек           |
 
 Grep подтвердил: фильтрации/поиска в `src/lib` нет вообще — это чистый пробел, не дубль.
 
@@ -94,13 +94,13 @@ Grep подтвердил: фильтрации/поиска в `src/lib` нет
 
 ### Фаза 0 — Подготовка (enabler, малый риск)
 
-- **0.1 Плагин `columnVisibility`** *(S)* — см. Part A.1. Обкатка нового плагина на
+- **0.1 Плагин `columnVisibility`** _(S)_ — см. Part A.1. Обкатка нового плагина на
   готовой фиче.
-- **0.2 ADR 0027 — единый серверный контракт `manual*`** *(M)* — обобщить ad-hoc
+- **0.2 ADR 0027 — единый серверный контракт `manual*`** _(M)_ — обобщить ad-hoc
   server sort/expand до семейства `manual*` + `rowCount`/`pageCount`. Фундамент под
   фильтрацию и Server-Side Row Model. Требования `SRV<n>`.
 
-### Фаза 1 — Фильтрация (критично, «Разрыв №1») *(L)*
+### Фаза 1 — Фильтрация (критично, «Разрыв №1») _(L)_
 
 **ADR 0028 — Filtering.** Комплект из трёх стоковых фич; требования `F<n>`.
 
@@ -121,14 +121,15 @@ Grep подтвердил: фильтрации/поиска в `src/lib` нет
   perf (скролл/рендер на отфильтрованном большом наборе), `X<n>` (фильтр × grouping,
   фильтр × selection).
 
-### Фаза 2 — Pagination *(M)*
+### Фаза 2 — Pagination _(M)_
 
 **ADR 0029.** `rowPaginationFeature` + `paginatedRowModel` (client) и `manualPagination`
-+ `rowCount`/`pageCount` (server, поверх 0.2). Требования `PG<n>`. Отдельно —
-**стыковка с виртуализацией** (страница vs окно), `autoResetPageIndex` при фильтрации.
-UI — контрол пагинации в футере.
 
-### Фаза 3 — Cell/range selection *(M)*
+- `rowCount`/`pageCount` (server, поверх 0.2). Требования `PG<n>`. Отдельно —
+  **стыковка с виртуализацией** (страница vs окно), `autoResetPageIndex` при фильтрации.
+  UI — контрол пагинации в футере.
+
+### Фаза 3 — Cell/range selection _(M)_
 
 **ADR 0030.** `cellSelectionFeature`. Требования `SEL<n>`. Критичные из skill-дока →
 в требования:
@@ -144,13 +145,13 @@ UI — контрол пагинации в футере.
 - **Тесты:** visual (рамка/диапазоны), unit-logic (include/exclude геометрия, edges),
   perf (драг по большому окну), `X<n>` (cell-selection × сортировка/reorder).
 
-### Фаза 4 — Row pinning *(S–M)*
+### Фаза 4 — Row pinning _(S–M)_
 
 **ADR 0031.** `rowPinningFeature` (top/bottom), `keepPinnedRows`. Требования `RP<n>`.
 Sticky-CSS переиспользуем из инфраструктуры columnPinning. Матрица: закреп строк ×
 фильтрация/пагинация (видимость закреплённых), × grouping.
 
-### Фаза 5 — Cell spanning *(M, ниже приоритетом)*
+### Фаза 5 — Cell spanning _(M, ниже приоритетом)_
 
 **ADR 0032.** `cellSpanningFeature` (`spanRows`/`spanColumns`, соглашение covered-cell
 = 0). Требования `SPAN<n>`. Подводные: спаны «ломаются» после сортировки/пагинации —
@@ -173,15 +174,15 @@ Sticky-CSS переиспользуем из инфраструктуры column
 
 ## 7. Грубая оценка
 
-| Фаза | Размер | Риск |
-| --- | --- | --- |
-| 0.1 visibility | S | низкий |
-| 0.2 manual* контракт | M | средний (трогает существующий server sort/expand) |
-| 1 фильтрация | L | средний (3 фичи + матрица) |
-| 2 pagination | M | средний (виртуализация) |
-| 3 cell-selection | M | средний (перф драга) |
-| 4 row-pinning | S–M | низкий |
-| 5 cell-spanning | M | средний (стабильность спанов) |
+| Фаза                 | Размер | Риск                                              |
+| -------------------- | ------ | ------------------------------------------------- |
+| 0.1 visibility       | S      | низкий                                            |
+| 0.2 manual* контракт | M      | средний (трогает существующий server sort/expand) |
+| 1 фильтрация         | L      | средний (3 фичи + матрица)                        |
+| 2 pagination         | M      | средний (виртуализация)                           |
+| 3 cell-selection     | M      | средний (перф драга)                              |
+| 4 row-pinning        | S–M    | низкий                                            |
+| 5 cell-spanning      | M      | средний (стабильность спанов)                     |
 
 ---
 
