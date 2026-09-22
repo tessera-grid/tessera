@@ -1,0 +1,33 @@
+/**
+ * Дефолтный инлайн-редактор ячейки. Вписан в футпринт контента ячейки: занимает всю
+ * ширину (как cell__title), не выходит за границы (box-sizing/overflow), компактная
+ * высота не раздувает строку. Стилистика — токены темы (шрифт ячейки, системные
+ * fg/bg/border/radius, focus-ring), поэтому автоматически совпадает и в dark.
+ */
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 48px;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--tsr-ref-space-1) calc(var(--tsr-ref-space-1) * 2);
+
+  font-family: inherit;
+  font-size: var(--tsr-comp-cell-font-size);
+  line-height: 1rem;
+  color: var(--tsr-sys-fg);
+
+  background: var(--tsr-sys-bg);
+  border: none;
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+}
+
+/* В покое рамки нет (инпут сливается с ячейкой). Фокус — той же обводкой, что и у
+   ячейки (BodyCell: outline 1px --tsr-comp-cell-outline-color, offset -1px), чтобы
+   цвет/толщина совпадали. Через outline (не border) разметка не сдвигается. */
+.input:focus,
+.input:focus-visible {
+  outline: 1px solid var(--tsr-comp-cell-outline-color);
+  outline-offset: -1px;
+}

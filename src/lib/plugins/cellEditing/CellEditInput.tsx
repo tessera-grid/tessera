@@ -1,5 +1,11 @@
-/** Инлайн-ввод редактирования ячейки: Enter — коммит, Escape/blur — отмена. */
+/**
+ * Дефолтный инлайн-ввод редактирования ячейки: Enter — коммит, Escape/blur — отмена.
+ * Оформлен токенами темы и вписан в футпринт ячейки (CellEditInput.module.css); при
+ * фокусе курсор встаёт в конец значения (autoFocus, без выделения).
+ */
 import { useState, type KeyboardEvent } from 'react'
+
+import styles from './CellEditInput.module.css'
 
 interface CellEditInputProps {
   initialValue: string
@@ -26,6 +32,7 @@ export const CellEditInput = ({
   return (
     <input
       autoFocus
+      className={styles.input}
       value={value}
       onChange={event => setValue(event.target.value)}
       onKeyDown={onKeyDown}
