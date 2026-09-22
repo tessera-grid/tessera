@@ -94,6 +94,8 @@ export const DataGrid = ({
   const enableRowDragging = !!(table.options as any).enableRowDragging
   const enableColumnDragging = !!(table.options as any).enableColumnDragging
   const enableContextMenu = !!(table.options as any).enableContextMenu
+  // rowSelection даёт функциональный enableRowSelection (гейт группировки), выкл — false.
+  const enableRowSelection = !!(table.options as any).enableRowSelection
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -254,6 +256,14 @@ export const DataGrid = ({
             {enableContextMenu && (
               <ContextMenu table={table} getScrollElement={getScrollElement} />
             )}
+            {keyboardNavigation && (
+              <div
+                ref={keyboardNavigation.guardBeforeRef}
+                tabIndex={-1}
+                className={dataGridStyles['focus-guard']}
+                data-kn-guard="before"
+              />
+            )}
             <div
               className={clsx(
                 'MuiPaper-root',
@@ -277,7 +287,14 @@ export const DataGrid = ({
                   aria-rowcount={headerGroupsDepth + rows.length}
                   aria-colcount={leafColumns.length}
                   className={clsx('MuiTable-root', dataGridStyles.table)}
+                  aria-multiselectable={
+                    keyboardNavigation && enableRowSelection ? true : undefined
+                  }
                   onKeyDown={keyboardNavigation?.onKeyDown}
+                  onFocusCapture={keyboardNavigation?.onFocusCapture}
+                  onPointerDownCapture={
+                    keyboardNavigation?.onPointerDownCapture
+                  }
                   style={{
                     ...columnSizes,
                     ...virtualPaddingStyles,
@@ -333,6 +350,14 @@ export const DataGrid = ({
                 </div>
               )}
             </div>
+            {keyboardNavigation && (
+              <div
+                ref={keyboardNavigation.guardAfterRef}
+                tabIndex={-1}
+                className={dataGridStyles['focus-guard']}
+                data-kn-guard="after"
+              />
+            )}
           </div>
         </FastScrollProvider>
       </LocalizationProvider>

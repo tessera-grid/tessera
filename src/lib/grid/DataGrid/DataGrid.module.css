@@ -82,3 +82,13 @@
   :global(.resize__handler--column[data-button-active='true']) {
   pointer-events: auto;
 }
+
+/* Страж Tab-выхода клавиатурной навигации: фокусируем только программно, невидим. */
+.focus-guard {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

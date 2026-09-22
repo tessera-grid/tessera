@@ -988,12 +988,18 @@ export const KeyboardNavigation: StoryObj<StoryProps> = {
   args: {
     // Стрелки/Home/End/PageUp-Down двигают активную ячейку (roving tabindex), в т.ч.
     // по заголовку и сервисным колонкам; с cellSelection стрелка схлопывает
-    // выделение, Shift+стрелка расширяет диапазон. Много строк/колонок — чтобы
-    // переход за окно виртуализации доводил ячейку в вид. См. ADR 0021.
+    // выделение, Shift+стрелка расширяет диапазон. Space — выбор строки, Enter на
+    // заголовке — сортировка, Enter/F2 — правка (age/visits/gender) или вход в
+    // виджеты ячейки, Escape — обратно, Tab — выход из грида, Shift+F10 — меню.
+    // Много строк/колонок — чтобы переход за окно виртуализации доводил ячейку в
+    // вид. См. ADR 0021.
     enableKeyboardNavigation: true,
     enableCellSelection: true,
     enableRowSelection: true,
     enableColumnPinning: true,
+    enableColumnSorting: true,
+    enableCellEditing: true,
+    enableContextMenu: true,
     columnCount: 40,
     dataCount: 500,
     containerHeight: 560,

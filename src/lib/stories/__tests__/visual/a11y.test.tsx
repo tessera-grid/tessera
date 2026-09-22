@@ -5,15 +5,15 @@ import { describe, expect, test } from 'vitest'
 import { bodyRows, headCells, renderGrid } from '../helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
 
-// A1–A6: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
+// A1–A7: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
 // vitest.config.ts). Каждое требование — отдельный именованный тест `A<n>`
 // (docs/decisions/0009-test-coverage-visual-and-performance.md).
 //
 // Отключённые правила — вне зоны структурной доступности этого набора:
 // - color-contrast: зависит от токенов темы, покрыт тестами темизации;
 // - region: документ-левел landmark-правило, неприменимо к встраиваемому гриду;
-// - scrollable-region-focusable: клавиатурная прокрутка/навигация — отдельная
-//   (пока не реализованная) область, а не имена/роли/структура.
+// - scrollable-region-focusable: без плагина keyboardNavigation грид — role="table"
+//   только для чтения; с плагином правило включено и проверяется в A7.
 const AXE_OPTIONS: axe.RunOptions = {
   rules: {
     'color-contrast': { enabled: false },
@@ -155,5 +155,31 @@ describe('Доступность (a11y)', () => {
       cell => cell.getAttribute('data-column-id') === 'c2',
     )!
     expect(body.getAttribute('aria-colindex')).toBe(colcount)
+  })
+
+  test('A7: с клавиатурной навигацией — без нарушений axe, включая scrollable-region-focusable', async () => {
+    renderGrid({
+      columnCount: 8,
+      dataCount: 30,
+      enableKeyboardNavigation: true,
+      enableColumnSorting: true,
+      enableColumnPinning: true,
+      enableRowSelection: true,
+      enableCellSelection: true,
+      enableFooter: true,
+    })
+    await waitForGrid()
+
+    const root = document.querySelector<HTMLElement>('[role="grid"]')!
+    expect(root).toBeTruthy()
+    // Правило scrollable-region-focusable здесь НЕ отключено: с плагином область
+    // прокрутки достижима с клавиатуры (WCAG 2.1.1).
+    const { violations } = await axe.run(root.parentElement!, {
+      rules: {
+        'color-contrast': { enabled: false },
+        region: { enabled: false },
+      },
+    })
+    expect(violations).toEqual([])
   })
 })

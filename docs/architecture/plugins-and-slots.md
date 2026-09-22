@@ -64,6 +64,10 @@ flowchart TB
 - `table.getHooks()` → `table.options.hooks`
 - `table.getRenderSlots()` → `table.options.slots`
 - `table.getSlotActions()` → `table.options.slotActions` (дескрипторы действий, ADR 0024)
+- `table.getContextMenuActions()` → `table.options.contextMenuActions` (пункты
+  контекстного меню, ADR 0030)
+- `table.getKeyboardActions()` → `table.options.keyboardActions` (клавиатурные
+  действия ячеек: `Space`/`Enter`/`F2`, ADR 0021)
 - `table.setRenderSlot(params)` → регистрация слота на месте
 - плюс хелперы: `getHeaderGroups` (флаги первой/последней группы через
   `initHeaderGroupInstanceData`), `getIsAnyColumnResizing` и флаги на

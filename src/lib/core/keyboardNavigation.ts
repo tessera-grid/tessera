@@ -21,6 +21,7 @@ import {
 
 import { setPluginState } from './definePlugin'
 import { getDisplayColumns } from './displayColumns'
+import type { KeyboardAction } from './keyboardActions'
 import { useTableState } from './reactivity'
 
 export const KEYBOARD_NAVIGATION = 'keyboardNavigation'
@@ -79,6 +80,8 @@ interface NavTable {
   // Стоковая фича cellSelection (есть, только если плагин подключён).
   setFocusedCell?: (rowId: string, columnId: string) => void
   extendCellSelection?: (direction: Direction) => void
+  getHeaderGroups: () => { headers: unknown[] }[]
+  getKeyboardActions?: () => KeyboardAction[] | undefined
   getFocusedCell?: () =>
     { row: { id: string }; column: { id: string } } | undefined
 }
@@ -257,6 +260,8 @@ interface FocusTracking {
   pending: boolean
   /** Фокус последним был на ячейке грида (для восстановления после анмаунта). */
   within: boolean
+  /** Идёт ввод указателем: фокус от него не перенаправляется на активную ячейку. */
+  pointer: boolean
 }
 
 const focusTracking = new WeakMap<object, FocusTracking>()
@@ -266,7 +271,7 @@ const focusTracking = new WeakMap<object, FocusTracking>()
 const trackingOf = (table: NavTable): FocusTracking => {
   let tracking = focusTracking.get(table.store)
   if (!tracking) {
-    tracking = { pending: false, within: false }
+    tracking = { pending: false, within: false, pointer: false }
     focusTracking.set(table.store, tracking)
   }
   return tracking
@@ -320,6 +325,123 @@ const extendSelectionFrom = (
   return true
 }
 
+// --- Режим действия, действия плагинов, стражи Tab --------------------------------
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  '[tabindex]',
+  '[contenteditable="true"]',
+]
+  .map(
+    selector =>
+      `${selector}:not([tabindex="-1"]):not([disabled]):not([aria-hidden="true"])`,
+  )
+  .join(',')
+
+/** Интерактивные виджеты внутри ячейки (кнопки, чекбоксы, поля) в DOM-порядке. */
+const getCellWidgets = (cell: HTMLElement): HTMLElement[] =>
+  Array.from(cell.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    widget => widget.getClientRects().length > 0,
+  )
+
+const isFocusLost = () =>
+  document.activeElement === null || document.activeElement === document.body
+
+/**
+ * Вернуть фокус на ячейку, если сфокусированный виджет исчез из DOM (редактор
+ * закрылся после коммита, меню размонтировалось). Проверка — после ре-рендера.
+ */
+const restoreFocusIfLost = (cell: HTMLElement) => {
+  setTimeout(() => {
+    if (isFocusLost() && cell.isConnected) {
+      cell.focus({ preventScroll: true })
+    }
+  }, 0)
+}
+
+const ACTION_KEYS = new Set([' ', 'Enter', 'F2'])
+
+const isContextMenuKey = (event: ReactKeyboardEvent<HTMLElement>) =>
+  event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)
+
+interface NavHeader {
+  column: { id: string }
+  getContext: () => unknown
+}
+
+/** Контекст активной ячейки для канала `keyboardActions`. */
+const resolveActionTarget = (
+  t: NavTable,
+  active: ActiveCell,
+): { scope: KeyboardAction['scope']; ctx: unknown } | null => {
+  if (active.rowIndex === HEADER_ROW_INDEX) {
+    const columnId = getDisplayColumns(t).ids[active.columnIndex]
+    const header = (
+      t.getHeaderGroups().at(-1)?.headers as NavHeader[] | undefined
+    )?.find(h => h.column.id === columnId)
+    return header ? { scope: 'header', ctx: header.getContext() } : null
+  }
+  const cell = t.getRowModel().rows[active.rowIndex]?.getVisibleCells()[
+    active.columnIndex
+  ] as { getContext?: () => unknown } | undefined
+  return cell?.getContext ? { scope: 'cell', ctx: cell.getContext() } : null
+}
+
+/** Первое применимое действие плагина для клавиши на активной ячейке. */
+const findKeyboardAction = (
+  t: NavTable,
+  target: { scope: KeyboardAction['scope']; ctx: unknown },
+  key: string,
+): KeyboardAction | undefined =>
+  (t.getKeyboardActions?.() ?? []).find(
+    action =>
+      action.scope === target.scope &&
+      action.keys.includes(key) &&
+      (action.visible?.(target.ctx as never) ?? true),
+  )
+
+/** Клавиши внутри виджета ячейки: `Escape` — на ячейку, `Tab` — по виджетам по кругу. */
+const handleActionModeKey = (
+  event: ReactKeyboardEvent<HTMLElement>,
+  cell: HTMLElement,
+) => {
+  if (event.key === 'Escape' && !event.defaultPrevented) {
+    event.preventDefault()
+    cell.focus({ preventScroll: true })
+    return
+  }
+  if (event.key === 'Tab' && !event.ctrlKey && !event.altKey) {
+    const widgets = getCellWidgets(cell)
+    const target = event.target as Node
+    const index = widgets.findIndex(widget => widget.contains(target))
+    if (widgets.length === 0 || index === -1) {
+      return
+    }
+    event.preventDefault()
+    const step = event.shiftKey ? -1 : 1
+    widgets[(index + step + widgets.length) % widgets.length].focus()
+    return
+  }
+  restoreFocusIfLost(cell)
+}
+
+/** Открыть контекстное меню у ячейки (клавиатурный вызов, центр ячейки). */
+const openContextMenuAt = (cell: HTMLElement) => {
+  const rect = cell.getBoundingClientRect()
+  cell.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    }),
+  )
+}
+
 /**
  * Индекс активной строки/колонки для пиновки в `rangeExtractor`; `undefined` без
  * плагина. Строка заголовка (`-1`) виртуализатором строк не пинуется.
@@ -338,24 +460,75 @@ export const useActiveCellIndex = (
 
 export interface KeyboardNavigationGrid {
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void
+  onFocusCapture: (event: ReactFocusEvent<HTMLElement>) => void
+  onPointerDownCapture: () => void
+  /** Стражи Tab-выхода: невидимые `tabindex=-1` до и после контейнера прокрутки. */
+  guardBeforeRef: RefObject<HTMLDivElement | null>
+  guardAfterRef: RefObject<HTMLDivElement | null>
 }
 
 /**
- * Клавиатурный обработчик корня грида; `null` без плагина. Реагирует только когда
- * фокус на самой ячейке (режим навигации) — нажатия внутри виджетов ячейки не трогает.
+ * Клавиатурный контроллер корня грида; `null` без плагина. В режиме навигации
+ * (фокус на ячейке) — стрелки, действия плагинов, вход в режим действия, Tab-выход;
+ * в режиме действия (фокус на виджете ячейки) — `Escape` и `Tab` по кругу.
  */
 export const useKeyboardNavigationGrid = (
   table: unknown,
   getScrollElement: () => HTMLElement | null,
 ): KeyboardNavigationGrid | null => {
+  const guardBeforeRef = useRef<HTMLDivElement>(null)
+  const guardAfterRef = useRef<HTMLDivElement>(null)
+
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLElement>) => {
       const target = event.target as HTMLElement
-      if (!target.hasAttribute?.(NAV_CELL_ATTR)) {
+      const cell = target.closest?.<HTMLElement>(`[${NAV_CELL_ATTR}]`)
+      if (!cell) {
         return
       }
+      if (cell !== target) {
+        handleActionModeKey(event, cell)
+        return
+      }
+
       const t = table as NavTable
+      const modified = event.ctrlKey || event.metaKey || event.altKey
+
+      // Tab — выход из грида: фокус на стража, нативный обход продолжится от него.
+      if (event.key === 'Tab' && !modified) {
+        const guard = event.shiftKey
+          ? guardBeforeRef.current
+          : guardAfterRef.current
+        guard?.focus({ preventScroll: true })
+        return
+      }
+
+      if (isContextMenuKey(event)) {
+        if (t.options.enableContextMenu) {
+          event.preventDefault()
+          openContextMenuAt(cell)
+        }
+        return
+      }
+
       const active = resolveActive(t, t.store.get())
+
+      if (ACTION_KEYS.has(event.key) && !modified) {
+        // Пробел не должен прокручивать контейнер, даже если действия нет.
+        event.preventDefault()
+        const actionTarget = resolveActionTarget(t, active)
+        const action =
+          actionTarget && findKeyboardAction(t, actionTarget, event.key)
+        if (action && actionTarget) {
+          action.run(actionTarget.ctx as never, event)
+          restoreFocusIfLost(cell)
+          return
+        }
+        if (event.key !== ' ' && !event.shiftKey) {
+          getCellWidgets(cell)[0]?.focus()
+        }
+        return
+      }
 
       const direction = ARROW_DIRECTIONS[event.key]
       if (event.shiftKey && !event.altKey && direction) {
@@ -388,7 +561,49 @@ export const useKeyboardNavigationGrid = (
     [table, getScrollElement],
   )
 
-  return isKeyboardNavigationEnabled(table) ? { onKeyDown } : null
+  // Вход в грид с клавиатуры извне (Tab/Shift+Tab попал на виджет) — на активную
+  // ячейку. Фокус от указателя (клик по чекбоксу/полю) не перенаправляем.
+  const onFocusCapture = useCallback(
+    (event: ReactFocusEvent<HTMLElement>) => {
+      const tracking = trackingOf(table as NavTable)
+      const root = event.currentTarget
+      const from = event.relatedTarget as Node | null
+      const target = event.target as HTMLElement
+      if (
+        tracking.pointer ||
+        (from && root.contains(from)) ||
+        target.hasAttribute(NAV_CELL_ATTR)
+      ) {
+        return
+      }
+      const activeCell = root.querySelector<HTMLElement>(
+        '[data-kn-active="true"]',
+      )
+      if (activeCell && activeCell !== target) {
+        activeCell.focus({ preventScroll: true })
+      }
+    },
+    [table],
+  )
+
+  const onPointerDownCapture = useCallback(() => {
+    const tracking = trackingOf(table as NavTable)
+    tracking.pointer = true
+    // Фокус от указателя приходит в той же задаче ввода (mousedown).
+    setTimeout(() => {
+      tracking.pointer = false
+    }, 0)
+  }, [table])
+
+  return isKeyboardNavigationEnabled(table)
+    ? {
+        onKeyDown,
+        onFocusCapture,
+        onPointerDownCapture,
+        guardBeforeRef,
+        guardAfterRef,
+      }
+    : null
 }
 
 // --- Хук ячейки --------------------------------------------------------------------
@@ -470,6 +685,16 @@ export const useKeyboardNavigationCell = (
       const root = el.closest(SCROLLER_SELECTOR)
       if (next && root?.contains(next)) {
         return
+      }
+      // Сфокусированный виджет ячейки исчез из DOM (напр. закрылся редактор) —
+      // вернуть фокус на ячейку, а не терять его в body.
+      const widget = event.target as HTMLElement
+      if (widget !== el && !next) {
+        setTimeout(() => {
+          if (!widget.isConnected && isFocusLost() && el.isConnected) {
+            el.focus({ preventScroll: true })
+          }
+        }, 0)
       }
       // Узел мог уйти из DOM вместе со строкой — это не уход фокуса из грида.
       queueMicrotask(() => {

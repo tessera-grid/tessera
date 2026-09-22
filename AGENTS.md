@@ -303,7 +303,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
-    - _Клавиатура:_ `keyboard-navigation` (KN1–KN19 — роль grid, roving tabindex,
+    - _Клавиатура:_ `keyboard-navigation` (KN1–KN26 — роль grid, roving tabindex, режим действия, Tab-выход,
       стрелки/Home/End/Page, пиновка под виртуализацией,
       [ADR 0021](docs/decisions/0021-keyboard-navigation.md)).
     - _Меню действий:_ `action-menu` (AM10–AM19 — kebab заголовка и строки,
@@ -316,7 +316,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
       (TC-1…TC-5 — единые контракты по семействам,
       [ADR 0017](docs/decisions/0017-ui-components.md)).
-    - _Доступность:_ `a11y` (A1–A6, прогон axe-core,
+    - _Доступность:_ `a11y` (A1–A7, прогон axe-core,
       [ADR 0020](docs/decisions/0020-accessibility.md)).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md)).

@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
 import { getScroller } from '../helpers'
@@ -96,6 +96,33 @@ async function focusBodyCell(rowIndex: number, position: number) {
   await expect.poll(() => active()).toBe(cell)
   return cell
 }
+
+/** Грид между двумя внешними кнопками — чтобы наблюдать уход фокуса по Tab. */
+async function renderWithNeighbours(args: StoryArgs = {}) {
+  const screen = await render(
+    <>
+      <button id="before-grid">before</button>
+      <composed.KeyboardNavigation {...args} />
+      <button id="after-grid">after</button>
+    </>,
+  )
+  await expect
+    .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
+    .toBeGreaterThan(3)
+  return screen
+}
+
+/** Инлайн-ввод редактора cellEditing. */
+const EDIT_INPUT = "[aria-label='edit cell value']"
+
+const headCellOf = (columnId: string) =>
+  document.querySelector<HTMLElement>(
+    `${HEAD_CELL}[data-column-id='${columnId}']`,
+  )!
+
+/** Позиция колонки слева направо в строке тела. */
+const columnPosition = (rowIndex: number, columnId: string) =>
+  cellsLeftRight(rowIndex).findIndex(cell => columnIdOf(cell) === columnId)
 
 describe('Клавиатурная навигация (keyboardNavigation)', () => {
   test('KN1: с плагином контейнер — role="grid", ячейки тела — gridcell; без него — table/cell', async () => {
@@ -347,5 +374,172 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
     // Активная ячейка (якорь) не сдвинулась.
     expect(active()).toBe(anchor)
     expect(anchor.getAttribute('data-cell-focused')).toBe('true')
+  })
+
+  // --- Срез 2: один tab-stop, режим действия, действия плагинов ------------------
+
+  test('KN2: Tab/Shift+Tab с ячейки уводят фокус из грида', async () => {
+    await renderWithNeighbours()
+    await focusBodyCell(2, 2)
+
+    await press('{Tab}')
+    await expect.poll(() => active().id).toBe('after-grid')
+
+    await focusBodyCell(2, 2)
+    await press('{Shift>}{Tab}{/Shift}')
+    await expect.poll(() => active().id).toBe('before-grid')
+  })
+
+  test('KN20: вход в грид с клавиатуры попадает на активную ячейку', async () => {
+    await renderWithNeighbours()
+    const cell = await focusBodyCell(3, 3)
+
+    document.getElementById('before-grid')!.focus()
+    await press('{Tab}')
+    await expect.poll(() => active()).toBe(cell)
+
+    document.getElementById('after-grid')!.focus()
+    await press('{Shift>}{Tab}{/Shift}')
+    await expect.poll(() => active()).toBe(cell)
+  })
+
+  test('KN11: Enter/F2 на ячейке с виджетом фокусирует виджет, Escape — обратно на ячейку', async () => {
+    await renderNavigation()
+    // Ячейка колонки выбора: собственного действия на Enter нет — режим действия.
+    const cell = await focusBodyCell(1, 0)
+
+    await press('{Enter}')
+    await expect.poll(() => active().getAttribute('role')).toBe('checkbox')
+    expect(cell.contains(active())).toBe(true)
+
+    await press('{Escape}')
+    await expect.poll(() => active()).toBe(cell)
+
+    await press('{F2}')
+    await expect.poll(() => active().getAttribute('role')).toBe('checkbox')
+  })
+
+  test('KN21: в режиме действия Tab/Shift+Tab ходят по виджетам ячейки по кругу', async () => {
+    await renderNavigation()
+    const head = headCellOf('firstName')
+    head.focus()
+    const widgets = () =>
+      Array.from(head.querySelectorAll<HTMLElement>('button'))
+    expect(widgets().length).toBeGreaterThan(1)
+
+    await press('{F2}')
+    await expect.poll(() => active()).toBe(widgets()[0])
+    await press('{Tab}')
+    await expect.poll(() => active()).toBe(widgets()[1])
+    for (let i = 2; i < widgets().length; i++) {
+      await press('{Tab}')
+    }
+    await press('{Tab}')
+    await expect.poll(() => active()).toBe(widgets()[0])
+    await press('{Shift>}{Tab}{/Shift}')
+    await expect.poll(() => active()).toBe(widgets().at(-1))
+    expect(head.contains(active())).toBe(true)
+  })
+
+  test('KN22: исчезнувший сфокусированный виджет возвращает фокус на свою ячейку', async () => {
+    await renderNavigation()
+    const cell = await focusBodyCell(2, columnPosition(2, 'age'))
+
+    await press('{Enter}')
+    await expect.poll(() => active().matches(EDIT_INPUT)).toBe(true)
+    // Коммит закрывает редактор — поле исчезает из DOM.
+    await press('{Enter}')
+    await expect.poll(() => active().hasAttribute('data-kn-cell')).toBe(true)
+    expect(columnIdOf(active())).toBe('age')
+    expect(rowIndexOf(active())).toBe(rowIndexOf(cell))
+  })
+
+  test('KN12: Space на ячейке тела переключает выбор строки и зовёт onSelectRow', async () => {
+    const onSelectRow = vi.fn()
+    await renderNavigation({ onSelectRow })
+    const cell = await focusBodyCell(1, 2)
+    const row = () => cell.closest(BODY_ROW)!
+
+    await press('[Space]')
+    await expect.poll(() => row().getAttribute('data-selected')).toBe('true')
+    expect(onSelectRow).toHaveBeenCalledTimes(1)
+    expect(active()).toBe(cell)
+
+    await press('[Space]')
+    await expect.poll(() => row().getAttribute('data-selected')).toBe('false')
+    expect(onSelectRow).toHaveBeenCalledTimes(2)
+  })
+
+  test('KN23: при активном rowSelection сетка несёт aria-multiselectable', async () => {
+    const screen = await renderNavigation()
+    expect(gridRoot().getAttribute('aria-multiselectable')).toBe('true')
+    await screen.unmount()
+
+    await renderNavigation({ enableRowSelection: false })
+    expect(gridRoot().hasAttribute('aria-multiselectable')).toBe(false)
+  })
+
+  test('KN13: Enter на сортируемом заголовке меняет сортировку', async () => {
+    await renderNavigation()
+    const head = headCellOf('age')
+    const before = head.getAttribute('aria-sort')
+    head.focus()
+
+    await press('{Enter}')
+    await expect
+      .poll(() => headCellOf('age').getAttribute('aria-sort'))
+      .not.toBe(before)
+    expect(active()).toBe(headCellOf('age'))
+  })
+
+  test('KN24: Enter на ячейке колонки раскрытия раскрывает и сворачивает строку', async () => {
+    await render(<composed.RowExpanding enableKeyboardNavigation />)
+    await expect
+      .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
+      .toBeGreaterThan(3)
+    const expanderCell = () =>
+      document.querySelector<HTMLElement>(
+        `${BODY_ROW}[data-index='0'] ${BODY_CELL}[data-column-id^='actionColumn__rowExpanding']`,
+      )!
+    const row = () => document.querySelector(`${BODY_ROW}[data-index='0']`)!
+    expect(row().getAttribute('aria-expanded')).toBe('false')
+
+    expanderCell().focus()
+    await press('{Enter}')
+    await expect.poll(() => row().getAttribute('aria-expanded')).toBe('true')
+    await press('{Enter}')
+    await expect.poll(() => row().getAttribute('aria-expanded')).toBe('false')
+  })
+
+  test('KN25: Enter/F2 на редактируемой ячейке открывают редактор', async () => {
+    await renderNavigation()
+    await focusBodyCell(2, columnPosition(2, 'age'))
+
+    await press('{Enter}')
+    await expect.poll(() => active().matches(EDIT_INPUT)).toBe(true)
+    await press('{Escape}')
+    await expect.poll(() => columnIdOf(active())).toBe('age')
+
+    await press('{F2}')
+    await expect.poll(() => active().matches(EDIT_INPUT)).toBe(true)
+  })
+
+  test('KN26: Shift+F10 открывает контекстное меню у активной ячейки', async () => {
+    await renderNavigation()
+    const cell = await focusBodyCell(3, 2)
+
+    await press('{Shift>}{F10}{/Shift}')
+    const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
+    await expect.poll(() => menu()).not.toBeNull()
+    const cellRect = cell.getBoundingClientRect()
+    const menuRect = menu()!.getBoundingClientRect()
+    // Меню открыто у ячейки (от её центра), а не в углу экрана.
+    expect(menuRect.left).toBeGreaterThanOrEqual(cellRect.left)
+    expect(menuRect.left).toBeLessThanOrEqual(cellRect.right)
+    expect(menuRect.top).toBeGreaterThanOrEqual(cellRect.top)
+    expect(menuRect.top).toBeLessThanOrEqual(cellRect.bottom)
+
+    await press('{Escape}')
+    await expect.poll(() => menu()).toBeNull()
   })
 })
