@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef } from 'react'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
 
-import type { Table } from '../../types'
+import type { Column, Table } from '../../types'
+import { getDisplayColumns } from '../displayColumns'
 import { useTableState } from '../reactivity'
 import { useColumnRangeExtractor } from './columnRangeExtractor'
 
@@ -19,10 +20,14 @@ export const useColumnVirtualizer = ({
   getScrollElement,
   enabled = true,
 }: ColumnVirtualizerParams) => {
-  const visibleColumns = table.getVisibleLeafColumns()
+  // Индексы виртуализатора — в порядке отображения (как ячейки строки и заголовки),
+  // иначе размер/ключ закреплённой справа колонки попадает в чужой слот.
+  const displayColumns = getDisplayColumns<Column<any, any, unknown>>(
+    table as never,
+  ).columns
 
-  const columnsRef = useRef(visibleColumns)
-  columnsRef.current = visibleColumns
+  const columnsRef = useRef(displayColumns)
+  columnsRef.current = displayColumns
 
   const getEstimateSize = useCallback(
     (index: number) => columnsRef.current[index].getSize(),
@@ -53,6 +58,19 @@ export const useColumnVirtualizer = ({
     table,
     state => (state as any).columnResizing?.isResizingColumn ?? false,
   )
+  // estimateSize не входит в мемо-зависимости react-virtual: при смене порядка
+  // отображения (закрепление/перестановка) кэш размеров надо сбросить явно.
+  const orderMountedRef = useRef(false)
+  useEffect(() => {
+    if (!orderMountedRef.current) {
+      orderMountedRef.current = true
+
+      return
+    }
+
+    virtualizer.measure()
+  }, [displayColumns, virtualizer])
+
   const mountedRef = useRef(false)
 
   useEffect(() => {

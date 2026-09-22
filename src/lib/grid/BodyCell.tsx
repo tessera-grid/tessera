@@ -8,6 +8,7 @@ import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../core/fastScroll'
 import { useCellSelection } from '../core/cellSelection'
+import { getDisplayColumnIndex } from '../core/displayColumns'
 import { useTableState } from '../core/reactivity'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -186,7 +187,7 @@ export const BodyCell = memo(
         data-cell-selected={cellSel?.isSelected || undefined}
         data-cell-focused={cellSel?.isFocused || undefined}
         data-virtual-cell={absoluteLeft !== undefined || undefined}
-        aria-colindex={cell.column.getIndex() + 1}
+        aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}

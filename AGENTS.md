@@ -291,7 +291,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
       `service-columns` (R6/R8/R10 — сервисные колонки).
     - _Виртуализация:_ `virtualization` (V1–V11).
-    - _Колонки:_ `column-pinning` (CP1–CP25, [ADR 0011](docs/decisions/0011-column-pinning.md)),
+    - _Колонки:_ `column-pinning` (CP1–CP26, [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
       [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-sorting` (CS1–CS23, [ADR 0012](docs/decisions/0012-column-sorting.md)),
@@ -312,7 +312,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
       (TC-1…TC-5 — единые контракты по семействам,
       [ADR 0017](docs/decisions/0017-ui-components.md)).
-    - _Доступность:_ `a11y` (A1–A5, прогон axe-core,
+    - _Доступность:_ `a11y` (A1–A6, прогон axe-core,
       [ADR 0020](docs/decisions/0020-accessibility.md)).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md)).

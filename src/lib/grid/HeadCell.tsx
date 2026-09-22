@@ -15,6 +15,7 @@ import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
+import { getDisplayColumnIndex } from '../core/displayColumns'
 import { useTableState } from '../core/reactivity'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ItemDraggableWrapper } from './dnd'
@@ -200,7 +201,8 @@ const HeadCellView = ({
       style={cellStyles}
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
       role="columnheader"
-      aria-colindex={header.column.getIndex() + 1}
+      // Спанящий групповой заголовок — позиция его первого листа.
+      aria-colindex={getDisplayColumnIndex(table, firstLeaf.id) + 1}
       aria-sort={getAriaSort(header)}
       data-column-id={header.column.id}
       data-virtual-cell={absoluteLeft !== undefined || undefined}

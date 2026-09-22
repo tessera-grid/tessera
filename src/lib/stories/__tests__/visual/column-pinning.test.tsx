@@ -7,7 +7,7 @@ import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Pinning requirement is its own named test, prefixed with its spec
-// ID (CP1–CP25 from the requirements table in docs/decisions/0011-column-pinning.md).
+// ID (CP1–CP26 from the requirements table in docs/decisions/0011-column-pinning.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -692,5 +692,57 @@ describe('Column Pinning — requirements', () => {
     expect(button).toBeTruthy()
     expect(isOpaque(button)).toBe(true)
     expect(getComputedStyle(button).boxShadow).not.toBe('none')
+  })
+
+  // --- Virtualization order (CP26) ----------------------------------------------
+
+  test('CP26: center columns stay contiguous after right-pinning a column of a different width', async () => {
+    // 20 равных столбцов, кроме c5 (400px, закрепляемый только вправо). Закрепление
+    // уносит c5 в конец порядка отображения; виртуализатор обязан размечать слоты в
+    // том же порядке, иначе ширина c5 ляжет в слот c6 и центр «разъедется».
+    const columns = Array.from({ length: 20 }, (_, i) => ({
+      id: `c${i}`,
+      accessorKey: `c${i}`,
+      header: `C${i}`,
+      size: i === 5 ? 400 : 150,
+      enablePinning: true,
+      ...(i === 5 ? { meta: { pinSides: 'right' } } : {}),
+    }))
+    const container = await renderColumnPinning({ columnsOverride: columns })
+
+    await userEvent.click(await revealPin(headCellById(container, 'c5')))
+    await expect
+      .poll(
+        () =>
+          container.querySelector(
+            `${HEAD_CELL}[data-column-id='c5'][data-cell-pinned='right']`,
+          ) !== null,
+      )
+      .toBe(true)
+
+    const centerHeads = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>(
+          `${HEAD_CELL}[data-virtual-cell]`,
+        ),
+      ).sort(
+        (a, b) =>
+          a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+      )
+    /** Зазор между каждым центральным заголовком и его левым соседом, px. */
+    const gaps = () => {
+      const rects = centerHeads().map(head => head.getBoundingClientRect())
+      return rects
+        .slice(1)
+        .map((rect, i) => Math.round(rect.left - rects[i].right))
+    }
+
+    // Окно содержит соседей бывшей позиции c5 — именно там разъезжался бы центр.
+    await expect
+      .poll(() =>
+        centerHeads().map(head => head.getAttribute('data-column-id')),
+      )
+      .toEqual(expect.arrayContaining(['c4', 'c6', 'c7']))
+    await expect.poll(() => gaps().every(gap => Math.abs(gap) <= 1)).toBe(true)
   })
 })

@@ -4,6 +4,7 @@ import clsx from 'clsx'
 
 import { CellWrapperContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
+import { getDisplayColumnIndex } from '../core/displayColumns'
 import type { Header } from '../types'
 import { getHeaderSizeVariable } from './columnSizes'
 
@@ -31,7 +32,9 @@ export const FooterCell = ({
         ...(absoluteLeft !== undefined ? { left: absoluteLeft } : null),
       }}
       data-virtual-cell={absoluteLeft !== undefined || undefined}
-      aria-colindex={header.column.getIndex() + 1}
+      aria-colindex={
+        getDisplayColumnIndex(header.getContext().table, header.column.id) + 1
+      }
       data-column-id={header.column.id}
       data-layout={layout}
       data-first-cell-in-row={header.column.getIsFirstColumn()}

@@ -1,10 +1,11 @@
 import axe from 'axe-core'
+import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import { bodyRows, headCells, renderGrid } from '../helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
 
-// A1–A5: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
+// A1–A6: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
 // vitest.config.ts). Каждое требование — отдельный именованный тест `A<n>`
 // (docs/decisions/0009-test-coverage-visual-and-performance.md).
 //
@@ -107,5 +108,52 @@ describe('Доступность (a11y)', () => {
     await waitForGrid()
 
     expect(await violations()).toEqual([])
+  })
+
+  test('A6: aria-colindex следует порядку отображения (закреплённая справа — последняя)', async () => {
+    // c2 закрепляется только вправо: в натуральном порядке она третья, а визуально —
+    // последняя. aria-colindex обязан повторять визуальный порядок.
+    const columnsOverride = Array.from({ length: 6 }, (_, i) => ({
+      id: `c${i}`,
+      accessorKey: `c${i}`,
+      header: `C${i}`,
+      size: 150,
+      enablePinning: true,
+      ...(i === 2 ? { meta: { pinSides: 'right' } } : {}),
+    }))
+    renderGrid({
+      columnsOverride,
+      columnCount: 6,
+      dataCount: 5,
+      enableColumnPinning: true,
+    })
+    await waitForGrid()
+
+    const head = () =>
+      headCells().find(cell => cell.getAttribute('data-column-id') === 'c2')!
+    await userEvent.hover(head())
+    await userEvent.click(
+      head().querySelector<HTMLElement>('.column-pin__button')!,
+    )
+    await expect
+      .poll(() => head().getAttribute('data-cell-pinned'))
+      .toBe('right')
+
+    const colcount = gridRoot().getAttribute('aria-colcount')
+    const indexes = [...headCells()]
+      .sort(
+        (a, b) =>
+          a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+      )
+      .map(cell => Number(cell.getAttribute('aria-colindex')))
+    // Слева направо — строго возрастает.
+    indexes
+      .slice(1)
+      .forEach((index, i) => expect(index).toBeGreaterThan(indexes[i]))
+    expect(head().getAttribute('aria-colindex')).toBe(colcount)
+    const body = bodyCellsOf(bodyRows()[0]).find(
+      cell => cell.getAttribute('data-column-id') === 'c2',
+    )!
+    expect(body.getAttribute('aria-colindex')).toBe(colcount)
   })
 })
