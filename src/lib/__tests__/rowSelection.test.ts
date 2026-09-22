@@ -118,7 +118,7 @@ describe('rowSelection', () => {
     expect(folded).toEqual({})
   })
 
-  it('гейт группировки: enableRowSelection false при активной группировке (ADR 0022)', () => {
+  it('гейт группировки: enableRowSelection false при активной группировке', () => {
     const { folded } = makeTable()
     const enableRowSelection = (folded.options as any).enableRowSelection
 

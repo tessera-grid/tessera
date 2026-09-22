@@ -13,7 +13,7 @@ import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 import '../../../core/themeVariables/theme.css'
 
-// Контракт стилевых признаков по СЕМЕЙСТВАМ компонентов (ADR 0017). Проверяет,
+// Контракт стилевых признаков по СЕМЕЙСТВАМ компонентов. Проверяет,
 // что члены одного семейства делят единые признаки: кнопки/иконки (F1/F2) — единый
 // disabled-цвет, единую transition и единый радиус; форм-контролы (F3) — единую
 // disabled-прозрачность и единую transition. Новый компонент семейства добавляется
@@ -99,7 +99,7 @@ const BUTTON_FAMILY: Member[] = [
 const el = async (m: Member, disabled: boolean) =>
   (await renderThemed(m.node(disabled))).querySelector<HTMLElement>(m.sel)!
 
-describe('Style contract by component family (ADR 0017)', () => {
+describe('Style contract by component family', () => {
   test('TC-1 button family shares ONE disabled color = --tsr-comp-control-disabled-color', async () => {
     const expected = resolveColor('--tsr-comp-control-disabled-color')
     for (const m of BUTTON_FAMILY) {

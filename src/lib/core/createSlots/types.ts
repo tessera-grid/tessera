@@ -39,7 +39,7 @@ export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]
 export type CellSlot = RegisterSlotParams<CellComponentProps>[]
 
 /**
- * Декларативное объявление слота плагином (ADR 0010). Ядро собирает слоты
+ * Декларативное объявление слота плагином. Ядро собирает слоты
  * реактивно из активных плагинов — появление/исчезновение кнопки следует за
  * наличием плагина.
  */

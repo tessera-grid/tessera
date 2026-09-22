@@ -1,6 +1,6 @@
 /**
  * Headless-проверка плагина rowDragging, включая гейты (многоуровневая шапка /
- * сортировка / группировка, ADR 0022).
+ * сортировка / группировка).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -79,7 +79,7 @@ describe('rowDragging', () => {
     ).toBe(false)
   })
 
-  it('гейт сортировки: активная сортировка отключает drag (ADR 0022)', () => {
+  it('гейт сортировки: активная сортировка отключает drag', () => {
     const { table } = build([columnSorting()])
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)
 
@@ -87,7 +87,7 @@ describe('rowDragging', () => {
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(false)
   })
 
-  it('гейт группировки: активная группировка отключает drag (ADR 0022)', () => {
+  it('гейт группировки: активная группировка отключает drag', () => {
     const { table } = build([rowGrouping()])
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)
 

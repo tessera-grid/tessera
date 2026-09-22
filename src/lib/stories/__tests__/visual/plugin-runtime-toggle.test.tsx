@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 import * as stories from '../../DataGrid.stories'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 
-// Runtime-toggle parity for EVERY plugin (ADR 0010, R11). Presence-based
+// Runtime-toggle parity for EVERY plugin (R11). Presence-based
 // композиция обещает: включение/выключение плагина в рантайме (без перезагрузки
 // страницы) меняет грид ровно так же, как свежий маунт с тем же набором — никаких
 // «застрявших» пустых артефактов и никаких падений. Опасный класс: TanStack

@@ -1,6 +1,6 @@
 /**
  * Кастомная фича rowDragging. Слайс overlay-состояния `rowDragging` + updater и
- * row-метод getCanDrag с гейтами (ADR 0022): многоуровневая шапка, активная
+ * row-метод getCanDrag с гейтами: многоуровневая шапка, активная
  * группировка, активная сортировка — всё гасит drag. grouping/sorting читаются из
  * атомов (optional — фичи могут отсутствовать); dev-warn'ы — TODO (логгер).
  */
@@ -79,8 +79,8 @@ const canDragRow = (row: DraggableRow): boolean => {
   if (!wantsDrag) {
     return false
   }
-  // Многоуровневая шапка / активная группировка / активная сортировка гасят drag
-  // (ADR 0022). TODO(логгер): dev-warn на каждый случай.
+  // Многоуровневая шапка / активная группировка / активная сортировка гасят drag.
+  // TODO(логгер): dev-warn на каждый случай.
   if (row.table.getHeaderGroups().length !== 1) {
     return false
   }

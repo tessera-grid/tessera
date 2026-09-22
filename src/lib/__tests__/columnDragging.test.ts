@@ -68,7 +68,7 @@ describe('columnDragging', () => {
     expect(a.getDraggableIndex()).toBe(0)
   })
 
-  it('getCanDrag (вложенная шапка): перетаскивание отключено (ADR 0022)', () => {
+  it('getCanDrag (вложенная шапка): перетаскивание отключено', () => {
     const { table } = makeTable(nestedCols)
     expect(table.getHeaderGroups().length).toBeGreaterThan(1)
     const leaf = table.getAllLeafColumns().find((c: any) => c.id === 'a')

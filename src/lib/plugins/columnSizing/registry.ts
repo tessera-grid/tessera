@@ -1,5 +1,5 @@
 /**
- * Запись плагина columnSizing (ADR 0013) на `definePlugin`. Sizing и resizing — две
+ * Запись плагина columnSizing на `definePlugin`. Sizing и resizing — две
  * отдельные фичи ядра; ресайз требует размеров, поэтому фичи несут обе:
  * `columnSizingFeature` + `columnResizingFeature` (prereq проверяется типами).
  */
@@ -15,7 +15,7 @@ import type { ColumnSizingHooks } from './types'
 export interface ColumnSizingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Бизнес-колбэк окончания ресайза (аргумент фабрики, ADR 0027); читается живо. */
+  /** Бизнес-колбэк окончания ресайза (аргумент фабрики); читается живо. */
   onColumnResizeEnd?: ColumnSizingHooks['onColumnResizeEnd']
 }
 

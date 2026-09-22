@@ -6,7 +6,7 @@ import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
 import * as stories from '../../DataGrid.stories'
 
-// Плагин rowActions (ADR 0025): служебная колонка действий строки. Здесь — только
+// Плагин rowActions: служебная колонка действий строки. Здесь — только
 // требования `RA<n>`, НЕ покрытые общими наборами (авто-пин/подложка — CP14/23/24,
 // подача действий/ширина в кебабе — AM15–AM19, порядок сервисных — service-columns
 // R6/R8/R10, reorder-out — LP7/LP10): поведение под вложенной шапкой (RA1) и точные
@@ -18,7 +18,7 @@ const HEAD_CELL = '.data-grid__head-cell'
 const BODY_CELL = '.data-grid__body-cell'
 const BY_ACTIONS = `[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`
 
-describe('Row actions — служебная колонка действий (ADR 0025)', () => {
+describe('Row actions — служебная колонка действий', () => {
   test('RA1: под вложенной шапкой колонка действий замыкает ряд и присутствует в шапке', async () => {
     const { container } = await render(
       <composed.HeaderGroups enableRowActions />,

@@ -1,5 +1,5 @@
 /**
- * Дескриптор закрепления столбца (ADR 0011/0024). Логическая сторона `start`/`end`
+ * Дескриптор закрепления столбца. Логическая сторона `start`/`end`
  * (getIsPinned/pin/state); состояние пиннинга читается из
  * `table.atoms.columnPinning`. Гранулярность под вложенной шапкой — в `visible`:
  * плоская шапка — любая закрепляемая; reorder-out (`enableLeafPinning`) — любая
@@ -62,8 +62,8 @@ const getSegmentPinnedSide = (
 }
 
 /**
- * Можно ли закрепить эту единицу заголовка (гранулярность, ADR 0011). Заменяет
- * v8-обёртку getCanPin: в v9 нет опции per-column canPin — считаем в дескрипторе.
+ * Можно ли закрепить эту единицу заголовка (гранулярность). Опции per-column
+ * canPin нет — считаем в дескрипторе.
  */
 const canPin = ({ column, table }: HeaderComponentProps): boolean => {
   if (!column.getCanPin()) {
@@ -76,7 +76,7 @@ const canPin = ({ column, table }: HeaderComponentProps): boolean => {
     return true
   }
   // Вложенная шапка: только группа верхнего уровня. Явную просьбу закрепить лист
-  // под группой в v9 не предупреждаем здесь (TODO: dev-warn через логгер, ADR 0022).
+  // под группой не предупреждаем здесь (TODO: dev-warn через логгер).
   return column.depth === 0
 }
 

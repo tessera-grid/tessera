@@ -1,5 +1,5 @@
 /**
- * Запись плагина rowDragging (ADR 0006/0022) на `definePlugin`. Кастомная фича
+ * Запись плагина rowDragging на `definePlugin`. Кастомная фича
  * `rowDraggingFeature` (слайс состояния + row-метод getCanDrag) и сервисная
  * колонка-ручка. dnd-редьюсер (getRowDraggingEvents) с геометрией offset/nesting —
  * grid-слой.
@@ -15,7 +15,7 @@ export interface RowDraggingOptions {
   enabled?: boolean
   /** Разрешить перетаскивание строк: булево или предикат по строке. */
   enable?: boolean | ((row: Row<any, any>) => boolean)
-  /** Бизнес-колбэк окончания переноса строки (аргумент фабрики, ADR 0027). */
+  /** Бизнес-колбэк окончания переноса строки (аргумент фабрики). */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
 }
 

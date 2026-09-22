@@ -55,7 +55,7 @@ afterEach(() => {
 
 const MODES: ColorMode[] = ['light', 'dark']
 
-describe('Theming matrix — loading / tooltip / icons (ADR 0019, этап 4)', () => {
+describe('Theming matrix — loading / tooltip / icons', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 

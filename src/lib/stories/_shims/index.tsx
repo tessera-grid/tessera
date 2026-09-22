@@ -15,7 +15,7 @@ interface BoxProps {
   children?: ReactNode
   style?: CSSProperties
   className?: string
-  // Прежние MUI-пропсы (container/item/xs/justify/...) принимаются и игнорируются
+  // MUI-пропсы (container/item/xs/justify/...) принимаются и игнорируются
   [key: string]: unknown
 }
 

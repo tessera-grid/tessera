@@ -18,7 +18,7 @@ export const RowSelectionComponent = ({
 
   useSlice(table, 'rowSelection')
 
-  // Активная группировка делает выбор недоступным (ADR 0022): прячем чекбокс.
+  // Активная группировка делает выбор недоступным: прячем чекбокс.
   if (isGroupingActive(table)) {
     return null
   }

@@ -1,5 +1,5 @@
 /**
- * Запись плагина columnDragging (ADR 0006/0022) на `definePlugin`. Кастомная фича
+ * Запись плагина columnDragging на `definePlugin`. Кастомная фича
  * `columnDraggingFeature` (свой слайс состояния + column-методы); порядок колонок
  * обеспечивает `columnOrderingFeature`. dnd-события — в getColumnDraggingEvents
  * (грид вызывает их).
@@ -14,7 +14,7 @@ import type { ColumnDraggingHooks } from './types'
 export interface ColumnDraggingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Бизнес-колбэк окончания переноса колонки (аргумент фабрики, ADR 0027). */
+  /** Бизнес-колбэк окончания переноса колонки (аргумент фабрики). */
   onColumnDragEnd?: ColumnDraggingHooks['onColumnDragEnd']
 }
 

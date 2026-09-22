@@ -11,8 +11,7 @@ export { COLUMN_SELECTION_ID } from './lib/plugins/rowSelection'
 export { COLUMN_EXPANDING_ID } from './lib/plugins/rowExpanding'
 export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
 
-// Реактивность v9 (ADR 0026, V9-2): собственный Pub-Sub (useSubscribeStore) убран —
-// подписки на состояние идут через атомы TanStack Store.
+// Реактивность: подписки на состояние идут через атомы TanStack Store.
 export { useSlice, useTableState } from './lib/core/reactivity'
 
 export {
@@ -27,14 +26,14 @@ export {
   stateUpdater,
 } from './lib/core/createState'
 
-// Запись фичи Tessera (v9-аналог TablePlugin/RegistryEntry, ADR 0010).
+// Запись фичи Tessera (экспортируется как TablePlugin).
 export type { TesseraFeatureEntry as TablePlugin } from './lib/core/features'
 export type {
   HeaderComponentProps,
   CellComponentProps,
 } from './lib/core/createSlots'
 
-// Авторский API плагина (ADR 0028): definePlugin + инъекторы каналов (hooks/state) +
+// Авторский API плагина: definePlugin + инъекторы каналов (hooks/state) +
 // типы пропсов компонентов. Каналы приходят в компонент пропсами, без кастов.
 export {
   definePlugin,

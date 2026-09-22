@@ -43,7 +43,7 @@ export interface CommonOptions {
   enableLoading?: boolean
   enableFooter?: boolean
   skeletonOptions?: SkeletonOptions
-  /** Writer авто-слайса размеров (generic-механизм ADR 0010). */
+  /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
 }
 

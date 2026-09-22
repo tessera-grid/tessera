@@ -11,7 +11,7 @@ type MinimalTable = {
 export const groupingLength = (table: unknown): number =>
   ((table as MinimalTable).atoms.grouping?.get() ?? []).length
 
-/** Активна ли группировка (владеет выбором → выбор недоступен, ADR 0022). */
+/** Активна ли группировка (владеет выбором → выбор недоступен). */
 export const isGroupingActive = (table: unknown): boolean =>
   groupingLength(table) > 0
 

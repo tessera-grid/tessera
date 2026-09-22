@@ -8,7 +8,7 @@ import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 
-// Reorder-out (ADR 0011, LP1–LP10): под вложенной шапкой за opt-in флагом
+// Reorder-out (LP1–LP10): под вложенной шапкой за opt-in флагом
 // `enableLeafPinning` закрепляется любая единица — лист или группа любого уровня.
 // Отдельный файл + префикс `LP<n>`, отдельный от контракта группового пиннинга
 // (CP*). Механика: при закреплении листья цели «вырываются» к левому краю через

@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
 
-// Плагин cellEditing (ADR 0028): инлайн-редактирование ячейки на ЛОКАЛЬНОМ
+// Плагин cellEditing: инлайн-редактирование ячейки на ЛОКАЛЬНОМ
 // state-канале definePlugin. Один инвариант — один тест, имя с префиксом
 // требования (CE<n>), состояние читается из DOM. Требования из запроса:
 //  1. кнопка живёт в правом слоте ЛЮБОЙ не-сервисной колонки;
@@ -41,7 +41,7 @@ async function renderCellEditing(
   return container
 }
 
-describe('Cell editing — инлайн-редактирование ячейки (ADR 0028)', () => {
+describe('Cell editing — инлайн-редактирование ячейки', () => {
   test('CE1: кнопка есть в правом слоте канредактируемых колонок, нет в остальных (req 1 + 4)', async () => {
     const container = await renderCellEditing()
 

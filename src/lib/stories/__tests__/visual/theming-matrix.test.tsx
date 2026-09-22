@@ -12,7 +12,7 @@ import { rowActions, rowSelection } from '../../../../lib/plugins'
 import { useColumns } from '../../__mocks__/columns'
 import { useData } from '../../__mocks__/data'
 
-// Матрица темизации (ADR 0019, этап 1): для КАЖДОГО компонента в КАЖДОМ состоянии
+// Матрица темизации: для КАЖДОГО компонента в КАЖДОМ состоянии
 // сверяем вычисленный стиль реального DOM-элемента с резолвом его компонент-токена,
 // в ОБОИХ режимах (light/dark). Рендерим грид напрямую (не через историю) — так
 // проп `colorMode` управляет темой без форсящего декоратора Storybook. global.css
@@ -84,7 +84,7 @@ afterEach(() => {
   park = null
 })
 
-describe('Theming matrix — DOM ↔ component token ↔ state (ADR 0019, этап 1)', () => {
+describe('Theming matrix — DOM ↔ component token ↔ state', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 

@@ -1,5 +1,5 @@
 /**
- * Плагин схлопывания действий СТРОКИ (`actionRowSlot`) в кебаб-меню (ADR 0024) на
+ * Плагин схлопывания действий СТРОКИ (`actionRowSlot`) в кебаб-меню на
  * `definePlugin`. Как headerActionMenu — только декларация `actionMenu`.
  */
 import { definePlugin } from '../../core/definePlugin'

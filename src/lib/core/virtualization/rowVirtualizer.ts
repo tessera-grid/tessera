@@ -19,8 +19,8 @@ export const useRowVirtualizer = ({
   table,
   getScrollElement,
 }: RowVirtualizerParams) => {
-  // rowDragging — uncontrolled слайс плагина rowDragging (ADR 0010): при
-  // отсутствии плагина среза нет в store, поэтому читаем activeId проекцией с ?.
+  // rowDragging — uncontrolled слайс плагина rowDragging: при отсутствии
+  // плагина среза нет в store, поэтому читаем activeId проекцией с ?.
   const rowDraggingActiveId = useTableState(
     table,
     state => (state as any).rowDragging?.activeId ?? null,

@@ -115,7 +115,7 @@ export const DataGrid = ({
     columnsTotalSize: bodyWidth,
   })
 
-  // rowDragging — uncontrolled слайс плагина rowDragging (ADR 0010): при отсутствии
+  // rowDragging — uncontrolled слайс плагина rowDragging: при отсутствии
   // плагина его нет в store, читаем через ?. с дефолтами.
   const draggableCssVariables = useMemo(
     () =>

@@ -6,8 +6,8 @@ export interface ColumnPinningHooks {
 /**
  * Разрешённые стороны закрепления столбца в UI. `both` — обе (инлайн даёт поповер
  * выбора); `start`/`end` — только одна (прямой тумблер). Задаётся по-колоночно через
- * `columnDef.meta.pinSides`, по умолчанию `both` (ADR 0011).
+ * `columnDef.meta.pinSides`, по умолчанию `both`.
  *
- * v9: логическая сторона `start`/`end` вместо физических `left`/`right`.
+ * Логическая сторона `start`/`end`, не физические `left`/`right`.
  */
 export type PinSides = 'both' | 'start' | 'end'

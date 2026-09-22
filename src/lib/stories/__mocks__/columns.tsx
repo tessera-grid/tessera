@@ -15,7 +15,7 @@ export const columns: any[] = [
   columnHelper.accessor('country', {
     id: 'country',
     header: 'Country',
-    // Демо `pinSides` (ADR 0011): только левое закрепление — инлайн даёт прямой
+    // Демо `pinSides`: только левое закрепление — инлайн даёт прямой
     // тумблер без поповера.
     meta: { pinSides: 'left' },
     aggregatedCell: cell => {
@@ -141,7 +141,7 @@ export const columns: any[] = [
   columnHelper.accessor('total', {
     id: 'total',
     header: 'Total',
-    // Демо `pinSides` (ADR 0011): только правое закрепление — инлайн даёт прямой
+    // Демо `pinSides`: только правое закрепление — инлайн даёт прямой
     // тумблер без поповера.
     meta: { pinSides: 'right' },
     aggregationFn: 'sum' as never,

@@ -15,7 +15,7 @@ import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 // per-row and select-all-on-page mechanics, and the `SubRowSelection` story (a
 // deterministic tree) for the sub-row cascade. State is read from the DOM/ARIA
 // contract (checkbox `data-checked`/`data-indeterminate`, row `data-selected`),
-// not from mock literals (ADR 0009 — no hard-coded mock data).
+// not from mock literals.
 
 const composed = composeStories(stories)
 

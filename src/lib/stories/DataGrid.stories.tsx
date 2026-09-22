@@ -87,7 +87,7 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   /**
    * Явный набор колонок вместо генерируемого `useColumns(columnCount)`. Даёт
    * тестам seam, чтобы подать колонки с известными `header`/`size` и сверяться с
-   * ними, а не с литералами дефолтного мока (ADR 0009 — запрет хардкода мок-данных).
+   * ними, а не с литералами дефолтного мока.
    */
   columnsOverride?: ColumnDef<any, any>[]
   /**
@@ -117,15 +117,15 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
 
   /**
    * Проброс hook закрепления столбца (`columnPinning.onTogglePin`) наружу.
-   * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении пина
-   * (см. ADR 0011, CP9); в обычных историях не задаётся.
+   * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении пина.
+   * В обычных историях не задаётся.
    */
   onTogglePin?: (pinned: boolean) => void
 
   /**
    * Проброс hook сортировки столбца (`columnSorting.onToggleColumnSort`) наружу.
-   * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении сортировки
-   * (см. ADR 0012, CS11); в обычных историях не задаётся.
+   * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении сортировки.
+   * В обычных историях не задаётся.
    */
   onToggleColumnSort?: (
     id: string,
@@ -135,23 +135,23 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   /**
    * Проброс hook изменения ширины столбца (`columnSizing.onColumnResizeEnd`)
    * наружу. Нужен визуальным тестам, чтобы наблюдать вызов hook по завершении
-   * ресайза и сброса (см. ADR 0013, CR10–CR11); в обычных историях не задаётся.
+   * ресайза и сброса. В обычных историях не задаётся.
    */
   onColumnResizeEnd?: (props: { id: string; width: number }) => void
 
   /**
    * Проброс hooks выбора строк (`rowSelection.onSelectRow` /
    * `onSelectAllRowsOnPage`) наружу. Нужны визуальным тестам, чтобы наблюдать
-   * вызов hook при переключении строки и «выбрать все на странице» (см. ADR
-   * 0014, RS6/RS11); в обычных историях не задаются (дефолт — no-op).
+   * вызов hook при переключении строки и «выбрать все на странице».
+   * В обычных историях не задаются (дефолт — no-op).
    */
   onSelectRow?: RowSelectionHooks['onSelectRow']
   onSelectAllRowsOnPage?: RowSelectionHooks['onSelectAllRowsOnPage']
 
   /**
    * Проброс hook раскрытия строки (`rowExpanding.onExpandRow`) наружу. Нужен
-   * визуальным тестам, чтобы наблюдать вызов hook при тоггле раскрытия (см. ADR
-   * 0015, RE6); в обычных историях не задаётся (дефолт — no-op).
+   * визуальным тестам, чтобы наблюдать вызов hook при тоггле раскрытия.
+   * В обычных историях не задаётся (дефолт — no-op).
    */
   onExpandRow?: RowExpandingHooks['onExpandRow']
 
@@ -303,7 +303,7 @@ export const StoryComponent = memo(
       enableFooter: options.enableFooter,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
-      // записи (ADR 0027), без верхнего параметра hooks.
+      // записи, без верхнего параметра hooks.
       plugins: [
         ...argsToPlugins(options),
         {
@@ -674,7 +674,7 @@ export const ColumnPinning: StoryObj<StoryProps> = {
 export const ColumnPinningTwoSides: StoryObj<StoryProps> = {
   name: 'Column Pinning (two-sided)',
   args: {
-    // Двустороннее закрепление в UI (ADR 0011). Стороны задаёт
+    // Двустороннее закрепление в UI. Стороны задаёт
     // `columnDef.meta.pinSides` (см. mock `columns.tsx`): `country` — только
     // влево, `total` — только вправо (инлайн-тумблер без поповера), остальные —
     // обе стороны (инлайн даёт поповер «Закрепить слева / справа»). Колонка
@@ -744,7 +744,7 @@ export const HeaderGroupsPinning: StoryObj<StoryProps> = {
   name: 'Header Groups Pinning',
   args: {
     // Вложенная шапка + пиннинг: закрепляется только группа верхнего уровня
-    // целиком (ADR 0011). Узкий вьюпорт по горизонтали, чтобы sticky-закрепление
+    // целиком. Узкий вьюпорт по горизонтали, чтобы sticky-закрепление
     // было видно при прокрутке.
     showHeaderGroups: true,
     enableColumnPinning: true,
@@ -763,7 +763,7 @@ export const HeaderGroupsPinning: StoryObj<StoryProps> = {
 export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
   name: 'Header Groups Leaf Pinning',
   args: {
-    // Reorder-out (ADR 0011): под вложенной шапкой можно пиннить любую единицу —
+    // Reorder-out: под вложенной шапкой можно пиннить любую единицу —
     // лист или группу любого уровня; при закреплении листья цели вырываются к
     // левому краю, а спанящие шапки родителей режутся на сегменты.
     showHeaderGroups: true,

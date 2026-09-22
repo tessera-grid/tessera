@@ -16,8 +16,7 @@ import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 // roots with nested groups one level down) plus a couple of flat leaf roots,
 // started collapsed. State is read from the DOM/ARIA contract (row
 // `data-expanded`/`aria-expanded`, the `.row-expand-button` toggle, the service
-// column's `data-column-id`), not from mock literals (ADR 0009 — no hard-coded
-// mock data).
+// column's `data-column-id`), not from mock literals.
 
 const composed = composeStories(stories)
 

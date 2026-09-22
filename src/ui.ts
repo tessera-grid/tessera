@@ -6,8 +6,7 @@ export { RowButton, type RowButtonProps } from './lib/grid/Actions/RowButton'
 export { Switch, type SwitchProps } from './lib/ui/Switch'
 
 // Контролы встроенных плагинов — для сборки своих колонок/слотов в их визуале.
-// Импорт с конкретных файлов (v8-плагинные barrel'ы удалены на cutover, ADR 0026;
-// сами контролы — агностичные survivor'ы).
+// Импортируются с конкретных файлов; сами контролы UI-агностичны.
 export {
   SortButton,
   type SortButtonProps,

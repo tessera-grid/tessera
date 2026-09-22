@@ -1,5 +1,5 @@
 /**
- * Плагин cellEditing (ADR 0028) — носитель ЛОКАЛЬНОГО состояния. `state` объявляет
+ * Плагин cellEditing — носитель ЛОКАЛЬНОГО состояния. `state` объявляет
  * дефолт слайса «редактируемая ячейка» (ключ `rowId:columnId` или null); definePlugin
  * генерирует v9-фичу, seed'ящую слайс под ключом `cellEditing`.
  *
@@ -27,7 +27,7 @@ export interface CellEditingOptions {
   enabled?: boolean
   /** Условие показа кнопки редактирования по контексту ячейки (по умолчанию — всегда). */
   canEdit?: (ctx: CellComponentProps) => boolean
-  /** Коммит нового значения ячейки (аргумент фабрики, ADR 0027); читается живо. */
+  /** Коммит нового значения ячейки (аргумент фабрики); читается живо. */
   onCellEdit?: CellEditingHooks['onCellEdit']
   /** Свой редактор ячейки (BYO); не задан — встроенный инлайн-ввод. */
   editor?: CellEditingHooks['editor']

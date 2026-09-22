@@ -24,7 +24,7 @@ import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
 // Storybook через настоящие фабрики. Тумблер → `enabled` фабрики; ядро само
 // отсеивает отключённые. Так Storybook сохраняет тумблеры, а истории/тесты гоняют
-// реальный API (ADR 0010). Маппер живёт здесь (демо), не в ядре.
+// реальный API. Маппер живёт здесь (демо), не в ядре.
 
 export interface FeatureToggles {
   enableRowSelection?: boolean
@@ -39,7 +39,7 @@ export interface FeatureToggles {
   /** Тонкая настройка мультисорта (`max` / `removal` / `event`) для тестов/историй. */
   multiSortOptions?: ColumnMultiSortOptions
   enableColumnPinning?: boolean
-  /** PoC (ADR 0011): под вложенной шапкой пиннить отдельные листья (reorder-out). */
+  /** Под вложенной шапкой пиннить отдельные листья (reorder-out). */
   enableLeafPinning?: boolean
   enableColumnResizing?: boolean
   enableColumnDragging?: boolean

@@ -1,5 +1,5 @@
 /**
- * Запись плагина rowGrouping (ADR 0016) на `definePlugin`. Поведение даёт
+ * Запись плагина rowGrouping на `definePlugin`. Поведение даёт
  * `columnGroupingFeature` + `groupedRowModel`; агрегация отделена от группировки —
  * добавляем `rowAggregationFeature` + стандартный набор `aggregationFns`.
  */
@@ -45,7 +45,7 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
     groupedRowModel: createGroupedRowModel(),
     aggregationFns,
   },
-  // Единый дескриптор (ADR 0016): ядро решает подачу (инлайн-кнопка / строка меню).
+  // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).
   slotActions: [groupHeaderAction],
   options: o => ({
     enableGrouping: o.enabled !== false,

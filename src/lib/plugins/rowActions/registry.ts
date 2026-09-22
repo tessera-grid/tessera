@@ -1,5 +1,5 @@
 /**
- * Запись плагина rowActions (ADR 0025/0010) на `definePlugin`. Сервисная колонка
+ * Запись плагина rowActions на `definePlugin`. Сервисная колонка
  * действий закреплена вправо (pin side `end`). `setup` (generic-escape): ширина
  * колонки следует за подачей действий (схлопнуты в кебаб rowActionMenu →
  * collapsedWidth) через `table.setColumnAutoSizing`; факт «слот схлопнут» читаем из

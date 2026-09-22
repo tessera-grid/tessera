@@ -1,5 +1,5 @@
-// Presence-based композиция (ADR 0010): реестр распределён по плагинам, этот
-// баррель собирает фабрики-примитивы для входа @mstrvtt/tessera/plugins (v9).
+// Presence-based композиция: реестр распределён по плагинам, этот
+// баррель собирает фабрики-примитивы для входа @mstrvtt/tessera/plugins.
 // Центрального статического реестра нет — набор собирает потребитель импортами.
 
 export { rowSelection, type RowSelectionOptions } from './rowSelection'
@@ -28,7 +28,7 @@ export {
 } from './headerActionMenu'
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 
-// Контракт хуков для потребителя (types-mode b, ADR 0010): слайсы как примитивы.
+// Контракт хуков для потребителя (types-mode b): слайсы как примитивы.
 export type { ColumnDraggingHooks } from './columnDragging/types'
 export type { ColumnPinningHooks } from './columnPinning/types'
 export type { ColumnSizingHooks } from './columnSizing/types'

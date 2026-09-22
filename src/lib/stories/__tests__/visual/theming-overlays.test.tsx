@@ -25,7 +25,7 @@ const simpleData = [
 // Матрица темизации, этап 6 — DnD-оверлеи и «края». Оверлеи живут только во время
 // drag → рендерим сами компоненты (`OverlayBodyRow`/`OverlayHeadCell`) с реальными
 // cell/header из таблицы, минуя дорогую и хрупкую симуляцию dnd-kit (её ПОВЕДЕНИЕ
-// уже в D-тестах; здесь — только сверка стиля с токеном, ADR 0009 R-B1/R-B3).
+// уже в D-тестах; здесь — только сверка стиля с токеном).
 
 const themeClass = (dark: boolean) =>
   dark ? 'data-grid-theme dark' : 'data-grid-theme'
@@ -82,7 +82,7 @@ const HeadOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
 
 const MODES: ColorMode[] = ['light', 'dark']
 
-describe('Theming matrix — DnD overlays & edges (ADR 0019, этап 6)', () => {
+describe('Theming matrix — DnD overlays & edges', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 

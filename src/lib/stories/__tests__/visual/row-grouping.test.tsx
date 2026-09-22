@@ -13,8 +13,7 @@ import * as stories from '../../DataGrid.stories'
 // Tests drive the `RowGrouping` story: a flat deterministic generated set, started
 // ungrouped. Grouping is toggled by clicking a column header's group button and
 // state is read from the DOM contract (the `.column-group__button` + its
-// `data-button-active` wrapper, the row `data-group-row`), not from mock literals
-// (ADR 0009 — no hard-coded mock data).
+// `data-button-active` wrapper, the row `data-group-row`), not from mock literals.
 
 const composed = composeStories(stories)
 

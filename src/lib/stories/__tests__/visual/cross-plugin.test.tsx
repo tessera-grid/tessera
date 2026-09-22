@@ -115,7 +115,7 @@ describe('Cross-plugin — rowSelection × rowDragging', () => {
 })
 
 describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
-  test('X2: header and row kebabs collapse independently — both menus work (ADR 0024)', async () => {
+  test('X2: header and row kebabs collapse independently — both menus work', async () => {
     const { container } = await render(
       <composed.AllFeatures
         enableColumnPinning
@@ -178,7 +178,7 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
 // real DOM. Selectors and choreography mirror the owning plugins' own specs
 // (column-pinning / column-resizing / column-sorting / column-dragging /
 // row-grouping / row-selection) so the cross-plugin tests read the same DOM
-// contract those suites do, not mock literals (ADR 0009 / 0023).
+// contract those suites do, not mock literals.
 // ---------------------------------------------------------------------------
 
 const BODY_ROW = '.data-grid__body-row'
@@ -469,7 +469,7 @@ describe('Cross-plugin — rowSelection × rowGrouping', () => {
 
     // Grouping is enabled but NOT applied → selection works: the header select-all
     // and per-row checkboxes are present. Presence of the grouping plugin alone
-    // must not disable another plugin (ADR 0022).
+    // must not disable another plugin.
     expect(headCheckbox(container)).not.toBeNull()
     expect(
       container.querySelectorAll(`${BODY_ROW} ${CHECKBOX}`).length,

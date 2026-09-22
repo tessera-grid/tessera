@@ -1,5 +1,5 @@
 /**
- * Ядро сборки таблицы. Presence-based композиция (ADR 0010): фичи/сервисные
+ * Ядро сборки таблицы. Presence-based композиция: фичи/сервисные
  * колонки/опции выводятся из набора plugins.
  *  - row-модели не передаются опциями — ядровая включается автоматически, остальные
  *    приходят слотами записей;
@@ -195,7 +195,7 @@ export const useCreateTable = <
     [externalSizing, internalSizing, autoSizing],
   )
 
-  // Авто-слайс пишут плагины в setup (generic-escape ADR 0010); setup перезапускается
+  // Авто-слайс пишут плагины в setup (generic-escape); setup перезапускается
   // при смене идентичности набора → writer бейлит при равенстве, иначе цикл.
   const onColumnAutoSizingChange = useCallback<OnChangeFn<ColumnSizingState>>(
     updater =>
@@ -268,7 +268,7 @@ export const useCreateTable = <
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
   )
 
-  // Императивный сетап плагинов (generic-escape ADR 0010) — единым эффектом.
+  // Императивный сетап плагинов (generic-escape) — единым эффектом.
   useEffect(
     () => {
       const cleanups = folded.setups.map(setup => setup(table))
@@ -316,7 +316,7 @@ export const useCreateTable = <
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу владельцев
   }, [cellSlotOwners.join('|'), table])
 
-  // Сброс выбора строк при смене опций выбора (ядровая логика, ADR 0010). Триггер
+  // Сброс выбора строк при смене опций выбора (ядровая логика). Триггер
   // ТОЛЬКО по изменению самих опций (через ref), а не по идентичности table — иначе
   // нестабильный ref из useTable запускал бы reset каждый рендер (бесконечный цикл).
   const enableRowSelection = (table.options as { enableRowSelection?: unknown })

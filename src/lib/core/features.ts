@@ -1,5 +1,5 @@
 /**
- * Presence-based сборка набора фич v9 (ADR 0010). Свёртка: always-on
+ * Presence-based сборка набора фич. Свёртка: always-on
  * `commonFeature` + слоты активных записей → один объект → `tableFeatures()`.
  *
  * Компромисс по типам: полностью динамический массив теряет статическую валидацию
@@ -34,7 +34,7 @@ import {
 } from './headerActions'
 
 /**
- * Запись фичи Tessera (v9-аналог RegistryEntry, ADR 0010): фрагмент карты фич +
+ * Запись фичи Tessera: фрагмент карты фич +
  * табличные опции + декларативные слоты/действия/меню. `features` идёт в
  * `tableFeatures()`; остальное сворачивается в опции таблицы (`foldEntries`).
  */
@@ -46,7 +46,7 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * (slotActions/actionMenu) без собственной фичи.
    */
   features?: TFeatures
-  /** Наличие = включено (как `enabled` в текущем RegistryEntry). */
+  /** Наличие = включено. */
   enabled?: boolean
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
   options?: Record<string, unknown>
@@ -66,7 +66,7 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
   column?: ServiceColumn
   /**
-   * Императивный сетап ПОСЛЕ создания таблицы (generic-escape, ADR 0010): побочный
+   * Императивный сетап ПОСЛЕ создания таблицы (generic-escape): побочный
    * эффект, невыразимый через фичу/опции (напр. rowActions пишет авто-слайс ширины
    * через table.setColumnAutoSizing). Ядро выполняет setups активных записей в
    * едином useEffect; может вернуть cleanup.
@@ -214,9 +214,9 @@ export const buildTesseraFeatures = <
     columnGroupingFeature,
   }
 
-  // Фичи ВСЕХ присутствующих записей (в т.ч. enabled:false): v9 фиксирует набор фич
+  // Фичи ВСЕХ присутствующих записей (в т.ч. enabled:false): набор фич фиксируется
   // на маунте useTable, поэтому рантайм-включение плагина не добавит фичу. Держим
-  // фичу всегда (как v8 keepFeatureWhenDisabled), а поведение гейтим опцией
+  // фичу всегда, а поведение гейтим опцией
   // (enable*:false у отключённого плагина — foldEntries эмитит её от всех записей).
   for (const entry of entries) {
     Object.assign(merged, entry.features)

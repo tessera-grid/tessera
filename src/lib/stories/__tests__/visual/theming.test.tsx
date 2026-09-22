@@ -4,9 +4,9 @@ import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../Theming.stories'
 
-// Каждое требование темизации — отдельный именованный тест (ADR 0001/0009):
-// TH1–TH8 (внешняя темизация + тёмный режим, ADR 0018), TK1–TK4 (уровни токенов
-// --tsr-ref/sys/comp, ADR 0019). Витрина Theming рендерит грид с включённым
+// Каждое требование темизации — отдельный именованный тест:
+// TH1–TH8 (внешняя темизация + тёмный режим), TK1–TK4 (уровни токенов
+// --tsr-ref/sys/comp). Витрина Theming рендерит грид с включённым
 // лоадером; его полоса читает `--tsr-comp-loader-bar`, а это ПЛОСКИЙ токен
 // (`var(--info, …)`, без color-mix), поэтому вычисленный `background-color`
 // сравнивается с задаваемым rgb без хрупкой математики oklch.
@@ -29,7 +29,7 @@ const barColor = (container: HTMLElement) =>
   getComputedStyle(container.querySelector<HTMLElement>(LOADER_BAR)!)
     .backgroundColor
 
-describe('Theming — external customization + token tiers (ADR 0018/0019)', () => {
+describe('Theming — external customization + token tiers', () => {
   test('TH1: the wrapper carries the stable `data-grid-theme` anchor class', async () => {
     const container = await renderTheming()
     // Публичный якорь темы: по нему потребитель адресует `--tsr-comp-*` из CSS.
@@ -66,7 +66,7 @@ describe('Theming — external customization + token tiers (ADR 0018/0019)', () 
     expect(getComputedStyle(head).boxShadow).toContain('rgb(255, 0, 0)')
   })
 
-  // --- Тёмный режим + уровни токенов (ADR 0018 шиппинг / ADR 0019 уровни) ------
+  // --- Тёмный режим + уровни токенов ------------------------------------------
   // Читаем вычисленное значение переменной на пробнике с заданными классами и
   // (опц.) инлайн-переменными. `--tsr-ref/sys/*` — наш неймспейс, не задаётся
   // global.css, поэтому пробники проверяют именно наши уровни и цепочку.
@@ -125,7 +125,7 @@ describe('Theming — external customization + token tiers (ADR 0018/0019)', () 
   })
 
   test('TH9: tooltip is tokenized and theme-aware (inverse surface flips light↔dark)', () => {
-    // Тултип больше не хардкодит цвета (ADR 0019): фон/текст — инверсная
+    // Тултип не хардкодит цвета: фон/текст — инверсная
     // поверхность из semantic, поэтому цвет флипается с темой.
     expect(readVar('--tsr-comp-tooltip-bg')).not.toBe('')
     const fgLight = readVar('--tsr-comp-tooltip-fg')
@@ -137,7 +137,7 @@ describe('Theming — external customization + token tiers (ADR 0018/0019)', () 
     expect(fgLight).not.toBe(fgDark)
   })
 
-  // --- Уровни токенов (ADR 0019) ----------------------------------------------
+  // --- Уровни токенов ---------------------------------------------------------
 
   test('TK1: primitive scale is mode-independent (`--tsr-ref-*` is not themed)', () => {
     // Primitive — сырые значения без light/dark: одинаковы в обоих режимах.

@@ -1,6 +1,6 @@
 /**
  * Слот-машинерия (сборка/регистрация). Чистые `createEmptyRenderSlots`/
- * `registerSlotInto` — реактивная свёртка слотов из активных плагинов (ADR 0010).
+ * `registerSlotInto` — реактивная свёртка слотов из активных плагинов.
  */
 import type { PluginSlot, RegisterSlotParams, RenderSlots } from './types'
 

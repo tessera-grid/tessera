@@ -1,14 +1,13 @@
 /**
  * Сервисная колонка действий строки. Колонка-контейнер: сами действия рисуются
- * гридом в слот `actionRowSlot`. Ширина задаётся авто-слайсом через setup плагина
- * (ADR 0024).
+ * гридом в слот `actionRowSlot`. Ширина задаётся авто-слайсом через setup плагина.
  */
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
 import type { ColumnDef } from '../../types'
 
 export interface RowActionsOptions {
   width: number
-  /** Ширина при схлопнутых действиях (кебаб rowActionMenu). См. ADR 0024. */
+  /** Ширина при схлопнутых действиях (кебаб rowActionMenu). */
   collapsedWidth: number
 }
 

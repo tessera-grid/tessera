@@ -19,7 +19,7 @@ export const HeadSelectionComponent = ({
 
   useSlice(table, 'rowSelection')
 
-  // Активная группировка делает выбор недоступным (ADR 0022): прячем «выбрать все».
+  // Активная группировка делает выбор недоступным: прячем «выбрать все».
   if (isGroupingActive(table)) {
     return null
   }

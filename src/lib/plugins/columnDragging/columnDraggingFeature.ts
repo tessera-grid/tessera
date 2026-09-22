@@ -87,7 +87,7 @@ const canDrag = (column: DraggableColumn): boolean => {
     !!column.columnDef.enableDragging &&
     !!column.table.options.enableColumnDragging
 
-  // Многоуровневая шапка гасит перетаскивание столбцов (ADR 0022).
+  // Многоуровневая шапка гасит перетаскивание столбцов.
   // TODO(логгер): dev-warn при wantsDrag под вложенной шапкой.
   if (column.table.getHeaderGroups().length !== 1) {
     return false

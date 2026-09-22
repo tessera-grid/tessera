@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../DataGrid.stories'
 
-// Визуальные тесты схлопывания действий слота в кебаб-меню (ADR 0024, AM10–AM18).
+// Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
 // Чёрный ящик над раскладкой: истории `HeaderActionMenu` / `RowActionMenu` через
 // composeStories, реальный Chromium. Один тест = одно требование (AM<n>).
 
@@ -50,7 +50,7 @@ async function renderRowMenu(args: Record<string, unknown> = {}) {
   return view
 }
 
-describe('Action menu — header (ADR 0024)', () => {
+describe('Action menu — header', () => {
   test('AM10: применимых дескрипторов ≥ порога → один кебаб на колонку, инлайн-кнопок нет', async () => {
     const { container } = await renderHeaderMenu()
 
@@ -179,7 +179,7 @@ describe('Action menu — header (ADR 0024)', () => {
   })
 })
 
-describe('Action menu — row (ADR 0024)', () => {
+describe('Action menu — row', () => {
   test('AM15: RowAction в actionRowSlot схлопываются в per-row overflow-кебаб', async () => {
     const { container } = await renderRowMenu()
 

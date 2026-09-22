@@ -1,5 +1,5 @@
 /**
- * Запись плагина columnSorting (ADR 0012) на `definePlugin`. Поведение даёт
+ * Запись плагина columnSorting на `definePlugin`. Поведение даёт
  * `rowSortingFeature` + `sortedRowModel`; функции сортировки регистрируются явно
  * (`sortFns`, tree-shakeable) — здесь стандартный набор.
  */
@@ -38,7 +38,7 @@ export interface ColumnSortingOptions {
   server?: boolean
   /** Мультисортировка: `true`/`undefined` — Shift+клик; `false` — выкл; объект — тонко. */
   multiSort?: boolean | ColumnMultiSortOptions
-  /** Бизнес-колбэк сортировки (аргумент фабрики, ADR 0027); читается живо. */
+  /** Бизнес-колбэк сортировки (аргумент фабрики); читается живо. */
   onToggleColumnSort?: ColumnSortingHooks['onToggleColumnSort']
 }
 
@@ -72,7 +72,7 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
     sortFns,
   },
   hooks: o => ({ onToggleColumnSort: o.onToggleColumnSort }),
-  // Единый дескриптор (ADR 0012): инлайн — циклящая кнопка с бейджем приоритета;
+  // Единый дескриптор: инлайн — циклящая кнопка с бейджем приоритета;
   // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
   slotActions: [sortHeaderAction],
   options: o => {

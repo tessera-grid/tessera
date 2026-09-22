@@ -1,8 +1,8 @@
 /**
- * Запись плагина rowExpanding (ADR 0015/0022) на `definePlugin`. Поведение даёт
+ * Запись плагина rowExpanding на `definePlugin`. Поведение даёт
  * `rowExpandingFeature` + `expandedRowModel`. Табличная опция `getRowCanExpand`
  * ПОЛНОСТЬЮ заменяет дефолт, поэтому проверку `subRows` включаем сами; гейт
- * группировки (ADR 0022) — там же.
+ * группировки — там же.
  */
 import {
   createExpandedRowModel,
@@ -27,7 +27,7 @@ export interface RowExpandingOptions {
    * раскрываема, пока `row.depth < maxDepth`. По умолчанию 1 — тоггл только у корней.
    */
   maxDepth?: number
-  /** Бизнес-колбэк раскрытия строки (аргумент фабрики, ADR 0027); читается живо. */
+  /** Бизнес-колбэк раскрытия строки (аргумент фабрики); читается живо. */
   onExpandRow?: RowExpandingHooks['onExpandRow']
 }
 
@@ -51,7 +51,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     /**
      * В v9 `getRowCanExpand` замещает дефолт целиком, поэтому воспроизводим его
      * (`subRows.length > 0`) и добавляем ограничение по глубине. При активной
-     * группировке раскрытием владеет rowGrouping (ADR 0022): глубина игнорируется,
+     * группировке раскрытием владеет rowGrouping: глубина игнорируется,
      * возвращаем дефолтную раскрываемость.
      */
     const getRowCanExpand = (row: Row<any, any>): boolean => {
@@ -67,7 +67,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
         ).length ?? 0) > 0
 
       if (groupingActive) {
-        // TODO(rowGrouping): dev-warn об игнорировании maxExpandingDepth (ADR 0022).
+        // TODO(rowGrouping): dev-warn об игнорировании maxExpandingDepth.
         return canDefault
       }
 

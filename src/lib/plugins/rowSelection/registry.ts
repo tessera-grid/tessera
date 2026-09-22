@@ -1,7 +1,7 @@
 /**
- * Запись плагина rowSelection (ADR 0014/0022) на `definePlugin` (ADR 0028).
+ * Запись плагина rowSelection на `definePlugin`.
  * Поведение даёт встроенный `rowSelectionFeature` (row-модель не нужна).
- *  - гейт группировки (ADR 0022) — через функциональный `enableRowSelection` (влияет
+ *  - гейт группировки — через функциональный `enableRowSelection` (влияет
  *    и на агрегаты getIsAll/SomePageRowsSelected);
  *  - `enableRowRangeSelection: false` — гасим shift-range (клик по чекбоксу не должен
  *    диапазонно выделять).
@@ -32,7 +32,7 @@ export interface RowSelectionOptions {
 }
 
 /**
- * Выбор недоступен при АКТИВНОЙ группировке (ADR 0022): сгруппированная модель
+ * Выбор недоступен при АКТИВНОЙ группировке: сгруппированная модель
  * производна, выбором владеет rowGrouping. Функциональный `enableRowSelection`
  * согласует и агрегаты (getIsAllPageRowsSelected и т.п.).
  */

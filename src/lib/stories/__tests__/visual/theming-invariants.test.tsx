@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 
 import themeCss from '../../../core/themeVariables/theme.css?raw'
 
-// Статические инварианты токен-системы (ADR 0019) по ИСХОДНИКАМ. Дополняют
+// Статические инварианты токен-системы по ИСХОДНИКАМ. Дополняют
 // dist-инварианты TI-01…04 (scripts/check-theme-dist.mjs, по артефакту сборки).
 // Читают theme.css и все *.module.css как строки (?raw) — так тест ловит
 // структурные баги (опечатки токенов, нарушение направления ссылок, забытый
@@ -25,7 +25,7 @@ const RUNTIME_ALLOWLIST = new Set([
 const matchAll = (css: string, re: RegExp) =>
   [...css.matchAll(re)].map(m => m[1])
 
-describe('Token architecture — static invariants (ADR 0019)', () => {
+describe('Token architecture — static invariants', () => {
   test('TI-05: every `var(--tsr-comp-*)` used in CSS is defined in theme.css', () => {
     const defined = new Set(matchAll(themeCss, /(--tsr-comp-[a-z0-9-]+)\s*:/g))
     const used = new Set<string>()

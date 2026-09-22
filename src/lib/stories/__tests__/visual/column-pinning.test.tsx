@@ -345,7 +345,7 @@ describe('Column Pinning — requirements', () => {
   test('CP13: under nested headers a leaf under a group is not individually pinnable', async () => {
     const container = await renderHeaderGroupsPinning()
     // Leaf headers live in the last header row — none of them carries a pin
-    // toggle: only whole top-level groups are pinnable (ADR 0011/0022).
+    // toggle: only whole top-level groups are pinnable.
     expect(container.querySelectorAll(HEAD_CELL).length).toBeGreaterThan(1)
     expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
   })

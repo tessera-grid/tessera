@@ -5,8 +5,8 @@ import { expect } from 'vitest'
 
 import { SEL, bodyRows, getScroller, headCells } from '../helpers'
 
-// Общие хелперы для набора тестов ядра (core-*.test.tsx). Разбиты по требованиям
-// ADR 0004: структура, размеры, роли, визуальные состояния и раскладка при
+// Общие хелперы для набора тестов ядра (core-*.test.tsx). Разбиты по требованиям:
+// структура, размеры, роли, визуальные состояния и раскладка при
 // прокрутке лежат в отдельных файлах, а всё, что переиспользуется между ними, —
 // здесь.
 
@@ -35,7 +35,7 @@ interface ColumnSpec {
 /**
  * Собрать явные колонки с известными `header`/`size`/`cell` — seam против
  * дефолтного мока: тест подаёт их через `columnsOverride` и сверяется с ними, а
- * не с литералами `__mocks__/columns` (ADR 0009 — запрет хардкода мок-данных).
+ * не с литералами `__mocks__/columns`.
  */
 export const buildColumns = (specs: ColumnSpec[]): ColumnDef<any, any>[] =>
   specs.map(({ id, header, size, cell }) => ({

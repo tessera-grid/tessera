@@ -56,7 +56,7 @@ afterEach(() => {
 const noop = () => {}
 const MODES: ColorMode[] = ['light', 'dark']
 
-describe('Theming matrix — header controls (ADR 0019, этап 3)', () => {
+describe('Theming matrix — header controls', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 

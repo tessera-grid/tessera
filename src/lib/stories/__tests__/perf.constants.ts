@@ -1,6 +1,6 @@
 // Чистые перф-константы без импортов — безопасны и в браузерном коде (тесты,
 // helpers), и в Node-командах (perf.commands). Пороги абсолютные, из моделей
-// восприятия RAIL / Core Web Vitals (см. ADR 0004), а не измеренные.
+// восприятия RAIL / Core Web Vitals, а не измеренные.
 
 /** Бюджет кадра 60fps, мс (RAIL Animation). */
 export const FRAME_BUDGET_60FPS = 1000 / 60
