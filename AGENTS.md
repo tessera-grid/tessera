@@ -99,7 +99,7 @@ src/lib/
   core/       useCreateTable + features/foldEntries (composition), commonFeature (bootstrap),
               reactivity (TanStack Store subscriptions), themeVariables (colorMode → CSS vars),
               createColumns/State/Hooks/Slots, localization, virtualization, fastScroll
-  plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions,
+  plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions, cellEditing,
               columnPinning, columnSizing, columnSorting, columnDragging, header/rowActionMenu
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
   ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons

@@ -75,7 +75,12 @@ flowchart TB
 ячейки/заголовка. «Корзины» (`useCreateSlots`):
 
 `leftHeaderSlot`, `rightHeaderSlot`, `leftCellSlot`, `rightCellSlot`,
-`actionRowSlot`.
+`actionRowSlot`, `cellSlot`.
+
+`cellSlot` — особый канал: его компонент-владелец получает собственный рендер
+ячейки пропсом `content` и решает, показать его как есть или заместить своим
+(инлайн-редактор `cellEditing`). Это единственный канал, подавляющий `{render}`
+ячейки; на несколько владельцев одного `cellSlot` ядро выдаёт дев-варн (ADR 0028).
 
 Плагины объявляют слоты **декларативно** в записи (`TesseraFeatureEntry.slots`);
 `foldEntries` сворачивает слоты активных записей в `table.options.slots`. Императивный
