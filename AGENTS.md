@@ -305,7 +305,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
     - _Клавиатура:_ `keyboard-navigation` (KN1–KN26 — роль grid, roving tabindex, режим действия, Tab-выход,
       стрелки/Home/End/Page, пиновка под виртуализацией,
-      [ADR 0021](docs/decisions/0021-keyboard-navigation.md)).
+      [ADR 0021](docs/decisions/0021-keyboard-navigation.md));
+      `keyboard-wcag` (KB1–KB10 — соответствие WCAG 2.1.1,
+      [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
     - _Меню действий:_ `action-menu` (AM10–AM19 — kebab заголовка и строки,
       [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md)).
     - _Тема и токены:_ `theming` (TH1–TH9,
