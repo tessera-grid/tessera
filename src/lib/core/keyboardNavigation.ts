@@ -26,7 +26,10 @@ import { useTableState } from './reactivity'
 
 export const KEYBOARD_NAVIGATION = 'keyboardNavigation'
 
-/** Индекс строки заголовка в модели навигации. */
+/**
+ * Индекс листовой строки заголовка в модели навигации. Строки групп вложенной
+ * шапки — выше: от `-headerRowCount` (верхняя) до `-2`.
+ */
 export const HEADER_ROW_INDEX = -1
 
 export interface ActiveCell {
@@ -68,6 +71,13 @@ interface NavRow {
 
 type NavColumn = { id: string }
 
+interface NavCellRange {
+  anchorRowId: string
+  anchorColumnId: string
+  focusRowId: string
+  focusColumnId: string
+}
+
 /** Duck-typed поверхность таблицы, которую читает шов. */
 interface NavTable {
   options: Record<string, unknown>
@@ -80,7 +90,12 @@ interface NavTable {
   // Стоковая фича cellSelection (есть, только если плагин подключён).
   setFocusedCell?: (rowId: string, columnId: string) => void
   extendCellSelection?: (direction: Direction) => void
-  getHeaderGroups: () => { headers: unknown[] }[]
+  setCellSelection?: (updater: (old: NavCellRange[]) => NavCellRange[]) => void
+  selectAllCells?: () => void
+  getColumn?: (
+    id: string,
+  ) => { columnDef: { enableCellSelection?: unknown } } | undefined
+  getHeaderGroups: () => { headers: NavHeader[] }[]
   getKeyboardActions?: () => KeyboardAction[] | undefined
   getFocusedCell?: () =>
     { row: { id: string }; column: { id: string } } | undefined
@@ -93,9 +108,10 @@ const clampActive = (
   raw: ActiveCell | undefined,
   rowCount: number,
   columnCount: number,
+  headerRowCount: number,
 ): ActiveCell => ({
   rowIndex: Math.min(
-    Math.max(raw?.rowIndex ?? HEADER_ROW_INDEX, HEADER_ROW_INDEX),
+    Math.max(raw?.rowIndex ?? HEADER_ROW_INDEX, -headerRowCount),
     rowCount - 1,
   ),
   columnIndex: Math.min(
@@ -109,7 +125,122 @@ const resolveActive = (t: NavTable, state: Record<string, unknown>) =>
     state[KEYBOARD_NAVIGATION] as ActiveCell | undefined,
     t.getRowModel().rows.length,
     getDisplayColumns(t).ids.length,
+    t.getHeaderGroups().length,
   )
+
+// --- Шапка: владелец позиции -------------------------------------------------------
+
+interface NavHeader {
+  id: string
+  isPlaceholder: boolean
+  column: { id: string; depth: number; columnDef: { rowSpan?: number } }
+  getLeafHeaders: () => { column: { id: string } }[]
+  getContext: () => unknown
+}
+
+/**
+ * Строки шапки, которые заголовок занимает визуально (0 — верхняя), как в
+ * `useGridStyles`: `rowSpan > 0` — с первой строки, иначе — строка глубины
+ * колонки. Плейсхолдер и `rowSpan: 0` не рисуются — пусто.
+ */
+const getHeaderRows = (header: NavHeader): number[] => {
+  const { rowSpan } = header.column.columnDef
+  if (header.isPlaceholder || rowSpan === 0) {
+    return []
+  }
+  return typeof rowSpan === 'number' && rowSpan > 0
+    ? Array.from({ length: rowSpan }, (_, row) => row)
+    : [header.column.depth]
+}
+
+/** Индекс строки навигации заголовка: его верхняя видимая строка (`< 0`). */
+export const getHeaderRowIndex = (
+  header: unknown,
+  headerRowCount: number,
+): number =>
+  (getHeaderRows(header as NavHeader)[0] ?? headerRowCount - 1) - headerRowCount
+
+const headerOwnerGrids = new WeakMap<object, (NavHeader | undefined)[][]>()
+
+/**
+ * Сетка владельцев шапки `[строка][колонка]`: заголовок, чей бокс покрывает
+ * позицию (группа — несколько колонок, `rowSpan` — несколько строк).
+ */
+const getHeaderOwnerGrid = (t: NavTable) => {
+  const groups = t.getHeaderGroups()
+  let grid = headerOwnerGrids.get(groups)
+  if (!grid) {
+    const { indexById } = getDisplayColumns(t)
+    const owners: (NavHeader | undefined)[][] = groups.map(() => [])
+    for (const group of groups) {
+      for (const header of group.headers) {
+        const rows = getHeaderRows(header)
+        for (const leaf of header.getLeafHeaders()) {
+          const column = indexById.get(leaf.column.id)
+          if (column === undefined) continue
+          for (const row of rows) {
+            if (owners[row]) owners[row][column] = header
+          }
+        }
+      }
+    }
+    grid = owners
+    headerOwnerGrids.set(groups, grid)
+  }
+  return grid
+}
+
+/** Заголовок, владеющий позицией `(rowIndex < 0, columnIndex)` шапки. */
+const getHeaderOwner = (
+  t: NavTable,
+  rowIndex: number,
+  columnIndex: number,
+): NavHeader | undefined => {
+  const grid = getHeaderOwnerGrid(t)
+  return grid[grid.length + rowIndex]?.[columnIndex]
+}
+
+/**
+ * Стрелка в шапке переходит к следующему владельцу: шаг сквозь бокс, растянутый на
+ * несколько колонок (группа) или строк (лист с `rowSpan`); за краем — на месте.
+ */
+const skipHeaderSpans = (
+  t: NavTable,
+  active: ActiveCell,
+  next: ActiveCell,
+  key: string,
+): ActiveCell => {
+  if (next.rowIndex >= 0) {
+    return next
+  }
+  const current =
+    active.rowIndex < 0
+      ? getHeaderOwner(t, active.rowIndex, active.columnIndex)
+      : undefined
+  const same = (row: number, column: number) =>
+    getHeaderOwner(t, row, column) === current
+  const top = -t.getHeaderGroups().length
+  const lastRow = t.getRowModel().rows.length - 1
+  const lastColumn = getDisplayColumns(t).ids.length - 1
+  let { rowIndex, columnIndex } = next
+  switch (key) {
+    case 'ArrowUp':
+      while (rowIndex >= top && same(rowIndex, columnIndex)) rowIndex--
+      return rowIndex < top ? active : { rowIndex, columnIndex }
+    case 'ArrowDown':
+      while (rowIndex < 0 && same(rowIndex, columnIndex)) rowIndex++
+      return rowIndex > lastRow ? active : { rowIndex, columnIndex }
+    case 'ArrowLeft':
+      while (columnIndex >= 0 && same(rowIndex, columnIndex)) columnIndex--
+      return columnIndex < 0 ? active : { rowIndex, columnIndex }
+    case 'ArrowRight':
+      while (columnIndex <= lastColumn && same(rowIndex, columnIndex))
+        columnIndex++
+      return columnIndex > lastColumn ? active : { rowIndex, columnIndex }
+    default:
+      return next
+  }
+}
 
 // --- Чистый резолвер клавиш ----------------------------------------------------
 
@@ -126,16 +257,18 @@ export interface NavigationBounds {
   columnCount: number
   /** Сколько строк помещается в видимую часть тела (шаг PageUp/PageDown). */
   pageRows: number
+  /** Число строк шапки (> 1 — вложенная); по умолчанию 1. */
+  headerRowCount?: number
 }
 
 /**
  * Следующая активная ячейка по клавише или `null`, если клавиша не навигационная.
- * Строки — от `-1` (заголовок) до `rowCount - 1`; кламп на краях.
+ * Строки — от `-headerRowCount` (верх шапки) до `rowCount - 1`; кламп на краях.
  */
 export const resolveNavigationKey = (
   active: ActiveCell,
   event: NavigationKeyEvent,
-  { rowCount, columnCount, pageRows }: NavigationBounds,
+  { rowCount, columnCount, pageRows, headerRowCount = 1 }: NavigationBounds,
 ): ActiveCell | null => {
   if (event.altKey || event.shiftKey) {
     return null
@@ -143,7 +276,7 @@ export const resolveNavigationKey = (
   const lastRow = rowCount - 1
   const lastColumn = Math.max(columnCount - 1, 0)
   const clampRow = (row: number) =>
-    Math.min(Math.max(row, HEADER_ROW_INDEX), lastRow)
+    Math.min(Math.max(row, -headerRowCount), lastRow)
   const clampColumn = (column: number) =>
     Math.min(Math.max(column, 0), lastColumn)
   const ctrl = event.ctrlKey || event.metaKey
@@ -160,7 +293,7 @@ export const resolveNavigationKey = (
       return { rowIndex, columnIndex: clampColumn(columnIndex + 1) }
     case 'Home':
       return ctrl
-        ? { rowIndex: HEADER_ROW_INDEX, columnIndex: 0 }
+        ? { rowIndex: -headerRowCount, columnIndex: 0 }
         : { rowIndex, columnIndex: 0 }
     case 'End':
       return ctrl
@@ -297,11 +430,37 @@ const collapseSelectionTo = (t: NavTable, active: ActiveCell) => {
   t.setFocusedCell!(row.id, columnId)
 }
 
-/** Shift+стрелка: расширить диапазон, якорь — активная ячейка. */
+/** Сдвинуть фокус активного диапазона до края таблицы в направлении `direction`. */
+const extendSelectionToEdge = (t: NavTable, direction: Direction) => {
+  const rows = t.getRowModel().rows
+  // Как у стоковой фичи: колонка вне выбора только по column-level opt-out.
+  const columnIds = getDisplayColumns(t).ids.filter(
+    id => t.getColumn?.(id)?.columnDef.enableCellSelection !== false,
+  )
+  const vertical = direction === 'up' || direction === 'down'
+  const ids = vertical ? rows.map(row => row.id) : columnIds
+  const target =
+    direction === 'up' || direction === 'left' ? ids[0] : ids.at(-1)
+  if (target === undefined) {
+    return
+  }
+  const key = vertical ? 'focusRowId' : 'focusColumnId'
+  t.setCellSelection?.(old =>
+    old.length
+      ? [...old.slice(0, -1), { ...old[old.length - 1], [key]: target }]
+      : old,
+  )
+}
+
+/**
+ * Shift+стрелка: расширить диапазон на шаг, Ctrl+Shift+стрелка — до края таблицы;
+ * якорь — активная ячейка.
+ */
 const extendSelectionFrom = (
   t: NavTable,
   active: ActiveCell,
   direction: Direction,
+  toEdge: boolean,
 ): boolean => {
   if (
     !isCellSelectionActive(t) ||
@@ -321,7 +480,30 @@ const extendSelectionFrom = (
   ) {
     collapseSelectionTo(t, active)
   }
-  t.extendCellSelection(direction)
+  if (toEdge) {
+    extendSelectionToEdge(t, direction)
+  } else {
+    t.extendCellSelection(direction)
+  }
+  return true
+}
+
+const isSelectAllKey = (event: NavigationKeyEvent) =>
+  (event.ctrlKey || event.metaKey) &&
+  !event.altKey &&
+  !event.shiftKey &&
+  event.key.toLowerCase() === 'a'
+
+/** Ctrl+A: выделить все ячейки; без cellSelection клавиша остаётся браузеру. */
+const selectAllCellsIn = (t: NavTable): boolean => {
+  if (
+    !isCellSelectionActive(t) ||
+    typeof t.selectAllCells !== 'function' ||
+    t.options.enableCellRangeSelection === false
+  ) {
+    return false
+  }
+  t.selectAllCells()
   return true
 }
 
@@ -368,21 +550,13 @@ const ACTION_KEYS = new Set([' ', 'Enter', 'F2'])
 const isContextMenuKey = (event: ReactKeyboardEvent<HTMLElement>) =>
   event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)
 
-interface NavHeader {
-  column: { id: string }
-  getContext: () => unknown
-}
-
 /** Контекст активной ячейки для канала `keyboardActions`. */
 const resolveActionTarget = (
   t: NavTable,
   active: ActiveCell,
 ): { scope: KeyboardAction['scope']; ctx: unknown } | null => {
-  if (active.rowIndex === HEADER_ROW_INDEX) {
-    const columnId = getDisplayColumns(t).ids[active.columnIndex]
-    const header = (
-      t.getHeaderGroups().at(-1)?.headers as NavHeader[] | undefined
-    )?.find(h => h.column.id === columnId)
+  if (active.rowIndex < 0) {
+    const header = getHeaderOwner(t, active.rowIndex, active.columnIndex)
     return header ? { scope: 'header', ctx: header.getContext() } : null
   }
   const cell = t.getRowModel().rows[active.rowIndex]?.getVisibleCells()[
@@ -530,22 +704,32 @@ export const useKeyboardNavigationGrid = (
         return
       }
 
-      const direction = ARROW_DIRECTIONS[event.key]
-      if (event.shiftKey && !event.altKey && direction) {
-        if (extendSelectionFrom(t, active, direction)) {
+      if (isSelectAllKey(event)) {
+        if (selectAllCellsIn(t)) {
           event.preventDefault()
         }
         return
       }
 
-      const next = resolveNavigationKey(active, event, {
+      const direction = ARROW_DIRECTIONS[event.key]
+      if (event.shiftKey && !event.altKey && direction) {
+        const toEdge = event.ctrlKey || event.metaKey
+        if (extendSelectionFrom(t, active, direction, toEdge)) {
+          event.preventDefault()
+        }
+        return
+      }
+
+      const resolved = resolveNavigationKey(active, event, {
         rowCount: t.getRowModel().rows.length,
         columnCount: getDisplayColumns(t).ids.length,
         pageRows: getPageRows(getScrollElement()),
+        headerRowCount: t.getHeaderGroups().length,
       })
-      if (!next) {
+      if (!resolved) {
         return
       }
+      const next = skipHeaderSpans(t, active, resolved, event.key)
       // Навигационная клавиша не должна прокручивать контейнер нативно.
       event.preventDefault()
       collapseSelectionTo(t, next)
@@ -618,15 +802,18 @@ export interface KeyboardNavigationCell {
 
 /**
  * Участие ячейки (заголовка или тела) в навигации; `null` без плагина или при
- * `participates=false` (групповые заголовки) — тогда ячейка не получает ни
- * `tabindex`, ни обработчиков. Активная ячейка несёт
- * `tabindex=0`, по запросу с клавиатуры доводит себя в вид и берёт фокус.
+ * `participates=false` (плейсхолдер шапки) — тогда ячейка не получает ни
+ * `tabindex`, ни обработчиков. Заголовок передаёт `headerId` и активен, когда
+ * владеет активной позицией шапки; `columnId` у него — первый лист. Активная
+ * ячейка несёт `tabindex=0`, по запросу с клавиатуры доводит себя в вид и берёт
+ * фокус.
  */
 export const useKeyboardNavigationCell = (
   table: unknown,
   rowIndex: number,
   columnId: string,
   participates = true,
+  headerId?: string,
 ): KeyboardNavigationCell | null => {
   const t = table as NavTable
   const ref = useRef<HTMLDivElement>(null)
@@ -636,6 +823,12 @@ export const useKeyboardNavigationCell = (
       return null
     }
     const active = resolveActive(t, state as Record<string, unknown>)
+    if (headerId !== undefined) {
+      return (
+        active.rowIndex < 0 &&
+        getHeaderOwner(t, active.rowIndex, active.columnIndex)?.id === headerId
+      )
+    }
     return (
       active.rowIndex === rowIndex &&
       getDisplayColumns(t).ids[active.columnIndex] === columnId
@@ -660,7 +853,7 @@ export const useKeyboardNavigationCell = (
     tracking.pending = false
     const scroller = el.closest<HTMLElement>(SCROLLER_SELECTOR)
     if (scroller) {
-      ensureCellVisible(el, scroller, rowIndex === HEADER_ROW_INDEX)
+      ensureCellVisible(el, scroller, rowIndex < 0)
     }
     el.focus({ preventScroll: true })
   }, [isActive, t, rowIndex])
@@ -675,14 +868,19 @@ export const useKeyboardNavigationCell = (
       // Фокус внутри виджета ячейки (всплывает) тоже делает ячейку активной.
       const columnIndex = getDisplayColumns(t).indexById.get(columnId)
       const active = resolveActive(t, t.store.get())
+      const owned =
+        headerId !== undefined &&
+        active.rowIndex < 0 &&
+        getHeaderOwner(t, active.rowIndex, active.columnIndex)?.id === headerId
       if (
         columnIndex !== undefined &&
+        !owned &&
         (active.rowIndex !== rowIndex || active.columnIndex !== columnIndex)
       ) {
         setPluginState(t, KEYBOARD_NAVIGATION, { rowIndex, columnIndex })
       }
     },
-    [t, rowIndex, columnId],
+    [t, rowIndex, columnId, headerId],
   )
 
   const onBlur = useCallback(

@@ -23,8 +23,8 @@ import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import {
-  HEADER_ROW_INDEX,
   NAV_CELL_ATTR,
+  getHeaderRowIndex,
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
@@ -145,13 +145,13 @@ const HeadCellView = ({
 
   const gridStyles = useGridStyles(header)
 
-  // Клавиатурная навигация: в строке заголовка участвуют только листовые заголовки
-  // (групповые строки вложенной шапки — вне модели навигации).
+  // Клавиатурная навигация: строка шапки — верхняя видимая строка заголовка (< 0).
   const nav = useKeyboardNavigationCell(
     table,
-    HEADER_ROW_INDEX,
-    header.column.id,
-    header.subHeaders.length === 0 && !header.isPlaceholder,
+    getHeaderRowIndex(header, table.getHeaderGroups().length),
+    firstLeaf.id,
+    !header.isPlaceholder,
+    header.id,
   )
   const setDragNodeRef = drag?.setNodeRef
   const navRef = nav?.ref

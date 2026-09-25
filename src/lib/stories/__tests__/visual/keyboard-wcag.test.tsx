@@ -13,6 +13,14 @@ const composed = composeStories(stories)
 
 const HEAD_CELL = '.data-grid__head-cell'
 const HIDDEN_BUTTON = '.cell__button--hidden'
+const BODY_ROW = '.data-grid__body-row'
+const BODY_CELL = '.data-grid__body-cell'
+const SELECTED = `${BODY_CELL}[data-cell-selected='true']`
+
+const PIN_BUTTON = '.column-pin__button'
+
+const headCellById = (id: string) =>
+  document.querySelector<HTMLElement>(`${HEAD_CELL}[data-column-id='${id}']`)!
 
 const active = () => document.activeElement as HTMLElement
 const press = (keys: string) => userEvent.keyboard(keys)
@@ -66,5 +74,86 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
 
     await press('{Escape}')
     await expect.poll(() => active()).toBe(cell)
+  })
+
+  test('KB6: Ctrl+Shift+стрелка расширяет выделение до края, Ctrl+A выделяет все ячейки', async () => {
+    const dataCount = 6
+    await render(
+      <composed.KeyboardNavigation dataCount={dataCount} columnCount={4} />,
+    )
+    await expect
+      .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
+      .toBeGreaterThan(3)
+    const anchor = document.querySelector<HTMLElement>(
+      `${BODY_ROW}[data-index='1'] ${BODY_CELL}[data-cell-selectable]`,
+    )!
+    const columnId = anchor.getAttribute('data-column-id')
+    await userEvent.click(anchor)
+    await expect.poll(() => active()).toBe(anchor)
+
+    // Вниз до края: строки 1…последняя в колонке якоря.
+    await press('{Control>}{Shift>}{ArrowDown}{/Shift}{/Control}')
+    await expect
+      .poll(() => document.querySelectorAll(SELECTED).length)
+      .toBe(dataCount - 1)
+    document
+      .querySelectorAll(SELECTED)
+      .forEach(cell =>
+        expect(cell.getAttribute('data-column-id')).toBe(columnId),
+      )
+    expect(
+      document
+        .querySelector(
+          `${BODY_ROW}[data-index='${dataCount - 1}'] ${BODY_CELL}[data-column-id='${columnId}']`,
+        )!
+        .getAttribute('data-cell-selected'),
+    ).toBe('true')
+    expect(active()).toBe(anchor)
+
+    // Ctrl+A: выделены все выбираемые ячейки, текст страницы не выделен.
+    await press('{Control>}a{/Control}')
+    const selectable = document.querySelectorAll(
+      `${BODY_CELL}[data-cell-selectable]`,
+    )
+    await expect
+      .poll(() => document.querySelectorAll(SELECTED).length)
+      .toBe(selectable.length)
+    expect(window.getSelection()?.toString()).toBe('')
+  })
+
+  test('KB5: заголовки групп вложенной шапки в навигации — группа закрепляется с клавиатуры', async () => {
+    await render(<composed.HeaderGroupsPinning enableKeyboardNavigation />)
+    await expect.poll(() => headCellById('name')).toBeTruthy()
+
+    // Группа `name` (rowSpan 2) — над листом `firstName`; выше неё строк нет.
+    const leaf = headCellById('firstName')
+    leaf.focus()
+    await expect.poll(() => active()).toBe(leaf)
+    await press('{ArrowUp}')
+    await expect.poll(() => active()).toBe(headCellById('name'))
+    await press('{ArrowUp}')
+    expect(active()).toBe(headCellById('name'))
+    await press('{ArrowDown}')
+    await expect.poll(() => active()).toBe(leaf)
+
+    // Режим действия на группе: pin-кнопка → «Pin left» — всё клавишами.
+    await press('{ArrowUp}{F2}')
+    const group = headCellById('name')
+    const pin = group.querySelector<HTMLElement>(PIN_BUTTON)!
+    for (let i = 0; i < 5 && !pin.contains(active()); i++) {
+      await press('{Tab}')
+    }
+    expect(pin.contains(active())).toBe(true)
+    await press('{Enter}')
+    const item = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+      ).find(el => el.textContent?.trim() === 'Pin left')
+    await expect.poll(item).toBeTruthy()
+    item()!.focus()
+    await press('{Enter}')
+    await expect
+      .poll(() => headCellById('name').getAttribute('data-cell-pinned'))
+      .toBe('left')
   })
 })
