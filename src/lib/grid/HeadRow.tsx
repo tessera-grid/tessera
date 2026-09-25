@@ -39,7 +39,11 @@ export const HeadRow = ({
 
   if (!isVirtualColumns) {
     return (
-      <div style={{ display: 'contents' }}>
+      <div
+        role="row"
+        aria-rowindex={headerGroup.depth + 1}
+        style={{ display: 'contents' }}
+      >
         {headers.map(header => (
           <CellComponent
             key={header.id}

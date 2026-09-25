@@ -316,7 +316,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
       (TC-1…TC-5 — единые контракты по семействам,
       [ADR 0017](docs/decisions/0017-ui-components.md)).
-    - _Доступность:_ `a11y` (A1–A8, прогон axe-core,
+    - _Доступность:_ `a11y` (A1–A10, прогон axe-core,
       [ADR 0020](docs/decisions/0020-accessibility.md)).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md)).

@@ -6,7 +6,7 @@ import { DEFAULT_LABELS } from '../../../core/localization'
 import { bodyRows, headCells, renderGrid } from '../helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
 
-// A1–A8: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
+// A1–A10: доступность (a11y). axe-core прогоняется в реальном Chromium (см.
 // vitest.config.ts). Каждое требование — отдельный именованный тест `A<n>`
 // (docs/decisions/0009-test-coverage-visual-and-performance.md).
 //
@@ -199,5 +199,51 @@ describe('Доступность (a11y)', () => {
       expect(button.getAttribute('aria-label')).toBe(DEFAULT_LABELS.editCell),
     )
     expect(byRule(await violations(), 'button-name')).toEqual([])
+  })
+
+  test('A9: под вложенной шапкой строки заголовков несут role="row" с aria-rowindex', async () => {
+    renderGrid({ showHeaderGroups: true, dataCount: 5 })
+    await waitForGrid()
+
+    const headRows = Array.from(
+      gridRoot().querySelectorAll<HTMLElement>(
+        '.data-grid__head > [role="row"]',
+      ),
+    )
+    expect(headRows.length).toBeGreaterThan(1)
+    headRows.forEach((row, i) =>
+      expect(row.getAttribute('aria-rowindex')).toBe(String(i + 1)),
+    )
+    headCells().forEach(cell =>
+      expect(cell.closest('[role="row"]')).not.toBeNull(),
+    )
+    expect(byRule(await violations(), 'aria-required-parent')).toEqual([])
+  })
+
+  test('A10: aria-selected на строках отражает выбор (только в role="grid")', async () => {
+    const table = await renderGrid({
+      columnCount: 4,
+      dataCount: 5,
+      enableRowSelection: true,
+    })
+    await waitForGrid()
+    expect(bodyRows()[0].hasAttribute('aria-selected')).toBe(false)
+    table.unmount()
+
+    renderGrid({
+      columnCount: 4,
+      dataCount: 5,
+      enableRowSelection: true,
+      enableKeyboardNavigation: true,
+    })
+    await waitForGrid()
+    expect(bodyRows()[0].getAttribute('aria-selected')).toBe('false')
+
+    await userEvent.click(
+      bodyRows()[0].querySelector<HTMLElement>('.row-select-checkbox')!,
+    )
+    await expect
+      .poll(() => bodyRows()[0].getAttribute('aria-selected'))
+      .toBe('true')
   })
 })

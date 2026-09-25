@@ -333,6 +333,9 @@ export const DataGrid = ({
                       cellSlot={cellSlot}
                       actionRowSlot={actionRowSlot}
                       headerRowCount={headerGroupsDepth}
+                      selectableRows={
+                        !!keyboardNavigation && enableRowSelection
+                      }
                       isResizingColumns={isResizingColumns}
                       isVirtualColumns={!hasNestedGroups}
                       enableRowDragging={enableRowDragging}

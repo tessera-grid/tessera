@@ -24,6 +24,7 @@ interface TableBodyProps {
   cellSlot?: CellSlot
   actionRowSlot?: CellSlot
   headerRowCount: number
+  selectableRows?: boolean
   isResizingColumns: false | string
   isVirtualColumns: boolean
   enableRowDragging?: boolean
@@ -40,6 +41,7 @@ export const Body = ({
   cellSlot,
   actionRowSlot,
   headerRowCount,
+  selectableRows,
   isVirtualColumns,
   enableRowDragging,
 }: TableBodyProps) => {
@@ -67,6 +69,7 @@ export const Body = ({
             cellSlot={cellSlot}
             actionRowSlot={actionRowSlot}
             headerRowCount={headerRowCount}
+            selectableRows={selectableRows}
             isVirtualColumns={isVirtualColumns}
           />
         )

@@ -32,6 +32,8 @@ interface TableBodyRowProps {
   cellSlot?: CellSlot
   actionRowSlot?: CellSlot
   headerRowCount: number
+  /** Строки несут `aria-selected` (grid с rowSelection). */
+  selectableRows?: boolean
   isVirtualColumns: boolean
 }
 
@@ -148,6 +150,12 @@ const BodyRowCells = ({
   )
 }
 
+/** `aria-selected` только у выбираемых строк грида с rowSelection. */
+const getAriaSelected = (row: Row<any, any>, selectableRows?: boolean) =>
+  selectableRows && (row.getCanSelect?.() ?? false)
+    ? (row.getIsSelected?.() ?? false)
+    : undefined
+
 /**
  * Ряд тела без Drag&Drop-обвязки. Используется, когда перетаскивание строк
  * выключено — чтобы не платить за useSortable на каждый смонтированный ряд.
@@ -171,6 +179,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       role="row"
       aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
+      aria-selected={getAriaSelected(row, props.selectableRows)}
       data-index={virtualRow.index}
       data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}
@@ -241,6 +250,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       role="row"
       aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
+      aria-selected={getAriaSelected(row, props.selectableRows)}
       data-index={virtualRow.index}
       data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}
