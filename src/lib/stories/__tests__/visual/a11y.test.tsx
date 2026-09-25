@@ -120,7 +120,7 @@ describe('Доступность (a11y)', () => {
       header: `C${i}`,
       size: 150,
       enablePinning: true,
-      ...(i === 2 ? { meta: { pinSides: 'right' } } : {}),
+      ...(i === 2 ? { meta: { pinSides: 'end' } } : {}),
     }))
     renderGrid({
       columnsOverride,
@@ -141,13 +141,16 @@ describe('Доступность (a11y)', () => {
       .toBe('right')
 
     const colcount = gridRoot().getAttribute('aria-colcount')
-    const indexes = [...headCells()]
+    // Незакреплённые ячейки лежат в раскладке содержимого — слева направо индекс
+    // строго растёт. Sticky-ячейку справа по координатам не сортируем: в узком
+    // вьюпорте она визуально накрывает центральные колонки.
+    const indexes = headCells()
+      .filter(cell => cell.getAttribute('data-cell-pinned') === 'false')
       .sort(
         (a, b) =>
           a.getBoundingClientRect().left - b.getBoundingClientRect().left,
       )
       .map(cell => Number(cell.getAttribute('aria-colindex')))
-    // Слева направо — строго возрастает.
     indexes
       .slice(1)
       .forEach((index, i) => expect(index).toBeGreaterThan(indexes[i]))

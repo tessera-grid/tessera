@@ -406,7 +406,10 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
   test('KN11: Enter/F2 на ячейке с виджетом фокусирует виджет, Escape — обратно на ячейку', async () => {
     await renderNavigation()
     // Ячейка колонки выбора: собственного действия на Enter нет — режим действия.
-    const cell = await focusBodyCell(1, 0)
+    // Фокус программный: клик в центр ячейки попал бы прямо в чекбокс.
+    const cell = cellsLeftRight(1)[0]
+    cell.focus()
+    await expect.poll(() => active()).toBe(cell)
 
     await press('{Enter}')
     await expect.poll(() => active().getAttribute('role')).toBe('checkbox')
@@ -533,9 +536,11 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
     await expect.poll(() => menu()).not.toBeNull()
     const cellRect = cell.getBoundingClientRect()
     const menuRect = menu()!.getBoundingClientRect()
-    // Меню открыто у ячейки (от её центра), а не в углу экрана.
-    expect(menuRect.left).toBeGreaterThanOrEqual(cellRect.left)
+    // Меню открыто у ячейки (от её центра), а не в углу экрана. По горизонтали
+    // Base UI может сдвинуть меню, чтобы оно поместилось во вьюпорт, — поэтому
+    // проверяем перекрытие с ячейкой, а не точку старта.
     expect(menuRect.left).toBeLessThanOrEqual(cellRect.right)
+    expect(menuRect.right).toBeGreaterThanOrEqual(cellRect.left)
     expect(menuRect.top).toBeGreaterThanOrEqual(cellRect.top)
     expect(menuRect.top).toBeLessThanOrEqual(cellRect.bottom)
 

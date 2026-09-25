@@ -706,7 +706,7 @@ describe('Column Pinning — requirements', () => {
       header: `C${i}`,
       size: i === 5 ? 400 : 150,
       enablePinning: true,
-      ...(i === 5 ? { meta: { pinSides: 'right' } } : {}),
+      ...(i === 5 ? { meta: { pinSides: 'end' } } : {}),
     }))
     const container = await renderColumnPinning({ columnsOverride: columns })
 
