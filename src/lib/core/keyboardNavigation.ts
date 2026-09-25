@@ -612,7 +612,7 @@ export interface KeyboardNavigationCell {
   ref: RefObject<HTMLDivElement | null>
   tabIndex: number
   isActive: boolean
-  onFocus: () => void
+  onFocus: (event: ReactFocusEvent<HTMLElement>) => void
   onBlur: (event: ReactFocusEvent<HTMLElement>) => void
 }
 
@@ -665,18 +665,25 @@ export const useKeyboardNavigationCell = (
     el.focus({ preventScroll: true })
   }, [isActive, t, rowIndex])
 
-  const onFocus = useCallback(() => {
-    trackingOf(t).within = true
-    // Фокус внутри виджета ячейки (всплывает) тоже делает ячейку активной.
-    const columnIndex = getDisplayColumns(t).indexById.get(columnId)
-    const active = resolveActive(t, t.store.get())
-    if (
-      columnIndex !== undefined &&
-      (active.rowIndex !== rowIndex || active.columnIndex !== columnIndex)
-    ) {
-      setPluginState(t, KEYBOARD_NAVIGATION, { rowIndex, columnIndex })
-    }
-  }, [t, rowIndex, columnId])
+  const onFocus = useCallback(
+    (event: ReactFocusEvent<HTMLElement>) => {
+      // Фокус уже перенаправлен (вход в грид с клавиатуры) — это событие устарело.
+      if (event.target !== document.activeElement) {
+        return
+      }
+      trackingOf(t).within = true
+      // Фокус внутри виджета ячейки (всплывает) тоже делает ячейку активной.
+      const columnIndex = getDisplayColumns(t).indexById.get(columnId)
+      const active = resolveActive(t, t.store.get())
+      if (
+        columnIndex !== undefined &&
+        (active.rowIndex !== rowIndex || active.columnIndex !== columnIndex)
+      ) {
+        setPluginState(t, KEYBOARD_NAVIGATION, { rowIndex, columnIndex })
+      }
+    },
+    [t, rowIndex, columnId],
+  )
 
   const onBlur = useCallback(
     (event: ReactFocusEvent<HTMLElement>) => {
