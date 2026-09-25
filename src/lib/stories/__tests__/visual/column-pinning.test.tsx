@@ -602,18 +602,28 @@ describe('Column Pinning — requirements', () => {
   })
 
   test('CP27: an end-only column pins to the right with a direct toggle', async () => {
-    const container = await renderColumnPinning()
+    // Explicit columns so the end-only column (c1) is mounted at scroll 0 under
+    // column virtualization in any viewport width.
+    const columns = Array.from({ length: 6 }, (_, i) => ({
+      id: `c${i}`,
+      accessorKey: `c${i}`,
+      header: `C${i}`,
+      size: 150,
+      enablePinning: true,
+      ...(i === 1 ? { meta: { pinSides: 'end' as const } } : {}),
+    }))
+    const container = await renderColumnPinning({ columnsOverride: columns })
 
-    // `total` is `pinSides:'end'` (see the mock) → the inline pin is a direct
-    // toggle that pins RIGHT (the logical `end` side), with no popover.
-    await userEvent.click(await revealPin(headCellById(container, 'total')))
+    // `pinSides:'end'` → the inline pin is a direct toggle that pins RIGHT (the
+    // logical `end` side), with no popover.
+    await userEvent.click(await revealPin(headCellById(container, 'c1')))
     await expect
       .poll(() =>
-        headCellById(container, 'total').getAttribute('data-cell-pinned'),
+        headCellById(container, 'c1').getAttribute('data-cell-pinned'),
       )
       .toBe('right')
     expect(menuItems().length).toBe(0)
-    expect(getComputedStyle(headCellById(container, 'total')).position).toBe(
+    expect(getComputedStyle(headCellById(container, 'c1')).position).toBe(
       'sticky',
     )
   })
