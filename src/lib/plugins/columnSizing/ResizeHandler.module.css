@@ -18,6 +18,12 @@
   height: 20px;
 }
 
+.handler:focus-visible {
+  height: 20px;
+  outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
+  outline-offset: 1px;
+}
+
 .wrapper:hover[aria-disabled='true'] {
   cursor: not-allowed;
 }

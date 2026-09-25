@@ -150,6 +150,9 @@ describe('Theming matrix — header controls', () => {
           onResize={noop}
           onResizeEnd={noop}
           onResetSize={noop}
+          onResizeBy={noop}
+          size={150}
+          minSize={20}
         />,
         dark,
       )

@@ -3,6 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { DEFAULT_LABELS } from '../../../core/localization'
 import * as stories from '../../DataGrid.stories'
 
 // Соответствие WCAG 2.1.1: каждое требование — свой именованный тест `KB<n>`
@@ -155,5 +156,49 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     await expect
       .poll(() => headCellById('name').getAttribute('data-cell-pinned'))
       .toBe('left')
+  })
+
+  test('KB2: ширина колонки меняется с клавиатуры через фокусируемый separator', async () => {
+    await render(<composed.KeyboardNavigation enableColumnResizing />)
+    await expect
+      .poll(() => document.querySelector(`${HEAD_CELL} [role="separator"]`))
+      .toBeTruthy()
+
+    const separator = document.querySelector<HTMLElement>(
+      `${HEAD_CELL} [role="separator"]`,
+    )!
+    const cell = separator.closest<HTMLElement>(HEAD_CELL)!
+    const width = () => cell.getBoundingClientRect().width
+    const valueNow = () => Number(separator.getAttribute('aria-valuenow'))
+
+    expect(separator.getAttribute('aria-label')).toBe(
+      DEFAULT_LABELS.resizeColumn,
+    )
+    const min = Number(separator.getAttribute('aria-valuemin'))
+    const max = Number(separator.getAttribute('aria-valuemax') ?? Infinity)
+    const initial = valueNow()
+    const initialWidth = width()
+    const grown = Math.min(initial + 10, max)
+
+    // Ячейка заголовка → режим действия (F2) → Tab до ручки.
+    cell.focus()
+    await press('{F2}')
+    for (let i = 0; i < 8 && active() !== separator; i++) {
+      await press('{Tab}')
+    }
+    expect(active()).toBe(separator)
+
+    await press('{ArrowRight}')
+    await expect.poll(valueNow).toBe(grown)
+    await expect
+      .poll(() => Math.round(width() - initialWidth))
+      .toBe(grown - initial)
+
+    await press('{Shift>}{ArrowLeft}{/Shift}')
+    await expect.poll(valueNow).toBe(Math.max(grown - 50, min))
+
+    await press('{Home}')
+    await expect.poll(valueNow).toBe(initial)
+    expect(active()).toBe(separator)
   })
 })

@@ -47,6 +47,8 @@ export interface TableLabels {
   copy: string
   /** Тултип и доступное имя кнопки правки ячейки (`cellEditing`) */
   editCell: string
+  /** Доступное имя ручки изменения ширины колонки (`role="separator"`) */
+  resizeColumn: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -69,6 +71,7 @@ export const DEFAULT_LABELS: TableLabels = {
   contextMenu: 'Context menu',
   copy: 'Copy',
   editCell: 'Edit cell',
+  resizeColumn: 'Resize column',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)
