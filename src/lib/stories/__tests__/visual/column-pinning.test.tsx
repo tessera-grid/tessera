@@ -7,7 +7,7 @@ import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Pinning requirement is its own named test, prefixed with its spec
-// ID (CP1–CP26 from the requirements table in docs/decisions/0011-column-pinning.md).
+// ID (CP1–CP27 from the requirements table in docs/decisions/0011-column-pinning.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -542,7 +542,7 @@ describe('Column Pinning — requirements', () => {
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => menuItems().length).toBe(0)
 
-    // `country` is `pinSides:'left'` (see the mock) → the inline pin is a direct
+    // `country` is `pinSides:'start'` (see the mock) → the inline pin is a direct
     // toggle: clicking it pins left with no popover.
     const oneSide = headCellById(container, 'country')
     await userEvent.click(await revealPin(oneSide))
@@ -598,6 +598,23 @@ describe('Column Pinning — requirements', () => {
     expect(body.getAttribute('data-cell-first-right-pinned')).toBe('true')
     expect(parseFloat(getComputedStyle(body).borderLeftWidth)).toBeGreaterThan(
       0,
+    )
+  })
+
+  test('CP27: an end-only column pins to the right with a direct toggle', async () => {
+    const container = await renderColumnPinning()
+
+    // `total` is `pinSides:'end'` (see the mock) → the inline pin is a direct
+    // toggle that pins RIGHT (the logical `end` side), with no popover.
+    await userEvent.click(await revealPin(headCellById(container, 'total')))
+    await expect
+      .poll(() =>
+        headCellById(container, 'total').getAttribute('data-cell-pinned'),
+      )
+      .toBe('right')
+    expect(menuItems().length).toBe(0)
+    expect(getComputedStyle(headCellById(container, 'total')).position).toBe(
+      'sticky',
     )
   })
 
@@ -706,7 +723,7 @@ describe('Column Pinning — requirements', () => {
       header: `C${i}`,
       size: i === 5 ? 400 : 150,
       enablePinning: true,
-      ...(i === 5 ? { meta: { pinSides: 'end' } } : {}),
+      ...(i === 5 ? { meta: { pinSides: 'end' as const } } : {}),
     }))
     const container = await renderColumnPinning({ columnsOverride: columns })
 

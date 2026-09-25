@@ -17,7 +17,7 @@ export const columns: any[] = [
     header: 'Country',
     // Демо `pinSides`: только левое закрепление — инлайн даёт прямой
     // тумблер без поповера.
-    meta: { pinSides: 'left' },
+    meta: { pinSides: 'start' },
     aggregatedCell: cell => {
       return cell.table.options.enableGrouping
         ? getNamesWithCounter(cell.row, 'country')
@@ -143,7 +143,7 @@ export const columns: any[] = [
     header: 'Total',
     // Демо `pinSides`: только правое закрепление — инлайн даёт прямой
     // тумблер без поповера.
-    meta: { pinSides: 'right' },
+    meta: { pinSides: 'end' },
     aggregationFn: 'sum' as never,
     // Сумма в сгруппированной строке (getValue() = агрегат), иначе исходное.
     cell: cell =>
