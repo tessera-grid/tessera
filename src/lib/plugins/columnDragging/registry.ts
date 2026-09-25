@@ -9,6 +9,7 @@ import { columnOrderingFeature } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { columnDraggingFeature } from './columnDraggingFeature'
+import { moveColumnKeyboardAction } from './keyboardActions'
 import type { ColumnDraggingHooks } from './types'
 
 export interface ColumnDraggingOptions {
@@ -22,6 +23,7 @@ export const columnDragging = definePlugin<ColumnDraggingOptions>()({
   id: 'columnDragging',
   features: { columnDraggingFeature, columnOrderingFeature },
   hooks: o => ({ onColumnDragEnd: o.onColumnDragEnd }),
+  keyboardActions: [moveColumnKeyboardAction],
   slots: [
     {
       id: 'columnDraggingPlugin',

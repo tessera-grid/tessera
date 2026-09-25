@@ -201,4 +201,62 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     await expect.poll(valueNow).toBe(initial)
     expect(active()).toBe(separator)
   })
+
+  test('KB3: Alt+Shift+←/→ на заголовке переставляют колонку, фокус следует за ней', async () => {
+    await render(<composed.ColumnDragging enableKeyboardNavigation />)
+    const movable = () =>
+      Array.from(document.querySelectorAll<HTMLElement>(HEAD_CELL))
+        .filter(cell => cell.querySelector('.drag__handler--column'))
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+        )
+    await expect.poll(() => movable().length).toBeGreaterThan(1)
+
+    const [first, second] = movable().map(cell =>
+      cell.getAttribute('data-column-id'),
+    )
+    const left = (id: string | null) =>
+      headCellById(id!).getBoundingClientRect().left
+    headCellById(first!).focus()
+    await expect.poll(() => active()).toBe(headCellById(first!))
+
+    await press('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
+    await expect.poll(() => left(first) > left(second)).toBe(true)
+    await expect.poll(() => active().getAttribute('data-column-id')).toBe(first)
+
+    await press('{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}')
+    await expect.poll(() => left(first) < left(second)).toBe(true)
+    expect(active().getAttribute('data-column-id')).toBe(first)
+  })
+
+  test('KB4: Alt+Shift+↑/↓ на ячейке переставляют строку, фокус следует за ней', async () => {
+    await render(<composed.RowDragging enableKeyboardNavigation />)
+    const rowAt = (index: number) =>
+      document.querySelector<HTMLElement>(`${BODY_ROW}[data-index='${index}']`)
+    await expect.poll(() => rowAt(1)).toBeTruthy()
+    expect(rowAt(0)!.getAttribute('aria-expanded')).not.toBe('true')
+
+    const moved = rowAt(0)!.getAttribute('data-row-id')
+    const other = rowAt(1)!.getAttribute('data-row-id')
+    const indexOf = (id: string | null) =>
+      Number(
+        document
+          .querySelector(`${BODY_ROW}[data-row-id='${id}']`)
+          ?.getAttribute('data-index'),
+      )
+    rowAt(0)!.querySelector<HTMLElement>('[data-kn-cell]')!.focus()
+
+    await press('{Alt>}{Shift>}{ArrowDown}{/Shift}{/Alt}')
+    await expect.poll(() => indexOf(moved) > indexOf(other)).toBe(true)
+    await expect
+      .poll(() => active().closest(BODY_ROW)?.getAttribute('data-row-id'))
+      .toBe(moved)
+
+    await press('{Alt>}{Shift>}{ArrowUp}{/Shift}{/Alt}')
+    await expect.poll(() => indexOf(moved)).toBe(0)
+    await expect
+      .poll(() => active().closest(BODY_ROW)?.getAttribute('data-row-id'))
+      .toBe(moved)
+  })
 })

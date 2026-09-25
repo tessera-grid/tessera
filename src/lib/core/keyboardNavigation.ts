@@ -21,7 +21,7 @@ import {
 
 import { setPluginState } from './definePlugin'
 import { getDisplayColumns } from './displayColumns'
-import type { KeyboardAction } from './keyboardActions'
+import { type KeyboardAction, keyComboOf } from './keyboardActions'
 import { useTableState } from './reactivity'
 
 export const KEYBOARD_NAVIGATION = 'keyboardNavigation'
@@ -395,6 +395,8 @@ interface FocusTracking {
   within: boolean
   /** Идёт ввод указателем: фокус от него не перенаправляется на активную ячейку. */
   pointer: boolean
+  /** Строка/колонка, за которой активная ячейка следует после перестановки. */
+  follow?: { rowId?: string; columnId?: string }
 }
 
 const focusTracking = new WeakMap<object, FocusTracking>()
@@ -408,6 +410,40 @@ const trackingOf = (table: NavTable): FocusTracking => {
     focusTracking.set(table.store, tracking)
   }
   return tracking
+}
+
+/**
+ * Перевести активную ячейку на новую позицию её строки/колонки после действия,
+ * переставившего их (перенос колонки — сразу, строки — когда придут новые данные).
+ */
+const applyFollow = (t: NavTable) => {
+  const tracking = trackingOf(t)
+  const follow = tracking.follow
+  if (!follow) {
+    return
+  }
+  const active = resolveActive(t, t.store.get())
+  const rowIndex =
+    follow.rowId === undefined
+      ? active.rowIndex
+      : t.getRowModel().rows.findIndex(row => row.id === follow.rowId)
+  const columnIndex =
+    follow.columnId === undefined
+      ? undefined
+      : getDisplayColumns(t).indexById.get(follow.columnId)
+  if (follow.rowId !== undefined && rowIndex === -1) {
+    return
+  }
+  const next = { rowIndex, columnIndex: columnIndex ?? active.columnIndex }
+  if (
+    next.rowIndex === active.rowIndex &&
+    next.columnIndex === active.columnIndex
+  ) {
+    return
+  }
+  tracking.follow = undefined
+  tracking.pending = true
+  setPluginState(t, KEYBOARD_NAVIGATION, next)
 }
 
 // --- Синхронизация с cellSelection ----------------------------------------------
@@ -653,6 +689,13 @@ export const useKeyboardNavigationGrid = (
   const guardBeforeRef = useRef<HTMLDivElement>(null)
   const guardAfterRef = useRef<HTMLDivElement>(null)
 
+  // Перестановка строки применяется, когда потребитель вернёт новые данные.
+  useLayoutEffect(() => {
+    if (isKeyboardNavigationEnabled(table)) {
+      applyFollow(table as NavTable)
+    }
+  })
+
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLElement>) => {
       const target = event.target as HTMLElement
@@ -667,6 +710,7 @@ export const useKeyboardNavigationGrid = (
 
       const t = table as NavTable
       const modified = event.ctrlKey || event.metaKey || event.altKey
+      trackingOf(t).follow = undefined
 
       // Tab — выход из грида: фокус на стража, нативный обход продолжится от него.
       if (event.key === 'Tab' && !modified) {
@@ -700,6 +744,26 @@ export const useKeyboardNavigationGrid = (
         }
         if (event.key !== ' ' && !event.shiftKey) {
           getCellWidgets(cell)[0]?.focus()
+        }
+        return
+      }
+
+      // Сочетания с Alt — действия плагинов (перестановка строк/колонок, ADR 0031).
+      if (event.altKey) {
+        const actionTarget = resolveActionTarget(t, active)
+        const action =
+          actionTarget && findKeyboardAction(t, actionTarget, keyComboOf(event))
+        if (action && actionTarget) {
+          event.preventDefault()
+          trackingOf(t).follow = {
+            rowId:
+              active.rowIndex >= 0
+                ? t.getRowModel().rows[active.rowIndex]?.id
+                : undefined,
+            columnId: getDisplayColumns(t).ids[active.columnIndex],
+          }
+          action.run(actionTarget.ctx as never, event)
+          applyFollow(t)
         }
         return
       }
@@ -773,6 +837,7 @@ export const useKeyboardNavigationGrid = (
   const onPointerDownCapture = useCallback(() => {
     const tracking = trackingOf(table as NavTable)
     tracking.pointer = true
+    tracking.follow = undefined
     // Фокус от указателя приходит в той же задаче ввода (mousedown).
     setTimeout(() => {
       tracking.pointer = false

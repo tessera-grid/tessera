@@ -1,7 +1,8 @@
 /**
- * Канал клавиатурных действий плагинов (ADR 0021): что делают `Space`/`Enter`/`F2`
- * на ячейке тела или листового заголовка. Действие объявляет плагин-владелец
- * ячейки; резолвер клавиатурной навигации берёт первое применимое.
+ * Канал клавиатурных действий плагинов (ADR 0021, ADR 0031): что делают
+ * `Space`/`Enter`/`F2` и сочетания с `Alt` на ячейке тела или заголовка.
+ * Действие объявляет плагин-владелец ячейки; резолвер клавиатурной навигации
+ * берёт первое применимое.
  */
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
@@ -10,7 +11,10 @@ import type { CellComponentProps, HeaderComponentProps } from './createSlots'
 interface KeyboardActionBase<TCtx> {
   /** Идентификатор; при свёртке дубли по id заменяются последним. */
   id: string
-  /** Значения `KeyboardEvent.key`, на которые откликается действие (`' '` — пробел). */
+  /**
+   * Значения `KeyboardEvent.key` (`' '` — пробел) или сочетания в форме
+   * `keyComboOf` — `'Alt+Shift+ArrowUp'`; сочетания срабатывают только с `Alt`.
+   */
   keys: string[]
   /** Применимо ли действие к этой ячейке. По умолчанию — всегда. */
   visible?: (ctx: TCtx) => boolean
@@ -22,12 +26,30 @@ export interface CellKeyboardAction extends KeyboardActionBase<CellComponentProp
   scope: 'cell'
 }
 
-/** Действие на ячейке листового заголовка; контекст — `header.getContext()`. */
+/** Действие на ячейке заголовка; контекст — `header.getContext()`. */
 export interface HeaderKeyboardAction extends KeyboardActionBase<HeaderComponentProps> {
   scope: 'header'
 }
 
 export type KeyboardAction = CellKeyboardAction | HeaderKeyboardAction
+
+/** Сочетание клавиш события: модификаторы в порядке Ctrl, Alt, Shift, Meta и `key`. */
+export const keyComboOf = (event: {
+  key: string
+  ctrlKey: boolean
+  altKey: boolean
+  shiftKey: boolean
+  metaKey: boolean
+}): string =>
+  [
+    event.ctrlKey && 'Ctrl',
+    event.altKey && 'Alt',
+    event.shiftKey && 'Shift',
+    event.metaKey && 'Meta',
+    event.key,
+  ]
+    .filter(Boolean)
+    .join('+')
 
 /** Добавить действия в общий список с дедупом по id (последний побеждает). */
 export const registerKeyboardActionsInto = (

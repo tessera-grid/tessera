@@ -7,6 +7,7 @@
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
 import { COLUMN_DRAGGING_ID, getRowDraggingColumn } from './rowDraggingColumn'
+import { moveRowKeyboardAction } from './keyboardActions'
 import { rowDraggingFeature } from './rowDraggingFeature'
 import type { RowDraggingHooks } from './types'
 
@@ -23,6 +24,7 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
   id: 'rowDragging',
   features: { rowDraggingFeature },
   hooks: o => ({ onRowDragEnd: o.onRowDragEnd }),
+  keyboardActions: [moveRowKeyboardAction],
   column: {
     id: COLUMN_DRAGGING_ID,
     make: getRowDraggingColumn,
