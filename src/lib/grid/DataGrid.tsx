@@ -19,7 +19,10 @@ import {
   hasSelectedCells,
 } from '../core/clipboard'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
-import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
+import {
+  isTreeGrid,
+  useKeyboardNavigationGrid,
+} from '../core/keyboardNavigation'
 import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
@@ -101,9 +104,7 @@ export const DataGrid = ({
   const enableRowSelection = !!(table.options as any).enableRowSelection
   // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
   // становится treegrid (ADR 0032, W10).
-  const hierarchical =
-    (table.options as any).enableExpanding === true ||
-    (table.options as any).enableGrouping === true
+  const hierarchical = isTreeGrid(table)
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)

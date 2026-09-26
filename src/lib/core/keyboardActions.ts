@@ -16,6 +16,11 @@ interface KeyboardActionBase<TCtx> {
    * `keyComboOf` — `'Alt+Shift+ArrowUp'`; сочетания срабатывают только с `Alt`.
    */
   keys: string[]
+  /**
+   * Действие раскрывает/сворачивает строку: его вызывает и фокус на строке
+   * treegrid (`→`/`←`, ADR 0032, W16), не зная плагина-владельца.
+   */
+  expands?: boolean
   /** Применимо ли действие к этой ячейке. По умолчанию — всегда. */
   visible?: (ctx: TCtx) => boolean
   run: (ctx: TCtx, event: ReactKeyboardEvent<HTMLElement>) => void

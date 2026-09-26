@@ -12,6 +12,10 @@ import clsx from 'clsx'
 import type { Cell, Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
+import {
+  NAV_ROW_ATTR,
+  useKeyboardNavigationRow,
+} from '../core/keyboardNavigation'
 import { animateLayoutChanges } from '../plugins/rowDragging'
 import { ItemDraggableWrapper } from './dnd'
 import { BodyCell } from './BodyCell'
@@ -172,6 +176,10 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, headerRowCount } = props
 
   useRowStateSubscription(row)
+  const nav = useKeyboardNavigationRow(
+    (row as unknown as { table: unknown }).table,
+    virtualRow.index,
+  )
 
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
@@ -183,6 +191,14 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
 
   return (
     <div
+      {...(nav && {
+        ref: nav.ref,
+        tabIndex: nav.tabIndex,
+        onFocus: nav.onFocus,
+        onBlur: nav.onBlur,
+        [NAV_ROW_ATTR]: '',
+      })}
+      data-kn-active={nav?.isActive || undefined}
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
       aria-rowindex={headerRowCount + virtualRow.index + 1}
@@ -215,6 +231,10 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, headerRowCount } = props
 
   useRowStateSubscription(row)
+  const nav = useKeyboardNavigationRow(
+    (row as unknown as { table: unknown }).table,
+    virtualRow.index,
+  )
 
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
@@ -254,7 +274,17 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       ref={node => {
         setDraggableNodeRef(node)
         setDroppableNodeRef(node)
+        if (nav) {
+          nav.ref.current = node
+        }
       }}
+      {...(nav && {
+        tabIndex: nav.tabIndex,
+        onFocus: nav.onFocus,
+        onBlur: nav.onBlur,
+        [NAV_ROW_ATTR]: '',
+      })}
+      data-kn-active={nav?.isActive || undefined}
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
       aria-rowindex={headerRowCount + virtualRow.index + 1}

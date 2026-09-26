@@ -45,6 +45,14 @@ export const INITIAL_ACTIVE_CELL: ActiveCell = {
 /** Атрибут ячейки-участника навигации: клавиши обрабатываются только на ней. */
 export const NAV_CELL_ATTR = 'data-kn-cell'
 
+/** Атрибут строки `treegrid` — участника навигации в режиме фокуса на строке. */
+export const NAV_ROW_ATTR = 'data-kn-row'
+
+/** `columnIndex` фокуса на самой строке `treegrid` (ADR 0032, W16). */
+export const ROW_FOCUS_COLUMN = -1
+
+const NAV_TARGET_SELECTOR = `[${NAV_CELL_ATTR}], [${NAV_ROW_ATTR}]`
+
 const SCROLLER_SELECTOR = '[data-resizing]'
 const HEAD_SELECTOR = '.data-grid__head'
 const FOOTER_SELECTOR = '.data-grid__footer'
@@ -66,7 +74,10 @@ interface NavCell {
 
 interface NavRow {
   id: string
+  parentId?: string
   getVisibleCells: () => NavCell[]
+  getCanExpand?: () => boolean
+  getIsExpanded?: () => boolean
 }
 
 type NavColumn = { id: string }
@@ -104,6 +115,15 @@ interface NavTable {
 export const isKeyboardNavigationEnabled = (table: unknown): boolean =>
   !!(table as NavTable).options.enableKeyboardNavigation
 
+/**
+ * Иерархия строк (`rowExpanding` / `rowGrouping` включены): с клавиатурной
+ * навигацией грид — `treegrid` (ADR 0032, W10, W16).
+ */
+export const isTreeGrid = (table: unknown): boolean => {
+  const { options } = table as NavTable
+  return options.enableExpanding === true || options.enableGrouping === true
+}
+
 const clampActive = (
   raw: ActiveCell | undefined,
   rowCount: number,
@@ -131,13 +151,22 @@ const getNavRowCount = (t: NavTable) =>
 export const isFooterRowIndex = (table: unknown, rowIndex: number) =>
   rowIndex >= (table as NavTable).getRowModel().rows.length
 
-const resolveActive = (t: NavTable, state: Record<string, unknown>) =>
-  clampActive(
-    state[KEYBOARD_NAVIGATION] as ActiveCell | undefined,
+const resolveActive = (t: NavTable, state: Record<string, unknown>) => {
+  const raw = state[KEYBOARD_NAVIGATION] as ActiveCell | undefined
+  const active = clampActive(
+    raw,
     getNavRowCount(t),
     getDisplayColumns(t).ids.length,
     t.getHeaderGroups().length,
   )
+  // Фокус на строке — только у строк тела treegrid.
+  return raw?.columnIndex === ROW_FOCUS_COLUMN &&
+    isTreeGrid(t) &&
+    active.rowIndex >= 0 &&
+    !isFooterRowIndex(t, active.rowIndex)
+    ? { ...active, columnIndex: ROW_FOCUS_COLUMN }
+    : active
+}
 
 // --- Шапка: владелец позиции -------------------------------------------------------
 
@@ -514,7 +543,8 @@ const extendSelectionFrom = (
     typeof t.extendCellSelection !== 'function' ||
     t.options.enableCellRangeSelection === false ||
     active.rowIndex < 0 ||
-    isFooterRowIndex(t, active.rowIndex)
+    isFooterRowIndex(t, active.rowIndex) ||
+    active.columnIndex === ROW_FOCUS_COLUMN
   ) {
     return false
   }
@@ -611,6 +641,74 @@ const resolveActionTarget = (
     active.columnIndex
   ] as { getContext?: () => unknown } | undefined
   return cell?.getContext ? { scope: 'cell', ctx: cell.getContext() } : null
+}
+
+/**
+ * Раскрыть/свернуть строку тем же путём, что и кнопка: действие канала с флагом
+ * `expands`, применимое к одной из ячеек строки. `false` — строку не раскрыть.
+ */
+const toggleRowExpansion = (
+  t: NavTable,
+  rowIndex: number,
+  event: ReactKeyboardEvent<HTMLElement>,
+): boolean => {
+  const row = t.getRowModel().rows[rowIndex]
+  const actions = (t.getKeyboardActions?.() ?? []).filter(
+    action => action.scope === 'cell' && action.expands,
+  )
+  const cells = (row?.getVisibleCells() ?? []) as {
+    getContext?: () => unknown
+  }[]
+  for (const cell of cells) {
+    const ctx = cell.getContext?.()
+    const action = actions.find(a => a.visible?.(ctx as never) ?? true)
+    if (ctx && action) {
+      action.run(ctx as never, event)
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Клавиши в режиме фокуса на строке treegrid (паттерн APG Treegrid): следующая
+ * активная позиция, `'handled'` — клавиша обработана на месте, `null` — не наша.
+ */
+const resolveRowFocusKey = (
+  t: NavTable,
+  active: ActiveCell,
+  event: ReactKeyboardEvent<HTMLElement>,
+): ActiveCell | 'handled' | null => {
+  const rows = t.getRowModel().rows
+  const row = rows[active.rowIndex]
+  const atRow = (rowIndex: number): ActiveCell => ({
+    rowIndex: Math.min(Math.max(rowIndex, 0), rows.length - 1),
+    columnIndex: ROW_FOCUS_COLUMN,
+  })
+  switch (event.key) {
+    case 'ArrowRight':
+      if (row?.getCanExpand?.() && !row.getIsExpanded?.()) {
+        return toggleRowExpansion(t, active.rowIndex, event) ? 'handled' : null
+      }
+      return { rowIndex: active.rowIndex, columnIndex: 0 }
+    case 'ArrowLeft': {
+      if (row?.getIsExpanded?.()) {
+        return toggleRowExpansion(t, active.rowIndex, event) ? 'handled' : null
+      }
+      const parent = rows.findIndex(r => r.id === row?.parentId)
+      return parent === -1 ? 'handled' : atRow(parent)
+    }
+    case 'ArrowUp':
+      return atRow(active.rowIndex - 1)
+    case 'ArrowDown':
+      return atRow(active.rowIndex + 1)
+    case 'Home':
+      return atRow(0)
+    case 'End':
+      return atRow(rows.length - 1)
+    default:
+      return null
+  }
 }
 
 /** Первое применимое действие плагина для клавиши на активной ячейке. */
@@ -718,7 +816,7 @@ export const useKeyboardNavigationGrid = (
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLElement>) => {
       const target = event.target as HTMLElement
-      const cell = target.closest?.<HTMLElement>(`[${NAV_CELL_ATTR}]`)
+      const cell = target.closest?.<HTMLElement>(NAV_TARGET_SELECTOR)
       if (!cell) {
         return
       }
@@ -749,6 +847,40 @@ export const useKeyboardNavigationGrid = (
       }
 
       const active = resolveActive(t, t.store.get())
+
+      // Фокус на строке treegrid: свои клавиши, действия ячеек не применяются.
+      if (active.columnIndex === ROW_FOCUS_COLUMN) {
+        if (modified || event.shiftKey) {
+          return
+        }
+        const next = resolveRowFocusKey(t, active, event)
+        if (next || ACTION_KEYS.has(event.key)) {
+          event.preventDefault()
+        }
+        if (next && next !== 'handled') {
+          trackingOf(t).pending = true
+          setPluginState(t, KEYBOARD_NAVIGATION, next)
+        }
+        return
+      }
+      // `←` на первой ячейке строки treegrid — фокус на саму строку.
+      if (
+        event.key === 'ArrowLeft' &&
+        !modified &&
+        !event.shiftKey &&
+        active.columnIndex === 0 &&
+        active.rowIndex >= 0 &&
+        !isFooterRowIndex(t, active.rowIndex) &&
+        isTreeGrid(t)
+      ) {
+        event.preventDefault()
+        trackingOf(t).pending = true
+        setPluginState(t, KEYBOARD_NAVIGATION, {
+          rowIndex: active.rowIndex,
+          columnIndex: ROW_FOCUS_COLUMN,
+        })
+        return
+      }
 
       if (ACTION_KEYS.has(event.key) && !modified) {
         // Пробел не должен прокручивать контейнер, даже если действия нет.
@@ -842,7 +974,8 @@ export const useKeyboardNavigationGrid = (
         // Возврат фокуса на триггер из закрывшегося всплывающего окна (меню в
         // портале уже размонтировано — источника нет); вход по Tab его имеет.
         (from === null && target.hasAttribute('aria-haspopup')) ||
-        target.hasAttribute(NAV_CELL_ATTR)
+        target.hasAttribute(NAV_CELL_ATTR) ||
+        target.hasAttribute(NAV_ROW_ATTR)
       ) {
         return
       }
@@ -994,6 +1127,93 @@ export const useKeyboardNavigationCell = (
         }, 0)
       }
       // Узел мог уйти из DOM вместе со строкой — это не уход фокуса из грида.
+      queueMicrotask(() => {
+        if (el.isConnected) {
+          trackingOf(t).within = false
+        }
+      })
+    },
+    [t],
+  )
+
+  if (isActive === null) {
+    return null
+  }
+  return { ref, tabIndex: isActive ? 0 : -1, isActive, onFocus, onBlur }
+}
+
+/**
+ * Участие строки тела treegrid в навигации (фокус на строке, ADR 0032, W16);
+ * `null` вне treegrid или без плагина. Реагирует только на фокус самой строки —
+ * фокус ячеек всплывает сквозь неё.
+ */
+export const useKeyboardNavigationRow = (
+  table: unknown,
+  rowIndex: number,
+): KeyboardNavigationCell | null => {
+  const t = table as NavTable
+  const ref = useRef<HTMLDivElement>(null)
+
+  const isActive = useTableState(table as never, (state: unknown) => {
+    if (!isKeyboardNavigationEnabled(t) || !isTreeGrid(t)) {
+      return null
+    }
+    const active = resolveActive(t, state as Record<string, unknown>)
+    return (
+      active.rowIndex === rowIndex && active.columnIndex === ROW_FOCUS_COLUMN
+    )
+  }) as boolean | null
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!isActive || !el) {
+      return
+    }
+    const tracking = trackingOf(t)
+    if (!tracking.pending) {
+      return
+    }
+    tracking.pending = false
+    const scroller = el.closest<HTMLElement>(SCROLLER_SELECTOR)
+    if (scroller) {
+      ensureCellVisible(el, scroller, false)
+    }
+    el.focus({ preventScroll: true })
+  }, [isActive, t])
+
+  const onFocus = useCallback(
+    (event: ReactFocusEvent<HTMLElement>) => {
+      if (
+        event.target !== event.currentTarget ||
+        event.target !== document.activeElement
+      ) {
+        return
+      }
+      trackingOf(t).within = true
+      const active = resolveActive(t, t.store.get())
+      if (
+        active.rowIndex !== rowIndex ||
+        active.columnIndex !== ROW_FOCUS_COLUMN
+      ) {
+        setPluginState(t, KEYBOARD_NAVIGATION, {
+          rowIndex,
+          columnIndex: ROW_FOCUS_COLUMN,
+        })
+      }
+    },
+    [t, rowIndex],
+  )
+
+  const onBlur = useCallback(
+    (event: ReactFocusEvent<HTMLElement>) => {
+      if (event.target !== event.currentTarget) {
+        return
+      }
+      const el = event.currentTarget
+      const next = event.relatedTarget as Node | null
+      if (next && el.closest(SCROLLER_SELECTOR)?.contains(next)) {
+        return
+      }
       queueMicrotask(() => {
         if (el.isConnected) {
           trackingOf(t).within = false

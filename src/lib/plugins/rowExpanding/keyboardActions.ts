@@ -12,6 +12,7 @@ export const toggleExpandedKeyboardAction: CellKeyboardAction = {
   id: 'rowExpanding.toggle',
   scope: 'cell',
   keys: ['Enter'],
+  expands: true,
   // Колонка раскрытия (и её уровни под группировкой) — где живёт кнопка.
   visible: ({ row, column }) =>
     column.id.startsWith(COLUMN_EXPANDING_ID) && row.getCanExpand(),

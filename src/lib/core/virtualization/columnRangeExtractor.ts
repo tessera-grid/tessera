@@ -31,7 +31,9 @@ export const useColumnRangeExtractor = ({
     (range: Range) => {
       const newIndexes = defaultRangeExtractor(range)
       const activeIndexes =
-        activeColumnIndex !== undefined && activeColumnIndex < range.count
+        activeColumnIndex !== undefined &&
+        activeColumnIndex >= 0 &&
+        activeColumnIndex < range.count
           ? [activeColumnIndex]
           : []
 
