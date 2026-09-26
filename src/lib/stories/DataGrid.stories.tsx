@@ -1018,3 +1018,57 @@ export const KeyboardNavigation: StoryObj<StoryProps> = {
     },
   },
 }
+
+// --- Ручная проверка доступности (docs/testing/screen-readers.md) ------------------
+
+export const A11yGrid: StoryObj<StoryProps> = {
+  name: 'A11y: Grid',
+  args: {
+    // Сценарии чеклиста для скринридеров: навигация, сортировка, выбор строк и
+    // ячеек, правка с проверкой значения, закрепление, ширина, контекстное меню,
+    // футер. Немного строк и колонок — чтобы дерево было обозримым.
+    enableKeyboardNavigation: true,
+    enableColumnSorting: true,
+    enableColumnPinning: true,
+    enableColumnResizing: true,
+    enableRowSelection: true,
+    enableCellSelection: true,
+    enableCellEditing: true,
+    enableContextMenu: true,
+    enableFooter: true,
+    validateCellEdit: (value: string) =>
+      value.trim() ? null : 'Value is required',
+    columnCount: 8,
+    dataCount: 30,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+}
+
+export const A11yTreeGrid: StoryObj<StoryProps> = {
+  name: 'A11y: Tree Grid',
+  args: {
+    // treegrid: группировка по gender с раскрытием — уровни строк и фокус на строке.
+    ...RowGrouping.args,
+    enableKeyboardNavigation: true,
+    enableRowExpanding: true,
+    initialGrouping: ['gender'],
+  },
+}
+
+export const A11yRowMoving: StoryObj<StoryProps> = {
+  name: 'A11y: Row Moving',
+  args: {
+    // Перестановка строк и колонок с клавиатуры (Alt+Shift+стрелки) на дереве.
+    enableKeyboardNavigation: true,
+    enableRowDragging: true,
+    enableRowExpanding: true,
+    enableColumnDragging: true,
+    dataMode: 'hierarchy',
+    dataCount: 20,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+}
