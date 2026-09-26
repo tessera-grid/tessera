@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
+import { axTree } from './src/lib/stories/__tests__/a11y.commands'
+
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
 // timing — neither of which jsdom provides. This config is intentionally
@@ -55,6 +57,8 @@ export default defineConfig({
         launchOptions: { channel: 'chromium' },
       }),
       instances: [{ browser: 'chromium' }],
+      // Дерево доступности Chromium через CDP (ADR 0033).
+      commands: { axTree },
     },
   },
 })

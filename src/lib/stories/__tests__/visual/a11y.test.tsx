@@ -681,7 +681,7 @@ describe('Доступность (a11y)', () => {
     await expect.poll(activeRowId).toBe('item-id-4')
   })
 
-  test('W13: заголовки служебных колонок имеют скрытую подпись (axe empty-table-header)', async () => {
+  test('W13: заголовки служебных колонок названы — скрытой подписью или контролом (axe empty-table-header)', async () => {
     await renderGrid({
       columnCount: 4,
       dataCount: 5,
@@ -696,7 +696,13 @@ describe('Доступность (a11y)', () => {
       cell => cell.getAttribute('data-actions-column-cell') === 'true',
     )
     expect(service.length).toBeGreaterThan(2)
-    service.forEach(cell => expect(cell.textContent!.trim()).not.toBe(''))
+    // Имя — скрытая подпись или именованный контрол (чекбокс «Select all rows»).
+    service.forEach(cell =>
+      expect(
+        cell.textContent!.trim() ||
+          cell.querySelector('[aria-label]')?.getAttribute('aria-label'),
+      ).toBeTruthy(),
+    )
     expect(byRule(await violations(), 'empty-table-header')).toEqual([])
   })
 
@@ -734,5 +740,63 @@ describe('Доступность (a11y)', () => {
       .poll(() => active().classList.contains('data-grid__footer-cell'))
       .toBe(true)
     expect(active().getAttribute('data-last-cell-in-row')).toBe('true')
+  })
+
+  test('W16: фокус на строке treegrid — ←/→ раскрывают, сворачивают и ведут к ячейке и родителю', async () => {
+    await render(
+      <Stories.RowGrouping
+        enableKeyboardNavigation
+        enableRowExpanding
+        initialGrouping={['gender']}
+      />,
+    )
+    const row = (index: number) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-index="${index}"]`,
+      )!
+    await expect.poll(() => row(0)).toBeTruthy()
+    const active = () => document.activeElement as HTMLElement
+    const press = (key: string) => userEvent.keyboard(key)
+
+    row(0).querySelector<HTMLElement>('[data-kn-cell]')!.focus()
+    await press('{ArrowLeft}')
+    await expect.poll(active).toBe(row(0))
+    expect(active().getAttribute('aria-expanded')).toBe('false')
+
+    await press('{ArrowRight}')
+    await expect.poll(() => row(0).getAttribute('aria-expanded')).toBe('true')
+    expect(active()).toBe(row(0))
+
+    await press('{ArrowRight}')
+    await expect.poll(() => active().getAttribute('role')).toBe('gridcell')
+    await press('{ArrowLeft}{ArrowDown}')
+    await expect.poll(active).toBe(row(1))
+    expect(row(1).getAttribute('aria-level')).toBe('2')
+
+    // ← на подстроке — к родителю, ← на раскрытом родителе — свернуть.
+    await press('{ArrowLeft}')
+    await expect.poll(active).toBe(row(0))
+    await press('{ArrowLeft}')
+    await expect.poll(() => row(0).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  test('W17: имя заголовка колонки — только его текст, без имён кнопок', async () => {
+    await renderGrid({
+      columnCount: 3,
+      dataCount: 3,
+      enableColumnSorting: true,
+      enableColumnPinning: true,
+    })
+    await waitForGrid()
+
+    const header = headCells().find(cell =>
+      cell.querySelector('.data-grid__cell-wrapper-title'),
+    )!
+    const title = document.getElementById(
+      header.getAttribute('aria-labelledby')!,
+    )!
+    expect(header.contains(title)).toBe(true)
+    expect(title.querySelector('button')).toBeNull()
+    expect(title.textContent!.trim()).not.toBe('')
   })
 })

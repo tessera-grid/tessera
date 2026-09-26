@@ -1,0 +1,93 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Дерево доступности (AX) > AX1: грид с сортировкой и выбором — роли, имена, multiselectable, selected 1`] = `
+"grid "Data table" multiselectable
+  rowgroup
+    row "Select all rows Country First Name Last Name"
+      columnheader "Select all rows"
+        checkbox "Select all rows" checked=mixed
+      columnheader "Country"
+        button "Sort descending"
+      columnheader "First Name"
+        button "Sort descending"
+      columnheader "Last Name"
+        button "Sort descending"
+  rowgroup
+    row "Select row Samoa Bettye Bahringer"
+      gridcell "Select row"
+        checkbox "Select row"
+      gridcell "Samoa"
+      gridcell "Bettye"
+      gridcell "Bahringer"
+    row "Select row Christmas Island Quincy Christiansen" selected
+      gridcell "Select row"
+        checkbox "Select row" checked=true
+      gridcell "Christmas Island"
+      gridcell "Quincy"
+      gridcell "Christiansen"
+    row "Select row Belize Libbie Bernhard"
+      gridcell "Select row"
+        checkbox "Select row"
+      gridcell "Belize"
+      gridcell "Libbie"
+      gridcell "Bernhard""
+`;
+
+exports[`Дерево доступности (AX) > AX2: treegrid с раскрытой группой — level и expanded у строк 1`] = `
+"treegrid "Data table"
+    row "Expand Country First Name Last Name Age Gender Visits"
+    row "Collapse Mexico, United States of America (and 4 more) Raina, Leah (and 4 more) Wilderman-Auer, Auer (and 4 more) 24, 40 (and 4 more) female, female (and 4 more) 56" level=1 expanded
+    row "Mexico Raina Wilderman-Auer 24 female 16" level=2
+    row "United States of America Leah Auer 40 female 15" level=2
+    row "Egypt Tristin Nitzsche 27 female 9" level=2"
+`;
+
+exports[`Дерево доступности (AX) > AX3: поле редактора с ошибкой — textbox invalid и alert с текстом 1`] = `
+"        textbox "Edit Age" description="Digits only" invalid=true
+        alert text="Digits only" live=assertive"
+`;
+
+exports[`Дерево доступности (AX) > AX4: загрузка — корень busy, progressbar "Loading" 1`] = `
+"  progressbar "Loading" valuemin=0 valuemax=100
+  table "Data table" busy=1"
+`;
+
+exports[`Дерево доступности (AX) > AX5: скелет первой загрузки — нет таблицы, есть status "Loading" 1`] = `
+"  status text="" live=polite
+  status text="Loading" live=polite"
+`;
+
+exports[`Дерево доступности (AX) > AX6: служебные колонки и футер — именованные заголовки, строка футера из gridcell 1`] = `
+"      columnheader "Reorder"
+      columnheader "Expand"
+      columnheader "Country"
+      columnheader "First Name"
+      columnheader "Actions"
+    row "Total"
+      gridcell
+      gridcell
+      gridcell "Total"
+      gridcell
+      gridcell"
+`;
+
+exports[`Дерево доступности (AX) > AX7: без keyboardNavigation — table/cell без gridcell и multiselectable 1`] = `
+"table "Data table"
+  rowgroup
+    row
+      columnheader "Select all rows"
+        checkbox "Select all rows"
+      columnheader "Country"
+      columnheader "First Name"
+  rowgroup
+    row
+      cell "Select row"
+        checkbox "Select row"
+      cell "Tajikistan"
+      cell "Lorenzo"
+    row
+      cell "Select row"
+        checkbox "Select row"
+      cell "Malta"
+      cell "Hulda""
+`;
