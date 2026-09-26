@@ -347,7 +347,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     await leaveGrid(cell())
 
     // Поповер закрепления в заголовке: Escape закрывает его и возвращает фокус
-    // на ячейку заголовка.
+    // на кнопку-триггер, следующий Escape — на ячейку заголовка.
     const head = headCellById('age')
     head.focus()
     await press('{F2}')
@@ -361,6 +361,8 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
       .not.toBeNull()
     await press('{Escape}')
     await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()
+    await expect.poll(() => pin.contains(active())).toBe(true)
+    await press('{Escape}')
     await leaveGrid(head)
   })
 
@@ -389,7 +391,9 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
       .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
       .toBeGreaterThan(3)
 
-    const root = document.querySelector<HTMLElement>('[role="grid"]')!
+    const root = document.querySelector<HTMLElement>(
+      '[role="grid"], [role="treegrid"]',
+    )!
     const controls = Array.from(
       root.querySelectorAll<HTMLElement>(
         [

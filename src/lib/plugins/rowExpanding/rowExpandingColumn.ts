@@ -14,6 +14,7 @@ export const COLUMN_EXPANDING_ID = getActionColumnId('rowExpanding')
 
 const leafColumn = {
   id: COLUMN_EXPANDING_ID,
+  serviceLabel: 'expandColumn',
   accessorKey: 'id',
   minSize: COLUMN_ACTIONS_SIZE,
   size: COLUMN_ACTIONS_SIZE,
@@ -36,6 +37,7 @@ export const getRowExpandingColumn = (
     (currentChild, _, index) =>
       ({
         id: `${COLUMN_EXPANDING_ID}-group-level-${index}`,
+        serviceLabel: 'expandColumn',
         header: '',
         rowSpan: index === 0 ? depth - 1 : 0,
         columns: [currentChild],

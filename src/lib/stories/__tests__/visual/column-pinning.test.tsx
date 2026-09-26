@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { DEFAULT_LABELS } from '../../../core/localization'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Pinning requirement is its own named test, prefixed with its spec
@@ -671,11 +672,19 @@ describe('Column Pinning — requirements', () => {
     await expect.poll(() => isOpaque(actionsBody(container))).toBe(true)
 
     // Its header adopts the backing too — sticky, aligned with its body, and with
-    // no content (the row-actions header is empty by design).
+    // no visible content: only the visually hidden service label (ADR 0032, W13).
     const head = actionsHead(container)
     expect(isOpaque(head)).toBe(true)
     expect(getComputedStyle(head).position).toBe('sticky')
-    expect(head.textContent).toBe('')
+    expect(head.textContent).toBe(DEFAULT_LABELS.rowActionsColumn)
+    expect(
+      Array.from(head.querySelectorAll<HTMLElement>('*')).some(
+        el =>
+          el.childElementCount === 0 &&
+          !!el.textContent?.trim() &&
+          el.getBoundingClientRect().width > 1,
+      ),
+    ).toBe(false)
     expect(Math.round(head.getBoundingClientRect().left)).toBe(
       Math.round(actionsBody(container).getBoundingClientRect().left),
     )

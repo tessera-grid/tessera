@@ -49,6 +49,8 @@ export interface CommonOptions {
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
+  /** `false` — ядро не объявляет сортировку/выбор/копирование/загрузку. */
+  enableAnnouncements?: boolean
   skeletonOptions?: SkeletonOptions
   /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
@@ -63,6 +65,8 @@ export interface CommonTableAPI {
   getKeyboardActions: () => KeyboardAction[] | undefined
   getIsAnyColumnResizing: () => boolean
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
+  /** Объявить текст скринридеру через live-область грида. */
+  announce: (message: string) => void
 }
 
 export interface CommonColumnAPI {
@@ -74,6 +78,9 @@ export interface CommonColumnAPI {
 export interface CommonColumnDef {
   /** Число строк вложенной шапки, которые перекрывает заголовок (grid-раскладка). */
   rowSpan?: number
+  /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
+  serviceLabel?:
+    'expandColumn' | 'reorderColumn' | 'selectColumn' | 'rowActionsColumn'
 }
 
 export interface CommonHeaderAPI {

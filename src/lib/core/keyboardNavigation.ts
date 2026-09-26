@@ -120,10 +120,21 @@ const clampActive = (
   ),
 })
 
+/**
+ * Строк в модели навигации: тело и, при `enableFooter`, строка футера сразу после
+ * последней строки тела (ADR 0032, W14).
+ */
+const getNavRowCount = (t: NavTable) =>
+  t.getRowModel().rows.length + (t.options.enableFooter ? 1 : 0)
+
+/** Индекс строки навигации — футер (за последней строкой тела). */
+export const isFooterRowIndex = (table: unknown, rowIndex: number) =>
+  rowIndex >= (table as NavTable).getRowModel().rows.length
+
 const resolveActive = (t: NavTable, state: Record<string, unknown>) =>
   clampActive(
     state[KEYBOARD_NAVIGATION] as ActiveCell | undefined,
-    t.getRowModel().rows.length,
+    getNavRowCount(t),
     getDisplayColumns(t).ids.length,
     t.getHeaderGroups().length,
   )
@@ -220,7 +231,7 @@ const skipHeaderSpans = (
   const same = (row: number, column: number) =>
     getHeaderOwner(t, row, column) === current
   const top = -t.getHeaderGroups().length
-  const lastRow = t.getRowModel().rows.length - 1
+  const lastRow = getNavRowCount(t) - 1
   const lastColumn = getDisplayColumns(t).ids.length - 1
   let { rowIndex, columnIndex } = next
   switch (key) {
@@ -353,10 +364,10 @@ const getCenterViewport = (cell: HTMLElement, scroller: HTMLElement) => {
 const ensureCellVisible = (
   cell: HTMLElement,
   scroller: HTMLElement,
-  isHeader: boolean,
+  isSticky: boolean,
 ) => {
   const rect = cell.getBoundingClientRect()
-  if (!isHeader) {
+  if (!isSticky) {
     const { top, bottom } = getBodyViewport(scroller)
     if (rect.top < top) {
       scroller.scrollTop -= top - rect.top
@@ -502,7 +513,8 @@ const extendSelectionFrom = (
     !isCellSelectionActive(t) ||
     typeof t.extendCellSelection !== 'function' ||
     t.options.enableCellRangeSelection === false ||
-    active.rowIndex < 0
+    active.rowIndex < 0 ||
+    isFooterRowIndex(t, active.rowIndex)
   ) {
     return false
   }
@@ -615,11 +627,18 @@ const findKeyboardAction = (
   )
 
 /** Клавиши внутри виджета ячейки: `Escape` — на ячейку, `Tab` — по виджетам по кругу. */
+const POPUP_SELECTOR = '[role="menu"], [role="dialog"], [role="listbox"]'
+
 const handleActionModeKey = (
   event: ReactKeyboardEvent<HTMLElement>,
   cell: HTMLElement,
 ) => {
   if (event.key === 'Escape' && !event.defaultPrevented) {
+    // Escape во всплывающем окне виджета (меню, диалог) закрывает его само и
+    // возвращает фокус на кнопку-триггер; на ячейку — следующий Escape.
+    if ((event.target as HTMLElement).closest?.(POPUP_SELECTOR)) {
+      return
+    }
     event.preventDefault()
     cell.focus({ preventScroll: true })
     return
@@ -785,7 +804,7 @@ export const useKeyboardNavigationGrid = (
       }
 
       const resolved = resolveNavigationKey(active, event, {
-        rowCount: t.getRowModel().rows.length,
+        rowCount: getNavRowCount(t),
         columnCount: getDisplayColumns(t).ids.length,
         pageRows: getPageRows(getScrollElement()),
         headerRowCount: t.getHeaderGroups().length,
@@ -820,6 +839,9 @@ export const useKeyboardNavigationGrid = (
       if (
         tracking.pointer ||
         (from && root.contains(from)) ||
+        // Возврат фокуса на триггер из закрывшегося всплывающего окна (меню в
+        // портале уже размонтировано — источника нет); вход по Tab его имеет.
+        (from === null && target.hasAttribute('aria-haspopup')) ||
         target.hasAttribute(NAV_CELL_ATTR)
       ) {
         return
@@ -918,7 +940,12 @@ export const useKeyboardNavigationCell = (
     tracking.pending = false
     const scroller = el.closest<HTMLElement>(SCROLLER_SELECTOR)
     if (scroller) {
-      ensureCellVisible(el, scroller, rowIndex < 0)
+      // Шапка и футер — sticky: по вертикали доводить не нужно.
+      ensureCellVisible(
+        el,
+        scroller,
+        rowIndex < 0 || isFooterRowIndex(t, rowIndex),
+      )
     }
     el.focus({ preventScroll: true })
   }, [isActive, t, rowIndex])

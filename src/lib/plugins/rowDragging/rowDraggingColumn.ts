@@ -17,6 +17,7 @@ export const COLUMN_DRAGGING_SIZE =
 
 const leafColumn = {
   id: COLUMN_DRAGGING_ID,
+  serviceLabel: 'reorderColumn',
   accessorKey: 'id',
   minSize: COLUMN_DRAGGING_SIZE,
   size: COLUMN_DRAGGING_SIZE,
@@ -39,6 +40,7 @@ export const getRowDraggingColumn = (
     (currentChild, _, index) =>
       ({
         id: `${COLUMN_DRAGGING_ID}-group-level-${index}`,
+        serviceLabel: 'reorderColumn',
         header: '',
         rowSpan: index === 0 ? depth - 1 : 0,
         columns: [currentChild],

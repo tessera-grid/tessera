@@ -18,6 +18,7 @@ export const DEFAULT_ROW_ACTIONS_OPTIONS: RowActionsOptions = {
 
 const leafColumn = {
   id: ROW_ACTIONS_COLUMN_ID,
+  serviceLabel: 'rowActionsColumn',
   accessorKey: ROW_ACTIONS_COLUMN_ID,
   minSize: 0,
   size: 0,
@@ -39,6 +40,7 @@ export const getRowActionsColumn = (
     (currentChild, _, index) =>
       ({
         id: `${ROW_ACTIONS_COLUMN_ID}-group-level-${index}`,
+        serviceLabel: 'rowActionsColumn',
         header: '',
         columns: [currentChild],
       }) as unknown as ColumnDef<any, any, any>,

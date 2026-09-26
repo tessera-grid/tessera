@@ -28,6 +28,8 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
+import { useLocalization } from '../core/localization'
+import type { CommonColumnDef } from '../core/commonFeature.types'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
@@ -40,6 +42,7 @@ import {
 } from './columnSizes'
 
 import headCellStyles from '../grid/HeadCell/HeadCell.module.css'
+import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 
 interface TableHeadCellProps {
   layout: 'grid' | 'flex'
@@ -131,17 +134,27 @@ const HeadCellView = ({
   const canRenderSlots = !isActionsColumn
   const isDragging = drag?.isDragging ?? false
 
+  const labels = useLocalization()
+  const serviceLabel = (header.column.columnDef as CommonColumnDef).serviceLabel
+
   const render = useMemo(() => {
     const content = flexRender(
       header.column.columnDef.header,
       header.getContext(),
     )
     return isActionsColumn ? (
-      content
+      <>
+        {content}
+        {serviceLabel && (
+          <span className={dataGridStyles['visually-hidden']}>
+            {labels[serviceLabel]}
+          </span>
+        )}
+      </>
     ) : (
       <CellWrapperTitle>{content}</CellWrapperTitle>
     )
-  }, [header, isActionsColumn])
+  }, [header, isActionsColumn, serviceLabel, labels])
 
   const gridStyles = useGridStyles(header)
 
