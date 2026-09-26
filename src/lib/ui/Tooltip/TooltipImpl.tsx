@@ -13,6 +13,9 @@ export interface TooltipPopupProps {
   anchor: RefObject<HTMLElement | null>
   title: ReactNode
   side: TooltipSide
+  /** Указатель на самой подсказке держит её открытой (WCAG 1.4.13). */
+  onPointerEnter: () => void
+  onPointerLeave: () => void
 }
 
 /**
@@ -28,6 +31,8 @@ const TooltipPopup = ({
   anchor,
   title,
   side,
+  onPointerEnter,
+  onPointerLeave,
 }: TooltipPopupProps) => (
   <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
     <BaseTooltip.Portal>
@@ -39,6 +44,8 @@ const TooltipPopup = ({
       >
         <BaseTooltip.Popup
           className={clsx(DATA_GRID_THEME_CLASS, styles.content)}
+          onPointerEnter={onPointerEnter}
+          onPointerLeave={onPointerLeave}
         >
           {title}
           <BaseTooltip.Arrow className={styles.arrow}>

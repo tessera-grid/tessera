@@ -33,6 +33,9 @@ export interface TooltipProps {
 // задерживает появление попапа, но не теряет наведение.
 const TooltipPopup = lazy(() => import('./TooltipImpl'))
 
+/** Пауза перед закрытием: указатель успевает перейти с триггера на подсказку. */
+const CLOSE_DELAY = 150
+
 const mergeRefs =
   <T,>(...refs: (Ref<T> | undefined)[]) =>
   (node: T) => {
@@ -81,6 +84,13 @@ export const Tooltip = ({
     setOpen(false)
   }, [])
 
+  const hideSoon = useCallback(() => {
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setOpen(false), CLOSE_DELAY)
+  }, [])
+
+  const keepOpen = useCallback(() => clearTimeout(timer.current), [])
+
   if (disabled || !title) {
     return children
   }
@@ -98,7 +108,7 @@ export const Tooltip = ({
   const trigger = cloneElement(children, {
     ref: mergeRefs(anchorRef, childRef),
     onPointerEnter: compose(childProps.onPointerEnter, show),
-    onPointerLeave: compose(childProps.onPointerLeave, hide),
+    onPointerLeave: compose(childProps.onPointerLeave, hideSoon),
     onFocus: compose(childProps.onFocus, show),
     onBlur: compose(childProps.onBlur, hide),
   } as Partial<typeof childProps> & { ref: Ref<HTMLElement> })
@@ -114,6 +124,8 @@ export const Tooltip = ({
             anchor={anchorRef}
             side={side}
             title={title}
+            onPointerEnter={keepOpen}
+            onPointerLeave={hideSoon}
           />
         </Suspense>
       )}

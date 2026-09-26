@@ -185,11 +185,8 @@
     var(--tsr-sys-info) 14%,
     transparent
   );
-  --tsr-comp-cell-selected-border-color: color-mix(
-    in srgb,
-    var(--tsr-sys-info) 55%,
-    transparent
-  );
+  /* Сплошной: край выделения — индикатор состояния, контраст ≥ 3:1 (WCAG 1.4.11). */
+  --tsr-comp-cell-selected-border-color: var(--tsr-sys-info);
   --tsr-comp-cell-pinned-bg: var(--tsr-sys-muted);
   --tsr-comp-cell-pinned-hovered-bg: color-mix(
     in oklch,
@@ -245,7 +242,12 @@
     transparent
   );
   --tsr-comp-control-radius: var(--tsr-sys-radius);
-  --tsr-comp-control-border: var(--tsr-sys-border);
+  /* Граница контрола (чекбокс) — контраст ≥ 3:1 к фону (WCAG 1.4.11). */
+  --tsr-comp-control-border: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) 55%,
+    transparent
+  );
 
   /* Формы радиуса (shape) — токенизированы, чтобы контракт семейств проверялся:
    * кнопки семейств F1/F2 делят --radius-round; switch — pill. */
@@ -257,11 +259,8 @@
    * (--tsr-comp-control-disabled-color, объявлен выше); наполненные форм-контролы
    * (F3: checkbox/switch) — общей ПРОЗРАЧНОСТЬЮ. Оба — канонические токены. */
   --tsr-comp-disabled-opacity: 0.5;
-  --tsr-comp-focus-ring: color-mix(
-    in oklch,
-    var(--tsr-sys-ring) 40%,
-    transparent
-  );
+  /* Сплошной: контраст ≥ 3:1 к фону ячейки (WCAG 1.4.11). */
+  --tsr-comp-focus-ring: var(--tsr-sys-ring);
   --tsr-comp-focus-ring-width: 2px;
 
   /* Checkbox — монохром: заливка accent + галочка accent-foreground. */
