@@ -57,7 +57,7 @@
 - **Доступность — хвосты после клавиатурной навигации.** WCAG 2.1.1 закрыт с
   плагином `keyboardNavigation` ([ADR 0031](decisions/0031-wcag-keyboard.md),
   KB1–KB10); остаток WCAG 2.1 AA — [ADR 0032](decisions/0032-wcag-aa-remainder.md)
-  (W1–W15). Остаются: проверка на NVDA / JAWS / VoiceOver; пункты меню «Сдвинуть …» как видимая подсказка к
+  (W1–W17), проверка автоматикой — ADR 0033. Остаются: проверка на NVDA / JAWS / VoiceOver (гайд — `docs/testing/screen-readers.md`); пункты меню «Сдвинуть …» как видимая подсказка к
   `Alt+Shift+стрелкам`; `enableKeyboardNavigation` в `ALL_PLUGINS` перф-матрицы
   (сдвигает замеры P1–P8 — решать вместе с пересмотром перф-базы).
 
