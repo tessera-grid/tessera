@@ -513,15 +513,20 @@ const isCellSelectionActive = (t: NavTable) =>
   typeof t.setFocusedCell === 'function' &&
   t.options.enableCellSelection !== false
 
-/** Схлопнуть выделение в активную ячейку тела, если она выбираема. */
+/**
+ * Схлопнуть выделение в активную ячейку тела; на невыбираемой ячейке (служебная
+ * колонка, шапка, футер) — снять его, чтобы оно не оставалось позади фокуса.
+ */
 const collapseSelectionTo = (t: NavTable, active: ActiveCell) => {
-  if (!isCellSelectionActive(t) || active.rowIndex < 0) {
+  if (!isCellSelectionActive(t)) {
     return
   }
-  const row = t.getRowModel().rows[active.rowIndex]
+  const row =
+    active.rowIndex >= 0 ? t.getRowModel().rows[active.rowIndex] : undefined
   const columnId = getDisplayColumns(t).ids[active.columnIndex]
   const cell = row?.getVisibleCells()[active.columnIndex]
   if (!row || !columnId || !(cell?.getCanSelect?.() ?? true)) {
+    t.setCellSelection?.(() => [])
     return
   }
   t.setFocusedCell!(row.id, columnId)

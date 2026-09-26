@@ -361,6 +361,35 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
     ).toHaveLength(1)
   })
 
+  test('KN28: стрелка на невыбираемую ячейку (служебная колонка, шапка) снимает выделение ячеек', async () => {
+    await renderNavigation({ enableRowSelection: true })
+    const selected = () =>
+      document.querySelectorAll(`${BODY_CELL}[data-cell-selected='true']`)
+        .length
+    const toFirstDataCell = async () => {
+      const [, firstData] = cellsLeftRight(2)
+      firstData.focus()
+      await press('{ArrowDown}{ArrowUp}')
+      await expect.poll(selected).toBe(1)
+    }
+
+    // Служебная колонка выбора слева от первой колонки данных.
+    await toFirstDataCell()
+    await press('{ArrowLeft}')
+    await expect
+      .poll(() => active().getAttribute('data-actions-column-cell'))
+      .toBe('true')
+    await expect.poll(selected).toBe(0)
+    await press('{ArrowDown}')
+    expect(selected()).toBe(0)
+
+    // Шапка.
+    await toFirstDataCell()
+    await press('{Control>}{ArrowUp}{/Control}')
+    await expect.poll(() => active().getAttribute('role')).toBe('columnheader')
+    await expect.poll(selected).toBe(0)
+  })
+
   test('KN19: при cellSelection Shift+стрелка расширяет диапазон от активной ячейки', async () => {
     await renderNavigation()
     const anchor = await focusBodyCell(2, 2)
