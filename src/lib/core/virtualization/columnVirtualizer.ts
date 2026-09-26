@@ -58,6 +58,12 @@ export const useColumnVirtualizer = ({
     table,
     state => (state as any).columnResizing?.isResizingColumn ?? false,
   )
+  // Ширина, заданная без протяжки (стрелки сплиттера, меню грипа, сброс), тоже
+  // сдвигает соседние колонки.
+  const columnSizing = useTableState(
+    table,
+    state => (state as any).columnSizing,
+  )
   // estimateSize не входит в мемо-зависимости react-virtual: при смене порядка
   // отображения (закрепление/перестановка) кэш размеров надо сбросить явно.
   const orderMountedRef = useRef(false)
@@ -83,7 +89,7 @@ export const useColumnVirtualizer = ({
     if (!isResizingColumn) {
       virtualizer.measure()
     }
-  }, [isResizingColumn, virtualizer])
+  }, [isResizingColumn, columnSizing, virtualizer])
 
   return {
     virtualColumns: virtualizer.getVirtualItems(),
