@@ -16,7 +16,6 @@ export const COLUMN_SELECTION_ID = getActionColumnId('rowSelection')
 
 const leafColumn = {
   id: COLUMN_SELECTION_ID,
-  serviceLabel: 'selectColumn',
   accessorKey: COLUMN_SELECTION_ID,
   minSize: COLUMN_ACTIONS_SIZE,
   size: COLUMN_ACTIONS_SIZE,
@@ -39,7 +38,6 @@ export const getRowSelectionColumn = (
     (currentChild, _, index) =>
       ({
         id: `${COLUMN_SELECTION_ID}-group-level-${index}`,
-        serviceLabel: 'selectColumn',
         header: '',
         rowSpan: index === 0 ? depth - 1 : 0,
         columns: [currentChild],

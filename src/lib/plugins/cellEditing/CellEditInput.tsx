@@ -47,11 +47,11 @@ export const CellEditInput = ({
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
       />
-      {error && (
-        <span id={errorId} role="alert" className={styles.error}>
-          {error}
-        </span>
-      )}
+      {/* Всегда в DOM: скринридеры надёжно объявляют смену текста alert-области,
+          а не вставку новой. */}
+      <span id={errorId} role="alert" className={styles.error}>
+        {error}
+      </span>
     </span>
   )
 }

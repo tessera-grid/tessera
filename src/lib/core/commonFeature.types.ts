@@ -79,8 +79,7 @@ export interface CommonColumnDef {
   /** Число строк вложенной шапки, которые перекрывает заголовок (grid-раскладка). */
   rowSpan?: number
   /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
-  serviceLabel?:
-    'expandColumn' | 'reorderColumn' | 'selectColumn' | 'rowActionsColumn'
+  serviceLabel?: 'expandColumn' | 'reorderColumn' | 'rowActionsColumn'
 }
 
 export interface CommonHeaderAPI {

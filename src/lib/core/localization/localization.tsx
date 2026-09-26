@@ -69,7 +69,6 @@ export interface TableLabels {
   /** Скрытые подписи заголовков служебных колонок (`columnDef.serviceLabel`) */
   expandColumn: string
   reorderColumn: string
-  selectColumn: string
   rowActionsColumn: string
 }
 
@@ -106,7 +105,6 @@ export const DEFAULT_LABELS: TableLabels = {
   noData: 'No data',
   expandColumn: 'Expand',
   reorderColumn: 'Reorder',
-  selectColumn: 'Select',
   rowActionsColumn: 'Actions',
 }
 

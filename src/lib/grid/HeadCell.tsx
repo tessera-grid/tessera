@@ -8,6 +8,7 @@ import {
   type ReactNode,
   memo,
   useCallback,
+  useId,
   useMemo,
 } from 'react'
 
@@ -137,6 +138,10 @@ const HeadCellView = ({
   const labels = useLocalization()
   const serviceLabel = (header.column.columnDef as CommonColumnDef).serviceLabel
 
+  // Имя заголовка — только его текст: кнопки действий в имя не попадают (W17).
+  const titleId = useId()
+  const hasTitle = !isActionsColumn && !!header.column.columnDef.header
+
   const render = useMemo(() => {
     const content = flexRender(
       header.column.columnDef.header,
@@ -152,9 +157,9 @@ const HeadCellView = ({
         )}
       </>
     ) : (
-      <CellWrapperTitle>{content}</CellWrapperTitle>
+      <CellWrapperTitle id={titleId}>{content}</CellWrapperTitle>
     )
-  }, [header, isActionsColumn, serviceLabel, labels])
+  }, [header, isActionsColumn, serviceLabel, labels, titleId])
 
   const gridStyles = useGridStyles(header)
 
@@ -250,6 +255,7 @@ const HeadCellView = ({
       style={cellStyles}
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
       role="columnheader"
+      aria-labelledby={hasTitle ? titleId : undefined}
       // Спанящий групповой заголовок — позиция его первого листа.
       aria-colindex={getDisplayColumnIndex(table, firstLeaf.id) + 1}
       aria-sort={getAriaSort(header)}
