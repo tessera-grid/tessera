@@ -27,16 +27,25 @@
   overflow: hidden;
 }
 
-/* Появление hidden-кнопок ячейки при наведении или клавиатурном фокусе */
+/*
+ * Появление hidden-кнопок ячейки при наведении или клавиатурном фокусе. Правило
+ * с `:has()` — отдельным блоком: браузер без `:has()` отбрасывает весь список
+ * селекторов, и вместе с ним пропало бы появление по наведению.
+ */
 
 .data-grid__head-cell:not([data-column-resizing='true']):hover
   .cell__button--hidden:not([data-button-active='true']),
 .data-grid__body-cell:hover:is([data-cell-interact='true'])
   .cell__button--hidden:not([data-button-active='true']),
-:is(.data-grid__head-cell, .data-grid__body-cell):is(
-    :focus-visible,
-    :has(:focus-visible)
-  )
+:is(.data-grid__head-cell, .data-grid__body-cell):focus-visible
+  .cell__button--hidden:not([data-button-active='true']) {
+  opacity: 1;
+  flex: auto;
+  overflow: unset;
+  flex-shrink: 0;
+}
+
+:is(.data-grid__head-cell, .data-grid__body-cell):has(:focus-visible)
   .cell__button--hidden:not([data-button-active='true']) {
   opacity: 1;
   flex: auto;
@@ -69,7 +78,10 @@
 
 /* Появление hidden-кнопок строки при наведении или клавиатурном фокусе */
 
-.data-grid__body-row:hover:is([data-row-interact='true']) .row__button--hidden,
+.data-grid__body-row:hover:is([data-row-interact='true']) .row__button--hidden {
+  opacity: 1;
+}
+
 .data-grid__body-row:has(:focus-visible) .row__button--hidden {
   opacity: 1;
 }

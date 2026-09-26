@@ -228,9 +228,9 @@ describe('Доступность (a11y)', () => {
     })
     await waitForGrid()
     expect(bodyRows()[0].hasAttribute('aria-selected')).toBe(false)
-    table.unmount()
+    await table.unmount()
 
-    renderGrid({
+    await renderGrid({
       columnCount: 4,
       dataCount: 5,
       enableRowSelection: true,
