@@ -192,8 +192,8 @@ v9-`TFeatures`. Наиболее вероятно `TFeatures` становитс
 `useTable` + `tableFeatures` с `commonFeature` и плагином сортировки, реактивность на
 `table.atoms`. По результату — ADR 0026 (go/no-go), и только потом фазы A–G.
 
-> **Статус: спайк собран и зелёный** ([spike/tanstack-v9/](../../spike/tanstack-v9/),
-> ветка `feat/tanstack-v9`). На реальном `@tanstack/react-table@9.2.4` подтверждены
+> **Статус: спайк собран и зелёный** (`spike/tanstack-v9/`, ветка
+> `feat/tanstack-v9`; после миграции удалён, последний раз — в коммите `bbc7bb5`). На реальном `@tanstack/react-table@9.2.4` подтверждены
 > ответы на все 5 вопросов §7: снос Pub-Sub (запускаемый тест гранулярности 3/3),
 > `FlexRender` вместо самописного рендера (Q1), presence-based→`tableFeatures()` с
 > компромиссом по типам (Q2), `keepFeatureWhenDisabled` скорее не нужен (Q4), `hooks`/

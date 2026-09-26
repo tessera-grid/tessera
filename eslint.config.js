@@ -12,7 +12,6 @@ export default tseslint.config(
       'storybook-static',
       'coverage',
       '.claude',
-      'spike',
     ],
   },
   js.configs.recommended,

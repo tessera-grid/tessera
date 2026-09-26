@@ -12,13 +12,15 @@
 [roadmap](../roadmap.md) держит миграцию на v9 в статусе «на рассмотрении».
 
 Проведён RnD и спайк (ветка `feat/tanstack-v9`, [docs/research/](../research/),
-[spike/tanstack-v9/](../../spike/tanstack-v9/)). Собраны два входа для решения.
+`spike/tanstack-v9/`). Собраны два входа для решения.
+
+> Спайк удалён после завершения миграции; последний коммит, где он есть, —
+> `bbc7bb5` (`git show bbc7bb5:spike/tanstack-v9/README.md`).
 
 ### Вход 1 — v8-базлайн производительности (доказательство проблемы)
 
 `npm run perf`, Chromium, throttle CPU 4×. Полный снимок —
-[spike/tanstack-v9/perf-baseline-v8.json](../../spike/tanstack-v9/perf-baseline-v8.json)
-(снят 2026-09-12).
+`spike/tanstack-v9/perf-baseline-v8.json` в коммите `bbc7bb5` (снят 2026-09-12).
 
 | Сценарий (размер / плагины) | Render, longest (бюджет 1000 мс) | Scroll Y p95 (бюджет 16.67 мс) | Scroll X p95              |
 | --------------------------- | -------------------------------- | ------------------------------ | ------------------------- |
@@ -36,7 +38,7 @@
 
 `@tanstack/react-table@9.2.4` (алиас `@tanstack/table-v9`, сосуществует с v8). Все пять
 открытых вопросов [плана](../research/tanstack-table-v9-migration-plan.md) закрыты, см.
-[spike/tanstack-v9/README.md](../../spike/tanstack-v9/README.md):
+`spike/tanstack-v9/README.md` (коммит `bbc7bb5`):
 
 - **Реактивность / снос Pub-Sub — подтверждено запускаемым тестом (3/3).** Состояние v9
   живёт в TanStack Store; `table.atoms.<slice>` слайс-адресуемо (незатронутый срез
