@@ -21,6 +21,7 @@ import {
 } from '../core/createColumns/actionColumnParams'
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
+import { announce } from './announcer'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
@@ -50,6 +51,9 @@ export const commonFeature: TableFeature = {
               ? resizable.getIsResizing()
               : false
           }),
+      },
+      table_announce: {
+        fn: (message: string) => announce(table, message),
       },
       table_setColumnAutoSizing: {
         fn: (updater: Updater<ColumnSizingState>) =>

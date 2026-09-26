@@ -197,6 +197,7 @@ export const BodyCell = memo(
             : undefined
         }
         onMouseEnter={cellSel ? cellSel.onMouseEnter : undefined}
+        aria-selected={nav && cellSel ? cellSel.isSelected : undefined}
         data-cell-selected={cellSel?.isSelected || undefined}
         data-cell-focused={cellSel?.isFocused || undefined}
         data-virtual-cell={absoluteLeft !== undefined || undefined}

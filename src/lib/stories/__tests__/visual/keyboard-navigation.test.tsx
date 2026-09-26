@@ -27,7 +27,9 @@ const HEAD_CELL = '.data-grid__head-cell'
 // --- DOM helpers --------------------------------------------------------------
 
 const gridRoot = () =>
-  document.querySelector<HTMLElement>('[role="grid"], [role="table"]')!
+  document.querySelector<HTMLElement>(
+    '[role="grid"], [role="treegrid"], [role="table"]',
+  )!
 
 const active = () => document.activeElement as HTMLElement
 
@@ -113,7 +115,7 @@ async function renderWithNeighbours(args: StoryArgs = {}) {
 }
 
 /** Инлайн-ввод редактора cellEditing. */
-const EDIT_INPUT = "[aria-label='edit cell value']"
+const EDIT_INPUT = '.data-grid__body-cell input'
 
 const headCellOf = (columnId: string) =>
   document.querySelector<HTMLElement>(
@@ -473,12 +475,15 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
     expect(onSelectRow).toHaveBeenCalledTimes(2)
   })
 
-  test('KN23: при активном rowSelection сетка несёт aria-multiselectable', async () => {
-    const screen = await renderNavigation()
+  test('KN23: при активном rowSelection или cellSelection сетка несёт aria-multiselectable', async () => {
+    const screen = await renderNavigation({ enableCellSelection: false })
     expect(gridRoot().getAttribute('aria-multiselectable')).toBe('true')
     await screen.unmount()
 
-    await renderNavigation({ enableRowSelection: false })
+    await renderNavigation({
+      enableRowSelection: false,
+      enableCellSelection: false,
+    })
     expect(gridRoot().hasAttribute('aria-multiselectable')).toBe(false)
   })
 

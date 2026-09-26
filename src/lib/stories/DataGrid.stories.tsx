@@ -108,6 +108,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
 
   showStub: boolean
   showHeaderGroups: boolean
+  /** Проверка значения редактора cellEditing (`validate`). */
+  validateCellEdit?: (value: string) => string | null
 
   showBatchToolbar: boolean
   isAllRowsSelected: boolean
@@ -207,6 +209,7 @@ export const StoryComponent = memo(
 
     showStub,
     showHeaderGroups,
+    validateCellEdit,
 
     showBatchToolbar,
     isAllRowsSelected,
@@ -301,6 +304,7 @@ export const StoryComponent = memo(
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
       enableFooter: options.enableFooter,
+      enableAnnouncements: options.enableAnnouncements,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.
@@ -331,6 +335,7 @@ export const StoryComponent = memo(
                   cellEditing: {
                     canEdit: (ctx: CellComponentProps) =>
                       CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
+                    validate: validateCellEdit,
                     onCellEdit: ({ rowId, columnId, value }: CellEditCommit) =>
                       setData(prev =>
                         prev.map(row =>

@@ -2,14 +2,14 @@
 // считает DataGrid), Body лишь маппит строки в BodyRow/DraggableBodyRow. При
 // enableRowDragging рисуется DraggableBodyRow (useSortable под DndContext тела),
 // иначе обычная BodyRow.
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
 import type { Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
-import { BodyRow, DraggableBodyRow } from './BodyRow'
+import { BodyRow, DraggableBodyRow, type TreeAria } from './BodyRow'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -25,6 +25,8 @@ interface TableBodyProps {
   actionRowSlot?: CellSlot
   headerRowCount: number
   selectableRows?: boolean
+  /** Строки несут aria-level/setsize/posinset (treegrid). */
+  treeRows?: boolean
   isResizingColumns: false | string
   isVirtualColumns: boolean
   enableRowDragging?: boolean
@@ -42,10 +44,15 @@ export const Body = ({
   actionRowSlot,
   headerRowCount,
   selectableRows,
+  treeRows,
   isVirtualColumns,
   enableRowDragging,
 }: TableBodyProps) => {
   const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
+  const treeAria = useMemo(
+    () => (treeRows ? getTreeAria(rows) : undefined),
+    [treeRows, rows],
+  )
 
   return (
     <div
@@ -70,12 +77,38 @@ export const Body = ({
             actionRowSlot={actionRowSlot}
             headerRowCount={headerRowCount}
             selectableRows={selectableRows}
+            treeAria={treeAria?.get(row.id)}
             isVirtualColumns={isVirtualColumns}
           />
         )
       })}
     </div>
   )
+}
+
+/** Уровень и позиция строки среди соседей того же родителя в видимой модели. */
+const getTreeAria = (rows: Row<any, any>[]) => {
+  const siblings = new Map<string, Row<any, any>[]>()
+  for (const row of rows) {
+    const key = row.parentId ?? ''
+    const group = siblings.get(key)
+    if (group) {
+      group.push(row)
+    } else {
+      siblings.set(key, [row])
+    }
+  }
+  const aria = new Map<string, TreeAria>()
+  for (const group of siblings.values()) {
+    group.forEach((row, index) =>
+      aria.set(row.id, {
+        'aria-level': row.depth + 1,
+        'aria-setsize': group.length,
+        'aria-posinset': index + 1,
+      }),
+    )
+  }
+  return aria
 }
 
 // Мемоизация активна только во время ресайза колонок.

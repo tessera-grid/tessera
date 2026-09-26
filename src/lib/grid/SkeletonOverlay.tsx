@@ -9,6 +9,7 @@ import { Skeleton } from '../ui/Skeleton'
 import type { Table } from '../types'
 import type { SkeletonOptions } from '../core/skeletonOptions'
 import { useSkeletonParams } from '../core/skeletonOverlay'
+import { useLocalization } from '../core/localization'
 import { getColumnSizeVariable, getHeaderSizeVariable } from './columnSizes'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
@@ -37,7 +38,6 @@ const BackgroundRow = memo(
             [backgroundRowStyles['body-row--skeleton-odd']]: rowIndex % 2 === 0,
           },
         )}
-        aria-rowindex={rowIndex}
       >
         {children}
       </div>
@@ -61,7 +61,11 @@ const SkeletonHead = memo(
     columnsCount,
   }: SkeletonHeadProps) => {
     return (
-      <div className="data-grid__head--skeleton" style={{ display: 'grid' }}>
+      <div
+        className="data-grid__head--skeleton"
+        style={{ display: 'grid' }}
+        aria-hidden="true"
+      >
         <div
           className="data-grid__head-row--skeleton"
           style={{
@@ -125,6 +129,7 @@ const SkeletonBody = memo(
     return (
       <div
         className="data-grid__body--skeleton"
+        aria-hidden="true"
         style={{ display: 'grid', position: 'relative' }}
       >
         {new Array(rowsCount).fill(null).map((_, rowIndex) => (
@@ -179,13 +184,16 @@ export const SkeletonOverlay = memo(
       skeletonLayout,
       needCalculateSkeletonSizes,
     } = useSkeletonParams({ table })
+    const labels = useLocalization()
 
     return (
       <div
-        role="table"
         className={clsx('MuiTable-root', dataGridStyles.table)}
         style={{ ...columnSizes }}
       >
+        <span role="status" className={dataGridStyles['visually-hidden']}>
+          {labels.loading}
+        </span>
         <SkeletonHead
           layout={skeletonLayout}
           calculateSize={needCalculateSkeletonSizes}

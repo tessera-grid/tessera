@@ -51,6 +51,7 @@ export interface CreateDataGridOptions {
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
+  enableAnnouncements?: boolean
   skeletonOptions?: SkeletonOptions
   handlers?: Record<string, unknown>
 }
@@ -73,6 +74,8 @@ export interface UseCreateTableParams<
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
+  /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
+  enableAnnouncements?: boolean
   skeletonOptions?: SkeletonOptions
   defaultColumn?: { minSize?: number; maxSize?: number; size?: number }
 }
@@ -93,6 +96,7 @@ export const useCreateTable = <
   enableSkeleton,
   enableLoading,
   enableFooter,
+  enableAnnouncements,
   skeletonOptions,
   defaultColumn,
 }: UseCreateTableParams<TData, TEntries>) => {
@@ -260,6 +264,7 @@ export const useCreateTable = <
     enableSkeleton,
     enableLoading,
     enableFooter,
+    enableAnnouncements,
     skeletonOptions,
   }
 

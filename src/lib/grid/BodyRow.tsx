@@ -34,7 +34,15 @@ interface TableBodyRowProps {
   headerRowCount: number
   /** Строки несут `aria-selected` (grid с rowSelection). */
   selectableRows?: boolean
+  /** Уровень и позиция строки в treegrid. */
+  treeAria?: TreeAria
   isVirtualColumns: boolean
+}
+
+export interface TreeAria {
+  'aria-level': number
+  'aria-setsize': number
+  'aria-posinset': number
 }
 
 interface BodyRowCellsProps extends TableBodyRowProps {
@@ -180,6 +188,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
+      {...props.treeAria}
       data-index={virtualRow.index}
       data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}
@@ -251,6 +260,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       aria-rowindex={headerRowCount + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
+      {...props.treeAria}
       data-index={virtualRow.index}
       data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}

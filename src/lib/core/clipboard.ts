@@ -53,3 +53,10 @@ export const cellRangesToHtml = (regions: unknown[][][]): string =>
 /** Есть ли в регионах хоть одна ячейка (пустой массив/пустые регионы → нет). */
 export const hasSelectedCells = (regions: unknown[][][]): boolean =>
   regions.some(region => region.some(row => row.length > 0))
+
+/** Число ячеек во всех регионах выделения. */
+export const countCells = (regions: unknown[][][]): number =>
+  regions.reduce(
+    (sum, region) => sum + region.reduce((n, row) => n + row.length, 0),
+    0,
+  )

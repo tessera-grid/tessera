@@ -15,6 +15,7 @@ import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import {
   cellRangesToHtml,
   cellRangesToTsv,
+  countCells,
   hasSelectedCells,
 } from '../core/clipboard'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
@@ -22,6 +23,8 @@ import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
+import { announceLabel } from '../core/announcer'
+import { LiveRegion } from './LiveRegion'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
 import type { Column } from '../types'
@@ -96,6 +99,11 @@ export const DataGrid = ({
   const enableContextMenu = !!(table.options as any).enableContextMenu
   // rowSelection даёт функциональный enableRowSelection (гейт группировки), выкл — false.
   const enableRowSelection = !!(table.options as any).enableRowSelection
+  // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
+  // становится treegrid (ADR 0032, W10).
+  const hierarchical =
+    (table.options as any).enableExpanding === true ||
+    (table.options as any).enableGrouping === true
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -131,8 +139,9 @@ export const DataGrid = ({
       event.preventDefault()
       event.clipboardData.setData('text/plain', cellRangesToTsv(regions))
       event.clipboardData.setData('text/html', cellRangesToHtml(regions))
+      announceLabel(table, l => l.announceCopy(countCells(regions)))
     },
-    [getRanges],
+    [getRanges, table],
   )
 
   // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
@@ -144,7 +153,13 @@ export const DataGrid = ({
   const headerGroupsDepth = headerGroups.length
   const hasNestedGroups = headerGroupsDepth > 1
 
-  const tableLabel = localization?.table ?? DEFAULT_LABELS.table
+  const labels = useMemo(
+    () =>
+      localization ? { ...DEFAULT_LABELS, ...localization } : DEFAULT_LABELS,
+    [localization],
+  )
+  const tableLabel = labels.table
+  const loadingLabel = labels.loading
 
   const layout = hasNestedGroups ? 'grid' : 'flex'
   const headStyles = getGridLayout({
@@ -223,147 +238,180 @@ export const DataGrid = ({
     dark: colorMode === 'dark',
   })
 
+  // LiveRegion — первым во фрагменте обеих веток: переживает переход в заглушку
+  // и объявляет пустой результат.
   if (showStub) {
     return (
-      <div
-        className={clsx(
-          'MuiPaper-root',
-          'MuiTableContainer-root',
-          'MuiPaper-rounded',
-          themeClassName,
-        )}
-        ref={scrollableNodeRef}
-        style={{ ...containerStyles, ...style }}
-      >
-        <div className={dataGridStyles.table__stub}>{stub}</div>
-      </div>
+      <>
+        <LiveRegion
+          table={table}
+          labels={labels}
+          loading={showLinearProgress || showSkeletonOverlay}
+          rowCount={rows.length}
+        />
+        <div
+          className={clsx(
+            'MuiPaper-root',
+            'MuiTableContainer-root',
+            'MuiPaper-rounded',
+            themeClassName,
+          )}
+          ref={scrollableNodeRef}
+          style={{ ...containerStyles, ...style }}
+        >
+          <div className={dataGridStyles.table__stub}>{stub}</div>
+        </div>
+      </>
     )
   }
 
   return (
-    <IconsProvider icons={icons}>
-      <LocalizationProvider localization={localization}>
-        <FastScrollProvider store={fastScrollStore}>
-          <div
-            ref={wrapperRef}
-            className={clsx(
-              dataGridStyles['table__theme-wrapper'],
-              themeClassName,
-            )}
-            style={wrapperStyles}
-          >
-            {showLinearProgress && <LinearProgress />}
-            {enableContextMenu && (
-              <ContextMenu table={table} getScrollElement={getScrollElement} />
-            )}
-            {keyboardNavigation && (
-              <div
-                ref={keyboardNavigation.guardBeforeRef}
-                tabIndex={-1}
-                className={dataGridStyles['focus-guard']}
-                data-kn-guard="before"
-              />
-            )}
+    <>
+      <LiveRegion
+        table={table}
+        labels={labels}
+        loading={showLinearProgress || showSkeletonOverlay}
+        rowCount={rows.length}
+      />
+      <IconsProvider icons={icons}>
+        <LocalizationProvider localization={localization}>
+          <FastScrollProvider store={fastScrollStore}>
             <div
+              ref={wrapperRef}
               className={clsx(
-                'MuiPaper-root',
-                'MuiTableContainer-root',
-                dataGridStyles.table__container,
-                {
-                  [dataGridStyles['table__container--skeleton']]:
-                    showSkeletonOverlay,
-                },
+                dataGridStyles['table__theme-wrapper'],
+                themeClassName,
               )}
-              ref={scrollableNodeRef}
-              data-resizing={isResizingColumns !== false}
-              onCopy={handleCopy}
+              style={wrapperStyles}
             >
-              {showSkeletonOverlay ? (
-                <SkeletonOverlay table={table} columnSizes={columnSizes} />
-              ) : (
+              {showLinearProgress && <LinearProgress label={loadingLabel} />}
+              {enableContextMenu && (
+                <ContextMenu
+                  table={table}
+                  getScrollElement={getScrollElement}
+                />
+              )}
+              {keyboardNavigation && (
                 <div
-                  role={keyboardNavigation ? 'grid' : 'table'}
-                  aria-label={tableLabel}
-                  aria-rowcount={headerGroupsDepth + rows.length}
-                  aria-colcount={leafColumns.length}
-                  className={clsx('MuiTable-root', dataGridStyles.table)}
-                  aria-multiselectable={
-                    keyboardNavigation && enableRowSelection ? true : undefined
-                  }
-                  onKeyDown={keyboardNavigation?.onKeyDown}
-                  onFocusCapture={keyboardNavigation?.onFocusCapture}
-                  onPointerDownCapture={
-                    keyboardNavigation?.onPointerDownCapture
-                  }
-                  style={{
-                    ...columnSizes,
-                    ...virtualPaddingStyles,
-                  }}
-                >
-                  <HeadDndBoundary
-                    table={table}
-                    leftHeaderSlot={leftHeaderSlot}
-                    rightHeaderSlot={rightHeaderSlot}
-                    enableColumnDragging={enableColumnDragging}
+                  ref={keyboardNavigation.guardBeforeRef}
+                  tabIndex={-1}
+                  className={dataGridStyles['focus-guard']}
+                  data-kn-guard="before"
+                />
+              )}
+              <div
+                className={clsx(
+                  'MuiPaper-root',
+                  'MuiTableContainer-root',
+                  dataGridStyles.table__container,
+                  {
+                    [dataGridStyles['table__container--skeleton']]:
+                      showSkeletonOverlay,
+                  },
+                )}
+                ref={scrollableNodeRef}
+                data-resizing={isResizingColumns !== false}
+                onCopy={handleCopy}
+              >
+                {showSkeletonOverlay ? (
+                  <SkeletonOverlay table={table} columnSizes={columnSizes} />
+                ) : (
+                  <div
+                    role={
+                      keyboardNavigation
+                        ? hierarchical
+                          ? 'treegrid'
+                          : 'grid'
+                        : 'table'
+                    }
+                    aria-label={tableLabel}
+                    aria-busy={showLinearProgress || undefined}
+                    aria-rowcount={headerGroupsDepth + rows.length}
+                    aria-colcount={leafColumns.length}
+                    className={clsx('MuiTable-root', dataGridStyles.table)}
+                    aria-multiselectable={
+                      keyboardNavigation &&
+                      (enableRowSelection ||
+                        !!(table.options as any).enableCellSelection)
+                        ? true
+                        : undefined
+                    }
+                    onKeyDown={keyboardNavigation?.onKeyDown}
+                    onFocusCapture={keyboardNavigation?.onFocusCapture}
+                    onPointerDownCapture={
+                      keyboardNavigation?.onPointerDownCapture
+                    }
+                    style={{
+                      ...columnSizes,
+                      ...virtualPaddingStyles,
+                    }}
                   >
-                    <MemoizedHead
-                      layout={layout}
-                      style={headStyles}
-                      headerGroups={headerGroups}
-                      virtualColumns={virtualColumns}
+                    <HeadDndBoundary
+                      table={table}
                       leftHeaderSlot={leftHeaderSlot}
                       rightHeaderSlot={rightHeaderSlot}
-                      isResizingColumns={isResizingColumns}
-                      isVirtualColumns={!hasNestedGroups}
                       enableColumnDragging={enableColumnDragging}
-                    />
-                  </HeadDndBoundary>
-                  <BodyDndBoundary
-                    table={table}
-                    enableRowDragging={enableRowDragging}
-                  >
-                    <MemoizedBody
-                      layout={layout}
-                      rows={rows}
-                      virtualRows={virtualRows}
-                      virtualColumns={virtualColumns}
-                      leafColumns={leafColumns}
-                      leftCellSlot={leftCellSlot}
-                      rightCellSlot={rightCellSlot}
-                      cellSlot={cellSlot}
-                      actionRowSlot={actionRowSlot}
-                      headerRowCount={headerGroupsDepth}
-                      selectableRows={
-                        !!keyboardNavigation && enableRowSelection
-                      }
-                      isResizingColumns={isResizingColumns}
-                      isVirtualColumns={!hasNestedGroups}
+                    >
+                      <MemoizedHead
+                        layout={layout}
+                        style={headStyles}
+                        headerGroups={headerGroups}
+                        virtualColumns={virtualColumns}
+                        leftHeaderSlot={leftHeaderSlot}
+                        rightHeaderSlot={rightHeaderSlot}
+                        isResizingColumns={isResizingColumns}
+                        isVirtualColumns={!hasNestedGroups}
+                        enableColumnDragging={enableColumnDragging}
+                      />
+                    </HeadDndBoundary>
+                    <BodyDndBoundary
+                      table={table}
                       enableRowDragging={enableRowDragging}
-                    />
-                  </BodyDndBoundary>
-                  {(table.options as any).enableFooter && (
-                    <MemoizedFooter
-                      layout={layout}
-                      footerGroup={table.getFooterGroups().at(0)}
-                      virtualColumns={virtualColumns}
-                      isVirtualColumns={!hasNestedGroups}
-                      isResizingColumns={isResizingColumns}
-                    />
-                  )}
-                </div>
+                    >
+                      <MemoizedBody
+                        layout={layout}
+                        rows={rows}
+                        virtualRows={virtualRows}
+                        virtualColumns={virtualColumns}
+                        leafColumns={leafColumns}
+                        leftCellSlot={leftCellSlot}
+                        rightCellSlot={rightCellSlot}
+                        cellSlot={cellSlot}
+                        actionRowSlot={actionRowSlot}
+                        headerRowCount={headerGroupsDepth}
+                        selectableRows={
+                          !!keyboardNavigation && enableRowSelection
+                        }
+                        treeRows={!!keyboardNavigation && hierarchical}
+                        isResizingColumns={isResizingColumns}
+                        isVirtualColumns={!hasNestedGroups}
+                        enableRowDragging={enableRowDragging}
+                      />
+                    </BodyDndBoundary>
+                    {(table.options as any).enableFooter && (
+                      <MemoizedFooter
+                        layout={layout}
+                        footerGroup={table.getFooterGroups().at(0)}
+                        virtualColumns={virtualColumns}
+                        isVirtualColumns={!hasNestedGroups}
+                        isResizingColumns={isResizingColumns}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+              {keyboardNavigation && (
+                <div
+                  ref={keyboardNavigation.guardAfterRef}
+                  tabIndex={-1}
+                  className={dataGridStyles['focus-guard']}
+                  data-kn-guard="after"
+                />
               )}
             </div>
-            {keyboardNavigation && (
-              <div
-                ref={keyboardNavigation.guardAfterRef}
-                tabIndex={-1}
-                className={dataGridStyles['focus-guard']}
-                data-kn-guard="after"
-              />
-            )}
-          </div>
-        </FastScrollProvider>
-      </LocalizationProvider>
-    </IconsProvider>
+          </FastScrollProvider>
+        </LocalizationProvider>
+      </IconsProvider>
+    </>
   )
 }

@@ -6,9 +6,11 @@
  */
 import { Copy } from 'lucide-react'
 
+import { announceLabel } from '../../core/announcer'
 import {
   cellRangesToHtml,
   cellRangesToTsv,
+  countCells,
   hasSelectedCells,
 } from '../../core/clipboard'
 import type { ContextMenuAction } from '../../core/headerActions'
@@ -56,5 +58,6 @@ export const copyContextAction: ContextMenuAction = {
       return
     }
     void writeClipboard(cellRangesToTsv(regions), cellRangesToHtml(regions))
+    announceLabel(ctx.table, l => l.announceCopy(countCells(regions)))
   },
 }
