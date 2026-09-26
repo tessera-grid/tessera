@@ -22,7 +22,7 @@ const CELL_BUTTON = '.cell__button'
 /** Класс «скрыта до hover»: opacity/min-width 0, overflow hidden → места не занимает. */
 const HIDDEN = 'cell__button--hidden'
 /** Инлайн-ввод редактирования (CellEditInput). */
-const EDIT_INPUT = "[aria-label='edit cell value']"
+const EDIT_INPUT = '.data-grid__body-cell input'
 
 /** Первая ячейка тела указанной колонки. */
 const bodyCell = (container: HTMLElement, columnId: string) =>

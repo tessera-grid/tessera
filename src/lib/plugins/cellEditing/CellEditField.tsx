@@ -5,13 +5,22 @@
  * дизайн-системой) либо дефолтный встроенный. Слайс «редактируемая ячейка» приходит
  * пропсом `state`, значение/коллбэки — без импорта плагина в потребителя.
  */
+import { useState } from 'react'
+
 import type { PluginCellOwnerProps } from '../../core/definePlugin'
+import { useLocalization } from '../../core/localization'
 import { CellEditInput } from './CellEditInput'
 import type { CellEditingHooks, CellEditor, EditingCell } from './types'
 
 /** Дефолтный редактор: встроенный инлайн-ввод (Enter — коммит, Escape/blur — отмена). */
-const defaultEditor: CellEditor = ({ value, commit, cancel }) => (
-  <CellEditInput initialValue={value} onCommit={commit} onCancel={cancel} />
+const defaultEditor: CellEditor = ({ value, label, error, commit, cancel }) => (
+  <CellEditInput
+    initialValue={value}
+    label={label}
+    error={error}
+    onCommit={commit}
+    onCancel={cancel}
+  />
 )
 
 export const CellEditField = (
@@ -24,6 +33,8 @@ export const CellEditField = (
     state: [editingCell, setEditingCell],
     hooks,
   } = props
+  const labels = useLocalization()
+  const [error, setError] = useState<string>()
   const key = `${row.id}:${column.id}`
 
   // Не эта ячейка — отдаём собственный контент ячейки как есть.
@@ -37,11 +48,26 @@ export const CellEditField = (
     <>
       {editor({
         value: String(row.getValue(column.id) ?? ''),
+        label: labels.editCellValue(
+          typeof column.columnDef.header === 'string'
+            ? column.columnDef.header
+            : column.id,
+        ),
+        error,
         commit: value => {
+          const message = hooks.validate?.(value, props)
+          if (message) {
+            setError(message)
+            return
+          }
+          setError(undefined)
           hooks.onCellEdit({ rowId: row.id, columnId: column.id, value })
           setEditingCell(null)
         },
-        cancel: () => setEditingCell(null),
+        cancel: () => {
+          setError(undefined)
+          setEditingCell(null)
+        },
         cell: props,
       })}
     </>

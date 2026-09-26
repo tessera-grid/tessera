@@ -32,6 +32,8 @@ export interface CellEditingOptions {
   onCellEdit?: CellEditingHooks['onCellEdit']
   /** Свой редактор ячейки (BYO); не задан — встроенный инлайн-ввод. */
   editor?: CellEditingHooks['editor']
+  /** Проверка значения перед коммитом: текст ошибки блокирует коммит. */
+  validate?: CellEditingHooks['validate']
 }
 
 export const cellEditing = definePlugin<CellEditingOptions>()({
@@ -42,6 +44,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     canEdit: o.canEdit ?? (() => true),
     onCellEdit: o.onCellEdit ?? (() => {}),
     editor: o.editor,
+    validate: o.validate,
   }),
   keyboardActions: [editCellKeyboardAction],
   slots: [

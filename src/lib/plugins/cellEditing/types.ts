@@ -20,6 +20,10 @@ export interface CellEditCommit {
  */
 export type CellEditor = (props: {
   value: string
+  /** Доступное имя поля (`localization.editCellValue` с именем колонки). */
+  label: string
+  /** Текст ошибки `validate`; поле — `aria-invalid` и связанный текст ошибки. */
+  error?: string
   commit: (value: string) => void
   cancel: () => void
   cell: CellComponentProps
@@ -32,4 +36,9 @@ export interface CellEditingHooks {
   onCellEdit: (commit: CellEditCommit) => void
   /** Редактор ячейки (BYO); не задан — встроенный `CellEditInput`. */
   editor?: CellEditor
+  /** Текст ошибки для значения или `null`/`undefined`, если оно допустимо. */
+  validate?: (
+    value: string,
+    ctx: CellComponentProps,
+  ) => string | null | undefined
 }

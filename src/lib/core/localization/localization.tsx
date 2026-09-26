@@ -49,6 +49,28 @@ export interface TableLabels {
   editCell: string
   /** Доступное имя ручки изменения ширины колонки (`role="separator"`) */
   resizeColumn: string
+  /** Доступное имя поля встроенного редактора ячейки (`column` — имя колонки) */
+  editCellValue: (column: string) => string
+  /** Доступное имя индикатора загрузки и объявление скелета первой загрузки */
+  loading: string
+  /** Объявление смены сортировки (`column: null` — сортировка сброшена) */
+  announceSort: (
+    column: string | null,
+    direction: 'ascending' | 'descending' | null,
+  ) => string
+  /** Объявление числа выбранных строк */
+  announceSelection: (count: number) => string
+  /** Объявление копирования выделения (`cells` — число ячеек) */
+  announceCopy: (cells: number) => string
+  /** Объявление окончания загрузки (`rows` — число строк) */
+  announceLoaded: (rows: number) => string
+  /** Объявление пустого результата */
+  noData: string
+  /** Скрытые подписи заголовков служебных колонок (`columnDef.serviceLabel`) */
+  expandColumn: string
+  reorderColumn: string
+  selectColumn: string
+  rowActionsColumn: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -72,6 +94,20 @@ export const DEFAULT_LABELS: TableLabels = {
   copy: 'Copy',
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',
+  editCellValue: column => `Edit ${column}`,
+  loading: 'Loading',
+  announceSort: (column, direction) =>
+    column ? `Sorted by ${column}, ${direction}` : 'Sorting cleared',
+  announceSelection: count =>
+    count === 1 ? '1 row selected' : `${count} rows selected`,
+  announceCopy: cells =>
+    cells === 1 ? 'Copied 1 cell' : `Copied ${cells} cells`,
+  announceLoaded: rows => (rows === 1 ? 'Loaded 1 row' : `Loaded ${rows} rows`),
+  noData: 'No data',
+  expandColumn: 'Expand',
+  reorderColumn: 'Reorder',
+  selectColumn: 'Select',
+  rowActionsColumn: 'Actions',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)
