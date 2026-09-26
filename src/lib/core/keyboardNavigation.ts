@@ -310,7 +310,7 @@ export const resolveNavigationKey = (
   event: NavigationKeyEvent,
   { rowCount, columnCount, pageRows, headerRowCount = 1 }: NavigationBounds,
 ): ActiveCell | null => {
-  if (event.altKey || event.shiftKey) {
+  if (event.shiftKey) {
     return null
   }
   const lastRow = rowCount - 1
@@ -322,15 +322,36 @@ export const resolveNavigationKey = (
   const ctrl = event.ctrlKey || event.metaKey
   const { rowIndex, columnIndex } = active
 
+  // Alt+↑/↓ — на экран: замена PageUp/PageDown для компактных клавиатур (KB13).
+  if (event.altKey) {
+    if (ctrl) {
+      return null
+    }
+    if (event.key === 'ArrowUp') {
+      return { rowIndex: clampRow(rowIndex - pageRows), columnIndex }
+    }
+    if (event.key === 'ArrowDown') {
+      return { rowIndex: clampRow(rowIndex + pageRows), columnIndex }
+    }
+    return null
+  }
+
+  // Ctrl+стрелка — к краю: замена Home/End и Ctrl+Home/End (KB11).
   switch (event.key) {
     case 'ArrowUp':
-      return { rowIndex: clampRow(rowIndex - 1), columnIndex }
+      return {
+        rowIndex: ctrl ? -headerRowCount : clampRow(rowIndex - 1),
+        columnIndex,
+      }
     case 'ArrowDown':
-      return { rowIndex: clampRow(rowIndex + 1), columnIndex }
+      return { rowIndex: clampRow(ctrl ? lastRow : rowIndex + 1), columnIndex }
     case 'ArrowLeft':
-      return { rowIndex, columnIndex: clampColumn(columnIndex - 1) }
+      return { rowIndex, columnIndex: ctrl ? 0 : clampColumn(columnIndex - 1) }
     case 'ArrowRight':
-      return { rowIndex, columnIndex: clampColumn(columnIndex + 1) }
+      return {
+        rowIndex,
+        columnIndex: ctrl ? lastColumn : clampColumn(columnIndex + 1),
+      }
     case 'Home':
       return ctrl
         ? { rowIndex: -headerRowCount, columnIndex: 0 }
@@ -625,8 +646,14 @@ const restoreFocusIfLost = (cell: HTMLElement) => {
 
 const ACTION_KEYS = new Set([' ', 'Enter', 'F2'])
 
+/** `Ctrl+Shift+Enter` — замена `Shift+F10` для клавиатур без F-ряда (KB14). */
 const isContextMenuKey = (event: ReactKeyboardEvent<HTMLElement>) =>
-  event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)
+  event.key === 'ContextMenu' ||
+  (event.key === 'F10' && event.shiftKey) ||
+  (event.key === 'Enter' &&
+    event.shiftKey &&
+    (event.ctrlKey || event.metaKey) &&
+    !event.altKey)
 
 /** Контекст активной ячейки для канала `keyboardActions`. */
 const resolveActionTarget = (
@@ -882,6 +909,18 @@ export const useKeyboardNavigationGrid = (
         return
       }
 
+      // Ctrl+Enter — к кнопкам ячейки без её действия: замена F2 (KB12).
+      if (
+        event.key === 'Enter' &&
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault()
+        getCellWidgets(cell)[0]?.focus()
+        return
+      }
+
       if (ACTION_KEYS.has(event.key) && !modified) {
         // Пробел не должен прокручивать контейнер, даже если действия нет.
         event.preventDefault()
@@ -915,8 +954,17 @@ export const useKeyboardNavigationGrid = (
           }
           action.run(actionTarget.ctx as never, event)
           applyFollow(t)
+          return
         }
-        return
+        // Без действия плагина Alt+↑/↓ листают на экран (KB13).
+        const altPage =
+          !event.shiftKey &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+        if (!altPage) {
+          return
+        }
       }
 
       if (isSelectAllKey(event)) {
@@ -944,7 +992,13 @@ export const useKeyboardNavigationGrid = (
       if (!resolved) {
         return
       }
-      const next = skipHeaderSpans(t, active, resolved, event.key)
+      // Прыжки (Ctrl/Alt+стрелка) приземляются как PageUp/Home — без обхода спанов.
+      const next = skipHeaderSpans(
+        t,
+        active,
+        resolved,
+        modified ? '' : event.key,
+      )
       // Навигационная клавиша не должна прокручивать контейнер нативно.
       event.preventDefault()
       collapseSelectionTo(t, next)

@@ -425,4 +425,101 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
       .map(el => el.outerHTML.slice(0, 120))
     expect(unreachable).toEqual([])
   })
+
+  // --- KB11–KB14: клавиатуры без F-ряда и блока навигации ----------------------
+
+  /** Ячейка тела строки `index` в колонке `columnId`, с клавиатурной модальностью. */
+  const focusBodyCell = async (index: number, columnId: string) => {
+    const cell = () =>
+      document.querySelector<HTMLElement>(
+        `${BODY_ROW}[data-index='${index}'] ${BODY_CELL}[data-column-id='${columnId}']`,
+      )
+    await expect.poll(cell).toBeTruthy()
+    cell()!.focus()
+    await press('{ArrowRight}{ArrowLeft}')
+    await expect
+      .poll(() => active().getAttribute('data-column-id'))
+      .toBe(columnId)
+  }
+  const colIndex = () => Number(active().getAttribute('aria-colindex'))
+  const rowOf = (el: HTMLElement) =>
+    el.closest('[role="row"]')?.getAttribute('aria-rowindex')
+
+  test('KB11: Ctrl+стрелки прыгают к краям строки и колонки, как Home/End и Ctrl+Home/End', async () => {
+    await render(<composed.A11yGrid />)
+    await focusBodyCell(2, 'firstName')
+    const colcount = Number(
+      document.querySelector('[role="grid"]')!.getAttribute('aria-colcount'),
+    )
+
+    await press('{Control>}{ArrowRight}{/Control}')
+    await expect.poll(colIndex).toBe(colcount)
+    await press('{Control>}{ArrowLeft}{/Control}')
+    await expect.poll(colIndex).toBe(1)
+
+    await focusBodyCell(2, 'firstName')
+    await press('{Control>}{ArrowUp}{/Control}')
+    await expect.poll(() => active().getAttribute('role')).toBe('columnheader')
+    expect(active().getAttribute('data-column-id')).toBe('firstName')
+
+    await press('{Control>}{ArrowDown}{/Control}')
+    await expect
+      .poll(() => active().getAttribute('role'))
+      .not.toBe('columnheader')
+    expect(active().getAttribute('data-column-id')).toBe('firstName')
+    const bottom = rowOf(active())
+    // Та же строка, что у Ctrl+End, — последняя.
+    await press('{Control>}{End}{/Control}')
+    await expect.poll(() => rowOf(active())).toBe(bottom)
+  })
+
+  test('KB12: Ctrl+Enter входит к кнопкам заголовка, не сортируя', async () => {
+    await render(<composed.A11yGrid />)
+    await expect.poll(() => headCellById('country')).toBeTruthy()
+    const head = headCellById('country')
+    head.focus()
+    await press('{ArrowRight}{ArrowLeft}')
+    await expect.poll(active).toBe(head)
+    const sort = head.getAttribute('aria-sort')
+
+    await press('{Control>}{Enter}{/Control}')
+    await expect.poll(() => active().tagName).toBe('BUTTON')
+    expect(head.contains(active())).toBe(true)
+    expect(head.getAttribute('aria-sort')).toBe(sort)
+
+    await press('{Escape}')
+    await expect.poll(active).toBe(head)
+  })
+
+  test('KB13: Alt+↑/↓ сдвигают на экран, как PageUp/PageDown', async () => {
+    await render(<composed.A11yGrid />)
+    await focusBodyCell(0, 'country')
+    const start = rowOf(active())
+
+    await press('{PageDown}')
+    await expect.poll(() => rowOf(active())).not.toBe(start)
+    const paged = rowOf(active())
+    await press('{PageUp}')
+    await expect.poll(() => rowOf(active())).toBe(start)
+
+    await press('{Alt>}{ArrowDown}{/Alt}')
+    await expect.poll(() => rowOf(active())).toBe(paged)
+    await press('{Alt>}{ArrowUp}{/Alt}')
+    await expect.poll(() => rowOf(active())).toBe(start)
+  })
+
+  test('KB14: Ctrl+Shift+Enter открывает контекстное меню активной ячейки, как Shift+F10', async () => {
+    await render(<composed.A11yGrid />)
+    await focusBodyCell(1, 'country')
+
+    await press('{Control>}{Shift>}{Enter}{/Shift}{/Control}')
+    await expect
+      .poll(() =>
+        document.querySelector('[role="menu"]')?.getAttribute('aria-label'),
+      )
+      .toBe(DEFAULT_LABELS.contextMenu)
+
+    await press('{Escape}')
+    await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()
+  })
 })
