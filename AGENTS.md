@@ -319,8 +319,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       (TC-1…TC-5 — единые контракты по семействам,
       [ADR 0017](docs/decisions/0017-ui-components.md)).
     - _Доступность:_ `a11y` (A1–A10, прогон axe-core,
-      [ADR 0020](docs/decisions/0020-accessibility.md); W1–W15 —
-      [ADR 0032](docs/decisions/0032-wcag-aa-remainder.md)).
+      [ADR 0020](docs/decisions/0020-accessibility.md); W1–W17 —
+      [ADR 0032](docs/decisions/0032-wcag-aa-remainder.md)); `a11y-tree` (AX1–AX7 —
+      снимки дерева доступности Chromium через CDP) и `screen-reader` (SR1–SR7 —
+      эмулятор скринридера), [ADR 0033](docs/decisions/0033-a11y-tree-and-virtual-screen-reader.md).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без

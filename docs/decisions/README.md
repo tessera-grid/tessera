@@ -38,7 +38,8 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0029](0029-cell-range-selection.md)                 | Выделение диапазона ячеек + копирование в буфер: плагин cellSelection (CR1–CR16)                                  | Принято    |
 | [0030](0030-context-menu.md)                         | Контекстное меню: плагин contextMenu, действия-контрибуции + гейтинг по выбору (CM1–CM10)                         | Принято    |
 | [0031](0031-wcag-keyboard.md)                        | Соответствие WCAG 2.1.1 (Keyboard): остаток после keyboardNavigation (KB1–KB10)                                   | Принято    |
-| [0032](0032-wcag-aa-remainder.md)                    | Доступность: остаток до WCAG 2.1 AA (W1–W15)                                                                      | Принято    |
+| [0032](0032-wcag-aa-remainder.md)                    | Доступность: остаток до WCAG 2.1 AA (W1–W17)                                                                      | Принято    |
+| [0033](0033-a11y-tree-and-virtual-screen-reader.md)  | Проверка доступности: дерево AX Chromium и эмулятор скринридера (AX1–AX7, SR1–SR7)                                | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).
