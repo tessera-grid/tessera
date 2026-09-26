@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
+import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
 import * as stories from '../../DataGrid.stories'
 
 // Соответствие WCAG 2.1.1: каждое требование — свой именованный тест `KB<n>`
@@ -75,6 +76,16 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
 
     await press('{Escape}')
     await expect.poll(() => active()).toBe(cell)
+
+    // Ячейка тела с hover-кнопкой (правка cellEditing) — так же видна при фокусе.
+    await press('{ArrowDown}')
+    await expect.poll(() => active().closest(BODY_ROW)).toBeTruthy()
+    for (let i = 0; i < 20 && !active().querySelector(HIDDEN_BUTTON); i++) {
+      await press('{ArrowRight}')
+    }
+    const bodyCell = active()
+    expect(bodyCell.querySelector(HIDDEN_BUTTON)).not.toBeNull()
+    await expect.poll(() => opacityOf(bodyCell)).toBe('1')
   })
 
   test('KB6: Ctrl+Shift+стрелка расширяет выделение до края, Ctrl+A выделяет все ячейки', async () => {
@@ -151,7 +162,12 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
         document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
       ).find(el => el.textContent?.trim() === 'Pin left')
     await expect.poll(item).toBeTruthy()
-    item()!.focus()
+    // Меню, открытое с клавиатуры, держит фокус на пункте; стрелкой — до «Pin left».
+    await expect.poll(() => active().getAttribute('role')).toBe('menuitem')
+    for (let i = 0; i < 5 && active() !== item(); i++) {
+      await press('{ArrowDown}')
+    }
+    expect(active()).toBe(item())
     await press('{Enter}')
     await expect
       .poll(() => headCellById('name').getAttribute('data-cell-pinned'))
@@ -258,5 +274,151 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     await expect
       .poll(() => active().closest(BODY_ROW)?.getAttribute('data-row-id'))
       .toBe(moved)
+  })
+
+  test('KB7: групповая строка rowGrouping раскрывается и сворачивается с клавиатуры', async () => {
+    await render(
+      <composed.RowGrouping
+        enableKeyboardNavigation
+        enableRowExpanding
+        initialGrouping={['gender']}
+      />,
+    )
+    const groupRow = () =>
+      document.querySelector<HTMLElement>(
+        `${BODY_ROW}[data-group-row='true'][data-index='0']`,
+      )
+    await expect.poll(groupRow).toBeTruthy()
+    expect(groupRow()!.getAttribute('aria-expanded')).toBe('false')
+    const rowCount = () => document.querySelectorAll(BODY_ROW).length
+    const collapsed = rowCount()
+
+    groupRow()!
+      .querySelector<HTMLElement>(
+        `[data-column-id^='${COLUMN_EXPANDING_ID}'][data-kn-cell]`,
+      )!
+      .focus()
+    await press('{Enter}')
+    await expect
+      .poll(() => groupRow()!.getAttribute('aria-expanded'))
+      .toBe('true')
+    await expect.poll(rowCount).toBeGreaterThan(collapsed)
+
+    await press('{Enter}')
+    await expect
+      .poll(() => groupRow()!.getAttribute('aria-expanded'))
+      .toBe('false')
+    await expect.poll(rowCount).toBe(collapsed)
+  })
+
+  test('KB8: из редактора, меню и контекстного меню фокус возвращается в грид, Tab уводит из него', async () => {
+    await render(
+      <>
+        <composed.KeyboardNavigation />
+        <button id="after-grid">after</button>
+      </>,
+    )
+    const cell = () =>
+      document.querySelector<HTMLElement>(
+        `${BODY_ROW}[data-index='2'] ${BODY_CELL}[data-column-id='age']`,
+      )!
+    await expect.poll(cell).toBeTruthy()
+    const leaveGrid = async (from: HTMLElement) => {
+      await expect.poll(() => active()).toBe(from)
+      await press('{Tab}')
+      await expect.poll(() => active().id).toBe('after-grid')
+    }
+
+    // Редактор cellEditing: Escape — на ячейку.
+    cell().focus()
+    await press('{Enter}')
+    await expect.poll(() => active().tagName).toBe('INPUT')
+    await press('{Escape}')
+    await leaveGrid(cell())
+
+    // Контекстное меню: Escape — меню закрыто, фокус на ячейке.
+    cell().focus()
+    await press('{Shift>}{F10}{/Shift}')
+    await expect
+      .poll(() => document.querySelector('[role="menu"]'))
+      .not.toBeNull()
+    await press('{Escape}')
+    await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()
+    await leaveGrid(cell())
+
+    // Поповер закрепления в заголовке: Escape закрывает его и возвращает фокус
+    // на ячейку заголовка.
+    const head = headCellById('age')
+    head.focus()
+    await press('{F2}')
+    const pin = head.querySelector<HTMLElement>(PIN_BUTTON)!
+    for (let i = 0; i < 5 && !pin.contains(active()); i++) {
+      await press('{Tab}')
+    }
+    await press('{Enter}')
+    await expect
+      .poll(() => document.querySelector('[role="menu"]'))
+      .not.toBeNull()
+    await press('{Escape}')
+    await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()
+    await leaveGrid(head)
+  })
+
+  test('KB10: аудит — каждый интерактивный контрол грида со всеми плагинами достижим с клавиатуры', async () => {
+    await render(
+      <composed.AllFeatures
+        enableKeyboardNavigation
+        enableColumnSorting
+        enableColumnResizing
+        enableColumnPinning
+        enableColumnDragging
+        enableGrouping
+        enableRowSelection
+        enableRowExpanding
+        enableRowDragging
+        enableRowActions
+        enableCellEditing
+        enableCellSelection
+        enableContextMenu
+        enableFooter
+        columnCount={8}
+        dataCount={20}
+      />,
+    )
+    await expect
+      .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
+      .toBeGreaterThan(3)
+
+    const root = document.querySelector<HTMLElement>('[role="grid"]')!
+    const controls = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        [
+          'button',
+          'input',
+          'select',
+          'textarea',
+          'a[href]',
+          '[role="button"]',
+          '[role="checkbox"]',
+          '[role="switch"]',
+          '[role="separator"]',
+          '[contenteditable="true"]',
+        ].join(','),
+      ),
+    ).filter(
+      el =>
+        !el.hasAttribute('disabled') &&
+        el.getAttribute('aria-disabled') !== 'true' &&
+        // Скрытые зеркала контролов (нативный input у Base UI Checkbox).
+        !el.closest('[aria-hidden="true"]'),
+    )
+    expect(controls.length).toBeGreaterThan(0)
+
+    // Контрол живёт в ячейке навигации (достижим режимом действия) и не выключен
+    // из обхода Tab.
+    const unreachable = controls
+      .filter(el => !el.closest('[data-kn-cell]') || el.tabIndex < 0)
+      .map(el => el.outerHTML.slice(0, 120))
+    expect(unreachable).toEqual([])
   })
 })
