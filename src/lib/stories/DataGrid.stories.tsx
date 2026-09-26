@@ -142,6 +142,12 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   onColumnResizeEnd?: (props: { id: string; width: number }) => void
 
   /**
+   * Проброс hook перестановки столбца (`columnDragging.onColumnDragEnd`) наружу.
+   * Нужен визуальным тестам. В обычных историях не задаётся.
+   */
+  onColumnDragEnd?: (props: { dragIndex: number; hoverIndex: number }) => void
+
+  /**
    * Проброс hooks выбора строк (`rowSelection.onSelectRow` /
    * `onSelectAllRowsOnPage`) наружу. Нужны визуальным тестам, чтобы наблюдать
    * вызов hook при переключении строки и «выбрать все на странице».
@@ -225,6 +231,7 @@ export const StoryComponent = memo(
     onTogglePin,
     onToggleColumnSort,
     onColumnResizeEnd,
+    onColumnDragEnd,
     onSelectRow,
     onSelectAllRowsOnPage,
     onExpandRow,
@@ -329,6 +336,7 @@ export const StoryComponent = memo(
             ...(onColumnResizeEnd
               ? { columnSizing: { onColumnResizeEnd } }
               : {}),
+            ...(onColumnDragEnd ? { columnDragging: { onColumnDragEnd } } : {}),
             ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
             ...(options.enableCellEditing
               ? {

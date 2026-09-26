@@ -1,21 +1,32 @@
-import { KeyboardEvent, MouseEvent, TouchEvent, memo, useCallback } from 'react'
+import {
+  KeyboardEvent,
+  MouseEvent,
+  TouchEvent,
+  memo,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { HandleMenu } from '../../grid/handleMenu/HandleMenu'
 import styles from './ResizeHandler.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 /** Шаг изменения ширины стрелкой и Shift+стрелкой, px. */
 const KEY_STEP = 10
 const LARGE_KEY_STEP = 50
+/** Сдвиг указателя, после которого нажатие — ресайз, а не клик (px). */
+const CLICK_TOLERANCE = 3
 
 export interface ResizeSplitterProps {
   isResizing: boolean
   onResize: (event: unknown) => void
   onResizeEnd: (event: unknown) => void
   onResetSize: (event: unknown) => void
-  /** Изменить ширину на `delta` px с клавиатуры. */
+  /** Изменить ширину на `delta` px с клавиатуры или из меню. */
   onResizeBy: (delta: number) => void
   size: number
   minSize: number
@@ -37,8 +48,14 @@ export const ResizeHandler = memo(
     disabled = false,
   }: ResizeSplitterProps) => {
     const labels = useLocalization()
+    const wrapperRef = useRef<HTMLDivElement>(null)
+    const separatorRef = useRef<HTMLSpanElement>(null)
+    const pressedX = useRef<number | null>(null)
+    const [menuOpen, setMenuOpen] = useState(false)
+
     const onResizeStart = useCallback(
       (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
+        pressedX.current = 'clientX' in event ? event.clientX : null
         document.body.style.cursor = 'col-resize'
         onResize(event)
         const listener = (evt: unknown) => {
@@ -52,6 +69,19 @@ export const ResizeHandler = memo(
       },
       [onResizeEnd, onResize],
     )
+
+    // Клик без сдвига — меню ширины (WCAG 2.5.7, ADR 0034); протяжка — ресайз.
+    const onClick = (event: MouseEvent<HTMLDivElement>) => {
+      const start = pressedX.current
+      pressedX.current = null
+      if (
+        disabled ||
+        (start !== null && Math.abs(event.clientX - start) >= CLICK_TOLERANCE)
+      ) {
+        return
+      }
+      setMenuOpen(true)
+    }
 
     const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
       const step = event.shiftKey ? LARGE_KEY_STEP : KEY_STEP
@@ -67,40 +97,73 @@ export const ResizeHandler = memo(
       event.preventDefault()
     }
 
+    const getMenuItems = () => [
+      {
+        id: 'widen',
+        label: labels.widenColumn,
+        disabled: maxSize !== undefined && size >= maxSize,
+        onSelect: () => onResizeBy(LARGE_KEY_STEP),
+      },
+      {
+        id: 'narrow',
+        label: labels.narrowColumn,
+        disabled: size <= minSize,
+        onSelect: () => onResizeBy(-LARGE_KEY_STEP),
+      },
+      {
+        id: 'reset',
+        label: labels.resetColumnWidth,
+        onSelect: () => onResetSize(undefined),
+      },
+    ]
+
     return (
-      <div
-        onDoubleClick={onResetSize}
-        onMouseDown={onResizeStart}
-        onTouchStart={onResizeStart}
-        aria-disabled={disabled}
-        className={clsx(
-          styles.wrapper,
-          'cell__button',
-          'cell__button--hidden',
-          'resize__handler--column',
-        )}
-        data-button-active={isResizing}
-      >
+      <>
         <div
+          ref={wrapperRef}
+          onClick={onClick}
+          onMouseDown={onResizeStart}
+          onTouchStart={onResizeStart}
+          aria-disabled={disabled}
           className={clsx(
-            'resize__handler--column--background',
-            styles.background,
+            styles.wrapper,
+            'cell__button',
+            'cell__button--hidden',
+            'resize__handler--column',
           )}
+          data-button-active={isResizing || menuOpen}
         >
-          <span
-            role="separator"
-            tabIndex={disabled ? -1 : 0}
-            aria-label={labels.resizeColumn}
-            aria-orientation="vertical"
-            aria-valuenow={Math.round(size)}
-            aria-valuemin={minSize}
-            aria-valuemax={maxSize}
-            aria-disabled={disabled}
-            onKeyDown={disabled ? undefined : onKeyDown}
-            className={styles.handler}
-          />
+          <div
+            className={clsx(
+              'resize__handler--column--background',
+              styles.background,
+            )}
+          >
+            <span
+              ref={separatorRef}
+              role="separator"
+              tabIndex={disabled ? -1 : 0}
+              aria-label={labels.resizeColumn}
+              aria-orientation="vertical"
+              aria-valuenow={Math.round(size)}
+              aria-valuemin={minSize}
+              aria-valuemax={maxSize}
+              aria-disabled={disabled}
+              onKeyDown={disabled ? undefined : onKeyDown}
+              className={styles.handler}
+            />
+          </div>
         </div>
-      </div>
+        {menuOpen && (
+          <HandleMenu
+            anchor={wrapperRef}
+            focusTarget={separatorRef}
+            label={labels.columnWidth}
+            getItems={getMenuItems}
+            onClose={() => setMenuOpen(false)}
+          />
+        )}
+      </>
     )
   },
 )

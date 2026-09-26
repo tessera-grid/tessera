@@ -1,7 +1,15 @@
 .button {
+  position: relative;
   display: flex;
   color: var(--tsr-comp-control-color);
   cursor: grab;
+}
+
+/* Прозрачная зона нажатия не меньше 24×24 (WCAG 2.5.8, ADR 0034); вид не меняется. */
+.button::before {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc((100% - 24px) / 2));
 }
 
 .button svg {

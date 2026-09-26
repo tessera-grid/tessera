@@ -71,3 +71,11 @@ export const autoScrollOnlyX: AutoScrollOptions = {
  * @link https://v4.mui.com/ru/customization/z-index/
  */
 export const Z_INDEX = 1501
+
+/** Сдвиг указателя, после которого нажатие — перетаскивание, а не клик (px). */
+export const DRAG_ACTIVATION_DISTANCE = 5
+
+/** Опции сенсоров: короткое нажатие без сдвига — клик по ручке (меню, ADR 0034). */
+export const sensorOptions = {
+  activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE },
+}

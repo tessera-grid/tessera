@@ -3,6 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import { DEFAULT_LABELS } from '../../../core/localization'
 import * as stories from '../../DataGrid.stories'
 
 // Every Column Resizing requirement is its own named test, prefixed with its spec
@@ -308,7 +309,7 @@ describe('Column Resizing — requirements', () => {
     ).toBeLessThan(2)
   })
 
-  test('CR11: double-clicking the grip resets the column and calls the hook', async () => {
+  test('CR11: the grip menu item «Reset width» resets the column and calls the hook', async () => {
     const onColumnResizeEnd = vi.fn()
     const container = await renderColumnResizing({ onColumnResizeEnd })
     const cell = firstDataCell(container)
@@ -319,19 +320,28 @@ describe('Column Resizing — requirements', () => {
     await resizeBy(grip, 160)
     expect(widthOf(firstDataCell(container))).toBeGreaterThan(original + 100)
 
-    // …then a double-click on the grip restores the default width and fires the
-    // hook with that restored width (not a hard-coded fallback).
+    // …then a click on the grip opens its menu; «Reset width» restores the default
+    // width and fires the hook with that restored width (not a hard-coded fallback).
+    await revealGrip(firstDataCell(container))
+    await userEvent.click(gripOf(firstDataCell(container)))
+    const reset = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+      ).find(
+        item => item.textContent?.trim() === DEFAULT_LABELS.resetColumnWidth,
+      )
+    await expect.poll(reset).toBeTruthy()
     onColumnResizeEnd.mockClear()
-    await userEvent.dblClick(gripOf(firstDataCell(container)))
+    await userEvent.click(reset()!)
     await expect
       .poll(() => Math.abs(widthOf(firstDataCell(container)) - original))
       .toBeLessThan(2)
     expect(onColumnResizeEnd).toHaveBeenCalled()
-    const reset = onColumnResizeEnd.mock.calls.at(-1)![0] as {
+    const call = onColumnResizeEnd.mock.calls.at(-1)![0] as {
       id: string
       width: number
     }
-    expect(reset.width).toBeCloseTo(original, 0)
+    expect(call.width).toBeCloseTo(original, 0)
   })
 
   test('CR12: a column cannot shrink below its minSize', async () => {

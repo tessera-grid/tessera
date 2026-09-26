@@ -6,6 +6,8 @@
   - [ADR 0020](0020-accessibility.md), [ADR 0031](0031-wcag-keyboard.md),
     [ADR 0032](0032-wcag-aa-remainder.md) — что грид обязан отдавать
     вспомогательным технологиям; этот ADR — как это проверяется автоматически.
+  - [ADR 0034](0034-wcag-22-dragging-and-target-size.md) — WCAG 2.2: меню на
+    ручках перетаскивания и ширины; в гайде ручной проверки — пункты M29–M31.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — один тест на
     требование; префиксы `AX<n>` (дерево) и `SR<n>` (эмулятор).
   - [ADR 0003](0003-formalize-tech-stack.md) — тестовый тулинг; новая

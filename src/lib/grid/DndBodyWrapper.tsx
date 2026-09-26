@@ -25,6 +25,7 @@ import {
   autoScrollOnlyY,
   dropAnimationConfig,
   measuring,
+  sensorOptions,
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
 
@@ -85,9 +86,9 @@ export const DndBodyWrapper = ({
   const items = useMemo(() => rows.map((row: any) => row.id), [rows])
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
+    useSensor(PointerSensor, sensorOptions),
+    useSensor(MouseSensor, sensorOptions),
+    useSensor(TouchSensor, sensorOptions),
   )
 
   return (

@@ -57,8 +57,11 @@
 - **Доступность — хвосты после клавиатурной навигации.** WCAG 2.1.1 закрыт с
   плагином `keyboardNavigation` ([ADR 0031](decisions/0031-wcag-keyboard.md),
   KB1–KB10); остаток WCAG 2.1 AA — [ADR 0032](decisions/0032-wcag-aa-remainder.md)
-  (W1–W17), проверка автоматикой — ADR 0033. Остаются: проверка на NVDA / JAWS / VoiceOver (гайд — `docs/testing/screen-readers.md`); пункты меню «Сдвинуть …» как видимая подсказка к
-  `Alt+Shift+стрелкам`; `enableKeyboardNavigation` в `ALL_PLUGINS` перф-матрицы
+  (W1–W17), проверка автоматикой — ADR 0033, WCAG 2.2 AA (альтернатива
+  перетаскиванию меню на ручках, зона нажатия 24×24) —
+  [ADR 0034](decisions/0034-wcag-22-dragging-and-target-size.md). Остаются:
+  проверка на NVDA / JAWS / VoiceOver (гайд — `docs/testing/screen-readers.md`);
+  `enableKeyboardNavigation` в `ALL_PLUGINS` перф-матрицы
   (сдвигает замеры P1–P8 — решать вместе с пересмотром перф-базы).
 
 - **Полная поддержка сводных таблиц (pivot).** Первоклассный режим pivot, со **всеми

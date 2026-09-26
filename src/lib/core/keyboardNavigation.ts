@@ -970,6 +970,8 @@ export const useKeyboardNavigationGrid = (
       const target = event.target as HTMLElement
       if (
         tracking.pointer ||
+        // Фокус в портале (пункты меню) всплывает по React-дереву — не наш вход.
+        !root.contains(target) ||
         (from && root.contains(from)) ||
         // Возврат фокуса на триггер из закрывшегося всплывающего окна (меню в
         // портале уже размонтировано — источника нет); вход по Tab его имеет.

@@ -12,6 +12,8 @@
     [ADR 0004](0004-core-on-tanstack-table.md) — загрузка и скелетоны.
   - [ADR 0009](0009-test-coverage-visual-and-performance.md) — один тест на
     требование; префикс требований этого ADR — `W<n>`.
+  - [ADR 0034](0034-wcag-22-dragging-and-target-size.md) — продолжение до
+    WCAG 2.2 AA: альтернатива перетаскиванию (2.5.7) и размер целей (2.5.8).
 
 ## Контекст
 

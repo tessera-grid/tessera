@@ -19,9 +19,14 @@
     outline: none;
   }
 
-  &[data-kn-cell][data-kn-active='true']:focus-visible {
-    outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
-    outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
+  /* Псевдоэлемент, а не outline: иначе грип ширины у края перекрыл бы контур. */
+  &[data-kn-cell][data-kn-active='true']:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
+    pointer-events: none;
   }
 
   /* Бордеры для ячеек заголовков */
@@ -137,6 +142,11 @@
   & :global(.drag__handler--column) {
     position: absolute !important;
     left: 0 !important;
+  }
+
+  /* Зона нажатия 24×24 — вправо от края ячейки, не на грип ширины соседа (ADR 0034). */
+  & :global(.drag__handler--column)::before {
+    inset: -4px -8px -4px 0;
   }
 }
 

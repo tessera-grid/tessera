@@ -22,7 +22,7 @@ import type { Table } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
 import { useSlice } from '../core/reactivity'
 import { getColumnDraggingEvents } from '../plugins/columnDragging'
-import { Z_INDEX, autoScrollOnlyX } from './dnd/parameters'
+import { Z_INDEX, autoScrollOnlyX, sensorOptions } from './dnd/parameters'
 import { horizontalCollisionDetection } from './dnd/collisionDetection'
 import { OverlayHeadCell } from './OverlayHeadCell'
 
@@ -85,9 +85,9 @@ export const DndHeadWrapper = ({
   }, [columnDraggingActiveId, headers])
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
+    useSensor(PointerSensor, sensorOptions),
+    useSensor(MouseSensor, sensorOptions),
+    useSensor(TouchSensor, sensorOptions),
   )
 
   const items: string[] = useMemo(

@@ -131,8 +131,9 @@
 - **−** Полное соответствие WCAG 2.1 AA **не** заявляется: WCAG 2.1.1 (Keyboard)
   закрыт [ADR 0031](0031-wcag-keyboard.md) только **с плагином**
   `keyboardNavigation`; объявления, иерархия строк, ошибки ввода и контраст —
-  [ADR 0032](0032-wcag-aa-remainder.md); вне области остаётся проверка на
-  реальных скринридерах.
+  [ADR 0032](0032-wcag-aa-remainder.md); критерии WCAG 2.2 AA про указатель
+  (2.5.7, 2.5.8) — [ADR 0034](0034-wcag-22-dragging-and-target-size.md); вне
+  области остаётся проверка на реальных скринридерах.
 - **−** Смена 0-based → 1-based ARIA-индексов **изменила контракт** тестов ядра:
   `core-structure` R2 (`aria-colindex` теперь `1..n`) и R3 (`aria-rowindex`
   теперь 1-based с учётом заголовка) обновлены; хелпер `renderedColumnIndexes`

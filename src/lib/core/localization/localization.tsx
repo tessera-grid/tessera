@@ -70,6 +70,22 @@ export interface TableLabels {
   expandColumn: string
   reorderColumn: string
   rowActionsColumn: string
+  /** Доступные имена ручек перетаскивания — кнопок меню перестановки */
+  moveColumn: string
+  moveRow: string
+  /** Пункты меню ручки колонки */
+  moveLeft: string
+  moveRight: string
+  /** Пункты меню ручки строки; `indentRow` / `outdentRow` — вложить в группу выше / вынести из группы */
+  moveUp: string
+  moveDown: string
+  indentRow: string
+  outdentRow: string
+  /** Меню грипа ширины: имя меню и пункты */
+  columnWidth: string
+  widenColumn: string
+  narrowColumn: string
+  resetColumnWidth: string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -106,6 +122,18 @@ export const DEFAULT_LABELS: TableLabels = {
   expandColumn: 'Expand',
   reorderColumn: 'Reorder',
   rowActionsColumn: 'Actions',
+  moveColumn: 'Move column',
+  moveRow: 'Move row',
+  moveLeft: 'Move left',
+  moveRight: 'Move right',
+  moveUp: 'Move up',
+  moveDown: 'Move down',
+  indentRow: 'Indent',
+  outdentRow: 'Outdent',
+  columnWidth: 'Column width',
+  widenColumn: 'Wider',
+  narrowColumn: 'Narrower',
+  resetColumnWidth: 'Reset width',
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)
