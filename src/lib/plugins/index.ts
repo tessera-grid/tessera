@@ -3,11 +3,7 @@
 // Центрального статического реестра нет — набор собирает потребитель импортами.
 
 export { rowSelection, type RowSelectionOptions } from './rowSelection'
-export {
-  rowExpanding,
-  DEFAULT_MAX_EXPANDING_DEPTH,
-  type RowExpandingOptions,
-} from './rowExpanding'
+export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
 export { rowDragging, type RowDraggingOptions } from './rowDragging'
 export { rowGrouping, type RowGroupingOptions } from './rowGrouping'
 export { rowActions, type RowActionsPluginOptions } from './rowActions'

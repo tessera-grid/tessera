@@ -837,9 +837,7 @@ export const Table = () => {
 }
 ```
 
-> ⚠️ Обратите внимание, что `Tessera` уже экспортирует готовые фасады кнопок действий для таблицы, а также функции и классы для их стилизации.
->
-> Для этого используйте импорты `@mstrvtt/tessera/ui` или `@mstrvtt/tessera/styles`.
+> ⚠️ Обратите внимание, что `Tessera` уже экспортирует готовые фасады кнопок действий для таблицы (`CellButton`, `RowButton`) — импортируйте их из `@mstrvtt/tessera/ui`. Их вид настраивается токенами темы `--tsr-comp-action-button-*`.
 
 Поздравляю! Теперь мы можем реагировать на нажатии кнопки в каждой строке!
 
@@ -1391,6 +1389,28 @@ const Table = () => {
 > Не смешивайте техническую реализацию таблицы и Вашу бизнес-логику, иначе библиотека превратится в God Object, а ее поддержка станет невозможна.
 >
 > Мы постарались разложить эти абстракции на слои, чтобы решение оставалось максимально гибким.
+
+#### Типы из TanStack Table
+
+`Tessera` не переэкспортирует типы `TanStack Table` (`ColumnDef`, `Row`, `Cell`, `CellContext`, `OnChangeFn` и т.д.): `@tanstack/react-table` — peer-зависимость, импортируйте их напрямую.
+
+Типы v9 параметризованы набором фич (`TFeatures`). Набор выводится из Ваших плагинов через `TesseraFeatures`:
+
+```tsx
+import { useCreateTable, type TesseraFeatures } from '@mstrvtt/tessera'
+import { columnPinning, columnSorting } from '@mstrvtt/tessera/plugins'
+import type { ColumnDef } from '@tanstack/react-table'
+
+// Держите набор плагинов вне компонента: он же задаёт тип фич
+const plugins = [columnPinning(), columnSorting()] as const
+type Features = TesseraFeatures<typeof plugins>
+
+const columns: ColumnDef<Features, Person, unknown>[] = [
+  { accessorKey: 'name', meta: { pinSides: 'start' } },
+]
+```
+
+Аугментации `Tessera` (методы `commonFeature` вроде `column.getIsActionsColumn()`, `meta.pinSides`, срезы состояния плагинов) подключаются вместе с импортом пакета — отдельный импорт для них не нужен. API фичи виден в типах ровно тогда, когда плагин есть в `plugins`.
 
 ### Полезные ссылки
 

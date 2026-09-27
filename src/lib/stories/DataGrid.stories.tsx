@@ -13,7 +13,7 @@ import { expect, waitFor } from 'storybook/test'
 
 import { Card, CardContent, Grid, NoDataStub } from './_shims'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../lib/plugins/rowActions'
-import { useRowExpandingState } from '../../lib/core/createState'
+import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
@@ -276,7 +276,7 @@ export const StoryComponent = memo(
       updateArgs,
     })
 
-    const { rowExpanded, onRowExpandedChange } = useRowExpandingState(
+    const { expanded, onExpandedChange } = useExpandedState(
       initialExpanded ??
         (dataMode === 'hierarchy' ? true : expandingInitialState),
     )
@@ -291,12 +291,12 @@ export const StoryComponent = memo(
       columns: columnsGetter,
       data: showBatchToolbar ? dataOnPage : data,
       state: {
-        expanded: rowExpanded,
+        expanded,
         rowSelection,
         ...(grouping !== undefined ? { grouping } : {}),
       },
       handlers: {
-        onExpandedChange: onRowExpandedChange,
+        onExpandedChange,
         onRowSelectionChange,
         onRowOrderChange: setData,
         ...(initialGrouping !== undefined

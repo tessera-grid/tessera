@@ -1,8 +1,12 @@
-export { useCreateTable } from './lib/core/useCreateTable'
+export {
+  useCreateTable,
+  type UseCreateTableParams,
+} from './lib/core/useCreateTable'
+export type { TesseraFeatures } from './lib/core/features'
+export type { SkeletonOptions } from './lib/core/skeletonOptions'
 
 export {
   getActionColumnId,
-  checkIsActionColumn,
   COLUMN_ACTIONS_SIZE,
 } from './lib/core/createColumns/actionColumnParams'
 
@@ -19,11 +23,10 @@ export {
   useColumnPinningState,
   useRowSelectionState,
   useColumnSizingState,
-  useRowExpandingState,
-  useColumnSortingState,
+  useExpandedState,
+  useSortingState,
   useColumnVisibilityState,
-  useRowGroupingState,
-  stateUpdater,
+  useGroupingState,
 } from './lib/core/createState'
 
 // Запись фичи Tessera (экспортируется как TablePlugin).
@@ -31,7 +34,14 @@ export type { TesseraFeatureEntry as TablePlugin } from './lib/core/features'
 export type {
   HeaderComponentProps,
   CellComponentProps,
+  PluginSlot,
 } from './lib/core/createSlots'
+export type { ServiceColumn } from './lib/core/createColumns'
+export type {
+  KeyboardAction,
+  CellKeyboardAction,
+  HeaderKeyboardAction,
+} from './lib/core/keyboardActions'
 
 // Авторский API плагина: definePlugin + инъекторы каналов (hooks/state) +
 // типы пропсов компонентов. Каналы приходят в компонент пропсами, без кастов.
@@ -56,9 +66,9 @@ export type {
   SlotName,
   HeaderAction,
   RowAction,
-  SlotActions,
-  HeaderActionSlot,
-  SlotMenuConfig,
+  ActionMenuDeclaration,
+  ContextMenuAction,
+  ContextMenuContext,
 } from './lib/core/headerActions'
 
 export { DataGrid } from './lib/grid/DataGrid'
@@ -73,7 +83,7 @@ export {
 
 export {
   type TableIcons,
-  type SvgIconProps,
+  type IconComponent,
   DEFAULT_ICONS,
 } from './lib/ui/icons'
 

@@ -5,5 +5,6 @@ export {
   useIcons,
   DEFAULT_ICONS,
   type TableIcons,
+  type IconComponent,
   type IconsProviderProps,
 } from './IconsContext'

@@ -37,7 +37,6 @@ export default defineConfig({
         index: resolvePath('src/index.ts'),
         plugins: resolvePath('src/plugins.ts'),
         ui: resolvePath('src/ui.ts'),
-        styles: resolvePath('src/styles.ts'),
       },
       formats: ['es', 'cjs'],
       fileName: (format, entryName) =>

@@ -22,10 +22,7 @@ import {
   type OnChangeFn,
   type RowSelectionState,
   type SortingState,
-  makeStateUpdater,
 } from '@tanstack/react-table'
-
-import type { RowData, Table, TableFeatures, TableState } from '../types'
 
 // --- Пиннинг сервисных колонок (start/end) -----------------------------------
 
@@ -162,11 +159,9 @@ export const useColumnPinningState = (
   return { columnPinning, onColumnPinningChange }
 }
 
-export const useColumnSortingState = (
-  initial: SortingState = EMPTY_SORTING,
-) => {
-  const [sorting, onColumnSortingChange] = useControlledSlice(initial)
-  return { sorting, onColumnSortingChange }
+export const useSortingState = (initial: SortingState = EMPTY_SORTING) => {
+  const [sorting, onSortingChange] = useControlledSlice(initial)
+  return { sorting, onSortingChange }
 }
 
 export const useRowSelectionState = (
@@ -176,31 +171,12 @@ export const useRowSelectionState = (
   return { rowSelection, onRowSelectionChange }
 }
 
-export const useRowExpandingState = (
-  initial: ExpandedState = EMPTY_EXPANDED,
-) => {
-  const [rowExpanded, onRowExpandedChange] = useControlledSlice(initial)
-  return { rowExpanded, onRowExpandedChange }
+export const useExpandedState = (initial: ExpandedState = EMPTY_EXPANDED) => {
+  const [expanded, onExpandedChange] = useControlledSlice(initial)
+  return { expanded, onExpandedChange }
 }
 
-export const useRowGroupingState = (
-  initial: GroupingState = EMPTY_GROUPING,
-) => {
+export const useGroupingState = (initial: GroupingState = EMPTY_GROUPING) => {
   const [grouping, onGroupingChange] = useControlledSlice(initial)
   return { grouping, onGroupingChange }
 }
-
-// --- Публичный stateUpdater ---------------------------------------------------
-
-/**
- * Обёртка для построения updater'а среза состояния. Состояние живёт в атомах —
- * используем штатный `makeStateUpdater(key, table)`.
- */
-export const stateUpdater = <
-  TFeatures extends TableFeatures,
-  TData extends RowData,
-  K extends keyof TableState<TFeatures> & string,
->(
-  key: K,
-  table: Table<TFeatures, TData>,
-) => makeStateUpdater(key as never, table as never)
