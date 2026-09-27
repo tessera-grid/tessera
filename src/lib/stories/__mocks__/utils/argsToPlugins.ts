@@ -63,11 +63,11 @@ export interface FeatureToggles {
   enableKeyboardNavigation?: boolean
 }
 
-export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
+export const argsToPlugins = (o: FeatureToggles) => {
   // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
   // строки TanStack — предикат кладём в опции фабрики.
   const expanding = rowExpanding({ enabled: !!o.enableRowExpanding })
-  const rowExpandingEntry: RegistryEntry = {
+  const rowExpandingEntry = {
     ...expanding,
     options: {
       ...expanding.options,
@@ -117,5 +117,5 @@ export const argsToPlugins = (o: FeatureToggles): RegistryEntry[] => {
       id: 'rowActionsDemo',
       slotActions: rowActionsDemo,
     },
-  ]
+  ] as const
 }

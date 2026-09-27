@@ -212,8 +212,13 @@ type UnionToIntersection<U> = (
   ? I
   : never
 
+// Запись без `features` даёт `{}` и не обнуляет вывод остальных записей.
+type EntryFeatures<E> = E extends { features?: infer F }
+  ? NonNullable<F>
+  : never
+
 type MergeFeatures<T extends readonly TesseraFeatureEntry[]> =
-  UnionToIntersection<T[number]['features']>
+  UnionToIntersection<EntryFeatures<T[number]>>
 
 /**
  * Тип набора фич: always-on `commonFeature` + `columnOrderingFeature` (порядок/
