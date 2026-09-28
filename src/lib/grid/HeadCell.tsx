@@ -1,6 +1,6 @@
-// HeadCell: обычная ячейка заголовка (HeadCell) и перетаскиваемая
-// (DraggableHeadCell, useSortable + SortableContext). Пиннинг start/end по листьям
-// ячейки-заголовка; контент через flexRender; действия слотов — ActionsZone.
+// HeadCell: ячейка заголовка (перетаскиваемая обёртка — DraggableHeadCell).
+// Пиннинг start/end по листьям ячейки-заголовка; контент через flexRender;
+// действия слотов — ActionsZone.
 // Опциональные методы фич (sort/resize/drag) вызываются через ?. — плагина может
 // не быть в наборе.
 import {
@@ -14,7 +14,6 @@ import {
 
 import type { DraggableAttributes } from '@dnd-kit/core'
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
-import { useSortable } from '@dnd-kit/sortable'
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
@@ -35,17 +34,17 @@ import { ActionsZone } from './headerActions/ActionsZone'
 import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
 import { pinnedSideToDom } from './cellPinningParams'
+import { getColumnSizeVariable, getHeaderSizeVariable } from './columnSizes'
 import {
-  getColumnSizeVariable,
-  getHeaderSizeVariable,
-  getPinnedEndOffset,
-  getPinnedStartOffset,
-} from './columnSizes'
+  getAriaSort,
+  getDisabledSortable,
+  getHeaderPinning,
+} from './headCellParams'
 
 import headCellStyles from '../grid/HeadCell/HeadCell.module.css'
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 
-interface TableHeadCellProps {
+export interface TableHeadCellProps {
   layout: 'grid' | 'flex'
   header: Header<any, any, unknown>
   leftHeaderSlot?: RegisterSlotParams<any>[]
@@ -70,26 +69,7 @@ interface HeadCellViewProps extends TableHeadCellProps {
   drag: DragBindings | null
 }
 
-const getAriaSort = (
-  header: Header<any, any, unknown>,
-): 'ascending' | 'descending' | 'none' | undefined => {
-  if (!(header.column.getCanSort?.() ?? false)) {
-    return undefined
-  }
-  const sorted = header.column.getIsSorted?.()
-  if (sorted === 'asc') return 'ascending'
-  if (sorted === 'desc') return 'descending'
-  return 'none'
-}
-
-const getDisabledSortable = (header: Header<any, any, unknown>): boolean =>
-  header.column.getIsPinned() !== false ||
-  header.column.getIsActionsColumn() ||
-  // При presence-based композиции columnDragging может отсутствовать — тогда
-  // getCanDrag не определён (перетаскивания нет), что эквивалентно canDrag=false.
-  !(header.column.getCanDrag?.() ?? false)
-
-const HeadCellView = ({
+export const HeadCellView = ({
   layout,
   header,
   leftHeaderSlot,
@@ -103,31 +83,14 @@ const HeadCellView = ({
   // Коарс-подписка (TODO Phase D: сузить). Нужна для aria-sort/resizing/пиннинга.
   useTableState(table as never, (state: unknown) => state)
 
-  // Пиннинг по листьям ЭТОЙ ячейки (reorder-out: сегмент закреплён, только если
-  // все его листья закреплены на одной стороне). start/end (v9).
-  const leafCols = header.getLeafHeaders().map(leaf => leaf.column)
-  const firstLeaf = leafCols[0] ?? header.column
-  const lastLeaf = leafCols.at(-1) ?? header.column
-  const isStartPinned =
-    leafCols.length > 0 && leafCols.every(c => c.getIsPinned() === 'start')
-  const isEndPinned =
-    leafCols.length > 0 && leafCols.every(c => c.getIsPinned() === 'end')
-  const headerPinned = isStartPinned ? 'start' : isEndPinned ? 'end' : false
-
-  const startCols = (table as any).getStartVisibleLeafColumns() as {
-    id: string
-  }[]
-  const endCols = (table as any).getEndVisibleLeafColumns() as { id: string }[]
-  const isLastStartPinnedColumn =
-    isStartPinned && startCols.at(-1)?.id === lastLeaf.id
-  const isFirstEndPinnedColumn = isEndPinned && endCols[0]?.id === firstLeaf.id
-
-  const startPinnedOffset = isStartPinned
-    ? getPinnedStartOffset(table as never, firstLeaf as never)
-    : undefined
-  const endPinnedOffset = isEndPinned
-    ? getPinnedEndOffset(table as never, lastLeaf as never)
-    : undefined
+  const {
+    firstLeaf,
+    headerPinned,
+    isLastStartPinnedColumn,
+    isFirstEndPinnedColumn,
+    startPinnedOffset,
+    endPinnedOffset,
+  } = getHeaderPinning(header)
 
   const isActionsColumn = header.column.getIsActionsColumn()
   const enableResizingColumn = header.column.getCanResize?.() ?? false
@@ -299,50 +262,3 @@ export const HeadCell = memo((props: TableHeadCellProps) => {
 })
 
 HeadCell.displayName = 'HeadCell'
-
-/**
- * Ячейка заголовка с включённым Drag&Drop: регистрирует колонку в SortableContext;
- * для закреплённых/служебных колонок сортировка отключается через `disabled`.
- */
-export const DraggableHeadCell = memo((props: TableHeadCellProps) => {
-  const { header } = props
-
-  const disabledSortable = getDisabledSortable(header)
-
-  const {
-    setActivatorNodeRef,
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-  } = useSortable({
-    id: header.column.id,
-    data: {
-      type: 'column',
-      orderIndex: header.column.getIndex(),
-      // При presence-based композиции columnDragging может отсутствовать — тогда
-      // getDraggableIndex не определён, а сортировка всё равно заблокирована.
-      draggableIndex: header.column.getDraggableIndex?.() ?? -1,
-      disabledSortable,
-    },
-    disabled: disabledSortable,
-  })
-
-  return (
-    <HeadCellView
-      {...props}
-      disabledSortable={disabledSortable}
-      drag={{
-        setNodeRef,
-        setActivatorNodeRef,
-        listeners,
-        attributes,
-        transformX: transform?.x ?? 0,
-        isDragging,
-      }}
-    />
-  )
-})
-
-DraggableHeadCell.displayName = 'DraggableHeadCell'

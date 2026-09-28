@@ -9,7 +9,8 @@ import clsx from 'clsx'
 
 import type { Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
-import { BodyRow, DraggableBodyRow, type TreeAria } from './BodyRow'
+import { BodyRow, type TreeAria } from './BodyRow'
+import { DraggableBodyRow } from './DraggableBodyRow'
 
 import styles from '../grid/Body/Body.module.css'
 

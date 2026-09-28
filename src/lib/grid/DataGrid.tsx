@@ -1,32 +1,16 @@
 // Корневой DataGrid: реактивность через table.atoms/store (useTableState/useSlice
 // в компонентах). Стейт-снимки (isResizingColumns/rowDragging) читаются реактивно
 // из общего store.
-import {
-  type ClipboardEvent as ReactClipboardEvent,
-  type CSSProperties,
-  useCallback,
-  useMemo,
-  useRef,
-} from 'react'
+import { type CSSProperties, useCallback, useMemo, useRef } from 'react'
 
 import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
-import {
-  cellRangesToHtml,
-  cellRangesToTsv,
-  countCells,
-  hasSelectedCells,
-} from '../core/clipboard'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
-import {
-  isTreeGrid,
-  useKeyboardNavigationGrid,
-} from '../core/keyboardNavigation'
+import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
-import { announceLabel } from '../core/announcer'
 import { LiveRegion } from './LiveRegion'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
@@ -40,11 +24,8 @@ import {
 } from '../core/virtualization'
 import { getRowDraggableStyles } from '../plugins/rowDragging'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
-import { BodyDndBoundary } from './DndBodyWrapper'
-import { MemoizedBody } from './Body'
-import { MemoizedFooter } from './Footer'
-import { HeadDndBoundary } from './DndHeadWrapper'
-import { MemoizedHead } from './Head'
+import { useCellSelectionCopy } from './useCellSelectionCopy'
+import { DataGridTable } from './DataGridTable'
 import { SkeletonOverlay } from './SkeletonOverlay'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
@@ -97,14 +78,7 @@ export const DataGrid = ({
     | { activeId: string | null; acceptable: boolean; offsetLeft: number }
     | undefined
 
-  const enableRowDragging = !!(table.options as any).enableRowDragging
-  const enableColumnDragging = !!(table.options as any).enableColumnDragging
   const enableContextMenu = !!(table.options as any).enableContextMenu
-  // rowSelection даёт функциональный enableRowSelection (гейт группировки), выкл — false.
-  const enableRowSelection = !!(table.options as any).enableRowSelection
-  // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
-  // становится treegrid (ADR 0032, W10).
-  const hierarchical = isTreeGrid(table)
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -114,36 +88,7 @@ export const DataGrid = ({
   // без плагина cellSelection). См. core/cellSelectionAutoScroll.
   useCellSelectionAutoScroll(table, getScrollElement)
 
-  // Копирование выделения ячеек в буфер. Инертно без плагина cellSelection:
-  // getSelectedCellRangesData есть только когда зарегистрирована stock-фича
-  // (ядро плагин не импортит — читаем duck-typed, ADR 0029). Нативное copy-событие
-  // всплывает от сфокусированной ячейки; текстовое выделение пользователя не трогаем.
-  const getRanges = (table as any).getSelectedCellRangesData as
-    (() => unknown[][][]) | undefined
-  const handleCopy = useCallback(
-    (event: ReactClipboardEvent<HTMLDivElement>) => {
-      if (typeof getRanges !== 'function') {
-        return
-      }
-      const textSelection = window.getSelection?.()
-      if (
-        textSelection &&
-        !textSelection.isCollapsed &&
-        textSelection.toString()
-      ) {
-        return
-      }
-      const regions = getRanges()
-      if (!hasSelectedCells(regions)) {
-        return
-      }
-      event.preventDefault()
-      event.clipboardData.setData('text/plain', cellRangesToTsv(regions))
-      event.clipboardData.setData('text/html', cellRangesToHtml(regions))
-      announceLabel(table, l => l.announceCopy(countCells(regions)))
-    },
-    [getRanges, table],
-  )
+  const handleCopy = useCellSelectionCopy(table)
 
   // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
   // на корне. `null` без плагина — остаётся role=table без обработчиков.
@@ -199,15 +144,6 @@ export const DataGrid = ({
       }),
     [rowDragging?.activeId, rowDragging?.acceptable, rowDragging?.offsetLeft],
   )
-
-  const {
-    leftHeaderSlot,
-    rightHeaderSlot,
-    leftCellSlot,
-    rightCellSlot,
-    cellSlot,
-    actionRowSlot,
-  } = table.getRenderSlots() ?? {}
 
   const { showSkeletonOverlay } = useSkeletonOverlayState(
     (table.options as any).enableSkeleton,
@@ -317,88 +253,22 @@ export const DataGrid = ({
                 {showSkeletonOverlay ? (
                   <SkeletonOverlay table={table} columnSizes={columnSizes} />
                 ) : (
-                  <div
-                    role={
-                      keyboardNavigation
-                        ? hierarchical
-                          ? 'treegrid'
-                          : 'grid'
-                        : 'table'
-                    }
-                    aria-label={tableLabel}
-                    aria-busy={showLinearProgress || undefined}
-                    aria-rowcount={headerGroupsDepth + rows.length}
-                    aria-colcount={leafColumns.length}
-                    className={clsx('MuiTable-root', dataGridStyles.table)}
-                    aria-multiselectable={
-                      keyboardNavigation &&
-                      (enableRowSelection ||
-                        !!(table.options as any).enableCellSelection)
-                        ? true
-                        : undefined
-                    }
-                    onKeyDown={keyboardNavigation?.onKeyDown}
-                    onFocusCapture={keyboardNavigation?.onFocusCapture}
-                    onPointerDownCapture={
-                      keyboardNavigation?.onPointerDownCapture
-                    }
-                    style={{
-                      ...columnSizes,
-                      ...virtualPaddingStyles,
-                    }}
-                  >
-                    <HeadDndBoundary
-                      table={table}
-                      leftHeaderSlot={leftHeaderSlot}
-                      rightHeaderSlot={rightHeaderSlot}
-                      enableColumnDragging={enableColumnDragging}
-                    >
-                      <MemoizedHead
-                        layout={layout}
-                        style={headStyles}
-                        headerGroups={headerGroups}
-                        virtualColumns={virtualColumns}
-                        leftHeaderSlot={leftHeaderSlot}
-                        rightHeaderSlot={rightHeaderSlot}
-                        isResizingColumns={isResizingColumns}
-                        isVirtualColumns={!hasNestedGroups}
-                        enableColumnDragging={enableColumnDragging}
-                      />
-                    </HeadDndBoundary>
-                    <BodyDndBoundary
-                      table={table}
-                      enableRowDragging={enableRowDragging}
-                    >
-                      <MemoizedBody
-                        layout={layout}
-                        rows={rows}
-                        virtualRows={virtualRows}
-                        virtualColumns={virtualColumns}
-                        leafColumns={leafColumns}
-                        leftCellSlot={leftCellSlot}
-                        rightCellSlot={rightCellSlot}
-                        cellSlot={cellSlot}
-                        actionRowSlot={actionRowSlot}
-                        headerRowCount={headerGroupsDepth}
-                        selectableRows={
-                          !!keyboardNavigation && enableRowSelection
-                        }
-                        treeRows={!!keyboardNavigation && hierarchical}
-                        isResizingColumns={isResizingColumns}
-                        isVirtualColumns={!hasNestedGroups}
-                        enableRowDragging={enableRowDragging}
-                      />
-                    </BodyDndBoundary>
-                    {(table.options as any).enableFooter && (
-                      <MemoizedFooter
-                        layout={layout}
-                        footerGroup={table.getFooterGroups().at(0)}
-                        virtualColumns={virtualColumns}
-                        isVirtualColumns={!hasNestedGroups}
-                        isResizingColumns={isResizingColumns}
-                      />
-                    )}
-                  </div>
+                  <DataGridTable
+                    table={table}
+                    layout={layout}
+                    headStyles={headStyles}
+                    headerGroups={headerGroups}
+                    rows={rows}
+                    leafColumns={leafColumns}
+                    virtualRows={virtualRows}
+                    virtualColumns={virtualColumns}
+                    isVirtualColumns={!hasNestedGroups}
+                    isResizingColumns={isResizingColumns}
+                    keyboardNavigation={keyboardNavigation}
+                    label={tableLabel}
+                    busy={showLinearProgress}
+                    style={{ ...columnSizes, ...virtualPaddingStyles }}
+                  />
                 )}
               </div>
               {keyboardNavigation && (

@@ -6,7 +6,8 @@ import clsx from 'clsx'
 
 import type { HeaderGroup } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
-import { DraggableHeadCell, HeadCell } from './HeadCell'
+import { DraggableHeadCell } from './DraggableHeadCell'
+import { HeadCell } from './HeadCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerHeadColumn } from './RightFillerHeadColumn'
 
