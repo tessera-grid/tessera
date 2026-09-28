@@ -28,9 +28,9 @@ const nextFrame = () =>
 const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
 
-/** Ширина спейсера центра (`--virtual-center-width`) на узле `.MuiTable-root`. */
+/** Ширина спейсера центра (`--virtual-center-width`) на узле `.data-grid__table`. */
 const centerWidth = () => {
-  const table = document.querySelector<HTMLElement>('.MuiTable-root')!
+  const table = document.querySelector<HTMLElement>('.data-grid__table')!
   return (
     parseFloat(
       getComputedStyle(table).getPropertyValue('--virtual-center-width'),

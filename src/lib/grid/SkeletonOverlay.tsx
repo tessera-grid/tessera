@@ -188,7 +188,7 @@ export const SkeletonOverlay = memo(
 
     return (
       <div
-        className={clsx('MuiTable-root', dataGridStyles.table)}
+        className={clsx('data-grid__table', dataGridStyles.table)}
         style={{ ...columnSizes }}
       >
         <span role="status" className={dataGridStyles['visually-hidden']}>

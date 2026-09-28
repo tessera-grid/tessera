@@ -29,7 +29,7 @@ const BODY_CELL = '.data-grid__body-cell'
 /** ColumnPinning plugin's pin toggle, rendered per pinnable header. */
 const PIN_BUTTON = '.column-pin__button'
 /** The element that actually overflows and scrolls. */
-const SCROLLER = '.MuiTableContainer-root'
+const SCROLLER = '.data-grid__container'
 /** A header cell of a real (non-action) data column. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 /** A head cell currently pinned to the left edge. */

@@ -12,7 +12,7 @@ export const Stories = composeStories(stories)
 
 /** Stable DOM selectors — class names / roles are part of the component contract. */
 export const SEL = {
-  scroller: '.MuiTableContainer-root',
+  scroller: '.data-grid__container',
   headCell: '.data-grid__head-cell',
   bodyRow: '.data-grid__body-row',
   bodyCell: '.data-grid__body-cell',
@@ -43,7 +43,7 @@ export function renderGrid(args: GridArgs = {}) {
 export function getScroller(): HTMLElement {
   const el = document.querySelector<HTMLElement>(SEL.scroller)
   if (!el) {
-    throw new Error('scroll container (.MuiTableContainer-root) not found')
+    throw new Error('scroll container (.data-grid__container) not found')
   }
   return el
 }

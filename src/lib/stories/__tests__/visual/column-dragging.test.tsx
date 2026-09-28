@@ -38,7 +38,7 @@ const OVERLAY = '.data-grid-head__cell--overlay'
 /** ColumnPinning plugin's pin toggle, rendered per pinnable header. */
 const PIN_BUTTON = '.column-pin__button'
 /** The element that actually overflows and scrolls. */
-const SCROLLER = '.MuiTableContainer-root'
+const SCROLLER = '.data-grid__container'
 
 // --- Rendering / DOM helpers --------------------------------------------------
 

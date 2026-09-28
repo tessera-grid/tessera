@@ -187,12 +187,7 @@ export const DataGrid = ({
           rowCount={rows.length}
         />
         <div
-          className={clsx(
-            'MuiPaper-root',
-            'MuiTableContainer-root',
-            'MuiPaper-rounded',
-            themeClassName,
-          )}
+          className={clsx('data-grid__container', themeClassName)}
           ref={scrollableNodeRef}
           style={{ ...containerStyles, ...style }}
         >
@@ -238,8 +233,7 @@ export const DataGrid = ({
               )}
               <div
                 className={clsx(
-                  'MuiPaper-root',
-                  'MuiTableContainer-root',
+                  'data-grid__container',
                   dataGridStyles.table__container,
                   {
                     [dataGridStyles['table__container--skeleton']]:

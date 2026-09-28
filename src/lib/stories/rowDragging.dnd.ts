@@ -19,7 +19,7 @@ export const OVERLAY = '.data-grid-body__row'
 /** The row whose slot shows the colour drop-indicator while dragging. */
 export const DRAG_FILL = '.data-grid__body-row[data-row-draggable="true"]'
 /** The element that actually overflows and scrolls. */
-export const SCROLLER = '.MuiTableContainer-root'
+export const SCROLLER = '.data-grid__container'
 
 export const sortByIndex = (a: HTMLElement, b: HTMLElement) =>
   Number(a.getAttribute('data-index')) - Number(b.getAttribute('data-index'))

@@ -78,7 +78,7 @@ export const DataGridTable = ({
       aria-busy={busy || undefined}
       aria-rowcount={headerGroups.length + rows.length}
       aria-colcount={leafColumns.length}
-      className={clsx('MuiTable-root', dataGridStyles.table)}
+      className={clsx('data-grid__table', dataGridStyles.table)}
       aria-multiselectable={
         keyboardNavigation &&
         (enableRowSelection || !!options.enableCellSelection)
