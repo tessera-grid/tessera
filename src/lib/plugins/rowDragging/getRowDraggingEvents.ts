@@ -13,12 +13,12 @@ import {
   getDragSourceParams,
   getMaxDepth,
   getMinDepth,
-  getNewOriginalIndex,
   getOffsetLeftFromDepth,
   getTargetParentId,
   getValidDepth,
 } from './draggingHelpers'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
+import { reorderRows } from './reorderRows'
 import type { RowDragOverlayState, RowSortableData } from './types'
 
 /**
@@ -217,159 +217,18 @@ export const getRowDraggingEvents = (
         return resetDragState()
       }
 
-      onRowOrderChange?.((prev: any[]) => {
-        const newArray = [...prev]
-
-        // Из root в root
-        if (!activeParentId && !overParentId) {
-          const activeItem = newArray[activeOriginalIndex]
-
-          newArray.splice(activeOriginalIndex, 1)
-
-          // targetItem отсутствует только при движении снизу вверх на самый первый индекс таблицы
-          if (!targetItem) {
-            newArray.splice(0, 0, activeItem)
-
-            return newArray
-          }
-
-          // Если элемент перетаскивается не в группу, а на следующий индекс после неё,
-          // берём индекс самой группы, а не последнего её элемента
-          if (targetItem.getIsLastSubRow() && currentDepth === 0) {
-            const nextIndexAfterExpandedGroup = getNewOriginalIndex(
-              targetItem.getParentRow()!.index,
-              isDownMove,
-            )
-
-            newArray.splice(nextIndexAfterExpandedGroup, 0, activeItem)
-
-            return newArray
-          }
-
-          newArray.splice(
-            getNewOriginalIndex(overOriginalIndex, isDownMove),
-            0,
-            activeItem,
-          )
-
-          return newArray
-        }
-
-        // Из группы в группу (или в рамках одной группы)
-        if (activeParentId && overParentId) {
-          const activeParentIndex = newArray.findIndex(
-            row => row.id === activeParentId,
-          )
-
-          const activeItem =
-            newArray[activeParentIndex].subRows[activeOriginalIndex]
-
-          newArray[activeParentIndex].subRows.splice(activeOriginalIndex, 1)
-
-          // Новый индекс в целевой группе: в начало, если группа была свёрнута
-          // (или подстрока перемещается под начало раскрытой группы), иначе целевой
-          const newIndexInGroup =
-            targetItem?.id === overParentId
-              ? 0
-              : getNewOriginalIndex(overOriginalIndex, isDownMove)
-
-          activeItem.parentId = overParentId
-
-          // Индекс целевой группы ищем непосредственно перед вставкой (выше много splice)
-          const overParentIndex = newArray.findIndex(
-            row => row.id === overParentId,
-          )
-
-          newArray[overParentIndex].subRows.splice(
-            newIndexInGroup,
-            0,
-            activeItem,
-          )
-
-          return newArray
-        }
-
-        // Из группы в root
-        if (activeParentId && activeParentRow && !overParentId) {
-          const activeParentIndex = newArray.findIndex(
-            row => row.id === activeParentId,
-          )
-
-          const activeItem =
-            newArray[activeParentIndex].subRows[activeOriginalIndex]
-
-          newArray[activeParentIndex].subRows.splice(activeOriginalIndex, 1)
-
-          // targetItem отсутствует только при движении снизу вверх на первый индекс таблицы
-          if (!targetItem) {
-            newArray.splice(0, 0, {
-              ...activeItem,
-              parentId: undefined,
-            })
-
-            return newArray
-          }
-
-          if (!targetItem.parentId) {
-            newArray.splice(overOriginalIndex + 1, 0, {
-              ...activeItem,
-              parentId: undefined,
-            })
-
-            return newArray
-          }
-
-          // Переместить на индекс ниже группы, из которой элемент удалён, если он
-          // должен располагаться сразу после её последней подстроки
-          if (targetItem.parentId === activeParentId) {
-            newArray.splice(activeParentRow.index + 1, 0, {
-              ...activeItem,
-              parentId: undefined,
-            })
-
-            return newArray
-          }
-
-          // Не в группу, а на следующий индекс после неё — индекс самой группы
-          if (targetItem.getIsLastSubRow() && currentDepth === 0) {
-            const nextIndexAfterExpandedGroup =
-              targetItem.getParentRow()!.index + 1
-
-            newArray.splice(nextIndexAfterExpandedGroup, 0, activeItem)
-
-            return newArray
-          }
-
-          return newArray
-        }
-
-        // Из root в группу
-        if (!activeParentId && overParentId) {
-          const activeItem = newArray[activeOriginalIndex]
-
-          newArray.splice(activeOriginalIndex, 1)
-
-          // В начало, если группа была свёрнута, иначе под целевой индекс
-          const newIndexInGroup =
-            targetItem?.id === overParentId ? 0 : overOriginalIndex + 1
-
-          activeItem.parentId = overParentId
-
-          const overParentIndex = newArray.findIndex(
-            row => row.id === overParentId,
-          )
-
-          newArray[overParentIndex].subRows.splice(
-            newIndexInGroup,
-            0,
-            activeItem,
-          )
-
-          return newArray
-        }
-
-        return newArray
-      })
+      onRowOrderChange?.(prev =>
+        reorderRows(prev, {
+          activeParentId,
+          overParentId,
+          activeParentRow,
+          activeOriginalIndex,
+          overOriginalIndex,
+          targetItem,
+          isDownMove,
+          currentDepth,
+        }),
+      )
 
       expandDraggableGroupAgain(activeRow)
 
