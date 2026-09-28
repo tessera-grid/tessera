@@ -1,10 +1,9 @@
 import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { getScroller } from '../helpers'
 import { cssVar, nextFrame } from './core-helpers'
 
@@ -14,8 +13,6 @@ import { cssVar, nextFrame } from './core-helpers'
 // и клики), состояние читается из DOM-контракта: роль контейнера/ячеек, roving
 // `tabindex`, `data-kn-active`, `document.activeElement`, `data-index` строки,
 // `data-column-id` ячейки.
-
-const composed = composeStories(stories)
 
 type StoryArgs = Partial<Parameters<typeof composed.KeyboardNavigation>[0]>
 

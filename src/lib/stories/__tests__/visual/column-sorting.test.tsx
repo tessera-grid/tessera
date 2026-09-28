@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Every Column Sorting requirement is its own named test, prefixed with its spec
 // ID (CS1–CS13 from the requirements table in docs/decisions/0012-column-sorting.md).
@@ -15,8 +14,6 @@ import * as stories from '../../DataGrid.stories'
 // order against. Synthetic input drives the mechanics; the two things it can't do —
 // the CSS `:hover` reveal (CS5) and the Base UI tooltip (CS7) — use trusted browser
 // input.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

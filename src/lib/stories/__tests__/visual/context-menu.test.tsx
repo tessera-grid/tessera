@@ -1,15 +1,12 @@
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 
 // Каждое требование contextMenu — свой именованный тест `CM<n>` (ADR 0030).
 // Гоняет историю `ContextMenu` (contextMenu + cellSelection). Меню портируется в
 // document.body — читаем по `role="menu"`/`role="menuitem"`, не из container'а.
-
-const composed = composeStories(stories)
 
 const BODY_ROW = '.data-grid__body-row'
 const BODY_CELL = '.data-grid__body-cell'

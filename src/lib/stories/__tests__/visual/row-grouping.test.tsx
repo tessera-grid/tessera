@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Each Row Grouping requirement is its own named test, prefixed with its spec ID
 // (RG1–RG11 from the requirements table in docs/decisions/0016-row-grouping.md).
@@ -14,8 +13,6 @@ import * as stories from '../../DataGrid.stories'
 // ungrouped. Grouping is toggled by clicking a column header's group button and
 // state is read from the DOM contract (the `.column-group__button` + its
 // `data-button-active` wrapper, the row `data-group-row`), not from mock literals.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

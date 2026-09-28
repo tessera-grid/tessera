@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 // The PointerEvent plumbing is plugin-agnostic; reuse the vetted primitives from
 // the row suite instead of duplicating them. Only the choreography below is
 // column-specific (horizontal activation, head-cell targets).
@@ -18,8 +17,6 @@ import { firePointer, nextFrame } from '../../rowDragging.dnd'
 // axes so the auto-scroll requirements (D26–D28) have real scroll distance.
 // Synthetic pointer events drive the mechanics; the one thing they can't do — the
 // CSS-`:hover` reveal (D21) — uses trusted browser input.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

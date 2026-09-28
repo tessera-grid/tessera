@@ -1,5 +1,5 @@
 // Shared drag-and-drop mechanics for the Row Dragging plugin, used by BOTH the
-// Storybook `play` scenario (DataGrid.stories.tsx) and the vitest requirement
+// Storybook `play` scenario (dataGridMeta.tsx) and the vitest requirement
 // suite (__tests__/row-dragging.test.tsx). Keeping the pointer choreography in
 // one place stops the story demo and the tests from drifting apart. Pure DOM /
 // pointer utilities only — no assertion library, so each caller brings its own

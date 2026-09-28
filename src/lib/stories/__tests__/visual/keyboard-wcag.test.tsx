@@ -1,17 +1,14 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Соответствие WCAG 2.1.1: каждое требование — свой именованный тест `KB<n>`
 // (таблица требований в docs/decisions/0031-wcag-keyboard.md). Ввод — реальные
 // CDP-клавиши, состояние читается из DOM и вычисленных стилей.
-
-const composed = composeStories(stories)
 
 const HEAD_CELL = '.data-grid__head-cell'
 const HIDDEN_BUTTON = '.cell__button--hidden'

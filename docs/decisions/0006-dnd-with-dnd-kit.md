@@ -643,7 +643,7 @@ overlay визуально совпадает с перетаскиваемым 
 работы); guard-тесты `… story overflows on both axes` защищают их от «тихого»
 прохождения. Пойнтер-механику оба набора делят через `stories/rowDragging.dnd.ts`
 (общие `firePointer` / `nextFrame`). Мета-уровневый `play` в
-`stories/DataGrid.stories.tsx` — тонкий демо-сценарий для панели Interactions в
+`stories/dataGridMeta.tsx` — тонкий демо-сценарий для панели Interactions в
 Storybook; он **не** несёт ассертов требований, но прогоняется под `npm test`
 smoke-тестом ради паритета.
 

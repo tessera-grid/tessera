@@ -1,6 +1,6 @@
 import { Grid, PaginationRow } from './_shims'
 
-import { StoryProps } from './DataGrid.stories'
+import { StoryProps } from './DataGridStory.types'
 
 export interface PaginationProps {
   currentPage: number

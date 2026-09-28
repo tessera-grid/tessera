@@ -1,18 +1,15 @@
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Плагин rowActions: служебная колонка действий строки. Здесь — только
 // требования `RA<n>`, НЕ покрытые общими наборами (авто-пин/подложка — CP14/23/24,
 // подача действий/ширина в кебабе — AM15–AM19, порядок сервисных — service-columns
 // R6/R8/R10, reorder-out — LP7/LP10): поведение под вложенной шапкой (RA1) и точные
 // дефолты ширины (RA2). Один инвариант — один тест; состояние читается из DOM.
-
-const composed = composeStories(stories)
 
 const HEAD_CELL = '.data-grid__head-cell'
 const BODY_CELL = '.data-grid__body-cell'

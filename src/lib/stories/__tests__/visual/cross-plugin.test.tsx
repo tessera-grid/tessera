@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import {
   HANDLE,
@@ -20,8 +19,6 @@ import {
 // single-plugin specs (RS*, D*), these drive a story with *several* plugins on at
 // once and assert the behaviour of their seam in real DOM, reusing the shared DnD
 // choreography (rowDragging.dnd.ts) and the selection DOM contract.
-
-const composed = composeStories(stories)
 
 /** The row/header selection checkbox (stable class on `SelectCheckbox`). */
 const CHECKBOX = '.row-select-checkbox'

@@ -1,8 +1,7 @@
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 
 // Runtime-toggle parity for EVERY plugin (R11). Presence-based
@@ -19,8 +18,6 @@ import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 // Демо-слой мапит boolean-тумблер в `фабрика({ enabled })` (см.
 // `__mocks__/utils/argsToPlugins`), поэтому переключение флага истории и есть
 // presence-based включение/выключение плагина.
-
-const composed = composeStories(stories)
 
 const HEAD_CELL = '.data-grid__head-cell'
 const BODY_CELL = '.data-grid__body-cell'

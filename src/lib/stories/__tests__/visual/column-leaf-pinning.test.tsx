@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
@@ -14,8 +13,6 @@ import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 // (CP*). Механика: при закреплении листья цели «вырываются» к левому краю через
 // переупорядочивание `columnOrder`; спанящие шапки родителей режутся на сегменты
 // (`buildHeaderGroups` группирует по смежным прогонам одного родителя).
-
-const composed = composeStories(stories)
 
 const HEAD_CELL = '.data-grid__head-cell'
 const BODY_CELL = '.data-grid__body-cell'

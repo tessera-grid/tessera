@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { StoryProps } from '../DataGrid.stories'
+import { StoryProps } from '../DataGridStory.types'
 
 export interface UsePaginationParams {
   data: any[]

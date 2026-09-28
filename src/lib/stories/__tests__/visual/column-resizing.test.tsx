@@ -1,10 +1,9 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Every Column Resizing requirement is its own named test, prefixed with its spec
 // ID (CR1–CR16 from the requirements table in docs/decisions/0013-column-sizing.md).
@@ -16,8 +15,6 @@ import * as stories from '../../DataGrid.stories'
 // events drive the TanStack resize handler (mousedown on the grip → mousemove on
 // document → mouseup); the one thing they can't do — the CSS `:hover` reveal
 // (CR5) — uses trusted browser input.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

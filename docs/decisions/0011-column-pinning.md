@@ -354,7 +354,7 @@ expander (`rowExpanding`), selection (`rowSelection`), drag-ручка
 [ADR 0009](0009-test-coverage-visual-and-performance.md)) каждое требование —
 **отдельный именованный тест** с ID-префиксом `CP<n>:`, совпадающим с ID из
 таблиц ниже. Визуальные тесты живут в
-`stories/__tests__/visual/column-pinning.test.tsx` (vitest-browser, реальный
+`stories/__tests__/visual/column-pinning*.test.tsx` (vitest-browser, реальный
 Chromium), перформанс-покрытие даёт кейс `enableColumnPinning` в общей перф-матрице
 (`stories/__tests__/performance/`, см. [ADR 0009](0009-test-coverage-visual-and-performance.md)).
 
@@ -409,7 +409,7 @@ Chromium), перформанс-покрытие даёт кейс `enableColumn
 
 Дополняют CP14/CP14b/CP14c (авто-закрепление справа и стык с ведущими сервисными)
 поведением колонки действий в двустороннем мире. Тесты — там же,
-`column-pinning.test.tsx` (история `ColumnPinning` с `enableRowActions`).
+`column-pinning-right.test.tsx` (история `ColumnPinning` с `enableRowActions`).
 
 | ID   | Требование                                                                                                                                                                                                                                                              | Тест                                                             |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |

@@ -1,0 +1,182 @@
+import { Meta, StoryObj } from '@storybook/react'
+import type { StoryProps } from './DataGridStory.types'
+import { dataGridMeta } from './dataGridMeta'
+import { makeData } from './__mocks__/data'
+
+/** Истории строк: выбор, раскрытие, группировка, перетаскивание, действия. */
+const meta = {
+  ...dataGridMeta,
+  title: 'Tessera/DataGrid/Rows',
+} satisfies Meta<StoryProps>
+
+export default meta
+
+// Детерминированное дерево для истории SubRow Selection (генератор, а не
+// захардкоженные данные) — 4 родителя × 3 ребёнка, наглядный каскад выбора.
+const subRowSelectionTree = makeData({
+  shape: 'tree',
+  count: 4,
+  depth: 2,
+  breadth: 3,
+})
+
+// Данные для истории Row Expanding (генератор, а не захардкоженные строки).
+// Дерево из 3 уровней: корни (depth 0) и их дети (depth 1) — узлы `isGroup`, у
+// внуков (depth 2) детей нет. Три уровня специально: при `maxExpandingDepth = 1`
+// раскрывать можно только корни, а группы глубже (depth 1) тоггла не получают
+// (RE8). Плюс несколько плоских листовых корней (без subRows) — раскрываемости у
+// них нет, тоггла нет (RE7).
+const rowExpandingData = [
+  ...makeData({ shape: 'tree', count: 3, depth: 3, breadth: 2 }),
+  ...makeData({ shape: 'flat', count: 2 }),
+]
+
+// Плоский детерминированный набор для истории Row Grouping — генератор
+// (faker.seed), а не захардкоженные строки. Группировка по колонке с малым
+// числом различных значений (gender) агрегирует их в несколько групп-строк.
+const rowGroupingData = makeData({ shape: 'flat', count: 12 })
+
+export const RowActionMenu: StoryObj<StoryProps> = {
+  name: 'Row Action Menu',
+  args: {
+    // Демо-производитель даёт три действия строки (Edit / Duplicate / Delete) как
+    // дескрипторы. Свич `enableRowActionMenu` (порог 2) схлопывает их в overflow-
+    // кебаб (⋮) в колонке действий; выключенным — три row-кнопки инлайн (ревил по
+    // hover строки). Колонка действий появляется по `enableRowActions`.
+    enableRowActions: true,
+    enableRowActionMenu: true,
+    dataCount: 30,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}
+
+export const RowSelection: StoryObj<StoryProps> = {
+  name: 'Row Selection',
+  args: {
+    enableRowSelection: true,
+    // Небольшой набор, целиком помещающийся в вьюпорт: требования «выбрать все
+    // на странице» (RS8–RS10, RS12) сверяются со всеми отрисованными строками,
+    // поэтому вертикальная виртуализация не должна прятать часть строк.
+    dataCount: 10,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+}
+
+export const BatchRowSelection: StoryObj<StoryProps> = {
+  name: 'Batch Row Selection',
+  args: {
+    enableRowSelection: true,
+    showBatchToolbar: true,
+    isAllRowsSelected: false,
+  },
+}
+
+export const SubRowSelection: StoryObj<StoryProps> = {
+  name: 'SubRow Selection',
+  args: {
+    // Реальное дерево из генератора (раскрыто), чтобы каскад выбора
+    // родитель↔дети был нагляден — не на захардкоженных 5 строках.
+    dataOverride: subRowSelectionTree,
+    initialExpanded: true,
+
+    enableRowSelection: true,
+    enableSubRowSelection: true,
+    enableRowExpanding: true,
+  },
+  parameters: {
+    controls: {
+      exclude: [
+        'columnCount',
+        'dataCount',
+        'page',
+        'recordsOnPage',
+        'dataMode',
+        'dataOverride',
+        'initialExpanded',
+      ],
+    },
+  },
+}
+
+export const RowExpanding: StoryObj<StoryProps> = {
+  name: 'Row Expanding',
+  args: {
+    // Реальные данные из генератора (см. rowExpandingData) — раскрытие видно на
+    // настоящих subRows, а не на захардкоженных строках.
+    dataOverride: rowExpandingData,
+    enableRowExpanding: true,
+    // Стартуем свёрнутыми: тесты сами раскрывают строки и сверяют появление
+    // детей и контракт data-expanded / aria-expanded.
+    initialExpanded: {},
+
+    containerHeight: 640,
+    height: 540,
+    maxHeight: 540,
+  },
+  parameters: {
+    controls: {
+      exclude: [
+        'columnCount',
+        'dataCount',
+        'page',
+        'recordsOnPage',
+        'dataMode',
+        'dataOverride',
+        'initialExpanded',
+      ],
+    },
+  },
+}
+
+export const RowGrouping: StoryObj<StoryProps> = {
+  name: 'Row Grouping',
+  args: {
+    // Реальные данные из генератора (см. rowGroupingData) — группировка видна на
+    // настоящих строках, а не на захардкоженных.
+    dataOverride: rowGroupingData,
+    enableGrouping: true,
+    // Немного колонок, целиком в горизонтальном вьюпорте: тесты адресуют шапку
+    // groupable-колонки (gender) — она не должна прятаться за виртуализацией.
+    columnCount: 6,
+
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+  parameters: {
+    controls: {
+      exclude: [
+        'columnCount',
+        'dataCount',
+        'page',
+        'recordsOnPage',
+        'dataMode',
+        'dataOverride',
+      ],
+    },
+  },
+}
+
+export const RowDragging: StoryObj<StoryProps> = {
+  name: 'Row Dragging',
+  args: {
+    enableRowDragging: true,
+    // Sized to overflow on both axes so the play's auto-scroll steps (D12–D14)
+    // have real vertical + horizontal scroll to exercise.
+    dataCount: 60,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}
+
+export const RowActions: StoryObj<StoryProps> = {
+  name: 'Row Actions',
+  args: {
+    enableRowActions: true,
+  },
+}

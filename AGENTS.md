@@ -292,7 +292,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
       `service-columns` (R6/R8/R10 — сервисные колонки).
     - _Виртуализация:_ `virtualization` (V1–V11).
-    - _Колонки:_ `column-pinning` (CP1–CP27, [ADR 0011](docs/decisions/0011-column-pinning.md)),
+    - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19),
+      `column-pinning-right` (CP20–CP27) — [ADR 0011](docs/decisions/0011-column-pinning.md),
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
       [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-sorting` (CS1–CS23, [ADR 0012](docs/decisions/0012-column-sorting.md)),
@@ -319,7 +320,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       (TC-1…TC-5 — единые контракты по семействам,
       [ADR 0017](docs/decisions/0017-ui-components.md)).
     - _Доступность:_ `a11y` (A1–A10, прогон axe-core,
-      [ADR 0020](docs/decisions/0020-accessibility.md); W1–W17 —
+      [ADR 0020](docs/decisions/0020-accessibility.md)); `wcag-aa` (W1–W17 —
       [ADR 0032](docs/decisions/0032-wcag-aa-remainder.md)); `a11y-tree` (AX1–AX7 —
       снимки дерева доступности Chromium через CDP) и `screen-reader` (SR1–SR7 —
       эмулятор скринридера), [ADR 0033](docs/decisions/0033-a11y-tree-and-virtual-screen-reader.md);

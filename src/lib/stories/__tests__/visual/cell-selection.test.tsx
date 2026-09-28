@@ -1,8 +1,7 @@
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Каждое требование cellSelection — свой именованный тест `CR<n>` (таблица
 // требований в docs/decisions/0029-cell-range-selection.md), чтобы `npm test`
@@ -12,8 +11,6 @@ import * as stories from '../../DataGrid.stories'
 // кромки — из инлайн-переменных `--tsr-sel-edge-*`. Взаимодействие — нативные
 // MouseEvent'ы (детерминированно, как DnD-хореография в других тестах): стоковые
 // хендлеры фичи читают модификаторы из `nativeEvent`.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

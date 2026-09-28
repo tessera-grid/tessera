@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import {
   DRAG_COLUMN_WIDTH,
   DRAG_FILL,
@@ -28,12 +27,10 @@ import {
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md). All tests drive the canonical `RowDragging`
 // story, sized to overflow on both axes so the auto-scroll requirements (D12–D14)
-// have real scroll distance. The thin Storybook `play` in DataGrid.stories.tsx is
+// have real scroll distance. The thin Storybook `play` in dataGridMeta.tsx is
 // only a demo scenario now; the assertions live here. Synthetic pointer events
 // drive the mechanics; the one thing they can't do — the CSS-`:hover` reveal (D7)
 // — uses trusted Playwright input.
-
-const composed = composeStories(stories)
 
 /** Render the RowDragging story and wait until its rows are on screen. */
 async function renderRowDragging() {

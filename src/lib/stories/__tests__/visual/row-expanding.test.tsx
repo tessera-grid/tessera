@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 
@@ -17,8 +16,6 @@ import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 // started collapsed. State is read from the DOM/ARIA contract (row
 // `data-expanded`/`aria-expanded`, the `.row-expand-button` toggle, the service
 // column's `data-column-id`), not from mock literals.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

@@ -3,13 +3,11 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
 // Чёрный ящик над раскладкой: истории `HeaderActionMenu` / `RowActionMenu` через
 // composeStories, реальный Chromium. Один тест = одно требование (AM<n>).
-
-const composed = composeStories(stories)
 
 const HEAD_CELL = '.data-grid__head-cell'
 /** Заголовки реальных (не сервисных) колонок. */

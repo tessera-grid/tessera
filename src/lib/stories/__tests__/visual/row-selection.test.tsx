@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 
 // Each Row Selection requirement is its own named test, prefixed with its spec ID
@@ -16,8 +15,6 @@ import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 // deterministic tree) for the sub-row cascade. State is read from the DOM/ARIA
 // contract (checkbox `data-checked`/`data-indeterminate`, row `data-selected`),
 // not from mock literals.
-
-const composed = composeStories(stories)
 
 // --- Selectors (part of the component contract) -------------------------------
 

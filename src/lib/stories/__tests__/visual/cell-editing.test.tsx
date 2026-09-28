@@ -1,9 +1,8 @@
 import { userEvent } from 'vitest/browser'
-import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as stories from '../../DataGrid.stories'
+import { composed } from '../stories'
 
 // Плагин cellEditing: инлайн-редактирование ячейки на ЛОКАЛЬНОМ
 // state-канале definePlugin. Один инвариант — один тест, имя с префиксом
@@ -13,8 +12,6 @@ import * as stories from '../../DataGrid.stories'
 //  3. без hover кнопка не занимает места;
 //  4. показ гейтит предикат по контексту ячейки (демо: CELL_EDITABLE_COLUMNS).
 // Синтетический ввод крутит механику; `:hover`-раскрытие (CE2) — доверенный ввод.
-
-const composed = composeStories(stories)
 
 const BODY_CELL = '.data-grid__body-cell'
 /** Обёртка кнопки редактирования (cellEditing → CellButton). */

@@ -1,14 +1,13 @@
 import type { ComponentProps } from 'react'
 
 import { commands } from '@vitest/browser/context'
-import { composeStories } from '@storybook/react-vite'
 import { cleanup, render } from 'vitest-browser-react'
 
-import * as stories from '../DataGrid.stories'
+import { composed } from './stories'
 import type { PerfRecord, ScrollWorkResult } from './perf.commands'
 
 /** All DataGrid stories, composed as portable React components. */
-export const Stories = composeStories(stories)
+export const Stories = composed
 
 /** Stable DOM selectors — class names / roles are part of the component contract. */
 export const SEL = {
