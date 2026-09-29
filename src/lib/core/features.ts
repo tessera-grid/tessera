@@ -127,6 +127,22 @@ export const findDuplicatePluginIds = (
 }
 
 /**
+ * Опции таблицы от ВСЕХ присутствующих записей (в т.ч. `enabled: false`): фабрика
+ * отключённого плагина эмитит нейтральные значения, гася свою фичу. Дёшево —
+ * `useCreateTable` сворачивает их каждый рендер, чтобы значения из аргументов
+ * фабрик (напр. `rowCount` пагинации) были живыми.
+ */
+export const foldOptions = (
+  entries: readonly TesseraFeatureEntry[],
+): Record<string, unknown> => {
+  const options: Record<string, unknown> = {}
+  for (const entry of entries) {
+    Object.assign(options, entry.options)
+  }
+  return options
+}
+
+/**
  * Чистая свёртка активных записей в опции таблицы. Порядок фолда = порядок
  * записей, как в императивной регистрации. Используется и `useCreateTable`, и
  * headless-тестами.
@@ -134,7 +150,7 @@ export const findDuplicatePluginIds = (
 export const foldEntries = (
   entries: readonly TesseraFeatureEntry[],
 ): FoldedEntryConfig => {
-  const options: Record<string, unknown> = {}
+  const options = foldOptions(entries)
   const slots = createEmptyRenderSlots()
   const slotActions = createEmptySlotActions()
   const contextMenuActions: ContextMenuAction[] = []
@@ -151,11 +167,7 @@ export const foldEntries = (
       diagnose: entry.diagnose,
     })
 
-    // Опции берём от ВСЕХ присутствующих записей (в т.ч. enabled:false) — фабрика
-    // отключённого плагина эмитит enable*:false, гася свою (всегда-присутствующую в
-    // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
-    Object.assign(options, entry.options)
-
+    // Слоты/колонки/действия/setup — только у активных (реактивный UI).
     if (!isActive(entry)) {
       continue
     }

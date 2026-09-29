@@ -102,6 +102,19 @@ export interface TableLabels {
   widenColumn: string
   narrowColumn: string
   resetColumnWidth: string
+  /** Доступное имя контрола пагинации (`aria-label` на `role="navigation"`) */
+  pagination: string
+  /** Видимая метка выбора размера страницы */
+  rowsPerPage: string
+  /** Кнопки пагинации: тултипы и доступные имена */
+  firstPage: string
+  previousPage: string
+  nextPage: string
+  lastPage: string
+  /** Диапазон строк текущей страницы: «1–25 of 1000» */
+  pageRange: (from: number, to: number, total: number) => string
+  /** Объявление смены страницы */
+  pageAnnouncement: (page: number, pages: number) => string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -158,6 +171,14 @@ export const DEFAULT_LABELS: TableLabels = {
   widenColumn: 'Wider',
   narrowColumn: 'Narrower',
   resetColumnWidth: 'Reset width',
+  pagination: 'Pagination',
+  rowsPerPage: 'Rows per page',
+  firstPage: 'First page',
+  previousPage: 'Previous page',
+  nextPage: 'Next page',
+  lastPage: 'Last page',
+  pageRange: (from, to, total) => `${from}–${to} of ${total}`,
+  pageAnnouncement: (page, pages) => `Page ${page} of ${pages}`,
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)

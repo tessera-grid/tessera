@@ -221,6 +221,16 @@ export const WithEmptyToolbar: StoryObj<StoryProps> = {
   },
 }
 
+export const Pagination: StoryObj<StoryProps> = {
+  name: 'Pagination',
+  args: {
+    // Пагинация в нижней панели: размер страницы, диапазон и кнопки. Включите
+    // enableColumnSorting — смена сортировки вернёт на первую страницу.
+    enablePagination: true,
+    dataCount: 1000,
+  },
+}
+
 export const WithStatusBar: StoryObj<StoryProps> = {
   name: 'With Status Bar',
   args: {

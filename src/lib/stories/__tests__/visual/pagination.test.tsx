@@ -1,0 +1,177 @@
+import type { ReactElement } from 'react'
+
+import { userEvent } from 'vitest/browser'
+import { render } from 'vitest-browser-react'
+import { describe, expect, test, vi } from 'vitest'
+
+import { DataGrid } from '../../../grid/DataGrid'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { pagination } from '../../../plugins/pagination'
+import { Stories, bodyRows } from '../helpers'
+
+// Пагинация в нижней панели (ADR 0038, PG2–PG4, PG6, PG11, PG16). Каждый тест —
+// одно требование, назван по его ID. Состояние читается из DOM-контракта (role,
+// aria-*, data-*), а не из хешированных классов CSS-модулей. PG1, PG5, PG8–PG10 —
+// модульные (`src/lib/__tests__/pagination.test.ts`), PG7 —
+// `src/lib/__tests__/pagination.dom.test.tsx`.
+
+const GRID = {
+  containerHeight: 600,
+  height: 500,
+  columnCount: 6,
+  dataCount: 1000,
+}
+
+const nav = () =>
+  document.querySelector<HTMLElement>('nav[data-testid="pagination"]')
+const range = () =>
+  document.querySelector<HTMLElement>('[data-testid="pagination-range"]')!
+    .textContent
+const pageButton = (action: 'first' | 'previous' | 'next' | 'last') =>
+  document.querySelector<HTMLButtonElement>(`[data-page-action="${action}"]`)!
+const disabledActions = () =>
+  (['first', 'previous', 'next', 'last'] as const).filter(
+    action => pageButton(action).getAttribute('aria-disabled') === 'true',
+  )
+const firstRowId = () =>
+  bodyRows().sort(
+    (a, b) => Number(a.dataset.index) - Number(b.dataset.index),
+  )[0]?.dataset.rowId
+const sizeTrigger = () =>
+  document.querySelector<HTMLElement>('[data-testid="page-size-select"]')
+
+const mount = async (node: ReactElement) => {
+  const result = await render(node)
+  await expect.poll(() => nav()).not.toBeNull()
+  return result
+}
+
+const renderPagination = (extra: object = {}) =>
+  mount(<Stories.Pagination {...GRID} {...extra} />)
+
+// Сторис не пробрасывают localization/icons — PG16 рендерит грид напрямую.
+const LOCALIZED_COLUMNS = [{ id: 'a', accessorKey: 'a', header: 'A' }]
+const LOCALIZED_DATA = Array.from({ length: 60 }, (_, index) => ({
+  id: String(index),
+  a: `row ${index}`,
+}))
+const LOCALIZED_PLUGINS = [pagination()] as const
+const CustomNextIcon = () => <svg data-testid="custom-next-icon" />
+
+const LocalizedGrid = () => {
+  const table = useCreateTable({
+    columns: LOCALIZED_COLUMNS,
+    data: LOCALIZED_DATA,
+    plugins: LOCALIZED_PLUGINS,
+  })
+  return (
+    <div style={{ height: 400 }}>
+      <DataGrid
+        table={table as never}
+        localization={{
+          pagination: 'Страницы',
+          rowsPerPage: 'Строк на странице',
+          nextPage: 'Следующая',
+          pageRange: (from, to, total) => `${from}–${to} из ${total}`,
+        }}
+        icons={{ nextPage: CustomNextIcon }}
+      />
+    </div>
+  )
+}
+
+describe('Pagination', () => {
+  test('PG2: first/previous/next/last switch the page; the edge buttons are disabled', async () => {
+    await renderPagination()
+    expect(firstRowId()).toBe('item-id-0')
+    expect(disabledActions()).toEqual(['first', 'previous'])
+
+    await userEvent.click(pageButton('next'))
+    await expect.poll(firstRowId).toBe('item-id-25')
+    expect(disabledActions()).toEqual([])
+
+    await userEvent.click(pageButton('last'))
+    await expect.poll(firstRowId).toBe('item-id-975')
+    expect(disabledActions()).toEqual(['next', 'last'])
+
+    await userEvent.click(pageButton('previous'))
+    await expect.poll(firstRowId).toBe('item-id-950')
+
+    await userEvent.click(pageButton('first'))
+    await expect.poll(firstRowId).toBe('item-id-0')
+  })
+
+  test('PG3: the range shows "from–to of total"; an empty set shows "0–0 of 0" with all buttons disabled', async () => {
+    const full = await renderPagination()
+    expect(range()).toBe('1–25 of 1000')
+    await userEvent.click(pageButton('last'))
+    await expect.poll(range).toBe('976–1000 of 1000')
+    await full.unmount()
+
+    await renderPagination({ dataCount: 0 })
+    expect(range()).toBe('0–0 of 0')
+    expect(disabledActions()).toEqual(['first', 'previous', 'next', 'last'])
+  })
+
+  test('PG4: choosing a page size changes pageSize and returns to the first page; pageSizes:false hides the choice', async () => {
+    await renderPagination()
+    await userEvent.click(pageButton('next'))
+    await expect.poll(range).toBe('26–50 of 1000')
+
+    await expect.poll(sizeTrigger).not.toBeNull()
+    await userEvent.click(sizeTrigger()!)
+    const option = await vi.waitFor(() => {
+      const item = [
+        ...document.querySelectorAll<HTMLElement>('[role="option"]'),
+      ].find(node => node.textContent?.trim() === '100')
+      if (!item) {
+        throw new Error('option 100 not rendered')
+      }
+      return item
+    })
+    await userEvent.click(option)
+    await expect.poll(range).toBe('1–100 of 1000')
+    expect(firstRowId()).toBe('item-id-0')
+  })
+
+  test('PG6: onPageChange fires on a user action, not on a programmatic slice change', async () => {
+    const onPageChange = vi.fn()
+    await renderPagination({ onPageChange, enableColumnSorting: true })
+
+    await userEvent.click(pageButton('next'))
+    await expect.poll(range).toBe('26–50 of 1000')
+    expect(onPageChange).toHaveBeenCalledTimes(1)
+    expect(onPageChange).toHaveBeenLastCalledWith(1, 25)
+
+    // Сортировка возвращает на первую страницу сама — это не действие с пагинацией.
+    const sort = document.querySelector<HTMLElement>('.column-sort__button')!
+    await userEvent.click(sort)
+    await expect.poll(range).toBe('1–25 of 1000')
+    expect(onPageChange).toHaveBeenCalledTimes(1)
+  })
+
+  test('PG11: a data change keeps the page; with fewer pages the index clamps to the last one', async () => {
+    const result = await renderPagination()
+    await userEvent.click(pageButton('next'))
+    await userEvent.click(pageButton('next'))
+    await expect.poll(range).toBe('51–75 of 1000')
+
+    await result.rerender(<Stories.Pagination {...GRID} dataCount={900} />)
+    await expect.poll(range).toBe('51–75 of 900')
+
+    await result.rerender(<Stories.Pagination {...GRID} dataCount={30} />)
+    await expect.poll(range).toBe('26–30 of 30')
+  })
+
+  test('PG16: labels come from localization and icons from icons', async () => {
+    await mount(<LocalizedGrid />)
+    expect(nav()!.getAttribute('aria-label')).toBe('Страницы')
+    expect(range()).toBe('1–25 из 60')
+    expect(pageButton('next').getAttribute('aria-label')).toBe('Следующая')
+    expect(
+      pageButton('next').querySelector('[data-testid="custom-next-icon"]'),
+    ).not.toBeNull()
+    await expect.poll(sizeTrigger).not.toBeNull()
+    expect(nav()!.textContent).toContain('Строк на странице')
+  })
+})

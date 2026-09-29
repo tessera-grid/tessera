@@ -59,6 +59,7 @@ export const StoryComponent = memo(
     onSelectAllRowsOnPage,
     onExpandRow,
     onToggleColumnVisibility,
+    onPageChange,
 
     updateArgs,
 
@@ -167,6 +168,7 @@ export const StoryComponent = memo(
             ...(onToggleColumnVisibility
               ? { columnVisibility: { onToggleColumnVisibility } }
               : {}),
+            ...(onPageChange ? { pagination: { onPageChange } } : {}),
             ...(options.enableCellEditing
               ? {
                   cellEditing: {

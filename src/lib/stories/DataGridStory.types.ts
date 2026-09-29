@@ -5,6 +5,7 @@ import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { useColumns } from './__mocks__/columns'
 import type { ColumnVisibilityHooks } from '../../lib/plugins/columnVisibility'
+import type { PaginationHooks } from '../../lib/plugins/pagination'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
 import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
 import { FeatureToggles } from './__mocks__/utils/argsToPlugins'
@@ -106,6 +107,9 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
 
   /** Проброс колбэка меню колонок (`columnVisibility`) наружу — для визуальных тестов. */
   onToggleColumnVisibility?: ColumnVisibilityHooks['onToggleColumnVisibility']
+
+  /** Проброс колбэка пагинации (`pagination`) наружу — для визуальных тестов. */
+  onPageChange?: PaginationHooks['onPageChange']
 
   updateArgs: (
     args: Partial<

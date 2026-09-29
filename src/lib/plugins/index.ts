@@ -39,6 +39,7 @@ export {
   type HeaderActionMenuOptions,
 } from './headerActionMenu'
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
+export { pagination, type PaginationOptions } from './pagination'
 
 // Контракт хуков для потребителя (types-mode b): слайсы как примитивы.
 export type { ColumnDraggingHooks } from './columnDragging/types'
@@ -49,4 +50,5 @@ export type { ColumnVisibilityHooks } from './columnVisibility/types'
 export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'
+export type { PaginationHooks } from './pagination/types'
 export type { CellEditingHooks, CellEditor } from './cellEditing/types'

@@ -11,6 +11,7 @@ import {
   columnSorting,
   columnVisibility,
   headerActionMenu,
+  pagination,
   rowActionMenu,
   rowActions,
   rowDragging,
@@ -64,6 +65,10 @@ export interface FeatureToggles {
   enableKeyboardNavigation?: boolean
   /** Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar). */
   enableColumnVisibility?: boolean
+  /** Пагинация в нижней панели (ADR 0038). */
+  enablePagination?: boolean
+  /** Размер страницы пагинации (по умолчанию 25). */
+  paginationPageSize?: number
 }
 
 export const argsToPlugins = (o: FeatureToggles) => {
@@ -115,6 +120,10 @@ export const argsToPlugins = (o: FeatureToggles) => {
     contextMenu({ enabled: !!o.enableContextMenu }),
     keyboardNavigation({ enabled: !!o.enableKeyboardNavigation }),
     columnVisibility({ enabled: !!o.enableColumnVisibility }),
+    pagination({
+      enabled: !!o.enablePagination,
+      pageSize: o.paginationPageSize,
+    }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

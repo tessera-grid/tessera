@@ -62,7 +62,7 @@ const rowActionEntry = {
 describe('контракт встроенного плагина', () => {
   it('PQ1: каждый встроенный плагин объявляет diagnose', () => {
     const entries = builtinPluginEntries()
-    expect(entries.length).toBeGreaterThanOrEqual(16)
+    expect(entries.length).toBeGreaterThanOrEqual(17)
 
     const missing = entries
       .filter(entry => typeof entry.diagnose !== 'function')

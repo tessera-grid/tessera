@@ -9,7 +9,11 @@ import {
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronsUpDown,
   Columns3,
   EyeOff,
@@ -71,6 +75,11 @@ export interface TableIcons {
   columns: IconComponent
   /** Пункт «Скрыть колонку» в кебабе заголовка */
   hideColumn: IconComponent
+  /** Кнопки пагинации: первая / предыдущая / следующая / последняя страница */
+  firstPage: IconComponent
+  previousPage: IconComponent
+  nextPage: IconComponent
+  lastPage: IconComponent
 }
 
 export const DEFAULT_ICONS: TableIcons = {
@@ -90,6 +99,10 @@ export const DEFAULT_ICONS: TableIcons = {
   edit: Pencil,
   columns: Columns3,
   hideColumn: EyeOff,
+  firstPage: ChevronsLeft,
+  previousPage: ChevronLeft,
+  nextPage: ChevronRight,
+  lastPage: ChevronsRight,
 }
 
 const IconsContext = createContext<TableIcons>(DEFAULT_ICONS)

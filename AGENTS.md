@@ -315,7 +315,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Тулбар и видимость колонок:_ `toolbar` (TB1–TB15 — рамка грида, тулбар,
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),
       [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md).
-    - _Нижняя панель:_ `status-bar` (SB1–SB4, SB6; SB5 — модульный `statusBar`),
+    - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB5 — модульный
+      `statusBar`), `pagination` (PG2–PG4, PG6, PG11, PG16; PG1, PG5, PG8–PG10 —
+      модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
     - _Тема и токены:_ `theming` (TH1–TH9,
       [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
