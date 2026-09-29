@@ -23,7 +23,7 @@ TanStack, ни от того, как пересчитывается модель
 состояния через контекст
 ([`FastScrollProvider`](../../src/lib/core/fastScroll/fastScrollContext.tsx)) и
 подавление содержимого на уровне ячейки
-([`BodyCell`](../../src/lib/ui/BodyCell/BodyCell.tsx)).
+([`BodyCell`](../../src/lib/grid/BodyCell.tsx)).
 
 ### Детектор скорости (`useFastScroll`)
 

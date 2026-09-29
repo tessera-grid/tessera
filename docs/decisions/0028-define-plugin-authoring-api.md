@@ -439,7 +439,7 @@ collision-prone ключ.
   форма записи остаётся валидной. Публичного слома для потребителя нет — сигнатуры
   плагинов те же.
 - **Раскатано на все 11 плагинов (сделано).** `definePlugin`
-  ([definePlugin.ts](../../src/lib/core/definePlugin.ts)) — каррированный (DP12), поля
+  ([definePlugin](../../src/lib/core/definePlugin/index.ts)) — каррированный (DP12), поля
   `options`/`hooks`/`features`/`column`/`slots`/`slotActions`/`actionMenu`/`setup`; все
   реестры и плагины-меню на нём (ушла ручная раскладка hook-слайса, `satisfies`,
   boilerplate). row-модели создаются один раз (мемо per-table в v9).

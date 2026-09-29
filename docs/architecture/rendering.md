@@ -1,6 +1,6 @@
 # Рендеринг — `<DataGrid/>`
 
-`<DataGrid table={...} />` (`src/lib/ui/DataGrid/DataGrid.tsx`) превращает инстанс
+`<DataGrid table={...} />` (`src/lib/grid/DataGrid.tsx`) превращает инстанс
 таблицы в DOM. Он не рендерит ничего о том, _что_ представляют собой данные — он
 компонует провайдеры, виртуализаторы, DnD-обёртки и дерево Head/Body/Footer.
 

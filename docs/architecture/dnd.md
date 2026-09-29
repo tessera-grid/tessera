@@ -13,9 +13,9 @@ Tessera строит перетаскивание рендер-слоя пове
 Head и body оборачиваются в отдельные обёртки, каждая со своим `DndContext` +
 `SortableContext`:
 
-- **`DndHeadWrapper`** (`src/lib/ui/Head/DndHeadWrapper.tsx`) — оборачивает
+- **`DndHeadWrapper`** (`src/lib/grid/DndHeadWrapper.tsx`) — оборачивает
   заголовки в `DndContext` + `SortableContext` для переупорядочивания **столбцов**.
-- **`DndBodyWrapper`** (`src/lib/ui/Body/DndBodyWrapper.tsx`) — то же для
+- **`DndBodyWrapper`** (`src/lib/grid/DndBodyWrapper.tsx`) — то же для
   переупорядочивания **строк**; поднимает вертикальный `SortableContext` и
   подключает handlers из `getRowDraggingEvents(table)`.
 
@@ -45,7 +45,7 @@ row-drag питает CSS-переменные, тонирующие accept/reje
 ## Collision detection и modifiers
 
 Tessera поставляет **кастомную стратегию коллизий** для столбцов и **модификаторы**
-для ограничения движения (`src/lib/core/dnd/`). Автоскролл у края ограничен
+для ограничения движения (`src/lib/grid/dnd/`). Автоскролл у края ограничен
 **только вертикальной осью** (`autoScroll={autoScrollOnlyY}`,
 `core/dnd/parameters.ts`): удержание указателя у верхнего/нижнего края скроллит
 таблицу вертикально, горизонтальный автоскролл отключён.

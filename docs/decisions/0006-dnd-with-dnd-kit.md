@@ -63,7 +63,7 @@ drag & drop как колонок, так и строк, включая пере
   wrapper'ом, поднимающим единый `DndContext` + `SortableContext` и подключающим
   handlers из `getRowDraggingEvents` / `getColumnDraggingEvents`. Активное
   перетаскивание рендерит плавающий `DragOverlay`, следующий за курсором.
-- **Автоскролл заперт по одной оси** (`src/lib/core/dnd/parameters.ts`):
+- **Автоскролл заперт по одной оси** (`src/lib/grid/dnd/parameters.ts`):
   `autoScrollOnlyY` для строк, `autoScrollOnlyX` для столбцов — зеркала друг друга
   (порог 0.2 по рабочей оси, 0 по другой).
 
@@ -162,7 +162,7 @@ const RowDraggingComponent = ({ row, table }) => {
 }
 ```
 
-`DragHandler` (`src/lib/plugins/ui/DragHandler.tsx`) — общий активатор (см.
+`DragHandler` (`src/lib/grid/dnd/DragHandler.tsx`) — общий активатор (см.
 [Общая механика](#общая-механика-единая-для-строк-и-столбцов)); контекст на строку
 предоставляет `ItemDraggableWrapper` в `BodyRow`. Он распространяет
 pointer-listeners на свой `<span class="drag__handler--column">`.
@@ -186,7 +186,7 @@ pointer-listeners на свой `<span class="drag__handler--column">`.
 
 ### Жизненный цикл перетаскивания
 
-Body обёрнут `DndBodyWrapper` (`src/lib/ui/Body/DndBodyWrapper.tsx`), который
+Body обёрнут `DndBodyWrapper` (`src/lib/grid/DndBodyWrapper.tsx`), который
 поднимает единый `DndContext` + вертикальный `SortableContext` для строк и
 подключает handlers из `getRowDraggingEvents(table)`:
 
@@ -241,7 +241,7 @@ sequenceDiagram
 #### «Облако» перетаскивания (overlay)
 
 `DndBodyWrapper` рендерит dnd-kit `DragOverlay`, содержащий `OverlayBodyRow`
-(`src/lib/ui/BodyRow/OverlayBodyRow.tsx`), который следует за курсором. Он строится
+(`src/lib/grid/OverlayBodyRow.tsx`), который следует за курсором. Он строится
 только из **первой не-action (текстовой) ячейки** перетаскиваемой строки —
 
 ```ts
@@ -270,7 +270,7 @@ drop-индикатор, и порядок строк меняется. Зате
 #### Автоскролл во время перетаскивания
 
 `DndBodyWrapper` передаёт `autoScroll={autoScrollOnlyY}`
-(`src/lib/core/dnd/parameters.ts`) в `DndContext`. Это ограничивает edge-автоскролл
+(`src/lib/grid/dnd/parameters.ts`) в `DndContext`. Это ограничивает edge-автоскролл
 **только вертикальной осью**:
 
 - `threshold.y = 0.2` — во время перетаскивания удержание указателя в пределах 20%
@@ -493,7 +493,7 @@ export const ColumnDraggingComponent = ({ column, table }) => {
 
 ### Жизненный цикл перетаскивания
 
-Заголовок обёрнут `DndHeadWrapper` (`src/lib/grid/Head/DndHeadWrapper.tsx`),
+Заголовок обёрнут `DndHeadWrapper` (`src/lib/grid/DndHeadWrapper.tsx`),
 который поднимает единый `DndContext` + **горизонтальный** `SortableContext` для
 столбцов и подключает handlers из `getColumnDraggingEvents(table)`:
 
@@ -548,7 +548,7 @@ translateX(${transform?.x || 0}px)` (для перетаскиваемых, не
 #### Overlay-клон заголовка
 
 `DndHeadWrapper` рендерит dnd-kit `DragOverlay`, содержащий `OverlayHeadCell`
-(`src/lib/grid/HeadCell/OverlayHeadCell.tsx`), который следует за курсором. В
+(`src/lib/grid/OverlayHeadCell.tsx`), который следует за курсором. В
 отличие от `rowDragging` (облако из **первой текстовой ячейки** строки), overlay
 столбца — **полный клон ячейки заголовка**: та же ширина
 (`var(--header-size-…)`), тот же контент заголовка, те же left/right-слоты. Так
@@ -580,7 +580,7 @@ overlay визуально совпадает с перетаскиваемым 
 #### Автоскролл во время перетаскивания
 
 `DndHeadWrapper` передаёт `autoScroll={autoScrollOnlyX}`
-(`src/lib/core/dnd/parameters.ts`) в `DndContext` — зеркало `autoScrollOnlyY` у
+(`src/lib/grid/dnd/parameters.ts`) в `DndContext` — зеркало `autoScrollOnlyY` у
 строк:
 
 - `threshold.x = 0.2` — удержание указателя в пределах 20% от левого или правого
