@@ -46,7 +46,6 @@ export const pagination = definePlugin<PaginationOptions>()({
     const pageSize = o.pageSize ?? DEFAULT_PAGE_SIZE
     return {
       manualPagination: !enabled || !!o.server,
-      rowCount: enabled && o.server ? o.rowCount : undefined,
       paginateExpandedRows: !enabled,
       // Стоковый сброс срабатывает на любую смену data (правка ячейки, перестановка
       // строки); страницу сбрасывает плагин — только при смене порядка строк.
@@ -55,6 +54,10 @@ export const pagination = definePlugin<PaginationOptions>()({
       initialState: { pagination: { pageIndex: 0, pageSize } },
     }
   },
+  // Итог приходит с каждым ответом сервера — опция живая, не по сигнатуре набора.
+  liveOptions: o => ({
+    rowCount: o.enabled !== false && o.server ? o.rowCount : undefined,
+  }),
   slots: [
     {
       id: 'paginationControl',

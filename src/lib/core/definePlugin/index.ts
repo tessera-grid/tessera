@@ -1,7 +1,8 @@
 /**
  * definePlugin — авторская поверхность плагина поверх записи `TesseraFeatureEntry`.
  * Принимает декларации по полям, возвращает фабрику
- * `(opts?) => TesseraFeatureEntry`. Прячет раскладку: `options` → опции таблицы,
+ * `(opts?) => TesseraFeatureEntry`. Прячет раскладку: `options` → опции таблицы
+ * (заморожены по сигнатуре набора), `liveOptions` → живые опции таблицы,
  * `hooks` → живой слайс записи под ключом `id` (undefined-ключи отброшены),
  * `features` → фрагмент фич v9, `state` → сгенерированная v9-фича локального слайса
  * под ключом `plugin:<id>`, `column`/`slots`/`setup` — как есть. Каналы в компонент — `./channels`.
@@ -74,8 +75,13 @@ interface DefinePluginConfig<
   id: string
   /** Фрагмент стоковых фич TanStack v9 (→ `tableFeatures`). */
   features?: TFeatures
-  /** Резолвнутые опции таблицы (→ опции useTable). */
+  /** Резолвнутые опции таблицы (→ опции useTable); заморожены по сигнатуре набора. */
   options?: (opts: TOptions) => TResolved
+  /**
+   * Живые опции таблицы — сворачиваются каждый рендер. Только значения, не кормящие
+   * мемо row-моделей (напр. `rowCount`); функции и флаги фич — в `options`.
+   */
+  liveOptions?: (opts: TOptions) => Record<string, unknown>
   /** Живой слайс бизнес-колбэков; undefined-ключи отбрасываются. */
   hooks?: (opts: TOptions) => THooks
   /**
@@ -86,8 +92,8 @@ interface DefinePluginConfig<
   state?: () => TState
   /** Сервисная колонка плагина. */
   column?: ServiceColumn
-  /** Декларативные слоты плагина (UI-компоненты в местах рендера). */
-  slots?: PluginSlot[]
+  /** Декларативные слоты плагина; функция — набор слотов зависит от аргументов фабрики. */
+  slots?: PluginSlot[] | ((opts: TOptions) => PluginSlot[])
   /** Декларативные действия слота (инлайн-кнопка / пункт кебаб-меню). */
   slotActions?: SlotAction[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
@@ -145,6 +151,9 @@ export const definePlugin =
       if (config.options) {
         entry.options = config.options(opts)
       }
+      if (config.liveOptions) {
+        entry.liveOptions = config.liveOptions(opts)
+      }
       if (config.hooks) {
         entry.hooks = { [config.id]: stripUndefined(config.hooks(opts)) }
       }
@@ -152,7 +161,8 @@ export const definePlugin =
         entry.column = config.column
       }
       if (config.slots) {
-        entry.slots = config.slots
+        entry.slots =
+          typeof config.slots === 'function' ? config.slots(opts) : config.slots
       }
       if (config.slotActions) {
         entry.slotActions = config.slotActions

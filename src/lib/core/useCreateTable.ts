@@ -26,7 +26,7 @@ import {
   buildTesseraFeatures,
   foldEntries,
   foldHooks,
-  foldOptions,
+  foldLiveOptions,
   type TesseraFeatureEntry,
   type TesseraFeatures,
 } from './features'
@@ -198,9 +198,10 @@ export const useCreateTable = <
     defaultColumn: defaultColumn ?? DEFAULT_COLUMN,
 
     // Фичевые опции плагинов (enableSorting и т.п.) — вливаются первыми, чтобы
-    // явные поля ниже их не затирались. Живые, как и хуки: сворачиваются каждый
-    // рендер из свежих записей, а не по сигнатуре набора.
-    ...foldOptions(plugins),
+    // явные поля ниже их не затирались. `options` заморожены по сигнатуре набора
+    // (функции в них кормят мемо row-моделей); `liveOptions` — каждый рендер.
+    ...folded.options,
+    ...foldLiveOptions(plugins),
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
     state: stableState,

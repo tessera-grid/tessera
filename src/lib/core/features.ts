@@ -62,6 +62,12 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
   options?: Record<string, unknown>
   /**
+   * Живые табличные опции: сворачиваются каждый рендер (`foldLiveOptions`), а не по
+   * сигнатуре набора. Только значения, не кормящие мемо row-моделей (напр.
+   * `rowCount` серверной пагинации); функции и флаги фич — в `options`.
+   */
+  liveOptions?: Record<string, unknown>
+  /**
    * Живой слайс бизнес-хуков плагина (колбэки/флаги), читается через
    * `table.getHooks()`. В отличие от `options`/`slots`, НЕ мемоизируется по сигнатуре
    * набора — сворачивается каждый рендер (`foldHooks`), чтобы колбэки оставались
@@ -127,17 +133,15 @@ export const findDuplicatePluginIds = (
 }
 
 /**
- * Опции таблицы от ВСЕХ присутствующих записей (в т.ч. `enabled: false`): фабрика
- * отключённого плагина эмитит нейтральные значения, гася свою фичу. Дёшево —
- * `useCreateTable` сворачивает их каждый рендер, чтобы значения из аргументов
- * фабрик (напр. `rowCount` пагинации) были живыми.
+ * Живые опции от ВСЕХ присутствующих записей (как и `options`): `useCreateTable`
+ * сворачивает их каждый рендер, поверх замороженных `options`.
  */
-export const foldOptions = (
+export const foldLiveOptions = (
   entries: readonly TesseraFeatureEntry[],
 ): Record<string, unknown> => {
   const options: Record<string, unknown> = {}
   for (const entry of entries) {
-    Object.assign(options, entry.options)
+    Object.assign(options, entry.liveOptions)
   }
   return options
 }
@@ -150,7 +154,7 @@ export const foldOptions = (
 export const foldEntries = (
   entries: readonly TesseraFeatureEntry[],
 ): FoldedEntryConfig => {
-  const options = foldOptions(entries)
+  const options: Record<string, unknown> = {}
   const slots = createEmptyRenderSlots()
   const slotActions = createEmptySlotActions()
   const contextMenuActions: ContextMenuAction[] = []
@@ -167,7 +171,11 @@ export const foldEntries = (
       diagnose: entry.diagnose,
     })
 
-    // Слоты/колонки/действия/setup — только у активных (реактивный UI).
+    // Опции берём от ВСЕХ присутствующих записей (в т.ч. enabled:false) — фабрика
+    // отключённого плагина эмитит enable*:false, гася свою (всегда-присутствующую в
+    // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
+    Object.assign(options, entry.options)
+
     if (!isActive(entry)) {
       continue
     }
