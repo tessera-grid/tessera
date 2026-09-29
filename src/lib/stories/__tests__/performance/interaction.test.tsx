@@ -130,9 +130,9 @@ const CASES: InteractionCase[] = [
       await waitForColumnsButton()
       await openColumnsMenu()
     },
-    // Смена набора колонок перестраивает грид 1000×1000 со всеми плагинами
-    // (~250 мс под ×4); меню — ~40 мс из них. Недостиг ядра, не плагина.
-    regressionCeiling: 400,
+    // Смена набора колонок перерисовывает видимые строки 1000×1000 со всеми
+    // плагинами (~170 мс под ×4); одной горячей точки в профиле нет.
+    regressionCeiling: 250,
     act: async () => {
       columnsMenu()!
         .querySelector<HTMLElement>('[data-column-id] [role="checkbox"]')!

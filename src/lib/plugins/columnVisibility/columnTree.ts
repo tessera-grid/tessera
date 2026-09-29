@@ -15,6 +15,7 @@ export interface VisibilityColumn {
 
 export interface VisibilityTable {
   getAllLeafColumns: () => VisibilityColumn[]
+  getVisibleLeafColumns?: () => VisibilityColumn[]
 }
 
 export interface ColumnTreeNode {
@@ -44,17 +45,24 @@ const ancestorsOf = (column: VisibilityColumn) => {
 const PIN_ORDER = { start: 0, center: 1, end: 2 } as const
 
 /** Пользовательские листья в порядке отображения: start-закреплённые → центр → end. */
-export const getUserLeaves = (table: VisibilityTable): VisibilityColumn[] => {
-  const leaves = table
+export const getUserLeaves = (table: VisibilityTable): VisibilityColumn[] =>
+  table
     .getAllLeafColumns()
     .filter(column => !column.getIsActionsColumn?.())
-  const side = (column: VisibilityColumn) =>
-    PIN_ORDER[column.getIsPinned?.() || 'center']
-  return leaves
-    .map((column, index) => ({ column, index }))
-    .sort((a, b) => side(a.column) - side(b.column) || a.index - b.index)
+    .map((column, index) => ({
+      column,
+      index,
+      side: PIN_ORDER[column.getIsPinned?.() || 'center'],
+    }))
+    .sort((a, b) => a.side - b.side || a.index - b.index)
     .map(({ column }) => column)
-}
+
+/** Сколько пользовательских колонок видно сейчас; мемоизированный список TanStack, если есть. */
+const countVisibleUserLeaves = (table: VisibilityTable): number =>
+  (
+    table.getVisibleLeafColumns?.() ??
+    table.getAllLeafColumns().filter(column => column.getIsVisible())
+  ).filter(column => !column.getIsActionsColumn?.()).length
 
 /**
  * Дерево по цепочкам родителей: соседние листья с общим предком попадают в один
@@ -118,13 +126,10 @@ export const getToggle = (
     return null
   }
 
-  const hiding = new Set(hideable.map(leaf => leaf.id))
-  const remaining = getUserLeaves(table).filter(
-    leaf => leaf.getIsVisible() && !hiding.has(leaf.id),
-  )
-  return remaining.length === 0
+  // Здесь все скрываемые листья узла видимы: после скрытия останутся остальные видимые.
+  return countVisibleUserLeaves(table) - hideable.length === 0
     ? null
-    : { columnIds: [...hiding], visible: false }
+    : { columnIds: hideable.map(leaf => leaf.id), visible: false }
 }
 
 /**
@@ -142,11 +147,9 @@ export const getHide = (
   if (hiding.length === 0) {
     return null
   }
-  const ids = new Set(hiding.map(leaf => leaf.id))
-  const remaining = getUserLeaves(table).filter(
-    leaf => leaf.getIsVisible() && !ids.has(leaf.id),
-  )
-  return remaining.length === 0 ? null : [...ids]
+  return countVisibleUserLeaves(table) - hiding.length === 0
+    ? null
+    : hiding.map(leaf => leaf.id)
 }
 
 /** Показать все скрываемые скрытые колонки. */

@@ -109,6 +109,33 @@ const canDrag = (column: DraggableColumn): boolean => {
   return reason === undefined
 }
 
+interface DraggableIndexCache {
+  enabled: boolean
+  depth: number
+  byId: Map<string, number>
+}
+
+// Ключ — мемоизированный массив листьев TanStack: без кэша каждый заголовок заново
+// фильтровал все колонки через getCanDrag (O(заголовков × колонок) на рендер шапки).
+const draggableIndexCache = new WeakMap<object, DraggableIndexCache>()
+
+const draggableIndexOf = (column: DraggableColumn): number => {
+  const { table } = column
+  const leaves = table.getAllLeafColumns()
+  const enabled = !!table.options.enableColumnDragging
+  const depth = table.getHeaderGroups().length
+  let cached = draggableIndexCache.get(leaves)
+  if (!cached || cached.enabled !== enabled || cached.depth !== depth) {
+    const byId = new Map<string, number>()
+    leaves
+      .filter(leaf => leaf.getCanDrag())
+      .forEach((leaf, index) => byId.set(leaf.id, index))
+    cached = { enabled, depth, byId }
+    draggableIndexCache.set(leaves, cached)
+  }
+  return cached.byId.get(column.id) ?? -1
+}
+
 export const columnDraggingFeature: TableFeature = {
   getInitialState: state => ({
     columnDraggingActiveId: null,
@@ -157,11 +184,7 @@ export const columnDraggingFeature: TableFeature = {
       },
       column_getDraggableIndex: {
         // Индекс среди перетаскиваемых листьев (порядок определения листьев).
-        fn: (column: DraggableColumn) =>
-          column.table
-            .getAllLeafColumns()
-            .filter(leaf => leaf.getCanDrag())
-            .findIndex(leaf => leaf.id === column.id),
+        fn: (column: DraggableColumn) => draggableIndexOf(column),
       },
     })
   },
