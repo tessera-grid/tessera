@@ -4,7 +4,7 @@
  * `(opts?) => TesseraFeatureEntry`. Прячет раскладку: `options` → опции таблицы,
  * `hooks` → живой слайс записи под ключом `id` (undefined-ключи отброшены),
  * `features` → фрагмент фич v9, `state` → сгенерированная v9-фича локального слайса
- * под ключом `id`, `column`/`slots`/`setup` — как есть. Каналы в компонент — `./channels`.
+ * под ключом `plugin:<id>`, `column`/`slots`/`setup` — как есть. Каналы в компонент — `./channels`.
  */
 import { makeStateUpdater } from '@tanstack/react-table'
 
@@ -19,7 +19,7 @@ import type {
 } from '../headerActions'
 import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
-import { stateChangeOption } from './channels'
+import { pluginStateKey, stateChangeOption } from './channels'
 
 export {
   readPluginHooks,
@@ -28,6 +28,7 @@ export {
   injectCellState,
   injectCellOwner,
   setPluginState,
+  pluginStateKey,
   type PluginCellProps,
   type PluginHeaderProps,
   type PluginCellStateProps,
@@ -35,19 +36,22 @@ export {
 } from './channels'
 
 /**
- * Минимальная v9-фича локального состояния плагина: seed слайса под ключом `id` из
- * дефолта `getDefault()`. Store сам создаёт атом `table.atoms[id]`; чтение/запись —
+ * Минимальная v9-фича локального состояния плагина: seed слайса под ключом
+ * `pluginStateKey(id)` из дефолта `getDefault()`. Store сам создаёт атом; чтение/запись —
  * через инъектированный пропс `state` (`injectCellState`), не через общий `getState`.
  */
 const makeLocalStateFeature = (
   id: string,
   getDefault: () => unknown,
-): TableFeature => ({
-  getInitialState: state => ({ [id]: getDefault(), ...state }),
-  getDefaultTableOptions: table => ({
-    [stateChangeOption(id)]: makeStateUpdater(id as never, table),
-  }),
-})
+): TableFeature => {
+  const key = pluginStateKey(id)
+  return {
+    getInitialState: state => ({ [key]: getDefault(), ...state }),
+    getDefaultTableOptions: table => ({
+      [stateChangeOption(key)]: makeStateUpdater(key as never, table),
+    }),
+  }
+}
 
 const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   const out: Record<string, unknown> = {}
@@ -76,7 +80,7 @@ interface DefinePluginConfig<
   hooks?: (opts: TOptions) => THooks
   /**
    * Дефолт ЛОКАЛЬНОГО состояния плагина (значение слайса). definePlugin генерирует
-   * v9-фичу, seed'ящую слайс под ключом `id`; компонент читает/пишет его через пропс
+   * v9-фичу, seed'ящую слайс под ключом `plugin:<id>`; компонент читает/пишет его через пропс
    * `state: [value, setter]` (`injectCellState`), приватно от общего `getState`.
    */
   state?: () => TState

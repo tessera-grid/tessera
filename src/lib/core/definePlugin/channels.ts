@@ -86,6 +86,9 @@ export interface PluginCellOwnerProps<
   content: ReactNode
 }
 
+/** Ключ локального слайса плагина в store: с пространством имён, чтобы не совпасть со стоковым срезом (DP13). */
+export const pluginStateKey = (id: string): string => `plugin:${id}`
+
 /** Имя опции-updater'а слайса (конвенция v9: `on<Key>Change`). */
 export const stateChangeOption = (id: string): string =>
   `on${id.charAt(0).toUpperCase()}${id.slice(1)}Change`
@@ -95,7 +98,7 @@ type WritableAtom = { set: (v: unknown) => void }
 /**
  * Запись значения в локальный слайс плагина: через штатный updater-опцию
  * `on<Key>Change` (makeStateUpdater), с фолбэком на запись атома тем же путём, что и
- * makeStateUpdater: внешний `options.atoms[id]`, иначе `baseAtoms[id]` (`table.atoms`
+ * makeStateUpdater: внешний `options.atoms[key]`, иначе `baseAtoms[key]` (`table.atoms`
  * в v9 — производные, только для чтения).
  */
 export const setPluginState = (
@@ -109,12 +112,13 @@ export const setPluginState = (
     }
     baseAtoms?: Record<string, WritableAtom | undefined>
   }
-  const updater = t.options?.[stateChangeOption(id)]
+  const key = pluginStateKey(id)
+  const updater = t.options?.[stateChangeOption(key)]
   if (typeof updater === 'function') {
     updater(next)
     return
   }
-  ;(t.options?.atoms?.[id] ?? t.baseAtoms?.[id])?.set(next)
+  ;(t.options?.atoms?.[key] ?? t.baseAtoms?.[key])?.set(next)
 }
 
 /**
@@ -129,7 +133,10 @@ export const injectCellState =
     id: string,
   ) =>
   (ctx: CellComponentProps): ReactNode => {
-    const value = useSlice(ctx.table as never, id as never) as TState
+    const value = useSlice(
+      ctx.table as never,
+      pluginStateKey(id) as never,
+    ) as TState
     const setter = (next: TState) => setPluginState(ctx.table, id, next)
     return createElement(Component, {
       ...ctx,
@@ -151,7 +158,10 @@ export const injectCellOwner =
   // Тип параметра — стоковый CellComponentProps (совместимость с сигнатурой слота);
   // `content` кладёт RenderCellSlot в рантайме (для cellSlot он всегда есть).
   (ctx: CellComponentProps): ReactNode => {
-    const value = useSlice(ctx.table as never, id as never) as TState
+    const value = useSlice(
+      ctx.table as never,
+      pluginStateKey(id) as never,
+    ) as TState
     const setter = (next: TState) => setPluginState(ctx.table, id, next)
     return createElement(Component, {
       ...ctx,

@@ -2,6 +2,7 @@
  * Модель клавиатурной навигации: активная ячейка в модельных индексах, константы
  * DOM-атрибутов и duck-typed поверхность таблицы, которую читает шов.
  */
+import { pluginStateKey } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
 import type { KeyboardAction } from '../keyboardActions'
 
@@ -141,7 +142,8 @@ export const isFooterRowIndex = (table: unknown, rowIndex: number) =>
   rowIndex >= (table as NavTable).getRowModel().rows.length
 
 export const resolveActive = (t: NavTable, state: Record<string, unknown>) => {
-  const raw = state[KEYBOARD_NAVIGATION] as ActiveCell | undefined
+  const raw = state[pluginStateKey(KEYBOARD_NAVIGATION)] as
+    ActiveCell | undefined
   const active = clampActive(
     raw,
     getNavRowCount(t),

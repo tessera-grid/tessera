@@ -69,7 +69,8 @@
 
 ### Модель фокуса — roving tabindex
 
-- Срез `keyboardNavigation: { rowIndex: number; columnIndex: number }` —
+- Локальный срез плагина (`plugin:keyboardNavigation`, ADR 0028 DP13)
+  `{ rowIndex: number; columnIndex: number }` —
   **активная ячейка в модельных индексах** (не виртуальных): `rowIndex` — индекс
   в `getRowModel().rows`, `-1` — строка заголовка; `columnIndex` — позиция в
   **порядке отображения** (закреплённые start → центр → закреплённые end), в

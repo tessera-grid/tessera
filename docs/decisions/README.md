@@ -34,7 +34,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0025](0025-row-actions.md)                          | Действия строки: плагин rowActions (RA1–RA2 + перекрёстные R/CP/AM/LP)                                            | Принято    |
 | [0026](0026-migrate-to-tanstack-v9.md)               | Миграция на TanStack Table v9 (V9-1–V9-3); отменяет ADR 0007                                                      | Принято    |
 | [0027](0027-plugin-hooks-in-factory-args.md)         | Бизнес-хуки в аргументах фабрики плагина (H1–H6, все 7 плагинов); верхний `hooks` удалён                          | Принято    |
-| [0028](0028-define-plugin-authoring-api.md)          | `definePlugin`: эргономичный API написания плагина (DP1–DP12); типобезопасные `PluginCellProps`, инъекция пропсов | Принято    |
+| [0028](0028-define-plugin-authoring-api.md)          | `definePlugin`: эргономичный API написания плагина (DP1–DP13); типобезопасные `PluginCellProps`, инъекция пропсов | Принято    |
 | [0029](0029-cell-range-selection.md)                 | Выделение диапазона ячеек + копирование в буфер: плагин cellSelection (CR1–CR16)                                  | Принято    |
 | [0030](0030-context-menu.md)                         | Контекстное меню: плагин contextMenu, действия-контрибуции + гейтинг по выбору (CM1–CM10)                         | Принято    |
 | [0031](0031-wcag-keyboard.md)                        | Соответствие WCAG 2.1.1 (Keyboard): остаток после keyboardNavigation (KB1–KB14)                                   | Принято    |

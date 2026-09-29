@@ -432,6 +432,7 @@ collision-prone ключ.
 | `DP10` | Поле фич записи переименовано `slot` → `features` (алиас `slot` сохранён на переходный период)                                                                                                                                                                                                    | headless/`tsc`                                  |
 | `DP11` | Локальные `state`/`hooks` типизированы **только** для слот-компонентов плагина (без глоб. аугментации); общее состояние типизируется глобально (`TableState`/`TableOptions`)                                                                                                                      | type-level (`tsc`/expect-type)                  |
 | `DP12` | Входной тип `TOptions` задаётся **один раз** явным дженериком (каррированная форма `definePlugin<TOptions>()(...)`); `o` в `options`/`hooks` выводится как `TOptions` без повторной аннотации; `features`/резолв-`options`/`hooks`/`state` выводятся из конфига                                   | type-level (`tsc`/expect-type)                  |
+| `DP13` | Локальный `state` плагина хранится в store под ключом `plugin:<id>` (пространство имён ядра), а не под голым `id`: плагин с `id`, совпадающим со стоковым срезом (`sorting`, `expanded`…), не делит с ним состояние                                                                               | headless                                        |
 
 ## Совместимость и миграция
 
@@ -454,7 +455,7 @@ collision-prone ключ.
   `*Plugin` удалены).
 - **Канал локального `state` — реализован (сделано).** Поле `state` в `definePlugin`
   генерирует v9-фичу (`getInitialState` + `on<Key>Change` через `makeStateUpdater`),
-  seed'ящую слайс под ключом `id`; `PluginCellStateProps<THooks, TState>` и `injectCellState`
+  seed'ящую слайс под ключом `plugin:<id>` (DP13); `PluginCellStateProps<THooks, TState>` и `injectCellState`
   доставляют компоненту пропс `state: [value, setter]` (реактивно, приватно от общего
   `getState`). Первый носитель — встроенный плагин `cellEditing` (слайс «редактируемая
   ячейка»), покрыт node-тестом. `TState` выводится из возврата `state`.
@@ -500,6 +501,11 @@ collision-prone ключ.
   `defaultHooks`/`resolveHooks` и держать ДВЕ identity (строковый `id` всё равно нужен для
   state/фичи/слотов/дебага) ради защиты от коллизии, которую у одного автора закрывает
   дешёвый дев-варн (выше). Итог: `id`-скоуп + дев-варн, без токена.
+- **Ключ локального `state` — с пространством имён (DP13).** Строковый ключ неизбежен
+  (Symbol в v9 невозможен, см. выше), но голый `id` совпадал со срезами TanStack: плагин
+  с `id: 'sorting'` получал в свой слайс стоковую сортировку. Ключ — `plugin:<id>`
+  (`pluginStateKey`), updater-опция — `on<Key>Change` от него. Для потребителя это не
+  ломающее изменение: слайс читается только пропсом `state`, а не по ключу.
 - Проверено на каждом шаге: `tsc`, node-набор (109), `eslint`, `prettier` — зелёные.
 
 ## Рассмотренные альтернативы

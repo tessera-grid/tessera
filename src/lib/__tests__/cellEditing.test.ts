@@ -1,6 +1,6 @@
 /**
  * Headless-проверка плагина cellEditing — носителя ЛОКАЛЬНОГО состояния.
- * Проверяет: сгенерированная из `state` v9-фича seed'ит слайс под ключом `cellEditing`
+ * Проверяет: сгенерированная из `state` v9-фича seed'ит слайс плагина
  * и он записываем; кнопка регистрируется в rightCellSlot, владелец-редактор — в
  * cellSlot; хуки canEdit/onCellEdit/editor из аргументов фабрики читаются живо с дефолтами.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { resolveHooks } from '../core/createHooks'
+import { pluginStateKey, setPluginState } from '../core/definePlugin'
 import { cellEditing } from '../plugins/cellEditing'
 
 interface Person {
@@ -45,13 +46,13 @@ const makeTable = (opts = {}) => {
 describe('cellEditing', () => {
   it("state: сгенерированная фича seed'ит слайс cellEditing = null", () => {
     const { table } = makeTable()
-    expect(table.atoms.cellEditing.get()).toBe(null)
+    expect(table.atoms[pluginStateKey('cellEditing')].get()).toBe(null)
   })
 
   it('локальный слайс записывается через updater-опцию (реактивно)', () => {
     const { table } = makeTable()
-    table.options.onCellEditingChange('1:name')
-    expect(table.atoms.cellEditing.get()).toBe('1:name')
+    setPluginState(table, 'cellEditing', '1:name')
+    expect(table.atoms[pluginStateKey('cellEditing')].get()).toBe('1:name')
   })
 
   it('кнопка регистрируется в правом слоте ячейки', () => {
