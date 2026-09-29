@@ -3,12 +3,21 @@
  * `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь рендера —
  * рендер идёт через нативный `FlexRender` (см. `component`).
  */
-import type { CellContext, ColumnDefTemplate, HeaderContext } from '../../types'
+import type {
+  CellContext,
+  ColumnDefTemplate,
+  HeaderContext,
+  Table,
+} from '../../types'
 
 /** Пропсы компонента слота заголовка — v9-контекст заголовка. */
 export type HeaderComponentProps = HeaderContext<any, any, any>
 /** Пропсы компонента слота ячейки/строки — v9-контекст ячейки. */
 export type CellComponentProps = CellContext<any, any, any>
+/** Пропсы компонента кнопки тулбара — таблица целиком (контекста колонки нет). */
+export interface ToolbarComponentProps {
+  table: Table<any, any>
+}
 
 export interface RegisterSlotParams<TContext extends object> {
   /** Уникальный идентификатор плагина (ключ не должен быть динамическим). */
@@ -32,11 +41,15 @@ export interface RegisterSlotParams<TContext extends object> {
    * (напр. resize-грип), не занимающий место в счётчике. По умолчанию учитывается.
    */
   countsAsHeaderAction?: boolean
+  /** Подгруппа кнопок тулбара (только `toolbarSlot`); по умолчанию `'default'`. */
+  group?: string
 }
 
 export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]
 
 export type CellSlot = RegisterSlotParams<CellComponentProps>[]
+
+export type ToolbarSlot = RegisterSlotParams<ToolbarComponentProps>[]
 
 /**
  * Декларативное объявление слота плагином. Ядро собирает слоты
@@ -50,6 +63,7 @@ export type PluginSlot =
   | (RegisterSlotParams<CellComponentProps> & {
       slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot' | 'cellSlot'
     })
+  | (RegisterSlotParams<ToolbarComponentProps> & { slot: 'toolbarSlot' })
 
 export interface RenderSlots {
   /** Место под плагин в заголовке колонки слева от текста. */
@@ -68,4 +82,6 @@ export interface RenderSlots {
   cellSlot: CellSlot
   /** Место под кнопки действий над строками. */
   actionRowSlot: CellSlot
+  /** Кнопки верхнего тулбара таблицы (ADR 0035). */
+  toolbarSlot: ToolbarSlot
 }

@@ -57,7 +57,12 @@ const KebabPlaceholder = ({
       {trigger}
     </div>
   ) : (
-    trigger
+    <div
+      className="cell__button cell__button--hidden"
+      data-button-active={open}
+    >
+      {trigger}
+    </div>
   )
 }
 

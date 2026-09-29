@@ -41,6 +41,12 @@
   поверхностью переопределения.
 - Инлайн на обёртке остаются только РАНТАЙМ-переменные
   (`--tsr-comp-head-height`, `--tsr-comp-body-height`, drag-офсеты).
+- **Рамка и тулбар** (ADR 0035): рамка грида — `--tsr-comp-frame-border-color` /
+  `-border-width` / `-radius` (ширина `0` убирает рамку); тулбар —
+  `--tsr-comp-toolbar-height` / `-padding-x` / `-gap` / `-bg` / `-divider-color`,
+  кнопки F4 — `--tsr-comp-toolbar-button-size` / `-button-radius`.
+  `--tsr-comp-toolbar-offset` выставляет сам грид при `enableToolbar` — его не
+  переопределяют.
 
 ```mermaid
 flowchart LR

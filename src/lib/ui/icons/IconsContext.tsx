@@ -11,6 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
+  Columns3,
+  EyeOff,
   Group,
   GripVertical,
   Minus,
@@ -65,6 +67,10 @@ export interface TableIcons {
   menu: IconComponent
   /** Редактирование ячейки */
   edit: IconComponent
+  /** Кнопка меню колонок в тулбаре */
+  columns: IconComponent
+  /** Пункт «Скрыть колонку» в кебабе заголовка */
+  hideColumn: IconComponent
 }
 
 export const DEFAULT_ICONS: TableIcons = {
@@ -82,6 +88,8 @@ export const DEFAULT_ICONS: TableIcons = {
   checkboxIndeterminate: Minus,
   menu: MoreVertical,
   edit: Pencil,
+  columns: Columns3,
+  hideColumn: EyeOff,
 }
 
 const IconsContext = createContext<TableIcons>(DEFAULT_ICONS)

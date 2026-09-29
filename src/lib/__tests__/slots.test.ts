@@ -24,7 +24,7 @@ const action = (
 })
 
 describe('createSlots: registerSlotInto', () => {
-  it('пустой набор содержит все шесть слотов', () => {
+  it('пустой набор содержит все семь слотов', () => {
     expect(Object.keys(createEmptyRenderSlots()).sort()).toEqual(
       [
         'actionRowSlot',
@@ -33,6 +33,7 @@ describe('createSlots: registerSlotInto', () => {
         'leftHeaderSlot',
         'rightCellSlot',
         'rightHeaderSlot',
+        'toolbarSlot',
       ].sort(),
     )
   })
@@ -129,6 +130,49 @@ describe('headerActions: resolveActionLayout', () => {
     expect(layout.collapsed).toBe(true)
     expect(layout.inline.map(a => a.id)).toEqual(['grip'])
     expect(layout.menu.map(a => a.id)).toEqual(['a'])
+  })
+
+  it("AM22: placement:'menu' не рисуется инлайн; кебаб показан и сам считается в пороге одной кнопкой", () => {
+    const hide = action({ id: 'hide', placement: 'menu' })
+    // pin + кебаб = 2 < 3: pin остаётся кнопкой, кебаб — ради menu-действия.
+    const below = resolveActionLayout({
+      actions: [action({ id: 'pin' }), hide],
+      opaqueCount: 0,
+      config: { mode: 'auto', threshold: 3 },
+      ctx: {},
+    })
+    expect(below.collapsed).toBe(true)
+    expect(below.inline.map(a => a.id)).toEqual(['pin'])
+    expect(below.menu.map(a => a.id)).toEqual(['hide'])
+
+    // pin + sort + кебаб = 3: порог достигнут — всё в кебабе, по order.
+    const above = resolveActionLayout({
+      actions: [
+        action({ id: 'pin', order: 0 }),
+        action({ id: 'sort', order: 1 }),
+        action({ ...hide, order: 2 }),
+      ],
+      opaqueCount: 0,
+      config: { mode: 'auto', threshold: 3 },
+      ctx: {},
+    })
+    expect(above.inline).toEqual([])
+    expect(above.menu.map(a => a.id)).toEqual(['pin', 'sort', 'hide'])
+  })
+
+  it("AM23: без плагина-меню действие placement:'menu' не показывается нигде", () => {
+    const layout = resolveActionLayout({
+      actions: [
+        action({ id: 'pin' }),
+        action({ id: 'hide', placement: 'menu' }),
+      ],
+      opaqueCount: 0,
+      config: undefined,
+      ctx: {},
+    })
+    expect(layout.collapsed).toBe(false)
+    expect(layout.inline.map(a => a.id)).toEqual(['pin'])
+    expect(layout.menu).toEqual([])
   })
 
   it('visible:false исключает действие целиком', () => {

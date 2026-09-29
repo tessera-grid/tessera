@@ -27,6 +27,19 @@ const menuItems = () =>
 const menuItemByText = (text: string) =>
   menuItems().find(i => i.textContent?.trim() === text)
 
+/**
+ * Увести указатель за пределы грида. `userEvent.unhover` ставит его в центр body —
+ * а там может оказаться заголовок; маленькая мишень в углу окна от этого свободна.
+ */
+const parkPointer = async () => {
+  const target = document.createElement('div')
+  target.style.cssText =
+    'position:fixed;right:0;bottom:0;width:4px;height:4px;z-index:2147483647'
+  document.body.appendChild(target)
+  await userEvent.hover(target)
+  target.remove()
+}
+
 const closeMenu = async () => {
   await userEvent.keyboard('{Escape}')
   await expect.poll(() => menuItems().length).toBe(0)
@@ -174,6 +187,34 @@ describe('Action menu — header', () => {
     expect(
       pin.closest('.cell__button')?.getAttribute('data-button-active'),
     ).toBe('false')
+  })
+
+  test('AM24: кебаб заголовка скрыт в покое, появляется по наведению и остаётся видимым, пока меню открыто', async () => {
+    const { container } = await renderHeaderMenu()
+    // Лениво догруженный триггер заменяет заглушку — кебаб перечитываем каждый раз.
+    const kebab = () =>
+      dataHeadCells(container)[0].querySelector<HTMLElement>(KEBAB)!
+    const opacity = () =>
+      getComputedStyle(kebab().closest('.cell__button')!).opacity
+
+    await parkPointer()
+    await expect.poll(opacity).toBe('0')
+
+    await userEvent.hover(dataHeadCells(container)[0])
+    await expect.poll(opacity).toBe('1')
+
+    await userEvent.click(kebab())
+    await expect.poll(() => menuItems().length).toBeGreaterThan(0)
+    await userEvent.hover(dataHeadCells(container)[1])
+    expect(opacity()).toBe('1')
+
+    // Escape возвращает фокус на кебаб — с клавиатурным фокусом он виден; снимаем
+    // фокус, и в покое кебаб снова скрыт.
+    await closeMenu()
+    expect(opacity()).toBe('1')
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    await parkPointer()
+    await expect.poll(opacity).toBe('0')
   })
 })
 

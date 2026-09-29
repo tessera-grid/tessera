@@ -31,6 +31,9 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       '@base-ui/react/menu',
+      '@base-ui/react/toolbar',
+      '@base-ui/react/popover',
+      '@base-ui/react/checkbox',
       '@tanstack/react-table',
       '@tanstack/react-store',
     ],

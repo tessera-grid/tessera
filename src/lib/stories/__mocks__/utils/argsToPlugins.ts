@@ -9,6 +9,7 @@ import {
   columnPinning,
   columnSizing,
   columnSorting,
+  columnVisibility,
   headerActionMenu,
   rowActionMenu,
   rowActions,
@@ -61,6 +62,8 @@ export interface FeatureToggles {
   enableContextMenu?: boolean
   /** Клавиатурная навигация по ячейкам (role=grid, roving tabindex, стрелки). */
   enableKeyboardNavigation?: boolean
+  /** Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar). */
+  enableColumnVisibility?: boolean
 }
 
 export const argsToPlugins = (o: FeatureToggles) => {
@@ -111,6 +114,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     cellSelection({ enabled: !!o.enableCellSelection }),
     contextMenu({ enabled: !!o.enableContextMenu }),
     keyboardNavigation({ enabled: !!o.enableKeyboardNavigation }),
+    columnVisibility({ enabled: !!o.enableColumnVisibility }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

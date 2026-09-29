@@ -29,6 +29,10 @@ export {
 export { columnPinning, type ColumnPinningOptions } from './columnPinning'
 export { columnSizing, type ColumnSizingOptions } from './columnSizing'
 export { columnDragging, type ColumnDraggingOptions } from './columnDragging'
+export {
+  columnVisibility,
+  type ColumnVisibilityOptions,
+} from './columnVisibility'
 
 export {
   headerActionMenu,
@@ -41,6 +45,7 @@ export type { ColumnDraggingHooks } from './columnDragging/types'
 export type { ColumnPinningHooks } from './columnPinning/types'
 export type { ColumnSizingHooks } from './columnSizing/types'
 export type { ColumnSortingHooks } from './columnSorting/types'
+export type { ColumnVisibilityHooks } from './columnVisibility/types'
 export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'

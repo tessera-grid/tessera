@@ -48,6 +48,7 @@ export interface CreateDataGridOptions {
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
+  enableToolbar?: boolean
   enableAnnouncements?: boolean
   skeletonOptions?: SkeletonOptions
   handlers?: Record<string, unknown>
@@ -75,6 +76,8 @@ export type UseCreateTableParams<
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
+  /** Верхний тулбар над таблицей (ADR 0035). */
+  enableToolbar?: boolean
   /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
   enableAnnouncements?: boolean
   skeletonOptions?: SkeletonOptions
@@ -97,6 +100,7 @@ export const useCreateTable = <
   enableSkeleton,
   enableLoading,
   enableFooter,
+  enableToolbar,
   enableAnnouncements,
   skeletonOptions,
   defaultColumn,
@@ -215,6 +219,7 @@ export const useCreateTable = <
     enableSkeleton,
     enableLoading,
     enableFooter,
+    enableToolbar,
     enableAnnouncements,
     skeletonOptions,
   }

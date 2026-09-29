@@ -122,26 +122,31 @@ export const resolveActionLayout = ({
   const applicable = sortByOrder(
     actions.filter(action => action.visible?.(ctx) !== false),
   )
+  // `placement: 'menu'` не бывает инлайн (ADR 0035, AM22–AM23); кебаб, который оно
+  // вызывает, сам занимает место в ряду и считается в пороге как одна кнопка.
+  const menuOnly = applicable.filter(action => action.placement === 'menu')
+  const regular = applicable.filter(action => action.placement !== 'menu')
 
   if (!config) {
-    return { collapsed: false, inline: applicable, menu: [] }
+    return { collapsed: false, inline: regular, menu: [] }
   }
 
-  const total = applicable.length + opaqueCount
+  const total = regular.length + opaqueCount + (menuOnly.length > 0 ? 1 : 0)
   const shouldCollapse = config.mode === 'always' || total >= config.threshold
+  const collapsible = shouldCollapse
+    ? regular.filter(action => action.collapsible !== false)
+    : []
 
-  if (!shouldCollapse) {
-    return { collapsed: false, inline: applicable, menu: [] }
+  if (collapsible.length === 0 && menuOnly.length === 0) {
+    return { collapsed: false, inline: regular, menu: [] }
   }
 
-  const menu = applicable.filter(action => action.collapsible !== false)
-  const inline = applicable.filter(action => action.collapsible === false)
-
-  if (menu.length === 0) {
-    return { collapsed: false, inline: applicable, menu: [] }
+  const inMenu = new Set([...collapsible, ...menuOnly])
+  return {
+    collapsed: true,
+    inline: regular.filter(action => !inMenu.has(action)),
+    menu: applicable.filter(action => inMenu.has(action)),
   }
-
-  return { collapsed: true, inline, menu }
 }
 
 /**

@@ -72,6 +72,7 @@ flowchart TB
     end
 
     subgraph paint["отрисовка"]
+        TB["Toolbar (enableToolbar) — вне скролл-контейнера<br/>+ toolbarSlot по подгруппам"]
         HEAD["DndHeadWrapper → Head → HeadRow → HeadCell<br/>+ left/right header-слоты"]
         BODY["DndBodyWrapper → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
         FOOT["Footer (enableFooter)"]
@@ -87,6 +88,20 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 скролла → `cell.renderComponent` → слот action/row-actions → `flexRender` от
 `cell` столбца. Pinned/action-столбцы исключаются из виртуализации столбцов и
 инъекции слотов там, где это уместно.
+
+## Рамка и тулбар
+
+Корневая обёртка грида (`table__theme-wrapper`) несёт внешнюю рамку со
+скруглением (`--tsr-comp-frame-*`, ADR [0035](../decisions/0035-toolbar-and-column-visibility.md))
+и обрезает содержимое по ней (`overflow: hidden`); скроллится только контейнер
+таблицы внутри. При `enableToolbar` над контейнером рендерится `Toolbar` (Base UI
+`Toolbar`, `role="toolbar"`): обёртка получает `data-toolbar`, что выставляет
+`--tsr-comp-toolbar-offset` равным высоте тулбара, и контейнер таблицы становится
+ниже на неё. `LinearProgress` — абсолютный элемент без `top`: его позиция берётся из
+потока, поэтому он сам оказывается под тулбаром и остаётся под шапкой. Кнопки
+тулбара — `toolbarSlot`; раскладку по подгруппам делает `resolveToolbarGroups`
+(`core/toolbar.ts`), между группами — `Toolbar.Separator`. Верхней линии у шапки
+нет: сверху её ограничивает рамка или разделитель тулбара.
 
 ## Состояния загрузки
 

@@ -1,0 +1,144 @@
+.positioner {
+  z-index: var(--tsr-comp-z-index-tooltip);
+  outline: none;
+}
+
+.popup {
+  box-sizing: border-box;
+  width: var(--tsr-comp-column-menu-width);
+  max-width: calc(100vw - 16px);
+  padding: 8px;
+  background-color: var(--tsr-comp-row-bg);
+  color: var(--tsr-comp-action-button-color);
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  box-shadow: var(--tsr-comp-shadow-action);
+  outline: none;
+  transform-origin: var(--transform-origin);
+  transition: var(--tsr-comp-tooltip-transition);
+  font-family: var(--tsr-comp-font-family);
+  font-size: 0.875rem;
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup {
+    transition-duration: 0ms;
+  }
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+}
+
+.search:focus-visible {
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.scroller {
+  max-height: var(--tsr-comp-column-menu-max-height);
+  overflow-y: auto;
+}
+
+.tree {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 32px;
+  padding-inline-end: 8px;
+  border-radius: var(--tsr-comp-control-radius);
+  cursor: pointer;
+}
+
+.row:hover:not([data-disabled]) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.row[data-disabled] {
+  cursor: default;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item[data-column-group] > .row > .label {
+  font-weight: 600;
+}
+
+.empty {
+  margin: 0;
+  padding: 8px;
+  color: var(--tsr-comp-control-disabled-color);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--tsr-comp-control-border);
+}
+
+.action {
+  height: 28px;
+  padding: 0 10px;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-control-radius);
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.action:hover:not(:disabled) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.action:disabled {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}

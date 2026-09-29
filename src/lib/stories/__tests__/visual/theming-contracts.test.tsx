@@ -1,5 +1,7 @@
 import { type ReactNode } from 'react'
 
+import { Toolbar } from '@base-ui/react/toolbar'
+
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -11,6 +13,7 @@ import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
 import { SelectCheckbox } from '../../../plugins/rowSelection/SelectCheckbox'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
+import { ToolbarButton } from '../../../ui/ToolbarButton'
 import '../../../core/themeVariables/theme.css'
 
 // Контракт стилевых признаков по СЕМЕЙСТВАМ компонентов. Проверяет,
@@ -96,6 +99,17 @@ const BUTTON_FAMILY: Member[] = [
   },
 ]
 
+// F4 (кнопка тулбара, ADR 0035): делит с F1/F2 disabled-цвет и transition, но не
+// радиус — она квадратная. Живёт только внутри Toolbar.Root.
+const toolbarButton = async (disabled: boolean) =>
+  (
+    await renderThemed(
+      <Toolbar.Root>
+        <ToolbarButton label="a" icon={<span>i</span>} disabled={disabled} />
+      </Toolbar.Root>,
+    )
+  ).querySelector<HTMLElement>('button')!
+
 const el = async (m: Member, disabled: boolean) =>
   (await renderThemed(m.node(disabled))).querySelector<HTMLElement>(m.sel)!
 
@@ -114,6 +128,10 @@ describe('Style contract by component family', () => {
       )
     ).querySelector<HTMLElement>('.drag__handler--column')!
     expect(read(dh, 'color'), 'DragHandler disabled color').toBe(expected)
+    expect(
+      read(await toolbarButton(true), 'color'),
+      'ToolbarButton disabled color',
+    ).toBe(expected)
   })
 
   test('TC-2 button family shares ONE transition', async () => {
@@ -123,6 +141,7 @@ describe('Style contract by component family', () => {
       const node = await el(m, false)
       values.push(read(node, 'transition'))
     }
+    values.push(read(await toolbarButton(false), 'transition'))
     expect(values.every(v => v && v === values[0])).toBe(true)
   })
 

@@ -1,8 +1,10 @@
 // Пропсы и дефолты демо-компонента историй DataGrid.
 import { ColumnDef, ExpandedState } from '@tanstack/react-table'
+import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { useColumns } from './__mocks__/columns'
+import type { ColumnVisibilityHooks } from '../../lib/plugins/columnVisibility'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
 import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
 import { FeatureToggles } from './__mocks__/utils/argsToPlugins'
@@ -37,6 +39,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * фича была видна сразу. По умолчанию наследует поведение dataMode.
    */
   initialExpanded?: ExpandedState
+  /** Дополнительные записи плагинов поверх тумблеров (демо и тесты тулбара). */
+  extraPlugins?: TesseraFeatureEntry[]
 
   containerHeight: number
   height: DataGridProps['height']
@@ -99,6 +103,9 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * В обычных историях не задаётся (дефолт — no-op).
    */
   onExpandRow?: RowExpandingHooks['onExpandRow']
+
+  /** Проброс колбэка меню колонок (`columnVisibility`) наружу — для визуальных тестов. */
+  onToggleColumnVisibility?: ColumnVisibilityHooks['onToggleColumnVisibility']
 
   updateArgs: (
     args: Partial<

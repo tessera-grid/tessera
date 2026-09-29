@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { Grid } from './_shims'
+import { toolbarDemoPlugins } from './toolbarDemo'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../lib/plugins/rowActions'
 import { DEFAULT_SKELETON_OPTIONS } from '../../lib/core/skeletonOptions'
 import {
@@ -12,6 +13,7 @@ import {
   enableColumnResizingType,
   enableColumnSortingType,
   enableFooterType,
+  enableToolbarType,
   enableGroupingType,
   enableLoadingType,
   enableMultiSortType,
@@ -82,6 +84,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableCellEditing: false,
 
     enableFooter: false,
+    enableToolbar: false,
   },
   argTypes: {
     columnCount: columnCountType,
@@ -121,6 +124,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableCellEditing: enableCellEditingType,
 
     enableFooter: enableFooterType,
+    enableToolbar: enableToolbarType,
   },
 }
 
@@ -169,6 +173,50 @@ export const WithFooter: StoryObj<StoryProps> = {
   name: 'With Footer',
   args: {
     enableFooter: true,
+  },
+}
+
+export const WithToolbar: StoryObj<StoryProps> = {
+  name: 'With Toolbar',
+  args: {
+    // Демо-кнопки в двух подгруппах (`view` и `data`): видны порядок, разделитель
+    // и состояния F4 — активное (Settings) и disabled (Export).
+    enableToolbar: true,
+    extraPlugins: toolbarDemoPlugins,
+  },
+}
+
+export const ColumnVisibility: StoryObj<StoryProps> = {
+  name: 'Column Visibility',
+  args: {
+    // Кнопка «Колонки» в тулбаре: поиск, дерево, «Показать все» / «Сбросить».
+    // Включите showHeaderGroups — меню покажет группы вложенной шапки.
+    enableToolbar: true,
+    enableColumnVisibility: true,
+    enableRowSelection: true,
+  },
+}
+
+export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
+  name: 'Column Visibility + Header Menu',
+  args: {
+    // Всё вместе: кнопка «Колонки» в тулбаре и «Скрыть колонку» в кебабе заголовка.
+    // Пин — обычное действие, остаётся кнопкой; «Скрыть колонку» (`placement:
+    // 'menu'`) — только в кебабе. Кебаб считается в пороге (3) одной кнопкой:
+    // включите enableColumnSorting — пин + сортировка + кебаб = 3, всё уйдёт в кебаб.
+    // Включите showHeaderGroups — у групп в кебабе появится «Скрыть группу».
+    enableToolbar: true,
+    enableColumnVisibility: true,
+    enableHeaderActionMenu: true,
+    enableColumnPinning: true,
+    enableRowSelection: true,
+  },
+}
+
+export const WithEmptyToolbar: StoryObj<StoryProps> = {
+  name: 'With Toolbar (empty)',
+  args: {
+    enableToolbar: true,
   },
 }
 

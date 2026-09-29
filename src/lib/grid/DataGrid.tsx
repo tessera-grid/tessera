@@ -1,7 +1,14 @@
 // Корневой DataGrid: реактивность через table.atoms/store (useTableState/useSlice
 // в компонентах). Стейт-снимки (isResizingColumns/rowDragging) читаются реактивно
 // из общего store.
-import { type CSSProperties, useCallback, useMemo, useRef } from 'react'
+import {
+  type CSSProperties,
+  lazy,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react'
 
 import clsx from 'clsx'
 
@@ -36,6 +43,11 @@ import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 // Токены темы (`.data-grid-theme`: --tsr-ref/sys/comp, light/dark) как ГЛОБАЛЬНЫЙ
 // (не-модульный) CSS side-effect отсюда — чтобы классы шиппились не захешированными.
 import '../core/themeVariables/theme.css'
+
+// Base UI Toolbar — около 6.5 KB gzip; грузим только при `enableToolbar`.
+const Toolbar = lazy(() =>
+  import('./Toolbar/Toolbar').then(module => ({ default: module.Toolbar })),
+)
 
 /**
  * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable), высоту и
@@ -79,6 +91,7 @@ export const DataGrid = ({
     | undefined
 
   const enableContextMenu = !!(table.options as any).enableContextMenu
+  const enableToolbar = !!(table.options as any).enableToolbar
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -105,6 +118,14 @@ export const DataGrid = ({
     [localization],
   )
   const tableLabel = labels.table
+  // Заглушка той же высоты, пока грузится чанк: раскладка не прыгает.
+  const toolbar = enableToolbar && (
+    <Suspense
+      fallback={<div className={dataGridStyles['toolbar-placeholder']} />}
+    >
+      <Toolbar table={table} label={labels.toolbar} />
+    </Suspense>
+  )
   const loadingLabel = labels.loading
 
   const layout = hasNestedGroups ? 'grid' : 'flex'
@@ -186,13 +207,29 @@ export const DataGrid = ({
           loading={showLinearProgress || showSkeletonOverlay}
           rowCount={rows.length}
         />
-        <div
-          className={clsx('data-grid__container', themeClassName)}
-          ref={scrollableNodeRef}
-          style={{ ...containerStyles, ...style }}
-        >
-          <div className={dataGridStyles.table__stub}>{stub}</div>
-        </div>
+        <IconsProvider icons={icons}>
+          <LocalizationProvider localization={localization}>
+            <div
+              className={clsx(
+                dataGridStyles['table__theme-wrapper'],
+                themeClassName,
+              )}
+              data-toolbar={enableToolbar || undefined}
+              style={{ ...containerStyles, ...style }}
+            >
+              {toolbar}
+              <div
+                className={clsx(
+                  'data-grid__container',
+                  dataGridStyles['table__stub-container'],
+                )}
+                ref={scrollableNodeRef}
+              >
+                <div className={dataGridStyles.table__stub}>{stub}</div>
+              </div>
+            </div>
+          </LocalizationProvider>
+        </IconsProvider>
       </>
     )
   }
@@ -214,8 +251,10 @@ export const DataGrid = ({
                 dataGridStyles['table__theme-wrapper'],
                 themeClassName,
               )}
+              data-toolbar={enableToolbar || undefined}
               style={wrapperStyles}
             >
+              {toolbar}
               {showLinearProgress && <LinearProgress label={loadingLabel} />}
               {enableContextMenu && (
                 <ContextMenu

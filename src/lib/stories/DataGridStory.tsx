@@ -49,6 +49,7 @@ export const StoryComponent = memo(
     columnsOverride,
     initialGrouping,
     initialExpanded,
+    extraPlugins,
 
     onTogglePin,
     onToggleColumnSort,
@@ -57,6 +58,7 @@ export const StoryComponent = memo(
     onSelectRow,
     onSelectAllRowsOnPage,
     onExpandRow,
+    onToggleColumnVisibility,
 
     updateArgs,
 
@@ -133,12 +135,14 @@ export const StoryComponent = memo(
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
       enableFooter: options.enableFooter,
+      enableToolbar: options.enableToolbar,
       enableAnnouncements: options.enableAnnouncements,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.
       plugins: [
         ...argsToPlugins(options),
+        ...(extraPlugins ?? []),
         {
           id: 'demoHooks',
           // Пустой slot — запись не несёт фич, только hook-слайс (сохраняет вывод
@@ -160,6 +164,9 @@ export const StoryComponent = memo(
               : {}),
             ...(onColumnDragEnd ? { columnDragging: { onColumnDragEnd } } : {}),
             ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
+            ...(onToggleColumnVisibility
+              ? { columnVisibility: { onToggleColumnVisibility } }
+              : {}),
             ...(options.enableCellEditing
               ? {
                   cellEditing: {

@@ -30,6 +30,9 @@ export default defineConfig({
     // поддеревья с единым React.
     include: [
       '@base-ui/react/menu',
+      '@base-ui/react/toolbar',
+      '@base-ui/react/popover',
+      '@base-ui/react/checkbox',
       '@tanstack/react-table',
       '@tanstack/react-store',
     ],

@@ -30,7 +30,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0021](0021-keyboard-navigation.md)                  | Клавиатурная навигация: плагин `keyboardNavigation` (KN1–KN14)                                                    | Предложено |
 | [0022](0022-plugin-compatibility-contract.md)        | Контракт совместимости плагинов: тихие отключения → dev-warning (PC1–PC8)                                         | Принято    |
 | [0023](0023-cross-plugin-interactions.md)            | Сквозные (межплагинные) взаимодействия: слой тестов `X<n>`                                                        | Принято    |
-| [0024](0024-slot-action-descriptor-and-menu.md)      | Единый дескриптор действия слота + схлопывание в кебаб-меню (AM1–AM21)                                            | Принято    |
+| [0024](0024-slot-action-descriptor-and-menu.md)      | Единый дескриптор действия слота + схлопывание в кебаб-меню (AM1–AM24)                                            | Принято    |
 | [0025](0025-row-actions.md)                          | Действия строки: плагин rowActions (RA1–RA2 + перекрёстные R/CP/AM/LP)                                            | Принято    |
 | [0026](0026-migrate-to-tanstack-v9.md)               | Миграция на TanStack Table v9 (V9-1–V9-3); отменяет ADR 0007                                                      | Принято    |
 | [0027](0027-plugin-hooks-in-factory-args.md)         | Бизнес-хуки в аргументах фабрики плагина (H1–H6, все 7 плагинов); верхний `hooks` удалён                          | Принято    |
@@ -41,6 +41,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0032](0032-wcag-aa-remainder.md)                    | Доступность: остаток до WCAG 2.1 AA (W1–W17)                                                                      | Принято    |
 | [0033](0033-a11y-tree-and-virtual-screen-reader.md)  | Проверка доступности: дерево AX Chromium и эмулятор скринридера (AX1–AX7, SR1–SR7)                                | Принято    |
 | [0034](0034-wcag-22-dragging-and-target-size.md)     | Доступность: WCAG 2.2 AA — альтернатива перетаскиванию и размер целей (DA1–DA6, TS1–TS2)                          | Принято    |
+| [0035](0035-toolbar-and-column-visibility.md)        | Верхний тулбар (слот `toolbarSlot`, кнопки F4) + плагин columnVisibility (TB1–TB15, CV1–CV18, AM22–AM23, I4–I6)   | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

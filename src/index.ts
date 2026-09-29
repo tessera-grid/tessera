@@ -34,6 +34,7 @@ export type { TesseraFeatureEntry as TablePlugin } from './lib/core/features'
 export type {
   HeaderComponentProps,
   CellComponentProps,
+  ToolbarComponentProps,
   PluginSlot,
 } from './lib/core/createSlots'
 export type { ServiceColumn } from './lib/core/createColumns'

@@ -35,6 +35,22 @@ export interface TableLabels {
   ungroup: string
   /** Доступное имя таблицы (`aria-label` на `role="table"`) */
   table: string
+  /** Доступное имя верхнего тулбара (`aria-label` на `role="toolbar"`) */
+  toolbar: string
+  /** Кнопка тулбара и доступное имя меню колонок (`columnVisibility`) */
+  columns: string
+  /** Плейсхолдер и доступное имя поиска в меню колонок */
+  searchColumns: string
+  /** Текст меню колонок, когда поиск ничего не нашёл */
+  noColumnsFound: string
+  /** Кнопка «показать все колонки» в меню колонок */
+  showAllColumns: string
+  /** Кнопка сброса видимости колонок к начальной */
+  resetColumns: string
+  /** Пункт кебаба заголовка: скрыть колонку */
+  hideColumn: string
+  /** Пункт кебаба заголовка группы вложенной шапки: скрыть группу */
+  hideGroup: string
   /** Доступное имя чекбокса выбора строки */
   selectRow: string
   /** Доступное имя чекбокса выбора всех строк */
@@ -102,6 +118,14 @@ export const DEFAULT_LABELS: TableLabels = {
   group: 'Group',
   ungroup: 'Ungroup',
   table: 'Data table',
+  toolbar: 'Table toolbar',
+  columns: 'Columns',
+  searchColumns: 'Search columns',
+  noColumnsFound: 'No columns found',
+  showAllColumns: 'Show all',
+  resetColumns: 'Reset',
+  hideColumn: 'Hide column',
+  hideGroup: 'Hide group',
   selectRow: 'Select row',
   selectAll: 'Select all rows',
   headerMenu: 'Column options',

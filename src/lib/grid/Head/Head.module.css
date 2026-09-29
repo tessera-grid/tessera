@@ -10,8 +10,4 @@
   opacity: var(--tsr-comp-opacity);
   background-color: var(--tsr-comp-head-bg);
   box-shadow: var(--tsr-comp-shadow-head);
-
-  &:is([data-layout='grid']) {
-    border-top: 1px solid var(--tsr-comp-row-hovered-bg);
-  }
 }

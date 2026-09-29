@@ -308,6 +308,18 @@ export const enableCellEditingType: ArgTypes = {
   },
 }
 
+export const enableToolbarType: ArgTypes = {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  control: 'boolean',
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  description: 'Включить верхний тулбар над таблицей',
+  table: {
+    defaultValue: { summary: false },
+  },
+}
+
 export const enableFooterType: ArgTypes = {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error

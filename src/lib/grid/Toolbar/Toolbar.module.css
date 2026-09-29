@@ -1,0 +1,28 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--tsr-comp-toolbar-height);
+  padding: 0 var(--tsr-comp-toolbar-padding-x);
+  background-color: var(--tsr-comp-toolbar-bg);
+  border-bottom: 1px solid var(--tsr-comp-toolbar-divider-color);
+}
+
+.toolbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--tsr-comp-toolbar-gap);
+  margin-left: auto;
+}
+
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: var(--tsr-comp-toolbar-gap);
+}
+
+.toolbar__separator {
+  width: 1px;
+  height: var(--tsr-comp-toolbar-separator-height);
+  background-color: var(--tsr-comp-toolbar-divider-color);
+}

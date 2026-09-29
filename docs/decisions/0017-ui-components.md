@@ -163,13 +163,17 @@ relative-якорь кнопки, круглая геометрия кнопки
 `theming-contracts.test.tsx` (TC-1…TC-5): новый член добавляется в список семейства
 и обязан пройти контракт.
 
-| Семейство            | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                          |
-| -------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **F1 icon-контролы** | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round` |
-| **F2 action-кнопки** | RowButton, CellButton                                              | color/bg/hover `action-button-*` · shadow `shadow-action` · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round`                                           |
-| **F3 форм-контролы** | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                         |
+| Семейство             | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F1 icon-контролы**  | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round`                   |
+| **F2 action-кнопки**  | RowButton, CellButton                                              | color/bg/hover `action-button-*` · shadow `shadow-action` · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round`                                                             |
+| **F3 форм-контролы**  | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                                           |
+| **F4 кнопки тулбара** | ToolbarButton ([ADR 0035](0035-toolbar-and-column-visibility.md))  | rest `action-button-color` · hover-bg `control-hover-bg` · active `control-active-color`+`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition `action-button-transition` · radius `toolbar-button-radius` (квадратная) |
 
-**Правила единого disabled (по семейству):** иконки/кнопки (F1/F2) гаснут **цветом**
+F4 проходит TC-1 и TC-2 вместе с F1/F2 (единый disabled-цвет и transition), но
+не TC-3: радиус у неё свой.
+
+**Правила единого disabled (по семейству):** иконки/кнопки (F1/F2/F4) гаснут **цветом**
 (`--tsr-comp-control-disabled-color`); наполненные форм-контролы (F3) — общей
 **прозрачностью** (`--tsr-comp-disabled-opacity`). Оба — канонические токены; больше
 никаких `cursor`-only или хардкод-`opacity:0.5`. Disabled base-ui-контролов ловится

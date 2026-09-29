@@ -50,7 +50,14 @@ export const ActionMenu = ({
           {trigger}
         </div>
       ) : (
-        trigger
+        // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
+        // открыто, `data-button-active` держит кебаб видимым (ADR 0024, AM24).
+        <div
+          className="cell__button cell__button--hidden"
+          data-button-active={open}
+        >
+          {trigger}
+        </div>
       )}
       <ActionMenuPopup actions={actions} context={context} />
     </Menu.Root>
