@@ -23,6 +23,10 @@ import type {
   SlotActions,
 } from './headerActions'
 import type { KeyboardAction } from './keyboardActions'
+import type {
+  PluginDiagnostic,
+  PluginDiagnosticSource,
+} from './pluginDiagnostics'
 import type { SkeletonOptions } from './skeletonOptions'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -44,6 +48,7 @@ export interface CommonOptions {
   slotActions?: SlotActionsV9
   contextMenuActions?: ContextMenuAction[]
   keyboardActions?: KeyboardAction[]
+  pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
   enableSkeleton?: boolean
@@ -63,6 +68,8 @@ export interface CommonTableAPI {
   getSlotActions: () => SlotActionsV9 | undefined
   getContextMenuActions: () => ContextMenuAction[] | undefined
   getKeyboardActions: () => KeyboardAction[] | undefined
+  /** Активен или инертен (и почему) каждый подключённый плагин — на момент вызова. */
+  getPluginDiagnostics: () => PluginDiagnostic[]
   getIsAnyColumnResizing: () => boolean
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
   /** Объявить текст скринридеру через live-область грида. */

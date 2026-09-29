@@ -50,4 +50,25 @@ describe('keyboardActions — канал клавиатурных действи
     ] as never)
     expect(folded.keyboardActions).toEqual([second])
   })
+
+  it('KN29: из применимых действий на одной клавише побеждает больший priority, при равенстве — порядок plugins', () => {
+    const action = (id: string, priority?: number): KeyboardAction => ({
+      id,
+      scope: 'cell',
+      keys: ['Enter'],
+      priority,
+      run: () => {},
+    })
+    const folded = foldEntries([
+      { id: 'a', keyboardActions: [action('low', -1), action('first')] },
+      { id: 'b', keyboardActions: [action('second', 0)] },
+      { id: 'c', keyboardActions: [action('high', 10)] },
+    ] as never)
+    expect(ids(folded.keyboardActions)).toEqual([
+      'high',
+      'first',
+      'second',
+      'low',
+    ])
+  })
 })

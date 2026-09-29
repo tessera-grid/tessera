@@ -57,6 +57,7 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
     isAllRowsSelected: o.isAllRowsSelected, // undefined-ключи отбросит definePlugin
   }),
   keyboardActions: [toggleRowKeyboardAction],
+  diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
   column: {
     id: COLUMN_SELECTION_ID,
     make: getRowSelectionColumn,

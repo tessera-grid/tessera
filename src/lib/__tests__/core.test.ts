@@ -17,6 +17,7 @@ import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-c
 import { describe, expect, it } from 'vitest'
 
 import { buildTesseraFeatures } from '../core/features'
+import type { UseCreateTableParams } from '../core/useCreateTable'
 
 interface Person {
   id: string
@@ -85,5 +86,37 @@ describe('v9 ядро: presence-based сборка + commonFeature', () => {
     const groups = table.getHeaderGroups()
     expect(groups[0].getIsFirstGroup()).toBe(true)
     expect(groups.at(-1).getIsLastGroup()).toBe(true)
+  })
+})
+
+type NoEntries = readonly []
+
+describe('useCreateTable: getRowId по типу строки', () => {
+  it('строка со строковым id — getRowId необязателен', () => {
+    const params: UseCreateTableParams<Person, NoEntries> = {
+      columns: [],
+      data: [],
+    }
+    expect(params.data).toEqual([])
+  })
+
+  it('строка без строкового id — getRowId обязателен', () => {
+    // @ts-expect-error — без id в строке getRowId обязателен
+    const missing: UseCreateTableParams<{ name: string }, NoEntries> = {
+      columns: [],
+      data: [],
+    }
+    // @ts-expect-error — числовой id не годится как id строки по умолчанию
+    const numeric: UseCreateTableParams<{ id: number }, NoEntries> = {
+      columns: [],
+      data: [],
+    }
+    const provided: UseCreateTableParams<{ id: number }, NoEntries> = {
+      columns: [],
+      data: [{ id: 1 }],
+      getRowId: row => String(row.id),
+    }
+    expect([missing, numeric].length).toBe(2)
+    expect(provided.getRowId({ id: 1 })).toBe('1')
   })
 })

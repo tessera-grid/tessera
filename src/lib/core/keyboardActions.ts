@@ -2,7 +2,7 @@
  * Канал клавиатурных действий плагинов (ADR 0021, ADR 0031): что делают
  * `Space`/`Enter`/`F2` и сочетания с `Alt` на ячейке тела или заголовка.
  * Действие объявляет плагин-владелец ячейки; резолвер клавиатурной навигации
- * берёт первое применимое.
+ * берёт применимое с наибольшим `priority`, при равенстве — первое по порядку `plugins`.
  */
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
@@ -21,6 +21,8 @@ interface KeyboardActionBase<TCtx> {
    * treegrid (`→`/`←`, ADR 0032, W16), не зная плагина-владельца.
    */
   expands?: boolean
+  /** Кто побеждает, если на одной клавише применимы несколько действий. По умолчанию `0`. */
+  priority?: number
   /** Применимо ли действие к этой ячейке. По умолчанию — всегда. */
   visible?: (ctx: TCtx) => boolean
   run: (ctx: TCtx, event: ReactKeyboardEvent<HTMLElement>) => void
@@ -70,3 +72,9 @@ export const registerKeyboardActionsInto = (
     }
   })
 }
+
+/** Упорядочить по убыванию `priority`; сортировка стабильна — равные сохраняют порядок `plugins`. */
+export const sortKeyboardActionsByPriority = (
+  actions: KeyboardAction[],
+): KeyboardAction[] =>
+  actions.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))

@@ -11,6 +11,7 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
+import type { PluginInertReason } from '../../core/pluginDiagnostics'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
@@ -61,37 +62,40 @@ declare module '@tanstack/react-table' {
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
-type DraggableRow = {
-  table: {
-    options: { enableRowDragging?: boolean | ((row: unknown) => boolean) }
-    getHeaderGroups: () => unknown[]
-    atoms: {
-      grouping?: { get: () => unknown[] }
-      sorting?: { get: () => unknown[] }
-    }
+type DraggableTable = {
+  options: { enableRowDragging?: boolean | ((row: unknown) => boolean) }
+  getHeaderGroups: () => unknown[]
+  atoms: {
+    grouping?: { get: () => unknown[] }
+    sorting?: { get: () => unknown[] }
   }
+}
+
+type DraggableRow = { table: DraggableTable }
+
+/** Многоуровневая шапка / активная группировка / активная сортировка гасят drag. */
+export const rowDraggingInertReason = (
+  table: unknown,
+): PluginInertReason | undefined => {
+  const t = table as DraggableTable
+  if (t.getHeaderGroups().length !== 1) {
+    return 'multiLevelHeader'
+  }
+  if ((t.atoms.grouping?.get() ?? []).length > 0) {
+    return 'grouping'
+  }
+  if ((t.atoms.sorting?.get() ?? []).length > 0) {
+    return 'sorting'
+  }
+  return undefined
 }
 
 const canDragRow = (row: DraggableRow): boolean => {
   const enable = row.table.options.enableRowDragging
   const wantsDrag = typeof enable === 'function' ? enable(row) : !!enable
 
-  if (!wantsDrag) {
-    return false
-  }
-  // Многоуровневая шапка / активная группировка / активная сортировка гасят drag.
-  // TODO(логгер): dev-warn на каждый случай.
-  if (row.table.getHeaderGroups().length !== 1) {
-    return false
-  }
-  if ((row.table.atoms.grouping?.get() ?? []).length > 0) {
-    return false
-  }
-  if ((row.table.atoms.sorting?.get() ?? []).length > 0) {
-    return false
-  }
-
-  return true
+  // TODO(логгер): dev-warn на каждую причину инертности.
+  return wantsDrag && rowDraggingInertReason(row.table) === undefined
 }
 
 export const rowDraggingFeature: TableFeature = {

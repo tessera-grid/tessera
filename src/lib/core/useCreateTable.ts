@@ -53,15 +53,19 @@ export interface CreateDataGridOptions {
   handlers?: Record<string, unknown>
 }
 
-export interface UseCreateTableParams<
+/** Без строкового `id` в строке `getRowId` обязателен — иначе id строк молча `undefined`. */
+type RowIdParams<TData extends RowData> = [TData] extends [{ id: string }]
+  ? { getRowId?: (row: TData) => string }
+  : { getRowId: (row: TData) => string }
+
+export type UseCreateTableParams<
   TData extends RowData,
   TEntries extends readonly TesseraFeatureEntry[],
-> {
+> = RowIdParams<TData> & {
   columns: ColumnDef<TesseraFeatures<TEntries>, TData, unknown>[]
   data: TData[]
   plugins?: TEntries
 
-  getRowId?: (row: TData) => string
   getSubRows?: (row: TData) => TData[] | undefined
 
   state?: Partial<TableState<TesseraFeatures<TEntries>>>
@@ -206,6 +210,7 @@ export const useCreateTable = <
     slotActions: folded.slotActions,
     contextMenuActions: folded.contextMenuActions,
     keyboardActions: folded.keyboardActions,
+    pluginDiagnostics: folded.pluginDiagnostics,
     actionMenu: folded.actionMenu,
     enableSkeleton,
     enableLoading,

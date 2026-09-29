@@ -67,7 +67,10 @@ flowchart TB
 - `table.getContextMenuActions()` → `table.options.contextMenuActions` (пункты
   контекстного меню, ADR 0030)
 - `table.getKeyboardActions()` → `table.options.keyboardActions` (клавиатурные
-  действия ячеек: `Space`/`Enter`/`F2`, ADR 0021)
+  действия ячеек: `Space`/`Enter`/`F2`, ADR 0021; упорядочены по `priority`)
+- `table.getPluginDiagnostics()` → снимок `active`/`inert` (+`reason`) по каждой
+  записи из `table.options.pluginDiagnostics`, считается на момент вызова через
+  `diagnose` записи (ADR 0022, PC12–PC14)
 - `table.setRenderSlot(params)` → регистрация слота на месте
 - плюс хелперы: `getHeaderGroups` (флаги первой/последней группы через
   `initHeaderGroupInstanceData`), `getIsAnyColumnResizing` и флаги на

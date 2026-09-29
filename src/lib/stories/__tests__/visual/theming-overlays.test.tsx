@@ -18,8 +18,8 @@ const simpleColumns = [
   ch.accessor('b', { id: 'b', header: 'B', cell: c => c.getValue() }),
 ]
 const simpleData = [
-  { a: '1', b: '2' },
-  { a: '3', b: '4' },
+  { id: 'r1', a: '1', b: '2' },
+  { id: 'r2', a: '3', b: '4' },
 ]
 
 // Матрица темизации, этап 6 — DnD-оверлеи и «края». Оверлеи живут только во время

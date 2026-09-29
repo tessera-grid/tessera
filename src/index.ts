@@ -42,6 +42,11 @@ export type {
   CellKeyboardAction,
   HeaderKeyboardAction,
 } from './lib/core/keyboardActions'
+export type {
+  PluginDiagnostic,
+  PluginDiagnose,
+  PluginInertReason,
+} from './lib/core/pluginDiagnostics'
 
 // Авторский API плагина: definePlugin + инъекторы каналов (hooks/state) +
 // типы пропсов компонентов. Каналы приходят в компонент пропсами, без кастов.

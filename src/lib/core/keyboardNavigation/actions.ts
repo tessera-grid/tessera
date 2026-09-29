@@ -135,7 +135,7 @@ export const resolveRowFocusKey = (
   }
 }
 
-/** Первое применимое действие плагина для клавиши на активной ячейке. */
+/** Применимое действие плагина для клавиши; канал уже упорядочен по `priority`. */
 export const findKeyboardAction = (
   t: NavTable,
   target: { scope: KeyboardAction['scope']; ctx: unknown },

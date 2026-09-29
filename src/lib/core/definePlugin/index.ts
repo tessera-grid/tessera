@@ -18,6 +18,7 @@ import type {
   SlotAction,
 } from '../headerActions'
 import type { KeyboardAction } from '../keyboardActions'
+import type { PluginDiagnose } from '../pluginDiagnostics'
 import { stateChangeOption } from './channels'
 
 export {
@@ -91,6 +92,8 @@ interface DefinePluginConfig<
   keyboardActions?: KeyboardAction[]
   /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
   actionMenu?: (opts: TOptions) => ActionMenuDeclaration
+  /** Причина инертности для `table.getPluginDiagnostics()`; `undefined` — плагин работает. */
+  diagnose?: PluginDiagnose
   /**
    * Императивный сетап после создания таблицы (фабрика от opts → эффект над table;
    * может вернуть cleanup). Через opts сетап видит аргументы фабрики.
@@ -158,6 +161,9 @@ export const definePlugin =
       }
       if (config.actionMenu) {
         entry.actionMenu = config.actionMenu(opts)
+      }
+      if (config.diagnose) {
+        entry.diagnose = config.diagnose
       }
       if (config.setup) {
         entry.setup = config.setup(opts)

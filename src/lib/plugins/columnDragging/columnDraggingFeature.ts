@@ -14,6 +14,7 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
+import type { PluginInertReason } from '../../core/pluginDiagnostics'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { DragOverlayState } from './types'
 
@@ -82,18 +83,21 @@ type DraggableColumn = {
   }
 }
 
+/** Многоуровневая шапка гасит перетаскивание столбцов. */
+export const columnDraggingInertReason = (
+  table: unknown,
+): PluginInertReason | undefined =>
+  (table as DraggableColumn['table']).getHeaderGroups().length !== 1
+    ? 'multiLevelHeader'
+    : undefined
+
 const canDrag = (column: DraggableColumn): boolean => {
   const wantsDrag =
     !!column.columnDef.enableDragging &&
     !!column.table.options.enableColumnDragging
 
-  // Многоуровневая шапка гасит перетаскивание столбцов.
   // TODO(логгер): dev-warn при wantsDrag под вложенной шапкой.
-  if (column.table.getHeaderGroups().length !== 1) {
-    return false
-  }
-
-  return wantsDrag
+  return wantsDrag && columnDraggingInertReason(column.table) === undefined
 }
 
 export const columnDraggingFeature: TableFeature = {

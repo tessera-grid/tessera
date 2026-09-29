@@ -22,6 +22,7 @@ import {
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
+import { resolvePluginDiagnostics } from './pluginDiagnostics'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
@@ -41,6 +42,10 @@ export const commonFeature: TableFeature = {
       table_getSlotActions: { fn: () => options().slotActions },
       table_getContextMenuActions: { fn: () => options().contextMenuActions },
       table_getKeyboardActions: { fn: () => options().keyboardActions },
+      table_getPluginDiagnostics: {
+        fn: () =>
+          resolvePluginDiagnostics(options().pluginDiagnostics ?? [], table),
+      },
       table_getIsAnyColumnResizing: {
         fn: () =>
           // getAllLeafColumns — ядровый метод (не зависит от columnVisibilityFeature).

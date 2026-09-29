@@ -10,6 +10,7 @@
 import {
   type KeyboardAction,
   registerKeyboardActionsInto,
+  sortKeyboardActionsByPriority,
 } from './keyboardActions'
 import {
   columnGroupingFeature,
@@ -37,6 +38,10 @@ import {
   type SlotActionMenu,
   type SlotActions,
 } from './headerActions'
+import type {
+  PluginDiagnose,
+  PluginDiagnosticSource,
+} from './pluginDiagnostics'
 
 /**
  * Запись фичи Tessera: фрагмент карты фич +
@@ -72,6 +77,8 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   keyboardActions?: KeyboardAction[]
   /** Декларация плагина-меню: на какие слоты распространить кебаб. */
   actionMenu?: ActionMenuDeclaration
+  /** Причина инертности для `table.getPluginDiagnostics()` (ADR 0022). */
+  diagnose?: PluginDiagnose
   /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
   column?: ServiceColumn
   /**
@@ -93,6 +100,8 @@ export interface FoldedEntryConfig {
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
   setups: NonNullable<TesseraFeatureEntry['setup']>[]
+  /** Все присутствующие записи, включая `enabled: false`. */
+  pluginDiagnostics: PluginDiagnosticSource[]
 }
 
 const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
@@ -132,8 +141,15 @@ export const foldEntries = (
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
+  const pluginDiagnostics: PluginDiagnosticSource[] = []
 
   for (const entry of entries) {
+    pluginDiagnostics.push({
+      id: entry.id,
+      enabled: entry.enabled,
+      diagnose: entry.diagnose,
+    })
+
     // Опции берём от ВСЕХ присутствующих записей (в т.ч. enabled:false) — фабрика
     // отключённого плагина эмитит enable*:false, гася свою (всегда-присутствующую в
     // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
@@ -181,10 +197,11 @@ export const foldEntries = (
     slots,
     slotActions,
     contextMenuActions,
-    keyboardActions,
+    keyboardActions: sortKeyboardActionsByPriority(keyboardActions),
     actionMenu,
     serviceColumns,
     setups,
+    pluginDiagnostics,
   }
 }
 
