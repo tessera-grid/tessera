@@ -199,7 +199,7 @@ describe('Action menu — header', () => {
     // Escape возвращает фокус на кебаб — с клавиатурным фокусом он виден; снимаем
     // фокус, и в покое кебаб снова скрыт.
     await closeMenu()
-    expect(opacity()).toBe('1')
+    await expect.poll(opacity).toBe('1')
     ;(document.activeElement as HTMLElement | null)?.blur()
     await parkPointer()
     await expect.poll(opacity).toBe('0')
