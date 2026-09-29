@@ -1,9 +1,11 @@
+import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
+import { AXE_OPTIONS } from './a11y-helpers'
 
 // Each Row Selection requirement is its own named test, prefixed with its spec ID
 // (RS1–RS18 from the requirements table in docs/decisions/0014-row-selection.md).
@@ -361,5 +363,81 @@ describe('Row Selection — sub-rows', () => {
     // Restore.
     await userEvent.click(rowCheckbox(child())!)
     await expect.poll(() => isIndeterminate(rowCheckbox(parent())!)).toBe(false)
+  })
+})
+
+// --- Счётчик выбранных строк в нижней панели (ADR 0038, RS19–RS22) -----------
+
+const COUNT_GRID = {
+  containerHeight: 600,
+  height: 500,
+  columnCount: 4,
+  dataCount: 100,
+}
+const counter = () =>
+  document.querySelector<HTMLElement>('[data-testid="selected-rows-count"]')
+const statusBar = () =>
+  document.querySelector<HTMLElement>('[data-testid="data-grid-status-bar"]')
+const pageNext = () =>
+  document.querySelector<HTMLElement>('[data-page-action="next"]')!
+
+describe('Row Selection — selected count', () => {
+  test('RS19: with selectedCount the left side of the status bar shows selectedRows(count); without the option there is no slot', async () => {
+    const plain = await render(
+      <composed.SelectedCount {...COUNT_GRID} showSelectedCount={false} />,
+    )
+    await expect
+      .poll(() => rowsTopDown(plain.container).length)
+      .toBeGreaterThan(0)
+    expect(counter()).toBeNull()
+    await plain.unmount()
+
+    const { container } = await render(
+      <composed.SelectedCount {...COUNT_GRID} />,
+    )
+    await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
+    await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
+    await expect.poll(() => counter()!.textContent).toBe('1 row selected')
+    expect(counter()!.closest('[data-align]')!.getAttribute('data-align')).toBe(
+      'start',
+    )
+    // Выбор на другой странице добавляется к счётчику.
+    await userEvent.click(pageNext())
+    await expect
+      .poll(() => rowsTopDown(container)[0]?.dataset.rowId)
+      .toBe('item-id-25')
+    await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
+    await expect.poll(() => counter()!.textContent).toBe('2 rows selected')
+  })
+
+  test('RS21: with nothing selected the text is empty and the panel stays (the grid height does not change)', async () => {
+    const { container } = await render(
+      <composed.SelectedCount {...COUNT_GRID} />,
+    )
+    await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
+    expect(counter()!.textContent).toBe('')
+    const before = statusBar()!.getBoundingClientRect()
+
+    const checkbox = rowCheckbox(rowsTopDown(container)[0])!
+    await userEvent.click(checkbox)
+    await expect.poll(() => counter()!.textContent).toBe('1 row selected')
+    await userEvent.click(checkbox)
+    await expect.poll(() => counter()!.textContent).toBe('')
+
+    const after = statusBar()!.getBoundingClientRect()
+    expect([after.top, after.height]).toEqual([before.top, before.height])
+  })
+
+  test('RS22: the status bar with the counter and pagination passes axe; the counter is not a live region', async () => {
+    const { container } = await render(
+      <composed.SelectedCount {...COUNT_GRID} />,
+    )
+    await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
+    await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
+    await expect.poll(() => counter()!.textContent).toBe('1 row selected')
+
+    const { violations } = await axe.run(statusBar()!, AXE_OPTIONS)
+    expect(violations).toEqual([])
+    expect(counter()!.closest('[aria-live], [role="status"]')).toBeNull()
   })
 })

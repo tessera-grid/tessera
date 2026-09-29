@@ -231,6 +231,18 @@ export const Pagination: StoryObj<StoryProps> = {
   },
 }
 
+export const SelectedCount: StoryObj<StoryProps> = {
+  name: 'Selected Count',
+  args: {
+    // Счётчик выбранных строк слева в нижней панели, пагинация справа: выбор на
+    // других страницах тоже считается.
+    enableRowSelection: true,
+    showSelectedCount: true,
+    enablePagination: true,
+    dataCount: 1000,
+  },
+}
+
 export const WithStatusBar: StoryObj<StoryProps> = {
   name: 'With Status Bar',
   args: {

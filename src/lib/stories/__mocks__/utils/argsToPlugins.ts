@@ -34,6 +34,8 @@ import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
 export interface FeatureToggles {
   enableRowSelection?: boolean
   enableSubRowSelection?: boolean
+  /** Счётчик выбранных строк в нижней панели (ADR 0038). */
+  showSelectedCount?: boolean
   enableRowExpanding?: boolean
   enableRowDragging?: boolean
   enableColumnSorting?: boolean
@@ -88,6 +90,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowSelection({
       enabled: !!o.enableRowSelection,
       subRows: o.enableSubRowSelection,
+      selectedCount: o.showSelectedCount,
     }),
     rowExpandingEntry,
     rowDragging({ enabled: !!o.enableRowDragging }),

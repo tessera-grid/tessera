@@ -12,6 +12,7 @@ import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
 import { warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleRowKeyboardAction } from './keyboardActions'
+import { SelectedRowsCount } from './SelectedRowsCount'
 import {
   COLUMN_SELECTION_ID,
   getRowSelectionColumn,
@@ -24,6 +25,8 @@ export interface RowSelectionOptions {
   enabled?: boolean
   /** Разрешить выбор дочерних строк (каскад на поддерево). */
   subRows?: boolean
+  /** Счётчик выбранных строк в нижней панели (ADR 0038); по умолчанию выключен. */
+  selectedCount?: boolean
   /**
    * Бизнес-колбэки плагина, задаются прямо в аргументах фабрики. Читаются живо через
    * `table.getHooks()`. Частичный набор дополняется no-op дефолтами (`resolveHooks`).
@@ -63,6 +66,18 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
     isAllRowsSelected: o.isAllRowsSelected, // undefined-ключи отбросит definePlugin
   }),
   keyboardActions: [toggleRowKeyboardAction],
+  // Opt-in: у гридов с выбором строк нижняя панель не появляется сама.
+  slots: o =>
+    o.selectedCount
+      ? [
+          {
+            id: 'selectedRowsCount',
+            slot: 'statusBarSlot',
+            align: 'start',
+            component: SelectedRowsCount,
+          },
+        ]
+      : [],
   diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
   column: {
     id: COLUMN_SELECTION_ID,

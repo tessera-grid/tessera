@@ -11,6 +11,7 @@ import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { resolveHooks } from '../core/createHooks'
 import { COLUMN_SELECTION_ID, rowSelection } from '../plugins/rowSelection'
 import { getCanSomeRowsSelect } from '../plugins/rowSelection/selectionHelpers'
+import { countSelectedRows } from '../plugins/rowSelection/SelectedRowsCount'
 import { captureInertWarnings } from './inertWarnings'
 
 interface Person {
@@ -142,5 +143,16 @@ describe('rowSelection', () => {
     expect(makeTable({ enabled: false }).folded.options).toMatchObject({
       enableRowSelection: false,
     })
+  })
+})
+
+describe('rowSelection — счётчик выбранных строк', () => {
+  it('RS20: число — id со значением true в срезе rowSelection: выбор на других страницах тоже считается', () => {
+    // `off-page` нет в текущей странице данных — выбор всё равно учитывается.
+    expect(countSelectedRows({ '1': true, '2': true, 'off-page': true })).toBe(
+      3,
+    )
+    expect(countSelectedRows({})).toBe(0)
+    expect(countSelectedRows(undefined)).toBe(0)
   })
 })

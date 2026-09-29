@@ -115,6 +115,8 @@ export interface TableLabels {
   pageRange: (from: number, to: number, total: number) => string
   /** Объявление смены страницы */
   pageAnnouncement: (page: number, pages: number) => string
+  /** Счётчик выбранных строк в нижней панели (`rowSelection({ selectedCount })`) */
+  selectedRows: (count: number) => string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -179,6 +181,8 @@ export const DEFAULT_LABELS: TableLabels = {
   lastPage: 'Last page',
   pageRange: (from, to, total) => `${from}–${to} of ${total}`,
   pageAnnouncement: (page, pages) => `Page ${page} of ${pages}`,
+  selectedRows: count =>
+    count === 1 ? '1 row selected' : `${count} rows selected`,
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)
