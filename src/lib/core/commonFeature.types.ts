@@ -72,6 +72,8 @@ export interface CommonTableAPI {
   getKeyboardActions: () => KeyboardAction[] | undefined
   /** Активен или инертен (и почему) каждый подключённый плагин — на момент вызова. */
   getPluginDiagnostics: () => PluginDiagnostic[]
+  /** Зарегистрировать ошибку плагина: лог + статус `error` в снимке (ADR 0037). */
+  reportPluginError: (pluginId: string, error: unknown) => void
   getIsAnyColumnResizing: () => boolean
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
   /** Объявить текст скринридеру через live-область грида. */

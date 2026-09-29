@@ -4,6 +4,7 @@
  * используется и `useCreateTable`, и тестами.
  */
 import type { ColumnDef } from '../../types'
+import { withPluginBoundary } from '../pluginBoundary'
 
 /**
  * Привязка сервисной колонки плагина к сборке колонок (pre-table инъекция).
@@ -13,6 +14,8 @@ export interface ServiceColumn {
   /** Стабильный базовый id (по нему таргетят видимость/пиннинг). */
   id: string
   make: (depth: number) => ColumnDef<any, any, any>
+  /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
+  pluginId?: string
   /** Размещение в НАБОРЕ колонок (не пиннинг). */
   side: 'leading' | 'trailing'
   order: number
@@ -92,7 +95,10 @@ export const injectServiceColumns = <TColumn>(
     .filter(c => c.side === 'trailing')
     .sort(byOrder)
 
-  const make = (column: ServiceColumn) => column.make(depth) as TColumn
+  const make = (column: ServiceColumn) =>
+    (column.pluginId
+      ? withPluginBoundary(column.make(depth), column.pluginId)
+      : column.make(depth)) as TColumn
 
   return dedupeById([
     ...leading.map(make),

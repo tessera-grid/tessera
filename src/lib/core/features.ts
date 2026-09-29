@@ -38,9 +38,10 @@ import {
   type SlotActionMenu,
   type SlotActions,
 } from './headerActions'
-import type {
-  PluginDiagnose,
-  PluginDiagnosticSource,
+import {
+  reportPluginError,
+  type PluginDiagnose,
+  type PluginDiagnosticSource,
 } from './pluginDiagnostics'
 
 /**
@@ -159,7 +160,9 @@ export const foldEntries = (
       continue
     }
 
-    entry.slots?.forEach(slot => registerSlotInto(slots, slot))
+    entry.slots?.forEach(slot =>
+      registerSlotInto(slots, { ...slot, pluginId: entry.id }),
+    )
     entry.slotActions?.forEach(action =>
       registerSlotActionInto(slotActions, action),
     )
@@ -177,11 +180,20 @@ export const foldEntries = (
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
 
     if (entry.column) {
-      serviceColumns.push(entry.column)
+      serviceColumns.push({ ...entry.column, pluginId: entry.id })
     }
 
-    if (entry.setup) {
-      setups.push(entry.setup)
+    const { setup, id } = entry
+    if (setup) {
+      // Падение setup одного плагина не мешает остальным (ADR 0037, PE3).
+      setups.push(table => {
+        try {
+          return setup(table)
+        } catch (error) {
+          reportPluginError(table, id, error)
+          return undefined
+        }
+      })
     }
 
     if (entry.actionMenu) {

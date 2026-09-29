@@ -82,8 +82,8 @@
 - Встроенные гейты и `diagnose` — **одна функция**, поэтому снимок не может
   разойтись с `getCan*`: `rowDragging` — `multiLevelHeader` / `grouping` /
   `sorting`, `columnDragging` — `multiLevelHeader`, `rowSelection` — `grouping`.
-- Статуса `error` нет: единого канала отлова падений плагина пока нет (см.
-  «Известные проблемы» в [roadmap](../roadmap.md)).
+- Статус `error` (плагин упал) даёт изоляция падений —
+  [ADR 0037](0037-plugin-error-isolation.md).
 
 ### Владение (кто побеждает) — без изменений, документируется
 

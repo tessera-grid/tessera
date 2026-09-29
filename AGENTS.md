@@ -335,7 +335,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Контракт плагина:_ `plugin-a11y` (PQ4 — axe для каждого встроенного плагина;
       набор сверяется с экспортами `/plugins`), модульные `pluginContract` (PQ1–PQ3 —
       обязательный `diagnose`, dev-warn ядра при монтировании, `'noActions'`),
-      [ADR 0036](docs/decisions/0036-plugin-contract-diagnostics-and-a11y.md).
+      [ADR 0036](docs/decisions/0036-plugin-contract-diagnostics-and-a11y.md);
+      `plugin-errors` (PE1–PE2 — падение рендера плагина не роняет грид), модульные
+      `pluginErrors` (PE3–PE5 — `setup`, `diagnose`, статус `error`),
+      [ADR 0037](docs/decisions/0037-plugin-error-isolation.md).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,

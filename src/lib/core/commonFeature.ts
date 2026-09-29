@@ -22,7 +22,10 @@ import {
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
-import { resolvePluginDiagnostics } from './pluginDiagnostics'
+import {
+  createPluginErrorRegistry,
+  resolvePluginDiagnostics,
+} from './pluginDiagnostics'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
@@ -35,6 +38,7 @@ export const commonFeature: TableFeature = {
 
   constructTableAPIs: table => {
     const options = () => table.options as unknown as CommonOptions
+    const pluginErrors = createPluginErrorRegistry(table)
 
     assignTableAPIs('commonFeature', table, {
       table_getHooks: { fn: () => options().hooks },
@@ -44,7 +48,15 @@ export const commonFeature: TableFeature = {
       table_getKeyboardActions: { fn: () => options().keyboardActions },
       table_getPluginDiagnostics: {
         fn: () =>
-          resolvePluginDiagnostics(options().pluginDiagnostics ?? [], table),
+          resolvePluginDiagnostics(
+            options().pluginDiagnostics ?? [],
+            table,
+            pluginErrors,
+          ),
+      },
+      table_reportPluginError: {
+        fn: (pluginId: string, error: unknown) =>
+          pluginErrors.report(pluginId, error),
       },
       table_getIsAnyColumnResizing: {
         fn: () =>

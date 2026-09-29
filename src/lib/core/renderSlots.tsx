@@ -5,11 +5,24 @@
 import { Fragment, type ReactNode } from 'react'
 
 import type { RegisterSlotParams } from './createSlots'
+import { PluginErrorBoundary } from './pluginBoundary'
 
 interface RenderSlotProps {
   slot?: RegisterSlotParams<any>[]
   context: unknown
 }
+
+// `render` вызывается внутри компонента, чтобы его исключение поймала граница плагина.
+const SlotRender = ({
+  render,
+  context,
+}: {
+  render: RegisterSlotParams<any>['render']
+  context: unknown
+}): ReactNode =>
+  typeof render === 'function' ? render(context as never) : (render ?? null)
+
+const tableOf = (context: unknown) => (context as { table?: unknown }).table
 
 export const RenderSlot = ({ slot, context }: RenderSlotProps) => {
   if (!slot?.length) {
@@ -18,17 +31,24 @@ export const RenderSlot = ({ slot, context }: RenderSlotProps) => {
 
   return (
     <>
-      {slot.map(({ id, order, render, component: Component }) => (
-        <Fragment key={`${id}-${order}`}>
-          {Component ? (
-            <Component {...(context as object)} />
-          ) : typeof render === 'function' ? (
-            render(context as never)
-          ) : (
-            render
-          )}
-        </Fragment>
-      ))}
+      {slot.map(({ id, order, render, component: Component, pluginId }) => {
+        const node = Component ? (
+          <Component {...(context as object)} />
+        ) : (
+          <SlotRender render={render} context={context} />
+        )
+        return (
+          <Fragment key={`${id}-${order}`}>
+            {pluginId ? (
+              <PluginErrorBoundary pluginId={pluginId} table={tableOf(context)}>
+                {node}
+              </PluginErrorBoundary>
+            ) : (
+              node
+            )}
+          </Fragment>
+        )
+      })}
     </>
   )
 }
@@ -56,12 +76,24 @@ export const RenderCellSlot = ({
   }
 
   return slot.reduceRight<ReactNode>(
-    (child, { component: Component }) =>
-      Component ? (
-        <Component {...(context as object)} content={child} />
+    (child, { component: Component, pluginId }) => {
+      if (!Component) {
+        return child
+      }
+      const owner = <Component {...(context as object)} content={child} />
+      // Упавший владелец отдаёт контент ячейки как есть.
+      return pluginId ? (
+        <PluginErrorBoundary
+          pluginId={pluginId}
+          table={tableOf(context)}
+          fallback={child}
+        >
+          {owner}
+        </PluginErrorBoundary>
       ) : (
-        child
-      ),
+        owner
+      )
+    },
     content,
   )
 }

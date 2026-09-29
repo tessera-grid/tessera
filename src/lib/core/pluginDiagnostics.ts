@@ -4,7 +4,7 @@
  * мере рендера: инертен ли плагин, решает его `diagnose` — та же проверка, что
  * гасит его `getCan*`.
  */
-import { logWarn } from './logger'
+import { logError, logWarn } from './logger'
 
 /** Почему подключённый плагин сейчас ничего не делает. */
 export type PluginInertReason =
@@ -19,6 +19,7 @@ export type PluginInertReason =
 export type PluginDiagnostic =
   | { id: string; status: 'active' }
   | { id: string; status: 'inert'; reason: PluginInertReason }
+  | { id: string; status: 'error'; error: string }
 
 /** Проверка плагина: причина инертности или `undefined`, если плагин работает. */
 export type PluginDiagnose = (table: unknown) => PluginInertReason | undefined
@@ -75,12 +76,64 @@ export const warnInertPlugins = (
   }
 }
 
+/** Первая пойманная ошибка каждого плагина таблицы (ADR 0037). */
+export interface PluginErrorRegistry {
+  get: (pluginId: string) => string | undefined
+  report: (pluginId: string, error: unknown) => void
+}
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
+
+export const createPluginErrorRegistry = (
+  table: unknown,
+): PluginErrorRegistry => {
+  const errors = new Map<string, string>()
+  return {
+    get: pluginId => errors.get(pluginId),
+    report: (pluginId, error) => {
+      const message = errorMessage(error)
+      if (!errors.has(pluginId)) {
+        errors.set(pluginId, message)
+      }
+      logError(
+        table as Parameters<typeof logError>[0],
+        `${pluginId} упал: ${message}`,
+        `${pluginId}:error`,
+      )
+    },
+  }
+}
+
+/** Сообщить таблице об ошибке плагина; без commonFeature — no-op. */
+export const reportPluginError = (
+  table: unknown,
+  pluginId: string,
+  error: unknown,
+): void =>
+  (
+    table as {
+      reportPluginError?: (pluginId: string, error: unknown) => void
+    } | null
+  )?.reportPluginError?.(pluginId, error)
+
 export const resolvePluginDiagnostics = (
   sources: readonly PluginDiagnosticSource[],
   table: unknown,
+  errors?: PluginErrorRegistry,
 ): PluginDiagnostic[] =>
-  sources.map(({ id, enabled, diagnose }) => {
-    const reason = enabled === false ? 'disabled' : diagnose?.(table)
+  sources.map(({ id, enabled, diagnose }): PluginDiagnostic => {
+    const known = errors?.get(id)
+    if (known !== undefined) {
+      return { id, status: 'error', error: known }
+    }
+    let reason: PluginInertReason | undefined
+    try {
+      reason = enabled === false ? 'disabled' : diagnose?.(table)
+    } catch (error) {
+      errors?.report(id, error)
+      return { id, status: 'error', error: errorMessage(error) }
+    }
     return reason === undefined
       ? { id, status: 'active' }
       : { id, status: 'inert', reason }

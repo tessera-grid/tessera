@@ -43,6 +43,8 @@ export interface RegisterSlotParams<TContext extends object> {
   countsAsHeaderAction?: boolean
   /** Подгруппа кнопок тулбара (только `toolbarSlot`); по умолчанию `'default'`. */
   group?: string
+  /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
+  pluginId?: string
 }
 
 export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]

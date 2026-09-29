@@ -68,6 +68,10 @@ flowchart TB
   контекстного меню, ADR 0030)
 - `table.getKeyboardActions()` → `table.options.keyboardActions` (клавиатурные
   действия ячеек: `Space`/`Enter`/`F2`, ADR 0021; упорядочены по `priority`)
+- `table.reportPluginError(id, error)` → реестр ошибок плагинов: `logError` один раз
+  на плагин + `status: 'error'` в снимке (ADR 0037). Компоненты слотов и сервисных
+  колонок ядро само рендерит в `PluginErrorBoundary` с `id` плагина (метку ставит
+  `foldEntries`), `setup` и `diagnose` обёрнуты в `try/catch`.
 - `table.getPluginDiagnostics()` → снимок `active`/`inert` (+`reason`) по каждой
   записи из `table.options.pluginDiagnostics`, считается на момент вызова через
   `diagnose` записи (ADR 0022, PC12–PC14)

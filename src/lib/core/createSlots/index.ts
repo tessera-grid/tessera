@@ -43,6 +43,7 @@ export const registerSlotInto = (
     component,
     countsAsHeaderAction,
     group,
+    pluginId,
   }: PluginSlot,
 ) => {
   const currentSlot = slots[slot]
@@ -55,6 +56,7 @@ export const registerSlotInto = (
     currentSlot[pluginIndexInSlot].component = component
     currentSlot[pluginIndexInSlot].countsAsHeaderAction = countsAsHeaderAction
     currentSlot[pluginIndexInSlot].group = group
+    currentSlot[pluginIndexInSlot].pluginId = pluginId
 
     return
   }
@@ -66,6 +68,7 @@ export const registerSlotInto = (
     component,
     countsAsHeaderAction,
     group,
+    pluginId,
   }
 
   if (order === undefined || order === 'last') {
