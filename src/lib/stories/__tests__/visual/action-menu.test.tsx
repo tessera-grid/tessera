@@ -3,6 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { parkPointer } from '../pointer'
 import { composed } from '../stories'
 
 // Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
@@ -26,19 +27,6 @@ const menuItems = () =>
 
 const menuItemByText = (text: string) =>
   menuItems().find(i => i.textContent?.trim() === text)
-
-/**
- * Увести указатель за пределы грида. `userEvent.unhover` ставит его в центр body —
- * а там может оказаться заголовок; маленькая мишень в углу окна от этого свободна.
- */
-const parkPointer = async () => {
-  const target = document.createElement('div')
-  target.style.cssText =
-    'position:fixed;right:0;bottom:0;width:4px;height:4px;z-index:2147483647'
-  document.body.appendChild(target)
-  await userEvent.hover(target)
-  target.remove()
-}
 
 const closeMenu = async () => {
   await userEvent.keyboard('{Escape}')
