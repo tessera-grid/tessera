@@ -23,6 +23,7 @@ import {
   Z_INDEX,
   adjustOverlayPosition,
   autoScrollOnlyY,
+  dndAccessibility,
   dropAnimationConfig,
   measuring,
   sensorOptions,
@@ -94,6 +95,7 @@ export const DndBodyWrapper = ({
   return (
     <DndContext
       id="data-grid-dnd-rows"
+      accessibility={dndAccessibility}
       sensors={sensors}
       collisionDetection={closestCenter}
       measuring={measuring}

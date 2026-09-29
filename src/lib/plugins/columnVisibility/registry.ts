@@ -7,6 +7,7 @@
 import { definePlugin } from '../../core/definePlugin'
 import { ColumnVisibilityButton } from './ColumnVisibilityButton'
 import { hideHeaderAction } from './hideHeaderAction'
+import { columnVisibilityInertReason } from './inertReason'
 import type { ColumnVisibilityHooks } from './types'
 
 export const COLUMN_VISIBILITY_TOOLBAR_GROUP = 'view'
@@ -20,6 +21,7 @@ export interface ColumnVisibilityOptions {
 
 export const columnVisibility = definePlugin<ColumnVisibilityOptions>()({
   id: 'columnVisibility',
+  diagnose: columnVisibilityInertReason,
   hooks: o => ({ onToggleColumnVisibility: o.onToggleColumnVisibility }),
   slotActions: [hideHeaderAction],
   slots: [

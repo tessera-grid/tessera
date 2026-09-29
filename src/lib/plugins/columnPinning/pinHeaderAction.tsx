@@ -12,6 +12,7 @@ import type { HeaderAction, HeaderMenuItem } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
 import { readPluginHooks } from '../../core/definePlugin'
+import { warnPluginInert } from '../../core/pluginDiagnostics'
 import type { ColumnPinningHooks, PinSides } from './types'
 
 import styles from '../../plugins/columnPinning/PinButton.module.css'
@@ -74,9 +75,19 @@ const canPin = ({ column, table }: HeaderComponentProps): boolean => {
   if (isLeafPinningEnabled(table)) {
     return true
   }
-  // Вложенная шапка: только группа верхнего уровня. Явную просьбу закрепить лист
-  // под группой не предупреждаем здесь (TODO: dev-warn через логгер).
-  return column.depth === 0
+  // Вложенная шапка: только группа верхнего уровня; явный enablePinning листа — варн.
+  if (column.depth === 0) {
+    return true
+  }
+  if (column.columnDef.enablePinning === true) {
+    warnPluginInert(
+      table,
+      'columnPinning',
+      'multiLevelHeader',
+      'под многоуровневой шапкой закрепляется только группа верхнего уровня; enablePinning листа игнорируется (включите leafPinning)',
+    )
+  }
+  return false
 }
 
 /** Тематизируемая иконка пина. */

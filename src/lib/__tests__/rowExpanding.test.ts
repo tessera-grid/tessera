@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest'
 import { injectServiceColumns } from '../core/createColumns'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { COLUMN_EXPANDING_ID, rowExpanding } from '../plugins/rowExpanding'
+import { rowGrouping } from '../plugins/rowGrouping'
+import { captureInertWarnings } from './inertWarnings'
 
 interface Person {
   id: string
@@ -16,12 +18,13 @@ interface Person {
   subRows?: Person[]
 }
 
-const makeTable = (opts = {}) => {
+const makeTable = (opts = {}, extraEntries: any[] = []) => {
   const entries = [
     {
       id: 'reactivity',
       features: { coreReactivityFeature: storeReactivityBindings() },
     },
+    ...extraEntries,
     rowExpanding(opts),
   ]
 
@@ -82,6 +85,8 @@ describe('injectServiceColumns', () => {
 })
 
 describe('rowExpanding', () => {
+  const warnings = captureInertWarnings()
+
   it('foldEntries даёт опции раскрытия и сервисную колонку', () => {
     const { folded } = makeTable()
     expect(folded.options).toMatchObject({
@@ -112,6 +117,22 @@ describe('rowExpanding', () => {
     const { table } = makeTable()
     const leaf = table.getRowModel().rows.find((r: any) => r.id === '2')
     expect(leaf.getCanExpand()).toBe(false)
+  })
+
+  it('PC5: при активной группировке раскрытием владеет rowGrouping, maxDepth игнорируется, предупреждает', () => {
+    const { table } = makeTable({ maxDepth: 0 }, [rowGrouping()])
+
+    // Без группировки — своя семантика: maxDepth 0 гасит раскрытие, тишина.
+    expect(table.getRowModel().rows[0].getCanExpand()).toBe(false)
+    expect(warnings()).toHaveLength(0)
+
+    table.setGrouping(['name'])
+    const [groupRow] = table.getRowModel().rows
+    expect(groupRow.getIsGrouped()).toBe(true)
+    expect(groupRow.getCanExpand()).toBe(true)
+    groupRow.getCanExpand()
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('rowExpanding')
   })
 
   it('expandedRowModel: раскрытие корня добавляет детей в модель', () => {

@@ -2,7 +2,7 @@
  * Кастомная фича rowDragging. Слайс overlay-состояния `rowDragging` + updater и
  * row-метод getCanDrag с гейтами: многоуровневая шапка, активная
  * группировка, активная сортировка — всё гасит drag. grouping/sorting читаются из
- * атомов (optional — фичи могут отсутствовать); dev-warn'ы — TODO (логгер).
+ * атомов (optional — фичи могут отсутствовать); каждая причина — dev-warn (ADR 0022).
  */
 import {
   assignPrototypeAPIs,
@@ -11,7 +11,10 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
-import type { PluginInertReason } from '../../core/pluginDiagnostics'
+import {
+  type PluginInertReason,
+  warnPluginInert,
+} from '../../core/pluginDiagnostics'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
@@ -94,8 +97,14 @@ const canDragRow = (row: DraggableRow): boolean => {
   const enable = row.table.options.enableRowDragging
   const wantsDrag = typeof enable === 'function' ? enable(row) : !!enable
 
-  // TODO(логгер): dev-warn на каждую причину инертности.
-  return wantsDrag && rowDraggingInertReason(row.table) === undefined
+  if (!wantsDrag) {
+    return false
+  }
+  const reason = rowDraggingInertReason(row.table)
+  if (reason !== undefined) {
+    warnPluginInert(row.table, 'rowDragging', reason)
+  }
+  return reason === undefined
 }
 
 export const rowDraggingFeature: TableFeature = {

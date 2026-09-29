@@ -8,6 +8,7 @@
 import { columnPinningFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { pinHeaderAction } from './pinHeaderAction'
 import type { ColumnPinningHooks } from './types'
 
@@ -22,6 +23,7 @@ export interface ColumnPinningOptions {
 
 export const columnPinning = definePlugin<ColumnPinningOptions>()({
   id: 'columnPinning',
+  diagnose: neverInert,
   features: { columnPinningFeature },
   hooks: o => ({ onTogglePin: o.onTogglePin }),
   // Единый дескриптор: ядро решает подачу (инлайн/кебаб).

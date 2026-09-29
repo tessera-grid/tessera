@@ -332,6 +332,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       нажатия 24×24, [ADR 0034](docs/decisions/0034-wcag-22-dragging-and-target-size.md)).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md)).
+    - _Контракт плагина:_ `plugin-a11y` (PQ4 — axe для каждого встроенного плагина;
+      набор сверяется с экспортами `/plugins`), модульные `pluginContract` (PQ1–PQ3 —
+      обязательный `diagnose`, dev-warn ядра при монтировании, `'noActions'`),
+      [ADR 0036](docs/decisions/0036-plugin-contract-diagnostics-and-a11y.md).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,

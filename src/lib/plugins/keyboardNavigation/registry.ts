@@ -7,6 +7,7 @@
  * (core/keyboardNavigation.ts) и читают presence по опции — ядро плагин не импортит.
  */
 import { definePlugin } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import {
   type ActiveCell,
   INITIAL_ACTIVE_CELL,
@@ -16,6 +17,7 @@ import type { KeyboardNavigationOptions } from './types'
 
 export const keyboardNavigation = definePlugin<KeyboardNavigationOptions>()({
   id: KEYBOARD_NAVIGATION,
+  diagnose: neverInert,
   state: (): ActiveCell => INITIAL_ACTIVE_CELL,
   options: o => ({ enableKeyboardNavigation: o.enabled !== false }),
 })

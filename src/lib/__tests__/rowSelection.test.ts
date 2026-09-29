@@ -11,6 +11,7 @@ import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { resolveHooks } from '../core/createHooks'
 import { COLUMN_SELECTION_ID, rowSelection } from '../plugins/rowSelection'
 import { getCanSomeRowsSelect } from '../plugins/rowSelection/selectionHelpers'
+import { captureInertWarnings } from './inertWarnings'
 
 interface Person {
   id: string
@@ -51,6 +52,8 @@ const makeTable = (opts = {}) => {
 }
 
 describe('rowSelection', () => {
+  const warnings = captureInertWarnings()
+
   it('foldEntries даёт опции выбора и сервисную колонку', () => {
     const { folded } = makeTable({ subRows: true })
     expect(folded.options).toMatchObject({
@@ -118,17 +121,26 @@ describe('rowSelection', () => {
     expect(folded).toEqual({})
   })
 
-  it('гейт группировки: enableRowSelection false при активной группировке', () => {
+  it('PC11: активная группировка делает rowSelection инертным и предупреждает', () => {
     const { folded } = makeTable()
     const enableRowSelection = (folded.options as any).enableRowSelection
 
-    // Активная группировка → выбор недоступен.
-    expect(
-      enableRowSelection({
-        table: { atoms: { grouping: { get: () => ['name'] } } },
-      }),
-    ).toBe(false)
-    // Без группировки (атома нет) → доступен.
+    // Без активной группировки (атома нет / пустая) → доступен, тишина.
     expect(enableRowSelection({ table: { atoms: {} } })).toBe(true)
+    expect(
+      enableRowSelection({ table: { atoms: { grouping: { get: () => [] } } } }),
+    ).toBe(true)
+    expect(warnings()).toHaveLength(0)
+
+    const grouped = { table: { atoms: { grouping: { get: () => ['name'] } } } }
+    expect(enableRowSelection(grouped)).toBe(false)
+    enableRowSelection(grouped)
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('rowSelection')
+
+    // Плагин отключён → опция жёстко false, гейт с варном не вызывается.
+    expect(makeTable({ enabled: false }).folded.options).toMatchObject({
+      enableRowSelection: false,
+    })
   })
 })

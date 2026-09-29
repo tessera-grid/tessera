@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnPinning, pinHeaderAction } from '../plugins/columnPinning'
+import { captureInertWarnings } from './inertWarnings'
 
 const makeTable = (columns: any[], opts = {}) => {
   const entries = [
@@ -52,6 +53,8 @@ const ctxOf = (table: any, groupIndex: number, headerIndex: number) =>
   table.getHeaderGroups()[groupIndex].headers[headerIndex].getContext()
 
 describe('columnPinning', () => {
+  const warnings = captureInertWarnings()
+
   it('foldEntries даёт опции пиннинга и дескриптор (order 0)', () => {
     const { folded } = makeTable(flatCols)
     expect(folded.options).toMatchObject({
@@ -80,15 +83,28 @@ describe('columnPinning', () => {
     expect(table.atoms.columnPinning.get().start).not.toContain('name')
   })
 
-  it('гейт вложенной шапки: группа верхнего уровня закрепляема, лист — нет', () => {
-    const { table } = makeTable(nestedCols)
+  it('PC2: под вложенной шапкой пиннится только группа верхнего уровня; явный enablePinning листа предупреждает', () => {
+    const { table } = makeTable([
+      {
+        id: 'grp',
+        header: 'G',
+        columns: [
+          { id: 'a', accessorKey: 'a', enablePinning: true },
+          { id: 'b', accessorKey: 'b' },
+        ],
+      },
+    ])
     expect(table.getHeaderGroups()).toHaveLength(2)
 
-    const topGroupCtx = ctxOf(table, 0, 0) // grp, depth 0
-    const leafCtx = ctxOf(table, 1, 0) // a, depth 1
+    expect(pinHeaderAction.visible!(ctxOf(table, 0, 0))).toBe(true) // grp
+    // лист без явного enablePinning — инертен молча
+    expect(pinHeaderAction.visible!(ctxOf(table, 1, 1))).toBe(false)
+    expect(warnings()).toHaveLength(0)
 
-    expect(pinHeaderAction.visible!(topGroupCtx)).toBe(true)
-    expect(pinHeaderAction.visible!(leafCtx)).toBe(false)
+    expect(pinHeaderAction.visible!(ctxOf(table, 1, 0))).toBe(false)
+    pinHeaderAction.visible!(ctxOf(table, 1, 0))
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('columnPinning')
   })
 
   it('reorder-out (leafPinning): лист под вложенной шапкой закрепляем', () => {

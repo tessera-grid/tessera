@@ -17,6 +17,7 @@ import {
   injectCellOwner,
   injectCellState,
 } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
 import { editCellKeyboardAction } from './keyboardActions'
@@ -38,6 +39,7 @@ export interface CellEditingOptions {
 
 export const cellEditing = definePlugin<CellEditingOptions>()({
   id: 'cellEditing',
+  diagnose: neverInert,
   // Локальный слайс: какая ячейка сейчас редактируется.
   state: (): EditingCell => null,
   hooks: o => ({

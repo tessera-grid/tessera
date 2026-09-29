@@ -13,6 +13,7 @@
 import { cellSelectionFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { copyContextAction } from './contextActions'
 import type { CellSelectionOptions, CellSelectionPredicateCell } from './types'
 
@@ -23,6 +24,7 @@ const defaultCanSelect = (cell: CellSelectionPredicateCell): boolean =>
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 export const cellSelection = definePlugin<CellSelectionOptions>()({
   id: 'cellSelection',
+  diagnose: neverInert,
   features: { cellSelectionFeature },
   options: o => {
     // При disabled — все enable* жёстко false: v9 фиксирует набор фич на маунте,

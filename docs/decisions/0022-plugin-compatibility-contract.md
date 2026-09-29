@@ -148,32 +148,36 @@ drag). Сбросив сортировку, потребитель возвра�
 диспатч предупреждения), поэтому покрытие — **модульное** (третий вид ADR 0009).
 
 > **Состояние после миграции на v9.** Логические тесты консолидированы в
-> `src/lib/__tests__/<plugin>.test.ts` (описательные заголовки «Фаза E …»); гейты
-> совместимости покрыты **поведенчески** (напр. «гейт сортировки/группировки»), но
-> выделенных `PC<n>`-именованных тестов в наборе **пока нет** — восстановление
-> ID-именования (ADR 0009) для PC1–PC6/PC11 остаётся открытой задачей. Пути ниже
-> указывают на актуальные файлы; метки `PC<n>` — целевые. `logger` (PC7–PC10) —
-> реальный `core/logger.test.ts`.
+> `src/lib/__tests__/<plugin>.test.ts`; гейты совместимости (PC1–PC6, PC11) снова
+> шлют dev-warn через `logger` — общий хелпер `warnPluginInert`
+> (`core/pluginDiagnostics.ts`, ключ dedup `<pluginId>:<reason>`) переиспользует ту
+> же функцию причины, что и `diagnose`, и зовётся только когда потребитель фичу
+> запросил. Каждое требование закрыто `PC<n>:`-тестом; перехват варнов —
+> `__tests__/inertWarnings.ts`. `logger` (PC7–PC10) — `core/logger.test.ts`.
 
-| ID   | Требование                                                                                                                                                                           | Тест                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| PC1  | Многоуровневая шапка делает columnDragging инертным (`getCanDrag`→false) и предупреждает                                                                                             | `__tests__/columnDragging.test.ts` (PC1, целевая метка) |
-| PC2  | Под вложенной шапкой пиннится только группа верхнего уровня; лист под группой инертен, при явном `enablePinning` — предупреждает                                                     | `__tests__/columnPinning.test.ts` (PC2, целевая метка)  |
-| PC3  | Многоуровневая шапка делает rowDragging инертным (`getCanDrag`→false) и предупреждает                                                                                                | `__tests__/rowDragging.test.ts` (PC3, целевая метка)    |
-| PC4  | Активная группировка (`grouping.length>0`) делает rowDragging инертным и предупреждает; само включение плагина группировки drag не трогает                                           | `__tests__/rowDragging.test.ts` (PC4, целевая метка)    |
-| PC5  | При активной группировке rowExpanding делегирует раскрытие TanStack, `maxExpandingDepth`/`enableRowExpanding` игнорируются, предупреждает; без активной группировки — своя семантика | `__tests__/rowExpanding.test.ts` (PC5, целевая метка)   |
-| PC6  | Активная сортировка делает rowDragging инертным (`getCanDrag`→false) и предупреждает                                                                                                 | `__tests__/rowDragging.test.ts` (PC6, целевая метка)    |
-| PC7  | `logger` по умолчанию молчит в проде                                                                                                                                                 | `core/logger.test.ts` `PC7:`                            |
-| PC8  | `logger` печатает один раз на ключ (dedup), разные ключи — каждый                                                                                                                    | `core/logger.test.ts` `PC8:`                            |
-| PC9  | Порог `logLevel` отсекает сообщения ниже уровня                                                                                                                                      | `core/logger.test.ts` `PC9:`                            |
-| PC10 | Явный `logLevel` потребителя переопределяет дефолт (`silent` глушит даже в dev)                                                                                                      | `core/logger.test.ts` `PC10:`                           |
-| PC11 | Активная группировка делает rowSelection инертным (`getCanSelect`→false) и предупреждает; само включение плагина группировки выбор не трогает                                        | `__tests__/rowSelection.test.ts` (PC11, целевая метка)  |
-| PC12 | `getPluginDiagnostics()` перечисляет каждую присутствующую запись: работающая — `active`, `enabled: false` — `inert` с `reason: 'disabled'`                                          | `__tests__/pluginDiagnostics.test.ts` `PC12:`           |
-| PC13 | Встроенные плагины отдают причину инертности из своих гейтов: `multiLevelHeader` (rowDragging, columnDragging), `grouping` (rowDragging, rowSelection), `sorting` (rowDragging)      | `__tests__/pluginDiagnostics.test.ts` `PC13:`           |
-| PC14 | Снимок считается на момент вызова: смена состояния сразу меняет статус, без рендера                                                                                                  | `__tests__/pluginDiagnostics.test.ts` `PC14:`           |
+| ID   | Требование                                                                                                                                                                           | Тест                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| PC1  | Многоуровневая шапка делает columnDragging инертным (`getCanDrag`→false) и предупреждает                                                                                             | `__tests__/columnDragging.test.ts` `PC1:`     |
+| PC2  | Под вложенной шапкой пиннится только группа верхнего уровня; лист под группой инертен, при явном `enablePinning` — предупреждает                                                     | `__tests__/columnPinning.test.ts` `PC2:`      |
+| PC3  | Многоуровневая шапка делает rowDragging инертным (`getCanDrag`→false) и предупреждает                                                                                                | `__tests__/rowDragging.test.ts` `PC3:`        |
+| PC4  | Активная группировка (`grouping.length>0`) делает rowDragging инертным и предупреждает; само включение плагина группировки drag не трогает                                           | `__tests__/rowDragging.test.ts` `PC4:`        |
+| PC5  | При активной группировке rowExpanding делегирует раскрытие TanStack, `maxExpandingDepth`/`enableRowExpanding` игнорируются, предупреждает; без активной группировки — своя семантика | `__tests__/rowExpanding.test.ts` `PC5:`       |
+| PC6  | Активная сортировка делает rowDragging инертным (`getCanDrag`→false) и предупреждает                                                                                                 | `__tests__/rowDragging.test.ts` `PC6:`        |
+| PC7  | `logger` по умолчанию молчит в проде                                                                                                                                                 | `core/logger.test.ts` `PC7:`                  |
+| PC8  | `logger` печатает один раз на ключ (dedup), разные ключи — каждый                                                                                                                    | `core/logger.test.ts` `PC8:`                  |
+| PC9  | Порог `logLevel` отсекает сообщения ниже уровня                                                                                                                                      | `core/logger.test.ts` `PC9:`                  |
+| PC10 | Явный `logLevel` потребителя переопределяет дефолт (`silent` глушит даже в dev)                                                                                                      | `core/logger.test.ts` `PC10:`                 |
+| PC11 | Активная группировка делает rowSelection инертным (`getCanSelect`→false) и предупреждает; само включение плагина группировки выбор не трогает                                        | `__tests__/rowSelection.test.ts` `PC11:`      |
+| PC12 | `getPluginDiagnostics()` перечисляет каждую присутствующую запись: работающая — `active`, `enabled: false` — `inert` с `reason: 'disabled'`                                          | `__tests__/pluginDiagnostics.test.ts` `PC12:` |
+| PC13 | Встроенные плагины отдают причину инертности из своих гейтов: `multiLevelHeader` (rowDragging, columnDragging), `grouping` (rowDragging, rowSelection), `sorting` (rowDragging)      | `__tests__/pluginDiagnostics.test.ts` `PC13:` |
+| PC14 | Снимок считается на момент вызова: смена состояния сразу меняет статус, без рендера                                                                                                  | `__tests__/pluginDiagnostics.test.ts` `PC14:` |
 
 Предупреждаем только когда фича включена потребителем — покрыто негативными
 кейсами в тех же файлах (инертность без сигнала, если drag/pin не запрошены).
+
+Правило расширено на все встроенные плагины в
+[ADR 0036](0036-plugin-contract-diagnostics-and-a11y.md): `diagnose` обязателен, о
+статических причинах ядро предупреждает при монтировании.
 
 C2 закрыт: единый **уровневый** канал (`core/logger.ts` + опция `logLevel`) даёт
 управляемый поток предупреждений/ошибок/инфо по плагинам, а `getPluginDiagnostics()`

@@ -41,7 +41,8 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0032](0032-wcag-aa-remainder.md)                    | Доступность: остаток до WCAG 2.1 AA (W1–W17)                                                                      | Принято    |
 | [0033](0033-a11y-tree-and-virtual-screen-reader.md)  | Проверка доступности: дерево AX Chromium и эмулятор скринридера (AX1–AX7, SR1–SR7)                                | Принято    |
 | [0034](0034-wcag-22-dragging-and-target-size.md)     | Доступность: WCAG 2.2 AA — альтернатива перетаскиванию и размер целей (DA1–DA6, TS1–TS2)                          | Принято    |
-| [0035](0035-toolbar-and-column-visibility.md)        | Верхний тулбар (слот `toolbarSlot`, кнопки F4) + плагин columnVisibility (TB1–TB15, CV1–CV18, AM22–AM23, I4–I6)   | Принято    |
+| [0035](0035-toolbar-and-column-visibility.md)        | Верхний тулбар (слот `toolbarSlot`, кнопки F4) + плагин columnVisibility (TB1–TB15, CV1–CV19, AM22–AM23, I4–I6)   | Принято    |
+| [0036](0036-plugin-contract-diagnostics-and-a11y.md) | Контракт встроенного плагина: обязательная диагностика инертности и axe для каждого плагина (PQ1–PQ4)             | Принято    |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

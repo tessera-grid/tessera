@@ -1,12 +1,13 @@
 /**
  * «Скрыть колонку» / «Скрыть группу» в кебабе заголовка (ADR 0035, CV14). Только
  * строка меню (`placement: 'menu'`): иконки-глаза в каждом заголовке нет, без
- * плагина-меню заголовка пункт не показывается.
+ * плагина-меню заголовка пункт не показывается, без тулбара — тоже (CV19).
  */
 import type { HeaderComponentProps } from '../../core/createSlots'
 import type { HeaderAction } from '../../core/headerActions'
 import { useIcons } from '../../ui/icons'
 import { getHide, type VisibilityColumn } from './columnTree'
+import { columnVisibilityInertReason } from './inertReason'
 import {
   setColumnsVisible,
   type VisibilityControlTable,
@@ -31,7 +32,9 @@ export const hideHeaderAction: HeaderAction = {
   id: 'columnVisibility.hide',
   slot: 'rightHeaderSlot',
   placement: 'menu',
-  visible: ctx => hideIds(ctx) !== null,
+  visible: ctx =>
+    columnVisibilityInertReason(ctx.table) === undefined &&
+    hideIds(ctx) !== null,
   icon: () => <HideIcon />,
   label: (ctx, labels) => (isGroup(ctx) ? labels.hideGroup : labels.hideColumn),
   onSelect: ctx => {

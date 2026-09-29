@@ -7,9 +7,11 @@
  * grid/contextMenu (читают presence по опции, ядро плагин не импортит).
  */
 import { definePlugin } from '../../core/definePlugin'
+import { noContextMenuActionsReason } from '../../core/pluginDiagnostics'
 import type { ContextMenuOptions } from './types'
 
 export const contextMenu = definePlugin<ContextMenuOptions>()({
   id: 'contextMenu',
+  diagnose: noContextMenuActionsReason,
   options: o => ({ enableContextMenu: o.enabled !== false }),
 })

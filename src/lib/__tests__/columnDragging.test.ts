@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnDragging } from '../plugins/columnDragging'
+import { captureInertWarnings } from './inertWarnings'
 
 const makeTable = (columns: any[]) => {
   const entries = [
@@ -44,6 +45,8 @@ const nestedCols = [
 ]
 
 describe('columnDragging', () => {
+  const warnings = captureInertWarnings()
+
   it('foldEntries: опция и слот-ручка в leftHeaderSlot', () => {
     const { folded } = makeTable(flatCols)
     expect(folded.options).toMatchObject({ enableColumnDragging: true })
@@ -68,10 +71,22 @@ describe('columnDragging', () => {
     expect(a.getDraggableIndex()).toBe(0)
   })
 
-  it('getCanDrag (вложенная шапка): перетаскивание отключено', () => {
-    const { table } = makeTable(nestedCols)
+  it('PC1: многоуровневая шапка делает columnDragging инертным и предупреждает', () => {
+    const { table } = makeTable([
+      ...nestedCols,
+      { id: 'b', accessorKey: 'b', enableDragging: false },
+    ])
     expect(table.getHeaderGroups().length).toBeGreaterThan(1)
-    const leaf = table.getAllLeafColumns().find((c: any) => c.id === 'a')
-    expect(leaf.getCanDrag()).toBe(false)
+    const find = (id: string) =>
+      table.getAllLeafColumns().find((c: any) => c.id === id)
+
+    // drag колонки не запрошен → инертно без сигнала
+    expect(find('b').getCanDrag()).toBe(false)
+    expect(warnings()).toHaveLength(0)
+
+    expect(find('a').getCanDrag()).toBe(false)
+    find('a').getCanDrag()
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('columnDragging')
   })
 })

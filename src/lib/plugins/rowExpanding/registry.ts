@@ -11,6 +11,7 @@ import {
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
 import {
   COLUMN_EXPANDING_ID,
@@ -34,6 +35,7 @@ export interface RowExpandingOptions {
 
 export const rowExpanding = definePlugin<RowExpandingOptions>()({
   id: 'rowExpanding',
+  diagnose: neverInert,
   features: {
     rowExpandingFeature,
     expandedRowModel: createExpandedRowModel(),
@@ -69,7 +71,14 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
         ).length ?? 0) > 0
 
       if (groupingActive) {
-        // TODO(rowGrouping): dev-warn об игнорировании maxExpandingDepth.
+        if (o.enabled !== false) {
+          warnPluginInert(
+            row.table,
+            'rowExpanding',
+            'grouping',
+            'при активной группировке раскрытием владеет rowGrouping, maxDepth и enabled игнорируются',
+          )
+        }
         return canDefault
       }
 

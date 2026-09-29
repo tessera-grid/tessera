@@ -7,6 +7,7 @@
  */
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
 import { definePlugin } from '../../core/definePlugin'
+import { noSlotActionsReason } from '../../core/pluginDiagnostics'
 import type { SlotActionMenu } from '../../core/headerActions'
 import type { ColumnSizingState, Updater } from '../../types'
 import {
@@ -30,6 +31,7 @@ type RowActionsTable = {
 
 export const rowActions = definePlugin<RowActionsPluginOptions>()({
   id: 'rowActions',
+  diagnose: table => noSlotActionsReason(table, ['actionRowSlot']),
   features: {},
   column: {
     id: ROW_ACTIONS_COLUMN_ID,

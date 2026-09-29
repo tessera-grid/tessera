@@ -5,6 +5,7 @@
  */
 import { definePlugin } from '../../core/definePlugin'
 import type { HeaderActionSlot } from '../../core/headerActions'
+import { menuSlotsOf, noSlotActionsReason } from '../../core/pluginDiagnostics'
 
 export interface HeaderActionMenuOptions {
   enabled?: boolean
@@ -18,6 +19,11 @@ export interface HeaderActionMenuOptions {
 
 export const headerActionMenu = definePlugin<HeaderActionMenuOptions>()({
   id: 'headerActionMenu',
+  diagnose: table =>
+    noSlotActionsReason(
+      table,
+      menuSlotsOf(table, ['leftHeaderSlot', 'rightHeaderSlot']),
+    ),
   features: {},
   actionMenu: o => ({
     mode: o.mode ?? 'auto',

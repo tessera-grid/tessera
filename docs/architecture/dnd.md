@@ -19,6 +19,12 @@ Head и body оборачиваются в отдельные обёртки, к
   переупорядочивания **строк**; поднимает вертикальный `SortableContext` и
   подключает handlers из `getRowDraggingEvents(table)`.
 
+> **Ловушка.** `DndContext` по умолчанию рендерит свой live region
+> (`role="status"`) и скрытые инструкции **на месте** — то есть внутри
+> `role="table"`, где axe допускает только строки (`aria-required-children`). Обе
+> обёртки передают `accessibility={dndAccessibility}` (`grid/dnd/parameters.ts`),
+> и dnd-kit порталит эту разметку в `document.body` (ADR 0036, PQ4).
+
 ```mermaid
 flowchart TB
     DHW["DndHeadWrapper<br/>DndContext + SortableContext (столбцы)"]

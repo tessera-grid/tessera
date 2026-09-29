@@ -20,6 +20,12 @@ export const adjustOverlayPosition: Modifier = ({ transform }) => {
   }
 }
 
+// Live region и инструкции dnd-kit — в body: внутри role="table" axe допускает
+// только строки (ADR 0036, PQ4).
+export const dndAccessibility = {
+  container: typeof document === 'undefined' ? undefined : document.body,
+}
+
 export const measuring: MeasuringConfiguration = {
   droppable: {
     strategy: MeasuringStrategy.WhileDragging,

@@ -3,6 +3,7 @@
  * `definePlugin`. Как headerActionMenu — только декларация `actionMenu`.
  */
 import { definePlugin } from '../../core/definePlugin'
+import { noSlotActionsReason } from '../../core/pluginDiagnostics'
 
 export interface RowActionMenuOptions {
   enabled?: boolean
@@ -14,6 +15,7 @@ export interface RowActionMenuOptions {
 
 export const rowActionMenu = definePlugin<RowActionMenuOptions>()({
   id: 'rowActionMenu',
+  diagnose: table => noSlotActionsReason(table, ['actionRowSlot']),
   features: {},
   actionMenu: o => ({
     mode: o.mode ?? 'auto',

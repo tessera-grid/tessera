@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin, injectHeaderHooks } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { ColumnSizingComponent } from './ColumnSizingComponent'
 import type { ColumnSizingHooks } from './types'
 
@@ -21,6 +22,7 @@ export interface ColumnSizingOptions {
 
 export const columnSizing = definePlugin<ColumnSizingOptions>()({
   id: 'columnSizing',
+  diagnose: neverInert,
   features: { columnSizingFeature, columnResizingFeature },
   hooks: o => ({ onColumnResizeEnd: o.onColumnResizeEnd }),
   slots: [

@@ -1,5 +1,5 @@
 /**
- * Headless-проверки модели меню колонок (ADR 0035, CV4, CV6, CV7, CV9–CV13):
+ * Headless-проверки модели меню колонок (ADR 0035, CV4, CV6, CV7, CV9–CV13, CV19):
  * дерево, галочки групп, переключение, поиск, «Показать все» / «Сбросить», общий
  * срез и бизнес-колбэк.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -26,6 +26,7 @@ import {
   setColumnsVisible,
 } from '../plugins/columnVisibility/applyVisibility'
 import { rowSelection } from '../plugins/rowSelection'
+import { hideHeaderAction } from '../plugins/columnVisibility/hideHeaderAction'
 
 const NESTED = [
   {
@@ -45,12 +46,14 @@ const build = ({
   state,
   initialState,
   onColumnVisibilityChange,
+  enableToolbar,
 }: {
   columns?: any[]
   plugins?: any[]
   state?: Record<string, unknown>
   initialState?: Record<string, unknown>
   onColumnVisibilityChange?: (updater: unknown) => void
+  enableToolbar?: boolean
 } = {}) => {
   const entries = [
     {
@@ -70,6 +73,7 @@ const build = ({
     ...(state ? { state } : {}),
     ...(initialState ? { initialState } : {}),
     ...(onColumnVisibilityChange ? { onColumnVisibilityChange } : {}),
+    enableToolbar,
   } as never) as any
 }
 
@@ -197,5 +201,26 @@ describe('columnVisibility — модель меню', () => {
     resetColumnsVisibility(table)
     expect(onToggle).toHaveBeenLastCalledWith(['first', 'last'], true)
     expect(onToggle).toHaveBeenCalledTimes(2)
+  })
+
+  it('CV19: без enableToolbar плагин инертен — diagnose noToolbar, «Скрыть колонку» не показывается', () => {
+    const { diagnose } = columnVisibility()
+    const headerCtx = (table: any) =>
+      table
+        .getHeaderGroups()
+        .at(-1)
+        .headers.find((h: any) => h.column.id === 'age')
+        .getContext()
+
+    const withToolbar = build({
+      plugins: [columnVisibility()],
+      enableToolbar: true,
+    })
+    expect(diagnose?.(withToolbar)).toBeUndefined()
+    expect(hideHeaderAction.visible!(headerCtx(withToolbar))).toBe(true)
+
+    const noToolbar = build({ plugins: [columnVisibility()] })
+    expect(diagnose?.(noToolbar)).toBe('noToolbar')
+    expect(hideHeaderAction.visible!(headerCtx(noToolbar))).toBe(false)
   })
 })

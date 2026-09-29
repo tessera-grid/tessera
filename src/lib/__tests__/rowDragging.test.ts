@@ -12,8 +12,17 @@ import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnSorting } from '../plugins/columnSorting'
 import { rowGrouping } from '../plugins/rowGrouping'
 import { COLUMN_DRAGGING_ID, rowDragging } from '../plugins/rowDragging'
+import { __resetLogger } from '../core/logger'
+import { captureInertWarnings } from './inertWarnings'
 
-const build = (extraEntries: any[], dragOpts = {}) => {
+const build = (
+  extraEntries: any[],
+  dragOpts = {},
+  userColumns: any[] = [
+    { id: 'cat', accessorKey: 'cat' },
+    { id: 'name', accessorKey: 'name' },
+  ],
+) => {
   const entries = [
     {
       id: 'reactivity',
@@ -24,13 +33,7 @@ const build = (extraEntries: any[], dragOpts = {}) => {
   ]
   const features = buildTesseraFeatures(entries as never)
   const folded = foldEntries(entries)
-  const columns = injectServiceColumns(
-    [
-      { id: 'cat', accessorKey: 'cat' },
-      { id: 'name', accessorKey: 'name' },
-    ],
-    folded.serviceColumns,
-  )
+  const columns = injectServiceColumns(userColumns, folded.serviceColumns)
   const table = constructTable({
     features,
     data: [
@@ -45,6 +48,8 @@ const build = (extraEntries: any[], dragOpts = {}) => {
 }
 
 describe('rowDragging', () => {
+  const warnings = captureInertWarnings()
+
   it('foldEntries: опция + сервисная колонка-ручка (order 0)', () => {
     const { folded } = build([])
     expect(folded.options).toMatchObject({ enableRowDragging: true })
@@ -79,19 +84,52 @@ describe('rowDragging', () => {
     ).toBe(false)
   })
 
-  it('гейт сортировки: активная сортировка отключает drag', () => {
-    const { table } = build([columnSorting()])
-    expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)
+  it('PC3: многоуровневая шапка делает rowDragging инертным и предупреждает', () => {
+    const nested = [
+      {
+        id: 'grp',
+        header: 'G',
+        columns: [
+          { id: 'cat', accessorKey: 'cat' },
+          { id: 'name', accessorKey: 'name' },
+        ],
+      },
+    ]
+    const { table } = build([], {}, nested)
+    const [row] = table.getRowModel().rows
+    expect(row.getCanDrag()).toBe(false)
+    row.getCanDrag()
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('rowDragging')
 
-    table.setSorting([{ id: 'name', desc: false }])
-    expect(table.getRowModel().rows[0].getCanDrag()).toBe(false)
+    // drag не запрошен → тишина
+    __resetLogger()
+    build([], { enable: false }, nested)
+      .table.getRowModel()
+      .rows[0].getCanDrag()
+    expect(warnings()).toHaveLength(1)
   })
 
-  it('гейт группировки: активная группировка отключает drag', () => {
+  it('PC4: активная группировка делает rowDragging инертным и предупреждает', () => {
     const { table } = build([rowGrouping()])
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)
+    expect(warnings()).toHaveLength(0)
 
     table.setGrouping(['cat'])
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(false)
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('rowGrouping')
+  })
+
+  it('PC6: активная сортировка делает rowDragging инертным и предупреждает', () => {
+    const { table } = build([columnSorting()])
+    expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)
+    expect(warnings()).toHaveLength(0)
+
+    table.setSorting([{ id: 'name', desc: false }])
+    expect(table.getRowModel().rows[0].getCanDrag()).toBe(false)
+    table.getRowModel().rows[1].getCanDrag()
+    expect(warnings()).toHaveLength(1)
+    expect(warnings()[0]).toContain('сортировк')
   })
 })

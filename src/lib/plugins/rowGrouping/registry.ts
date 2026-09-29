@@ -18,6 +18,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { groupHeaderAction } from './groupHeaderAction'
 
 /** Стандартный набор агрегаций. */
@@ -39,6 +40,7 @@ export interface RowGroupingOptions {
 
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
   id: 'rowGrouping',
+  diagnose: neverInert,
   features: {
     columnGroupingFeature,
     rowAggregationFeature,

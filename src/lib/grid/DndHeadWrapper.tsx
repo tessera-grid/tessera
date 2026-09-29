@@ -22,7 +22,12 @@ import type { Table } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
 import { useSlice } from '../core/reactivity'
 import { getColumnDraggingEvents } from '../plugins/columnDragging'
-import { Z_INDEX, autoScrollOnlyX, sensorOptions } from './dnd/parameters'
+import {
+  Z_INDEX,
+  autoScrollOnlyX,
+  dndAccessibility,
+  sensorOptions,
+} from './dnd/parameters'
 import { horizontalCollisionDetection } from './dnd/collisionDetection'
 import { OverlayHeadCell } from './OverlayHeadCell'
 
@@ -98,6 +103,7 @@ export const DndHeadWrapper = ({
   return (
     <DndContext
       id="data-grid-dnd-columns"
+      accessibility={dndAccessibility}
       collisionDetection={horizontalCollisionDetection}
       sensors={sensors}
       modifiers={[restrictToHorizontalAxis]}

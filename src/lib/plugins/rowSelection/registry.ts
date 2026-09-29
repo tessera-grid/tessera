@@ -10,6 +10,7 @@ import { rowSelectionFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import { warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleRowKeyboardAction } from './keyboardActions'
 import {
   COLUMN_SELECTION_ID,
@@ -37,8 +38,13 @@ export interface RowSelectionOptions {
  * производна, выбором владеет rowGrouping. Функциональный `enableRowSelection`
  * согласует и агрегаты (getIsAllPageRowsSelected и т.п.).
  */
-const enableRowSelection = (row: Row<any, any>): boolean =>
-  !isGroupingActive(row.table)
+const enableRowSelection = (row: Row<any, any>): boolean => {
+  if (!isGroupingActive(row.table)) {
+    return true
+  }
+  warnPluginInert(row.table, 'rowSelection', 'grouping')
+  return false
+}
 
 // TOptions (RowSelectionOptions) задаётся ОДИН раз дженериком; `o` в полях выводится.
 export const rowSelection = definePlugin<RowSelectionOptions>()({

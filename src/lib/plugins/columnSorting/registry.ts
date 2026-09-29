@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
 import type { ColumnSortingHooks } from './types'
@@ -67,6 +68,7 @@ const resolveMultiSortEvent = (
 
 export const columnSorting = definePlugin<ColumnSortingOptions>()({
   id: 'columnSorting',
+  diagnose: neverInert,
   features: {
     rowSortingFeature,
     sortedRowModel: createSortedRowModel(),

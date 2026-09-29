@@ -1,6 +1,6 @@
 /**
- * Эффекты после создания таблицы: императивный сетап плагинов, дев-варны о
- * конфликтах набора и сброс выбора строк при смене его опций.
+ * Эффекты после создания таблицы: императивный сетап плагинов, дев-варны об
+ * инертных плагинах и конфликтах набора, сброс выбора строк при смене его опций.
  */
 import { useEffect, useMemo, useRef } from 'react'
 
@@ -10,6 +10,7 @@ import {
   type TesseraFeatureEntry,
 } from './features'
 import { logWarn } from './logger'
+import { type PluginDiagnostic, warnInertPlugins } from './pluginDiagnostics'
 
 export const useTableEffects = (
   table: unknown,
@@ -29,6 +30,20 @@ export const useTableEffects = (
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature, table],
+  )
+
+  // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.
+  useEffect(
+    () => {
+      const { getPluginDiagnostics } = table as {
+        getPluginDiagnostics?: () => PluginDiagnostic[]
+      }
+      if (getPluginDiagnostics) {
+        warnInertPlugins(getPluginDiagnostics.call(table), table)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
+    [signature],
   )
 
   // Дев-варн на коллизию id плагинов (DP5): id ключует hooks-scope, локальный state и
