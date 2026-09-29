@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { Grid } from './_shims'
+import { statusBarDemoPlugins } from './statusBarDemo'
 import { toolbarDemoPlugins } from './toolbarDemo'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../lib/plugins/rowActions'
 import { DEFAULT_SKELETON_OPTIONS } from '../../lib/core/skeletonOptions'
@@ -217,6 +218,15 @@ export const WithEmptyToolbar: StoryObj<StoryProps> = {
   name: 'With Toolbar (empty)',
   args: {
     enableToolbar: true,
+  },
+}
+
+export const WithStatusBar: StoryObj<StoryProps> = {
+  name: 'With Status Bar',
+  args: {
+    // Демо-слоты нижней панели: один слева, два справа (порядок по `order`).
+    // Включите enableFooter — панель встанет под футером одной линией.
+    extraPlugins: statusBarDemoPlugins,
   },
 }
 

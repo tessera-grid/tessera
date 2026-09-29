@@ -10,10 +10,12 @@ export type {
   HeaderSlot,
   CellSlot,
   ToolbarSlot,
+  StatusBarSlot,
   PluginSlot,
   HeaderComponentProps,
   CellComponentProps,
   ToolbarComponentProps,
+  StatusBarComponentProps,
 } from './types'
 
 /** Пустой набор слотов — база, в которую ядро сворачивает объявления плагинов. */
@@ -25,6 +27,7 @@ export const createEmptyRenderSlots = (): RenderSlots => ({
   cellSlot: [],
   actionRowSlot: [],
   toolbarSlot: [],
+  statusBarSlot: [],
 })
 
 /**
@@ -43,6 +46,7 @@ export const registerSlotInto = (
     component,
     countsAsHeaderAction,
     group,
+    align,
     pluginId,
   }: PluginSlot,
 ) => {
@@ -56,6 +60,7 @@ export const registerSlotInto = (
     currentSlot[pluginIndexInSlot].component = component
     currentSlot[pluginIndexInSlot].countsAsHeaderAction = countsAsHeaderAction
     currentSlot[pluginIndexInSlot].group = group
+    currentSlot[pluginIndexInSlot].align = align
     currentSlot[pluginIndexInSlot].pluginId = pluginId
 
     return
@@ -68,6 +73,7 @@ export const registerSlotInto = (
     component,
     countsAsHeaderAction,
     group,
+    align,
     pluginId,
   }
 

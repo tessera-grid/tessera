@@ -76,6 +76,7 @@ flowchart TB
         HEAD["DndHeadWrapper → Head → HeadRow → HeadCell<br/>+ left/right header-слоты"]
         BODY["DndBodyWrapper → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
         FOOT["Footer (enableFooter)"]
+        SB["StatusBar (есть statusBarSlot) — вне скролл-контейнера<br/>+ statusBarSlot по сторонам"]
         SK["SkeletonOverlay (enableSkeleton)<br/>LinearProgress (enableLoading)"]
     end
 
@@ -89,7 +90,7 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 `cell` столбца. Pinned/action-столбцы исключаются из виртуализации столбцов и
 инъекции слотов там, где это уместно.
 
-## Рамка и тулбар
+## Рамка, тулбар и нижняя панель
 
 Корневая обёртка грида (`table__theme-wrapper`) несёт внешнюю рамку со
 скруглением (`--tsr-comp-frame-*`, ADR [0035](../decisions/0035-toolbar-and-column-visibility.md))
@@ -102,6 +103,14 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 тулбара — `toolbarSlot`; раскладку по подгруппам делает `resolveToolbarGroups`
 (`core/toolbar.ts`), между группами — `Toolbar.Separator`. Верхней линии у шапки
 нет: сверху её ограничивает рамка или разделитель тулбара.
+
+Нижняя панель (`StatusBar`, ADR [0038](../decisions/0038-pagination-and-status-bar.md))
+рендерится под контейнером таблицы, когда в `statusBarSlot` есть хоть один слот:
+обёртка получает `data-status-bar`, что выставляет `--tsr-comp-status-bar-offset`,
+и контейнер становится ниже и на неё. Панель есть и в ветке заглушки (пустые
+данные). Сверху её отделяет одна линия (`border-top`); у футера колонок нижней
+линии нет, поэтому под ним она не двоится. Раскладку по сторонам делает
+`resolveStatusBarSides` (`core/statusBar.ts`).
 
 ## Состояния загрузки
 

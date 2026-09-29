@@ -22,6 +22,7 @@ import { LiveRegion } from './LiveRegion'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
 import type { Column } from '../types'
+import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { useSkeletonOverlayState } from '../core/skeletonOverlay'
 import {
@@ -33,6 +34,7 @@ import { getRowDraggableStyles } from '../plugins/rowDragging'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { useCellSelectionCopy } from './useCellSelectionCopy'
 import { DataGridTable } from './DataGridTable'
+import { StatusBar } from './StatusBar/StatusBar'
 import { SkeletonOverlay } from './SkeletonOverlay'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
@@ -92,6 +94,11 @@ export const DataGrid = ({
 
   const enableContextMenu = !!(table.options as any).enableContextMenu
   const enableToolbar = !!(table.options as any).enableToolbar
+  // Панель есть, пока есть хоть один слот: её включает сам плагин (ADR 0038).
+  const statusBarSlot =
+    (table.getRenderSlots as () => RenderSlots | undefined)()?.statusBarSlot ??
+    []
+  const hasStatusBar = statusBarSlot.length > 0
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -125,6 +132,9 @@ export const DataGrid = ({
     >
       <Toolbar table={table} label={labels.toolbar} />
     </Suspense>
+  )
+  const statusBar = hasStatusBar && (
+    <StatusBar table={table} slot={statusBarSlot} />
   )
   const loadingLabel = labels.loading
 
@@ -215,6 +225,7 @@ export const DataGrid = ({
                 themeClassName,
               )}
               data-toolbar={enableToolbar || undefined}
+              data-status-bar={hasStatusBar || undefined}
               style={{ ...containerStyles, ...style }}
             >
               {toolbar}
@@ -227,6 +238,7 @@ export const DataGrid = ({
               >
                 <div className={dataGridStyles.table__stub}>{stub}</div>
               </div>
+              {statusBar}
             </div>
           </LocalizationProvider>
         </IconsProvider>
@@ -252,6 +264,7 @@ export const DataGrid = ({
                 themeClassName,
               )}
               data-toolbar={enableToolbar || undefined}
+              data-status-bar={hasStatusBar || undefined}
               style={wrapperStyles}
             >
               {toolbar}
@@ -312,6 +325,7 @@ export const DataGrid = ({
                   data-kn-guard="after"
                 />
               )}
+              {statusBar}
             </div>
           </FastScrollProvider>
         </LocalizationProvider>

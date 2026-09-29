@@ -303,6 +303,15 @@
   --tsr-comp-toolbar-button-size: 32px;
   --tsr-comp-toolbar-button-radius: var(--tsr-comp-control-radius);
   --tsr-comp-toolbar-separator-height: 20px;
+
+  /* Нижняя панель (ADR 0038). Высота включает верхний разделитель. */
+  --tsr-comp-status-bar-height: 48px;
+  --tsr-comp-status-bar-padding-x: 12px;
+  --tsr-comp-status-bar-gap: 16px;
+  --tsr-comp-status-bar-bg: var(--tsr-sys-surface);
+  --tsr-comp-status-bar-divider-color: var(--tsr-sys-border);
+  /* Сдвиг области таблицы над панелью; ставит грид, когда есть `statusBarSlot`. */
+  --tsr-comp-status-bar-offset: 0px;
   /* Меню колонок (columnVisibility): ширина поповера и высота списка до прокрутки. */
   --tsr-comp-column-menu-width: 260px;
   --tsr-comp-column-menu-max-height: 320px;

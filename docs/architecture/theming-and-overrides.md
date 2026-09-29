@@ -47,6 +47,9 @@
   кнопки F4 — `--tsr-comp-toolbar-button-size` / `-button-radius`.
   `--tsr-comp-toolbar-offset` выставляет сам грид при `enableToolbar` — его не
   переопределяют.
+- **Нижняя панель** (ADR 0038): `--tsr-comp-status-bar-height` / `-padding-x` /
+  `-gap` / `-bg` / `-divider-color`. `--tsr-comp-status-bar-offset` выставляет сам
+  грид, когда есть `statusBarSlot`, — его не переопределяют.
 
 ```mermaid
 flowchart LR

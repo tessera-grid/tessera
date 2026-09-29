@@ -16,8 +16,14 @@
   --tsr-comp-toolbar-offset: var(--tsr-comp-toolbar-height);
 }
 
+.table__theme-wrapper[data-status-bar] {
+  --tsr-comp-status-bar-offset: var(--tsr-comp-status-bar-height);
+}
+
 .table__container {
-  height: calc(100% - var(--tsr-comp-toolbar-offset));
+  height: calc(
+    100% - var(--tsr-comp-toolbar-offset) - var(--tsr-comp-status-bar-offset)
+  );
   padding: 0;
   display: flex;
   position: relative;
@@ -49,7 +55,9 @@
 }
 
 .table__stub-container {
-  height: calc(100% - var(--tsr-comp-toolbar-offset));
+  height: calc(
+    100% - var(--tsr-comp-toolbar-offset) - var(--tsr-comp-status-bar-offset)
+  );
 }
 
 .table__stub {

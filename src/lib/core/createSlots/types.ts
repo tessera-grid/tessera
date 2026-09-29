@@ -18,6 +18,8 @@ export type CellComponentProps = CellContext<any, any, any>
 export interface ToolbarComponentProps {
   table: Table<any, any>
 }
+/** Пропсы компонента нижней панели — как у тулбара, таблица целиком. */
+export type StatusBarComponentProps = ToolbarComponentProps
 
 export interface RegisterSlotParams<TContext extends object> {
   /** Уникальный идентификатор плагина (ключ не должен быть динамическим). */
@@ -43,6 +45,8 @@ export interface RegisterSlotParams<TContext extends object> {
   countsAsHeaderAction?: boolean
   /** Подгруппа кнопок тулбара (только `toolbarSlot`); по умолчанию `'default'`. */
   group?: string
+  /** Сторона нижней панели (только `statusBarSlot`); по умолчанию `'start'`. */
+  align?: 'start' | 'end'
   /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
   pluginId?: string
 }
@@ -52,6 +56,8 @@ export type HeaderSlot = RegisterSlotParams<HeaderComponentProps>[]
 export type CellSlot = RegisterSlotParams<CellComponentProps>[]
 
 export type ToolbarSlot = RegisterSlotParams<ToolbarComponentProps>[]
+
+export type StatusBarSlot = RegisterSlotParams<StatusBarComponentProps>[]
 
 /**
  * Декларативное объявление слота плагином. Ядро собирает слоты
@@ -66,6 +72,7 @@ export type PluginSlot =
       slot: 'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot' | 'cellSlot'
     })
   | (RegisterSlotParams<ToolbarComponentProps> & { slot: 'toolbarSlot' })
+  | (RegisterSlotParams<StatusBarComponentProps> & { slot: 'statusBarSlot' })
 
 export interface RenderSlots {
   /** Место под плагин в заголовке колонки слева от текста. */
@@ -86,4 +93,6 @@ export interface RenderSlots {
   actionRowSlot: CellSlot
   /** Кнопки верхнего тулбара таблицы (ADR 0035). */
   toolbarSlot: ToolbarSlot
+  /** Сведения о данных в нижней панели под таблицей (ADR 0038). */
+  statusBarSlot: StatusBarSlot
 }
