@@ -8,6 +8,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import type { PaginationState } from '@tanstack/react-table'
 import { ChevronDown } from 'lucide-react'
 
+import { announceLabel } from '../../core/announcer'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
@@ -66,14 +67,19 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     table.options as { paginationPageSizes?: number[] | false }
   ).paginationPageSizes
 
+  const announcePage = (index: number, pages: number) =>
+    announceLabel(table, all => all.pageAnnouncement(index + 1, pages))
+
   const goTo = (index: number) => {
     t.setPageIndex(index)
     notifyPageChange(t, index, pageSize)
+    announcePage(index, pageCount)
   }
 
   const changeSize = (size: number) => {
     t.setPagination({ pageIndex: 0, pageSize: size })
     notifyPageChange(t, 0, size)
+    announcePage(0, Math.max(1, Math.ceil(rowCount / size)))
   }
 
   const empty = rowCount === 0

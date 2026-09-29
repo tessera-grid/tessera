@@ -31,7 +31,8 @@ export interface TableBodyRowProps {
   rightCellSlot?: CellSlot
   cellSlot?: CellSlot
   actionRowSlot?: CellSlot
-  headerRowCount: number
+  /** `aria-rowindex` первой строки тела минус 1: строки шапки + строки прошлых страниц. */
+  ariaRowIndexBase: number
   /** Строки несут `aria-selected` (grid с rowSelection). */
   selectableRows?: boolean
   /** Уровень и позиция строки в treegrid. */
@@ -172,7 +173,7 @@ export const getAriaSelected = (
  * выключено — чтобы не платить за useSortable на каждый смонтированный ряд.
  */
 export const BodyRow = memo((props: TableBodyRowProps) => {
-  const { layout, row, virtualRow, headerRowCount } = props
+  const { layout, row, virtualRow, ariaRowIndexBase } = props
 
   useRowStateSubscription(row)
   const nav = useKeyboardNavigationRow(
@@ -200,7 +201,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-kn-active={nav?.isActive || undefined}
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
-      aria-rowindex={headerRowCount + virtualRow.index + 1}
+      aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       {...props.treeAria}

@@ -7,6 +7,7 @@ import {
   isTreeGrid,
   type KeyboardNavigationGrid,
 } from '../core/keyboardNavigation'
+import { getRowWindow } from '../core/pagination'
 import type { Column, HeaderGroup, Row, Table } from '../types'
 import { BodyDndBoundary } from './DndBodyWrapper'
 import { MemoizedBody } from './Body'
@@ -61,6 +62,8 @@ export const DataGridTable = ({
   // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
   // становится treegrid (ADR 0032, W10).
   const hierarchical = isTreeGrid(table)
+  // Страница — окно полного набора: число строк и индексы сквозные (ADR 0038, PG15).
+  const rowWindow = getRowWindow(table, rows)
 
   const {
     leftHeaderSlot,
@@ -76,7 +79,7 @@ export const DataGridTable = ({
       role={keyboardNavigation ? (hierarchical ? 'treegrid' : 'grid') : 'table'}
       aria-label={label}
       aria-busy={busy || undefined}
-      aria-rowcount={headerGroups.length + rows.length}
+      aria-rowcount={headerGroups.length + rowWindow.total}
       aria-colcount={leafColumns.length}
       className={clsx('data-grid__table', dataGridStyles.table)}
       aria-multiselectable={
@@ -119,7 +122,7 @@ export const DataGridTable = ({
           rightCellSlot={rightCellSlot}
           cellSlot={cellSlot}
           actionRowSlot={actionRowSlot}
-          headerRowCount={headerGroups.length}
+          ariaRowIndexBase={headerGroups.length + rowWindow.offset}
           selectableRows={!!keyboardNavigation && enableRowSelection}
           treeRows={!!keyboardNavigation && hierarchical}
           isResizingColumns={isResizingColumns}

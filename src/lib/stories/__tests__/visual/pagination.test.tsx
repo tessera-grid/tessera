@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 
+import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
@@ -7,9 +8,10 @@ import { describe, expect, test, vi } from 'vitest'
 import { DataGrid } from '../../../grid/DataGrid'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { pagination } from '../../../plugins/pagination'
-import { Stories, bodyRows } from '../helpers'
+import { Stories, bodyRows, getScroller } from '../helpers'
+import { AXE_OPTIONS } from './a11y-helpers'
 
-// Пагинация в нижней панели (ADR 0038, PG2–PG4, PG6, PG11, PG16). Каждый тест —
+// Пагинация в нижней панели (ADR 0038, PG2–PG4, PG6, PG11–PG18). Каждый тест —
 // одно требование, назван по его ID. Состояние читается из DOM-контракта (role,
 // aria-*, data-*), а не из хешированных классов CSS-модулей. PG1, PG5, PG8–PG10 —
 // модульные (`src/lib/__tests__/pagination.test.ts`), PG7 —
@@ -37,6 +39,14 @@ const firstRowId = () =>
   bodyRows().sort(
     (a, b) => Number(a.dataset.index) - Number(b.dataset.index),
   )[0]?.dataset.rowId
+const live = () =>
+  document.querySelector<HTMLElement>('[role="status"][aria-live="polite"]')!
+    .textContent
+const gridRoot = () => document.querySelector<HTMLElement>('[aria-rowcount]')!
+const firstRow = () =>
+  bodyRows().sort(
+    (a, b) => Number(a.dataset.index) - Number(b.dataset.index),
+  )[0]
 const sizeTrigger = () =>
   document.querySelector<HTMLElement>('[data-testid="page-size-select"]')
 
@@ -173,5 +183,93 @@ describe('Pagination', () => {
     ).not.toBeNull()
     await expect.poll(sizeTrigger).not.toBeNull()
     expect(nav()!.textContent).toContain('Строк на странице')
+  })
+
+  test('PG12: after a page change the body is scrolled to the top', async () => {
+    await renderPagination()
+    const scroller = getScroller()
+    scroller.scrollTo({ top: 400 })
+    await expect.poll(() => scroller.scrollTop).toBeGreaterThan(0)
+
+    await userEvent.click(pageButton('next'))
+    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(() => scroller.scrollTop).toBe(0)
+  })
+
+  test('PG13: the control is a labelled navigation; buttons are labelled, disabled ones stay focusable; the size choice has a label', async () => {
+    await renderPagination()
+    expect(nav()!.tagName).toBe('NAV')
+    expect(nav()!.getAttribute('aria-label')).toBe('Pagination')
+    expect(
+      (['first', 'previous', 'next', 'last'] as const).map(action =>
+        pageButton(action).getAttribute('aria-label'),
+      ),
+    ).toEqual(['First page', 'Previous page', 'Next page', 'Last page'])
+
+    const first = pageButton('first')
+    expect(first.getAttribute('aria-disabled')).toBe('true')
+    first.focus()
+    expect(document.activeElement).toBe(first)
+
+    await expect.poll(sizeTrigger).not.toBeNull()
+    const labelId = sizeTrigger()!.getAttribute('aria-labelledby')!
+    expect(document.getElementById(labelId)!.textContent).toBe('Rows per page')
+  })
+
+  test('PG14: a page change is announced in the live region: "Page N of M"', async () => {
+    await renderPagination()
+    await userEvent.click(pageButton('next'))
+    await expect.poll(live).toBe('Page 2 of 40')
+    await userEvent.click(pageButton('last'))
+    await expect.poll(live).toBe('Page 40 of 40')
+  })
+
+  test('PG15: aria-rowcount counts rows of all pages, aria-rowindex runs through the page offset', async () => {
+    await renderPagination()
+    // Одна строка шапки + 1000 строк данных.
+    expect(gridRoot().getAttribute('aria-rowcount')).toBe('1001')
+    expect(firstRow().getAttribute('aria-rowindex')).toBe('2')
+
+    await userEvent.click(pageButton('next'))
+    await expect.poll(firstRowId).toBe('item-id-25')
+    expect(firstRow().getAttribute('aria-rowindex')).toBe('27')
+    expect(gridRoot().getAttribute('aria-rowcount')).toBe('1001')
+  })
+
+  test('PG17: the status bar with pagination passes axe; page buttons are at least 24×24', async () => {
+    await renderPagination()
+    await expect.poll(sizeTrigger).not.toBeNull()
+    const wrapper = document.querySelector<HTMLElement>('.data-grid-theme')!
+    const { violations } = await axe.run(wrapper, AXE_OPTIONS)
+    expect(violations).toEqual([])
+
+    for (const action of ['first', 'previous', 'next', 'last'] as const) {
+      const { width, height } = pageButton(action).getBoundingClientRect()
+      expect(Math.min(width, height)).toBeGreaterThanOrEqual(24)
+    }
+  })
+
+  test('PG18: after a page change the active keyboard cell keeps its column and moves to the first row', async () => {
+    await renderPagination({ enableKeyboardNavigation: true })
+    const target = bodyRows()
+      .find(row => row.dataset.rowId === 'item-id-3')!
+      .querySelectorAll<HTMLElement>('[data-kn-cell]')[1]
+    const columnId = target.dataset.columnId
+    expect(columnId).toBeTruthy()
+    await userEvent.click(target)
+    await expect.poll(() => target.dataset.knActive).toBe('true')
+
+    await userEvent.click(pageButton('next'))
+    await expect.poll(firstRowId).toBe('item-id-25')
+    const active = () =>
+      document.querySelector<HTMLElement>(
+        '[data-kn-cell][data-kn-active="true"]',
+      )
+    await expect
+      .poll(
+        () => active()?.closest<HTMLElement>('[data-row-id]')?.dataset.rowId,
+      )
+      .toBe('item-id-25')
+    expect(active()!.dataset.columnId).toBe(columnId)
   })
 })

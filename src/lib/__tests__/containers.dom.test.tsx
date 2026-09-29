@@ -82,7 +82,7 @@ describe('Body/Head контейнеры (happy-dom)', () => {
           virtualRows={[vRow(0), vRow(1)]}
           virtualColumns={[]}
           leafColumns={table.getAllLeafColumns()}
-          headerRowCount={1}
+          ariaRowIndexBase={1}
           isResizingColumns={false}
           isVirtualColumns={false}
         />,

@@ -85,7 +85,7 @@ describe('BodyRow (happy-dom)', () => {
           virtualRow={virtualRow}
           virtualColumns={[]}
           leafColumns={table.getAllLeafColumns()}
-          headerRowCount={1}
+          ariaRowIndexBase={1}
           isVirtualColumns={false}
         />,
       )

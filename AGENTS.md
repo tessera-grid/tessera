@@ -316,7 +316,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),
       [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md).
     - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB5 — модульный
-      `statusBar`), `pagination` (PG2–PG4, PG6, PG11, PG16; PG1, PG5, PG8–PG10 —
+      `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG18; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
     - _Тема и токены:_ `theming` (TH1–TH9,

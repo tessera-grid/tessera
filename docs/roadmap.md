@@ -148,8 +148,8 @@ Tessera затевалась (highload-CRM-таблицы), — поэтому �
   валидацией/bulk-edit) — после клавиатурной навигации. Копирование ~~range/
   cell-selection + clipboard~~ — **сделано** ([ADR 0029](decisions/0029-cell-range-selection.md)).
 - **Pagination — в работе** ([ADR 0038](decisions/0038-pagination-and-status-bar.md)):
-  нижняя панель `statusBarSlot` и плагин `pagination` (клиент и сервер) готовы;
-  впереди доступность смены страницы, счётчик выбранных строк, матрица
+  нижняя панель `statusBarSlot`, плагин `pagination` (клиент и сервер) и
+  доступность смены страницы готовы; впереди счётчик выбранных строк, матрица
   совместимости и перф-кейсы I7–I8.
 - **UI видимости колонок — сделано** ([ADR 0035](decisions/0035-toolbar-and-column-visibility.md)):
   верхний тулбар со слотом `toolbarSlot`, плагин `columnVisibility` (меню «Колонки»

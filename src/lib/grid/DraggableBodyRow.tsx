@@ -23,7 +23,7 @@ import styles from '../grid/BodyRow/BodyRow.module.css'
  * стилями/состоянием перетаскивания (offset-индикатор вложенности через CSS-var).
  */
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
-  const { row, virtualRow, headerRowCount } = props
+  const { row, virtualRow, ariaRowIndexBase } = props
 
   useRowStateSubscription(row)
   const nav = useKeyboardNavigationRow(
@@ -82,7 +82,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-kn-active={nav?.isActive || undefined}
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
-      aria-rowindex={headerRowCount + virtualRow.index + 1}
+      aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       {...props.treeAria}

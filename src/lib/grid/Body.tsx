@@ -24,7 +24,8 @@ interface TableBodyProps {
   rightCellSlot?: CellSlot
   cellSlot?: CellSlot
   actionRowSlot?: CellSlot
-  headerRowCount: number
+  /** `aria-rowindex` первой строки тела минус 1: строки шапки + строки прошлых страниц. */
+  ariaRowIndexBase: number
   selectableRows?: boolean
   /** Строки несут aria-level/setsize/posinset (treegrid). */
   treeRows?: boolean
@@ -43,7 +44,7 @@ export const Body = ({
   rightCellSlot,
   cellSlot,
   actionRowSlot,
-  headerRowCount,
+  ariaRowIndexBase,
   selectableRows,
   treeRows,
   isVirtualColumns,
@@ -76,7 +77,7 @@ export const Body = ({
             rightCellSlot={rightCellSlot}
             cellSlot={cellSlot}
             actionRowSlot={actionRowSlot}
-            headerRowCount={headerRowCount}
+            ariaRowIndexBase={ariaRowIndexBase}
             selectableRows={selectableRows}
             treeAria={treeAria?.get(row.id)}
             isVirtualColumns={isVirtualColumns}

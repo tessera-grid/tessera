@@ -19,6 +19,7 @@ import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
+import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
 import type { Column } from '../types'
@@ -113,6 +114,9 @@ export const DataGrid = ({
   // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
   // на корне. `null` без плагина — остаётся role=table без обработчиков.
   const keyboardNavigation = useKeyboardNavigationGrid(table, getScrollElement)
+
+  // Смена страницы: тело к началу, активная ячейка — на первую строку (ADR 0038).
+  usePageChange(table, state.pagination, rows.length, getScrollElement)
 
   const columnSizes = useCalculateColumnSizes({ table })
 
