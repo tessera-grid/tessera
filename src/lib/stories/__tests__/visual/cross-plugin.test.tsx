@@ -2,6 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { DEFAULT_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import {
@@ -490,5 +491,130 @@ describe('Cross-plugin — rowSelection × rowGrouping', () => {
     await expect
       .poll(() => container.querySelector(CHECKBOX) !== null)
       .toBe(true)
+  })
+})
+
+// --- Пагинация × другие плагины (ADR 0038, X7–X10) ----------------------------
+
+const PAGED = {
+  containerHeight: 600,
+  height: 500,
+  columnCount: 5,
+  dataCount: 100,
+  enablePagination: true,
+}
+
+const pageRange = () =>
+  document.querySelector<HTMLElement>('[data-testid="pagination-range"]')!
+    .textContent
+const pageButton = (action: 'previous' | 'next') =>
+  document.querySelector<HTMLElement>(`[data-page-action="${action}"]`)!
+const firstPagedRow = (container: HTMLElement) => sortedRows(container)[0]
+
+async function renderPaged(extra: object) {
+  const { container } = await render(
+    <composed.Pagination {...PAGED} {...extra} />,
+  )
+  await expect.poll(() => sortedRows(container).length).toBeGreaterThan(4)
+  await expect.poll(pageRange).toBe('1–25 of 100')
+  return container
+}
+
+async function toSecondPage(container: HTMLElement) {
+  await userEvent.click(pageButton('next'))
+  await expect.poll(pageRange).toBe('26–50 of 100')
+  await expect
+    .poll(() => firstPagedRow(container)?.dataset.rowId)
+    .toBe('item-id-25')
+}
+
+describe('Cross-plugin — pagination', () => {
+  test('X7: the header checkbox selects rows of the current page; the selection survives a page change', async () => {
+    const container = await renderPaged({ enableRowSelection: true })
+    const headCheckbox = container.querySelector<HTMLElement>(
+      `${HEAD_CELL} ${CHECKBOX}`,
+    )!
+    await userEvent.click(headCheckbox)
+    await expect
+      .poll(() => sortedRows(container).every(isRowSelected))
+      .toBe(true)
+
+    await toSecondPage(container)
+    expect(sortedRows(container).some(isRowSelected)).toBe(false)
+
+    await userEvent.click(pageButton('previous'))
+    await expect.poll(pageRange).toBe('1–25 of 100')
+    await expect
+      .poll(() => sortedRows(container).every(isRowSelected))
+      .toBe(true)
+  })
+
+  test('X8: a saved cell edit keeps the current page', async () => {
+    const container = await renderPaged({ enableCellEditing: true })
+    await toSecondPage(container)
+
+    const cell = () =>
+      firstPagedRow(container).querySelector<HTMLElement>(
+        '.data-grid__body-cell[data-column-id="age"]',
+      )!
+    await userEvent.hover(cell())
+    await userEvent.click(
+      cell().querySelector<HTMLElement>('.cell__button button')!,
+    )
+    const input = await expect
+      .poll(() => cell().querySelector<HTMLInputElement>('input'))
+      .not.toBeNull()
+      .then(() => cell().querySelector<HTMLInputElement>('input')!)
+    await userEvent.clear(input)
+    await userEvent.type(input, '77{Enter}')
+
+    await expect.poll(() => cell().textContent).toContain('77')
+    expect(pageRange()).toBe('26–50 of 100')
+  })
+
+  test('X9: reordering a row within the page keeps the current page', async () => {
+    const container = await renderPaged({ enableRowDragging: true })
+    await toSecondPage(container)
+
+    const moved = firstPagedRow(container).dataset.rowId!
+    const row = () =>
+      container.querySelector<HTMLElement>(`${ROW}[data-row-id="${moved}"]`)!
+    row().querySelector<HTMLElement>(HANDLE)!.focus()
+    await userEvent.keyboard('{Enter}')
+    const moveDown = await expect
+      .poll(() =>
+        [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+          item => item.textContent?.trim() === DEFAULT_LABELS.moveDown,
+        ),
+      )
+      .toBeTruthy()
+      .then(() =>
+        [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+          item => item.textContent?.trim() === DEFAULT_LABELS.moveDown,
+        )!,
+      )
+    await userEvent.click(moveDown)
+
+    await expect.poll(() => row().dataset.index).toBe('1')
+    expect(pageRange()).toBe('26–50 of 100')
+  })
+
+  test('X10: the cell range selection is reset on a page change', async () => {
+    const container = await renderPaged({ enableCellSelection: true })
+    const cell = firstPagedRow(container).querySelector<HTMLElement>(
+      '.data-grid__body-cell[data-column-id="age"]',
+    )!
+    await userEvent.click(cell)
+    await expect
+      .poll(() => container.querySelectorAll('[data-cell-selected]').length)
+      .toBeGreaterThan(0)
+
+    await toSecondPage(container)
+    await expect
+      .poll(() => container.querySelectorAll('[data-cell-selected]').length)
+      .toBe(0)
+    await userEvent.click(pageButton('previous'))
+    await expect.poll(pageRange).toBe('1–25 of 100')
+    expect(container.querySelectorAll('[data-cell-selected]').length).toBe(0)
   })
 })

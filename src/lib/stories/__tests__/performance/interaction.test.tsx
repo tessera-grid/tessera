@@ -10,6 +10,7 @@ import {
   ALL_PLUGINS,
   CPU_THROTTLE_RATE,
   LARGE,
+  PAGED,
   PERF_TIMEOUT,
   SMALL,
 } from './perf-cases'
@@ -83,9 +84,23 @@ const typeIntoSearch = async () => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
+// Пагинация (ADR 0038): кнопка «вперёд» и выбор размера страницы в нижней панели.
+const PAGINATION = { enablePagination: true }
+
+const pageButton = (action: string) =>
+  document.querySelector<HTMLElement>(`[data-page-action="${action}"]`)
+const pageSizeTrigger = () =>
+  document.querySelector<HTMLElement>('[data-testid="page-size-select"]')
+const pageSizeOption = (size: string) =>
+  [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(
+    option => option.textContent?.trim() === size,
+  )
+
 interface InteractionCase {
   id: string
   label: string
+  /** Подпись объёма в дашборде, если не 30×500 / 1000×1000. */
+  size?: string
   args: Record<string, number | boolean>
   /** Подготовка вне замера (напр. фокус на ячейку). */
   prepare?: () => Promise<void>
@@ -156,6 +171,43 @@ const CASES: InteractionCase[] = [
     },
     act: typeIntoSearch,
   },
+  {
+    id: 'I7',
+    label:
+      'переход на следующую страницу по 100 строк, 100 000 строк, все плагины',
+    size: '100 000×30',
+    args: { ...PAGED, ...ALL_PLUGINS, ...PAGINATION, paginationPageSize: 100 },
+    // Новая страница — строки с другими id: видимые строки монтируются заново со
+    // всеми плагинами (~150–210 мс под ×4); одной горячей точки в профиле нет.
+    regressionCeiling: 300,
+    prepare: async () => {
+      await expect.poll(() => pageButton('next')).not.toBeNull()
+    },
+    act: async () => pageButton('next')!.click(),
+  },
+  {
+    id: 'I8',
+    label: 'смена размера страницы 25 ↔ 100, 100 000 строк, все плагины',
+    size: '100 000×30',
+    args: { ...PAGED, ...ALL_PLUGINS, ...PAGINATION },
+    // Строки первой страницы сохраняются, меняется высота тела и хвост строк
+    // (~105–140 мс под ×4).
+    regressionCeiling: 200,
+    prepare: async () => {
+      await expect.poll(() => pageSizeTrigger()).not.toBeNull()
+    },
+    // Замер повторяет действие (прогрев + замер), поэтому размер чередуется;
+    // открытие списка — отдельная задача, в longest не попадает.
+    act: async () => {
+      const next = pageSizeTrigger()!.textContent?.includes('100')
+        ? '25'
+        : '100'
+      pageSizeTrigger()!.click()
+      await expect.poll(() => pageSizeOption(next)).toBeTruthy()
+      pageSizeOption(next)!.click()
+      await expect.poll(() => pageSizeTrigger()!.textContent?.trim()).toBe(next)
+    },
+  },
 ]
 
 describe('Отзывчивость взаимодействий (INP)', () => {
@@ -178,7 +230,8 @@ describe('Отзывчивость взаимодействий (INP)', () => {
           label: c.label,
           operation: 'interaction',
           size:
-            c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
+            c.size ??
+            (c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'),
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
           knownShortfall: c.regressionCeiling !== undefined,

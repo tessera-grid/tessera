@@ -20,6 +20,9 @@ export const SMALL = { columnCount: 30, dataCount: 500 } as const
 /** Большая выборка: экстремальный грид. */
 export const LARGE = { columnCount: 1000, dataCount: 1000 } as const
 
+/** Пагинированный набор (ADR 0038, I7–I8): много строк, страница режется моделью. */
+export const PAGED = { columnCount: 30, dataCount: 100_000 } as const
+
 /** Режим без плагинов — чистая виртуализация. */
 export const NO_PLUGINS: Record<string, boolean> = {}
 /** Все плагины включены одновременно. */

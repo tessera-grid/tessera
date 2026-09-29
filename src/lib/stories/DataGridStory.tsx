@@ -7,14 +7,12 @@ import { useRowSelectionState } from '../../lib/core/createState'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { DataGrid } from '../../lib/grid/DataGrid'
 import { BatchToolbar } from './BatchToolbar'
-import { Pagination } from './Pagination'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
 import type { CellEditCommit } from '../../lib/plugins/cellEditing/types'
 import type { CellComponentProps } from '../../lib/core/createSlots'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { argsToPlugins } from './__mocks__/utils/argsToPlugins'
-import { usePagination } from './__mocks__/usePagination'
 import type { StoryProps } from './DataGridStory.types'
 
 const expandingInitialState = {}
@@ -41,9 +39,6 @@ export const StoryComponent = memo(
 
     showBatchToolbar,
     isAllRowsSelected,
-
-    page,
-    recordsOnPage,
 
     dataOverride,
     columnsOverride,
@@ -94,13 +89,6 @@ export const StoryComponent = memo(
       initialGrouping,
     )
 
-    const { dataOnPage } = usePagination({
-      data,
-      page,
-      recordsOnPage,
-      updateArgs,
-    })
-
     const { expanded, onExpandedChange } = useExpandedState(
       initialExpanded ??
         (dataMode === 'hierarchy' ? true : expandingInitialState),
@@ -114,7 +102,7 @@ export const StoryComponent = memo(
 
     const table = useCreateTable({
       columns: columnsGetter,
-      data: showBatchToolbar ? dataOnPage : data,
+      data,
       state: {
         expanded,
         rowSelection,
@@ -227,15 +215,6 @@ export const StoryComponent = memo(
               colorMode={colorMode}
               stub={<NoDataStub label="No Data!" />}
             />
-            {showBatchToolbar && (
-              <Pagination
-                currentPage={page}
-                recordsOnPage={recordsOnPage}
-                totalPageAmount={Math.ceil(data.length / recordsOnPage)}
-                totalRecordsAmount={data.length}
-                updateArgs={updateArgs}
-              />
-            )}
           </CardContent>
         </Card>
       </Grid>

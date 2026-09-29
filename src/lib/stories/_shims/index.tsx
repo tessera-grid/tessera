@@ -90,58 +90,6 @@ export const NoDataStub = ({ label }: { label: ReactNode }) => (
   </div>
 )
 
-interface PaginationRowProps {
-  paging: {
-    recordsOnPage: number
-    currentPage: number
-    totalPageAmount: number
-    totalRecordsAmount: number
-  }
-  onChangePage: (event: unknown, page: number) => void
-  onChangeRowsNumber: (event: { target: { value: number } }) => void
-  recordsOnPageVariables?: number[]
-}
-
-export const PaginationRow = ({
-  paging: { recordsOnPage, currentPage, totalPageAmount, totalRecordsAmount },
-  onChangePage,
-  onChangeRowsNumber,
-  recordsOnPageVariables = [5],
-}: PaginationRowProps) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-    <span>Total: {totalRecordsAmount}</span>
-    <button
-      type="button"
-      disabled={currentPage <= 0}
-      onClick={() => onChangePage(null, currentPage)}
-    >
-      {'<'}
-    </button>
-    <span>
-      {currentPage + 1} / {totalPageAmount}
-    </span>
-    <button
-      type="button"
-      disabled={currentPage + 1 >= totalPageAmount}
-      onClick={() => onChangePage(null, currentPage + 2)}
-    >
-      {'>'}
-    </button>
-    <select
-      value={recordsOnPage}
-      onChange={e =>
-        onChangeRowsNumber({ target: { value: Number(e.target.value) } })
-      }
-    >
-      {recordsOnPageVariables.map(n => (
-        <option key={n} value={n}>
-          {n}
-        </option>
-      ))}
-    </select>
-  </div>
-)
-
 /* ---------- Typography ---------- */
 
 export const OverflowTypography = ({

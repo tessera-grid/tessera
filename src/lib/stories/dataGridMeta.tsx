@@ -14,7 +14,6 @@ import {
 import {
   COLUMN_COUNT,
   DATA_COUNT,
-  PAGE_OFFSET,
   type StoryProps,
 } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
@@ -72,9 +71,6 @@ export const dataGridMeta = {
   args: {
     columnCount: COLUMN_COUNT,
     dataCount: DATA_COUNT,
-
-    page: 0,
-    recordsOnPage: PAGE_OFFSET,
   },
   play: rowDraggingPlay,
   parameters: {
@@ -82,7 +78,7 @@ export const dataGridMeta = {
     layout: 'fullscreen',
     controls: {
       expanded: true,
-      exclude: ['page', 'recordsOnPage', 'dataMode', 'colorMode'],
+      exclude: ['dataMode', 'colorMode'],
     },
   },
   render: function Render(args) {

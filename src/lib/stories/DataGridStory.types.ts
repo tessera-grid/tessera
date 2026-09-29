@@ -12,7 +12,6 @@ import { FeatureToggles } from './__mocks__/utils/argsToPlugins'
 
 export const COLUMN_COUNT = 20
 export const DATA_COUNT = 10
-export const PAGE_OFFSET = 5
 
 export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   columnCount: number
@@ -55,9 +54,6 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
 
   showBatchToolbar: boolean
   isAllRowsSelected: boolean
-
-  page: number
-  recordsOnPage: number
 
   /**
    * Проброс hook закрепления столбца (`columnPinning.onTogglePin`) наружу.
@@ -111,9 +107,5 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   /** Проброс колбэка пагинации (`pagination`) наружу — для визуальных тестов. */
   onPageChange?: PaginationHooks['onPageChange']
 
-  updateArgs: (
-    args: Partial<
-      Pick<StoryProps, 'isAllRowsSelected' | 'page' | 'recordsOnPage'>
-    >,
-  ) => void
+  updateArgs: (args: Partial<Pick<StoryProps, 'isAllRowsSelected'>>) => void
 }

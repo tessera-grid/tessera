@@ -26,13 +26,7 @@ export const CellEditing: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: [
-        'columnCount',
-        'dataCount',
-        'page',
-        'recordsOnPage',
-        'dataMode',
-      ],
+      exclude: ['columnCount', 'dataCount', 'dataMode'],
     },
   },
 }
@@ -51,7 +45,7 @@ export const ContextMenu: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['page', 'recordsOnPage', 'dataMode'],
+      exclude: ['dataMode'],
     },
   },
 }
@@ -71,7 +65,7 @@ export const CellSelection: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['page', 'recordsOnPage', 'dataMode'],
+      exclude: ['dataMode'],
     },
   },
 }
@@ -101,7 +95,7 @@ export const KeyboardNavigation: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['page', 'recordsOnPage', 'dataMode'],
+      exclude: ['dataMode'],
     },
   },
 }

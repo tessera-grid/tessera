@@ -133,7 +133,7 @@ export const HeaderGroups: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'page', 'recordsOnPage'],
+      exclude: ['columnCount'],
     },
   },
 }
@@ -153,7 +153,7 @@ export const HeaderGroupsPinning: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'page', 'recordsOnPage'],
+      exclude: ['columnCount'],
     },
   },
 }
@@ -174,7 +174,7 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'page', 'recordsOnPage'],
+      exclude: ['columnCount'],
     },
   },
 }

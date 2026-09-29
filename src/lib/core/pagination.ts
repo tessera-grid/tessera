@@ -4,7 +4,8 @@
  *  - `getRowWindow` — место страницы в полном наборе для `aria-rowcount` и
  *    сквозного `aria-rowindex` (PG15);
  *  - `usePageChange` — после смены страницы тело прокручено к началу, активная
- *    ячейка клавиатурной навигации — на первой строке той же колонки (PG12, PG18).
+ *    ячейка клавиатурной навигации — на первой строке той же колонки, диапазон
+ *    выделения ячеек сброшен (PG12, PG18, X10).
  */
 import { useEffect, useRef } from 'react'
 
@@ -68,6 +69,7 @@ export const getRowWindow = (
 interface PageChangeTable {
   store: { get: () => Record<string, unknown> }
   options: { enableKeyboardNavigation?: boolean }
+  setCellSelection?: (updater: (old: unknown[]) => unknown[]) => void
 }
 
 export const usePageChange = (
@@ -95,10 +97,15 @@ export const usePageChange = (
 
     getScrollElement()?.scrollTo({ top: 0 })
 
+    const t = table as PageChangeTable
+    // Диапазон выделения — внутри страницы; на новой странице его углов нет.
+    if (((t.store.get().cellSelection as unknown[] | undefined) ?? []).length) {
+      t.setCellSelection?.(() => [])
+    }
+
     if (!isKeyboardNavigationEnabled(table)) {
       return
     }
-    const t = table as PageChangeTable
     const active = t.store.get()[pluginStateKey(KEYBOARD_NAVIGATION)] as
       ActiveCell | undefined
     // Шапка и футер (строка за последней строкой тела) от страницы не зависят.

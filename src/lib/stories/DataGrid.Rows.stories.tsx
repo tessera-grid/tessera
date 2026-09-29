@@ -69,9 +69,14 @@ export const RowSelection: StoryObj<StoryProps> = {
 export const BatchRowSelection: StoryObj<StoryProps> = {
   name: 'Batch Row Selection',
   args: {
+    // Пакетный выбор «все строки» (BatchToolbar) поверх пагинации плагином: выбор
+    // живёт по id и переживает смену страницы.
     enableRowSelection: true,
     showBatchToolbar: true,
     isAllRowsSelected: false,
+    enablePagination: true,
+    paginationPageSize: 5,
+    dataCount: 50,
   },
 }
 
@@ -92,8 +97,6 @@ export const SubRowSelection: StoryObj<StoryProps> = {
       exclude: [
         'columnCount',
         'dataCount',
-        'page',
-        'recordsOnPage',
         'dataMode',
         'dataOverride',
         'initialExpanded',
@@ -122,8 +125,6 @@ export const RowExpanding: StoryObj<StoryProps> = {
       exclude: [
         'columnCount',
         'dataCount',
-        'page',
-        'recordsOnPage',
         'dataMode',
         'dataOverride',
         'initialExpanded',
@@ -149,14 +150,7 @@ export const RowGrouping: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: [
-        'columnCount',
-        'dataCount',
-        'page',
-        'recordsOnPage',
-        'dataMode',
-        'dataOverride',
-      ],
+      exclude: ['columnCount', 'dataCount', 'dataMode', 'dataOverride'],
     },
   },
 }

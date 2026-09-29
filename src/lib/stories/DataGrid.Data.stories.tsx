@@ -161,8 +161,6 @@ const meta = {
         showHeaderGroups={false}
         showBatchToolbar={false}
         isAllRowsSelected={false}
-        page={0}
-        recordsOnPage={5}
         updateArgs={updateArgs}
       />
     )
