@@ -105,6 +105,7 @@ export interface FeatureToggles {
   onRowDragCancel?: RowDraggingOptions['onRowDragCancel']
   onCellEdit?: CellEditingOptions['onCellEdit']
   onEditCancel?: CellEditingOptions['onEditCancel']
+  onConflict?: CellEditingOptions['onConflict']
 }
 
 const storyCanExpand = (row: Row<any, any>) =>
@@ -179,6 +180,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
       canEdit: o.cellEditingCanEdit,
       onCellEdit: o.onCellEdit,
       onEditCancel: o.onEditCancel,
+      onConflict: o.onConflict,
     }),
     cellSelection({
       enabled: !!o.enableCellSelection,

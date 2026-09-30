@@ -55,6 +55,7 @@ export type {
   CellEditingHooks,
   CellEditor,
   CellEditCancel,
+  CellEditCommit,
   EditCancelReason,
   EditSession,
   CellEditingState,
