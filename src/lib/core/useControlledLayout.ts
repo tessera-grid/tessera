@@ -71,7 +71,7 @@ export const useControlledSizing = (
   )
 
   // Авто-слайс пишут плагины в setup (generic-escape); setup перезапускается
-  // при смене идентичности набора → writer бейлит при равенстве, иначе цикл.
+  // при смене аргументов → writer бейлит при равенстве, чтобы не перерисовывать зря.
   const onColumnAutoSizingChange = useCallback<OnChangeFn<ColumnSizingState>>(
     updater =>
       setAutoSizing(prev => {

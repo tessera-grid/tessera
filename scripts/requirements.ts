@@ -31,12 +31,12 @@ export interface BaselineEntry {
   reason: string
 }
 
-/** Значения колонки вида, которые не требуют теста с ID требования. */
-const UNTESTED_KINDS = new Set(['отчёт', 'ревью', 'тест фичи'])
+/** Начало ячейки вида или теста, при котором теста с ID требования не нужно. */
+const UNTESTED_KINDS = new Set(['отчёт', 'ревью', 'тест фичи', 'линт'])
 
 const ID = '[A-Z][A-Za-z]*-?\\d+[a-z]?'
 const ID_CELL = new RegExp(`^${ID}$`)
-const KIND_HEADER = /^(Вид|Проверка)$/
+const KIND_HEADER = /^(Вид|Проверка|Тест)$/
 const COVERED_BY = new RegExp(`^→\\s*(${ID}(?:\\s*,\\s*${ID})*)$`)
 
 const isAccepted = (text: string) =>
@@ -78,7 +78,8 @@ export const parseRequirements = (text: string, adr: string): Requirement[] => {
       result.push({ id, adr, tested: false, coveredBy })
       continue
     }
-    result.push({ id, adr, tested: !UNTESTED_KINDS.has(kind) })
+    const untested = [...UNTESTED_KINDS].some(word => kind.startsWith(word))
+    result.push({ id, adr, tested: !untested })
   }
   return result
 }

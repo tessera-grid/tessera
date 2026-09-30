@@ -6,6 +6,7 @@ import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { describe, expect, it } from 'vitest'
 
+import { mergeColumnSizing } from '../core/createState'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnSizing } from '../plugins/columnSizing'
 
@@ -69,5 +70,17 @@ describe('columnSizing', () => {
   it('commonFeature.getIsAnyColumnResizing = false вне активного ресайза (фича ресайза есть)', () => {
     const { table } = makeTable()
     expect(table.getIsAnyColumnResizing()).toBe(false)
+  })
+})
+
+describe('ширина служебных колонок', () => {
+  it('CR17: авто-слайс плагина побеждает и контролируемый, и внутренний columnSizing; остальные ширины сохраняются', () => {
+    const auto = { service: 24 }
+    expect(
+      mergeColumnSizing({ service: 100, name: 200 }, { name: 50 }, auto),
+    ).toEqual({ service: 24, name: 200 })
+    expect(
+      mergeColumnSizing(undefined, { service: 80, name: 50 }, auto),
+    ).toEqual({ service: 24, name: 50 })
   })
 })

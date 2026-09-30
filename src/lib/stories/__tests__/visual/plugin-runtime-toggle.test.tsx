@@ -95,7 +95,7 @@ const CASES: ToggleCase[] = [
 
 describe('Plugin runtime toggle — enable/disable parity (no reload)', () => {
   for (const { plugin, story, flag, affordance } of CASES) {
-    test(`RT-${plugin}: toggling ${flag} at runtime adds then removes the affordance without a remount`, async () => {
+    test(`IV11 ${plugin}: toggling ${flag} at runtime adds then removes the affordance without a remount`, async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- динамический флаг истории
       const Story = composed[story] as any
       const withFlag = (on: boolean) => <Story {...{ [flag]: on }} />

@@ -41,6 +41,18 @@ describe('Сверка требований и тестов', () => {
       ),
       ...parseRequirements(adr('Принято', '| XX1 | снова | unit |'), 'b.md'),
       ...parseRequirements(
+        [
+          '- **Статус:** Принято',
+          '',
+          '| ID | Требование | Тест |',
+          '| --- | --- | --- |',
+          '| DD1 | документ | ревью: README |',
+          '| DD3 | импорт | линт: no-restricted-imports |',
+          '| DD2 | с тестом | ✔ `DD2:` |',
+        ].join('\n'),
+        'd.md',
+      ),
+      ...parseRequirements(
         adr('Предложено', '| BB1 | черновик | unit |'),
         'c.md',
       ),
@@ -55,6 +67,9 @@ describe('Сверка требований и тестов', () => {
       'AA6',
       'AA7',
       'XX1',
+      'DD1',
+      'DD3',
+      'DD2',
     ])
     expect(requirements.find(r => r.id === 'AA7')?.coveredBy).toEqual([
       'AA1',
@@ -83,6 +98,7 @@ describe('Сверка требований и тестов', () => {
       'collision:XX1',
       'duplicate:AA3',
       'missing:AA2',
+      'missing:DD2',
       'reference:AA7',
       'unknown:ZZ9',
     ])
@@ -94,6 +110,7 @@ describe('Сверка требований и тестов', () => {
     expect(fresh.map(p => `${p.kind}:${p.id}`)).toEqual([
       'collision:XX1',
       'duplicate:AA3',
+      'missing:DD2',
       'reference:AA7',
       'unknown:ZZ9',
     ])
