@@ -1,40 +1,5 @@
 [
   {
-    "kind": "duplicate",
-    "id": "CM1",
-    "reason": "вид «unit+visual» в ADR 0030: по тесту каждого вида под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CM3",
-    "reason": "несколько модульных тестов под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CM4",
-    "reason": "несколько модульных тестов под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CM8",
-    "reason": "вид «unit+visual» в ADR 0030: по тесту каждого вида под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CRS8",
-    "reason": "несколько модульных тестов под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CRS11",
-    "reason": "несколько модульных тестов под одним ID"
-  },
-  {
-    "kind": "missing",
-    "id": "CR17",
-    "reason": "пробел, признанный в ADR 0013: выделенного теста нет"
-  },
-  {
     "kind": "missing",
     "id": "DP1",
     "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
@@ -91,62 +56,7 @@
   },
   {
     "kind": "missing",
-    "id": "IV1",
-    "reason": "проверяется ESLint-правилом no-restricted-imports уровня error, не тестом"
-  },
-  {
-    "kind": "missing",
-    "id": "IV2",
-    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
-  },
-  {
-    "kind": "missing",
     "id": "IV3",
     "reason": "гарантирован IV1 (нет статических импортов плагинов); build-size-проверки нет"
-  },
-  {
-    "kind": "missing",
-    "id": "IV4",
-    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
-  },
-  {
-    "kind": "missing",
-    "id": "IV5",
-    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
-  },
-  {
-    "kind": "missing",
-    "id": "IV6",
-    "reason": "частично покрыт service-columns.test.tsx без ID; порядок при равенстве order не проверен"
-  },
-  {
-    "kind": "missing",
-    "id": "IV7",
-    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
-  },
-  {
-    "kind": "missing",
-    "id": "IV8",
-    "reason": "покрыт service-columns.test.tsx тестами без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "IV9",
-    "reason": "мета-требование: зелёные спеки плагинов, своего теста не бывает"
-  },
-  {
-    "kind": "missing",
-    "id": "IV10",
-    "reason": "частично покрыт columnPinning.test.ts без ID; сев видимости и приоритет external-vs-core не проверены"
-  },
-  {
-    "kind": "missing",
-    "id": "IV11",
-    "reason": "покрыт plugin-runtime-toggle (RT-<плагин>), ID RT не из таблицы"
-  },
-  {
-    "kind": "missing",
-    "id": "KB9",
-    "reason": "требование к документации (README, ADR 0020), не к коду"
   }
 ]

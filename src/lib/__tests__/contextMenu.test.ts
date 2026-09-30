@@ -29,7 +29,7 @@ const ctxWith = (
   }) as ContextMenuContext
 
 describe('contextMenu — плагин и канал', () => {
-  it('CM8: enabled по умолчанию → enableContextMenu true; enabled:false → false', () => {
+  it('CM12: enabled по умолчанию → enableContextMenu true; enabled:false → false', () => {
     expect(
       foldEntries([contextMenu()] as never).options.enableContextMenu,
     ).toBe(true)
@@ -91,7 +91,7 @@ describe('contextMenu — гейтинг по выбору (CM3)', () => {
     expect(visible.map(a => a.id)).toEqual(['single'])
   })
 
-  it('CM3: мультивыбор — только multi-действие', () => {
+  it('CM13: мультивыбор — только multi-действие', () => {
     const visible = resolveVisibleActions(
       [single, multi],
       ctxWith({ count: 3, isMultiple: true }),
@@ -118,7 +118,7 @@ describe('contextMenu — гейтинг по выбору (CM3)', () => {
 describe('cellSelection — пункт «Копировать» (CM4)', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('CM4/CM10: visible, когда ячейка под курсором в выделении; иначе (в т.ч. сервисные) — нет', () => {
+  it('CM4: «Копировать» виден, когда ячейка под курсором в выделении; иначе (в т.ч. сервисные) — нет', () => {
     expect(
       copyContextAction.visible?.(ctxWith({ count: 0, isInSelection: false })),
     ).toBe(false)
@@ -131,7 +131,7 @@ describe('cellSelection — пункт «Копировать» (CM4)', () => {
     ).toBe(true)
   })
 
-  it('CM4: onSelect сериализует выделение в буфер (TSV-фолбэк)', async () => {
+  it('CM14: onSelect сериализует выделение в буфер (TSV-фолбэк)', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { clipboard: { writeText } })
     vi.stubGlobal('ClipboardItem', undefined)
@@ -155,7 +155,7 @@ describe('cellSelection — пункт «Копировать» (CM4)', () => {
     expect(writeText).toHaveBeenCalledWith('a\tb\nc\td')
   })
 
-  it('CM4: пустой выбор — в буфер не пишем', async () => {
+  it('CM15: пустой выбор — в буфер не пишем', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { clipboard: { writeText } })
     vi.stubGlobal('ClipboardItem', undefined)

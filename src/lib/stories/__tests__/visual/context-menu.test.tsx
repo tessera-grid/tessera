@@ -87,7 +87,7 @@ describe('Context Menu', () => {
     await expect.poll(() => menuEl()).not.toBeNull()
   })
 
-  test('CM1: cellSelection contributes a "Copy" item to the menu', async () => {
+  test('CM11: cellSelection contributes a "Copy" item to the menu', async () => {
     const container = await renderContextMenu()
     rightClick(cellAt(container, 1, 0))
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)

@@ -1,6 +1,6 @@
 /**
  * Headless/чистые проверки плагина cellSelection и ядровой сериализации буфера.
- * Требования CRS8/CRS10/CRS11 из docs/decisions/0029-cell-range-selection.md — каждое
+ * Требования CRS8, CRS10, CRS17–CRS22 из docs/decisions/0029-cell-range-selection.md — каждое
  * отдельным именованным тестом (ADR 0009).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
@@ -27,7 +27,7 @@ const fakeCell = (
 })
 
 describe('cellSelection — сериализация буфера (CRS8)', () => {
-  it('CRS8: TSV — колонки табом, строки переводом строки, регионы пустой строкой', () => {
+  it('CRS18: TSV — колонки табом, строки переводом строки, регионы пустой строкой', () => {
     const regions = [
       [
         ['a', 'b'],
@@ -40,7 +40,7 @@ describe('cellSelection — сериализация буфера (CRS8)', () =>
     expect(cellRangesToTsv(twoRegions)).toBe('a\n\nb')
   })
 
-  it('CRS8: null/undefined → пустая строка', () => {
+  it('CRS17: null/undefined → пустая строка', () => {
     expect(cellRangesToTsv([[[null, undefined, 0]]])).toBe('\t\t0')
   })
 
@@ -51,7 +51,7 @@ describe('cellSelection — сериализация буфера (CRS8)', () =>
     expect(cellRangesToTsv([[['plain']]])).toBe('plain')
   })
 
-  it('CRS8: HTML — таблица на регион, спецсимволы экранированы', () => {
+  it('CRS19: HTML — таблица на регион, спецсимволы экранированы', () => {
     expect(cellRangesToHtml([[['a', 'b']]])).toBe(
       '<table><tr><td>a</td><td>b</td></tr></table>',
     )
@@ -60,7 +60,7 @@ describe('cellSelection — сериализация буфера (CRS8)', () =>
     )
   })
 
-  it('CRS8: hasSelectedCells — пустые массивы/регионы → false', () => {
+  it('CRS20: hasSelectedCells — пустые массивы/регионы → false', () => {
     expect(hasSelectedCells([])).toBe(false)
     expect(hasSelectedCells([[]])).toBe(false)
     expect(hasSelectedCells([[[]]])).toBe(false)
@@ -87,7 +87,7 @@ describe('cellSelection — гейтинг и предикат (CRS10/CRS11)', (
     expect(options.enableMultiCellRangeSelection).toBe(true)
   })
 
-  it('CRS11: дефолтный предикат исключает сервисные колонки (действия)', () => {
+  it('CRS21: дефолтный предикат исключает сервисные колонки (действия)', () => {
     const { options } = foldEntries([cellSelection()] as never)
     const predicate = options.enableCellSelection as (
       cell: CellSelectionPredicateCell,
@@ -97,7 +97,7 @@ describe('cellSelection — гейтинг и предикат (CRS10/CRS11)', (
     expect(predicate(fakeCell(false, true))).toBe(false) // row-actions column
   })
 
-  it('CRS11: пользовательский canSelectCell имеет приоритет над дефолтом', () => {
+  it('CRS22: пользовательский canSelectCell имеет приоритет над дефолтом', () => {
     const { options } = foldEntries([
       cellSelection({ canSelectCell: () => false }),
     ] as never)
