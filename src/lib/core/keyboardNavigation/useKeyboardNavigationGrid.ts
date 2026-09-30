@@ -90,10 +90,18 @@ export const useKeyboardNavigationGrid = (
     const tracking = trackingOf(table as NavTable)
     tracking.pointer = true
     tracking.follow = undefined
-    // Фокус от указателя приходит в той же задаче ввода (mousedown).
-    setTimeout(() => {
-      tracking.pointer = false
-    }, 0)
+    // Фокус от указателя приходит и по mousedown, и по click — после отпускания
+    // (редактор открывается кнопкой). Нажатие длится, пока кнопку не отпустили,
+    // в том числе за пределами грида (KN30).
+    const release = () => {
+      document.removeEventListener('pointerup', release, true)
+      document.removeEventListener('pointercancel', release, true)
+      setTimeout(() => {
+        tracking.pointer = false
+      }, 0)
+    }
+    document.addEventListener('pointerup', release, true)
+    document.addEventListener('pointercancel', release, true)
   }, [table])
 
   return isKeyboardNavigationEnabled(table)

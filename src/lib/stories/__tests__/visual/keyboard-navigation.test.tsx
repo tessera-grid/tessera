@@ -558,6 +558,38 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
     await expect.poll(() => active().matches(EDIT_INPUT)).toBe(true)
   })
 
+  test('KN30: фокус, пришедший до конца нажатия указателя, не перенаправляется — правка по кнопке не закрывается сразу', async () => {
+    await renderNavigation()
+    const cell = () => bodyCellAt(0, 'age')
+    await userEvent.hover(cell())
+    const button = cell().querySelector<HTMLElement>('.cell__button button')!
+    // Нажатие человеком: кнопку отпускают не в той же задаче, что нажали, — редактор
+    // получает фокус по click, уже после сброса пометки «фокус от указателя» на
+    // mousedown.
+    const at = button.getBoundingClientRect()
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      clientX: at.x + at.width / 2,
+      clientY: at.y + at.height / 2,
+    }
+    const pointer = { ...init, pointerType: 'mouse', isPrimary: true }
+    button.dispatchEvent(new PointerEvent('pointerdown', pointer))
+    if (button.dispatchEvent(new MouseEvent('mousedown', init))) {
+      button.focus()
+    }
+    await new Promise(resolve => setTimeout(resolve, 100))
+    button.dispatchEvent(new PointerEvent('pointerup', pointer))
+    button.dispatchEvent(new MouseEvent('mouseup', init))
+    button.dispatchEvent(new MouseEvent('click', init))
+
+    await expect.poll(() => active().matches(EDIT_INPUT)).toBe(true)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(active().matches(EDIT_INPUT)).toBe(true)
+    expect(cell().querySelector('input')).toBe(active())
+  })
+
   test('KN26: Shift+F10 открывает контекстное меню у активной ячейки', async () => {
     await renderNavigation()
     const cell = await focusBodyCell(3, 2)
