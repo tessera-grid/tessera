@@ -37,6 +37,8 @@ export interface CellEditingOptions {
   onCellEdit?: CellEditingHooks['onCellEdit']
   /** Правка завершилась без сохранения; приходят причина и черновик (ADR 0040). */
   onEditCancel?: CellEditingHooks['onEditCancel']
+  /** Значение изменилось извне во время правки: сохранить (по умолчанию) или нет. */
+  onConflict?: CellEditingHooks['onConflict']
   /** Свой редактор ячейки (BYO); не задан — встроенный инлайн-ввод. */
   editor?: CellEditingHooks['editor']
   /** Проверка значения перед коммитом: текст ошибки блокирует коммит. */
@@ -55,6 +57,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     canEdit: o.canEdit ?? (() => true),
     onCellEdit: o.onCellEdit ?? (() => {}),
     onEditCancel: o.onEditCancel,
+    onConflict: o.onConflict,
     editor: o.editor,
     validate: o.validate,
   }),

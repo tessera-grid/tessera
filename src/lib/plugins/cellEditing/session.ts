@@ -4,7 +4,11 @@
  * она переживает прокрутку, смену страницы, сортировку и скрытие колонки.
  */
 import type { PluginReconcileContext } from '../../core/features'
-import { pluginStateKey, setPluginState } from '../../core/definePlugin'
+import {
+  pluginStateKey,
+  readPluginHooks,
+  setPluginState,
+} from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
 import type {
   CellEditingHooks,
@@ -35,11 +39,26 @@ export const isEditingCell = (
   columnId: string,
 ) => session?.cell.rowId === rowId && session.cell.columnId === columnId
 
+/**
+ * Открыть правку ячейки. Открытая сессия другой ячейки (недопустимое значение,
+ * оставшееся после потери фокуса) завершается `cancel` — черновик не пропадает молча.
+ */
 export const startEditSession = (
   table: unknown,
   row: SessionRow,
   column: { id: string },
 ) => {
+  const open = readEditSession(table)
+  if (open && !isEditingCell(open, row.id, column.id)) {
+    cancelEditSession(
+      table,
+      'cancel',
+      readPluginHooks<Partial<CellEditingHooks>>(
+        table as { getHooks: () => unknown },
+        ID,
+      ),
+    )
+  }
   const original = row.getValue(column.id)
   const session: EditSession = {
     cell: { rowId: row.id, columnId: column.id },
@@ -64,6 +83,7 @@ export const cancelEditSession = (
   table: unknown,
   reason: EditCancelReason,
   hooks: Partial<CellEditingHooks>,
+  current?: { value: unknown },
 ) => {
   const session = readEditSession(table)
   if (!session) {
@@ -76,6 +96,43 @@ export const cancelEditSession = (
     reason,
     draft: session.draft,
     original: session.original,
+    ...(current ? { current: current.value } : {}),
+  })
+}
+
+/**
+ * Сохранить значение сессии этой ячейки (ADR 0040, §3–§4). Сессии нет — уже
+ * завершена (Enter, Escape) и потеря фокуса после неё ничего не делает. Значение
+ * изменилось извне: по умолчанию сохранение проходит с `original`/`current`, при
+ * `onConflict: 'block'` — завершение с `conflict`.
+ */
+export const commitEditSession = (
+  table: unknown,
+  cell: { rowId: string; columnId: string },
+  value: string,
+  hooks: Partial<CellEditingHooks>,
+) => {
+  const session = readEditSession(table)
+  if (!isEditingCell(session, cell.rowId, cell.columnId)) {
+    return
+  }
+  const { rowId, columnId } = cell
+  const { original } = session!
+  const row = (table as ReconcileTable).getCoreRowModel().rowsById[rowId]
+  const now = row ? row.getValue(columnId) : original
+  const changed = !Object.is(now, original)
+  if (changed && hooks.onConflict === 'block') {
+    setEditDraft(table, value)
+    cancelEditSession(table, 'conflict', hooks, { value: now })
+    return
+  }
+  endEditSession(table)
+  hooks.onCellEdit?.({
+    rowId,
+    columnId,
+    value,
+    original,
+    ...(changed ? { current: now } : {}),
   })
 }
 

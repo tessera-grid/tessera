@@ -15,14 +15,14 @@ import { CellEditInput } from './CellEditInput'
 import {
   EDIT_SESSION_KEY,
   cancelEditSession,
-  endEditSession,
+  commitEditSession,
   isEditingCell,
   readEditSession,
   setEditDraft,
 } from './session'
 import type { CellEditingHooks, CellEditor, EditingCell } from './types'
 
-/** Дефолтный редактор: встроенный инлайн-ввод (Enter — коммит, Escape/blur — отмена). */
+/** Дефолтный редактор: встроенный инлайн-ввод (Enter и потеря фокуса — коммит, Escape — отмена). */
 const defaultEditor: CellEditor = ({
   value,
   label,
@@ -73,14 +73,22 @@ export const CellEditField = (
         ),
         error,
         commit: value => {
+          // Потеря фокуса после Enter или Escape: сессия уже закрыта.
+          if (!isEditingCell(readEditSession(table), row.id, column.id)) {
+            return
+          }
           const message = hooks.validate?.(value, props)
           if (message) {
             setError(message)
             return
           }
           setError(undefined)
-          endEditSession(table)
-          hooks.onCellEdit({ rowId: row.id, columnId: column.id, value })
+          commitEditSession(
+            table,
+            { rowId: row.id, columnId: column.id },
+            value,
+            hooks,
+          )
         },
         cancel: () => {
           setError(undefined)

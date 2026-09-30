@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Сессии действий (ADR 0040, SS1, SS5–SS6, SS14, SS16): успешное завершение зовёт
+ * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS14, SS16–SS17): успешное завершение зовёт
  * колбэк успеха, сессия правки живёт в срезе плагина и согласуется с таблицей после
  * рендера. Компоненты слотов рендерятся напрямую с контекстом ячейки и заголовка.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -138,6 +138,7 @@ describe('сессии действий', () => {
       rowId: '1',
       columnId: 'name',
       value: 'A',
+      original: 'A',
     })
     expect(onEditCancel).not.toHaveBeenCalled()
     unmount()
@@ -268,5 +269,64 @@ describe('сессии действий', () => {
         reason: 'revoke',
       }),
     )
+  })
+
+  it('SS10: значение изменилось извне во время правки — по умолчанию сохранение с original и current, при onConflict: block — onEditCancel с conflict', () => {
+    const changed = rows.map(row =>
+      row.id === '1' ? { ...row, name: 'Z' } : row,
+    )
+    // Черновик до монтирования редактора — он стартует с него.
+    const editAndChange = (plugins: TesseraFeatureEntry[]) => {
+      render({ plugins })
+      startEdit()
+      act(() => setEditDraft(captured, 'mine'))
+      render({ plugins, probe: 'edit', data: changed })
+      key(container!.querySelector('input')!, 'Enter')
+    }
+
+    const plugins = [cellEditing({ onCellEdit, onEditCancel })]
+    editAndChange(plugins)
+    expect(onCellEdit).toHaveBeenCalledWith({
+      rowId: '1',
+      columnId: 'name',
+      value: 'mine',
+      original: 'A',
+      current: 'Z',
+    })
+    expect(onEditCancel).not.toHaveBeenCalled()
+    unmount()
+
+    onCellEdit.mockReset()
+    const strict = [
+      cellEditing({ onCellEdit, onEditCancel, onConflict: 'block' }),
+    ]
+    editAndChange(strict)
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(session()).toBeNull()
+    expect(onEditCancel).toHaveBeenCalledWith({
+      rowId: '1',
+      columnId: 'name',
+      reason: 'conflict',
+      draft: 'mine',
+      original: 'A',
+      current: 'Z',
+    })
+  })
+
+  it('SS17: открытие правки другой ячейки при открытой сессии завершает прежнюю с cancel и её черновиком', () => {
+    render({ plugins: [cellEditing({ onCellEdit, onEditCancel })] })
+    startEdit()
+    act(() => setEditDraft(captured, 'left behind'))
+    act(() => startEditSession(captured, captured.getRow('2'), { id: 'name' }))
+
+    expect(onEditCancel).toHaveBeenCalledWith({
+      rowId: '1',
+      columnId: 'name',
+      reason: 'cancel',
+      draft: 'left behind',
+      original: 'A',
+    })
+    expect(session().cell).toEqual({ rowId: '2', columnId: 'name' })
+    expect(onCellEdit).not.toHaveBeenCalled()
   })
 })

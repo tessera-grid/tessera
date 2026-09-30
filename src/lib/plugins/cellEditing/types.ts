@@ -24,6 +24,10 @@ export interface CellEditCommit {
   rowId: string
   columnId: string
   value: string
+  /** Значение ячейки на начало правки. */
+  original: unknown
+  /** Значение сейчас — есть, только если оно изменилось извне во время правки. */
+  current?: unknown
 }
 
 /** Причина завершения правки без сохранения (ADR 0040, §1). */
@@ -68,6 +72,12 @@ export interface CellEditingHooks {
   onCellEdit: (commit: CellEditCommit) => void
   /** Правка завершилась без сохранения: Escape, запрет на лету (ADR 0040). */
   onEditCancel?: (end: CellEditCancel) => void
+  /**
+   * Значение изменилось извне во время правки: `'commit'` (по умолчанию) —
+   * сохранить и отдать `original`/`current` в `onCellEdit`; `'block'` — не
+   * сохранять, завершить с `conflict`.
+   */
+  onConflict?: 'commit' | 'block'
   /** Редактор ячейки (BYO); не задан — встроенный `CellEditInput`. */
   editor?: CellEditor
   /** Текст ошибки для значения или `null`/`undefined`, если оно допустимо. */

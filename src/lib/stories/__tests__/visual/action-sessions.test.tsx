@@ -12,9 +12,10 @@ import {
   rowIdOrder,
 } from '../../rowDragging.dnd'
 
-// Сессии действий (ADR 0040, SS2–SS4, SS11–SS13, SS15): завершение без результата
+// Сессии действий (ADR 0040, SS2–SS4, SS7–SS9, SS11–SS13, SS15): завершение без результата
 // доходит до колбэка отмены плагина с причиной, колбэк успеха не зовётся; черновик
-// правки живёт в срезе плагина. SS1, SS5–SS6, SS14, SS16 — модульные
+// правки живёт в срезе плагина, потеря фокуса сохраняет. SS1, SS5–SS6, SS10,
+// SS14, SS16 — модульные
 // (`src/lib/__tests__/actionSessions.dom.test.tsx`).
 
 const GRID = {
@@ -54,6 +55,14 @@ const startEdit = async () => {
   await userEvent.type(input, '999')
   return original
 }
+
+/** Увести фокус из редактора кликом по ячейке другой строки. */
+const clickAway = () =>
+  userEvent.click(
+    bodyRows()
+      .find(row => row.dataset.index === '3')!
+      .querySelector<HTMLElement>('.data-grid__body-cell')!,
+  )
 
 /** Начать перетаскивание первой строки и довести её до четвёртой. */
 const startRowDrag = async () => {
@@ -472,5 +481,86 @@ describe('Сессии действий', () => {
       columnId,
       reason: 'unavailable',
     })
+  })
+
+  test('SS7: потеря фокуса с допустимым значением сохраняет его (onCellEdit)', async () => {
+    const onCellEdit = vi.fn()
+    const onEditCancel = vi.fn()
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableCellEditing
+        cellEditingCanEdit={allow}
+        onCellEdit={onCellEdit}
+        onEditCancel={onEditCancel}
+      />,
+    )
+    const original = await startEdit()
+    await clickAway()
+    await expect.poll(draftInput).toBeNull()
+    expect(onCellEdit).toHaveBeenCalledTimes(1)
+    expect(onCellEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ columnId: 'age', value: '999' }),
+    )
+    expect(onCellEdit.mock.calls[0][0].original).toBe(Number(original))
+    expect(onEditCancel).not.toHaveBeenCalled()
+  })
+
+  test('SS8: потеря фокуса с недопустимым значением оставляет редактор открытым с ошибкой и черновиком', async () => {
+    const onEditCancel = vi.fn()
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableCellEditing
+        validateCellEdit={value => (/^d+$/.test(value) ? null : 'Digits only')}
+        onEditCancel={onEditCancel}
+      />,
+    )
+    await waitForGrid()
+    await userEvent.hover(ageCell())
+    await userEvent.click(
+      ageCell().querySelector<HTMLElement>('.cell__button button')!,
+    )
+    await expect.poll(draftInput).not.toBeNull()
+    await userEvent.clear(draftInput()!)
+    await userEvent.type(draftInput()!, 'abc')
+    await clickAway()
+
+    await expect
+      .poll(() => draftInput()?.getAttribute('aria-invalid'))
+      .toBe('true')
+    expect(draftInput()!.value).toBe('abc')
+    expect(ageCell().querySelector('[role="alert"]')!.textContent).toBe(
+      'Digits only',
+    )
+    expect(onEditCancel).not.toHaveBeenCalled()
+  })
+
+  test('SS9: Escape отменяет правку — значение не сохраняется, onEditCancel с cancel и черновиком', async () => {
+    const onCellEdit = vi.fn()
+    const onEditCancel = vi.fn()
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableCellEditing
+        cellEditingCanEdit={allow}
+        onCellEdit={onCellEdit}
+        onEditCancel={onEditCancel}
+      />,
+    )
+    const original = await startEdit()
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(draftInput).toBeNull()
+    await nextFrame()
+    expect(ageCell().textContent).toBe(original)
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(onEditCancel).toHaveBeenCalledTimes(1)
+    expect(onEditCancel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        columnId: 'age',
+        reason: 'cancel',
+        draft: '999',
+      }),
+    )
   })
 })

@@ -1,5 +1,6 @@
 /**
- * Дефолтный инлайн-ввод редактирования ячейки: Enter — коммит, Escape/blur — отмена.
+ * Дефолтный инлайн-ввод редактирования ячейки: Enter и потеря фокуса — коммит
+ * (ADR 0040, §3), Escape — отмена.
  * Оформлен токенами темы и вписан в футпринт ячейки (CellEditInput.module.css); при
  * фокусе курсор встаёт в конец значения (autoFocus, без выделения).
  */
@@ -47,7 +48,7 @@ export const CellEditInput = ({
           onDraftChange(event.target.value)
         }}
         onKeyDown={onKeyDown}
-        onBlur={onCancel}
+        onBlur={() => onCommit(value)}
         aria-label={label}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
