@@ -28,7 +28,8 @@ export const useTableEffects = (
   const host = table as Parameters<typeof logWarn>[0]
 
   // Императивный сетап плагинов (generic-escape) — единым эффектом; перезапускается
-  // и при смене значения аргументов фабрик (ADR 0039).
+  // только при смене состава набора или значения аргументов фабрик (ADR 0039, RX24).
+  // `table` в зависимости не входит: обёртка useTable новая на каждом рендере.
   useEffect(
     () => {
       const cleanups = folded.setups.map(setup => setup(table))
@@ -37,7 +38,7 @@ export const useTableEffects = (
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
-    [argsSignature, table],
+    [argsSignature],
   )
 
   // Согласование состояния плагинов с таблицей — после каждого рендера, и у

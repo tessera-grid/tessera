@@ -85,3 +85,4 @@
 | PE3 | Исключение в `setup` плагина не роняет таблицу и не мешает `setup` остальных плагинов                                                  | `__tests__/pluginErrors.dom.test.tsx` `PE3:` |
 | PE4 | Исключение в `diagnose` не выходит из `getPluginDiagnostics()`: плагин получает `status: 'error'`, остальные — свой обычный статус     | `__tests__/pluginErrors.test.ts` `PE4:`      |
 | PE5 | Пойманная ошибка пишется `logError` один раз на `<id>:error`; снимок отдаёт `{ id, status: 'error', error }`, и `error` важнее `inert` | `__tests__/pluginErrors.test.ts` `PE5:`      |
+| PE6 | Исключение в `reconcile` плагина не роняет таблицу и не мешает `reconcile` остальных плагинов; плагин получает `status: 'error'`       | unit                                         |

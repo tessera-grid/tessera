@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 /**
- * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS16–SS18): успешное завершение зовёт
+ * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS16–SS20): успешное завершение зовёт
  * колбэк успеха, сессия правки живёт в срезе плагина и согласуется с таблицей после
  * рендера. Компоненты слотов рендерятся напрямую с контекстом ячейки и заголовка.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
-import { act, createElement } from 'react'
+import { act, createElement, Profiler } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -17,7 +17,11 @@ import {
   columnSizing,
   type CellEditor,
 } from '../plugins'
-import { setEditDraft, startEditSession } from '../plugins/cellEditing/session'
+import {
+  endEditSession,
+  setEditDraft,
+  startEditSession,
+} from '../plugins/cellEditing/session'
 import { getColumnDraggingEvents } from '../plugins/columnDragging/getColumnDraggingEvents'
 
 ;(
@@ -234,6 +238,53 @@ describe('сессии действий', () => {
         reason: 'revoke',
       }),
     )
+  })
+
+  it('SS19: плагин правки удалили из plugins посреди правки — призрак завершает сессию revoke с черновиком', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    render({ plugins: [cellEditing({ onEditCancel })] })
+    startEdit()
+    act(() => setEditDraft(captured, 'mine'))
+    render({ plugins: [] })
+    expect(session()).toBeNull()
+    expect(onEditCancel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rowId: '1',
+        columnId: 'name',
+        reason: 'revoke',
+        draft: 'mine',
+      }),
+    )
+    warn.mockRestore()
+  })
+
+  it('SS20: ввод черновика не перерисовывает слоты правки других ячеек; начало и конец правки — только ячейку в правке', () => {
+    render({ plugins: [cellEditing({ canEdit: () => true })] })
+    const commits: Record<string, number> = { own: 0, other: 0 }
+    const button = slotComponent('rightCellSlot', 'cellEditing')
+    const probe = (id: 'own' | 'other', rowId: string) =>
+      createElement(
+        Profiler,
+        { id, onRender: () => (commits[id] += 1) },
+        createElement(button, {
+          ...captured.getRow(rowId).getAllCells()[0].getContext(),
+        }),
+      )
+    const probes = createRoot(document.createElement('div'))
+    act(() => probes.render([probe('own', '1'), probe('other', '2')]))
+    const mounted = { ...commits }
+
+    startEdit()
+    expect(commits).toEqual({ own: mounted.own + 1, other: mounted.other })
+
+    act(() => setEditDraft(captured, 'a'))
+    act(() => setEditDraft(captured, 'ab'))
+    act(() => setEditDraft(captured, 'abc'))
+    expect(commits).toEqual({ own: mounted.own + 1, other: mounted.other })
+
+    act(() => endEditSession(captured))
+    expect(commits).toEqual({ own: mounted.own + 2, other: mounted.other })
+    act(() => probes.unmount())
   })
 
   it('SS10: значение изменилось извне во время правки — по умолчанию сохранение с original и current, при onConflict: block — onEditCancel с conflict', () => {

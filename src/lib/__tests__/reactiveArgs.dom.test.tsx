@@ -1,14 +1,16 @@
 // @vitest-environment happy-dom
 /**
- * Живые аргументы фабрик плагинов (ADR 0039, RX1–RX3, RX21): смена значения
+ * Живые аргументы фабрик плагинов (ADR 0039, RX1–RX3, RX21, RX24): смена значения
  * применяется без пересоздания таблицы, функции живые при стабильной ссылке, новый
- * объект с теми же значениями — не смена; политика сортировки меняется на лету.
+ * объект с теми же значениями — не смена; политика сортировки меняется на лету;
+ * `setup` — раз на значение аргументов.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { definePlugin } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 import { cellSelection, columnSorting, rowSelection } from '../plugins'
 
@@ -170,5 +172,40 @@ describe('политика сортировки на лету', () => {
     renderSort(false, false)
     toggle('name', true)
     expect(sorting().map((sort: { id: string }) => sort.id)).toEqual(['name'])
+  })
+})
+
+describe('перезапуск setup', () => {
+  it('RX24: setup выполняется раз на значение аргументов — перерисовка не перезапускает, смена значения перезапускает после cleanup', () => {
+    const setup = vi.fn()
+    const cleanup = vi.fn()
+    const probe = definePlugin<{ enabled?: boolean; level?: number }>()({
+      id: 'setupProbe',
+      setup: opts => () => {
+        setup(opts.level)
+        return cleanup
+      },
+    })
+    const SetupHost = ({ level, tick }: { level: number; tick: number }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data: tick >= 0 ? data : [],
+        plugins: [probe({ level })],
+      })
+      return null
+    }
+    root = createRoot(document.createElement('div'))
+    act(() => root!.render(<SetupHost level={1} tick={0} />))
+    act(() => root!.render(<SetupHost level={1} tick={1} />))
+    act(() => root!.render(<SetupHost level={1} tick={2} />))
+    expect(setup.mock.calls).toEqual([[1]])
+    expect(cleanup).not.toHaveBeenCalled()
+
+    act(() => root!.render(<SetupHost level={2} tick={3} />))
+    expect(setup.mock.calls).toEqual([[1], [2]])
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(cleanup.mock.invocationCallOrder[0]).toBeLessThan(
+      setup.mock.invocationCallOrder[1],
+    )
   })
 })

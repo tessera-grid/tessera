@@ -378,16 +378,18 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       обязательный `diagnose`, dev-warn ядра при монтировании, `'noActions'`),
       [ADR 0036](docs/decisions/0036-plugin-contract-diagnostics-and-a11y.md);
       `plugin-errors` (PE1–PE2 — падение рендера плагина не роняет грид), модульные
-      `pluginErrors` (PE3–PE5 — `setup`, `diagnose`, статус `error`),
+      `pluginErrors` (PE3–PE6 — `setup`, `diagnose`, `reconcile`, статус `error`),
       [ADR 0037](docs/decisions/0037-plugin-error-isolation.md); модульные
-      `reactiveArgs` (RX1–RX3, RX21 — живые аргументы фабрик), `pluginLifetime`
+      `reactiveArgs` (RX1–RX3, RX21, RX24 — живые аргументы фабрик, `setup` раз на
+      значение аргументов), `pluginLifetime`
       (RX4–RX7 — договоры на время жизни и `initialPageSize`), `effectiveState`
       (RX9–RX10, RX12–RX13 — эффективное состояние), визуальные `reactive-args`
       (RX8, RX11, RX14–RX20, RX22–RX23 — аргументы на лету, сужение и отмена
       действий при запрете),
       [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md);
-      модульные `actionSessions` (SS1 — колбэки успеха; SS5–SS6, SS16–SS18 — сессия
-      правки в срезе, её согласование, неизменённое значение; SS10 — конфликт),
+      модульные `actionSessions` (SS1 — колбэки успеха; SS5–SS6, SS16–SS20 — сессия
+      правки в срезе, её согласование, неизменённое значение, удалённый плагин,
+      перерисовка только ячейки в правке; SS10 — конфликт),
       визуальные `action-sessions` (SS2, SS11–SS13, SS15 — колбэки отмены с
       причиной, `Escape` у ресайза; SS3–SS4 — черновик переживает прокрутку,
       страницу, сортировку; SS7–SS9 — потеря фокуса сохраняет, `Escape` отменяет;
@@ -402,6 +404,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
       Async: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
+    - _Автор плагина:_ модульный `cellSlotOwners` (DP16 — дев-варн на нескольких
+      владельцев `cellSlot`, [ADR 0028](docs/decisions/0028-define-plugin-authoring-api.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы,
       [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).

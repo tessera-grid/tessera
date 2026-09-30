@@ -17,7 +17,7 @@ export {
 
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { setPluginState } from '../../../core/definePlugin'
-import { cellKey, readEditingState } from '../../../plugins/cellEditing/session'
+import { cellKey } from '../../../plugins/cellEditing/session'
 
 /** Небольшая выборка: умеренный грид, переполняющий обе оси. */
 export const SMALL = { columnCount: 30, dataCount: 500 } as const
@@ -43,28 +43,29 @@ export const ALL_PLUGINS: Record<string, boolean> = {
 }
 
 /**
- * Засев отправленных ячеек правки (ADR 0041, AS14): служебная запись с `setup`
- * пишет в срез `cellEditing` ячейки редактируемых колонок первых `rows` строк —
+ * Засев отправленных ячеек правки (ADR 0041, AS14): служебная запись с `reconcile`
+ * один раз, когда появились строки (история подаёт данные эффектом), пишет в срез
+ * `cellEditing` ячейки редактируемых колонок первых `rows` строк —
  * чётные строки ждут сервера, нечётные в «ошибке». Через интерфейс набирать
  * столько ячеек долго, а замеряется отрисовка их состояний при прокрутке.
  */
-export const submittedCellsSeed = (rows: number): TesseraFeatureEntry => ({
-  id: 'perfSubmittedCells',
-  setup: table => {
-    // Идемпотентно: setup сейчас перезапускается на каждом рендере таблицы, и
-    // повторная запись среза зациклила бы обновления.
-    if (Object.keys(readEditingState(table).submitted).length > 0) {
-      return
-    }
-    const t = table as {
-      getCoreRowModel: () => {
-        rows: { id: string; getValue: (id: string) => unknown }[]
+export const submittedCellsSeed = (rows: number): TesseraFeatureEntry => {
+  let seeded = false
+  return {
+    id: 'perfSubmittedCells',
+    reconcile: table => {
+      const t = table as {
+        getCoreRowModel: () => {
+          rows: { id: string; getValue: (id: string) => unknown }[]
+        }
       }
-    }
-    const submitted: Record<string, unknown> = {}
-    t.getCoreRowModel()
-      .rows.slice(0, rows)
-      .forEach((row, index) => {
+      const available = t.getCoreRowModel().rows
+      if (seeded || available.length === 0) {
+        return
+      }
+      seeded = true
+      const submitted: Record<string, unknown> = {}
+      available.slice(0, rows).forEach((row, index) => {
         for (const columnId of EDITABLE_COLUMNS) {
           const original = row.getValue(columnId)
           submitted[cellKey(row.id, columnId)] = {
@@ -78,9 +79,10 @@ export const submittedCellsSeed = (rows: number): TesseraFeatureEntry => ({
           }
         }
       })
-    setPluginState(table, 'cellEditing', { active: null, submitted })
-  },
-})
+      setPluginState(table, 'cellEditing', { active: null, submitted })
+    },
+  }
+}
 
 /** Колонки, которые демо разрешает править (как `CELL_EDITABLE_COLUMNS` историй). */
 const EDITABLE_COLUMNS = ['age', 'visits', 'gender']
