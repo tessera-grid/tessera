@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import { Stories, bodyRows, headCells } from '../helpers'
+import { Stories, bodyRows, headCells, humanClick } from '../helpers'
 import { composed } from '../stories'
 
 // Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11): сохранение с
@@ -33,7 +33,7 @@ const waitForGrid = () =>
 /** Открыть правку ячейки `age` строки и ввести `value`. */
 const openAndType = async (index: number, value: string) => {
   await userEvent.hover(ageCell(index))
-  await userEvent.click(
+  await humanClick(
     ageCell(index).querySelector<HTMLElement>('.cell__button button')!,
   )
   await expect.poll(() => ageCell(index).querySelector('input')).not.toBeNull()
@@ -78,9 +78,10 @@ describe('Асинхронный контракт бизнес-колбэков'
     await userEvent.hover(ageCell(0))
     expect(ageCell(0).querySelector('.cell__button button')).toBeNull()
 
-    await userEvent.click(ageCell(0))
+    await humanClick(ageCell(0))
+    await expect.poll(() => document.activeElement).toBe(ageCell(0))
     await userEvent.keyboard('{Enter}')
-    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => setTimeout(resolve, 100))
     expect(ageCell(0).querySelector('input')).toBeNull()
     expect(busy()).not.toBeNull()
   })
@@ -143,27 +144,47 @@ describe('Асинхронный контракт бизнес-колбэков'
     expect(document.activeElement).toBe(active)
   })
 
-  test('AS6: из «ошибки» кнопка правки открывает редактор с черновиком и текстом ошибки; успешное сохранение снимает ошибку', async () => {
+  test('AS6: из «ошибки» Enter или кнопка правки открывают редактор с черновиком и текстом ошибки; успешное сохранение снимает ошибку', async () => {
     const server = controlledServer()
     await render(
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
+        enableKeyboardNavigation
         cellEditingCanEdit={allow}
         onCellEdit={server.onCellEdit}
       />,
     )
     await waitForGrid()
+    const failed = (index: number) =>
+      ageCell(index).querySelector('[aria-invalid="true"]')
+    await openAndType(1, '42')
+    await userEvent.keyboard('{Enter}')
     await openAndType(0, '999')
     await userEvent.keyboard('{Enter}')
-    await expect.poll(() => server.settle.length).toBe(1)
+    await expect.poll(() => server.settle.length).toBe(2)
     server.settle[0].reject(new Error('Server down'))
-    await expect
-      .poll(() => ageCell(0).querySelector('[aria-invalid="true"]'))
-      .not.toBeNull()
+    server.settle[1].reject(new Error('Server down'))
+    await expect.poll(() => failed(0) && failed(1)).toBeTruthy()
+
+    // Enter на ячейке в «ошибке».
+    await humanClick(ageCell(1))
+    await expect.poll(() => document.activeElement).toBe(ageCell(1))
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => ageCell(1).querySelector('input')).not.toBeNull()
+    expect(ageCell(1).querySelector<HTMLInputElement>('input')!.value).toBe(
+      '42',
+    )
+    expect(ageCell(1).querySelector('[role="alert"]')!.textContent).toBe(
+      'Server down',
+    )
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => ageCell(1).querySelector('input')).toBeNull()
+
+    // Кнопка правки на ячейке в «ошибке».
 
     await userEvent.hover(ageCell(0))
-    await userEvent.click(
+    await humanClick(
       ageCell(0).querySelector<HTMLElement>('.cell__button button')!,
     )
     await expect.poll(() => ageCell(0).querySelector('input')).not.toBeNull()
@@ -175,8 +196,8 @@ describe('Асинхронный контракт бизнес-колбэков'
     )
 
     await userEvent.keyboard('{Enter}')
-    await expect.poll(() => server.settle.length).toBe(2)
-    server.settle[1].resolve()
+    await expect.poll(() => server.settle.length).toBe(3)
+    server.settle[2].resolve()
     await expect
       .poll(() => ageCell(0).querySelector('[aria-busy="true"]'))
       .toBeNull()

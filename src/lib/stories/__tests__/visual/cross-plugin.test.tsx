@@ -2,6 +2,8 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { humanClick } from '../helpers'
+
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
@@ -558,9 +560,7 @@ describe('Cross-plugin — pagination', () => {
         '.data-grid__body-cell[data-column-id="age"]',
       )!
     await userEvent.hover(cell())
-    await userEvent.click(
-      cell().querySelector<HTMLElement>('.cell__button button')!,
-    )
+    await humanClick(cell().querySelector<HTMLElement>('.cell__button button')!)
     const input = await expect
       .poll(() => cell().querySelector<HTMLInputElement>('input'))
       .not.toBeNull()

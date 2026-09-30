@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react'
 
 import { commands } from '@vitest/browser/context'
+import { userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
 
 import { composed } from './stories'
@@ -8,6 +9,18 @@ import type { PerfRecord, ScrollWorkResult } from './perf.commands'
 
 /** All DataGrid stories, composed as portable React components. */
 export const Stories = composed
+
+/** Пауза между нажатием и отпусканием кнопки мыши у человека, мс. */
+export const HUMAN_PRESS_MS = 100
+
+/**
+ * Клик в темпе человека: настоящий клик Playwright, кнопку отпускают через
+ * `HUMAN_PRESS_MS` после нажатия — не в той же задаче, что `mousedown`.
+ * Мгновенный `userEvent.click` гонки фокуса между нажатием и `click` не ловит
+ * (ADR 0021, KN30).
+ */
+export const humanClick = (element: Element) =>
+  userEvent.click(element, { delay: HUMAN_PRESS_MS })
 
 /** Stable DOM selectors — class names / roles are part of the component contract. */
 export const SEL = {

@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import { Stories, bodyRows, headCells } from '../helpers'
+import { Stories, bodyRows, headCells, humanClick } from '../helpers'
 import {
   HANDLE,
   beginDrag,
@@ -366,9 +366,7 @@ describe('Аргументы фабрик на лету', () => {
         )!
     const original = cell().textContent
     await userEvent.hover(cell())
-    await userEvent.click(
-      cell().querySelector<HTMLElement>('.cell__button button')!,
-    )
+    await humanClick(cell().querySelector<HTMLElement>('.cell__button button')!)
     await expect.poll(() => cell().querySelector('input')).not.toBeNull()
     const input = cell().querySelector<HTMLInputElement>('input')!
     await userEvent.clear(input)

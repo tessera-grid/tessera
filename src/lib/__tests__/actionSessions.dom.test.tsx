@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS14, SS16–SS18): успешное завершение зовёт
+ * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS16–SS18): успешное завершение зовёт
  * колбэк успеха, сессия правки живёт в срезе плагина и согласуется с таблицей после
  * рендера. Компоненты слотов рендерятся напрямую с контекстом ячейки и заголовка.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -15,13 +15,10 @@ import {
   cellEditing,
   columnDragging,
   columnSizing,
-  rowDragging,
   type CellEditor,
 } from '../plugins'
 import { setEditDraft, startEditSession } from '../plugins/cellEditing/session'
 import { getColumnDraggingEvents } from '../plugins/columnDragging/getColumnDraggingEvents'
-import { moveRow } from '../plugins/rowDragging/moveRow'
-import { getRowDraggingEvents } from '../plugins/rowDragging/getRowDraggingEvents'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -212,41 +209,6 @@ describe('сессии действий', () => {
     expect(seen.at(-1)).toBe('kept')
     expect(session().draft).toBe('kept')
     expect(onEditCancel).not.toHaveBeenCalled()
-  })
-
-  it('SS14: onRowDragEnd зовётся при успешном броске и при перестановке с клавиатуры, без колбэка отмены', () => {
-    const onRowDragEnd = vi.fn()
-    const onRowDragCancel = vi.fn()
-    render({ plugins: [rowDragging({ onRowDragEnd, onRowDragCancel })] })
-
-    act(() => moveRow(captured.getRow('1'), captured, 1))
-    expect(onRowDragEnd).toHaveBeenLastCalledWith({
-      rowId: '1',
-      dragIndex: 0,
-      hoverIndex: 1,
-    })
-
-    const source = (id: string, virtualIndex: number) => ({
-      id,
-      data: { current: { virtualIndex, row: captured.getRow(id) } },
-    })
-    act(() =>
-      getRowDraggingEvents(captured).onRowDragStart?.({
-        active: source('1', 0),
-      } as never),
-    )
-    act(() =>
-      getRowDraggingEvents(captured).onRowDragEnd?.({
-        active: source('1', 0),
-        over: source('3', 2),
-      } as never),
-    )
-    expect(onRowDragEnd).toHaveBeenLastCalledWith({
-      rowId: '1',
-      dragIndex: 0,
-      hoverIndex: 2,
-    })
-    expect(onRowDragCancel).not.toHaveBeenCalled()
   })
 
   it('SS16: плагин правки выключили или canEdit запретил ячейку вне экрана — сессия завершается revoke с черновиком', () => {

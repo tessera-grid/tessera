@@ -2,20 +2,27 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import { Stories, bodyRows, getScroller, headCells } from '../helpers'
+import {
+  Stories,
+  bodyRows,
+  getScroller,
+  headCells,
+  humanClick,
+} from '../helpers'
 import { makeData } from '../../__mocks__/data'
 import {
   HANDLE,
   beginDrag,
+  dragRowOnto,
   firePointer,
   nextFrame,
   rowIdOrder,
 } from '../../rowDragging.dnd'
 
-// Сессии действий (ADR 0040, SS2–SS4, SS7–SS9, SS11–SS13, SS15): завершение без результата
+// Сессии действий (ADR 0040, SS2–SS4, SS7–SS9, SS11–SS15): завершение без результата
 // доходит до колбэка отмены плагина с причиной, колбэк успеха не зовётся; черновик
 // правки живёт в срезе плагина, потеря фокуса сохраняет. SS1, SS5–SS6, SS10,
-// SS14, SS16 — модульные
+// SS16–SS18 — модульные
 // (`src/lib/__tests__/actionSessions.dom.test.tsx`).
 
 const GRID = {
@@ -46,7 +53,7 @@ const startEdit = async () => {
   await waitForGrid()
   const original = ageCell().textContent
   await userEvent.hover(ageCell())
-  await userEvent.click(
+  await humanClick(
     ageCell().querySelector<HTMLElement>('.cell__button button')!,
   )
   await expect.poll(() => ageCell().querySelector('input')).not.toBeNull()
@@ -58,7 +65,7 @@ const startEdit = async () => {
 
 /** Увести фокус из редактора кликом по ячейке другой строки. */
 const clickAway = () =>
-  userEvent.click(
+  humanClick(
     bodyRows()
       .find(row => row.dataset.index === '3')!
       .querySelector<HTMLElement>('.data-grid__body-cell')!,
@@ -518,7 +525,7 @@ describe('Сессии действий', () => {
     )
     await waitForGrid()
     await userEvent.hover(ageCell())
-    await userEvent.click(
+    await humanClick(
       ageCell().querySelector<HTMLElement>('.cell__button button')!,
     )
     await expect.poll(draftInput).not.toBeNull()
@@ -562,5 +569,42 @@ describe('Сессии действий', () => {
         draft: '999',
       }),
     )
+  })
+
+  test('SS14: onRowDragEnd зовётся при успешном броске и при перестановке с клавиатуры, без колбэка отмены', async () => {
+    const onRowDragEnd = vi.fn()
+    const onRowDragCancel = vi.fn()
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableRowDragging
+        enableKeyboardNavigation
+        onRowDragEnd={onRowDragEnd}
+        onRowDragCancel={onRowDragCancel}
+      />,
+    )
+    await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
+    const [dropped] = rowIdOrder(document.body)
+    const rowAt = (index: number) =>
+      bodyRows().find(row => row.dataset.index === String(index))!
+    await dragRowOnto(rowAt(0), rowAt(3))
+    await expect.poll(() => onRowDragEnd.mock.calls.length).toBe(1)
+    expect(onRowDragEnd).toHaveBeenLastCalledWith({
+      rowId: dropped,
+      dragIndex: 0,
+      hoverIndex: 3,
+    })
+    await expect.poll(() => rowIdOrder(document.body)[0]).not.toBe(dropped)
+
+    const moved = rowIdOrder(document.body)[0]
+    rowAt(0).querySelector<HTMLElement>('[data-kn-cell]')!.focus()
+    await userEvent.keyboard('{Alt>}{Shift>}{ArrowDown}{/Shift}{/Alt}')
+    await expect.poll(() => onRowDragEnd.mock.calls.length).toBe(2)
+    expect(onRowDragEnd).toHaveBeenLastCalledWith({
+      rowId: moved,
+      dragIndex: 0,
+      hoverIndex: 1,
+    })
+    expect(onRowDragCancel).not.toHaveBeenCalled()
   })
 })

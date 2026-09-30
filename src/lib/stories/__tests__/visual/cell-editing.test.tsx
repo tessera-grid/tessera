@@ -2,6 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { humanClick } from '../helpers'
 import { composed } from '../stories'
 
 // Плагин cellEditing: инлайн-редактирование ячейки на ЛОКАЛЬНОМ
@@ -74,7 +75,7 @@ describe('Cell editing — инлайн-редактирование ячейк�
     // Ховерим ячейку — кнопка становится кликабельной (снят opacity/overflow).
     await userEvent.hover(cell)
     const button = cell.querySelector<HTMLElement>(`${CELL_BUTTON} button`)!
-    await userEvent.click(button)
+    await humanClick(button)
 
     // Открылся инлайн-ввод (слайс «редактируемая ячейка» = `rowId:columnId`).
     const input = await expect
@@ -103,9 +104,7 @@ describe('Cell editing — инлайн-редактирование ячейк�
     expect(original.length).toBeGreaterThan(0)
 
     await userEvent.hover(cell)
-    await userEvent.click(
-      cell.querySelector<HTMLElement>(`${CELL_BUTTON} button`)!,
-    )
+    await humanClick(cell.querySelector<HTMLElement>(`${CELL_BUTTON} button`)!)
 
     // Открылся редактор.
     await expect

@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { composed } from '../stories'
-import { getScroller } from '../helpers'
+import { getScroller, humanClick } from '../helpers'
 import { cssVar, nextFrame } from './core-helpers'
 
 // Плагин keyboardNavigation: каждое требование — свой именованный тест `KN<n>`
@@ -562,27 +562,9 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
     await renderNavigation()
     const cell = () => bodyCellAt(0, 'age')
     await userEvent.hover(cell())
-    const button = cell().querySelector<HTMLElement>('.cell__button button')!
-    // Нажатие человеком: кнопку отпускают не в той же задаче, что нажали, — редактор
-    // получает фокус по click, уже после сброса пометки «фокус от указателя» на
-    // mousedown.
-    const at = button.getBoundingClientRect()
-    const init = {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      clientX: at.x + at.width / 2,
-      clientY: at.y + at.height / 2,
-    }
-    const pointer = { ...init, pointerType: 'mouse', isPrimary: true }
-    button.dispatchEvent(new PointerEvent('pointerdown', pointer))
-    if (button.dispatchEvent(new MouseEvent('mousedown', init))) {
-      button.focus()
-    }
-    await new Promise(resolve => setTimeout(resolve, 100))
-    button.dispatchEvent(new PointerEvent('pointerup', pointer))
-    button.dispatchEvent(new MouseEvent('mouseup', init))
-    button.dispatchEvent(new MouseEvent('click', init))
+    // Кнопку отпускают не в той же задаче, что нажали: редактор получает фокус по
+    // click — уже после сброса пометки «фокус от указателя» на mousedown.
+    await humanClick(cell().querySelector<HTMLElement>('.cell__button button')!)
 
     await expect.poll(() => active().matches(EDIT_INPUT)).toBe(true)
     await new Promise(resolve => setTimeout(resolve, 100))

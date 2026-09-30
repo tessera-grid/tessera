@@ -306,8 +306,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
-    - _Клавиатура:_ `keyboard-navigation` (KN1–KN28 — роль grid, roving tabindex, режим действия, Tab-выход,
-      стрелки/Home/End/Page, пиновка под виртуализацией,
+    - _Клавиатура:_ `keyboard-navigation` (KN1–KN28, KN30 — роль grid, roving tabindex, режим действия, Tab-выход,
+      стрелки/Home/End/Page, пиновка под виртуализацией, фокус от указателя до конца нажатия,
       [ADR 0021](docs/decisions/0021-keyboard-navigation.md));
       `keyboard-wcag` (KB1–KB14 — соответствие WCAG 2.1.1 и замены клавиш для компактных клавиатур,
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
@@ -352,11 +352,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       (RX8, RX11, RX14–RX20, RX22–RX23 — аргументы на лету, сужение и отмена
       действий при запрете),
       [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md);
-      модульные `actionSessions` (SS1, SS14 — колбэки успеха; SS5–SS6, SS16–SS17 —
-      сессия правки в срезе и её согласование; SS10 — конфликт), визуальные
-      `action-sessions` (SS2, SS11–SS13, SS15 — колбэки отмены с причиной, `Escape`
-      у ресайза; SS3–SS4 — черновик переживает прокрутку, страницу, сортировку;
-      SS7–SS9 — потеря фокуса сохраняет, `Escape` отменяет),
+      модульные `actionSessions` (SS1 — колбэки успеха; SS5–SS6, SS16–SS18 — сессия
+      правки в срезе, её согласование, неизменённое значение; SS10 — конфликт),
+      визуальные `action-sessions` (SS2, SS11–SS13, SS15 — колбэки отмены с
+      причиной, `Escape` у ресайза; SS3–SS4 — черновик переживает прокрутку,
+      страницу, сортировку; SS7–SS9 — потеря фокуса сохраняет, `Escape` отменяет;
+      SS14 — `onRowDragEnd` при броске мышью и с клавиатуры),
       [ADR 0040](docs/decisions/0040-action-sessions.md); модульные `asyncCallbacks`
       (AS1, AS4, AS7–AS10, AS12 — промис от колбэка, ожидание, «ошибка» и её
       снятие, откат раскрытия),
@@ -390,6 +391,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
   Веб-защита антивируса (например, Kaspersky) внедряет в страницу свой скрипт и
   обходит DOM на каждую мутацию — на замерах это до +50% к кадру; отключайте её на
   время `npm run perf`.
+- **Клик мышью там, где важен фокус** (кнопки, открывающие редактор или меню, клик
+  мимо редактора), — `humanClick` из `__tests__/helpers.tsx`: настоящий клик
+  Playwright с паузой между нажатием и отпусканием. Мгновенный `userEvent.click`
+  гонок фокуса между `mousedown` и `click` не ловит (ADR 0021, KN30).
 - Не выдумывайте проходящий `npm test` — если что-то не покрыто, так и скажите.
 
 ### Как относиться к падающей проверке

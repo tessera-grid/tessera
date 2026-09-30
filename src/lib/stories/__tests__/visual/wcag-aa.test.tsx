@@ -4,7 +4,13 @@ import { describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-react'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
-import { Stories, bodyRows, headCells, renderGrid } from '../helpers'
+import {
+  Stories,
+  bodyRows,
+  headCells,
+  renderGrid,
+  humanClick,
+} from '../helpers'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -31,7 +37,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     const columnId = button
       .closest('.data-grid__body-cell')!
       .getAttribute('data-column-id')!
-    await userEvent.click(button)
+    await humanClick(button)
     const input = () =>
       gridRoot().querySelector<HTMLInputElement>('.data-grid__body-cell input')
     await expect.poll(input).toBeTruthy()
@@ -342,7 +348,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     })
     await waitForGrid()
 
-    await userEvent.click(
+    await humanClick(
       gridRoot().querySelector<HTMLElement>(
         '.data-grid__body-cell .cell__button button',
       )!,
