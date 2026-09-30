@@ -71,6 +71,20 @@ export interface FeatureToggles {
   enablePagination?: boolean
   /** Размер страницы пагинации (по умолчанию 25). */
   paginationPageSize?: number
+  /** Варианты размера страницы пагинации (по умолчанию 10/25/50/100). */
+  paginationPageSizes?: number[] | false
+  /** Тонкая настройка кебаба заголовка (`mode` / `threshold`). */
+  headerActionMenuOptions?: { mode?: 'auto' | 'always'; threshold?: number }
+  /** Тонкая настройка кебаба строки (`mode` / `threshold`). */
+  rowActionMenuOptions?: { mode?: 'auto' | 'always'; threshold?: number }
+  /** Флаги выделения ячеек (`rangeSelection` / `dragSelection` / `multiRange`). */
+  cellSelectionOptions?: {
+    rangeSelection?: boolean
+    dragSelection?: boolean
+    multiRange?: boolean
+  }
+  /** Разрешение перетаскивания строк при включённом плагине (`rowDragging({ enable })`). */
+  rowDraggingEnable?: boolean
 }
 
 const storyCanExpand = (row: Row<any, any>) =>
@@ -92,7 +106,10 @@ export const argsToPlugins = (o: FeatureToggles) => {
         enableRowExpanding: storyCanExpand,
       },
     },
-    rowDragging({ enabled: !!o.enableRowDragging }),
+    rowDragging({
+      enabled: !!o.enableRowDragging,
+      enable: o.rowDraggingEnable,
+    }),
     columnPinning({
       enabled: !!o.enableColumnPinning,
       leafPinning: o.enableLeafPinning,
@@ -111,20 +128,31 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowActions({
       enabled: !!o.enableRowActions,
       width: o.rowActionsOptions?.width,
+      collapsedWidth: o.rowActionsOptions?.collapsedWidth,
     }),
-    headerActionMenu({ enabled: !!o.enableHeaderActionMenu }),
-    rowActionMenu({ enabled: !!o.enableRowActionMenu }),
+    headerActionMenu({
+      enabled: !!o.enableHeaderActionMenu,
+      ...o.headerActionMenuOptions,
+    }),
+    rowActionMenu({
+      enabled: !!o.enableRowActionMenu,
+      ...o.rowActionMenuOptions,
+    }),
     // Фича/слот/локальный state включаются тумблером; бизнес-хуки (canEdit/
     // onCellEdit) демо кладёт в hook-слайс записи `demoHooks` (StoryComponent),
     // как и для остальных плагинов.
     cellEditing({ enabled: !!o.enableCellEditing }),
-    cellSelection({ enabled: !!o.enableCellSelection }),
+    cellSelection({
+      enabled: !!o.enableCellSelection,
+      ...o.cellSelectionOptions,
+    }),
     contextMenu({ enabled: !!o.enableContextMenu }),
     keyboardNavigation({ enabled: !!o.enableKeyboardNavigation }),
     columnVisibility({ enabled: !!o.enableColumnVisibility }),
     pagination({
       enabled: !!o.enablePagination,
       initialPageSize: o.paginationPageSize,
+      pageSizes: o.paginationPageSizes,
     }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.

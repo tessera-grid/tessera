@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Живые аргументы фабрик плагинов (ADR 0039, RX1–RX3): смена значения применяется
- * без пересоздания таблицы, функции живые при стабильной ссылке, новый объект с теми
- * же значениями — не смена.
+ * Живые аргументы фабрик плагинов (ADR 0039, RX1–RX3, RX21): смена значения
+ * применяется без пересоздания таблицы, функции живые при стабильной ссылке, новый
+ * объект с теми же значениями — не смена; политика сортировки меняется на лету.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
@@ -110,5 +110,65 @@ describe('живые аргументы фабрик', () => {
     rerender({ maxSort: 2 })
     expect(captured.getRenderSlots()).not.toBe(slots)
     expect(captured.options.maxMultiSortColCount).toBe(2)
+  })
+})
+
+const sortColumns = [
+  { id: 'name', accessorKey: 'name' },
+  { id: 'rank', accessorKey: 'rank' },
+]
+const sortData = [
+  { id: '1', name: 'A', rank: 2 },
+  { id: '2', name: 'B', rank: 1 },
+]
+
+const SortHost = ({
+  removal,
+  multiSort,
+}: {
+  removal: boolean
+  multiSort: boolean
+}) => {
+  captured = useCreateTable({
+    columns: sortColumns as never,
+    data: sortData,
+    plugins: [columnSorting({ removal, multiSort })],
+  })
+  return null
+}
+
+describe('политика сортировки на лету', () => {
+  it('RX21: removal и multiSort у columnSorting на лету действуют со следующего клика', () => {
+    root = createRoot(document.createElement('div'))
+    const renderSort = (removal: boolean, multiSort: boolean) =>
+      act(() =>
+        root!.render(<SortHost removal={removal} multiSort={multiSort} />),
+      )
+    const sorting = () => captured.atoms.sorting.get()
+    const toggle = (id: string, multi = false) =>
+      act(() => captured.getColumn(id).toggleSorting(undefined, multi))
+
+    renderSort(true, true)
+    toggle('name')
+    toggle('name')
+    toggle('name')
+    // С removal третий клик снимает сортировку.
+    expect(sorting()).toEqual([])
+
+    renderSort(false, true)
+    toggle('name')
+    toggle('name')
+    toggle('name')
+    expect(sorting()).toHaveLength(1)
+
+    toggle('rank', true)
+    expect(sorting().map((sort: { id: string }) => sort.id)).toEqual([
+      'name',
+      'rank',
+    ])
+
+    renderSort(false, false)
+    toggle('name', true)
+    expect(sorting().map((sort: { id: string }) => sort.id)).toEqual(['name'])
   })
 })

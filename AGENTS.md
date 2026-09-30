@@ -346,8 +346,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `plugin-errors` (PE1–PE2 — падение рендера плагина не роняет грид), модульные
       `pluginErrors` (PE3–PE5 — `setup`, `diagnose`, статус `error`),
       [ADR 0037](docs/decisions/0037-plugin-error-isolation.md); модульные
-      `reactiveArgs` (RX1–RX3 — живые аргументы фабрик), `pluginLifetime` (RX4–RX7 —
-      договоры на время жизни и `initialPageSize`),
+      `reactiveArgs` (RX1–RX3, RX21 — живые аргументы фабрик), `pluginLifetime`
+      (RX4–RX7 — договоры на время жизни и `initialPageSize`), визуальные
+      `reactive-args` (RX17–RX20, RX22–RX23 — аргументы на лету),
       [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
