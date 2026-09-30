@@ -25,6 +25,8 @@ export interface RowDraggingOptions {
 
 export const rowDragging = definePlugin<RowDraggingOptions>()({
   id: 'rowDragging',
+  // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
+  refreshOn: ['enable'],
   features: { rowDraggingFeature },
   hooks: o => ({ onRowDragEnd: o.onRowDragEnd }),
   keyboardActions: [moveRowKeyboardAction, nestRowKeyboardAction],

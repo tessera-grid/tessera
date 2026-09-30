@@ -45,6 +45,17 @@ bail-out на стороне React по изменению снимка селе
 Корень `DataGrid` держит единственную подписку `useTableState(table, s => …)`
 (отдельного `SubscriptionStoreProvider` больше нет).
 
+## Эффективное состояние и предикаты плагинов
+
+Параметры плагина могут сужать допустимое состояние (`rowExpanding` `maxDepth`,
+`columnSorting` `multiSort.max`, `columnPinning` без `leafPinning`). Ядро не
+переписывает сохранённый срез, а передаёт TanStack эффективный через `state`
+(`core/effectiveState.ts`, ADR 0039): сохранённое хранит ядро (неконтролируемый срез)
+или потребитель (контролируемый). Предикаты отрисовки из `refreshOn` плагина
+(`canSelectCell`, `canEdit`, `enable`) при новой ссылке поднимают версию отрисовки
+(`core/renderVersion.ts`): `BodyCell` и `HeadCellView` читают её из контекста и
+перерисовываются мимо мемоизации.
+
 ## Выбор механизма
 
 | Нужно                                   | Использовать                          |

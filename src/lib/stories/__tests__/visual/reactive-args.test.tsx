@@ -4,10 +4,11 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { Stories, bodyRows, headCells } from '../helpers'
 
-// Аргументы фабрик на лету (ADR 0039, RX17–RX20, RX22–RX23): история
+// Аргументы фабрик на лету (ADR 0039, RX8, RX11, RX17–RX20, RX22–RX23): история
 // перерисовывается с новым значением аргумента на том же экземпляре таблицы, и
 // поведение меняется без пересоздания. Состояние читается из DOM-контракта.
-// RX21 — модульный (`src/lib/__tests__/reactiveArgs.dom.test.tsx`).
+// Сужение (RX8, RX11) не переписывает сохранённое: вернули значение — вернулось
+// прежнее. RX9–RX10, RX12–RX13, RX21 — модульные (`src/lib/__tests__/`).
 
 const GRID = {
   containerHeight: 600,
@@ -193,5 +194,61 @@ describe('Аргументы фабрик на лету', () => {
       <Stories.AllFeatures {...args} rowDraggingEnable={false} />,
     )
     await expect.poll(rowHandles).toBe(0)
+  })
+
+  test('RX8: maxDepth ↓ показывает строки глубже предела свёрнутыми; вернули значение — строки снова раскрыты', async () => {
+    const args = {
+      ...GRID,
+      dataMode: 'hierarchy' as const,
+      enableRowExpanding: true,
+    }
+    const rowIds = () => bodyRows().map(row => row.dataset.rowId)
+    const screen = await render(
+      <Stories.AllFeatures {...args} rowExpandingMaxDepth={3} />,
+    )
+    // Всё дерево раскрыто: item-id-3 — ребёнок строки глубины 1.
+    await expect.poll(rowIds).toContain('item-id-3')
+
+    await screen.rerender(
+      <Stories.AllFeatures {...args} rowExpandingMaxDepth={1} />,
+    )
+    await expect.poll(rowIds).not.toContain('item-id-3')
+    expect(rowIds()).toContain('item-id-2')
+
+    await screen.rerender(
+      <Stories.AllFeatures {...args} rowExpandingMaxDepth={3} />,
+    )
+    await expect.poll(rowIds).toContain('item-id-3')
+  })
+
+  test('RX11: canSelectCell сузился — невыбираемые ячейки не показаны выбранными; вернули — снова выбраны', async () => {
+    const args = { ...GRID, enableCellSelection: true }
+    const allowAll = () => true
+    const denyAll = () => false
+    const screen = await render(
+      <Stories.AllFeatures
+        {...args}
+        cellSelectionOptions={{ canSelectCell: allowAll }}
+      />,
+    )
+    await waitForGrid()
+    await userEvent.click(cellAt(0, 1))
+    await expect.poll(selectedCells).toBe(1)
+
+    await screen.rerender(
+      <Stories.AllFeatures
+        {...args}
+        cellSelectionOptions={{ canSelectCell: denyAll }}
+      />,
+    )
+    await expect.poll(selectedCells).toBe(0)
+
+    await screen.rerender(
+      <Stories.AllFeatures
+        {...args}
+        cellSelectionOptions={{ canSelectCell: allowAll }}
+      />,
+    )
+    await expect.poll(selectedCells).toBe(1)
   })
 })

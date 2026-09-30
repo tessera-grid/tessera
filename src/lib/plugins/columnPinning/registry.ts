@@ -9,6 +9,7 @@ import { columnPinningFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
+import { narrowLeafPinning } from './narrowPinning'
 import { pinHeaderAction } from './pinHeaderAction'
 import type { ColumnPinningHooks } from './types'
 
@@ -28,6 +29,10 @@ export const columnPinning = definePlugin<ColumnPinningOptions>()({
   hooks: o => ({ onTogglePin: o.onTogglePin }),
   // Единый дескриптор: ядро решает подачу (инлайн/кебаб).
   slotActions: [pinHeaderAction],
+  narrow: o =>
+    o.enabled === false || o.leafPinning
+      ? undefined
+      : { columnPinning: narrowLeafPinning },
   options: o => ({
     enableColumnPinning: o.enabled !== false,
     enableLeafPinning: !!o.leafPinning,

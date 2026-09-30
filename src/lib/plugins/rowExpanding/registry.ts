@@ -13,6 +13,7 @@ import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
+import { narrowExpandedByDepth } from './narrowExpanded'
 import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
@@ -42,6 +43,14 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
   },
   hooks: o => ({ onExpandRow: o.onExpandRow }),
   keyboardActions: [toggleExpandedKeyboardAction],
+  narrow: o =>
+    o.enabled === false
+      ? undefined
+      : {
+          expanded: narrowExpandedByDepth(
+            o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH,
+          ),
+        },
   column: {
     id: COLUMN_EXPANDING_ID,
     make: getRowExpandingColumn,

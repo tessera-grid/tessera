@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { narrowSorting } from './narrowSorting'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
@@ -81,6 +82,14 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
   slotActions: [sortHeaderAction],
   keyboardActions: [sortKeyboardAction],
+  narrow: o => {
+    if (o.enabled === false) {
+      return undefined
+    }
+    const multi = resolveMultiSort(o.multiSort)
+    const limit = multi.enabled ? multi.opts.max : 1
+    return limit === undefined ? undefined : { sorting: narrowSorting(limit) }
+  },
   options: o => {
     const multi = resolveMultiSort(o.multiSort)
     const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)

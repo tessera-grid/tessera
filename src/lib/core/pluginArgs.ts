@@ -47,12 +47,15 @@ export interface PluginArgsStore {
   latest: Map<string, unknown>
   mounted: Map<string, unknown>
   trampolines: Map<string, (...args: unknown[]) => unknown>
+  /** Растёт при новой ссылке на предикат из `refreshArgs` (перерисовка ячеек). */
+  renderVersion: number
 }
 
 export const createPluginArgsStore = (): PluginArgsStore => ({
   latest: new Map(),
   mounted: new Map(),
   trampolines: new Map(),
+  renderVersion: 0,
 })
 
 /**
@@ -95,6 +98,17 @@ export const rememberPluginArgs = (
 ) => {
   for (const entry of entries) {
     if (entry.configure) {
+      const previous = store.latest.get(entry.id)
+      if (
+        entry.refreshArgs?.some(
+          key =>
+            readPath(previous, [key]) !== readPath(entry.args, [key]) &&
+            (typeof readPath(previous, [key]) === 'function' ||
+              typeof readPath(entry.args, [key]) === 'function'),
+        )
+      ) {
+        store.renderVersion += 1
+      }
       store.latest.set(entry.id, entry.args)
       if (!store.mounted.has(entry.id)) {
         store.mounted.set(entry.id, entry.args)

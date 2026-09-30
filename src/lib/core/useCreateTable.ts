@@ -47,6 +47,7 @@ import {
   resolvePluginSet,
   type PluginSetStore,
 } from './pluginSet'
+import { useEffectiveState } from './effectiveState'
 import { useTableEffects } from './useTableEffects'
 
 const DEFAULT_COLUMN = {
@@ -203,6 +204,27 @@ export const useCreateTable = <
   // мемоизируются по сигнатуре набора. resolveHooks подкладывает no-op дефолты.
   const resolvedHooks = resolveHooks(foldHooks(entries))
 
+  // Эффективное состояние при сужении параметров (ADR 0039, §4): TanStack видит
+  // «сохранённое ∩ допустимое», сохранённое остаётся нетронутым. Сужению отдаётся
+  // экземпляр предыдущего рендера, только если его данные совпадают с текущими (строки
+  // уже построены); иначе оно откладывается на повторный рендер.
+  const tableRef = useRef<{
+    options: { data: unknown }
+    atoms: Record<string, { get: () => unknown }>
+  }>(null)
+  const previous = tableRef.current
+  const freshTable = previous?.options.data === data ? previous : null
+  const narrowToken = useMemo(() => ({}), [data, injectedColumns])
+  const effective = useEffectiveState({
+    narrow: folded.narrow,
+    owned: { columnPinning: displayedPinning },
+    state: restState,
+    handlers: restHandlers,
+    table: freshTable,
+    getAtoms: () => tableRef.current?.atoms,
+    token: narrowToken,
+  })
+
   // Стабильная ссылка на контролируемый state: потребитель (стори) отдаёт свежий
   // объект state каждый рендер, а v9 useTable публикует его в store в layout-эффекте
   // (table_publishExternalState). При новой ссылке-но-том-же-контенте это давало
@@ -210,7 +232,8 @@ export const useCreateTable = <
   // ссылку, пока срезы shallow-равны.
   const mergedState = {
     ...restState,
-    columnPinning: displayedPinning,
+    ...effective.state,
+    columnPinning: effective.state.columnPinning ?? displayedPinning,
     columnSizing: displayedSizing,
   }
   const stateRef = useRef(mergedState)
@@ -239,8 +262,9 @@ export const useCreateTable = <
     onColumnSizingChange,
     onColumnAutoSizingChange,
     // Прочие onXChange потребителя (onExpandedChange/onRowSelectionChange/
-    // onGroupingChange/onRowOrderChange…).
+    // onGroupingChange/onRowOrderChange…); для суженных срезов — обёртки слоя.
     ...restHandlers,
+    ...effective.handlers,
 
     hooks: resolvedHooks,
     slots: folded.slots,
@@ -248,6 +272,7 @@ export const useCreateTable = <
     contextMenuActions: folded.contextMenuActions,
     keyboardActions: folded.keyboardActions,
     pluginDiagnostics: folded.pluginDiagnostics,
+    pluginRenderVersion: argsStore.current.renderVersion,
     actionMenu: folded.actionMenu,
     enableSkeleton,
     enableLoading,
@@ -263,6 +288,8 @@ export const useCreateTable = <
   const table = useTable(
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
   )
+
+  tableRef.current = table as unknown as typeof tableRef.current
 
   useTableEffects(
     table,

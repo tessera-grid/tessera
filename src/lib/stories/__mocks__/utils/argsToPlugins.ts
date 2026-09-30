@@ -18,6 +18,7 @@ import {
   rowExpanding,
   rowGrouping,
   rowSelection,
+  type CellSelectionOptions,
   type ColumnMultiSortOptions,
 } from '../../../../lib/plugins'
 import type { TesseraFeatureEntry } from '../../../../lib/core/features'
@@ -82,7 +83,10 @@ export interface FeatureToggles {
     rangeSelection?: boolean
     dragSelection?: boolean
     multiRange?: boolean
+    canSelectCell?: CellSelectionOptions['canSelectCell']
   }
+  /** Предел глубины раскрытия (`rowExpanding({ maxDepth })`). */
+  rowExpandingMaxDepth?: number
   /** Разрешение перетаскивания строк при включённом плагине (`rowDragging({ enable })`). */
   rowDraggingEnable?: boolean
 }
@@ -97,7 +101,10 @@ export const argsToPlugins = (o: FeatureToggles) => {
       subRows: o.enableSubRowSelection,
       selectedCount: o.showSelectedCount,
     }),
-    rowExpanding({ enabled: !!o.enableRowExpanding }),
+    rowExpanding({
+      enabled: !!o.enableRowExpanding,
+      maxDepth: o.rowExpandingMaxDepth,
+    }),
     // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
     // строки TanStack — предикат отдельной записью после плагина (опции по порядку).
     {

@@ -14,6 +14,7 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
+import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import { Skeleton } from '../ui/Skeleton'
@@ -56,6 +57,8 @@ export const BodyCell = memo(
     absoluteLeft,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
+    // Новая ссылка на предикат плагина (canSelectCell, canEdit…) — перерисовка.
+    usePluginRenderVersion()
 
     // Самоподписка: BodyCell — memo по стабильному `cell`, поэтому смена срезов не
     // приходит сверху новым пропом. Подписка сужена до срезов ФОРМЫ КОЛОНОК, от которых

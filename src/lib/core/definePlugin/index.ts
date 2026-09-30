@@ -19,6 +19,7 @@ import type {
 } from '../headerActions'
 import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
+import type { NarrowState } from '../effectiveState'
 import { argsKeyOf } from '../pluginArgs'
 import { pluginStateKey, stateChangeOption } from './channels'
 
@@ -85,8 +86,18 @@ interface DefinePluginConfig<
    * монтирования, смена на лету не применяется и сопровождается dev-warn.
    */
   lifetime?: readonly Extract<keyof TOptions, string>[]
+  /**
+   * Аргументы-функции, влияющие на отрисовку (предикаты): новая ссылка на функцию
+   * перерисовывает ячейки (ADR 0039). Колбэки `on*` сюда не входят.
+   */
+  refreshOn?: readonly Extract<keyof TOptions, string>[]
   /** Живой слайс бизнес-колбэков; undefined-ключи отбрасываются. */
   hooks?: (opts: TOptions) => THooks
+  /**
+   * Сужение срезов состояния аргументами (ADR 0039, §4): «сохранённое → допустимое»
+   * по ключу среза; ядро отдаёт TanStack эффективное, не переписывая сохранённое.
+   */
+  narrow?: (opts: TOptions) => Record<string, NarrowState> | undefined
   /**
    * Дефолт ЛОКАЛЬНОГО состояния плагина (значение слайса). definePlugin генерирует
    * v9-фичу, seed'ящую слайс под ключом `plugin:<id>`; компонент читает/пишет его через пропс
@@ -170,6 +181,10 @@ export const definePlugin =
         if (config.setup) {
           out.setup = config.setup(args)
         }
+        const narrow = config.narrow?.(args)
+        if (narrow) {
+          out.narrow = narrow
+        }
         return out
       }
       Object.assign(entry, configure(opts))
@@ -178,6 +193,9 @@ export const definePlugin =
       entry.configure = configure as TesseraFeatureEntry['configure']
       if (config.lifetime) {
         entry.lifetimeArgs = config.lifetime
+      }
+      if (config.refreshOn) {
+        entry.refreshArgs = config.refreshOn
       }
 
       if (config.hooks) {

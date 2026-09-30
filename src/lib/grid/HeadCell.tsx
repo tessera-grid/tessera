@@ -28,6 +28,7 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
+import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
 import type { CommonColumnDef } from '../core/commonFeature.types'
 import { ActionsZone } from './headerActions/ActionsZone'
@@ -78,6 +79,8 @@ export const HeadCellView = ({
   drag,
   absoluteLeft,
 }: HeadCellViewProps) => {
+  // Новая ссылка на предикат плагина — перерисовка шапки.
+  usePluginRenderVersion()
   const table = header.getContext().table
 
   // Коарс-подписка (TODO Phase D: сузить). Нужна для aria-sort/resizing/пиннинга.

@@ -39,6 +39,8 @@ export interface CellEditingOptions {
 
 export const cellEditing = definePlugin<CellEditingOptions>()({
   id: 'cellEditing',
+  // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
+  refreshOn: ['canEdit'],
   diagnose: neverInert,
   // Локальный слайс: какая ячейка сейчас редактируется.
   state: (): EditingCell => null,

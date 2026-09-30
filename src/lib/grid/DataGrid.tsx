@@ -19,6 +19,7 @@ import { ContextMenu } from './contextMenu/ContextMenu'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
+import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
@@ -95,6 +96,8 @@ export const DataGrid = ({
 
   const enableContextMenu = !!(table.options as any).enableContextMenu
   const enableToolbar = !!(table.options as any).enableToolbar
+  const renderVersion = ((table.options as any).pluginRenderVersion ??
+    0) as number
   // Панель есть, пока есть хоть один слот: её включает сам плагин (ADR 0038).
   const statusBarSlot =
     (table.getRenderSlots as () => RenderSlots | undefined)()?.statusBarSlot ??
@@ -221,31 +224,33 @@ export const DataGrid = ({
           loading={showLinearProgress || showSkeletonOverlay}
           rowCount={rows.length}
         />
-        <IconsProvider icons={icons}>
-          <LocalizationProvider localization={localization}>
-            <div
-              className={clsx(
-                dataGridStyles['table__theme-wrapper'],
-                themeClassName,
-              )}
-              data-toolbar={enableToolbar || undefined}
-              data-status-bar={hasStatusBar || undefined}
-              style={{ ...containerStyles, ...style }}
-            >
-              {toolbar}
+        <PluginRenderVersionContext.Provider value={renderVersion}>
+          <IconsProvider icons={icons}>
+            <LocalizationProvider localization={localization}>
               <div
                 className={clsx(
-                  'data-grid__container',
-                  dataGridStyles['table__stub-container'],
+                  dataGridStyles['table__theme-wrapper'],
+                  themeClassName,
                 )}
-                ref={scrollableNodeRef}
+                data-toolbar={enableToolbar || undefined}
+                data-status-bar={hasStatusBar || undefined}
+                style={{ ...containerStyles, ...style }}
               >
-                <div className={dataGridStyles.table__stub}>{stub}</div>
+                {toolbar}
+                <div
+                  className={clsx(
+                    'data-grid__container',
+                    dataGridStyles['table__stub-container'],
+                  )}
+                  ref={scrollableNodeRef}
+                >
+                  <div className={dataGridStyles.table__stub}>{stub}</div>
+                </div>
+                {statusBar}
               </div>
-              {statusBar}
-            </div>
-          </LocalizationProvider>
-        </IconsProvider>
+            </LocalizationProvider>
+          </IconsProvider>
+        </PluginRenderVersionContext.Provider>
       </>
     )
   }
@@ -258,82 +263,84 @@ export const DataGrid = ({
         loading={showLinearProgress || showSkeletonOverlay}
         rowCount={rows.length}
       />
-      <IconsProvider icons={icons}>
-        <LocalizationProvider localization={localization}>
-          <FastScrollProvider store={fastScrollStore}>
-            <div
-              ref={wrapperRef}
-              className={clsx(
-                dataGridStyles['table__theme-wrapper'],
-                themeClassName,
-              )}
-              data-toolbar={enableToolbar || undefined}
-              data-status-bar={hasStatusBar || undefined}
-              style={wrapperStyles}
-            >
-              {toolbar}
-              {showLinearProgress && <LinearProgress label={loadingLabel} />}
-              {enableContextMenu && (
-                <ContextMenu
-                  table={table}
-                  getScrollElement={getScrollElement}
-                />
-              )}
-              {keyboardNavigation && (
-                <div
-                  ref={keyboardNavigation.guardBeforeRef}
-                  tabIndex={-1}
-                  className={dataGridStyles['focus-guard']}
-                  data-kn-guard="before"
-                />
-              )}
+      <PluginRenderVersionContext.Provider value={renderVersion}>
+        <IconsProvider icons={icons}>
+          <LocalizationProvider localization={localization}>
+            <FastScrollProvider store={fastScrollStore}>
               <div
+                ref={wrapperRef}
                 className={clsx(
-                  'data-grid__container',
-                  dataGridStyles.table__container,
-                  {
-                    [dataGridStyles['table__container--skeleton']]:
-                      showSkeletonOverlay,
-                  },
+                  dataGridStyles['table__theme-wrapper'],
+                  themeClassName,
                 )}
-                ref={scrollableNodeRef}
-                data-resizing={isResizingColumns !== false}
-                onCopy={handleCopy}
+                data-toolbar={enableToolbar || undefined}
+                data-status-bar={hasStatusBar || undefined}
+                style={wrapperStyles}
               >
-                {showSkeletonOverlay ? (
-                  <SkeletonOverlay table={table} columnSizes={columnSizes} />
-                ) : (
-                  <DataGridTable
+                {toolbar}
+                {showLinearProgress && <LinearProgress label={loadingLabel} />}
+                {enableContextMenu && (
+                  <ContextMenu
                     table={table}
-                    layout={layout}
-                    headStyles={headStyles}
-                    headerGroups={headerGroups}
-                    rows={rows}
-                    leafColumns={leafColumns}
-                    virtualRows={virtualRows}
-                    virtualColumns={virtualColumns}
-                    isVirtualColumns={!hasNestedGroups}
-                    isResizingColumns={isResizingColumns}
-                    keyboardNavigation={keyboardNavigation}
-                    label={tableLabel}
-                    busy={showLinearProgress}
-                    style={{ ...columnSizes, ...virtualPaddingStyles }}
+                    getScrollElement={getScrollElement}
                   />
                 )}
-              </div>
-              {keyboardNavigation && (
+                {keyboardNavigation && (
+                  <div
+                    ref={keyboardNavigation.guardBeforeRef}
+                    tabIndex={-1}
+                    className={dataGridStyles['focus-guard']}
+                    data-kn-guard="before"
+                  />
+                )}
                 <div
-                  ref={keyboardNavigation.guardAfterRef}
-                  tabIndex={-1}
-                  className={dataGridStyles['focus-guard']}
-                  data-kn-guard="after"
-                />
-              )}
-              {statusBar}
-            </div>
-          </FastScrollProvider>
-        </LocalizationProvider>
-      </IconsProvider>
+                  className={clsx(
+                    'data-grid__container',
+                    dataGridStyles.table__container,
+                    {
+                      [dataGridStyles['table__container--skeleton']]:
+                        showSkeletonOverlay,
+                    },
+                  )}
+                  ref={scrollableNodeRef}
+                  data-resizing={isResizingColumns !== false}
+                  onCopy={handleCopy}
+                >
+                  {showSkeletonOverlay ? (
+                    <SkeletonOverlay table={table} columnSizes={columnSizes} />
+                  ) : (
+                    <DataGridTable
+                      table={table}
+                      layout={layout}
+                      headStyles={headStyles}
+                      headerGroups={headerGroups}
+                      rows={rows}
+                      leafColumns={leafColumns}
+                      virtualRows={virtualRows}
+                      virtualColumns={virtualColumns}
+                      isVirtualColumns={!hasNestedGroups}
+                      isResizingColumns={isResizingColumns}
+                      keyboardNavigation={keyboardNavigation}
+                      label={tableLabel}
+                      busy={showLinearProgress}
+                      style={{ ...columnSizes, ...virtualPaddingStyles }}
+                    />
+                  )}
+                </div>
+                {keyboardNavigation && (
+                  <div
+                    ref={keyboardNavigation.guardAfterRef}
+                    tabIndex={-1}
+                    className={dataGridStyles['focus-guard']}
+                    data-kn-guard="after"
+                  />
+                )}
+                {statusBar}
+              </div>
+            </FastScrollProvider>
+          </LocalizationProvider>
+        </IconsProvider>
+      </PluginRenderVersionContext.Provider>
     </>
   )
 }

@@ -38,6 +38,7 @@ import {
   type SlotActionMenu,
   type SlotActions,
 } from './headerActions'
+import type { NarrowMap, NarrowState } from './effectiveState'
 import {
   reportPluginError,
   type PluginDiagnose,
@@ -71,6 +72,11 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * держит их значение с момента монтирования, смена на лету — dev-warn.
    */
   lifetimeArgs?: readonly string[]
+  /**
+   * Аргументы-функции, влияющие на отрисовку (ADR 0039): новая ссылка на такую
+   * функцию перерисовывает ячейки. Колбэки `on*` сюда не входят.
+   */
+  refreshArgs?: readonly string[]
   /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
   inertReason?: PluginInertReason
   /**
@@ -106,11 +112,20 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * едином useEffect; может вернуть cleanup.
    */
   setup?: (table: unknown) => void | (() => void)
+  /**
+   * Сужение срезов состояния параметрами плагина (ADR 0039, §4): «сохранённое →
+   * допустимое» по ключу среза. Ядро отдаёт TanStack эффективное значение, не
+   * переписывая сохранённое.
+   */
+  narrow?: Record<string, NarrowState>
 }
 
 /** Поля записи, которые зависят от аргументов фабрики. */
 export type PluginConfiguration = Partial<
-  Pick<TesseraFeatureEntry, 'options' | 'slots' | 'actionMenu' | 'setup'>
+  Pick<
+    TesseraFeatureEntry,
+    'options' | 'slots' | 'actionMenu' | 'setup' | 'narrow'
+  >
 >
 
 /** Свёрнутая из записей конфигурация — уходит в опции таблицы / сборку колонок. */
@@ -123,6 +138,8 @@ export interface FoldedEntryConfig {
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
   setups: NonNullable<TesseraFeatureEntry['setup']>[]
+  /** Сужения срезов состояния активных записей, по ключу среза (ADR 0039). */
+  narrow: NarrowMap
   /** Все присутствующие записи, включая `enabled: false`. */
   pluginDiagnostics: PluginDiagnosticSource[]
 }
@@ -165,6 +182,7 @@ export const foldEntries = (
   const serviceColumns: ServiceColumn[] = []
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
   const pluginDiagnostics: PluginDiagnosticSource[] = []
+  const narrow: NarrowMap = {}
 
   for (const entry of entries) {
     pluginDiagnostics.push({
@@ -219,6 +237,10 @@ export const foldEntries = (
       })
     }
 
+    for (const [key, fn] of Object.entries(entry.narrow ?? {})) {
+      ;(narrow[key] ??= []).push(fn)
+    }
+
     if (entry.actionMenu) {
       const { slots: menuSlots, mode, threshold } = entry.actionMenu
       menuSlots.forEach(slot => {
@@ -236,6 +258,7 @@ export const foldEntries = (
     actionMenu,
     serviceColumns,
     setups,
+    narrow,
     pluginDiagnostics,
   }
 }

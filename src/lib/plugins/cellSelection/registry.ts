@@ -24,6 +24,8 @@ const defaultCanSelect = (cell: CellSelectionPredicateCell): boolean =>
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 export const cellSelection = definePlugin<CellSelectionOptions>()({
   id: 'cellSelection',
+  // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
+  refreshOn: ['canSelectCell'],
   diagnose: neverInert,
   features: { cellSelectionFeature },
   options: o => {

@@ -232,12 +232,14 @@ export const useData = ({
       setData(getData(count))
     }
 
+    // Копия на экземпляр истории: перестановка строк меняет вложенные subRows, и
+    // общий модульный массив протекал бы между историями и тестами.
     if (mode === 'hierarchy') {
-      setData(hierarchyData)
+      setData(structuredClone(hierarchyData))
     }
 
     if (mode === 'groups') {
-      setData(groupedData)
+      setData(structuredClone(groupedData))
     }
   }, [count, mode, showStub])
 
