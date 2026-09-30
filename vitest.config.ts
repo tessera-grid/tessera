@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import { axTree } from './src/lib/stories/__tests__/a11y.commands'
+import { axTree } from './src/lib/stories/__tests__/a11y.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
@@ -38,30 +38,41 @@ export default defineConfig({
     ],
   },
   test: {
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    // Исключаем из основного (dev) прогона: node-тесты логики (vitest.node.config.ts)
-    // и перф-тесты — последние меряются на PROD-сборке отдельным vitest.perf.config.ts
-    // (dev-сборка завышает работу кадра ~2×; бюджеты RAIL сверяются с прод-релизом).
-    exclude: [
-      ...configDefaults.exclude,
-      'src/lib/__tests__/**',
-      'src/lib/stories/__tests__/performance/**',
+    // Два проекта одного `npm test`: браузерный (визуальные тесты в Chromium) и
+    // модульный `unit` (node, vitest.node.config.ts).
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'browser',
+          include: ['src/**/*.{test,spec}.{ts,tsx}'],
+          // Исключаем модульные тесты — у них проект `unit` — и перф-тесты: те меряются
+          // на PROD-сборке отдельным vitest.perf.config.ts (dev-сборка завышает работу
+          // кадра ~2×; бюджеты RAIL сверяются с прод-релизом).
+          exclude: [
+            ...configDefaults.exclude,
+            'src/lib/__tests__/**',
+            'src/lib/stories/__tests__/performance/**',
+          ],
+          setupFiles: ['./vitest.setup.ts'],
+          // Файлы гоняются по одному: визуальные тесты сравнивают скриншоты реального
+          // layout, а параллельные браузерные вкладки конкурируют за ресурсы и делают
+          // рендер/тайминги нестабильными.
+          fileParallelism: false,
+          browser: {
+            enabled: true,
+            headless: true,
+            // Реальный Chromium headless — визуальные тесты сверяют настоящий рендер.
+            provider: playwright({
+              launchOptions: { channel: 'chromium' },
+            }),
+            instances: [{ browser: 'chromium' }],
+            // Дерево доступности Chromium через CDP (ADR 0033).
+            commands: { axTree },
+          },
+        },
+      },
+      './vitest.node.config.ts',
     ],
-    setupFiles: ['./vitest.setup.ts'],
-    // Файлы гоняются по одному: визуальные тесты сравнивают скриншоты реального
-    // layout, а параллельные браузерные вкладки конкурируют за ресурсы и делают
-    // рендер/тайминги нестабильными.
-    fileParallelism: false,
-    browser: {
-      enabled: true,
-      headless: true,
-      // Реальный Chromium headless — визуальные тесты сверяют настоящий рендер.
-      provider: playwright({
-        launchOptions: { channel: 'chromium' },
-      }),
-      instances: [{ browser: 'chromium' }],
-      // Дерево доступности Chromium через CDP (ADR 0033).
-      commands: { axTree },
-    },
   },
 })

@@ -2,9 +2,8 @@ import { fileURLToPath } from 'node:url'
 
 import { defineConfig } from 'vitest/config'
 
-// Конфиг node-тестов логики (src/lib/__tests__/**). Отдельно от основного
-// браузерного прогона (vitest.config.ts). Запуск:
-//   npx vitest run --config vitest.node.config.ts
+// Конфиг модульных тестов логики (src/lib/__tests__/**) — проект `unit` в
+// vitest.config.ts, идёт в `npm test`. Отдельно: `npm test -- --project unit`.
 export default defineConfig({
   resolve: {
     alias: {
@@ -12,6 +11,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: 'unit',
     include: ['src/lib/__tests__/**/*.test.{ts,tsx}'],
     // node по умолчанию; DOM-тесты реактивности задают happy-dom докблоком
     // `// @vitest-environment happy-dom` пофайлово.

@@ -250,7 +250,8 @@ Story-derived тесты (визуальные и перформанс) живу
   `measureScrollWork` через CDP-команды (`perf.commands.ts`).
 - **модульные (логика):** тесты логики в `src/lib/__tests__/*.test.ts` (после
   миграции на v9 консолидированы там, напр. `columnDragging.test.ts`,
-  `columnSizing.test.ts`, `core.test.ts`, `slots.test.ts`). Выделенный тест drag-end
+  `columnSizing.test.ts`, `core.test.ts`, `slots.test.ts`); идут в `npm test` проектом `unit`
+  (node) рядом с браузерным проектом. Выделенный тест drag-end
   (промах мимо цели / чистота updater'а, регрессии `A1`/`A2`) **пока не
   восстановлен** — открытый пробел.
 

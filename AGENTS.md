@@ -307,9 +307,11 @@ CSS-модули. Storybook — инструмент отладки, а не ш�
 Chromium через Playwright, а **не** в jsdom, потому что виртуализация и поведение
 производительности Tessera зависят от реальной раскладки и тайминга кадров, которые jsdom
 обеспечить не может. Stories переиспользуются как фикстуры через `composeStories`
-(`src/lib/stories/__tests__/helpers.tsx`).
+(`src/lib/stories/__tests__/helpers.tsx`). Модульные тесты логики (`src/lib/__tests__/**`) идут
+в том же `npm test` отдельным проектом `unit` в node (`vitest.node.config.ts`).
 
-- `npm test` — прогнать один раз. `npm run test:watch` — watch-режим.
+- `npm test` — прогнать один раз (оба проекта); один проект —
+  `npm test -- --project unit` или `--project browser`. `npm run test:watch` — watch-режим.
 - `npm run perf` — прогнать только перф-матрицу и собрать локальный дашборд
   `performance-results/index.html` (кейсы P1–P8, бары «значение vs бюджет», p95/p99/
   longest/над-бюджетом); `npm run perf:report` пересобирает борд из последнего
