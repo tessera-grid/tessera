@@ -17,10 +17,12 @@ export const useTableEffects = (
   plugins: readonly TesseraFeatureEntry[],
   folded: FoldedEntryConfig,
   signature: string,
+  argsSignature: string,
 ) => {
   const host = table as Parameters<typeof logWarn>[0]
 
-  // Императивный сетап плагинов (generic-escape) — единым эффектом.
+  // Императивный сетап плагинов (generic-escape) — единым эффектом; перезапускается
+  // и при смене значения аргументов фабрик (ADR 0039).
   useEffect(
     () => {
       const cleanups = folded.setups.map(setup => setup(table))
@@ -28,8 +30,8 @@ export const useTableEffects = (
         cleanups.forEach(cleanup => cleanup?.())
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
-    [signature, table],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
+    [argsSignature, table],
   )
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.

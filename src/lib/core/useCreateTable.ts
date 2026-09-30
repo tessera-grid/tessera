@@ -26,7 +26,6 @@ import {
   buildTesseraFeatures,
   foldEntries,
   foldHooks,
-  foldLiveOptions,
   type TesseraFeatureEntry,
   type TesseraFeatures,
 } from './features'
@@ -34,6 +33,13 @@ import {
   useControlledPinning,
   useControlledSizing,
 } from './useControlledLayout'
+import {
+  createPluginArgsStore,
+  pluginArgsSignature,
+  rememberPluginArgs,
+  resolvePluginEntries,
+  type PluginArgsStore,
+} from './pluginArgs'
 import { useTableEffects } from './useTableEffects'
 
 const DEFAULT_COLUMN = {
@@ -119,25 +125,40 @@ export const useCreateTable = <
     [signature],
   )
 
-  const folded = useMemo(
-    () => foldEntries(plugins),
+  // Сервисные колонки не зависят от аргументов фабрик — держим их по составу набора:
+  // смена аргумента не пересоздаёт колонки и не перестраивает модель.
+  const serviceColumns = useMemo(
+    () => foldEntries(plugins).serviceColumns,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature],
   )
 
+  // Аргументы фабрик живые (ADR 0039): настройка записей пересобирается при смене
+  // ЗНАЧЕНИЯ аргументов, функции из аргументов — стабильные обёртки на последнюю версию.
+  const argsStore = useRef<PluginArgsStore | null>(null)
+  argsStore.current ??= createPluginArgsStore()
+  rememberPluginArgs(argsStore.current, plugins)
+  const argsSignature = `${signature}#${pluginArgsSignature(plugins)}`
+
+  const folded = useMemo(
+    () => foldEntries(resolvePluginEntries(argsStore.current!, plugins)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
+    [argsSignature],
+  )
+
   const injectedColumns = useMemo(
-    () => injectServiceColumns(columns, folded.serviceColumns),
-    [columns, folded],
+    () => injectServiceColumns(columns, serviceColumns),
+    [columns, serviceColumns],
   )
 
   // Сервисные колонки для пиннинга: id (таргет пина) + объявленная плагином политика.
   const servicePins = useMemo(
     () =>
-      folded.serviceColumns.map(column => ({
+      serviceColumns.map(column => ({
         id: column.id,
         pin: column.pin,
       })),
-    [folded],
+    [serviceColumns],
   )
 
   // Потребительский state/handlers: columnPinning/columnSizing перехватываем
@@ -198,10 +219,8 @@ export const useCreateTable = <
     defaultColumn: defaultColumn ?? DEFAULT_COLUMN,
 
     // Фичевые опции плагинов (enableSorting и т.п.) — вливаются первыми, чтобы
-    // явные поля ниже их не затирались. `options` заморожены по сигнатуре набора
-    // (функции в них кормят мемо row-моделей); `liveOptions` — каждый рендер.
+    // явные поля ниже их не затирались.
     ...folded.options,
-    ...foldLiveOptions(plugins),
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
     state: stableState,
@@ -234,7 +253,7 @@ export const useCreateTable = <
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
   )
 
-  useTableEffects(table, plugins, folded, signature)
+  useTableEffects(table, plugins, folded, signature, argsSignature)
 
   return table
 }

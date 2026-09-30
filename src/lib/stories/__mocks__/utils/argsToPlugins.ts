@@ -73,26 +73,25 @@ export interface FeatureToggles {
   paginationPageSize?: number
 }
 
-export const argsToPlugins = (o: FeatureToggles) => {
-  // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
-  // строки TanStack — предикат кладём в опции фабрики.
-  const expanding = rowExpanding({ enabled: !!o.enableRowExpanding })
-  const rowExpandingEntry = {
-    ...expanding,
-    options: {
-      ...expanding.options,
-      enableRowExpanding: (row: Row<any, any>) =>
-        row.getIsGrouped() || !!row.original?.isGroup,
-    },
-  }
+const storyCanExpand = (row: Row<any, any>) =>
+  row.getIsGrouped() || !!row.original?.isGroup
 
+export const argsToPlugins = (o: FeatureToggles) => {
   return [
     rowSelection({
       enabled: !!o.enableRowSelection,
       subRows: o.enableSubRowSelection,
       selectedCount: o.showSelectedCount,
     }),
-    rowExpandingEntry,
+    rowExpanding({ enabled: !!o.enableRowExpanding }),
+    // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
+    // строки TanStack — предикат отдельной записью после плагина (опции по порядку).
+    {
+      id: 'storyExpandPredicate',
+      options: {
+        enableRowExpanding: storyCanExpand,
+      },
+    },
     rowDragging({ enabled: !!o.enableRowDragging }),
     columnPinning({
       enabled: !!o.enableColumnPinning,

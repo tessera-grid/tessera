@@ -1,8 +1,7 @@
 /**
  * definePlugin — авторская поверхность плагина поверх записи `TesseraFeatureEntry`.
  * Принимает декларации по полям, возвращает фабрику
- * `(opts?) => TesseraFeatureEntry`. Прячет раскладку: `options` → опции таблицы
- * (заморожены по сигнатуре набора), `liveOptions` → живые опции таблицы,
+ * `(opts?) => TesseraFeatureEntry`. Прячет раскладку: `options` → опции таблицы,
  * `hooks` → живой слайс записи под ключом `id` (undefined-ключи отброшены),
  * `features` → фрагмент фич v9, `state` → сгенерированная v9-фича локального слайса
  * под ключом `plugin:<id>`, `column`/`slots`/`setup` — как есть. Каналы в компонент — `./channels`.
@@ -12,7 +11,7 @@ import { makeStateUpdater } from '@tanstack/react-table'
 import type { TableFeature } from '../../types'
 import type { ServiceColumn } from '../createColumns'
 import type { PluginSlot } from '../createSlots'
-import type { TesseraFeatureEntry } from '../features'
+import type { PluginConfiguration, TesseraFeatureEntry } from '../features'
 import type {
   ActionMenuDeclaration,
   ContextMenuAction,
@@ -20,6 +19,7 @@ import type {
 } from '../headerActions'
 import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
+import { argsKeyOf } from '../pluginArgs'
 import { pluginStateKey, stateChangeOption } from './channels'
 
 export {
@@ -75,13 +75,11 @@ interface DefinePluginConfig<
   id: string
   /** Фрагмент стоковых фич TanStack v9 (→ `tableFeatures`). */
   features?: TFeatures
-  /** Резолвнутые опции таблицы (→ опции useTable); заморожены по сигнатуре набора. */
-  options?: (opts: TOptions) => TResolved
   /**
-   * Живые опции таблицы — сворачиваются каждый рендер. Только значения, не кормящие
-   * мемо row-моделей (напр. `rowCount`); функции и флаги фич — в `options`.
+   * Резолвнутые опции таблицы (→ опции useTable). Живые (ADR 0039): ядро пересобирает
+   * их при смене значения аргументов, функции из аргументов приходят стабильными.
    */
-  liveOptions?: (opts: TOptions) => Record<string, unknown>
+  options?: (opts: TOptions) => TResolved
   /** Живой слайс бизнес-колбэков; undefined-ключи отбрасываются. */
   hooks?: (opts: TOptions) => THooks
   /**
@@ -148,21 +146,37 @@ export const definePlugin =
         }
         entry.features = merged as TFeatures
       }
-      if (config.options) {
-        entry.options = config.options(opts)
+      // Поля, зависящие от аргументов: считаются сразу (запись самодостаточна) и
+      // пересобираются ядром при смене значения аргументов (ADR 0039).
+      const configure = (args: TOptions): PluginConfiguration => {
+        const out: PluginConfiguration = {}
+        if (config.options) {
+          out.options = config.options(args)
+        }
+        if (config.slots) {
+          out.slots =
+            typeof config.slots === 'function'
+              ? config.slots(args)
+              : config.slots
+        }
+        if (config.actionMenu) {
+          out.actionMenu = config.actionMenu(args)
+        }
+        if (config.setup) {
+          out.setup = config.setup(args)
+        }
+        return out
       }
-      if (config.liveOptions) {
-        entry.liveOptions = config.liveOptions(opts)
-      }
+      Object.assign(entry, configure(opts))
+      entry.args = opts
+      entry.argsKey = argsKeyOf(opts)
+      entry.configure = configure as TesseraFeatureEntry['configure']
+
       if (config.hooks) {
         entry.hooks = { [config.id]: stripUndefined(config.hooks(opts)) }
       }
       if (config.column) {
         entry.column = config.column
-      }
-      if (config.slots) {
-        entry.slots =
-          typeof config.slots === 'function' ? config.slots(opts) : config.slots
       }
       if (config.slotActions) {
         entry.slotActions = config.slotActions
@@ -173,14 +187,8 @@ export const definePlugin =
       if (config.keyboardActions) {
         entry.keyboardActions = config.keyboardActions
       }
-      if (config.actionMenu) {
-        entry.actionMenu = config.actionMenu(opts)
-      }
       if (config.diagnose) {
         entry.diagnose = config.diagnose
-      }
-      if (config.setup) {
-        entry.setup = config.setup(opts)
       }
 
       return entry

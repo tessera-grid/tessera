@@ -61,12 +61,15 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   enabled?: boolean
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
   options?: Record<string, unknown>
+  /** Аргументы фабрики `definePlugin` (ADR 0039): из них ядро пересобирает настройку. */
+  args?: unknown
+  /** Ключ аргументов по значению; смена ключа пересобирает `configure`. */
+  argsKey?: string
   /**
-   * Живые табличные опции: сворачиваются каждый рендер (`foldLiveOptions`), а не по
-   * сигнатуре набора. Только значения, не кормящие мемо row-моделей (напр.
-   * `rowCount` серверной пагинации); функции и флаги фич — в `options`.
+   * Настройка из вида аргументов (функции — стабильные обёртки). Ядро зовёт её при
+   * смене `argsKey` вместо готовых `options`/`slots`/`actionMenu`/`setup`.
    */
-  liveOptions?: Record<string, unknown>
+  configure?: (args: any) => PluginConfiguration
   /**
    * Живой слайс бизнес-хуков плагина (колбэки/флаги), читается через
    * `table.getHooks()`. В отличие от `options`/`slots`, НЕ мемоизируется по сигнатуре
@@ -96,6 +99,11 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    */
   setup?: (table: unknown) => void | (() => void)
 }
+
+/** Поля записи, которые зависят от аргументов фабрики. */
+export type PluginConfiguration = Partial<
+  Pick<TesseraFeatureEntry, 'options' | 'slots' | 'actionMenu' | 'setup'>
+>
 
 /** Свёрнутая из записей конфигурация — уходит в опции таблицы / сборку колонок. */
 export interface FoldedEntryConfig {
@@ -130,20 +138,6 @@ export const findDuplicatePluginIds = (
     seen.add(entry.id)
   }
   return [...duplicates]
-}
-
-/**
- * Живые опции от ВСЕХ присутствующих записей (как и `options`): `useCreateTable`
- * сворачивает их каждый рендер, поверх замороженных `options`.
- */
-export const foldLiveOptions = (
-  entries: readonly TesseraFeatureEntry[],
-): Record<string, unknown> => {
-  const options: Record<string, unknown> = {}
-  for (const entry of entries) {
-    Object.assign(options, entry.liveOptions)
-  }
-  return options
 }
 
 /**

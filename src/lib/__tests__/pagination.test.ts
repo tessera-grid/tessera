@@ -11,7 +11,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildTesseraFeatures,
   foldEntries,
-  foldLiveOptions,
   type TesseraFeatureEntry,
 } from '../core/features'
 import { columnSorting } from '../plugins/columnSorting'
@@ -58,7 +57,6 @@ const build = (
     getRowId: (row: Item) => row.id,
     getSubRows: (row: Item) => row.subRows ?? [],
     ...folded.options,
-    ...foldLiveOptions(entries),
     pluginDiagnostics: folded.pluginDiagnostics,
     ...tableOptions,
   } as never) as any
