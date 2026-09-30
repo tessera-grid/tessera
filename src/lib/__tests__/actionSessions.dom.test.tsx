@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS14, SS16–SS17): успешное завершение зовёт
+ * Сессии действий (ADR 0040, SS1, SS5–SS6, SS10, SS14, SS16–SS18): успешное завершение зовёт
  * колбэк успеха, сессия правки живёт в срезе плагина и согласуется с таблицей после
  * рендера. Компоненты слотов рендерятся напрямую с контекстом ячейки и заголовка.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -131,13 +131,16 @@ describe('сессии действий', () => {
       columnDragging({ onColumnDragEnd, onColumnDragCancel }),
     ]
 
-    render({ plugins, probe: 'edit' })
+    // Черновик до монтирования редактора — он стартует с него.
+    render({ plugins })
     startEdit()
+    act(() => setEditDraft(captured, 'B'))
+    render({ plugins, probe: 'edit' })
     key(container!.querySelector('input')!, 'Enter')
     expect(onCellEdit).toHaveBeenCalledWith({
       rowId: '1',
       columnId: 'name',
-      value: 'A',
+      value: 'B',
       original: 'A',
     })
     expect(onEditCancel).not.toHaveBeenCalled()
@@ -328,5 +331,28 @@ describe('сессии действий', () => {
     })
     expect(session().cell).toEqual({ rowId: '2', columnId: 'name' })
     expect(onCellEdit).not.toHaveBeenCalled()
+  })
+
+  it('SS18: сохранение неизменённого значения закрывает правку без onCellEdit, onEditCancel и validate', () => {
+    const validate = vi.fn(() => 'never valid')
+    const plugins = [cellEditing({ onCellEdit, onEditCancel, validate })]
+    render({ plugins, probe: 'edit' })
+
+    startEdit()
+    key(container!.querySelector('input')!, 'Enter')
+    expect(session()).toBeNull()
+    expect(container!.querySelector('input')).toBeNull()
+
+    startEdit()
+    act(() => {
+      container!
+        .querySelector('input')!
+        .dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(session()).toBeNull()
+
+    expect(onCellEdit).not.toHaveBeenCalled()
+    expect(onEditCancel).not.toHaveBeenCalled()
+    expect(validate).not.toHaveBeenCalled()
   })
 })

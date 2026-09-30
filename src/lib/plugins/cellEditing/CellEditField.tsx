@@ -20,7 +20,9 @@ import {
   cancelEditSession,
   cellEditingViewOf,
   commitEditSession,
+  endEditSession,
   isEditingCell,
+  isUnchangedCommit,
   readEditSession,
   setEditDraft,
 } from './session'
@@ -112,7 +114,14 @@ export const CellEditField = (
         error: error ?? serverError,
         commit: value => {
           // Потеря фокуса после Enter или Escape: сессия уже закрыта.
-          if (!isEditingCell(readEditSession(table), row.id, column.id)) {
+          const session = readEditSession(table)
+          if (!isEditingCell(session, row.id, column.id)) {
+            return
+          }
+          // Значение не изменилось — просто закрыть правку, без onCellEdit (SS18).
+          if (isUnchangedCommit(session, value)) {
+            setError(undefined)
+            endEditSession(table)
             return
           }
           const message = hooks.validate?.(value, props)

@@ -149,6 +149,10 @@ export const endEditSession = (table: unknown) => {
   writeEditingState(table, { ...state, active: null })
 }
 
+/** Черновик совпадает с исходным значением ячейки — сохранять нечего (ADR 0040, SS18). */
+export const isUnchangedCommit = (session: EditingCell, value: string) =>
+  !!session && value === String(session.original ?? '')
+
 /** Завершить сессию без сохранения: черновик уходит в `onEditCancel`. */
 export const cancelEditSession = (
   table: unknown,
