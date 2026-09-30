@@ -67,6 +67,10 @@ export interface TableLabels {
   resizeColumn: string
   /** Доступное имя поля встроенного редактора ячейки (`column` — имя колонки) */
   editCellValue: (column: string) => string
+  /** Текст отказа сохранения ячейки, если сервер не прислал свой (ADR 0041) */
+  saveFailed: string
+  /** Объявление отказа сохранения ячейки (`column` — имя колонки) */
+  announceSaveFailed: (column: string, error: string) => string
   /** Доступное имя индикатора загрузки и объявление скелета первой загрузки */
   loading: string
   /** Объявление смены сортировки (`column: null` — сортировка сброшена) */
@@ -149,6 +153,8 @@ export const DEFAULT_LABELS: TableLabels = {
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',
   editCellValue: column => `Edit ${column}`,
+  saveFailed: "Couldn't save",
+  announceSaveFailed: (column, error) => `${column}: ${error}`,
   loading: 'Loading',
   announceSort: (column, direction) =>
     column ? `Sorted by ${column}, ${direction}` : 'Sorting cleared',

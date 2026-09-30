@@ -14,6 +14,8 @@ export interface EditSession {
   draft: string
   /** Значение ячейки на начало правки. */
   original: unknown
+  /** Правка открыта из «ошибки»: текст отказа сервера (ADR 0041). */
+  rejected?: { error: string }
 }
 
 /** Активная сессия правки или null. */
@@ -29,7 +31,7 @@ export interface SubmittedCell {
   draft: string
   original: unknown
   status: 'pending' | 'error'
-  /** Текст отказа сервера. */
+  /** Текст отказа сервера (для `error`). */
   error?: string
   /** Номер отправки: поздний итог прежней отправки игнорируется. */
   attempt: number

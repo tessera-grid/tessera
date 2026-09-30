@@ -208,6 +208,8 @@
     var(--tsr-sys-fg) 55%,
     transparent
   );
+  /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
+  --tsr-comp-cell-error-color: var(--tsr-sys-danger);
   /* Typography — theme-agnostic default (system stack); override to use a
    * custom face. Numeric feature aligns digits in columns. */
   --tsr-comp-font-family:

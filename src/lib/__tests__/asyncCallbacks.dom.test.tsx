@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Асинхронный контракт бизнес-колбэков (ADR 0041, AS1, AS4, AS8–AS9): промис от
- * `onCellEdit` отделяет ячейку в ожидание, итог промиса снимает его; поздний итог
- * снятого ожидания игнорируется.
+ * Асинхронный контракт бизнес-колбэков (ADR 0041, AS1, AS4, AS7–AS10): промис от
+ * `onCellEdit` отделяет ячейку в ожидание, отказ переводит её в «ошибку» с
+ * черновиком; поздний итог снятого ожидания игнорируется.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, createElement } from 'react'
@@ -68,6 +68,7 @@ const render = (props: HostProps) => {
 
 const state = () => captured.atoms['plugin:cellEditing'].get()
 const busy = () => container!.querySelector('[aria-busy="true"]')
+const failed = () => container!.querySelector('[aria-invalid="true"]')
 
 /** Открыть правку первой ячейки и сохранить `value` через Enter. */
 const editAndCommit = (value: string) => {
@@ -141,8 +142,9 @@ describe('асинхронный контракт бизнес-колбэков'
     expect(onEditCancel).not.toHaveBeenCalled()
   })
 
-  it('AS8: ожидание и ошибка переживают размонтирование ячейки', () => {
-    const plugins = [cellEditing({ onCellEdit: () => deferred().promise })]
+  it('AS8: ожидание и ошибка переживают размонтирование ячейки', async () => {
+    const save = deferred()
+    const plugins = [cellEditing({ onCellEdit: () => save.promise })]
     render({ plugins, probe: true })
     editAndCommit('kept')
     expect(busy()?.textContent).toBe('kept')
@@ -151,9 +153,19 @@ describe('асинхронный контракт бизнес-колбэков'
     expect(busy()).toBeNull()
     render({ plugins, probe: true })
     expect(busy()?.textContent).toBe('kept')
+
+    save.reject(new Error('down'))
+    await flush()
+    render({ plugins, probe: false })
+    expect(failed()).toBeNull()
+    render({ plugins, probe: true })
+    expect(failed()?.textContent).toContain('down')
+    expect(Object.values(state().submitted)).toEqual([
+      expect.objectContaining({ status: 'error', draft: 'kept' }),
+    ])
   })
 
-  it('AS9: строка ушла из данных или плагин выключен — ожидание снято, поздний итог промиса игнорируется', async () => {
+  it('AS9: строка ушла из данных — ожидание и ошибка сняты, у ошибки onEditCancel с unavailable; плагин выключен — то же с revoke; поздний итог промиса игнорируется', async () => {
     const save = deferred()
     const plugins = [cellEditing({ onCellEdit: () => save.promise })]
     render({ plugins, probe: true })
@@ -182,5 +194,101 @@ describe('асинхронный контракт бизнес-колбэков'
     second.resolve()
     await flush()
     expect(state().submitted).toEqual({})
+    act(() => root!.unmount())
+    root = undefined
+
+    // «Ошибка» при уходе строки и выключении плагина отдаёт черновик.
+    const onEditCancel = vi.fn()
+    const toError = async (extra: object) => {
+      const save = deferred()
+      const plugins = [
+        cellEditing({ onCellEdit: () => save.promise, onEditCancel, ...extra }),
+      ]
+      render({ plugins, probe: true })
+      editAndCommit('lost?')
+      save.reject(new Error('down'))
+      await flush()
+    }
+    await toError({})
+    render({
+      plugins: [cellEditing({ onEditCancel })],
+      data: rows.filter(row => row.id !== '1'),
+    })
+    expect(state().submitted).toEqual({})
+    expect(onEditCancel).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        reason: 'unavailable',
+        draft: 'lost?',
+        error: 'down',
+      }),
+    )
+    act(() => root!.unmount())
+    root = undefined
+
+    await toError({})
+    render({ plugins: [cellEditing({ enabled: false, onEditCancel })] })
+    expect(state().submitted).toEqual({})
+    expect(onEditCancel).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        reason: 'revoke',
+        draft: 'lost?',
+        error: 'down',
+      }),
+    )
+  })
+
+  it('AS7: Escape в редакторе, открытом из «ошибки», снимает ошибку и зовёт onEditCancel с cancel, черновиком и error', async () => {
+    const save = deferred()
+    const onEditCancel = vi.fn()
+    const plugins = [
+      cellEditing({ onCellEdit: () => save.promise, onEditCancel }),
+    ]
+    render({ plugins, probe: true })
+    editAndCommit('draft')
+    save.reject(new Error('down'))
+    await flush()
+    expect(failed()).not.toBeNull()
+
+    act(() => startEditSession(captured, captured.getRow('1'), { id: 'name' }))
+    const input = container!.querySelector('input')!
+    expect(input.value).toBe('draft')
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+    })
+    expect(state()).toEqual({ active: null, submitted: {} })
+    expect(failed()).toBeNull()
+    expect(onEditCancel).toHaveBeenCalledTimes(1)
+    expect(onEditCancel).toHaveBeenCalledWith({
+      rowId: '1',
+      columnId: 'name',
+      reason: 'cancel',
+      draft: 'draft',
+      original: 'A',
+      error: 'down',
+    })
+  })
+
+  it('AS10: текст ошибки — Error.message, строка как есть, иначе подпись saveFailed', async () => {
+    const errorOf = async (reason: unknown) => {
+      const save = deferred()
+      render({
+        plugins: [cellEditing({ onCellEdit: () => save.promise })],
+        probe: true,
+      })
+      editAndCommit('draft')
+      save.reject(reason)
+      await flush()
+      const text = (Object.values(state().submitted)[0] as { error: string })
+        .error
+      act(() => root!.unmount())
+      root = undefined
+      return text
+    }
+    expect(await errorOf(new Error('from error'))).toBe('from error')
+    expect(await errorOf('from string')).toBe('from string')
+    expect(await errorOf({ code: 500 })).toBe("Couldn't save")
+    expect(await errorOf(new Error(''))).toBe("Couldn't save")
   })
 })

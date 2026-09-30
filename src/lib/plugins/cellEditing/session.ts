@@ -5,7 +5,9 @@
  * Сохранение с промисом отделяет ячейку от активной правки в `submitted`
  * (ADR 0041, §2): правка других ячеек не ждёт сервера.
  */
+import { announceLabel, announcerLabels } from '../../core/announcer'
 import type { PluginReconcileContext } from '../../core/features'
+import { DEFAULT_LABELS } from '../../core/localization'
 import {
   pluginStateKey,
   readPluginHooks,
@@ -110,11 +112,14 @@ export const startEditSession = (
       ),
     )
   }
-  const original = row.getValue(column.id)
+  // Из «ошибки» — с отклонённым черновиком и текстом отказа (ADR 0041, §2).
+  const failed = readEditingState(table).submitted[cellKey(row.id, column.id)]
+  const original = failed ? failed.original : row.getValue(column.id)
   const session: EditSession = {
     cell: { rowId: row.id, columnId: column.id },
-    draft: String(original ?? ''),
+    draft: failed ? failed.draft : String(original ?? ''),
     original,
+    ...(failed ? { rejected: { error: failed.error ?? '' } } : {}),
   }
   writeEditingState(table, { ...readEditingState(table), active: session })
 }
@@ -129,8 +134,19 @@ export const setEditDraft = (table: unknown, draft: string) => {
   }
 }
 
-export const endEditSession = (table: unknown) =>
-  writeEditingState(table, { ...readEditingState(table), active: null })
+/** Закрыть активную правку; «ошибка» её ячейки снимается — сессия её забрала. */
+export const endEditSession = (table: unknown) => {
+  const state = readEditingState(table)
+  const cell = state.active?.cell
+  const key = cell && cellKey(cell.rowId, cell.columnId)
+  if (key && state.submitted[key]?.status === 'error') {
+    const submitted = { ...state.submitted }
+    delete submitted[key]
+    writeEditingState(table, { active: null, submitted })
+    return
+  }
+  writeEditingState(table, { ...state, active: null })
+}
 
 /** Завершить сессию без сохранения: черновик уходит в `onEditCancel`. */
 export const cancelEditSession = (
@@ -151,6 +167,7 @@ export const cancelEditSession = (
     draft: session.draft,
     original: session.original,
     ...(current ? { current: current.value } : {}),
+    ...(session.rejected ? { error: session.rejected.error } : {}),
   })
 }
 
@@ -183,14 +200,23 @@ const settleSubmitted = (
   const submitted = { ...state.submitted }
   if (outcome.ok) {
     delete submitted[key]
-  } else {
-    submitted[key] = {
-      ...entry,
-      status: 'error',
-      error: rejectionText(outcome.reason),
-    }
+    writeEditingState(table, { ...state, submitted })
+    return
   }
+  const labels = announcerLabels(table) ?? DEFAULT_LABELS
+  const error = rejectionText(outcome.reason) ?? labels.saveFailed
+  submitted[key] = { ...entry, status: 'error', error }
   writeEditingState(table, { ...state, submitted })
+  announceLabel(table, all =>
+    all.announceSaveFailed(columnNameOf(table, entry.columnId), error),
+  )
+}
+
+const columnNameOf = (table: unknown, columnId: string) => {
+  const header = (table as ReconcileTable)
+    .getAllLeafColumns()
+    .find(column => column.id === columnId)?.columnDef?.header
+  return typeof header === 'string' ? header : columnId
 }
 
 /**
@@ -227,11 +253,11 @@ export const commitEditSession = (
     original,
     ...(changed ? { current: now } : {}),
   })
-  const state = readEditingState(table)
   if (!isThenable(result)) {
-    writeEditingState(table, { ...state, active: null })
+    endEditSession(table)
     return
   }
+  const state = readEditingState(table)
   const key = cellKey(rowId, columnId)
   const attempt = ++lastAttempt
   writeEditingState(table, {
@@ -256,7 +282,7 @@ export const commitEditSession = (
 
 interface ReconcileTable extends SessionTable {
   getCoreRowModel: () => { rowsById: Record<string, ReconcileRow | undefined> }
-  getAllLeafColumns: () => { id: string }[]
+  getAllLeafColumns: () => { id: string; columnDef?: { header?: unknown } }[]
 }
 
 interface ReconcileRow extends SessionRow {
@@ -287,6 +313,10 @@ const reconcileSubmitted = (
   }
   const dropped: [SubmittedCell, EditCancelReason][] = []
   for (const [, entry] of entries) {
+    // «Ошибку», открытую в правку, ведёт активная сессия.
+    if (isEditingCell(state.active, entry.rowId, entry.columnId)) {
+      continue
+    }
     if (!hasCell(table, entry)) {
       dropped.push([entry, 'unavailable'])
     } else if (!enabled) {

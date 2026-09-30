@@ -26,6 +26,10 @@ export const registerAnnouncer = (table: unknown, announcer: Announcer) => {
   }
 }
 
+/** Подписи смонтированного грида — для текстов, собираемых вне React. */
+export const announcerLabels = (table: unknown): TableLabels | undefined =>
+  announcers.get(storeOf(table))?.labels
+
 /** Объявить текст; без смонтированного грида — ничего. */
 export const announce = (table: unknown, message: string): void =>
   announcers.get(storeOf(table))?.say(message)

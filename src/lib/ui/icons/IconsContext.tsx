@@ -15,6 +15,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronsUpDown,
+  CircleAlert,
   Columns3,
   EyeOff,
   Group,
@@ -80,6 +81,8 @@ export interface TableIcons {
   previousPage: IconComponent
   nextPage: IconComponent
   lastPage: IconComponent
+  /** Метка ячейки, сохранение которой отклонено сервером */
+  saveFailed: IconComponent
 }
 
 export const DEFAULT_ICONS: TableIcons = {
@@ -103,6 +106,7 @@ export const DEFAULT_ICONS: TableIcons = {
   previousPage: ChevronLeft,
   nextPage: ChevronRight,
   lastPage: ChevronsRight,
+  saveFailed: CircleAlert,
 }
 
 const IconsContext = createContext<TableIcons>(DEFAULT_ICONS)

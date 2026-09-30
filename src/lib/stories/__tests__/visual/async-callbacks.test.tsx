@@ -4,9 +4,10 @@ import { describe, expect, test } from 'vitest'
 
 import { Stories, bodyRows, headCells } from '../helpers'
 
-// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3): сохранение с промисом
-// отделяет ячейку в ожидание, правка других ячеек не ждёт сервера. AS1, AS4, AS8–AS9
-// — модульные (`src/lib/__tests__/asyncCallbacks.dom.test.tsx`).
+// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6): сохранение с
+// промисом отделяет ячейку в ожидание, правка других ячеек не ждёт сервера, отказ —
+// «ошибка» с черновиком. AS1, AS4, AS7–AS10 — модульные
+// (`src/lib/__tests__/asyncCallbacks.dom.test.tsx`).
 
 const GRID = {
   containerHeight: 600,
@@ -39,6 +40,18 @@ const openAndType = async (index: number, value: string) => {
   await userEvent.type(input, value)
   return input
 }
+
+/** Сервер, ответ которого задаёт тест: `settle[i]` — итог i-го сохранения. */
+const controlledServer = () => {
+  const settle: { resolve: () => void; reject: (reason: unknown) => void }[] =
+    []
+  const onCellEdit = () =>
+    new Promise<void>((resolve, reject) => settle.push({ resolve, reject }))
+  return { settle, onCellEdit }
+}
+
+const liveRegion = () =>
+  document.querySelector<HTMLElement>('[role="status"][aria-live="polite"]')!
 
 describe('Асинхронный контракт бизнес-колбэков', () => {
   test('AS2: onCellEdit вернул промис — редактор закрыт, ячейка показывает отправленное значение с aria-busy, кнопки правки нет, Enter игнорируется', async () => {
@@ -89,5 +102,83 @@ describe('Асинхронный контракт бизнес-колбэков'
     const input = await openAndType(1, '42')
     expect(input.value).toBe('42')
     expect(ageCell(0).querySelector('[aria-busy="true"]')).not.toBeNull()
+  })
+
+  test('AS5: промис отклонён — ячейка в «ошибке» с меткой и текстом, отказ объявлен; активная правка другой ячейки не тронута', async () => {
+    const server = controlledServer()
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableCellEditing
+        cellEditingCanEdit={allow}
+        onCellEdit={server.onCellEdit}
+      />,
+    )
+    await waitForGrid()
+    const original = ageCell(0).textContent
+    await openAndType(0, '999')
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => server.settle.length).toBe(1)
+    const active = await openAndType(1, '42')
+
+    server.settle[0].reject(new Error('Server down'))
+    const failed = () =>
+      ageCell(0).querySelector<HTMLElement>('[aria-invalid="true"]')
+    await expect.poll(failed).not.toBeNull()
+    expect(ageCell(0).textContent).toContain(original)
+    expect(failed()!.querySelector('svg')).not.toBeNull()
+    const description = document.getElementById(
+      failed()!.getAttribute('aria-describedby')!,
+    )
+    expect(description!.textContent).toBe('Server down')
+    expect(failed()!.title).toBe('Server down')
+    await expect
+      .poll(() => liveRegion().textContent)
+      .toContain('Age: Server down')
+
+    expect(ageCell(1).querySelector('input')).toBe(active)
+    expect(active.value).toBe('42')
+    expect(document.activeElement).toBe(active)
+  })
+
+  test('AS6: из «ошибки» кнопка правки открывает редактор с черновиком и текстом ошибки; успешное сохранение снимает ошибку', async () => {
+    const server = controlledServer()
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableCellEditing
+        cellEditingCanEdit={allow}
+        onCellEdit={server.onCellEdit}
+      />,
+    )
+    await waitForGrid()
+    await openAndType(0, '999')
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => server.settle.length).toBe(1)
+    server.settle[0].reject(new Error('Server down'))
+    await expect
+      .poll(() => ageCell(0).querySelector('[aria-invalid="true"]'))
+      .not.toBeNull()
+
+    await userEvent.hover(ageCell(0))
+    await userEvent.click(
+      ageCell(0).querySelector<HTMLElement>('.cell__button button')!,
+    )
+    await expect.poll(() => ageCell(0).querySelector('input')).not.toBeNull()
+    const input = ageCell(0).querySelector<HTMLInputElement>('input')!
+    expect(input.value).toBe('999')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(ageCell(0).querySelector('[role="alert"]')!.textContent).toBe(
+      'Server down',
+    )
+
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => server.settle.length).toBe(2)
+    server.settle[1].resolve()
+    await expect
+      .poll(() => ageCell(0).querySelector('[aria-busy="true"]'))
+      .toBeNull()
+    expect(ageCell(0).querySelector('[aria-invalid="true"]')).toBeNull()
+    expect(ageCell(0).querySelector('input')).toBeNull()
   })
 })

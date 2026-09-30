@@ -4,13 +4,15 @@
  * показывает контент как есть. Редактор берётся из `hooks.editor` (BYO со своей
  * дизайн-системой) либо дефолтный встроенный. Сессия правки живёт в срезе плагина
  * (ADR 0040, §2): редактор стартует с черновика и пишет его через `setDraft`, поэтому
- * текст переживает прокрутку, смену страницы и сортировку.
+ * текст переживает прокрутку, смену страницы и сортировку. Сохранение с промисом
+ * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2).
  */
-import { useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
+import { useIcons } from '../../ui/icons'
 import { CellEditInput } from './CellEditInput'
 import styles from './CellEditInput.module.css'
 import {
@@ -48,6 +50,8 @@ export const CellEditField = (
 ) => {
   const { row, column, table, content, hooks } = props
   const labels = useLocalization()
+  const { saveFailed: FailedIcon } = useIcons()
+  const errorId = useId()
   const [error, setError] = useState<string>()
   // Подписка только на состояние этой ячейки: ввод черновика другие ячейки не
   // перерисовывает.
@@ -66,10 +70,33 @@ export const CellEditField = (
     )
   }
 
+  // Сервер отказал — значение из данных с меткой и текстом отказа; черновик ждёт
+  // повторной правки.
+  if (view && view !== 'editing') {
+    return (
+      <span
+        className={styles.failed}
+        aria-invalid="true"
+        aria-describedby={errorId}
+        title={view.error}
+      >
+        <span className={styles.failedContent}>{content}</span>
+        <span className={styles.failedIcon} aria-hidden="true">
+          <FailedIcon width={14} height={14} />
+        </span>
+        <span id={errorId} className={styles.visuallyHidden}>
+          {view.error}
+        </span>
+      </span>
+    )
+  }
+
   // Не в правке — отдаём собственный контент ячейки как есть.
   if (view !== 'editing') {
     return <>{content}</>
   }
+  // Правка открыта из «ошибки» — текст отказа, пока `validate` не сказала своё.
+  const serverError = readEditSession(table)?.rejected?.error || undefined
 
   // Режим правки: контент замещается редактором (BYO или дефолтный).
   const editor = hooks.editor ?? defaultEditor
@@ -82,7 +109,7 @@ export const CellEditField = (
             ? column.columnDef.header
             : column.id,
         ),
-        error,
+        error: error ?? serverError,
         commit: value => {
           // Потеря фокуса после Enter или Escape: сессия уже закрыта.
           if (!isEditingCell(readEditSession(table), row.id, column.id)) {

@@ -358,8 +358,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       у ресайза; SS3–SS4 — черновик переживает прокрутку, страницу, сортировку;
       SS7–SS9 — потеря фокуса сохраняет, `Escape` отменяет),
       [ADR 0040](docs/decisions/0040-action-sessions.md); модульные `asyncCallbacks`
-      (AS1, AS4, AS8–AS9 — промис от колбэка, ожидание и его снятие), визуальные
-      `async-callbacks` (AS2–AS3 — ячейка в ожидании, правка других не ждёт),
+      (AS1, AS4, AS7–AS10 — промис от колбэка, ожидание, «ошибка» и её снятие),
+      визуальные `async-callbacks` (AS2–AS3 — ячейка в ожидании, правка других не
+      ждёт; AS5–AS6 — «ошибка» с меткой, объявлением и повторной правкой),
       [ADR 0041](docs/decisions/0041-async-business-callbacks.md).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
