@@ -1,180 +1,5 @@
 [
   {
-    "kind": "collision",
-    "id": "AM22",
-    "reason": "требование записано и в ADR 0024, и в ADR 0035"
-  },
-  {
-    "kind": "collision",
-    "id": "AM23",
-    "reason": "требование записано и в ADR 0024, и в ADR 0035"
-  },
-  {
-    "kind": "collision",
-    "id": "CP14",
-    "reason": "таблица ADR 0025 повторяет требования ADR 0011"
-  },
-  {
-    "kind": "collision",
-    "id": "CP23",
-    "reason": "таблица ADR 0025 повторяет требования ADR 0011"
-  },
-  {
-    "kind": "collision",
-    "id": "CP24",
-    "reason": "таблица ADR 0025 повторяет требования ADR 0011"
-  },
-  {
-    "kind": "collision",
-    "id": "CP25",
-    "reason": "таблица ADR 0025 повторяет требования ADR 0011"
-  },
-  {
-    "kind": "collision",
-    "id": "CR1",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR2",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR3",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR4",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR5",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR6",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR7",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR8",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR9",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR10",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR11",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR12",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR13",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR14",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR15",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "CR16",
-    "reason": "ADR 0013 (ширина колонок) и ADR 0029 (выделение диапазона) делят префикс CR"
-  },
-  {
-    "kind": "collision",
-    "id": "LP1",
-    "reason": "ADR 0011 (пиннинг листьев) и ADR 0017 (LinearProgress) делят префикс LP"
-  },
-  {
-    "kind": "collision",
-    "id": "LP2",
-    "reason": "ADR 0011 (пиннинг листьев) и ADR 0017 (LinearProgress) делят префикс LP"
-  },
-  {
-    "kind": "collision",
-    "id": "R1",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R2",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R3",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R4",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R5",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R6",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R7",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R8",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R9",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R10",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
-    "kind": "collision",
-    "id": "R11",
-    "reason": "ADR 0004 (ядро) и ADR 0010 (инверсия реестра) оба нумеруют требования R<n>"
-  },
-  {
     "kind": "duplicate",
     "id": "CM1",
     "reason": "вид «unit+visual» в ADR 0030: по тесту каждого вида под одним ID"
@@ -196,88 +21,13 @@
   },
   {
     "kind": "duplicate",
-    "id": "CR1",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
+    "id": "CRS8",
+    "reason": "несколько модульных тестов под одним ID"
   },
   {
     "kind": "duplicate",
-    "id": "CR2",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR3",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR4",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR5",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR6",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR7",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR8",
-    "reason": "коллизия префикса CR и несколько модульных тестов под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR9",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR10",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR11",
-    "reason": "коллизия префикса CR и несколько модульных тестов под одним ID"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR12",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR14",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR15",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "CR16",
-    "reason": "следствие коллизии префикса CR: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "LP1",
-    "reason": "следствие коллизии префикса LP: у каждого ADR свой тест"
-  },
-  {
-    "kind": "duplicate",
-    "id": "LP2",
-    "reason": "следствие коллизии префикса LP: у каждого ADR свой тест"
+    "id": "CRS11",
+    "reason": "несколько модульных тестов под одним ID"
   },
   {
     "kind": "missing",
@@ -338,6 +88,11 @@
     "kind": "missing",
     "id": "CR17",
     "reason": "пробел, признанный в ADR 0013: выделенного теста нет"
+  },
+  {
+    "kind": "missing",
+    "id": "CRS13",
+    "reason": "покрыт перф-матрицей P5–P8 (enableCellSelection в ALL_PLUGINS), своего кейса нет"
   },
   {
     "kind": "missing",
@@ -428,6 +183,61 @@
     "kind": "missing",
     "id": "H6",
     "reason": "покрыт тестами без ID (ADR 0027 называет их по описанию)"
+  },
+  {
+    "kind": "missing",
+    "id": "IV1",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV2",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV3",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV4",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV5",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV6",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV7",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV8",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV9",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV10",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+  },
+  {
+    "kind": "missing",
+    "id": "IV11",
+    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
   },
   {
     "kind": "missing",

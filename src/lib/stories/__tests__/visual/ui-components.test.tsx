@@ -247,12 +247,12 @@ describe('Skeleton', () => {
 // --- LinearProgress (LP1–LP2) -------------------------------------------------
 
 describe('LinearProgress', () => {
-  test('LP1: exposes the progressbar role', async () => {
+  test('PR1: exposes the progressbar role', async () => {
     const { container } = await render(<LinearProgress label="Loading" />)
     expect(container.querySelector('[role="progressbar"]')).not.toBeNull()
   })
 
-  test('LP2: is an absolutely-positioned overlay', async () => {
+  test('PR2: is an absolutely-positioned overlay', async () => {
     const { container } = await render(<LinearProgress label="Loading" />)
     const root = container.querySelector('[role="progressbar"]')! as HTMLElement
     expect(computed(root).position).toBe('absolute')

@@ -23,7 +23,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0014](0014-row-selection.md)                        | Выбор строк: плагин rowSelection (RS1–RS18)                                                                                          | Принято |
 | [0015](0015-row-expanding.md)                        | Раскрытие строк: плагин rowExpanding (RE1–RE11)                                                                                      | Принято |
 | [0016](0016-row-grouping.md)                         | Группировка строк: плагин rowGrouping (RG1–RG11)                                                                                     | Принято |
-| [0017](0017-ui-components.md)                        | UI-компоненты: контракт и покрытие (IB/TT/SW/SK/LP/IC)                                                                               | Принято |
+| [0017](0017-ui-components.md)                        | UI-компоненты: контракт и покрытие (IB/TT/SW/SK/PR/IC)                                                                               | Принято |
 | [0018](0018-external-theming.md)                     | Внешняя темизация: переопределяемый слой токенов + тени (TH1–TH8)                                                                    | Принято |
 | [0019](0019-token-architecture.md)                   | Архитектура токенов: 3 уровня `--tsr-ref/sys/comp` (T-R1–T-R10, TK1–TK4)                                                             | Принято |
 | [0020](0020-accessibility.md)                        | Доступность (a11y): роли, имена, индексы, axe (A1–A5)                                                                                | Принято |
@@ -35,7 +35,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0026](0026-migrate-to-tanstack-v9.md)               | Миграция на TanStack Table v9 (V9-1–V9-3); отменяет ADR 0007                                                                         | Принято |
 | [0027](0027-plugin-hooks-in-factory-args.md)         | Бизнес-хуки в аргументах фабрики плагина (H1–H6, все 7 плагинов); верхний `hooks` удалён                                             | Принято |
 | [0028](0028-define-plugin-authoring-api.md)          | `definePlugin`: эргономичный API написания плагина (DP1–DP13); типобезопасные `PluginCellProps`, инъекция пропсов                    | Принято |
-| [0029](0029-cell-range-selection.md)                 | Выделение диапазона ячеек + копирование в буфер: плагин cellSelection (CR1–CR16)                                                     | Принято |
+| [0029](0029-cell-range-selection.md)                 | Выделение диапазона ячеек + копирование в буфер: плагин cellSelection (CRS1–CRS16)                                                   | Принято |
 | [0030](0030-context-menu.md)                         | Контекстное меню: плагин contextMenu, действия-контрибуции + гейтинг по выбору (CM1–CM10)                                            | Принято |
 | [0031](0031-wcag-keyboard.md)                        | Соответствие WCAG 2.1.1 (Keyboard): остаток после keyboardNavigation (KB1–KB14)                                                      | Принято |
 | [0032](0032-wcag-aa-remainder.md)                    | Доступность: остаток до WCAG 2.1 AA (W1–W17)                                                                                         | Принято |

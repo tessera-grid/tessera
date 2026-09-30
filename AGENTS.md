@@ -325,7 +325,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Ядро:_ `core-structure`, `core-sizing`, `core-roles`, `core-visual-states`,
       `core-scroll` (R1–R19, [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) —
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
-      `service-columns` (R6/R8/R10 — сервисные колонки).
+      `service-columns` (IV6/IV8/IV10 — сервисные колонки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _Виртуализация:_ `virtualization` (V1–V11).
     - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19),
       `column-pinning-right` (CP20–CP27) — [ADR 0011](docs/decisions/0011-column-pinning.md),
@@ -411,7 +411,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
-    - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,
+    - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
       `Switch`, `Skeleton`, `LinearProgress`, иконки).
   - **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500 / 1000×1000 ×

@@ -87,10 +87,10 @@ async function renderCellSelection(args: CellSelectionArgs = {}) {
   return container
 }
 
-// --- Requirements (CR1–CR12) --------------------------------------------------
+// --- Requirements (CRS1–CRS12) --------------------------------------------------
 
 describe('Cell Selection — activation', () => {
-  test('CR9: the plugin is inert without `enableCellSelection`', async () => {
+  test('CRS9: the plugin is inert without `enableCellSelection`', async () => {
     const container = await renderCellSelection({ enableCellSelection: false })
     // No selection attributes, no roving tabindex, and clicking does nothing.
     expect(container.querySelector('[data-cell-selected]')).toBeNull()
@@ -99,7 +99,7 @@ describe('Cell Selection — activation', () => {
     expect(container.querySelector('[data-cell-selected]')).toBeNull()
   })
 
-  test('CR14: selectable cells suppress native text selection (user-select: none)', async () => {
+  test('CRS14: selectable cells suppress native text selection (user-select: none)', async () => {
     const container = await renderCellSelection()
     // Клик/shift/drag должны выделять ЯЧЕЙКИ, а не текст: выбираемая ячейка
     // (несёт roving tabindex) отключает нативное выделение текста.
@@ -110,7 +110,7 @@ describe('Cell Selection — activation', () => {
 })
 
 describe('Cell Selection — mouse', () => {
-  test('CR1: clicking a cell selects it alone and focuses it', async () => {
+  test('CRS1: clicking a cell selects it alone and focuses it', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     await expect.poll(() => selectedCount(container)).toBe(1)
@@ -124,7 +124,7 @@ describe('Cell Selection — mouse', () => {
     expect(isSelected(cellAt(container, 0, 0))).toBe(false)
   })
 
-  test('CR2: shift-click extends a rectangular range from the anchor', async () => {
+  test('CRS2: shift-click extends a rectangular range from the anchor', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     clickCell(cellAt(container, 1, 2), { shiftKey: true })
@@ -136,7 +136,7 @@ describe('Cell Selection — mouse', () => {
     expect(isFocused(cellAt(container, 0, 0))).toBe(true)
   })
 
-  test('CR3: dragging across cells selects the swept rectangle', async () => {
+  test('CRS3: dragging across cells selects the swept rectangle', async () => {
     const container = await renderCellSelection()
     dragCells(cellAt(container, 0, 0), [
       cellAt(container, 0, 1),
@@ -148,7 +148,7 @@ describe('Cell Selection — mouse', () => {
     expect(isSelected(cellAt(container, 1, 1))).toBe(true)
   })
 
-  test('CR16: dragging past the edge auto-scrolls and extends the selection', async () => {
+  test('CRS16: dragging past the edge auto-scrolls and extends the selection', async () => {
     const container = await renderCellSelection()
     const scroller = container.querySelector<HTMLElement>(SCROLL_CONTAINER)!
     const rect = scroller.getBoundingClientRect()
@@ -170,7 +170,7 @@ describe('Cell Selection — mouse', () => {
     fireMouse(document, 'mouseup')
   })
 
-  test('CR4: ctrl/cmd-click adds a separate rectangle (multi-range)', async () => {
+  test('CRS4: ctrl/cmd-click adds a separate rectangle (multi-range)', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     clickCell(cellAt(container, 2, 2), { ctrlKey: true })
@@ -181,7 +181,7 @@ describe('Cell Selection — mouse', () => {
     expect(isSelected(cellAt(container, 1, 1))).toBe(false)
   })
 
-  test('CR5: selected cells carry boundary edges; the anchor is focused', async () => {
+  test('CRS5: selected cells carry boundary edges; the anchor is focused', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     clickCell(cellAt(container, 1, 1), { shiftKey: true })
@@ -202,7 +202,7 @@ describe('Cell Selection — mouse', () => {
     expect(edge(bottomRight, 'bottom')).not.toBe('transparent')
   })
 
-  test('CR15: the anchor cell is not tinted (Excel/Sheets style); others are', async () => {
+  test('CRS15: the anchor cell is not tinted (Excel/Sheets style); others are', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     clickCell(cellAt(container, 1, 1), { shiftKey: true })
@@ -219,7 +219,7 @@ describe('Cell Selection — mouse', () => {
 })
 
 describe('Cell Selection — clipboard (copy)', () => {
-  test('CR6: Ctrl/Cmd+C copies the selection as TSV in row-major order', async () => {
+  test('CRS6: Ctrl/Cmd+C copies the selection as TSV in row-major order', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     clickCell(cellAt(container, 1, 1), { shiftKey: true })
@@ -240,7 +240,7 @@ describe('Cell Selection — clipboard (copy)', () => {
     expect(rows[1].split('\t')).toHaveLength(2)
   })
 
-  test('CR7: the copy also carries an HTML table (rich paste)', async () => {
+  test('CRS7: the copy also carries an HTML table (rich paste)', async () => {
     const container = await renderCellSelection()
     clickCell(cellAt(container, 0, 0))
     clickCell(cellAt(container, 0, 1), { shiftKey: true })
@@ -258,7 +258,7 @@ describe('Cell Selection — clipboard (copy)', () => {
 })
 
 describe('Cell Selection — virtualization', () => {
-  test('CR12: selection survives vertical scroll (stored by model id)', async () => {
+  test('CRS12: selection survives vertical scroll (stored by model id)', async () => {
     const container = await renderCellSelection()
     const firstRow = rowsTopDown(container)[0]
     const rowId = firstRow.getAttribute('data-row-id')!

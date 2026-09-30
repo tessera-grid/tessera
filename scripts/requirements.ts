@@ -40,7 +40,7 @@ const isAccepted = (text: string) =>
 
 /**
  * Требования из таблиц `| ID | Требование | … |` принятого ADR. Строка, чей ID не
- * одиночный (`R6/R8/R10`, `AM15–AM19`), — ссылка на чужие требования, не своё.
+ * одиночный (`IV6/IV8/IV10`, `AM15–AM19`) или ссылка (`[CP14](…)`), — чужое требование.
  */
 export const parseRequirements = (text: string, adr: string): Requirement[] => {
   if (!isAccepted(text)) return []
