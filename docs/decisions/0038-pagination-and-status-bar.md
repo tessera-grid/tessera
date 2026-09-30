@@ -102,7 +102,7 @@ Presence-based плагин на `definePlugin`, без сервисной ко�
 ```ts
 pagination({
   enabled?: boolean,
-  pageSize?: number, // по умолчанию 25
+  initialPageSize?: number, // начальный размер, по умолчанию 25 (ADR 0039)
   pageSizes?: number[] | false, // варианты выбора; по умолчанию [10, 25, 50, 100]; false — без выбора
   server?: boolean, // v9 manualPagination
   rowCount?: number, // всего строк на сервере; обязателен при server
@@ -134,7 +134,7 @@ dev-warn по [ADR 0036](0036-plugin-contract-diagnostics-and-a11y.md)), кон�
 **Группы и раскрытие — страницы по верхнему уровню** (`paginateExpandedRows: false`):
 дети остаются на странице родителя, группа между страницами не рвётся. Размер
 страницы считается в строках верхнего уровня, поэтому видимых строк может быть
-больше `pageSize`.
+больше размера страницы.
 
 **Сброс страницы.** Стоковый `autoResetPageIndex` выключен: он сбрасывает страницу
 на любую смену `data`, а `cellEditing` и `rowDragging` меняют `data` на каждое

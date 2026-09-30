@@ -18,6 +18,7 @@ export const useTableEffects = (
   folded: FoldedEntryConfig,
   signature: string,
   argsSignature: string,
+  lifetimeViolations: readonly string[],
 ) => {
   const host = table as Parameters<typeof logWarn>[0]
 
@@ -47,6 +48,19 @@ export const useTableEffects = (
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature],
   )
+
+  // Дев-варн на смену аргумента-договора после монтирования (ADR 0039, RX4).
+  const violationsKey = lifetimeViolations.join('|')
+  useEffect(() => {
+    for (const violation of lifetimeViolations) {
+      logWarn(
+        host,
+        `${violation} — договор на время жизни таблицы: смена после монтирования не применяется; пересоздайте таблицу (key)`,
+        `lifetime:${violation}`,
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу нарушений
+  }, [violationsKey, host])
 
   // Дев-варн на коллизию id плагинов (DP5): id ключует hooks-scope, локальный state и
   // генерируемую фичу — дубль молча перезапишет их. Печатается один раз на набор.

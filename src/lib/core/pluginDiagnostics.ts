@@ -15,6 +15,8 @@ export type PluginInertReason =
   | 'noToolbar'
   | 'noActions'
   | 'noRowCount'
+  | 'addedAfterMount'
+  | 'removedAfterMount'
   | (string & {})
 
 export type PluginDiagnostic =
@@ -63,6 +65,8 @@ export interface PluginDiagnosticSource {
   id: string
   enabled?: boolean
   diagnose?: PluginDiagnose
+  /** Причина, заданная ядром (состав набора, ADR 0039); важнее `enabled` и `diagnose`. */
+  reason?: PluginInertReason
 }
 
 /** Предупреждает о каждой инертной записи снимка, кроме `disabled` (ADR 0036, PQ2). */
@@ -123,14 +127,14 @@ export const resolvePluginDiagnostics = (
   table: unknown,
   errors?: PluginErrorRegistry,
 ): PluginDiagnostic[] =>
-  sources.map(({ id, enabled, diagnose }): PluginDiagnostic => {
+  sources.map(({ id, enabled, diagnose, reason: forced }): PluginDiagnostic => {
     const known = errors?.get(id)
     if (known !== undefined) {
       return { id, status: 'error', error: known }
     }
     let reason: PluginInertReason | undefined
     try {
-      reason = enabled === false ? 'disabled' : diagnose?.(table)
+      reason = forced ?? (enabled === false ? 'disabled' : diagnose?.(table))
     } catch (error) {
       errors?.report(id, error)
       return { id, status: 'error', error: errorMessage(error) }
@@ -148,6 +152,10 @@ const INERT_MESSAGES: Record<string, string> = {
   noActions: 'нечего показать: ни один плагин не добавил действий',
   noRowCount:
     'в серверном режиме нужен rowCount (0, пока ответ сервера не пришёл)',
+  addedAfterMount:
+    'добавлен в plugins после монтирования: TanStack v9 собирает фичи в конструкторе, плагин не подключится — держите его в наборе с enabled: false или пересоздайте таблицу (key)',
+  removedAfterMount:
+    'удалён из plugins после монтирования: фича осталась в таблице и выключена как enabled: false — держите плагин в наборе с enabled: false или пересоздайте таблицу (key)',
 }
 
 /**

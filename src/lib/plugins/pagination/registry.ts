@@ -19,8 +19,11 @@ export const DEFAULT_PAGE_SIZES = [10, 25, 50, 100]
 export interface PaginationOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Строк верхнего уровня на странице (по умолчанию 25). */
-  pageSize?: number
+  /**
+   * Начальный размер страницы в строках верхнего уровня (по умолчанию 25). Семя
+   * состояния: текущим размером владеет срез `pagination` (ADR 0039).
+   */
+  initialPageSize?: number
   /** Варианты выбора размера (по умолчанию 10/25/50/100); `false` — без выбора. */
   pageSizes?: number[] | false
   /** Серверная пагинация — v9 `manualPagination`: `data` — уже текущая страница. */
@@ -33,6 +36,8 @@ export interface PaginationOptions {
 
 export const pagination = definePlugin<PaginationOptions>()({
   id: 'pagination',
+  // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
+  lifetime: ['server'],
   diagnose: paginationInertReason,
   features: {
     rowPaginationFeature,
@@ -43,7 +48,7 @@ export const pagination = definePlugin<PaginationOptions>()({
   // и `paginateExpandedRows: false` без нарезки спрятал бы раскрытые строки.
   options: o => {
     const enabled = o.enabled !== false
-    const pageSize = o.pageSize ?? DEFAULT_PAGE_SIZE
+    const pageSize = o.initialPageSize ?? DEFAULT_PAGE_SIZE
     return {
       manualPagination: !enabled || !!o.server,
       rowCount: enabled && o.server ? o.rowCount : undefined,

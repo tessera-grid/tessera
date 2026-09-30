@@ -35,11 +35,18 @@ import {
 } from './useControlledLayout'
 import {
   createPluginArgsStore,
+  lifetimeArgViolations,
   pluginArgsSignature,
   rememberPluginArgs,
   resolvePluginEntries,
   type PluginArgsStore,
 } from './pluginArgs'
+import {
+  createPluginSetStore,
+  pluginSetSignature,
+  resolvePluginSet,
+  type PluginSetStore,
+} from './pluginSet'
 import { useTableEffects } from './useTableEffects'
 
 const DEFAULT_COLUMN = {
@@ -112,15 +119,18 @@ export const useCreateTable = <
   skeletonOptions,
   defaultColumn,
 }: UseCreateTableParams<TData, TEntries>) => {
+  // Состав набора — договор на время жизни таблицы (ADR 0039): добавленный позже
+  // плагин инертен, удалённый — выключен как enabled: false.
+  const setStore = useRef<PluginSetStore | null>(null)
+  setStore.current ??= createPluginSetStore()
+  const entries = resolvePluginSet(setStore.current, plugins)
+
   // Держим набор фич и свёртку по СИГНАТУРЕ структуры активных записей (id +
   // enabled), а не по идентичности массива — иначе новый plugins пересобирал бы всё.
-  const signature = plugins
-    .filter(entry => entry.enabled !== false)
-    .map(entry => entry.id)
-    .join('|')
+  const signature = pluginSetSignature(entries)
 
   const features = useMemo(
-    () => buildTesseraFeatures(plugins),
+    () => buildTesseraFeatures(entries),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature],
   )
@@ -128,7 +138,7 @@ export const useCreateTable = <
   // Сервисные колонки не зависят от аргументов фабрик — держим их по составу набора:
   // смена аргумента не пересоздаёт колонки и не перестраивает модель.
   const serviceColumns = useMemo(
-    () => foldEntries(plugins).serviceColumns,
+    () => foldEntries(entries).serviceColumns,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature],
   )
@@ -137,11 +147,12 @@ export const useCreateTable = <
   // ЗНАЧЕНИЯ аргументов, функции из аргументов — стабильные обёртки на последнюю версию.
   const argsStore = useRef<PluginArgsStore | null>(null)
   argsStore.current ??= createPluginArgsStore()
-  rememberPluginArgs(argsStore.current, plugins)
-  const argsSignature = `${signature}#${pluginArgsSignature(plugins)}`
+  rememberPluginArgs(argsStore.current, entries)
+  const argsSignature = `${signature}#${pluginArgsSignature(entries)}`
+  const lifetimeViolations = lifetimeArgViolations(argsStore.current, entries)
 
   const folded = useMemo(
-    () => foldEntries(resolvePluginEntries(argsStore.current!, plugins)),
+    () => foldEntries(resolvePluginEntries(argsStore.current!, entries)),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
     [argsSignature],
   )
@@ -190,7 +201,7 @@ export const useCreateTable = <
   // и из hook-слайсов пользовательских записей сворачиваются ЖИВО каждый рендер:
   // колбэки читаются через table.getHooks() на момент вызова, поэтому не
   // мемоизируются по сигнатуре набора. resolveHooks подкладывает no-op дефолты.
-  const resolvedHooks = resolveHooks(foldHooks(plugins))
+  const resolvedHooks = resolveHooks(foldHooks(entries))
 
   // Стабильная ссылка на контролируемый state: потребитель (стори) отдаёт свежий
   // объект state каждый рендер, а v9 useTable публикует его в store в layout-эффекте
@@ -253,7 +264,14 @@ export const useCreateTable = <
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
   )
 
-  useTableEffects(table, plugins, folded, signature, argsSignature)
+  useTableEffects(
+    table,
+    entries,
+    folded,
+    signature,
+    argsSignature,
+    lifetimeViolations,
+  )
 
   return table
 }

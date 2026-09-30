@@ -42,14 +42,16 @@ const readPath = (value: unknown, path: readonly string[]): unknown =>
     value,
   )
 
-/** Последние аргументы и обёртки функций одной таблицы. */
+/** Последние аргументы, аргументы монтирования и обёртки функций одной таблицы. */
 export interface PluginArgsStore {
   latest: Map<string, unknown>
+  mounted: Map<string, unknown>
   trampolines: Map<string, (...args: unknown[]) => unknown>
 }
 
 export const createPluginArgsStore = (): PluginArgsStore => ({
   latest: new Map(),
+  mounted: new Map(),
   trampolines: new Map(),
 })
 
@@ -94,9 +96,44 @@ export const rememberPluginArgs = (
   for (const entry of entries) {
     if (entry.configure) {
       store.latest.set(entry.id, entry.args)
+      if (!store.mounted.has(entry.id)) {
+        store.mounted.set(entry.id, entry.args)
+      }
     }
   }
 }
+
+/** Аргументы с договорами на время жизни, взятыми с момента монтирования (RX4). */
+const withLifetimeArgs = (
+  store: PluginArgsStore,
+  entry: TesseraFeatureEntry,
+): unknown => {
+  const mounted = store.mounted.get(entry.id)
+  if (!entry.lifetimeArgs?.length || !isPlainObject(mounted)) {
+    return entry.args
+  }
+  const args = { ...(entry.args as Record<string, unknown>) }
+  for (const key of entry.lifetimeArgs) {
+    args[key] = mounted[key]
+  }
+  return args
+}
+
+/** Аргументы-договоры, чьё значение сменилось после монтирования: `id.аргумент`. */
+export const lifetimeArgViolations = (
+  store: PluginArgsStore,
+  entries: readonly TesseraFeatureEntry[],
+): string[] =>
+  entries.flatMap(entry => {
+    const mounted = store.mounted.get(entry.id)
+    if (!entry.lifetimeArgs?.length || !isPlainObject(mounted)) {
+      return []
+    }
+    const latest = entry.args as Record<string, unknown>
+    return entry.lifetimeArgs
+      .filter(key => argsKeyOf(latest?.[key]) !== argsKeyOf(mounted[key]))
+      .map(key => `${entry.id}.${key}`)
+  })
 
 /** Сигнатура значений аргументов набора: меняется только при смене значения. */
 export const pluginArgsSignature = (
@@ -114,6 +151,11 @@ export const resolvePluginEntries = (
 ): TesseraFeatureEntry[] =>
   entries.map(entry =>
     entry.configure
-      ? { ...entry, ...entry.configure(viewOf(store, entry.id, entry.args)) }
+      ? {
+          ...entry,
+          ...entry.configure(
+            viewOf(store, entry.id, withLifetimeArgs(store, entry)),
+          ),
+        }
       : entry,
   )

@@ -41,6 +41,7 @@ import {
 import {
   reportPluginError,
   type PluginDiagnose,
+  type PluginInertReason,
   type PluginDiagnosticSource,
 } from './pluginDiagnostics'
 
@@ -65,6 +66,13 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   args?: unknown
   /** Ключ аргументов по значению; смена ключа пересобирает `configure`. */
   argsKey?: string
+  /**
+   * Аргументы-договоры на время жизни таблицы (напр. `server`, ADR 0039): ядро
+   * держит их значение с момента монтирования, смена на лету — dev-warn.
+   */
+  lifetimeArgs?: readonly string[]
+  /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
+  inertReason?: PluginInertReason
   /**
    * Настройка из вида аргументов (функции — стабильные обёртки). Ядро зовёт её при
    * смене `argsKey` вместо готовых `options`/`slots`/`actionMenu`/`setup`.
@@ -163,6 +171,7 @@ export const foldEntries = (
       id: entry.id,
       enabled: entry.enabled,
       diagnose: entry.diagnose,
+      reason: entry.inertReason,
     })
 
     // Опции берём от ВСЕХ присутствующих записей (в т.ч. enabled:false) — фабрика

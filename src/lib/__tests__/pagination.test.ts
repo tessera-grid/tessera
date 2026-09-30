@@ -68,7 +68,7 @@ const rowIds = (table: any) =>
 
 describe('pagination — модель', () => {
   it('PG1: клиентский режим — в модели строк pageSize строк текущей страницы из полного data', () => {
-    const { table } = build(items(60), { pageSize: 25 })
+    const { table } = build(items(60), { initialPageSize: 25 })
     expect(rowIds(table)).toHaveLength(25)
     expect(rowIds(table)[0]).toBe('0')
 
@@ -82,7 +82,7 @@ describe('pagination — модель', () => {
 
   it('PG5: срез pagination контролируется state.pagination + onPaginationChange', () => {
     const onPaginationChange = vi.fn()
-    const { table } = build(items(60), { pageSize: 25 }, [], {
+    const { table } = build(items(60), { initialPageSize: 25 }, [], {
       state: { pagination: { pageIndex: 1, pageSize: 25 } },
       onPaginationChange,
     })
@@ -121,7 +121,7 @@ describe('pagination — модель', () => {
         group: 'g',
       })),
     }))
-    const { table } = build(tree, { pageSize: 2 }, [rowExpanding()])
+    const { table } = build(tree, { initialPageSize: 2 }, [rowExpanding()])
     table.setExpanded(true)
 
     expect(rowIds(table)).toEqual(['p0', 'p0c0', 'p0c1', 'p1', 'p1c0', 'p1c1'])
@@ -132,7 +132,7 @@ describe('pagination — модель', () => {
   })
 
   it('PG10: смена сортировки или группировки возвращает на первую страницу', () => {
-    const { table, folded } = build(items(100), { pageSize: 10 }, [
+    const { table, folded } = build(items(100), { initialPageSize: 10 }, [
       columnSorting(),
       rowGrouping(),
     ])

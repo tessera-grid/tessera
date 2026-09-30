@@ -124,7 +124,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     columnVisibility({ enabled: !!o.enableColumnVisibility }),
     pagination({
       enabled: !!o.enablePagination,
-      pageSize: o.paginationPageSize,
+      initialPageSize: o.paginationPageSize,
     }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.

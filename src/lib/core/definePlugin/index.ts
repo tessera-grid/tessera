@@ -80,6 +80,11 @@ interface DefinePluginConfig<
    * их при смене значения аргументов, функции из аргументов приходят стабильными.
    */
   options?: (opts: TOptions) => TResolved
+  /**
+   * Аргументы-договоры на время жизни таблицы (ADR 0039): значение берётся с момента
+   * монтирования, смена на лету не применяется и сопровождается dev-warn.
+   */
+  lifetime?: readonly Extract<keyof TOptions, string>[]
   /** Живой слайс бизнес-колбэков; undefined-ключи отбрасываются. */
   hooks?: (opts: TOptions) => THooks
   /**
@@ -171,6 +176,9 @@ export const definePlugin =
       entry.args = opts
       entry.argsKey = argsKeyOf(opts)
       entry.configure = configure as TesseraFeatureEntry['configure']
+      if (config.lifetime) {
+        entry.lifetimeArgs = config.lifetime
+      }
 
       if (config.hooks) {
         entry.hooks = { [config.id]: stripUndefined(config.hooks(opts)) }

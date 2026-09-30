@@ -68,6 +68,8 @@ const resolveMultiSortEvent = (
 
 export const columnSorting = definePlugin<ColumnSortingOptions>()({
   id: 'columnSorting',
+  // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
+  lifetime: ['server'],
   diagnose: neverInert,
   features: {
     rowSortingFeature,
