@@ -44,9 +44,12 @@ const makeTable = (opts = {}) => {
 }
 
 describe('cellEditing', () => {
-  it("state: сгенерированная фича seed'ит слайс cellEditing = null", () => {
+  it("state: сгенерированная фича seed'ит слайс cellEditing пустым: без правки и отправленных ячеек", () => {
     const { table } = makeTable()
-    expect(table.atoms[pluginStateKey('cellEditing')].get()).toBe(null)
+    expect(table.atoms[pluginStateKey('cellEditing')].get()).toEqual({
+      active: null,
+      submitted: {},
+    })
   })
 
   it('локальный слайс записывается через updater-опцию (реактивно)', () => {

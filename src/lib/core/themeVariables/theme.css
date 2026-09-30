@@ -202,6 +202,12 @@
   --tsr-comp-cell-content-padding: 0px var(--tsr-ref-space-4);
   --tsr-comp-cell-content-gap: var(--tsr-ref-space-1);
   --tsr-comp-cell-font-size: 0.8125rem;
+  /* Значение ячейки, сохранение которой ждёт сервера (ADR 0041). */
+  --tsr-comp-cell-pending-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) 55%,
+    transparent
+  );
   /* Typography — theme-agnostic default (system stack); override to use a
    * custom face. Numeric feature aligns digits in columns. */
   --tsr-comp-font-family:

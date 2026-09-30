@@ -109,7 +109,7 @@ const key = (target: Element, name: string) =>
 const startEdit = () =>
   act(() => startEditSession(captured, captured.getRow('1'), { id: 'name' }))
 
-const session = () => captured.atoms['plugin:cellEditing'].get()
+const session = () => captured.atoms['plugin:cellEditing'].get().active
 
 const onCellEdit = vi.fn()
 const onEditCancel = vi.fn()

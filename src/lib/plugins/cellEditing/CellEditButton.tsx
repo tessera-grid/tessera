@@ -2,29 +2,33 @@
  * Правый слот ячейки: кнопка входа в режим правки. Появляется по hover и без него
  * места не занимает (`CellButton showOnHover` → класс cell__button--hidden). Показ
  * гейтит предикат `canEdit` по контексту ячейки; в режиме правки этой ячейки кнопки
- * нет (её место занял редактор во владельце cellSlot). Ячейка подписана только на
- * «редактируется ли она», а не на всю сессию.
+ * нет (её место занял редактор во владельце cellSlot), как и пока сохранение ждёт
+ * сервера. Ячейка подписана только на своё состояние, а не на весь срез.
  */
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { CellButton } from '../../grid/Actions/CellButton'
 import { useIcons } from '../../ui/icons'
-import { EDIT_SESSION_KEY, isEditingCell, startEditSession } from './session'
-import type { CellEditingHooks, EditingCell } from './types'
+import {
+  EDIT_SESSION_KEY,
+  cellEditingViewOf,
+  startEditSession,
+} from './session'
+import type { CellEditingHooks, CellEditingState } from './types'
 
 export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
   const { row, column, table, hooks } = props
   const { edit: EditIcon } = useIcons()
   const labels = useLocalization()
-  const editing = useSliceProjection(
+  const view = useSliceProjection(
     table,
     EDIT_SESSION_KEY,
-    (session: EditingCell) => isEditingCell(session, row.id, column.id),
+    (state: CellEditingState) => cellEditingViewOf(state, row.id, column.id),
   )
 
-  // Эта ячейка уже редактируется — кнопка не нужна.
-  if (editing) {
+  // Ячейка уже в правке или ждёт сервера — кнопка не нужна.
+  if (view === 'editing' || (view && view.status === 'pending')) {
     return null
   }
 

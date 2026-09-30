@@ -57,5 +57,7 @@ export type {
   CellEditCancel,
   EditCancelReason,
   EditSession,
+  CellEditingState,
+  SubmittedCell,
 } from './cellEditing/types'
 export type { SessionCancelReason } from '../core/cancelInteraction'

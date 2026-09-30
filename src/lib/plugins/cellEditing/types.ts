@@ -16,8 +16,30 @@ export interface EditSession {
   original: unknown
 }
 
-/** Срез плагина: открытая сессия правки или null. */
+/** Активная сессия правки или null. */
 export type EditingCell = EditSession | null
+
+/**
+ * Отправленная ячейка (ADR 0041, §2): сохранение ждёт промиса `onCellEdit` или
+ * отклонено. Отделена от активной правки — править другие ячейки можно сразу.
+ */
+export interface SubmittedCell {
+  rowId: string
+  columnId: string
+  draft: string
+  original: unknown
+  status: 'pending' | 'error'
+  /** Текст отказа сервера. */
+  error?: string
+  /** Номер отправки: поздний итог прежней отправки игнорируется. */
+  attempt: number
+}
+
+/** Срез плагина: активная правка и отправленные ячейки по ключу ячейки. */
+export interface CellEditingState {
+  active: EditingCell
+  submitted: Record<string, SubmittedCell>
+}
 
 /** Данные коммита нового значения ячейки. */
 export interface CellEditCommit {
@@ -44,6 +66,8 @@ export interface CellEditCancel {
   original: unknown
   /** Значение сейчас — для `conflict`. */
   current?: unknown
+  /** Текст отказа сервера — черновик был отклонён (ADR 0041). */
+  error?: string
 }
 
 /**
@@ -68,8 +92,11 @@ export type CellEditor = (props: {
 export interface CellEditingHooks {
   /** Условие показа кнопки редактирования по контексту ячейки. */
   canEdit: (ctx: CellComponentProps) => boolean
-  /** Коммит нового значения ячейки. */
-  onCellEdit: (commit: CellEditCommit) => void
+  /**
+   * Коммит нового значения ячейки. Промис — сохранение с ожиданием: ячейка ждёт
+   * его итога, не блокируя правку других (ADR 0041).
+   */
+  onCellEdit: (commit: CellEditCommit) => void | Promise<unknown>
   /** Правка завершилась без сохранения: Escape, запрет на лету (ADR 0040). */
   onEditCancel?: (end: CellEditCancel) => void
   /**

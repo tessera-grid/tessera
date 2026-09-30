@@ -60,3 +60,12 @@
   outline: 1px solid var(--tsr-sys-danger);
   outline-offset: -1px;
 }
+
+/* Сохранение ждёт сервера (ADR 0041): отправленное значение, приглушённо. */
+.pending {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tsr-comp-cell-pending-color);
+}

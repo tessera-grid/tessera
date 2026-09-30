@@ -12,15 +12,17 @@ import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { CellEditInput } from './CellEditInput'
+import styles from './CellEditInput.module.css'
 import {
   EDIT_SESSION_KEY,
   cancelEditSession,
+  cellEditingViewOf,
   commitEditSession,
   isEditingCell,
   readEditSession,
   setEditDraft,
 } from './session'
-import type { CellEditingHooks, CellEditor, EditingCell } from './types'
+import type { CellEditingHooks, CellEditingState, CellEditor } from './types'
 
 /** Дефолтный редактор: встроенный инлайн-ввод (Enter и потеря фокуса — коммит, Escape — отмена). */
 const defaultEditor: CellEditor = ({
@@ -47,16 +49,25 @@ export const CellEditField = (
   const { row, column, table, content, hooks } = props
   const labels = useLocalization()
   const [error, setError] = useState<string>()
-  // Подписка только на «редактируется ли эта ячейка»: ввод черновика ячейки не
+  // Подписка только на состояние этой ячейки: ввод черновика другие ячейки не
   // перерисовывает.
-  const editing = useSliceProjection(
+  const view = useSliceProjection(
     table,
     EDIT_SESSION_KEY,
-    (session: EditingCell) => isEditingCell(session, row.id, column.id),
+    (state: CellEditingState) => cellEditingViewOf(state, row.id, column.id),
   )
 
-  // Не эта ячейка — отдаём собственный контент ячейки как есть.
-  if (!editing) {
+  // Сохранение ждёт сервера — отправленное значение, приглушённо (ADR 0041, §2).
+  if (view && view !== 'editing' && view.status === 'pending') {
+    return (
+      <span className={styles.pending} aria-busy="true">
+        {view.draft}
+      </span>
+    )
+  }
+
+  // Не в правке — отдаём собственный контент ячейки как есть.
+  if (view !== 'editing') {
     return <>{content}</>
   }
 

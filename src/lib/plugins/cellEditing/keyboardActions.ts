@@ -5,7 +5,7 @@
  */
 import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
-import { startEditSession } from './session'
+import { isCellPending, startEditSession } from './session'
 import type { CellEditingHooks } from './types'
 
 export const editCellKeyboardAction: CellKeyboardAction = {
@@ -16,6 +16,7 @@ export const editCellKeyboardAction: CellKeyboardAction = {
   visible: ctx =>
     !ctx.column.getIsActionsColumn() &&
     !ctx.column.getIsRowActionsColumn() &&
+    !isCellPending(ctx.table, ctx.row.id, ctx.column.id) &&
     (readPluginHooks<Partial<CellEditingHooks>>(
       ctx.table,
       'cellEditing',

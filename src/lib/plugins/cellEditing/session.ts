@@ -2,6 +2,8 @@
  * Сессия правки ячейки (ADR 0040, §2): начало, черновик, завершение и
  * согласование с таблицей. Сессию ведёт плагин, а не смонтированный редактор —
  * она переживает прокрутку, смену страницы, сортировку и скрытие колонки.
+ * Сохранение с промисом отделяет ячейку от активной правки в `submitted`
+ * (ADR 0041, §2): правка других ячеек не ждёт сервера.
  */
 import type { PluginReconcileContext } from '../../core/features'
 import {
@@ -12,13 +14,20 @@ import {
 import type { CellComponentProps } from '../../core/createSlots'
 import type {
   CellEditingHooks,
+  CellEditingState,
   EditCancelReason,
   EditingCell,
   EditSession,
+  SubmittedCell,
 } from './types'
 
 const ID = 'cellEditing'
 export const EDIT_SESSION_KEY = pluginStateKey(ID)
+
+export const EMPTY_EDITING_STATE: CellEditingState = {
+  active: null,
+  submitted: {},
+}
 
 interface SessionRow {
   id: string
@@ -29,9 +38,20 @@ type SessionTable = {
   atoms: Record<string, { get: () => unknown } | undefined>
 }
 
+type Cell = { rowId: string; columnId: string }
+
+export const cellKey = (rowId: string, columnId: string) =>
+  `${rowId}\u0000${columnId}`
+
+export const readEditingState = (table: unknown): CellEditingState =>
+  ((table as SessionTable).atoms[EDIT_SESSION_KEY]?.get() as
+    CellEditingState | undefined) ?? EMPTY_EDITING_STATE
+
+const writeEditingState = (table: unknown, next: CellEditingState) =>
+  setPluginState(table, ID, next)
+
 export const readEditSession = (table: unknown): EditingCell =>
-  ((table as SessionTable).atoms[EDIT_SESSION_KEY]?.get() as EditingCell) ??
-  null
+  readEditingState(table).active
 
 export const isEditingCell = (
   session: EditingCell,
@@ -40,14 +60,45 @@ export const isEditingCell = (
 ) => session?.cell.rowId === rowId && session.cell.columnId === columnId
 
 /**
+ * Что показывает ячейка: `'editing'` — редактор, отправленная ячейка — её
+ * ожидание или ошибку, `null` — собственный контент.
+ */
+export const cellEditingViewOf = (
+  state: CellEditingState | undefined,
+  rowId: string,
+  columnId: string,
+): 'editing' | SubmittedCell | null => {
+  if (!state) {
+    return null
+  }
+  if (isEditingCell(state.active, rowId, columnId)) {
+    return 'editing'
+  }
+  return state.submitted[cellKey(rowId, columnId)] ?? null
+}
+
+/** Сохранение этой ячейки ещё ждёт сервера — повторной правки нет. */
+export const isCellPending = (
+  table: unknown,
+  rowId: string,
+  columnId: string,
+) =>
+  readEditingState(table).submitted[cellKey(rowId, columnId)]?.status ===
+  'pending'
+
+/**
  * Открыть правку ячейки. Открытая сессия другой ячейки (недопустимое значение,
  * оставшееся после потери фокуса) завершается `cancel` — черновик не пропадает молча.
+ * Ячейку, ждущую сервера, не открыть.
  */
 export const startEditSession = (
   table: unknown,
   row: SessionRow,
   column: { id: string },
 ) => {
+  if (isCellPending(table, row.id, column.id)) {
+    return
+  }
   const open = readEditSession(table)
   if (open && !isEditingCell(open, row.id, column.id)) {
     cancelEditSession(
@@ -65,18 +116,21 @@ export const startEditSession = (
     draft: String(original ?? ''),
     original,
   }
-  setPluginState(table, ID, session)
+  writeEditingState(table, { ...readEditingState(table), active: session })
 }
 
 export const setEditDraft = (table: unknown, draft: string) => {
-  const session = readEditSession(table)
-  if (session && session.draft !== draft) {
-    setPluginState(table, ID, { ...session, draft })
+  const state = readEditingState(table)
+  if (state.active && state.active.draft !== draft) {
+    writeEditingState(table, {
+      ...state,
+      active: { ...state.active, draft },
+    })
   }
 }
 
 export const endEditSession = (table: unknown) =>
-  setPluginState(table, ID, null)
+  writeEditingState(table, { ...readEditingState(table), active: null })
 
 /** Завершить сессию без сохранения: черновик уходит в `onEditCancel`. */
 export const cancelEditSession = (
@@ -100,15 +154,55 @@ export const cancelEditSession = (
   })
 }
 
+const isThenable = (value: unknown): value is PromiseLike<unknown> =>
+  typeof (value as { then?: unknown } | null)?.then === 'function'
+
+/** Текст отказа: `Error.message`, строка — как есть; иначе — подпись по умолчанию. */
+export const rejectionText = (reason: unknown): string | undefined => {
+  if (reason instanceof Error) {
+    return reason.message || undefined
+  }
+  return typeof reason === 'string' && reason ? reason : undefined
+}
+
+// Номер отправки сквозной: снятое и заново отправленное сохранение той же ячейки не
+// спутать с поздним итогом прежнего.
+let lastAttempt = 0
+
+const settleSubmitted = (
+  table: unknown,
+  key: string,
+  attempt: number,
+  outcome: { ok: true } | { ok: false; reason: unknown },
+) => {
+  const state = readEditingState(table)
+  const entry = state.submitted[key]
+  if (!entry || entry.attempt !== attempt || entry.status !== 'pending') {
+    return
+  }
+  const submitted = { ...state.submitted }
+  if (outcome.ok) {
+    delete submitted[key]
+  } else {
+    submitted[key] = {
+      ...entry,
+      status: 'error',
+      error: rejectionText(outcome.reason),
+    }
+  }
+  writeEditingState(table, { ...state, submitted })
+}
+
 /**
  * Сохранить значение сессии этой ячейки (ADR 0040, §3–§4). Сессии нет — уже
  * завершена (Enter, Escape) и потеря фокуса после неё ничего не делает. Значение
  * изменилось извне: по умолчанию сохранение проходит с `original`/`current`, при
- * `onConflict: 'block'` — завершение с `conflict`.
+ * `onConflict: 'block'` — завершение с `conflict`. Промис от `onCellEdit` отделяет
+ * ячейку в ожидание (ADR 0041, §2).
  */
 export const commitEditSession = (
   table: unknown,
-  cell: { rowId: string; columnId: string },
+  cell: Cell,
   value: string,
   hooks: Partial<CellEditingHooks>,
 ) => {
@@ -126,14 +220,38 @@ export const commitEditSession = (
     cancelEditSession(table, 'conflict', hooks, { value: now })
     return
   }
-  endEditSession(table)
-  hooks.onCellEdit?.({
+  const result = hooks.onCellEdit?.({
     rowId,
     columnId,
     value,
     original,
     ...(changed ? { current: now } : {}),
   })
+  const state = readEditingState(table)
+  if (!isThenable(result)) {
+    writeEditingState(table, { ...state, active: null })
+    return
+  }
+  const key = cellKey(rowId, columnId)
+  const attempt = ++lastAttempt
+  writeEditingState(table, {
+    active: null,
+    submitted: {
+      ...state.submitted,
+      [key]: {
+        rowId,
+        columnId,
+        draft: value,
+        original,
+        status: 'pending',
+        attempt,
+      },
+    },
+  })
+  result.then(
+    () => settleSubmitted(table, key, attempt, { ok: true }),
+    reason => settleSubmitted(table, key, attempt, { ok: false, reason }),
+  )
 }
 
 interface ReconcileTable extends SessionTable {
@@ -148,25 +266,74 @@ interface ReconcileRow extends SessionRow {
   }[]
 }
 
+const hasCell = (table: ReconcileTable, { rowId, columnId }: Cell) =>
+  !!table.getCoreRowModel().rowsById[rowId] &&
+  table.getAllLeafColumns().some(column => column.id === columnId)
+
 /**
- * Согласование открытой сессии с таблицей после рендера: строка или колонка ушла —
- * `unavailable`; плагин выключен или `canEdit` запретил ячейку — `revoke`.
- * Ячейка вне экрана, на другой странице, в скрытой колонке — сессия жива.
+ * Отправленные ячейки, ушедшие из таблицы или выключенного плагина, снимаются;
+ * черновик отклонённой уходит в `onEditCancel`. Поздний итог снятого промиса
+ * игнорируется (`settleSubmitted`).
+ */
+const reconcileSubmitted = (
+  table: ReconcileTable,
+  enabled: boolean,
+  hooks: Partial<CellEditingHooks>,
+) => {
+  const state = readEditingState(table)
+  const entries = Object.entries(state.submitted)
+  if (entries.length === 0) {
+    return
+  }
+  const dropped: [SubmittedCell, EditCancelReason][] = []
+  for (const [, entry] of entries) {
+    if (!hasCell(table, entry)) {
+      dropped.push([entry, 'unavailable'])
+    } else if (!enabled) {
+      dropped.push([entry, 'revoke'])
+    }
+  }
+  if (dropped.length === 0) {
+    return
+  }
+  const submitted = { ...state.submitted }
+  for (const [entry] of dropped) {
+    delete submitted[cellKey(entry.rowId, entry.columnId)]
+  }
+  writeEditingState(table, { ...state, submitted })
+  for (const [entry, reason] of dropped) {
+    if (entry.status === 'error') {
+      hooks.onEditCancel?.({
+        rowId: entry.rowId,
+        columnId: entry.columnId,
+        reason,
+        draft: entry.draft,
+        original: entry.original,
+        error: entry.error,
+      })
+    }
+  }
+}
+
+/**
+ * Согласование с таблицей после рендера. Активная сессия: строка или колонка ушла —
+ * `unavailable`; плагин выключен или `canEdit` запретил ячейку — `revoke`. Ячейка вне
+ * экрана, на другой странице, в скрытой колонке — сессия жива. Отправленные ячейки —
+ * `reconcileSubmitted`.
  */
 export const reconcileEditSession = (
   table: unknown,
   { enabled, hooks }: PluginReconcileContext,
 ) => {
+  const cellHooks = hooks as Partial<CellEditingHooks>
+  const t = table as ReconcileTable
+  reconcileSubmitted(t, enabled, cellHooks)
   const session = readEditSession(table)
   if (!session) {
     return
   }
-  const cellHooks = hooks as Partial<CellEditingHooks>
-  const t = table as ReconcileTable
   const { rowId, columnId } = session.cell
-  const row = t.getCoreRowModel().rowsById[rowId]
-  const hasColumn = t.getAllLeafColumns().some(column => column.id === columnId)
-  if (!row || !hasColumn) {
+  if (!hasCell(t, session.cell)) {
     cancelEditSession(table, 'unavailable', cellHooks)
     return
   }
@@ -174,7 +341,10 @@ export const reconcileEditSession = (
     cancelEditSession(table, 'revoke', cellHooks)
     return
   }
-  const cell = row.getAllCells().find(item => item.column.id === columnId)
+  const cell = t
+    .getCoreRowModel()
+    .rowsById[rowId]!.getAllCells()
+    .find(item => item.column.id === columnId)
   if (
     cell &&
     cellHooks.canEdit &&

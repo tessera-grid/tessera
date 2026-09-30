@@ -1,6 +1,6 @@
 /**
  * Плагин cellEditing — носитель ЛОКАЛЬНОГО состояния. `state` объявляет
- * дефолт слайса «сессия правки» (ячейка, черновик, исходное значение или null);
+ * дефолт слайса: активная сессия правки и ячейки, ждущие сервера (ADR 0041);
  * definePlugin генерирует v9-фичу, seed'ящую слайс под ключом `plugin:cellEditing`.
  * Сессию с таблицей согласует `reconcile` (ADR 0040, §2).
  *
@@ -24,9 +24,9 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
 import { editCellKeyboardAction } from './keyboardActions'
-import { reconcileEditSession } from './session'
+import { EMPTY_EDITING_STATE, reconcileEditSession } from './session'
 import type { CellComponentProps } from '../../core/createSlots'
-import type { CellEditingHooks, EditingCell } from './types'
+import type { CellEditingHooks, CellEditingState } from './types'
 
 export interface CellEditingOptions {
   /** `false` — плагин отключён. */
@@ -50,8 +50,8 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canEdit'],
   diagnose: neverInert,
-  // Локальный слайс: открытая сессия правки — ячейка, черновик, исходное значение.
-  state: (): EditingCell => null,
+  // Локальный слайс: активная правка и отправленные ячейки (ADR 0040, ADR 0041).
+  state: (): CellEditingState => EMPTY_EDITING_STATE,
   reconcile: reconcileEditSession,
   hooks: o => ({
     canEdit: o.canEdit ?? (() => true),

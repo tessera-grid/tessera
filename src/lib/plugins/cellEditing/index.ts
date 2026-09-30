@@ -8,4 +8,6 @@ export type {
   CellEditor,
   EditingCell,
   EditSession,
+  CellEditingState,
+  SubmittedCell,
 } from './types'
