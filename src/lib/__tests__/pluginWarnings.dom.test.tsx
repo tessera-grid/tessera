@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Дев-варн на несколько владельцев `cellSlot` (ADR 0028, DP16): владение ячейкой
- * эксклюзивно, ядро предупреждает по числу владельцев после дедупа по `id`.
+ * Дев-варны набора плагинов (ADR 0028): дубль `id` (DP5) и несколько владельцев
+ * `cellSlot` (DP16) — владение ячейкой эксклюзивно, ядро предупреждает по числу
+ * владельцев после дедупа по `id`.
  */
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -22,8 +23,8 @@ const owner = (pluginId: string, slotId: string) => ({
   slots: [{ id: slotId, slot: 'cellSlot', component: () => null }],
 })
 
-/** Сообщения о владельцах `cellSlot` за монтирование таблицы с набором плагинов. */
-const cellSlotWarnings = (plugins: unknown[]) => {
+/** Дев-варны с `topic` за монтирование таблицы с набором плагинов. */
+const warningsAbout = (topic: string, plugins: unknown[]) => {
   __resetLogger()
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   const Grid = () => {
@@ -36,7 +37,7 @@ const cellSlotWarnings = (plugins: unknown[]) => {
   act(() => root.unmount())
   const messages = warn.mock.calls
     .map(call => String(call[0]))
-    .filter(message => message.includes('cellSlot'))
+    .filter(message => message.includes(topic))
   warn.mockRestore()
   __resetLogger()
   return messages
@@ -44,16 +45,32 @@ const cellSlotWarnings = (plugins: unknown[]) => {
 
 describe('владельцы cellSlot', () => {
   it('DP16: разные владельцы cellSlot дают один дев-варн со списком; один владелец и дубль id — без варна', () => {
-    const conflict = cellSlotWarnings([
+    const conflict = warningsAbout('cellSlot', [
       owner('a', 'first'),
       owner('b', 'second'),
     ])
     expect(conflict).toHaveLength(1)
     expect(conflict[0]).toContain('first, second')
 
-    expect(cellSlotWarnings([owner('a', 'first')])).toEqual([])
-    expect(cellSlotWarnings([owner('a', 'same'), owner('b', 'same')])).toEqual(
-      [],
-    )
+    expect(warningsAbout('cellSlot', [owner('a', 'first')])).toEqual([])
+    expect(
+      warningsAbout('cellSlot', [owner('a', 'same'), owner('b', 'same')]),
+    ).toEqual([])
+  })
+})
+
+describe('коллизия id плагинов', () => {
+  it('DP5: дубль id плагинов даёт один дев-варн с этим id; разные id — без варна', () => {
+    const plugin = (id: string) => ({ id })
+    const duplicate = warningsAbout('дублирующиеся id', [
+      plugin('a'),
+      plugin('b'),
+      plugin('a'),
+    ])
+    expect(duplicate).toHaveLength(1)
+    expect(duplicate[0]).toContain('a')
+    expect(
+      warningsAbout('дублирующиеся id', [plugin('a'), plugin('b')]),
+    ).toEqual([])
   })
 })

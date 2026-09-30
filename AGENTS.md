@@ -404,7 +404,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
       Async: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
-    - _Автор плагина:_ модульный `cellSlotOwners` (DP16 — дев-варн на нескольких
+    - _Автор плагина:_ модульный `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
       владельцев `cellSlot`, [ADR 0028](docs/decisions/0028-define-plugin-authoring-api.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы,
