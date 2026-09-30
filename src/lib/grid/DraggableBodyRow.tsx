@@ -33,6 +33,10 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
 
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
+  // Раскрытие ждёт промиса onExpandRow (ADR 0041, §3).
+  const isExpandPending =
+    (row as { getIsExpandPending?: () => boolean }).getIsExpandPending?.() ??
+    false
 
   const {
     setActivatorNodeRef,
@@ -84,6 +88,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       role="row"
       aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
+      aria-busy={isExpandPending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       {...props.treeAria}
       data-index={virtualRow.index}

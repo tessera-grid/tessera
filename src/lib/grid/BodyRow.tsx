@@ -62,11 +62,13 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       rowSelection?: Record<string, boolean>
       expanded?: true | Record<string, boolean>
       grouping?: unknown
+      rowExpandPending?: Record<string, number>
     }
     return {
       selected: s.rowSelection?.[row.id] ?? false,
       expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
       grouping: s.grouping,
+      expandPending: s.rowExpandPending?.[row.id] ?? 0,
     }
   })
 }
@@ -183,6 +185,10 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
 
   const canExpand = row.getCanExpand?.() ?? false
   const isExpanded = row.getIsExpanded?.() ?? false
+  // Раскрытие ждёт промиса onExpandRow (ADR 0041, §3).
+  const isExpandPending =
+    (row as { getIsExpandPending?: () => boolean }).getIsExpandPending?.() ??
+    false
 
   const rowStyles = useMemo(
     () => ({ top: virtualRow.start }),
@@ -203,6 +209,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       role="row"
       aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
       aria-expanded={canExpand ? isExpanded : undefined}
+      aria-busy={isExpandPending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       {...props.treeAria}
       data-index={virtualRow.index}

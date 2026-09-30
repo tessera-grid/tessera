@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Асинхронный контракт бизнес-колбэков (ADR 0041, AS1, AS4, AS7–AS10): промис от
+ * Асинхронный контракт бизнес-колбэков (ADR 0041, AS1, AS4, AS7–AS10, AS12): промис от
  * `onCellEdit` отделяет ячейку в ожидание, отказ переводит её в «ошибку» с
  * черновиком; поздний итог снятого ожидания игнорируется.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -290,5 +290,30 @@ describe('асинхронный контракт бизнес-колбэков'
     expect(await errorOf('from string')).toBe('from string')
     expect(await errorOf({ code: 500 })).toBe("Couldn't save")
     expect(await errorOf(new Error(''))).toBe("Couldn't save")
+  })
+
+  it('AS12: промис onExpandRow отклонён — строка свёрнута обратно; выполнен — остаётся раскрытой', async () => {
+    const tree = [{ id: 'p', name: 'P', subRows: [{ id: 'c', name: 'C' }] }]
+    const expandWith = async (outcome: 'resolve' | 'reject') => {
+      const load = deferred()
+      const hooks = { onExpandRow: () => load.promise }
+      render({ plugins: [rowExpanding(hooks)], data: tree })
+      act(() => toggleRowExpanded(captured.getRow('p'), hooks))
+      expect(captured.getRow('p').getIsExpanded()).toBe(true)
+      expect(captured.getRow('p').getIsExpandPending()).toBe(true)
+      if (outcome === 'resolve') {
+        load.resolve()
+      } else {
+        load.reject(new Error('down'))
+      }
+      await flush()
+      const row = captured.getRow('p')
+      const result = [row.getIsExpanded(), row.getIsExpandPending()]
+      act(() => root!.unmount())
+      root = undefined
+      return result
+    }
+    expect(await expandWith('reject')).toEqual([false, false])
+    expect(await expandWith('resolve')).toEqual([true, false])
   })
 })

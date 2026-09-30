@@ -8,6 +8,7 @@
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import type { PluginReconcileContext } from '../../core/features'
 import { DEFAULT_LABELS } from '../../core/localization'
+import { isThenable } from '../../core/thenable'
 import {
   pluginStateKey,
   readPluginHooks,
@@ -170,9 +171,6 @@ export const cancelEditSession = (
     ...(session.rejected ? { error: session.rejected.error } : {}),
   })
 }
-
-const isThenable = (value: unknown): value is PromiseLike<unknown> =>
-  typeof (value as { then?: unknown } | null)?.then === 'function'
 
 /** Текст отказа: `Error.message`, строка — как есть; иначе — подпись по умолчанию. */
 export const rejectionText = (reason: unknown): string | undefined => {

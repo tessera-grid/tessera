@@ -14,6 +14,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
 import { narrowExpandedByDepth } from './narrowExpanded'
+import { rowExpandingPendingFeature } from './rowExpandingPendingFeature'
 import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
@@ -39,6 +40,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
   diagnose: neverInert,
   features: {
     rowExpandingFeature,
+    rowExpandingPendingFeature,
     expandedRowModel: createExpandedRowModel(),
   },
   hooks: o => ({ onExpandRow: o.onExpandRow }),

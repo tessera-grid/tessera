@@ -1,12 +1,14 @@
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { Stories, bodyRows, headCells } from '../helpers'
+import { composed } from '../stories'
 
-// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6): сохранение с
+// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11): сохранение с
 // промисом отделяет ячейку в ожидание, правка других ячеек не ждёт сервера, отказ —
-// «ошибка» с черновиком. AS1, AS4, AS7–AS10 — модульные
+// «ошибка» с черновиком; раскрытие ждёт подгрузки. AS1, AS4, AS7–AS10, AS12 —
+// модульные
 // (`src/lib/__tests__/asyncCallbacks.dom.test.tsx`).
 
 const GRID = {
@@ -180,5 +182,32 @@ describe('Асинхронный контракт бизнес-колбэков'
       .toBeNull()
     expect(ageCell(0).querySelector('[aria-invalid="true"]')).toBeNull()
     expect(ageCell(0).querySelector('input')).toBeNull()
+  })
+
+  test('AS11: onExpandRow вернул промис при раскрытии — кнопка раскрытия в ожидании, строка с aria-busy, повторное нажатие игнорируется', async () => {
+    const onExpandRow = vi.fn(() => new Promise<void>(() => {}))
+    const { container } = await render(
+      <composed.RowExpanding onExpandRow={onExpandRow} />,
+    )
+    const firstExpandable = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>('.data-grid__body-row'),
+      ).find(row => row.querySelector('.row-expand-button'))!
+    await expect.poll(() => firstExpandable()).toBeTruthy()
+    const toggle = () =>
+      firstExpandable().querySelector<HTMLElement>('.row-expand-button')!
+
+    await userEvent.click(toggle())
+    await expect
+      .poll(() => firstExpandable().getAttribute('aria-busy'))
+      .toBe('true')
+    expect(firstExpandable().getAttribute('data-expanded')).toBe('true')
+    expect(toggle().getAttribute('aria-busy')).toBe('true')
+
+    await userEvent.click(toggle())
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(onExpandRow).toHaveBeenCalledTimes(1)
+    expect(firstExpandable().getAttribute('data-expanded')).toBe('true')
+    expect(firstExpandable().getAttribute('aria-busy')).toBe('true')
   })
 })

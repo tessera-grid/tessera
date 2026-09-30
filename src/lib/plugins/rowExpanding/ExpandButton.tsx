@@ -12,12 +12,15 @@ import styles from './ExpandButton.module.css'
 export interface ExpandButtonProps {
   expanded: boolean
   disabled?: boolean
+  /** Раскрытие ждёт промиса `onExpandRow` (ADR 0041). */
+  pending?: boolean
   onClick: (e: MouseEvent) => void
 }
 
 export const ExpandButton = ({
   expanded,
   disabled = false,
+  pending = false,
   onClick,
 }: ExpandButtonProps) => {
   const { expand: ExpandIcon } = useIcons()
@@ -33,8 +36,10 @@ export const ExpandButton = ({
           className={clsx('row-expand-button', styles.button, {
             [styles.expanded]: expanded,
             [styles.disabled]: disabled && !expanded,
+            [styles.pending]: pending,
           })}
           disabled={disabled}
+          aria-busy={pending || undefined}
           onClick={onClick}
           aria-label={label}
         >
