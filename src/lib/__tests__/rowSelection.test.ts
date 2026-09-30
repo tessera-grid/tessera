@@ -94,7 +94,7 @@ describe('rowSelection', () => {
     expect(entry.hooks?.rowSelection).toMatchObject({ onSelectRow })
   })
 
-  it('foldHooks + resolveHooks: колбэк доступен, отсутствующие ключи — no-op дефолты', () => {
+  it('H2: частичный слайс хуков дополняется no-op дефолтами scope, не затирая заданный колбэк', () => {
     const onSelectRow = vi.fn()
     const resolved = resolveHooks(
       foldHooks([rowSelection({ onSelectRow })] as never),
@@ -105,7 +105,7 @@ describe('rowSelection', () => {
     expect(resolved.rowSelection.isAllRowsSelected).toBe(false)
   })
 
-  it('table.getHooks() читает колбэк, заданный в аргументах фабрики, живо', () => {
+  it('H1: колбэк из аргументов фабрики доступен через table.getHooks()', () => {
     const onSelectRow = vi.fn()
     const { table } = makeTable({ onSelectRow })
     const hooks = table.getHooks() as any
@@ -114,7 +114,7 @@ describe('rowSelection', () => {
     expect(typeof hooks.rowSelection.onSelectAllRowsOnPage).toBe('function')
   })
 
-  it('foldHooks игнорирует отключённые записи (enabled: false)', () => {
+  it('H3: отключённый плагин (enabled: false) не вносит хуков', () => {
     const onSelectRow = vi.fn()
     const folded = foldHooks([
       rowSelection({ onSelectRow, enabled: false }),

@@ -70,7 +70,7 @@ const cases: Case[] = [
 
 describe('бизнес-хуки в аргументах фабрики плагина', () => {
   for (const c of cases) {
-    it(`${c.name}: колбэк из аргументов фабрики читается через resolveHooks(foldHooks())`, () => {
+    it(`H6 ${c.name}: колбэк из аргументов фабрики читается через resolveHooks(foldHooks())`, () => {
       const fn = vi.fn()
       const resolved = resolveHooks(foldHooks([c.make(fn)] as never)) as Record<
         string,

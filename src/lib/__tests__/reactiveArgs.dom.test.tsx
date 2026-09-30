@@ -175,6 +175,26 @@ describe('политика сортировки на лету', () => {
   })
 })
 
+describe('живые хуки (ADR 0027)', () => {
+  it('H5: колбэк, пересозданный на рендере, актуален в table.getHooks()', () => {
+    const HooksHost = ({ onSelectRow }: { onSelectRow: () => void }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        plugins: [rowSelection({ onSelectRow })],
+      })
+      return null
+    }
+    const first = vi.fn()
+    const second = vi.fn()
+    root = createRoot(document.createElement('div'))
+    act(() => root!.render(<HooksHost onSelectRow={first} />))
+    expect(captured.getHooks().rowSelection.onSelectRow).toBe(first)
+    act(() => root!.render(<HooksHost onSelectRow={second} />))
+    expect(captured.getHooks().rowSelection.onSelectRow).toBe(second)
+  })
+})
+
 describe('перезапуск setup', () => {
   it('RX24: setup выполняется раз на значение аргументов — перерисовка не перезапускает, смена значения перезапускает после cleanup', () => {
     const setup = vi.fn()

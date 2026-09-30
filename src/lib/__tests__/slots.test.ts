@@ -1,8 +1,9 @@
 /**
- * Юнит-покрытие слот-машинерии (чистые функции).
+ * Юнит-покрытие слот-машинерии (чистые функции): раскладка действий слота и пункты
+ * меню — ADR 0024, AM1–AM9, AM20–AM23.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createEmptyRenderSlots, registerSlotInto } from '../core/createSlots'
 import {
@@ -96,7 +97,13 @@ describe('headerActions: registerSlotActionInto', () => {
 })
 
 describe('headerActions: resolveActionLayout', () => {
-  it('без конфига — все действия инлайн', () => {
+  const layoutOf = (
+    actions: SlotAction[],
+    config?: { mode: 'auto' | 'always'; threshold: number },
+    opaqueCount = 0,
+  ) => resolveActionLayout({ actions, opaqueCount, config, ctx: {} })
+
+  it('AM1: без конфига меню все применимые действия инлайн, схлопывания нет', () => {
     const layout = resolveActionLayout({
       actions: [action({ id: 'a' }), action({ id: 'b' })],
       opaqueCount: 0,
@@ -107,7 +114,27 @@ describe('headerActions: resolveActionLayout', () => {
     expect(layout.inline.map(a => a.id)).toEqual(['a', 'b'])
   })
 
-  it('порог достигнут (с учётом opaqueCount) — схлопывание в кебаб', () => {
+  it('AM2: auto — применимых меньше порога, все инлайн', () => {
+    const layout = layoutOf([action({ id: 'a' }), action({ id: 'b' })], {
+      mode: 'auto',
+      threshold: 3,
+    })
+    expect(layout.collapsed).toBe(false)
+    expect(layout.inline.map(a => a.id)).toEqual(['a', 'b'])
+    expect(layout.menu).toEqual([])
+  })
+
+  it('AM3: auto — применимых не меньше порога, все схлопываемые в кебабе', () => {
+    const layout = layoutOf([action({ id: 'a' }), action({ id: 'b' })], {
+      mode: 'auto',
+      threshold: 2,
+    })
+    expect(layout.collapsed).toBe(true)
+    expect(layout.inline).toEqual([])
+    expect(layout.menu.map(a => a.id)).toEqual(['a', 'b'])
+  })
+
+  it('AM4: опаковые компоненты добивают счётчик до порога, но сами в кебаб не уезжают', () => {
     const layout = resolveActionLayout({
       actions: [action({ id: 'a' }), action({ id: 'b' })],
       opaqueCount: 1,
@@ -116,9 +143,25 @@ describe('headerActions: resolveActionLayout', () => {
     })
     expect(layout.collapsed).toBe(true)
     expect(layout.menu.map(a => a.id)).toEqual(['a', 'b'])
+    // Без опаковых тот же набор ниже порога — опаковые и дали схлопывание.
+    expect(
+      layoutOf([action({ id: 'a' }), action({ id: 'b' })], {
+        mode: 'auto',
+        threshold: 3,
+      }).collapsed,
+    ).toBe(false)
   })
 
-  it('collapsible:false остаётся инлайн при схлопывании', () => {
+  it('AM5: always схлопывает независимо от счётчика', () => {
+    const layout = layoutOf([action({ id: 'a' })], {
+      mode: 'always',
+      threshold: 10,
+    })
+    expect(layout.collapsed).toBe(true)
+    expect(layout.menu.map(a => a.id)).toEqual(['a'])
+  })
+
+  it('AM7: collapsible: false остаётся инлайн при схлопывании', () => {
     const layout = resolveActionLayout({
       actions: [
         action({ id: 'a' }),
@@ -176,40 +219,80 @@ describe('headerActions: resolveActionLayout', () => {
     expect(layout.menu).toEqual([])
   })
 
-  it('visible:false исключает действие целиком', () => {
-    const layout = resolveActionLayout({
-      actions: [action({ id: 'a', visible: () => false }), action({ id: 'b' })],
-      opaqueCount: 0,
-      config: undefined,
-      ctx: {},
-    })
+  it('AM6: visible(ctx) === false убирает действие целиком и из счётчика', () => {
+    const actions = [
+      action({ id: 'a', visible: () => false }),
+      action({ id: 'b' }),
+    ]
+    expect(layoutOf(actions).inline.map(a => a.id)).toEqual(['b'])
+    // Невидимое не добивает счётчик: одно видимое при пороге 2 — инлайн.
+    const layout = layoutOf(actions, { mode: 'auto', threshold: 2 })
+    expect(layout.collapsed).toBe(false)
     expect(layout.inline.map(a => a.id)).toEqual(['b'])
+  })
+
+  it('AM8: схлопывание с пустым меню невозможно — при одних инлайн-only кебаба нет', () => {
+    const layout = layoutOf(
+      [
+        action({ id: 'grip', collapsible: false }),
+        action({ id: 'handle', collapsible: false }),
+      ],
+      { mode: 'always', threshold: 0 },
+    )
+    expect(layout.collapsed).toBe(false)
+    expect(layout.inline.map(a => a.id)).toEqual(['grip', 'handle'])
+    expect(layout.menu).toEqual([])
+  })
+
+  it('AM9: порядок по order един для инлайн и меню; смена подачи его не тасует', () => {
+    const actions = [
+      action({ id: 'c', order: 2 }),
+      action({ id: 'a', order: 0 }),
+      action({ id: 'b', order: 1 }),
+    ]
+    expect(layoutOf(actions).inline.map(a => a.id)).toEqual(['a', 'b', 'c'])
+    expect(
+      layoutOf(actions, { mode: 'always', threshold: 0 }).menu.map(a => a.id),
+    ).toEqual(['a', 'b', 'c'])
   })
 })
 
 describe('headerActions: resolveMenuItems', () => {
-  it('без menuItems — одна строка из полей дескриптора', () => {
+  it('AM21: без menuItems одна строка из полей дескриптора: disabled/active по умолчанию false, onSelect зовёт action.onSelect(ctx)', () => {
+    const ctx = { cell: 1 }
+    const onSelect = vi.fn()
     const items = resolveMenuItems(
-      action({ id: 'a', active: () => true }),
-      {},
+      action({ id: 'a', onSelect }),
+      ctx,
       {} as never,
     )
     expect(items).toHaveLength(1)
-    expect(items[0]).toMatchObject({ id: 'a', active: true })
-  })
+    expect(items[0]).toMatchObject({ id: 'a', disabled: false, active: false })
+    items[0].onSelect()
+    expect(onSelect).toHaveBeenCalledWith(ctx)
 
-  it('с menuItems — разворот в несколько пунктов', () => {
-    const items = resolveMenuItems(
-      action({
-        id: 'sort',
-        menuItems: () => [
-          { id: 'asc', label: 'ASC', onSelect: () => {} },
-          { id: 'desc', label: 'DESC', onSelect: () => {} },
-        ],
-      }),
-      {},
+    const flagged = resolveMenuItems(
+      action({ id: 'b', active: () => true, disabled: () => true }),
+      ctx,
       {} as never,
     )
-    expect(items.map(i => i.id)).toEqual(['asc', 'desc'])
+    expect(flagged[0]).toMatchObject({ active: true, disabled: true })
+  })
+
+  it('AM20: с menuItems возвращает его результат, передавая ctx и labels', () => {
+    const ctx = { column: 'age' }
+    const labels = { sortAsc: 'ASC' } as never
+    const expanded = [
+      { id: 'asc', label: 'ASC', onSelect: () => {} },
+      { id: 'desc', label: 'DESC', onSelect: () => {} },
+    ]
+    const menuItems = vi.fn(() => expanded)
+    const items = resolveMenuItems(
+      action({ id: 'sort', menuItems }),
+      ctx,
+      labels,
+    )
+    expect(items).toBe(expanded)
+    expect(menuItems).toHaveBeenCalledWith(ctx, labels)
   })
 })

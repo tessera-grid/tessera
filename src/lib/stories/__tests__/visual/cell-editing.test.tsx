@@ -6,18 +6,13 @@ import { humanClick } from '../helpers'
 import { composed } from '../stories'
 
 // Плагин cellEditing: инлайн-редактирование ячейки на ЛОКАЛЬНОМ
-// state-канале definePlugin. Один инвариант — один тест, имя с префиксом
-// требования (CE<n>), состояние читается из DOM. Требования из запроса:
-//  1. кнопка живёт в правом слоте ЛЮБОЙ не-сервисной колонки;
-//  2. кнопка появляется только по hover;
-//  3. без hover кнопка не занимает места;
-//  4. показ гейтит предикат по контексту ячейки (демо: CELL_EDITABLE_COLUMNS).
-// Синтетический ввод крутит механику; `:hover`-раскрытие (CE2) — доверенный ввод.
+// state-канале definePlugin (ADR 0028, CE1–CE5). Один инвариант — один тест,
+// состояние читается из DOM; `:hover`-раскрытие (CE3) — доверенный ввод.
 
 const BODY_CELL = '.data-grid__body-cell'
 /** Обёртка кнопки редактирования (cellEditing → CellButton). */
 const CELL_BUTTON = '.cell__button'
-/** Класс «скрыта до hover»: opacity/min-width 0, overflow hidden → места не занимает. */
+/** Класс «скрыта до наведения»: прозрачна, раскрывает CSS `:hover` ячейки. */
 const HIDDEN = 'cell__button--hidden'
 /** Инлайн-ввод редактирования (CellEditInput). */
 const EDIT_INPUT = '.data-grid__body-cell input'
@@ -40,7 +35,7 @@ async function renderCellEditing(
 }
 
 describe('Cell editing — инлайн-редактирование ячейки', () => {
-  test('CE1: кнопка есть в правом слоте канредактируемых колонок, нет в остальных (req 1 + 4)', async () => {
+  test('CE1: кнопка правки есть в правом слоте разрешённых canEdit ячеек, нет в остальных', async () => {
     const container = await renderCellEditing()
 
     // Демо разрешает редактирование по контексту (CELL_EDITABLE_COLUMNS =
@@ -58,14 +53,24 @@ describe('Cell editing — инлайн-редактирование ячейк�
     ).toBeNull()
   })
 
-  test('CE2/CE3: без hover кнопка скрыта (класс cell__button--hidden — места не занимает) (req 2 + 3)', async () => {
+  test('CE2: без наведения кнопка правки прозрачна', async () => {
     const container = await renderCellEditing()
 
     const button = bodyCell(container, 'age').querySelector<HTMLElement>(
       CELL_BUTTON,
     )!
-    // До hover — контрактный класс «скрыта»: раскрытие делает CSS `:hover`.
     expect(button.classList.contains(HIDDEN)).toBe(true)
+    expect(getComputedStyle(button).opacity).toBe('0')
+  })
+
+  test('CE3: наведение на ячейку показывает кнопку правки', async () => {
+    const container = await renderCellEditing()
+
+    const cell = bodyCell(container, 'age')
+    const button = cell.querySelector<HTMLElement>(CELL_BUTTON)!
+    // Доверенный hover: раскрытие делает CSS `:hover` ячейки.
+    await userEvent.hover(cell)
+    await expect.poll(() => getComputedStyle(button).opacity).toBe('1')
   })
 
   test('CE4: клик по кнопке открывает инлайн-ввод, Enter коммитит значение в ячейку (локальный state-канал)', async () => {
