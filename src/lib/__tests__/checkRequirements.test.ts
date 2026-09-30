@@ -19,7 +19,7 @@ ${rows}
 `
 
 describe('Сверка требований и тестов', () => {
-  it('TQ10: находит пропуск, дубль, неизвестный ID, коллизию и устаревшую запись базы; ссылки, ревью и непринятые ADR не считает', () => {
+  it('TQ10: находит пропуск, дубль, неизвестный ID, коллизию, битую ссылку → и устаревшую запись базы; ссылки, ревью и непринятые ADR не считает', () => {
     const requirements = [
       ...parseRequirements(
         adr(
@@ -33,6 +33,8 @@ describe('Сверка требований и тестов', () => {
             '| R6/R8 | ссылка | visual |',
             '| [CP1](x.md) | ссылка на владельца | visual |',
             '| XX1 | коллизия | unit |',
+            '| AA6 | покрыто чужим тестом | → AA1 |',
+            '| AA7 | битая ссылка | `→ AA1, QQ1` |',
           ].join('\n'),
         ),
         'a.md',
@@ -50,7 +52,13 @@ describe('Сверка требований и тестов', () => {
       'AA4',
       'AA5',
       'XX1',
+      'AA6',
+      'AA7',
       'XX1',
+    ])
+    expect(requirements.find(r => r.id === 'AA7')?.coveredBy).toEqual([
+      'AA1',
+      'QQ1',
     ])
 
     // Вызовы собраны из частей, чтобы сама сверка не приняла фикстуру за тесты.
@@ -75,6 +83,7 @@ describe('Сверка требований и тестов', () => {
       'collision:XX1',
       'duplicate:AA3',
       'missing:AA2',
+      'reference:AA7',
       'unknown:ZZ9',
     ])
 
@@ -85,6 +94,7 @@ describe('Сверка требований и тестов', () => {
     expect(fresh.map(p => `${p.kind}:${p.id}`)).toEqual([
       'collision:XX1',
       'duplicate:AA3',
+      'reference:AA7',
       'unknown:ZZ9',
     ])
     expect(stale.map(e => `${e.kind}:${e.id}`)).toEqual(['missing:AA1'])

@@ -43,6 +43,7 @@ const LABEL = {
   duplicate: 'больше одного теста',
   unknown: 'тест ссылается на несуществующий ID',
   collision: 'ID определён в нескольких ADR',
+  reference: 'ссылка → на требование без теста или несуществующее',
 }
 
 if (process.argv.includes('--list')) {

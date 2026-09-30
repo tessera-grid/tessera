@@ -131,16 +131,20 @@ UI-фреймворк: привязка темы+режима через `style`
 ID-префиксом `TH<n>:` в
 [`stories/__tests__/visual/theming.test.tsx`](../../src/lib/stories/__tests__/visual/theming.test.tsx).
 
-| ID  | Требование                                                                              | Тест                              |
-| --- | --------------------------------------------------------------------------------------- | --------------------------------- |
-| TH1 | Обёртка грида несёт стабильный якорь-класс `data-grid-theme`                            | ✔ `TH1: the wrapper carries …`    |
-| TH2 | Дефолты токенов приходят из слоя `theme.css` (лоадер — синий `--info` по умолчанию)     | ✔ `TH2: default token layer …`    |
-| TH3 | Прямой оверрайд `--tsr-comp-*` (инлайн-`style`) бьёт дефолт слоя                        | ✔ `TH3: a direct … override wins` |
-| TH4 | Правка апстрим-палитры (`--info`) каскадит в производный токен грида                    | ✔ `TH4: an upstream palette …`    |
-| TH5 | Тени токенизированы: `--tsr-comp-shadow-color` управляет elevation-тенью шапки          | ✔ `TH5: shadows are tokenized …`  |
-| TH6 | Самодостаточная тёмная палитра шиппится: semantic-роль флипается под `.dark` на обёртке | ✔ `TH6: a self-contained dark …`  |
-| TH7 | Тёмный слой флипается и когда `.dark` на предке обёртки (`.dark .data-grid-theme`)      | ✔ `TH7: the dark layer also …`    |
-| TH8 | Без апстрим-shadcn производный component-токен берёт тёмный дефолт (своя тема в dark)   | ✔ `TH8: a derived … falls back`   |
+| ID  | Требование                                                                                  | Тест                              |
+| --- | ------------------------------------------------------------------------------------------- | --------------------------------- |
+| TH1 | Обёртка грида несёт стабильный якорь-класс `data-grid-theme`                                | ✔ `TH1: the wrapper carries …`    |
+| TH2 | Дефолты токенов приходят из слоя `theme.css` (лоадер — синий `--info` по умолчанию)         | ✔ `TH2: default token layer …`    |
+| TH3 | Прямой оверрайд `--tsr-comp-*` (инлайн-`style`) бьёт дефолт слоя                            | ✔ `TH3: a direct … override wins` |
+| TH4 | Правка апстрим-палитры (`--info`) каскадит в производный токен грида                        | ✔ `TH4: an upstream palette …`    |
+| TH5 | Тени токенизированы: `--tsr-comp-shadow-color` управляет elevation-тенью шапки              | ✔ `TH5: shadows are tokenized …`  |
+| TH6 | Самодостаточная тёмная палитра шиппится: semantic-роль флипается под `.dark` на обёртке     | ✔ `TH6: a self-contained dark …`  |
+| TH7 | Тёмный слой флипается и когда `.dark` на предке обёртки (`.dark .data-grid-theme`)          | ✔ `TH7: the dark layer also …`    |
+| TH8 | Без апстрим-shadcn производный component-токен берёт тёмный дефолт (своя тема в dark)       | ✔ `TH8: a derived … falls back`   |
+| TH9 | Tooltip токенизирован и тема-зависим: инверсная поверхность флипается light↔dark (ADR 0019) | ✔ `theming.test.tsx`              |
+| PL1 | Борд палитры рендерит ровно две тематизированные колонки — светлую и тёмную                 | ✔ `theming-palette.test.tsx`      |
+| PL2 | Один и тот же токен `--tsr-sys-bg` даёт разный фон в light и dark                           | ✔ `theming-palette.test.tsx`      |
+| PL3 | Каждый цвет борда снабжён свотчем-квадратом и подписью-значением                            | ✔ `theming-palette.test.tsx`      |
 
 См. [architecture/theming-and-overrides.md](../architecture/theming-and-overrides.md)
 про слой токенов и [ADR 0017](0017-ui-components.md) про UI-компоненты, которые

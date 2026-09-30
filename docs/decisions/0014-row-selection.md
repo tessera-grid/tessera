@@ -179,7 +179,7 @@ Hook `isAllRowsSelected` — флаг режима «выбрано всё по�
 **отдельный именованный тест** с ID-префиксом `RS<n>:`, совпадающим с ID из
 таблиц ниже. Визуальные тесты живут в
 `stories/__tests__/visual/row-selection.test.tsx` (vitest-browser, реальный
-Chromium), перформанс-покрытие даёт кейс выбора в общей перф-матрице
+Chromium), перформанс — кейсы выбора I1–I2 в перф-матрице
 (`stories/__tests__/performance/`, см.
 [ADR 0009](0009-test-coverage-visual-and-performance.md)).
 
@@ -230,6 +230,13 @@ Chromium), перформанс-покрытие даёт кейс выбора 
 | RS16 | Без `enableSubRowSelection` дочерние строки не получают чекбокса                   | ✔ `RS16: without `enableSubRowSelection` …` |
 | RS17 | С `enableSubRowSelection` выбор родителя каскадирует на потомков                   | ✔ `RS17: selecting a parent cascades …`     |
 | RS18 | С `enableSubRowSelection` частичный выбор потомков делает родителя `indeterminate` | ✔ `RS18: a partial child selection …`       |
+
+**Производительность** (`performance/interaction.test.tsx`)
+
+| ID  | Требование                                                                                | Тест   |
+| --- | ----------------------------------------------------------------------------------------- | ------ |
+| I1  | Выбор строки на небольшой выборке со всеми плагинами укладывается в бюджет Response (INP) | ✔ `I1` |
+| I2  | Выбор строки на большой выборке со всеми плагинами укладывается в бюджет Response (INP)   | ✔ `I2` |
 
 См. [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм
 плагинов и `renderComponent` и [rendering.md](../architecture/rendering.md) про

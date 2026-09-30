@@ -6,6 +6,8 @@ export interface Requirement {
   adr: string
   /** Проверяется ли требование тестом с его ID (иначе — ревью, отчёт, тест фичи). */
   tested: boolean
+  /** Требования, чьи тесты покрывают это (ячейка `→ ID, ID`). */
+  coveredBy?: string[]
 }
 
 export interface TestName {
@@ -14,7 +16,8 @@ export interface TestName {
   line: number
 }
 
-export type ProblemKind = 'missing' | 'duplicate' | 'unknown' | 'collision'
+export type ProblemKind =
+  'missing' | 'duplicate' | 'unknown' | 'collision' | 'reference'
 
 export interface Problem {
   kind: ProblemKind
@@ -34,6 +37,7 @@ const UNTESTED_KINDS = new Set(['отчёт', 'ревью', 'тест фичи']
 const ID = '[A-Z][A-Za-z]*-?\\d+[a-z]?'
 const ID_CELL = new RegExp(`^${ID}$`)
 const KIND_HEADER = /^(Вид|Проверка)$/
+const COVERED_BY = new RegExp(`^→\\s*(${ID}(?:\\s*,\\s*${ID})*)$`)
 
 const isAccepted = (text: string) =>
   /^(?:- \*\*Статус:\*\*|Статус:)\s*Принято/m.test(text)
@@ -41,6 +45,7 @@ const isAccepted = (text: string) =>
 /**
  * Требования из таблиц `| ID | Требование | … |` принятого ADR. Строка, чей ID не
  * одиночный (`IV6/IV8/IV10`, `AM15–AM19`) или ссылка (`[CP14](…)`), — чужое требование.
+ * Ячейка `→ ID, ID` — требование покрыто тестами перечисленных требований.
  */
 export const parseRequirements = (text: string, adr: string): Requirement[] => {
   if (!isAccepted(text)) return []
@@ -64,6 +69,15 @@ export const parseRequirements = (text: string, adr: string): Requirement[] => {
     if (!ID_CELL.test(id)) continue
     const kindColumn = header.findIndex(cell => KIND_HEADER.test(cell))
     const kind = kindColumn > 0 ? cells[kindColumn] : ''
+    const covered = cells
+      .slice(2)
+      .map(cell => COVERED_BY.exec(cell.replace(/`/g, ''))?.[1])
+      .find(Boolean)
+    if (covered) {
+      const coveredBy = covered.split(',').map(ref => ref.trim())
+      result.push({ id, adr, tested: false, coveredBy })
+      continue
+    }
     result.push({ id, adr, tested: !UNTESTED_KINDS.has(kind) })
   }
   return result
@@ -129,6 +143,14 @@ export const findProblems = (
       })
     } else if (found.length > 1) {
       problems.push({ kind: 'duplicate', id, detail: where(found) })
+    }
+  }
+  for (const r of requirements) {
+    const broken = (r.coveredBy ?? []).filter(
+      ref => !adrsById.has(ref) || !testsById.has(ref),
+    )
+    if (broken.length > 0) {
+      problems.push({ kind: 'reference', id: r.id, detail: broken.join(', ') })
     }
   }
   for (const [id, found] of testsById) {

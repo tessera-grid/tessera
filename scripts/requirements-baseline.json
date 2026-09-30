@@ -31,77 +31,12 @@
   },
   {
     "kind": "missing",
-    "id": "AM1",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM2",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM3",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM4",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM5",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM6",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM7",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM8",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM9",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM20",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
-    "id": "AM21",
-    "reason": "тест под ID не найден: возможно, покрыт тестом без ID"
-  },
-  {
-    "kind": "missing",
     "id": "CR17",
     "reason": "пробел, признанный в ADR 0013: выделенного теста нет"
   },
   {
     "kind": "missing",
-    "id": "CRS13",
-    "reason": "покрыт перф-матрицей P5–P8 (enableCellSelection в ALL_PLUGINS), своего кейса нет"
-  },
-  {
-    "kind": "missing",
     "id": "DP1",
-    "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
-  },
-  {
-    "kind": "missing",
-    "id": "DP2",
     "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
   },
   {
@@ -156,342 +91,62 @@
   },
   {
     "kind": "missing",
-    "id": "DP14",
-    "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
-  },
-  {
-    "kind": "missing",
-    "id": "H1",
-    "reason": "покрыт тестами без ID (ADR 0027 называет их по описанию)"
-  },
-  {
-    "kind": "missing",
-    "id": "H2",
-    "reason": "покрыт тестами без ID (ADR 0027 называет их по описанию)"
-  },
-  {
-    "kind": "missing",
-    "id": "H3",
-    "reason": "покрыт тестами без ID (ADR 0027 называет их по описанию)"
-  },
-  {
-    "kind": "missing",
-    "id": "H5",
-    "reason": "покрыт тестами без ID (ADR 0027 называет их по описанию)"
-  },
-  {
-    "kind": "missing",
-    "id": "H6",
-    "reason": "покрыт тестами без ID (ADR 0027 называет их по описанию)"
-  },
-  {
-    "kind": "missing",
     "id": "IV1",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "проверяется ESLint-правилом no-restricted-imports уровня error, не тестом"
   },
   {
     "kind": "missing",
     "id": "IV2",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
   },
   {
     "kind": "missing",
     "id": "IV3",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "гарантирован IV1 (нет статических импортов плагинов); build-size-проверки нет"
   },
   {
     "kind": "missing",
     "id": "IV4",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
   },
   {
     "kind": "missing",
     "id": "IV5",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
   },
   {
     "kind": "missing",
     "id": "IV6",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "частично покрыт service-columns.test.tsx без ID; порядок при равенстве order не проверен"
   },
   {
     "kind": "missing",
     "id": "IV7",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "теста нет: заявленный в ADR 0010 core.test.ts после миграции на v9 его не содержит"
   },
   {
     "kind": "missing",
     "id": "IV8",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "покрыт service-columns.test.tsx тестами без ID"
   },
   {
     "kind": "missing",
     "id": "IV9",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "мета-требование: зелёные спеки плагинов, своего теста не бывает"
   },
   {
     "kind": "missing",
     "id": "IV10",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "частично покрыт columnPinning.test.ts без ID; сев видимости и приоритет external-vs-core не проверены"
   },
   {
     "kind": "missing",
     "id": "IV11",
-    "reason": "ADR 0010 называет покрывающие тесты по файлу (core.test.ts, service-columns.test.tsx), а не по ID"
+    "reason": "покрыт plugin-runtime-toggle (RT-<плагин>), ID RT не из таблицы"
   },
   {
     "kind": "missing",
     "id": "KB9",
     "reason": "требование к документации (README, ADR 0020), не к коду"
-  },
-  {
-    "kind": "missing",
-    "id": "R13",
-    "reason": "покрыт тестом темизации TT-13 (ADR 0004, колонка «Тест»)"
-  },
-  {
-    "kind": "missing",
-    "id": "R14",
-    "reason": "покрыт тестом темизации TT-03 (ADR 0004, колонка «Тест»)"
-  },
-  {
-    "kind": "missing",
-    "id": "W15",
-    "reason": "покрыт тестом KB8 (ADR 0032, колонка «Тест»)"
-  },
-  {
-    "kind": "unknown",
-    "id": "CE1",
-    "reason": "ID не описан в таблице требований ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "CE4",
-    "reason": "ID не описан в таблице требований ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "CE5",
-    "reason": "ID не описан в таблице требований ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "CP14c",
-    "reason": "ID не описан в таблице требований ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "DN1",
-    "reason": "ID не описан в таблице требований ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "DN2",
-    "reason": "ID не описан в таблице требований ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "I1",
-    "reason": "перф-кейс без таблицы требований в ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "I2",
-    "reason": "перф-кейс без таблицы требований в ADR"
-  },
-  {
-    "kind": "unknown",
-    "id": "PL1",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "PL2",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "PL3",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TH9",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TI-05",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TI-06",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TI-06b",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TI-07",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-01",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-02",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-03",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-04",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-12",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-13",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-16",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-17",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-18",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-19g",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-19p",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-20",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-20d",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-21",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-22",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-23",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-23b",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-25",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-26",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-27",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-27t",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-29",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-32",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-33",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-33b",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-34",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-35",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-36",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-37",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-38",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
-  },
-  {
-    "kind": "unknown",
-    "id": "TT-40",
-    "reason": "ADR 0018/0019 перечисляют эти ID прозой, без таблицы требований"
   }
 ]
