@@ -202,10 +202,11 @@
   --tsr-comp-cell-content-padding: 0px var(--tsr-ref-space-4);
   --tsr-comp-cell-content-gap: var(--tsr-ref-space-1);
   --tsr-comp-cell-font-size: 0.8125rem;
-  /* Значение ячейки, сохранение которой ждёт сервера (ADR 0041). */
+  /* Значение ячейки, сохранение которой ждёт сервера (ADR 0041); 65% держит
+     контраст текста 4.5:1 в обеих темах (AS13). */
   --tsr-comp-cell-pending-color: color-mix(
     in srgb,
-    var(--tsr-sys-fg) 55%,
+    var(--tsr-sys-fg) 65%,
     transparent
   );
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */

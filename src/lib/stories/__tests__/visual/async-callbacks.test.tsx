@@ -1,12 +1,15 @@
+import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { Stories, bodyRows, headCells, humanClick } from '../helpers'
 import { composed } from '../stories'
+import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
-// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11): сохранение с
-// промисом отделяет ячейку в ожидание, правка других ячеек не ждёт сервера, отказ —
+// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11, AS13):
+// сохранение с промисом отделяет ячейку в ожидание, правка других ячеек не ждёт
+// сервера, отказ —
 // «ошибка» с черновиком; раскрытие ждёт подгрузки. AS1, AS4, AS7–AS10, AS12 —
 // модульные
 // (`src/lib/__tests__/asyncCallbacks.dom.test.tsx`).
@@ -230,5 +233,61 @@ describe('Асинхронный контракт бизнес-колбэков'
     expect(onExpandRow).toHaveBeenCalledTimes(1)
     expect(firstExpandable().getAttribute('data-expanded')).toBe('true')
     expect(firstExpandable().getAttribute('aria-busy')).toBe('true')
+  })
+
+  test('AS13: ожидание, «ошибка» и раскрытие в ожидании проходят axe; текст ожидания держит контраст', async () => {
+    const grid = () =>
+      document.querySelector<HTMLElement>(
+        '[role="table"], [role="grid"], [role="treegrid"]',
+      )!
+    // Общие правила набора доступности плюс контраст: цвет ожидания — новый токен.
+    const run = () =>
+      axe.run(grid(), {
+        ...AXE_OPTIONS,
+        rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+      })
+
+    const server = controlledServer()
+    const cells = await render(
+      <Stories.AllFeatures
+        {...GRID}
+        enableCellEditing
+        cellEditingCanEdit={allow}
+        onCellEdit={server.onCellEdit}
+      />,
+    )
+    await waitForGrid()
+    await openAndType(0, '999')
+    await userEvent.keyboard('{Enter}')
+    await openAndType(1, '42')
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => server.settle.length).toBe(2)
+    server.settle[1].reject(new Error('Server down'))
+    await expect
+      .poll(() => ageCell(1).querySelector('[aria-invalid="true"]'))
+      .not.toBeNull()
+    expect(ageCell(0).querySelector('[aria-busy="true"]')).not.toBeNull()
+    await inBothThemes(async () => {
+      expect((await run()).violations).toEqual([])
+    })
+    await cells.unmount()
+
+    await render(
+      // С навигацией — treegrid: aria-expanded у строк законен только в нём.
+      <composed.RowExpanding
+        enableKeyboardNavigation
+        onExpandRow={() => new Promise<void>(() => {})}
+      />,
+    )
+    const expandable = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
+      ).find(row => row.querySelector('.row-expand-button'))!
+    await expect.poll(() => expandable()).toBeTruthy()
+    await humanClick(
+      expandable().querySelector<HTMLElement>('.row-expand-button')!,
+    )
+    await expect.poll(() => expandable().getAttribute('aria-busy')).toBe('true')
+    expect((await run()).violations).toEqual([])
   })
 })

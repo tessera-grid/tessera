@@ -89,7 +89,7 @@ const card = r => `
         <span class="card__id">${esc(r.id)}</span>
         <span class="card__label">${esc(r.label)}</span>
         ${r.knownShortfall ? '<span class="tag">известный недостиг</span>' : ''}
-        <span class="card__meta">${esc(r.size)} · ${r.plugins === 'all' ? 'все плагины' : 'без плагинов'}</span>
+        <span class="card__meta">${esc(r.size)} · ${r.plugins === 'all' ? 'все плагины' : r.plugins === 'none' ? 'без плагинов' : esc(r.plugins)}</span>
       </header>
       ${r.metrics.map(m => metricRow(m, r)).join('')}
     </article>`

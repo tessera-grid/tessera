@@ -13,6 +13,7 @@ import {
   NO_PLUGINS,
   PERF_TIMEOUT,
   SMALL,
+  submittedCellsSeed,
 } from './perf-cases'
 
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
@@ -141,4 +142,72 @@ describe('Производительность прокрутки', () => {
       PERF_TIMEOUT,
     )
   }
+})
+
+// Прокрутка с отправленными ячейками правки (ADR 0041, AS14): 500 строк × 3 колонки
+// в ожидании и «ошибке» против той же выборки без них — видна цена новых состояний.
+describe('Производительность прокрутки — ожидание и «ошибка» правки', () => {
+  test(
+    'AS14: прокрутка небольшой выборки с 1500 отправленными ячейками — в пределах регресс-потолка; база без них в дашборде',
+    async () => {
+      const args = { ...SMALL, enableCellEditing: true }
+      const measure = async (seeded: boolean) => {
+        const screen = renderGrid({
+          ...args,
+          extraPlugins: seeded ? [submittedCellsSeed(SMALL.dataCount)] : [],
+        })
+        await waitForGrid()
+        if (seeded) {
+          await expect
+            .poll(() => document.querySelector('[aria-busy="true"]'))
+            .not.toBeNull()
+        }
+        const y = await measureScrollWork('y')
+        const x = await measureScrollWork('x')
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const seeded = await measure(true)
+      // Регресс-потолок ≈2× замера (y ~10мс, x ~15–16мс), как у P2/P7.
+      const ceiling = { y: 24, x: 35 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '30×500',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('AS14-base', 'правка без отправленных ячеек', base, false)
+      await record('AS14', '1500 ячеек в ожидании и «ошибке»', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect
+          .soft(
+            seeded[axis].p95Ms,
+            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          )
+          .toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
 })

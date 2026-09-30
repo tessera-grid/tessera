@@ -210,7 +210,8 @@ export interface PerfRecord {
   /** Объём данных, напр. '30×500'. */
   size: string
   /** Режим плагинов. */
-  plugins: 'none' | 'all'
+  /** `all`/`none` — оси матрицы; имя плагина — кейс одного плагина (AS14). */
+  plugins: 'none' | 'all' | 'cellEditing'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
   cpuThrottle: number
   /** Известный недостиг: кейс намеренно не укладывается в порог RAIL (xfail). */
