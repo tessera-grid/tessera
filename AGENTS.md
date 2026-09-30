@@ -147,21 +147,22 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 
 ### Команды (все через npm)
 
-| Задача                    | Команда                   | Примечания                                                         |
-| ------------------------- | ------------------------- | ------------------------------------------------------------------ |
-| Сборка библиотеки         | `npm run build`           | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).       |
-| Инварианты темы в `dist`  | `npm run check:theme`     | После `build`: проверяет `dist/style.css` (ADR 0018/0019).         |
-| Пересборка при правках    | `npm run dev`             | `vite build --watch`. Долгоживущая — запускать в фоне.             |
-| Проверка типов            | `npm run typecheck`       | `tsc --noEmit`. **Включает stories.** Первый барьер.               |
-| Линт                      | `npm run lint`            | Плоский конфиг ESLint.                                             |
-| Форматирование (запись)   | `npm run format`          | Prettier.                                                          |
-| Форматирование (проверка) | `npm run format:check`    | Немутирующая; используйте в проходе проверок.                      |
-| Storybook (live)          | `npm run storybook`       | Dev-сервер на :6006. Долгоживущий — в фоне.                        |
-| Storybook (сборка)        | `npm run build-storybook` | Статическая сборка; хороший headless smoke-тест.                   |
-| Тесты                     | `npm test`                | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка. |
-| Тесты (watch)             | `npm run test:watch`      | Vitest watch mode.                                                 |
-| Перф-матрица + дашборд    | `npm run perf`            | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
-| Перф-дашборд (пересбор)   | `npm run perf:report`     | Пересобирает борд из `latest.json` без прогона.                    |
+| Задача                    | Команда                      | Примечания                                                         |
+| ------------------------- | ---------------------------- | ------------------------------------------------------------------ |
+| Сборка библиотеки         | `npm run build`              | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).       |
+| Инварианты темы в `dist`  | `npm run check:theme`        | После `build`: проверяет `dist/style.css` (ADR 0018/0019).         |
+| Требования ↔ тесты        | `npm run check:requirements` | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).            |
+| Пересборка при правках    | `npm run dev`                | `vite build --watch`. Долгоживущая — запускать в фоне.             |
+| Проверка типов            | `npm run typecheck`          | `tsc --noEmit`. **Включает stories.** Первый барьер.               |
+| Линт                      | `npm run lint`               | Плоский конфиг ESLint.                                             |
+| Форматирование (запись)   | `npm run format`             | Prettier.                                                          |
+| Форматирование (проверка) | `npm run format:check`       | Немутирующая; используйте в проходе проверок.                      |
+| Storybook (live)          | `npm run storybook`          | Dev-сервер на :6006. Долгоживущий — в фоне.                        |
+| Storybook (сборка)        | `npm run build-storybook`    | Статическая сборка; хороший headless smoke-тест.                   |
+| Тесты                     | `npm test`                   | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка. |
+| Тесты (watch)             | `npm run test:watch`         | Vitest watch mode.                                                 |
+| Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
+| Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                    |
 
 Тесты выполняются в **реальном браузере**, а не в jsdom — см. [Проверки](#4-checks).
 
@@ -241,16 +242,22 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 сначала самый дешёвый и быстрый сигнал — и исправляйте то, что выявляет каждый шаг, прежде
 чем двигаться дальше:
 
-| #   | Барьер            | Команда                | Блокирующий?              |
-| --- | ----------------- | ---------------------- | ------------------------- |
-| 1   | Формат            | `npm run format:check` | да                        |
-| 2   | Линт              | `npm run lint`         | да                        |
-| 3   | Типы              | `npm run typecheck`    | да                        |
-| 4   | Тесты             | `npm test` _(vitest)_  | да — **см. примечание**   |
-| 5   | Сборка библиотеки | `npm run build`        | да                        |
-| 6   | Инварианты темы   | `npm run check:theme`  | да — **при правках темы** |
+| #   | Барьер             | Команда                      | Блокирующий?              |
+| --- | ------------------ | ---------------------------- | ------------------------- |
+| 1   | Формат             | `npm run format:check`       | да                        |
+| 2   | Линт               | `npm run lint`               | да                        |
+| 3   | Типы               | `npm run typecheck`          | да                        |
+| 4   | Требования ↔ тесты | `npm run check:requirements` | да                        |
+| 5   | Тесты              | `npm test` _(vitest)_        | да — **см. примечание**   |
+| 6   | Сборка библиотеки  | `npm run build`              | да                        |
+| 7   | Инварианты темы    | `npm run check:theme`        | да — **при правках темы** |
 
-Это весь барьер: **format · lint · ts · tests · build**. Шаг 6 (`check:theme`) —
+Это весь барьер: **format · lint · ts · requirements · tests · build**. Шаг 4
+(`check:requirements`) сверяет таблицы требований принятых ADR с именами тестов: у
+каждого ID ровно один тест, у каждого ID в имени теста есть требование, ID не
+определён в нескольких ADR. Расхождения на момент ADR 0043 — в
+`scripts/requirements-baseline.json` с причиной; список только сокращается: закрыли
+расхождение — удалите запись, иначе шаг упадёт. Шаг 7 (`check:theme`) —
 пост-build-страж: он проверяет собранный `dist/style.css` (нехешированные классы
 темы, три уровня токенов — ADR 0018/0019), чего браузерные тесты по исходникам не
 видят; запускайте его после `build`, когда изменение задевает тему, токены или
@@ -393,6 +400,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
       Async: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
+    - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
+      неизвестный ID, коллизия, устаревшая запись базы,
+      [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,

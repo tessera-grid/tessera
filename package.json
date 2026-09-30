@@ -32,6 +32,7 @@
   "scripts": {
     "build": "vite build",
     "check:theme": "node scripts/check-theme-dist.mjs",
+    "check:requirements": "node scripts/check-requirements.mjs",
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
