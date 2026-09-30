@@ -1,4 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { useState } from 'react'
 import { useArgs } from 'storybook/preview-api'
 
 import type { CellComponentProps } from '../../lib/core/createSlots'
@@ -36,12 +37,9 @@ interface SessionsArgs extends StoryProps {
 }
 
 const meta = {
-  ...(dataGridMeta as Meta<SessionsArgs>),
+  ...dataGridMeta,
   title: 'Tessera/DataGrid/Sessions & Async',
-  // Демо-сценарий перетаскивания из общего meta здесь не нужен: журнал должен
-  // показывать только действия пользователя.
-  play: undefined,
-} satisfies Meta<SessionsArgs>
+} satisfies Meta<StoryProps>
 
 export default meta
 
@@ -173,12 +171,10 @@ const PAGE_SIZE_PRESETS: Record<
   hidden: false,
 }
 
-const reactiveTree = makeData({
-  shape: 'tree',
-  count: 40,
-  depth: 3,
-  breadth: 2,
-})
+// Данные — при рендере истории, а не при импорте модуля: makeData пересевает общий
+// faker, и данные остальных историй (и снимки тестов) зависели бы от импорта.
+const makeReactiveTree = () =>
+  makeData({ shape: 'tree', count: 40, depth: 3, breadth: 2 })
 
 export const ReactiveArgs: StoryObj<SessionsArgs> = {
   name: 'Plugin arguments on the fly',
@@ -214,11 +210,12 @@ export const ReactiveArgs: StoryObj<SessionsArgs> = {
     ...args
   }) {
     const [, updateArgs] = useArgs()
+    const [data] = useState(makeReactiveTree)
     return (
       <StoryComponent
         {...normalizeArgs(args)}
         updateArgs={updateArgs}
-        dataOverride={reactiveTree}
+        dataOverride={data}
         multiSortOptions={{ max: multiSortMax }}
         cellEditingCanEdit={allowEditing ? canEditDemoCell : denyEditing}
         paginationPageSizes={PAGE_SIZE_PRESETS[pageSizesPreset]}

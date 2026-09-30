@@ -365,6 +365,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       ждёт; AS5–AS6 — «ошибка» с меткой, объявлением и повторной правкой; AS11 —
       раскрытие в ожидании),
       [ADR 0041](docs/decisions/0041-async-business-callbacks.md).
+    - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
+      Async: сценарий истории в интерфейсе и журнале колбэков,
+      [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,

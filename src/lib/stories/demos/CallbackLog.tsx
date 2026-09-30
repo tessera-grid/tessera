@@ -50,8 +50,9 @@ export const CallbackLog = ({
   <aside
     aria-label="Callback log"
     style={{
-      width: 340,
-      flex: 'none',
+      // Не шире 340px; при узком окне уходит под грид (WithLog переносит).
+      flex: '1 1 280px',
+      maxWidth: 340,
       display: 'flex',
       flexDirection: 'column',
       gap: 8,
@@ -102,7 +103,7 @@ export const CallbackLog = ({
   </aside>
 )
 
-/** Грид и журнал рядом. */
+/** Грид и журнал рядом; при нехватке ширины журнал уходит под грид. */
 export const WithLog = ({
   children,
   log,
@@ -110,8 +111,15 @@ export const WithLog = ({
   children: ReactNode
   log: ReactNode
 }) => (
-  <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
-    <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+  <div
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 16,
+      alignItems: 'stretch',
+    }}
+  >
+    <div style={{ flex: '999 1 560px', minWidth: 0 }}>{children}</div>
     {log}
   </div>
 )
