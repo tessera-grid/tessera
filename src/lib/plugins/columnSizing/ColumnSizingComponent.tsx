@@ -3,6 +3,9 @@
  * на ширине своей колонки; бизнес-колбэк — из пропса `hooks` (инъекция
  * definePlugin).
  */
+import { useEffect, useRef } from 'react'
+
+import { cancelColumnResize } from '../../core/cancelInteraction'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { ResizeHandler } from '../../plugins/columnSizing/ResizeHandler'
@@ -23,7 +26,27 @@ export const ColumnSizingComponent = ({
       ],
   )
 
-  if (!column.getCanResize()) {
+  // Ресайз запретили посреди протяжки (колонка, плагин) — отмена как по Escape:
+  // ширина возвращается к исходной, бизнес-колбэк не зовётся (ADR 0039, RX15).
+  const canResize = column.getCanResize()
+  const isResizing = column.getIsResizing()
+  useEffect(() => {
+    if (isResizing && !canResize) {
+      cancelColumnResize(table)
+    }
+  }, [isResizing, canResize, table])
+  const latest = useRef({ table, isResizing })
+  latest.current = { table, isResizing }
+  useEffect(
+    () => () => {
+      if (latest.current.isResizing) {
+        cancelColumnResize(latest.current.table)
+      }
+    },
+    [],
+  )
+
+  if (!canResize) {
     return null
   }
 

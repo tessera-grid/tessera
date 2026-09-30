@@ -3,8 +3,15 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { Stories, bodyRows, headCells } from '../helpers'
+import {
+  HANDLE,
+  beginDrag,
+  firePointer,
+  nextFrame,
+  rowIdOrder,
+} from '../../rowDragging.dnd'
 
-// Аргументы фабрик на лету (ADR 0039, RX8, RX11, RX17–RX20, RX22–RX23): история
+// Аргументы фабрик на лету (ADR 0039, RX8, RX11, RX14–RX20, RX22–RX23): история
 // перерисовывается с новым значением аргумента на том же экземпляре таблицы, и
 // поведение меняется без пересоздания. Состояние читается из DOM-контракта.
 // Сужение (RX8, RX11) не переписывает сохранённое: вернули значение — вернулось
@@ -250,5 +257,127 @@ describe('Аргументы фабрик на лету', () => {
       />,
     )
     await expect.poll(selectedCells).toBe(1)
+  })
+
+  test('RX14: перетаскивание строки или колонки, запрещённое посреди действия, отменяется как по Escape', async () => {
+    const rowArgs = { ...GRID, enableRowDragging: true }
+    const rows = await render(<Stories.AllFeatures {...rowArgs} />)
+    await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
+    const before = rowIdOrder(document.body)
+    const handle = bodyRows()[0].querySelector<HTMLElement>(HANDLE)!
+    const { hx } = await beginDrag(handle)
+    const target = bodyRows()[3].getBoundingClientRect()
+    firePointer('pointermove', document, hx, target.top + target.height / 2)
+    await nextFrame()
+    await expect.poll(() => document.body.style.cursor).not.toBe('default')
+
+    await rows.rerender(
+      <Stories.AllFeatures {...rowArgs} rowDraggingEnable={false} />,
+    )
+    await expect.poll(() => document.body.style.cursor).toBe('default')
+    firePointer('pointerup', document, hx, target.top + target.height / 2)
+    await nextFrame()
+    expect(rowIdOrder(document.body)).toEqual(before)
+    await rows.unmount()
+
+    const columnArgs = { ...GRID, enableColumnDragging: true }
+    const columns = await render(<Stories.AllFeatures {...columnArgs} />)
+    await waitForGrid()
+    const columnIds = () => headCells().map(cell => cell.dataset.columnId)
+    const order = columnIds()
+    const columnHandle = headCells()
+      .map(cell => cell.querySelector<HTMLElement>(HANDLE))
+      .find(Boolean)!
+    const start = columnHandle.getBoundingClientRect()
+    const cx = start.left + start.width / 2
+    const cy = start.top + start.height / 2
+    firePointer('pointerdown', columnHandle, cx, cy)
+    await nextFrame()
+    firePointer('pointermove', document, cx + 6, cy)
+    await nextFrame()
+    firePointer('pointermove', document, cx + 200, cy)
+    await nextFrame()
+    await expect.poll(() => document.body.style.cursor).toBe('grabbing')
+
+    await columns.rerender(
+      <Stories.AllFeatures {...columnArgs} enableColumnDragging={false} />,
+    )
+    await expect.poll(() => document.body.style.cursor).toBe('default')
+    firePointer('pointerup', document, cx + 200, cy)
+    await nextFrame()
+    expect(columnIds()).toEqual(order)
+  })
+
+  test('RX15: ресайз колонки, запрещённый посреди действия, отменяется как по Escape — ширина возвращается к исходной', async () => {
+    const onColumnResizeEnd = vi.fn()
+    const args = { ...GRID, enableColumnResizing: true, onColumnResizeEnd }
+    const screen = await render(<Stories.AllFeatures {...args} />)
+    await waitForGrid()
+    const cell = headCells().find(head =>
+      head.querySelector('.resize__handler--column'),
+    )!
+    const width = () => cell.getBoundingClientRect().width
+    const initial = width()
+    const grip = cell.querySelector<HTMLElement>('.resize__handler--column')!
+    const r = grip.getBoundingClientRect()
+    const x0 = r.left + r.width / 2
+    const y = r.top + r.height / 2
+    const mouse = (type: string, target: Element | Document, x: number) =>
+      target.dispatchEvent(
+        new MouseEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          buttons: type === 'mouseup' ? 0 : 1,
+          clientX: x,
+          clientY: y,
+        }),
+      )
+    mouse('mousedown', grip, x0)
+    await nextFrame()
+    mouse('mousemove', document, x0 + 80)
+    await nextFrame()
+    await expect.poll(width).toBeGreaterThan(initial + 40)
+
+    await screen.rerender(
+      <Stories.AllFeatures {...args} enableColumnResizing={false} />,
+    )
+    await expect.poll(width).toBe(initial)
+    mouse('mousemove', document, x0 + 160)
+    mouse('mouseup', document, x0 + 160)
+    await nextFrame()
+    expect(width()).toBe(initial)
+    expect(onColumnResizeEnd).not.toHaveBeenCalled()
+  })
+
+  test('RX16: canEdit стал false при открытом редакторе — редактор закрывается, значение не сохраняется', async () => {
+    const allow = () => true
+    const deny = () => false
+    const args = { ...GRID, enableCellEditing: true }
+    const screen = await render(
+      <Stories.AllFeatures {...args} cellEditingCanEdit={allow} />,
+    )
+    await waitForGrid()
+    const cell = () =>
+      bodyRows()
+        .find(row => row.dataset.index === '0')!
+        .querySelector<HTMLElement>(
+          '.data-grid__body-cell[data-column-id="age"]',
+        )!
+    const original = cell().textContent
+    await userEvent.hover(cell())
+    await userEvent.click(
+      cell().querySelector<HTMLElement>('.cell__button button')!,
+    )
+    await expect.poll(() => cell().querySelector('input')).not.toBeNull()
+    const input = cell().querySelector<HTMLInputElement>('input')!
+    await userEvent.clear(input)
+    await userEvent.type(input, '999')
+
+    await screen.rerender(
+      <Stories.AllFeatures {...args} cellEditingCanEdit={deny} />,
+    )
+    await expect.poll(() => cell().querySelector('input')).toBeNull()
+    expect(cell().textContent).toBe(original)
   })
 })

@@ -18,6 +18,7 @@ import {
   rowExpanding,
   rowGrouping,
   rowSelection,
+  type CellEditingOptions,
   type CellSelectionOptions,
   type ColumnMultiSortOptions,
 } from '../../../../lib/plugins'
@@ -87,6 +88,8 @@ export interface FeatureToggles {
   }
   /** Предел глубины раскрытия (`rowExpanding({ maxDepth })`). */
   rowExpandingMaxDepth?: number
+  /** Предикат правки аргументом плагина (`cellEditing({ canEdit })`). */
+  cellEditingCanEdit?: CellEditingOptions['canEdit']
   /** Разрешение перетаскивания строк при включённом плагине (`rowDragging({ enable })`). */
   rowDraggingEnable?: boolean
 }
@@ -148,7 +151,10 @@ export const argsToPlugins = (o: FeatureToggles) => {
     // Фича/слот/локальный state включаются тумблером; бизнес-хуки (canEdit/
     // onCellEdit) демо кладёт в hook-слайс записи `demoHooks` (StoryComponent),
     // как и для остальных плагинов.
-    cellEditing({ enabled: !!o.enableCellEditing }),
+    cellEditing({
+      enabled: !!o.enableCellEditing,
+      canEdit: o.cellEditingCanEdit,
+    }),
     cellSelection({
       enabled: !!o.enableCellSelection,
       ...o.cellSelectionOptions,

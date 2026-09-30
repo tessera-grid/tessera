@@ -1,7 +1,7 @@
 // DnD-обвязка хедера. HeadDndBoundary монтирует DndContext + SortableContext только
 // при enableColumnDragging (иначе цена useSortable платится на каждую ячейку).
 // Состояние overlay читается из атома columnDraggingActiveId.
-import { type PropsWithChildren, useMemo } from 'react'
+import { type PropsWithChildren, useMemo, useLayoutEffect } from 'react'
 
 import {
   DndContext,
@@ -20,7 +20,8 @@ import {
 
 import type { Table } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
-import { useSlice } from '../core/reactivity'
+import { cancelDragLikeEscape } from '../core/cancelInteraction'
+import { useSlice, useTableState } from '../core/reactivity'
 import { getColumnDraggingEvents } from '../plugins/columnDragging'
 import {
   Z_INDEX,
@@ -51,7 +52,14 @@ export const HeadDndBoundary = ({
   enableColumnDragging,
   children,
 }: PropsWithChildren<HeadDndBoundaryProps>) => {
-  if (!enableColumnDragging) {
+  // Идущее перетаскивание держит обёртку, пока его не отменят (ADR 0039, RX14).
+  const activeId = useTableState(
+    table,
+    state =>
+      (state as { columnDraggingActiveId?: string | null })
+        .columnDraggingActiveId ?? null,
+  )
+  if (!enableColumnDragging && !activeId) {
     return children
   }
 
@@ -81,13 +89,26 @@ export const DndHeadWrapper = ({
 
   // Редьюсер dnd-событий столбцов (меняет стейт методами таблицы — фасад useTable
   // несёт сырые options без фичевых on*Change).
-  const { onColumnDragStart, onColumnDragEnd } = getColumnDraggingEvents(
-    table as never,
-  )
+  const { onColumnDragStart, onColumnDragEnd, onColumnDragCancel } =
+    getColumnDraggingEvents(table as never)
 
   const draggableHeader = useMemo(() => {
     return headers.find((header: any) => header.id === columnDraggingActiveId)
   }, [columnDraggingActiveId, headers])
+
+  // Перетаскивание запретили на лету — отмена как по Escape.
+  const forbidden =
+    !!columnDraggingActiveId &&
+    (!(table.options as { enableColumnDragging?: boolean })
+      .enableColumnDragging ||
+      !(
+        draggableHeader?.column as { getCanDrag?: () => boolean } | undefined
+      )?.getCanDrag?.())
+  useLayoutEffect(() => {
+    if (forbidden) {
+      cancelDragLikeEscape()
+    }
+  }, [forbidden])
 
   const sensors = useSensors(
     useSensor(PointerSensor, sensorOptions),
@@ -110,6 +131,7 @@ export const DndHeadWrapper = ({
       autoScroll={autoScrollOnlyX}
       onDragEnd={onColumnDragEnd}
       onDragStart={onColumnDragStart}
+      onDragCancel={onColumnDragCancel}
     >
       <SortableContext items={items} strategy={horizontalListSortingStrategy}>
         {children}

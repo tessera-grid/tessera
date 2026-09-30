@@ -349,7 +349,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `reactiveArgs` (RX1–RX3, RX21 — живые аргументы фабрик), `pluginLifetime`
       (RX4–RX7 — договоры на время жизни и `initialPageSize`), `effectiveState`
       (RX9–RX10, RX12–RX13 — эффективное состояние), визуальные `reactive-args`
-      (RX8, RX11, RX17–RX20, RX22–RX23 — аргументы на лету),
+      (RX8, RX11, RX14–RX20, RX22–RX23 — аргументы на лету, сужение и отмена
+      действий при запрете),
       [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).

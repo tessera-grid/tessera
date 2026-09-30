@@ -2,7 +2,7 @@
 // при enableRowDragging (иначе цена useSortable платится на каждый смонтированный
 // ряд). Состояние overlay читается из атома rowDragging; геометрия
 // переупорядочивания — getRowDraggingEvents.
-import { type PropsWithChildren, useMemo } from 'react'
+import { type PropsWithChildren, useMemo, useLayoutEffect } from 'react'
 
 import {
   DndContext,
@@ -17,7 +17,8 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import type { Table } from '../types'
-import { useSlice } from '../core/reactivity'
+import { cancelDragLikeEscape } from '../core/cancelInteraction'
+import { useSlice, useTableState } from '../core/reactivity'
 import { getRowDraggingEvents } from '../plugins/rowDragging'
 import {
   Z_INDEX,
@@ -46,7 +47,14 @@ export const BodyDndBoundary = ({
   enableRowDragging,
   children,
 }: PropsWithChildren<BodyDndBoundaryProps>) => {
-  if (!enableRowDragging) {
+  // Идущее перетаскивание держит обёртку, пока его не отменят (ADR 0039, RX14).
+  const activeId = useTableState(
+    table,
+    state =>
+      (state as { rowDragging?: { activeId: string | null } }).rowDragging
+        ?.activeId ?? null,
+  )
+  if (!enableRowDragging && !activeId) {
     return children
   }
 
@@ -75,6 +83,19 @@ export const DndBodyWrapper = ({
     () => rows.find((row: any) => row.id === rowDragging.activeId),
     [rowDragging.activeId, rows],
   )
+
+  // Перетаскивание запретили на лету — отмена как по Escape.
+  const forbidden =
+    !!rowDragging.activeId &&
+    (!(table.options as { enableRowDragging?: unknown }).enableRowDragging ||
+      !(
+        draggableRow as { getCanDrag?: () => boolean } | undefined
+      )?.getCanDrag?.())
+  useLayoutEffect(() => {
+    if (forbidden) {
+      cancelDragLikeEscape()
+    }
+  }, [forbidden])
 
   const draggableRowCell = useMemo(
     () =>

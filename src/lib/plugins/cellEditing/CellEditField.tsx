@@ -5,7 +5,7 @@
  * дизайн-системой) либо дефолтный встроенный. Слайс «редактируемая ячейка» приходит
  * пропсом `state`, значение/коллбэки — без импорта плагина в потребителя.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { PluginCellOwnerProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
@@ -36,9 +36,19 @@ export const CellEditField = (
   const labels = useLocalization()
   const [error, setError] = useState<string>()
   const key = `${row.id}:${column.id}`
+  const editing = editingCell === key
+  // Правку запретили на лету (`canEdit`) — редактор закрывается без сохранения
+  // (ADR 0039, RX16).
+  const allowed = hooks.canEdit(props)
+  useEffect(() => {
+    if (editing && !allowed) {
+      setError(undefined)
+      setEditingCell(null)
+    }
+  }, [editing, allowed, setEditingCell])
 
   // Не эта ячейка — отдаём собственный контент ячейки как есть.
-  if (editingCell !== key) {
+  if (!editing) {
     return <>{content}</>
   }
 

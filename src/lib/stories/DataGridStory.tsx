@@ -157,7 +157,9 @@ export const StoryComponent = memo(
               ? { columnVisibility: { onToggleColumnVisibility } }
               : {}),
             ...(onPageChange ? { pagination: { onPageChange } } : {}),
-            ...(options.enableCellEditing
+            // Предикат аргументом плагина (тесты) — без демо-хуков: слайс хуков
+            // записи заменил бы слайс плагина целиком.
+            ...(options.enableCellEditing && !options.cellEditingCanEdit
               ? {
                   cellEditing: {
                     canEdit: (ctx: CellComponentProps) =>

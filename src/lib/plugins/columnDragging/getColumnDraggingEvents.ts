@@ -40,6 +40,11 @@ export const getColumnDraggingEvents = (table: DndTable) => {
       document.body.style.cursor = 'grabbing'
       table.setColumnDraggingActiveId(event.active.id)
     },
+    // Отмена (Escape, запрет на лету) — без перестановки.
+    onColumnDragCancel: () => {
+      document.body.style.cursor = 'default'
+      table.setColumnDraggingActiveId(null)
+    },
     onColumnDragEnd: (event: {
       over: { id: unknown; data: { current?: Record<string, unknown> } } | null
     }) => {

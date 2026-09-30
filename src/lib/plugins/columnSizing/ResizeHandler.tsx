@@ -11,6 +11,7 @@ import {
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { isResizeCancel } from '../../core/cancelInteraction'
 import { HandleMenu } from '../../grid/handleMenu/HandleMenu'
 import styles from './ResizeHandler.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -59,7 +60,10 @@ export const ResizeHandler = memo(
         document.body.style.cursor = 'col-resize'
         onResize(event)
         const listener = (evt: unknown) => {
-          onResizeEnd(evt)
+          // Отмена запретом на лету — без бизнес-колбэка (ADR 0039, RX15).
+          if (!isResizeCancel(evt)) {
+            onResizeEnd(evt)
+          }
           document.removeEventListener('mouseup', listener)
           document.removeEventListener('touchend', listener)
           document.body.style.cursor = 'default'
