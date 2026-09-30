@@ -5,7 +5,10 @@
  */
 import { useEffect, useRef } from 'react'
 
-import { cancelColumnResize } from '../../core/cancelInteraction'
+import {
+  cancelColumnResize,
+  type SessionCancelReason,
+} from '../../core/cancelInteraction'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { ResizeHandler } from '../../plugins/columnSizing/ResizeHandler'
@@ -32,15 +35,16 @@ export const ColumnSizingComponent = ({
   const isResizing = column.getIsResizing()
   useEffect(() => {
     if (isResizing && !canResize) {
-      cancelColumnResize(table)
+      cancelColumnResize(table, 'revoke')
     }
   }, [isResizing, canResize, table])
   const latest = useRef({ table, isResizing })
   latest.current = { table, isResizing }
+  // Ручка ушла посреди протяжки (грид размонтирован) — цель недоступна.
   useEffect(
     () => () => {
       if (latest.current.isResizing) {
-        cancelColumnResize(latest.current.table)
+        cancelColumnResize(latest.current.table, 'unavailable')
       }
     },
     [],
@@ -82,11 +86,17 @@ export const ColumnSizingComponent = ({
     hooks.onColumnResizeEnd({ id: column.id, width: column.getSize() })
   }
 
+  const onResizeCancel = (reason: SessionCancelReason) => {
+    hooks.onColumnResizeCancel?.({ columnId: column.id, reason })
+  }
+
   return (
     <ResizeHandler
       isResizing={column.getIsResizing()}
       onResize={header.getResizeHandler()}
       onResizeEnd={onResizeEnd}
+      onResizeCancel={onResizeCancel}
+      onEscape={() => cancelColumnResize(table, 'cancel')}
       onResetSize={onResetSize}
       onResizeBy={onResizeBy}
       size={column.getSize()}

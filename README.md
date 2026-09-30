@@ -437,7 +437,7 @@ export const Table = () => {
 | `rowActions()`         | Колонка кнопок действий над строкой          | колонка, закреплённая справа              | ширина `width` (px, по умолч. 120) и `collapsedWidth` (56) при схлопывании действий                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `headerActionMenu()`   | Схлопывает кнопки заголовка в кебаб-меню «⋯» | меню в заголовке                          | `mode`: `auto` (по порогу) / `always`; `threshold` (по умолч. 3). Своей колонки/фичи не вносит                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `rowActionMenu()`      | Схлопывает действия строки в кебаб-меню «⋯»  | меню в колонке действий строки            | `mode`: `auto` / `always`; `threshold` (по умолч. 2). Работает поверх `rowActions()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `cellEditing()`        | Инлайн-редактирование значения ячейки        | кнопка в ячейке (по hover)                | кнопка в ЛЮБОЙ не-сервисной колонке; показ гейтит предикат `canEdit(ctx)`; `validate(value, ctx)` — текст ошибки блокирует коммит; редактор замещает контент ячейки (`cellSlot`), сменный через `editor`; коммит через `onCellEdit`                                                                                                                                                                                                                                                                                                                                  |
+| `cellEditing()`        | Инлайн-редактирование значения ячейки        | кнопка в ячейке (по hover)                | кнопка в ЛЮБОЙ не-сервисной колонке; показ гейтит предикат `canEdit(ctx)`; `validate(value, ctx)` — текст ошибки блокирует коммит; редактор замещает контент ячейки (`cellSlot`), сменный через `editor`; коммит через `onCellEdit`, завершение без сохранения — `onEditCancel({ reason, draft, original })`                                                                                                                                                                                                                                                         |
 | `cellSelection()`      | Выделение диапазона ячеек + копирование      | клик / Shift / drag / Ctrl-Cmd по ячейкам | `Ctrl/Cmd+C` копирует выделение как TSV и HTML-таблицу; сервисные колонки невыбираемы (`canSelectCell`)                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `contextMenu()`        | Контекстное меню по правому клику            | меню у курсора                            | пункты вносят другие плагины (напр. «Копировать» от `cellSelection`); на сервисных колонках не показывается                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `pagination()`         | Пагинация строк                              | контрол в нижней панели                   | клиентская и серверная (`server` + `rowCount`; пока ответа нет — `rowCount: 0`); `initialPageSize` (начальный размер, по умолч. 25; текущим владеет срез `pagination`), `pageSizes` (10/25/50/100, `false` — без выбора); страницы по верхнему уровню — дети группы не рвутся; сортировка и группировка возвращают на первую страницу, правка и перестановка строк — нет; колбэк `onPageChange(pageIndex, pageSize)`; состояние — срез `pagination` (`state` + `handlers`)                                                                                           |
@@ -1206,11 +1206,14 @@ import { MyInput } from './design-system'
 cellEditing({
   // editor получает текущее значение, доступное имя поля (label — из
   // localization.editCellValue с именем колонки), коллбэки commit/cancel (инкапсулируют
-  // запись в приватный слайс и вызов onCellEdit) + контекст ячейки.
-  editor: ({ value, label, commit, cancel }) => (
+  // запись в приватный слайс и вызов onCellEdit) + контекст ячейки. value — черновик
+  // сессии; setDraft сообщает введённый текст: он переживает прокрутку и смену
+  // страницы, а при отмене приходит в onEditCancel, а не пропадает молча.
+  editor: ({ value, label, commit, cancel, setDraft }) => (
     <MyInput
       aria-label={label}
       defaultValue={value}
+      onChange={setDraft}
       onEnter={commit}
       onEscape={cancel}
       autoFocus
@@ -1218,6 +1221,12 @@ cellEditing({
   ),
 })
 ```
+
+Каждая сессия действия сообщает не только об успехе, но и о завершении без результата
+([ADR 0040](docs/decisions/0040-action-sessions.md)): `onEditCancel`, `onRowDragCancel`,
+`onColumnDragCancel`, `onColumnResizeCancel` получают причину — `'cancel'` (`Escape`,
+бросок мимо), `'revoke'` (запрет на лету) или `'unavailable'` (строка или колонка ушла).
+`Escape` во время ресайза отменяет его и возвращает ширины.
 
 Свой владелец ячейки в собственном плагине:
 

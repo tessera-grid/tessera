@@ -96,7 +96,7 @@ export const DndHeadWrapper = ({
     return headers.find((header: any) => header.id === columnDraggingActiveId)
   }, [columnDraggingActiveId, headers])
 
-  // Перетаскивание запретили на лету — отмена как по Escape.
+  // Перетаскивание запретили на лету или колонка ушла — отмена как по Escape.
   const forbidden =
     !!columnDraggingActiveId &&
     (!(table.options as { enableColumnDragging?: boolean })
@@ -104,11 +104,12 @@ export const DndHeadWrapper = ({
       !(
         draggableHeader?.column as { getCanDrag?: () => boolean } | undefined
       )?.getCanDrag?.())
+  const lost = !draggableHeader
   useLayoutEffect(() => {
     if (forbidden) {
-      cancelDragLikeEscape()
+      cancelDragLikeEscape(lost ? 'unavailable' : 'revoke')
     }
-  }, [forbidden])
+  }, [forbidden, lost])
 
   const sensors = useSensors(
     useSensor(PointerSensor, sensorOptions),

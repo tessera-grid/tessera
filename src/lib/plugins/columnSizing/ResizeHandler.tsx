@@ -11,7 +11,10 @@ import {
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { isResizeCancel } from '../../core/cancelInteraction'
+import {
+  resizeCancelReason,
+  type SessionCancelReason,
+} from '../../core/cancelInteraction'
 import { HandleMenu } from '../../grid/handleMenu/HandleMenu'
 import styles from './ResizeHandler.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -26,6 +29,10 @@ export interface ResizeSplitterProps {
   isResizing: boolean
   onResize: (event: unknown) => void
   onResizeEnd: (event: unknown) => void
+  /** Протяжка завершилась без результата (ADR 0040, §1). */
+  onResizeCancel: (reason: SessionCancelReason) => void
+  /** Escape во время протяжки — отменить её. */
+  onEscape: () => void
   onResetSize: (event: unknown) => void
   /** Изменить ширину на `delta` px с клавиатуры или из меню. */
   onResizeBy: (delta: number) => void
@@ -41,6 +48,8 @@ export const ResizeHandler = memo(
     isResizing,
     onResize,
     onResizeEnd,
+    onResizeCancel,
+    onEscape,
     onResetSize,
     onResizeBy,
     size,
@@ -59,19 +68,29 @@ export const ResizeHandler = memo(
         pressedX.current = 'clientX' in event ? event.clientX : null
         document.body.style.cursor = 'col-resize'
         onResize(event)
+        const onKey = (evt: globalThis.KeyboardEvent) => {
+          if (evt.key === 'Escape') {
+            onEscape()
+          }
+        }
         const listener = (evt: unknown) => {
-          // Отмена запретом на лету — без бизнес-колбэка (ADR 0039, RX15).
-          if (!isResizeCancel(evt)) {
+          // Отмена — без бизнес-колбэка успеха (ADR 0040, §1).
+          const reason = resizeCancelReason(evt)
+          if (reason) {
+            onResizeCancel(reason)
+          } else {
             onResizeEnd(evt)
           }
           document.removeEventListener('mouseup', listener)
           document.removeEventListener('touchend', listener)
+          document.removeEventListener('keydown', onKey)
           document.body.style.cursor = 'default'
         }
         document.addEventListener('mouseup', listener)
         document.addEventListener('touchend', listener)
+        document.addEventListener('keydown', onKey)
       },
-      [onResizeEnd, onResize],
+      [onResizeEnd, onResizeCancel, onEscape, onResize],
     )
 
     // Клик без сдвига — меню ширины (WCAG 2.5.7, ADR 0034); протяжка — ресайз.

@@ -5,6 +5,9 @@
  */
 import { arrayMove } from '@dnd-kit/sortable'
 
+import { readPluginHooks } from '../../core/definePlugin'
+import type { RowDraggingHooks } from './types'
+
 interface OrderItem {
   id: string
   parentId?: string
@@ -27,6 +30,8 @@ interface MoveRow {
 interface MoveTable {
   options: { onRowOrderChange?: OnRowOrderChange }
   getCoreRowModel: () => { rows: MoveRow[] }
+  getRowModel: () => { rows: MoveRow[] }
+  getHooks: () => unknown
 }
 
 /** `-1` — вверх, `1` — вниз. */
@@ -61,9 +66,14 @@ export const moveRow = (
     return
   }
   const r = row as MoveRow
+  const t = table as MoveTable
   const parent = r.getParentRow()
   const from = r.index
   const to = from + direction
+  const shown = t.getRowModel().rows
+  const neighbour = siblingsOf(r, table)[to]
+  const dragIndex = shown.findIndex(item => item.id === r.id)
+  const hoverIndex = shown.findIndex(item => item.id === neighbour.id)
   onRowOrderChangeOf(table)?.(prev =>
     parent
       ? prev.map(item =>
@@ -73,6 +83,11 @@ export const moveRow = (
         )
       : arrayMove(prev, from, to),
   )
+  readPluginHooks<Partial<RowDraggingHooks>>(t, 'rowDragging').onRowDragEnd?.({
+    rowId: r.id,
+    dragIndex,
+    hoverIndex,
+  })
 }
 
 /** Предыдущая корневая строка-группа, в которую вкладывается строка. */

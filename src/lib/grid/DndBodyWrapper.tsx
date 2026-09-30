@@ -84,18 +84,19 @@ export const DndBodyWrapper = ({
     [rowDragging.activeId, rows],
   )
 
-  // Перетаскивание запретили на лету — отмена как по Escape.
+  // Перетаскивание запретили на лету или строка ушла — отмена как по Escape.
   const forbidden =
     !!rowDragging.activeId &&
     (!(table.options as { enableRowDragging?: unknown }).enableRowDragging ||
       !(
         draggableRow as { getCanDrag?: () => boolean } | undefined
       )?.getCanDrag?.())
+  const lost = !draggableRow
   useLayoutEffect(() => {
     if (forbidden) {
-      cancelDragLikeEscape()
+      cancelDragLikeEscape(lost ? 'unavailable' : 'revoke')
     }
-  }, [forbidden])
+  }, [forbidden, lost])
 
   const draggableRowCell = useMemo(
     () =>

@@ -20,7 +20,10 @@ import {
   rowSelection,
   type CellEditingOptions,
   type CellSelectionOptions,
+  type ColumnDraggingOptions,
   type ColumnMultiSortOptions,
+  type ColumnSizingOptions,
+  type RowDraggingOptions,
 } from '../../../../lib/plugins'
 import type { TesseraFeatureEntry } from '../../../../lib/core/features'
 import type { RowActionsOptions } from '../../../../lib/plugins/rowActions/rowActionsColumn'
@@ -92,6 +95,16 @@ export interface FeatureToggles {
   cellEditingCanEdit?: CellEditingOptions['canEdit']
   /** Разрешение перетаскивания строк при включённом плагине (`rowDragging({ enable })`). */
   rowDraggingEnable?: boolean
+  // Бизнес-колбэки сессий аргументами фабрик — чтобы визуальные тесты наблюдали
+  // их вызовы. В обычных историях не задаются.
+  onColumnResizeEnd?: ColumnSizingOptions['onColumnResizeEnd']
+  onColumnResizeCancel?: ColumnSizingOptions['onColumnResizeCancel']
+  onColumnDragEnd?: ColumnDraggingOptions['onColumnDragEnd']
+  onColumnDragCancel?: ColumnDraggingOptions['onColumnDragCancel']
+  onRowDragEnd?: RowDraggingOptions['onRowDragEnd']
+  onRowDragCancel?: RowDraggingOptions['onRowDragCancel']
+  onCellEdit?: CellEditingOptions['onCellEdit']
+  onEditCancel?: CellEditingOptions['onEditCancel']
 }
 
 const storyCanExpand = (row: Row<any, any>) =>
@@ -119,12 +132,18 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowDragging({
       enabled: !!o.enableRowDragging,
       enable: o.rowDraggingEnable,
+      onRowDragEnd: o.onRowDragEnd,
+      onRowDragCancel: o.onRowDragCancel,
     }),
     columnPinning({
       enabled: !!o.enableColumnPinning,
       leafPinning: o.enableLeafPinning,
     }),
-    columnSizing({ enabled: !!o.enableColumnResizing }),
+    columnSizing({
+      enabled: !!o.enableColumnResizing,
+      onColumnResizeEnd: o.onColumnResizeEnd,
+      onColumnResizeCancel: o.onColumnResizeCancel,
+    }),
     columnSorting({
       enabled: !!o.enableColumnSorting,
       removal: o.enableSortingRemoval,
@@ -133,7 +152,11 @@ export const argsToPlugins = (o: FeatureToggles) => {
       // (undefined → дефолт фабрики: мультисорт включён жестом Shift).
       multiSort: o.multiSortOptions ?? o.enableMultiSort,
     }),
-    columnDragging({ enabled: !!o.enableColumnDragging }),
+    columnDragging({
+      enabled: !!o.enableColumnDragging,
+      onColumnDragEnd: o.onColumnDragEnd,
+      onColumnDragCancel: o.onColumnDragCancel,
+    }),
     rowGrouping({ enabled: !!o.enableGrouping }),
     rowActions({
       enabled: !!o.enableRowActions,
@@ -154,6 +177,8 @@ export const argsToPlugins = (o: FeatureToggles) => {
     cellEditing({
       enabled: !!o.enableCellEditing,
       canEdit: o.cellEditingCanEdit,
+      onCellEdit: o.onCellEdit,
+      onEditCancel: o.onEditCancel,
     }),
     cellSelection({
       enabled: !!o.enableCellSelection,

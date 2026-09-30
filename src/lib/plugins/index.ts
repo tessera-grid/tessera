@@ -51,4 +51,11 @@ export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'
 export type { PaginationHooks } from './pagination/types'
-export type { CellEditingHooks, CellEditor } from './cellEditing/types'
+export type {
+  CellEditingHooks,
+  CellEditor,
+  CellEditCancel,
+  EditCancelReason,
+  EditSession,
+} from './cellEditing/types'
+export type { SessionCancelReason } from '../core/cancelInteraction'

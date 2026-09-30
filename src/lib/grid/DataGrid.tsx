@@ -6,6 +6,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useLayoutEffect,
   useMemo,
   useRef,
 } from 'react'
@@ -26,6 +27,7 @@ import { LinearProgress } from '../ui/LinearProgress'
 import type { Column } from '../types'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
+import { cancelColumnResize } from '../core/cancelInteraction'
 import { useSkeletonOverlayState } from '../core/skeletonOverlay'
 import {
   useColumnVirtualizer,
@@ -90,6 +92,16 @@ export const DataGrid = ({
 
   const isResizingColumns: false | string =
     state.columnResizing?.isResizingColumn ?? false
+  // Колонку убрали или скрыли посреди протяжки — отмена с `unavailable` (ADR 0040,
+  // SS15): шапка на время протяжки заморожена и сама этого не увидит.
+  const resizeLost =
+    isResizingColumns !== false &&
+    !leafColumns.some(column => column.id === isResizingColumns)
+  useLayoutEffect(() => {
+    if (resizeLost) {
+      cancelColumnResize(table, 'unavailable')
+    }
+  }, [resizeLost, table])
   const rowDragging = state.rowDragging as
     | { activeId: string | null; acceptable: boolean; offsetLeft: number }
     | undefined

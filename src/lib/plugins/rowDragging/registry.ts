@@ -21,6 +21,8 @@ export interface RowDraggingOptions {
   enable?: boolean | ((row: Row<any, any>) => boolean)
   /** Бизнес-колбэк окончания переноса строки (аргумент фабрики). */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
+  /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
+  onRowDragCancel?: RowDraggingHooks['onRowDragCancel']
 }
 
 export const rowDragging = definePlugin<RowDraggingOptions>()({
@@ -28,7 +30,10 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['enable'],
   features: { rowDraggingFeature },
-  hooks: o => ({ onRowDragEnd: o.onRowDragEnd }),
+  hooks: o => ({
+    onRowDragEnd: o.onRowDragEnd,
+    onRowDragCancel: o.onRowDragCancel,
+  }),
   keyboardActions: [moveRowKeyboardAction, nestRowKeyboardAction],
   diagnose: rowDraggingInertReason,
   column: {

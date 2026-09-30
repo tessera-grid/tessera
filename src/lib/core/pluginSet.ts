@@ -31,6 +31,8 @@ const ghostOf = (
     inertReason: 'removedAfterMount',
     features: last?.features,
     options: last?.options,
+    reconcile: last?.reconcile,
+    hooks: last?.hooks,
   }
   if (!last?.configure) {
     return ghost

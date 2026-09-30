@@ -118,6 +118,18 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * переписывая сохранённое.
    */
   narrow?: Record<string, NarrowState>
+  /**
+   * Согласование состояния плагина с таблицей после каждого рендера (ADR 0040, §2):
+   * ядро зовёт его у всех присутствующих записей, включая выключенные. Обязано быть
+   * дешёвым, когда согласовывать нечего.
+   */
+  reconcile?: (table: unknown, context: PluginReconcileContext) => void
+}
+
+export interface PluginReconcileContext {
+  enabled: boolean
+  /** Хуки плагина: живые у включённого, из записи — у выключенного. */
+  hooks: Record<string, unknown>
 }
 
 /** Поля записи, которые зависят от аргументов фабрики. */

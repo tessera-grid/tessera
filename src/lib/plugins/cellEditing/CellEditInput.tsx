@@ -13,6 +13,7 @@ interface CellEditInputProps {
   error?: string
   onCommit: (value: string) => void
   onCancel: () => void
+  onDraftChange: (value: string) => void
 }
 
 export const CellEditInput = ({
@@ -21,6 +22,7 @@ export const CellEditInput = ({
   error,
   onCommit,
   onCancel,
+  onDraftChange,
 }: CellEditInputProps) => {
   const [value, setValue] = useState(initialValue)
   const errorId = useId()
@@ -40,7 +42,10 @@ export const CellEditInput = ({
         autoFocus
         className={styles.input}
         value={value}
-        onChange={event => setValue(event.target.value)}
+        onChange={event => {
+          setValue(event.target.value)
+          onDraftChange(event.target.value)
+        }}
         onKeyDown={onKeyDown}
         onBlur={onCancel}
         aria-label={label}

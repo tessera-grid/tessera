@@ -73,19 +73,6 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   ) => void
 
   /**
-   * Проброс hook изменения ширины столбца (`columnSizing.onColumnResizeEnd`)
-   * наружу. Нужен визуальным тестам, чтобы наблюдать вызов hook по завершении
-   * ресайза и сброса. В обычных историях не задаётся.
-   */
-  onColumnResizeEnd?: (props: { id: string; width: number }) => void
-
-  /**
-   * Проброс hook перестановки столбца (`columnDragging.onColumnDragEnd`) наружу.
-   * Нужен визуальным тестам. В обычных историях не задаётся.
-   */
-  onColumnDragEnd?: (props: { dragIndex: number; hoverIndex: number }) => void
-
-  /**
    * Проброс hooks выбора строк (`rowSelection.onSelectRow` /
    * `onSelectAllRowsOnPage`) наружу. Нужны визуальным тестам, чтобы наблюдать
    * вызов hook при переключении строки и «выбрать все на странице».

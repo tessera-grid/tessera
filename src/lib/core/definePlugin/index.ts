@@ -11,7 +11,11 @@ import { makeStateUpdater } from '@tanstack/react-table'
 import type { TableFeature } from '../../types'
 import type { ServiceColumn } from '../createColumns'
 import type { PluginSlot } from '../createSlots'
-import type { PluginConfiguration, TesseraFeatureEntry } from '../features'
+import type {
+  PluginConfiguration,
+  PluginReconcileContext,
+  TesseraFeatureEntry,
+} from '../features'
 import type {
   ActionMenuDeclaration,
   ContextMenuAction,
@@ -123,6 +127,11 @@ interface DefinePluginConfig<
    * может вернуть cleanup). Через opts сетап видит аргументы фабрики.
    */
   setup?: (opts: TOptions) => (table: unknown) => void | (() => void)
+  /**
+   * Согласование состояния плагина с таблицей после каждого рендера — и у
+   * выключенного плагина (ADR 0040, §2). Должно быть дешёвым без работы.
+   */
+  reconcile?: (table: unknown, context: PluginReconcileContext) => void
 }
 
 /**
@@ -215,6 +224,9 @@ export const definePlugin =
       }
       if (config.diagnose) {
         entry.diagnose = config.diagnose
+      }
+      if (config.reconcile) {
+        entry.reconcile = config.reconcile
       }
 
       return entry

@@ -1,5 +1,6 @@
 /** Типы плагина rowDragging. */
 import type { Row } from '../../types'
+import type { SessionCancelReason } from '../../core/cancelInteraction'
 import type { DragOverlayState } from '../columnDragging/types'
 
 export interface RowDragOverlayState {
@@ -21,7 +22,17 @@ export interface RowDraggingState {
 }
 
 export interface RowDraggingHooks {
-  onRowDragEnd: (props: { dragIndex: number; hoverIndex: number }) => void
+  /** Строка переставлена; индексы — позиции в показанных строках до перестановки. */
+  onRowDragEnd: (props: {
+    rowId: string
+    dragIndex: number
+    hoverIndex: number
+  }) => void
+  /** Перетаскивание завершилось без перестановки (ADR 0040, §1). */
+  onRowDragCancel?: (end: {
+    rowId: string
+    reason: SessionCancelReason
+  }) => void
 }
 
 export interface RowSortableData {

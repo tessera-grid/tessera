@@ -351,7 +351,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       (RX9–RX10, RX12–RX13 — эффективное состояние), визуальные `reactive-args`
       (RX8, RX11, RX14–RX20, RX22–RX23 — аргументы на лету, сужение и отмена
       действий при запрете),
-      [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md).
+      [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md);
+      модульные `actionSessions` (SS1, SS14 — колбэки успеха; SS5–SS6, SS16 —
+      сессия правки в срезе и её согласование), визуальные `action-sessions` (SS2,
+      SS11–SS13, SS15 — колбэки отмены с причиной, `Escape` у ресайза; SS3–SS4 —
+      черновик переживает прокрутку, страницу, сортировку),
+      [ADR 0040](docs/decisions/0040-action-sessions.md).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/LP/IC,

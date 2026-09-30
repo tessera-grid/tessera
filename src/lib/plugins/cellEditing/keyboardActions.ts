@@ -4,7 +4,8 @@
  * возвращает на ячейку ядро навигации.
  */
 import type { CellKeyboardAction } from '../../core/keyboardActions'
-import { readPluginHooks, setPluginState } from '../../core/definePlugin'
+import { readPluginHooks } from '../../core/definePlugin'
+import { startEditSession } from './session'
 import type { CellEditingHooks } from './types'
 
 export const editCellKeyboardAction: CellKeyboardAction = {
@@ -20,6 +21,5 @@ export const editCellKeyboardAction: CellKeyboardAction = {
       'cellEditing',
     ).canEdit?.(ctx) ??
       true),
-  run: ({ row, column, table }) =>
-    setPluginState(table, 'cellEditing', `${row.id}:${column.id}`),
+  run: ({ row, column, table }) => startEditSession(table, row, column),
 }

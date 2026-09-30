@@ -48,8 +48,6 @@ export const StoryComponent = memo(
 
     onTogglePin,
     onToggleColumnSort,
-    onColumnResizeEnd,
-    onColumnDragEnd,
     onSelectRow,
     onSelectAllRowsOnPage,
     onExpandRow,
@@ -148,10 +146,6 @@ export const StoryComponent = memo(
             ...(onToggleColumnSort
               ? { columnSorting: { onToggleColumnSort } }
               : {}),
-            ...(onColumnResizeEnd
-              ? { columnSizing: { onColumnResizeEnd } }
-              : {}),
-            ...(onColumnDragEnd ? { columnDragging: { onColumnDragEnd } } : {}),
             ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
             ...(onToggleColumnVisibility
               ? { columnVisibility: { onToggleColumnVisibility } }
@@ -165,6 +159,7 @@ export const StoryComponent = memo(
                     canEdit: (ctx: CellComponentProps) =>
                       CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
                     validate: validateCellEdit,
+                    onEditCancel: options.onEditCancel,
                     onCellEdit: ({ rowId, columnId, value }: CellEditCommit) =>
                       setData(prev =>
                         prev.map(row =>

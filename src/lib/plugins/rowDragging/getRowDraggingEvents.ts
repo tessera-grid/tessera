@@ -9,6 +9,12 @@ import type {
 
 import type { Row, Table } from '../../types'
 import {
+  holdSessionHooks,
+  releaseSessionHooks,
+  takeDragCancelReason,
+  type SessionCancelReason,
+} from '../../core/cancelInteraction'
+import {
   getDepthFromOffsetLeft,
   getDragSourceParams,
   getMaxDepth,
@@ -19,7 +25,11 @@ import {
 } from './draggingHelpers'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 import { reorderRows } from './reorderRows'
-import type { RowDragOverlayState, RowSortableData } from './types'
+import type {
+  RowDraggingHooks,
+  RowDragOverlayState,
+  RowSortableData,
+} from './types'
 
 /**
  * Редьюсер DnD-событий тела: переупорядочивание строк c поддержкой вложенности
@@ -118,6 +128,15 @@ export const getRowDraggingEvents = (
     }))
   }
 
+  /** Сессия кончилась без перестановки (ADR 0040, §1). */
+  const cancel = (rowId: UniqueIdentifier, reason: SessionCancelReason) => {
+    resetDragState()
+    releaseSessionHooks<Partial<RowDraggingHooks>>(
+      table as never,
+      'rowDragging',
+    ).onRowDragCancel?.({ rowId: String(rowId), reason })
+  }
+
   const constOffsetLeft = getRowDraggableOffsetLeft({ table })
 
   return {
@@ -125,6 +144,7 @@ export const getRowDraggingEvents = (
       const { row } = active.data.current as RowSortableData
 
       document.body.style.cursor = 'grabbing'
+      holdSessionHooks(table as never, 'rowDragging')
       onRowDraggingChange(prev => ({
         ...prev,
         activeId: active.id,
@@ -179,10 +199,11 @@ export const getRowDraggingEvents = (
 
       const activeIsGroup = activeRow.subRows.length > 0
 
+      // Бросок без перестановки (мимо, на то же место, недопустимо) — `cancel`.
       if (!over || !rowDraggingState.acceptable) {
         expandDraggableGroupAgain(activeRow)
 
-        return resetDragState()
+        return cancel(active.id, 'cancel')
       }
 
       const { virtualIndex: overVirtualIndex } = getDragSourceParams(over)
@@ -201,7 +222,7 @@ export const getRowDraggingEvents = (
       if (active.id === over?.id && activeRow.depth === currentDepth) {
         expandDraggableGroupAgain(activeRow)
 
-        return resetDragState()
+        return cancel(active.id, 'cancel')
       }
 
       const activeParentId = activeRow.parentId
@@ -214,7 +235,7 @@ export const getRowDraggingEvents = (
       if (activeIsGroup && !!overParentId) {
         expandDraggableGroupAgain(activeRow)
 
-        return resetDragState()
+        return cancel(active.id, 'cancel')
       }
 
       onRowOrderChange?.(prev =>
@@ -231,15 +252,24 @@ export const getRowDraggingEvents = (
       )
 
       expandDraggableGroupAgain(activeRow)
+      releaseSessionHooks<Partial<RowDraggingHooks>>(
+        table as never,
+        'rowDragging',
+      ).onRowDragEnd?.({
+        rowId: String(active.id),
+        dragIndex: activeVirtualIndex,
+        hoverIndex: overVirtualIndex,
+      })
 
       return resetDragState()
     },
+    // Отмена (Escape, запрет на лету, строка ушла).
     onRowDragCancel: ({ active }) => {
       const { row: activeRow } = getDragSourceParams(active)
 
       expandDraggableGroupAgain(activeRow)
 
-      return resetDragState()
+      return cancel(active.id, takeDragCancelReason())
     },
     onRowDragAbort: resetDragState,
   }

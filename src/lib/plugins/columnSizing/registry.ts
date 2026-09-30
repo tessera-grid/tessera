@@ -18,13 +18,18 @@ export interface ColumnSizingOptions {
   enabled?: boolean
   /** Бизнес-колбэк окончания ресайза (аргумент фабрики); читается живо. */
   onColumnResizeEnd?: ColumnSizingHooks['onColumnResizeEnd']
+  /** Ресайз отменён: Escape, запрет на лету, колонка ушла (ADR 0040). */
+  onColumnResizeCancel?: ColumnSizingHooks['onColumnResizeCancel']
 }
 
 export const columnSizing = definePlugin<ColumnSizingOptions>()({
   id: 'columnSizing',
   diagnose: neverInert,
   features: { columnSizingFeature, columnResizingFeature },
-  hooks: o => ({ onColumnResizeEnd: o.onColumnResizeEnd }),
+  hooks: o => ({
+    onColumnResizeEnd: o.onColumnResizeEnd,
+    onColumnResizeCancel: o.onColumnResizeCancel,
+  }),
   slots: [
     {
       id: 'columnSizingPlugin',

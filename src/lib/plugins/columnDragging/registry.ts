@@ -20,12 +20,17 @@ export interface ColumnDraggingOptions {
   enabled?: boolean
   /** Бизнес-колбэк окончания переноса колонки (аргумент фабрики). */
   onColumnDragEnd?: ColumnDraggingHooks['onColumnDragEnd']
+  /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, колонка ушла (ADR 0040). */
+  onColumnDragCancel?: ColumnDraggingHooks['onColumnDragCancel']
 }
 
 export const columnDragging = definePlugin<ColumnDraggingOptions>()({
   id: 'columnDragging',
   features: { columnDraggingFeature, columnOrderingFeature },
-  hooks: o => ({ onColumnDragEnd: o.onColumnDragEnd }),
+  hooks: o => ({
+    onColumnDragEnd: o.onColumnDragEnd,
+    onColumnDragCancel: o.onColumnDragCancel,
+  }),
   keyboardActions: [moveColumnKeyboardAction],
   diagnose: columnDraggingInertReason,
   slots: [

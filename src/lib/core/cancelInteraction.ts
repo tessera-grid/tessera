@@ -1,24 +1,72 @@
 /**
- * Отмена идущего действия, запрещённого на лету (ADR 0039, §5, RX14–RX15): так,
- * будто пользователь нажал Escape.
+ * Отмена идущего действия (ADR 0039, §5; ADR 0040, §1): пользователем (Escape),
+ * запретом на лету или исчезновением цели. Причина доходит до колбэка отмены
+ * плагина.
  */
 
-/** Перетаскивание dnd-kit: указательные сенсоры отменяют его по Escape на document. */
-export const cancelDragLikeEscape = () => {
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      key: 'Escape',
-      code: 'Escape',
-      bubbles: true,
-    }),
-  )
+import { readPluginHooks } from './definePlugin/channels'
+
+/** Причина завершения сессии без результата (ADR 0040, §1). */
+export type SessionCancelReason = 'cancel' | 'revoke' | 'unavailable'
+
+type HooksTable = { getHooks: () => unknown; atoms: object }
+
+const sessionHooks = new WeakMap<object, Map<string, unknown>>()
+
+/**
+ * Запомнить хуки плагина на начало сессии: выключенный посреди неё плагин свой
+ * слайс уже не отдаёт, а отмена с `revoke` должна дойти до приложения.
+ */
+export const holdSessionHooks = (table: HooksTable, scope: string) => {
+  const held = sessionHooks.get(table.atoms) ?? new Map<string, unknown>()
+  held.set(scope, readPluginHooks(table, scope))
+  sessionHooks.set(table.atoms, held)
 }
 
-/** Признак события отмены: слушатель конца ресайза не зовёт бизнес-колбэк. */
-export const RESIZE_CANCEL = Symbol('tessera.resizeCancel')
+/** Хуки, запомненные на начало сессии, — и забыть их: сессия кончилась. */
+export const releaseSessionHooks = <THooks>(
+  table: HooksTable,
+  scope: string,
+): THooks => {
+  const held = sessionHooks.get(table.atoms)
+  const hooks = held?.get(scope)
+  held?.delete(scope)
+  return (hooks ?? readPluginHooks(table, scope)) as THooks
+}
 
-export const isResizeCancel = (event: unknown): boolean =>
-  !!(event as Record<symbol, unknown> | undefined)?.[RESIZE_CANCEL]
+let pendingDragCancel: SessionCancelReason | null = null
+
+/**
+ * Перетаскивание dnd-kit: указательные сенсоры отменяют его по Escape на document,
+ * `onDragCancel` зовётся синхронно — причина читается в нём через `takeDragCancelReason`.
+ */
+export const cancelDragLikeEscape = (reason: SessionCancelReason) => {
+  pendingDragCancel = reason
+  try {
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        bubbles: true,
+      }),
+    )
+  } finally {
+    pendingDragCancel = null
+  }
+}
+
+/** Причина отмены перетаскивания: настоящий Escape пользователя — `cancel`. */
+export const takeDragCancelReason = (): SessionCancelReason =>
+  pendingDragCancel ?? 'cancel'
+
+/** Метка события отмены ресайза; значение — причина. */
+const RESIZE_CANCEL = Symbol('tessera.resizeCancel')
+
+/** Причина, если событие конца ресайза — отмена; иначе `undefined`. */
+export const resizeCancelReason = (
+  event: unknown,
+): SessionCancelReason | undefined =>
+  (event as Record<symbol, SessionCancelReason> | undefined)?.[RESIZE_CANCEL]
 
 interface ResizeTable {
   atoms: {
@@ -40,7 +88,10 @@ interface ResizeTable {
  * Ресайз колонки: завершить протяжку помеченным событием (TanStack снимает свои
  * слушатели документа) и вернуть ширины, с которых она началась.
  */
-export const cancelColumnResize = (table: unknown) => {
+export const cancelColumnResize = (
+  table: unknown,
+  reason: SessionCancelReason,
+) => {
   const t = table as ResizeTable
   const info = t.atoms.columnResizing?.get()
   const start = info?.columnSizingStart ?? []
@@ -53,7 +104,7 @@ export const cancelColumnResize = (table: unknown) => {
     new Event('touchend', { bubbles: true }),
   ]
   for (const event of events) {
-    Object.defineProperty(event, RESIZE_CANCEL, { value: true })
+    Object.defineProperty(event, RESIZE_CANCEL, { value: reason })
     document.dispatchEvent(event)
   }
   if (start.length) {

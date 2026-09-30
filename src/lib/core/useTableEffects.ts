@@ -2,15 +2,20 @@
  * Эффекты после создания таблицы: императивный сетап плагинов, дев-варны об
  * инертных плагинах и конфликтах набора, сброс выбора строк при смене его опций.
  */
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 
 import {
   findDuplicatePluginIds,
   type FoldedEntryConfig,
   type TesseraFeatureEntry,
 } from './features'
+import { readPluginHooks } from './definePlugin/channels'
 import { logWarn } from './logger'
-import { type PluginDiagnostic, warnInertPlugins } from './pluginDiagnostics'
+import {
+  type PluginDiagnostic,
+  reportPluginError,
+  warnInertPlugins,
+} from './pluginDiagnostics'
 
 export const useTableEffects = (
   table: unknown,
@@ -34,6 +39,28 @@ export const useTableEffects = (
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
     [argsSignature, table],
   )
+
+  // Согласование состояния плагинов с таблицей — после каждого рендера, и у
+  // выключенных записей (ADR 0040, §2).
+  useLayoutEffect(() => {
+    for (const entry of plugins) {
+      if (!entry.reconcile) {
+        continue
+      }
+      const enabled = entry.enabled !== false
+      const hooks = enabled
+        ? readPluginHooks<Record<string, unknown>>(
+            table as { getHooks: () => unknown },
+            entry.id,
+          )
+        : ((entry.hooks?.[entry.id] ?? {}) as Record<string, unknown>)
+      try {
+        entry.reconcile(table, { enabled, hooks })
+      } catch (error) {
+        reportPluginError(table, entry.id, error)
+      }
+    }
+  })
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.
   useEffect(

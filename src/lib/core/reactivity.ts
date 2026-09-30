@@ -5,7 +5,8 @@
  * изменении:
  *  - `useSlice(table, 'sorting')` — один атом состояния (самая узкая подписка);
  *  - `useTableState(table, s => ({...}))` — проекция из общего store с
- *    shallow-сравнением.
+ *    shallow-сравнением;
+ *  - `useSliceProjection(table, key, v => ...)` — проекция одного среза.
  */
 import { useSelector } from '@tanstack/react-store'
 
@@ -59,6 +60,19 @@ export const useSlice = <
     SliceSource<TableState<TFeatures>[K]>
   >
   return useSelector(atoms[key])
+}
+
+/**
+ * Подписка на ПРОЕКЦИЮ одного среза: ре-рендер только при смене проекции, а не
+ * всего среза (напр. «редактируется ли эта ячейка» вместо всей сессии правки).
+ */
+export const useSliceProjection = <TSelected>(
+  table: unknown,
+  key: string,
+  selector: (value: any) => TSelected,
+): TSelected => {
+  const atoms = (table as { atoms: Record<string, SliceSource<unknown>> }).atoms
+  return useSelector(atoms[key], selector, { compare: shallowEqual })
 }
 
 /**
