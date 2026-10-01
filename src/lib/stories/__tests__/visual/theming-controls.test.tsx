@@ -9,7 +9,7 @@ import { RowButton } from '../../../grid/Actions/RowButton'
 // (иначе токены не определены и сравнения проходят ложно — обе стороны transparent).
 import '../../../core/themeVariables/theme.css'
 import type { ColorMode } from '../../../core/themeVariables'
-import { SelectCheckbox } from '../../../plugins/rowSelection/SelectCheckbox'
+import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 

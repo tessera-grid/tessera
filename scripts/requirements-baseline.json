@@ -13,10 +13,5 @@
     "kind": "missing",
     "id": "DP11",
     "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
-  },
-  {
-    "kind": "missing",
-    "id": "IV3",
-    "reason": "гарантирован IV1 (нет статических импортов плагинов); build-size-проверки нет"
   }
 ]

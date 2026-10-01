@@ -152,6 +152,7 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Сборка библиотеки         | `npm run build`              | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).       |
 | Инварианты темы в `dist`  | `npm run check:theme`        | После `build`: проверяет `dist/style.css` (ADR 0018/0019).         |
 | Требования ↔ тесты        | `npm run check:requirements` | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).            |
+| Tree-shaking плагинов     | `npm run check:tree-shaking` | После `build`: импорт одного плагина не тянет другие (IV3).        |
 | Пересборка при правках    | `npm run dev`                | `vite build --watch`. Долгоживущая — запускать в фоне.             |
 | Проверка типов            | `npm run typecheck`          | `tsc --noEmit`. **Включает stories.** Первый барьер.               |
 | Линт                      | `npm run lint`               | Плоский конфиг ESLint.                                             |
@@ -250,14 +251,19 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | 4   | Требования ↔ тесты | `npm run check:requirements` | да                        |
 | 5   | Тесты              | `npm test` _(vitest)_        | да — **см. примечание**   |
 | 6   | Сборка библиотеки  | `npm run build`              | да                        |
-| 7   | Инварианты темы    | `npm run check:theme`        | да — **при правках темы** |
+| 7   | Tree-shaking       | `npm run check:tree-shaking` | да                        |
+| 8   | Инварианты темы    | `npm run check:theme`        | да — **при правках темы** |
 
-Это весь барьер: **format · lint · ts · requirements · tests · build**. Шаг 4
+Это весь барьер: **format · lint · ts · requirements · tests · build · tree-shaking**. Шаг 4
 (`check:requirements`) сверяет таблицы требований принятых ADR с именами тестов: у
 каждого ID ровно один тест, у каждого ID в имени теста есть требование, ID не
 определён в нескольких ADR. Расхождения на момент ADR 0043 — в
 `scripts/requirements-baseline.json` с причиной; список только сокращается: закрыли
-расхождение — удалите запись, иначе шаг упадёт. Шаг 7 (`check:theme`) —
+расхождение — удалите запись, иначе шаг упадёт. Шаг 7 (`check:tree-shaking`) — после
+`build`: для каждого плагина собирает vite-приложение из одного импорта поверх `dist` и
+падает, если в сборку попали модули других плагинов (ADR 0010, IV3). `dist` собран с
+`preserveModules` — модуль на файл; общий код двух плагинов живёт вне папок плагинов.
+Шаг 8 (`check:theme`) —
 пост-build-страж: он проверяет собранный `dist/style.css` (нехешированные классы
 темы, три уровня токенов — ADR 0018/0019), чего браузерные тесты по исходникам не
 видят; запускайте его после `build`, когда изменение задевает тему, токены или

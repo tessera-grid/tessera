@@ -3,7 +3,7 @@ import { ChangeEvent, memo } from 'react'
 import { Checkbox } from '@base-ui/react/checkbox'
 import clsx from 'clsx'
 
-import { useIcons } from '../../ui/icons'
+import { useIcons } from '../icons'
 
 import styles from './SelectCheckbox.module.css'
 

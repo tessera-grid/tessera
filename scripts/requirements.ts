@@ -32,7 +32,13 @@ export interface BaselineEntry {
 }
 
 /** Начало ячейки вида или теста, при котором теста с ID требования не нужно. */
-const UNTESTED_KINDS = new Set(['отчёт', 'ревью', 'тест фичи', 'линт'])
+const UNTESTED_KINDS = new Set([
+  'отчёт',
+  'ревью',
+  'тест фичи',
+  'линт',
+  'скрипт',
+])
 
 const ID = '[A-Z][A-Za-z]*-?\\d+[a-z]?'
 const ID_CELL = new RegExp(`^${ID}$`)

@@ -48,6 +48,7 @@ describe('Сверка требований и тестов', () => {
           '| --- | --- | --- |',
           '| DD1 | документ | ревью: README |',
           '| DD3 | импорт | линт: no-restricted-imports |',
+          '| DD4 | сборка | скрипт: check:tree-shaking |',
           '| DD2 | с тестом | ✔ `DD2:` |',
         ].join('\n'),
         'd.md',
@@ -69,6 +70,7 @@ describe('Сверка требований и тестов', () => {
       'XX1',
       'DD1',
       'DD3',
+      'DD4',
       'DD2',
     ])
     expect(requirements.find(r => r.id === 'AA7')?.coveredBy).toEqual([

@@ -23,7 +23,7 @@ export {
 export {
   SelectCheckbox,
   type SelectCheckboxProps,
-} from './lib/plugins/rowSelection/SelectCheckbox'
+} from './lib/ui/SelectCheckbox/SelectCheckbox'
 export { ExpandButton } from './lib/plugins/rowExpanding/ExpandButton'
 export {
   GroupButton,

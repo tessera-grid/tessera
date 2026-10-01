@@ -25,6 +25,8 @@ export default defineConfig({
     !isStorybook &&
       dts({
         tsconfigPath: './tsconfig.json',
+        // Корень деклараций — src: dist/index.d.ts и т. п. по путям exports.
+        entryRoot: 'src',
         include: ['src'],
         exclude: STORY_TEST_GLOBS,
       }),
@@ -56,6 +58,9 @@ export default defineConfig({
         /^@tanstack\//,
         /^@dnd-kit\//,
       ],
+      // Модуль на файл: сборщик потребителя выбрасывает модули неиспользуемых
+      // плагинов целиком (sideEffects в package.json — только CSS), ADR 0010, IV3.
+      output: { preserveModules: true, preserveModulesRoot: 'src' },
     },
     sourcemap: true,
     emptyOutDir: true,

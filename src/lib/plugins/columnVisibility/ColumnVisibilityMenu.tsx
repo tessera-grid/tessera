@@ -11,7 +11,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
-import { SelectCheckbox } from '../rowSelection/SelectCheckbox'
+import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import {
   type ColumnTreeNode,
   buildColumnTree,
