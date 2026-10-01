@@ -208,7 +208,9 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       className={clsx('data-grid__body-row', styles.body__row)}
       role="row"
       aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
-      aria-expanded={canExpand ? isExpanded : undefined}
+      // aria-expanded строки допустим только в treegrid; в table состояние несёт
+      // кнопка раскрытия (ADR 0015, RE10, RE12).
+      aria-expanded={canExpand && props.treeAria ? isExpanded : undefined}
       aria-busy={isExpandPending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       {...props.treeAria}

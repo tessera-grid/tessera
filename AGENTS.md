@@ -342,7 +342,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `column-dragging` (D14–D30, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)).
     - _Строки:_ `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md);
       RS19–RS22 — счётчик в нижней панели, [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md)),
-      `row-expanding` (RE1–RE11, [ADR 0015](docs/decisions/0015-row-expanding.md)),
+      `row-expanding` (RE1–RE12, [ADR 0015](docs/decisions/0015-row-expanding.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).

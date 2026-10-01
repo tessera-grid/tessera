@@ -2,6 +2,9 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** 2026-10-01 — RE10 сужен до `treegrid`, добавлен RE12: без `keyboardNavigation`
+  корень — `role="table"`, а там `aria-expanded` у строки недопустим (axe
+  `aria-allowed-attr`); состояние раскрытия несёт кнопка-тоггл.
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен на штатной
     модели раскрытия TanStack (`enableExpanding`/`enableRowExpanding`,
@@ -123,11 +126,17 @@ TanStack Table v9 несёт готовую модель раскрытия: с�
 про запрет хардкода мок-данных: состояние читается из атрибутов, а не из
 литералов мока):
 
-- **`aria-expanded` и `data-expanded` на `role="row"`** (`BodyRow.tsx`) —
-  `row.getIsExpanded()`; реактивны (`useSelector`). Атрибуты
-  проставляются **только** на раскрываемой строке (`getCanExpand()`): у листьев
-  их нет — так контракт различает «свёрнута» (`false`) и «не раскрываема»
-  (атрибута нет).
+- **`data-expanded` на `role="row"`** (`BodyRow.tsx`) — `row.getIsExpanded()`;
+  реактивен (`useSelector`). Проставляется **только** на раскрываемой строке
+  (`getCanExpand()`): у листьев его нет — так контракт различает «свёрнута»
+  (`false`) и «не раскрываема» (атрибута нет).
+- **`aria-expanded` строки — только в `treegrid`** (с `keyboardNavigation`,
+  [ADR 0032](0032-wcag-aa-remainder.md), W10), вместе с `aria-level`/`setsize`/
+  `posinset`. Без навигации корень — `role="table"`, где ARIA не допускает
+  `aria-expanded` у строки; там состояние раскрытия несёт **кнопка-тоггл**
+  (`aria-expanded` на `.row-expand-button`, у неё оно есть всегда). Сделать корень
+  `treegrid` и без навигации нельзя: `treegrid` — интерактивный виджет, без
+  управления фокусом роль обещала бы клавиатуру, которой нет.
 - **`.row-expand-button`** — стабильный класс тоггла (на `ExpandButton`), за
   который цепляются тесты и потребитель.
 - **`data-actions-column-cell='true'` и `data-column-id` =
@@ -207,10 +216,11 @@ Chromium) и гоняют историю `RowExpanding` (детерминиро�
 
 **Доступность и внешний вид**
 
-| ID   | Требование                                                                                   | Тест                                   |
-| ---- | -------------------------------------------------------------------------------------------- | -------------------------------------- |
-| RE10 | Раскрытие выражено в доступности: `aria-expanded` строки отражает состояние, у листа его нет | ✔ `RE10: the row exposes expansion …`  |
-| RE11 | Тоггл разворачивает шеврон при раскрытии (класс `.expanded`)                                 | ✔ `RE11: the toggle chevron rotates …` |
+| ID   | Требование                                                                                                                                 | Тест                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| RE10 | В `treegrid` (с `keyboardNavigation`) `aria-expanded` строки отражает раскрытие, у листа его нет                                           | ✔ `RE10: in a treegrid …`               |
+| RE11 | Тоггл разворачивает шеврон при раскрытии (класс `.expanded`)                                                                               | ✔ `RE11: the toggle chevron rotates …`  |
+| RE12 | Без `keyboardNavigation` (`role="table"`) раскрытие — `aria-expanded` тоггла, у строк его нет; раскрытое дерево проходит axe в обеих темах | ✔ `RE12: without keyboard navigation …` |
 
 См. [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм
 плагинов и `renderComponent` и [rendering.md](../architecture/rendering.md) про

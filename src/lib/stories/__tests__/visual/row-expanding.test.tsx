@@ -2,7 +2,10 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import axe from 'axe-core'
+
 import { composed } from '../stories'
+import { AXE_OPTIONS, gridRoot, inBothThemes } from './a11y-helpers'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 
@@ -67,7 +70,7 @@ async function renderRowExpanding(args: RowExpandingArgs = {}) {
   return container
 }
 
-// --- Requirements (RE1–RE11) --------------------------------------------------
+// --- Requirements (RE1–RE12) --------------------------------------------------
 
 describe('Row Expanding — activation & service column', () => {
   test('RE1: the plugin is inert without `enableRowExpanding`', async () => {
@@ -234,8 +237,11 @@ describe('Row Expanding — indentation', () => {
 })
 
 describe('Row Expanding — accessibility & appearance', () => {
-  test('RE10: the row exposes expansion via `aria-expanded`', async () => {
-    const container = await renderRowExpanding()
+  test('RE10: in a treegrid (keyboard navigation) the row exposes expansion via `aria-expanded`', async () => {
+    const container = await renderRowExpanding({
+      enableKeyboardNavigation: true,
+    })
+    expect(container.querySelector('[role="treegrid"]')).not.toBeNull()
     const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
 
     // Collapsed: expandable row advertises aria-expanded='false'…
@@ -282,6 +288,37 @@ describe('Row Expanding — accessibility & appearance', () => {
     await expect
       .poll(() => isRowExpanded(firstExpandableRow(container)))
       .toBe(false)
+  })
+})
+
+describe('Row Expanding — accessibility', () => {
+  test('RE12: without keyboard navigation (role=table) the toggle carries aria-expanded, rows do not, and the expanded tree passes axe', async () => {
+    // Обычные строки и строки с перетаскиванием (DraggableBodyRow).
+    for (const args of [{}, { enableRowDragging: true }]) {
+      const view = await render(<composed.RowExpanding {...args} />)
+      const { container } = view
+      await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
+      expect(container.querySelector('[role="table"]')).not.toBeNull()
+      const toggle = () => rowToggle(firstExpandableRow(container))!
+
+      expect(toggle().getAttribute('aria-expanded')).toBe('false')
+      await userEvent.click(toggle())
+      await expect
+        .poll(() => toggle().getAttribute('aria-expanded'))
+        .toBe('true')
+
+      expect(
+        rowsTopDown(container).filter(row => row.hasAttribute('aria-expanded')),
+      ).toEqual([])
+      await inBothThemes(async () => {
+        const { violations } = await axe.run(gridRoot(), {
+          ...AXE_OPTIONS,
+          rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+        })
+        expect(violations).toEqual([])
+      })
+      await view.unmount()
+    }
   })
 })
 

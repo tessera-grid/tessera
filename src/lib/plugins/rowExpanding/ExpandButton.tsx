@@ -39,6 +39,7 @@ export const ExpandButton = ({
             [styles.pending]: pending,
           })}
           disabled={disabled}
+          aria-expanded={expanded}
           aria-busy={pending || undefined}
           onClick={onClick}
           aria-label={label}
