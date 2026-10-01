@@ -8,6 +8,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
+import { useClosingVisible } from './useClosingVisible'
 
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -28,6 +29,7 @@ export const ActionInlineMenu = ({
   onOpenChange,
 }: ActionInlineMenuProps) => {
   const labels = useLocalization()
+  const [visible, onOpenChangeComplete] = useClosingVisible(open)
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
@@ -52,9 +54,13 @@ export const ActionInlineMenu = ({
   const wrapperBase = variant === 'row' ? 'row__button' : 'cell__button'
 
   return (
-    <Menu.Root open={open} onOpenChange={onOpenChange}>
+    <Menu.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
       <div
-        className={clsx(wrapperBase, !open && hiddenClass)}
+        className={clsx(wrapperBase, !visible && hiddenClass)}
         data-button-active={active}
       >
         {adornment ? (

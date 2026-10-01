@@ -352,7 +352,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0021](docs/decisions/0021-keyboard-navigation.md));
       `keyboard-wcag` (KB1–KB14 — соответствие WCAG 2.1.1 и замены клавиш для компактных клавиатур,
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
-    - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM26 — kebab заголовка и строки,
+    - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки,
       [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md)).
     - _Тулбар и видимость колонок:_ `toolbar` (TB1–TB15 — рамка грида, тулбар,
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),

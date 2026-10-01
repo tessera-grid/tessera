@@ -4,6 +4,11 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { parkPointer } from '../pointer'
+import {
+  headCellById,
+  renderColumnPinning,
+  revealPin,
+} from './column-pinning-helpers'
 import { composed } from '../stories'
 
 // Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
@@ -228,6 +233,40 @@ describe('Action menu — header', () => {
     requestAnimationFrame(sample)
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => document.activeElement).toBe(kebab())
+    await new Promise(resolve => setTimeout(resolve, 500))
+    sampling = false
+
+    expect(Math.min(...samples)).toBe(1)
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    await parkPointer()
+    await expect.poll(opacity).toBe(0)
+  })
+
+  test('AM27: инлайн-действие с мини-меню не гаснет, пока меню закрывается и фокус возвращается на него', async () => {
+    const container = await renderColumnPinning()
+    // Закрепление двусторонней колонки — инлайн-кнопка с мини-меню сторон.
+    const pin = () =>
+      headCellById(container, 'firstName').querySelector<HTMLElement>(
+        '.column-pin__button',
+      )!
+    const opacity = () =>
+      Number(getComputedStyle(pin().closest('.cell__button')!).opacity)
+
+    await userEvent.click(await revealPin(headCellById(container, 'firstName')))
+    await expect.poll(() => menuItems().length).toBeGreaterThan(0)
+    await userEvent.hover(headCellById(container, 'lastName'))
+    await expect.poll(opacity).toBe(1)
+
+    // Каждый кадр от Escape до возврата фокуса на кнопку и ещё полсекунды после.
+    const samples: number[] = []
+    let sampling = true
+    const sample = () => {
+      samples.push(opacity())
+      if (sampling) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => document.activeElement).toBe(pin())
     await new Promise(resolve => setTimeout(resolve, 500))
     sampling = false
 

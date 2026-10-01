@@ -4,7 +4,6 @@
 // позволяет открыть меню сразу после догрузки чанка, если по плейсхолдеру уже
 // кликнули.
 import { Menu } from '@base-ui/react/menu'
-import { useState } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
@@ -12,6 +11,7 @@ import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
+import { useClosingVisible } from './useClosingVisible'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -33,9 +33,7 @@ export const ActionMenu = ({
 }: ActionMenuProps) => {
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
-  // Закрытое, но ещё не завершившее закрытие меню: фокус на кебаб Base UI возвращает
-  // в конце — до него кебаб держится видимым (AM25, AM26).
-  const [settledOpen, setSettledOpen] = useState(open)
+  const [visible, onOpenChangeComplete] = useClosingVisible(open)
 
   const trigger = (
     <Menu.Trigger
@@ -51,15 +49,10 @@ export const ActionMenu = ({
     <Menu.Root
       open={open}
       onOpenChange={onOpenChange}
-      onOpenChangeComplete={setSettledOpen}
+      onOpenChangeComplete={onOpenChangeComplete}
     >
       {variant === 'row' ? (
-        <div
-          className={clsx(
-            'row__button',
-            !(open || settledOpen) && 'row__button--hidden',
-          )}
-        >
+        <div className={clsx('row__button', !visible && 'row__button--hidden')}>
           {trigger}
         </div>
       ) : (
@@ -68,7 +61,7 @@ export const ActionMenu = ({
         // AM24, AM25).
         <div
           className="cell__button cell__button--hidden"
-          data-button-active={open || settledOpen}
+          data-button-active={visible}
         >
           {trigger}
         </div>
