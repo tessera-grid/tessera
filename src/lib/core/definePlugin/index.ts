@@ -25,7 +25,12 @@ import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
 import { argsKeyOf } from '../pluginArgs'
-import { pluginStateKey, stateChangeOption } from './channels'
+import {
+  pluginStateKey,
+  stateChangeOption,
+  withPluginChannels,
+  type PluginSlotDecl,
+} from './channels'
 
 export {
   readPluginHooks,
@@ -39,6 +44,7 @@ export {
   type PluginHeaderProps,
   type PluginCellStateProps,
   type PluginCellOwnerProps,
+  type PluginSlotDecl,
 } from './channels'
 
 /**
@@ -110,8 +116,14 @@ interface DefinePluginConfig<
   state?: () => TState
   /** Сервисная колонка плагина. */
   column?: ServiceColumn
-  /** Декларативные слоты плагина; функция — набор слотов зависит от аргументов фабрики. */
-  slots?: PluginSlot[] | ((opts: TOptions) => PluginSlot[])
+  /**
+   * Декларативные слоты плагина; функция — набор слотов зависит от аргументов фабрики.
+   * Компонент получает каналы плагина (`hooks`, локальный `state`) с типами из
+   * деклараций этого же вызова: расхождение — ошибка компиляции (DP7).
+   */
+  slots?:
+    | PluginSlotDecl<THooks, NoInfer<TState>>[]
+    | ((opts: TOptions) => PluginSlotDecl<THooks, NoInfer<TState>>[])
   /** Декларативные действия слота (инлайн-кнопка / пункт кебаб-меню). */
   slotActions?: SlotAction[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
@@ -141,9 +153,47 @@ interface DefinePluginConfig<
  * конфига (DP12). TS не выводит общий входной тип из нескольких соседних полей —
  * отсюда явный дженерик первым шагом.
  */
-export const definePlugin =
-  <TOptions extends { enabled?: boolean }>() =>
+/**
+ * Вторая ступень `definePlugin`. Две сигнатуры, чтобы тип хуков слот-компонента
+ * шёл от плагина: без `hooks` он пустой (компонент, ждущий хуки, — ошибка), с
+ * `hooks` — выведен из их декларации и из компонентов, и расхождение не сходится (DP7).
+ */
+export interface PluginFactoryBuilder<TOptions extends { enabled?: boolean }> {
   <
+    TFeatures extends object = object,
+    TResolved extends Record<string, unknown> = Record<string, unknown>,
+    TState = never,
+  >(
+    config: DefinePluginConfig<
+      TOptions,
+      TFeatures,
+      TResolved,
+      Record<never, never>,
+      TState
+    > & { hooks?: undefined },
+  ): (opts?: TOptions) => TesseraFeatureEntry<TFeatures>
+  <
+    TFeatures extends object = object,
+    TResolved extends Record<string, unknown> = Record<string, unknown>,
+    THooks extends object = Record<never, never>,
+    TState = never,
+  >(
+    config: DefinePluginConfig<
+      TOptions,
+      TFeatures,
+      TResolved,
+      THooks,
+      TState
+    > & {
+      hooks: (opts: TOptions) => THooks
+    },
+  ): (opts?: TOptions) => TesseraFeatureEntry<TFeatures>
+}
+
+export const definePlugin = <
+  TOptions extends { enabled?: boolean },
+>(): PluginFactoryBuilder<TOptions> =>
+  (<
     TFeatures extends object = object,
     TResolved extends Record<string, unknown> = Record<string, unknown>,
     THooks extends object = Record<never, never>,
@@ -179,10 +229,22 @@ export const definePlugin =
           out.options = config.options(args)
         }
         if (config.slots) {
-          out.slots =
+          const declared =
             typeof config.slots === 'function'
               ? config.slots(args)
               : config.slots
+          out.slots = declared.map(({ state, ...slot }) =>
+            slot.component
+              ? {
+                  ...slot,
+                  component: withPluginChannels(
+                    slot.component as never,
+                    config.id,
+                    state === true,
+                  ),
+                }
+              : slot,
+          ) as PluginSlot[]
         }
         if (config.actionMenu) {
           out.actionMenu = config.actionMenu(args)
@@ -231,6 +293,6 @@ export const definePlugin =
 
       return entry
     }
-  }
+  }) as PluginFactoryBuilder<TOptions>
 
 export type { CellComponentProps, HeaderComponentProps } from '../createSlots'

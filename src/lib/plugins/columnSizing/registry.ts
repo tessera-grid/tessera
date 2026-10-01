@@ -8,7 +8,7 @@ import {
   columnSizingFeature,
 } from '@tanstack/react-table'
 
-import { definePlugin, injectHeaderHooks } from '../../core/definePlugin'
+import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { ColumnSizingComponent } from './ColumnSizingComponent'
 import type { ColumnSizingHooks } from './types'
@@ -27,7 +27,7 @@ export const columnSizing = definePlugin<ColumnSizingOptions>()({
   diagnose: neverInert,
   features: { columnSizingFeature, columnResizingFeature },
   hooks: o => ({
-    onColumnResizeEnd: o.onColumnResizeEnd,
+    onColumnResizeEnd: o.onColumnResizeEnd ?? (() => null),
     onColumnResizeCancel: o.onColumnResizeCancel,
   }),
   slots: [
@@ -35,7 +35,7 @@ export const columnSizing = definePlugin<ColumnSizingOptions>()({
       id: 'columnSizingPlugin',
       slot: 'rightHeaderSlot',
       order: 'last',
-      component: injectHeaderHooks(ColumnSizingComponent, 'columnSizing'),
+      component: ColumnSizingComponent,
       // Resize-грип — кромочный аффорданс, а не иконка-кнопка: инлайн, но НЕ
       // учитывается в пороге схлопывания кебаба (иначе «крал» бы место).
       countsAsHeaderAction: false,

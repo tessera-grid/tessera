@@ -13,13 +13,7 @@
  * Показ кнопки гейтит предикат `canEdit`; редактор — BYO через `editor` (дефолт —
  * встроенный CellEditInput). И предикат, и редактор живут в hook-слайсе (читаются живо).
  */
-import { createElement, type ReactNode } from 'react'
-
-import {
-  definePlugin,
-  injectCellHooks,
-  readPluginHooks,
-} from '../../core/definePlugin'
+import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
@@ -67,18 +61,13 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
       id: 'cellEditing',
       slot: 'rightCellSlot',
       order: 'last',
-      component: injectCellHooks(CellEditButton, 'cellEditing'),
+      component: CellEditButton,
     },
     {
       id: 'cellEditing',
       slot: 'cellSlot',
       // `content` кладёт RenderCellSlot — собственный рендер ячейки.
-      component: (ctx: CellComponentProps) =>
-        createElement(CellEditField, {
-          ...ctx,
-          content: (ctx as { content?: ReactNode }).content,
-          hooks: readPluginHooks<CellEditingHooks>(ctx.table, 'cellEditing'),
-        }),
+      component: CellEditField,
     },
   ],
 })

@@ -6,7 +6,13 @@
  */
 import { createElement, type ReactNode } from 'react'
 
-import type { CellComponentProps, HeaderComponentProps } from '../createSlots'
+import type {
+  CellComponentProps,
+  HeaderComponentProps,
+  RegisterSlotParams,
+  StatusBarComponentProps,
+  ToolbarComponentProps,
+} from '../createSlots'
 import { useSlice } from '../reactivity'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
@@ -170,3 +176,102 @@ export const injectCellOwner =
       state: [value, setter],
     })
   }
+
+type SlotBase<TName extends string> = Omit<
+  RegisterSlotParams<object>,
+  'component' | 'render' | 'pluginId'
+> & { slot: TName }
+
+/**
+ * Слот одного вида. По умолчанию компонент получает hook-слайс плагина; пару
+ * локального состояния `[value, setter]` — только слот с `state: true`: такой
+ * компонент подписан на весь срез и перерисовывается при каждом его изменении.
+ */
+type SlotDeclOf<TName extends string, TContext, THooks, TState> =
+  | (SlotBase<TName> & {
+      state?: false
+      component?: (props: TContext & { hooks: THooks }) => ReactNode
+    })
+  | ([TState] extends [never]
+      ? never
+      : SlotBase<TName> & {
+          state: true
+          component?: (
+            props: TContext & {
+              hooks: THooks
+              state: [TState, (next: TState) => void]
+            },
+          ) => ReactNode
+        })
+
+/**
+ * Слот в `definePlugin`: компонент получает контекст своего слота и каналы плагина,
+ * типы которых выведены из `hooks`/`state` того же вызова. Компонент, ждущий другой
+ * тип канала, не присваивается — ошибка компиляции в вызове `definePlugin` (DP7).
+ */
+export type PluginSlotDecl<THooks = Record<never, never>, TState = never> =
+  | SlotDeclOf<
+      'leftHeaderSlot' | 'rightHeaderSlot',
+      HeaderComponentProps,
+      THooks,
+      TState
+    >
+  | SlotDeclOf<
+      'leftCellSlot' | 'rightCellSlot' | 'actionRowSlot',
+      CellComponentProps,
+      THooks,
+      TState
+    >
+  | SlotDeclOf<
+      'cellSlot',
+      CellComponentProps & { content: ReactNode },
+      THooks,
+      TState
+    >
+  | SlotDeclOf<'toolbarSlot', ToolbarComponentProps, THooks, TState>
+  | SlotDeclOf<'statusBarSlot', StatusBarComponentProps, THooks, TState>
+
+type SlotContext = { table: unknown }
+type SlotComponent = (props: never) => ReactNode
+
+// Обёртка на пару «компонент — плагин» одна: иначе пересборка настройки при смене
+// аргументов давала бы новый тип компонента и перемонтировала слот.
+const wrappers = new WeakMap<SlotComponent, Map<string, SlotComponent>>()
+
+const hooksOnly =
+  (Component: SlotComponent, id: string) => (ctx: SlotContext) =>
+    createElement(Component as (props: Record<string, unknown>) => ReactNode, {
+      ...ctx,
+      hooks: readPluginHooks(ctx.table as { getHooks: () => unknown }, id),
+    })
+
+const hooksAndState =
+  (Component: SlotComponent, id: string) => (ctx: SlotContext) => {
+    const value = useSlice(ctx.table as never, pluginStateKey(id) as never)
+    return createElement(
+      Component as (props: Record<string, unknown>) => ReactNode,
+      {
+        ...ctx,
+        hooks: readPluginHooks(ctx.table as { getHooks: () => unknown }, id),
+        state: [value, (next: unknown) => setPluginState(ctx.table, id, next)],
+      },
+    )
+  }
+
+/** Компонент слота с каналами плагина `id` (обёртка кэшируется). */
+export const withPluginChannels = (
+  Component: SlotComponent,
+  id: string,
+  withState: boolean,
+): SlotComponent => {
+  const key = `${id}|${withState}`
+  const byPlugin = wrappers.get(Component) ?? new Map<string, SlotComponent>()
+  wrappers.set(Component, byPlugin)
+  const cached = byPlugin.get(key)
+  if (cached) {
+    return cached
+  }
+  const wrapped = (withState ? hooksAndState : hooksOnly)(Component, id)
+  byPlugin.set(key, wrapped as SlotComponent)
+  return wrapped as SlotComponent
+}

@@ -1,5 +1,5 @@
 /**
- * Авторская поверхность `definePlugin` (ADR 0028, DP1, DP3, DP10, DP12, DP15): запись
+ * Авторская поверхность `definePlugin` (ADR 0028, DP1, DP3, DP6, DP7, DP10, DP12, DP15): запись
  * по форме идентична ручной, hook-слайс без undefined под ключом id, поле фич —
  * `features`, `TOptions` задаётся один раз, слоты как функция аргументов.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -7,7 +7,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import type { TableFeature } from '../types'
-import { definePlugin } from '../core/definePlugin'
+import {
+  definePlugin,
+  type PluginCellProps,
+  type PluginCellStateProps,
+} from '../core/definePlugin'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 
 describe('definePlugin — слоты', () => {
@@ -40,7 +44,7 @@ describe('definePlugin — запись', () => {
     component: () => null,
   }
 
-  it('DP1: фабрика даёт запись, свёртка которой совпадает со свёрткой ручной', () => {
+  it('DP1: фабрика даёт запись, свёртка которой совпадает со свёрткой ручной; компонент слота обёрнут каналами плагина', () => {
     const onPing = () => {}
     const factory = definePlugin<{ enabled?: boolean; size?: number }>()({
       id: 'probe',
@@ -59,7 +63,15 @@ describe('definePlugin — запись', () => {
       slots: [slot],
     }
     const defined = factory({ size: 3 })
-    expect(defined).toMatchObject(manual)
+    // Компонент слота definePlugin оборачивает каналами (DP9) — сверяем без него.
+    const withoutComponents = (entry: { slots?: object[] }) => ({
+      ...entry,
+      slots: entry.slots?.map(
+        ({ component: _component, ...rest }: any) => rest,
+      ),
+    })
+    expect(withoutComponents(defined)).toMatchObject(withoutComponents(manual))
+    expect(defined.slots?.[0].component).not.toBe(slot.component)
 
     const fold = (entry: object) => {
       const { options, slots, serviceColumns, hooks } = foldEntries([
@@ -67,7 +79,9 @@ describe('definePlugin — запись', () => {
       ] as never) as unknown as Record<string, unknown>
       return { options, slots, serviceColumns, hooks }
     }
-    expect(fold(defined)).toEqual(fold(manual))
+    expect(fold(withoutComponents(defined))).toEqual(
+      fold(withoutComponents(manual)),
+    )
   })
 
   it('DP3: hook-слайс лежит под id плагина, undefined-ключи отброшены', () => {
@@ -116,5 +130,96 @@ describe('definePlugin — запись', () => {
     })
     expectTypeOf(factory).parameter(0).toEqualTypeOf<Opts | undefined>()
     expect(factory({ size: 2 }).options).toEqual({ probeSize: 2 })
+  })
+})
+
+describe('definePlugin — типы слот-компонентов', () => {
+  interface Opts {
+    enabled?: boolean
+  }
+  const Ping = (props: PluginCellProps<{ onPing: () => void }>) => {
+    props.hooks.onPing()
+    return null
+  }
+  const Counter = (
+    props: PluginCellStateProps<Record<never, never>, number>,
+  ) => (props.state[0] > 0 ? null : null)
+
+  it('DP6: компонент, написанный в слоте, получает типы хуков и состояния из деклараций плагина', () => {
+    const plugin = definePlugin<Opts>()({
+      id: 'inferred',
+      state: () => 0,
+      hooks: () => ({ onPing: () => {} }),
+      slots: [
+        {
+          id: 'slot',
+          slot: 'rightCellSlot',
+          state: true,
+          component: props => {
+            expectTypeOf(props.hooks).toEqualTypeOf<{ onPing: () => void }>()
+            expectTypeOf(props.state).toEqualTypeOf<
+              [number, (next: number) => void]
+            >()
+            return null
+          },
+        },
+      ],
+    })
+    expect(plugin().slots).toHaveLength(1)
+  })
+
+  it('DP7: компонент слота, ждущий хуки или состояние не того типа, не компилируется', () => {
+    const matching = definePlugin<Opts>()({
+      id: 'matching',
+      hooks: () => ({ onPing: () => {} }),
+      slots: [{ id: 'slot', slot: 'rightCellSlot', component: Ping }],
+    })
+    const otherHooks = definePlugin<Opts>()({
+      id: 'otherHooks',
+      // @ts-expect-error — компонент ждёт onPing, плагин объявил onPong
+      hooks: () => ({ onPong: () => {} }),
+      slots: [{ id: 'slot', slot: 'rightCellSlot', component: Ping }],
+    })
+    // @ts-expect-error — у плагина нет хуков, компонент их ждёт
+    const noHooks = definePlugin<Opts>()({
+      id: 'noHooks',
+      slots: [{ id: 'slot', slot: 'rightCellSlot', component: Ping }],
+    })
+    const noState = definePlugin<Opts>()({
+      id: 'noState',
+      // @ts-expect-error — у плагина нет состояния, компонент его ждёт
+      slots: [{ id: 'slot', slot: 'rightCellSlot', component: Counter }],
+    })
+    const otherState = definePlugin<Opts>()({
+      id: 'otherState',
+      state: () => 'text',
+      slots: [
+        // @ts-expect-error — состояние плагина — строка, компонент ждёт число
+        { id: 'slot', slot: 'rightCellSlot', state: true, component: Counter },
+      ],
+    })
+    const stateNotRequested = definePlugin<Opts>()({
+      id: 'stateNotRequested',
+      state: () => 0,
+      // @ts-expect-error — слот не объявил state: true, компонент ждёт состояние
+      slots: [{ id: 'slot', slot: 'rightCellSlot', component: Counter }],
+    })
+    const wrongSlot = definePlugin<Opts>()({
+      id: 'wrongSlot',
+      hooks: () => ({ onPing: () => {} }),
+      // @ts-expect-error — компонент ячейки в слоте заголовка
+      slots: [{ id: 'slot', slot: 'leftHeaderSlot', component: Ping }],
+    })
+    expect(
+      [
+        matching,
+        otherHooks,
+        noHooks,
+        noState,
+        otherState,
+        stateNotRequested,
+        wrongSlot,
+      ].every(factory => typeof factory === 'function'),
+    ).toBe(true)
   })
 })
