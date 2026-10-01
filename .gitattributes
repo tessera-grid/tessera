@@ -1,0 +1,2 @@
+# Окончания строк — LF везде, как ждёт Prettier, независимо от core.autocrlf.
+* text=auto eol=lf
