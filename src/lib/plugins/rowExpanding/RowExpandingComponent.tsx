@@ -12,7 +12,7 @@ export const RowExpandingComponent = ({
   row,
   table,
   hooks,
-}: PluginCellProps<RowExpandingHooks>) => {
+}: PluginCellProps<Partial<RowExpandingHooks>>) => {
   useSlice(table, 'expanded')
   const pending = useSliceProjection(
     table,

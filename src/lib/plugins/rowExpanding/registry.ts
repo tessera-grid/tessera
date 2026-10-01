@@ -19,6 +19,7 @@ import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
 } from './rowExpandingColumn'
+import { RowExpandingComponent } from './RowExpandingComponent'
 import type { RowExpandingHooks } from './types'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
@@ -55,6 +56,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
         },
   column: {
     id: COLUMN_EXPANDING_ID,
+    cell: RowExpandingComponent,
     make: getRowExpandingColumn,
     side: 'leading',
     order: 2,

@@ -17,6 +17,8 @@ import {
   COLUMN_SELECTION_ID,
   getRowSelectionColumn,
 } from './rowSelectionColumn'
+import { HeadSelectionComponent } from './HeadSelectionComponent'
+import { RowSelectionComponent } from './RowSelectionComponent'
 import { isGroupingActive } from './selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
@@ -81,6 +83,8 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
   diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
   column: {
     id: COLUMN_SELECTION_ID,
+    cell: RowSelectionComponent,
+    header: HeadSelectionComponent,
     make: getRowSelectionColumn,
     side: 'leading',
     order: 1,

@@ -14,7 +14,7 @@ export const RowSelectionComponent = ({
   row,
   table,
   hooks,
-}: PluginCellProps<RowSelectionHooks>) => {
+}: PluginCellProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
 
   useSlice(table, 'rowSelection')
@@ -28,7 +28,7 @@ export const RowSelectionComponent = ({
     return null
   }
 
-  const { isAllRowsSelected } = hooks
+  const { isAllRowsSelected = false } = hooks
 
   const canSelect = row.getCanSelect()
   const selected = row.getIsSelected()

@@ -1,32 +1,34 @@
 /**
- * Сервисная колонка раскрытия. `cell` — компонент напрямую (нативный FlexRender).
+ * Сервисная колонка раскрытия. `cell` — компонент с хуками плагина от `definePlugin`.
  * Под вложенной шапкой (depth>1) строит группы с rowSpan.
  */
 import {
   COLUMN_ACTIONS_SIZE,
   getActionColumnId,
 } from '../../core/createColumns/actionColumnParams'
-import { injectCellHooks } from '../../core/definePlugin'
+import type { ServiceColumnParts } from '../../core/definePlugin'
 import type { ColumnDef } from '../../types'
-import { RowExpandingComponent } from './RowExpandingComponent'
 
 export const COLUMN_EXPANDING_ID = getActionColumnId('rowExpanding')
 
-const leafColumn = {
-  id: COLUMN_EXPANDING_ID,
-  serviceLabel: 'expandColumn',
-  accessorKey: 'id',
-  minSize: COLUMN_ACTIONS_SIZE,
-  size: COLUMN_ACTIONS_SIZE,
-  header: undefined,
-  enableSorting: false,
-  enableResizing: false,
-  cell: injectCellHooks(RowExpandingComponent, 'rowExpanding'),
-} as unknown as ColumnDef<any, any, any>
+const leafColumnOf = ({ cell }: ServiceColumnParts) =>
+  ({
+    id: COLUMN_EXPANDING_ID,
+    serviceLabel: 'expandColumn',
+    accessorKey: 'id',
+    minSize: COLUMN_ACTIONS_SIZE,
+    size: COLUMN_ACTIONS_SIZE,
+    header: undefined,
+    enableSorting: false,
+    enableResizing: false,
+    cell,
+  }) as unknown as ColumnDef<any, any, any>
 
 export const getRowExpandingColumn = (
   depth: number,
+  parts: ServiceColumnParts,
 ): ColumnDef<any, any, any> => {
+  const leafColumn = leafColumnOf(parts)
   if (depth <= 1) {
     return leafColumn
   }

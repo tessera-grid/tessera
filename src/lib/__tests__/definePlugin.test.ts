@@ -1,5 +1,5 @@
 /**
- * Авторская поверхность `definePlugin` (ADR 0028, DP1, DP3, DP6, DP7, DP10–DP12, DP15): запись
+ * Авторская поверхность `definePlugin` (ADR 0028, DP1, DP3, DP6, DP7, DP10–DP12, DP15, DP19): запись
  * по форме идентична ручной, hook-слайс без undefined под ключом id, поле фич —
  * `features`, `TOptions` задаётся один раз, слоты как функция аргументов.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -13,6 +13,7 @@ import {
   definePlugin,
   type PluginCellProps,
   type PluginCellStateProps,
+  type PluginHeaderProps,
 } from '../core/definePlugin'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 
@@ -65,12 +66,21 @@ describe('definePlugin — запись', () => {
       slots: [slot],
     }
     const defined = factory({ size: 3 })
-    // Компонент слота definePlugin оборачивает каналами (DP9) — сверяем без него.
-    const withoutComponents = (entry: { slots?: object[] }) => ({
+    // Компонент слота (DP9) и `make` колонки (DP20) definePlugin оборачивает
+    // каналами — слот сверяем без компонента, колонку — по полям и результату `make`.
+    const withoutComponents = (entry: {
+      slots?: object[]
+      column?: { make: (depth: number) => unknown }
+    }) => ({
       ...entry,
       slots: entry.slots?.map(
         ({ component: _component, ...rest }: any) => rest,
       ),
+      column: entry.column && {
+        ...entry.column,
+        make: undefined,
+        made: entry.column.make(1),
+      },
     })
     expect(withoutComponents(defined)).toMatchObject(withoutComponents(manual))
     expect(defined.slots?.[0].component).not.toBe(slot.component)
@@ -222,6 +232,40 @@ describe('definePlugin — типы слот-компонентов', () => {
         stateNotRequested,
         wrongSlot,
       ].every(factory => typeof factory === 'function'),
+    ).toBe(true)
+  })
+
+  it('DP19: компонент сервисной колонки, ждущий хуки не того типа, не компилируется', () => {
+    const column = { id: 'probe', side: 'leading' as const, order: 1 }
+    const PingHeader = (props: PluginHeaderProps<{ onPing: () => void }>) => {
+      props.hooks.onPing()
+      return null
+    }
+    const matching = definePlugin<Opts>()({
+      id: 'matching',
+      hooks: () => ({ onPing: () => {} }),
+      column: {
+        ...column,
+        cell: Ping,
+        header: PingHeader,
+        make: () => ({ id: 'probe' }),
+      },
+    })
+    const otherHooks = definePlugin<Opts>()({
+      id: 'otherHooks',
+      // @ts-expect-error — колонка ждёт onPing, плагин объявил onPong
+      hooks: () => ({ onPong: () => {} }),
+      column: { ...column, cell: Ping, make: () => ({ id: 'probe' }) },
+    })
+    // @ts-expect-error — у плагина нет хуков, заголовок колонки их ждёт
+    const noHooks = definePlugin<Opts>()({
+      id: 'noHooks',
+      column: { ...column, header: PingHeader, make: () => ({ id: 'probe' }) },
+    })
+    expect(
+      [matching, otherHooks, noHooks].every(
+        factory => typeof factory === 'function',
+      ),
     ).toBe(true)
   })
 })

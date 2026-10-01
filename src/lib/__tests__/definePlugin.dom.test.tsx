@@ -5,13 +5,14 @@
  * пары; обёртка компонента стабильна между вызовами фабрики, слот не перемонтируется.
  * Внешнее локальное состояние (DP8, DP17, DP18): значение из опции плагина
  * переносится в срез по новой ссылке, изменения изнутри приходят в `onChange`, смена
- * значения не пересобирает настройку.
+ * значения не пересобирает настройку. Сервисная колонка (DP20): `hooks` в ячейку
+ * подмешивает `definePlugin` по `id`.
  */
 import { act, createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, expect, it, vi } from 'vitest'
 
-import { definePlugin } from '../core/definePlugin'
+import { definePlugin, type PluginCellProps } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 
 ;(
@@ -67,6 +68,47 @@ describe('каналы плагина в слоте', () => {
     act(() => increment!())
     expect(seen.at(-1)).toEqual({ label: 'live', count: 1 })
     expect(table.atoms['plugin:probe'].get()).toBe(1)
+    act(() => root.unmount())
+  })
+})
+
+describe('каналы плагина в сервисной колонке', () => {
+  it('DP20: ячейка сервисной колонки получает живые hooks плагина без указания scope; обёртка стабильна между вызовами фабрики', () => {
+    const seen: string[] = []
+    const Cell = (props: PluginCellProps<{ label: string }>) => {
+      seen.push(props.hooks.label)
+      return null
+    }
+    const probe = definePlugin<Opts>()({
+      id: 'probe',
+      hooks: o => ({ label: o.label ?? 'default' }),
+      column: {
+        id: 'probe-column',
+        side: 'leading',
+        order: 1,
+        cell: Cell,
+        make: (_depth, { cell }) => ({ id: 'probe-column', cell }),
+      },
+    })
+    const cellOf = (entry: ReturnType<typeof probe>) =>
+      (entry.column!.make(1) as { cell: unknown }).cell
+    expect(cellOf(probe({ label: 'a' }))).toBe(cellOf(probe({ label: 'b' })))
+
+    const Host = () => {
+      const table = useCreateTable({
+        columns: [{ id: 'name', accessorKey: 'name' }],
+        data: [{ id: '1', name: 'A' }],
+        plugins: [probe({ label: 'live' })],
+      } as never) as any
+      const cell = table
+        .getRow('1')
+        .getAllCells()
+        .find((c: any) => c.column.id === 'probe-column')
+      return createElement(cell.column.columnDef.cell, cell.getContext())
+    }
+    const root = createRoot(document.createElement('div'))
+    act(() => root.render(<Host />))
+    expect(seen.at(-1)).toBe('live')
     act(() => root.unmount())
   })
 })

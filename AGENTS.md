@@ -414,9 +414,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
       Async: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
-    - _Автор плагина:_ модульные `definePlugin` (DP1, DP3, DP6–DP7, DP10–DP12, DP15 — запись,
-      типы слотов), `definePlugin.dom` (DP8–DP9, DP17–DP18 — каналы слота, внешнее локальное
-      состояние), `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
+    - _Автор плагина:_ модульные `definePlugin` (DP1, DP3, DP6–DP7, DP10–DP12, DP15, DP19 —
+      запись, типы слотов и сервисной колонки), `definePlugin.dom` (DP8–DP9, DP17–DP18, DP20 —
+      каналы слота и сервисной колонки, внешнее локальное состояние), `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
       владельцев `cellSlot`); визуальный `cell-editing` (CE1–CE6 — кнопка, редактор,
       состояние правки у приложения), [ADR 0028](docs/decisions/0028-define-plugin-authoring-api.md).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,

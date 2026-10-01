@@ -14,7 +14,7 @@ import type { RowSelectionHooks } from './types'
 export const HeadSelectionComponent = ({
   table,
   hooks,
-}: PluginHeaderProps<RowSelectionHooks>) => {
+}: PluginHeaderProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
 
   useSlice(table, 'rowSelection')
@@ -24,7 +24,7 @@ export const HeadSelectionComponent = ({
     return null
   }
 
-  const { isAllRowsSelected, onSelectAllRowsOnPage } = hooks
+  const { isAllRowsSelected = false, onSelectAllRowsOnPage } = hooks
 
   const selected = table.getIsAllPageRowsSelected()
   const indeterminate =
@@ -33,7 +33,7 @@ export const HeadSelectionComponent = ({
 
   const handleSelectAllPageRows = (event: unknown) => {
     table.getToggleAllPageRowsSelectedHandler()(event)
-    onSelectAllRowsOnPage(!table.getIsAllPageRowsSelected())
+    onSelectAllRowsOnPage?.(!table.getIsAllPageRowsSelected())
   }
 
   return (

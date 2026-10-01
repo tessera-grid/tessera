@@ -6,11 +6,16 @@
  * `features` → фрагмент фич v9, `state` → сгенерированная v9-фича локального слайса
  * под ключом `plugin:<id>`, `column`/`slots`/`setup` — как есть. Каналы в компонент — `./channels`.
  */
+import type { ReactNode } from 'react'
 import { makeStateUpdater } from '@tanstack/react-table'
 
-import type { TableFeature } from '../../types'
+import type { ColumnDef, TableFeature } from '../../types'
 import type { ServiceColumn } from '../createColumns'
-import type { PluginSlot } from '../createSlots'
+import type {
+  CellComponentProps,
+  HeaderComponentProps,
+  PluginSlot,
+} from '../createSlots'
 import type {
   PluginConfiguration,
   PluginReconcileContext,
@@ -29,6 +34,8 @@ import {
   pluginStateKey,
   stateChangeOption,
   withPluginChannels,
+  type PluginCellProps,
+  type PluginHeaderProps,
   type PluginSlotDecl,
 } from './channels'
 
@@ -95,6 +102,44 @@ const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   return out as Partial<T>
 }
 
+/** Компоненты сервисной колонки с подмешанными каналами плагина — для `make`. */
+export interface ServiceColumnParts {
+  cell?: (ctx: CellComponentProps) => ReactNode
+  header?: (ctx: HeaderComponentProps) => ReactNode
+}
+
+/**
+ * Сервисная колонка в `definePlugin`: `cell`/`header` типизированы по `hooks`
+ * плагина и получают их без scope-строки (ADR 0028, DP19, DP20).
+ */
+export interface PluginServiceColumn<THooks> extends Omit<
+  ServiceColumn,
+  'make' | 'pluginId'
+> {
+  cell?: (props: PluginCellProps<THooks>) => ReactNode
+  header?: (props: PluginHeaderProps<THooks>) => ReactNode
+  make: (depth: number, parts: ServiceColumnParts) => ColumnDef<any, any, any>
+}
+
+const toServiceColumn = (
+  { cell, header, make, ...column }: PluginServiceColumn<unknown>,
+  id: string,
+): ServiceColumn => {
+  const parts: ServiceColumnParts = {
+    cell: cell && (withPluginChannels(cell as never, id, false) as never),
+    header: header && (withPluginChannels(header as never, id, false) as never),
+  }
+  const byDepth = new Map<number, ColumnDef<any, any, any>>()
+  return {
+    ...column,
+    make: depth => {
+      const made = byDepth.get(depth) ?? make(depth, parts)
+      byDepth.set(depth, made)
+      return made
+    },
+  }
+}
+
 interface DefinePluginConfig<
   TOptions extends { enabled?: boolean },
   TFeatures extends object,
@@ -142,8 +187,8 @@ interface DefinePluginConfig<
     value: Extract<keyof TOptions, string>
     onChange?: Extract<keyof TOptions, string>
   }
-  /** Сервисная колонка плагина. */
-  column?: ServiceColumn
+  /** Сервисная колонка плагина; `cell`/`header` получают его `hooks` (DP19). */
+  column?: PluginServiceColumn<THooks>
   /**
    * Декларативные слоты плагина; функция — набор слотов зависит от аргументов фабрики.
    * Компонент получает каналы плагина (`hooks`, локальный `state`) с типами из
@@ -229,6 +274,9 @@ export const definePlugin = <
   >(
     config: DefinePluginConfig<TOptions, TFeatures, TResolved, THooks, TState>,
   ) => {
+    const column =
+      config.column &&
+      toServiceColumn(config.column as PluginServiceColumn<unknown>, config.id)
     return (
       opts: TOptions = {} as TOptions,
     ): TesseraFeatureEntry<TFeatures> => {
@@ -314,8 +362,8 @@ export const definePlugin = <
       if (config.hooks) {
         entry.hooks = { [config.id]: stripUndefined(config.hooks(opts)) }
       }
-      if (config.column) {
-        entry.column = config.column
+      if (column) {
+        entry.column = column
       }
       if (config.slotActions) {
         entry.slotActions = config.slotActions
