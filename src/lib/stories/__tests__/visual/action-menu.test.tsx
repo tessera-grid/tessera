@@ -295,4 +295,37 @@ describe('Action menu — row', () => {
 
     await closeMenu()
   })
+
+  test('AM26: row-кебаб не гаснет, пока меню закрывается и фокус возвращается на него', async () => {
+    const { container } = await renderRowMenu()
+    const cells = () =>
+      Array.from(container.querySelectorAll<HTMLElement>(ACTION_CELL))
+    const kebab = () => cells()[0].querySelector<HTMLElement>(KEBAB)!
+    const opacity = () =>
+      Number(getComputedStyle(kebab().closest('.row__button')!).opacity)
+
+    await userEvent.click(kebab())
+    await expect.poll(() => menuItems().length).toBeGreaterThan(0)
+    // Указатель — вне строки: в другой строке под ним оказалось бы само меню.
+    await userEvent.hover(dataHeadCells(container)[1])
+    await expect.poll(opacity).toBe(1)
+
+    // Каждый кадр от Escape до возврата фокуса на кебаб и ещё полсекунды после.
+    const samples: number[] = []
+    let sampling = true
+    const sample = () => {
+      samples.push(opacity())
+      if (sampling) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => document.activeElement).toBe(kebab())
+    await new Promise(resolve => setTimeout(resolve, 500))
+    sampling = false
+
+    expect(Math.min(...samples)).toBe(1)
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    await parkPointer()
+    await expect.poll(opacity).toBe(0)
+  })
 })

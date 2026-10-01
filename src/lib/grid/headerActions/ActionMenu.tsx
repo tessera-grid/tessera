@@ -34,7 +34,7 @@ export const ActionMenu = ({
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
   // Закрытое, но ещё не завершившее закрытие меню: фокус на кебаб Base UI возвращает
-  // в конце — до него кебаб держится видимым (AM25).
+  // в конце — до него кебаб держится видимым (AM25, AM26).
   const [settledOpen, setSettledOpen] = useState(open)
 
   const trigger = (
@@ -54,7 +54,12 @@ export const ActionMenu = ({
       onOpenChangeComplete={setSettledOpen}
     >
       {variant === 'row' ? (
-        <div className={clsx('row__button', !open && 'row__button--hidden')}>
+        <div
+          className={clsx(
+            'row__button',
+            !(open || settledOpen) && 'row__button--hidden',
+          )}
+        >
           {trigger}
         </div>
       ) : (
