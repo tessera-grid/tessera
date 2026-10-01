@@ -4,6 +4,7 @@
 // позволяет открыть меню сразу после догрузки чанка, если по плейсхолдеру уже
 // кликнули.
 import { Menu } from '@base-ui/react/menu'
+import { useState } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
@@ -32,6 +33,9 @@ export const ActionMenu = ({
 }: ActionMenuProps) => {
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
+  // Закрытое, но ещё не завершившее закрытие меню: фокус на кебаб Base UI возвращает
+  // в конце — до него кебаб держится видимым (AM25).
+  const [settledOpen, setSettledOpen] = useState(open)
 
   const trigger = (
     <Menu.Trigger
@@ -44,17 +48,22 @@ export const ActionMenu = ({
   )
 
   return (
-    <Menu.Root open={open} onOpenChange={onOpenChange}>
+    <Menu.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={setSettledOpen}
+    >
       {variant === 'row' ? (
         <div className={clsx('row__button', !open && 'row__button--hidden')}>
           {trigger}
         </div>
       ) : (
         // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
-        // открыто, `data-button-active` держит кебаб видимым (ADR 0024, AM24).
+        // открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
+        // AM24, AM25).
         <div
           className="cell__button cell__button--hidden"
-          data-button-active={open}
+          data-button-active={open || settledOpen}
         >
           {trigger}
         </div>
