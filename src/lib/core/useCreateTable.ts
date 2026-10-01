@@ -20,7 +20,6 @@ import type {
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
 import { resolveHooks } from './createHooks'
-import { shallowEqual } from './reactivity'
 import { injectServiceColumns } from './createColumns'
 import {
   buildTesseraFeatures,
@@ -225,22 +224,12 @@ export const useCreateTable = <
     token: narrowToken,
   })
 
-  // Стабильная ссылка на контролируемый state: потребитель (стори) отдаёт свежий
-  // объект state каждый рендер, а v9 useTable публикует его в store в layout-эффекте
-  // (table_publishExternalState). При новой ссылке-но-том-же-контенте это давало
-  // бесконечный ре-рендер (единый @tanstack/store после свапа). Держим прежнюю
-  // ссылку, пока срезы shallow-равны.
-  const mergedState = {
+  const controlledState = {
     ...restState,
     ...effective.state,
     columnPinning: effective.state.columnPinning ?? displayedPinning,
     columnSizing: displayedSizing,
   }
-  const stateRef = useRef(mergedState)
-  if (!shallowEqual(stateRef.current, mergedState)) {
-    stateRef.current = mergedState
-  }
-  const stableState = stateRef.current
 
   const options = {
     features,
@@ -257,7 +246,7 @@ export const useCreateTable = <
     ...folded.options,
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
-    state: stableState,
+    state: controlledState,
     onColumnPinningChange,
     onColumnSizingChange,
     onColumnAutoSizingChange,
