@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Эффективное состояние при сужении параметров (ADR 0039, §4, RX9–RX10, RX12–RX13):
+ * Эффективное состояние при сужении параметров (ADR 0039, §4, RX9–RX10, RX12–RX13, RX25):
  * TanStack видит «сохранённое ∩ допустимое», сохранённое не переписывается —
  * вернули параметр, вернулось прежнее. Смена смысла состояния — сброс.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -156,5 +156,48 @@ describe('эффективное состояние при сужении', () =
 
     mount(<Host subRows />)
     expect(captured.options.state.rowSelection).toEqual({})
+  })
+
+  it('RX25: сужение пересчитывается при смене данных или колонок, даже когда сохранённый срез тот же', () => {
+    // Сохранённое раскрытие — одна ссылка: меняются только данные.
+    const expanded = { p: true, c: true }
+    // Колонки — одна ссылка: потребитель мемоизирует их (AGENTS.md, §1).
+    const columns = [{ id: 'name', accessorKey: 'name' }]
+    const ExpandHost = ({ data }: { data: typeof tree }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        plugins: [rowExpanding({ maxDepth: 1 })],
+        state: { expanded },
+      })
+      return null
+    }
+    const withoutGrandchild: typeof tree = [{ id: 'p', name: 'P', subRows: [] }]
+    mount(<ExpandHost data={withoutGrandchild} />)
+    expect(captured.getRowModel().rows).toHaveLength(1)
+
+    // `c` появилась на глубине 1 — её раскрытие сужается, внук не показан.
+    mount(<ExpandHost data={tree} />)
+    expect(
+      captured.getRowModel().rows.map((row: { id: string }) => row.id),
+    ).toEqual(['p', 'c'])
+
+    // Закреплённый лист `name` уходит под группу — при leafPinning выкл он не закреплён.
+    const ColumnsHost = ({ columns }: { columns: unknown[] }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data: flatData,
+        plugins: [columnPinning({ leafPinning: false })],
+      })
+      return null
+    }
+    act(() => root?.unmount())
+    root = undefined
+    mount(<ColumnsHost columns={flatColumns} />)
+    act(() => captured.getColumn('name').pin('start'))
+    expect(captured.getColumn('name').getIsPinned()).toBe('start')
+
+    mount(<ColumnsHost columns={nestedColumns} />)
+    expect(captured.getColumn('name').getIsPinned()).toBe(false)
   })
 })

@@ -30,6 +30,27 @@ export interface ServiceColumn {
   }
 }
 
+/**
+ * Структура колонок одной строкой: `id` и вложенность групп. Новый массив с той же
+ * структурой (инлайн-колонки) даёт ту же подпись.
+ */
+export const getColumnsSignature = (columns: readonly unknown[]): string =>
+  columns
+    .map(column => {
+      const {
+        id,
+        accessorKey,
+        columns: children,
+      } = column as {
+        id?: string
+        accessorKey?: string
+        columns?: unknown[]
+      }
+      const key = id ?? accessorKey ?? ''
+      return children ? `${key}(${getColumnsSignature(children)})` : key
+    })
+    .join(',')
+
 /** Максимальная глубина вложенности шапки (число уровней). */
 export const getMaxColumnsDepth = (
   columns: ColumnDef<any, any, any>[],

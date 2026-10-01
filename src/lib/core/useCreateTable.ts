@@ -20,7 +20,7 @@ import type {
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
 import { resolveHooks } from './createHooks'
-import { injectServiceColumns } from './createColumns'
+import { getColumnsSignature, injectServiceColumns } from './createColumns'
 import {
   buildTesseraFeatures,
   foldEntries,
@@ -205,14 +205,20 @@ export const useCreateTable = <
 
   // Эффективное состояние при сужении параметров (ADR 0039, §4): TanStack видит
   // «сохранённое ∩ допустимое», сохранённое остаётся нетронутым. Сужению отдаётся
-  // экземпляр предыдущего рендера, только если его данные совпадают с текущими (строки
-  // уже построены); иначе оно откладывается на повторный рендер.
+  // экземпляр предыдущего рендера, только если его данные и структура колонок совпадают
+  // с текущими (строки и колонки уже построены); иначе оно откладывается на повторный
+  // рендер.
   const tableRef = useRef<{
-    options: { data: unknown }
+    options: { data: unknown; columns: readonly unknown[] }
     atoms: Record<string, { get: () => unknown }>
   }>(null)
   const previous = tableRef.current
-  const freshTable = previous?.options.data === data ? previous : null
+  const columnsSignature = getColumnsSignature(injectedColumns)
+  const freshTable =
+    previous?.options.data === data &&
+    getColumnsSignature(previous.options.columns) === columnsSignature
+      ? previous
+      : null
   const effective = useEffectiveState({
     narrow: folded.narrow,
     owned: { columnPinning: displayedPinning },
@@ -220,7 +226,7 @@ export const useCreateTable = <
     handlers: restHandlers,
     table: freshTable,
     getAtoms: () => tableRef.current?.atoms,
-    inputs: [data, injectedColumns],
+    inputs: [data, columnsSignature],
   })
 
   const controlledState = {

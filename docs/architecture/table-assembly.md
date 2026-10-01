@@ -35,7 +35,7 @@ flowchart TB
     CTRL["контролируемые срезы:<br/>columnPinning (пиннинг сервисных колонок)<br/>columnSizing (ресайз + авто-слайс)"]
     HK["useCreateHooks(hooks)"]
 
-    RT["useTable(options)<br/>features, columns: injected, data<br/>...folded.options, state (стабилизирован ref+shallowEqual)<br/>hooks, slots, slotActions, actionMenu"]
+    RT["useTable(options)<br/>features, columns: injected, data<br/>...folded.options, state<br/>hooks, slots, slotActions, actionMenu"]
 
     OUT["инстанс table"]
 
@@ -67,9 +67,9 @@ id, распознаются `column.getIsActionsColumn()` (метод от `com
 
 Всё остальное `state`/`handlers` потребителя (включая кастомные слайсы и `onXChange`
 вроде `onExpandedChange`/`onRowSelectionChange`/`onGroupingChange`/`onRowOrderChange`)
-пробрасывается в `useTable` **как есть**. Ссылка на итоговый `state` стабилизируется
-через `ref` + `shallowEqual` (иначе свежий объект каждый рендер даёт бесконечный
-ре-рендер, см. [reactivity.md](reactivity.md)).
+пробрасывается в `useTable` **как есть**. Новый объект `state` с теми же срезами
+перерисовок не даёт: `useTable` публикует его по срезам со сравнением `shallow`
+(см. [reactivity.md](reactivity.md)).
 
 ```mermaid
 flowchart LR
@@ -79,7 +79,7 @@ flowchart LR
     end
     P --> CTRL["перехват:<br/>сервисный пиннинг + авто-слайс"]
     R --> PASS["pass-through в useTable"]
-    CTRL --> MERGE["options.state (стабилизирован ref+shallowEqual)"]
+    CTRL --> MERGE["options.state"]
     PASS --> MERGE
 ```
 
