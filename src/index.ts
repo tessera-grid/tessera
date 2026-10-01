@@ -49,15 +49,11 @@ export type {
   PluginInertReason,
 } from './lib/core/pluginDiagnostics'
 
-// Авторский API плагина: definePlugin + инъекторы каналов (hooks/state) +
-// типы пропсов компонентов. Каналы приходят в компонент пропсами, без кастов.
+// Авторский API плагина: definePlugin + типы пропсов компонентов. Каналы (hooks/state)
+// definePlugin подмешивает в компонент пропсами, без кастов.
 export {
   definePlugin,
   readPluginHooks,
-  injectCellHooks,
-  injectHeaderHooks,
-  injectCellState,
-  injectCellOwner,
   type PluginCellProps,
   type PluginHeaderProps,
   type PluginCellStateProps,

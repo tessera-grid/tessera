@@ -654,10 +654,10 @@ export const myPlugin = definePlugin<MyPluginOptions>()({
 > (`PluginCellProps<THooks>` / `PluginHeaderProps<THooks>`, а для локального состояния —
 > `PluginCellStateProps<THooks, TState>`) и рендерятся часто: не кладите в них тяжёлые
 > вычисления, оборачивайте в `memo` и подписывайтесь точечно (`useSlice` / `useTableState`).
-> Хуки и state приходят пропсами через обёртки `injectCellHooks` / `injectHeaderHooks` /
-> `injectCellState` / `injectCellOwner` — не читайте их кастами `table.getHooks() as …`.
-> Владелец ячейки (`cellSlot`) оборачивается `injectCellOwner` и получает пропс
-> `content` (тип `PluginCellOwnerProps<THooks, TState>`).
+> Хуки и state подмешивает `definePlugin`: компонент слота или сервисной колонки
+> получает их пропсами с типами из деклараций плагина — не читайте их кастами
+> `table.getHooks() as …`. Пара `state` приходит слоту с `state: true`. Владелец ячейки
+> (`cellSlot`) получает ещё пропс `content` (тип `PluginCellOwnerProps<THooks, TState>`).
 
 <a name="custom_plugin_example_1" id="custom_plugin_example_1"></a>
 
@@ -762,13 +762,13 @@ export interface RowDownloadHooks {
 }
 ```
 
-Объявим колбэк в `hooks` фабрики (как встроенные плагины) и доставим его компоненту
-пропсом через обёртку `injectCellHooks`:
+Объявим колбэк в `hooks` фабрики (как встроенные плагины) — компонент слота получит
+его пропсом `hooks`:
 
 ```tsx
 // rowDownloadAction.tsx
 
-import { definePlugin, injectCellHooks } from '@mstrvtt/tessera'
+import { definePlugin } from '@mstrvtt/tessera'
 import { RowDownloadComponent } from './RowDownloadComponent'
 import type { RowDownloadHooks } from './types'
 
@@ -778,7 +778,8 @@ export interface RowDownloadOptions {
 }
 
 // hooks эмитит слайс колбэков (undefined-ключи отбрасываются, дефолт — no-op);
-// injectCellHooks подмешивает его компоненту пропсом `hooks` (scope = id плагина).
+// definePlugin подмешивает его компоненту пропсом `hooks`. Компонент, ждущий другие
+// хуки, — ошибка компиляции.
 export const rowDownloadAction = definePlugin<RowDownloadOptions>()({
   id: 'rowDownloadAction',
   hooks: o => ({ onDownload: o.onDownload ?? (() => {}) }),
@@ -787,7 +788,7 @@ export const rowDownloadAction = definePlugin<RowDownloadOptions>()({
       id: 'rowDownloadAction',
       slot: 'actionRowSlot',
       order: 0,
-      component: injectCellHooks(RowDownloadComponent, 'rowDownloadAction'),
+      component: RowDownloadComponent,
     },
   ],
 })
@@ -1135,7 +1136,7 @@ columnHelper.accessor(row => row[field.name], {
 
 ```tsx
 // myLocalPlugin.tsx
-import { definePlugin, injectCellState } from '@mstrvtt/tessera'
+import { definePlugin } from '@mstrvtt/tessera'
 import { MyCell } from './MyCell'
 
 interface MyOptions {
@@ -1152,8 +1153,9 @@ export const myLocalPlugin = definePlugin<MyOptions>()({
       id: 'myLocalPlugin',
       slot: 'rightCellSlot',
       order: 'last',
-      // injectCellState доставляет `state: [value, setter]` (реактивно) + hooks пропсом.
-      component: injectCellState(MyCell, 'myLocalPlugin'),
+      // state: true — слот получает `state: [value, setter]` (реактивно) + hooks пропсами.
+      state: true,
+      component: MyCell,
     },
   ],
 })
@@ -1167,7 +1169,7 @@ import { type PluginCellStateProps } from '@mstrvtt/tessera'
 export const MyCell = ({
   row,
   state: [active, setActive],
-}: PluginCellStateProps<never, string | null>) => (
+}: PluginCellStateProps<Record<never, never>, string | null>) => (
   <button onClick={() => setActive(active === row.id ? null : row.id)}>
     {active === row.id ? 'on' : 'off'}
   </button>
@@ -1183,7 +1185,7 @@ export const MyCell = ({
 Обычные слоты (`leftCellSlot` / `rightCellSlot`) **добавляются** рядом с собственным
 рендером ячейки — не замещают его. Когда плагину нужно в какой-то момент **заменить**
 контент ячейки (инлайн-редактор, свой просмотрщик), объявите слот-владельца
-`slot: 'cellSlot'` и оберните компонент в `injectCellOwner`. Владелец получает
+`slot: 'cellSlot'` (с `state: true`, если владельцу нужно локальное состояние). Владелец получает
 собственный рендер ячейки пропсом `content` (`PluginCellOwnerProps<THooks, TState>`) и
 рантайм решает, отдать его как есть или заместить своим UI. Это **единственный** канал,
 подавляющий рендер ячейки; в сервисных колонках слоты не рендерятся, поэтому владелец
@@ -1232,15 +1234,14 @@ cellEditing({
 Свой владелец ячейки в собственном плагине:
 
 ```tsx
-import { definePlugin, injectCellOwner } from '@mstrvtt/tessera'
-import { type PluginCellOwnerProps } from '@mstrvtt/tessera'
+import { definePlugin, type PluginCellOwnerProps } from '@mstrvtt/tessera'
 
 // content — собственный рендер ячейки; показываем его или замещаем своим UI.
 const MyOwner = ({
   content,
   state: [active, setActive],
   row,
-}: PluginCellOwnerProps<never, string | null>) =>
+}: PluginCellOwnerProps<Record<never, never>, string | null>) =>
   active === row.id ? <input autoFocus /> : <>{content}</>
 
 export const myOwner = definePlugin<{ enabled?: boolean }>()({
@@ -1250,7 +1251,8 @@ export const myOwner = definePlugin<{ enabled?: boolean }>()({
     {
       id: 'myOwner',
       slot: 'cellSlot',
-      component: injectCellOwner(MyOwner, 'myOwner'),
+      state: true,
+      component: MyOwner,
     },
   ],
 })
@@ -1324,7 +1326,7 @@ export const SwitchActionComponent = memo(
 SwitchActionComponent.displayName = 'SwitchActionComponent'
 ```
 
-При необходимости в этот плагин можно так же добавить кастомные хуки и состояния, как мы это делали в предыдущих гайдах.
+При необходимости в этот плагин можно так же добавить кастомные хуки и состояния, как мы это делали в предыдущих гайдах. Компонент, которому нужны хуки плагина, передайте в `column.cell` / `column.header`: `definePlugin` подмешает `hooks` пропсом и отдаст обёрнутые компоненты вторым аргументом `make(depth, { cell, header })`.
 
 Подключим плагин:
 

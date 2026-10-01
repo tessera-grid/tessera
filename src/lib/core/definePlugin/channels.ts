@@ -1,8 +1,7 @@
 /**
- * Каналы плагина в компонент: `hooks` — пропсом через
- * `injectCellHooks`/`injectHeaderHooks`; локальный `state` — пропсом
- * `[value, setter]` через `injectCellState`/`injectCellOwner`. Компонент-facing
- * конфиг (напр. предикат `canEdit`) кладут в `hooks` (живой слайс).
+ * Каналы плагина в компонент: `hooks` и локальный `state: [value, setter]` —
+ * пропсами; подмешивает `definePlugin` по `id` плагина (`withPluginChannels`).
+ * Компонент-facing конфиг (напр. предикат `canEdit`) кладут в `hooks` (живой слайс).
  */
 import { createElement, type ReactNode } from 'react'
 
@@ -39,34 +38,6 @@ export const readPluginHooks = <THooks>(
   const all = (table.getHooks() ?? {}) as Record<string, unknown>
   return (all[scope] ?? {}) as THooks
 }
-
-/**
- * Обёртка колонки/слота: подмешивает hook-слайс плагина (по `scope`) в компонент
- * ячейки типизированным пропсом `hooks`. Компонент — чистая функция `PluginCellProps`,
- * без кастов и импорта плагина.
- */
-export const injectCellHooks =
-  <THooks>(
-    Component: (props: PluginCellProps<THooks>) => ReactNode,
-    scope: string,
-  ) =>
-  (ctx: CellComponentProps): ReactNode =>
-    createElement(Component, {
-      ...ctx,
-      hooks: readPluginHooks<THooks>(ctx.table, scope),
-    })
-
-/** Аналог `injectCellHooks` для слота/колонки заголовка (`PluginHeaderProps`). */
-export const injectHeaderHooks =
-  <THooks>(
-    Component: (props: PluginHeaderProps<THooks>) => ReactNode,
-    scope: string,
-  ) =>
-  (ctx: HeaderComponentProps): ReactNode =>
-    createElement(Component, {
-      ...ctx,
-      hooks: readPluginHooks<THooks>(ctx.table, scope),
-    })
 
 /**
  * Пропсы компонента ячейки плагина с ЛОКАЛЬНЫМ состоянием: hooks-слайс + пара
@@ -158,56 +129,6 @@ export const writePluginAtom = (
   }
   ;(t.options?.atoms?.[key] ?? t.baseAtoms?.[key])?.set(next)
 }
-
-/**
- * Обёртка колонки/слота для плагина с локальным состоянием: реактивно читает слайс
- * `id` (`useSlice`) и подмешивает `state: [value, setter]` + hooks в компонент.
- * Рендерится как компонент (RenderSlot/FlexRender → createElement), поэтому вызов
- * хука внутри легален.
- */
-export const injectCellState =
-  <THooks, TState>(
-    Component: (props: PluginCellStateProps<THooks, TState>) => ReactNode,
-    id: string,
-  ) =>
-  (ctx: CellComponentProps): ReactNode => {
-    const value = useSlice(
-      ctx.table as never,
-      pluginStateKey(id) as never,
-    ) as TState
-    const setter = (next: TState) => setPluginState(ctx.table, id, next)
-    return createElement(Component, {
-      ...ctx,
-      hooks: readPluginHooks<THooks>(ctx.table, id),
-      state: [value, setter],
-    })
-  }
-
-/**
- * Обёртка слота-владельца ячейки (`cellSlot`) с локальным состоянием: как
- * `injectCellState`, но прокидывает ещё `content` (собственный рендер ячейки,
- * приходит от `RenderCellSlot`) в компонент типизированным пропсом.
- */
-export const injectCellOwner =
-  <THooks, TState>(
-    Component: (props: PluginCellOwnerProps<THooks, TState>) => ReactNode,
-    id: string,
-  ) =>
-  // Тип параметра — стоковый CellComponentProps (совместимость с сигнатурой слота);
-  // `content` кладёт RenderCellSlot в рантайме (для cellSlot он всегда есть).
-  (ctx: CellComponentProps): ReactNode => {
-    const value = useSlice(
-      ctx.table as never,
-      pluginStateKey(id) as never,
-    ) as TState
-    const setter = (next: TState) => setPluginState(ctx.table, id, next)
-    return createElement(Component, {
-      ...ctx,
-      content: (ctx as { content?: ReactNode }).content,
-      hooks: readPluginHooks<THooks>(ctx.table, id),
-      state: [value, setter],
-    })
-  }
 
 type SlotBase<TName extends string> = Omit<
   RegisterSlotParams<object>,

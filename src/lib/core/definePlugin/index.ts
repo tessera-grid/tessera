@@ -41,10 +41,6 @@ import {
 
 export {
   readPluginHooks,
-  injectCellHooks,
-  injectHeaderHooks,
-  injectCellState,
-  injectCellOwner,
   setPluginState,
   pluginStateKey,
   type PluginCellProps,
@@ -57,7 +53,7 @@ export {
 /**
  * Минимальная v9-фича локального состояния плагина: seed слайса под ключом
  * `pluginStateKey(id)` из дефолта `getDefault()`. Store сам создаёт атом; чтение/запись —
- * через инъектированный пропс `state` (`injectCellState`), не через общий `getState`.
+ * через пропс `state` слота с `state: true`, не через общий `getState`.
  */
 const makeLocalStateFeature = (
   id: string,
