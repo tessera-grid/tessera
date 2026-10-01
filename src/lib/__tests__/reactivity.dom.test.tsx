@@ -74,7 +74,7 @@ afterEach(() => {
 })
 
 describe('Гранулярные ре-рендеры на table.atoms', () => {
-  it('смена sorting перерисовывает только подписчика sorting', () => {
+  it('ST1: useSlice перерисовывает подписчика своего среза и не трогает подписчика чужого', () => {
     const table = makeTable()
     act(() => {
       root.render(
@@ -85,31 +85,15 @@ describe('Гранулярные ре-рендеры на table.atoms', () => {
       )
     })
 
-    const sortingBase = sortingRenders
-    const visibilityBase = visibilityRenders
-
+    let sortingBase = sortingRenders
+    let visibilityBase = visibilityRenders
     act(() => table.setSorting([{ id: 'name', desc: false }]))
-
     expect(sortingRenders).toBeGreaterThan(sortingBase)
     expect(visibilityRenders).toBe(visibilityBase)
-  })
 
-  it('смена columnVisibility перерисовывает только подписчика visibility', () => {
-    const table = makeTable()
-    act(() => {
-      root.render(
-        <>
-          <SortingView table={table} />
-          <VisibilityView table={table} />
-        </>,
-      )
-    })
-
-    const sortingBase = sortingRenders
-    const visibilityBase = visibilityRenders
-
+    sortingBase = sortingRenders
+    visibilityBase = visibilityRenders
     act(() => table.setColumnVisibility({ name: false }))
-
     expect(visibilityRenders).toBeGreaterThan(visibilityBase)
     expect(sortingRenders).toBe(sortingBase)
   })

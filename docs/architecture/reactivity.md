@@ -36,7 +36,7 @@ flowchart TB
 
 - **`useSlice(table, key)`** — подписка на ОДИН атом `table.atoms[key]` (самая узкая;
   прямая замена `useSubscribeStore(() => [table.getState().<key>…])`). Перерисовка
-  только подписчика среза — `reactivity.dom.test.tsx` (тесты без ID требования).
+  только подписчика среза — [ADR 0026](../decisions/0026-migrate-to-tanstack-v9.md), ST1.
 - **`useTableState(table, selector)`** — проекция из общего `table.store` с
   `shallowEqual`-сравнением (для компонентов, которым нужно несколько срезов сразу).
 - **`useSliceProjection(table, key, selector)`** — проекция ОДНОГО среза: ре-рендер

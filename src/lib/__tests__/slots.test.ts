@@ -40,7 +40,7 @@ describe('createSlots: registerSlotInto', () => {
     )
   })
 
-  it('дедуплицирует по id в пределах слота (обновление на месте)', () => {
+  it('IV12: повторная регистрация с тем же id обновляет слот на месте', () => {
     const slots = createEmptyRenderSlots()
     registerSlotInto(slots, {
       id: 'a',

@@ -156,7 +156,7 @@ slots: [
 Регистрация слота (`registerSlotInto`, `core/createSlots`) **дедуплицирует по `id`**:
 если id уже существует в слоте, обновляет `visible/render/component` на месте, иначе
 вставляет (по `order`) или пушит. Так что повторная регистрация безопасна и
-идемпотентна (`slots.test.ts`, тест без ID требования).
+идемпотентна ([ADR 0010](../decisions/0010-invert-core-plugins-registry.md), IV12).
 
 ```mermaid
 flowchart LR

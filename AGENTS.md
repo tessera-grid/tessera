@@ -331,7 +331,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Ядро:_ `core-structure`, `core-sizing`, `core-roles`, `core-visual-states`,
       `core-scroll` (R1–R19, [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) —
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
-      `service-columns` (IV6/IV8/IV10 — сервисные колонки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
+      `service-columns` (IV6/IV8/IV10 — сервисные колонки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md));
+      модульные `slots` (IV12 — повторная регистрация слота по `id` на месте) и
+      `reactivity.dom` (ST1 — перерисовка только подписчика среза,
+      [ADR 0026](docs/decisions/0026-migrate-to-tanstack-v9.md)).
     - _Виртуализация:_ `virtualization` (V1–V11).
     - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19),
       `column-pinning-right` (CP20–CP27) — [ADR 0011](docs/decisions/0011-column-pinning.md),
