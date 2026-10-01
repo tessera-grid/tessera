@@ -213,7 +213,6 @@ export const useCreateTable = <
   }>(null)
   const previous = tableRef.current
   const freshTable = previous?.options.data === data ? previous : null
-  const narrowToken = useMemo(() => ({}), [data, injectedColumns])
   const effective = useEffectiveState({
     narrow: folded.narrow,
     owned: { columnPinning: displayedPinning },
@@ -221,7 +220,7 @@ export const useCreateTable = <
     handlers: restHandlers,
     table: freshTable,
     getAtoms: () => tableRef.current?.atoms,
-    token: narrowToken,
+    inputs: [data, injectedColumns],
   })
 
   const controlledState = {

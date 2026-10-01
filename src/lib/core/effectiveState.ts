@@ -45,9 +45,12 @@ export const applyNarrow = (
 interface CacheEntry {
   raw: unknown
   narrows: readonly NarrowState[]
-  token: unknown
+  inputs: readonly unknown[]
   result: unknown
 }
+
+const sameInputs = (a: readonly unknown[], b: readonly unknown[]) =>
+  a.length === b.length && a.every((value, index) => value === b[index])
 
 interface EffectiveStateParams {
   narrow: NarrowMap
@@ -62,8 +65,8 @@ interface EffectiveStateParams {
   table: unknown
   /** Атомы любого прежнего экземпляра — источник сохранённого значения. */
   getAtoms: () => Record<string, { get: () => unknown }> | undefined
-  /** Меняется вместе с данными и колонками: сужение по строкам пересчитывается. */
-  token: unknown
+  /** Данные и колонки: при смене любого сужение по строкам пересчитывается. */
+  inputs: readonly unknown[]
 }
 
 export const useEffectiveState = ({
@@ -73,11 +76,11 @@ export const useEffectiveState = ({
   handlers,
   table,
   getAtoms,
-  token,
+  inputs,
 }: EffectiveStateParams) => {
   const [inner, setInner] = useState<Record<string, unknown>>({})
   const cache = useRef(new Map<string, CacheEntry>())
-  const [, forceRender] = useState(0)
+  const [tick, forceRender] = useState(0)
   const forced = useRef(0)
   let pending = false
 
@@ -121,7 +124,7 @@ export const useEffectiveState = ({
       cached &&
       cached.raw === raw &&
       cached.narrows === narrow[key] &&
-      cached.token === token
+      sameInputs(cached.inputs, inputs)
     ) {
       result = cached.result
     } else {
@@ -130,15 +133,16 @@ export const useEffectiveState = ({
         pending = true
         result = raw
       } else {
-        cache.current.set(key, { raw, narrows: narrow[key], token, result })
+        cache.current.set(key, { raw, narrows: narrow[key], inputs, result })
       }
     }
     stateOut[key] = result
   }
 
   // Сужение, которому нужна таблица, до её обновления не посчитать — пересчёт после
-  // коммита. Предел — если данные новые каждый рендер (не мемоизированы), таблица
-  // никогда не «свежая», и без предела это был бы бесконечный цикл.
+  // коммита; `tick` перезапускает проверку после каждой принудительной перерисовки.
+  // Предел — если данные новые каждый рендер (не мемоизированы), таблица никогда не
+  // «свежая», и без предела это был бы бесконечный цикл.
   useLayoutEffect(() => {
     if (!pending) {
       forced.current = 0
@@ -146,9 +150,9 @@ export const useEffectiveState = ({
     }
     if (forced.current < MAX_FORCED_RENDERS) {
       forced.current += 1
-      forceRender(tick => tick + 1)
+      forceRender(previous => previous + 1)
     }
-  })
+  }, [pending, tick])
 
   return { state: stateOut, handlers: handlersOut }
 }
