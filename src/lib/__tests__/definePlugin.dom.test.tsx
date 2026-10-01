@@ -3,10 +3,13 @@
  * Каналы плагина в слот-компоненте (ADR 0028, DP9): `hooks` и — у слота с
  * `state: true` — пара локального `state` приходят пропсами, запись — сеттером из
  * пары; обёртка компонента стабильна между вызовами фабрики, слот не перемонтируется.
+ * Внешнее локальное состояние (DP8, DP17, DP18): значение из опции плагина
+ * переносится в срез по новой ссылке, изменения изнутри приходят в `onChange`, смена
+ * значения не пересобирает настройку.
  */
 import { act, createElement } from 'react'
 import { createRoot } from 'react-dom/client'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { definePlugin } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
@@ -65,5 +68,103 @@ describe('каналы плагина в слоте', () => {
     expect(seen.at(-1)).toEqual({ label: 'live', count: 1 })
     expect(table.atoms['plugin:probe'].get()).toBe(1)
     act(() => root.unmount())
+  })
+})
+
+interface CounterOpts {
+  enabled?: boolean
+  count?: number
+  onCountChange?: (next: number) => void
+  label?: string
+}
+
+describe('внешнее локальное состояние', () => {
+  const setup = vi.fn()
+  let write: ((next: number) => void) | undefined
+  const counter = definePlugin<CounterOpts>()({
+    id: 'counter',
+    state: () => 0,
+    controlled: { value: 'count', onChange: 'onCountChange' },
+    slots: o => [
+      {
+        id: `counter-${o.label ?? ''}`,
+        slot: 'statusBarSlot',
+        state: true,
+        component: props => {
+          write = props.state[1]
+          return null
+        },
+      },
+    ],
+    setup: () => () => {
+      setup()
+    },
+  })
+
+  let table: any
+  const Host = (props: CounterOpts) => {
+    table = useCreateTable({
+      columns: [{ id: 'name', accessorKey: 'name' }],
+      data: [{ id: '1', name: 'A' }],
+      plugins: [counter(props)],
+    } as never)
+    const slot = table.getRenderSlots().statusBarSlot[0]
+    return createElement(slot.component, { table })
+  }
+  const value = () => table.atoms['plugin:counter'].get()
+  const mount = () => {
+    const root = createRoot(document.createElement('div'))
+    return {
+      render: (props: CounterOpts) =>
+        act(() => root.render(<Host {...props} />)),
+      unmount: () => act(() => root.unmount()),
+    }
+  }
+
+  it('DP8: без value — дефолт; новая ссылка value переносится в срез; та же ссылка изменения изнутри не затирает', () => {
+    const host = mount()
+    host.render({})
+    expect(value()).toBe(0)
+    host.render({ count: 5 })
+    expect(value()).toBe(5)
+    act(() => write!(7))
+    host.render({ count: 5 })
+    expect(value()).toBe(7)
+    host.render({ count: 9 })
+    expect(value()).toBe(9)
+    host.unmount()
+  })
+
+  it('DP17: изменение изнутри приходит в onChange; перенос внешнего значения — нет; без onChange срез всё равно меняется', () => {
+    const onCountChange = vi.fn()
+    const host = mount()
+    host.render({ count: 1, onCountChange })
+    expect(onCountChange).not.toHaveBeenCalled()
+    act(() => write!(2))
+    expect(onCountChange).toHaveBeenCalledExactlyOnceWith(2)
+    host.render({ count: 3, onCountChange })
+    expect(onCountChange).toHaveBeenCalledTimes(1)
+    host.unmount()
+
+    const silent = mount()
+    silent.render({})
+    act(() => write!(4))
+    expect(value()).toBe(4)
+    silent.unmount()
+  })
+
+  it('DP18: новое value не пересобирает настройку плагина; смена обычной опции — пересобирает', () => {
+    const host = mount()
+    host.render({ count: 1, label: 'a' })
+    const slots = table.getRenderSlots()
+    setup.mockClear()
+    host.render({ count: 2, label: 'a' })
+    host.render({ count: 3, label: 'a' })
+    expect(table.getRenderSlots()).toBe(slots)
+    expect(setup).not.toHaveBeenCalled()
+    host.render({ count: 3, label: 'b' })
+    expect(table.getRenderSlots()).not.toBe(slots)
+    expect(setup).toHaveBeenCalledTimes(1)
+    host.unmount()
   })
 })

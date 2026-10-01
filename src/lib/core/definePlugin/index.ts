@@ -59,11 +59,31 @@ const makeLocalStateFeature = (
   const key = pluginStateKey(id)
   return {
     getInitialState: state => ({ [key]: getDefault(), ...state }),
-    getDefaultTableOptions: table => ({
-      [stateChangeOption(key)]: makeStateUpdater(key as never, table),
-    }),
+    getDefaultTableOptions: table => {
+      const write = makeStateUpdater(key as never, table)
+      const t = table as unknown as {
+        atoms: Record<string, { get: () => unknown } | undefined>
+        options: {
+          pluginStateListeners?: Record<string, (next: unknown) => void>
+        }
+      }
+      return {
+        // Каждое изменение среза изнутри — в `onChange` внешнего состояния (DP17).
+        [stateChangeOption(key)]: (updater: never) => {
+          const prev = t.atoms[key]?.get()
+          write(updater)
+          const next = t.atoms[key]?.get()
+          if (next !== prev) {
+            t.options.pluginStateListeners?.[key]?.(next)
+          }
+        },
+      }
+    },
   }
 }
+
+const withoutKey = (value: object, key: string): object =>
+  Object.fromEntries(Object.entries(value).filter(([name]) => name !== key))
 
 const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   const out: Record<string, unknown> = {}
@@ -110,10 +130,18 @@ interface DefinePluginConfig<
   narrow?: (opts: TOptions) => Record<string, NarrowState> | undefined
   /**
    * Дефолт ЛОКАЛЬНОГО состояния плагина (значение слайса). definePlugin генерирует
-   * v9-фичу, seed'ящую слайс под ключом `plugin:<id>`; компонент читает/пишет его через пропс
-   * `state: [value, setter]` (`injectCellState`), приватно от общего `getState`.
+   * v9-фичу, seed'ящую слайс под ключом `plugin:<id>`; слот с `state: true` читает и
+   * пишет его пропсом `state: [value, setter]`.
    */
   state?: () => TState
+  /**
+   * Пара опций внешнего локального состояния (ADR 0028, DP8): `value` — значение,
+   * которое приложение задаёт срезу, `onChange` — колбэк каждого изменения среза.
+   */
+  controlled?: {
+    value: Extract<keyof TOptions, string>
+    onChange?: Extract<keyof TOptions, string>
+  }
   /** Сервисная колонка плагина. */
   column?: ServiceColumn
   /**
@@ -260,7 +288,21 @@ export const definePlugin = <
       }
       Object.assign(entry, configure(opts))
       entry.args = opts
-      entry.argsKey = argsKeyOf(opts)
+      // Значение внешнего состояния — не настройка: его смена не пересобирает плагин (DP18).
+      entry.argsKey = argsKeyOf(
+        config.controlled ? withoutKey(opts, config.controlled.value) : opts,
+      )
+      if (config.controlled) {
+        const options = opts as Record<string, unknown>
+        const onChange = config.controlled.onChange
+        entry.controlledState = {
+          key: pluginStateKey(config.id),
+          value: options[config.controlled.value],
+          onChange: onChange
+            ? (options[onChange] as ((next: unknown) => void) | undefined)
+            : undefined,
+        }
+      }
       entry.configure = configure as TesseraFeatureEntry['configure']
       if (config.lifetime) {
         entry.lifetimeArgs = config.lifetime

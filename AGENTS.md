@@ -346,8 +346,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
-    - _Клавиатура:_ `keyboard-navigation` (KN1–KN28, KN30 — роль grid, roving tabindex, режим действия, Tab-выход,
+    - _Клавиатура:_ `keyboard-navigation` (KN1–KN28, KN30–KN31 — роль grid, roving tabindex, режим действия, Tab-выход,
       стрелки/Home/End/Page, пиновка под виртуализацией, фокус от указателя до конца нажатия,
+      активная ячейка у приложения,
       [ADR 0021](docs/decisions/0021-keyboard-navigation.md));
       `keyboard-wcag` (KB1–KB14 — соответствие WCAG 2.1.1 и замены клавиш для компактных клавиатур,
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
@@ -410,8 +411,11 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
       Async: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
-    - _Автор плагина:_ модульный `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
-      владельцев `cellSlot`, [ADR 0028](docs/decisions/0028-define-plugin-authoring-api.md)).
+    - _Автор плагина:_ модульные `definePlugin` (DP1, DP3, DP6–DP7, DP10–DP12, DP15 — запись,
+      типы слотов), `definePlugin.dom` (DP8–DP9, DP17–DP18 — каналы слота, внешнее локальное
+      состояние), `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
+      владельцев `cellSlot`); визуальный `cell-editing` (CE1–CE6 — кнопка, редактор,
+      состояние правки у приложения), [ADR 0028](docs/decisions/0028-define-plugin-authoring-api.md).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы,
       [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).

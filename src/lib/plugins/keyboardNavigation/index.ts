@@ -1,2 +1,2 @@
 export { keyboardNavigation } from './registry'
-export type { KeyboardNavigationOptions } from './types'
+export type { ActiveCell, KeyboardNavigationOptions } from './types'

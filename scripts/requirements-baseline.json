@@ -1,17 +1,1 @@
-[
-  {
-    "kind": "missing",
-    "id": "DP4",
-    "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
-  },
-  {
-    "kind": "missing",
-    "id": "DP8",
-    "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
-  },
-  {
-    "kind": "missing",
-    "id": "DP11",
-    "reason": "тест под ID не найден: ADR 0028 указывает вид (headless, type-level), но не имя теста"
-  }
-]
+[]

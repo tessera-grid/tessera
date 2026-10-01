@@ -9,7 +9,7 @@ import {
   type FoldedEntryConfig,
   type TesseraFeatureEntry,
 } from './features'
-import { readPluginHooks } from './definePlugin/channels'
+import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
 import { logWarn } from './logger'
 import {
   type PluginDiagnostic,
@@ -40,6 +40,25 @@ export const useTableEffects = (
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
     [argsSignature],
   )
+
+  // Внешнее значение локального состояния плагина — в срез до отрисовки кадра, только
+  // при новой ссылке: та же ссылка не затирает изменения изнутри (ADR 0028, DP8).
+  const syncedStates = useRef(new Map<string, unknown>())
+  useLayoutEffect(() => {
+    for (const entry of plugins) {
+      const external = entry.controlledState
+      if (
+        !external ||
+        external.value === undefined ||
+        entry.enabled === false ||
+        syncedStates.current.get(external.key) === external.value
+      ) {
+        continue
+      }
+      syncedStates.current.set(external.key, external.value)
+      writePluginAtom(table, external.key, external.value)
+    }
+  })
 
   // Согласование состояния плагинов с таблицей — после каждого рендера, и у
   // выключенных записей (ADR 0040, §2).

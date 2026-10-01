@@ -1,8 +1,12 @@
 import axe from 'axe-core'
+import { useState } from 'react'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { keyboardNavigation, type ActiveCell } from '../../../plugins'
 import { composed } from '../stories'
 import { getScroller, humanClick } from '../helpers'
 import { cssVar, nextFrame } from './core-helpers'
@@ -591,5 +595,67 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
 
     await press('{Escape}')
     await expect.poll(() => menu()).toBeNull()
+  })
+})
+
+// Хост с активной ячейкой у приложения (KN31): activeCell в useState,
+// onActiveCellChange пишет её обратно.
+const NAV_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'rank', accessorKey: 'rank', header: 'Rank' },
+]
+const NAV_DATA = [
+  { id: '1', name: 'A', rank: 1 },
+  { id: '2', name: 'B', rank: 2 },
+  { id: '3', name: 'C', rank: 3 },
+]
+const navControl: { set?: (next: ActiveCell) => void } = {}
+
+const ControlledNavigation = ({
+  onActiveCellChange,
+}: {
+  onActiveCellChange: (next: ActiveCell) => void
+}) => {
+  const [activeCell, setActiveCell] = useState<ActiveCell>()
+  navControl.set = setActiveCell
+  const table = useCreateTable({
+    columns: NAV_COLUMNS,
+    data: NAV_DATA,
+    plugins: [
+      keyboardNavigation({
+        activeCell,
+        onActiveCellChange: next => {
+          onActiveCellChange(next)
+          setActiveCell(next)
+        },
+      }),
+    ],
+  })
+  return (
+    <div style={{ height: 300 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Клавиатурная навигация — активная ячейка у приложения', () => {
+  test('KN31: приложение ставит активную ячейку через activeCell; перемещение стрелкой приходит в onActiveCellChange', async () => {
+    const onActiveCellChange = vi.fn()
+    await render(
+      <ControlledNavigation onActiveCellChange={onActiveCellChange} />,
+    )
+    await expect.poll(() => tabStops().length).toBe(1)
+
+    navControl.set!({ rowIndex: 1, columnIndex: 1 })
+    await expect.poll(() => tabStops()[0]).toBe(bodyCellAt(1, 'rank'))
+    expect(onActiveCellChange).not.toHaveBeenCalled()
+
+    tabStops()[0].focus()
+    await press('{ArrowUp}')
+    await expect.poll(() => tabStops()[0]).toBe(bodyCellAt(0, 'rank'))
+    expect(onActiveCellChange).toHaveBeenLastCalledWith({
+      rowIndex: 0,
+      columnIndex: 1,
+    })
   })
 })

@@ -18,6 +18,7 @@ export {
 export { contextMenu, type ContextMenuOptions } from './contextMenu'
 export {
   keyboardNavigation,
+  type ActiveCell,
   type KeyboardNavigationOptions,
 } from './keyboardNavigation'
 

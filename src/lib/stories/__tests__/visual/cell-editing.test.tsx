@@ -1,12 +1,17 @@
+import { useState } from 'react'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { cellEditing, type CellEditingState } from '../../../plugins'
 
 import { humanClick } from '../helpers'
 import { composed } from '../stories'
 
 // Плагин cellEditing: инлайн-редактирование ячейки на ЛОКАЛЬНОМ
-// state-канале definePlugin (ADR 0028, CE1–CE5). Один инвариант — один тест,
+// state-канале definePlugin (ADR 0028, CE1–CE6). Один инвариант — один тест,
 // состояние читается из DOM; `:hover`-раскрытие (CE3) — доверенный ввод.
 
 const BODY_CELL = '.data-grid__body-cell'
@@ -121,5 +126,100 @@ describe('Cell editing — инлайн-редактирование ячейк�
     const editing = bodyCell(container, 'age')
     expect(editing.textContent).not.toContain(original)
     expect(editing.querySelector(CELL_BUTTON)).toBeNull()
+  })
+})
+
+// Хост с состоянием правки у приложения (CE6): editing в useState, onEditingChange
+// пишет его обратно.
+const CONTROLLED_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'rank', accessorKey: 'rank', header: 'Rank' },
+]
+const CONTROLLED_DATA = [
+  { id: '1', name: 'A', rank: 1 },
+  { id: '2', name: 'B', rank: 2 },
+]
+const control: { set?: (next: CellEditingState) => void } = {}
+
+const ControlledEditing = ({
+  onEditingChange,
+}: {
+  onEditingChange: (next: CellEditingState) => void
+}) => {
+  const [editing, setEditing] = useState<CellEditingState>()
+  control.set = setEditing
+  const table = useCreateTable({
+    columns: CONTROLLED_COLUMNS,
+    data: CONTROLLED_DATA,
+    plugins: [
+      cellEditing({
+        canEdit: () => true,
+        editing,
+        onEditingChange: next => {
+          onEditingChange(next)
+          setEditing(next)
+        },
+      }),
+    ],
+  })
+  return (
+    <div style={{ height: 300 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Cell editing — состояние у приложения', () => {
+  test('CE6: приложение открывает и закрывает правку через editing; открытие, ввод и закрытие из интерфейса приходят в onEditingChange', async () => {
+    const onEditingChange = vi.fn()
+    const { container } = await render(
+      <ControlledEditing onEditingChange={onEditingChange} />,
+    )
+    const cell = () =>
+      container.querySelector<HTMLElement>(
+        `[data-row-id="1"] ${BODY_CELL}[data-column-id="name"]`,
+      )!
+    const input = () => cell().querySelector<HTMLInputElement>('input')
+    await expect.poll(() => cell()).toBeTruthy()
+
+    // Снаружи: открыть и закрыть.
+    control.set!({
+      active: {
+        cell: { rowId: '1', columnId: 'name' },
+        draft: 'A',
+        original: 'A',
+      },
+      submitted: {},
+    })
+    await expect.poll(input).not.toBeNull()
+    expect(input()!.value).toBe('A')
+    control.set!({ active: null, submitted: {} })
+    await expect.poll(input).toBeNull()
+    expect(onEditingChange).not.toHaveBeenCalled()
+
+    // Из интерфейса: открыть, ввести, закрыть.
+    await userEvent.hover(cell())
+    await humanClick(
+      cell().querySelector<HTMLElement>(`${CELL_BUTTON} button`)!,
+    )
+    await expect.poll(input).not.toBeNull()
+    expect(onEditingChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        active: expect.objectContaining({
+          cell: { rowId: '1', columnId: 'name' },
+        }),
+      }),
+    )
+    await userEvent.type(input()!, 'Z')
+    expect(onEditingChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        active: expect.objectContaining({ draft: 'AZ' }),
+      }),
+    )
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(input).toBeNull()
+    expect(onEditingChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ active: null }),
+    )
   })
 })

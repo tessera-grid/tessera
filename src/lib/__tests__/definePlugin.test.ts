@@ -1,12 +1,14 @@
 /**
- * Авторская поверхность `definePlugin` (ADR 0028, DP1, DP3, DP6, DP7, DP10, DP12, DP15): запись
+ * Авторская поверхность `definePlugin` (ADR 0028, DP1, DP3, DP6, DP7, DP10–DP12, DP15): запись
  * по форме идентична ручной, hook-слайс без undefined под ключом id, поле фич —
  * `features`, `TOptions` задаётся один раз, слоты как функция аргументов.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
-import type { TableFeature } from '../types'
+import type { TableFeature, TableState } from '../types'
+import type { TesseraFeatures } from '../core/features'
+import { columnSorting } from '../plugins/columnSorting'
 import {
   definePlugin,
   type PluginCellProps,
@@ -221,5 +223,23 @@ describe('definePlugin — типы слот-компонентов', () => {
         wrongSlot,
       ].every(factory => typeof factory === 'function'),
     ).toBe(true)
+  })
+})
+
+describe('definePlugin — где живут типы', () => {
+  it('DP11: локальное состояние плагина не входит в глобальный тип состояния таблицы; срез стоковой фичи — входит', () => {
+    const local = definePlugin<{ enabled?: boolean }>()({
+      id: 'local',
+      state: () => ({ note: 'x' }),
+    })
+    type LocalState = TableState<TesseraFeatures<[ReturnType<typeof local>]>>
+    expectTypeOf<LocalState>().not.toHaveProperty('plugin:local')
+    expectTypeOf<LocalState>().not.toHaveProperty('note')
+
+    type SortingState = TableState<
+      TesseraFeatures<[ReturnType<typeof columnSorting>]>
+    >
+    expectTypeOf<SortingState>().toHaveProperty('sorting')
+    expect(local().id).toBe('local')
   })
 })

@@ -19,5 +19,6 @@ export const keyboardNavigation = definePlugin<KeyboardNavigationOptions>()({
   id: KEYBOARD_NAVIGATION,
   diagnose: neverInert,
   state: (): ActiveCell => INITIAL_ACTIVE_CELL,
+  controlled: { value: 'activeCell', onChange: 'onActiveCellChange' },
   options: o => ({ enableKeyboardNavigation: o.enabled !== false }),
 })

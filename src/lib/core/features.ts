@@ -77,6 +77,15 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * функцию перерисовывает ячейки. Колбэки `on*` сюда не входят.
    */
   refreshArgs?: readonly string[]
+  /**
+   * Внешнее значение локального состояния плагина (ADR 0028, DP8): ключ среза,
+   * значение из опции плагина (`undefined` — не передано) и колбэк изменений.
+   */
+  controlledState?: {
+    key: string
+    value: unknown
+    onChange?: (next: unknown) => void
+  }
   /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
   inertReason?: PluginInertReason
   /**
