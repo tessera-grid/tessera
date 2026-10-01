@@ -36,7 +36,7 @@ exports[`Дерево доступности (AX) > AX1: грид с сорти�
 exports[`Дерево доступности (AX) > AX2: treegrid с раскрытой группой — level и expanded у строк 1`] = `
 "treegrid "Data table"
     row "Expand Country First Name Last Name Age Gender Visits"
-    row "Collapse Mexico, United States of America (and 4 more) Raina, Leah (and 4 more) Wilderman-Auer, Auer (and 4 more) 24, 40 (and 4 more) female, female (and 4 more) 56" level=1 expanded
+    row "Toggle row Mexico, United States of America (and 4 more) Raina, Leah (and 4 more) Wilderman-Auer, Auer (and 4 more) 24, 40 (and 4 more) female, female (and 4 more) 56" level=1 expanded
     row "Mexico Raina Wilderman-Auer 24 female 16" level=2
     row "United States of America Leah Auer 40 female 15" level=2
     row "Egypt Tristin Nitzsche 27 female 9" level=2"

@@ -5,10 +5,11 @@ import { ReactNode, createContext, useContext, useMemo } from 'react'
  * проп `localization` у DataGrid — для локализации или смены формулировок.
  */
 export interface TableLabels {
-  /** Тултип кнопки разворачивания строки */
-  expand: string
-  /** Тултип кнопки сворачивания строки */
-  collapse: string
+  /**
+   * Имя и тултип кнопки раскрытия строки — одно в обоих состояниях: состояние несёт
+   * `aria-expanded` кнопки (ADR 0015, RE13).
+   */
+  toggleRow: string
   /** Тултип кнопки закрепления колонки */
   pin: string
   /** Тултип кнопки открепления колонки */
@@ -124,8 +125,7 @@ export interface TableLabels {
 }
 
 export const DEFAULT_LABELS: TableLabels = {
-  expand: 'Expand',
-  collapse: 'Collapse',
+  toggleRow: 'Toggle row',
   pin: 'Pin column',
   unpin: 'Unpin column',
   pinLeft: 'Pin left',

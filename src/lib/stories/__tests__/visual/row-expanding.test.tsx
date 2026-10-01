@@ -5,6 +5,8 @@ import { describe, expect, test, vi } from 'vitest'
 import axe from 'axe-core'
 
 import { composed } from '../stories'
+import { DEFAULT_LABELS } from '../../../core/localization'
+import { waitForBodyText } from './column-pinning-helpers'
 import { AXE_OPTIONS, gridRoot, inBothThemes } from './a11y-helpers'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
@@ -70,7 +72,7 @@ async function renderRowExpanding(args: RowExpandingArgs = {}) {
   return container
 }
 
-// --- Requirements (RE1–RE12) --------------------------------------------------
+// --- Requirements (RE1–RE13) --------------------------------------------------
 
 describe('Row Expanding — activation & service column', () => {
   test('RE1: the plugin is inert without `enableRowExpanding`', async () => {
@@ -319,6 +321,30 @@ describe('Row Expanding — accessibility', () => {
       })
       await view.unmount()
     }
+  })
+
+  test('RE13: the toggle name is constant across states and matches its tooltip', async () => {
+    const container = await renderRowExpanding()
+    const toggle = () => rowToggle(firstExpandableRow(container))!
+    const label = DEFAULT_LABELS.toggleRow
+
+    expect(toggle().getAttribute('aria-label')).toBe(label)
+    await userEvent.hover(toggle())
+    expect(await waitForBodyText(label)).toBe(true)
+
+    await userEvent.click(toggle())
+    await expect.poll(() => toggle().getAttribute('aria-expanded')).toBe('true')
+    expect(toggle().getAttribute('aria-label')).toBe(label)
+    // Указатель уходит и возвращается — тултип открывается заново, уже раскрытой строки.
+    await userEvent.hover(rowsTopDown(container).at(-1)!)
+    await userEvent.hover(toggle())
+    expect(await waitForBodyText(label)).toBe(true)
+
+    // Restore.
+    await userEvent.click(toggle())
+    await expect
+      .poll(() => toggle().getAttribute('aria-expanded'))
+      .toBe('false')
   })
 })
 

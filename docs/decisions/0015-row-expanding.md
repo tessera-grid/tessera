@@ -4,7 +4,9 @@
 - **Дата:** 2026-09-01
 - **Изменён:** 2026-10-01 — RE10 сужен до `treegrid`, добавлен RE12: без `keyboardNavigation`
   корень — `role="table"`, а там `aria-expanded` у строки недопустим (axe
-  `aria-allowed-attr`); состояние раскрытия несёт кнопка-тоггл.
+  `aria-allowed-attr`); состояние раскрытия несёт кнопка-тоггл. Добавлен RE13: подпись
+  тоггла постоянна (ключ `toggleRow` вместо `expand`/`collapse`) — иначе скринридер
+  слышит «Collapse, развёрнуто», состояние дважды.
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен на штатной
     модели раскрытия TanStack (`enableExpanding`/`enableRowExpanding`,
@@ -134,7 +136,9 @@ TanStack Table v9 несёт готовую модель раскрытия: с�
   [ADR 0032](0032-wcag-aa-remainder.md), W10), вместе с `aria-level`/`setsize`/
   `posinset`. Без навигации корень — `role="table"`, где ARIA не допускает
   `aria-expanded` у строки; там состояние раскрытия несёт **кнопка-тоггл**
-  (`aria-expanded` на `.row-expand-button`, у неё оно есть всегда). Сделать корень
+  (`aria-expanded` на `.row-expand-button`, у неё оно есть всегда). Имя и тултип
+  тоггла — постоянная подпись `toggleRow`: состояние — в `aria-expanded`, а не в
+  тексте (RE13). Сделать корень
   `treegrid` и без навигации нельзя: `treegrid` — интерактивный виджет, без
   управления фокусом роль обещала бы клавиатуру, которой нет.
 - **`.row-expand-button`** — стабильный класс тоггла (на `ExpandButton`), за
@@ -221,6 +225,7 @@ Chromium) и гоняют историю `RowExpanding` (детерминиро�
 | RE10 | В `treegrid` (с `keyboardNavigation`) `aria-expanded` строки отражает раскрытие, у листа его нет                                           | ✔ `RE10: in a treegrid …`               |
 | RE11 | Тоггл разворачивает шеврон при раскрытии (класс `.expanded`)                                                                               | ✔ `RE11: the toggle chevron rotates …`  |
 | RE12 | Без `keyboardNavigation` (`role="table"`) раскрытие — `aria-expanded` тоггла, у строк его нет; раскрытое дерево проходит axe в обеих темах | ✔ `RE12: without keyboard navigation …` |
+| RE13 | Имя и тултип тоггла — одна постоянная подпись `toggleRow` в свёрнутом и раскрытом состоянии                                                | ✔ `RE13: the toggle name is constant …` |
 
 См. [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм
 плагинов и `renderComponent` и [rendering.md](../architecture/rendering.md) про
