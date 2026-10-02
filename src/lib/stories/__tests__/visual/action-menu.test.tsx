@@ -340,8 +340,12 @@ describe('Action menu — row', () => {
     const cells = () =>
       Array.from(container.querySelectorAll<HTMLElement>(ACTION_CELL))
     const kebab = () => cells()[0].querySelector<HTMLElement>(KEBAB)!
-    const opacity = () =>
-      Number(getComputedStyle(kebab().closest('.row__button')!).opacity)
+    // Видимость чипа — по прозрачности значка: обёртка чипа не гаснет (ADR 0017, MO5).
+    const opacity = () => {
+      const color = getComputedStyle(kebab()).color
+      const alpha = /rgba\([^)]*,\s*([\d.]+)\)/.exec(color)?.[1]
+      return alpha === undefined ? 1 : Number(alpha)
+    }
 
     await userEvent.click(kebab())
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)

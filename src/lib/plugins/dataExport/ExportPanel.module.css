@@ -1,0 +1,122 @@
+.positioner {
+  composes: positioner from '../../ui/Popup/Popup.module.css';
+}
+
+.popup {
+  composes: popup from '../../ui/Popup/Popup.module.css';
+  min-width: 240px;
+  max-width: calc(100vw - 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+.preset,
+.run {
+  height: var(--tsr-comp-popup-item-min-height);
+  padding: 0 10px;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-popup-item-radius);
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.preset:hover,
+.run:hover:not(:disabled) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.preset:focus-visible,
+.run:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.run:disabled {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.axis {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.axisLabel {
+  padding-inline: 8px;
+  font-weight: 600;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.option {
+  composes: item from '../../ui/Popup/Popup.module.css';
+}
+
+.option:hover:not([data-disabled]) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.radio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: 50%;
+  cursor: inherit;
+}
+
+.radio[data-checked] {
+  border-color: var(--tsr-comp-control-active-color);
+}
+
+.radio[data-disabled] {
+  border-color: var(--tsr-comp-control-disabled-color);
+}
+
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
+.radio:focus-visible {
+  outline: none;
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--tsr-comp-control-active-color);
+}
+
+.radio[data-disabled] .dot {
+  background-color: var(--tsr-comp-control-disabled-color);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--tsr-comp-popup-divider-color);
+}

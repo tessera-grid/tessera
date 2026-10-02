@@ -27,12 +27,6 @@
   transition-duration: 0ms;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .content {
-    transition-duration: 0ms;
-  }
-}
-
 .arrow {
   display: flex;
   fill: var(--tsr-comp-tooltip-bg);

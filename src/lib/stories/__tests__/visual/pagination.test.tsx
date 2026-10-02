@@ -144,6 +144,32 @@ describe('Pagination', () => {
     expect(firstRowId()).toBe('item-id-0')
   })
 
+  test('PG19: the page-size list is positioned like the other popovers — beside the trigger with a 4px gap, not over it', async () => {
+    await renderPagination()
+    await expect.poll(sizeTrigger).not.toBeNull()
+    await userEvent.click(sizeTrigger()!)
+    const positioner = await vi.waitFor(() => {
+      const found = document
+        .querySelector('[role="listbox"]')
+        ?.closest<HTMLElement>('[data-side]')
+      if (!found) {
+        throw new Error('list not rendered')
+      }
+      return found
+    })
+
+    const trigger = sizeTrigger()!.getBoundingClientRect()
+    const list = positioner.getBoundingClientRect()
+    // Список снизу или (если снизу нет места) сверху триггера, но не поверх него.
+    const gapBelow = list.top - trigger.bottom
+    const gapAbove = trigger.top - list.bottom
+    const gap = Math.max(gapBelow, gapAbove)
+    expect(gap).toBeGreaterThanOrEqual(3)
+    expect(gap).toBeLessThanOrEqual(6)
+    // Ширина без трансформации: список на входе ещё масштабируется анимацией появления.
+    expect(positioner.offsetWidth).toBeGreaterThanOrEqual(trigger.width - 1)
+  })
+
   test('PG6: onPageChange fires on a user action, not on a programmatic slice change', async () => {
     const onPageChange = vi.fn()
     await renderPagination({ onPageChange, enableColumnSorting: true })

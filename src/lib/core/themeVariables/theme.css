@@ -87,6 +87,11 @@
 
   /* Тон elevation-теней — единый рычаг. */
   --tsr-sys-shadow-color: rgba(0, 0, 0, 0.1);
+
+  /* Приподнятая поверхность: меню, поповеры, кнопки поверх контента. В светлой теме
+   * совпадает с surface и отделяется тенью; в тёмной светлее surface (ниже). */
+  --tsr-sys-elevated: var(--tsr-sys-surface);
+  --tsr-sys-shadow-elevated: rgb(0 0 0 / 20%);
 }
 
 /* Dark: переопределяем ТОЛЬКО primitive-слот роли; мост var(--shadcn,…) сохранён,
@@ -106,6 +111,12 @@
   --tsr-sys-ring: var(--ring, var(--tsr-ref-neutral-300));
   --tsr-sys-danger: var(--destructive, var(--tsr-ref-red-400));
   --tsr-sys-info: var(--info, var(--tsr-ref-blue-400));
+  --tsr-sys-elevated: color-mix(
+    in oklch,
+    var(--tsr-sys-surface),
+    var(--tsr-sys-fg) 8%
+  );
+  --tsr-sys-shadow-elevated: rgb(0 0 0 / 60%);
 }
 
 /* ============================================================================
@@ -137,23 +148,46 @@
   );
   --tsr-comp-resize-handler-width: 24px;
 
-  /* Тайминги */
+  /* Движение (ADR 0017, MO1–MO3): все переходы собираются из двух базовых токенов.
+   * Длительность и кривая нигде больше не пишутся литералами. */
+  --tsr-comp-motion-duration: 150ms;
+  --tsr-comp-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Для появления: быстрый старт, плавное завершение. */
+  --tsr-comp-motion-easing-out: cubic-bezier(0, 0, 0.2, 1);
   --tsr-comp-head-cell-transition:
-    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-  --tsr-comp-row-transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1)
-    0ms;
+    background-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing),
+    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+  --tsr-comp-row-transition:
+    background-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing),
+    outline-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing-out);
   --tsr-comp-button-cell-transition:
-    color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-    opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-    height 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-  --tsr-comp-resize-handler-transition: height 150ms
-    cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-  --tsr-comp-action-button-transition: background-color 300ms
-    cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    background-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing),
+    border-color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    height var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+  /* Проявление скрытых кнопок ячейки и строки: одно правило для обеих. */
+  --tsr-comp-reveal-transition: opacity var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing-out);
+  /* Проявление «чипа» кнопки строки: значок и граница, тем же темпом; фон — сразу. */
+  --tsr-comp-reveal-chip-transition:
+    color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing-out),
+    box-shadow var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing-out);
+  /* Hover кнопки «поверх контента»: светлый слой над непрозрачным фоном. */
+  --tsr-comp-overlay-hover-transition: opacity var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
+  --tsr-comp-resize-handler-transition: height var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
+  --tsr-comp-action-button-transition:
+    background-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing),
+    border-color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
 
   --tsr-comp-loader-height: 2px;
   --tsr-comp-row-height: 50px;
@@ -187,16 +221,23 @@
   );
   /* Сплошной: край выделения — индикатор состояния, контраст ≥ 3:1 (WCAG 1.4.11). */
   --tsr-comp-cell-selected-border-color: var(--tsr-sys-info);
-  --tsr-comp-cell-pinned-bg: var(--tsr-sys-muted);
+  /* Закреплённые ячейки (ADR 0011, CP28): фон строки плюс тон текста — непрозрачно
+   * (маскирует прокручиваемый контент) и в одну сторону в обеих темах. Тон ступенями:
+   * покой 3 %, hover 7 % (= 4 % hover строки + 3 %), выбор 9 % и 13 %. */
+  --tsr-comp-cell-pinned-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-surface),
+    var(--tsr-sys-fg) 9%
+  );
   --tsr-comp-cell-pinned-hovered-bg: color-mix(
     in oklch,
-    var(--tsr-sys-muted),
-    var(--tsr-sys-fg) 6%
+    var(--tsr-sys-surface),
+    var(--tsr-sys-fg) 7%
   );
   --tsr-comp-cell-pinned-selected-hovered-bg: color-mix(
     in oklch,
-    var(--tsr-sys-muted),
-    var(--tsr-sys-fg) 6%
+    var(--tsr-sys-surface),
+    var(--tsr-sys-fg) 13%
   );
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
   --tsr-comp-cell-content-padding: 0px var(--tsr-ref-space-4);
@@ -217,8 +258,18 @@
     system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial,
     sans-serif;
   --tsr-comp-numeric-font-feature: tabular-nums;
-  --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-sys-muted);
-  --tsr-comp-cell-pinned-left-bg: var(--tsr-sys-bg);
+  --tsr-comp-cell-odd-pinned-left-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-bg),
+    var(--tsr-sys-fg) 3%
+  );
+  --tsr-comp-cell-pinned-left-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-surface),
+    var(--tsr-sys-fg) 3%
+  );
+  /* Закреплённый заголовок — тот же фон, что у шапки. */
+  --tsr-comp-head-cell-pinned-bg: var(--tsr-comp-head-bg);
   --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-cell-odd-pinned-left-bg);
   --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-cell-pinned-left-bg);
   --tsr-comp-cell-pinned-border-color: var(--tsr-sys-border);
@@ -287,14 +338,19 @@
   --tsr-comp-switch-track-on: var(--tsr-sys-accent);
   --tsr-comp-switch-thumb: var(--tsr-sys-surface);
 
-  /* Кнопки действий */
-  --tsr-comp-action-button-color: color-mix(
+  /* Кнопки действий. Цвет значка — псевдоним канона `control-color`. Фон, hover и
+   * тень — вариант «поверх контента» (кнопки действий строки над прозрачной колонкой
+   * действий, ADR 0017): непрозрачный фон, светлый непрозрачный hover, тень. */
+  --tsr-comp-action-button-color: var(--tsr-comp-control-color);
+  --tsr-comp-action-button-bg: var(--tsr-sys-elevated);
+  --tsr-comp-action-button-hover-bg: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 78%,
-    var(--tsr-sys-bg)
+    var(--tsr-sys-elevated),
+    var(--tsr-sys-fg) 6%
   );
-  --tsr-comp-action-button-bg: var(--tsr-sys-surface);
-  --tsr-comp-action-button-hover-bg: var(--tsr-sys-muted);
+
+  /* Цвет текста грида (ADR 0018, TH10): задаётся на корне, а не наследуется от страницы. */
+  --tsr-comp-fg: var(--tsr-sys-fg);
 
   /* Рамка грида (ADR 0035): ширина 0 убирает её. */
   --tsr-comp-frame-border-color: var(--tsr-sys-border);
@@ -321,6 +377,15 @@
   --tsr-comp-status-bar-divider-color: var(--tsr-sys-border);
   /* Сдвиг области таблицы над панелью; ставит грид, когда есть `statusBarSlot`. */
   --tsr-comp-status-bar-offset: 0px;
+  /* Всплывающие меню и панели (ADR 0017, PP1–PP4): единая поверхность и пункт. */
+  --tsr-comp-popup-bg: var(--tsr-sys-elevated);
+  --tsr-comp-popup-padding: 4px;
+  --tsr-comp-popup-font-size: 0.8125rem;
+  --tsr-comp-popup-color: var(--tsr-comp-control-color);
+  --tsr-comp-popup-item-min-height: 32px;
+  --tsr-comp-popup-item-radius: calc(var(--tsr-comp-control-radius) - 2px);
+  /* Разделители внутри меню и панелей: мягче границы контролов. */
+  --tsr-comp-popup-divider-color: var(--tsr-sys-border);
   /* Меню колонок (columnVisibility): ширина поповера и высота списка до прокрутки. */
   --tsr-comp-column-menu-width: 260px;
   --tsr-comp-column-menu-max-height: 320px;
@@ -360,8 +425,8 @@
     0 4px 12px var(--tsr-comp-shadow-color),
     0 1px 3px var(--tsr-comp-shadow-color);
   --tsr-comp-tooltip-transition:
-    opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
 
   /* Тени (elevation). Цвет основных — единый рычаг --tsr-comp-shadow-color
    * (= sys-тон); полные значения по поверхностям переопределяемы целиком.
@@ -371,5 +436,21 @@
   --tsr-comp-shadow-footer: 0 -4px 8px var(--tsr-comp-shadow-color);
   --tsr-comp-shadow-drag: var(--tsr-comp-shadow-color) 0 2px 4px 2px;
   --tsr-comp-shadow-drop-bubble: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
-  --tsr-comp-shadow-action: rgb(0 0 0 / 20%) 0px 0px 4px 2px;
+  --tsr-comp-shadow-action: 0px 0px 4px 2px var(--tsr-sys-shadow-elevated);
+}
+
+/* Единый гаситель движения (ADR 0017, MO3): система просит меньше анимации — все
+ * переходы и бесконечные анимации грида, включая порталы (у них тот же класс темы),
+ * выключаются одним правилом, а не по компонентам. */
+@media (prefers-reduced-motion: reduce) {
+  .data-grid-theme,
+  .data-grid-theme *,
+  .data-grid-theme *::before,
+  .data-grid-theme *::after {
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

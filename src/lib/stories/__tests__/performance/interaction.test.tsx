@@ -14,7 +14,7 @@ import {
   PERF_TIMEOUT,
   SMALL,
 } from './perf-cases'
-import { INTERACTION_BUDGET_MS } from '../perf.constants'
+import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 
 // Отзывчивость на ВЗАИМОДЕЙСТВИЕ (INP): выбор ОДНОЙ строки меняет только
 // срез rowSelection на одну запись — законной работы минимум (обновить одну строку и
@@ -96,6 +96,40 @@ const pageSizeOption = (size: string) =>
     option => option.textContent?.trim() === size,
   )
 
+// Экспорт (ADR 0044): «Выгрузить» в панели (строки «Все данные») сериализует всю таблицу синхронно.
+const EXPORT = { enableToolbar: true, enableExport: true }
+const EXPORT_SIZE = { columnCount: 10, dataCount: 100_000 } as const
+
+const exportButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="export-button"]')
+const exportRunButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="export-run"]')
+
+/** Панель грузится лениво: до загрузки кнопка-заглушка по клику тоже открывает её. */
+const openExportPanel = async () => {
+  await expect.poll(() => exportButton()).not.toBeNull()
+  exportButton()!.click()
+  await expect.poll(() => exportRunButton()).not.toBeNull()
+}
+
+/**
+ * Скачивание в замере не нужно: подменяем клик по ссылке, сериализация остаётся.
+ * Замер повторяет действие, а «Выгрузить» закрывает панель — перед повтором открываем её снова.
+ */
+const exportWithoutDownload = async () => {
+  if (!exportRunButton()) {
+    exportButton()!.click()
+    await expect.poll(() => exportRunButton()).not.toBeNull()
+  }
+  const click = HTMLAnchorElement.prototype.click
+  HTMLAnchorElement.prototype.click = () => {}
+  try {
+    exportRunButton()!.click()
+  } finally {
+    HTMLAnchorElement.prototype.click = click
+  }
+}
+
 interface InteractionCase {
   id: string
   label: string
@@ -111,6 +145,8 @@ interface InteractionCase {
    * (как P5/P6 в first-render).
    */
   regressionCeiling?: number
+  /** Бюджет класса Load вместо INP (разовая тяжёлая операция, не отклик). */
+  loadBudget?: boolean
 }
 
 const CASES: InteractionCase[] = [
@@ -208,6 +244,15 @@ const CASES: InteractionCase[] = [
       await expect.poll(() => pageSizeTrigger()!.textContent?.trim()).toBe(next)
     },
   },
+  {
+    id: 'EX33',
+    label: 'выгрузка «Все данные», 100 000×10, все плагины',
+    size: '100 000×10',
+    loadBudget: true,
+    args: { ...EXPORT_SIZE, ...ALL_PLUGINS, ...EXPORT },
+    prepare: openExportPanel,
+    act: exportWithoutDownload,
+  },
 ]
 
 describe('Отзывчивость взаимодействий (INP)', () => {
@@ -223,7 +268,9 @@ describe('Отзывчивость взаимодействий (INP)', () => {
         // видимости userEvent (getComputedStyle/checkVisibility), а только работу
         // приложения: обработчик → обновление стейта → ре-рендер → коммит.
         const result = await measureInteractionWork(c.act)
-        const budget = c.regressionCeiling ?? INTERACTION_BUDGET_MS
+        const budget =
+          c.regressionCeiling ??
+          (c.loadBudget ? LOAD_BUDGET_MS : INTERACTION_BUDGET_MS)
 
         await recordPerf({
           id: c.id,

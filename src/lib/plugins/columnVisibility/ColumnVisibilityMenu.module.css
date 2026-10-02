@@ -1,35 +1,11 @@
 .positioner {
-  z-index: var(--tsr-comp-z-index-tooltip);
-  outline: none;
+  composes: positioner from '../../ui/Popup/Popup.module.css';
 }
 
 .popup {
-  box-sizing: border-box;
+  composes: popup from '../../ui/Popup/Popup.module.css';
   width: var(--tsr-comp-column-menu-width);
   max-width: calc(100vw - 16px);
-  padding: 8px;
-  background-color: var(--tsr-comp-row-bg);
-  color: var(--tsr-comp-action-button-color);
-  border: 1px solid var(--tsr-comp-control-border);
-  border-radius: var(--tsr-comp-control-radius);
-  box-shadow: var(--tsr-comp-shadow-action);
-  outline: none;
-  transform-origin: var(--transform-origin);
-  transition: var(--tsr-comp-tooltip-transition);
-  font-family: var(--tsr-comp-font-family);
-  font-size: 0.875rem;
-}
-
-.popup[data-starting-style],
-.popup[data-ending-style] {
-  opacity: 0;
-  transform: scale(0.97);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .popup {
-    transition-duration: 0ms;
-  }
 }
 
 .menu {
@@ -51,8 +27,12 @@
   outline: none;
 }
 
+/* Граница 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена:
+ * суммарная толщина = focus-ring-width, без «граница + кольцо» поверх друг друга. */
 .search:focus-visible {
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
 }
 
 .scroller {
@@ -75,22 +55,12 @@
 }
 
 .row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-sizing: border-box;
-  height: 32px;
-  padding-inline-end: 8px;
-  border-radius: var(--tsr-comp-control-radius);
-  cursor: pointer;
+  composes: item from '../../ui/Popup/Popup.module.css';
+  height: var(--tsr-comp-popup-item-min-height);
 }
 
 .row:hover:not([data-disabled]) {
   background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.row[data-disabled] {
-  cursor: default;
 }
 
 .label {
@@ -114,17 +84,17 @@
   justify-content: space-between;
   gap: 8px;
   padding-top: 8px;
-  border-top: 1px solid var(--tsr-comp-control-border);
+  border-top: 1px solid var(--tsr-comp-popup-divider-color);
 }
 
 .action {
-  height: 28px;
+  height: var(--tsr-comp-popup-item-min-height);
   padding: 0 10px;
   color: inherit;
   font: inherit;
   background-color: transparent;
   border: 0;
-  border-radius: var(--tsr-comp-control-radius);
+  border-radius: var(--tsr-comp-popup-item-radius);
   cursor: pointer;
   transition: var(--tsr-comp-action-button-transition);
 }

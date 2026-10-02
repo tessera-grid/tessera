@@ -10,6 +10,7 @@ import {
   columnSizing,
   columnSorting,
   columnVisibility,
+  dataExport,
   headerActionMenu,
   pagination,
   rowActionMenu,
@@ -23,6 +24,7 @@ import {
   type ColumnDraggingOptions,
   type ColumnMultiSortOptions,
   type ColumnSizingOptions,
+  type ExportOptions,
   type RowDraggingOptions,
 } from '../../../../lib/plugins'
 import type { TesseraFeatureEntry } from '../../../../lib/core/features'
@@ -72,6 +74,14 @@ export interface FeatureToggles {
   enableKeyboardNavigation?: boolean
   /** Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar). */
   enableColumnVisibility?: boolean
+  /** Кнопка «Экспорт» в тулбаре (ADR 0044; нужен enableToolbar). */
+  enableExport?: boolean
+  /** Тонкая настройка экспорта: пресеты, серверный режим, колбэки (ADR 0044). */
+  exportOptions?: Omit<ExportOptions, 'enabled'>
+  /** Серверная пагинация: `data` — текущая страница, итог — `paginationRowCount`. */
+  paginationServer?: boolean
+  /** Всего строк на сервере (нужен при `paginationServer`). */
+  paginationRowCount?: number
   /** Пагинация в нижней панели (ADR 0038). */
   enablePagination?: boolean
   /** Размер страницы пагинации (по умолчанию 25). */
@@ -189,10 +199,13 @@ export const argsToPlugins = (o: FeatureToggles) => {
     contextMenu({ enabled: !!o.enableContextMenu }),
     keyboardNavigation({ enabled: !!o.enableKeyboardNavigation }),
     columnVisibility({ enabled: !!o.enableColumnVisibility }),
+    dataExport({ enabled: !!o.enableExport, ...o.exportOptions }),
     pagination({
       enabled: !!o.enablePagination,
       initialPageSize: o.paginationPageSize,
       pageSizes: o.paginationPageSizes,
+      server: o.paginationServer,
+      rowCount: o.paginationRowCount,
     }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.

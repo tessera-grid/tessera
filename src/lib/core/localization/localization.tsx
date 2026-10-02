@@ -40,6 +40,30 @@ export interface TableLabels {
   toolbar: string
   /** Кнопка тулбара и доступное имя меню колонок (`columnVisibility`) */
   columns: string
+  /** Кнопка тулбара «Экспорт» (`export`) */
+  export: string
+  /** Заголовок оси «Строки» панели экспорта */
+  exportRows: string
+  /** Заголовок оси «Колонки» панели экспорта */
+  exportColumns: string
+  /** Заголовок оси «Формат» панели экспорта */
+  exportFormat: string
+  /** Доступное имя ряда быстрых наборов панели экспорта */
+  exportPresets: string
+  /** Кнопка «Выгрузить» в панели экспорта */
+  exportRun: string
+  /** Ось «Строки»: весь `data` в исходном порядке */
+  exportAll: string
+  /** Ось «Строки»: с учётом перечисленного (сортировка, фильтры) */
+  exportView: (features: ('sorting' | 'filtering')[]) => string
+  /** Ось «Строки»: текущая страница */
+  exportPage: string
+  /** Ось «Строки»: выбранные строки */
+  exportSelected: string
+  /** Ось «Колонки»: видимые колонки */
+  exportColumnsVisible: string
+  /** Ось «Колонки»: все колонки, включая скрытые */
+  exportColumnsAll: string
   /** Плейсхолдер и доступное имя поиска в меню колонок */
   searchColumns: string
   /** Текст меню колонок, когда поиск ничего не нашёл */
@@ -139,6 +163,18 @@ export const DEFAULT_LABELS: TableLabels = {
   table: 'Data table',
   toolbar: 'Table toolbar',
   columns: 'Columns',
+  export: 'Export',
+  exportRows: 'Rows',
+  exportColumns: 'Columns',
+  exportFormat: 'Format',
+  exportPresets: 'Quick sets',
+  exportRun: 'Export',
+  exportColumnsVisible: 'Visible columns',
+  exportColumnsAll: 'All columns',
+  exportAll: 'All data',
+  exportView: features => `With ${features.join(' and ')}`,
+  exportPage: 'Current page',
+  exportSelected: 'Selected rows',
   searchColumns: 'Search columns',
   noColumnsFound: 'No columns found',
   showAllColumns: 'Show all',

@@ -53,7 +53,7 @@
     will-change: transform;
     z-index: var(--tsr-comp-z-index-pinned);
     opacity: var(--tsr-comp-opacity);
-    background-color: var(--tsr-comp-cell-pinned-left-bg);
+    background-color: var(--tsr-comp-head-cell-pinned-bg);
     position: sticky;
   }
 
@@ -68,7 +68,7 @@
     will-change: transform;
     z-index: var(--tsr-comp-z-index-pinned);
     opacity: var(--tsr-comp-opacity);
-    background-color: var(--tsr-comp-cell-pinned-right-bg);
+    background-color: var(--tsr-comp-head-cell-pinned-bg);
     position: sticky;
   }
 
@@ -84,7 +84,7 @@
   &[data-actions-column-cell='true'][data-cell-pinned='right']:not(
       [data-cell-first-right-pinned='true']
     ) {
-    background-color: var(--tsr-comp-cell-pinned-right-bg);
+    background-color: var(--tsr-comp-head-cell-pinned-bg);
     position: sticky;
     z-index: var(--tsr-comp-z-index-pinned);
     flex-grow: 0;

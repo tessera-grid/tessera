@@ -2,6 +2,7 @@ import { type ReactNode } from 'react'
 
 import { Toolbar } from '@base-ui/react/toolbar'
 
+import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -153,6 +154,103 @@ describe('Style contract by component family', () => {
         '50%',
       )
     }
+  })
+
+  // TC-6…TC-8 (ADR 0017): цвета и тени единые, радиус — по семейству.
+  const colored = (name: string) =>
+    ['SortButton', 'PinButton', 'GroupButton', 'RowButton'].includes(name)
+
+  test('TC-6 button family shares ONE rest color = --tsr-comp-control-color', async () => {
+    const expected = resolveColor('--tsr-comp-control-color')
+    for (const m of BUTTON_FAMILY.filter(member => colored(member.name))) {
+      // eslint-disable-next-line no-await-in-loop
+      const node = await el(m, false)
+      expect(read(node, 'color'), `${m.name} rest color`).toBe(expected)
+    }
+    expect(
+      read(await toolbarButton(false), 'color'),
+      'ToolbarButton rest color',
+    ).toBe(expected)
+  })
+
+  test('TC-7 flat buttons share ONE hover layer = --tsr-comp-control-hover-bg; overlay buttons (row actions) show the light --tsr-comp-action-button-hover-bg over their opaque bg', async () => {
+    const hover = resolveColor('--tsr-comp-control-hover-bg')
+    const hovered = async (node: HTMLElement) => {
+      await userEvent.hover(node)
+      return node
+    }
+    for (const m of BUTTON_FAMILY.filter(member => colored(member.name))) {
+      // eslint-disable-next-line no-await-in-loop
+      const node = await hovered(await el(m, false))
+      if (m.name === 'RowButton') {
+        const layer = () => getComputedStyle(node, '::before')
+        // eslint-disable-next-line no-await-in-loop
+        await expect.poll(() => layer().opacity, { timeout: 5000 }).toBe('1')
+        expect(layer().backgroundColor).toBe(
+          resolveColor('--tsr-comp-action-button-hover-bg'),
+        )
+        expect(read(node, 'background-color')).toBe(
+          resolveColor('--tsr-comp-action-button-bg'),
+        )
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        await expect
+          .poll(() => read(node, 'background-color'), { timeout: 5000 })
+          .toBe(hover)
+      }
+    }
+    const toolbar = await hovered(await toolbarButton(false))
+    await expect
+      .poll(() => read(toolbar, 'background-color'), { timeout: 5000 })
+      .toBe(hover)
+  })
+
+  test('TC-8 flat buttons have NO shadow at rest; only the overlay variant (row actions) and floating popups carry shadow-action', async () => {
+    for (const m of BUTTON_FAMILY.filter(
+      member => member.name !== 'RowButton',
+    )) {
+      // eslint-disable-next-line no-await-in-loop
+      const node = await el(m, false)
+      expect(read(node, 'box-shadow'), `${m.name} shadow`).toBe('none')
+    }
+    expect(read(await toolbarButton(false), 'box-shadow')).toBe('none')
+  })
+
+  test('TC-9 an overlay button (row actions) reads over content: opaque bg, shadow-action, no border', async () => {
+    const chip = BUTTON_FAMILY.find(member => member.name === 'RowButton')!
+    const node = await el(chip, false)
+    const probe = document.createElement('div')
+    probe.className = 'data-grid-theme'
+    probe.style.boxShadow = 'var(--tsr-comp-shadow-action)'
+    document.body.appendChild(probe)
+    const shadow = getComputedStyle(probe).boxShadow
+    probe.remove()
+    expect(read(node, 'box-shadow')).toBe(shadow)
+    expect(read(node, 'background-color')).toBe(
+      resolveColor('--tsr-comp-action-button-bg'),
+    )
+    expect(read(node, 'border-top-width')).toBe('0px')
+  })
+
+  test('TC-10 in the dark theme an overlay button stands out from its row: elevated (lighter) background and a denser shadow', async () => {
+    const themed = (theme: string, token: string, prop: string) => {
+      const probe = document.createElement('div')
+      probe.className = theme
+      probe.style.setProperty(prop, 'var(' + token + ')')
+      document.body.appendChild(probe)
+      const value = getComputedStyle(probe).getPropertyValue(prop).trim()
+      probe.remove()
+      return value
+    }
+    const dark = 'data-grid-theme dark'
+    const chip = themed(dark, '--tsr-comp-action-button-bg', 'background-color')
+    expect(chip).not.toBe(themed(dark, '--tsr-comp-row-bg', 'background-color'))
+    expect(chip).not.toBe(
+      themed(dark, '--tsr-comp-row-odd-bg', 'background-color'),
+    )
+    expect(themed(dark, '--tsr-comp-shadow-action', 'box-shadow')).not.toBe(
+      themed('data-grid-theme', '--tsr-comp-shadow-action', 'box-shadow'),
+    )
   })
 
   test('TC-4 form controls share ONE disabled opacity = --tsr-comp-disabled-opacity', async () => {

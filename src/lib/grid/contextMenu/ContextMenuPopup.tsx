@@ -6,7 +6,7 @@ import { Menu } from '@base-ui/react/menu'
 import { Check } from 'lucide-react'
 import clsx from 'clsx'
 
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { usePortalThemeClass } from '../../core/themeVariables'
 import type { TableLabels } from '../../core/localization'
 import {
   resolveMenuItems,
@@ -15,6 +15,7 @@ import {
 } from '../../core/headerActions'
 
 import menuStyles from '../headerActions/ActionMenu.module.css'
+import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 export interface ContextMenuPopupProps {
   /** Координаты курсора (виртуальный якорь позиционера). */
@@ -34,6 +35,7 @@ export const ContextMenuPopup = ({
   labels,
   onClose,
 }: ContextMenuPopupProps) => {
+  const themeClass = usePortalThemeClass()
   // Виртуальный якорь — точка курсора (нулевой прямоугольник у координат).
   const anchor = { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) }
 
@@ -51,12 +53,12 @@ export const ContextMenuPopup = ({
           anchor={anchor}
           side="right"
           align="start"
-          sideOffset={2}
-          className={clsx(DATA_GRID_THEME_CLASS, menuStyles.positioner)}
+          sideOffset={POPUP_SIDE_OFFSET}
+          className={clsx(themeClass, menuStyles.positioner)}
         >
           <Menu.Popup
             aria-label={labels.contextMenu}
-            className={clsx(DATA_GRID_THEME_CLASS, menuStyles.popup)}
+            className={clsx(themeClass, menuStyles.popup)}
           >
             {actions.map((action, index) => {
               const items = resolveMenuItems(action, context, labels)

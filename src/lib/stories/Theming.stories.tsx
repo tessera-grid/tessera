@@ -271,13 +271,13 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-action-button-color',
     arg: 'actionColor',
     label: 'action-button-color',
-    desc: 'Цвет иконок кнопок действий над строкой.',
+    desc: 'Цвет иконок кнопок действий (псевдоним `control-color`).',
   },
   {
     token: '--tsr-comp-action-button-bg',
     arg: 'actionBg',
     label: 'action-button-bg',
-    desc: 'Фон кнопок действий над строкой.',
+    desc: 'Непрозрачный фон «чипа» кнопок действий строки (тени нет).',
   },
   {
     token: '--tsr-comp-accent',

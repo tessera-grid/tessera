@@ -35,13 +35,16 @@
     }
   }
 
-  /* Обводка ячейки при наведении */
+  /* Обводка ячейки при наведении: проявляется тем же переходом, что и кнопки внутри */
+  /* (ADR 0017, MO4) — без мгновенного скачка, который опережал их появление. */
+
+  outline: 1px solid transparent;
+  outline-offset: -1px;
 
   &:hover:not([data-actions-column-cell='true']):is(
       [data-cell-interact='true']
     ) {
-    outline: 1px solid var(--tsr-comp-cell-outline-color);
-    outline-offset: -1px;
+    outline-color: var(--tsr-comp-cell-outline-color);
   }
 
   /* Выделение диапазона ячеек (плагин cellSelection). */

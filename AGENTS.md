@@ -361,16 +361,23 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),
       [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md).
     - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB5 — модульный
-      `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG18; PG1, PG5, PG8–PG10 —
+      `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
-    - _Тема и токены:_ `theming` (TH1–TH9,
+    - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
+      панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),
+      модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,
+      строки и колонки, значения, CSV, защита от формул, `table.exportData`,
+      [ADR 0044](docs/decisions/0044-export.md)); дымовой `export-stories` (EX34 — история
+      «Export — server»); перф EX33 — в `interaction`.
+    - _Тема и токены:_ `theming` (TH1–TH10,
       [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
       матрица `theming-matrix` / `theming-controls` / `theming-header-controls` /
       `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
       (TI-05… — статические инварианты токенов) —
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
-      (TC-1…TC-5 — единые контракты по семействам,
+      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO5 — движение), `theming-popups` (PP1–PP7 — единый вид
+      поповеров),
       [ADR 0017](docs/decisions/0017-ui-components.md)).
     - _Доступность:_ `a11y` (A1–A10, прогон axe-core,
       [ADR 0020](docs/decisions/0020-accessibility.md)); `wcag-aa` (W1–W17 —
@@ -541,13 +548,6 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
 (`R<n>:`, согласно [ADR 0009](docs/decisions/0009-test-coverage-visual-and-performance.md)). Меняется
 поведение — сначала правится список требований, потом код и тесты приводятся к нему.
 
-### ADR обязательны к исполнению — не обсуждается
-
-**Следование каждому принятому ADR в [`docs/decisions/`](docs/decisions/) —
-обязательное условие любой работы здесь.** Это не история и не рекомендация — это
-действующие правила. Читайте их перед действиями и никогда им не противоречьте. Если
-задача потребовала бы нарушить ADR, **остановитесь и поднимите вопрос**: ADR отменяется
-только новым ADR (согласно [decisions/README](docs/decisions/README.md)), а не
 ### Прожарка — перед любой фичей, до ADR
 
 **Любая новая фича или заметное изменение поведения начинается с прожарки, а не с
@@ -602,6 +602,13 @@ ADR и не с кода.** Прожарка — короткий диалог с
 - Типизация историй проходит в `npm run typecheck`; `npm run build-storybook` — дымовая
   проверка сборки, когда трогали много историй.
 
+### ADR обязательны к исполнению — не обсуждается
+
+**Следование каждому принятому ADR в [`docs/decisions/`](docs/decisions/) —
+обязательное условие любой работы здесь.** Это не история и не рекомендация — это
+действующие правила. Читайте их перед действиями и никогда им не противоречьте. Если
+задача потребовала бы нарушить ADR, **остановитесь и поднимите вопрос**: ADR отменяется
+только новым ADR (согласно [decisions/README](docs/decisions/README.md)), а не
 игнорированием.
 
 ### Язык документации — русский
@@ -645,6 +652,11 @@ ADR и не с кода.** Прожарка — короткий диалог с
 
 ### Архитектурная дисциплина
 
+- **Анимации — только через токены движения** (`--tsr-comp-motion-duration`,
+  `--tsr-comp-motion-easing`, [ADR 0017](docs/decisions/0017-ui-components.md), MO1–MO5):
+  никаких литералов `ms`/`cubic-bezier` в компонентах; скрытые кнопки ячейки и строки
+  проявляются через `--tsr-comp-reveal-transition`; `prefers-reduced-motion` гасит тема
+  одним правилом, а не компоненты по отдельности.
 - **Реагируйте на состояние только через TanStack Store** (`table.atoms`/`table.store`,
   обёртки `useSlice`/`useTableState`) — это единственный механизм; не вводите перестройки
   модели, управляемые зависимостями ([reactivity.md](docs/architecture/reactivity.md)).

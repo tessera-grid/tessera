@@ -17,6 +17,7 @@ import {
   ChevronsUpDown,
   CircleAlert,
   Columns3,
+  Download,
   EyeOff,
   Group,
   GripVertical,
@@ -74,6 +75,8 @@ export interface TableIcons {
   edit: IconComponent
   /** Кнопка меню колонок в тулбаре */
   columns: IconComponent
+  /** Кнопка «Экспорт» в тулбаре */
+  download: IconComponent
   /** Пункт «Скрыть колонку» в кебабе заголовка */
   hideColumn: IconComponent
   /** Кнопки пагинации: первая / предыдущая / следующая / последняя страница */
@@ -101,6 +104,7 @@ export const DEFAULT_ICONS: TableIcons = {
   menu: MoreVertical,
   edit: Pencil,
   columns: Columns3,
+  download: Download,
   hideColumn: EyeOff,
   firstPage: ChevronsLeft,
   previousPage: ChevronLeft,

@@ -5,11 +5,12 @@ import { Menu } from '@base-ui/react/menu'
 import { Check } from 'lucide-react'
 import clsx from 'clsx'
 
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { usePortalThemeClass } from '../../core/themeVariables'
 import { useLocalization } from '../../core/localization'
 import { type SlotAction, resolveMenuItems } from '../../core/headerActions'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
+import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 interface ActionMenuPopupProps {
   actions: SlotAction[]
@@ -17,6 +18,7 @@ interface ActionMenuPopupProps {
 }
 
 export const ActionMenuPopup = ({ actions, context }: ActionMenuPopupProps) => {
+  const themeClass = usePortalThemeClass()
   const labels = useLocalization()
 
   return (
@@ -24,10 +26,10 @@ export const ActionMenuPopup = ({ actions, context }: ActionMenuPopupProps) => {
       <Menu.Positioner
         side="bottom"
         align="end"
-        sideOffset={4}
-        className={clsx(DATA_GRID_THEME_CLASS, styles.positioner)}
+        sideOffset={POPUP_SIDE_OFFSET}
+        className={clsx(themeClass, styles.positioner)}
       >
-        <Menu.Popup className={clsx(DATA_GRID_THEME_CLASS, styles.popup)}>
+        <Menu.Popup className={clsx(themeClass, styles.popup)}>
           {actions.map((action, index) => {
             const items = resolveMenuItems(action, context, labels)
             const groupLabel = action.menuGroupLabel?.(labels)

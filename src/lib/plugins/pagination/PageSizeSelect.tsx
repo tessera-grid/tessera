@@ -6,8 +6,9 @@ import { Select } from '@base-ui/react/select'
 import clsx from 'clsx'
 import { Check, ChevronDown } from 'lucide-react'
 
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { usePortalThemeClass } from '../../core/themeVariables'
 import styles from './Pagination.module.css'
+import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 export interface PageSizeSelectProps {
   label: string
@@ -21,40 +22,46 @@ export const PageSizeSelect = ({
   pageSize,
   pageSizes,
   onChange,
-}: PageSizeSelectProps) => (
-  <Select.Root
-    value={pageSize}
-    onValueChange={value => {
-      if (value !== null) {
-        onChange(value)
-      }
-    }}
-  >
-    <Select.Label className={styles.label}>{label}</Select.Label>
-    <Select.Trigger className={styles.trigger} data-testid="page-size-select">
-      <Select.Value />
-      <Select.Icon className={styles.triggerIcon}>
-        <ChevronDown width={14} height={14} />
-      </Select.Icon>
-    </Select.Trigger>
-    <Select.Portal>
-      <Select.Positioner
-        sideOffset={4}
-        className={clsx(DATA_GRID_THEME_CLASS, styles.positioner)}
-      >
-        <Select.Popup className={clsx(DATA_GRID_THEME_CLASS, styles.popup)}>
-          <Select.List>
-            {pageSizes.map(size => (
-              <Select.Item key={size} value={size} className={styles.item}>
-                <Select.ItemText>{size}</Select.ItemText>
-                <Select.ItemIndicator className={styles.itemCheck}>
-                  <Check width={14} height={14} />
-                </Select.ItemIndicator>
-              </Select.Item>
-            ))}
-          </Select.List>
-        </Select.Popup>
-      </Select.Positioner>
-    </Select.Portal>
-  </Select.Root>
-)
+}: PageSizeSelectProps) => {
+  const themeClass = usePortalThemeClass()
+  return (
+    <Select.Root
+      value={pageSize}
+      onValueChange={value => {
+        if (value !== null) {
+          onChange(value)
+        }
+      }}
+    >
+      <Select.Label className={styles.label}>{label}</Select.Label>
+      <Select.Trigger className={styles.trigger} data-testid="page-size-select">
+        <Select.Value />
+        <Select.Icon className={styles.triggerIcon}>
+          <ChevronDown width={14} height={14} />
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Positioner
+          side="bottom"
+          align="end"
+          sideOffset={POPUP_SIDE_OFFSET}
+          alignItemWithTrigger={false}
+          className={clsx(themeClass, styles.positioner)}
+        >
+          <Select.Popup className={clsx(themeClass, styles.popup)}>
+            <Select.List>
+              {pageSizes.map(size => (
+                <Select.Item key={size} value={size} className={styles.item}>
+                  <Select.ItemText>{size}</Select.ItemText>
+                  <Select.ItemIndicator className={styles.itemCheck}>
+                    <Check width={14} height={14} />
+                  </Select.ItemIndicator>
+                </Select.Item>
+              ))}
+            </Select.List>
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
+  )
+}

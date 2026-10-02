@@ -38,6 +38,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   },
   rowActionMenu: { enableRowActionMenu: true, enableRowActions: true },
   pagination: { enablePagination: true },
+  dataExport: { enableExport: true, enableToolbar: true },
 }
 
 // Контекст axe — вся обёртка грида, включая тулбар над таблицей.

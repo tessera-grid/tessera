@@ -165,7 +165,7 @@ describe('Column Pinning — right side', () => {
     // Its header adopts the backing too — sticky, aligned with its body, and with
     // no visible content: only the visually hidden service label (ADR 0032, W13).
     const head = actionsHead(container)
-    expect(isOpaque(head)).toBe(true)
+    await expect.poll(() => isOpaque(head)).toBe(true)
     expect(getComputedStyle(head).position).toBe('sticky')
     expect(head.textContent).toBe(DEFAULT_LABELS.rowActionsColumn)
     expect(
@@ -209,15 +209,16 @@ describe('Column Pinning — right side', () => {
 
     // The row-actions column is sticky and transparent, so scrolled content can
     // pass under it; each row-action button must stay an opaque chip (background
-    // + elevation) to remain legible. Buttons live in the row-actions cell,
+    // + shadow: the overlay button variant, ADR 0017, TC-9) to remain legible. Buttons live in the row-actions cell,
     // revealed on row hover.
-    const row = container.querySelector<HTMLElement>('.data-grid__body-row')!
-    await userEvent.hover(row)
+    // Наводим на ячейку действий самой строки: центр широкой строки может быть
+    // вне видимой области, и наведения не случилось бы.
+    await userEvent.hover(actionsBody(container))
     const button = actionsBody(container).querySelector<HTMLElement>(
       '.row__button button',
     )!
     expect(button).toBeTruthy()
-    expect(isOpaque(button)).toBe(true)
+    await expect.poll(() => isOpaque(button)).toBe(true)
     expect(getComputedStyle(button).boxShadow).not.toBe('none')
   })
 

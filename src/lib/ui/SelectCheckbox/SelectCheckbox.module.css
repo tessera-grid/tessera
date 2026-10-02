@@ -38,8 +38,11 @@
   border-color: var(--tsr-comp-checkbox-checked-bg);
 }
 
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
 .checkbox:focus-visible {
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
 }
 
 /* base-ui выставляет [data-disabled] (не всегда нативный :disabled). */

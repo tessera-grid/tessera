@@ -5,6 +5,7 @@ import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
 import { axTree } from './src/lib/stories/__tests__/a11y.commands.ts'
+import { reducedMotion } from './src/lib/stories/__tests__/motion.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
@@ -68,7 +69,7 @@ export default defineConfig({
             }),
             instances: [{ browser: 'chromium' }],
             // Дерево доступности Chromium через CDP (ADR 0033).
-            commands: { axTree },
+            commands: { axTree, reducedMotion },
           },
         },
       },

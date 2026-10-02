@@ -1,7 +1,10 @@
 import { composeStories } from '@storybook/react-vite'
+import type { CSSProperties } from 'react'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
 import * as stories from '../../Theming.stories'
 
 // Каждое требование темизации — отдельный именованный тест:
@@ -135,6 +138,41 @@ describe('Theming — external customization + token tiers', () => {
     expect(fgLight).not.toBe('')
     expect(fgDark).not.toBe('')
     expect(fgLight).not.toBe(fgDark)
+  })
+
+  test('TH10: the grid sets its own text color — cells and headers ignore the page color in both themes', async () => {
+    // Страница без shadcn (гасим `--foreground`) со своим цветом текста: грид не
+    // наследует его, а берёт `--tsr-comp-fg` своей темы.
+    const Grid = ({ colorMode }: { colorMode: 'light' | 'dark' }) => {
+      const table = useCreateTable({
+        columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }],
+        data: [{ id: '1', name: 'Ann' }],
+        getRowId: (row: { id: string }) => row.id,
+      })
+      return (
+        <div style={{ height: 200, color: 'rgb(1, 2, 3)' }}>
+          <DataGrid
+            table={table as never}
+            colorMode={colorMode}
+            style={{ '--foreground': 'initial' } as CSSProperties}
+          />
+        </div>
+      )
+    }
+    for (const [colorMode, fg] of [
+      ['light', 'rgb(23, 23, 23)'],
+      ['dark', 'rgb(250, 250, 250)'],
+    ] as const) {
+      const { container, unmount } = await render(
+        <Grid colorMode={colorMode} />,
+      )
+      const cell = container.querySelector('.data-grid__body-cell')
+      const head = container.querySelector('.data-grid__head-cell')
+      await expect.poll(() => cell && head).toBeTruthy()
+      expect(getComputedStyle(cell!).color, `${colorMode} cell`).toBe(fg)
+      expect(getComputedStyle(head!).color, `${colorMode} head`).toBe(fg)
+      await unmount()
+    }
   })
 
   // --- Уровни токенов ---------------------------------------------------------

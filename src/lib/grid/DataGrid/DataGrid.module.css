@@ -8,6 +8,7 @@
   border: var(--tsr-comp-frame-border-width) solid
     var(--tsr-comp-frame-border-color);
   border-radius: var(--tsr-comp-frame-radius);
+  color: var(--tsr-comp-fg);
   font-family: var(--tsr-comp-font-family);
   font-variant-numeric: var(--tsr-comp-numeric-font-feature);
 }

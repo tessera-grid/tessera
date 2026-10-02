@@ -41,6 +41,22 @@ export {
 } from './headerActionMenu'
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 export { pagination, type PaginationOptions } from './pagination'
+export {
+  dataExport,
+  exportFormats,
+  type ExportOptions,
+  type CsvFormatOptions,
+  type ExportAllow,
+  type ExportColumn,
+  type ExportColumns,
+  type ExportData,
+  type ExportFormat,
+  type ExportPreset,
+  type ExportRequest,
+  type ExportRows,
+  type ExportSettings,
+  type ExportValueContext,
+} from './dataExport'
 
 // Контракт хуков для потребителя (types-mode b): слайсы как примитивы.
 export type { ColumnDraggingHooks } from './columnDragging/types'
@@ -48,6 +64,7 @@ export type { ColumnPinningHooks } from './columnPinning/types'
 export type { ColumnSizingHooks } from './columnSizing/types'
 export type { ColumnSortingHooks } from './columnSorting/types'
 export type { ColumnVisibilityHooks } from './columnVisibility/types'
+export type { ExportHooks } from './dataExport/types'
 export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'

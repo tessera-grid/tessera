@@ -163,18 +163,91 @@ relative-якорь кнопки, круглая геометрия кнопки
 
 Компоненты сгруппированы в **семейства** со схожей стилевой ролью; члены семейства
 ОБЯЗАНЫ делить единые признаки, привязанные к каноническим токенам. Enforcement —
-`theming-contracts.test.tsx` (TC-1…TC-5): новый член добавляется в список семейства
+`theming-contracts.test.tsx` (TC-1…TC-10) и `theming-popups.test.tsx` (PP1–PP7) и `theming-motion.test.tsx` (MO1–MO5): новый член добавляется в список семейства
 и обязан пройти контракт.
 
-| Семейство             | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                                            |
-| --------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **F1 icon-контролы**  | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round`                   |
-| **F2 action-кнопки**  | RowButton, CellButton                                              | color/bg/hover `action-button-*` · shadow `shadow-action` · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round`                                                             |
-| **F3 форм-контролы**  | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                                           |
-| **F4 кнопки тулбара** | ToolbarButton ([ADR 0035](0035-toolbar-and-column-visibility.md))  | rest `action-button-color` · hover-bg `control-hover-bg` · active `control-active-color`+`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition `action-button-transition` · radius `toolbar-button-radius` (квадратная) |
+| Семейство             | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F1 icon-контролы**  | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round`                                                                |
+| **F2 action-кнопки**  | RowButton, CellButton                                              | rest `control-color` (`action-button-color` — псевдоним) · непрозрачный фон «чипа» `action-button-bg` · hover — слой `control-hover-bg` поверх фона · **без тени** · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round` |
+| **F3 форм-контролы**  | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                                                                                        |
+| **F4 кнопки тулбара** | ToolbarButton ([ADR 0035](0035-toolbar-and-column-visibility.md))  | rest `control-color` · hover-bg `control-hover-bg` · active `control-active-color`+`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition `action-button-transition` · radius `toolbar-button-radius` (квадратная)                                                    |
 
-F4 проходит TC-1 и TC-2 вместе с F1/F2 (единый disabled-цвет и transition), но
-не TC-3: радиус у неё свой.
+F4 проходит TC-1, TC-2 и TC-6…TC-8 вместе с F1/F2 (единые disabled-цвет, transition,
+цвет покоя, hover и отсутствие тени), но не TC-3: радиус у неё свой.
+
+**Единые цвета и тени (TC-6…TC-8).** Канон — токены `control-*`: цвет покоя
+`control-color`, hover `control-hover-bg`, активное `control-active-*`, disabled
+`control-disabled-color`. `action-button-color` — **псевдоним** канона (внешняя тема,
+переопределявшая его, продолжает работать, а значения не расходятся). **Плоские кнопки
+без тени** (шапка, ячейки, тулбар, кнопки в панелях); `shadow-action` есть у
+всплывающих поверхностей (меню, поповеры) и у **варианта кнопки «поверх контента»**.
+
+**Вариант «поверх контента» (TC-7…TC-9).** Кнопки действий строки лежат поверх
+контента: колонка действий закреплена и прозрачна, под ней проходят ячейки центра
+(и их кнопки). Такая кнопка — непрозрачный «чип» `action-button-bg` с тенью
+`shadow-action` и без обводки; hover — светлый **непрозрачный** слой
+`action-button-hover-bg` (`sys-muted`) над фоном, проявляется плавно
+(`--tsr-comp-overlay-hover-transition`). Полупрозрачный hover плоских кнопок здесь не
+годится: фон чипа почти равен фону строки, а hover плоской кнопки (5 %) почти равен
+hover-тинту строки (4 %), и кнопка сливалась бы со строкой. Радиус
+различаться может (у F4 свой). Кнопки внутри панелей (`columnVisibility`,
+`dataExport`) — без рамки, hover `control-hover-bg`.
+
+**Поповеры (PP1–PP7).** Всплывающие меню и панели — кебаб, контекстное меню и меню
+ручки, меню колонок, панель экспорта, список размера страницы — берут вид из одного
+источника, [`ui/Popup/Popup.module.css`](../../src/lib/ui/Popup/Popup.module.css)
+(через `composes`), и токенов `--tsr-comp-popup-*`: отступ `popup-padding` (4px),
+кегль `popup-font-size` (0.8125rem), цвет текста `popup-color` (= `control-color`),
+высота пункта `popup-item-min-height` (32px), радиус пункта `popup-item-radius`,
+разделитель `popup-divider-color`. Поверхность — **приподнятая** `popup-bg`
+(= `--tsr-sys-elevated`) **без рамки**: её отделяет только тень `shadow-action`
+(PP6). Анимация появления и скрытия (fade + scale), слой `z-index-tooltip`.
+
+**Тёмная тема в порталах (PP5).** Поповеры рендерятся в портал вне корня грида и
+не наследуют его класс `dark`. Грид передаёт класс своей цветовой схемы
+(`colorMode`) через контекст (`usePortalThemeClass`), и каждый поповер, меню и тултип
+ставит его себе. Пользовательский `className` грида в порталы не передаётся (он может
+нести раскладку), как и инлайн-переменные из `style`: переопределения темы для
+поповеров задаются на `.data-grid-theme`, а не на конкретном экземпляре.
+
+**Приподнятая поверхность** (`--tsr-sys-elevated`, `--tsr-sys-shadow-elevated`) —
+общая у поповеров и кнопок «поверх контента». В светлой теме совпадает с `surface`
+и отделяется тенью; в тёмной — светлее `surface` (смесь с `fg` 8 %) и с более плотной
+тенью: на тёмном фоне тень почти не видна, и без этого кнопки и поповеры сливались
+бы с таблицей (TC-10).
+Внешний отступ у всех одинаковый (4px); панели с полями (меню колонок, экспорт) меняют только ширину. Зазор до якоря — `POPUP_SIDE_OFFSET` (4px) у всех, включая контекстное меню; высота и радиус кнопок внутри панелей — как у пункта.
+Пункт показывает курсор-указатель (PP7). Недоступный пункт гаснет **цветом**
+`control-disabled-color`, а не прозрачностью, как кнопки, и показывает обычный курсор. Тултип — отдельная тёмная поверхность и в контракт не входит.
+
+**Движение (MO1–MO5).** Подход к анимациям един для всего грида:
+
+- **Два базовых токена** — `--tsr-comp-motion-duration` (150 мс) и
+  `--tsr-comp-motion-easing` (`cubic-bezier(0.4, 0, 0.2, 1)`); для появления есть
+  `--tsr-comp-motion-easing-out` (быстрый старт). Все `*-transition` (`row`, `head-cell`,
+  `button-cell`, `action-button`, `reveal`, `resize-handler`, `tooltip`) собираются из них;
+  литералы `ms` и `cubic-bezier` в компонентах не пишутся.
+- **Проявление скрытых кнопок** ячейки и строки — один темп: длительность
+  `motion-duration` и кривая появления `motion-easing-out`. Кнопка ячейки проявляется
+  прозрачностью (`--tsr-comp-reveal-transition`). «Чип» кнопки действий строки лежит
+  поверх контента ячеек — и поверх их кнопок (колонка действий прозрачна): проявлять его
+  прозрачностью нельзя, иначе полупрозрачный чип пропускает кнопку ячейки под собой и
+  она видна раньше чипа. Поэтому непрозрачный фон чипа закрывает то, что под ним, с
+  первого кадра, а проявляются только значок и тень
+  (`--tsr-comp-reveal-chip-transition`); скрытый чип прозрачен целиком и ничего не
+  закрывает. Раскладка кнопки ячейки (`flex`, `overflow`) переключается мгновенно
+  намеренно и не анимируется.
+- **Обратная связь при наведении проявляется тем же движением.** Обводка наведённой
+  ячейки (`outline-color`) идёт переходом `row-transition` (кривая появления), а не
+  включается мгновенно: мгновенная обводка в ячейке с кнопкой опережала плавное
+  проявление самой кнопки и казалось, что кнопка появляется раньше кнопок соседней
+  ячейки/строки (кебаб действий строки).
+- **Цвета состояний** кнопок (`background-color`, `border-color`, `color`) — одна
+  длительность `motion-duration` (раньше у `action-button` было 300 мс).
+- **Меньше движения.** Один гаситель `@media (prefers-reduced-motion: reduce)` в теме
+  обнуляет все переходы и анимации внутри `.data-grid-theme`, включая порталы (поповеры,
+  тултип): компоненты свои правила для этого не пишут. Бесконечные фоновые анимации
+  (скелетон, линейный прогресс) в этом режиме выключаются тем же правилом.
 
 **Правила единого disabled (по семейству):** иконки/кнопки (F1/F2/F4) гаснут **цветом**
 (`--tsr-comp-control-disabled-color`); наполненные форм-контролы (F3) — общей
@@ -291,13 +364,40 @@ Chromium) и рендерят компоненты напрямую, читая 
 
 **Контракт стилевых признаков по семействам** (`theming-contracts.test.tsx`)
 
-| ID   | Требование                                                                   | Тест                                       |
-| ---- | ---------------------------------------------------------------------------- | ------------------------------------------ |
-| TC-1 | Семейство кнопок (F1/F2) делит единый disabled-цвет `control-disabled-color` | ✔ `TC-1: button family … disabled color`   |
-| TC-2 | Семейство кнопок делит единую `transition`                                   | ✔ `TC-2: button family … transition`       |
-| TC-3 | Семейство кнопок делит единый радиус `radius-round` (50%)                    | ✔ `TC-3: button family … radius`           |
-| TC-4 | Форм-контролы (F3) делят единую disabled-прозрачность `disabled-opacity`     | ✔ `TC-4: form controls … disabled opacity` |
-| TC-5 | Форм-контролы делят единую `transition`                                      | ✔ `TC-5: form controls … transition`       |
+| ID    | Требование                                                                                                                                               | Тест                                            |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| TC-1  | Семейство кнопок (F1/F2) делит единый disabled-цвет `control-disabled-color`                                                                             | ✔ `TC-1: button family … disabled color`        |
+| TC-2  | Семейство кнопок делит единую `transition`                                                                                                               | ✔ `TC-2: button family … transition`            |
+| TC-3  | Семейство кнопок делит единый радиус `radius-round` (50%)                                                                                                | ✔ `TC-3: button family … radius`                |
+| TC-4  | Форм-контролы (F3) делят единую disabled-прозрачность `disabled-opacity`                                                                                 | ✔ `TC-4: form controls … disabled opacity`      |
+| TC-5  | Форм-контролы делят единую `transition`                                                                                                                  | ✔ `TC-5: form controls … transition`            |
+| TC-6  | Семейство кнопок (F1/F2/F4) делит единый цвет покоя `control-color`                                                                                      | ✔ `TC-6: button family … rest color`            |
+| TC-7  | Плоские кнопки делят hover-слой `control-hover-bg`; кнопка «поверх контента» — светлый непрозрачный слой `action-button-hover-bg` над непрозрачным фоном | ✔ `TC-7 flat buttons share ONE hover layer …`   |
+| TC-8  | Плоские кнопки без тени в покое; `shadow-action` — у варианта «поверх контента» и всплывающих поверхностей                                               | ✔ `TC-8 flat buttons have NO shadow …`          |
+| TC-9  | Кнопка «поверх контента» (действия строки): непрозрачный фон, `shadow-action`, без обводки                                                               | ✔ `TC-9 an overlay button …`                    |
+| TC-10 | В тёмной теме кнопка «поверх контента» выделяется на строке: фон светлее строки и плотнее тень                                                           | ✔ `TC-10 in the dark theme an overlay button …` |
+
+**Контракт вида поповеров** (`theming-popups.test.tsx`)
+
+| ID  | Требование                                                                                                                               | Тест                                            |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| PP1 | Поповеры делят единую поверхность: фон, цвет текста, рамка, радиус, тень, кегль, шрифт и transition                                      | ✔ `PP1 popover surfaces share ONE …`            |
+| PP2 | Пункты поповеров делят единую высоту (`popup-item-min-height`), радиус и кегль                                                           | ✔ `PP2 popover items share ONE …`               |
+| PP3 | Недоступный пункт гаснет цветом `control-disabled-color`, а не прозрачностью                                                             | ✔ `PP3 a disabled popover item fades …`         |
+| PP4 | Поповеры открываются на едином расстоянии от якоря — `POPUP_SIDE_OFFSET` (4px): кебаб, контекстное меню, кнопки тулбара, список страницы | ✔ `PP4 popovers open at ONE distance …`         |
+| PP5 | Поповеры в порталах следуют цветовой схеме грида: при `colorMode="dark"` тёмные фон и текст                                              | ✔ `PP5 popovers rendered in portals …`          |
+| PP6 | Поверхность поповера без рамки: её отделяет только `shadow-action`                                                                       | ✔ `PP6 popover surfaces have no border …`       |
+| PP7 | Пункты поповеров показывают курсор-указатель; недоступный пункт — обычный курсор                                                         | ✔ `PP7 popover items show the pointer cursor …` |
+
+**Контракт движения** (`theming-motion.test.tsx`)
+
+| ID  | Требование                                                                                                                                           | Тест                                               |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| MO1 | Все переходы грида собраны из токенов движения: одна длительность и общая кривая (или кривая появления)                                              | ✔ `MO1 every transition is built …`                |
+| MO2 | Кнопки ячейки и «чипы» строки проявляются одним темпом: та же длительность и кривая появления                                                        | ✔ `MO2 hidden cell buttons and row action chips …` |
+| MO3 | `prefers-reduced-motion` одним правилом выключает все переходы, включая порталы                                                                      | ✔ `MO3 prefers-reduced-motion …`                   |
+| MO4 | Обводка наведённой ячейки проявляется переходом `outline-color`, а не мгновенно                                                                      | ✔ `MO4 the hover outline of a body cell …`         |
+| MO5 | «Чип» кнопки строки закрывает то, что под ним, с первого кадра проявления (фон непрозрачен, обёртка не полупрозрачна); скрытый — ничего не закрывает | ✔ `MO5 a row action chip covers …`                 |
 
 См. [ADR 0003](0003-formalize-tech-stack.md) про стек контролов,
 [ADR 0019](0019-token-architecture.md) про уровни токенов и

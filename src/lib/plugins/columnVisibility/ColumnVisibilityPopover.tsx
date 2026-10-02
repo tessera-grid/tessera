@@ -9,13 +9,14 @@ import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { usePortalThemeClass } from '../../core/themeVariables'
 import type { Table } from '../../types'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { ColumnVisibilityMenu } from './ColumnVisibilityMenu'
 
 import styles from './ColumnVisibilityMenu.module.css'
+import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 export interface ColumnVisibilityPopoverProps {
   table: Table<any, any>
@@ -30,6 +31,7 @@ export const ColumnVisibilityPopover = ({
   open,
   onOpenChange,
 }: ColumnVisibilityPopoverProps) => {
+  const themeClass = usePortalThemeClass()
   const labels = useLocalization()
   const { columns: ColumnsIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -49,14 +51,14 @@ export const ColumnVisibilityPopover = ({
         <Popover.Positioner
           side="bottom"
           align="end"
-          sideOffset={4}
-          className={clsx(DATA_GRID_THEME_CLASS, styles.positioner)}
+          sideOffset={POPUP_SIDE_OFFSET}
+          className={clsx(themeClass, styles.positioner)}
         >
           <Popover.Popup
             aria-label={labels.columns}
             initialFocus={searchRef}
             finalFocus={triggerRef}
-            className={clsx(DATA_GRID_THEME_CLASS, styles.popup)}
+            className={clsx(themeClass, styles.popup)}
             data-testid="column-visibility-menu"
           >
             <ColumnVisibilityMenu table={table} searchRef={searchRef} />

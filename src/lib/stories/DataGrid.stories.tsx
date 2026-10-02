@@ -9,10 +9,19 @@ import {
   containerHeightType,
   dataCountType,
   enableCellEditingType,
+  enableCellSelectionType,
   enableColumnDraggingType,
   enableColumnPinningType,
   enableColumnResizingType,
   enableColumnSortingType,
+  enableColumnVisibilityType,
+  enableContextMenuType,
+  enableExportType,
+  enableHeaderActionMenuType,
+  enableKeyboardNavigationType,
+  enableLeafPinningType,
+  enablePaginationType,
+  enableRowActionMenuType,
   enableFooterType,
   enableToolbarType,
   enableGroupingType,
@@ -30,6 +39,7 @@ import {
   rowActionsOptionsType,
   serverColumnSortingType,
   showHeaderGroupsType,
+  showSelectedCountType,
   showStubType,
   skeletonOptionsType,
 } from './__mocks__/utils/argTypes'
@@ -68,10 +78,13 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableColumnResizing: false,
     enableColumnDragging: false,
     enableColumnPinning: false,
+    enableLeafPinning: false,
+    enableColumnVisibility: false,
 
     enableGrouping: false,
 
     enableRowSelection: false,
+    showSelectedCount: false,
     enableSubRowSelection: false,
     enableRowExpanding: false,
     enableRowDragging: false,
@@ -83,6 +96,12 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableRowActionMenu: false,
 
     enableCellEditing: false,
+    enableCellSelection: false,
+    enableContextMenu: false,
+    enableKeyboardNavigation: false,
+
+    enablePagination: false,
+    enableExport: false,
 
     enableFooter: false,
     enableToolbar: false,
@@ -111,18 +130,29 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableColumnResizing: enableColumnResizingType,
     enableColumnDragging: enableColumnDraggingType,
     enableColumnPinning: enableColumnPinningType,
+    enableLeafPinning: enableLeafPinningType,
+    enableColumnVisibility: enableColumnVisibilityType,
 
     enableGrouping: enableGroupingType,
 
     enableRowSelection: enableRowSelectionType,
+    showSelectedCount: showSelectedCountType,
     enableSubRowSelection: enableSubRowSelectionType,
     enableRowExpanding: enableRowExpandingType,
     enableRowDragging: enableRowDraggingType,
 
     enableRowActions: enableRowActionsType,
     rowActionsOptions: rowActionsOptionsType,
+    enableHeaderActionMenu: enableHeaderActionMenuType,
+    enableRowActionMenu: enableRowActionMenuType,
 
     enableCellEditing: enableCellEditingType,
+    enableCellSelection: enableCellSelectionType,
+    enableContextMenu: enableContextMenuType,
+    enableKeyboardNavigation: enableKeyboardNavigationType,
+
+    enablePagination: enablePaginationType,
+    enableExport: enableExportType,
 
     enableFooter: enableFooterType,
     enableToolbar: enableToolbarType,

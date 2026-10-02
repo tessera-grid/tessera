@@ -2,7 +2,7 @@ import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
 import clsx from 'clsx'
 import type { ReactNode, RefObject } from 'react'
 
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { usePortalThemeClass } from '../../core/themeVariables'
 import type { TooltipSide } from './Tooltip'
 import styles from './Tooltip.module.css'
 
@@ -33,30 +33,33 @@ const TooltipPopup = ({
   side,
   onPointerEnter,
   onPointerLeave,
-}: TooltipPopupProps) => (
-  <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
-    <BaseTooltip.Portal>
-      <BaseTooltip.Positioner
-        anchor={anchor}
-        side={side}
-        sideOffset={6}
-        className={clsx(DATA_GRID_THEME_CLASS, styles.positioner)}
-      >
-        <BaseTooltip.Popup
-          className={clsx(DATA_GRID_THEME_CLASS, styles.content)}
-          onPointerEnter={onPointerEnter}
-          onPointerLeave={onPointerLeave}
+}: TooltipPopupProps) => {
+  const themeClass = usePortalThemeClass()
+  return (
+    <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
+      <BaseTooltip.Portal>
+        <BaseTooltip.Positioner
+          anchor={anchor}
+          side={side}
+          sideOffset={6}
+          className={clsx(themeClass, styles.positioner)}
         >
-          {title}
-          <BaseTooltip.Arrow className={styles.arrow}>
-            <svg width="12" height="6" viewBox="0 0 12 6" aria-hidden>
-              <path d="M0 0 H12 L6 6 Z" />
-            </svg>
-          </BaseTooltip.Arrow>
-        </BaseTooltip.Popup>
-      </BaseTooltip.Positioner>
-    </BaseTooltip.Portal>
-  </BaseTooltip.Root>
-)
+          <BaseTooltip.Popup
+            className={clsx(themeClass, styles.content)}
+            onPointerEnter={onPointerEnter}
+            onPointerLeave={onPointerLeave}
+          >
+            {title}
+            <BaseTooltip.Arrow className={styles.arrow}>
+              <svg width="12" height="6" viewBox="0 0 12 6" aria-hidden>
+                <path d="M0 0 H12 L6 6 Z" />
+              </svg>
+            </BaseTooltip.Arrow>
+          </BaseTooltip.Popup>
+        </BaseTooltip.Positioner>
+      </BaseTooltip.Portal>
+    </BaseTooltip.Root>
+  )
+}
 
 export default TooltipPopup

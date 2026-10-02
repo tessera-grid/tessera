@@ -332,6 +332,46 @@ export const enableFooterType: ArgTypes = {
   },
 }
 
+/** Булев тумблер фичи: контрол `boolean`, по умолчанию выключен. */
+const featureToggle = (description: string): ArgTypes => ({
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  control: 'boolean',
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  description,
+  table: { defaultValue: { summary: false } },
+})
+
+export const enableLeafPinningType = featureToggle(
+  'Закрепление отдельных листьев под вложенной шапкой (нужен enableColumnPinning)',
+)
+export const showSelectedCountType = featureToggle(
+  'Счётчик выбранных строк в нижней панели (нужен enableRowSelection)',
+)
+export const enableHeaderActionMenuType = featureToggle(
+  'Схлопывать кнопки заголовка в кебаб-меню',
+)
+export const enableRowActionMenuType = featureToggle(
+  'Схлопывать действия строки в кебаб-меню (нужен enableRowActions)',
+)
+export const enableCellSelectionType = featureToggle(
+  'Выделение диапазона ячеек мышью и копирование (Ctrl/Cmd+C)',
+)
+export const enableContextMenuType = featureToggle(
+  'Контекстное меню по правому клику',
+)
+export const enableKeyboardNavigationType = featureToggle(
+  'Клавиатурная навигация по ячейкам (role=grid, roving tabindex)',
+)
+export const enableColumnVisibilityType = featureToggle(
+  'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar)',
+)
+export const enablePaginationType = featureToggle('Пагинация в нижней панели')
+export const enableExportType = featureToggle(
+  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (нужен enableToolbar)',
+)
+
 export const disabledType: InputType = {
   control: 'boolean',
   description: 'Заблокировать кнопки?',

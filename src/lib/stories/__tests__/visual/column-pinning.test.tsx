@@ -1,4 +1,5 @@
 import { userEvent } from 'vitest/browser'
+import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import {
@@ -16,6 +17,9 @@ import {
   revealPin,
   pinFirstColumn,
 } from './column-pinning-helpers'
+import { composed } from './column-pinning-helpers'
+import { luminance, toRgba } from './a11y-helpers'
+import { parkPointer } from '../pointer'
 
 // CP1–CP12: кнопка, переключение и sticky-рендер закрепления.
 // Каждое требование — отдельный тест с ID из таблицы требований
@@ -217,5 +221,55 @@ describe('Column Pinning — requirements', () => {
     expect(pinnedCell.getAttribute('data-cell-last-left-pinned')).toBe('true')
     const border = getComputedStyle(pinnedCell).borderRightWidth
     expect(parseFloat(border)).toBeGreaterThan(0)
+  })
+
+  test('CP28: in both themes a pinned cell is tinted the same way against its row (even and odd), and the pinned header matches the header', async () => {
+    const lum = (el: Element) =>
+      luminance(toRgba(getComputedStyle(el).backgroundColor))
+    for (const theme of ['light', 'dark'] as const) {
+      const screen = await render(
+        <div className={theme === 'dark' ? 'dark' : undefined}>
+          <composed.ColumnPinning />
+        </div>,
+      )
+      await expect
+        .poll(() => document.querySelectorAll(PIN_BUTTON).length)
+        .toBeGreaterThan(0)
+      await userEvent.click(
+        document.querySelectorAll<HTMLElement>(PIN_BUTTON)[0],
+      )
+      await expect
+        .poll(() =>
+          document.querySelector(`${BODY_CELL}[data-cell-pinned='left']`),
+        )
+        .not.toBeNull()
+      // Курсор вне грида: hover заголовка и строки меняет их фон.
+      await parkPointer()
+
+      const rows = [...document.querySelectorAll('.data-grid__body-row')]
+      const pinned = (row: Element) =>
+        row.querySelector(`${BODY_CELL}[data-cell-pinned='left']`)!
+      const even = lum(pinned(rows[0])) - lum(rows[0])
+      const odd = lum(pinned(rows[1])) - lum(rows[1])
+      // Тон текста: в светлой теме темнее строки, в тёмной — светлее; одинаково у чётных и нечётных.
+      const sign = theme === 'dark' ? 1 : -1
+      expect(Math.sign(even), `${theme} even`).toBe(sign)
+      expect(Math.sign(odd), `${theme} odd`).toBe(sign)
+
+      const head = document.querySelector(LEFT_PINNED_HEAD)!
+      const probe = document.createElement('div')
+      probe.className =
+        theme === 'dark' ? 'data-grid-theme dark' : 'data-grid-theme'
+      probe.style.backgroundColor = 'var(--tsr-comp-head-bg)'
+      document.body.appendChild(probe)
+      const headBg = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      await expect
+        .poll(() => getComputedStyle(head).backgroundColor, {
+          message: `${theme} header`,
+        })
+        .toBe(headBg)
+      await screen.unmount()
+    }
   })
 })
