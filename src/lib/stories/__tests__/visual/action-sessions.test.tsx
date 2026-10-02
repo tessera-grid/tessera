@@ -543,6 +543,32 @@ describe('Сессии действий', () => {
     expect(onEditCancel).not.toHaveBeenCalled()
   })
 
+  test('SS21: текст ошибки validate переживает размонтирование — строка ушла из окна виртуализации и вернулась, редактор с черновиком и той же ошибкой', async () => {
+    await render(
+      <Stories.AllFeatures
+        {...GRID}
+        dataCount={300}
+        enableCellEditing
+        validateCellEdit={() => 'Rejected'}
+      />,
+    )
+    await startEdit()
+    await userEvent.keyboard('{Enter}')
+    await expect
+      .poll(() => draftInput()?.getAttribute('aria-invalid'))
+      .toBe('true')
+
+    const scroller = getScroller()
+    scroller.scrollTop = scroller.scrollHeight
+    await expect.poll(draftInput).toBeNull()
+    scroller.scrollTop = 0
+    await expect.poll(() => draftInput()?.value).toBe('999')
+    expect(draftInput()!.getAttribute('aria-invalid')).toBe('true')
+    expect(ageCell().querySelector('[role="alert"]')!.textContent).toBe(
+      'Rejected',
+    )
+  })
+
   test('SS9: Escape отменяет правку — значение не сохраняется, onEditCancel с cancel и черновиком', async () => {
     const onCellEdit = vi.fn()
     const onEditCancel = vi.fn()

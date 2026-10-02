@@ -16,6 +16,8 @@ export interface EditSession {
   original: unknown
   /** Правка открыта из «ошибки»: текст отказа сервера (ADR 0041). */
   rejected?: { error: string }
+  /** Текст ошибки `validate` последнего сохранения. */
+  invalid?: string
 }
 
 /** Активная сессия правки или null. */

@@ -7,7 +7,7 @@
  * текст переживает прокрутку, смену страницы и сортировку. Сохранение с промисом
  * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2).
  */
-import { useId, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
@@ -25,6 +25,7 @@ import {
   isUnchangedCommit,
   readEditSession,
   setEditDraft,
+  setEditError,
 } from './session'
 import type { CellEditingHooks, CellEditingState, CellEditor } from './types'
 
@@ -54,13 +55,20 @@ export const CellEditField = (
   const labels = useLocalization()
   const { saveFailed: FailedIcon } = useIcons()
   const errorId = useId()
-  const [error, setError] = useState<string>()
   // Подписка только на состояние этой ячейки: ввод черновика другие ячейки не
   // перерисовывает.
   const view = useSliceProjection(
     table,
     EDIT_SESSION_KEY,
     (state: CellEditingState) => cellEditingViewOf(state, row.id, column.id),
+  )
+  const error = useSliceProjection(
+    table,
+    EDIT_SESSION_KEY,
+    (state: CellEditingState) =>
+      isEditingCell(state.active, row.id, column.id)
+        ? state.active!.invalid
+        : undefined,
   )
 
   // Сохранение ждёт сервера — отправленное значение, приглушённо (ADR 0041, §2).
@@ -120,16 +128,14 @@ export const CellEditField = (
           }
           // Значение не изменилось — просто закрыть правку, без onCellEdit (SS18).
           if (isUnchangedCommit(session, value)) {
-            setError(undefined)
             endEditSession(table)
             return
           }
           const message = hooks.validate?.(value, props)
           if (message) {
-            setError(message)
+            setEditError(table, message)
             return
           }
-          setError(undefined)
           commitEditSession(
             table,
             { rowId: row.id, columnId: column.id },
@@ -138,7 +144,6 @@ export const CellEditField = (
           )
         },
         cancel: () => {
-          setError(undefined)
           cancelEditSession(table, 'cancel', hooks)
         },
         setDraft: value => setEditDraft(table, value),

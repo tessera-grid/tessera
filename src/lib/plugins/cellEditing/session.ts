@@ -135,6 +135,17 @@ export const setEditDraft = (table: unknown, draft: string) => {
   }
 }
 
+/** Ошибка `validate`: живёт в сессии и переживает размонтирование редактора (SS21). */
+export const setEditError = (table: unknown, invalid: string) => {
+  const state = readEditingState(table)
+  if (state.active && state.active.invalid !== invalid) {
+    writeEditingState(table, {
+      ...state,
+      active: { ...state.active, invalid },
+    })
+  }
+}
+
 /** Закрыть активную правку; «ошибка» её ячейки снимается — сессия её забрала. */
 export const endEditSession = (table: unknown) => {
   const state = readEditingState(table)
