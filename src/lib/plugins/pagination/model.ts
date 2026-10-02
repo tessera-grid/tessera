@@ -18,7 +18,12 @@ export interface PaginationTable {
     rowCount?: number
     pageCount?: number
   }
-  atoms: Partial<Record<'sorting' | 'grouping', Atom<unknown>>> & {
+  atoms: Partial<
+    Record<
+      'sorting' | 'grouping' | 'columnFilters' | 'globalFilter',
+      Atom<unknown>
+    >
+  > & {
     pagination?: Atom<PaginationState>
   }
   getRowCount: () => number
@@ -40,10 +45,15 @@ export const paginationInertReason: PluginDiagnose = table => {
     : undefined
 }
 
-/** Сортировка и группировка меняют порядок строк — назад на первую страницу (PG10). */
+/**
+ * Сортировка и группировка меняют порядок строк, фильтры и поиск — их набор: назад на
+ * первую страницу (PG10, ADR 0045 FL19).
+ */
 export const resetPageOnReorder = (table: unknown) => {
   const t = table as PaginationTable
-  const subscriptions = (['sorting', 'grouping'] as const).map(key => {
+  const subscriptions = (
+    ['sorting', 'grouping', 'columnFilters', 'globalFilter'] as const
+  ).map(key => {
     const atom = t.atoms[key]
     if (!atom) {
       return undefined

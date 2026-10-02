@@ -112,6 +112,13 @@ export const exportRowsOf = (
     walk(viewRows(source), row => {
       if (scope === 'view' || row.getIsSelected?.()) push(row)
     })
+    // Выбранные, но скрытые фильтром — после видимых, в порядке данных (ADR 0045, FL25).
+    if (scope === 'selected') {
+      const included = new Set(out.map(row => row.id))
+      walk(source.getCoreRowModel().rows, row => {
+        if (row.getIsSelected?.() && !included.has(row.id)) push(row)
+      })
+    }
   }
   return out
 }

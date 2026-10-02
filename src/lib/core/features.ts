@@ -218,6 +218,12 @@ export const foldEntries = (
     // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
     Object.assign(options, entry.options)
 
+    // Сужение — тоже от всех записей: выключенный плагин гасит свой срез (фильтры —
+    // ADR 0045), не теряя сохранённого значения.
+    for (const [key, fn] of Object.entries(entry.narrow ?? {})) {
+      ;(narrow[key] ??= []).push(fn)
+    }
+
     if (!isActive(entry)) {
       continue
     }
@@ -256,10 +262,6 @@ export const foldEntries = (
           return undefined
         }
       })
-    }
-
-    for (const [key, fn] of Object.entries(entry.narrow ?? {})) {
-      ;(narrow[key] ??= []).push(fn)
     }
 
     if (entry.actionMenu) {

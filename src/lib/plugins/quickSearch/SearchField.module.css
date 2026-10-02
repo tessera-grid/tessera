@@ -1,0 +1,66 @@
+.field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: var(--tsr-comp-quick-search-width);
+  max-width: 100%;
+}
+
+.icon {
+  position: absolute;
+  left: 8px;
+  display: inline-flex;
+  color: var(--tsr-comp-control-color);
+  pointer-events: none;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--tsr-comp-toolbar-button-size);
+  padding: 0 28px 0 30px;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+}
+
+/* Свой крестик поля: нативную кнопку очистки `type="search"` прячем. */
+.input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
+.input:focus-visible {
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}
+
+.clear {
+  position: absolute;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--tsr-comp-control-color);
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-control-radius);
+  cursor: pointer;
+}
+
+.clear:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.clear:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}

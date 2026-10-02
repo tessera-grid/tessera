@@ -6,6 +6,7 @@ import {
   contextMenu,
   keyboardNavigation,
   columnDragging,
+  columnFiltering,
   columnPinning,
   columnSizing,
   columnSorting,
@@ -13,6 +14,7 @@ import {
   dataExport,
   headerActionMenu,
   pagination,
+  quickSearch,
   rowActionMenu,
   rowActions,
   rowDragging,
@@ -21,10 +23,12 @@ import {
   rowSelection,
   type CellEditingOptions,
   type CellSelectionOptions,
+  type ColumnFilteringOptions,
   type ColumnDraggingOptions,
   type ColumnMultiSortOptions,
   type ColumnSizingOptions,
   type ExportOptions,
+  type QuickSearchOptions,
   type RowDraggingOptions,
 } from '../../../../lib/plugins'
 import type { TesseraFeatureEntry } from '../../../../lib/core/features'
@@ -74,6 +78,14 @@ export interface FeatureToggles {
   enableKeyboardNavigation?: boolean
   /** Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar). */
   enableColumnVisibility?: boolean
+  /** Фильтры колонок: кнопка в заголовке колонки с `filter` (ADR 0045). */
+  enableColumnFiltering?: boolean
+  /** Тонкая настройка фильтров колонок (ADR 0045). */
+  columnFilteringOptions?: Omit<ColumnFilteringOptions, 'enabled'>
+  /** Быстрый поиск в тулбаре (ADR 0045; нужен enableToolbar). */
+  enableQuickSearch?: boolean
+  /** Тонкая настройка быстрого поиска (ADR 0045). */
+  quickSearchOptions?: Omit<QuickSearchOptions, 'enabled'>
   /** Кнопка «Экспорт» в тулбаре (ADR 0044; нужен enableToolbar). */
   enableExport?: boolean
   /** Тонкая настройка экспорта: пресеты, серверный режим, колбэки (ADR 0044). */
@@ -199,6 +211,11 @@ export const argsToPlugins = (o: FeatureToggles) => {
     contextMenu({ enabled: !!o.enableContextMenu }),
     keyboardNavigation({ enabled: !!o.enableKeyboardNavigation }),
     columnVisibility({ enabled: !!o.enableColumnVisibility }),
+    columnFiltering({
+      enabled: !!o.enableColumnFiltering,
+      ...o.columnFilteringOptions,
+    }),
+    quickSearch({ enabled: !!o.enableQuickSearch, ...o.quickSearchOptions }),
     dataExport({ enabled: !!o.enableExport, ...o.exportOptions }),
     pagination({
       enabled: !!o.enablePagination,

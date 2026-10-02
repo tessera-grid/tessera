@@ -1,3 +1,5 @@
+import { Funnel } from 'lucide-react'
+
 import { SvgIcon, SvgIconProps } from './SvgIcon'
 
 // The checked / indeterminate checkbox marks now come from lucide (Check /
@@ -20,3 +22,10 @@ export const CheckboxOutlineIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 )
+
+/** Фильтр колонки активен: закрашенная воронка (переопределяемый дефолт `filterActive`) */
+export const FilterActiveIcon = (props: {
+  width?: number | string
+  height?: number | string
+  className?: string
+}) => <Funnel {...props} fill="currentColor" />

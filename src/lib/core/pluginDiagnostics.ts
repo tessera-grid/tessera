@@ -12,6 +12,7 @@ export type PluginInertReason =
   | 'multiLevelHeader'
   | 'grouping'
   | 'sorting'
+  | 'filtering'
   | 'noToolbar'
   | 'noActions'
   | 'noRowCount'

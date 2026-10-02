@@ -19,6 +19,9 @@ import {
   Columns3,
   Download,
   EyeOff,
+  Funnel,
+  Search,
+  X,
   Group,
   GripVertical,
   Minus,
@@ -28,7 +31,7 @@ import {
   PinOff,
 } from 'lucide-react'
 
-import { CheckboxOutlineIcon } from './icons'
+import { CheckboxOutlineIcon, FilterActiveIcon } from './icons'
 
 /**
  * Иконкам таблицы передают только размер и класс — этого достаточно и для
@@ -77,6 +80,14 @@ export interface TableIcons {
   columns: IconComponent
   /** Кнопка «Экспорт» в тулбаре */
   download: IconComponent
+  /** Кнопка фильтра в заголовке (`columnFiltering`) */
+  filter: IconComponent
+  /** Кнопка фильтра при активном фильтре колонки */
+  filterActive: IconComponent
+  /** Поле быстрого поиска в тулбаре (`quickSearch`) */
+  search: IconComponent
+  /** Очистка поля и сброс фильтра в сводке */
+  clear: IconComponent
   /** Пункт «Скрыть колонку» в кебабе заголовка */
   hideColumn: IconComponent
   /** Кнопки пагинации: первая / предыдущая / следующая / последняя страница */
@@ -105,6 +116,10 @@ export const DEFAULT_ICONS: TableIcons = {
   edit: Pencil,
   columns: Columns3,
   download: Download,
+  filter: Funnel,
+  filterActive: FilterActiveIcon,
+  search: Search,
+  clear: X,
   hideColumn: EyeOff,
   firstPage: ChevronsLeft,
   previousPage: ChevronLeft,

@@ -2,6 +2,7 @@ import axe from 'axe-core'
 import { describe, expect, test } from 'vitest'
 
 import { builtinPluginEntries } from '../../../__tests__/builtinPlugins'
+import { filteringColumns, filteringData } from '../../__mocks__/filteringData'
 import type { FeatureToggles } from '../../__mocks__/utils/argsToPlugins'
 import { renderGrid } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
@@ -14,6 +15,8 @@ import { waitForGrid } from './core-helpers'
 type GridArgs = FeatureToggles & {
   enableToolbar?: boolean
   showHeaderGroups?: boolean
+  columnsOverride?: typeof filteringColumns
+  dataOverride?: typeof filteringData
 }
 
 const PLUGIN_ARGS: Record<string, GridArgs> = {
@@ -38,6 +41,13 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   },
   rowActionMenu: { enableRowActionMenu: true, enableRowActions: true },
   pagination: { enablePagination: true },
+  quickSearch: { enableQuickSearch: true, enableToolbar: true },
+  columnFiltering: {
+    enableToolbar: true,
+    enableColumnFiltering: true,
+    columnsOverride: filteringColumns,
+    dataOverride: filteringData,
+  },
   dataExport: { enableExport: true, enableToolbar: true },
 }
 

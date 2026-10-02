@@ -14,11 +14,13 @@ import type {
   ExportSettings,
 } from './types'
 
-/** Что учитывает значение `view`; фильтрация добавится здесь вместе с плагином. */
+/** Что учитывает значение `view`. */
 export type ExportViewFeature = 'sorting' | 'filtering'
 
 const VIEW_PLUGINS: Record<string, ExportViewFeature> = {
   columnSorting: 'sorting',
+  columnFiltering: 'filtering',
+  quickSearch: 'filtering',
 }
 
 const ROWS_PLUGIN: Partial<Record<ExportRows, string>> = {
@@ -91,6 +93,7 @@ export const resolveAxes = (table: unknown): ExportAxes | undefined => {
   const viewBy = Object.entries(VIEW_PLUGINS)
     .filter(([id]) => active.has(id))
     .map(([, feature]) => feature)
+    .filter((feature, index, all) => all.indexOf(feature) === index)
   const noSelection = selectedRowIdsOf(table).length === 0
 
   const present = (rows: ExportRows) =>

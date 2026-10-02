@@ -390,6 +390,9 @@
   --tsr-comp-column-menu-width: 260px;
   --tsr-comp-column-menu-max-height: 320px;
 
+  /* Поле быстрого поиска в тулбаре (ADR 0045). */
+  --tsr-comp-quick-search-width: 240px;
+
   --tsr-comp-accent: var(--tsr-sys-accent);
 
   /* Загрузка */

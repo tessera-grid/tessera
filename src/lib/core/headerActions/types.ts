@@ -3,7 +3,7 @@
  * `CellComponentProps` (из ./createSlots); гранулярная реактивность — через
  * `useSelector(table.atoms.<slice>)` на уровне компонента.
  */
-import type { MouseEvent, ReactNode } from 'react'
+import type { MouseEvent, ReactNode, RefObject } from 'react'
 
 import type { TableLabels } from '../../core/localization'
 import type { CellComponentProps, HeaderComponentProps } from '../createSlots'
@@ -73,6 +73,18 @@ export interface SlotAction<
   adornment?: (ctx: TCtx) => ReactNode
   /** Показывать ли ИНЛАЙН-подачу как мини-меню (поповер) из `menuItems`. */
   inlineAsMenu?: (ctx: TCtx) => boolean
+  /**
+   * Действие с панелью: инлайн-кнопка и пункт кебаба открывают поповер с этим
+   * содержимым (у кебаба — у его кнопки), `onSelect` не вызывается.
+   */
+  panel?: (ctx: TCtx, controls: ActionPanelControls) => ReactNode
+}
+
+/** Управление поповером действия с панелью. */
+export interface ActionPanelControls {
+  close: () => void
+  /** Элемент, получающий фокус при открытии; без него — первый фокусируемый. */
+  initialFocusRef: RefObject<HTMLElement | null>
 }
 
 /**

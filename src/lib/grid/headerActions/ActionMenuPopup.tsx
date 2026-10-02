@@ -15,9 +15,15 @@ import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 interface ActionMenuPopupProps {
   actions: SlotAction[]
   context: unknown
+  /** Пункт действия с панелью открывает её вместо `onSelect`. */
+  onOpenPanel?: (action: SlotAction) => void
 }
 
-export const ActionMenuPopup = ({ actions, context }: ActionMenuPopupProps) => {
+export const ActionMenuPopup = ({
+  actions,
+  context,
+  onOpenPanel,
+}: ActionMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
   const labels = useLocalization()
 
@@ -50,7 +56,11 @@ export const ActionMenuPopup = ({ actions, context }: ActionMenuPopupProps) => {
                     className={styles.item}
                     disabled={item.disabled}
                     label={item.label}
-                    onClick={item.onSelect}
+                    onClick={
+                      action.panel && onOpenPanel
+                        ? () => onOpenPanel(action)
+                        : item.onSelect
+                    }
                   >
                     <span className={styles.itemIcon} aria-hidden>
                       {item.icon}

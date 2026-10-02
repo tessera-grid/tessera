@@ -1,0 +1,61 @@
+/**
+ * Дескриптор кнопки фильтра в заголовке (ADR 0045, §4): действие с панелью —
+ * инлайн-кнопка и пункт кебаба открывают поповер фильтра колонки. Активный фильтр
+ * виден по иконке, признаку `active` и доступному имени.
+ */
+import { lazy, Suspense } from 'react'
+
+import type { HeaderAction } from '../../core/headerActions'
+import { useIcons } from '../../ui/icons'
+import { DEFAULT_FILTER_DEBOUNCE_MS, filterTypeOf } from './conditions'
+import type { ColumnFilterDef } from './types'
+
+import '../../grid/cellControls/buttonVisibility.css'
+
+const FilterPanel = lazy(() =>
+  import('./FilterPanel').then(m => ({ default: m.FilterPanel })),
+)
+
+const FilterIcon = ({ active }: { active: boolean }) => {
+  const { filter, filterActive } = useIcons()
+  const Icon = active ? filterActive : filter
+  return <Icon width={16} height={16} />
+}
+
+interface FilteringOptions {
+  enableColumnFilters?: boolean
+  columnFilteringDebounceMs?: number
+}
+
+const filterDefOf = (column: { columnDef: unknown }) =>
+  (column.columnDef as { filter?: ColumnFilterDef }).filter
+
+export const filterHeaderAction: HeaderAction = {
+  id: 'columnFiltering',
+  slot: 'rightHeaderSlot',
+  order: 2,
+  visible: ({ column, table }) =>
+    (table.options as FilteringOptions).enableColumnFilters !== false &&
+    !!filterTypeOf(filterDefOf(column)),
+  icon: ({ column }) => <FilterIcon active={column.getIsFiltered()} />,
+  label: (_, labels) => labels.filter,
+  ariaLabel: ({ column }, labels) =>
+    column.getIsFiltered() ? labels.filterActive : labels.filter,
+  active: ({ column }) => column.getIsFiltered(),
+  className: () => 'column-filter__button',
+  // Действие с панелью: выбор открывает поповер, а не вызывает обработчик.
+  onSelect: () => {},
+  panel: ({ column, table }, controls) => (
+    <Suspense fallback={null}>
+      <FilterPanel
+        table={table}
+        column={column as never}
+        debounceMs={
+          (table.options as FilteringOptions).columnFilteringDebounceMs ??
+          DEFAULT_FILTER_DEBOUNCE_MS
+        }
+        controls={controls}
+      />
+    </Suspense>
+  ),
+}

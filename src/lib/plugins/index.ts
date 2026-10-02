@@ -42,6 +42,19 @@ export {
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 export { pagination, type PaginationOptions } from './pagination'
 export {
+  columnFiltering,
+  type ColumnFilteringOptions,
+  type BooleanFilter,
+  type ColumnFilterDef,
+  type ColumnFilterType,
+  type ColumnFilterValue,
+  type NumberFilter,
+  type NumberFilterOperator,
+  type TextFilter,
+  type TextFilterOperator,
+} from './columnFiltering'
+export { quickSearch, type QuickSearchOptions } from './quickSearch'
+export {
   dataExport,
   exportFormats,
   type ExportOptions,

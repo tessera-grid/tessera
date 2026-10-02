@@ -3,7 +3,10 @@
 // Открытием управляет ленивая обёртка (ActionMenu.lazy): контролируемый `open`
 // позволяет открыть меню сразу после догрузки чанка, если по плейсхолдеру уже
 // кликнули.
+import { useRef, useState } from 'react'
+
 import { Menu } from '@base-ui/react/menu'
+import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
@@ -11,6 +14,7 @@ import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
+import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
@@ -34,11 +38,25 @@ export const ActionMenu = ({
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  // Действие с панелью, открытое из меню: поповер у кнопки кебаба.
+  const [panelAction, setPanelAction] = useState<SlotAction | null>(null)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [panelVisible, onPanelOpenChangeComplete] = useClosingVisible(panelOpen)
+  const openPanel = (action: SlotAction) => {
+    setPanelAction(action)
+    onOpenChange(false)
+    setPanelOpen(true)
+  }
 
   const trigger = (
     <Menu.Trigger
       render={
-        <IconButton className={styles.trigger} aria-label={labels.headerMenu}>
+        <IconButton
+          ref={triggerRef}
+          className={styles.trigger}
+          aria-label={labels.headerMenu}
+        >
           <MenuIcon width={16} height={16} />
         </IconButton>
       }
@@ -52,7 +70,12 @@ export const ActionMenu = ({
       onOpenChangeComplete={onOpenChangeComplete}
     >
       {variant === 'row' ? (
-        <div className={clsx('row__button', !visible && 'row__button--hidden')}>
+        <div
+          className={clsx(
+            'row__button',
+            !visible && !panelVisible && 'row__button--hidden',
+          )}
+        >
           {trigger}
         </div>
       ) : (
@@ -61,12 +84,30 @@ export const ActionMenu = ({
         // AM24, AM25).
         <div
           className="cell__button cell__button--hidden"
-          data-button-active={visible}
+          data-button-active={visible || panelVisible}
         >
           {trigger}
         </div>
       )}
-      <ActionMenuPopup actions={actions} context={context} />
+      <ActionMenuPopup
+        actions={actions}
+        context={context}
+        onOpenPanel={openPanel}
+      />
+      {panelAction && (
+        <Popover.Root
+          open={panelOpen}
+          onOpenChange={setPanelOpen}
+          onOpenChangeComplete={onPanelOpenChangeComplete}
+        >
+          <ActionPanelPopup
+            action={panelAction}
+            context={context}
+            anchorRef={triggerRef}
+            close={() => setPanelOpen(false)}
+          />
+        </Popover.Root>
+      )}
     </Menu.Root>
   )
 }

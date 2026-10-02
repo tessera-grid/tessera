@@ -1,7 +1,8 @@
 /**
  * Кастомная фича rowDragging. Слайс overlay-состояния `rowDragging` + updater и
  * row-метод getCanDrag с гейтами: многоуровневая шапка, активная
- * группировка, активная сортировка — всё гасит drag. grouping/sorting читаются из
+ * группировка, активная сортировка, непустой фильтр или поиск (ADR 0045) — всё гасит
+ * drag. grouping/sorting/фильтры читаются из
  * атомов (optional — фичи могут отсутствовать); каждая причина — dev-warn (ADR 0022).
  */
 import {
@@ -71,12 +72,14 @@ type DraggableTable = {
   atoms: {
     grouping?: { get: () => unknown[] }
     sorting?: { get: () => unknown[] }
+    columnFilters?: { get: () => unknown[] }
+    globalFilter?: { get: () => unknown }
   }
 }
 
 type DraggableRow = { table: DraggableTable }
 
-/** Многоуровневая шапка / активная группировка / активная сортировка гасят drag. */
+/** Многоуровневая шапка / группировка / сортировка / фильтр гасят drag. */
 export const rowDraggingInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
@@ -89,6 +92,14 @@ export const rowDraggingInertReason = (
   }
   if ((t.atoms.sorting?.get() ?? []).length > 0) {
     return 'sorting'
+  }
+  // Порядок отфильтрованного вида ненастоящий: перестановка в нём бессмысленна.
+  const search = t.atoms.globalFilter?.get()
+  if (
+    (t.atoms.columnFilters?.get() ?? []).length > 0 ||
+    (typeof search === 'string' && search.trim() !== '')
+  ) {
+    return 'filtering'
   }
   return undefined
 }

@@ -2,6 +2,7 @@
  * Раскладка кнопок тулбара по подгруппам (ADR 0035, TB9): кнопки группируются по
  * `group`, группы идут по наименьшему `order` среди своих кнопок, кнопки внутри —
  * по `order`. Без `order` (или `'last'`) — в конец, в порядке регистрации.
+ * Стороны (`align`): `'start'` — слева (поле поиска), по умолчанию `'end'` — справа.
  */
 import type { ToolbarSlot } from './createSlots'
 
@@ -26,3 +27,13 @@ export const resolveToolbarGroups = (slot: ToolbarSlot): ToolbarGroup[] => {
 
   return [...groups].map(([id, items]) => ({ id, items }))
 }
+
+export interface ToolbarSides {
+  start: ToolbarGroup[]
+  end: ToolbarGroup[]
+}
+
+export const resolveToolbarSides = (slot: ToolbarSlot): ToolbarSides => ({
+  start: resolveToolbarGroups(slot.filter(item => item.align === 'start')),
+  end: resolveToolbarGroups(slot.filter(item => item.align !== 'start')),
+})

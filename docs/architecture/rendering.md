@@ -28,10 +28,15 @@ flowchart TB
 `DataGrid` подписан на состояние единственным `useTableState(table, …)`, а компоненты —
 на свои срезы через `useSlice`/`useTableState` (см. [reactivity.md](reactivity.md)).
 
-`props`: `table`, `height`, `maxHeight`, `stub`, `colorMode`, `icons`,
+`props`: `table`, `height`, `maxHeight`, `stub`, `filterStub`, `colorMode`, `icons`,
 `localization`. `colorMode` управляет темой на CSS-переменных; `icons` и
 `localization` питают два контекста переопределения, потребляемых кнопками
 плагинов (см. [theming-and-overrides.md](theming-and-overrides.md)).
+
+Две заглушки. `stub` — пустые данные: заменяет таблицу целиком (тулбар и нижняя
+панель остаются). `filterStub` — пустой результат при активном фильтре или поиске
+([ADR 0045](../decisions/0045-filtering.md), §9): встаёт поверх пустого тела, шапка с
+кнопками фильтров остаётся; без пропа — подпись и «Сбросить фильтры».
 
 ## Два layout: flex против grid
 

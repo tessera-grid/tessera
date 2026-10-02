@@ -64,6 +64,38 @@ export interface TableLabels {
   exportColumnsVisible: string
   /** Ось «Колонки»: все колонки, включая скрытые */
   exportColumnsAll: string
+  /** Кнопка фильтра в заголовке и подпись панели фильтра (`columnFiltering`) */
+  filter: string
+  /** Доступное имя кнопки фильтра при активном фильтре колонки */
+  filterActive: string
+  /** Поле выбора условия в панели фильтра */
+  filterCondition: string
+  /** Поле значения в панели фильтра */
+  filterValue: string
+  /** Нижняя граница условия «между» */
+  filterFrom: string
+  /** Верхняя граница условия «между» */
+  filterTo: string
+  /** Кнопка сброса фильтра колонки */
+  filterReset: string
+  /** Ошибка поля числа: ввод не разбирается как число */
+  filterInvalidNumber: string
+  filterContains: string
+  filterEquals: string
+  filterNotEquals: string
+  filterStartsWith: string
+  filterEndsWith: string
+  filterLessThan: string
+  filterLessThanOrEqual: string
+  filterGreaterThan: string
+  filterGreaterThanOrEqual: string
+  filterBetween: string
+  filterEmpty: string
+  filterNotEmpty: string
+  /** Булев фильтр: без фильтра */
+  filterAll: string
+  filterYes: string
+  filterNo: string
   /** Плейсхолдер и доступное имя поиска в меню колонок */
   searchColumns: string
   /** Текст меню колонок, когда поиск ничего не нашёл */
@@ -146,6 +178,26 @@ export interface TableLabels {
   pageAnnouncement: (page: number, pages: number) => string
   /** Счётчик выбранных строк в нижней панели (`rowSelection({ selectedCount })`) */
   selectedRows: (count: number) => string
+  /** Добавка к счётчику выбранных: выбранные строки, скрытые фильтром (ADR 0045) */
+  selectedRowsHidden: (count: number) => string
+  /** Поле быстрого поиска в тулбаре (`quickSearch`): плейсхолдер и доступное имя */
+  search: string
+  /** Кнопка очистки быстрого поиска */
+  clearSearch: string
+  /** Кнопка-сводка фильтров в тулбаре: тултип и доступное имя с числами */
+  filters: (active: number, hidden: number) => string
+  /** Кнопка сброса одного фильтра в сводке */
+  removeFilter: (column: string) => string
+  /** Заглушка пустого результата фильтрации */
+  noRowsMatchFilters: string
+  /** Объявление числа строк после применения фильтра или поиска */
+  announceFilteredRows: (count: number) => string
+  /** Сброс всех фильтров (сводка, заглушка пустого результата) */
+  resetFilters: string
+  /** Пометка фильтра на скрытой колонке в сводке */
+  columnHidden: string
+  /** «Показано N из M» в нижней панели */
+  filteredRows: (shown: number, total: number) => string
 }
 
 export const DEFAULT_LABELS: TableLabels = {
@@ -175,6 +227,29 @@ export const DEFAULT_LABELS: TableLabels = {
   exportView: features => `With ${features.join(' and ')}`,
   exportPage: 'Current page',
   exportSelected: 'Selected rows',
+  filter: 'Filter',
+  filterActive: 'Filter, active',
+  filterCondition: 'Condition',
+  filterValue: 'Value',
+  filterFrom: 'From',
+  filterTo: 'To',
+  filterReset: 'Reset',
+  filterInvalidNumber: 'Enter a number',
+  filterContains: 'Contains',
+  filterEquals: 'Equals',
+  filterNotEquals: 'Does not equal',
+  filterStartsWith: 'Starts with',
+  filterEndsWith: 'Ends with',
+  filterLessThan: 'Less than',
+  filterLessThanOrEqual: 'Less than or equal to',
+  filterGreaterThan: 'Greater than',
+  filterGreaterThanOrEqual: 'Greater than or equal to',
+  filterBetween: 'Between',
+  filterEmpty: 'Is empty',
+  filterNotEmpty: 'Is not empty',
+  filterAll: 'All',
+  filterYes: 'Yes',
+  filterNo: 'No',
   searchColumns: 'Search columns',
   noColumnsFound: 'No columns found',
   showAllColumns: 'Show all',
@@ -225,6 +300,20 @@ export const DEFAULT_LABELS: TableLabels = {
   pageAnnouncement: (page, pages) => `Page ${page} of ${pages}`,
   selectedRows: count =>
     count === 1 ? '1 row selected' : `${count} rows selected`,
+  selectedRowsHidden: count => `${count} hidden by filters`,
+  search: 'Search',
+  clearSearch: 'Clear search',
+  filters: (active, hidden) =>
+    active === 0
+      ? 'Filters'
+      : `Filters, ${active} active` +
+        (hidden > 0 ? `, ${hidden} on hidden columns` : ''),
+  removeFilter: column => `Remove filter: ${column}`,
+  noRowsMatchFilters: 'No rows match the filters',
+  announceFilteredRows: count => (count === 1 ? '1 row' : `${count} rows`),
+  resetFilters: 'Reset filters',
+  columnHidden: 'column hidden',
+  filteredRows: (shown, total) => `Showing ${shown} of ${total}`,
 }
 
 const LocalizationContext = createContext<TableLabels>(DEFAULT_LABELS)

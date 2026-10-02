@@ -1,6 +1,7 @@
 // LiveRegion: визуально скрытая область role="status" грида (ADR 0032, W9) —
 // принимает table.announce и сама объявляет сортировку, число выбранных строк,
-// окончание загрузки и пустой результат (если enableAnnouncements !== false).
+// окончание загрузки, пустой результат и число строк после фильтра или поиска (если
+// enableAnnouncements !== false).
 import { useEffect, useRef, useState } from 'react'
 
 import { announceLabel, registerAnnouncer } from '../core/announcer'
@@ -83,6 +84,27 @@ export const LiveRegion = ({
         : l.announceSort(null, null),
     )
   })
+  // Фильтр или поиск применён — объявить число строк (ADR 0045, FL32). В серверном
+  // режиме результат ещё не пришёл: о нём скажет окончание загрузки.
+  const filters = useTableState(table as never, state => {
+    const { columnFilters, globalFilter } = state as {
+      columnFilters?: unknown
+      globalFilter?: unknown
+    }
+    return JSON.stringify([columnFilters ?? [], globalFilter ?? ''])
+  }) as string
+  const filtersChanged = useRef(false)
+  useOnChange(filters, () => {
+    const t = table as {
+      options: { manualFiltering?: boolean }
+      getFilteredRowModel?: () => { rows: unknown[] }
+    }
+    if (t.options.manualFiltering || !t.getFilteredRowModel) return
+    filtersChanged.current = true
+    const count = t.getFilteredRowModel().rows.length
+    announceLabel(table, l => l.announceFilteredRows(count))
+  })
+
   useOnChange(selected, count =>
     announceLabel(table, l => l.announceSelection(count)),
   )
@@ -94,9 +116,16 @@ export const LiveRegion = ({
     }
   })
   useOnChange(rowCount, (count, before) => {
+    // Пустой результат фильтра уже объявлен числом строк.
+    if (filtersChanged.current) return
     if (count === 0 && before > 0 && !loading) {
       announceLabel(table, l => l.noData)
     }
+  })
+
+  // Флаг живёт один коммит: эффекты выше уже прочли его.
+  useEffect(() => {
+    filtersChanged.current = false
   })
 
   return (

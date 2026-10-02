@@ -8,6 +8,13 @@
   border-bottom: 1px solid var(--tsr-comp-toolbar-divider-color);
 }
 
+.toolbar__start {
+  display: flex;
+  align-items: center;
+  gap: var(--tsr-comp-toolbar-gap);
+  min-width: 0;
+}
+
 .toolbar__end {
   display: flex;
   align-items: center;

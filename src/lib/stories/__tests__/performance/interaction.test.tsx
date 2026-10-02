@@ -130,12 +130,53 @@ const exportWithoutDownload = async () => {
   }
 }
 
+// Фильтрация (ADR 0045): применение поиска и фильтра колонки без дебаунса — замер
+// ловит пересчёт модели и перерисовку, а не ожидание таймера.
+const SEARCH = {
+  enableToolbar: true,
+  enableQuickSearch: true,
+  quickSearchOptions: { debounceMs: 0 },
+}
+const SEARCH_SIZE = { columnCount: 10, dataCount: 100_000 } as const
+const FILTERING = {
+  enableColumnFiltering: true,
+  columnFilteringOptions: { debounceMs: 0 },
+}
+
+/** Ввод в контролируемое поле React: нативный сеттер + событие input. */
+const setInputValue = (input: HTMLInputElement, value: string) => {
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+/** Замер повторяет действие (прогрев + замер): значение чередуется, чтобы фильтр менялся. */
+const alternate = (input: HTMLInputElement, a: string, b: string) =>
+  setInputValue(input, input.value === a ? b : a)
+
+const quickSearchInput = () =>
+  document.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
+const filterValueInput = () =>
+  document.querySelector<HTMLInputElement>('[data-testid="filter-value"]')
+
+const openCountryFilter = async () => {
+  const button = () =>
+    document.querySelector<HTMLElement>(
+      '.data-grid__head-cell[data-column-id="country"] .column-filter__button',
+    )
+  await expect.poll(button).not.toBeNull()
+  button()!.click()
+  await expect.poll(filterValueInput).not.toBeNull()
+}
+
 interface InteractionCase {
   id: string
   label: string
   /** Подпись объёма в дашборде, если не 30×500 / 1000×1000. */
   size?: string
-  args: Record<string, number | boolean>
+  args: Record<string, unknown>
   /** Подготовка вне замера (напр. фокус на ячейку). */
   prepare?: () => Promise<void>
   /** Измеряемое взаимодействие. */
@@ -245,6 +286,28 @@ const CASES: InteractionCase[] = [
     },
   },
   {
+    id: 'FL35',
+    label: 'применение быстрого поиска, 100 000×10, все плагины',
+    size: '100 000×10',
+    args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...SEARCH },
+    // Проход «содержит» по 1 000 000 ячеек — сам по себе 70–350 мс под ×4 (в
+    // зависимости от совпадений); лишних перерисовок в профиле нет.
+    regressionCeiling: 550,
+    prepare: async () => {
+      await expect.poll(quickSearchInput).not.toBeNull()
+    },
+    act: async () => alternate(quickSearchInput()!, 'a', 'e'),
+  },
+  {
+    id: 'FL36',
+    label: 'применение фильтра колонки, большая выборка, все плагины',
+    args: { ...LARGE, ...ALL_PLUGINS, ...FILTERING },
+    // Как I4: перерисовка видимых строк на 1000 колонок (~140 мс под ×4).
+    regressionCeiling: 220,
+    prepare: openCountryFilter,
+    act: async () => alternate(filterValueInput()!, 'a', 'e'),
+  },
+  {
     id: 'EX33',
     label: 'выгрузка «Все данные», 100 000×10, все плагины',
     size: '100 000×10',
@@ -260,7 +323,7 @@ describe('Отзывчивость взаимодействий (INP)', () => {
     test(
       `${c.id}: ${c.label}`,
       async () => {
-        renderGrid(c.args)
+        renderGrid(c.args as Parameters<typeof renderGrid>[0])
         await waitForGrid()
         await c.prepare?.()
 

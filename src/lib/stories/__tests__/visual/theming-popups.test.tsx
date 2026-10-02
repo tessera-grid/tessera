@@ -6,6 +6,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellSelection,
+  columnFiltering,
   columnSorting,
   columnVisibility,
   contextMenu,
@@ -17,16 +18,18 @@ import {
 import { composed } from '../stories'
 
 // Контракт единого вида поповеров (ADR 0017, PP1–PP3): кебаб, меню колонок, панель
-// экспорта и список размера страницы делят поверхность, размеры и состояния пунктов.
+// экспорта, панель фильтра со списком условий и список размера страницы делят
+// поверхность, размеры и состояния пунктов.
 // Сравниваются вычисленные стили открытых поповеров, а не значения токенов.
 
 const COLUMNS = [
   { id: 'name', accessorKey: 'name', header: 'Name', enableHiding: false },
-  { id: 'note', accessorKey: 'note', header: 'Note' },
+  { id: 'note', accessorKey: 'note', header: 'Note', filter: 'text' as const },
+  { id: 'vip', accessorKey: 'vip', header: 'VIP', filter: 'boolean' as const },
 ]
 const DATA = [
-  { id: '1', name: 'Ann', note: 'a' },
-  { id: '2', name: 'Bob', note: 'b' },
+  { id: '1', name: 'Ann', note: 'a', vip: true },
+  { id: '2', name: 'Bob', note: 'b', vip: false },
 ]
 
 const read = (el: Element, prop: string) =>
@@ -73,6 +76,37 @@ const gapFrom = (anchor: DOMRect, popup: HTMLElement): number => {
 }
 
 let pointer = { x: 0, y: 0 }
+
+/** Кнопка фильтра колонки: инлайн или кебаб, если кнопки схлопнуты. */
+const filterAnchor = (columnId: string) => {
+  const head = query(`.data-grid__head-cell[data-column-id="${columnId}"]`)[0]
+  return (
+    head.querySelector<HTMLElement>('.column-filter__button') ??
+    head.querySelector<HTMLElement>('[aria-label="Column options"]')!
+  )
+}
+
+const openFilterPanel = async (columnId: string) => {
+  // Скрытые кнопки заголовка проявляются по наведению — без него клик уходит мимо.
+  await userEvent.hover(
+    query(`.data-grid__head-cell[data-column-id="${columnId}"]`)[0],
+  )
+  const anchor = filterAnchor(columnId)
+  await userEvent.click(anchor)
+  if (anchor.getAttribute('aria-label') === 'Column options') {
+    const item = () =>
+      query('[role="menuitem"]').find(el => el.textContent?.trim() === 'Filter')
+    await expect.poll(item).toBeTruthy()
+    await userEvent.click(item()!)
+  }
+  await expect.poll(() => query('[data-testid="filter-panel"]').length).toBe(1)
+}
+
+// Закрытая панель из DOM уходит: `isOpen` получает `undefined`.
+const filterPopup = () =>
+  query('[data-testid="filter-panel"]')[0]?.closest<HTMLElement>(
+    '[role="dialog"]',
+  ) as HTMLElement
 
 const POPOVERS: Popover[] = [
   {
@@ -147,6 +181,41 @@ const POPOVERS: Popover[] = [
       ),
   },
   {
+    name: 'filter panel',
+    open: () => openFilterPanel('vip'),
+    popup: filterPopup,
+    items: () => query('[data-testid="filter-panel"] label'),
+    gap: () =>
+      gapFrom(filterAnchor('vip').getBoundingClientRect(), filterPopup()),
+  },
+  {
+    name: 'filter condition list',
+    open: async () => {
+      await openFilterPanel('note')
+      await userEvent.click(query('[data-testid="filter-operator"]')[0])
+      await expect
+        .poll(() => query('[role="option"]').length)
+        .toBeGreaterThan(0)
+    },
+    // Список уходит из DOM вместе с закрытой панелью.
+    popup: () => query('[role="listbox"]')[0]?.parentElement as HTMLElement,
+    items: () => query('[role="option"]'),
+    gap: () =>
+      gapFrom(
+        query('[data-testid="filter-operator"]')[0].getBoundingClientRect(),
+        query('[role="listbox"]')[0].parentElement as HTMLElement,
+      ),
+    // Список закрывается выбором текущего условия, панель — Escape.
+    close: async () => {
+      await userEvent.click(
+        query('[role="option"]').find(
+          item => item.getAttribute('aria-selected') === 'true',
+        )!,
+      )
+      await userEvent.keyboard('{Escape}')
+    },
+  },
+  {
     name: 'page size list',
     open: async () => {
       await userEvent.click(query('[data-testid="page-size-select"]')[0])
@@ -190,6 +259,7 @@ const renderAll = async () => {
       enableHeaderActionMenu
       enableCellSelection
       enableContextMenu
+      enableColumnFiltering
     />,
   )
   await expect.poll(() => query('[data-testid="export-button"]').length).toBe(1)
@@ -209,6 +279,7 @@ const DARK_PLUGINS = [
   rowSelection(),
   cellSelection(),
   contextMenu(),
+  columnFiltering(),
 ]
 
 const DarkGrid = () => {

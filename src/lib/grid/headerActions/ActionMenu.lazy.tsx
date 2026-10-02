@@ -12,6 +12,7 @@ import { useIcons } from '../../ui/icons'
 import type { SlotAction } from '../../core/headerActions'
 import type { ActionMenuProps } from './ActionMenu'
 import type { ActionInlineMenuProps } from './ActionInlineMenu'
+import type { ActionPanelProps } from './ActionPanel'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
@@ -23,6 +24,10 @@ const ActionMenuImpl = lazy(() =>
 
 const ActionInlineMenuImpl = lazy(() =>
   import('./ActionInlineMenu').then(m => ({ default: m.ActionInlineMenu })),
+)
+
+const ActionPanelImpl = lazy(() =>
+  import('./ActionPanel').then(m => ({ default: m.ActionPanel })),
 )
 
 type Variant = 'cell' | 'row'
@@ -73,12 +78,14 @@ const InlinePlaceholder = ({
   variant,
   open,
   onOpen,
+  popup = 'menu',
 }: {
   action: SlotAction
   context: any
   variant: Variant
   open: boolean
   onOpen: () => void
+  popup?: 'menu' | 'dialog'
 }) => {
   const labels = useLocalization()
 
@@ -91,7 +98,7 @@ const InlinePlaceholder = ({
     <IconButton
       className={action.className?.(context)}
       aria-label={ariaLabel}
-      aria-haspopup="menu"
+      aria-haspopup={popup}
       aria-expanded={open}
       onClick={onOpen}
     >
@@ -170,6 +177,38 @@ export const ActionInlineMenu = ({
       }
     >
       <ActionInlineMenuImpl
+        action={action}
+        context={context}
+        variant={variant}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </Suspense>
+  )
+}
+
+/** Инлайн-действие с панелью (поповер). Base UI-поповер грузится лениво. */
+export const ActionPanel = ({
+  action,
+  context,
+  variant = 'cell',
+}: Omit<ActionPanelProps, 'open' | 'onOpenChange'>) => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Suspense
+      fallback={
+        <InlinePlaceholder
+          action={action}
+          context={context}
+          variant={variant}
+          open={open}
+          onOpen={() => setOpen(true)}
+          popup="dialog"
+        />
+      }
+    >
+      <ActionPanelImpl
         action={action}
         context={context}
         variant={variant}

@@ -17,6 +17,8 @@ import {
   enableColumnVisibilityType,
   enableContextMenuType,
   enableExportType,
+  enableColumnFilteringType,
+  enableQuickSearchType,
   enableHeaderActionMenuType,
   enableKeyboardNavigationType,
   enableLeafPinningType,
@@ -102,6 +104,8 @@ export const AllFeatures: StoryObj<StoryProps> = {
 
     enablePagination: false,
     enableExport: false,
+    enableColumnFiltering: false,
+    enableQuickSearch: false,
 
     enableFooter: false,
     enableToolbar: false,
@@ -153,6 +157,8 @@ export const AllFeatures: StoryObj<StoryProps> = {
 
     enablePagination: enablePaginationType,
     enableExport: enableExportType,
+    enableColumnFiltering: enableColumnFilteringType,
+    enableQuickSearch: enableQuickSearchType,
 
     enableFooter: enableFooterType,
     enableToolbar: enableToolbarType,

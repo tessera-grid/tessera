@@ -16,7 +16,7 @@ import {
 } from '../../core/headerActions'
 import { useTableState } from '../../core/reactivity'
 import { ActionButton } from './ActionButton'
-import { ActionInlineMenu, ActionMenu } from './ActionMenu.lazy'
+import { ActionInlineMenu, ActionMenu, ActionPanel } from './ActionMenu.lazy'
 
 interface ActionsZoneProps {
   slot: SlotName
@@ -69,7 +69,9 @@ export const ActionsZone = memo(
     const inlineItems: ZoneItem[] = inline.map(action => ({
       rank: action.order,
       key: `action-${action.id}`,
-      node: action.inlineAsMenu?.(context) ? (
+      node: action.panel ? (
+        <ActionPanel action={action} context={context} variant={variant} />
+      ) : action.inlineAsMenu?.(context) ? (
         <ActionInlineMenu action={action} context={context} variant={variant} />
       ) : (
         <ActionButton action={action} context={context} variant={variant} />

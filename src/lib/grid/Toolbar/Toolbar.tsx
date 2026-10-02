@@ -1,6 +1,7 @@
 /**
  * Верхний тулбар грида (ADR 0035): кнопки плагинов из `toolbarSlot`, прижатые
- * вправо, по подгруппам с вертикальными разделителями. Один tab-stop, стрелки
+ * вправо, по подгруппам с вертикальными разделителями; слоты с `align: 'start'`
+ * (поле поиска, ADR 0045) — слева. Один tab-stop, стрелки
  * ходят по кнопкам (Base UI Toolbar).
  */
 import { Fragment, type KeyboardEvent } from 'react'
@@ -9,7 +10,7 @@ import { Toolbar as BaseToolbar } from '@base-ui/react/toolbar'
 
 import type { RenderSlots } from '../../core/createSlots'
 import { RenderSlot } from '../../core/renderSlots'
-import { resolveToolbarGroups } from '../../core/toolbar'
+import { type ToolbarGroup, resolveToolbarSides } from '../../core/toolbar'
 import type { Table } from '../../types'
 import styles from './Toolbar.module.css'
 
@@ -35,9 +36,33 @@ const handleEdgeKeys = (event: KeyboardEvent<HTMLDivElement>) => {
   }
 }
 
+const ToolbarGroups = ({
+  groups,
+  table,
+}: {
+  groups: ToolbarGroup[]
+  table: Table<any, any>
+}) =>
+  groups.map((group, index) => (
+    <Fragment key={group.id}>
+      {index > 0 && (
+        <BaseToolbar.Separator
+          orientation="vertical"
+          className={styles.toolbar__separator}
+        />
+      )}
+      <BaseToolbar.Group
+        className={styles.toolbar__group}
+        data-group={group.id}
+      >
+        <RenderSlot slot={group.items} context={{ table }} />
+      </BaseToolbar.Group>
+    </Fragment>
+  ))
+
 export const Toolbar = ({ table, label }: ToolbarProps) => {
   const slots = (table.getRenderSlots as () => RenderSlots | undefined)()
-  const groups = resolveToolbarGroups(slots?.toolbarSlot ?? [])
+  const { start, end } = resolveToolbarSides(slots?.toolbarSlot ?? [])
 
   return (
     <BaseToolbar.Root
@@ -47,23 +72,13 @@ export const Toolbar = ({ table, label }: ToolbarProps) => {
       className={styles.toolbar}
       data-testid="data-grid-toolbar"
     >
+      {start.length > 0 && (
+        <div className={styles.toolbar__start}>
+          <ToolbarGroups groups={start} table={table} />
+        </div>
+      )}
       <div className={styles.toolbar__end}>
-        {groups.map((group, index) => (
-          <Fragment key={group.id}>
-            {index > 0 && (
-              <BaseToolbar.Separator
-                orientation="vertical"
-                className={styles.toolbar__separator}
-              />
-            )}
-            <BaseToolbar.Group
-              className={styles.toolbar__group}
-              data-group={group.id}
-            >
-              <RenderSlot slot={group.items} context={{ table }} />
-            </BaseToolbar.Group>
-          </Fragment>
-        ))}
+        <ToolbarGroups groups={end} table={table} />
       </div>
     </BaseToolbar.Root>
   )

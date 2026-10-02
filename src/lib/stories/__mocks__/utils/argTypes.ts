@@ -368,6 +368,12 @@ export const enableColumnVisibilityType = featureToggle(
   'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar)',
 )
 export const enablePaginationType = featureToggle('Пагинация в нижней панели')
+export const enableColumnFilteringType = featureToggle(
+  'Фильтры колонок: кнопка в заголовке колонки с полем filter (Country, имена — текст; Age, Visits, Total — число)',
+)
+export const enableQuickSearchType = featureToggle(
+  'Быстрый поиск в тулбаре по видимым колонкам (нужен enableToolbar)',
+)
 export const enableExportType = featureToggle(
   'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (нужен enableToolbar)',
 )

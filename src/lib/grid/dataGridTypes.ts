@@ -1,3 +1,4 @@
+import type { FilterStubRender } from './filtering/FilterStub'
 import type { CSSProperties, ReactNode } from 'react'
 
 import type { TableLabels } from '../core/localization'
@@ -26,6 +27,11 @@ export interface DataGridProps {
   maxHeight?: number | string
   /** Компонент, отображающийся при отсутствии данных. */
   stub?: ReactNode
+  /**
+   * Заглушка пустого результата при активном фильтре или поиске (ADR 0045, FL28):
+   * узел или функция от `{ reset }`. По умолчанию — подпись и «Сбросить фильтры».
+   */
+  filterStub?: FilterStubRender
   /** Доп. CSS-класс на обёртке грида (несущей `.data-grid-theme`). */
   className?: string
   /** Инлайн-стиль обёртки грида (пер-инстансное переопределение токенов темы). */

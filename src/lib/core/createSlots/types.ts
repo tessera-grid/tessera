@@ -45,7 +45,10 @@ export interface RegisterSlotParams<TContext extends object> {
   countsAsHeaderAction?: boolean
   /** Подгруппа кнопок тулбара (только `toolbarSlot`); по умолчанию `'default'`. */
   group?: string
-  /** Сторона нижней панели (только `statusBarSlot`); по умолчанию `'start'`. */
+  /**
+   * Сторона нижней панели или тулбара (`statusBarSlot`, `toolbarSlot`). По умолчанию
+   * у панели — `'start'`, у тулбара — `'end'` (кнопки прижаты вправо).
+   */
   align?: 'start' | 'end'
   /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
   pluginId?: string

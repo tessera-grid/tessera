@@ -1,0 +1,42 @@
+.stub {
+  position: sticky;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 32px 16px;
+  color: var(--tsr-comp-control-color);
+  font-family: var(--tsr-comp-font-family);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.text {
+  margin: 0;
+}
+
+.reset {
+  height: var(--tsr-comp-toolbar-button-size);
+  padding: 0 12px;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.reset:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.reset:focus-visible {
+  outline: none;
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}

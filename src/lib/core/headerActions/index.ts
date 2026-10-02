@@ -27,6 +27,7 @@ export type {
   ContextMenuAction,
   ContextMenuContext,
   CellSelectionSummary,
+  ActionPanelControls,
 } from './types'
 
 /** Пустой набор действий по всем слотам — база для реактивной свёртки плагинов. */

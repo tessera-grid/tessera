@@ -24,6 +24,8 @@ import {
 } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
+import { FilterStub } from './filtering/FilterStub'
+import { isFilteringActive } from '../core/filtering'
 import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
@@ -68,6 +70,7 @@ export const DataGrid = ({
   height = '100%',
   maxHeight = '100%',
   stub,
+  filterStub,
   colorMode = 'light',
   icons,
   localization,
@@ -204,7 +207,10 @@ export const DataGrid = ({
   )
 
   const noData = !showSkeletonOverlay && rows.length === 0
-  const showStub = noData && !!stub
+  // Пусто из-за фильтра — своя заглушка поверх тела, шапка с фильтрами остаётся.
+  const filtered = isFilteringActive(state)
+  const showStub = noData && !!stub && !filtered
+  const showFilterStub = noData && filtered
 
   const showLinearProgress =
     (table.options as any).enableLoading && !showSkeletonOverlay
@@ -349,6 +355,9 @@ export const DataGrid = ({
                         busy={showLinearProgress}
                         style={{ ...columnSizes, ...virtualPaddingStyles }}
                       />
+                    )}
+                    {showFilterStub && (
+                      <FilterStub table={table} render={filterStub} />
                     )}
                   </div>
                   {keyboardNavigation && (
