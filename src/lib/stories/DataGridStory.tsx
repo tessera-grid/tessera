@@ -1,5 +1,5 @@
 // Демо-компонент историй DataGrid: собирает таблицу из аргументов Storybook.
-import { memo, useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { GroupingState, Updater, functionalUpdate } from '@tanstack/react-table'
 import { Card, CardContent, Grid, NoDataStub } from './_shims'
 import { useExpandedState } from '../../lib/core/createState'
@@ -72,14 +72,36 @@ export const StoryComponent = memo(
       return columnsWithCount
     }, [columnsOverride, showHeaderGroups, columnsWithCount])
 
-    const { data: mockData, setData } = useData({
+    const { data: mockData, setData: setMockData } = useData({
       count: dataCount,
       mode: dataMode,
       showStub,
     })
 
-    // Явно переданный набор (группа Data) имеет приоритет над генерируемым.
-    const data = dataOverride ?? mockData
+    // Явно переданный набор имеет приоритет над генерируемым. Перестановки и правки
+    // пишутся в его локальную копию; новый `dataOverride` (ответ «сервера») её сбрасывает.
+    const [edited, setEdited] = useState<{ source: any[]; data: any[] }>()
+    const data = dataOverride
+      ? edited?.source === dataOverride
+        ? edited.data
+        : dataOverride
+      : mockData
+    const setData = useCallback(
+      (updater: Updater<any[]>) => {
+        if (!dataOverride) {
+          setMockData(updater)
+          return
+        }
+        setEdited(prev => ({
+          source: dataOverride,
+          data: functionalUpdate(
+            updater,
+            prev?.source === dataOverride ? prev.data : dataOverride,
+          ),
+        }))
+      },
+      [dataOverride, setMockData],
+    )
 
     // Grouping контролируется только когда задан initialGrouping — иначе
     // поведение остальных историй не меняется (uncontrolled).
