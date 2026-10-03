@@ -1,5 +1,5 @@
 /**
- * Headless-проверки модели меню колонок (ADR 0035, CV4, CV6, CV7, CV9–CV13, CV19):
+ * Headless-проверки модели меню колонок (ADR 0035, CV4, CV6, CV7, CV9–CV13; ADR 0046, PB7):
  * дерево, галочки групп, переключение, поиск, «Показать все» / «Сбросить», общий
  * срез и бизнес-колбэк.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -203,7 +203,7 @@ describe('columnVisibility — модель меню', () => {
     expect(onToggle).toHaveBeenCalledTimes(2)
   })
 
-  it('CV19: без enableToolbar плагин инертен — diagnose noToolbar, «Скрыть колонку» не показывается', () => {
+  it('PB7: при enableToolbar: false columnVisibility инертен — diagnose noToolbar, «Скрыть колонку» нет; без флага — активен и пункт есть', () => {
     const { diagnose } = columnVisibility()
     const headerCtx = (table: any) =>
       table
@@ -212,15 +212,15 @@ describe('columnVisibility — модель меню', () => {
         .headers.find((h: any) => h.column.id === 'age')
         .getContext()
 
-    const withToolbar = build({
-      plugins: [columnVisibility()],
-      enableToolbar: true,
-    })
-    expect(diagnose?.(withToolbar)).toBeUndefined()
-    expect(hideHeaderAction.visible!(headerCtx(withToolbar))).toBe(true)
+    const byDefault = build({ plugins: [columnVisibility()] })
+    expect(diagnose?.(byDefault)).toBeUndefined()
+    expect(hideHeaderAction.visible!(headerCtx(byDefault))).toBe(true)
 
-    const noToolbar = build({ plugins: [columnVisibility()] })
-    expect(diagnose?.(noToolbar)).toBe('noToolbar')
-    expect(hideHeaderAction.visible!(headerCtx(noToolbar))).toBe(false)
+    const forbidden = build({
+      plugins: [columnVisibility()],
+      enableToolbar: false,
+    })
+    expect(diagnose?.(forbidden)).toBe('noToolbar')
+    expect(hideHeaderAction.visible!(headerCtx(forbidden))).toBe(false)
   })
 })

@@ -35,6 +35,7 @@ import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
 import { useSkeletonOverlayState } from '../core/skeletonOverlay'
+import { resolvePanelVisible } from '../core/panels'
 import {
   useColumnVirtualizer,
   useColumnVirtualizerScroll,
@@ -56,7 +57,7 @@ import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 // (не-модульный) CSS side-effect отсюда — чтобы классы шиппились не захешированными.
 import '../core/themeVariables/theme.css'
 
-// Base UI Toolbar — около 6.5 KB gzip; грузим только при `enableToolbar`.
+// Base UI Toolbar — около 6.5 KB gzip; грузим, только когда тулбар показывается.
 const Toolbar = lazy(() =>
   import('./Toolbar/Toolbar').then(module => ({ default: module.Toolbar })),
 )
@@ -114,14 +115,19 @@ export const DataGrid = ({
     | undefined
 
   const enableContextMenu = !!(table.options as any).enableContextMenu
-  const enableToolbar = !!(table.options as any).enableToolbar
   const renderVersion = ((table.options as any).pluginRenderVersion ??
     0) as number
-  // Панель есть, пока есть хоть один слот: её включает сам плагин (ADR 0038).
-  const statusBarSlot =
-    (table.getRenderSlots as () => RenderSlots | undefined)()?.statusBarSlot ??
-    []
-  const hasStatusBar = statusBarSlot.length > 0
+  // Панели включают слоты плагинов; флаг их переопределяет (ADR 0046).
+  const renderSlots = (table.getRenderSlots as () => RenderSlots | undefined)()
+  const statusBarSlot = renderSlots?.statusBarSlot ?? []
+  const enableToolbar = resolvePanelVisible(
+    (table.options as any).enableToolbar,
+    renderSlots?.toolbarSlot.length ?? 0,
+  )
+  const hasStatusBar = resolvePanelVisible(
+    (table.options as any).enableStatusBar,
+    statusBarSlot.length,
+  )
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)

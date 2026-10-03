@@ -77,11 +77,11 @@ flowchart TB
     end
 
     subgraph paint["отрисовка"]
-        TB["Toolbar (enableToolbar) — вне скролл-контейнера<br/>+ toolbarSlot по подгруппам"]
+        TB["Toolbar (toolbarSlot или enableToolbar) — вне скролл-контейнера<br/>+ toolbarSlot по подгруппам"]
         HEAD["DndHeadWrapper → Head → HeadRow → HeadCell<br/>+ left/right header-слоты"]
         BODY["DndBodyWrapper → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
         FOOT["Footer (enableFooter)"]
-        SB["StatusBar (есть statusBarSlot) — вне скролл-контейнера<br/>+ statusBarSlot по сторонам"]
+        SB["StatusBar (statusBarSlot или enableStatusBar) — вне скролл-контейнера<br/>+ statusBarSlot по сторонам"]
         SK["SkeletonOverlay (enableSkeleton)<br/>LinearProgress (enableLoading)"]
     end
 
@@ -100,7 +100,11 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 Корневая обёртка грида (`table__theme-wrapper`) несёт внешнюю рамку со
 скруглением (`--tsr-comp-frame-*`, ADR [0035](../decisions/0035-toolbar-and-column-visibility.md))
 и обрезает содержимое по ней (`overflow: hidden`); скроллится только контейнер
-таблицы внутри. При `enableToolbar` над контейнером рендерится `Toolbar` (Base UI
+таблицы внутри. Обе панели вне скролла показываются по одному правилу
+(`resolvePanelVisible`, `core/panels.ts`, ADR [0046](../decisions/0046-toolbar-and-status-bar-visibility.md)):
+флаг (`enableToolbar` / `enableStatusBar`) важнее, без флага панель есть, пока у неё
+есть хоть один активный слот. Когда тулбар показывается, над контейнером рендерится
+`Toolbar` (Base UI
 `Toolbar`, `role="toolbar"`): обёртка получает `data-toolbar`, что выставляет
 `--tsr-comp-toolbar-offset` равным высоте тулбара, и контейнер таблицы становится
 ниже на неё. `LinearProgress` — абсолютный элемент без `top`: его позиция берётся из
@@ -110,7 +114,8 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 нет: сверху её ограничивает рамка или разделитель тулбара.
 
 Нижняя панель (`StatusBar`, ADR [0038](../decisions/0038-pagination-and-status-bar.md))
-рендерится под контейнером таблицы, когда в `statusBarSlot` есть хоть один слот:
+рендерится под контейнером таблицы по тому же правилу (по умолчанию — когда в
+`statusBarSlot` есть хоть один слот):
 обёртка получает `data-status-bar`, что выставляет `--tsr-comp-status-bar-offset`,
 и контейнер становится ниже и на неё. Панель есть и в ветке заглушки (пустые
 данные). Сверху её отделяет одна линия (`border-top`); у футера колонок нижней

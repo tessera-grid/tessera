@@ -34,7 +34,6 @@ const GRID = {
   dataOverride: filteringData,
   enableColumnFiltering: true,
   enableQuickSearch: true,
-  enableToolbar: true,
   columnFilteringOptions: { filteredCount: true },
   quickSearchOptions: { filteredCount: true },
 }

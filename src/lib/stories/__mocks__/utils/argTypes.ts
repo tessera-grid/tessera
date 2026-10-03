@@ -308,17 +308,24 @@ export const enableCellEditingType: ArgTypes = {
   },
 }
 
-export const enableToolbarType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить верхний тулбар над таблицей',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
+/**
+ * Флаг панели вне скролла (ADR 0046): «auto» — по наличию слотов плагинов, «on» —
+ * всегда, «off» — никогда.
+ */
+const panelFlag = (description: string): InputType => ({
+  control: 'inline-radio',
+  options: ['auto', 'on', 'off'],
+  mapping: { auto: undefined, on: true, off: false },
+  description,
+  table: { defaultValue: { summary: 'auto' } },
+})
+
+export const enableToolbarType = panelFlag(
+  'Верхний тулбар: auto — по наличию кнопок плагинов, on — всегда (и пустой), off — никогда',
+)
+export const enableStatusBarType = panelFlag(
+  'Нижняя панель: auto — по наличию её слотов, on — всегда (и пустая), off — никогда',
+)
 
 export const enableFooterType: ArgTypes = {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -365,17 +372,17 @@ export const enableKeyboardNavigationType = featureToggle(
   'Клавиатурная навигация по ячейкам (role=grid, roving tabindex)',
 )
 export const enableColumnVisibilityType = featureToggle(
-  'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar)',
+  'Кнопка «Колонки» в тулбаре: скрытие и показ колонок',
 )
 export const enablePaginationType = featureToggle('Пагинация в нижней панели')
 export const enableColumnFilteringType = featureToggle(
   'Фильтры колонок: кнопка в заголовке колонки с полем filter (Country, имена — текст; Age, Visits, Total — число)',
 )
 export const enableQuickSearchType = featureToggle(
-  'Быстрый поиск в тулбаре по видимым колонкам (нужен enableToolbar)',
+  'Быстрый поиск в тулбаре по видимым колонкам',
 )
 export const enableExportType = featureToggle(
-  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (нужен enableToolbar)',
+  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV',
 )
 
 export const disabledType: InputType = {

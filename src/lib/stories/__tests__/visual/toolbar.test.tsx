@@ -76,18 +76,14 @@ describe('Grid frame', () => {
 })
 
 describe('Toolbar', () => {
-  test('TB3: with enableToolbar a labelled toolbar renders above the table; without it — none', async () => {
-    const plain = await render(<Stories.AllFeatures {...GRID} />)
-    expect(toolbar()).toBeNull()
-    await plain.unmount()
-
+  test('TB3: the toolbar is labelled and stands above the table', async () => {
     await renderToolbar()
     const el = toolbar()!
     expect(el.getAttribute('aria-label')).toBe('Table toolbar')
     expect(rect(el).bottom).toBeLessThanOrEqual(rect(getScroller()).top + 0.5)
   })
 
-  test('TB4: the toolbar renders without buttons and keeps the same height', async () => {
+  test('TB4: with enableToolbar: true the toolbar renders without buttons and keeps the same height', async () => {
     const empty = await mount(<Stories.WithEmptyToolbar {...GRID} />)
     expect(toolbar()).not.toBeNull()
     expect(toolbarButtons()).toHaveLength(0)

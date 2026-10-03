@@ -149,7 +149,8 @@ const INERT_MESSAGES: Record<string, string> = {
   multiLevelHeader: 'под многоуровневой шапкой не поддержан',
   grouping: 'при активной группировке управление переходит к rowGrouping',
   sorting: 'при активной сортировке порядком строк владеет сортировка',
-  noToolbar: 'без enableToolbar у плагина нет поверхности',
+  noToolbar:
+    'тулбар запрещён (enableToolbar: false) — у плагина нет поверхности',
   noActions: 'нечего показать: ни один плагин не добавил действий',
   noRowCount:
     'в серверном режиме нужен rowCount (0, пока ответ сервера не пришёл)',

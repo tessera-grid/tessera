@@ -26,6 +26,7 @@ import {
   enableRowActionMenuType,
   enableFooterType,
   enableToolbarType,
+  enableStatusBarType,
   enableGroupingType,
   enableLoadingType,
   enableMultiSortType,
@@ -108,7 +109,6 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableQuickSearch: false,
 
     enableFooter: false,
-    enableToolbar: false,
   },
   argTypes: {
     columnCount: columnCountType,
@@ -162,6 +162,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
 
     enableFooter: enableFooterType,
     enableToolbar: enableToolbarType,
+    enableStatusBar: enableStatusBarType,
   },
 }
 
@@ -217,8 +218,8 @@ export const WithToolbar: StoryObj<StoryProps> = {
   name: 'With Toolbar',
   args: {
     // Демо-кнопки в двух подгруппах (`view` и `data`): видны порядок, разделитель
-    // и состояния F4 — активное (Settings) и disabled (Export).
-    enableToolbar: true,
+    // и состояния F4 — активное (Settings) и disabled (Export). Тулбар вызывают
+    // сами кнопки — флаг не нужен (ADR 0046).
     extraPlugins: toolbarDemoPlugins,
   },
 }
@@ -228,7 +229,6 @@ export const ColumnVisibility: StoryObj<StoryProps> = {
   args: {
     // Кнопка «Колонки» в тулбаре: поиск, дерево, «Показать все» / «Сбросить».
     // Включите showHeaderGroups — меню покажет группы вложенной шапки.
-    enableToolbar: true,
     enableColumnVisibility: true,
     enableRowSelection: true,
   },
@@ -242,7 +242,6 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
     // 'menu'`) — только в кебабе. Кебаб считается в пороге (3) одной кнопкой:
     // включите enableColumnSorting — пин + сортировка + кебаб = 3, всё уйдёт в кебаб.
     // Включите showHeaderGroups — у групп в кебабе появится «Скрыть группу».
-    enableToolbar: true,
     enableColumnVisibility: true,
     enableHeaderActionMenu: true,
     enableColumnPinning: true,
@@ -253,6 +252,7 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
 export const WithEmptyToolbar: StoryObj<StoryProps> = {
   name: 'With Toolbar (empty)',
   args: {
+    // Пустой тулбар держит только явный enableToolbar: true (ADR 0046).
     enableToolbar: true,
   },
 }

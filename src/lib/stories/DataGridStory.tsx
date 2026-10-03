@@ -123,6 +123,7 @@ export const StoryComponent = memo(
       enableLoading: options.enableLoading,
       enableFooter: options.enableFooter,
       enableToolbar: options.enableToolbar,
+      enableStatusBar: options.enableStatusBar,
       enableAnnouncements: options.enableAnnouncements,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской

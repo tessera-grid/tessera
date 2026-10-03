@@ -24,7 +24,6 @@ const GRID = {
   containerHeight: 560,
   height: 460,
   maxHeight: 460,
-  enableToolbar: true,
   enableExport: true,
 }
 

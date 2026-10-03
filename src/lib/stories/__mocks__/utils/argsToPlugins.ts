@@ -76,17 +76,17 @@ export interface FeatureToggles {
   enableContextMenu?: boolean
   /** Клавиатурная навигация по ячейкам (role=grid, roving tabindex, стрелки). */
   enableKeyboardNavigation?: boolean
-  /** Кнопка «Колонки» в тулбаре: скрытие и показ колонок (нужен enableToolbar). */
+  /** Кнопка «Колонки» в тулбаре: скрытие и показ колонок. */
   enableColumnVisibility?: boolean
   /** Фильтры колонок: кнопка в заголовке колонки с `filter` (ADR 0045). */
   enableColumnFiltering?: boolean
   /** Тонкая настройка фильтров колонок (ADR 0045). */
   columnFilteringOptions?: Omit<ColumnFilteringOptions, 'enabled'>
-  /** Быстрый поиск в тулбаре (ADR 0045; нужен enableToolbar). */
+  /** Быстрый поиск в тулбаре (ADR 0045). */
   enableQuickSearch?: boolean
   /** Тонкая настройка быстрого поиска (ADR 0045). */
   quickSearchOptions?: Omit<QuickSearchOptions, 'enabled'>
-  /** Кнопка «Экспорт» в тулбаре (ADR 0044; нужен enableToolbar). */
+  /** Кнопка «Экспорт» в тулбаре (ADR 0044). */
   enableExport?: boolean
   /** Тонкая настройка экспорта: пресеты, серверный режим, колбэки (ADR 0044). */
   exportOptions?: Omit<ExportOptions, 'enabled'>

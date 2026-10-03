@@ -28,15 +28,14 @@ export interface QuickSearchOptions {
   onSearchChange?: (search: string) => void
 }
 
-/** Без тулбара поля поиска нет (FL15); сервер без колбэка — поиск некуда отправить (FL31). */
+/** Сервер без колбэка — поиск некуда отправить (FL31); без тулбара поиск работает программно (PB9). */
 const quickSearchInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
   const t = table as {
-    options: { enableToolbar?: boolean; quickSearchServer?: boolean }
+    options: { quickSearchServer?: boolean }
     getHooks: () => unknown
   }
-  if (!t.options.enableToolbar) return 'noToolbar'
   return t.options.quickSearchServer &&
     !readPluginHooks<{ onSearchChange?: unknown }>(t, 'quickSearch')
       .onSearchChange

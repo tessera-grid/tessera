@@ -102,10 +102,14 @@ const disabled = (choices: ExportAxes['rows']) =>
   choices.filter(choice => choice.disabled).map(choice => choice.value)
 
 describe('dataExport — оси настроек', () => {
-  it('EX2: без enableToolbar плагин инертен — diagnose → noToolbar', () => {
-    const entry = dataExport() as any
-    expect(entry.diagnose(build({ enableToolbar: false }))).toBe('noToolbar')
-    expect(entry.diagnose(build({ plugins: [dataExport()] }))).toBeUndefined()
+  it('PB8: при enableToolbar: false dataExport активен в diagnose, а table.exportData() запускает выгрузку', async () => {
+    const onExport = vi.fn()
+    const entry = dataExport({ server: true, onExport }) as any
+    const table = build({ plugins: [entry], enableToolbar: false })
+    expect(entry.diagnose(table)).toBeUndefined()
+    await table.exportData()
+    expect(onExport).toHaveBeenCalledTimes(1)
+    expect(onExport.mock.calls[0][0].settings.rows).toBe('all')
   })
 
   it('EX3: значения оси «Строки» — по активным плагинам, в порядке all, view, page, selected', () => {

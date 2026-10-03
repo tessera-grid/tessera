@@ -110,7 +110,6 @@ export const FilteringServerDemo = ({
         columnsOverride={filteringColumns}
         dataOverride={rows}
         enableLoading={loading}
-        enableToolbar
         enableColumnFiltering
         enableQuickSearch
         columnFilteringOptions={{

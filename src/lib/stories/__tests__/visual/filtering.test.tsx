@@ -29,8 +29,6 @@ import { nextFrame, waitForGrid } from './core-helpers'
 // 12 строк помещаются в окно целиком: id строк — полный результат фильтра.
 const DATA = makeFilteringData(12)
 const ALL = DATA.map((_, i) => String(i))
-const NO_TOOLBAR_PLUGINS = [quickSearch()] as const
-const NO_TOOLBAR_COLUMNS = [{ id: 'city', accessorKey: 'city', header: 'City' }]
 
 const GRID = {
   containerHeight: 700,
@@ -393,8 +391,8 @@ describe('Фильтрация — тулбар и нижняя панель', (
     expect(item.textContent).toContain('column hidden')
   })
 
-  test('FL15: поле поиска слева в тулбаре с кнопкой очистки; без enableToolbar quickSearch инертен — diagnose noToolbar', async () => {
-    const screen = await renderFiltering(TOOLBAR)
+  test('FL15: поле поиска слева в тулбаре с кнопкой очистки', async () => {
+    await renderFiltering(TOOLBAR)
     const input = searchInput()!
     expect(input.getAttribute('aria-label')).toBe('Search')
     expect(input.getBoundingClientRect().right).toBeLessThan(
@@ -411,30 +409,6 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await expect.poll(rowIds).toEqual(ALL)
     expect(searchInput()!.value).toBe('')
     expect(clear()).toBeNull()
-    await screen.unmount()
-
-    let diagnostics: { id: string; status: string; reason?: string }[] = []
-    const NoToolbar = () => {
-      const table = useCreateTable({
-        columns: NO_TOOLBAR_COLUMNS,
-        data: DATA,
-        plugins: NO_TOOLBAR_PLUGINS,
-      })
-      diagnostics = (table as any).getPluginDiagnostics()
-      return (
-        <div style={{ height: 400 }}>
-          <DataGrid table={table as never} />
-        </div>
-      )
-    }
-    await render(<NoToolbar />)
-    await waitForGrid()
-    expect(searchInput()).toBeNull()
-    expect(diagnostics.find(d => d.id === 'quickSearch')).toEqual({
-      id: 'quickSearch',
-      status: 'inert',
-      reason: 'noToolbar',
-    })
   })
 
   test('FL16: с filteredCount — «показано N из M» при активном фильтре или поиске; без них или без опции элемента нет; при обоих плагинах — один', async () => {

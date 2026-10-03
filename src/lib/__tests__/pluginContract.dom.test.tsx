@@ -24,8 +24,19 @@ import { captureInertWarnings } from './inertWarnings'
 const COLUMNS = [{ id: 'name', accessorKey: 'name' }]
 const DATA = [{ id: '1', name: 'A' }]
 
-const Grid = ({ plugins }: { plugins: readonly any[] }) => {
-  useCreateTable({ columns: COLUMNS, data: DATA, plugins } as never)
+const Grid = ({
+  plugins,
+  enableToolbar,
+}: {
+  plugins: readonly any[]
+  enableToolbar?: boolean
+}) => {
+  useCreateTable({
+    columns: COLUMNS,
+    data: DATA,
+    plugins,
+    enableToolbar,
+  } as never)
   return null
 }
 
@@ -53,12 +64,12 @@ describe('контракт встроенного плагина — dev-warn п
       columnVisibility(),
       headerActionMenu({ enabled: false }),
     ] as const
-    act(() => root.render(<Grid plugins={plugins} />))
+    act(() => root.render(<Grid plugins={plugins} enableToolbar={false} />))
 
     expect(warnings()).toHaveLength(1)
     expect(warnings()[0]).toContain('columnVisibility')
 
-    act(() => root.render(<Grid plugins={plugins} />))
+    act(() => root.render(<Grid plugins={plugins} enableToolbar={false} />))
     expect(warnings()).toHaveLength(1)
   })
 })

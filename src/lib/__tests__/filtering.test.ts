@@ -208,16 +208,25 @@ describe('quickSearch', () => {
   })
 })
 
-describe('columnFiltering — без тулбара', () => {
-  it('FL18: без enableToolbar фильтры колонок работают, сводки нет, плагин активен в diagnose', () => {
+describe('фильтрация при запрещённом тулбаре', () => {
+  it('FL18: при enableToolbar: false фильтры колонок работают, плагин активен в diagnose', () => {
     const entry = columnFiltering() as any
     const table = build([entry])
-    expect(table.options.enableToolbar).toBeFalsy()
+    table.options.enableToolbar = false
     expect(entry.diagnose(table)).toBeUndefined()
     table.setColumnFilters([
       { id: 'city', value: { operator: 'equals', value: 'oslo' } },
     ])
     expect(ids(table)).toEqual(['4'])
+  })
+
+  it('PB9: при enableToolbar: false quickSearch активен в diagnose, а программная смена globalFilter фильтрует строки', () => {
+    const entry = quickSearch() as any
+    const table = build([entry])
+    table.options.enableToolbar = false
+    expect(entry.diagnose(table)).toBeUndefined()
+    table.setGlobalFilter('ber')
+    expect(ids(table)).toEqual(['2', '6'])
   })
 })
 
@@ -255,7 +264,6 @@ describe('серверный режим без колбэка', () => {
     const filtering = columnFiltering({ server: true }) as any
     const search = quickSearch({ server: true }) as any
     const table = build([filtering, search])
-    table.options.enableToolbar = true
     expect(filtering.diagnose(table)).toBe('noOnFilterChange')
     expect(search.diagnose(table)).toBe('noOnSearchChange')
 
@@ -263,7 +271,6 @@ describe('серверный режим без колбэка', () => {
       columnFiltering({ server: true, onFilterChange: () => {} }),
       quickSearch({ server: true, onSearchChange: () => {} }),
     ])
-    withCallbacks.options.enableToolbar = true
     expect(filtering.diagnose(withCallbacks)).toBeUndefined()
     expect(search.diagnose(withCallbacks)).toBeUndefined()
   })

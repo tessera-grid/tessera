@@ -105,7 +105,11 @@ const renderPlugin = (args = {}) =>
 describe('columnVisibility', () => {
   test('CV1: the plugin adds a Columns button to the toolbar; without it or with enabled:false — none', async () => {
     const off = await render(
-      <Stories.ColumnVisibility {...GRID} enableColumnVisibility={false} />,
+      <Stories.ColumnVisibility
+        {...GRID}
+        enableColumnVisibility={false}
+        enableToolbar
+      />,
     )
     await expect
       .poll(() => document.querySelector('[role="toolbar"]'))

@@ -54,8 +54,10 @@ export interface CommonOptions {
   enableSkeleton?: boolean
   enableLoading?: boolean
   enableFooter?: boolean
-  /** Верхний тулбар над таблицей (ADR 0035). */
+  /** Верхний тулбар: без флага — по наличию `toolbarSlot` (ADR 0046). */
   enableToolbar?: boolean
+  /** Нижняя панель: без флага — по наличию `statusBarSlot` (ADR 0046). */
+  enableStatusBar?: boolean
   /** `false` — ядро не объявляет сортировку/выбор/копирование/загрузку. */
   enableAnnouncements?: boolean
   skeletonOptions?: SkeletonOptions
