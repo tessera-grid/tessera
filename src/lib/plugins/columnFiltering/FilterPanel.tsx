@@ -34,6 +34,10 @@ const DateFilterPanel = lazy(() =>
   import('./DateFilterPanel').then(m => ({ default: m.DateFilterPanel })),
 )
 
+const OptionFilterPanel = lazy(() =>
+  import('./OptionFilterPanel').then(m => ({ default: m.OptionFilterPanel })),
+)
+
 export interface FilterPanelProps {
   table: unknown
   column: FilterColumn
@@ -314,6 +318,22 @@ export const FilterPanel = (props: FilterPanelProps) => {
   const type = filterTypeOf(props.column.columnDef.filter)
   if (type === 'boolean') return <BooleanPanel {...props} />
   // Календарь — ленивый модуль: грид без колонок дат его не загружает (DF14).
+  // Чек-лист вариантов — тоже ленивый модуль (ADR 0048, SF22).
+  if (type === 'select' || type === 'multiselect' || type === 'lookup') {
+    return (
+      <Suspense
+        fallback={
+          <div
+            className={styles.panel}
+            aria-busy="true"
+            data-testid="filter-options-loading"
+          />
+        }
+      >
+        <OptionFilterPanel {...props} type={type} />
+      </Suspense>
+    )
+  }
   if (type === 'date' || type === 'datetime') {
     return (
       <Suspense

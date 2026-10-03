@@ -1,12 +1,19 @@
 /**
  * Быстрый поиск (ADR 0045, §6): «содержит» без учёта регистра по видимым колонкам
  * со значением строка или число. Служебные колонки и колонки дат (ADR 0047, §6) не
- * участвуют.
+ * участвуют; у колонок с вариантами ищется подпись (ADR 0048, §4).
  */
 import type { FilterFn } from '@tanstack/react-table'
 
+import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
+
 interface SearchRow {
   getValue: (columnId: string) => unknown
+  table: {
+    getColumn: (
+      id: string,
+    ) => { id: string; columnDef: ColumnOptionsDef } | undefined
+  }
 }
 
 interface SearchColumn {
@@ -30,10 +37,12 @@ export const quickSearchFilter = ((
   row: SearchRow,
   columnId: string,
   query: string,
-) => matchesSearch(row.getValue(columnId), query)) as unknown as FilterFn<
-  any,
-  any
->
+) => {
+  const value = row.getValue(columnId)
+  const column = row.table.getColumn(columnId)
+  const text = column ? optionTextOf(row.table, column, value) : undefined
+  return matchesSearch(text ?? value, query)
+}) as unknown as FilterFn<any, any>
 
 quickSearchFilter.resolveFilterValue = normalizeSearch
 

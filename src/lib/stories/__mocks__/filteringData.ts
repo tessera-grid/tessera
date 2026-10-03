@@ -134,3 +134,138 @@ export const dateFilteringColumns: ColumnDef<any, any>[] = [
       formatCreatedAt(getValue() as string, table.options as DateCellOptions),
   },
 ] as ColumnDef<any, any>[]
+
+export interface OptionFilteringItem {
+  id: string
+  name: string
+  status: string | null
+  tags: string[]
+  city: string
+  managerId: string
+}
+
+export const STATUS_OPTIONS = [
+  { value: 'lead', label: 'Lead' },
+  { value: 'qualified', label: 'Qualified' },
+  { value: 'won', label: 'Won' },
+  { value: 'lost', label: 'Lost' },
+]
+
+export const TAG_OPTIONS = [
+  { value: 'vip', label: 'VIP' },
+  { value: 'partner', label: 'Partner' },
+  { value: 'new', label: 'New' },
+  { value: 'churn-risk', label: 'Churn risk' },
+]
+
+const FIRST = [
+  'Alice',
+  'Bob',
+  'Carol',
+  'Dave',
+  'Erin',
+  'Frank',
+  'Grace',
+  'Heidi',
+]
+const LAST = [
+  'Moss',
+  'Reed',
+  'Hale',
+  'Stone',
+  'Vance',
+  'Wolfe',
+  'Price',
+  'Lane',
+]
+
+/** Справочник менеджеров (ADR 0048): 64 записи, id → имя. */
+export const MANAGERS = Array.from({ length: 64 }, (_, i) => ({
+  value: `m${i}`,
+  label: `${FIRST[i % FIRST.length]} ${LAST[Math.floor(i / FIRST.length) % LAST.length]}`,
+}))
+
+const managerNames = new Map(MANAGERS.map(m => [m.value, m.label]))
+
+/**
+ * Данные фильтра вариантов (ADR 0048): `status` — select (каждая 11-я строка пуста),
+ * `tags` — multiselect, `city` — select без `options` (варианты из данных),
+ * `managerId` — lookup (id справочника).
+ */
+export const makeOptionFilteringData = (count = 60): OptionFilteringItem[] =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `item-id-${i}`,
+    name: `${NAMES[i % NAMES.length]} ${i}`,
+    status:
+      i % 11 === 10 ? null : STATUS_OPTIONS[i % STATUS_OPTIONS.length].value,
+    tags: TAG_OPTIONS.filter((_, t) => (i * 7 + t * 5) % 3 === 0).map(
+      t => t.value,
+    ),
+    city: CITIES[i % CITIES.length],
+    managerId: MANAGERS[(i * 7) % MANAGERS.length].value,
+  }))
+
+export const optionFilteringData = makeOptionFilteringData()
+
+/** «Сервер» справочника: поиск по имени с задержкой, отмена через `signal`. */
+export const loadManagers = (
+  search: string,
+  { signal }: { signal: AbortSignal },
+  delayMs = 300,
+): Promise<{ value: string; label: string }[]> =>
+  new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      const needle = search.trim().toLowerCase()
+      resolve(
+        MANAGERS.filter(m => m.label.toLowerCase().includes(needle)).slice(
+          0,
+          20,
+        ),
+      )
+    }, delayMs)
+    signal.addEventListener('abort', () => {
+      window.clearTimeout(timer)
+      reject(signal.reason)
+    })
+  })
+
+export const optionFilteringColumns: ColumnDef<any, any>[] = [
+  {
+    id: 'name',
+    accessorKey: 'name',
+    header: 'Name',
+    size: 140,
+    filter: 'text',
+  },
+  {
+    id: 'status',
+    accessorKey: 'status',
+    header: 'Status',
+    size: 130,
+    options: STATUS_OPTIONS,
+    filter: 'select',
+  },
+  {
+    id: 'tags',
+    accessorKey: 'tags',
+    header: 'Tags',
+    size: 220,
+    options: TAG_OPTIONS,
+    filter: 'multiselect',
+  },
+  {
+    id: 'city',
+    accessorKey: 'city',
+    header: 'City',
+    size: 120,
+    filter: 'select',
+  },
+  {
+    id: 'managerId',
+    accessorKey: 'managerId',
+    header: 'Manager',
+    size: 160,
+    getOptionLabel: (id: string) => managerNames.get(id),
+    filter: { type: 'lookup', loadOptions: loadManagers },
+  },
+] as ColumnDef<any, any>[]

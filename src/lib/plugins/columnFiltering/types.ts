@@ -1,6 +1,21 @@
-/** Тип фильтра колонки (ADR 0045, §2; ADR 0047, §1): задаёт набор условий и UI. */
+import type { ColumnOption, OptionValue } from '../../core/columnOptions'
+
+/** Тип фильтра колонки (ADR 0045, §2; ADR 0047, §1; ADR 0048): набор условий и UI. */
 export type ColumnFilterType =
-  'text' | 'number' | 'boolean' | 'date' | 'datetime'
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'datetime'
+  | 'select'
+  | 'multiselect'
+  | 'lookup'
+
+/** Поиск вариантов справочника в панели фильтра (ADR 0048, §5). */
+export type LoadOptions = (
+  search: string,
+  context: { signal: AbortSignal },
+) => Promise<ColumnOption[]>
 
 /** Значение даты в ячейке, которое разбирает фильтр дат (ADR 0047, §2). */
 export type DateCellValue = Date | string | number | null | undefined
@@ -14,6 +29,8 @@ export type ColumnFilterDef =
       nullable?: boolean
       /** Дата: своё значение ячейки → `Date`, миллисекунды или ISO. */
       parse?: (value: unknown) => DateCellValue
+      /** Справочник: варианты по строке поиска панели. */
+      loadOptions?: LoadOptions
     }
 
 export type TextFilterOperator =
@@ -70,6 +87,14 @@ export type DateFilter =
   | { operator: 'preset'; value: DateFilterPreset }
   | EmptinessFilter
 
+export type OptionFilterOperator =
+  'anyOf' | 'allOf' | 'noneOf' | 'empty' | 'notEmpty'
+
+/** Фильтр вариантов: выбранные значения; «содержит все» — только у `multiselect`. */
+export type OptionFilter =
+  | { operator: 'anyOf' | 'allOf' | 'noneOf'; value: OptionValue[] }
+  | EmptinessFilter
+
 /** Значение фильтра колонки в срезе `columnFilters`. */
 export type ColumnFilterValue =
-  TextFilter | NumberFilter | BooleanFilter | DateFilter
+  TextFilter | NumberFilter | BooleanFilter | DateFilter | OptionFilter

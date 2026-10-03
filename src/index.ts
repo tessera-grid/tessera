@@ -4,6 +4,11 @@ export {
 } from './lib/core/useCreateTable'
 export type { TesseraFeatures } from './lib/core/features'
 export type { SkeletonOptions } from './lib/core/skeletonOptions'
+export type {
+  ColumnOption,
+  ColumnOptionsDef,
+  OptionValue,
+} from './lib/core/columnOptions'
 
 export {
   getActionColumnId,

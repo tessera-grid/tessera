@@ -115,3 +115,108 @@ describe('Демо-история Filtering — dates', () => {
     }
   })
 })
+
+describe('Демо-истории Filtering — варианты', () => {
+  const openFilter = async (columnId: string) => {
+    const head = document.querySelector<HTMLElement>(
+      `.data-grid__head-cell[data-column-id="${columnId}"]`,
+    )!
+    await userEvent.hover(head)
+    await humanClick(head.querySelector('.column-filter__button')!)
+    await expect
+      .poll(() => document.querySelector('[data-testid="filter-options"]'))
+      .not.toBeNull()
+  }
+  const option = (value: string) =>
+    document.querySelector<HTMLElement>(
+      `[data-testid="filter-panel"] [data-option-index][data-value="${value}"]`,
+    )
+  const close = async () => {
+    await userEvent.keyboard('{Escape}')
+    await expect
+      .poll(() => document.querySelector('[data-testid="filter-panel"]'))
+      .toBeNull()
+  }
+
+  test('SF23: «Filtering — select & multiselect» — галочки, «содержит все» и фасетные счётчики меняют выборку и «показано N из M»', async () => {
+    await render(<composed.FilteringOptions />)
+    await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
+    const statusCell = bodyRows()[0].querySelector('[data-column-id="status"]')!
+    expect(statusCell.textContent).toBe('Lead')
+
+    await openFilter('status')
+    await humanClick(option('won')!.querySelector('[role="checkbox"]')!)
+    await expect
+      .poll(() => filteredCount() ?? '')
+      .toMatch(/^Showing \d+ of 60$/)
+    const afterStatus = filteredCount()
+    await close()
+
+    await openFilter('tags')
+    const count = (value: string) =>
+      Number(
+        option(value)!.querySelector('[data-testid="filter-option-count"]')!
+          .textContent,
+      )
+    const vip = count('vip')
+    expect(vip).toBeGreaterThan(0)
+    expect(vip).toBeLessThan(30)
+    const operator = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="filter-panel"] [data-testid="filter-operator"]',
+      )!
+    await humanClick(operator())
+    const allOf = () =>
+      document.querySelector<HTMLElement>('[data-operator="allOf"]')
+    await expect.poll(allOf).not.toBeNull()
+    await humanClick(allOf()!)
+    await humanClick(option('vip')!.querySelector('[role="checkbox"]')!)
+    await humanClick(option('partner')!.querySelector('[role="checkbox"]')!)
+    await expect.poll(filteredCount).not.toBe(afterStatus)
+    expect(filteredCount()).toMatch(/^Showing \d+ of 60$/)
+  })
+
+  test('SF24: «Filtering — lookup (server)» — поиск в панели зовёт loadOptions (журнал), выбор уходит в onFilterChange, сводка показывает подписи', async () => {
+    await render(<composed.FilteringLookupServer serverDelayMs={100} />)
+    await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
+    await openFilter('managerId')
+    await expect.poll(log).toContain('loadOptions')
+    const search = document.querySelector<HTMLInputElement>(
+      '[data-testid="filter-options-search"]',
+    )!
+    await userEvent.type(search, 'alice')
+    await expect.poll(log).toContain('search="alice"')
+    // Справочник сузился до найденных: в списке только Alice.
+    const names = () =>
+      [
+        ...document.querySelectorAll(
+          '[data-testid="filter-panel"] [data-option-index]',
+        ),
+      ].map(item => item.textContent ?? '')
+    await expect
+      .poll(
+        () =>
+          names().length > 0 && names().every(name => name.startsWith('Alice')),
+      )
+      .toBe(true)
+    expect(option('m0')).not.toBeNull()
+    await humanClick(option('m0')!.querySelector('[role="checkbox"]')!)
+    await expect.poll(log).toContain('onFilterChange')
+    expect(log()).toContain('"value":["m0"]')
+    await expect.poll(log).toMatch(/server\s+\d+ of 200 rows/)
+    await close()
+
+    const summaryButton = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="filter-summary-button"]',
+      )
+    await expect.poll(summaryButton).not.toBeNull()
+    await humanClick(summaryButton()!)
+    await expect
+      .poll(
+        () =>
+          document.querySelector('[data-testid="filter-summary"]')?.textContent,
+      )
+      .toContain('Any of: Alice Moss')
+  })
+})

@@ -10,10 +10,15 @@ import {
   filteringColumns,
   filteringData,
   makeFilteringData,
+  optionFilteringColumns,
+  optionFilteringData,
 } from './__mocks__/filteringData'
 import { StoryComponent } from './DataGridStory'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { FilteringServerDemo } from './demos/filteringDemos'
+import {
+  FilteringLookupServerDemo,
+  FilteringServerDemo,
+} from './demos/filteringDemos'
 
 interface FilteringServerArgs extends StoryProps {
   serverDelayMs?: number
@@ -26,8 +31,8 @@ interface FilteringDatesArgs extends StoryProps {
 }
 
 /**
- * Фильтрация (ADR 0045, ADR 0047): фильтры колонок по типам — текст, число, булево,
- * дата; быстрый поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой
+ * Фильтрация (ADR 0045, ADR 0047, ADR 0048): фильтры колонок по типам — текст, число,
+ * булево, дата, варианты (select, multiselect, справочник); быстрый поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой
  * результат; сервер.
  */
 
@@ -217,4 +222,32 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
       />
     )
   },
+}
+
+export const FilteringOptions: StoryObj<StoryProps> = {
+  name: 'Filtering — select & multiselect',
+  args: {
+    ...GRID,
+    columnsOverride: optionFilteringColumns,
+    dataOverride: optionFilteringData,
+    // «Status» — select, «Tags» — multiselect («содержит все»), «City» — варианты из
+    // данных, «Manager» — справочник: поиск в панели идёт через loadOptions. У
+    // вариантов — счётчики строк с учётом остальных фильтров. Ячейки показывают
+    // подписи, поиск и экспорт — тоже.
+  },
+}
+
+export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
+  name: 'Filtering — lookup (server)',
+  args: {
+    ...GRID,
+    serverDelayMs: 400,
+    // Справочник менеджеров на «сервере»: поиск в панели «Manager» пишет вызовы
+    // loadOptions в журнал, прошлый запрос отменяется. Выбор уходит в onFilterChange,
+    // сводка «Фильтры» называет менеджеров по имени.
+  },
+  argTypes: {
+    serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
+  },
+  render: args => <FilteringLookupServerDemo {...normalizeArgs(args)} />,
 }

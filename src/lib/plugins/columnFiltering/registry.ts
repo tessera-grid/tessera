@@ -4,7 +4,11 @@
  * (`filter` в описании колонки). Фильтры разных колонок объединяются через И.
  */
 import type { DayPickerLocale } from '@daypicker/react'
-import { columnFilteringFeature } from '@tanstack/react-table'
+import {
+  columnFacetingFeature,
+  columnFilteringFeature,
+  createFacetedRowModel,
+} from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { createSearchAwareFilteredRowModel } from '../../core/filteredRowModel'
@@ -70,6 +74,9 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
     columnFilteringFeature,
     columnFilterTypesFeature,
     filteredRowModel: createSearchAwareFilteredRowModel(),
+    // Счётчики вариантов — по строкам без фильтра своей колонки (ADR 0048, §3).
+    columnFacetingFeature,
+    facetedRowModel: createFacetedRowModel(),
   },
   // Выключенный плагин не фильтрует: эффективный срез пуст, сохранённый не меняется
   // (ADR 0039) — включили снова, фильтры вернулись.

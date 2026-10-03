@@ -4,6 +4,7 @@
  * фильтром не считается — строка проходит.
  */
 import { cellToWall, isInactiveDateFilter, matchesDate, nowWall } from './dates'
+import { matchesOption } from './options'
 import type {
   BooleanFilter,
   ColumnFilterDef,
@@ -11,6 +12,7 @@ import type {
   ColumnFilterValue,
   DateFilter,
   NumberFilter,
+  OptionFilter,
   TextFilter,
 } from './types'
 
@@ -119,6 +121,10 @@ export const matchesColumnFilter = (
   context: MatchContext = {},
 ): boolean => {
   switch (type) {
+    case 'select':
+    case 'multiselect':
+    case 'lookup':
+      return matchesOption(value, filter as OptionFilter)
     case 'date':
     case 'datetime':
       return matchesDate(
@@ -140,6 +146,9 @@ export const isInactiveFilter = (filter: unknown): boolean => {
   if (!filter || typeof filter !== 'object') return true
   const { operator, value } = filter as { operator?: unknown; value?: unknown }
   if (operator === 'empty' || operator === 'notEmpty') return false
+  if (operator === 'anyOf' || operator === 'allOf' || operator === 'noneOf') {
+    return !Array.isArray(value) || value.length === 0
+  }
   if (
     operator === 'on' ||
     operator === 'before' ||

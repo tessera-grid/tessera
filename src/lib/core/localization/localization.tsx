@@ -112,6 +112,17 @@ export interface TableLabels {
   filterTimeTo: string
   previousMonth: string
   nextMonth: string
+  /** Фильтр вариантов (ADR 0048): условия, чек-лист, загрузка справочника */
+  filterAnyOf: string
+  filterAllOf: string
+  filterNoneOf: string
+  filterSearchOptions: string
+  filterSelectAll: string
+  filterClearSelection: string
+  filterNoOptions: string
+  filterLoadingOptions: string
+  filterOptionsError: string
+  filterRetry: string
   /** Плейсхолдер и доступное имя поиска в меню колонок */
   searchColumns: string
   /** Текст меню колонок, когда поиск ничего не нашёл */
@@ -281,6 +292,16 @@ export const DEFAULT_LABELS: TableLabels = {
   filterTimeTo: 'End time',
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
+  filterAnyOf: 'Any of',
+  filterAllOf: 'Has all of',
+  filterNoneOf: 'None of',
+  filterSearchOptions: 'Search values',
+  filterSelectAll: 'Select all',
+  filterClearSelection: 'Clear',
+  filterNoOptions: 'No values',
+  filterLoadingOptions: 'Loading…',
+  filterOptionsError: 'Could not load values',
+  filterRetry: 'Retry',
   searchColumns: 'Search columns',
   noColumnsFound: 'No columns found',
   showAllColumns: 'Show all',

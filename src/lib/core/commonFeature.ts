@@ -22,6 +22,7 @@ import {
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
+import { optionTextOf } from './columnOptions'
 import {
   createPluginErrorRegistry,
   resolvePluginDiagnostics,
@@ -34,6 +35,22 @@ export type { CommonOptions } from './commonFeature.types'
 export const commonFeature: TableFeature = {
   getDefaultTableOptions: () => ({
     skeletonOptions: DEFAULT_SKELETON_OPTIONS,
+  }),
+
+  // Ячейка по умолчанию: у колонки с вариантами — подпись (ADR 0048, SF15), иначе как
+  // стоковая. Свой `cell` колонки её перекрывает.
+  getDefaultColumnDef: () => ({
+    cell: (props: {
+      table: object
+      column: { id: string; columnDef: object }
+      getValue: () => unknown
+      renderValue: () => unknown
+    }) =>
+      optionTextOf(props.table, props.column, props.getValue()) ??
+      (
+        props.renderValue() as { toString?: () => string } | null | undefined
+      )?.toString?.() ??
+      null,
   }),
 
   constructTableAPIs: table => {

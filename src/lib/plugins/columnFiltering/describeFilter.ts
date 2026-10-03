@@ -9,11 +9,15 @@ import type {
   DateFilterOperator,
   DateFilterPreset,
   NumberFilterOperator,
+  OptionFilterOperator,
   TextFilterOperator,
 } from './types'
 
 export type FilterOperator =
-  TextFilterOperator | NumberFilterOperator | DateFilterOperator
+  | TextFilterOperator
+  | NumberFilterOperator
+  | DateFilterOperator
+  | OptionFilterOperator
 
 export const OPERATOR_LABEL: Record<FilterOperator, keyof TableLabels> = {
   contains: 'filterContains',
@@ -32,6 +36,9 @@ export const OPERATOR_LABEL: Record<FilterOperator, keyof TableLabels> = {
   before: 'filterBefore',
   after: 'filterAfter',
   preset: 'filterPreset',
+  anyOf: 'filterAnyOf',
+  allOf: 'filterAllOf',
+  noneOf: 'filterNoneOf',
 }
 
 export const PRESET_LABEL: Record<DateFilterPreset, keyof TableLabels> = {
@@ -62,6 +69,17 @@ export const formatFilterDate = (value: string, locale = 'en-US'): string => {
 }
 
 const DATE_OPERATORS = new Set<string>(['on', 'before', 'after', 'preset'])
+const OPTION_OPERATORS = new Set<string>(['anyOf', 'allOf', 'noneOf'])
+
+/** Подписей вариантов в строке сводки; остальные — «+N». */
+const SHOWN_OPTIONS = 2
+
+export interface DescribeContext {
+  /** Локаль дат (`dateLocale.code`), по умолчанию `en-US`. */
+  locale?: string
+  /** Подпись значения варианта (ADR 0048, §4). */
+  optionLabel?: (value: unknown) => string
+}
 
 const isDateFilter = (filter: ColumnFilterValue) =>
   DATE_OPERATORS.has(filter.operator) ||
@@ -73,15 +91,21 @@ export const operatorLabel = (operator: FilterOperator, labels: TableLabels) =>
 
 /**
  * Условие и значение одной строкой: «Contains "ali"», «Between 25–30», «Yes»,
- * «On Oct 3, 2026», «Today».
+ * «On Oct 3, 2026», «Today», «Any of: Lead, Won +2».
  */
 export const describeFilter = (
   filter: ColumnFilterValue,
   labels: TableLabels,
-  locale?: string,
+  { locale, optionLabel = String }: DescribeContext = {},
 ): string => {
   if (!('value' in filter)) {
     return operatorLabel(filter.operator, labels)
+  }
+  if (OPTION_OPERATORS.has(filter.operator)) {
+    const values = filter.value as unknown[]
+    const shown = values.slice(0, SHOWN_OPTIONS).map(optionLabel).join(', ')
+    const rest = values.length - SHOWN_OPTIONS
+    return `${operatorLabel(filter.operator, labels)}: ${shown}${rest > 0 ? ` +${rest}` : ''}`
   }
   if (isDateFilter(filter)) {
     if (filter.operator === 'preset') {

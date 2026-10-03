@@ -7,6 +7,7 @@
  * существует в типах ровно когда фича включена). Для `HeaderGroup` карты нет —
  * используем прямой merge интерфейса (эскейп).
  */
+import type { ColumnOptionsDef } from './columnOptions'
 import type {
   ColumnSizingState,
   OnChangeFn,
@@ -87,8 +88,8 @@ export interface CommonColumnAPI {
   getIsRowActionsColumn: () => boolean
 }
 
-/** Кастомные поля columnDef Tessera. */
-export interface CommonColumnDef {
+/** Кастомные поля columnDef Tessera; `options` / `getOptionLabel` — ADR 0048. */
+export interface CommonColumnDef extends ColumnOptionsDef {
   /** Число строк вложенной шапки, которые перекрывает заголовок (grid-раскладка). */
   rowSpan?: number
   /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */

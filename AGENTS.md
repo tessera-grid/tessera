@@ -389,6 +389,14 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       сериализуемый срез, поиск, экспорт), дымовой `filtering-stories` (DF21 — история
       «Filtering — dates»), перф DF22 — в `interaction`,
       [ADR 0047](docs/decisions/0047-date-filtering.md).
+    - _Фильтр вариантов:_ `filtering-options` (SF1, SF6–SF7, SF9–SF13, SF15, SF18–SF21 —
+      чек-лист, поиск, счётчики, виртуализация, клавиатура, справочник, подписи в
+      ячейке и сводке, сервер, локализация, axe), `option-filter-chunk` (SF22 —
+      ленивый модуль панели), модульные `filteringOptions` (SF2–SF5, SF8, SF14, SF16–SF17
+      — варианты из данных, условия, срез, фасеты, подписи в поиске и экспорте),
+      дымовые `filtering-stories` (SF23–SF24 — истории «Filtering — select &
+      multiselect» и «Filtering — lookup (server)»), перф SF25–SF26 — в `interaction`,
+      [ADR 0048](docs/decisions/0048-option-filtering.md).
     - _Тема и токены:_ `theming` (TH1–TH10,
       [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
       матрица `theming-matrix` / `theming-controls` / `theming-header-controls` /
@@ -460,14 +468,15 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     Animation); плюс `interaction` (INP: I1–I2 — выбор строки, I3 — шаг стрелкой,
     I4–I6 — меню колонок, I7–I8 — смена страницы и её размера на 100 000 строк,
     FL35–FL36 — поиск на 100 000 строк и фильтр колонки на 1000×1000, DF22 — фильтр
-    даты на 1000×1000 → Interaction); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
+    даты на 1000×1000, SF25–SF26 — фильтр варианта на 100 000 строк и открытие
+    панели с 1000 вариантов → Interaction); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md)).
 - **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →
   Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс), взаимодействие →
   Response/INP (≤ 100мс). Замер под **×4 CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается
   `knownShortfall` и гейтится **регресс-потолком** (`regressionCeiling`) заметно выше
   текущего замера — сборка зелёная, цель RAIL остаётся в дашборде, деградация
-  ловится потолком (P5/P6, I4, I7–I8, FL35–FL36, DF22). Неожиданный выход за порог — красная регрессия. Не подгоняйте пороги под «зелёно» — это цели, а не хардкод.
+  ловится потолком (P5/P6, I4, I7–I8, FL35–FL36, DF22, SF25). Неожиданный выход за порог — красная регрессия. Не подгоняйте пороги под «зелёно» — это цели, а не хардкод.
 - **Дашборд.** `npm run perf` прогоняет матрицу и собирает `performance-results/index.html`
   (статус в бюджете/xfail/регрессия, p95/p99/longest/long tasks/TBT); `npm run perf:report`
   пересобирает борд из последнего `latest.json`. Каталог в `.gitignore`.

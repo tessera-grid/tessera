@@ -1,7 +1,9 @@
 /**
  * Сбор данных выгрузки из таблицы (ADR 0044, §2–§3): колонки в порядке отображения,
- * строки по охвату пресета, значения ячеек, а не их отрисовка.
+ * строки по охвату пресета, значения ячеек, а не их отрисовка; у колонок с вариантами
+ * — подписи (ADR 0048, §4).
  */
+import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import type {
   ExportColumn,
   ExportData,
@@ -25,7 +27,7 @@ interface ExportRow {
 
 interface ExportSourceColumn {
   id: string
-  columnDef: { header?: unknown }
+  columnDef: { header?: unknown } & ColumnOptionsDef
   getIsVisible: () => boolean
   getIsActionsColumn?: () => boolean
   getIsPinned?: () => false | 'start' | 'end'
@@ -149,7 +151,9 @@ export const collectExportData = (
     rows: exportRowsOf(table, rows).map(row =>
       leaves.map(column => {
         const value = row.getValue(column.id)
-        return formatValue ? formatValue({ value, row, column }) : value
+        return formatValue
+          ? formatValue({ value, row, column })
+          : (optionTextOf(table as object, column, value) ?? value)
       }),
     ),
   }

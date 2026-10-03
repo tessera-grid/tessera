@@ -2,11 +2,12 @@
  * Сводка активных фильтров колонок (ADR 0045, §5): подпись колонки, текст условия и
  * признак скрытой колонки. Фильтр колонки, которой нет в описании, не показывается.
  */
+import type { ColumnOptionsDef } from '../../core/columnOptions'
 import type { ColumnFilterValue } from './types'
 
 interface SummaryColumn {
   id: string
-  columnDef: { header?: unknown }
+  columnDef: { header?: unknown } & ColumnOptionsDef
   getIsVisible?: () => boolean
 }
 
@@ -17,6 +18,7 @@ interface SummaryTable {
 
 export interface FilterSummaryItem {
   columnId: string
+  column: SummaryColumn
   header: string
   filter: ColumnFilterValue
   hidden: boolean
@@ -31,6 +33,7 @@ export const filterSummaryOf = (table: unknown): FilterSummaryItem[] => {
     const { header } = column.columnDef
     items.push({
       columnId: id,
+      column,
       header: typeof header === 'string' ? header : id,
       filter: value as ColumnFilterValue,
       hidden: column.getIsVisible?.() === false,

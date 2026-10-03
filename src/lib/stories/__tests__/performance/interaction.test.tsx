@@ -236,6 +236,92 @@ const toggleCalendarDay = async () => {
   calendarDay(dateFlip ? 10 : 20)!.click()
 }
 
+/**
+ * 100 000×10 с колонкой пола — select с вариантами (ADR 0048, SF25): фильтр по ней
+ * при открытой панели пересчитывает строки и фасеты остальных колонок.
+ */
+const OPTION_FILTERING = {
+  ...FILTERING,
+  columnsOverride: mockColumns.slice(0, SEARCH_SIZE.columnCount).map(column =>
+    column.id === 'gender'
+      ? {
+          ...column,
+          options: [
+            { value: 'male', label: 'Male' },
+            { value: 'female', label: 'Female' },
+          ],
+          filter: 'select',
+        }
+      : column,
+  ),
+}
+
+const optionCheckbox = (value: string) =>
+  document.querySelector<HTMLElement>(
+    `[data-testid="filter-options"] [data-value="${value}"] [role="checkbox"]`,
+  )
+
+const openOptionFilter = (columnId: string) => async () => {
+  const button = () =>
+    document.querySelector<HTMLElement>(
+      `.data-grid__head-cell[data-column-id="${columnId}"] .column-filter__button`,
+    )
+  await expect.poll(button).not.toBeNull()
+  button()!.click()
+  await expect
+    .poll(() => document.querySelector('[data-testid="filter-options"]'))
+    .not.toBeNull()
+}
+
+/** 30×500 с колонкой из 1000 вариантов первой (SF26). */
+const MANY_OPTIONS = Array.from({ length: 1000 }, (_, i) => ({
+  value: `v${i}`,
+  label: `Value ${String(i).padStart(4, '0')}`,
+}))
+const MANY_OPTIONS_FILTERING = {
+  ...FILTERING,
+  columnsOverride: [
+    {
+      id: 'variant',
+      accessorFn: (_: unknown, index: number) => `v${(index * 37) % 1000}`,
+      header: 'Variant',
+      options: MANY_OPTIONS,
+      filter: 'select',
+      size: 150,
+    },
+    ...mockColumns,
+    ...Array.from(
+      { length: SMALL.columnCount - mockColumns.length - 1 },
+      (_, i) => ({
+        id: `col_${i}`,
+        accessorKey: `col_${i}`,
+        header: `col_${i}`,
+      }),
+    ),
+  ],
+}
+
+const variantButton = () =>
+  document.querySelector<HTMLElement>(
+    '.data-grid__head-cell[data-column-id="variant"] .column-filter__button',
+  )
+
+/** Открытие панели; открытую прежде закрывает (закрытие — отдельная короткая задача). */
+const reopenVariantFilter = async () => {
+  if (document.querySelector('[data-testid="filter-panel"]')) {
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    )
+    await expect
+      .poll(() => document.querySelector('[data-testid="filter-panel"]'))
+      .toBeNull()
+  }
+  variantButton()!.click()
+  await expect
+    .poll(() => document.querySelector('[data-testid="filter-options"]'))
+    .not.toBeNull()
+}
+
 interface InteractionCase {
   id: string
   label: string
@@ -380,6 +466,32 @@ const CASES: InteractionCase[] = [
     regressionCeiling: 280,
     prepare: openDateFilter,
     act: toggleCalendarDay,
+  },
+  {
+    id: 'SF25',
+    label: 'применение фильтра варианта с фасетами, 100 000×10, все плагины',
+    size: '100 000×10',
+    args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...OPTION_FILTERING },
+    // Как FL35: проход фильтра по 100 000 строкам и перерисовка (~340–520 мс под ×4,
+    // с выбросами); фасеты в замере не видны — без счётчиков столько же.
+    regressionCeiling: 600,
+    prepare: openOptionFilter('gender'),
+    // Прогрев отмечает «male», замер — «female»: оба щелчка применяют фильтр, а не снимают.
+    act: async () =>
+      optionCheckbox(
+        optionCheckbox('male')!.getAttribute('aria-checked') === 'true'
+          ? 'female'
+          : 'male',
+      )!.click(),
+  },
+  {
+    id: 'SF26',
+    label: 'открытие панели с 1000 вариантов, все плагины',
+    args: { ...SMALL, ...ALL_PLUGINS, ...MANY_OPTIONS_FILTERING },
+    prepare: async () => {
+      await expect.poll(variantButton).not.toBeNull()
+    },
+    act: reopenVariantFilter,
   },
   {
     id: 'EX33',

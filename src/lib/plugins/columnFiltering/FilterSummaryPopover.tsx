@@ -18,6 +18,7 @@ import type { Table } from '../../types'
 import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { ToolbarButton } from '../../ui/ToolbarButton'
+import { optionLabelOf } from '../../core/columnOptions'
 import { describeFilter } from './describeFilter'
 import type { FilterSummaryItem } from './filterSummary'
 
@@ -83,7 +84,11 @@ export const FilterSummaryPopover = ({
                   <span className={styles.text}>
                     <span className={styles.header}>{item.header}</span>
                     <span className={styles.condition}>
-                      {describeFilter(item.filter, labels, locale)}
+                      {describeFilter(item.filter, labels, {
+                        locale,
+                        optionLabel: value =>
+                          optionLabelOf(table, item.column, value),
+                      })}
                     </span>
                     {item.hidden && (
                       <span className={styles.hidden}>
