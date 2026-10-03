@@ -312,6 +312,20 @@ const isOpen = (popover: Popover) =>
 /** Открывает поповер, снимает метрики и закрывает его. */
 const measure = async <T,>(popover: Popover, take: (p: Popover) => T) => {
   await popover.open()
+  // Первый кадр открытия Base UI держит `data-starting-style` и инлайновый
+  // `transition: none` — меряем поповер уже в покое.
+  await expect
+    .poll(
+      () => {
+        const popup = popover.popup()
+        return (
+          !popup.hasAttribute('data-starting-style') &&
+          popup.style.transition !== 'none'
+        )
+      },
+      { message: popover.name },
+    )
+    .toBe(true)
   const result = take(popover)
   await (popover.close?.() ?? userEvent.keyboard('{Escape}'))
   await expect
