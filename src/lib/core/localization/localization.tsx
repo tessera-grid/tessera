@@ -96,6 +96,22 @@ export interface TableLabels {
   filterAll: string
   filterYes: string
   filterNo: string
+  /** Фильтр дат (ADR 0047): условия, пресеты, поле времени, листание месяцев */
+  filterOn: string
+  filterBefore: string
+  filterAfter: string
+  filterPreset: string
+  filterPresetToday: string
+  filterPresetYesterday: string
+  filterPresetLast7Days: string
+  filterPresetLast30Days: string
+  filterPresetThisMonth: string
+  filterPresetThisYear: string
+  filterTime: string
+  filterTimeFrom: string
+  filterTimeTo: string
+  previousMonth: string
+  nextMonth: string
   /** Плейсхолдер и доступное имя поиска в меню колонок */
   searchColumns: string
   /** Текст меню колонок, когда поиск ничего не нашёл */
@@ -250,6 +266,21 @@ export const DEFAULT_LABELS: TableLabels = {
   filterAll: 'All',
   filterYes: 'Yes',
   filterNo: 'No',
+  filterOn: 'On',
+  filterBefore: 'Before',
+  filterAfter: 'After',
+  filterPreset: 'Period',
+  filterPresetToday: 'Today',
+  filterPresetYesterday: 'Yesterday',
+  filterPresetLast7Days: 'Last 7 days',
+  filterPresetLast30Days: 'Last 30 days',
+  filterPresetThisMonth: 'This month',
+  filterPresetThisYear: 'This year',
+  filterTime: 'Time',
+  filterTimeFrom: 'Start time',
+  filterTimeTo: 'End time',
+  previousMonth: 'Previous month',
+  nextMonth: 'Next month',
   searchColumns: 'Search columns',
   noColumnsFound: 'No columns found',
   showAllColumns: 'Show all',

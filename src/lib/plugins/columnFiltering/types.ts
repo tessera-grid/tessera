@@ -1,9 +1,20 @@
-/** Тип фильтра колонки (ADR 0045, §2): задаёт набор условий и UI. */
-export type ColumnFilterType = 'text' | 'number' | 'boolean'
+/** Тип фильтра колонки (ADR 0045, §2; ADR 0047, §1): задаёт набор условий и UI. */
+export type ColumnFilterType =
+  'text' | 'number' | 'boolean' | 'date' | 'datetime'
+
+/** Значение даты в ячейке, которое разбирает фильтр дат (ADR 0047, §2). */
+export type DateCellValue = Date | string | number | null | undefined
 
 /** Поле `filter` в описании колонки: тип строкой или объектом с уточнениями. */
 export type ColumnFilterDef =
-  ColumnFilterType | { type: ColumnFilterType; nullable?: boolean }
+  | ColumnFilterType
+  | {
+      type: ColumnFilterType
+      /** Булево: вариант «Пусто». */
+      nullable?: boolean
+      /** Дата: своё значение ячейки → `Date`, миллисекунды или ISO. */
+      parse?: (value: unknown) => DateCellValue
+    }
 
 export type TextFilterOperator =
   'contains' | 'equals' | 'startsWith' | 'endsWith' | 'empty' | 'notEmpty'
@@ -42,5 +53,23 @@ export type NumberFilter =
 export type BooleanFilter =
   { operator: 'equals'; value: boolean } | { operator: 'empty' }
 
+export type DateFilterOperator =
+  'on' | 'before' | 'after' | 'between' | 'preset' | 'empty' | 'notEmpty'
+
+/** Пресет дат: считается от «сегодня» в момент применения (ADR 0047, §3). */
+export type DateFilterPreset =
+  'today' | 'yesterday' | 'last7Days' | 'last30Days' | 'thisMonth' | 'thisYear'
+
+/**
+ * Фильтр даты: `'YYYY-MM-DD'` или `'YYYY-MM-DDTHH:mm'` (стенное время пояса
+ * `timeZone`); граница `null` у «между» — открытый интервал.
+ */
+export type DateFilter =
+  | { operator: 'on' | 'before' | 'after'; value: string }
+  | { operator: 'between'; value: [string | null, string | null] }
+  | { operator: 'preset'; value: DateFilterPreset }
+  | EmptinessFilter
+
 /** Значение фильтра колонки в срезе `columnFilters`. */
-export type ColumnFilterValue = TextFilter | NumberFilter | BooleanFilter
+export type ColumnFilterValue =
+  TextFilter | NumberFilter | BooleanFilter | DateFilter

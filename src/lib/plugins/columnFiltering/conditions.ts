@@ -3,11 +3,13 @@
  * Значение, которое условие не может применить (пустой текст, нечисловая граница),
  * фильтром не считается — строка проходит.
  */
+import { cellToWall, isInactiveDateFilter, matchesDate, nowWall } from './dates'
 import type {
   BooleanFilter,
   ColumnFilterDef,
   ColumnFilterType,
   ColumnFilterValue,
+  DateFilter,
   NumberFilter,
   TextFilter,
 } from './types'
@@ -90,13 +92,40 @@ export const matchesBoolean = (
     ? value === null || value === undefined
     : value === filter.value
 
+export const isDateType = (type: ColumnFilterType | undefined) =>
+  type === 'date' || type === 'datetime'
+
+/** Разбор значения ячейки даты: `parse` колонки, затем стенные минуты пояса. */
+export const dateCellWall = (
+  def: ColumnFilterDef | undefined,
+  value: unknown,
+  timeZone?: string,
+) =>
+  cellToWall(
+    typeof def === 'object' && def.parse ? def.parse(value) : value,
+    timeZone,
+  )
+
+export interface MatchContext {
+  def?: ColumnFilterDef
+  timeZone?: string
+}
+
 /** Значение ячейки проходит фильтр колонки своего типа. */
 export const matchesColumnFilter = (
   type: ColumnFilterType,
   value: unknown,
   filter: ColumnFilterValue,
+  context: MatchContext = {},
 ): boolean => {
   switch (type) {
+    case 'date':
+    case 'datetime':
+      return matchesDate(
+        dateCellWall(context.def, value, context.timeZone),
+        filter as DateFilter,
+        () => nowWall(context.timeZone),
+      )
     case 'text':
       return matchesText(value, filter as TextFilter)
     case 'number':
@@ -111,6 +140,17 @@ export const isInactiveFilter = (filter: unknown): boolean => {
   if (!filter || typeof filter !== 'object') return true
   const { operator, value } = filter as { operator?: unknown; value?: unknown }
   if (operator === 'empty' || operator === 'notEmpty') return false
+  if (
+    operator === 'on' ||
+    operator === 'before' ||
+    operator === 'after' ||
+    operator === 'preset' ||
+    (operator === 'between' &&
+      Array.isArray(value) &&
+      value.some(bound => typeof bound === 'string'))
+  ) {
+    return isInactiveDateFilter(filter as DateFilter)
+  }
   if (operator === 'between') {
     const [from, to] = (value as [number | null, number | null]) ?? []
     return !isBound(from ?? null) && !isBound(to ?? null)

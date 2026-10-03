@@ -1,6 +1,7 @@
 /**
  * Быстрый поиск (ADR 0045, §6): «содержит» без учёта регистра по видимым колонкам
- * со значением строка или число. Служебные колонки не участвуют.
+ * со значением строка или число. Служебные колонки и колонки дат (ADR 0047, §6) не
+ * участвуют.
  */
 import type { FilterFn } from '@tanstack/react-table'
 
@@ -9,6 +10,7 @@ interface SearchRow {
 }
 
 interface SearchColumn {
+  columnDef?: { filter?: string | { type?: string } }
   getIsVisible?: () => boolean
   getIsActionsColumn?: () => boolean
 }
@@ -35,5 +37,13 @@ export const quickSearchFilter = ((
 
 quickSearchFilter.resolveFilterValue = normalizeSearch
 
+const isDateColumn = ({ columnDef }: SearchColumn) => {
+  const def = columnDef?.filter
+  const type = typeof def === 'object' ? def.type : def
+  return type === 'date' || type === 'datetime'
+}
+
 export const canSearchColumn = (column: SearchColumn) =>
-  (column.getIsVisible?.() ?? true) && !column.getIsActionsColumn?.()
+  (column.getIsVisible?.() ?? true) &&
+  !column.getIsActionsColumn?.() &&
+  !isDateColumn(column)

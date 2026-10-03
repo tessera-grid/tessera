@@ -95,6 +95,9 @@ export interface TableIcons {
   previousPage: IconComponent
   nextPage: IconComponent
   lastPage: IconComponent
+  /** Листание месяцев в календаре фильтра дат (ADR 0047) */
+  previousMonth: IconComponent
+  nextMonth: IconComponent
   /** Метка ячейки, сохранение которой отклонено сервером */
   saveFailed: IconComponent
 }
@@ -125,6 +128,8 @@ export const DEFAULT_ICONS: TableIcons = {
   previousPage: ChevronLeft,
   nextPage: ChevronRight,
   lastPage: ChevronsRight,
+  previousMonth: ChevronLeft,
+  nextMonth: ChevronRight,
   saveFailed: CircleAlert,
 }
 

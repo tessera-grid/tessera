@@ -15,6 +15,8 @@ import {
   SMALL,
 } from './perf-cases'
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
+import { columns as mockColumns } from '../../__mocks__/columns'
+import { getData } from '../../__mocks__/data'
 
 // Отзывчивость на ВЗАИМОДЕЙСТВИЕ (INP): выбор ОДНОЙ строки меняет только
 // срез rowSelection на одну запись — законной работы минимум (обновить одну строку и
@@ -171,6 +173,69 @@ const openCountryFilter = async () => {
   await expect.poll(filterValueInput).not.toBeNull()
 }
 
+const pad = (n: number) => String(n).padStart(2, '0')
+const MONTH = (() => {
+  const now = new Date()
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+})()
+
+/**
+ * 1000×1000 с колонкой дат первой — её кнопка фильтра в окне; дни текущего месяца,
+ * чтобы календарь открылся на них (ADR 0047, DF22).
+ */
+const DATE_FILTERING = {
+  ...FILTERING,
+  columnsOverride: [
+    {
+      id: 'registered',
+      accessorKey: 'registered',
+      header: 'Registered',
+      filter: 'date',
+      size: 150,
+    },
+    ...mockColumns,
+    ...Array.from(
+      { length: LARGE.columnCount - mockColumns.length - 1 },
+      (_, i) => ({
+        id: `col_${i}`,
+        accessorKey: `col_${i}`,
+        header: `col_${i}`,
+        size: 150,
+        enableResizing: true,
+        enableGrouping: true,
+        enableSorting: true,
+        enablePinning: true,
+        enableDragging: true,
+      }),
+    ),
+  ],
+  dataOverride: getData(LARGE.dataCount).map((row, i) => ({
+    ...row,
+    registered: `${MONTH}-${pad(1 + (i % 28))}`,
+  })),
+}
+
+const calendarDay = (day: number) =>
+  document.querySelector<HTMLElement>(
+    `[data-testid="filter-calendar"] [data-day="${MONTH}-${pad(day)}"] button`,
+  )
+
+const openDateFilter = async () => {
+  const button = () =>
+    document.querySelector<HTMLElement>(
+      '.data-grid__head-cell[data-column-id="registered"] .column-filter__button',
+    )
+  await expect.poll(button).not.toBeNull()
+  button()!.click()
+  await expect.poll(() => calendarDay(10)).not.toBeNull()
+}
+
+let dateFlip = false
+const toggleCalendarDay = async () => {
+  dateFlip = !dateFlip
+  calendarDay(dateFlip ? 10 : 20)!.click()
+}
+
 interface InteractionCase {
   id: string
   label: string
@@ -306,6 +371,15 @@ const CASES: InteractionCase[] = [
     regressionCeiling: 220,
     prepare: openCountryFilter,
     act: async () => alternate(filterValueInput()!, 'a', 'e'),
+  },
+  {
+    id: 'DF22',
+    label: 'применение фильтра даты, большая выборка, все плагины',
+    args: { ...LARGE, ...ALL_PLUGINS, ...DATE_FILTERING },
+    // Как FL36 и вдобавок перерисовка месяца календаря (~180 мс под ×4).
+    regressionCeiling: 280,
+    prepare: openDateFilter,
+    act: toggleCalendarDay,
   },
   {
     id: 'EX33',

@@ -3,22 +3,18 @@
  * Ввод применяется через `debounceMs` после последнего нажатия, выбор условия и
  * булева значения — сразу. Нечисловой ввод в поле числа не применяется.
  */
-import { type RefObject, useId, useState } from 'react'
+import { lazy, type RefObject, Suspense, useId, useState } from 'react'
 
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
-import { Select } from '@base-ui/react/select'
-import clsx from 'clsx'
-import { Check, ChevronDown } from 'lucide-react'
 
 import { setColumnFilterByUser } from '../../core/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeClass } from '../../core/themeVariables'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { filterTypeOf } from './conditions'
 import { type FilterOperator, operatorLabel } from './describeFilter'
+import { OperatorSelect } from './OperatorSelect'
 import type {
   ColumnFilterDef,
   ColumnFilterValue,
@@ -28,13 +24,17 @@ import type {
 
 import styles from './FilterPanel.module.css'
 
-interface FilterColumn {
+export interface FilterColumn {
   id: string
   columnDef: { filter?: ColumnFilterDef }
   getFilterValue: () => unknown
 }
 
-interface FilterPanelProps {
+const DateFilterPanel = lazy(() =>
+  import('./DateFilterPanel').then(m => ({ default: m.DateFilterPanel })),
+)
+
+export interface FilterPanelProps {
   table: unknown
   column: FilterColumn
   debounceMs: number
@@ -141,7 +141,6 @@ const ConditionPanel = ({
   controls,
 }: FilterPanelProps & { type: 'text' | 'number' }) => {
   const labels = useLocalization()
-  const themeClass = usePortalThemeClass()
   const errorId = useId()
   const [draft, setDraft] = useState(() =>
     draftOf(type, column.getFilterValue() as ColumnFilterValue | undefined),
@@ -198,50 +197,12 @@ const ConditionPanel = ({
 
   return (
     <div className={styles.panel} data-testid="filter-panel">
-      <Select.Root
+      <OperatorSelect
         value={draft.operator}
-        onValueChange={value => {
-          if (value !== null) update({ operator: value }, true)
-        }}
-      >
-        <Select.Trigger
-          className={styles.trigger}
-          aria-label={labels.filterCondition}
-          data-testid="filter-operator"
-        >
-          <Select.Value>{labelOf(draft.operator)}</Select.Value>
-          <Select.Icon className={styles.triggerIcon}>
-            <ChevronDown width={14} height={14} />
-          </Select.Icon>
-        </Select.Trigger>
-        <Select.Portal>
-          <Select.Positioner
-            side="bottom"
-            align="start"
-            sideOffset={POPUP_SIDE_OFFSET}
-            alignItemWithTrigger={false}
-            className={clsx(themeClass, styles.selectPositioner)}
-          >
-            <Select.Popup className={clsx(themeClass, styles.selectPopup)}>
-              <Select.List>
-                {operators.map(operator => (
-                  <Select.Item
-                    key={operator}
-                    value={operator}
-                    className={styles.selectItem}
-                    data-operator={operator}
-                  >
-                    <Select.ItemText>{labelOf(operator)}</Select.ItemText>
-                    <Select.ItemIndicator className={styles.itemCheck}>
-                      <Check width={14} height={14} />
-                    </Select.ItemIndicator>
-                  </Select.Item>
-                ))}
-              </Select.List>
-            </Select.Popup>
-          </Select.Positioner>
-        </Select.Portal>
-      </Select.Root>
+        operators={operators}
+        labelOf={labelOf}
+        onChange={operator => update({ operator }, true)}
+      />
       {draft.operator === 'between' ? (
         <div className={styles.range}>
           {numberField('from', labels.filterFrom, controls.initialFocusRef)}
@@ -352,6 +313,22 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
 export const FilterPanel = (props: FilterPanelProps) => {
   const type = filterTypeOf(props.column.columnDef.filter)
   if (type === 'boolean') return <BooleanPanel {...props} />
+  // Календарь — ленивый модуль: грид без колонок дат его не загружает (DF14).
+  if (type === 'date' || type === 'datetime') {
+    return (
+      <Suspense
+        fallback={
+          <div
+            className={styles.panel}
+            aria-busy="true"
+            data-testid="filter-date-loading"
+          />
+        }
+      >
+        <DateFilterPanel {...props} type={type} />
+      </Suspense>
+    )
+  }
   if (type === 'text' || type === 'number') {
     return <ConditionPanel {...props} type={type} />
   }

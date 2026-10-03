@@ -393,6 +393,13 @@
   /* Поле быстрого поиска в тулбаре (ADR 0045). */
   --tsr-comp-quick-search-width: 240px;
 
+  /* Календарь фильтра дат (ADR 0047): выбранный день — заливка accent, как чекбокс;
+   * дни внутри диапазона — подложка выбора. */
+  --tsr-comp-calendar-day-size: 32px;
+  --tsr-comp-calendar-day-selected-bg: var(--tsr-sys-accent);
+  --tsr-comp-calendar-day-selected-fg: var(--tsr-sys-accent-fg);
+  --tsr-comp-calendar-range-bg: var(--tsr-sys-overlay-selected-strong);
+
   --tsr-comp-accent: var(--tsr-sys-accent);
 
   /* Загрузка */

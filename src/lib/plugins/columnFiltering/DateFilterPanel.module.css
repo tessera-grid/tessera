@@ -1,0 +1,180 @@
+/* Календарь фильтра дат (ADR 0047): разметка `@daypicker/react`, стили — на токенах. */
+.calendar {
+  position: relative;
+  width: max-content;
+}
+
+.months {
+  display: flex;
+}
+
+.month {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 2px;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tsr-comp-calendar-day-size);
+  height: var(--tsr-comp-calendar-day-size);
+  padding: 0;
+  color: var(--tsr-comp-control-color);
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-popup-item-radius);
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.navButton:hover:not([aria-disabled='true']) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.navButton[aria-disabled='true'] {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  height: var(--tsr-comp-calendar-day-size);
+  /* Место под кнопки листания справа. */
+  padding-right: calc(var(--tsr-comp-calendar-day-size) * 2 + 4px);
+}
+
+.captionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.dropdowns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Нативный select поверх подписи: подпись видна, выбор — у select. */
+.dropdownRoot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: var(--tsr-comp-popup-item-radius);
+}
+
+.dropdownRoot:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.dropdownRoot:has(.dropdown:focus-visible) {
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.dropdown {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+}
+
+.chevron {
+  display: inline-flex;
+}
+
+.grid {
+  border-collapse: collapse;
+}
+
+.weekday {
+  width: var(--tsr-comp-calendar-day-size);
+  height: 24px;
+  color: var(--tsr-comp-control-color);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.day {
+  width: var(--tsr-comp-calendar-day-size);
+  height: var(--tsr-comp-calendar-day-size);
+  padding: 0;
+  text-align: center;
+}
+
+.dayButton {
+  box-sizing: border-box;
+  width: var(--tsr-comp-calendar-day-size);
+  height: var(--tsr-comp-calendar-day-size);
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-popup-item-radius);
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.dayButton:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.dayButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.today .dayButton {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rangeMiddle {
+  background-color: var(--tsr-comp-calendar-range-bg);
+}
+
+.rangeMiddle .dayButton {
+  border-radius: 0;
+}
+
+.selected:not(.rangeMiddle) .dayButton,
+.rangeStart .dayButton,
+.rangeEnd .dayButton {
+  color: var(--tsr-comp-calendar-day-selected-fg);
+  background-color: var(--tsr-comp-calendar-day-selected-bg);
+}
+
+.outside {
+  color: var(--tsr-comp-control-disabled-color);
+}
+
+.disabled .dayButton {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.focused {
+  position: relative;
+}

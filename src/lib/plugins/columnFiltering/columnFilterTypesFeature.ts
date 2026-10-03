@@ -8,11 +8,14 @@ import type { FilterFn } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures } from '../../types'
 import {
+  dateCellWall,
   filterTypeOf,
+  isDateType,
   isInactiveFilter,
   matchesColumnFilter,
 } from './conditions'
-import type { ColumnFilterDef, ColumnFilterValue } from './types'
+import { matchesDate, nowWall } from './dates'
+import type { ColumnFilterDef, ColumnFilterValue, DateFilter } from './types'
 
 interface ColumnFilterTypesColumnDef {
   /** Тип фильтра колонки; без него колонку не отфильтровать (ADR 0045). */
@@ -40,8 +43,36 @@ interface FilterRow {
     getColumn: (
       id: string,
     ) => { columnDef: ColumnFilterTypesColumnDef } | undefined
+    options: { columnFilteringTimeZone?: string }
   }
   getValue: (columnId: string) => unknown
+}
+
+interface CachedDate {
+  value: unknown
+  timeZone: string | undefined
+  wall: number | null
+}
+
+/** Разобранные даты по строке и колонке: фильтр не разбирает их на каждое применение. */
+const dateCache = new WeakMap<object, Map<string, CachedDate>>()
+
+const cellWallOf = (
+  row: FilterRow,
+  columnId: string,
+  def: ColumnFilterDef | undefined,
+  timeZone: string | undefined,
+) => {
+  const value = row.getValue(columnId)
+  let byColumn = dateCache.get(row)
+  if (!byColumn) dateCache.set(row, (byColumn = new Map()))
+  const cached = byColumn.get(columnId)
+  if (cached && cached.value === value && cached.timeZone === timeZone) {
+    return cached.wall
+  }
+  const wall = dateCellWall(def, value, timeZone)
+  byColumn.set(columnId, { value, timeZone, wall })
+  return wall
 }
 
 const columnTypeFilter = ((
@@ -49,8 +80,17 @@ const columnTypeFilter = ((
   columnId: string,
   filter: ColumnFilterValue,
 ) => {
-  const type = filterTypeOf(row.table.getColumn(columnId)?.columnDef.filter)
+  const def = row.table.getColumn(columnId)?.columnDef.filter
+  const type = filterTypeOf(def)
   if (!type) return true
+  if (isDateType(type)) {
+    const timeZone = row.table.options.columnFilteringTimeZone
+    return matchesDate(
+      cellWallOf(row, columnId, def, timeZone),
+      filter as DateFilter,
+      () => nowWall(timeZone),
+    )
+  }
   return matchesColumnFilter(type, row.getValue(columnId), filter)
 }) as unknown as FilterFn<any, any>
 

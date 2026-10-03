@@ -1,12 +1,17 @@
+import { ru } from '@daypicker/react/locale/ru'
 import { Meta, StoryObj } from '@storybook/react'
+import { useArgs } from 'storybook/preview-api'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  dateFilteringColumns,
+  dateFilteringData,
   filteringColumns,
   filteringData,
   makeFilteringData,
 } from './__mocks__/filteringData'
+import { StoryComponent } from './DataGridStory'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { FilteringServerDemo } from './demos/filteringDemos'
 
@@ -14,9 +19,16 @@ interface FilteringServerArgs extends StoryProps {
   serverDelayMs?: number
 }
 
+interface FilteringDatesArgs extends StoryProps {
+  /** Пояс фильтра; `'browser'` — без `timeZone`, пояс браузера. */
+  timeZone?: string
+  dateLocale?: 'en-US' | 'ru'
+}
+
 /**
- * Фильтрация (ADR 0045): фильтры колонок по типам — текст, число, булево; быстрый
- * поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой результат; сервер.
+ * Фильтрация (ADR 0045, ADR 0047): фильтры колонок по типам — текст, число, булево,
+ * дата; быстрый поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой
+ * результат; сервер.
  */
 
 const meta = {
@@ -162,4 +174,47 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
   },
   render: args => <FilteringServerDemo {...normalizeArgs(args)} />,
+}
+
+export const FilteringDates: StoryObj<FilteringDatesArgs> = {
+  name: 'Filtering — dates',
+  args: {
+    ...GRID,
+    columnsOverride: dateFilteringColumns,
+    dataOverride: dateFilteringData,
+    timeZone: 'UTC',
+    dateLocale: 'en-US',
+    // «Birth date» — календарный день, «Created» — момент со временем. В панели —
+    // условия, пресеты («Period») и календарь. Смените timeZone при фильтре «On
+    // Mar 15, 2026» по «Created»: строки у границы суток уходят в соседний день.
+    // dateLocale переводит календарь и даты в сводке.
+  },
+  argTypes: {
+    timeZone: {
+      control: { type: 'select' },
+      options: [
+        'browser',
+        'UTC',
+        'Europe/London',
+        'Europe/Moscow',
+        'America/New_York',
+        'Asia/Tokyo',
+      ],
+    },
+    dateLocale: { control: { type: 'inline-radio' }, options: ['en-US', 'ru'] },
+  },
+  render: function Render({ timeZone, dateLocale, ...args }) {
+    const [, updateArgs] = useArgs()
+    return (
+      <StoryComponent
+        {...normalizeArgs(args)}
+        updateArgs={updateArgs}
+        columnFilteringOptions={{
+          ...args.columnFilteringOptions,
+          timeZone: timeZone === 'browser' ? undefined : timeZone,
+          dateLocale: dateLocale === 'ru' ? ru : undefined,
+        }}
+      />
+    )
+  },
 }

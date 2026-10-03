@@ -3,6 +3,7 @@
  * `columnFilteringFeature`, общая отфильтрованная модель строк и типы фильтров колонок
  * (`filter` в описании колонки). Фильтры разных колонок объединяются через И.
  */
+import type { DayPickerLocale } from '@daypicker/react'
 import { columnFilteringFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
@@ -33,6 +34,13 @@ export interface ColumnFilteringOptions {
   filteredRowCount?: number
   /** Серверный режим: всех строк — для «показано N из M». */
   totalRowCount?: number
+  /**
+   * Пояс дат (IANA или `'UTC'`): сутки, «сегодня», пресеты и стенное время
+   * `datetime`; по умолчанию — пояс браузера (ADR 0047, §4).
+   */
+  timeZone?: string
+  /** Локаль календаря: месяцы, дни недели, первый день недели (по умолчанию `en-US`). */
+  dateLocale?: DayPickerLocale
 }
 
 /** Серверный режим без колбэка: фильтры некуда отправить (FL31). */
@@ -84,6 +92,8 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
     // В дереве родитель виден, если фильтр проходит потомок (FL22).
     filterFromLeafRows: true,
     columnFilteringDebounceMs: o.debounceMs,
+    columnFilteringTimeZone: o.timeZone,
+    columnFilteringDateLocale: o.dateLocale,
     columnFilteringServer: !!o.server,
     ...(o.server
       ? {

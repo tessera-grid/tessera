@@ -44,6 +44,9 @@ export const FilterSummaryPopover = ({
   const labels = useLocalization()
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const locale = (
+    table.options as { columnFilteringDateLocale?: { code?: string } }
+  ).columnFilteringDateLocale?.code
 
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
@@ -80,7 +83,7 @@ export const FilterSummaryPopover = ({
                   <span className={styles.text}>
                     <span className={styles.header}>{item.header}</span>
                     <span className={styles.condition}>
-                      {describeFilter(item.filter, labels)}
+                      {describeFilter(item.filter, labels, locale)}
                     </span>
                     {item.hidden && (
                       <span className={styles.hidden}>
