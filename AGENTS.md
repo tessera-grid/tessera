@@ -408,7 +408,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
       (TI-05… — статические инварианты токенов) —
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
-      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO5 — движение), `theming-popups` (PP1–PP7 — единый вид
+      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO6 — движение), `theming-popups` (PP1–PP7 — единый вид
       поповеров),
       [ADR 0017](docs/decisions/0017-ui-components.md)).
     - _Доступность:_ `a11y` (A1–A10, прогон axe-core,
@@ -688,7 +688,7 @@ ADR и не с кода.** Прожарка — короткий диалог с
 ### Архитектурная дисциплина
 
 - **Анимации — только через токены движения** (`--tsr-comp-motion-duration`,
-  `--tsr-comp-motion-easing`, [ADR 0017](docs/decisions/0017-ui-components.md), MO1–MO5):
+  `--tsr-comp-motion-easing`, [ADR 0017](docs/decisions/0017-ui-components.md), MO1–MO6):
   никаких литералов `ms`/`cubic-bezier` в компонентах; скрытые кнопки ячейки и строки
   проявляются через `--tsr-comp-reveal-transition`; `prefers-reduced-motion` гасит тема
   одним правилом, а не компоненты по отдельности.

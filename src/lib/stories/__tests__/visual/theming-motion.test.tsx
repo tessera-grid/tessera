@@ -174,6 +174,38 @@ describe('Motion contract', () => {
       .toBe(resolve('--tsr-comp-cell-outline-color', 'color'))
   })
 
+  test('MO6 the resize handle background matches its header cell background on every frame, on hover and on leave', async () => {
+    await render(<composed.ColumnResizing />)
+    await expect
+      .poll(
+        () => query('.data-grid__head-cell .resize__handler--column').length,
+      )
+      .toBeGreaterThan(0)
+    const handle = query('.data-grid__head-cell .resize__handler--column')[0]
+    const cell = handle.closest<HTMLElement>('.data-grid__head-cell')!
+    // Длинный переход, чтобы замер попал в его середину независимо от задержек RPC.
+    const theme = cell.closest<HTMLElement>('.data-grid-theme')!
+    theme.style.setProperty('--tsr-comp-motion-duration', '10s')
+    try {
+      const hovered = resolve(
+        '--tsr-comp-head-cell-hovered-bg',
+        'background-color',
+      )
+      const expectInSync = (stage: string) => {
+        const cellBg = read(cell, 'background-color')
+        expect(cellBg, `${stage}: mid-transition`).not.toBe(hovered)
+        expect(read(handle, 'background-color'), stage).toBe(cellBg)
+      }
+
+      await userEvent.hover(cell)
+      expectInSync('hover')
+      await userEvent.hover(document.body)
+      expectInSync('leave')
+    } finally {
+      theme.style.removeProperty('--tsr-comp-motion-duration')
+    }
+  })
+
   test('MO3 prefers-reduced-motion switches every transition off with one rule', async () => {
     await renderAll()
     await reducedMotion(true)

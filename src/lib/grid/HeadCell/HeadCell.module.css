@@ -6,6 +6,8 @@
   user-select: none;
   overflow: hidden;
   transition: var(--tsr-comp-head-cell-transition);
+  /* Фон — через переменную: ей же и тем же переходом красится хэндл ширины. */
+  background-color: var(--tsr-head-cell-bg);
 
   /* Центральный виртуализированный заголовок вне потока: статика в CSS. */
   &[data-virtual-cell] {
@@ -58,7 +60,7 @@
     will-change: transform;
     z-index: var(--tsr-comp-z-index-pinned);
     opacity: var(--tsr-comp-opacity);
-    background-color: var(--tsr-comp-head-cell-pinned-bg);
+    --tsr-head-cell-bg: var(--tsr-comp-head-cell-pinned-bg);
     position: sticky;
   }
 
@@ -73,7 +75,7 @@
     will-change: transform;
     z-index: var(--tsr-comp-z-index-pinned);
     opacity: var(--tsr-comp-opacity);
-    background-color: var(--tsr-comp-head-cell-pinned-bg);
+    --tsr-head-cell-bg: var(--tsr-comp-head-cell-pinned-bg);
     position: sticky;
   }
 
@@ -89,7 +91,7 @@
   &[data-actions-column-cell='true'][data-cell-pinned='right']:not(
       [data-cell-first-right-pinned='true']
     ) {
-    background-color: var(--tsr-comp-head-cell-pinned-bg);
+    --tsr-head-cell-bg: var(--tsr-comp-head-cell-pinned-bg);
     position: sticky;
     z-index: var(--tsr-comp-z-index-pinned);
     flex-grow: 0;
@@ -128,18 +130,28 @@
 
   /* Бэкграунд для заголовков и правого отступа с ресайзером при наведении */
 
+  /* Хэндл виден без наведения (открыто его меню): непрозрачный фон маскирует контент. */
+  &:has(:global(.resize__handler--column)[data-button-active='true']):not(
+      [data-cell-pinned='left'],
+      [data-cell-pinned='right']
+    ) {
+    --tsr-head-cell-bg: var(--tsr-comp-head-bg);
+  }
+
   &:hover:not([data-actions-column-cell='true']),
   &:is([data-column-resizing='true']) {
-    background-color: var(--tsr-comp-head-cell-hovered-bg);
+    --tsr-head-cell-bg: var(--tsr-comp-head-cell-hovered-bg);
+  }
 
-    /*
-     * Хэндл должен маскировать контент ячейки (область ресайза), поэтому фон
-     * непрозрачный и равен фону ячейки — hovered-bg сделан сплошным цветом,
-     * иначе полупрозрачность удваивалась бы и хэндл темнел.
-     */
-    :global(.resize__handler--column) {
-      background-color: var(--tsr-comp-head-cell-hovered-bg);
-    }
+  /*
+   * Хэндл маскирует контент под собой фоном ячейки и меняет его тем же переходом —
+   * hovered-bg сплошной, иначе полупрозрачность удваивалась бы. Класс `.cell__button`
+   * в селекторе перебивает переход проявления из buttonVisibility.css.
+   */
+  & :global(.resize__handler--column.cell__button) {
+    background-color: var(--tsr-head-cell-bg);
+    transition:
+      var(--tsr-comp-reveal-transition), var(--tsr-comp-head-cell-transition);
   }
 
   /* Абсолютное позиционирование drag-иконки в заголовке */
