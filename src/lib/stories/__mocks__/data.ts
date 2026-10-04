@@ -5,6 +5,8 @@ import { faker } from '@faker-js/faker'
 const today = new Date()
 
 export const getData = (count: number) => {
+  // Сид от объёма: данные истории не зависят от того, что генерировалось до неё.
+  faker.seed(count)
   return Array.from({ length: count }).map((_, i) => {
     const sexType = faker.person.sexType()
 

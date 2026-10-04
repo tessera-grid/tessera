@@ -13,24 +13,24 @@ exports[`Дерево доступности (AX) > AX1: грид с сорти�
       columnheader "Last Name"
         button "Sort descending"
   rowgroup
-    row "Select row Samoa Bettye Bahringer"
+    row "Select row Pitcairn Islands Jaydon Tremblay"
       gridcell "Select row"
         checkbox "Select row"
-      gridcell "Samoa"
-      gridcell "Bettye"
-      gridcell "Bahringer"
-    row "Select row Christmas Island Quincy Christiansen" selected
+      gridcell "Pitcairn Islands"
+      gridcell "Jaydon"
+      gridcell "Tremblay"
+    row "Select row Anguilla Madge Padberg" selected
       gridcell "Select row"
         checkbox "Select row" checked=true
-      gridcell "Christmas Island"
-      gridcell "Quincy"
-      gridcell "Christiansen"
-    row "Select row Belize Libbie Bernhard"
+      gridcell "Anguilla"
+      gridcell "Madge"
+      gridcell "Padberg"
+    row "Select row India Marjorie Crona"
       gridcell "Select row"
         checkbox "Select row"
-      gridcell "Belize"
-      gridcell "Libbie"
-      gridcell "Bernhard""
+      gridcell "India"
+      gridcell "Marjorie"
+      gridcell "Crona""
 `;
 
 exports[`Дерево доступности (AX) > AX2: treegrid с раскрытой группой — level и expanded у строк 1`] = `
@@ -83,11 +83,11 @@ exports[`Дерево доступности (AX) > AX7: без keyboardNavigati
     row
       cell "Select row"
         checkbox "Select row"
-      cell "Tajikistan"
-      cell "Lorenzo"
+      cell "Angola"
+      cell "Jade"
     row
       cell "Select row"
         checkbox "Select row"
-      cell "Malta"
-      cell "Hulda""
+      cell "Nauru"
+      cell "Birdie""
 `;
