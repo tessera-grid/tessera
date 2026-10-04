@@ -10,6 +10,7 @@ import { DraggableHeadCell } from './DraggableHeadCell'
 import { HeadCell } from './HeadCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerHeadColumn } from './RightFillerHeadColumn'
+import { needsRightFiller } from './layout'
 
 import styles from '../grid/HeadRow/HeadRow.module.css'
 
@@ -54,7 +55,7 @@ export const HeadRow = ({
             rightHeaderSlot={rightHeaderSlot}
           />
         ))}
-        {!headers.at(-1)?.column.getIsActionsColumn() && (
+        {needsRightFiller(headers.at(-1)?.getLeafHeaders().at(-1)?.column) && (
           <RightFillerHeadColumn
             gridRow={headerGroup.depth + 1}
             hasBorderBottom={!lastGroup}

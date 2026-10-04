@@ -64,6 +64,11 @@ colSpan` (`getHeaderGridPosition`, `grid/layout.ts`). Вершина цепоч�
 `headerGroup.depth`), а `getLeafHeaders()` возвращает всех потомков вместе с самим
 заголовком — общие хелперы спанов живут в `core/headerSpans.ts`.
 
+Свободное место справа (колонки уже контейнера) в обеих раскладках забирает один и тот
+же элемент в шапке и в теле: первый правозакреплённый столбец, иначе колонка действий,
+иначе заполнитель в конце строки (`needsRightFiller`, `grid/layout.ts`). Иначе заголовки
+расходятся с колонками тела ([ADR 0011](../decisions/0011-column-pinning.md), CP29–CP30).
+
 ```mermaid
 flowchart TB
     HG{"headerGroups.length > 1 ?"}

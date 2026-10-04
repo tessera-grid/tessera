@@ -106,6 +106,13 @@
     flex-grow: 1;
   }
 
+  /* Первая закреплённая справа колонка забирает свободное место — как ячейка тела. */
+  &[data-layout='flex'][data-cell-pinned='right'][data-cell-first-right-pinned='true']:not(
+      [data-actions-column-cell='true']
+    ) {
+    flex-grow: 1;
+  }
+
   /* Бордер для ячейки последней закрепленной колонки слева */
 
   &:is([data-cell-last-left-pinned='true']) {

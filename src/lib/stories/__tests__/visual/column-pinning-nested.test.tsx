@@ -15,9 +15,11 @@ import {
   renderHeaderGroupsPinning,
   pinFirstColumn,
   pinViaPopover,
+  headVsBodyColumns,
+  withWideViewport,
 } from './column-pinning-helpers'
 
-// CP13–CP19: вложенная шапка и сервисные столбцы.
+// CP13–CP19, CP30: вложенная шапка и сервисные столбцы.
 // Каждое требование — отдельный тест с ID из таблицы требований
 // docs/decisions/0011-column-pinning.md (правило именования — ADR 0009).
 // Селекторы и хелперы — column-pinning-helpers.tsx.
@@ -214,5 +216,30 @@ describe('Column Pinning — nested headers and service columns', () => {
     // see `column-dragging.test.tsx` → D29 (docs/decisions/0006-dnd-with-dnd-kit.md).
     // Kept as a named marker so CP15 shows up in the requirement roll-call.
     expect(true).toBe(true)
+  })
+
+  test('CP30: under nested headers, with free space on the right, a right-pinned group and its leaves line up with their body columns', async () => {
+    await withWideViewport(async () => {
+      const container = await renderHeaderGroupsPinning()
+      await pinViaPopover(headCellById(container, 'name'), 'Pin right')
+      await expect
+        .poll(() =>
+          headCellById(container, 'name').getAttribute('data-cell-pinned'),
+        )
+        .toBe('right')
+      const columns = headVsBodyColumns(container)
+      for (const { id, head, body } of columns) {
+        expect(head, id!).toEqual(body)
+      }
+      // Группа охватывает ровно свои листья в теле.
+      const [first, last] = ['firstName', 'lastName'].map(
+        id => columns.find(column => column.id === id)!.body!,
+      )
+      const group = headCellById(container, 'name').getBoundingClientRect()
+      expect([Math.round(group.left), Math.round(group.width)]).toEqual([
+        first[0],
+        last[0] + last[1] - first[0],
+      ])
+    })
   })
 })

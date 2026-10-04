@@ -153,7 +153,8 @@ export const HeadCellView = ({
   const cellStyles: CSSProperties = {
     ...gridStyles,
     width:
-      header.column.getIsRowActionsColumn() && layout === 'grid'
+      layout === 'grid' &&
+      (header.column.getIsRowActionsColumn() || isFirstEndPinnedColumn)
         ? 'auto'
         : `var(${getColumnSizeVariable(header.id)})`,
     // Центральный виртуализированный заголовок — только динамический left инлайн,

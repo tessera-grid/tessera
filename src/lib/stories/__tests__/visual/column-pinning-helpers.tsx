@@ -1,5 +1,5 @@
 // Общие селекторы и хелперы наборов column-pinning (ADR 0011).
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expect } from 'vitest'
 import { composed } from '../stories'
@@ -136,4 +136,35 @@ export const pinViaPopover = async (
   await userEvent.click(button)
   await expect.poll(() => menuItemByText(item)).toBeTruthy()
   await userEvent.click(menuItemByText(item)!)
+}
+
+/** Run `body` in a viewport wider than the grid's columns (free space on the right). */
+export const withWideViewport = async (body: () => Promise<void>) => {
+  const { innerWidth, innerHeight } = window
+  await page.viewport(1600, innerHeight)
+  try {
+    await body()
+  } finally {
+    await page.viewport(innerWidth, innerHeight)
+  }
+}
+
+/**
+ * Left edge and width of every body cell in the first row next to its leaf header
+ * (`[left, width]`, px) — equal pairs mean header and body columns line up.
+ */
+export const headVsBodyColumns = (container: HTMLElement) => {
+  const box = (el: Element | null) => {
+    if (!el) return null
+    const { left, width } = el.getBoundingClientRect()
+    return [Math.round(left), Math.round(width)]
+  }
+  const row = container.querySelector('.data-grid__body-row')!
+  return Array.from(row.querySelectorAll<HTMLElement>(BODY_CELL)).map(cell => {
+    const id = cell.getAttribute('data-column-id')
+    const heads = container.querySelectorAll(
+      `${HEAD_CELL}[data-column-id='${id}']`,
+    )
+    return { id, head: box(heads[heads.length - 1]), body: box(cell) }
+  })
 }

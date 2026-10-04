@@ -13,9 +13,12 @@ import {
   menuItems,
   menuItemByText,
   pinViaPopover,
+  headVsBodyColumns,
+  scrollerOf,
+  withWideViewport,
 } from './column-pinning-helpers'
 
-// CP20–CP27: закрепление справа, колонка действий, виртуализация.
+// CP20–CP27, CP29: закрепление справа, колонка действий, виртуализация.
 // Каждое требование — отдельный тест с ID из таблицы требований
 // docs/decisions/0011-column-pinning.md (правило именования — ADR 0009).
 // Селекторы и хелперы — column-pinning-helpers.tsx.
@@ -272,5 +275,26 @@ describe('Column Pinning — right side', () => {
       )
       .toEqual(expect.arrayContaining(['c4', 'c6', 'c7']))
     await expect.poll(() => gaps().every(gap => Math.abs(gap) <= 1)).toBe(true)
+  })
+
+  test('CP29: with free space on the right, right-pinned headers keep the left edge and width of their body columns', async () => {
+    await withWideViewport(async () => {
+      const container = await renderColumnPinning({ columnCount: 5 })
+      await pinViaPopover(headCellById(container, 'lastName'), 'Pin right')
+      await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+      await expect
+        .poll(
+          () =>
+            container.querySelectorAll(`${HEAD_CELL}[data-cell-pinned='right']`)
+              .length,
+        )
+        .toBe(2)
+      // Свободное место есть: колонки уже контейнера, иначе растягивать нечего.
+      const scroller = scrollerOf(container)
+      expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
+      for (const { id, head, body } of headVsBodyColumns(container)) {
+        expect(head, id!).toEqual(body)
+      }
+    })
   })
 })

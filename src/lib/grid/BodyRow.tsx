@@ -17,6 +17,7 @@ import {
 import { BodyCell } from './BodyCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
+import { needsRightFiller } from './layout'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 
@@ -151,7 +152,7 @@ export const BodyRowCells = ({
           />
         )
       })}
-      {!row.getVisibleCells().at(-1)?.column.getIsActionsColumn() && (
+      {needsRightFiller(row.getVisibleCells().at(-1)?.column) && (
         <RightFillerBodyColumn
           hasBorderTop={!row.getIsFirstRow()}
           hasBorderRight
