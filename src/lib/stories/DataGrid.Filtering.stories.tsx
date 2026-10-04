@@ -33,7 +33,7 @@ interface FilteringDatesArgs extends StoryProps {
 /**
  * Фильтрация (ADR 0045, ADR 0047, ADR 0048): фильтры колонок по типам — текст, число,
  * булево, дата, варианты (select, multiselect, справочник); быстрый поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой
- * результат; сервер.
+ * результат; сервер; поиск без колонок для поиска.
  */
 
 const meta = {
@@ -60,8 +60,9 @@ export const Filtering: StoryObj<StoryProps> = {
   args: {
     ...GRID,
     // Воронка в заголовке открывает панель: «Name» и «City» — текст, «Age» — число
-    // (с «между»), «VIP» — булево с «Пусто». У «Visits» фильтра нет. Поиск слева в
-    // тулбаре, справа — сводка «Фильтры» со сбросом; внизу — «Показано N из M».
+    // (с «между»), «VIP» — булево с «Пусто». У «Visits» фильтра нет. Слева в тулбаре
+    // поиск и сразу за ним сводка «Фильтры» со сбросом (ADR 0051); иконка «i» у поиска
+    // называет колонки, по которым он идёт (ADR 0053); внизу — «Показано N из M».
     // Включите enableHeaderActionMenu — фильтр уйдёт пунктом в кебаб.
   },
 }
@@ -157,6 +158,20 @@ export const FilteringCombined: StoryObj<StoryProps> = {
   },
 }
 
+export const QuickSearchNoColumns: StoryObj<StoryProps> = {
+  name: 'Quick search — no searchable columns',
+  args: {
+    ...GRID,
+    // Искать негде (ADR 0053): «VIP» — булево, у «Name» поиск снят
+    // (`enableGlobalFilter: false`). Поле недоступно, причина — в его описании и в
+    // тултипе иконки; фильтры колонок при этом работают.
+    columnsOverride: [
+      { ...filteringColumns[0], enableGlobalFilter: false },
+      filteringColumns[3],
+    ],
+  },
+}
+
 export const FilteringEmpty: StoryObj<StoryProps> = {
   name: 'Filtering — empty result',
   args: {
@@ -173,7 +188,9 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     serverDelayMs: 600,
     // Грид не фильтрует сам: фильтры и поиск уходят в onFilterChange / onSearchChange
     // (журнал справа), «сервер» отвечает с задержкой, пока идёт загрузка — полоса
-    // прогресса. «Показано N из M» — из ответа сервера.
+    // прогресса. «Показано N из M» — из ответа сервера. Поиск передаёт колонки
+    // (`columnIds` в журнале, ADR 0053): включите enableColumnVisibility и скройте
+    // колонку — запрос уйдёт повторно с новым набором.
   },
   argTypes: {
     serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },

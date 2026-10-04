@@ -49,6 +49,7 @@ import {
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { RowGrouping } from './DataGrid.Rows.stories'
+import { filteringColumns, filteringData } from './__mocks__/filteringData'
 
 /** Общие истории: все фичи, загрузка, заглушка, футер, ручная проверка доступности. */
 const meta = {
@@ -221,6 +222,21 @@ export const WithToolbar: StoryObj<StoryProps> = {
     // и состояния F4 — активное (Settings) и disabled (Export). Тулбар вызывают
     // сами кнопки — флаг не нужен (ADR 0046).
     extraPlugins: toolbarDemoPlugins,
+  },
+}
+
+export const ToolbarAllButtons: StoryObj<StoryProps> = {
+  name: 'Toolbar — all buttons',
+  args: {
+    // Все встроенные кнопки разом (ADR 0051): слева поиск и «Фильтры», справа
+    // «Колонки», затем «Экспорт». Порядок задают группы search → view → data, а не
+    // порядок плагинов. Сузьте окно — поле поиска сжимается, стороны не наезжают.
+    columnsOverride: filteringColumns,
+    dataOverride: filteringData,
+    enableQuickSearch: true,
+    enableColumnFiltering: true,
+    enableColumnVisibility: true,
+    enableExport: true,
   },
 }
 
