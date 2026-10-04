@@ -29,6 +29,7 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Info,
 } from 'lucide-react'
 
 import { CheckboxOutlineIcon, FilterActiveIcon } from './icons'
@@ -88,6 +89,8 @@ export interface TableIcons {
   search: IconComponent
   /** Очистка поля и сброс фильтра в сводке */
   clear: IconComponent
+  /** Подсказка поля поиска: по каким колонкам ищем (ADR 0053) */
+  info: IconComponent
   /** Пункт «Скрыть колонку» в кебабе заголовка */
   hideColumn: IconComponent
   /** Кнопки пагинации: первая / предыдущая / следующая / последняя страница */
@@ -123,6 +126,7 @@ export const DEFAULT_ICONS: TableIcons = {
   filterActive: FilterActiveIcon,
   search: Search,
   clear: X,
+  info: Info,
   hideColumn: EyeOff,
   firstPage: ChevronsLeft,
   previousPage: ChevronLeft,

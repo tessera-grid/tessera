@@ -1,7 +1,8 @@
 /**
  * Быстрый поиск (ADR 0045, §6): «содержит» без учёта регистра по видимым колонкам
- * со значением строка или число. Служебные колонки и колонки дат (ADR 0047, §6) не
- * участвуют; у колонок с вариантами ищется подпись (ADR 0048, §4).
+ * со значением строка или число. Служебные колонки, колонки дат (ADR 0047, §6) и
+ * булевы (ADR 0053: значение не строка — совпасть не может) не участвуют; у колонок с
+ * вариантами ищется подпись (ADR 0048, §4).
  */
 import type { FilterFn } from '@tanstack/react-table'
 
@@ -46,13 +47,15 @@ export const quickSearchFilter = ((
 
 quickSearchFilter.resolveFilterValue = normalizeSearch
 
-const isDateColumn = ({ columnDef }: SearchColumn) => {
+const UNSEARCHABLE_TYPES = new Set(['date', 'datetime', 'boolean'])
+
+const isUnsearchableType = ({ columnDef }: SearchColumn) => {
   const def = columnDef?.filter
   const type = typeof def === 'object' ? def.type : def
-  return type === 'date' || type === 'datetime'
+  return !!type && UNSEARCHABLE_TYPES.has(type)
 }
 
 export const canSearchColumn = (column: SearchColumn) =>
   (column.getIsVisible?.() ?? true) &&
   !column.getIsActionsColumn?.() &&
-  !isDateColumn(column)
+  !isUnsearchableType(column)

@@ -42,8 +42,12 @@ const SERVER_DATA = makeFilteringData(TOTAL_ROWS)
 
 type Filters = { id: string; value: unknown }[]
 
-/** «Сервер»: те же условия, что у клиентского режима. */
-const query = (filters: Filters, search: string): FilteringItem[] => {
+/** «Сервер»: те же условия, что у клиентского режима; поиск — по колонкам грида (ADR 0053). */
+const query = (
+  filters: Filters,
+  search: string,
+  columnIds: string[],
+): FilteringItem[] => {
   const needle = normalizeSearch(search)
   return SERVER_DATA.filter(
     row =>
@@ -61,8 +65,8 @@ const query = (filters: Filters, search: string): FilteringItem[] => {
         )
       }) &&
       (needle === '' ||
-        [row.name, row.city, row.age, row.visits].some(value =>
-          matchesSearch(value, needle),
+        columnIds.some(id =>
+          matchesSearch(row[id as keyof FilteringItem], needle),
         )),
   )
 }
@@ -74,7 +78,12 @@ export const FilteringServerDemo = ({
   const { entries, log, clear } = useCallbackLog()
   const [rows, setRows] = useState(SERVER_DATA)
   const [loading, setLoading] = useState(false)
-  const request = useRef({ filters: [] as Filters, search: '', seq: 0 })
+  const request = useRef({
+    filters: [] as Filters,
+    search: '',
+    columnIds: [] as string[],
+    seq: 0,
+  })
   const delay = useRef(serverDelayMs)
   delay.current = serverDelayMs
 
@@ -83,7 +92,8 @@ export const FilteringServerDemo = ({
     setLoading(true)
     window.setTimeout(() => {
       if (seq !== request.current.seq) return
-      const result = query(request.current.filters, request.current.search)
+      const { filters, search, columnIds } = request.current
+      const result = query(filters, search, columnIds)
       log('server', `${result.length} of ${TOTAL_ROWS} rows`)
       setRows(result)
       setLoading(false)
@@ -99,9 +109,13 @@ export const FilteringServerDemo = ({
     [log, refetch],
   )
   const onSearchChange = useCallback(
-    (search: string) => {
-      log('onSearchChange', describeEvent({ search }))
+    (search: string, { columnIds }: { columnIds: string[] }) => {
+      log(
+        'onSearchChange',
+        describeEvent({ search, columnIds: columnIds.join(',') }),
+      )
       request.current.search = search
+      request.current.columnIds = columnIds
       refetch()
     },
     [log, refetch],

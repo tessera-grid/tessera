@@ -809,7 +809,9 @@ describe('Фильтрация — пустой результат, сервер
     await userEvent.type(searchInput()!, 'rome')
     expect(onSearchChange).not.toHaveBeenCalled()
     await expect.poll(() => onSearchChange.mock.calls.length).toBe(1)
-    expect(onSearchChange).toHaveBeenLastCalledWith('rome')
+    expect(onSearchChange).toHaveBeenLastCalledWith('rome', {
+      columnIds: expect.any(Array),
+    })
     expect(rowIds()).toEqual(ALL)
 
     table.setColumnFilters([])

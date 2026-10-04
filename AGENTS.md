@@ -396,6 +396,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       FL18, FL25–FL26, FL31 — условия, объединение через И, поиск, экспорт, `diagnose`),
       дымовой `filtering-stories` (FL37 — история «Filtering — server»), перф FL35–FL36 —
       в `interaction`, [ADR 0045](docs/decisions/0045-filtering.md).
+    - _Подсказка поиска:_ `quick-search-hint` (QS1–QS2, QS4–QS5, QS8–QS9 — тултип и
+      описание колонок поиска, недоступное поле, колонки для сервера), модульные
+      `quickSearchHint.dom` (QS3, QS6–QS7), [ADR 0053](docs/decisions/0053-quick-search-columns-hint.md).
     - _Фильтр дат:_ `filtering-dates` (DF1, DF9–DF13, DF15–DF17, DF19 — кнопка и панель
       даты, календарь, время, клавиатура, тема, движение, локализация, сводка, axe,
       сервер), `date-filter-chunk` (DF14 — ленивый модуль календаря), модульные

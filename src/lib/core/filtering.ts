@@ -5,6 +5,7 @@
  * заглушки пустого результата.
  */
 import { readPluginHooks } from './definePlugin'
+import { searchColumnIdsOf } from './searchColumns'
 
 export interface ColumnFilterEntry {
   id: string
@@ -32,7 +33,12 @@ interface FilteringHooks {
 }
 
 interface SearchHooks {
-  onSearchChange?: (search: string) => void
+  onSearchChange?: (search: string, scope: SearchScope) => void
+}
+
+/** Где ищет грид — для сервера, чтобы искать по тем же колонкам (ADR 0053). */
+export interface SearchScope {
+  columnIds: string[]
 }
 
 const EMPTY: ColumnFilterEntry[] = []
@@ -91,7 +97,9 @@ export const setColumnFilterByUser = (
 export const setSearchByUser = (table: unknown, search: string) => {
   const t = table as FilteringTable
   t.setGlobalFilter?.(search === '' ? undefined : search)
-  readPluginHooks<SearchHooks>(t, 'quickSearch').onSearchChange?.(search)
+  readPluginHooks<SearchHooks>(t, 'quickSearch').onSearchChange?.(search, {
+    columnIds: searchColumnIdsOf(t),
+  })
 }
 
 /** Снять фильтры колонок и поиск (заглушка пустого результата). */

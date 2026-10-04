@@ -41,7 +41,13 @@
     var(--tsr-comp-focus-ring);
 }
 
-.clear {
+/* С кнопкой очистки справа две кнопки — поле резервирует место под обе. */
+.field[data-has-clear] .input {
+  padding-right: 52px;
+}
+
+.clear,
+.info {
   position: absolute;
   right: 2px;
   display: inline-flex;
@@ -57,11 +63,17 @@
   cursor: pointer;
 }
 
-.clear:hover {
+.field[data-has-clear] .info {
+  right: 26px;
+}
+
+.clear:hover,
+.info:hover {
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
-.clear:focus-visible {
+.clear:focus-visible,
+.info:focus-visible {
   outline: none;
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }

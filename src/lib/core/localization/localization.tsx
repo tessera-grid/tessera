@@ -211,6 +211,10 @@ export interface TableLabels {
   search: string
   /** Кнопка очистки быстрого поиска */
   clearSearch: string
+  /** Подсказка поиска: подписи колонок, по которым он идёт (ADR 0053) */
+  searchColumnsHint: (columns: string[]) => string
+  /** Подсказка поиска, когда искать не по чему */
+  searchNoColumns: string
   /** Кнопка-сводка фильтров в тулбаре: тултип и доступное имя с числами */
   filters: (active: number, hidden: number) => string
   /** Кнопка сброса одного фильтра в сводке */
@@ -355,6 +359,8 @@ export const DEFAULT_LABELS: TableLabels = {
   selectedRowsHidden: count => `${count} hidden by filters`,
   search: 'Search',
   clearSearch: 'Clear search',
+  searchColumnsHint: columns => `Searches in: ${columns.join(', ')}`,
+  searchNoColumns: 'No columns to search',
   filters: (active, hidden) =>
     active === 0
       ? 'Filters'
