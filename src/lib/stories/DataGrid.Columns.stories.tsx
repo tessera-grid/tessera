@@ -204,3 +204,26 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
     },
   },
 }
+
+/**
+ * Перетаскивание под вложенной шапкой (ADR 0052): лист — среди соседей своей группы,
+ * группа — среди соседей уровня целиком. Включите `enableColumnPinning`, чтобы
+ * увидеть, что закреплённые узлы не двигаются.
+ */
+export const HeaderGroupsDragging: StoryObj<StoryProps> = {
+  name: 'Header Groups — dragging',
+  args: {
+    showHeaderGroups: true,
+    enableColumnDragging: true,
+    enableRowDragging: true,
+    dataCount: 40,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  parameters: {
+    controls: {
+      exclude: ['columnCount'],
+    },
+  },
+}

@@ -8,10 +8,8 @@ import { columnOrderingFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { ColumnDraggingComponent } from './ColumnDraggingComponent'
-import {
-  columnDraggingFeature,
-  columnDraggingInertReason,
-} from './columnDraggingFeature'
+import { columnDraggingFeature } from './columnDraggingFeature'
+import { neverInert } from '../../core/pluginDiagnostics'
 import { moveColumnKeyboardAction } from './keyboardActions'
 import type { ColumnDraggingHooks } from './types'
 
@@ -32,7 +30,7 @@ export const columnDragging = definePlugin<ColumnDraggingOptions>()({
     onColumnDragCancel: o.onColumnDragCancel,
   }),
   keyboardActions: [moveColumnKeyboardAction],
-  diagnose: columnDraggingInertReason,
+  diagnose: neverInert,
   slots: [
     {
       id: 'columnDraggingPlugin',

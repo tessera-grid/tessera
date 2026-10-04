@@ -167,9 +167,11 @@ export const HeadCellView = ({
           right: endPinnedOffset,
         }),
     opacity: isDragging ? 0 : 1,
-    transform: disabledSortable
-      ? 'none'
-      : `translateX(${drag?.transformX || 0}px)`,
+    // Неперемещаемая ячейка сдвигается только вместе с перетаскиваемой группой.
+    transform:
+      disabledSortable && !drag?.transformX
+        ? 'none'
+        : `translateX(${drag?.transformX || 0}px)`,
   }
 
   if (isCoveredHeader(header)) {

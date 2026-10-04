@@ -1,79 +1,86 @@
 /**
- * Перестановка колонки к соседней перемещаемой (незакреплённой, `getCanDrag`) —
- * общая для `Alt+Shift+←/→` (ADR 0031, KB3) и меню ручки (ADR 0034, DA2): тот же
- * `setColumnOrder` и `onColumnDragEnd`, что у DnD.
+ * Перестановка узла (лист или группа) к соседнему перемещаемому узлу того же родителя
+ * — общая для `Alt+Shift+←/→` (ADR 0031, KB3) и меню ручки (ADR 0034, DA2; ADR 0052,
+ * ND5): тот же `setColumnOrder` и `onColumnDragEnd`, что у DnD.
  */
-import { arrayMove } from '@dnd-kit/sortable'
-
 import { readPluginHooks } from '../../core/definePlugin'
+import {
+  type NodeHeader,
+  draggableIndexOfNode,
+  isMovableNode,
+  moveBlock,
+  siblingsOf,
+} from '../../core/columnNodes'
 import type { ColumnDraggingHooks } from './types'
-
-interface MovableColumn {
-  id: string
-  getIndex: () => number
-  getDraggableIndex: () => number
-  getCanDrag: () => boolean
-  getIsPinned: () => false | 'start' | 'end'
-}
 
 interface MoveTable {
   setColumnOrder: (updater: (prev: string[]) => string[]) => void
-  getVisibleLeafColumns: () => MovableColumn[]
+  getVisibleLeafColumns: () => { id: string }[]
+  getHeaderGroups: () => { headers: NodeHeader[] }[]
+  atoms: { columnOrder?: { get: () => string[] } }
 }
 
 /** `-1` — влево, `1` — вправо. */
 export type ColumnMoveDirection = -1 | 1
 
-export const isMovableColumn = (column: unknown) => {
-  const c = column as MovableColumn
-  return c.getCanDrag() && c.getIsPinned() === false
-}
+export const isMovableColumn = (header: unknown) =>
+  isMovableNode(header as NodeHeader)
 
 const findMove = (
   table: unknown,
-  column: { id: string },
+  header: NodeHeader,
   direction: ColumnMoveDirection,
 ) => {
-  const movable = (table as MoveTable)
-    .getVisibleLeafColumns()
-    .filter(isMovableColumn)
-  const position = movable.findIndex(c => c.id === column.id)
+  const movable = siblingsOf(table as MoveTable, header).filter(isMovableNode)
+  const position = movable.findIndex(node => node.id === header.id)
   const neighbour = movable[position + direction]
-  return position === -1 || !neighbour
-    ? null
-    : { active: movable[position], neighbour }
+  return position === -1 || !neighbour ? null : neighbour
 }
 
-export const canMoveColumn = (
-  table: unknown,
-  column: { id: string },
-  direction: ColumnMoveDirection,
-) => findMove(table, column, direction) !== null
-
-export const moveColumn = (
-  table: unknown,
-  column: { id: string },
-  direction: ColumnMoveDirection,
-) => {
-  const move = findMove(table, column, direction)
-  if (!move) {
-    return
-  }
+/** Текущий порядок листьев: срез `columnOrder` или порядок видимых колонок. */
+export const currentLeafOrder = (table: unknown) => {
   const t = table as MoveTable
-  const from = move.active.getIndex()
-  const to = move.neighbour.getIndex()
-  t.setColumnOrder(prev =>
-    arrayMove(
-      prev.length > 0 ? prev : t.getVisibleLeafColumns().map(c => c.id),
-      from,
-      to,
-    ),
-  )
+  const order = t.atoms.columnOrder?.get() ?? []
+  return order.length > 0 ? order : t.getVisibleLeafColumns().map(c => c.id)
+}
+
+/** Переставить узел за/перед соседа, сообщить колбэку; возвращает новый порядок. */
+export const applyNodeMove = (
+  table: unknown,
+  active: NodeHeader,
+  target: NodeHeader,
+  toRight: boolean,
+) => {
+  const next = moveBlock(currentLeafOrder(table), active, target, toRight)
+  // Индексы — по порядку до перестановки.
+  const dragIndex = draggableIndexOfNode(active)
+  const hoverIndex = draggableIndexOfNode(target)
+  ;(table as MoveTable).setColumnOrder(() => next)
   readPluginHooks<Partial<ColumnDraggingHooks>>(
     table as Parameters<typeof readPluginHooks>[0],
     'columnDragging',
   ).onColumnDragEnd?.({
-    dragIndex: move.active.getDraggableIndex(),
-    hoverIndex: move.neighbour.getDraggableIndex(),
+    dragIndex,
+    hoverIndex,
+    columnId: active.column.id,
+    columnOrder: next,
   })
+  return next
+}
+
+export const canMoveColumn = (
+  table: unknown,
+  header: unknown,
+  direction: ColumnMoveDirection,
+) => findMove(table, header as NodeHeader, direction) !== null
+
+export const moveColumn = (
+  table: unknown,
+  header: unknown,
+  direction: ColumnMoveDirection,
+) => {
+  const neighbour = findMove(table, header as NodeHeader, direction)
+  if (neighbour) {
+    applyNodeMove(table, header as NodeHeader, neighbour, direction === 1)
+  }
 }

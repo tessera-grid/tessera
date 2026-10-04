@@ -1,8 +1,9 @@
 /**
  * Слот-ручка перетаскивания столбца. Реактивность на срезе `columnDraggingActiveId`
- * (`useSlice`); ручка гаснет у закреплённых (`getIsPinned`). Переиспользуем
+ * (`useSlice`); ручка гаснет у закреплённого узла (зона листьев). Переиспользуем
  * grid-компонент DragHandler. Хуки не читает — колбэк живёт в dnd-редьюсере и
- * `moveColumn`. Клик по ручке — меню «Move left / right» (ADR 0034, DA1).
+ * `moveColumn`. Клик по ручке — меню «Move left / right» (ADR 0034, DA1) — и у
+ * группы (ADR 0052, ND5).
  */
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
@@ -13,6 +14,7 @@ import {
   canMoveColumn,
   moveColumn,
 } from './moveColumn'
+import { zoneOf } from '../../core/columnNodes'
 
 export const ColumnDraggingComponent = ({
   header,
@@ -30,24 +32,20 @@ export const ColumnDraggingComponent = ({
   const item = (id: string, label: string, direction: ColumnMoveDirection) => ({
     id,
     label,
-    disabled: !canMoveColumn(table, column, direction),
-    onSelect: () => moveColumn(table, column, direction),
+    disabled: !canMoveColumn(table, header, direction),
+    onSelect: () => moveColumn(table, header, direction),
   })
 
   return (
     <DragHandler
       id={column.id}
       type="column"
-      disabled={column.getIsPinned() !== false}
+      disabled={zoneOf(header as never) !== false}
       label={labels.moveColumn}
-      getMenuItems={
-        header.subHeaders.length === 0
-          ? () => [
-              item('moveLeft', labels.moveLeft, -1),
-              item('moveRight', labels.moveRight, 1),
-            ]
-          : undefined
-      }
+      getMenuItems={() => [
+        item('moveLeft', labels.moveLeft, -1),
+        item('moveRight', labels.moveRight, 1),
+      ]}
     />
   )
 }

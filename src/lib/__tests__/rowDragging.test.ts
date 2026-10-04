@@ -84,32 +84,6 @@ describe('rowDragging', () => {
     ).toBe(false)
   })
 
-  it('PC3: многоуровневая шапка делает rowDragging инертным и предупреждает', () => {
-    const nested = [
-      {
-        id: 'grp',
-        header: 'G',
-        columns: [
-          { id: 'cat', accessorKey: 'cat' },
-          { id: 'name', accessorKey: 'name' },
-        ],
-      },
-    ]
-    const { table } = build([], {}, nested)
-    const [row] = table.getRowModel().rows
-    expect(row.getCanDrag()).toBe(false)
-    row.getCanDrag()
-    expect(warnings()).toHaveLength(1)
-    expect(warnings()[0]).toContain('rowDragging')
-
-    // drag не запрошен → тишина
-    __resetLogger()
-    build([], { enable: false }, nested)
-      .table.getRowModel()
-      .rows[0].getCanDrag()
-    expect(warnings()).toHaveLength(1)
-  })
-
   it('PC4: активная группировка делает rowDragging инертным и предупреждает', () => {
     const { table } = build([rowGrouping()])
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)

@@ -79,14 +79,11 @@ type DraggableTable = {
 
 type DraggableRow = { table: DraggableTable }
 
-/** Многоуровневая шапка / группировка / сортировка / фильтр гасят drag. */
+/** Группировка / сортировка / фильтр гасят drag (вложенная шапка — нет, ADR 0052). */
 export const rowDraggingInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
   const t = table as DraggableTable
-  if (t.getHeaderGroups().length !== 1) {
-    return 'multiLevelHeader'
-  }
   if ((t.atoms.grouping?.get() ?? []).length > 0) {
     return 'grouping'
   }

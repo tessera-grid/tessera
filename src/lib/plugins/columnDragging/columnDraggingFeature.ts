@@ -3,7 +3,7 @@
  * (columnDraggingActiveId) + его updater, и column-методы getCanDrag/getDraggableIndex.
  *  - getDraggableIndex считается напрямую (учитывает порядок листьев, не видимость —
  *    достаточно для dnd-индекса);
- *  - под многоуровневой шапкой инертен, с dev-warn (ADR 0022, PC1);
+ *  - под вложенной шапкой перетаскиваются и группы (ADR 0052, узлы — ./nodes);
  *  - dnd-события живут в getColumnDraggingEvents (грид вызывает их), а не пекутся в
  *    options (v9 запрещает setOptions в constructTableAPIs).
  */
@@ -14,10 +14,6 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
-import {
-  type PluginInertReason,
-  warnPluginInert,
-} from '../../core/pluginDiagnostics'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { DragOverlayState } from './types'
 
@@ -86,28 +82,10 @@ type DraggableColumn = {
   }
 }
 
-/** Многоуровневая шапка гасит перетаскивание столбцов. */
-export const columnDraggingInertReason = (
-  table: unknown,
-): PluginInertReason | undefined =>
-  (table as DraggableColumn['table']).getHeaderGroups().length !== 1
-    ? 'multiLevelHeader'
-    : undefined
-
-const canDrag = (column: DraggableColumn): boolean => {
-  const wantsDrag =
-    !!column.columnDef.enableDragging &&
-    !!column.table.options.enableColumnDragging
-
-  if (!wantsDrag) {
-    return false
-  }
-  const reason = columnDraggingInertReason(column.table)
-  if (reason !== undefined) {
-    warnPluginInert(column.table, 'columnDragging', reason)
-  }
-  return reason === undefined
-}
+/** Колонка (лист или группа) перетаскиваема: флаг плагина и флаг её `columnDef`. */
+const canDrag = (column: DraggableColumn): boolean =>
+  !!column.columnDef.enableDragging &&
+  !!column.table.options.enableColumnDragging
 
 interface DraggableIndexCache {
   enabled: boolean

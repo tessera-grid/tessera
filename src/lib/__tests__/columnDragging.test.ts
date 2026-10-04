@@ -36,13 +36,6 @@ const flatCols = [
   { id: 'a', accessorKey: 'a', enableDragging: true },
   { id: 'b', accessorKey: 'b', enableDragging: false },
 ]
-const nestedCols = [
-  {
-    id: 'grp',
-    header: 'G',
-    columns: [{ id: 'a', accessorKey: 'a', enableDragging: true }],
-  },
-]
 
 describe('columnDragging', () => {
   const warnings = captureInertWarnings()
@@ -71,22 +64,30 @@ describe('columnDragging', () => {
     expect(a.getDraggableIndex()).toBe(0)
   })
 
-  it('PC1: многоуровневая шапка делает columnDragging инертным и предупреждает', () => {
+  it('ND6: под вложенной шапкой перетаскиваемость узла — флаг enableDragging его columnDef; листья группы следуют своим флагам, без предупреждений', () => {
     const { table } = makeTable([
-      ...nestedCols,
-      { id: 'b', accessorKey: 'b', enableDragging: false },
+      {
+        id: 'grp',
+        header: 'G',
+        enableDragging: true,
+        columns: [
+          { id: 'a', accessorKey: 'a', enableDragging: true },
+          { id: 'c', accessorKey: 'c' },
+        ],
+      },
+      {
+        id: 'plain',
+        header: 'P',
+        columns: [{ id: 'd', accessorKey: 'd', enableDragging: true }],
+      },
     ])
     expect(table.getHeaderGroups().length).toBeGreaterThan(1)
-    const find = (id: string) =>
-      table.getAllLeafColumns().find((c: any) => c.id === id)
-
-    // drag колонки не запрошен → инертно без сигнала
-    expect(find('b').getCanDrag()).toBe(false)
+    const find = (id: string) => table.getColumn(id)
+    expect(find('grp').getCanDrag()).toBe(true)
+    expect(find('a').getCanDrag()).toBe(true)
+    expect(find('c').getCanDrag()).toBe(false)
+    expect(find('plain').getCanDrag()).toBe(false)
+    expect(find('d').getCanDrag()).toBe(true)
     expect(warnings()).toHaveLength(0)
-
-    expect(find('a').getCanDrag()).toBe(false)
-    find('a').getCanDrag()
-    expect(warnings()).toHaveLength(1)
-    expect(warnings()[0]).toContain('columnDragging')
   })
 })

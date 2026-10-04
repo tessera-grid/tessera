@@ -118,6 +118,8 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
     expect(onColumnDragEnd.mock.calls[0][0]).toEqual({
       dragIndex: expect.any(Number),
       hoverIndex: expect.any(Number),
+      columnId: first,
+      columnOrder: expect.any(Array),
     })
 
     await openHandleMenu(headById(first), handleOf(first))

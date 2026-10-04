@@ -185,6 +185,7 @@ export const groupedColumns: any[] = [
   columnHelper.group({
     id: 'name',
     header: 'Name',
+    enableDragging: true,
     enableResizing: false,
     columns: [
       columnHelper.accessor<any, any>('firstName', {
@@ -216,11 +217,13 @@ export const groupedColumns: any[] = [
   columnHelper.group({
     id: 'info',
     header: 'Info',
+    enableDragging: true,
     enableResizing: false,
     columns: [
       columnHelper.group({
         id: 'more-info',
         header: 'More Info',
+        enableDragging: true,
         enableResizing: false,
         columns: [
           columnHelper.accessor<any, any>('age', {

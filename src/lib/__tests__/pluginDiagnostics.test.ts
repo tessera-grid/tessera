@@ -1,6 +1,6 @@
 /**
  * Headless-проверка снимка активности плагинов `table.getPluginDiagnostics()`
- * (ADR 0022, PC12–PC14).
+ * (ADR 0022, PC12–PC14; ADR 0052, ND11).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -56,19 +56,7 @@ describe('getPluginDiagnostics — снимок активности плаги�
     ])
   })
 
-  it('PC13: встроенные плагины сообщают причину инертности из своих гейтов (multiLevelHeader / grouping / sorting)', () => {
-    const nested = build([rowDragging(), columnDragging()], NESTED_COLUMNS)
-    expect(statusOf(nested, 'rowDragging')).toEqual({
-      id: 'rowDragging',
-      status: 'inert',
-      reason: 'multiLevelHeader',
-    })
-    expect(statusOf(nested, 'columnDragging')).toEqual({
-      id: 'columnDragging',
-      status: 'inert',
-      reason: 'multiLevelHeader',
-    })
-
+  it('PC13: встроенные плагины сообщают причину инертности из своих гейтов (grouping / sorting)', () => {
     const grouped = build([rowGrouping(), rowSelection(), rowDragging()])
     grouped.setGrouping(['cat'])
     expect(statusOf(grouped, 'rowSelection').reason).toBe('grouping')
@@ -79,6 +67,18 @@ describe('getPluginDiagnostics — снимок активности плаги�
     sorted.setSorting([{ id: 'name', desc: false }])
     expect(statusOf(sorted, 'rowDragging').reason).toBe('sorting')
     expect(sorted.getRowModel().rows[0].getCanDrag()).toBe(false)
+  })
+
+  it('ND11: под вложенной шапкой columnDragging и rowDragging не инертны — причины multiLevelHeader нет', () => {
+    const nested = build([rowDragging(), columnDragging()], NESTED_COLUMNS)
+    expect(statusOf(nested, 'rowDragging')).toEqual({
+      id: 'rowDragging',
+      status: 'active',
+    })
+    expect(statusOf(nested, 'columnDragging')).toEqual({
+      id: 'columnDragging',
+      status: 'active',
+    })
   })
 
   it('PC14: снимок считается на момент вызова — смена состояния сразу меняет статус, без рендера', () => {

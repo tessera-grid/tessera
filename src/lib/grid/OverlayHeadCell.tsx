@@ -1,5 +1,5 @@
 // OverlayHeadCell: ячейка заголовка в DragOverlay при перетаскивании колонки.
-// Контент через flexRender.
+// Контент через flexRender; ширина — переменная заголовка (у группы — по header.id).
 import { type CSSProperties, memo, useMemo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
@@ -24,9 +24,9 @@ export const OverlayHeadCell = memo(
   ({ header, leftHeaderSlot, rightHeaderSlot }: OverlayHeadCellProps) => {
     const cellStyles: CSSProperties = useMemo(
       () => ({
-        width: `var(${getHeaderSizeVariable(header.column.id)})`,
+        width: `var(${getHeaderSizeVariable(header.id)})`,
       }),
-      [header.column.id],
+      [header.id],
     )
 
     const enableResizingColumn = header.column.columnDef.enableResizing || false
@@ -50,7 +50,8 @@ export const OverlayHeadCell = memo(
         )}
         data-index={header.index}
         style={cellStyles}
-        role="columnheader"
+        // Призрак — визуальный клон: ни в дереве доступности, ни в фокусе (ADR 0052, ND13).
+        inert
         data-column-resizable={enableResizingColumn}
         data-actions-column-cell={isActionsColumn}
       >

@@ -161,16 +161,12 @@ describe('сессии действий', () => {
     )
     act(() =>
       getColumnDraggingEvents(captured).onColumnDragEnd({
-        over: {
-          id: 'rank',
-          data: { current: { orderIndex: 1, draggableIndex: 1 } },
-        },
+        over: { id: 'rank' },
       }),
     )
-    expect(onColumnDragEnd).toHaveBeenCalledWith({
-      dragIndex: 0,
-      hoverIndex: 1,
-    })
+    expect(onColumnDragEnd).toHaveBeenCalledWith(
+      expect.objectContaining({ dragIndex: 0, hoverIndex: 1 }),
+    )
     expect(onColumnDragCancel).not.toHaveBeenCalled()
   })
 

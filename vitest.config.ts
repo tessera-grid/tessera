@@ -6,6 +6,7 @@ import { configDefaults, defineConfig } from 'vitest/config'
 
 import { axTree } from './src/lib/stories/__tests__/a11y.commands.ts'
 import { reducedMotion } from './src/lib/stories/__tests__/motion.commands.ts'
+import { realDrag } from './src/lib/stories/__tests__/pointer.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
@@ -68,8 +69,8 @@ export default defineConfig({
               launchOptions: { channel: 'chromium' },
             }),
             instances: [{ browser: 'chromium' }],
-            // Дерево доступности Chromium через CDP (ADR 0033).
-            commands: { axTree, reducedMotion },
+            // Дерево доступности Chromium через CDP (ADR 0033); настоящий drag мышью (TQ3).
+            commands: { axTree, reducedMotion, realDrag },
           },
         },
       },

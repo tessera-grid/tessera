@@ -322,6 +322,39 @@ const reopenVariantFilter = async () => {
     .not.toBeNull()
 }
 
+/** Вложенная шапка с перетаскиванием групп (ADR 0052, ND14). */
+const NESTED_DRAG = {
+  showHeaderGroups: true,
+  enableColumnDragging: true,
+  enableKeyboardNavigation: true,
+  dataCount: 1000,
+}
+const headOf = (id: string) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${id}"]`,
+  )
+
+/** Группа «Name» — через соседа «Info» и обратно (Alt+Shift+→/←). */
+const moveNameGroup = async () => {
+  const name = headOf('name')!
+  const right =
+    name.getBoundingClientRect().left <
+    headOf('info')!.getBoundingClientRect().left
+  const before = name.getBoundingClientRect().left
+  name.focus()
+  name.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: right ? 'ArrowRight' : 'ArrowLeft',
+      altKey: true,
+      shiftKey: true,
+      bubbles: true,
+    }),
+  )
+  await expect
+    .poll(() => headOf('name')!.getBoundingClientRect().left)
+    .not.toBe(before)
+}
+
 interface InteractionCase {
   id: string
   label: string
@@ -501,6 +534,16 @@ const CASES: InteractionCase[] = [
     args: { ...EXPORT_SIZE, ...ALL_PLUGINS, ...EXPORT },
     prepare: openExportPanel,
     act: exportWithoutDownload,
+  },
+  {
+    id: 'ND14',
+    label: 'перестановка группы на вложенной шапке, 1000 строк',
+    size: '1000×7 (вложенная шапка)',
+    args: NESTED_DRAG,
+    prepare: async () => {
+      await expect.poll(() => headOf('name')).not.toBeNull()
+    },
+    act: moveNameGroup,
   },
 ]
 

@@ -1,9 +1,15 @@
 // DnD-обвязка хедера. HeadDndBoundary монтирует DndContext + SortableContext только
 // при enableColumnDragging (иначе цена useSortable платится на каждую ячейку).
 // Состояние overlay читается из атома columnDraggingActiveId.
-import { type PropsWithChildren, useMemo, useLayoutEffect } from 'react'
+import {
+  type PropsWithChildren,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import {
+  type CollisionDetection,
   DndContext,
   DragOverlay,
   MouseSensor,
@@ -31,6 +37,19 @@ import {
 } from './dnd/parameters'
 import { horizontalCollisionDetection } from './dnd/collisionDetection'
 import { OverlayHeadCell } from './OverlayHeadCell'
+import { NodeShiftContext, createNodeShiftStore } from './dnd/nodeShift'
+import { nodeIdOf, zoneOf } from '../core/columnNodes'
+
+/** Столкновения — только с соседями активного узла (ADR 0052, ND3). */
+const siblingCollisionDetection: CollisionDetection = args => {
+  const key = args.active.data.current?.siblingKey
+  return horizontalCollisionDetection({
+    ...args,
+    droppableContainers: args.droppableContainers.filter(
+      container => container.data.current?.siblingKey === key,
+    ),
+  })
+}
 
 export interface DndHeadWrapperProps {
   table: Table<any, any>
@@ -117,16 +136,26 @@ export const DndHeadWrapper = ({
     useSensor(TouchSensor, sensorOptions),
   )
 
+  // Плоская шапка — одна группа соседей; во вложенной SortableContext у каждой серии
+  // соседей свой (HeadRow), этот остаётся внешним.
   const items: string[] = useMemo(
-    () => headers.map((header: any) => header.column.id),
+    () => headers.map((header: any) => header.id),
     [headers],
   )
+
+  const [shiftStore] = useState(createNodeShiftStore)
+  const activeNodeId = draggableHeader
+    ? nodeIdOf(draggableHeader.column, zoneOf(draggableHeader as never))
+    : null
+  useLayoutEffect(() => {
+    shiftStore.setActive(activeNodeId)
+  }, [shiftStore, activeNodeId])
 
   return (
     <DndContext
       id="data-grid-dnd-columns"
       accessibility={dndAccessibility}
-      collisionDetection={horizontalCollisionDetection}
+      collisionDetection={siblingCollisionDetection}
       sensors={sensors}
       modifiers={[restrictToHorizontalAxis]}
       autoScroll={autoScrollOnlyX}
@@ -134,9 +163,11 @@ export const DndHeadWrapper = ({
       onDragStart={onColumnDragStart}
       onDragCancel={onColumnDragCancel}
     >
-      <SortableContext items={items} strategy={horizontalListSortingStrategy}>
-        {children}
-      </SortableContext>
+      <NodeShiftContext.Provider value={shiftStore}>
+        <SortableContext items={items} strategy={horizontalListSortingStrategy}>
+          {children}
+        </SortableContext>
+      </NodeShiftContext.Provider>
       <DragOverlay zIndex={Z_INDEX}>
         {draggableHeader && (
           <OverlayHeadCell

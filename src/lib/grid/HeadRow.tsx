@@ -2,6 +2,10 @@
 // enableColumnDragging рисуется DraggableHeadCell (useSortable под DndContext
 // хедера), иначе обычная HeadCell.
 import type { VirtualItem } from '@tanstack/react-virtual'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import clsx from 'clsx'
 
 import type { HeaderGroup } from '../types'
@@ -11,6 +15,8 @@ import { HeadCell } from './HeadCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerHeadColumn } from './RightFillerHeadColumn'
 import { needsRightFiller } from './layout'
+import { isCoveredHeader } from '../core/headerSpans'
+import { siblingKeyOf } from '../core/columnNodes'
 
 import styles from '../grid/HeadRow/HeadRow.module.css'
 
@@ -23,6 +29,27 @@ interface TableHeadRowProps {
   rightHeaderSlot?: HeaderSlot
   isVirtualColumns: boolean
   enableColumnDragging?: boolean
+}
+
+/**
+ * Серии подряд идущих соседей строки (ADR 0052): у каждой свой SortableContext, чтобы
+ * перетаскивание шло только среди соседей. Порядок в DOM сохраняется — от него
+ * зависит раскладка CSS grid; покрытые заголовки идут в текущую серию.
+ */
+const siblingRuns = <THeader extends { id: string }>(headers: THeader[]) => {
+  const runs: { key: string; headers: THeader[]; ids: string[] }[] = []
+  for (const header of headers) {
+    const covered = isCoveredHeader(header as never)
+    const key = covered ? runs.at(-1)?.key : siblingKeyOf(header as never)
+    let run = runs.at(-1)
+    if (!run || (key !== undefined && run.key !== key)) {
+      run = { key: key ?? '', headers: [], ids: [] }
+      runs.push(run)
+    }
+    run.headers.push(header)
+    if (!covered) run.ids.push(header.id)
+  }
+  return runs
 }
 
 export const HeadRow = ({
@@ -40,21 +67,37 @@ export const HeadRow = ({
   const CellComponent = enableColumnDragging ? DraggableHeadCell : HeadCell
 
   if (!isVirtualColumns) {
+    const renderCell = (header: (typeof headers)[number]) => {
+      // Покрытый заголовок не рисуется и в сортировке не участвует.
+      const Component = isCoveredHeader(header) ? HeadCell : CellComponent
+      return (
+        <Component
+          key={header.id}
+          layout={layout}
+          header={header}
+          leftHeaderSlot={leftHeaderSlot}
+          rightHeaderSlot={rightHeaderSlot}
+        />
+      )
+    }
+
     return (
       <div
         role="row"
         aria-rowindex={headerGroup.depth + 1}
         style={{ display: 'contents' }}
       >
-        {headers.map(header => (
-          <CellComponent
-            key={header.id}
-            layout={layout}
-            header={header}
-            leftHeaderSlot={leftHeaderSlot}
-            rightHeaderSlot={rightHeaderSlot}
-          />
-        ))}
+        {enableColumnDragging
+          ? siblingRuns(headers).map(run => (
+              <SortableContext
+                key={run.ids[0] ?? run.headers[0].id}
+                items={run.ids}
+                strategy={horizontalListSortingStrategy}
+              >
+                {run.headers.map(renderCell)}
+              </SortableContext>
+            ))
+          : headers.map(renderCell)}
         {needsRightFiller(headers.at(-1)?.getLeafHeaders().at(-1)?.column) && (
           <RightFillerHeadColumn
             gridRow={headerGroup.depth + 1}
