@@ -91,7 +91,7 @@ useCreateTable({
 ```ts
 export interface ServiceColumn {
   id: string // стабильный базовый id (таргет видимости/пиннинга)
-  make: (depth: number) => ColumnDef<any, any>
+  make: () => ColumnDef<any, any> // до ADR 0049 — make(depth)
   side: 'leading' | 'trailing' // порядок в наборе колонок
   order: number
   // пиннинг объявляет плагин-владелец, ядро лишь исполняет:

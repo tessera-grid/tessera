@@ -134,7 +134,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     await render(<composed.HeaderGroupsPinning enableKeyboardNavigation />)
     await expect.poll(() => headCellById('name')).toBeTruthy()
 
-    // Группа `name` (rowSpan 2) — над листом `firstName`; выше неё строк нет.
+    // Группа `name` — верхняя строка над растянутым листом `firstName`.
     const leaf = headCellById('firstName')
     leaf.focus()
     await expect.poll(() => active()).toBe(leaf)
@@ -169,6 +169,46 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     await expect
       .poll(() => headCellById('name').getAttribute('data-cell-pinned'))
       .toBe('left')
+  })
+
+  test('HS10: растянутый лист шапки — стрелки проходят его за один шаг; без навигации кебаб достижим Tab и открывается Enter', async () => {
+    // С keyboardNavigation: `visits` растянут на две нижние строки под `info`.
+    const nav = await render(<composed.HeaderGroupsShallowLeaves />)
+    await expect.poll(() => headCellById('visits')).toBeTruthy()
+    const gender = headCellById('gender')
+    gender.focus()
+    await expect.poll(() => active()).toBe(gender)
+    await press('{ArrowRight}')
+    await expect.poll(() => active()).toBe(headCellById('visits'))
+    await press('{ArrowUp}')
+    await expect.poll(() => active()).toBe(headCellById('info'))
+    await press('{ArrowDown}')
+    await expect.poll(() => active()).toBe(headCellById('visits'))
+    await nav.unmount()
+
+    // Без плагина: Tab идёт по строкам шапки — от кебаба группы `more-info` до кебаба
+    // растянутого `visits` в той же строке; Enter открывает меню.
+    await render(
+      <composed.HeaderGroupsShallowLeaves enableKeyboardNavigation={false} />,
+    )
+    await expect.poll(() => headCellById('visits')).toBeTruthy()
+    const kebab = (id: string) =>
+      headCellById(id).querySelector<HTMLElement>(
+        '[aria-label="Column options"]',
+      )!
+    kebab('more-info').focus()
+    for (let i = 0; i < 10 && active() !== kebab('visits'); i++) {
+      await press('{Tab}')
+    }
+    expect(active()).toBe(kebab('visits'))
+    await press('{Enter}')
+    await expect
+      .poll(() =>
+        [...document.querySelectorAll('[role="menuitem"]')].map(item =>
+          item.textContent?.trim(),
+        ),
+      )
+      .toContain('Hide column')
   })
 
   test('KB2: ширина колонки меняется с клавиатуры через фокусируемый separator', async () => {

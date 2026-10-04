@@ -336,6 +336,11 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `reactivity.dom` (ST1 — перерисовка только подписчика среза,
       [ADR 0026](docs/decisions/0026-migrate-to-tanstack-v9.md)).
     - _Виртуализация:_ `virtualization` (V1–V11).
+    - _Вложенная шапка:_ `header-spans` (HS2–HS6, HS9, HS11–HS13 — растянутые листья,
+      служебные колонки, `aria-rowspan`/`aria-colspan`, пиннинг, axe, кебаб), модульные
+      `headerSpans` (HS1, HS7–HS8, HS14 — позиция из `header.rowSpan` v9, полная
+      высота, без `columnDef.rowSpan`, `make` служебной колонки без глубины), HS10 — в `keyboard-wcag`,
+      [ADR 0049](docs/decisions/0049-native-header-spans.md).
     - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19),
       `column-pinning-right` (CP20–CP27) — [ADR 0011](docs/decisions/0011-column-pinning.md),
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,

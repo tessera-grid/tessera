@@ -1,26 +1,12 @@
 /** Владелец позиции в шапке: какой заголовок покрывает строку/колонку навигации. */
 import { getDisplayColumns } from '../displayColumns'
+import { getHeaderRows } from '../headerSpans'
 import {
   type ActiveCell,
   type NavHeader,
   type NavTable,
   getNavRowCount,
 } from './model'
-
-/**
- * Строки шапки, которые заголовок занимает визуально (0 — верхняя), как в
- * `useGridStyles`: `rowSpan > 0` — с первой строки, иначе — строка глубины
- * колонки. Плейсхолдер и `rowSpan: 0` не рисуются — пусто.
- */
-const getHeaderRows = (header: NavHeader): number[] => {
-  const { rowSpan } = header.column.columnDef
-  if (header.isPlaceholder || rowSpan === 0) {
-    return []
-  }
-  return typeof rowSpan === 'number' && rowSpan > 0
-    ? Array.from({ length: rowSpan }, (_, row) => row)
-    : [header.column.depth]
-}
 
 /** Индекс строки навигации заголовка: его верхняя видимая строка (`< 0`). */
 export const getHeaderRowIndex = (
@@ -33,7 +19,7 @@ const headerOwnerGrids = new WeakMap<object, (NavHeader | undefined)[][]>()
 
 /**
  * Сетка владельцев шапки `[строка][колонка]`: заголовок, чей бокс покрывает
- * позицию (группа — несколько колонок, `rowSpan` — несколько строк).
+ * позицию (группа — несколько колонок, растянутый лист — несколько строк).
  */
 const getHeaderOwnerGrid = (t: NavTable) => {
   const groups = t.getHeaderGroups()
@@ -71,7 +57,7 @@ export const getHeaderOwner = (
 
 /**
  * Стрелка в шапке переходит к следующему владельцу: шаг сквозь бокс, растянутый на
- * несколько колонок (группа) или строк (лист с `rowSpan`); за краем — на месте.
+ * несколько колонок (группа) или строк (растянутый лист); за краем — на месте.
  */
 export const skipHeaderSpans = (
   t: NavTable,

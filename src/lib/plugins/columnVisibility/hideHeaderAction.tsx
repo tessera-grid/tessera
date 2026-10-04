@@ -5,6 +5,7 @@
  */
 import type { HeaderComponentProps } from '../../core/createSlots'
 import type { HeaderAction } from '../../core/headerActions'
+import { isCoveredHeader } from '../../core/headerSpans'
 import { useIcons } from '../../ui/icons'
 import { getHide, type VisibilityColumn } from './columnTree'
 import { columnVisibilityInertReason } from './inertReason'
@@ -22,7 +23,7 @@ const leavesOf = ({ column }: HeaderComponentProps) =>
   column.getLeafColumns() as unknown as VisibilityColumn[]
 
 const hideIds = (ctx: HeaderComponentProps) =>
-  ctx.header?.isPlaceholder
+  ctx.header && isCoveredHeader(ctx.header)
     ? null
     : getHide(leavesOf(ctx), ctx.table as unknown as VisibilityControlTable)
 

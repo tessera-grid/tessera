@@ -11,7 +11,10 @@ import type { ColumnDef } from '../../types'
 
 export const COLUMN_SELECTION_ID = getActionColumnId('rowSelection')
 
-const leafColumnOf = ({ cell, header }: ServiceColumnParts) =>
+export const getRowSelectionColumn = ({
+  cell,
+  header,
+}: ServiceColumnParts): ColumnDef<any, any, any> =>
   ({
     id: COLUMN_SELECTION_ID,
     accessorKey: COLUMN_SELECTION_ID,
@@ -22,26 +25,3 @@ const leafColumnOf = ({ cell, header }: ServiceColumnParts) =>
     header,
     cell,
   }) as unknown as ColumnDef<any, any, any>
-
-export const getRowSelectionColumn = (
-  depth: number,
-  parts: ServiceColumnParts,
-): ColumnDef<any, any, any> => {
-  const leafColumn = leafColumnOf(parts)
-  if (depth <= 1) {
-    return leafColumn
-  }
-
-  return Array.from({ length: depth - 1 }).reduceRight<
-    ColumnDef<any, any, any>
-  >(
-    (currentChild, _, index) =>
-      ({
-        id: `${COLUMN_SELECTION_ID}-group-level-${index}`,
-        header: '',
-        rowSpan: index === 0 ? depth - 1 : 0,
-        columns: [currentChild],
-      }) as unknown as ColumnDef<any, any, any>,
-    leafColumn,
-  )
-}

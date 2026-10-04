@@ -29,6 +29,11 @@
     pointer-events: none;
   }
 
+  /* Растянутый лист: содержимое в нижней строке, на одной линии с соседними листьями. */
+  &[data-header-stretched] {
+    align-items: flex-end;
+  }
+
   /* Бордеры для ячеек заголовков */
 
   &:is([data-layout='grid']) {

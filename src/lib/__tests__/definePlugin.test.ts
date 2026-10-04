@@ -70,7 +70,7 @@ describe('definePlugin — запись', () => {
     // каналами — слот сверяем без компонента, колонку — по полям и результату `make`.
     const withoutComponents = (entry: {
       slots?: object[]
-      column?: { make: (depth: number) => unknown }
+      column?: { make: () => unknown }
     }) => ({
       ...entry,
       slots: entry.slots?.map(
@@ -79,7 +79,7 @@ describe('definePlugin — запись', () => {
       column: entry.column && {
         ...entry.column,
         make: undefined,
-        made: entry.column.make(1),
+        made: entry.column.make(),
       },
     })
     expect(withoutComponents(defined)).toMatchObject(withoutComponents(manual))

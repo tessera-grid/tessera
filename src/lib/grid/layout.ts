@@ -6,6 +6,11 @@
 import { useMemo } from 'react'
 
 import type { Column, Header, HeaderGroup } from '../types'
+import {
+  type SpanHeader,
+  getHeaderRowStart,
+  isCoveredHeader,
+} from '../core/headerSpans'
 
 type RowActionsAware = { getIsRowActionsColumn: () => boolean }
 
@@ -40,14 +45,21 @@ export const getGridLayout = ({
   return { gridTemplateRows, gridTemplateColumns }
 }
 
-export const useGridStyles = (header: Header<any, any, unknown>) => {
-  const rowSpan = (header.column.columnDef as { rowSpan?: number }).rowSpan
+/** Grid-позиция ячейки шапки; `null` — заголовок покрыт и не рисуется. */
+export const getHeaderGridPosition = (
+  header: SpanHeader,
+): { gridRow: string; gridColumn: string } | null =>
+  isCoveredHeader(header)
+    ? null
+    : {
+        gridRow: `${getHeaderRowStart(header) + 1} / span ${header.rowSpan}`,
+        gridColumn: `span ${header.colSpan}`,
+      }
 
-  const gridRow: string | number =
-    typeof rowSpan === 'number' && rowSpan > 0
-      ? `1 / span ${rowSpan}`
-      : header.column.depth + 1
-  const gridColumn = `span ${header.colSpan}`
+export const useGridStyles = (header: Header<any, any, unknown>) => {
+  const position = getHeaderGridPosition(header)
+  const gridRow = position?.gridRow
+  const gridColumn = position?.gridColumn
 
   return useMemo(() => ({ gridRow, gridColumn }), [gridColumn, gridRow])
 }

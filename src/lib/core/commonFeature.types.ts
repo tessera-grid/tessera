@@ -90,8 +90,6 @@ export interface CommonColumnAPI {
 
 /** Кастомные поля columnDef Tessera; `options` / `getOptionLabel` — ADR 0048. */
 export interface CommonColumnDef extends ColumnOptionsDef {
-  /** Число строк вложенной шапки, которые перекрывает заголовок (grid-раскладка). */
-  rowSpan?: number
   /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
   serviceLabel?: 'expandColumn' | 'reorderColumn' | 'rowActionsColumn'
 }

@@ -27,23 +27,4 @@ const leafColumn = {
   enableResizing: false,
 } as unknown as ColumnDef<any, any, any>
 
-export const getRowActionsColumn = (
-  depth: number,
-): ColumnDef<any, any, any> => {
-  if (depth <= 1) {
-    return leafColumn
-  }
-
-  return Array.from({ length: depth - 1 }).reduceRight<
-    ColumnDef<any, any, any>
-  >(
-    (currentChild, _, index) =>
-      ({
-        id: `${ROW_ACTIONS_COLUMN_ID}-group-level-${index}`,
-        serviceLabel: 'rowActionsColumn',
-        header: '',
-        columns: [currentChild],
-      }) as unknown as ColumnDef<any, any, any>,
-    leafColumn,
-  )
-}
+export const getRowActionsColumn = (): ColumnDef<any, any, any> => leafColumn

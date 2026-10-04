@@ -55,6 +55,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0046](0046-toolbar-and-status-bar-visibility.md)    | Включение тулбара и нижней панели: по наличию слотов, `enableToolbar` / `enableStatusBar` — явное переопределение (PB1–PB12)                                                                                    | Принято |
 | [0047](0047-date-filtering.md)                       | Фильтрация дат: типы `date` / `datetime` в `columnFiltering`, календарь `@daypicker/react`, пресеты, часовой пояс `timeZone` (DF1–DF22)                                                                         | Принято |
 | [0048](0048-option-filtering.md)                     | Фильтрация справочника и селекта: `select` / `multiselect` / `lookup`, варианты `options` колонки, чек-лист с фасетными счётчиками, `loadOptions`, подписи в ячейке, поиске и экспорте (SF1–SF26)               | Принято |
+| [0049](0049-native-header-spans.md)                  | Нативные спаны вложенной шапки: `header.rowSpan` TanStack v9 вместо `columnDef.rowSpan`, служебные колонки без прокладок, `aria-rowspan` / `aria-colspan` (HS1–HS14)                                            | Принято |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

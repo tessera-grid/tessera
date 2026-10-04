@@ -114,7 +114,7 @@ export interface PluginServiceColumn<THooks> extends Omit<
 > {
   cell?: (props: PluginCellProps<THooks>) => ReactNode
   header?: (props: PluginHeaderProps<THooks>) => ReactNode
-  make: (depth: number, parts: ServiceColumnParts) => ColumnDef<any, any, any>
+  make: (parts: ServiceColumnParts) => ColumnDef<any, any, any>
 }
 
 const toServiceColumn = (
@@ -125,14 +125,10 @@ const toServiceColumn = (
     cell: cell && (withPluginChannels(cell as never, id, false) as never),
     header: header && (withPluginChannels(header as never, id, false) as never),
   }
-  const byDepth = new Map<number, ColumnDef<any, any, any>>()
+  let made: ColumnDef<any, any, any> | undefined
   return {
     ...column,
-    make: depth => {
-      const made = byDepth.get(depth) ?? make(depth, parts)
-      byDepth.set(depth, made)
-      return made
-    },
+    make: () => (made ??= make(parts)),
   }
 }
 

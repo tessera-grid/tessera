@@ -1278,7 +1278,7 @@ import { SwitchActionComponent } from './SwitchActionComponent'
 export const SWITCH_ACTION_COLUMN_ID = 'switchActionColumn'
 
 // Сервисная колонка плагина: ставится справа (side: 'trailing'), ячейки рисует
-// SwitchActionComponent. make(depth) строит ColumnDef; для плоской колонки depth не нужен.
+// SwitchActionComponent. make() строит ColumnDef колонки.
 export const switchAction = definePlugin<{ enabled?: boolean }>()({
   id: 'switchAction',
   column: {
@@ -1327,7 +1327,7 @@ export const SwitchActionComponent = memo(
 SwitchActionComponent.displayName = 'SwitchActionComponent'
 ```
 
-При необходимости в этот плагин можно так же добавить кастомные хуки и состояния, как мы это делали в предыдущих гайдах. Компонент, которому нужны хуки плагина, передайте в `column.cell` / `column.header`: `definePlugin` подмешает `hooks` пропсом и отдаст обёрнутые компоненты вторым аргументом `make(depth, { cell, header })`.
+При необходимости в этот плагин можно так же добавить кастомные хуки и состояния, как мы это делали в предыдущих гайдах. Компонент, которому нужны хуки плагина, передайте в `column.cell` / `column.header`: `definePlugin` подмешает `hooks` пропсом и отдаст обёрнутые компоненты аргументом `make({ cell, header })`.
 
 Подключим плагин:
 

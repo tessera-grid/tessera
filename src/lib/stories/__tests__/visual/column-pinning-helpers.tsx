@@ -25,6 +25,8 @@ export const LEFT_PINNED_HEAD = `${HEAD_CELL}[data-cell-pinned='left']`
 export const FIRST_ROW_HEAD = `${HEAD_CELL}[data-first-headers-row='true']`
 /** Head cells of the bottom (last) header row — the leaf headers under nesting. */
 export const LAST_ROW_HEAD = `${HEAD_CELL}[data-last-headers-row='true']`
+/** Leaf headers under a group: reach the bottom row but start below the top one. */
+export const LEAF_UNDER_GROUP_HEAD = `${LAST_ROW_HEAD}:not([data-first-headers-row='true'])`
 
 /** A head cell addressed by its column id (used for group/leaf headers). */
 export const headCellById = (container: HTMLElement, id: string) =>

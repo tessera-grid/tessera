@@ -87,11 +87,11 @@ describe('каналы плагина в сервисной колонке', () 
         side: 'leading',
         order: 1,
         cell: Cell,
-        make: (_depth, { cell }) => ({ id: 'probe-column', cell }),
+        make: ({ cell }) => ({ id: 'probe-column', cell }),
       },
     })
     const cellOf = (entry: ReturnType<typeof probe>) =>
-      (entry.column!.make(1) as { cell: unknown }).cell
+      (entry.column!.make() as { cell: unknown }).cell
     expect(cellOf(probe({ label: 'a' }))).toBe(cellOf(probe({ label: 'b' })))
 
     const Host = () => {

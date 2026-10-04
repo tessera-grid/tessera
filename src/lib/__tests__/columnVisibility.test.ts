@@ -205,11 +205,12 @@ describe('columnVisibility — модель меню', () => {
 
   it('PB7: при enableToolbar: false columnVisibility инертен — diagnose noToolbar, «Скрыть колонку» нет; без флага — активен и пункт есть', () => {
     const { diagnose } = columnVisibility()
+    // Видимая ячейка `age` — вершина цепочки v9 (ADR 0049), а не покрытый лист снизу.
     const headerCtx = (table: any) =>
       table
         .getHeaderGroups()
-        .at(-1)
-        .headers.find((h: any) => h.column.id === 'age')
+        .flatMap((group: any) => group.headers)
+        .find((h: any) => h.column.id === 'age' && h.rowSpan > 0)
         .getContext()
 
     const byDefault = build({ plugins: [columnVisibility()] })

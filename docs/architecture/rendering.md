@@ -52,6 +52,18 @@ Layout выбирается по глубине заголовков:
 на другом layout/render-пути (известная область будущих работ). Детали про
 виртуализаторы и их включение — в [virtualization.md](virtualization.md).
 
+**Спаны вложенной шапки** считает TanStack v9
+([ADR 0049](../decisions/0049-native-header-spans.md)). Лист мельче максимальной
+глубины получает плейсхолдеры в строках над собой; вершина цепочки несёт
+`header.rowSpan` всей цепочки, покрытые ею заголовки — `rowSpan: 0` и не рисуются.
+Ячейка ставится в `gridRow: headerGroup.depth + 1 / span rowSpan`, `gridColumn: span
+colSpan` (`getHeaderGridPosition`, `grid/layout.ts`). Вершина цепочки — это заголовок
+своего листа: контент, слоты, кебаб и клавиатурная навигация у неё те же. Содержимое
+растянутого листа прижато к низу, `data-last-headers-row` отмечает ячейку, доходящую до
+нижней строки шапки. Ловушка v9: `header.depth` отсчитывается с 1 (на единицу больше
+`headerGroup.depth`), а `getLeafHeaders()` возвращает всех потомков вместе с самим
+заголовком — общие хелперы спанов живут в `core/headerSpans.ts`.
+
 ```mermaid
 flowchart TB
     HG{"headerGroups.length > 1 ?"}

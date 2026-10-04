@@ -126,11 +126,9 @@ export const commonFeature: TableFeature = {
       },
       header_getIsFullHeightHeader: {
         fn: (header: {
-          column: { columnDef: { rowSpan?: number } }
+          rowSpan: number
           table: { getHeaderGroups: () => unknown[] }
-        }) =>
-          header.column.columnDef.rowSpan ===
-          header.table.getHeaderGroups().length,
+        }) => header.rowSpan === header.table.getHeaderGroups().length,
       },
     })
   },

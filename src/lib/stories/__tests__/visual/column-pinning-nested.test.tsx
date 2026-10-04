@@ -9,7 +9,7 @@ import {
   PIN_BUTTON,
   LEFT_PINNED_HEAD,
   FIRST_ROW_HEAD,
-  LAST_ROW_HEAD,
+  LEAF_UNDER_GROUP_HEAD,
   headCellById,
   renderColumnPinning,
   renderHeaderGroupsPinning,
@@ -25,10 +25,12 @@ import {
 describe('Column Pinning — nested headers and service columns', () => {
   test('CP13: under nested headers a leaf under a group is not individually pinnable', async () => {
     const container = await renderHeaderGroupsPinning()
-    // Leaf headers live in the last header row — none of them carries a pin
-    // toggle: only whole top-level groups are pinnable.
+    // Leaf headers under a group — none of them carries a pin toggle: only
+    // top-level units are pinnable.
     expect(container.querySelectorAll(HEAD_CELL).length).toBeGreaterThan(1)
-    expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
+    expect(
+      container.querySelector(`${LEAF_UNDER_GROUP_HEAD} ${PIN_BUTTON}`),
+    ).toBeNull()
   })
 
   test('CP16: enabling the plugin after mount reveals top-level group pinning under nested headers (matches a fresh mount)', async () => {
@@ -54,7 +56,9 @@ describe('Column Pinning — nested headers and service columns', () => {
     await expect
       .poll(() => container.querySelector(PIN_BUTTON) !== null)
       .toBe(true)
-    expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
+    expect(
+      container.querySelector(`${LEAF_UNDER_GROUP_HEAD} ${PIN_BUTTON}`),
+    ).toBeNull()
   })
 
   test('CP17: under nested headers only top-level group headers get a pin button', async () => {
@@ -68,8 +72,10 @@ describe('Column Pinning — nested headers and service columns', () => {
     expect(buttons.every(btn => btn.closest(FIRST_ROW_HEAD) !== null)).toBe(
       true,
     )
-    // …and none in the leaf (last) header row.
-    expect(container.querySelector(`${LAST_ROW_HEAD} ${PIN_BUTTON}`)).toBeNull()
+    // …and none on a leaf under a group.
+    expect(
+      container.querySelector(`${LEAF_UNDER_GROUP_HEAD} ${PIN_BUTTON}`),
+    ).toBeNull()
   })
 
   test('CP18: clicking a top-level group toggle pins the whole group (all its leaves)', async () => {

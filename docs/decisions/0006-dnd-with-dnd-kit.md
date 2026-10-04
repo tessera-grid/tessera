@@ -141,9 +141,9 @@ assignRowPrototype: (prototype, table) => {
   (`getIsActionsColumn()` истинно), поэтому он исключён из sizing, pinning,
   sorting, dragging и из математики offset «первого пользовательского столбца».
 - он не рендерит header/footer.
-- для **вложенных заголовков** он оборачивает себя в placeholder-уровни групп
-  (`rowSpan`), чтобы охватить полную высоту заголовка; на одноуровневом заголовке
-  возвращается как есть.
+- колонка — всегда лист без групп-обёрток: под **вложенными заголовками** полную
+  высоту ей даёт вертикальный спан TanStack v9
+  ([ADR 0049](0049-native-header-spans.md), HS6).
 - **ширина** — это `COLUMN_DRAGGING_SIZE = иконка (16px) + левый padding (4) +
 правый padding (4) = 24` (`ACTION_COLUMN_CONTENT_PADDING = 4`).
 

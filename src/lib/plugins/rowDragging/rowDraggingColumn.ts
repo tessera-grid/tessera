@@ -27,24 +27,4 @@ const leafColumn = {
   cell: RowDraggingComponent,
 } as unknown as ColumnDef<any, any, any>
 
-export const getRowDraggingColumn = (
-  depth: number,
-): ColumnDef<any, any, any> => {
-  if (depth <= 1) {
-    return leafColumn
-  }
-
-  return Array.from({ length: depth - 1 }).reduceRight<
-    ColumnDef<any, any, any>
-  >(
-    (currentChild, _, index) =>
-      ({
-        id: `${COLUMN_DRAGGING_ID}-group-level-${index}`,
-        serviceLabel: 'reorderColumn',
-        header: '',
-        rowSpan: index === 0 ? depth - 1 : 0,
-        columns: [currentChild],
-      }) as unknown as ColumnDef<any, any, any>,
-    leafColumn,
-  )
-}
+export const getRowDraggingColumn = (): ColumnDef<any, any, any> => leafColumn

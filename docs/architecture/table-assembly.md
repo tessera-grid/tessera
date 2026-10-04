@@ -50,7 +50,9 @@ Tessera инъектирует не-data столбцы на основе **на
 `TesseraFeatureEntry.column` (`rowSelection`, `rowExpanding`, `rowDragging`,
 `rowActions`). `foldEntries` собирает их в `serviceColumns`, а `injectServiceColumns`
 раскладывает по `side`/`order`; ядро плагины не импортит. У колонок зарезервированные
-id, распознаются `column.getIsActionsColumn()` (метод от `commonFeature`).
+id, распознаются `column.getIsActionsColumn()` (метод от `commonFeature`). Сервисная
+колонка — всегда лист без групп-обёрток: под вложенной шапкой полную высоту ей даёт
+вертикальный спан TanStack v9 ([ADR 0049](../decisions/0049-native-header-spans.md)).
 
 ## Состояние: контролируемые срезы против pass-through
 

@@ -138,6 +138,32 @@ export const HeaderGroups: StoryObj<StoryProps> = {
   },
 }
 
+export const HeaderGroupsShallowLeaves: StoryObj<StoryProps> = {
+  name: 'Header Groups — shallow leaves',
+  args: {
+    // Листья разной глубины без групп-прокладок: Country, Visits и служебные
+    // колонки растянуты до низа шапки (ADR 0049). Кебаб растянутого листа — тот же,
+    // что в плоской шапке.
+    showHeaderGroups: true,
+    enableRowSelection: true,
+    enableRowExpanding: true,
+    enableRowActions: true,
+    enableColumnPinning: true,
+    enableColumnVisibility: true,
+    enableHeaderActionMenu: true,
+    enableKeyboardNavigation: true,
+    dataCount: 40,
+    containerHeight: 500,
+    height: 400,
+    maxHeight: 400,
+  },
+  parameters: {
+    controls: {
+      exclude: ['columnCount'],
+    },
+  },
+}
+
 export const HeaderGroupsPinning: StoryObj<StoryProps> = {
   name: 'Header Groups Pinning',
   args: {

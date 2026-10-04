@@ -158,15 +158,15 @@ describe('columnVisibility', () => {
       .filter(id => !id.startsWith('actionColumn'))
     expect(menuLeaves).toEqual(gridLeaves)
 
-    const group = menuRow('countryGroup')
+    const group = menuRow('info')
     expect(group.hasAttribute('data-column-group')).toBe(true)
     const indent = (id: string) =>
       parseFloat(
         getComputedStyle(menuRow(id).querySelector('label')!)
           .paddingInlineStart,
       )
-    expect(indent('countryNestedGroup')).toBeGreaterThan(indent('countryGroup'))
-    expect(indent('country')).toBeGreaterThan(indent('countryNestedGroup'))
+    expect(indent('more-info')).toBeGreaterThan(indent('info'))
+    expect(indent('age')).toBeGreaterThan(indent('more-info'))
   })
 
   test('CV5: a leaf checkbox hides and shows the column in the grid', async () => {

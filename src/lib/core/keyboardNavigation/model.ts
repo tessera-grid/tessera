@@ -96,8 +96,9 @@ export interface NavTable {
 
 export interface NavHeader {
   id: string
-  isPlaceholder: boolean
-  column: { id: string; depth: number; columnDef: { rowSpan?: number } }
+  rowSpan: number
+  headerGroup: { depth: number } | null
+  column: { id: string }
   getLeafHeaders: () => { column: { id: string } }[]
   getContext: () => unknown
 }

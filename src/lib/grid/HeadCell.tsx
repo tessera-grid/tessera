@@ -22,6 +22,7 @@ import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { getDisplayColumnIndex } from '../core/displayColumns'
+import { getHeaderRowStart, isCoveredHeader } from '../core/headerSpans'
 import {
   NAV_CELL_ATTR,
   getHeaderRowIndex,
@@ -134,7 +135,7 @@ export const HeadCellView = ({
     table,
     getHeaderRowIndex(header, table.getHeaderGroups().length),
     firstLeaf.id,
-    !header.isPlaceholder,
+    !isCoveredHeader(header),
     header.id,
   )
   const setDragNodeRef = drag?.setNodeRef
@@ -170,12 +171,13 @@ export const HeadCellView = ({
       : `translateX(${drag?.transformX || 0}px)`,
   }
 
-  if (
-    header.isPlaceholder ||
-    (header.column.columnDef as { rowSpan?: number }).rowSpan === 0
-  ) {
+  if (isCoveredHeader(header)) {
     return null
   }
+
+  const headerRowCount = table.getHeaderGroups().length
+  const reachesLastRow =
+    getHeaderRowStart(header) + header.rowSpan === headerRowCount
 
   const slots = (
     <>
@@ -225,6 +227,8 @@ export const HeadCellView = ({
       // Спанящий групповой заголовок — позиция его первого листа.
       aria-colindex={getDisplayColumnIndex(table, firstLeaf.id) + 1}
       aria-sort={getAriaSort(header)}
+      aria-rowspan={header.rowSpan > 1 ? header.rowSpan : undefined}
+      aria-colspan={header.colSpan > 1 ? header.colSpan : undefined}
       data-column-id={header.column.id}
       data-virtual-cell={absoluteLeft !== undefined || undefined}
       data-cell-pinned={pinnedSideToDom(headerPinned)}
@@ -235,7 +239,8 @@ export const HeadCellView = ({
       data-actions-column-cell={isActionsColumn}
       data-layout={layout}
       data-first-headers-row={header.headerGroup?.getIsFirstGroup() ?? false}
-      data-last-headers-row={header.headerGroup?.getIsLastGroup() ?? false}
+      data-last-headers-row={reachesLastRow}
+      data-header-stretched={header.rowSpan > 1 || undefined}
       data-first-header-in-row={header.getIsFirstHeader()}
       data-last-header-in-row={header.getIsLastHeader()}
       data-header-full-height={header.getIsFullHeightHeader()}
