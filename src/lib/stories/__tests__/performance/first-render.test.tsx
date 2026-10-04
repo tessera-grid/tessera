@@ -7,12 +7,14 @@ import {
   recordPerf,
   renderGrid,
 } from '../helpers'
+import { makeData } from '../../__mocks__/data'
 import {
   ALL_PLUGINS,
   CPU_THROTTLE_RATE,
   LARGE,
   LOAD_BUDGET_MS,
   NO_PLUGINS,
+  PAGED,
   PERF_TIMEOUT,
   SMALL,
 } from './perf-cases'
@@ -35,6 +37,8 @@ interface RenderCase {
   args: Record<string, number | boolean>
   // Потолок регресс-гейта для фичастых кейсов. Нет → абсолютный Load-бюджет 1000мс.
   regressionCeiling?: number
+  /** Данные генерируются до замера: меряется монтирование, а не faker. */
+  pregenerated?: boolean
 }
 
 const CASES: RenderCase[] = [
@@ -68,6 +72,12 @@ const CASES: RenderCase[] = [
     args: { ...LARGE, ...ALL_PLUGINS, enableRowExpanding: true },
     regressionCeiling: 500,
   },
+  {
+    id: 'P9',
+    label: 'много строк, без плагинов',
+    args: { ...PAGED, ...NO_PLUGINS },
+    pregenerated: true,
+  },
 ]
 
 describe('Производительность первой отрисовки', () => {
@@ -87,8 +97,11 @@ describe('Производительность первой отрисовки',
     test(
       `${c.id}: ${c.label}`,
       async () => {
+        const dataOverride = c.pregenerated
+          ? makeData({ shape: 'flat', count: Number(c.args.dataCount) })
+          : undefined
         const result = await measureRenderWork(
-          () => renderGrid(c.args),
+          () => renderGrid({ ...c.args, dataOverride }),
           () => headCells().length > 0,
           { warmup: false },
         )
@@ -101,7 +114,11 @@ describe('Производительность первой отрисовки',
           label: c.label,
           operation: 'render',
           size:
-            c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500',
+            c.args.columnCount === LARGE.columnCount
+              ? '1000×1000'
+              : c.args.dataCount === PAGED.dataCount
+                ? '30×100 000'
+                : '30×500',
           plugins: c.args.enableColumnSorting ? 'all' : 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
           // Фичастые кейсы сверяются с регресс-потолком, а не с абсолютным Load.

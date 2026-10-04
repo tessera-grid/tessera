@@ -480,7 +480,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
       `Switch`, `Skeleton`, `LinearProgress`, иконки).
   - **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500 / 1000×1000 ×
-    плагины, требования P1–P8 из [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md)):
+    плагины, требования P1–P8 из [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md);
+    P9 — монтирование 30×100 000 без плагинов):
     `first-render` (стоимость монтирования → Load) и `scroll` (работа на кадр →
     Animation); плюс `interaction` (INP: I1–I2 — выбор строки, I3 — шаг стрелкой,
     I4–I6 — меню колонок, I7–I8 — смена страницы и её размера на 100 000 строк,

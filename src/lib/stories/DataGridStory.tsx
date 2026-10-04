@@ -76,6 +76,7 @@ export const StoryComponent = memo(
       count: dataCount,
       mode: dataMode,
       showStub,
+      skip: dataOverride !== undefined,
     })
 
     // Явно переданный набор имеет приоритет над генерируемым. Перестановки и правки

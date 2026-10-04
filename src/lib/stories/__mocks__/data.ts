@@ -214,14 +214,19 @@ export const useData = ({
   count,
   mode,
   showStub,
+  skip = false,
 }: {
   count: number
   mode: 'flat' | 'hierarchy' | 'groups'
   showStub: boolean
+  /** Данные пришли извне — не генерировать. */
+  skip?: boolean
 }) => {
   const [data, setData] = useState<any[]>([])
 
   useEffect(() => {
+    if (skip) return
+
     if (showStub) {
       setData([])
 
@@ -241,7 +246,7 @@ export const useData = ({
     if (mode === 'groups') {
       setData(structuredClone(groupedData))
     }
-  }, [count, mode, showStub])
+  }, [count, mode, showStub, skip])
 
   return { data, setData }
 }

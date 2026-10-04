@@ -11,19 +11,13 @@ export const useAllRowsSelect = ({
   data,
   rowSelection,
 }: UseAllRowsSelectParams) => {
-  const dataIds: string[] = useMemo(
-    () =>
-      data.reduce<string[]>((acc, item) => {
-        return [...acc, item.id]
-      }, []),
-    [data],
-  )
+  const dataIds: string[] = useMemo(() => data.map(item => item.id), [data])
 
   const getSelectedData = useCallback(
     (selected = true) =>
-      dataIds.reduce<RowSelectionState>((acc, itemId): RowSelectionState => {
-        return { ...acc, [itemId]: selected } as RowSelectionState
-      }, {}),
+      Object.fromEntries(
+        dataIds.map(itemId => [itemId, selected]),
+      ) as RowSelectionState,
     [dataIds],
   )
 
