@@ -10,7 +10,8 @@ import { Stories, getScroller } from '../helpers'
 // Рамка грида и верхний тулбар (ADR 0035, TB1–TB7, TB10–TB15). Каждый тест — одно
 // требование, назван по его ID. Состояние читается из DOM/ARIA-контракта (role,
 // aria-*, data-*) и вычисленных стилей, а не из хешированных классов CSS-модулей.
-// TB8–TB9 — модульные (`src/lib/__tests__/toolbar.test.ts`).
+// TB8–TB9 — модульные (`src/lib/__tests__/toolbar.test.ts`). Порядок кнопок встроенных
+// плагинов — TB17, TB18, TB20 (ADR 0051); TB16, TB19 — модульные там же.
 
 const GRID = {
   containerHeight: 600,
@@ -258,5 +259,75 @@ describe('ToolbarButton (F4)', () => {
     await expect
       .poll(() => document.querySelector('[data-side]')?.textContent ?? '')
       .toContain('Density')
+  })
+})
+
+describe('Toolbar button order', () => {
+  const byTestId = (id: string) =>
+    toolbar()!.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+  const separators = () => [
+    ...toolbar()!.querySelectorAll<HTMLElement>('[role="separator"]'),
+  ]
+
+  const renderBuiltIns = (enableQuickSearch = true) =>
+    mount(
+      <Stories.AllFeatures
+        {...GRID}
+        enableColumnVisibility
+        enableColumnFiltering
+        enableQuickSearch={enableQuickSearch}
+        enableExport
+      />,
+    )
+
+  test('TB17: the filter summary sits on the left right after the search field with no separator; without search it comes first on the left', async () => {
+    const { unmount } = await renderBuiltIns()
+    const search = rect(byTestId('quick-search'))
+    const filters = rect(byTestId('filter-summary-button'))
+    const columns = rect(byTestId('column-visibility-button'))
+    const gap = parseFloat(read(toolbar()!, 'column-gap'))
+    // Вплотную к полю поиска (зазор группы) и не наезжает на правую сторону.
+    expect(filters.left - search.right).toBeCloseTo(gap, 0)
+    expect(columns.left - filters.right).toBeGreaterThanOrEqual(gap)
+    expect(
+      separators().filter(separator => rect(separator).right < filters.left),
+    ).toHaveLength(0)
+    await unmount()
+
+    await renderBuiltIns(false)
+    const padding = parseFloat(read(toolbar()!, 'padding-left'))
+    expect(rect(byTestId('filter-summary-button')).left).toBeCloseTo(
+      rect(toolbar()!).left + padding,
+      0,
+    )
+  })
+
+  test('TB18: on the right — Columns, a separator, then Export', async () => {
+    await renderBuiltIns()
+    const bar = rect(toolbar()!)
+    const columns = rect(byTestId('column-visibility-button'))
+    const exportButton = rect(byTestId('export-button'))
+    expect(columns.left).toBeGreaterThan(bar.left + bar.width / 2)
+    const [separator] = separators().map(rect)
+    expect(separators()).toHaveLength(1)
+    expect(separator.left).toBeGreaterThan(columns.right)
+    expect(separator.right).toBeLessThan(exportButton.left)
+  })
+
+  test('TB20: ←/→ and Home/End walk the buttons in the visual order', async () => {
+    await renderBuiltIns()
+    const focused = () => document.activeElement?.getAttribute('data-testid')
+    byTestId('column-visibility-button').focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(focused()).toBe('filter-summary-button')
+    await userEvent.keyboard('{ArrowRight}')
+    expect(focused()).toBe('column-visibility-button')
+    await userEvent.keyboard('{ArrowRight}')
+    expect(focused()).toBe('export-button')
+    await userEvent.keyboard('{Home}')
+    expect(focused()).toBe('quick-search')
+    byTestId('filter-summary-button').focus()
+    await userEvent.keyboard('{End}')
+    expect(focused()).toBe('export-button')
   })
 })

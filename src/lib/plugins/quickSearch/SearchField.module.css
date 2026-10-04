@@ -4,6 +4,7 @@
   align-items: center;
   width: var(--tsr-comp-quick-search-width);
   max-width: 100%;
+  min-width: 0;
 }
 
 .icon {

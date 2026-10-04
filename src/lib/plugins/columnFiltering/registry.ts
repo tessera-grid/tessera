@@ -88,7 +88,9 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
     {
       id: 'filterSummaryButton',
       slot: 'toolbarSlot',
-      group: 'view',
+      // Рядом с поиском: оба сужают данные (ADR 0051).
+      align: 'start',
+      group: 'search',
       order: 1,
       component: FilterSummaryButton,
     },

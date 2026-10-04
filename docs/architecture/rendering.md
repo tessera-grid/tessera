@@ -127,7 +127,9 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 ниже на неё. `LinearProgress` — абсолютный элемент без `top`: его позиция берётся из
 потока, поэтому он сам оказывается под тулбаром и остаётся под шапкой. Кнопки
 тулбара — `toolbarSlot`; раскладку по подгруппам делает `resolveToolbarGroups`
-(`core/toolbar.ts`), между группами — `Toolbar.Separator`. Верхней линии у шапки
+(`core/toolbar.ts`), между группами — `Toolbar.Separator`. Встроенные группы идут по
+фиксированному рангу (`search` → `view` → `data`), а не по порядку плагинов: слева
+поиск и сводка фильтров, справа «Колонки» и «Экспорт» (ADR [0051](../decisions/0051-toolbar-button-order.md)). Верхней линии у шапки
 нет: сверху её ограничивает рамка или разделитель тулбара.
 
 Нижняя панель (`StatusBar`, ADR [0038](../decisions/0038-pagination-and-status-bar.md))

@@ -1,12 +1,21 @@
 /**
- * Раскладка кнопок тулбара по подгруппам (ADR 0035, TB9): кнопки группируются по
- * `group`, группы идут по наименьшему `order` среди своих кнопок, кнопки внутри —
- * по `order`. Без `order` (или `'last'`) — в конец, в порядке регистрации.
- * Стороны (`align`): `'start'` — слева (поле поиска), по умолчанию `'end'` — справа.
+ * Раскладка кнопок тулбара по подгруппам (ADR 0035, TB9; ADR 0051): кнопки
+ * группируются по `group`; встроенные группы идут по рангу, остальные — после них,
+ * по наименьшему `order` среди своих кнопок; кнопки внутри — по `order`. Без
+ * `order` (или `'last'`) — в конец, в порядке регистрации.
+ * Стороны (`align`): `'start'` — слева (поиск и сводка фильтров), по умолчанию
+ * `'end'` — справа.
  */
 import type { ToolbarSlot } from './createSlots'
 
 export const DEFAULT_TOOLBAR_GROUP = 'default'
+
+/** Ранги встроенных групп: порядок не зависит от порядка плагинов (TB16). */
+const BUILTIN_GROUP_RANK: Record<string, number> = {
+  search: 0,
+  view: 1,
+  data: 2,
+}
 
 export interface ToolbarGroup {
   id: string
@@ -25,7 +34,13 @@ export const resolveToolbarGroups = (slot: ToolbarSlot): ToolbarGroup[] => {
     groups.set(id, [...(groups.get(id) ?? []), item])
   }
 
-  return [...groups].map(([id, items]) => ({ id, items }))
+  const rankOf = (id: string) =>
+    BUILTIN_GROUP_RANK[id] ?? Number.MAX_SAFE_INTEGER
+
+  // Map хранит порядок по наименьшему `order`; стабильная сортировка по рангу его сохраняет.
+  return [...groups]
+    .sort(([a], [b]) => rankOf(a) - rankOf(b))
+    .map(([id, items]) => ({ id, items }))
 }
 
 export interface ToolbarSides {

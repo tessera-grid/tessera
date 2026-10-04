@@ -1,13 +1,19 @@
 /**
- * Headless-проверки слота тулбара (ADR 0035, TB8–TB9): свёртка `toolbarSlot` из
- * активных записей и раскладка кнопок по подгруппам.
+ * Headless-проверки слота тулбара (ADR 0035, TB8–TB9; ADR 0051, TB16, TB19): свёртка
+ * `toolbarSlot` из активных записей и раскладка кнопок по подгруппам.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, it } from 'vitest'
 
 import type { PluginSlot } from '../core/createSlots'
 import { foldEntries } from '../core/features'
-import { resolveToolbarGroups } from '../core/toolbar'
+import { resolveToolbarGroups, resolveToolbarSides } from '../core/toolbar'
+import {
+  columnFiltering,
+  columnVisibility,
+  dataExport,
+  quickSearch,
+} from '../plugins'
 
 type ToolbarPluginSlot = Extract<PluginSlot, { slot: 'toolbarSlot' }>
 
@@ -57,5 +63,51 @@ describe('toolbarSlot — кнопки тулбара', () => {
       ['view', ['density', 'settings', 'noOrder']],
       ['data', ['import', 'export']],
     ])
+  })
+
+  /** Стороны тулбара как [группа, [id кнопок]] — слева и справа. */
+  const layoutOf = (entries: Parameters<typeof foldEntries>[0]) => {
+    const { start, end } = resolveToolbarSides(
+      foldEntries(entries).slots.toolbarSlot,
+    )
+    const ids = (groups: typeof start) =>
+      groups.map(group => [group.id, group.items.map(item => item.id)])
+    return { start: ids(start), end: ids(end) }
+  }
+
+  it('TB16: порядок групп не зависит от порядка плагинов: слева поиск и сводка фильтров, справа «Колонки», затем «Экспорт»', () => {
+    const expected = {
+      start: [['search', ['quickSearchField', 'filterSummaryButton']]],
+      end: [
+        ['view', ['columnVisibilityButton']],
+        ['data', ['exportButton']],
+      ],
+    }
+    expect(
+      layoutOf([
+        columnVisibility(),
+        columnFiltering(),
+        quickSearch(),
+        dataExport(),
+      ]),
+    ).toEqual(expected)
+    expect(
+      layoutOf([
+        dataExport(),
+        columnFiltering(),
+        quickSearch(),
+        columnVisibility(),
+      ]),
+    ).toEqual(expected)
+  })
+
+  it('TB19: группы потребителя и кнопки без group идут после встроенных групп правой стороны', () => {
+    const { end } = layoutOf([
+      { id: 'app', slots: [button('density', { group: 'app', order: -1 })] },
+      { id: 'loose', slots: [button('help')] },
+      dataExport(),
+      columnVisibility(),
+    ])
+    expect(end.map(([id]) => id)).toEqual(['view', 'data', 'app', 'default'])
   })
 })

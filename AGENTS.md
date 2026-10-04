@@ -367,7 +367,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md)).
     - _Тулбар и видимость колонок:_ `toolbar` (TB1–TB15 — рамка грида, тулбар,
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),
-      [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md).
+      [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md); порядок кнопок —
+      `toolbar` (TB17, TB18, TB20) и модульные `toolbar` (TB16, TB19),
+      [ADR 0051](docs/decisions/0051-toolbar-button-order.md).
     - _Включение панелей:_ `panels` (PB1–PB5, PB10–PB11 — тулбар и нижняя панель по
       слотам, флаги-переопределения), `toolbar-chunk` (PB6 — ленивый модуль тулбара),
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), дымовой
