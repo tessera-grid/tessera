@@ -30,4 +30,27 @@
 
     border-bottom: 1px solid var(--tsr-comp-row-hovered-bg);
   }
+
+  /* Закреплённые ячейки — sticky, как в теле, на непрозрачном фоне футера. */
+
+  &:is([data-cell-pinned='left'], [data-cell-pinned='right']) {
+    position: sticky;
+    z-index: var(--tsr-comp-z-index-pinned);
+    background-color: var(--tsr-comp-head-bg);
+  }
+
+  &[data-cell-last-left-pinned='true'] {
+    border-right: 1px solid var(--tsr-comp-cell-pinned-border-color);
+  }
+
+  &[data-cell-first-right-pinned='true']:not(
+      [data-actions-column-cell='true']
+    ) {
+    border-left: 1px solid var(--tsr-comp-cell-pinned-border-color);
+  }
+
+  /* Свободное место справа забирает первая закреплённая справа — как в теле. */
+  &[data-cell-pinned='right'][data-cell-first-right-pinned='true'] {
+    flex-grow: 1;
+  }
 }

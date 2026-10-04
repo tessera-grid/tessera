@@ -9,6 +9,7 @@ import type { Header, HeaderGroup } from '../types'
 import { FooterCell } from './FooterCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
+import { needsRightFiller } from './layout'
 
 import footerStyles from '../grid/Footer/Footer.module.css'
 
@@ -83,10 +84,12 @@ export const Footer = ({
             {headers.map(header => (
               <FooterCell key={header.id} layout={layout} header={header} />
             ))}
-            <RightFillerBodyColumn
-              hasBorderBottom={layout === 'grid'}
-              hasBorderRight={layout === 'grid'}
-            />
+            {needsRightFiller(headers.at(-1)?.column) && (
+              <RightFillerBodyColumn
+                hasBorderBottom={layout === 'grid'}
+                hasBorderRight={layout === 'grid'}
+              />
+            )}
           </>
         )}
       </div>

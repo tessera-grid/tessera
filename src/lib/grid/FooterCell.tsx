@@ -10,6 +10,7 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import type { Header } from '../types'
+import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getHeaderSizeVariable } from './columnSizes'
 
 import styles from '../grid/FooterCell/FooterCell.module.css'
@@ -34,6 +35,7 @@ export const FooterCell = ({
     header.column.id,
     !header.isPlaceholder,
   )
+  const pinning = getCellPinningParams(table as never, header.column as never)
 
   return (
     <div
@@ -48,11 +50,22 @@ export const FooterCell = ({
       className={clsx('data-grid__footer-cell', styles.footer__cell)}
       style={{
         width: `var(${getHeaderSizeVariable(header.id)})`,
-        ...(absoluteLeft !== undefined ? { left: absoluteLeft } : null),
+        // Как в теле: виртуальная центральная — по `left`, закреплённая — sticky-офсеты.
+        ...(absoluteLeft !== undefined
+          ? { left: absoluteLeft }
+          : {
+              minWidth: `var(${getHeaderSizeVariable(header.id)})`,
+              left: pinning.startPinnedOffset,
+              right: pinning.endPinnedOffset,
+            }),
       }}
       data-virtual-cell={absoluteLeft !== undefined || undefined}
       aria-colindex={getDisplayColumnIndex(table, header.column.id) + 1}
       data-column-id={header.column.id}
+      data-cell-pinned={pinnedSideToDom(header.column.getIsPinned())}
+      data-cell-last-left-pinned={pinning.isLastStartPinnedColumn}
+      data-cell-first-right-pinned={pinning.isFirstEndPinnedColumn}
+      data-actions-column-cell={header.column.getIsActionsColumn()}
       data-layout={layout}
       data-first-cell-in-row={header.column.getIsFirstColumn()}
       data-last-cell-in-row={header.column.getIsLastColumn()}
