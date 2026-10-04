@@ -11,6 +11,10 @@ import {
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import type {
+  ServiceColumnMode,
+  ServicePresence,
+} from '../../core/servicePresence'
 import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
 import { narrowExpandedByDepth } from './narrowExpanded'
@@ -32,8 +36,29 @@ export interface RowExpandingOptions {
    * раскрываема, пока `row.depth < maxDepth`. По умолчанию 1 — тоггл только у корней.
    */
   maxDepth?: number
+  /**
+   * `'auto'` (по умолчанию) — колонка видна, только если в данных есть раскрываемые
+   * строки; `'always'` — всегда (серверный режим, ADR 0050).
+   */
+  column?: ServiceColumnMode
   /** Бизнес-колбэк раскрытия строки (аргумент фабрики); читается живо. */
   onExpandRow?: RowExpandingHooks['onExpandRow']
+}
+
+/**
+ * Колонка нужна, если хоть один корень исходных данных имеет детей (раскрываемый
+ * потомок глубже означает раскрываемого предка) или подключена группировка: группы
+ * раскрываются тогглом этой колонки.
+ */
+const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
+  table,
+  context,
+  o,
+) => {
+  if (context.options.enableGrouping === true) return true
+  if ((o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH) < 1) return false
+  if (!table) return undefined
+  return table.getCoreRowModel().rows.some(row => row.subRows.length > 0)
 }
 
 export const rowExpanding = definePlugin<RowExpandingOptions>()({
@@ -61,6 +86,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     side: 'leading',
     order: 2,
     pin: { side: 'start', when: 'with-user' },
+    presence: hasExpandableRows,
   },
   options: o => {
     const maxDepth = o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH

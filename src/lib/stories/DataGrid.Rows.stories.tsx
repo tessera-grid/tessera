@@ -133,6 +133,35 @@ export const RowExpanding: StoryObj<StoryProps> = {
   },
 }
 
+/**
+ * Раскрытие на плоских данных: раскрывать нечего — колонки раскрытия нет (ADR 0050).
+ * Включите `rowExpandingColumn: 'always'`, чтобы держать колонку (серверный режим).
+ */
+export const RowExpandingFlatData: StoryObj<StoryProps> = {
+  name: 'Row Expanding — flat data',
+  args: {
+    dataOverride: makeData({ shape: 'flat', count: 12 }),
+    enableRowExpanding: true,
+    enableRowSelection: true,
+  },
+  parameters: {
+    controls: { exclude: ['dataCount', 'dataMode', 'dataOverride'] },
+  },
+}
+
+/** Колонка раскрытия в режиме `'always'`: есть и без раскрываемых строк (ADR 0050). */
+export const RowExpandingColumnAlways: StoryObj<StoryProps> = {
+  name: 'Row Expanding — column always',
+  args: {
+    dataOverride: makeData({ shape: 'flat', count: 12 }),
+    enableRowExpanding: true,
+    rowExpandingColumn: 'always',
+  },
+  parameters: {
+    controls: { exclude: ['dataCount', 'dataMode', 'dataOverride'] },
+  },
+}
+
 export const RowGrouping: StoryObj<StoryProps> = {
   name: 'Row Grouping',
   args: {
@@ -172,5 +201,17 @@ export const RowActions: StoryObj<StoryProps> = {
   name: 'Row Actions',
   args: {
     enableRowActions: true,
+  },
+}
+
+/**
+ * Плагин действий без единого действия: колонки действий нет (ADR 0050). Включите
+ * `rowActionsDemo`, чтобы действия появились вместе с колонкой.
+ */
+export const RowActionsWithoutActions: StoryObj<StoryProps> = {
+  name: 'Row Actions — no actions',
+  args: {
+    enableRowActions: true,
+    rowActionsDemo: false,
   },
 }

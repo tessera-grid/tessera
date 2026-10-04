@@ -29,7 +29,9 @@ import {
   type ColumnSizingOptions,
   type ExportOptions,
   type QuickSearchOptions,
+  type RowActionsPluginOptions,
   type RowDraggingOptions,
+  type RowExpandingOptions,
 } from '../../../../lib/plugins'
 import type { TesseraFeatureEntry } from '../../../../lib/core/features'
 import type { RowActionsOptions } from '../../../../lib/plugins/rowActions/rowActionsColumn'
@@ -113,6 +115,12 @@ export interface FeatureToggles {
   }
   /** Предел глубины раскрытия (`rowExpanding({ maxDepth })`). */
   rowExpandingMaxDepth?: number
+  /** Режим колонки раскрытия (ADR 0050): `'always'` — видна и без раскрываемых строк. */
+  rowExpandingColumn?: RowExpandingOptions['column']
+  /** Режим колонки действий (ADR 0050). */
+  /** `false` — демо-действий строки нет (колонка действий без надобности, ADR 0050). */
+  rowActionsDemo?: boolean
+  rowActionsColumn?: RowActionsPluginOptions['column']
   /** Предикат правки аргументом плагина (`cellEditing({ canEdit })`). */
   cellEditingCanEdit?: CellEditingOptions['canEdit']
   /** Разрешение перетаскивания строк при включённом плагине (`rowDragging({ enable })`). */
@@ -143,6 +151,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowExpanding({
       enabled: !!o.enableRowExpanding,
       maxDepth: o.rowExpandingMaxDepth,
+      column: o.rowExpandingColumn,
     }),
     // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
     // строки TanStack — предикат отдельной записью после плагина (опции по порядку).
@@ -185,6 +194,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
       enabled: !!o.enableRowActions,
       width: o.rowActionsOptions?.width,
       collapsedWidth: o.rowActionsOptions?.collapsedWidth,
+      column: o.rowActionsColumn,
     }),
     headerActionMenu({
       enabled: !!o.enableHeaderActionMenu,
@@ -228,6 +238,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
       id: 'rowActionsDemo',
+      enabled: o.rowActionsDemo !== false,
       slotActions: rowActionsDemo,
     },
   ] as const

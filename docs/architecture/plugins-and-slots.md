@@ -191,6 +191,14 @@ const leafColumn = {
 }
 ```
 
+**Показ по условию.** Служебная колонка в `definePlugin` может объявить
+`presence(table, context, opts)` — когда она нужна; без поля колонка видна всегда.
+Условие смотрит только на исходные строки (`getCoreRowModel`), аргументы фабрики и
+свёртку набора (`context.options`, `context.slotActions`), но не на вид. Ложное
+условие скрывает колонку сужением среза `columnVisibility` в эффективном состоянии —
+идентичность `columns` не меняется. Плагин с условием даёт приложению опцию
+`column: 'auto' | 'always'` ([ADR 0050](../decisions/0050-service-column-presence.md)).
+
 Дополнительно `BodyCell` / `HeadCell` уважают **приоритетный** override
 `cell.renderComponent` (escape-hatch — если фиче нужно подменить рендерер на уровне
 инстанса ячейки через `assignCellPrototype` / `init*InstanceData`).

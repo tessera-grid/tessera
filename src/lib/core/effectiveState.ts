@@ -11,12 +11,22 @@ import { useLayoutEffect, useRef, useState } from 'react'
 
 import { functionalUpdate } from '@tanstack/react-table'
 
+/** Текущая свёртка набора (опции, действия слотов) — свежее, чем опции `table`. */
+export interface NarrowContext {
+  options: Record<string, unknown>
+  slotActions: Partial<Record<string, readonly unknown[]>>
+}
+
 /**
  * Сужение среза. `table` — экземпляр с текущими данными и колонками или `null`
  * (монтирование, смена данных). Возвращает то же значение, если сужать нечего;
  * `undefined` — без таблицы не посчитать (ядро пересчитает после рендера).
  */
-export type NarrowState = (value: any, table: any) => unknown
+export type NarrowState = (
+  value: any,
+  table: any,
+  context: NarrowContext,
+) => unknown
 
 export type NarrowMap = Record<string, NarrowState[]>
 
@@ -30,10 +40,11 @@ export const applyNarrow = (
   narrows: readonly NarrowState[],
   value: unknown,
   table: unknown,
+  context: NarrowContext = { options: {}, slotActions: {} },
 ): unknown => {
   let current = value
   for (const narrow of narrows) {
-    const next = narrow(current, table)
+    const next = narrow(current, table, context)
     if (next === undefined) {
       return undefined
     }
@@ -67,6 +78,9 @@ interface EffectiveStateParams {
   getAtoms: () => Record<string, { get: () => unknown }> | undefined
   /** Данные и подпись структуры колонок: при смене любого сужение пересчитывается. */
   inputs: readonly unknown[]
+  context: NarrowContext
+  /** Начальное значение среза, которым TanStack не владеет до первого рендера. */
+  initial?: Record<string, unknown>
 }
 
 export const useEffectiveState = ({
@@ -77,6 +91,8 @@ export const useEffectiveState = ({
   table,
   getAtoms,
   inputs,
+  context,
+  initial = {},
 }: EffectiveStateParams) => {
   const [inner, setInner] = useState<Record<string, unknown>>({})
   const cache = useRef(new Map<string, CacheEntry>())
@@ -98,19 +114,26 @@ export const useEffectiveState = ({
         ? state[key]
         : key in inner
           ? inner[key]
-          : getAtoms()?.[key]?.get()
+          : key in initial
+            ? initial[key]
+            : getAtoms()?.[key]?.get()
 
     if (!isOwned)
       handlersOut[handlerName] = (updater: unknown) => {
-        if (external) {
-          external(updater)
+        external?.(updater)
+        // Без контролируемого значения срез хранит ядро — и при колбэке потребителя.
+        if (external && state[key] !== undefined) {
           return
         }
         setInner(prev => ({
           ...prev,
           [key]: functionalUpdate(
             updater as never,
-            (key in prev ? prev[key] : getAtoms()?.[key]?.get()) as never,
+            (key in prev
+              ? prev[key]
+              : key in initial
+                ? initial[key]
+                : getAtoms()?.[key]?.get()) as never,
           ),
         }))
       }
@@ -128,7 +151,7 @@ export const useEffectiveState = ({
     ) {
       result = cached.result
     } else {
-      result = applyNarrow(narrow[key], raw, table)
+      result = applyNarrow(narrow[key], raw, table, context)
       if (result === undefined) {
         pending = true
         result = raw

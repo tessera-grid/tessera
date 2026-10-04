@@ -8,6 +8,7 @@
 import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
 import { definePlugin } from '../../core/definePlugin'
 import { noSlotActionsReason } from '../../core/pluginDiagnostics'
+import type { ServiceColumnMode } from '../../core/servicePresence'
 import type { SlotActionMenu } from '../../core/headerActions'
 import type { ColumnSizingState, Updater } from '../../types'
 import {
@@ -22,6 +23,11 @@ export interface RowActionsPluginOptions {
   width?: number
   /** Ширина при схлопнутых действиях (кебаб rowActionMenu, по умолчанию 56). */
   collapsedWidth?: number
+  /**
+   * `'auto'` (по умолчанию) — колонка видна, только если плагины добавили действия
+   * строки; `'always'` — всегда (ADR 0050).
+   */
+  column?: ServiceColumnMode
 }
 
 type RowActionsTable = {
@@ -40,6 +46,9 @@ export const rowActions = definePlugin<RowActionsPluginOptions>()({
     order: 0,
     // Колонка действий закреплена всегда справа (логическая сторона end в v9).
     pin: { side: 'end', when: 'always' },
+    // То же условие, что у диагностики 'noActions'.
+    presence: (_table, context) =>
+      (context.slotActions.actionRowSlot?.length ?? 0) > 0,
   },
   setup: o => table => {
     const width = o.width ?? DEFAULT_ROW_ACTIONS_OPTIONS.width

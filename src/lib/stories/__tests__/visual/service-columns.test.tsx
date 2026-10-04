@@ -57,6 +57,8 @@ describe('Сервисные колонки — порядок по умолча
       enableRowDragging: true,
       enableRowSelection: true,
       enableRowExpanding: true,
+      // Колонка раскрытия нужна и на плоских данных (ADR 0050).
+      rowExpandingColumn: 'always',
     })
     await waitForGrid()
 
@@ -77,6 +79,8 @@ describe('Сервисные колонки — размещение и пинн
       enableRowDragging: true,
       enableRowSelection: true,
       enableRowExpanding: true,
+      // Колонка раскрытия нужна и на плоских данных (ADR 0050).
+      rowExpandingColumn: 'always',
       enableRowActions: true,
     })
     await waitForGrid()

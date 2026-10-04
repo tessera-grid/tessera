@@ -231,6 +231,9 @@ export const useCreateTable = <
     table: freshTable,
     getAtoms: () => tableRef.current?.atoms,
     inputs: [data, columnsSignature],
+    context: { options: folded.options, slotActions: folded.slotActions },
+    // Видимость служебных колонок сужается с первого рендера (ADR 0050).
+    initial: { columnVisibility: {} },
   })
 
   const controlledState = {

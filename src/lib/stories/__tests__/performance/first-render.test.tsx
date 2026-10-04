@@ -60,6 +60,14 @@ const CASES: RenderCase[] = [
     args: { ...LARGE, ...ALL_PLUGINS },
     regressionCeiling: 500,
   },
+  {
+    // Колонка раскрытия по условию (ADR 0050): проход по корням и одна повторная
+    // отрисовка после монтирования — та же цена, что у P6.
+    id: 'SC10',
+    label: 'большая выборка, все плагины, колонка раскрытия по условию',
+    args: { ...LARGE, ...ALL_PLUGINS, enableRowExpanding: true },
+    regressionCeiling: 500,
+  },
 ]
 
 describe('Производительность первой отрисовки', () => {

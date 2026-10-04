@@ -154,6 +154,7 @@ describe('Нативные спаны вложенной шапки', () => {
         {...GRID}
         enableRowSelection
         enableRowExpanding
+        rowExpandingColumn="always"
         enableRowDragging
         enableRowActions
       />,

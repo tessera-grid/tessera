@@ -29,6 +29,11 @@ import type {
 import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
+import {
+  type ServiceColumnMode,
+  type ServicePresence,
+  presenceNarrow,
+} from '../servicePresence'
 import { argsKeyOf } from '../pluginArgs'
 import {
   pluginStateKey,
@@ -108,17 +113,30 @@ export interface ServiceColumnParts {
  * Сервисная колонка в `definePlugin`: `cell`/`header` типизированы по `hooks`
  * плагина и получают их без scope-строки (ADR 0028, DP19, DP20).
  */
-export interface PluginServiceColumn<THooks> extends Omit<
+export interface PluginServiceColumn<THooks, TOptions = never> extends Omit<
   ServiceColumn,
   'make' | 'pluginId'
 > {
   cell?: (props: PluginCellProps<THooks>) => ReactNode
   header?: (props: PluginHeaderProps<THooks>) => ReactNode
   make: (parts: ServiceColumnParts) => ColumnDef<any, any, any>
+  /**
+   * Когда колонка нужна (ADR 0050); без поля — всегда. Приложение переопределяет
+   * опцией фабрики `column: 'always'`.
+   */
+  presence?: ServicePresence<TOptions>
 }
 
+const keepVisibility: NarrowState = value => value
+
 const toServiceColumn = (
-  { cell, header, make, ...column }: PluginServiceColumn<unknown>,
+  {
+    cell,
+    header,
+    make,
+    presence: _presence,
+    ...column
+  }: PluginServiceColumn<unknown, unknown>,
   id: string,
 ): ServiceColumn => {
   const parts: ServiceColumnParts = {
@@ -180,7 +198,7 @@ interface DefinePluginConfig<
     onChange?: Extract<keyof TOptions, string>
   }
   /** Сервисная колонка плагина; `cell`/`header` получают его `hooks` (DP19). */
-  column?: PluginServiceColumn<THooks>
+  column?: PluginServiceColumn<THooks, TOptions>
   /**
    * Декларативные слоты плагина; функция — набор слотов зависит от аргументов фабрики.
    * Компонент получает каналы плагина (`hooks`, локальный `state`) с типами из
@@ -268,7 +286,11 @@ export const definePlugin = <
   ) => {
     const column =
       config.column &&
-      toServiceColumn(config.column as PluginServiceColumn<unknown>, config.id)
+      toServiceColumn(
+        config.column as PluginServiceColumn<unknown, unknown>,
+        config.id,
+      )
+    const presence = config.column?.presence
     return (
       opts: TOptions = {} as TOptions,
     ): TesseraFeatureEntry<TFeatures> => {
@@ -320,8 +342,17 @@ export const definePlugin = <
         if (config.setup) {
           out.setup = config.setup(args)
         }
-        const narrow = config.narrow?.(args)
-        if (narrow) {
+        const narrow = { ...config.narrow?.(args) }
+        // Срез остаётся под сужением и в режиме 'always': иначе TanStack держал бы
+        // последнее суженное значение.
+        if (presence) {
+          narrow.columnVisibility =
+            args.enabled === false ||
+            (args as { column?: ServiceColumnMode }).column === 'always'
+              ? keepVisibility
+              : presenceNarrow(config.column!.id, presence, args)
+        }
+        if (Object.keys(narrow).length > 0) {
           out.narrow = narrow
         }
         return out

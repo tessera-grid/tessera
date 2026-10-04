@@ -125,6 +125,8 @@ describe('Дерево доступности (AX)', () => {
       dataCount: 2,
       enableKeyboardNavigation: true,
       enableRowExpanding: true,
+      // Колонка раскрытия нужна и на плоских данных (ADR 0050).
+      rowExpandingColumn: 'always',
       enableRowDragging: true,
       enableRowActions: true,
       enableFooter: true,
