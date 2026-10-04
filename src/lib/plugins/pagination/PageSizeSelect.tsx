@@ -9,6 +9,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import { usePortalThemeClass } from '../../core/themeVariables'
 import styles from './Pagination.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
 
 export interface PageSizeSelectProps {
   label: string
@@ -24,9 +25,11 @@ export const PageSizeSelect = ({
   onChange,
 }: PageSizeSelectProps) => {
   const themeClass = usePortalThemeClass()
+  const trigger = useTriggerWidth()
   return (
     <Select.Root
       value={pageSize}
+      onOpenChange={trigger.onOpenChange}
       onValueChange={value => {
         if (value !== null) {
           onChange(value)
@@ -34,7 +37,11 @@ export const PageSizeSelect = ({
       }}
     >
       <Select.Label className={styles.label}>{label}</Select.Label>
-      <Select.Trigger className={styles.trigger} data-testid="page-size-select">
+      <Select.Trigger
+        ref={trigger.ref}
+        className={styles.trigger}
+        data-testid="page-size-select"
+      >
         <Select.Value />
         <Select.Icon className={styles.triggerIcon}>
           <ChevronDown width={14} height={14} />
@@ -48,7 +55,10 @@ export const PageSizeSelect = ({
           alignItemWithTrigger={false}
           className={clsx(themeClass, styles.positioner)}
         >
-          <Select.Popup className={clsx(themeClass, styles.popup)}>
+          <Select.Popup
+            className={clsx(themeClass, styles.popup)}
+            style={{ minWidth: trigger.minWidth }}
+          >
             <Select.List>
               {pageSizes.map(size => (
                 <Select.Item key={size} value={size} className={styles.item}>

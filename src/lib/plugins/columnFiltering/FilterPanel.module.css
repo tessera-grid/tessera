@@ -70,7 +70,6 @@
 
 .selectPopup {
   composes: popup from '../../ui/Popup/Popup.module.css';
-  min-width: var(--anchor-width);
 }
 
 .selectItem {

@@ -8,6 +8,7 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useLocalization } from '../../core/localization'
 import { usePortalThemeClass } from '../../core/themeVariables'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
 
 import styles from './FilterPanel.module.css'
 
@@ -28,15 +29,17 @@ export const OperatorSelect = <T extends string>({
 }: OperatorSelectProps<T>) => {
   const labels = useLocalization()
   const themeClass = usePortalThemeClass()
+  const trigger = useTriggerWidth(triggerRef)
   return (
     <Select.Root
       value={value}
+      onOpenChange={trigger.onOpenChange}
       onValueChange={next => {
         if (next !== null) onChange(next)
       }}
     >
       <Select.Trigger
-        ref={triggerRef as RefObject<HTMLButtonElement | null> | undefined}
+        ref={trigger.ref}
         className={styles.trigger}
         aria-label={labels.filterCondition}
         data-testid="filter-operator"
@@ -54,7 +57,10 @@ export const OperatorSelect = <T extends string>({
           alignItemWithTrigger={false}
           className={clsx(themeClass, styles.selectPositioner)}
         >
-          <Select.Popup className={clsx(themeClass, styles.selectPopup)}>
+          <Select.Popup
+            className={clsx(themeClass, styles.selectPopup)}
+            style={{ minWidth: trigger.minWidth }}
+          >
             <Select.List>
               {operators.map(operator => (
                 <Select.Item

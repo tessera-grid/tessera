@@ -476,4 +476,39 @@ describe('Popover family contract', () => {
       })
     }
   })
+
+  test('PP8 popovers open without a ResizeObserver loop error; a select list is at least as wide as its trigger', async () => {
+    const loops: string[] = []
+    const onError = (event: ErrorEvent) => {
+      if (event.message.includes('ResizeObserver')) loops.push(event.message)
+    }
+    window.addEventListener('error', onError)
+    try {
+      await renderAll()
+      const triggers: Record<string, string> = {
+        'filter condition list': '[data-testid="filter-operator"]',
+        'page size list': '[data-testid="page-size-select"]',
+      }
+      const widths = await collect(p =>
+        triggers[p.name]
+          ? {
+              popup: p.popup().offsetWidth,
+              trigger: query(triggers[p.name])[0].offsetWidth,
+            }
+          : null,
+      )
+      // Ошибка цикла приходит в конце кадра после открытия.
+      await new Promise(r =>
+        requestAnimationFrame(() => requestAnimationFrame(r)),
+      )
+      expect(loops).toEqual([])
+      const selects = widths.filter(([, w]) => w !== null)
+      expect(selects.length).toBe(2)
+      for (const [name, w] of selects) {
+        expect(w!.popup, name).toBeGreaterThanOrEqual(w!.trigger)
+      }
+    } finally {
+      window.removeEventListener('error', onError)
+    }
+  })
 })
