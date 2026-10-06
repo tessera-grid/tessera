@@ -17,6 +17,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
+import { cellSavedFeature } from './cellSavedFeature'
 import { editCellKeyboardAction } from './keyboardActions'
 import { EMPTY_EDITING_STATE, reconcileEditSession } from './session'
 import type { CellComponentProps } from '../../core/createSlots'
@@ -51,6 +52,8 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canEdit'],
   diagnose: neverInert,
+  // Отметки сохранения ячеек (ADR 0057, §3) — свой срез, вне управляемого `editing`.
+  features: { cellSavedFeature },
   // Локальный слайс: активная правка и отправленные ячейки (ADR 0040, ADR 0041).
   state: (): CellEditingState => EMPTY_EDITING_STATE,
   controlled: { value: 'editing', onChange: 'onEditingChange' },

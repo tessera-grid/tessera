@@ -49,7 +49,11 @@ export const ALL_PLUGINS: Record<string, boolean> = {
  * чётные строки ждут сервера, нечётные в «ошибке». Через интерфейс набирать
  * столько ячеек долго, а замеряется отрисовка их состояний при прокрутке.
  */
-export const submittedCellsSeed = (rows: number): TesseraFeatureEntry => {
+export const submittedCellsSeed = (
+  rows: number,
+  /** `mixed` — через строку ожидание и «ошибка»; `pending` — все в ожидании (блик). */
+  mode: 'mixed' | 'pending' = 'mixed',
+): TesseraFeatureEntry => {
   let seeded = false
   return {
     id: 'perfSubmittedCells',
@@ -73,8 +77,9 @@ export const submittedCellsSeed = (rows: number): TesseraFeatureEntry => {
             columnId,
             draft: String(original ?? ''),
             original,
-            status: index % 2 === 0 ? 'pending' : 'error',
-            error: index % 2 === 0 ? undefined : 'Server down',
+            status: mode === 'pending' || index % 2 === 0 ? 'pending' : 'error',
+            error:
+              mode === 'pending' || index % 2 === 0 ? undefined : 'Server down',
             attempt: -1 - index,
           }
         }

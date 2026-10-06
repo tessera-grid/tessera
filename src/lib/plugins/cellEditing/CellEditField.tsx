@@ -5,13 +5,18 @@
  * дизайн-системой) либо дефолтный встроенный. Сессия правки живёт в срезе плагина
  * (ADR 0040, §2): редактор стартует с черновика и пишет его через `setDraft`, поэтому
  * текст переживает прокрутку, смену страницы и сортировку. Сохранение с промисом
- * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2).
+ * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2). Слой поверх ячейки
+ * несёт блик ожидания, вспышку отказа и подсветку сохранения (ADR 0057).
  */
-import { useId, type ReactNode } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
+
+import clsx from 'clsx'
 
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
-import { useSliceProjection } from '../../core/reactivity'
+import { useSliceProjection, useTableState } from '../../core/reactivity'
+import { useErrorFlash } from '../../ui/buttonStates/useErrorFlash'
+import ring from '../../ui/ringStates/ringStates.module.css'
 import { useIcons } from '../../ui/icons'
 import { CellEditInput } from './CellEditInput'
 import styles from './CellEditInput.module.css'
@@ -19,6 +24,7 @@ import {
   EDIT_SESSION_KEY,
   cancelEditSession,
   cellEditingViewOf,
+  cellKey,
   commitEditSession,
   endEditSession,
   isEditingCell,
@@ -71,39 +77,85 @@ export const CellEditField = (
         : undefined,
   )
 
-  // Сохранение ждёт сервера — отправленное значение, приглушённо (ADR 0041, §2).
-  if (view && view !== 'editing' && view.status === 'pending') {
+  const submitted = view && view !== 'editing' ? view : null
+  const pending = submitted?.status === 'pending'
+  const saved = useTableState(
+    table as never,
+    state =>
+      cellKey(row.id, column.id) in
+      ((state as { cellSaved?: object }).cellSaved ?? {}),
+  ) as boolean
+  const layerRef = useRef<HTMLSpanElement>(null)
+  const flash = useErrorFlash(
+    layerRef,
+    submitted?.status === 'error' ? submitted.attempt : undefined,
+  )
+  // Слой появляется с первым ожиданием или сохранением и остаётся до размонтирования:
+  // блик переходит во вспышку, а подсветка гаснет на том же элементе.
+  const [layer, setLayer] = useState(false)
+  if (!layer && (pending || saved)) {
+    setLayer(true)
+  }
+  const feedback = layer ? (
+    <span
+      ref={layerRef}
+      className={clsx(
+        'cell-edit-feedback',
+        ring.ring,
+        ring.layer,
+        styles.feedback,
+      )}
+      aria-hidden="true"
+      data-pending={pending || undefined}
+      data-error-flash={flash}
+      data-saved={saved || undefined}
+    />
+  ) : null
+
+  // Сохранение ждёт сервера — отправленное значение и блик по контуру (ADR 0057, §1).
+  if (submitted && pending) {
     return (
-      <span className={styles.pending} aria-busy="true">
-        {view.draft}
-      </span>
+      <>
+        {feedback}
+        <span className={styles.pending} aria-busy="true">
+          {submitted.draft}
+        </span>
+      </>
     )
   }
 
   // Сервер отказал — значение из данных с меткой и текстом отказа; черновик ждёт
   // повторной правки.
-  if (view && view !== 'editing') {
+  if (submitted) {
     return (
-      <span
-        className={styles.failed}
-        aria-invalid="true"
-        aria-describedby={errorId}
-        title={view.error}
-      >
-        <span className={styles.failedContent}>{content}</span>
-        <span className={styles.failedIcon} aria-hidden="true">
-          <FailedIcon width={14} height={14} />
+      <>
+        {feedback}
+        <span
+          className={styles.failed}
+          aria-invalid="true"
+          aria-describedby={errorId}
+          title={submitted.error}
+        >
+          <span className={styles.failedContent}>{content}</span>
+          <span className={styles.failedIcon} aria-hidden="true">
+            <FailedIcon width={14} height={14} />
+          </span>
+          <span id={errorId} className={styles.visuallyHidden}>
+            {submitted.error}
+          </span>
         </span>
-        <span id={errorId} className={styles.visuallyHidden}>
-          {view.error}
-        </span>
-      </span>
+      </>
     )
   }
 
   // Не в правке — отдаём собственный контент ячейки как есть.
   if (view !== 'editing') {
-    return <>{content}</>
+    return (
+      <>
+        {feedback}
+        {content}
+      </>
+    )
   }
   // Правка открыта из «ошибки» — текст отказа, пока `validate` не сказала своё.
   const serverError = readEditSession(table)?.rejected?.error || undefined
@@ -112,6 +164,7 @@ export const CellEditField = (
   const editor = hooks.editor ?? defaultEditor
   return (
     <>
+      {feedback}
       {editor({
         value: readEditSession(table)?.draft ?? '',
         label: labels.editCellValue(

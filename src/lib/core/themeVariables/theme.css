@@ -243,13 +243,6 @@
   --tsr-comp-cell-content-padding: 0px var(--tsr-ref-space-4);
   --tsr-comp-cell-content-gap: var(--tsr-ref-space-1);
   --tsr-comp-cell-font-size: 0.8125rem;
-  /* Значение ячейки, сохранение которой ждёт сервера (ADR 0041); 65% держит
-     контраст текста 4.5:1 в обеих темах (AS13). */
-  --tsr-comp-cell-pending-color: color-mix(
-    in srgb,
-    var(--tsr-sys-fg) 65%,
-    transparent
-  );
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
   --tsr-comp-cell-error-color: var(--tsr-sys-danger);
   /* Ожидание и отказ базовых кнопок (ADR 0055): блик по контуру, вспышка. */
@@ -268,6 +261,14 @@
   );
   --tsr-comp-row-arrival-duration: 300ms;
   --tsr-comp-row-arrival-fade-duration: 500ms;
+  /* Подсветка ячейки после асинхронного сохранения (ADR 0057): тон пришедших строк. */
+  /* Толщина блика ожидания на ячейке — тоньше, чем у кнопок (ADR 0057). */
+  --tsr-comp-cell-pending-ring-width: 1px;
+  --tsr-comp-cell-saved-color: var(--tsr-comp-row-arrival-color);
+  --tsr-comp-cell-saved-duration: var(--tsr-comp-row-arrival-duration);
+  --tsr-comp-cell-saved-fade-duration: var(
+    --tsr-comp-row-arrival-fade-duration
+  );
   /* Typography — theme-agnostic default (system stack); override to use a
    * custom face. Numeric feature aligns digits in columns. */
   --tsr-comp-font-family:

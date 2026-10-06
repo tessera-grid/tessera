@@ -8,7 +8,7 @@ import {
 
 import { useErrorFlash } from './useErrorFlash'
 
-import styles from './buttonStates.module.css'
+import styles from '../ringStates/ringStates.module.css'
 
 export interface ButtonStatesProps {
   /** Ждёт асинхронного действия: кольцо по контуру, `aria-busy`, нажатия игнорируются. */
@@ -48,7 +48,7 @@ export const useButtonStates = <T extends HTMLElement>(
 
   return {
     ref,
-    className: styles.states,
+    className: styles.ring,
     'aria-busy': pending || undefined,
     'data-error-flash': flash,
     onClick: handleClick,

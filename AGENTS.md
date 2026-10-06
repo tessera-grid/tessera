@@ -472,7 +472,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       визуальные `async-callbacks` (AS2–AS3 — ячейка в ожидании, правка других не
       ждёт; AS5–AS6 — «ошибка» с меткой, объявлением и повторной правкой; AS11 —
       раскрытие в ожидании; AS13 — axe и контраст новых состояний),
-      [ADR 0041](docs/decisions/0041-async-business-callbacks.md).
+      [ADR 0041](docs/decisions/0041-async-business-callbacks.md); вид асинхронной
+      правки — визуальные `async-callbacks` (CF1–CF6, CF8–CF11 — блик по контуру,
+      закрепление, выделение и фокус, вспышка отказа, подсветка сохранения,
+      виртуализация, уменьшенное движение, объявления, контраст, токены), модульный
+      `asyncCallbacks` (CF7 — отметки сохранения), перф CF12 — в `scroll`
+      ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
     - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
       Async: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
@@ -503,7 +508,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     RE50 — тот же приход ответом сервера с подсветкой против RE38
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
-    против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md)).
+    против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);
+    CF12 — медленная прокрутка с 1500 ячейками в ожидании с бликом против выборки без
+    них, [ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
 - **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →
   Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс), взаимодействие →
   Response/INP (≤ 100мс). Замер под **×4 CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается

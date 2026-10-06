@@ -214,3 +214,76 @@ describe('Производительность прокрутки — ожида
     PERF_TIMEOUT * 2,
   )
 })
+
+// Блик ожидания правки (ADR 0057, CF12): 500 строк × 3 колонки, все в ожидании —
+// бесконечная анимация контура на каждой смонтированной ячейке — против той же
+// выборки без отправленных ячеек.
+describe('Производительность прокрутки — блик ожидания правки', () => {
+  test(
+    'CF12: прокрутка с 1500 ячейками в ожидании (блик) — в пределах регресс-потолка; база без них в дашборде',
+    async () => {
+      const args = { ...SMALL, enableCellEditing: true }
+      const measure = async (seeded: boolean) => {
+        const screen = renderGrid({
+          ...args,
+          extraPlugins: seeded
+            ? [submittedCellsSeed(SMALL.dataCount, 'pending')]
+            : [],
+        })
+        await waitForGrid()
+        if (seeded) {
+          await expect
+            .poll(() => document.querySelector('[data-pending]'))
+            .not.toBeNull()
+        }
+        // Медленно, без быстрой прокрутки: ячейки (и блики) рисуются, а не
+        // заменяются скелетами.
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const seeded = await measure(true)
+      // Потолок — как у AS14 (≈2× замера базы).
+      const ceiling = { y: 24, x: 35 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '30×500',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('CF12-base', 'правка без отправленных ячеек', base, false)
+      await record('CF12', '1500 ячеек в ожидании с бликом', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect
+          .soft(
+            seeded[axis].p95Ms,
+            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          )
+          .toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

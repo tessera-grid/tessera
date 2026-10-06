@@ -61,13 +61,42 @@
   outline-offset: -1px;
 }
 
-/* Сохранение ждёт сервера (ADR 0041): отправленное значение, приглушённо. */
+/* Сохранение ждёт сервера (ADR 0041): отправленное значение — как текст обычной ячейки. */
 .pending {
   min-width: 0;
+  font-size: var(--tsr-comp-cell-font-size);
+  line-height: 1rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--tsr-comp-cell-pending-color);
+}
+
+/*
+ * Слой обратной связи поверх ячейки (ADR 0057): блик и вспышка — `::after` модуля
+ * колец, подсветка сохранения — `::before`: держится, пока есть отметка, затем гаснет.
+ */
+/* Внутри фокус-кольца и рамки выделения ячейки: они рисуются поверх по краю. */
+span.feedback {
+  --tsr-comp-pending-ring-width: var(--tsr-comp-cell-pending-ring-width);
+
+  position: absolute;
+  inset: var(--tsr-comp-focus-ring-width);
+  pointer-events: none;
+}
+
+span.feedback::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--tsr-comp-cell-saved-color);
+  opacity: 0;
+  transition: opacity var(--tsr-comp-cell-saved-fade-duration)
+    var(--tsr-comp-motion-easing-out);
+}
+
+span.feedback[data-saved]::before {
+  opacity: 1;
+  transition: none;
 }
 
 /* Сервер отказал (ADR 0041): значение из данных и метка ошибки справа. */

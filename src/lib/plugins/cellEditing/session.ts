@@ -15,6 +15,7 @@ import {
   setPluginState,
 } from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
+import { dropCellSaved, markCellSaved, readCellSaved } from './cellSavedFeature'
 import type {
   CellEditingHooks,
   CellEditingState,
@@ -43,8 +44,10 @@ type SessionTable = {
 
 type Cell = { rowId: string; columnId: string }
 
+const KEY_SEPARATOR = '\u0000'
+
 export const cellKey = (rowId: string, columnId: string) =>
-  `${rowId}\u0000${columnId}`
+  `${rowId}${KEY_SEPARATOR}${columnId}`
 
 export const readEditingState = (table: unknown): CellEditingState =>
   ((table as SessionTable).atoms[EDIT_SESSION_KEY]?.get() as
@@ -206,6 +209,7 @@ const settleSubmitted = (
   if (outcome.ok) {
     delete submitted[key]
     writeEditingState(table, { ...state, submitted })
+    markCellSaved(table, key)
     return
   }
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
@@ -350,6 +354,23 @@ const reconcileSubmitted = (
   }
 }
 
+/** Отметки сохранения ушедших ячеек и выключенного плагина снимаются (ADR 0057, §3). */
+const reconcileSaved = (table: ReconcileTable, enabled: boolean) => {
+  const keys = Object.keys(readCellSaved(table))
+  if (keys.length === 0) {
+    return
+  }
+  dropCellSaved(
+    table,
+    enabled
+      ? keys.filter(key => {
+          const [rowId, columnId] = key.split(KEY_SEPARATOR) as [string, string]
+          return !hasCell(table, { rowId, columnId })
+        })
+      : keys,
+  )
+}
+
 /**
  * Согласование с таблицей после рендера. Активная сессия: строка или колонка ушла —
  * `unavailable`; плагин выключен или `canEdit` запретил ячейку — `revoke`. Ячейка вне
@@ -363,6 +384,7 @@ export const reconcileEditSession = (
   const cellHooks = hooks as Partial<CellEditingHooks>
   const t = table as ReconcileTable
   reconcileSubmitted(t, enabled, cellHooks)
+  reconcileSaved(t, enabled)
   const session = readEditSession(table)
   if (!session) {
     return

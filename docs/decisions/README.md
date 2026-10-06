@@ -63,6 +63,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0054](0054-lazy-row-children.md)                    | Ленивые дети строк: `hasChildren` + `loadChildren`, грид держит последний ответ (stale-while-revalidate), `setLoadedChildren`, ожидание и вспышка на тогле (RE17–RE40)                                          | Принято                                                                        |
 | [0055](0055-button-pending-and-error-flash.md)       | Базовые кнопки: `pending` — блик по контуру любой формы, `errorFlash` — заливка контура цветом ошибки; `IconButton` и `ToolbarButton` (BS1–BS16)                                                                | Принято                                                                        |
 | [0056](0056-lazy-children-arrival-highlight.md)      | Подсветка пришедших ленивых детей: слой у новых строк асинхронного ответа держится и гаснет, отметка в срезе переживает виртуализацию, объявление прихода (RE42–RE51)                                           | Принято                                                                        |
+| [0057](0057-async-cell-edit-feedback.md)             | Асинхронная правка ячейки: блик в ожидании вместо приглушения, вспышка контура при отказе, подсветка сохранения; меняет §2 ADR 0041 (CF1–CF12)                                                                  | Принято                                                                        |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).
