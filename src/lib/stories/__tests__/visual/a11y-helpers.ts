@@ -75,8 +75,14 @@ export const contrast = (fg: number[], bg: number[]) => {
 export const inBothThemes = async (check: () => Promise<void>) => {
   for (const dark of [false, true]) {
     document.documentElement.classList.toggle('dark', dark)
-    // Цвета контролов анимируются (transition) — читаем конечные значения.
-    document.getAnimations().forEach(animation => animation.finish())
+    // Цвета контролов анимируются (transition) — читаем конечные значения;
+    // бесконечную анимацию (кольцо ожидания) довести до конца нельзя.
+    document
+      .getAnimations()
+      .filter(
+        animation => animation.effect?.getTiming().iterations !== Infinity,
+      )
+      .forEach(animation => animation.finish())
     try {
       await check()
     } finally {

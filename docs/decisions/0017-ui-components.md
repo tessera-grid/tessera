@@ -76,6 +76,8 @@ Tessera рендерит служебные контролы (тоггл рас�
 `className`, `data-*`) проходят насквозь. В состоянии `disabled` кнопка получает
 атрибут `disabled`, курсор `default` и опциональный `disabledClassName`; hover
 низкой специфичности (`:where(...)`), чтобы прикладной hover перекрывал базовый.
+Состояния ожидания (`pending`) и вспышки ошибки (`errorFlash`) — в
+[ADR 0055](0055-button-pending-and-error-flash.md).
 
 ### `Tooltip`
 

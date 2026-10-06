@@ -60,6 +60,7 @@ _Контекст → Решение → Последствия_. Файлы н�
 | [0051](0051-toolbar-button-order.md)                 | Порядок кнопок тулбара: фиксированные ранги групп, «Фильтры» рядом с поиском (TB16–TB20)                                                                                                                        | Предложено                                                                     |
 | [0052](0052-dnd-under-nested-headers.md)             | Перетаскивание под вложенной шапкой: листья в своей группе, группы среди соседей уровня, строки; `onColumnDragEnd` с `columnId` и `columnOrder` (ND1–ND15)                                                      | Предложено                                                                     |
 | [0053](0053-quick-search-columns-hint.md)            | Быстрый поиск: тултип «по каким колонкам ищем», `disabled` при пустом наборе, `onSearchChange(search, { columnIds })` (QS1–QS9)                                                                                 | Предложено                                                                     |
+| [0055](0055-button-pending-and-error-flash.md)       | Базовые кнопки: `pending` — блик по контуру любой формы, `errorFlash` — заливка контура цветом ошибки; `IconButton` и `ToolbarButton` (BS1–BS15)                                                                | Принято                                                                        |
 
 См. также мотивацию проекта в
 [`docs/architecture/README.md` → Зачем существует Tessera](../architecture/README.md#why-tessera-exists).

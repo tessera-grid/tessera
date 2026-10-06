@@ -53,6 +53,13 @@
 - **Нижняя панель** (ADR 0038): `--tsr-comp-status-bar-height` / `-padding-x` /
   `-gap` / `-bg` / `-divider-color`. `--tsr-comp-status-bar-offset` выставляет сам
   грид, когда есть `statusBarSlot`, — его не переопределяют.
+- **Ожидание и отказ кнопок** (ADR [0055](../decisions/0055-button-pending-and-error-flash.md)):
+  блик `pending` по контуру — `--tsr-comp-pending-ring-color` / `-width` /
+  `-duration`; вспышка `errorFlash` — `--tsr-comp-error-flash-color` / `-fill-duration` (блик
+  заливает контур) / `-duration` (удержание; гаснет `--tsr-comp-motion-duration`). Кольцо и вспышка — `::after`
+  кнопки: `::before` у `IconButton` и `ToolbarButton` остаётся за слоями наведения.
+  Своих правил для `prefers-reduced-motion` у них нет: гаситель темы останавливает
+  блик (он остаётся виден на месте), а удержание вспышки отсчитывает таймер кнопки.
 
 ```mermaid
 flowchart LR

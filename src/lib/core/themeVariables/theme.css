@@ -252,6 +252,14 @@
   );
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
   --tsr-comp-cell-error-color: var(--tsr-sys-danger);
+  /* Ожидание и отказ базовых кнопок (ADR 0055): блик по контуру, вспышка. */
+  --tsr-comp-pending-ring-color: var(--tsr-sys-accent);
+  --tsr-comp-pending-ring-width: 2px;
+  --tsr-comp-pending-ring-duration: 1s;
+  --tsr-comp-error-flash-color: var(--tsr-sys-danger);
+  /* Заливка контура красным и удержание вспышки (с начала заливки); гаснет переходом движения. */
+  --tsr-comp-error-flash-fill-duration: 600ms;
+  --tsr-comp-error-flash-duration: 1200ms;
   /* Typography — theme-agnostic default (system stack); override to use a
    * custom face. Numeric feature aligns digits in columns. */
   --tsr-comp-font-family:

@@ -9,12 +9,13 @@ import { Toolbar } from '@base-ui/react/toolbar'
 import clsx from 'clsx'
 
 import { Tooltip } from '../Tooltip'
+import { type ButtonStatesProps, useButtonStates } from '../buttonStates'
 import styles from './ToolbarButton.module.css'
 
-export interface ToolbarButtonProps extends Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'children'
-> {
+export interface ToolbarButtonProps
+  extends
+    Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
+    ButtonStatesProps {
   /** Тултип и доступное имя кнопки. */
   label: string
   icon: ReactNode
@@ -29,20 +30,43 @@ export interface ToolbarButtonProps extends Omit<
  * со скруглёнными углами. Живёт только внутри тулбара грида (roving-фокус Base UI).
  */
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
-  ({ label, icon, active = false, className, ...rest }, ref) => (
-    <Tooltip title={label}>
-      <Toolbar.Button
-        ref={ref}
-        type="button"
-        aria-label={label}
-        data-active={active || undefined}
-        className={clsx(styles.toolbarButton, className)}
-        {...rest}
-      >
-        {icon}
-      </Toolbar.Button>
-    </Tooltip>
-  ),
+  (
+    {
+      label,
+      icon,
+      active = false,
+      className,
+      pending,
+      errorFlash,
+      onClick,
+      ...rest
+    },
+    forwardedRef,
+  ) => {
+    const states = useButtonStates(
+      forwardedRef,
+      { pending, errorFlash },
+      onClick,
+    )
+
+    return (
+      <Tooltip title={label}>
+        <Toolbar.Button
+          type="button"
+          aria-label={label}
+          data-active={active || undefined}
+          {...rest}
+          ref={states.ref}
+          aria-busy={states['aria-busy'] ?? rest['aria-busy']}
+          data-error-flash={states['data-error-flash']}
+          onClick={states.onClick}
+          className={clsx(styles.toolbarButton, states.className, className)}
+        >
+          {icon}
+        </Toolbar.Button>
+      </Tooltip>
+    )
+  },
 )
 
 ToolbarButton.displayName = 'ToolbarButton'
