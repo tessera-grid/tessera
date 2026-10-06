@@ -34,10 +34,7 @@ export const ExpandButton = ({
     <Tooltip title={label} disabled={disabled}>
       <div>
         <IconButton
-          className={clsx('row-expand-button', styles.button, {
-            [styles.expanded]: expanded,
-            [styles.disabled]: disabled && !expanded,
-          })}
+          className="row-expand-button"
           disabled={disabled}
           pending={pending}
           errorFlash={errorFlash}
@@ -45,7 +42,14 @@ export const ExpandButton = ({
           onClick={onClick}
           aria-label={label}
         >
-          <ExpandIcon width={20} height={20} />
+          <ExpandIcon
+            width={20}
+            height={20}
+            className={clsx(styles.icon, {
+              [styles.expanded]: expanded,
+              [styles.disabled]: disabled && !expanded,
+            })}
+          />
         </IconButton>
       </div>
     </Tooltip>

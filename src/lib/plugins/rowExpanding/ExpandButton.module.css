@@ -1,9 +1,10 @@
-.button {
-  transform: rotate(180deg);
+.icon {
+  transition: transform var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
 }
 
 .expanded {
-  transform: rotate(0deg);
+  transform: rotate(180deg);
 }
 
 .disabled {

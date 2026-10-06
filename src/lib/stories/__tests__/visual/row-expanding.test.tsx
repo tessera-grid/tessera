@@ -29,6 +29,8 @@ const BODY_ROW = '.data-grid__body-row'
 const BODY_CELL = '.data-grid__body-cell'
 /** The row-expanding toggle (stable class on `ExpandButton`). */
 const TOGGLE = '.row-expand-button'
+const chevron = (row: HTMLElement) =>
+  row.querySelector<SVGElement>(`${TOGGLE} svg`)!
 /** Depth indent step per `getCellExpandingStyles` (`ROW_NESTING_INDENT_PX`). */
 const DEPTH_OFFSET_PX = ROW_NESTING_INDENT_PX
 
@@ -268,22 +270,49 @@ describe('Row Expanding — accessibility & appearance', () => {
     )
   })
 
-  test('RE11: the toggle chevron rotates when the row is expanded', async () => {
+  test('RE11: the toggle chevron points down when collapsed and up when expanded', async () => {
     const container = await renderRowExpanding()
     const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
 
-    const collapsedTransform = getComputedStyle(rowToggle(parent)!).transform
+    // Иконка expand — шеврон вниз: свёрнутая строка без поворота, раскрытая — на 180°.
+    expect(getComputedStyle(chevron(parent)).transform).toBe('none')
 
     await userEvent.click(rowToggle(parent)!)
     await expect
       .poll(() => isRowExpanded(firstExpandableRow(container)))
       .toBe(true)
 
-    // The chevron transform differs between collapsed and expanded states.
-    const expandedTransform = getComputedStyle(
-      rowToggle(firstExpandableRow(container))!,
-    ).transform
-    expect(expandedTransform).not.toBe(collapsedTransform)
+    const icon = chevron(firstExpandableRow(container))
+    await Promise.all(icon.getAnimations().map(animation => animation.finished))
+    const { a, b, c, d } = new DOMMatrix(getComputedStyle(icon).transform)
+    expect([a, b, c, d].map(Math.round)).toEqual([-1, 0, 0, -1])
+
+    // Restore.
+    await userEvent.click(rowToggle(firstExpandableRow(container))!)
+    await expect
+      .poll(() => isRowExpanded(firstExpandableRow(container)))
+      .toBe(false)
+  })
+})
+
+describe('Row Expanding — chevron motion', () => {
+  test('RE41: the chevron turn is animated with the motion tokens', async () => {
+    const container = await renderRowExpanding()
+    const parent = rowsTopDown(container).find(row => rowToggle(row) !== null)!
+
+    await userEvent.click(rowToggle(parent)!)
+    const icon = chevron(firstExpandableRow(container))
+    const turn = icon
+      .getAnimations()
+      .find(
+        (animation): animation is CSSTransition =>
+          animation instanceof CSSTransition &&
+          animation.transitionProperty === 'transform',
+      )
+    const duration = getComputedStyle(icon).getPropertyValue(
+      '--tsr-comp-motion-duration',
+    )
+    expect(turn?.effect?.getTiming().duration).toBe(parseFloat(duration))
 
     // Restore.
     await userEvent.click(rowToggle(firstExpandableRow(container))!)

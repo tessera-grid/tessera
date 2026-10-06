@@ -358,7 +358,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       ([ADR 0052](docs/decisions/0052-dnd-under-nested-headers.md)).
     - _Строки:_ `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md);
       RS19–RS22 — счётчик в нижней панели, [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md)),
-      `row-expanding` (RE1–RE13, [ADR 0015](docs/decisions/0015-row-expanding.md)),
+      `row-expanding` (RE1–RE13, RE41 — анимация шеврона, [ADR 0015](docs/decisions/0015-row-expanding.md)),
       `row-expanding-lazy` (RE17–RE18, RE20, RE23–RE25, RE30–RE32, RE37, RE40 — ленивые
       дети: `hasChildren`/`loadChildren`, ожидание и вспышка тоггла, история) и модульные
       `lazyChildren.dom` (RE19, RE21–RE22, RE26–RE29, RE34–RE36 — ответ по строке, его
