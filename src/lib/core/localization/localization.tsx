@@ -155,6 +155,10 @@ export interface TableLabels {
   saveFailed: string
   /** Объявление отказа сохранения ячейки (`column` — имя колонки) */
   announceSaveFailed: (column: string, error: string) => string
+  /** Текст отказа загрузки детей строки, если сервер не прислал свой (ADR 0054) */
+  loadChildrenFailed: string
+  /** Объявление отказа раскрытия строки */
+  announceExpandFailed: (error: string) => string
   /** Доступное имя индикатора загрузки и объявление скелета первой загрузки */
   loading: string
   /** Объявление смены сортировки (`column: null` — сортировка сброшена) */
@@ -322,6 +326,8 @@ export const DEFAULT_LABELS: TableLabels = {
   editCellValue: column => `Edit ${column}`,
   saveFailed: "Couldn't save",
   announceSaveFailed: (column, error) => `${column}: ${error}`,
+  loadChildrenFailed: 'Unknown error',
+  announceExpandFailed: error => `Couldn't load: ${error}`,
   loading: 'Loading',
   announceSort: (column, direction) =>
     column ? `Sorted by ${column}, ${direction}` : 'Sorting cleared',

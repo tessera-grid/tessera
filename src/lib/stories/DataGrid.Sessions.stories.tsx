@@ -11,6 +11,7 @@ import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
   CellEditingServerDemo,
   CellEditingSessionsDemo,
+  RowExpandingLazyChildrenDemo,
   RowExpandingLazyDemo,
   SessionCallbacksDemo,
   canEditDemoCell,
@@ -154,6 +155,37 @@ export const RowExpandingLazy: StoryObj<SessionsArgs> = {
     const [, updateArgs] = useArgs()
     return (
       <RowExpandingLazyDemo {...normalizeArgs(args)} updateArgs={updateArgs} />
+    )
+  },
+}
+
+/**
+ * Ленивые дети (ADR 0054): у корней нет `subRows`, `hasChildren` читает `childCount`,
+ * `loadChildren` на каждое раскрытие получает детей с «сервера». Повторное раскрытие
+ * сразу показывает прошлый ответ и обновляет его; `node-3` сервер вернёт пустым — строка
+ * станет листом; «Fail next load» и `loadFailMode` — вспышка тоггла и объявление.
+ */
+export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
+  name: 'Row Expanding — lazy children (server)',
+  args: {
+    ...GRID,
+    enableRowExpanding: true,
+    rowExpandingMaxDepth: 2,
+    loadDelayMs: 900,
+    loadFailMode: 'never',
+  },
+  argTypes: {
+    loadDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
+    loadFailMode: failModeControl,
+  },
+  parameters: hideDataControls,
+  render: function Render(args) {
+    const [, updateArgs] = useArgs()
+    return (
+      <RowExpandingLazyChildrenDemo
+        {...normalizeArgs(args)}
+        updateArgs={updateArgs}
+      />
     )
   },
 }

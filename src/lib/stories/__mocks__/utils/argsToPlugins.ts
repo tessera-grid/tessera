@@ -117,6 +117,9 @@ export interface FeatureToggles {
   rowExpandingMaxDepth?: number
   /** Режим колонки раскрытия (ADR 0050): `'always'` — видна и без раскрываемых строк. */
   rowExpandingColumn?: RowExpandingOptions['column']
+  /** Ленивые дети (ADR 0054): `rowExpanding({ hasChildren, loadChildren })`. */
+  rowExpandingHasChildren?: RowExpandingOptions['hasChildren']
+  rowExpandingLoadChildren?: RowExpandingOptions['loadChildren']
   /** Режим колонки действий (ADR 0050). */
   /** `false` — демо-действий строки нет (колонка действий без надобности, ADR 0050). */
   rowActionsDemo?: boolean
@@ -152,6 +155,8 @@ export const argsToPlugins = (o: FeatureToggles) => {
       enabled: !!o.enableRowExpanding,
       maxDepth: o.rowExpandingMaxDepth,
       column: o.rowExpandingColumn,
+      hasChildren: o.rowExpandingHasChildren,
+      loadChildren: o.rowExpandingLoadChildren,
     }),
     // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
     // строки TanStack — предикат отдельной записью после плагина (опции по порядку).

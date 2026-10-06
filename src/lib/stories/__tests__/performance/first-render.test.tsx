@@ -144,3 +144,83 @@ describe('Производительность первой отрисовки',
     )
   }
 })
+
+// Ленивые дети (ADR 0054, RE39): монтирование 100 000 корней с `hasChildren` против
+// той же выборки без него. Худший случай условия колонки: помечена только последняя
+// строка — проверка «есть ли раскрываемые» проходит все корни.
+describe('Производительность первой отрисовки — ленивые дети', () => {
+  test(
+    'RE39: монтирование 100 000 строк с hasChildren не хуже базы без него',
+    async () => {
+      const dataOverride = makeData({
+        shape: 'flat',
+        count: PAGED.dataCount,
+      })
+      const last = PAGED.dataCount - 1
+      const measure = async (lazy: boolean) => {
+        const result = await measureRenderWork(
+          () =>
+            renderGrid({
+              ...PAGED,
+              ...NO_PLUGINS,
+              enableRowExpanding: true,
+              dataOverride,
+              ...(lazy
+                ? {
+                    rowExpandingHasChildren: (row: { index: number }) =>
+                      row.index === last,
+                    rowExpandingLoadChildren: () => [],
+                  }
+                : {}),
+            }),
+          () => headCells().length > 0,
+          { warmup: false },
+        )
+        cleanup()
+        return result
+      }
+      const base = await measure(false)
+      const lazy = await measure(true)
+      // Шум замера монтирования — до ~30% между прогонами; больше — регрессия.
+      const ceiling = Math.max(base.longestMs * 1.3, base.longestMs + 40)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'render',
+          size: '30×100 000',
+          plugins: 'rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: gated ? ceiling : LOAD_BUDGET_MS,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('RE39-base', 'раскрытие без hasChildren', base, false)
+      await record(
+        'RE39',
+        'раскрытие с hasChildren (помечена последняя)',
+        lazy,
+        true,
+      )
+
+      expect(
+        lazy.longestMs,
+        `с hasChildren longest=${lazy.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

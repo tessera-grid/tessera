@@ -9,9 +9,3 @@
 .disabled {
   transform: rotate(90deg);
 }
-
-/* Раскрытие ждёт промиса onExpandRow (ADR 0041): приглушено, курсор ожидания. */
-.pending {
-  opacity: 0.5;
-  cursor: progress;
-}

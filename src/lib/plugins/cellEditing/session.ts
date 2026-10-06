@@ -8,7 +8,7 @@
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import type { PluginReconcileContext } from '../../core/features'
 import { DEFAULT_LABELS } from '../../core/localization'
-import { isThenable } from '../../core/thenable'
+import { isThenable, rejectionText } from '../../core/thenable'
 import {
   pluginStateKey,
   readPluginHooks,
@@ -185,14 +185,6 @@ export const cancelEditSession = (
     ...(current ? { current: current.value } : {}),
     ...(session.rejected ? { error: session.rejected.error } : {}),
   })
-}
-
-/** Текст отказа: `Error.message`, строка — как есть; иначе — подпись по умолчанию. */
-export const rejectionText = (reason: unknown): string | undefined => {
-  if (reason instanceof Error) {
-    return reason.message || undefined
-  }
-  return typeof reason === 'string' && reason ? reason : undefined
 }
 
 // Номер отправки сквозной: снятое и заново отправленное сохранение той же ячейки не

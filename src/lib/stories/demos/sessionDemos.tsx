@@ -272,3 +272,99 @@ export const RowExpandingLazyDemo = ({
     </WithLog>
   )
 }
+
+// --- 5. Ленивые дети (ADR 0054) -----------------------------------------------
+
+type DemoNode = DemoRow & { childCount?: number; subRows?: DemoNode[] }
+
+/** Узел, который сервер «опустошил»: помечен детьми, а ответ — пустой. */
+const EMPTY_NODE_ID = 'node-3'
+
+export interface RowExpandingLazyChildrenDemoProps extends StoryProps {
+  /** Задержка ответа `loadChildren`, мс. */
+  loadDelayMs?: number
+  /** `always` — каждая загрузка падает. */
+  loadFailMode?: ServerFailMode
+}
+
+export const RowExpandingLazyChildrenDemo = ({
+  loadDelayMs = 900,
+  loadFailMode = 'never',
+  ...args
+}: RowExpandingLazyChildrenDemoProps) => {
+  const { entries, log, clear } = useCallbackLog()
+  // «Сервер»: полное дерево; клиенту уходят узлы без детей, но с `childCount`.
+  const [server] = useState(() => {
+    const children = new Map<string, DemoNode[]>()
+    const strip = (nodes: DemoNode[]): DemoNode[] =>
+      nodes.map(({ subRows, ...node }) => {
+        if (subRows) {
+          children.set(node.id, subRows)
+        }
+        return { ...node, childCount: subRows?.length ?? 0 }
+      })
+    const tree = makeData({
+      shape: 'tree',
+      count: 12,
+      depth: 3,
+      breadth: 3,
+    }) as DemoNode[]
+    return { roots: strip(tree), children, strip }
+  })
+  const failNext = useRef(false)
+  const settings = useLatest({ loadDelayMs, loadFailMode })
+
+  const hasChildren = useCallback(
+    (row: Row<any, any>) => ((row.original as DemoNode).childCount ?? 0) > 0,
+    [],
+  )
+  const loadChildren = useCallback(
+    (row: Row<any, any>) => {
+      log('loadChildren', describeEvent({ rowId: row.id }))
+      return new Promise<DemoNode[]>((resolve, reject) => {
+        window.setTimeout(() => {
+          if (settings.current.loadFailMode === 'always' || failNext.current) {
+            failNext.current = false
+            log('server', `children of ${row.id} failed to load`)
+            reject(new Error('Server unavailable'))
+            return
+          }
+          const rows =
+            row.id === EMPTY_NODE_ID
+              ? []
+              : server.strip(server.children.get(row.id) ?? [])
+          log('server', `children of ${row.id}: ${rows.length}`)
+          resolve(rows)
+        }, settings.current.loadDelayMs)
+      })
+    },
+    [log, server, settings],
+  )
+
+  return (
+    <WithLog
+      log={
+        <CallbackLog entries={entries} onClear={clear}>
+          <div style={panelRow}>
+            <button
+              type="button"
+              onClick={() => {
+                failNext.current = true
+                log('server', 'the next load will fail')
+              }}
+            >
+              Fail next load
+            </button>
+          </div>
+        </CallbackLog>
+      }
+    >
+      <StoryComponent
+        {...args}
+        dataOverride={server.roots}
+        rowExpandingHasChildren={hasChildren}
+        rowExpandingLoadChildren={loadChildren}
+      />
+    </WithLog>
+  )
+}

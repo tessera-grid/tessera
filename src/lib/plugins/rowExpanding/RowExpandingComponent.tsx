@@ -1,6 +1,7 @@
 /**
- * Ячейка колонки раскрытия. Реактивность на срезе `expanded` (`useSlice`) и на
- * ожидании своей строки; бизнес-колбэк — из пропса `hooks` (инъекция definePlugin).
+ * Ячейка колонки раскрытия. Реактивность на срезе `expanded` (`useSlice`), на
+ * ожидании и на неудаче своей строки; бизнес-колбэк — из пропса `hooks` (инъекция
+ * definePlugin).
  */
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useSlice, useSliceProjection } from '../../core/reactivity'
@@ -19,6 +20,11 @@ export const RowExpandingComponent = ({
     'rowExpandPending',
     (value: Record<string, number> | undefined) => !!value?.[row.id],
   )
+  const failed = useSliceProjection(
+    table,
+    'rowExpandFailed',
+    (value: Record<string, number> | undefined) => value?.[row.id],
+  )
 
   if (!row.getCanExpand()) {
     return null
@@ -30,6 +36,7 @@ export const RowExpandingComponent = ({
     <ExpandButton
       expanded={row.getIsExpanded()}
       pending={pending}
+      errorFlash={failed}
       onClick={onExpand}
     />
   )

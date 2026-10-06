@@ -2,7 +2,7 @@
  * Запись плагина rowExpanding на `definePlugin`. Поведение даёт
  * `rowExpandingFeature` + `expandedRowModel`. Табличная опция `getRowCanExpand`
  * ПОЛНОСТЬЮ заменяет дефолт, поэтому проверку `subRows` включаем сами; гейт
- * группировки — там же.
+ * группировки — там же. Ленивые дети (ADR 0054) — своя исходная модель и срез ответов.
  */
 import {
   createExpandedRowModel,
@@ -17,13 +17,20 @@ import type {
 } from '../../core/servicePresence'
 import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
-import { narrowExpandedByDepth } from './narrowExpanded'
+import { createLazyCoreRowModel } from './lazyCoreRowModel'
+import {
+  readLoadedChildren,
+  rowExpandingLazyFeature,
+} from './lazyChildrenFeature'
+import { narrowExpanded } from './narrowExpanded'
+import { reconcileLoadedChildren } from './reconcileLoadedChildren'
 import { rowExpandingPendingFeature } from './rowExpandingPendingFeature'
 import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
 } from './rowExpandingColumn'
 import { RowExpandingComponent } from './RowExpandingComponent'
+import { isLazyRow } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
@@ -43,12 +50,19 @@ export interface RowExpandingOptions {
   column?: ServiceColumnMode
   /** Бизнес-колбэк раскрытия строки (аргумент фабрики); читается живо. */
   onExpandRow?: RowExpandingHooks['onExpandRow']
+  /** У строки есть дети, которых нет в `subRows`, — их грузит `loadChildren` (ADR 0054). */
+  hasChildren?: RowExpandingHooks['hasChildren']
+  /**
+   * Загрузка детей ленивой строки на каждое раскрытие: массив — сразу, промис —
+   * после ожидания. Грид держит последний ответ; кэш — на приложении (ADR 0054).
+   */
+  loadChildren?: RowExpandingHooks['loadChildren']
 }
 
 /**
- * Колонка нужна, если хоть один корень исходных данных имеет детей (раскрываемый
- * потомок глубже означает раскрываемого предка) или подключена группировка: группы
- * раскрываются тогглом этой колонки.
+ * Колонка нужна, если хоть один корень исходных данных имеет детей или помечен
+ * `hasChildren` (раскрываемый потомок глубже означает раскрываемого предка), или
+ * подключена группировка: группы раскрываются тогглом этой колонки.
  */
 const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
   table,
@@ -58,7 +72,13 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
   if (context.options.enableGrouping === true) return true
   if ((o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH) < 1) return false
   if (!table) return undefined
-  return table.getCoreRowModel().rows.some(row => row.subRows.length > 0)
+  return table
+    .getCoreRowModel()
+    .rows.some(
+      row =>
+        row.subRows.length > 0 ||
+        !!o.hasChildren?.(row as unknown as Row<any, any>),
+    )
 }
 
 export const rowExpanding = definePlugin<RowExpandingOptions>()({
@@ -67,16 +87,25 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
   features: {
     rowExpandingFeature,
     rowExpandingPendingFeature,
+    rowExpandingLazyFeature,
+    coreRowModel: createLazyCoreRowModel(),
     expandedRowModel: createExpandedRowModel(),
   },
-  hooks: o => ({ onExpandRow: o.onExpandRow }),
+  hooks: o => ({
+    onExpandRow: o.onExpandRow,
+    hasChildren: o.hasChildren,
+    loadChildren: o.loadChildren,
+  }),
+  refreshOn: ['hasChildren'],
+  reconcile: reconcileLoadedChildren,
   keyboardActions: [toggleExpandedKeyboardAction],
   narrow: o =>
     o.enabled === false
       ? undefined
       : {
-          expanded: narrowExpandedByDepth(
+          expanded: narrowExpanded(
             o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH,
+            o.hasChildren,
           ),
         },
   column: {
@@ -121,7 +150,17 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
         return canDefault
       }
 
-      return canDefault && row.depth < maxDepth
+      if (row.depth >= maxDepth) {
+        return false
+      }
+      if (canDefault) {
+        return true
+      }
+      // Ленивая строка; пустой ответ делает её листом до смены данных.
+      return (
+        isLazyRow(row, o.hasChildren) &&
+        readLoadedChildren(row.table)[row.id]?.length !== 0
+      )
     }
 
     return {

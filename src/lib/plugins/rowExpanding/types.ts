@@ -10,4 +10,13 @@ export interface RowExpandingHooks {
     row: Row<any, any>,
     expanded: boolean,
   ) => void | Promise<unknown>
+  /** У строки есть дети, которых нет в `subRows` (ADR 0054). */
+  hasChildren?: (row: Row<any, any>) => boolean
+  /**
+   * Загрузка детей ленивой строки — на каждое раскрытие (ADR 0054). Массив
+   * показывается сразу, промис — после ожидания.
+   */
+  loadChildren?: (
+    row: Row<any, any>,
+  ) => readonly unknown[] | PromiseLike<readonly unknown[]>
 }

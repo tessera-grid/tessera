@@ -16,7 +16,7 @@ import {
 } from './perf-cases'
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 import { columns as mockColumns } from '../../__mocks__/columns'
-import { getData } from '../../__mocks__/data'
+import { getData, makeData } from '../../__mocks__/data'
 
 // Отзывчивость на ВЗАИМОДЕЙСТВИЕ (INP): выбор ОДНОЙ строки меняет только
 // срез rowSelection на одну запись — законной работы минимум (обновить одну строку и
@@ -355,6 +355,41 @@ const moveNameGroup = async () => {
     .not.toBe(before)
 }
 
+// Ленивые дети (ADR 0054, RE38): две первые корневые строки помечены `hasChildren`,
+// `loadChildren` отдаёт заранее собранные 100 детей синхронно — замеряется приход
+// ответа: пересборка исходной модели 100 000 корней и отрисовка детей. Прогрев
+// раскрывает одну строку, замер — другую.
+const LAZY_KIDS = 100
+const lazyKids = (() => {
+  const rows = makeData({ shape: 'flat', count: LAZY_KIDS })
+  const byParent = new Map<string, unknown[]>()
+  return (parentId: string) => {
+    if (!byParent.has(parentId)) {
+      byParent.set(
+        parentId,
+        rows.map((row, i) => ({ ...row, id: `${parentId}-k${i}` })),
+      )
+    }
+    return byParent.get(parentId)!
+  }
+})()
+const LAZY_CHILDREN = {
+  enableRowExpanding: true,
+  rowExpandingHasChildren: (row: { depth: number; index: number }) =>
+    row.depth === 0 && row.index < 2,
+  rowExpandingLoadChildren: (row: { id: string }) => lazyKids(row.id),
+}
+// Нижняя свёрнутая ленивая строка: дети прогрева не вытесняют из окна ту, что выше.
+const collapsedLazyToggle = () =>
+  [
+    ...document.querySelectorAll<HTMLElement>(
+      ".data-grid__body-row[data-expanded='false']",
+    ),
+  ]
+    .filter(row => ['item-id-0', 'item-id-1'].includes(row.dataset.rowId ?? ''))
+    .sort((a, b) => Number(b.dataset.index) - Number(a.dataset.index))[0]
+    ?.querySelector<HTMLElement>('.row-expand-button')
+
 interface InteractionCase {
   id: string
   label: string
@@ -544,6 +579,21 @@ const CASES: InteractionCase[] = [
       await expect.poll(() => headOf('name')).not.toBeNull()
     },
     act: moveNameGroup,
+  },
+  {
+    id: 'RE38',
+    label: 'приход 100 детей ленивой строки, 100 000×10, все плагины',
+    size: '100 000×10',
+    args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
+    // Известный недостиг: ответ пересобирает исходную модель всех 100 000 корней, как
+    // смена data (~630–690 мс под ×4); инкрементальная сборка — отдельная задача.
+    regressionCeiling: 900,
+    prepare: async () => {
+      await expect.poll(collapsedLazyToggle).toBeTruthy()
+      lazyKids('item-id-0')
+      lazyKids('item-id-1')
+    },
+    act: async () => collapsedLazyToggle()!.click(),
   },
 ]
 

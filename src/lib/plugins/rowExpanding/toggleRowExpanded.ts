@@ -1,5 +1,12 @@
 import type { Row } from '../../types'
-import { isThenable } from '../../core/thenable'
+import { announceLabel, announcerLabels } from '../../core/announcer'
+import { DEFAULT_LABELS } from '../../core/localization'
+import { isThenable, rejectionText } from '../../core/thenable'
+import {
+  markExpandFailed,
+  readLoadedChildren,
+  setLoadedAnswer,
+} from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 import type { RowExpandingHooks } from './types'
 
@@ -7,19 +14,42 @@ type PendingRow = Row<any, any> & {
   getIsExpandPending?: () => boolean
   table: {
     atoms: { rowExpandPending?: { get: () => RowExpandPending } }
+    options: {
+      getSubRows?: (row: unknown, index: number) => unknown[] | undefined
+    }
     setRowExpandPending?: (
       updater: (prev: RowExpandPending) => RowExpandPending,
     ) => void
   }
 }
 
+/**
+ * Ленивая строка (ADR 0054): `hasChildren` истинно, а детей в данных приложения нет
+ * (сохранённый ответ `loadChildren` не в счёт).
+ */
+export const isLazyRow = (
+  row: Row<any, any>,
+  hasChildren: RowExpandingHooks['hasChildren'],
+): boolean =>
+  !!hasChildren &&
+  !(row as PendingRow).table.options.getSubRows?.(row.original, row.index)
+    ?.length &&
+  hasChildren(row)
+
+const storeAnswer = (table: unknown, rowId: string, rows: unknown) =>
+  setLoadedAnswer(table, prev => ({
+    ...prev,
+    [rowId]: Array.isArray(rows) ? rows : [],
+  }))
+
 // Номер попытки сквозной: итог прежнего раскрытия не спутать с новым.
 let lastAttempt = 0
 
 /**
  * Переключить раскрытие и уведомить `onExpandRow` (общий путь клика и клавиши).
- * Промис при раскрытии — ожидание: повторное нажатие до итога игнорируется,
- * отказ сворачивает строку обратно (ADR 0041, §3).
+ * Ленивая строка зовёт `loadChildren` на каждое раскрытие (ADR 0054). Промис —
+ * ожидание: повторное нажатие до итога игнорируется; отказ сворачивает строку, если
+ * сохранённого ответа нет, вспыхивает и объявляется (ADR 0041, §3; ADR 0054, §4).
  */
 export const toggleRowExpanded = (
   row: Row<any, any>,
@@ -30,16 +60,27 @@ export const toggleRowExpanded = (
     return
   }
   const expanding = !row.getIsExpanded()
-  row.getToggleExpandedHandler()()
-  const result = hooks.onExpandRow?.(row, expanding)
+  // Явное значение: при сохранённом `expanded: true` переключатель TanStack сворачивал
+  // бы строку, которую сужение показывает свёрнутой (ленивую без ответа).
+  row.toggleExpanded(expanding)
+  const notified = hooks.onExpandRow?.(row, expanding)
+  if (!expanding) {
+    return
+  }
   const { table } = pendingRow
+  const lazy = !!hooks.loadChildren && isLazyRow(row, hooks.hasChildren)
+  const result = lazy ? hooks.loadChildren!(row) : notified
+  if (lazy && !isThenable(result)) {
+    storeAnswer(table, row.id, result)
+    return
+  }
   const setPending = table.setRowExpandPending
-  if (!expanding || !isThenable(result) || !setPending) {
+  if (!isThenable(result) || !setPending) {
     return
   }
   const attempt = ++lastAttempt
   setPending(prev => ({ ...prev, [row.id]: attempt }))
-  const settle = (ok: boolean) => {
+  const settle = (ok: boolean, value: unknown) => {
     if (table.atoms.rowExpandPending?.get()[row.id] !== attempt) {
       return
     }
@@ -48,12 +89,22 @@ export const toggleRowExpanded = (
       delete next[row.id]
       return next
     })
-    if (!ok) {
+    if (ok) {
+      if (lazy) {
+        storeAnswer(table, row.id, value)
+      }
+      return
+    }
+    if (!(lazy && row.id in readLoadedChildren(table))) {
       row.toggleExpanded(false)
     }
+    markExpandFailed(table, row.id, attempt)
+    const labels = announcerLabels(table) ?? DEFAULT_LABELS
+    const error = rejectionText(value) ?? labels.loadChildrenFailed
+    announceLabel(table, all => all.announceExpandFailed(error))
   }
   result.then(
-    () => settle(true),
-    () => settle(false),
+    value => settle(true, value),
+    reason => settle(false, reason),
   )
 }

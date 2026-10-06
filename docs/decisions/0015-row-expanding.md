@@ -8,6 +8,8 @@
   тоггла постоянна (ключ `toggleRow` вместо `expand`/`collapse`) — иначе скринридер
   слышит «Collapse, развёрнуто», состояние дважды.
 - **Связано:**
+  - [ADR 0054](0054-lazy-row-children.md) — ленивые дети: `hasChildren` /
+    `loadChildren`, строка раскрываема без `subRows`.
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен на штатной
     модели раскрытия TanStack (`enableExpanding`/`enableRowExpanding`,
     `getExpandedRowModel`, срез `expanded`, `row.getIsExpanded` /
