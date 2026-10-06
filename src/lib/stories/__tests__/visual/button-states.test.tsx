@@ -17,7 +17,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 
-// Ожидание и вспышка ошибки базовых кнопок (ADR 0055, BS1–BS13). Кнопки рендерятся
+// Ожидание и вспышка ошибки базовых кнопок (ADR 0055, BS1–BS16). Кнопки рендерятся
 // напрямую внутри обёртки темы; состояние читается из ARIA, атрибутов и вычисленных
 // стилей `::after`, а не из имён CSS-модулей.
 
@@ -390,6 +390,16 @@ describe('Button states: contrast and axe', () => {
           3,
         )
       }
+    })
+  })
+
+  test('BS16: by default the shine takes the progress bar color in both themes', async () => {
+    await renderIcon({ pending: true })
+    await inBothThemes(async () => {
+      expect(token('--tsr-comp-pending-ring-color')).toBe(
+        token('--tsr-comp-loader-bar'),
+      )
+      expect(ring().backgroundImage).toContain(token('--tsr-comp-loader-bar'))
     })
   })
 

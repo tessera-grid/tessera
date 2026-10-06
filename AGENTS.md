@@ -484,7 +484,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
-      `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS15 —
+      `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS16 —
       блик `pending` и вспышка контура `errorFlash` у `IconButton` и `ToolbarButton`,
       [ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md)).
   - **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500 / 1000×1000 ×
