@@ -16,6 +16,7 @@ import {
   CONTENT_SCROLL,
   submittedCellsSeed,
 } from './perf-cases'
+import { makeData } from '../../__mocks__/data'
 
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
 // PROD-сборке под ×4 CPU-троттлингом, метрика p95 работы на кадр по обеим осям.
@@ -280,6 +281,78 @@ describe('Производительность прокрутки — блик �
           .soft(
             seeded[axis].p95Ms,
             `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          )
+          .toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Линии дерева (ADR 0058, RE60): раскрытое дерево 50 корней × 3 уровня по 3 ребёнка
+// (650 строк) с линиями против того же дерева без них; скорость ниже порога быстрой
+// прокрутки — ячейки отступа рисуются, а не заменяются скелетами.
+describe('Производительность прокрутки — линии дерева', () => {
+  test(
+    'RE60: прокрутка раскрытого дерева с линиями — в пределах регресс-потолка; база без линий в дашборде',
+    async () => {
+      const tree = makeData({ shape: 'tree', count: 50, depth: 3, breadth: 3 })
+      const measure = async (treeLines: boolean) => {
+        const screen = renderGrid({
+          ...SMALL,
+          dataOverride: tree,
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 3,
+          rowExpandingTreeLines: treeLines,
+          initialExpanded: true,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        // Дерево раскрыто, и линии есть ровно тогда, когда включены.
+        await expect
+          .poll(() => document.querySelector('[data-tree-depth]') !== null)
+          .toBe(treeLines)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const lined = await measure(true)
+      // Потолок ≈2× замера базы (y ~10мс, x ~15мс).
+      const ceiling = { y: 20, x: 31 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '650 строк дерева',
+          plugins: 'rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('RE60-base', 'дерево без линий', base, false)
+      await record('RE60', 'дерево с линиями', lined, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect
+          .soft(
+            lined[axis].p95Ms,
+            `${axis.toUpperCase()} p95=${lined[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
           )
           .toBeLessThanOrEqual(ceiling[axis])
       }

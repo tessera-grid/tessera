@@ -60,6 +60,15 @@
   кнопки: `::before` у `IconButton` и `ToolbarButton` остаётся за слоями наведения.
   Своих правил для `prefers-reduced-motion` у них нет: гаситель темы останавливает
   блик (он остаётся виден на месте), а удержание вспышки отсчитывает таймер кнопки.
+- **Шаг отступа вложенности** (ADR [0059](../decisions/0059-row-nesting-indent.md)):
+  `--tsr-comp-row-nesting-indent` (16px) — отступ первой колонки, шаг линий дерева и
+  шаг перетаскивания строки по уровням (JS читает его из темы грида).
+- **Линии дерева** (ADR [0058](../decisions/0058-tree-lines.md)): псевдоэлемент
+  `::before` ячейки отступа с `data-tree-depth` — `--tsr-comp-tree-line-color` (3 %
+  цвета текста) и `--tsr-comp-tree-line-width` (1px); сам псевдоэлемент — линия первого
+  уровня, глубже — её тени со сдвигом на шаг `--tsr-comp-row-nesting-indent`
+  (ADR 0059). Прямоугольники, а не градиент: стоп градиента в 1px пропадает при
+  дробном масштабе страницы.
 - **Подсветка пришедших строк** (ADR [0056](../decisions/0056-lazy-children-arrival-highlight.md)):
   слой `::after` строки тела с `data-arrived` — `--tsr-comp-row-arrival-color` (по
   умолчанию 16 % `--tsr-comp-loader-bar`), удержание `--tsr-comp-row-arrival-duration`

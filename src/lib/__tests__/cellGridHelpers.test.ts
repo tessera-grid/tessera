@@ -95,7 +95,10 @@ describe('getCellExpandingStyles', () => {
       rowDepth: 2,
       table,
     })
-    expect(first.paddingLeft).toBe(64) // 32 * 2
+    // Шаг — токен темы (ADR 0059): JS передаёт только глубину.
+    expect(first.paddingLeft).toBe(
+      'calc(var(--tsr-comp-row-nesting-indent) * 2)',
+    )
 
     const second = getCellExpandingStyles({
       column: table.getColumn('b'),

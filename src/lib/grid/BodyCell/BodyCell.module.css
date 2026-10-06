@@ -179,3 +179,36 @@
  * Видимость hidden-кнопок ячейки — единый контракт в
  * grid/cellControls/buttonVisibility.css.
  */
+
+/*
+ * Линии дерева (ADR 0058): вертикальная направляющая по центру каждого шага отступа.
+ * Псевдоэлемент — сама линия первого уровня, линии глубже — её тени со сдвигом на шаг
+ * (`--tsr-tree-shadows` от ячейки). Прямоугольники, а не градиент: тонкий стоп
+ * градиента пропадает при дробном масштабе страницы, прямоугольник — нет.
+ * overflow-clip-margin выпускает линию на верхнюю границу ячейки (раскладка grid),
+ * которую иначе обрезает contain: paint, — линия не рвётся между строками.
+ */
+.body__cell[data-tree-depth] {
+  overflow-clip-margin: border-box;
+}
+
+.body__cell[data-tree-depth]::before {
+  --tsr-tree-step: var(--tsr-comp-row-nesting-indent);
+
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--tsr-tree-line-overlap, 0px));
+  bottom: 0;
+  left: calc(var(--tsr-tree-step) / 2);
+  width: var(--tsr-comp-tree-line-width);
+  pointer-events: none;
+  background-color: var(--tsr-comp-tree-line-color);
+  box-shadow: var(--tsr-tree-shadows, none);
+}
+
+/* В раскладке grid у ячейки есть верхняя граница — линия заходит на неё. */
+.body__cell[data-tree-depth][data-layout='grid']:not(
+    [data-cell-of-first-row='true']
+  )::before {
+  --tsr-tree-line-overlap: 1px;
+}

@@ -262,6 +262,15 @@
   --tsr-comp-row-arrival-duration: 300ms;
   --tsr-comp-row-arrival-fade-duration: 500ms;
   /* Подсветка ячейки после асинхронного сохранения (ADR 0057): тон пришедших строк. */
+  /* Шаг отступа уровня вложенности строк (ADR 0059). */
+  --tsr-comp-row-nesting-indent: 16px;
+  /* Линии дерева (ADR 0058): направляющие по уровням в отступе первой колонки. */
+  --tsr-comp-tree-line-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) 3%,
+    transparent
+  );
+  --tsr-comp-tree-line-width: 1px;
   /* Толщина блика ожидания на ячейке — тоньше, чем у кнопок (ADR 0057). */
   --tsr-comp-cell-pending-ring-width: 1px;
   --tsr-comp-cell-saved-color: var(--tsr-comp-row-arrival-color);

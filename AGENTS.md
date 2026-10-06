@@ -367,7 +367,13 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       подсветка прихода — `row-expanding-lazy` (RE42, RE45–RE49 — слой, виртуализация,
       уменьшенное движение, объявление, контраст), модульные `lazyChildren.dom`
       (RE43–RE44, RE51 — отметки прихода), перф RE50 — в `interaction`
-      ([ADR 0056](docs/decisions/0056-lazy-children-arrival-highlight.md)),
+      ([ADR 0056](docs/decisions/0056-lazy-children-arrival-highlight.md));
+      линии дерева — `row-expanding-tree-lines` (RE52–RE59 — по пикселям скриншота:
+      уровни, непрерывность через границу строки, группы, закрепление, виртуализация,
+      сортировка, страница, раскладка, axe, токены), перф RE60 — в `scroll`
+      ([ADR 0058](docs/decisions/0058-tree-lines.md)); шаг отступа — `row-expanding`
+      (RE61), `row-expanding-tree-lines` (RE62), модульный `rowNesting` (RE63)
+      ([ADR 0059](docs/decisions/0059-row-nesting-indent.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
@@ -510,7 +516,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);
     CF12 — медленная прокрутка с 1500 ячейками в ожидании с бликом против выборки без
-    них, [ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
+    них, [ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md); RE60 — прокрутка
+    раскрытого дерева с линиями против того же дерева без них,
+    [ADR 0058](docs/decisions/0058-tree-lines.md)).
 - **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →
   Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс), взаимодействие →
   Response/INP (≤ 100мс). Замер под **×4 CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается

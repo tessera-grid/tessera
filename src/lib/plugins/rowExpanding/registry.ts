@@ -57,6 +57,8 @@ export interface RowExpandingOptions {
    * после ожидания. Грид держит последний ответ; кэш — на приложении (ADR 0054).
    */
   loadChildren?: RowExpandingHooks['loadChildren']
+  /** Вертикальные направляющие по уровням в отступе первой колонки (ADR 0058). */
+  treeLines?: boolean
 }
 
 /**
@@ -167,6 +169,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
       enableExpanding: o.enabled !== false,
       autoResetExpanded: false,
       getRowCanExpand,
+      enableTreeLines: o.enabled !== false && !!o.treeLines,
     }
   },
 })

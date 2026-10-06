@@ -26,6 +26,13 @@ const subRowSelectionTree = makeData({
 // раскрывать можно только корни, а группы глубже (depth 1) тоггла не получают
 // (RE8). Плюс несколько плоских листовых корней (без subRows) — раскрываемости у
 // них нет, тоггла нет (RE7).
+const treeLinesData = makeData({
+  shape: 'tree',
+  count: 6,
+  depth: 4,
+  breadth: 2,
+})
+
 const rowExpandingData = [
   ...makeData({ shape: 'tree', count: 3, depth: 3, breadth: 2 }),
   ...makeData({ shape: 'flat', count: 2 }),
@@ -129,6 +136,30 @@ export const RowExpanding: StoryObj<StoryProps> = {
         'dataOverride',
         'initialExpanded',
       ],
+    },
+  },
+}
+
+/**
+ * Линии дерева (ADR 0058): вертикальные направляющие по уровням в отступе первой
+ * колонки. Дерево в 4 уровня раскрыто целиком; выключите `rowExpandingTreeLines`,
+ * чтобы сравнить с одним отступом.
+ */
+export const RowExpandingTreeLines: StoryObj<StoryProps> = {
+  name: 'Row Expanding — tree lines',
+  args: {
+    dataOverride: treeLinesData,
+    enableRowExpanding: true,
+    rowExpandingMaxDepth: 4,
+    rowExpandingTreeLines: true,
+    initialExpanded: true,
+    containerHeight: 640,
+    height: 540,
+    maxHeight: 540,
+  },
+  parameters: {
+    controls: {
+      exclude: ['columnCount', 'dataCount', 'dataMode', 'dataOverride'],
     },
   },
 }

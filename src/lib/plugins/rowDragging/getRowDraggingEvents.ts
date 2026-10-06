@@ -137,11 +137,13 @@ export const getRowDraggingEvents = (
     ).onRowDragCancel?.({ rowId: String(rowId), reason })
   }
 
-  const constOffsetLeft = getRowDraggableOffsetLeft({ table })
+  // Шаг уровня — на старте перетаскивания: токен темы читается у смонтированного грида.
+  let constOffsetLeft = getRowDraggableOffsetLeft({ table })
 
   return {
     onRowDragStart: ({ active }) => {
       const { row } = active.data.current as RowSortableData
+      constOffsetLeft = getRowDraggableOffsetLeft({ table })
 
       document.body.style.cursor = 'grabbing'
       holdSessionHooks(table as never, 'rowDragging')

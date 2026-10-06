@@ -120,6 +120,8 @@ export interface FeatureToggles {
   /** Ленивые дети (ADR 0054): `rowExpanding({ hasChildren, loadChildren })`. */
   rowExpandingHasChildren?: RowExpandingOptions['hasChildren']
   rowExpandingLoadChildren?: RowExpandingOptions['loadChildren']
+  /** Линии дерева (`rowExpanding({ treeLines })`, ADR 0058). */
+  rowExpandingTreeLines?: boolean
   /** Режим колонки действий (ADR 0050). */
   /** `false` — демо-действий строки нет (колонка действий без надобности, ADR 0050). */
   rowActionsDemo?: boolean
@@ -157,6 +159,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
       column: o.rowExpandingColumn,
       hasChildren: o.rowExpandingHasChildren,
       loadChildren: o.rowExpandingLoadChildren,
+      treeLines: o.rowExpandingTreeLines,
     }),
     // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
     // строки TanStack — предикат отдельной записью после плагина (опции по порядку).

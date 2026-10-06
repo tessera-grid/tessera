@@ -23,7 +23,7 @@ import { RenderCellSlot, RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
-import { getCellExpandingStyles } from './cellExpandingStyles'
+import { getCellExpandingStyles, treeLineShadows } from './cellExpandingStyles'
 import { getColumnSizeVariable } from './columnSizes'
 
 import styles from '../grid/BodyCell/BodyCell.module.css'
@@ -91,6 +91,13 @@ export const BodyCell = memo(
       rowDepth: cell.row.depth,
       table: table as never,
     })
+
+    // Линии дерева (ADR 0058) — в отступе той же ячейки, по уровню на шаг.
+    const treeDepth =
+      paddingLeft &&
+      (table.options as { enableTreeLines?: boolean }).enableTreeLines
+        ? cell.row.depth
+        : undefined
 
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
@@ -175,6 +182,9 @@ export const BodyCell = memo(
                 right: endPinnedOffset,
               }),
           paddingLeft,
+          ...(treeDepth && {
+            '--tsr-tree-shadows': treeLineShadows(treeDepth),
+          }),
           ...selectionStyle,
         }}
         tabIndex={nav ? nav.tabIndex : cellSel?.tabIndex}
@@ -206,6 +216,7 @@ export const BodyCell = memo(
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}
+        data-tree-depth={treeDepth}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}
         data-cell-odd-right-pinned={isEndPinned && rowIndex % 2 !== 0}
