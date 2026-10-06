@@ -84,6 +84,16 @@ export const submittedCellsSeed = (rows: number): TesseraFeatureEntry => {
   }
 }
 
+/**
+ * Скорость прокрутки ниже порогов быстрой прокрутки (2000 px/s по Y, 4500 по X) с
+ * запасом на разброс кадров: ячейки рисуются своим содержимым, а не скелетами, —
+ * замер видит цену состояний ячеек (AS14, CF12).
+ */
+export const CONTENT_SCROLL = {
+  y: { velocity: 600 },
+  x: { velocity: 2000 },
+} as const
+
 /** Колонки, которые демо разрешает править (как `CELL_EDITABLE_COLUMNS` историй). */
 const EDITABLE_COLUMNS = ['age', 'visits', 'gender']
 

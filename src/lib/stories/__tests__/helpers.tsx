@@ -131,6 +131,10 @@ export function recordPerf(record: PerfRecord): Promise<void> {
  * reports actual task durations (script/style/layout), not rAF wall-clock — so
  * it is not quantised by the display refresh rate and is portable across
  * machines' refresh rates.
+ *
+ * `stepPx` — сдвиг за кадр: скорость зависит от частоты кадров и обычно включает
+ * быструю прокрутку (ячейки — скелеты). `velocity` (px/s) — сдвиг по реальному времени
+ * кадра: ниже порога быстрой прокрутки ячейки рисуются своим содержимым.
  */
 export async function measureScrollWork(
   axis: 'y' | 'x',
@@ -138,7 +142,13 @@ export async function measureScrollWork(
     frames = 60,
     stepPx = 100,
     warmupFrames = 20,
-  }: { frames?: number; stepPx?: number; warmupFrames?: number } = {},
+    velocity,
+  }: {
+    frames?: number
+    stepPx?: number
+    warmupFrames?: number
+    velocity?: number
+  } = {},
 ): Promise<ScrollWorkResult> {
   const scroller = getScroller()
 
@@ -155,8 +165,18 @@ export async function measureScrollWork(
   // Warm-up pass (untraced): trigger JIT compilation, the first fast-scroll
   // transition and initial layout so the measured pass reflects steady scroll
   // cost, not one-off startup spikes.
+  // Позиция следующего кадра: шаг на кадр или скорость по реальному времени кадра.
+  let pos = 0
+  let last = performance.now()
+  const advance = () => {
+    const now = performance.now()
+    pos += velocity === undefined ? stepPx : (velocity * (now - last)) / 1000
+    last = now
+    return Math.min(distance(), pos)
+  }
+
   for (let i = 1; i <= warmupFrames; i++) {
-    setPos(Math.min(distance(), i * stepPx))
+    setPos(advance())
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
   }
@@ -165,17 +185,23 @@ export async function measureScrollWork(
   scroller.scrollLeft = 0
   await nextFrame()
   await nextFrame()
+  if (velocity !== undefined) {
+    // Прыжок в начало — быстрая прокрутка; ждём её выхода, чтобы замер шёл в обычной.
+    await new Promise(resolve => setTimeout(resolve, 600))
+  }
 
   const id = `${axis}-${traceSeq++}-${Date.now()}`
   await perfCommands.perfTraceStart(id)
 
   const total = distance()
+  pos = 0
+  last = performance.now()
   for (let i = 1; i <= frames; i++) {
-    const pos = Math.min(total, i * stepPx)
-    setPos(pos)
+    const next = advance()
+    setPos(next)
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
-    if (pos >= total) break
+    if (next >= total) break
   }
 
   return perfCommands.perfTraceStop(id)

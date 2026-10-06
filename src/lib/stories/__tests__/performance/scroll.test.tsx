@@ -13,6 +13,7 @@ import {
   NO_PLUGINS,
   PERF_TIMEOUT,
   SMALL,
+  CONTENT_SCROLL,
   submittedCellsSeed,
 } from './perf-cases'
 
@@ -146,6 +147,7 @@ describe('Производительность прокрутки', () => {
 
 // Прокрутка с отправленными ячейками правки (ADR 0041, AS14): 500 строк × 3 колонки
 // в ожидании и «ошибке» против той же выборки без них — видна цена новых состояний.
+// Скорость ниже порога быстрой прокрутки (CONTENT_SCROLL): иначе ячейки — скелеты.
 describe('Производительность прокрутки — ожидание и «ошибка» правки', () => {
   test(
     'AS14: прокрутка небольшой выборки с 1500 отправленными ячейками — в пределах регресс-потолка; база без них в дашборде',
@@ -162,15 +164,16 @@ describe('Производительность прокрутки — ожида
             .poll(() => document.querySelector('[aria-busy="true"]'))
             .not.toBeNull()
         }
-        const y = await measureScrollWork('y')
-        const x = await measureScrollWork('x')
+        // Медленно, без быстрой прокрутки: ячейки рисуются, а не заменяются скелетами.
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
         ;(await screen).unmount()
         return { y, x }
       }
 
       const base = await measure(false)
       const seeded = await measure(true)
-      // Регресс-потолок ≈2× замера (y ~10мс, x ~15–16мс), как у P2/P7.
+      // Регресс-потолок ≈2× замера базы (y ~12мс, x ~19–21мс), как у P2/P7.
       const ceiling = { y: 24, x: 35 }
       const record = (
         id: string,
