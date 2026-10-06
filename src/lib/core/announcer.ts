@@ -9,6 +9,8 @@ import type { TableLabels } from './localization'
 interface Announcer {
   say: (message: string) => void
   labels: TableLabels
+  /** Значение CSS-токена темы в контексте смонтированного грида. */
+  token?: (name: string) => string
 }
 
 const announcers = new WeakMap<object, Announcer>()
@@ -29,6 +31,10 @@ export const registerAnnouncer = (table: unknown, announcer: Announcer) => {
 /** Подписи смонтированного грида — для текстов, собираемых вне React. */
 export const announcerLabels = (table: unknown): TableLabels | undefined =>
   announcers.get(storeOf(table))?.labels
+
+/** Токен темы грида — для таймингов, отсчитываемых вне React; без грида — `''`. */
+export const readGridToken = (table: unknown, name: string): string =>
+  announcers.get(storeOf(table))?.token?.(name).trim() ?? ''
 
 /** Объявить текст; без смонтированного грида — ничего. */
 export const announce = (table: unknown, message: string): void =>

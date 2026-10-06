@@ -251,6 +251,7 @@ export const DataGrid = ({
           labels={labels}
           loading={showLinearProgress || showSkeletonOverlay}
           rowCount={rows.length}
+          themeNode={scrollableNodeRef}
         />
         <PluginRenderVersionContext.Provider value={renderVersion}>
           <PortalThemeProvider value={portalThemeClass(colorMode)}>
@@ -292,6 +293,7 @@ export const DataGrid = ({
         labels={labels}
         loading={showLinearProgress || showSkeletonOverlay}
         rowCount={rows.length}
+        themeNode={scrollableNodeRef}
       />
       <PluginRenderVersionContext.Provider value={renderVersion}>
         <PortalThemeProvider value={portalThemeClass(colorMode)}>

@@ -46,6 +46,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   height: DataGridProps['height']
   maxHeight: DataGridProps['maxHeight']
   colorMode: DataGridProps['colorMode']
+  /** Подписи грида (переопределение части `DEFAULT_LABELS`). */
+  localization?: DataGridProps['localization']
 
   showStub: boolean
   showHeaderGroups: boolean

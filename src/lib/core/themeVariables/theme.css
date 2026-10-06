@@ -260,6 +260,14 @@
   /* Заливка контура красным и удержание вспышки (с начала заливки); гаснет переходом движения. */
   --tsr-comp-error-flash-fill-duration: 600ms;
   --tsr-comp-error-flash-duration: 1200ms;
+  /* Подсветка пришедших ленивых детей (ADR 0056): держится, затем гаснет. */
+  --tsr-comp-row-arrival-color: color-mix(
+    in srgb,
+    var(--tsr-comp-loader-bar) 16%,
+    transparent
+  );
+  --tsr-comp-row-arrival-duration: 300ms;
+  --tsr-comp-row-arrival-fade-duration: 500ms;
   /* Typography — theme-agnostic default (system stack); override to use a
    * custom face. Numeric feature aligns digits in columns. */
   --tsr-comp-font-family:

@@ -1,9 +1,15 @@
 /**
  * Согласование ленивых детей со сменой данных (ADR 0054, §2): ответ строки, ушедшей из
  * данных, и пустой ответ удаляются, ожидание ушедшей строки снимается (её поздний ответ
- * не применится); ответы оставшихся строк живут по id.
+ * не применится), как и отметки прихода (ADR 0056); ответы оставшихся строк живут
+ * по id.
  */
-import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
+import {
+  readLoadedChildren,
+  readRowArrivals,
+  setLoadedAnswer,
+} from './lazyChildrenFeature'
+import { dropArrivals } from './rowArrivals'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 
 interface ReconcileTable {
@@ -52,4 +58,8 @@ export const reconcileLoadedChildren = (table: unknown) => {
   if (gone.length > 0) {
     t.setRowExpandPending?.(prev => without(prev, gone))
   }
+  dropArrivals(
+    table,
+    Object.keys(readRowArrivals(table)).filter(id => !rowsById[id]),
+  )
 }

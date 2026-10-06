@@ -70,6 +70,27 @@
 }
 
 /*
+ * Подсветка пришедшей строки (ADR 0056): слой поверх фона и ячеек, держится, пока у
+ * строки есть отметка, затем гаснет переходом.
+ */
+.body__row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background-color: var(--tsr-comp-row-arrival-color);
+  opacity: 0;
+  transition: opacity var(--tsr-comp-row-arrival-fade-duration)
+    var(--tsr-comp-motion-easing-out);
+}
+
+.body__row[data-arrived]::after {
+  opacity: 1;
+  transition: none;
+}
+
+/*
  * Видимость hidden-кнопок строки — единый контракт в
  * grid/cellControls/buttonVisibility.css.
  */

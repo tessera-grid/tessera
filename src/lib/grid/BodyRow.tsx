@@ -54,24 +54,27 @@ interface BodyRowCellsProps extends TableBodyRowProps {
 /**
  * Пер-строчная подписка на СВОИ срезы: строка ре-рендерится только когда меняется её
  * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице) либо группировка.
- * `expanded` бывает `true` (все) или картой по id.
+ * `expanded` бывает `true` (все) или картой по id. Возвращает отметку прихода строки
+ * (ADR 0056).
  */
 export const useRowStateSubscription = (row: Row<any, any>) => {
   const table = (row as unknown as { table: never }).table
-  useTableState(table, (state: unknown) => {
+  return useTableState(table, (state: unknown) => {
     const s = state as {
       rowSelection?: Record<string, boolean>
       expanded?: true | Record<string, boolean>
       grouping?: unknown
       rowExpandPending?: Record<string, number>
+      rowArrivals?: Record<string, number>
     }
     return {
       selected: s.rowSelection?.[row.id] ?? false,
       expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
       grouping: s.grouping,
       expandPending: s.rowExpandPending?.[row.id] ?? 0,
+      arrived: row.id in (s.rowArrivals ?? {}),
     }
-  })
+  }) as { arrived: boolean }
 }
 
 export const BodyRowCells = ({
@@ -178,7 +181,7 @@ export const getAriaSelected = (
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, ariaRowIndexBase } = props
 
-  useRowStateSubscription(row)
+  const { arrived } = useRowStateSubscription(row)
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
@@ -220,6 +223,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
+      data-arrived={arrived || undefined}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-interact
       data-last-row={row.getIsLastRow()}

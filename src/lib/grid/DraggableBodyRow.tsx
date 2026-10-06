@@ -25,7 +25,7 @@ import styles from '../grid/BodyRow/BodyRow.module.css'
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, ariaRowIndexBase } = props
 
-  useRowStateSubscription(row)
+  const { arrived } = useRowStateSubscription(row)
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
@@ -98,6 +98,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
+      data-arrived={arrived || undefined}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
       data-row-interact={isRowInteract}

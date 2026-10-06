@@ -1,3 +1,4 @@
+import { cleanup } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import {
@@ -647,4 +648,83 @@ describe('Отзывчивость взаимодействий (INP)', () => {
       PERF_TIMEOUT,
     )
   }
+})
+
+// Подсветка прихода (ADR 0056, RE50): тот же приход 100 детей, что в RE38, но ответом
+// сервера — отметки прихода, слой строк и объявление — против синхронного ответа без
+// них. Длиннейшая задача — ожидание или приход, каждая отдельно. Каждый замер — свежий грид; прогрев раскрывает одну строку, замер — другую.
+describe('Отзывчивость взаимодействий — подсветка прихода', () => {
+  test(
+    'RE50: приход 100 детей с подсветкой на 100 000 корней не хуже прихода без неё',
+    async () => {
+      const measure = async (async: boolean) => {
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...LAZY_CHILDREN,
+          ...(async
+            ? {
+                // Ответ — отдельной задачей, как у сервера: ожидание и приход не
+                // склеиваются в одну задачу.
+                rowExpandingLoadChildren: (row: { id: string }) =>
+                  new Promise(resolve =>
+                    setTimeout(() => resolve(lazyKids(row.id)), 0),
+                  ),
+              }
+            : {}),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(collapsedLazyToggle).toBeTruthy()
+        lazyKids('item-id-0')
+        lazyKids('item-id-1')
+        const result = await measureInteractionWork(async () =>
+          collapsedLazyToggle()!.click(),
+        )
+        await cleanup()
+        return result
+      }
+      const base = await measure(false)
+      const lit = await measure(true)
+      // Шум замера взаимодействия на 100 000 строк — до ~15%; больше — регрессия.
+      const ceiling = Math.max(base.longestMs * 1.15, base.longestMs + 40)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record(
+        'RE50-base',
+        'приход 100 детей синхронно, без подсветки',
+        base,
+        false,
+      )
+      await record('RE50', 'приход 100 детей промисом, с подсветкой', lit, true)
+
+      expect(
+        lit.longestMs,
+        `с подсветкой longest=${lit.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
 })

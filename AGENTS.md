@@ -363,7 +363,11 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       дети: `hasChildren`/`loadChildren`, ожидание и вспышка тоггла, история) и модульные
       `lazyChildren.dom` (RE19, RE21–RE22, RE26–RE29, RE34–RE36 — ответ по строке, его
       согласование с данными, `setLoadedChildren`/`resetLoadedChildren`), перф RE38 — в
-      `interaction`, RE39 — в `first-render` ([ADR 0054](docs/decisions/0054-lazy-row-children.md)),
+      `interaction`, RE39 — в `first-render` ([ADR 0054](docs/decisions/0054-lazy-row-children.md));
+      подсветка прихода — `row-expanding-lazy` (RE42, RE45–RE49 — слой, виртуализация,
+      уменьшенное движение, объявление, контраст), модульные `lazyChildren.dom`
+      (RE43–RE44, RE51 — отметки прихода), перф RE50 — в `interaction`
+      ([ADR 0056](docs/decisions/0056-lazy-children-arrival-highlight.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
@@ -495,7 +499,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     I4–I6 — меню колонок, I7–I8 — смена страницы и её размера на 100 000 строк,
     FL35–FL36 — поиск на 100 000 строк и фильтр колонки на 1000×1000, DF22 — фильтр
     даты на 1000×1000, SF25–SF26 — фильтр варианта на 100 000 строк и открытие
-    панели с 1000 вариантов, RE38 — приход 100 детей ленивой строки на 100 000 корней
+    панели с 1000 вариантов, RE38 — приход 100 детей ленивой строки на 100 000 корней,
+    RE50 — тот же приход ответом сервера с подсветкой против RE38
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md)).

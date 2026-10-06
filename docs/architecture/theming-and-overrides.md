@@ -60,6 +60,12 @@
   кнопки: `::before` у `IconButton` и `ToolbarButton` остаётся за слоями наведения.
   Своих правил для `prefers-reduced-motion` у них нет: гаситель темы останавливает
   блик (он остаётся виден на месте), а удержание вспышки отсчитывает таймер кнопки.
+- **Подсветка пришедших строк** (ADR [0056](../decisions/0056-lazy-children-arrival-highlight.md)):
+  слой `::after` строки тела с `data-arrived` — `--tsr-comp-row-arrival-color` (по
+  умолчанию 16 % `--tsr-comp-loader-bar`), удержание `--tsr-comp-row-arrival-duration`
+  (отсчитывает таймер плагина, токен читается с узла внутри темы), угасание
+  `--tsr-comp-row-arrival-fade-duration`. Слой лежит над текстом ячеек — тон
+  ограничен контрастом текста 4.5:1.
 
 ```mermaid
 flowchart LR

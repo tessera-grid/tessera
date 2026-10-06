@@ -2,7 +2,7 @@
 // принимает table.announce и сама объявляет сортировку, число выбранных строк,
 // окончание загрузки, пустой результат и число строк после фильтра или поиска (если
 // enableAnnouncements !== false).
-import { useEffect, useRef, useState } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 
 import { announceLabel, registerAnnouncer } from '../core/announcer'
 import type { TableLabels } from '../core/localization'
@@ -15,6 +15,8 @@ interface LiveRegionProps {
   labels: TableLabels
   loading: boolean
   rowCount: number
+  /** Узел внутри `.data-grid-theme` — сама область лежит вне темы. */
+  themeNode?: RefObject<HTMLElement | null>
 }
 
 /** Вызвать `effect` при смене `value` (не на первом рендере). */
@@ -43,6 +45,7 @@ export const LiveRegion = ({
   labels,
   loading,
   rowCount,
+  themeNode,
 }: LiveRegionProps) => {
   const [message, setMessage] = useState('')
 
@@ -55,8 +58,12 @@ export const LiveRegion = ({
           setMessage('')
           requestAnimationFrame(() => setMessage(text))
         },
+        token: name =>
+          themeNode?.current
+            ? getComputedStyle(themeNode.current).getPropertyValue(name)
+            : '',
       }),
-    [table, labels],
+    [table, labels, themeNode],
   )
 
   const sorting = useTableState(table as never, state => {

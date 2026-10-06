@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
  * Ленивые дети строк (ADR 0054; RE19, RE21–RE22, RE26–RE29, RE34–RE36): ответ
- * `loadChildren` по строке, его согласование с данными и методы таблицы.
+ * `loadChildren` по строке, его согласование с данными и методы таблицы. Отметки
+ * прихода (ADR 0056; RE43–RE44, RE51).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, createElement } from 'react'
@@ -12,7 +13,10 @@ import type { TesseraFeatureEntry } from '../core/features'
 import { readPluginHooks } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 import { rowExpanding, rowGrouping } from '../plugins'
-import { readLoadedChildren } from '../plugins/rowExpanding/lazyChildrenFeature'
+import {
+  readLoadedChildren,
+  readRowArrivals,
+} from '../plugins/rowExpanding/lazyChildrenFeature'
 import { toggleRowExpanded } from '../plugins/rowExpanding/toggleRowExpanded'
 import type { RowExpandingHooks } from '../plugins/rowExpanding'
 
@@ -273,5 +277,72 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     act(() => captured.resetLoadedChildren())
     expect(readLoadedChildren(captured)).toEqual({})
     expect(coreRow('c').getIsExpanded()).toBe(false)
+  })
+
+  it('RE43: синхронный массив из loadChildren и setLoadedChildren отметок прихода не дают', async () => {
+    const plugins = [
+      rowExpanding({ hasChildren, loadChildren: () => [node('a1')] }),
+    ]
+    render({ plugins })
+    toggle('a')
+    expect(childIds('a')).toEqual(['a1'])
+    act(() => captured.setLoadedChildren('a', [node('a1'), node('a2')]))
+    expect(childIds('a')).toEqual(['a1', 'a2'])
+    await flush()
+    expect(readRowArrivals(captured)).toEqual({})
+  })
+
+  it('RE44: отметку получают только id, которых не было в прошлом ответе; тот же набор — без новых отметок', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(100)
+    const loadChildren = vi
+      .fn()
+      .mockReturnValueOnce(Promise.resolve([node('a1')]))
+      .mockReturnValueOnce(Promise.resolve([node('a1'), node('a2')]))
+      .mockReturnValueOnce(Promise.resolve([node('a1'), node('a2')]))
+    render({ plugins: [rowExpanding({ hasChildren, loadChildren })] })
+    toggle('a')
+    await flush()
+    expect(readRowArrivals(captured)).toEqual({ a1: 100 })
+    toggle('a')
+    now.mockReturnValue(200)
+    toggle('a')
+    await flush()
+    expect(readRowArrivals(captured)).toEqual({ a1: 100, a2: 200 })
+    toggle('a')
+    now.mockReturnValue(300)
+    toggle('a')
+    await flush()
+    expect(readRowArrivals(captured)).toEqual({ a1: 100, a2: 200 })
+    now.mockRestore()
+  })
+
+  it('RE51: отметки снимаются по истечении времени и у строк, ушедших из data', async () => {
+    vi.useFakeTimers()
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0)
+    try {
+      const lazy = [node('a', 1), node('c', 1)]
+      const loadChildren = (row: { id: string }) =>
+        Promise.resolve([node(`${row.id}1`)])
+      const plugins = [rowExpanding({ hasChildren, loadChildren })]
+      render({ plugins, data: lazy })
+      toggle('a')
+      await act(() => vi.advanceTimersByTimeAsync(0))
+      now.mockReturnValue(200)
+      toggle('c')
+      await act(() => vi.advanceTimersByTimeAsync(0))
+      expect(readRowArrivals(captured)).toEqual({ a1: 0, c1: 200 })
+
+      // Время a1 вышло (300 мс по умолчанию), c1 — ещё нет.
+      now.mockReturnValue(300)
+      await act(() => vi.advanceTimersByTimeAsync(300))
+      expect(readRowArrivals(captured)).toEqual({ c1: 200 })
+
+      // c ушла из данных — её ответ и отметка ребёнка удалены.
+      render({ plugins, data: [lazy[0]!] })
+      expect(readRowArrivals(captured)).toEqual({})
+    } finally {
+      now.mockRestore()
+      vi.useRealTimers()
+    }
   })
 })

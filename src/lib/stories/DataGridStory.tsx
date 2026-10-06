@@ -32,6 +32,7 @@ export const StoryComponent = memo(
     height,
     maxHeight,
     colorMode,
+    localization,
 
     showStub,
     showHeaderGroups,
@@ -234,6 +235,7 @@ export const StoryComponent = memo(
               height={height}
               maxHeight={maxHeight}
               colorMode={colorMode}
+              localization={localization}
               stub={<NoDataStub label="No Data!" />}
             />
           </CardContent>

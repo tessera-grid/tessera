@@ -159,6 +159,8 @@ export interface TableLabels {
   loadChildrenFailed: string
   /** Объявление отказа раскрытия строки */
   announceExpandFailed: (error: string) => string
+  /** Объявление асинхронного прихода детей строки (`0` — пустой ответ, ADR 0056) */
+  announceChildrenLoaded: (count: number) => string
   /** Доступное имя индикатора загрузки и объявление скелета первой загрузки */
   loading: string
   /** Объявление смены сортировки (`column: null` — сортировка сброшена) */
@@ -328,6 +330,8 @@ export const DEFAULT_LABELS: TableLabels = {
   announceSaveFailed: (column, error) => `${column}: ${error}`,
   loadChildrenFailed: 'Unknown error',
   announceExpandFailed: error => `Couldn't load: ${error}`,
+  announceChildrenLoaded: count =>
+    count === 0 ? 'No rows' : `Loaded ${count} ${count === 1 ? 'row' : 'rows'}`,
   loading: 'Loading',
   announceSort: (column, direction) =>
     column ? `Sorted by ${column}, ${direction}` : 'Sorting cleared',

@@ -8,11 +8,15 @@ import {
   setLoadedAnswer,
 } from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
+import { markArrivals } from './rowArrivals'
 import type { RowExpandingHooks } from './types'
 
 type PendingRow = Row<any, any> & {
   getIsExpandPending?: () => boolean
   table: {
+    getCoreRowModel: () => {
+      rowsById: Record<string, { subRows: { id: string }[] } | undefined>
+    }
     atoms: { rowExpandPending?: { get: () => RowExpandPending } }
     options: {
       getSubRows?: (row: unknown, index: number) => unknown[] | undefined
@@ -41,6 +45,28 @@ const storeAnswer = (table: unknown, rowId: string, rows: unknown) =>
     ...prev,
     [rowId]: Array.isArray(rows) ? rows : [],
   }))
+
+const childIds = (table: PendingRow['table'], rowId: string) =>
+  (table.getCoreRowModel().rowsById[rowId]?.subRows ?? []).map(row => row.id)
+
+/**
+ * Асинхронный ответ (ADR 0056): сохранить, отметить детей, которых не было в прошлом
+ * ответе, и объявить приход.
+ */
+const storeArrival = (
+  table: PendingRow['table'],
+  rowId: string,
+  rows: unknown,
+) => {
+  const before = new Set(childIds(table, rowId))
+  storeAnswer(table, rowId, rows)
+  const after = childIds(table, rowId)
+  markArrivals(
+    table,
+    after.filter(id => !before.has(id)),
+  )
+  announceLabel(table, all => all.announceChildrenLoaded(after.length))
+}
 
 // Номер попытки сквозной: итог прежнего раскрытия не спутать с новым.
 let lastAttempt = 0
@@ -91,7 +117,7 @@ export const toggleRowExpanded = (
     })
     if (ok) {
       if (lazy) {
-        storeAnswer(table, row.id, value)
+        storeArrival(table, row.id, value)
       }
       return
     }

@@ -164,6 +164,7 @@ export const RowExpandingLazy: StoryObj<SessionsArgs> = {
  * `loadChildren` на каждое раскрытие получает детей с «сервера». Повторное раскрытие
  * сразу показывает прошлый ответ и обновляет его; `node-3` сервер вернёт пустым — строка
  * станет листом; «Fail next load» и `loadFailMode` — вспышка тоггла и объявление.
+ * Новые дети ответа подсвечены и объявлены (ADR 0056).
  */
 export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
   name: 'Row Expanding — lazy children (server)',
