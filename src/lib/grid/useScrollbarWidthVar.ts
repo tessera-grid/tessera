@@ -9,8 +9,10 @@ export const SCROLLBAR_WIDTH_VAR = '--tsr-comp-scrollbar-actual-width'
  * бар на всю ширину.
  *
  * Реализация имперная (setProperty) → не вызывает ре-рендер грида. Пересчёт только
- * по ResizeObserver. Первый замер намеренно НЕ синхронный: observe() присылает
- * начальный колбэк уже после раскладки, а до него CSS падает на фолбэк-токен.
+ * по ResizeObserver; запись меняет ширину лишь у лоадера (position: absolute), так что
+ * обратной связи с observer нет. Первый замер намеренно НЕ синхронный: observe()
+ * присылает начальный колбэк уже после раскладки, а до него CSS падает на
+ * фолбэк-токен — синхронный замер мог бы записать 0 до появления скроллбара.
  */
 export const useScrollbarWidthVar = (
   getScrollElement: () => HTMLElement | null,
