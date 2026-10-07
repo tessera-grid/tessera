@@ -1,5 +1,3 @@
-import type { Row } from '@tanstack/react-table'
-
 import {
   cellEditing,
   cellSelection,
@@ -143,9 +141,6 @@ export interface FeatureToggles {
   onConflict?: CellEditingOptions['onConflict']
 }
 
-const storyCanExpand = (row: Row<any, any>) =>
-  row.getIsGrouped() || !!row.original?.isGroup
-
 export const argsToPlugins = (o: FeatureToggles) => {
   return [
     rowSelection({
@@ -161,14 +156,6 @@ export const argsToPlugins = (o: FeatureToggles) => {
       loadChildren: o.rowExpandingLoadChildren,
       treeLines: o.rowExpandingTreeLines,
     }),
-    // rowExpanding в историях раскрывает узлы дерева (isGroup) и сгруппированные
-    // строки TanStack — предикат отдельной записью после плагина (опции по порядку).
-    {
-      id: 'storyExpandPredicate',
-      options: {
-        enableRowExpanding: storyCanExpand,
-      },
-    },
     rowDragging({
       enabled: !!o.enableRowDragging,
       enable: o.rowDraggingEnable,

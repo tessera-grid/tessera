@@ -1,312 +1,52 @@
-import { ArgTypes, InputType } from 'storybook/internal/csf'
+import type { InputType } from 'storybook/internal/csf'
 
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 
-export const columnCountType: ArgTypes = {
-  control: { type: 'number', min: 1, max: 1000, step: 5 },
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Количество колонок',
-  table: {
-    defaultValue: { summary: 'Storybook-параметр' },
-  },
-}
+const STORY_PARAM = 'параметр истории'
 
-export const dataCountType: ArgTypes = {
-  control: { type: 'number', min: 1, max: 1000, step: 10 },
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Количество строк',
-  table: {
-    defaultValue: { summary: 'Storybook-параметр' },
-  },
-}
+const numberControl = (
+  description: string,
+  range: { min: number; max: number; step: number },
+  defaultSummary: string,
+): InputType => ({
+  control: { type: 'number', ...range },
+  description,
+  table: { defaultValue: { summary: defaultSummary } },
+})
 
-export const containerHeightType: ArgTypes = {
-  control: { type: 'number', min: 100, max: 1000, step: 100 },
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Высота контейнера таблицы',
-  table: {
-    defaultValue: { summary: 'Storybook-параметр' },
-  },
-}
-
-export const numberHeightType: ArgTypes = {
-  control: { type: 'number', min: 100, max: 1000, step: 100 },
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Высота таблицы',
-  table: {
-    defaultValue: { summary: '100%' },
-  },
-}
-
-export const numberMaxHeightType: ArgTypes = {
-  control: { type: 'number', min: 100, max: 1000, step: 100 },
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Максимальная высота таблицы',
-  table: {
-    defaultValue: { summary: '100%' },
-  },
-}
-
-export const enableSkeletonType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
+const booleanControl = (
+  description: string,
+  defaultValue = false,
+): InputType => ({
   control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить отображение скелетонов',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
+  description,
+  table: { defaultValue: { summary: String(defaultValue) } },
+})
 
-export const skeletonOptionsType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
+const radioControl = (
+  description: string,
+  options: string[],
+  defaultSummary: string,
+): InputType => ({
+  control: 'inline-radio',
+  options,
+  description,
+  table: { defaultValue: { summary: defaultSummary } },
+})
+
+const objectControl = (
+  description: string,
+  typeSummary: string,
+  defaultValue: object,
+): InputType => ({
   control: 'object',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Задать количество колонок и строк для отображения скелетонов',
+  description,
   table: {
-    defaultValue: {
-      summary: DEFAULT_SKELETON_OPTIONS,
-    },
-    type: {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      summary: 'SkeletonOptions',
-    },
+    type: { summary: typeSummary },
+    defaultValue: { summary: JSON.stringify(defaultValue) },
   },
-}
-
-export const enableLoadingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить отображение прогресс-бара',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const showStubType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить отображение заглушки',
-  table: {
-    defaultValue: { summary: 'Storybook-параметр' },
-  },
-}
-
-export const showHeaderGroupsType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить режим сгруппированных заголовков',
-  table: {
-    defaultValue: { summary: 'Storybook-параметр' },
-  },
-}
-
-export const enableColumnSortingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить сортировку DESC/ASC',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableSortingRemovalType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить сброс сортировки DESC/ASC',
-  table: {
-    defaultValue: { summary: true },
-  },
-}
-
-export const enableMultiSortType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Мультисортировка по нескольким столбцам (жест Shift+клик)',
-  table: {
-    defaultValue: { summary: true },
-  },
-}
-
-export const serverColumnSortingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description:
-    'Включить сортировку DESC/ASC только на сервере [моки не реализованы]',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableColumnResizingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить изменение ширины колонок',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableColumnDraggingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить перетаскивание колонок',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableColumnPinningType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить закрепление колонок к левому краю',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableGroupingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить группировку данных',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableRowSelectionType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить выбор строк',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableSubRowSelectionType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить выбор подстрок',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableRowExpandingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить разворачивание строк',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableRowDraggingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить перетаскивание строк',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const enableRowActionsType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить отображение действий в каждой строке',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-export const rowActionsOptionsType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'object',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Задать ширину колонки действий над строкой',
-  table: {
-    defaultValue: {
-      summary: DEFAULT_ROW_ACTIONS_OPTIONS,
-    },
-    type: {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      summary: 'RowActionsOptions',
-    },
-  },
-}
-
-export const enableCellEditingType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить инлайн-редактирование ячейки (кнопка по hover)',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
+})
 
 /**
  * Флаг панели вне скролла (ADR 0046): «auto» — по наличию слотов плагинов, «on» —
@@ -320,119 +60,196 @@ const panelFlag = (description: string): InputType => ({
   table: { defaultValue: { summary: 'auto' } },
 })
 
+/** Раскладывает контролы истории по группе (и подгруппе) панели Controls. */
+export const inCategory = <T extends Record<string, InputType>>(
+  category: string,
+  types: T,
+  subcategory?: string,
+): T =>
+  Object.fromEntries(
+    Object.entries(types).map(([name, type]) => [
+      name,
+      { ...type, table: { ...type.table, category, subcategory } },
+    ]),
+  ) as T
+
+// --- Данные и размеры ---------------------------------------------------------
+
+export const columnCountType = numberControl(
+  'Количество колонок мока',
+  { min: 1, max: 1000, step: 5 },
+  STORY_PARAM,
+)
+export const dataCountType = numberControl(
+  'Количество строк верхнего уровня мока; у каждой 10-й есть дети (видны с раскрытием строк)',
+  { min: 0, max: 100_000, step: 10 },
+  STORY_PARAM,
+)
+export const containerHeightType = numberControl(
+  'Высота контейнера вокруг грида, px',
+  { min: 100, max: 1000, step: 100 },
+  STORY_PARAM,
+)
+export const numberHeightType = numberControl(
+  'Высота грида (`height`), px',
+  { min: 100, max: 1000, step: 100 },
+  '100%',
+)
+export const numberMaxHeightType = numberControl(
+  'Максимальная высота грида (`maxHeight`), px',
+  { min: 100, max: 1000, step: 100 },
+  '100%',
+)
+export const showStubType = booleanControl(
+  'Пустые данные: грид показывает заглушку «нет данных»',
+)
+export const showHeaderGroupsType = booleanControl(
+  'Колонки с вложенной шапкой (группы заголовков)',
+)
+
+// --- Ядро: панели и состояния -------------------------------------------------
+
+export const enableSkeletonType = booleanControl(
+  'Скелеты вместо содержимого ячеек (`enableSkeleton`)',
+)
+export const skeletonOptionsType = objectControl(
+  'Сколько колонок и строк скелетов показать: число или `auto`',
+  'SkeletonOptions',
+  DEFAULT_SKELETON_OPTIONS,
+)
+export const enableLoadingType = booleanControl(
+  'Прогресс-бар загрузки над телом грида (`enableLoading`)',
+)
+export const enableFooterType = booleanControl(
+  'Футер с агрегированными значениями колонок (`enableFooter`)',
+)
 export const enableToolbarType = panelFlag(
   'Верхний тулбар: auto — по наличию кнопок плагинов, on — всегда (и пустой), off — никогда',
 )
 export const enableStatusBarType = panelFlag(
   'Нижняя панель: auto — по наличию её слотов, on — всегда (и пустая), off — никогда',
 )
-
-export const enableFooterType: ArgTypes = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description: 'Включить отображение футера агрегированных значений',
-  table: {
-    defaultValue: { summary: false },
-  },
-}
-
-/** Булев тумблер фичи: контрол `boolean`, по умолчанию выключен. */
-const featureToggle = (description: string): ArgTypes => ({
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  control: 'boolean',
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  description,
-  table: { defaultValue: { summary: false } },
-})
-
-export const enableLeafPinningType = featureToggle(
-  'Закрепление отдельных листьев под вложенной шапкой (нужен enableColumnPinning)',
-)
-export const showSelectedCountType = featureToggle(
-  'Счётчик выбранных строк в нижней панели (нужен enableRowSelection)',
-)
-export const enableHeaderActionMenuType = featureToggle(
-  'Схлопывать кнопки заголовка в кебаб-меню',
-)
-export const enableRowActionMenuType = featureToggle(
-  'Схлопывать действия строки в кебаб-меню (нужен enableRowActions)',
-)
-export const enableCellSelectionType = featureToggle(
-  'Выделение диапазона ячеек мышью и копирование (Ctrl/Cmd+C)',
-)
-export const enableContextMenuType = featureToggle(
-  'Контекстное меню по правому клику',
-)
-export const enableKeyboardNavigationType = featureToggle(
-  'Клавиатурная навигация по ячейкам (role=grid, roving tabindex)',
-)
-export const enableColumnVisibilityType = featureToggle(
-  'Кнопка «Колонки» в тулбаре: скрытие и показ колонок',
-)
-export const enablePaginationType = featureToggle('Пагинация в нижней панели')
-export const enableColumnFilteringType = featureToggle(
-  'Фильтры колонок: кнопка в заголовке колонки с полем filter (Country, имена — текст; Age, Visits, Total — число)',
-)
-export const enableQuickSearchType = featureToggle(
-  'Быстрый поиск в тулбаре по видимым колонкам',
-)
-export const enableExportType = featureToggle(
-  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV',
+export const enableAnnouncementsType = booleanControl(
+  'Объявления скринридеру через live-область: сортировка, выбор, загрузка (`enableAnnouncements`)',
+  true,
 )
 
-export const disabledType: InputType = {
-  control: 'boolean',
-  description: 'Заблокировать кнопки?',
-  table: {
-    defaultValue: { summary: 'false' },
-  },
-}
+// --- Колонки -------------------------------------------------------------------
 
-export const activeType: InputType = {
-  control: 'boolean',
-  description: 'Включить активное состояние кнопок?',
-  table: {
-    defaultValue: { summary: 'false' },
-  },
-}
+export const enableColumnSortingType = booleanControl(
+  'Сортировка кнопкой в заголовке (плагин `columnSorting`)',
+)
+export const enableSortingRemovalType = booleanControl(
+  'Третий клик снимает сортировку (`removal`); иначе направление только переключается',
+  true,
+)
+export const enableMultiSortType = booleanControl(
+  'Мультисортировка по нескольким колонкам жестом Shift+клик (`multiSort`)',
+  true,
+)
+export const serverColumnSortingType = booleanControl(
+  'Серверная сортировка (`server`): меняется только состояние и колбэк, порядок строк мока не меняется',
+)
+export const enableColumnResizingType = booleanControl(
+  'Изменение ширины колонок перетаскиванием границы (плагин `columnSizing`)',
+)
+export const enableColumnDraggingType = booleanControl(
+  'Перестановка колонок перетаскиванием заголовка (плагин `columnDragging`)',
+)
+export const enableColumnPinningType = booleanControl(
+  'Закрепление колонок кнопкой в заголовке (плагин `columnPinning`)',
+)
+export const enableLeafPinningType = booleanControl(
+  'Закрепление отдельных листьев под вложенной шапкой (`leafPinning`, нужен enableColumnPinning)',
+)
+export const enableColumnVisibilityType = booleanControl(
+  'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (плагин `columnVisibility`)',
+)
+export const enableHeaderActionMenuType = booleanControl(
+  'Схлопывать кнопки заголовка в кебаб-меню (плагин `headerActionMenu`)',
+)
 
-export const rowExpandingMaxDepthType: InputType = {
-  control: { type: 'number', min: 1, max: 10, step: 1 },
-  description:
-    'Сколько уровней раскрываемы от корня (rowExpanding({ maxDepth }), нужен enableRowExpanding)',
-  table: { defaultValue: { summary: '1' } },
-}
+// --- Строки --------------------------------------------------------------------
 
-export const rowExpandingColumnType: InputType = {
-  control: 'inline-radio',
-  options: ['auto', 'always'],
-  description:
-    'Колонка тоггла раскрытия: auto — по данным, always — всегда (нужен enableRowExpanding)',
-  table: { defaultValue: { summary: 'auto' } },
-}
+export const enableRowSelectionType = booleanControl(
+  'Выбор строк чекбоксами (плагин `rowSelection`)',
+)
+export const enableSubRowSelectionType = booleanControl(
+  'Выбор строки выбирает её потомков (`subRows`, нужен enableRowSelection)',
+)
+export const showSelectedCountType = booleanControl(
+  'Счётчик выбранных строк в нижней панели (`selectedCount`, нужен enableRowSelection)',
+)
+export const enableRowExpandingType = booleanControl(
+  'Раскрытие строк с детьми (плагин `rowExpanding`)',
+)
+export const rowExpandingMaxDepthType = numberControl(
+  'Сколько уровней раскрываемы от корня (`maxDepth`, нужен enableRowExpanding)',
+  { min: 0, max: 10, step: 1 },
+  '1',
+)
+export const rowExpandingColumnType = radioControl(
+  'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`, нужен enableRowExpanding)',
+  ['auto', 'always'],
+  'auto',
+)
+export const rowExpandingTreeLinesType = booleanControl(
+  'Линии дерева по уровням (`treeLines`, нужен enableRowExpanding)',
+)
+export const enableRowDraggingType = booleanControl(
+  'Перестановка строк перетаскиванием ручки (плагин `rowDragging`)',
+)
+export const enableGroupingType = booleanControl(
+  'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',
+)
+export const enableRowActionsType = booleanControl(
+  'Колонка действий строки с демо-кнопками (плагин `rowActions`)',
+)
+export const rowActionsOptionsType = objectControl(
+  'Ширина колонки действий: width — с кнопками, collapsedWidth — в кебабе (нужен enableRowActions)',
+  'RowActionsOptions',
+  DEFAULT_ROW_ACTIONS_OPTIONS,
+)
+export const rowActionsColumnType = radioControl(
+  'Колонка действий: auto — если у строк есть действия, always — всегда (`column`, нужен enableRowActions)',
+  ['auto', 'always'],
+  'auto',
+)
+export const enableRowActionMenuType = booleanControl(
+  'Схлопывать действия строки в кебаб-меню (плагин `rowActionMenu`, нужен enableRowActions)',
+)
 
-export const rowExpandingTreeLinesType: InputType = {
-  control: 'boolean',
-  description:
-    'Линии дерева по уровням (rowExpanding({ treeLines }), нужен enableRowExpanding)',
-  table: { defaultValue: { summary: 'false' } },
-}
+// --- Ячейки и клавиатура -------------------------------------------------------
 
-export const rowActionsColumnType: InputType = {
-  control: 'inline-radio',
-  options: ['auto', 'always'],
-  description:
-    'Колонка действий строки: auto — по наличию действий, always — всегда (нужен enableRowActions)',
-  table: { defaultValue: { summary: 'auto' } },
-}
+export const enableCellEditingType = booleanControl(
+  'Правка ячеек Age, Visits, Gender: кнопка по наведению (плагин `cellEditing`)',
+)
+export const enableCellSelectionType = booleanControl(
+  'Выделение диапазона ячеек мышью и копирование Ctrl/Cmd+C (плагин `cellSelection`)',
+)
+export const enableContextMenuType = booleanControl(
+  'Контекстное меню по правому клику (плагин `contextMenu`)',
+)
+export const enableKeyboardNavigationType = booleanControl(
+  'Навигация по ячейкам стрелками: роль grid, roving tabindex (плагин `keyboardNavigation`)',
+)
 
-export const paginationPageSizeType: InputType = {
-  control: { type: 'number', min: 1, max: 1000, step: 5 },
-  description: 'Начальный размер страницы (нужен enablePagination)',
-  table: { defaultValue: { summary: '25' } },
-}
+// --- Поиск, фильтры, страницы, экспорт -----------------------------------------
+
+export const enableQuickSearchType = booleanControl(
+  'Быстрый поиск в тулбаре по видимым колонкам (плагин `quickSearch`)',
+)
+export const enableColumnFilteringType = booleanControl(
+  'Фильтры колонок с полем filter: Country и имена — текст, Age, Visits, Total — число (плагин `columnFiltering`)',
+)
+export const enablePaginationType = booleanControl(
+  'Пагинация в нижней панели (плагин `pagination`)',
+)
+export const paginationPageSizeType = numberControl(
+  'Начальный размер страницы (`initialPageSize`, нужен enablePagination)',
+  { min: 1, max: 1000, step: 5 },
+  '25',
+)
+export const enableExportType = booleanControl(
+  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
+)

@@ -39,6 +39,7 @@ interface SessionsArgs extends StoryProps {
 
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Sessions & Async',
 } satisfies Meta<StoryProps>
 

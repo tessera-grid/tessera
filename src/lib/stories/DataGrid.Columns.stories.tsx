@@ -5,6 +5,7 @@ import { dataGridMeta } from './dataGridMeta'
 /** Истории колонок: размеры, сортировка, перетаскивание, закрепление, шапка. */
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Columns',
 } satisfies Meta<StoryProps>
 

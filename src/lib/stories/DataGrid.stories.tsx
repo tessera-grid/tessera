@@ -8,6 +8,8 @@ import {
   columnCountType,
   containerHeightType,
   dataCountType,
+  enableAnnouncementsType,
+  inCategory,
   paginationPageSizeType,
   rowActionsColumnType,
   rowExpandingColumnType,
@@ -59,6 +61,7 @@ import { filteringColumns, filteringData } from './__mocks__/filteringData'
 /** Общие истории: все фичи, загрузка, заглушка, футер, ручная проверка доступности. */
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid',
 } satisfies Meta<StoryProps>
 
@@ -66,42 +69,44 @@ export default meta
 
 export const AllFeatures: StoryObj<StoryProps> = {
   name: 'All Features',
+  // Все тумблеры грида по группам панели Controls. Дети у каждой 10-й строки видны с
+  // «Раскрытием строк»; ядро и плагины по умолчанию выключены.
   args: {
     containerHeight: 600,
     height: 500,
     maxHeight: 500,
-
-    enableSkeleton: false,
-    skeletonOptions: DEFAULT_SKELETON_OPTIONS,
-
-    enableLoading: false,
-
     showStub: false,
     showHeaderGroups: false,
 
+    enableSkeleton: false,
+    skeletonOptions: DEFAULT_SKELETON_OPTIONS,
+    enableLoading: false,
+    enableFooter: false,
+    enableAnnouncements: true,
+
     enableColumnSorting: false,
     enableSortingRemoval: true,
-    serverColumnSorting: false,
     enableMultiSort: true,
-
+    serverColumnSorting: false,
     enableColumnResizing: false,
     enableColumnDragging: false,
     enableColumnPinning: false,
     enableLeafPinning: false,
     enableColumnVisibility: false,
-
-    enableGrouping: false,
+    enableHeaderActionMenu: false,
 
     enableRowSelection: false,
-    showSelectedCount: false,
     enableSubRowSelection: false,
+    showSelectedCount: false,
     enableRowExpanding: false,
+    rowExpandingMaxDepth: 1,
+    rowExpandingColumn: 'auto',
+    rowExpandingTreeLines: false,
     enableRowDragging: false,
-
+    enableGrouping: false,
     enableRowActions: false,
     rowActionsOptions: DEFAULT_ROW_ACTIONS_OPTIONS,
-
-    enableHeaderActionMenu: false,
+    rowActionsColumn: 'auto',
     enableRowActionMenu: false,
 
     enableCellEditing: false,
@@ -109,71 +114,109 @@ export const AllFeatures: StoryObj<StoryProps> = {
     enableContextMenu: false,
     enableKeyboardNavigation: false,
 
-    enablePagination: false,
-    enableExport: false,
-    enableColumnFiltering: false,
     enableQuickSearch: false,
-
-    enableFooter: false,
+    enableColumnFiltering: false,
+    enablePagination: false,
+    paginationPageSize: 25,
+    enableExport: false,
   },
   argTypes: {
-    columnCount: columnCountType,
-    dataCount: dataCountType,
-
-    containerHeight: containerHeightType,
-    height: numberHeightType,
-    maxHeight: numberMaxHeightType,
-
-    enableSkeleton: enableSkeletonType,
-    skeletonOptions: skeletonOptionsType,
-
-    enableLoading: enableLoadingType,
-
-    showStub: showStubType,
-    showHeaderGroups: showHeaderGroupsType,
-
-    enableColumnSorting: enableColumnSortingType,
-    enableSortingRemoval: enableSortingRemovalType,
-    serverColumnSorting: serverColumnSortingType,
-    enableMultiSort: enableMultiSortType,
-
-    enableColumnResizing: enableColumnResizingType,
-    enableColumnDragging: enableColumnDraggingType,
-    enableColumnPinning: enableColumnPinningType,
-    enableLeafPinning: enableLeafPinningType,
-    enableColumnVisibility: enableColumnVisibilityType,
-
-    enableGrouping: enableGroupingType,
-
-    enableRowSelection: enableRowSelectionType,
-    showSelectedCount: showSelectedCountType,
-    enableSubRowSelection: enableSubRowSelectionType,
-    enableRowExpanding: enableRowExpandingType,
-    rowExpandingMaxDepth: rowExpandingMaxDepthType,
-    rowExpandingColumn: rowExpandingColumnType,
-    rowExpandingTreeLines: rowExpandingTreeLinesType,
-    enableRowDragging: enableRowDraggingType,
-
-    enableRowActions: enableRowActionsType,
-    rowActionsOptions: rowActionsOptionsType,
-    rowActionsColumn: rowActionsColumnType,
-    enableHeaderActionMenu: enableHeaderActionMenuType,
-    enableRowActionMenu: enableRowActionMenuType,
-
-    enableCellEditing: enableCellEditingType,
-    enableCellSelection: enableCellSelectionType,
-    enableContextMenu: enableContextMenuType,
-    enableKeyboardNavigation: enableKeyboardNavigationType,
-
-    enablePagination: enablePaginationType,
-    paginationPageSize: paginationPageSizeType,
-    enableExport: enableExportType,
-    enableColumnFiltering: enableColumnFilteringType,
-    enableQuickSearch: enableQuickSearchType,
-
-    enableFooter: enableFooterType,
-    enableToolbar: enableToolbarType,
-    enableStatusBar: enableStatusBarType,
+    ...inCategory('Данные и размеры', {
+      columnCount: columnCountType,
+      dataCount: dataCountType,
+      containerHeight: containerHeightType,
+      height: numberHeightType,
+      maxHeight: numberMaxHeightType,
+      showStub: showStubType,
+      showHeaderGroups: showHeaderGroupsType,
+    }),
+    ...inCategory('Ядро: панели и состояния', {
+      enableSkeleton: enableSkeletonType,
+      skeletonOptions: skeletonOptionsType,
+      enableLoading: enableLoadingType,
+      enableFooter: enableFooterType,
+      enableToolbar: enableToolbarType,
+      enableStatusBar: enableStatusBarType,
+      enableAnnouncements: enableAnnouncementsType,
+    }),
+    ...inCategory(
+      'Колонки',
+      {
+        enableColumnSorting: enableColumnSortingType,
+        enableSortingRemoval: enableSortingRemovalType,
+        enableMultiSort: enableMultiSortType,
+        serverColumnSorting: serverColumnSortingType,
+      },
+      'Сортировка',
+    ),
+    ...inCategory(
+      'Колонки',
+      {
+        enableColumnPinning: enableColumnPinningType,
+        enableLeafPinning: enableLeafPinningType,
+      },
+      'Закрепление',
+    ),
+    ...inCategory(
+      'Колонки',
+      {
+        enableColumnResizing: enableColumnResizingType,
+        enableColumnDragging: enableColumnDraggingType,
+        enableColumnVisibility: enableColumnVisibilityType,
+        enableHeaderActionMenu: enableHeaderActionMenuType,
+      },
+      'Ширина, порядок, видимость',
+    ),
+    ...inCategory(
+      'Строки',
+      {
+        enableRowSelection: enableRowSelectionType,
+        enableSubRowSelection: enableSubRowSelectionType,
+        showSelectedCount: showSelectedCountType,
+      },
+      'Выбор',
+    ),
+    ...inCategory(
+      'Строки',
+      {
+        enableRowExpanding: enableRowExpandingType,
+        rowExpandingMaxDepth: rowExpandingMaxDepthType,
+        rowExpandingColumn: rowExpandingColumnType,
+        rowExpandingTreeLines: rowExpandingTreeLinesType,
+      },
+      'Раскрытие',
+    ),
+    ...inCategory(
+      'Строки',
+      {
+        enableRowDragging: enableRowDraggingType,
+        enableGrouping: enableGroupingType,
+      },
+      'Порядок и группировка',
+    ),
+    ...inCategory(
+      'Строки',
+      {
+        enableRowActions: enableRowActionsType,
+        rowActionsOptions: rowActionsOptionsType,
+        rowActionsColumn: rowActionsColumnType,
+        enableRowActionMenu: enableRowActionMenuType,
+      },
+      'Действия',
+    ),
+    ...inCategory('Ячейки и клавиатура', {
+      enableCellEditing: enableCellEditingType,
+      enableCellSelection: enableCellSelectionType,
+      enableContextMenu: enableContextMenuType,
+      enableKeyboardNavigation: enableKeyboardNavigationType,
+    }),
+    ...inCategory('Поиск, фильтры, страницы, экспорт', {
+      enableQuickSearch: enableQuickSearchType,
+      enableColumnFiltering: enableColumnFilteringType,
+      enablePagination: enablePaginationType,
+      paginationPageSize: paginationPageSizeType,
+      enableExport: enableExportType,
+    }),
   },
 }
 

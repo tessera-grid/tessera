@@ -6,6 +6,7 @@ import { makeData } from './__mocks__/data'
 /** Истории строк: выбор, раскрытие, группировка, перетаскивание, действия. */
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Rows',
 } satisfies Meta<StoryProps>
 

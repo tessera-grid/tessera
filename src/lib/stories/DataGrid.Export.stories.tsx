@@ -14,6 +14,7 @@ interface ExportArgs extends StoryProps {
 
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Export',
 } satisfies Meta<StoryProps>
 

@@ -38,6 +38,7 @@ interface FilteringDatesArgs extends StoryProps {
 
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Filtering',
 } satisfies Meta<StoryProps>
 

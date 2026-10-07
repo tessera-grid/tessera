@@ -67,6 +67,8 @@ const rowDraggingPlay: NonNullable<Meta<StoryProps>['play']> = async ({
   })
 }
 
+// Файл историй повторяет `parameters: { ...dataGridMeta.parameters }` явно: addon-docs
+// пишет описание из JSDoc в `meta.parameters` и параметры, пришедшие спредом, теряет.
 export const dataGridMeta = {
   args: {
     columnCount: COLUMN_COUNT,

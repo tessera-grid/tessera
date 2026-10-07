@@ -5,6 +5,7 @@ import { dataGridMeta } from './dataGridMeta'
 /** Истории ячеек: редактирование, контекстное меню, выделение, клавиатура. */
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Cells',
 } satisfies Meta<StoryProps>
 

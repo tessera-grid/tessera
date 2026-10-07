@@ -16,6 +16,7 @@ import { OwnPagerDemo } from './demos/panelsDemos'
 
 const meta = {
   ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Panels',
 } satisfies Meta<StoryProps>
 
