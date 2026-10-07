@@ -23,8 +23,9 @@
     overflow-x: unset;
   }
 
+  /* Зона грипа маскирует текст под собой тем же фоном, что у призрака (D32). */
   & :global(.resize__handler--column) {
-    background-color: var(--tsr-comp-head-cell-hovered-bg);
+    background-color: var(--tsr-comp-draggable-cell-bg);
   }
 
   & :global(.drag__handler--column) {

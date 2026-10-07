@@ -1,5 +1,6 @@
 // OverlayHeadCell: ячейка заголовка в DragOverlay при перетаскивании колонки.
-// Контент через flexRender; ширина — переменная заголовка (у группы — по header.id).
+// Контент через flexRender, кнопки — та же ActionsZone, что у ячейки заголовка;
+// ширина — переменная заголовка (у группы — по header.id).
 import { type CSSProperties, memo, useMemo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
@@ -9,8 +10,8 @@ import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
-import { RenderSlot } from '../core/renderSlots'
 import { getHeaderSizeVariable } from './columnSizes'
+import { ActionsZone } from './headerActions/ActionsZone'
 
 import styles from '../grid/HeadCell/OverlayHeadCell.module.css'
 
@@ -29,7 +30,7 @@ export const OverlayHeadCell = memo(
       [header.id],
     )
 
-    const enableResizingColumn = header.column.columnDef.enableResizing || false
+    const enableResizingColumn = header.column.getCanResize?.() ?? false
 
     const isActionsColumn = header.column.getIsActionsColumn()
 
@@ -58,9 +59,21 @@ export const OverlayHeadCell = memo(
         <CellWrapperContent
           flex={getAlignContent({ isActionsColumn, isRowActionsColumn: false })}
         >
-          <RenderSlot slot={leftHeaderSlot} context={header.getContext()} />
+          {!isActionsColumn && (
+            <ActionsZone
+              slot="leftHeaderSlot"
+              opaqueSlot={leftHeaderSlot}
+              context={header.getContext()}
+            />
+          )}
           {render}
-          <RenderSlot slot={rightHeaderSlot} context={header.getContext()} />
+          {!isActionsColumn && (
+            <ActionsZone
+              slot="rightHeaderSlot"
+              opaqueSlot={rightHeaderSlot}
+              context={header.getContext()}
+            />
+          )}
         </CellWrapperContent>
       </div>
     )

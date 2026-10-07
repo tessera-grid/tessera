@@ -637,7 +637,7 @@ overlay визуально совпадает с перетаскиваемым 
 (см. [ADR 0001](0001-spec-driven-development.md) и
 [ADR 0009](0009-test-coverage-visual-and-performance.md)) каждое требование — это
 **отдельный именованный тест** с ID-префиксом `D<n>:`, совпадающим с ID из таблиц
-ниже. Нумерация сквозная по обоим плагинам: **D1–D14** — строки, **D15–D30** —
+ниже. Нумерация сквозная по обоим плагинам: **D1–D14** — строки, **D15–D30, D32** —
 столбцы. Тесты строк живут в `stories/__tests__/visual/row-dragging.test.tsx`, тесты
 столбцов — в `stories/__tests__/visual/column-dragging.test.tsx` (оба — vitest-browser,
 реальный Chromium). Каждый набор гоняет свою историю (`RowDragging` /
@@ -671,7 +671,7 @@ smoke-тестом ради паритета.
 | DN1 | Раскрытое дерево показывает подстроки родителя — у перетаскивания в дереве есть цели   | `DN1: expanded tree renders its subrows …`       |
 | DN2 | Подстрока переставляется среди сиблингов, ни одна строка дерева не пропадает           | `DN2: a subrow reorders among its siblings …`    |
 
-#### Столбцы — `columnDragging` (D15–D30, `column-dragging.test.tsx`)
+#### Столбцы — `columnDragging` (D15–D30, D32, `column-dragging.test.tsx`)
 
 | ID  | Требование                                                                                          | Тест                                     |
 | --- | --------------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -691,6 +691,7 @@ smoke-тестом ради паритета.
 | D28 | Перетаскивание никогда не двигает столбец по вертикали (restrictToHorizontalAxis + autoScrollOnlyX) | `D28: … never scrolls vertically`        |
 | D29 | Закреплённый столбец нельзя перетащить (ручка `disabled`, `useSortable` disabled)                   | `D29: … pinned column cannot be dragged` |
 | D30 | Сброс над закреплённой/сервисной колонкой зажимается к крайней перетаскиваемой колонке              | `D30: … never lands in the pinned zone`  |
+| D32 | Фон зоны грипа ширины в overlay-клоне совпадает с фоном самого клона                                | `D32: … resize zone background …`        |
 
 Не покрыто тестом (см. [Известные ограничения](#известные-ограничения), список
 случаев `getRowDraggingEvents` и `TODO` в `getColumnDraggingEvents.ts`): вложенное /

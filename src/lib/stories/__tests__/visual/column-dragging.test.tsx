@@ -260,10 +260,22 @@ describe('Column Dragging — requirements', () => {
     await expect.poll(() => getComputedStyle(icon).opacity).toBe('1')
   })
 
-  test('D22: dragging shows the overlay clone of the header cell', async () => {
-    const container = await renderColumnDragging()
+  test('D22: dragging shows the overlay clone of the header cell — same width, title and header buttons', async () => {
+    // Кнопки-дескрипторы (сортировка, закрепление) и непрозрачные слоты (ручка, грип).
+    const container = await renderColumnDragging({
+      enableColumnSorting: true,
+      enableColumnPinning: true,
+      enableColumnResizing: true,
+    })
     const { source, target } = pickSourceTarget(container)
     const handle = source.querySelector<HTMLElement>(HANDLE)!
+    const buttonsOf = (cell: Element) =>
+      [...cell.querySelectorAll('button, [role="separator"]')].map(el =>
+        el.getAttribute('aria-label'),
+      )
+    const sourceButtons = buttonsOf(source)
+    const sourceWidth = source.getBoundingClientRect().width
+    expect(sourceButtons.length).toBeGreaterThan(2)
 
     const { hy } = await beginColumnDrag(handle)
     const tr = target.getBoundingClientRect()
@@ -275,6 +287,10 @@ describe('Column Dragging — requirements', () => {
       await expect
         .poll(() => container.querySelector(OVERLAY) !== null)
         .toBe(true)
+      const overlay = container.querySelector(OVERLAY)!
+      expect(overlay.getBoundingClientRect().width).toBe(sourceWidth)
+      expect(textOf(overlay as HTMLElement)).toBe(textOf(source))
+      expect(buttonsOf(overlay)).toEqual(sourceButtons)
     } finally {
       firePointer('pointerup', document, tx, hy)
     }
@@ -482,5 +498,33 @@ describe('Column Dragging — requirements', () => {
         return sourceMoved && pinnedStillFirst
       })
       .toBe(true)
+  })
+
+  test('D32: the resize zone background inside the overlay clone matches the clone background', async () => {
+    const container = await renderColumnDragging({ enableColumnResizing: true })
+    const { source, target } = pickSourceTarget(container)
+    const handle = source.querySelector<HTMLElement>(HANDLE)!
+
+    const { hy } = await beginColumnDrag(handle)
+    const tr = target.getBoundingClientRect()
+    const tx = tr.left + tr.width / 2
+    firePointer('pointermove', document, tx, hy)
+    await nextFrame()
+    await nextFrame()
+    try {
+      await expect
+        .poll(() => container.querySelector(OVERLAY) !== null)
+        .toBe(true)
+      const overlay = container.querySelector<HTMLElement>(OVERLAY)!
+      const zone = overlay.querySelector<HTMLElement>(
+        '.resize__handler--column',
+      )!
+      document.getAnimations().forEach(animation => animation.finish())
+      expect(getComputedStyle(zone).backgroundColor).toBe(
+        getComputedStyle(overlay).backgroundColor,
+      )
+    } finally {
+      firePointer('pointerup', document, tx, hy)
+    }
   })
 })
