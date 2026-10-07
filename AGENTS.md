@@ -476,7 +476,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       снимки дерева доступности Chromium через CDP) и `screen-reader` (SR1–SR7 —
       эмулятор скринридера), [ADR 0033](docs/decisions/0033-a11y-tree-and-virtual-screen-reader.md);
       `wcag-22` (DA1–DA6 — меню на ручках вместо перетаскивания, TS1–TS2 — зона
-      нажатия 24×24, [ADR 0034](docs/decisions/0034-wcag-22-dragging-and-target-size.md)).
+      нажатия 24×24, [ADR 0034](docs/decisions/0034-wcag-22-dragging-and-target-size.md));
+      модульный `treeAria` (TA1–TA2 — `aria-*` дерева без объекта на строку), перф TA3 —
+      в `interaction` ([ADR 0065](docs/decisions/0065-tree-aria-without-row-objects.md)).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md); X7–X10 — пагинация
       с выбором, правкой, перестановкой строк и выделением ячеек,
@@ -545,7 +547,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     панели с 1000 вариантов, RE38 — приход 100 детей ленивой строки на 100 000 корней,
     RE50 — тот же приход ответом сервера с подсветкой против RE38
     OS11 — сортировка 100 000 строк по подписи против сортировки по id;
-    SM7 — построение отсортированной модели на 100 000 строк против TanStack
+    SM7 — построение отсортированной модели на 100 000 строк против TanStack;
+    TA3 — счёт `aria-*` дерева на 100 000 строк против прежнего
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);

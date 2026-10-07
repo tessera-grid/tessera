@@ -28,6 +28,7 @@ import {
 } from './perf-cases'
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
+import { getTreeAria } from '../../../grid/treeAria'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import {
@@ -979,5 +980,97 @@ describe('Своя отсортированная модель', () => {
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// aria-* дерева без объекта на строку (ADR 0065, TA3): счёт на 100 000 корней со 100
+// детьми у двух — как в RE38 — против прежнего алгоритма (Map по parentId, объект на
+// строку) в том же замере. Счёт повторяется 10 раз за действие: один проход короче
+// порога замера задачи.
+const TREE_ARIA_REPEAT = 10
+const TREE_ARIA_ROWS = (() => {
+  const rows: { id: string; depth: number; parentId?: string }[] = []
+  for (let i = 0; i < 100_000; i++) {
+    rows.push({ id: `r${i}`, depth: 0 })
+    if (i < 2) {
+      for (let k = 0; k < 100; k++) {
+        rows.push({ id: `r${i}-${k}`, depth: 1, parentId: `r${i}` })
+      }
+    }
+  }
+  return rows
+})()
+
+/** Прежний счёт тела: соседи по parentId в Map, объект атрибутов на строку. */
+const treeAriaByObjects = (rows: typeof TREE_ARIA_ROWS) => {
+  const siblings = new Map<string, typeof TREE_ARIA_ROWS>()
+  for (const row of rows) {
+    const key = row.parentId ?? ''
+    const group = siblings.get(key)
+    if (group) group.push(row)
+    else siblings.set(key, [row])
+  }
+  const aria = new Map<string, object>()
+  for (const group of siblings.values()) {
+    group.forEach((row, index) =>
+      aria.set(row.id, {
+        'aria-level': row.depth + 1,
+        'aria-setsize': group.length,
+        'aria-posinset': index + 1,
+      }),
+    )
+  }
+  return aria
+}
+
+describe('aria-* дерева', () => {
+  test(
+    'TA3: счёт aria-* дерева на 100 000 строк — не дольше четверти прежнего',
+    async () => {
+      const theirs = await measureInteractionWork(async () => {
+        for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
+          treeAriaByObjects(TREE_ARIA_ROWS)
+        }
+      })
+      const ours = await measureInteractionWork(async () => {
+        for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
+          getTreeAria(TREE_ARIA_ROWS)
+        }
+      })
+      const ceiling = theirs.longestMs / 4
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000 строк',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('TA3-base', 'объект на строку', theirs, false)
+      await record('TA3', 'типизированные массивы', ours, true)
+
+      expect(
+        ours.longestMs,
+        `новый longest=${ours.longestMs.toFixed(1)}ms, прежний ${theirs.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT,
   )
 })

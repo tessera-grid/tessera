@@ -36,15 +36,10 @@ export interface TableBodyRowProps {
   ariaRowIndexBase: number
   /** Строки несут `aria-selected` (grid с rowSelection). */
   selectableRows?: boolean
-  /** Уровень и позиция строки в treegrid. */
-  treeAria?: TreeAria
+  /** Позиция строки среди соседей в treegrid; есть только в treegrid. */
+  treeSetSize?: number
+  treePosInSet?: number
   isVirtualColumns: boolean
-}
-
-export interface TreeAria {
-  'aria-level': number
-  'aria-setsize': number
-  'aria-posinset': number
 }
 
 interface BodyRowCellsProps extends TableBodyRowProps {
@@ -214,10 +209,14 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
       // aria-expanded строки допустим только в treegrid; в table состояние несёт
       // кнопка раскрытия (ADR 0015, RE10, RE12).
-      aria-expanded={canExpand && props.treeAria ? isExpanded : undefined}
+      aria-expanded={
+        canExpand && props.treeSetSize !== undefined ? isExpanded : undefined
+      }
       aria-busy={isExpandPending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
-      {...props.treeAria}
+      aria-level={props.treeSetSize !== undefined ? row.depth + 1 : undefined}
+      aria-setsize={props.treeSetSize}
+      aria-posinset={props.treePosInSet}
       data-index={virtualRow.index}
       data-row-id={row.id}
       data-selected={row.getIsSelected?.() ?? false}

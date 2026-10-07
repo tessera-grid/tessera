@@ -9,8 +9,9 @@ import clsx from 'clsx'
 
 import type { Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
-import { BodyRow, type TreeAria } from './BodyRow'
+import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
+import { getTreeAria } from './treeAria'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -79,38 +80,14 @@ export const Body = ({
             actionRowSlot={actionRowSlot}
             ariaRowIndexBase={ariaRowIndexBase}
             selectableRows={selectableRows}
-            treeAria={treeAria?.get(row.id)}
+            treeSetSize={treeAria?.setSize(virtualRow.index)}
+            treePosInSet={treeAria?.posInSet(virtualRow.index)}
             isVirtualColumns={isVirtualColumns}
           />
         )
       })}
     </div>
   )
-}
-
-/** Уровень и позиция строки среди соседей того же родителя в видимой модели. */
-const getTreeAria = (rows: Row<any, any>[]) => {
-  const siblings = new Map<string, Row<any, any>[]>()
-  for (const row of rows) {
-    const key = row.parentId ?? ''
-    const group = siblings.get(key)
-    if (group) {
-      group.push(row)
-    } else {
-      siblings.set(key, [row])
-    }
-  }
-  const aria = new Map<string, TreeAria>()
-  for (const group of siblings.values()) {
-    group.forEach((row, index) =>
-      aria.set(row.id, {
-        'aria-level': row.depth + 1,
-        'aria-setsize': group.length,
-        'aria-posinset': index + 1,
-      }),
-    )
-  }
-  return aria
 }
 
 // Мемоизация активна только во время ресайза колонок.
