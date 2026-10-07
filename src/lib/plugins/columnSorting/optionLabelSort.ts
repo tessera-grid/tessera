@@ -14,7 +14,8 @@ import {
 interface SortColumn {
   id: string
   table: object
-  columnDef: ColumnOptionsDef & { sortFn?: unknown }
+  columnDef: ColumnOptionsDef & { sortFn?: unknown; invertSorting?: boolean }
+  getIsSorted: () => false | 'asc' | 'desc'
 }
 
 interface SortRow {
@@ -57,7 +58,7 @@ const compareKeys = ([groupA, placeA]: SortKey, [groupB, placeB]: SortKey) => {
     : collator.compare(placeA, placeB as string)
 }
 
-/** Функция сортировки колонки: пустые значения — после непустых. */
+/** Функция сортировки колонки: пустые значения — после непустых в обе стороны. */
 export const optionLabelSortFn = (column: SortColumn) => {
   // Ключи значений на один проход сортировки: он синхронный, подписи за это время не
   // меняются; кэш сбрасывается после прохода.
@@ -92,7 +93,14 @@ export const optionLabelSortFn = (column: SortColumn) => {
     const b = rowB.getValue(columnId)
     const emptyA = isEmptyOptionValue(a)
     const emptyB = isEmptyOptionValue(b)
-    if (emptyA || emptyB) return Number(emptyA) - Number(emptyB)
+    if (emptyA || emptyB) {
+      // TanStack обращает результат по убыванию и при invertSorting — заранее
+      // обращаем, чтобы пустые остались внизу.
+      const flipped =
+        (column.getIsSorted() === 'desc') !== !!column.columnDef.invertSorting
+      const order = Number(emptyA) - Number(emptyB)
+      return flipped ? -order : order
+    }
     return compareItems(a, b)
   }
 }

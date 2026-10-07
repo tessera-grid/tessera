@@ -140,7 +140,7 @@ describe('columnSorting — подписи вариантов', () => {
     expect(sortedIds(table, 'tags')).toEqual(['c', 'b', 'a'])
   })
 
-  it("OS6: пустые значения (null, '', []) по возрастанию — последними", () => {
+  it("OS6: пустые значения (null, '', []) — последними и по возрастанию, и по убыванию", () => {
     const table = build([
       { id: 'a', status: null, tags: [] },
       { id: 'b', status: 'won', tags: ['vip'] },
@@ -149,6 +149,8 @@ describe('columnSorting — подписи вариантов', () => {
     ])
     expect(sortedIds(table, 'status').slice(0, 2)).toEqual(['d', 'b'])
     expect(sortedIds(table, 'tags').slice(0, 2)).toEqual(['b', 'd'])
+    expect(sortedIds(table, 'status', true).slice(0, 2)).toEqual(['b', 'd'])
+    expect(sortedIds(table, 'tags', true).slice(0, 2)).toEqual(['d', 'b'])
   })
 
   it('OS7: свой sortFn колонки перекрывает сортировку по подписи', () => {

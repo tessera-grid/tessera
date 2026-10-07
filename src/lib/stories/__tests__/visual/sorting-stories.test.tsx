@@ -12,14 +12,6 @@ const firstRowText = (columnId: string) =>
     ?.querySelector(`[data-column-id="${columnId}"]`)
     ?.textContent?.trim()
 
-/** Первое непустое значение колонки сверху: по убыванию пустые идут первыми (OS6). */
-const firstFilledText = (columnId: string) =>
-  bodyRows()
-    .map(row =>
-      row.querySelector(`[data-column-id="${columnId}"]`)?.textContent?.trim(),
-    )
-    .find(Boolean)
-
 const sortButton = (columnId: string) =>
   document.querySelector<HTMLElement>(
     `.data-grid__head-cell[data-column-id="${columnId}"] .column-sort__button`,
@@ -31,9 +23,10 @@ describe('Демо-история Sorting', () => {
     await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
     expect(firstRowText('managerId')).not.toMatch(/^m\d+$/)
 
-    // Первый клик — по убыванию (sortDescFirst таблицы): последний вариант — первым.
+    // Первый клик — по убыванию (sortDescFirst таблицы): последний вариант — первым,
+    // пустые — внизу (OS6).
     await humanClick(sortButton('status'))
-    await expect.poll(() => firstFilledText('status')).toBe('Lost')
+    await expect.poll(() => firstRowText('status')).toBe('Lost')
     await humanClick(sortButton('status'))
     await expect.poll(() => firstRowText('status')).toBe('Lead')
   })
