@@ -377,7 +377,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       уровни, непрерывность через границу строки, группы, закрепление, виртуализация,
       сортировка, страница, раскладка, axe, токены), перф RE60 — в `scroll`
       ([ADR 0058](docs/decisions/0058-tree-lines.md)); шаг отступа — `row-expanding`
-      (RE61), `row-expanding-tree-lines` (RE62), модульный `rowNesting` (RE63)
+      (RE61), `row-expanding-tree-lines` (RE62), модульный `rowNesting` (RE63–RE64)
       ([ADR 0059](docs/decisions/0059-row-nesting-indent.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),

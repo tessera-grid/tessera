@@ -137,13 +137,16 @@ export const getRowDraggingEvents = (
     ).onRowDragCancel?.({ rowId: String(rowId), reason })
   }
 
-  // Шаг уровня — на старте перетаскивания: токен темы читается у смонтированного грида.
-  let constOffsetLeft = getRowDraggableOffsetLeft({ table })
+  // Шаг уровня читается из темы на старте перетаскивания, а не в рендере (RE64):
+  // обработчики, пересозданные посреди перетаскивания, читают его при первом событии.
+  let levelStep: number | undefined
+  const getLevelStep = () =>
+    (levelStep ??= getRowDraggableOffsetLeft({ table }))
 
   return {
     onRowDragStart: ({ active }) => {
       const { row } = active.data.current as RowSortableData
-      constOffsetLeft = getRowDraggableOffsetLeft({ table })
+      levelStep = getRowDraggableOffsetLeft({ table })
 
       document.body.style.cursor = 'grabbing'
       holdSessionHooks(table as never, 'rowDragging')
@@ -153,7 +156,7 @@ export const getRowDraggingEvents = (
         // Начальная позиция индикатора вложенности
         offsetLeft: row.getIsLastSubRow()
           ? 0
-          : getOffsetLeftFromDepth(row.depth, constOffsetLeft),
+          : getOffsetLeftFromDepth(row.depth, getLevelStep()),
         // Запомнить, была ли открыта группа до перетаскивания, чтобы свернуть её на
         // время и после открыть вновь (rowExpanding может отсутствовать → false).
         isExpanded: row.getIsExpanded?.() ?? false,
@@ -178,7 +181,7 @@ export const getRowDraggingEvents = (
         overVirtualIndex,
       )
 
-      const currentDepth = getDepthFromOffsetLeft(delta.x, constOffsetLeft)
+      const currentDepth = getDepthFromOffsetLeft(delta.x, getLevelStep())
 
       const minDepth = getMinDepth(activeRow, targetItem, over.id)
       const maxDepth = getMaxDepth(targetItem)
@@ -186,7 +189,7 @@ export const getRowDraggingEvents = (
 
       onRowDraggingChange?.(prev => ({
         ...prev,
-        offsetLeft: getOffsetLeftFromDepth(validDepth, constOffsetLeft),
+        offsetLeft: getOffsetLeftFromDepth(validDepth, getLevelStep()),
         // Вложенность больше 1 сейчас не поддерживается.
         acceptable:
           (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true,
@@ -217,7 +220,7 @@ export const getRowDraggingEvents = (
 
       const currentDepth = getDepthFromOffsetLeft(
         rowDraggingState.offsetLeft,
-        constOffsetLeft,
+        getLevelStep(),
       )
 
       // Если id или вложенность не поменялась, элемент остаётся на месте
