@@ -92,6 +92,11 @@ export interface CommonColumnAPI {
 export interface CommonColumnDef extends ColumnOptionsDef {
   /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
   serviceLabel?: 'expandColumn' | 'reorderColumn' | 'rowActionsColumn'
+  /**
+   * Служебная колонка в скелете первой загрузки (ADR 0060): `'control'` — квадрат
+   * на месте контрола; без поля — пустая ячейка.
+   */
+  skeletonCell?: 'control'
 }
 
 export interface CommonHeaderAPI {

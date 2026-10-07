@@ -2,8 +2,10 @@ import { cleanup } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import {
+  Stories,
   headCells,
   measureInteractionWork,
+  measureTransitionWork,
   recordPerf,
   renderGrid,
 } from '../helpers'
@@ -726,5 +728,82 @@ describe('Отзывчивость взаимодействий — подсве
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// Скелет первой загрузки (ADR 0060, SL15): смена скелета на данные (выключение
+// `enableSkeleton`) — самая длинная задача в пределах регресс-потолка против прежнего
+// оверлея. База — его замер на 2026-10-07 (до ADR 0060); прежний оверлей делил смену
+// на две задачи паузой 200 мс, теперь она одна.
+const SKELETON_SWAP_BASE_MS = { small: 112, large: 131 }
+
+describe('Отзывчивость — смена скелета на данные', () => {
+  test(
+    'SL15: смена скелета на данные — самая длинная задача в пределах регресс-потолка против прежнего оверлея',
+    async () => {
+      const sizes = [
+        { key: 'small', size: SMALL, label: '30×500' },
+        { key: 'large', size: LARGE, label: '1000×1000' },
+      ] as const
+      const rowsReady = () =>
+        !!document.querySelector('.data-grid__body .data-grid__body-row')
+      for (const { key, size, label } of sizes) {
+        const args = { ...size, ...ALL_PLUGINS }
+        const measureSwap = async () => {
+          const screen = await renderGrid({ ...args, enableSkeleton: true })
+          await expect
+            .poll(() => document.querySelector('.data-grid__body--skeleton'), {
+              timeout: 20_000,
+            })
+            .toBeTruthy()
+          const result = await measureTransitionWork(async () => {
+            await screen.rerender(
+              <Stories.AllFeatures
+                containerHeight={600}
+                height={500}
+                {...args}
+                enableSkeleton={false}
+              />,
+            )
+          }, rowsReady)
+          await screen.unmount()
+          return result
+        }
+        // Прогрев JIT вне замера.
+        // eslint-disable-next-line no-await-in-loop
+        await measureSwap()
+        // eslint-disable-next-line no-await-in-loop
+        const result = await measureSwap()
+        const ceiling = Math.max(
+          SKELETON_SWAP_BASE_MS[key] * 1.3,
+          SKELETON_SWAP_BASE_MS[key] + 40,
+        )
+        // eslint-disable-next-line no-await-in-loop
+        await recordPerf({
+          id: `SL15-${key}`,
+          label: `смена скелета на данные, ${label}, все плагины`,
+          operation: 'interaction',
+          size: label,
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: result.longestMs,
+              budgetMs: ceiling,
+              pass: result.longestMs <= ceiling,
+              ...result,
+            },
+          ],
+        })
+        expect(
+          result.longestMs,
+          `${label}: longest=${result.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(0)}ms`,
+        ).toBeLessThanOrEqual(ceiling)
+      }
+    },
+    PERF_TIMEOUT,
   )
 })

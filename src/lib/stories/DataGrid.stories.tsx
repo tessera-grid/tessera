@@ -222,9 +222,20 @@ export const AllFeatures: StoryObj<StoryProps> = {
 
 export const Skeletons: StoryObj<StoryProps> = {
   name: 'Skeletons',
+  // Скелет первой загрузки повторяет раскладку грида (ADR 0060): служебные колонки,
+  // закрепление, шапку и пагинатор. Выключите enableSkeleton — данные встанут на
+  // место без сдвига; skeletonOptions.rowsCount числом задаёт строки вручную.
   args: {
     enableSkeleton: true,
     skeletonOptions: DEFAULT_SKELETON_OPTIONS,
+    enableRowSelection: true,
+    showSelectedCount: true,
+    enableRowDragging: true,
+    enableRowExpanding: true,
+    enableColumnPinning: true,
+    enableColumnSorting: true,
+    enablePagination: true,
+    enableFooter: true,
   },
   argTypes: {
     columnCount: columnCountType,

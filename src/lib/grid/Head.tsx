@@ -21,6 +21,8 @@ interface TableHeadProps {
   isResizingColumns: false | string | undefined
   isVirtualColumns: boolean
   enableColumnDragging?: boolean
+  /** Шапка внутри скелета первой загрузки: скрыта от скринридера и неинтерактивна. */
+  skeleton?: boolean
 }
 
 export const Head = ({
@@ -32,12 +34,17 @@ export const Head = ({
   rightHeaderSlot,
   isVirtualColumns,
   enableColumnDragging,
+  skeleton,
 }: TableHeadProps) => (
   <div
-    className={clsx('data-grid__head', styles.head)}
+    className={clsx('data-grid__head', styles.head, {
+      'data-grid__head--skeleton': skeleton,
+    })}
     style={style}
     role="rowgroup"
     data-layout={layout}
+    aria-hidden={skeleton || undefined}
+    inert={skeleton}
   >
     {headerGroups.map(headerGroup => (
       <HeadRow

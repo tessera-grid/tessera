@@ -75,7 +75,8 @@
 }
 
 .table__container--skeleton {
-  overflow: hidden;
+  /* Строк скелета ровно на экран; по горизонтали — прокрутка, как у грида. */
+  overflow-y: hidden;
 }
 
 /*

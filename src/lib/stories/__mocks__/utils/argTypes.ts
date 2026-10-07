@@ -113,7 +113,7 @@ export const enableSkeletonType = booleanControl(
   'Скелеты вместо содержимого ячеек (`enableSkeleton`)',
 )
 export const skeletonOptionsType = objectControl(
-  'Сколько колонок и строк скелетов показать: число или `auto`',
+  'rowsCount — строк: число или `auto` (по высоте); columnsCount — колонок, только когда своих колонок нет',
   'SkeletonOptions',
   DEFAULT_SKELETON_OPTIONS,
 )

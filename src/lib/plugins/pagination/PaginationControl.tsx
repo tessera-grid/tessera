@@ -12,6 +12,8 @@ import { announceLabel } from '../../core/announcer'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
+import { isSkeletonShown } from '../../core/skeletonOptions'
+import { Skeleton } from '../../ui/Skeleton'
 import { useIcons } from '../../ui/icons'
 import {
   clampedPageIndex,
@@ -31,6 +33,8 @@ const PageSizeSelect = lazy(() =>
 )
 
 const ICON_SIZE = 18
+/** Ширина скелета диапазона «1–25 of 1000» на время первой загрузки. */
+const RANGE_SKELETON_WIDTH = 96
 
 export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
@@ -123,7 +127,11 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
         </div>
       )}
       <span className={styles.range} data-testid="pagination-range">
-        {labels.pageRange(from, to, rowCount)}
+        {isSkeletonShown(table) ? (
+          <Skeleton width={RANGE_SKELETON_WIDTH} height={14} />
+        ) : (
+          labels.pageRange(from, to, rowCount)
+        )}
       </span>
       <div className={styles.buttons}>
         <PageButton

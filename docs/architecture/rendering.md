@@ -99,7 +99,7 @@ flowchart TB
         BODY["DndBodyWrapper → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
         FOOT["Footer (enableFooter)"]
         SB["StatusBar (statusBarSlot или enableStatusBar) — вне скролл-контейнера<br/>+ statusBarSlot по сторонам"]
-        SK["SkeletonOverlay (enableSkeleton)<br/>LinearProgress (enableLoading)"]
+        SK["скелет первой загрузки (enableSkeleton): та же шапка, SkeletonBody<br/>LinearProgress (enableLoading)"]
     end
 
     read --> virt --> paint
@@ -157,8 +157,16 @@ DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [
 
 ## Состояния загрузки
 
-- `enableSkeleton` → `SkeletonOverlay` для первой загрузки (конфигурируется через
-  `skeletonOptions`); также используется на уровне ячейки при быстром скролле
-  (`FastScrollProvider`).
+- `enableSkeleton` → скелет первой загрузки ([ADR 0060](../decisions/0060-initial-loading-skeleton.md)).
+  Рисует та же `DataGridTable`: шапка остаётся настоящей (контекст режима скелета
+  убирает кнопки плагинов и содержимое служебных заголовков), тело и футер —
+  `SkeletonBody`: лёгкие ячейки без строк TanStack по переменным ширин, закреплению и
+  диапазону виртуализатора колонок, строк — по высоте области (`skeletonOptions.rowsCount`).
+  Служебная колонка рисует квадрат, если у неё `columnDef.skeletonCell: 'control'`.
+  Скелет скрыт от скринридера (`aria-hidden`, `inert`), у таблицы нет роли, загрузку
+  объявляет статус. Компоненты панелей читают флаг через `isSkeletonShown`. Флаг —
+  единственный источник: скелет снимается в том же рендере, без задержки.
+- Отдельно от него — скелеты ячеек при быстрой прокрутке (`FastScrollProvider`,
+  [ADR 0008](../decisions/0008-fast-scroll.md)).
 - `enableLoading` → полоса `LinearProgress` под заголовком для асинхронных
   обновлений.

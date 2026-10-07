@@ -8,6 +8,8 @@ import type { RowSelectionState } from '@tanstack/react-table'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
+import { isSkeletonShown } from '../../core/skeletonOptions'
+import { Skeleton } from '../../ui/Skeleton'
 
 /** Выбранные `id` среза, а не строки модели: выбор на других страницах тоже считается. */
 export const countSelectedRows = (selection: RowSelectionState | undefined) =>
@@ -38,6 +40,14 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
     state => state.rowSelection as RowSelectionState | undefined,
   )
   useTableState(table, state => [state.columnFilters, state.globalFilter])
+  if (isSkeletonShown(table)) {
+    return (
+      <span data-testid="selected-rows-count">
+        <Skeleton width={80} height={14} />
+      </span>
+    )
+  }
+
   const count = countSelectedRows(selection)
   const hidden = count > 0 ? countHiddenSelectedRows(table, selection) : 0
 

@@ -14,6 +14,8 @@ import { MemoizedBody } from './Body'
 import { MemoizedFooter } from './Footer'
 import { HeadDndBoundary } from './DndHeadWrapper'
 import { MemoizedHead } from './Head'
+import { SkeletonBody } from './SkeletonBody'
+import { SkeletonModeContext } from './skeletonMode'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 
@@ -31,6 +33,10 @@ interface DataGridTableProps {
   keyboardNavigation: KeyboardNavigationGrid | null
   label: string
   busy: boolean
+  /** Скелет первой загрузки (ADR 0060): та же шапка, лёгкие тело и футер. */
+  skeleton: boolean
+  /** Статус «Loading» скелета. */
+  loadingLabel: string
   style: CSSProperties
 }
 
@@ -52,6 +58,8 @@ export const DataGridTable = ({
   keyboardNavigation,
   label,
   busy,
+  skeleton,
+  loadingLabel,
   style,
 }: DataGridTableProps) => {
   const options = table.options as any
@@ -74,63 +82,91 @@ export const DataGridTable = ({
     actionRowSlot,
   } = table.getRenderSlots() ?? {}
 
+  // Скелет — не таблица с данными: без роли и aria таблицы, загрузку объявляет статус.
+  const tableAria = skeleton
+    ? undefined
+    : {
+        role: keyboardNavigation
+          ? hierarchical
+            ? 'treegrid'
+            : 'grid'
+          : 'table',
+        'aria-label': label,
+        'aria-busy': busy || undefined,
+        'aria-rowcount': headerGroups.length + rowWindow.total,
+        'aria-colcount': leafColumns.length,
+        'aria-multiselectable':
+          keyboardNavigation &&
+          (enableRowSelection || !!options.enableCellSelection)
+            ? true
+            : undefined,
+        onKeyDown: keyboardNavigation?.onKeyDown,
+        onFocusCapture: keyboardNavigation?.onFocusCapture,
+        onPointerDownCapture: keyboardNavigation?.onPointerDownCapture,
+      }
+
   return (
     <div
-      role={keyboardNavigation ? (hierarchical ? 'treegrid' : 'grid') : 'table'}
-      aria-label={label}
-      aria-busy={busy || undefined}
-      aria-rowcount={headerGroups.length + rowWindow.total}
-      aria-colcount={leafColumns.length}
+      {...tableAria}
       className={clsx('data-grid__table', dataGridStyles.table)}
-      aria-multiselectable={
-        keyboardNavigation &&
-        (enableRowSelection || !!options.enableCellSelection)
-          ? true
-          : undefined
-      }
-      onKeyDown={keyboardNavigation?.onKeyDown}
-      onFocusCapture={keyboardNavigation?.onFocusCapture}
-      onPointerDownCapture={keyboardNavigation?.onPointerDownCapture}
       style={style}
     >
-      <HeadDndBoundary
-        table={table}
-        leftHeaderSlot={leftHeaderSlot}
-        rightHeaderSlot={rightHeaderSlot}
-        enableColumnDragging={enableColumnDragging}
-      >
-        <MemoizedHead
-          layout={layout}
-          style={headStyles}
-          headerGroups={headerGroups}
-          virtualColumns={virtualColumns}
+      {skeleton && (
+        <span role="status" className={dataGridStyles['visually-hidden']}>
+          {loadingLabel}
+        </span>
+      )}
+      <SkeletonModeContext.Provider value={skeleton}>
+        <HeadDndBoundary
+          table={table}
           leftHeaderSlot={leftHeaderSlot}
           rightHeaderSlot={rightHeaderSlot}
-          isResizingColumns={isResizingColumns}
-          isVirtualColumns={isVirtualColumns}
           enableColumnDragging={enableColumnDragging}
-        />
-      </HeadDndBoundary>
-      <BodyDndBoundary table={table} enableRowDragging={enableRowDragging}>
-        <MemoizedBody
+        >
+          <MemoizedHead
+            layout={layout}
+            style={headStyles}
+            headerGroups={headerGroups}
+            virtualColumns={virtualColumns}
+            leftHeaderSlot={leftHeaderSlot}
+            rightHeaderSlot={rightHeaderSlot}
+            isResizingColumns={isResizingColumns}
+            isVirtualColumns={isVirtualColumns}
+            enableColumnDragging={enableColumnDragging}
+            skeleton={skeleton}
+          />
+        </HeadDndBoundary>
+      </SkeletonModeContext.Provider>
+      {skeleton ? (
+        <SkeletonBody
+          table={table}
           layout={layout}
-          rows={rows}
-          virtualRows={virtualRows}
-          virtualColumns={virtualColumns}
           leafColumns={leafColumns}
-          leftCellSlot={leftCellSlot}
-          rightCellSlot={rightCellSlot}
-          cellSlot={cellSlot}
-          actionRowSlot={actionRowSlot}
-          ariaRowIndexBase={headerGroups.length + rowWindow.offset}
-          selectableRows={!!keyboardNavigation && enableRowSelection}
-          treeRows={!!keyboardNavigation && hierarchical}
-          isResizingColumns={isResizingColumns}
+          virtualColumns={virtualColumns}
           isVirtualColumns={isVirtualColumns}
-          enableRowDragging={enableRowDragging}
         />
-      </BodyDndBoundary>
-      {options.enableFooter && (
+      ) : (
+        <BodyDndBoundary table={table} enableRowDragging={enableRowDragging}>
+          <MemoizedBody
+            layout={layout}
+            rows={rows}
+            virtualRows={virtualRows}
+            virtualColumns={virtualColumns}
+            leafColumns={leafColumns}
+            leftCellSlot={leftCellSlot}
+            rightCellSlot={rightCellSlot}
+            cellSlot={cellSlot}
+            actionRowSlot={actionRowSlot}
+            ariaRowIndexBase={headerGroups.length + rowWindow.offset}
+            selectableRows={!!keyboardNavigation && enableRowSelection}
+            treeRows={!!keyboardNavigation && hierarchical}
+            isResizingColumns={isResizingColumns}
+            isVirtualColumns={isVirtualColumns}
+            enableRowDragging={enableRowDragging}
+          />
+        </BodyDndBoundary>
+      )}
+      {options.enableFooter && !skeleton && (
         <MemoizedFooter
           layout={layout}
           footerGroup={table.getFooterGroups().at(0)}

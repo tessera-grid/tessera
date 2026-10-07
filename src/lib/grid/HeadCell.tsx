@@ -36,6 +36,7 @@ import { ActionsZone } from './headerActions/ActionsZone'
 import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
 import { pinnedSideToDom } from './cellPinningParams'
+import { useSkeletonMode } from './skeletonMode'
 import { getColumnSizeVariable, getHeaderSizeVariable } from './columnSizes'
 import {
   getAriaSort,
@@ -99,7 +100,9 @@ export const HeadCellView = ({
   const isActionsColumn = header.column.getIsActionsColumn()
   const enableResizingColumn = header.column.getCanResize?.() ?? false
   const isResizing = header.column.getIsResizing?.() ?? false
-  const canRenderSlots = !isActionsColumn
+  // Скелет первой загрузки: только названия колонок (ADR 0060, §3).
+  const skeleton = useSkeletonMode()
+  const canRenderSlots = !isActionsColumn && !skeleton
   const isDragging = drag?.isDragging ?? false
 
   const labels = useLocalization()
@@ -110,10 +113,10 @@ export const HeadCellView = ({
   const hasTitle = !isActionsColumn && !!header.column.columnDef.header
 
   const render = useMemo(() => {
-    const content = flexRender(
-      header.column.columnDef.header,
-      header.getContext(),
-    )
+    const content =
+      skeleton && isActionsColumn
+        ? null
+        : flexRender(header.column.columnDef.header, header.getContext())
     return isActionsColumn ? (
       <>
         {content}
@@ -126,7 +129,7 @@ export const HeadCellView = ({
     ) : (
       <CellWrapperTitle id={titleId}>{content}</CellWrapperTitle>
     )
-  }, [header, isActionsColumn, serviceLabel, labels, titleId])
+  }, [header, isActionsColumn, serviceLabel, labels, titleId, skeleton])
 
   const gridStyles = useGridStyles(header)
 

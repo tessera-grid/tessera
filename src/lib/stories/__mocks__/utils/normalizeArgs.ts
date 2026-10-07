@@ -1,21 +1,19 @@
+import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
+
 /**
- * Поведение объекта в аргументах сторибука ведет себя некорректно
- * При параметризации свойств объекта как number | string и изменения значения свойства объекта с числа на строку
- * Перезагрузка страницы истории приводит данное свойство к NaN
+ * Объектный аргумент Storybook с полем `number | string` после смены числа на строку и
+ * перезагрузки истории приходит как NaN — возвращаем умолчание.
  */
 export const normalizeArgs = (args: any) => {
   const skeletonOptions = args?.skeletonOptions
 
   if (skeletonOptions) {
-    const columnsCount = Number.isNaN(skeletonOptions?.columnsCount)
-      ? 'auto'
-      : skeletonOptions?.columnsCount
-    const rowsCount = Number.isNaN(skeletonOptions?.rowsCount)
-      ? 'auto'
-      : skeletonOptions?.rowsCount
-
-    skeletonOptions.columnsCount = columnsCount
-    skeletonOptions.rowsCount = rowsCount
+    if (Number.isNaN(skeletonOptions.rowsCount)) {
+      skeletonOptions.rowsCount = DEFAULT_SKELETON_OPTIONS.rowsCount
+    }
+    if (Number.isNaN(skeletonOptions.columnsCount)) {
+      skeletonOptions.columnsCount = DEFAULT_SKELETON_OPTIONS.columnsCount
+    }
   }
 
   return { ...args, skeletonOptions }

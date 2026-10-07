@@ -18,6 +18,7 @@ export const getRowSelectionColumn = ({
   ({
     id: COLUMN_SELECTION_ID,
     accessorKey: COLUMN_SELECTION_ID,
+    skeletonCell: 'control',
     minSize: COLUMN_ACTIONS_SIZE,
     size: COLUMN_ACTIONS_SIZE,
     enableSorting: false,

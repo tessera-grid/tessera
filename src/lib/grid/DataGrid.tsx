@@ -34,7 +34,6 @@ import type { Column } from '../types'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
-import { useSkeletonOverlayState } from '../core/skeletonOverlay'
 import { resolvePanelVisible } from '../core/panels'
 import {
   useColumnVirtualizer,
@@ -46,7 +45,6 @@ import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { useCellSelectionCopy } from './useCellSelectionCopy'
 import { DataGridTable } from './DataGridTable'
 import { StatusBar } from './StatusBar/StatusBar'
-import { SkeletonOverlay } from './SkeletonOverlay'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
@@ -208,18 +206,17 @@ export const DataGrid = ({
     [rowDragging?.activeId, rowDragging?.acceptable, rowDragging?.offsetLeft],
   )
 
-  const { showSkeletonOverlay } = useSkeletonOverlayState(
-    (table.options as any).enableSkeleton,
-  )
+  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5).
+  const showSkeleton = !!(table.options as any).enableSkeleton
 
-  const noData = !showSkeletonOverlay && rows.length === 0
+  const noData = !showSkeleton && rows.length === 0
   // Пусто из-за фильтра — своя заглушка поверх тела, шапка с фильтрами остаётся.
   const filtered = isFilteringActive(state)
   const showStub = noData && !!stub && !filtered
   const showFilterStub = noData && filtered
 
   const showLinearProgress =
-    (table.options as any).enableLoading && !showSkeletonOverlay
+    (table.options as any).enableLoading && !showSkeleton
 
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
@@ -249,7 +246,7 @@ export const DataGrid = ({
         <LiveRegion
           table={table}
           labels={labels}
-          loading={showLinearProgress || showSkeletonOverlay}
+          loading={showLinearProgress || showSkeleton}
           rowCount={rows.length}
           themeNode={scrollableNodeRef}
         />
@@ -291,7 +288,7 @@ export const DataGrid = ({
       <LiveRegion
         table={table}
         labels={labels}
-        loading={showLinearProgress || showSkeletonOverlay}
+        loading={showLinearProgress || showSkeleton}
         rowCount={rows.length}
         themeNode={scrollableNodeRef}
       />
@@ -334,36 +331,31 @@ export const DataGrid = ({
                       dataGridStyles.table__container,
                       {
                         [dataGridStyles['table__container--skeleton']]:
-                          showSkeletonOverlay,
+                          showSkeleton,
                       },
                     )}
                     ref={scrollableNodeRef}
                     data-resizing={isResizingColumns !== false}
                     onCopy={handleCopy}
                   >
-                    {showSkeletonOverlay ? (
-                      <SkeletonOverlay
-                        table={table}
-                        columnSizes={columnSizes}
-                      />
-                    ) : (
-                      <DataGridTable
-                        table={table}
-                        layout={layout}
-                        headStyles={headStyles}
-                        headerGroups={headerGroups}
-                        rows={rows}
-                        leafColumns={leafColumns}
-                        virtualRows={virtualRows}
-                        virtualColumns={virtualColumns}
-                        isVirtualColumns={!hasNestedGroups}
-                        isResizingColumns={isResizingColumns}
-                        keyboardNavigation={keyboardNavigation}
-                        label={tableLabel}
-                        busy={showLinearProgress}
-                        style={{ ...columnSizes, ...virtualPaddingStyles }}
-                      />
-                    )}
+                    <DataGridTable
+                      table={table}
+                      layout={layout}
+                      headStyles={headStyles}
+                      headerGroups={headerGroups}
+                      rows={rows}
+                      leafColumns={leafColumns}
+                      virtualRows={virtualRows}
+                      virtualColumns={virtualColumns}
+                      isVirtualColumns={!hasNestedGroups}
+                      isResizingColumns={isResizingColumns}
+                      keyboardNavigation={keyboardNavigation}
+                      label={tableLabel}
+                      busy={showLinearProgress}
+                      skeleton={showSkeleton}
+                      loadingLabel={loadingLabel}
+                      style={{ ...columnSizes, ...virtualPaddingStyles }}
+                    />
                     {showFilterStub && (
                       <FilterStub table={table} render={filterStub} />
                     )}

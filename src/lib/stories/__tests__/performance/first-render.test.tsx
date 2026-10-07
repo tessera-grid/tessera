@@ -224,3 +224,56 @@ describe('Производительность первой отрисовки �
     PERF_TIMEOUT * 2,
   )
 })
+
+// Скелет первой загрузки (ADR 0060, SL14): монтирование со скелетом против прежнего
+// оверлея. База — замер прежнего оверлея на 2026-10-07 (до ADR 0060); потолок —
+// база с запасом на шум, как у RE39.
+const SKELETON_MOUNT_BASE_MS = { small: 80, large: 326 }
+const skeletonCeiling = (base: number) => Math.max(base * 1.3, base + 40)
+
+describe('Производительность первой отрисовки — скелет', () => {
+  test(
+    'SL14: монтирование со скелетом на 30×500 и 1000×1000 колонок — в пределах регресс-потолка против прежнего оверлея',
+    async () => {
+      const sizes = [
+        { key: 'small', size: SMALL, label: '30×500' },
+        { key: 'large', size: LARGE, label: '1000×1000' },
+      ] as const
+      for (const { key, size, label } of sizes) {
+        // eslint-disable-next-line no-await-in-loop
+        const result = await measureRenderWork(
+          () => renderGrid({ ...size, ...ALL_PLUGINS, enableSkeleton: true }),
+          () => !!document.querySelector('.data-grid__body--skeleton'),
+          { warmup: true },
+        )
+        cleanup()
+        const ceiling = skeletonCeiling(SKELETON_MOUNT_BASE_MS[key])
+        // eslint-disable-next-line no-await-in-loop
+        await recordPerf({
+          id: `SL14-${key}`,
+          label: `монтирование со скелетом, ${label}, все плагины`,
+          operation: 'render',
+          size: label,
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: result.longestMs,
+              budgetMs: ceiling,
+              pass: result.longestMs <= ceiling,
+              ...result,
+            },
+          ],
+        })
+        expect(
+          result.longestMs,
+          `${label}: longest=${result.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(0)}ms`,
+        ).toBeLessThanOrEqual(ceiling)
+      }
+    },
+    PERF_TIMEOUT,
+  )
+})

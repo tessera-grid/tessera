@@ -249,6 +249,36 @@ export async function measureRenderWork(
 }
 
 /**
+ * Работа главного потока на один переход уже смонтированного грида (например, скелет
+ * → данные): `trigger` под трейсом, затем ждём `ready` и ещё `settleFrames` кадров.
+ */
+export async function measureTransitionWork(
+  trigger: () => Promise<void>,
+  ready: () => boolean,
+  {
+    timeoutFrames = 600,
+    settleFrames = 2,
+  }: { timeoutFrames?: number; settleFrames?: number } = {},
+): Promise<ScrollWorkResult> {
+  const id = `transition-${traceSeq++}-${Date.now()}`
+  await perfCommands.perfTraceStart(id)
+  await trigger()
+  for (let i = 0; i < timeoutFrames && !ready(); i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await nextFrame()
+  }
+  if (!ready()) {
+    await perfCommands.perfTraceStop(id)
+    throw new Error('transition did not settle within the frame budget')
+  }
+  for (let i = 0; i < settleFrames; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await nextFrame()
+  }
+  return perfCommands.perfTraceStop(id)
+}
+
+/**
  * Measure the REAL main-thread work an INTERACTION triggers (INP-style): the
  * synchronous event-handler → React re-render → commit → layout blob, via CDP
  * tracing. `trigger` performs one interaction (e.g. click select-all); it runs once
