@@ -8,7 +8,7 @@ export { composed }
 
 // --- Selectors (part of the component contract) -------------------------------
 
-/** Icon side per spec (`PinButton.tsx`: `<PinIcon width={16} height={16} />`). */
+/** Icon side per spec (`pinHeaderAction.tsx`: `<Icon width={16} height={16} />`). */
 export const PIN_ICON_SIZE = 16
 
 export const HEAD_CELL = '.data-grid__head-cell'
@@ -98,11 +98,12 @@ export const hiddenWrapperOf = (button: HTMLElement) =>
 /** Reveal a cell's hover-hidden controls with a trusted pointer, return its pin. */
 export const revealPin = async (cell: HTMLElement) => {
   await userEvent.hover(cell)
-  const button = pinButtonOf(cell)
+  // Наведение догружает модуль мини-меню, и заглушка кнопки сменяется настоящей
+  // (ADR 0061) — кнопка перечитывается, а не берётся один раз.
   await expect
-    .poll(() => getComputedStyle(hiddenWrapperOf(button)).opacity)
+    .poll(() => getComputedStyle(hiddenWrapperOf(pinButtonOf(cell))).opacity)
     .toBe('1')
-  return button
+  return pinButtonOf(cell)
 }
 
 /** Pin the first data column to the left and wait until it becomes sticky. */

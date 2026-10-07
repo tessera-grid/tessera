@@ -17,7 +17,7 @@ import { composed } from '../stories'
 
 // --- Selectors (part of the component contract) -------------------------------
 
-/** Icon side per spec (`SortButton.tsx`: `<SortIcon width={16} height={16} />`). */
+/** Icon side per spec (`sortHeaderAction.tsx`: `<Icon width={16} height={16} />`). */
 const SORT_ICON_SIZE = 16
 
 /** Default lucide icon classes per direction (`ui/icons/IconsContext.tsx`). */

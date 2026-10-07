@@ -24,7 +24,7 @@ const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 const GROUP_BUTTON = '.column-group__button'
 /** A column with few distinct values — grouping it aggregates into a few groups. */
 const GROUPED_COLUMN = 'gender'
-/** Group button icon size per `GroupButton` (`<GroupIcon width={16} height={16}>`). */
+/** Group button icon size per `groupHeaderAction` (`<Icon width={16} height={16}>`). */
 const GROUP_ICON_SIZE = 16
 
 // --- Rendering / DOM helpers --------------------------------------------------
