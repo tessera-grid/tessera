@@ -329,7 +329,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
   назван по его коду (`R<n>`/`CP<n>`/…). Каждый набор восходит к своему ADR:
   - **`visual/`** — внешний вид, вёрстка, роли, поведение UI:
     - _Ядро:_ `core-structure`, `core-sizing`, `core-roles`, `core-visual-states`,
-      `core-scroll` (R1–R19, [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) —
+      `core-scroll` (R1–R19, R21, [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) —
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
       `service-columns` (IV6/IV8/IV10 — сервисные колонки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md));
       `service-column-presence` (SC3–SC5, SC7, RE14–RE16, RA3) и модульные

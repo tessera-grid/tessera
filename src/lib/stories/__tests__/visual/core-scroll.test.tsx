@@ -9,7 +9,7 @@ import {
 } from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
 
-// R17–R18 из docs/decisions/0004-core-on-tanstack-table.md: раскладка при
+// R17–R18, R21 из docs/decisions/0004-core-on-tanstack-table.md: раскладка при
 // прокрутке. Каждое требование — отдельный именованный тест `R<n>`.
 
 describe('Ядро на TanStack — раскладка при прокрутке', () => {
@@ -71,5 +71,50 @@ describe('Ядро на TanStack — раскладка при прокрутк�
     // Последняя колонка достижима до самого края.
     await scrollToEnd('x')
     expect(Math.max(...renderedColumnIndexes())).toBe(columnCount - 1)
+  })
+
+  test('R21: грид не выходит за свою рамку — тулбар, шапка, тело и футер внутри рамки, лишняя ширина колонок прокручивается контейнером, а не страницей', async () => {
+    renderGrid({
+      columnCount: 30,
+      dataCount: 40,
+      enableToolbar: true,
+      enableColumnVisibility: true,
+      enableFooter: true,
+    })
+    await waitForGrid()
+    await expect
+      .poll(() => document.querySelector('[role="toolbar"]'))
+      .not.toBeNull()
+
+    const scroller = getScroller()
+    // Рамка грида — обёртка темы вокруг тулбара, контейнера и нижней панели.
+    const frame = scroller.parentElement!.getBoundingClientRect()
+    expect(getComputedStyle(scroller).overflowX).toBe('auto')
+    expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
+    // Страница не прокручивается вбок — лишнюю ширину держит контейнер.
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      document.documentElement.clientWidth,
+    )
+
+    const inside = (el: Element | null, name: string) => {
+      expect(el, name).not.toBeNull()
+      const rect = el!.getBoundingClientRect()
+      expect(rect.left, name).toBeGreaterThanOrEqual(frame.left - 1)
+      expect(rect.right, name).toBeLessThanOrEqual(frame.right + 1)
+      expect(rect.top, name).toBeGreaterThanOrEqual(frame.top - 1)
+      expect(rect.bottom, name).toBeLessThanOrEqual(frame.bottom + 1)
+    }
+    inside(scroller, 'контейнер')
+    inside(document.querySelector('[role="toolbar"]'), 'тулбар')
+    // Шапка, тело и футер шире рамки и видны через контейнер прокрутки.
+    for (const name of [
+      '.data-grid__head',
+      '.data-grid__body-row',
+      '.data-grid__footer',
+    ]) {
+      const el = document.querySelector(name)
+      expect(el, name).not.toBeNull()
+      expect(scroller.contains(el), name).toBe(true)
+    }
   })
 })
