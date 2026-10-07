@@ -101,13 +101,7 @@ export const SubRowSelection: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: [
-        'columnCount',
-        'dataCount',
-        'dataMode',
-        'dataOverride',
-        'initialExpanded',
-      ],
+      exclude: ['columnCount', 'dataCount', 'dataOverride', 'initialExpanded'],
     },
   },
 }
@@ -129,13 +123,7 @@ export const RowExpanding: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: [
-        'columnCount',
-        'dataCount',
-        'dataMode',
-        'dataOverride',
-        'initialExpanded',
-      ],
+      exclude: ['columnCount', 'dataCount', 'dataOverride', 'initialExpanded'],
     },
   },
 }
@@ -159,7 +147,7 @@ export const RowExpandingTreeLines: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'dataCount', 'dataMode', 'dataOverride'],
+      exclude: ['columnCount', 'dataCount', 'dataOverride'],
     },
   },
 }
@@ -176,7 +164,7 @@ export const RowExpandingFlatData: StoryObj<StoryProps> = {
     enableRowSelection: true,
   },
   parameters: {
-    controls: { exclude: ['dataCount', 'dataMode', 'dataOverride'] },
+    controls: { exclude: ['dataCount', 'dataOverride'] },
   },
 }
 
@@ -189,7 +177,7 @@ export const RowExpandingColumnAlways: StoryObj<StoryProps> = {
     rowExpandingColumn: 'always',
   },
   parameters: {
-    controls: { exclude: ['dataCount', 'dataMode', 'dataOverride'] },
+    controls: { exclude: ['dataCount', 'dataOverride'] },
   },
 }
 
@@ -210,7 +198,7 @@ export const RowGrouping: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'dataCount', 'dataMode', 'dataOverride'],
+      exclude: ['columnCount', 'dataCount', 'dataOverride'],
     },
   },
 }

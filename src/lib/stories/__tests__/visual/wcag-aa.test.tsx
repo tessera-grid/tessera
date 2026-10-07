@@ -377,8 +377,8 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   test('W12: Alt+Shift+→/← вкладывают строку в предыдущую группу и выносят обратно', async () => {
     await render(
       <Stories.RowDragging
-        dataMode="hierarchy"
         enableRowExpanding
+        initialExpanded
         enableKeyboardNavigation
       />,
     )
@@ -386,25 +386,25 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       document.querySelector<HTMLElement>(
         `.data-grid__body-row[data-row-id="${id}"]`,
       )
-    await expect.poll(() => rowById('item-id-4')).toBeTruthy()
-    expect(rowById('item-id-4')!.getAttribute('aria-level')).toBe('1')
+    await expect.poll(() => rowById('item-id-1')).toBeTruthy()
+    expect(rowById('item-id-1')!.getAttribute('aria-level')).toBe('1')
     const activeRowId = () =>
       (document.activeElement as HTMLElement)
         .closest('.data-grid__body-row')
         ?.getAttribute('data-row-id')
 
-    rowById('item-id-4')!.querySelector<HTMLElement>('[data-kn-cell]')!.focus()
+    rowById('item-id-1')!.querySelector<HTMLElement>('[data-kn-cell]')!.focus()
     await userEvent.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
     await expect
-      .poll(() => rowById('item-id-4')?.getAttribute('aria-level'))
+      .poll(() => rowById('item-id-1')?.getAttribute('aria-level'))
       .toBe('2')
-    await expect.poll(activeRowId).toBe('item-id-4')
+    await expect.poll(activeRowId).toBe('item-id-1')
 
     await userEvent.keyboard('{Alt>}{Shift>}{ArrowLeft}{/Shift}{/Alt}')
     await expect
-      .poll(() => rowById('item-id-4')?.getAttribute('aria-level'))
+      .poll(() => rowById('item-id-1')?.getAttribute('aria-level'))
       .toBe('1')
-    await expect.poll(activeRowId).toBe('item-id-4')
+    await expect.poll(activeRowId).toBe('item-id-1')
   })
 
   test('W13: заголовки служебных колонок названы — скрытой подписью или контролом (axe empty-table-header)', async () => {

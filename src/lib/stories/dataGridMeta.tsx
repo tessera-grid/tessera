@@ -78,7 +78,7 @@ export const dataGridMeta = {
     layout: 'fullscreen',
     controls: {
       expanded: true,
-      exclude: ['dataMode', 'colorMode'],
+      exclude: ['colorMode'],
     },
   },
   render: function Render(args) {

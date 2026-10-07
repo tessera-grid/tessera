@@ -57,7 +57,7 @@ const failModeControl = {
 } as const
 
 const hideDataControls = {
-  controls: { exclude: ['columnCount', 'dataCount', 'dataMode', 'colorMode'] },
+  controls: { exclude: ['columnCount', 'dataCount', 'colorMode'] },
 }
 
 export const CellEditingServer: StoryObj<SessionsArgs> = {

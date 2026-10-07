@@ -400,3 +400,39 @@ export const activeType: InputType = {
     defaultValue: { summary: 'false' },
   },
 }
+
+export const rowExpandingMaxDepthType: InputType = {
+  control: { type: 'number', min: 1, max: 10, step: 1 },
+  description:
+    'Сколько уровней раскрываемы от корня (rowExpanding({ maxDepth }), нужен enableRowExpanding)',
+  table: { defaultValue: { summary: '1' } },
+}
+
+export const rowExpandingColumnType: InputType = {
+  control: 'inline-radio',
+  options: ['auto', 'always'],
+  description:
+    'Колонка тоггла раскрытия: auto — по данным, always — всегда (нужен enableRowExpanding)',
+  table: { defaultValue: { summary: 'auto' } },
+}
+
+export const rowExpandingTreeLinesType: InputType = {
+  control: 'boolean',
+  description:
+    'Линии дерева по уровням (rowExpanding({ treeLines }), нужен enableRowExpanding)',
+  table: { defaultValue: { summary: 'false' } },
+}
+
+export const rowActionsColumnType: InputType = {
+  control: 'inline-radio',
+  options: ['auto', 'always'],
+  description:
+    'Колонка действий строки: auto — по наличию действий, always — всегда (нужен enableRowActions)',
+  table: { defaultValue: { summary: 'auto' } },
+}
+
+export const paginationPageSizeType: InputType = {
+  control: { type: 'number', min: 1, max: 1000, step: 5 },
+  description: 'Начальный размер страницы (нужен enablePagination)',
+  table: { defaultValue: { summary: '25' } },
+}

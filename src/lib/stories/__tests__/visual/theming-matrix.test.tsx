@@ -20,7 +20,7 @@ import { useData } from '../../__mocks__/data'
 
 const Grid = memo(({ colorMode }: { colorMode: ColorMode }) => {
   const columns = useColumns(6)
-  const { data } = useData({ count: 6, mode: 'flat', showStub: false })
+  const { data } = useData({ count: 6, showStub: false })
   const { rowSelection: selection, onRowSelectionChange } =
     useRowSelectionState()
 

@@ -96,7 +96,7 @@ export const ExportServer: StoryObj<ExportArgs> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'dataCount', 'dataMode', 'colorMode'],
+      exclude: ['columnCount', 'dataCount', 'colorMode'],
     },
   },
   render: args => <ExportServerDemo {...normalizeArgs(args)} />,

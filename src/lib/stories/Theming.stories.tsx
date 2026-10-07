@@ -450,7 +450,7 @@ const buildThemeStyle = (args: ThemingArgs): CSSProperties => {
 
 const ThemingDemo = memo((args: ThemingArgs) => {
   const columns = useColumns(6)
-  const { data } = useData({ count: 12, mode: 'flat', showStub: false })
+  const { data } = useData({ count: 12, showStub: false })
 
   const { rowSelection: selection, onRowSelectionChange } =
     useRowSelectionState()

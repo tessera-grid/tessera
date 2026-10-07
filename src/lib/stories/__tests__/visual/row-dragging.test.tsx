@@ -316,13 +316,13 @@ describe('Row Dragging — requirements', () => {
 // --- Nested rows (subrows) ----------------------------------------------------
 // Вложенный drag реализован в reducer'е (splice по subRows/parentRow, depth), но
 // каноническая RowDragging-история плоская — здесь он проверяется на дереве.
-// Раскрытое дерево hierarchyData: item-id-0 (root) → [item-id-1, item-id-2 →
-// item-id-3], затем item-id-4. Проверка по стабильному data-row-id.
+// Раскрытое дерево мока: item-id-0 (root) → [item-id-0-0 → item-id-0-0-0,
+// item-id-0-1, item-id-0-2], затем item-id-1. Проверка по стабильному data-row-id.
 
 describe('Row Dragging — nested rows (subrows)', () => {
   async function renderNested() {
     const { container } = await render(
-      <composed.RowDragging dataMode="hierarchy" enableRowExpanding />,
+      <composed.RowDragging enableRowExpanding initialExpanded />,
     )
     await expect
       .poll(() => container.querySelectorAll(ROW).length)
@@ -337,22 +337,22 @@ describe('Row Dragging — nested rows (subrows)', () => {
     const ids = rowIdOrder(container)
     // Родитель и обе его субстроки присутствуют одновременно.
     expect(ids).toContain('item-id-0')
-    expect(ids).toContain('item-id-1')
-    expect(ids).toContain('item-id-2')
+    expect(ids).toContain('item-id-0-1')
+    expect(ids).toContain('item-id-0-2')
   })
 
   test('DN2: a subrow reorders among its siblings, losing no row', async () => {
     const container = await renderNested()
 
     const before = rowIdOrder(container)
-    // item-id-1 и item-id-2 — сиблинги-субстроки под item-id-0.
-    expect(before.indexOf('item-id-1')).toBeLessThan(
-      before.indexOf('item-id-2'),
+    // item-id-0-1 и item-id-0-2 — сиблинги-субстроки под item-id-0.
+    expect(before.indexOf('item-id-0-1')).toBeLessThan(
+      before.indexOf('item-id-0-2'),
     )
 
     await dragRowOnto(
-      rowById(container, 'item-id-1'),
-      rowById(container, 'item-id-2'),
+      rowById(container, 'item-id-0-1'),
+      rowById(container, 'item-id-0-2'),
     )
 
     // Честно по data-row-id: субстрока реально ушла за сиблинга, и ни одна строка
@@ -361,7 +361,7 @@ describe('Row Dragging — nested rows (subrows)', () => {
       .poll(() => {
         const after = rowIdOrder(container)
         return (
-          movedBelow(container, 'item-id-1', 'item-id-2') &&
+          movedBelow(container, 'item-id-0-1', 'item-id-0-2') &&
           before.every(id => after.includes(id))
         )
       })

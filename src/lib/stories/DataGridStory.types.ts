@@ -16,10 +16,9 @@ export const DATA_COUNT = 10
 export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   columnCount: number
   dataCount: number
-  dataMode?: 'flat' | 'hierarchy' | 'groups'
 
   /**
-   * Явный набор данных вместо генерируемого по dataMode/dataCount.
+   * Явный набор данных вместо генерируемого по dataCount.
    * Используется группой Sizing/Data для параметризованных данных.
    */
   dataOverride?: any[]
@@ -36,7 +35,7 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   initialGrouping?: string[]
   /**
    * Начальное раскрытие строк (дерево/группы). `true` — раскрыть всё, чтобы
-   * фича была видна сразу. По умолчанию наследует поведение dataMode.
+   * фича была видна сразу. По умолчанию всё свёрнуто.
    */
   initialExpanded?: ExpandedState
   /** Дополнительные записи плагинов поверх тумблеров (демо и тесты тулбара). */

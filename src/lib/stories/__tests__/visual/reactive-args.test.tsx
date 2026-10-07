@@ -206,26 +206,26 @@ describe('Аргументы фабрик на лету', () => {
   test('RX8: maxDepth ↓ показывает строки глубже предела свёрнутыми; вернули значение — строки снова раскрыты', async () => {
     const args = {
       ...GRID,
-      dataMode: 'hierarchy' as const,
       enableRowExpanding: true,
+      initialExpanded: true as const,
     }
     const rowIds = () => bodyRows().map(row => row.dataset.rowId)
     const screen = await render(
       <Stories.AllFeatures {...args} rowExpandingMaxDepth={3} />,
     )
-    // Всё дерево раскрыто: item-id-3 — ребёнок строки глубины 1.
-    await expect.poll(rowIds).toContain('item-id-3')
+    // Всё дерево раскрыто: item-id-0-0-0 — ребёнок строки глубины 1.
+    await expect.poll(rowIds).toContain('item-id-0-0-0')
 
     await screen.rerender(
       <Stories.AllFeatures {...args} rowExpandingMaxDepth={1} />,
     )
-    await expect.poll(rowIds).not.toContain('item-id-3')
-    expect(rowIds()).toContain('item-id-2')
+    await expect.poll(rowIds).not.toContain('item-id-0-0-0')
+    expect(rowIds()).toContain('item-id-0-0')
 
     await screen.rerender(
       <Stories.AllFeatures {...args} rowExpandingMaxDepth={3} />,
     )
-    await expect.poll(rowIds).toContain('item-id-3')
+    await expect.poll(rowIds).toContain('item-id-0-0-0')
   })
 
   test('RX11: canSelectCell сузился — невыбираемые ячейки не показаны выбранными; вернули — снова выбраны', async () => {

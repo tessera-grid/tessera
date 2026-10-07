@@ -26,7 +26,6 @@ export const StoryComponent = memo(
   ({
     columnCount,
     dataCount,
-    dataMode = 'flat',
 
     containerHeight,
     height,
@@ -75,7 +74,6 @@ export const StoryComponent = memo(
 
     const { data: mockData, setData: setMockData } = useData({
       count: dataCount,
-      mode: dataMode,
       showStub,
       skip: dataOverride !== undefined,
     })
@@ -112,8 +110,7 @@ export const StoryComponent = memo(
     )
 
     const { expanded, onExpandedChange } = useExpandedState(
-      initialExpanded ??
-        (dataMode === 'hierarchy' ? true : expandingInitialState),
+      initialExpanded ?? expandingInitialState,
     )
 
     const { rowSelection, onRowSelectionChange } = useRowSelectionState()

@@ -595,7 +595,6 @@ describe('Фильтрация — сочетания с плагинами', ()
     await renderFilteringWith({
       columnsOverride: TREE_COLUMNS,
       dataOverride: TREE_DATA,
-      dataMode: 'hierarchy',
       enableRowExpanding: true,
       initialExpanded: true,
       rowExpandingMaxDepth: 5,

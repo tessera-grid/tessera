@@ -26,7 +26,7 @@ export const CellEditing: StoryObj<StoryProps> = {
   },
   parameters: {
     controls: {
-      exclude: ['columnCount', 'dataCount', 'dataMode'],
+      exclude: ['columnCount', 'dataCount'],
     },
   },
 }
@@ -43,11 +43,6 @@ export const ContextMenu: StoryObj<StoryProps> = {
     height: 460,
     maxHeight: 460,
   },
-  parameters: {
-    controls: {
-      exclude: ['dataMode'],
-    },
-  },
 }
 
 export const CellSelection: StoryObj<StoryProps> = {
@@ -62,11 +57,6 @@ export const CellSelection: StoryObj<StoryProps> = {
     containerHeight: 560,
     height: 460,
     maxHeight: 460,
-  },
-  parameters: {
-    controls: {
-      exclude: ['dataMode'],
-    },
   },
 }
 
@@ -92,10 +82,5 @@ export const KeyboardNavigation: StoryObj<StoryProps> = {
     containerHeight: 560,
     height: 460,
     maxHeight: 460,
-  },
-  parameters: {
-    controls: {
-      exclude: ['dataMode'],
-    },
   },
 }

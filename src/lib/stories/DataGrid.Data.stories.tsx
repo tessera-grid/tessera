@@ -147,7 +147,6 @@ const meta = {
         key={`${args.dataShape}-${args.expandAll}`}
         columnCount={args.columnCount}
         dataCount={args.count}
-        dataMode="flat"
         containerHeight={600}
         height={500}
         maxHeight={undefined}

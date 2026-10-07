@@ -157,18 +157,18 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
   test('DA4: при раскрытии строк меню даёт «Indent / Outdent» — вложение в группу выше и вынос обратно', async () => {
     await render(
       <Stories.RowDragging
-        dataMode="hierarchy"
         enableRowExpanding
+        initialExpanded
         enableKeyboardNavigation
       />,
     )
-    await expect.poll(() => rowById('item-id-4')).toBeTruthy()
-    const level = () => rowById('item-id-4')?.getAttribute('aria-level')
+    await expect.poll(() => rowById('item-id-1')).toBeTruthy()
+    const level = () => rowById('item-id-1')?.getAttribute('aria-level')
     const handleOf = (row: HTMLElement) =>
       row.querySelector<HTMLElement>(HANDLE)!
     expect(level()).toBe('1')
 
-    await openHandleMenu(rowById('item-id-4')!, handleOf(rowById('item-id-4')!))
+    await openHandleMenu(rowById('item-id-1')!, handleOf(rowById('item-id-1')!))
     expect(menuLabels()).toEqual([
       DEFAULT_LABELS.moveUp,
       DEFAULT_LABELS.moveDown,
@@ -179,7 +179,7 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
     await userEvent.click(menuItem(DEFAULT_LABELS.indentRow))
     await expect.poll(level).toBe('2')
 
-    await openHandleMenu(rowById('item-id-4')!, handleOf(rowById('item-id-4')!))
+    await openHandleMenu(rowById('item-id-1')!, handleOf(rowById('item-id-1')!))
     expect(isDisabled(menuItem(DEFAULT_LABELS.indentRow))).toBe(true)
     await userEvent.click(menuItem(DEFAULT_LABELS.outdentRow))
     await expect.poll(level).toBe('1')
@@ -372,7 +372,7 @@ describe('WCAG 2.5.8 и 2.4.7 — размер целей и видимость 
     renderGrid({
       columnCount: 5,
       dataCount: 6,
-      dataMode: 'hierarchy',
+      initialExpanded: true,
       enableColumnSorting: true,
       enableColumnPinning: true,
       enableColumnResizing: true,

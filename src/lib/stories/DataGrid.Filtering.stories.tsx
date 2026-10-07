@@ -132,7 +132,6 @@ export const FilteringTree: StoryObj<StoryProps> = {
   args: {
     ...GRID,
     dataOverride: TREE,
-    dataMode: 'hierarchy',
     enableRowExpanding: true,
     rowExpandingMaxDepth: 5,
     initialExpanded: true,
