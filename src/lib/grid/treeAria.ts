@@ -24,19 +24,22 @@ const countInTreeOrder = (
   const group = new Int32Array(rows.length)
   const position = new Int32Array(rows.length)
   const sizes: number[] = []
-  // По уровням: id последней строки и группа её детей (-1 — ещё не открыта).
-  const lastId: (string | undefined)[] = []
+  // По уровням: индекс последней строки и группа её детей (-1 — ещё не открыта).
+  // id читается только у родителя проверяемой строки: у корней он не нужен.
+  const lastIndex: number[] = []
   const childGroup: number[] = []
   let rootGroup = -1
   for (let i = 0; i < rows.length; i++) {
-    const { id, depth, parentId } = rows[i]
+    const row = rows[i]
+    const depth = row.depth
     let g: number
     if (depth === 0) {
-      if (parentId != null) return undefined
       if (rootGroup < 0) rootGroup = sizes.push(0) - 1
       g = rootGroup
     } else {
-      if (lastId[depth - 1] !== parentId) return undefined
+      const parent = lastIndex[depth - 1]
+      if (parent === undefined || rows[parent].id !== row.parentId)
+        return undefined
       g = childGroup[depth - 1] ?? -1
       if (g < 0) {
         g = sizes.push(0) - 1
@@ -45,7 +48,7 @@ const countInTreeOrder = (
     }
     position[i] = ++sizes[g]
     group[i] = g
-    lastId[depth] = id
+    lastIndex[depth] = i
     childGroup[depth] = -1
   }
   return {

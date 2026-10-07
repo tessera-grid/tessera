@@ -1,6 +1,8 @@
 import {
   constructTable,
+  createExpandedRowModel,
   createSortedRowModel,
+  rowExpandingFeature,
   rowSortingFeature,
   sortFn_alphanumeric,
   sortFn_basic,
@@ -988,22 +990,36 @@ describe('Своя отсортированная модель', () => {
 // строку) в том же замере. Счёт повторяется 10 раз за действие: один проход короче
 // порога замера задачи.
 const TREE_ARIA_REPEAT = 10
-const TREE_ARIA_ROWS = (() => {
-  const rows: { id: string; depth: number; parentId?: string }[] = []
-  for (let i = 0; i < 100_000; i++) {
-    rows.push({ id: `r${i}`, depth: 0 })
-    if (i < 2) {
-      for (let k = 0; k < 100; k++) {
-        rows.push({ id: `r${i}-${k}`, depth: 1, parentId: `r${i}` })
-      }
-    }
-  }
-  return rows
-})()
+// Строки — настоящие строки модели TanStack: на простых объектах счёт дешевле.
+type TreeAriaRow = { id: string; depth: number; parentId?: string }
+// Строится в самом тесте: таблица на 100 000 строк на весь прогон файла давит на
+// сборку мусора соседних кейсов.
+const makeTreeAriaRows = () => {
+  const data = Array.from({ length: 100_000 }, (_, i) => ({
+    id: `r${i}`,
+    children:
+      i < 2
+        ? Array.from({ length: 100 }, (_, k) => ({ id: `r${i}-${k}` }))
+        : [],
+  }))
+  const table = constructTable({
+    features: tableFeatures({
+      coreReactivityFeature: storeReactivityBindings(),
+      rowExpandingFeature,
+      expandedRowModel: createExpandedRowModel(),
+    } as never),
+    data,
+    columns: [{ id: 'id', accessorKey: 'id' }],
+    getRowId: (row: { id: string }) => row.id,
+    getSubRows: (row: { children?: unknown[] }) => row.children,
+    initialState: { expanded: { r0: true, r1: true } },
+  } as never) as unknown as { getRowModel: () => { rows: TreeAriaRow[] } }
+  return table.getRowModel().rows
+}
 
 /** Прежний счёт тела: соседи по parentId в Map, объект атрибутов на строку. */
-const treeAriaByObjects = (rows: typeof TREE_ARIA_ROWS) => {
-  const siblings = new Map<string, typeof TREE_ARIA_ROWS>()
+const treeAriaByObjects = (rows: TreeAriaRow[]) => {
+  const siblings = new Map<string, TreeAriaRow[]>()
   for (const row of rows) {
     const key = row.parentId ?? ''
     const group = siblings.get(key)
@@ -1027,14 +1043,15 @@ describe('aria-* дерева', () => {
   test(
     'TA3: счёт aria-* дерева на 100 000 строк — не дольше четверти прежнего',
     async () => {
+      const rows = makeTreeAriaRows()
       const theirs = await measureInteractionWork(async () => {
         for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
-          treeAriaByObjects(TREE_ARIA_ROWS)
+          treeAriaByObjects(rows)
         }
       })
       const ours = await measureInteractionWork(async () => {
         for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
-          getTreeAria(TREE_ARIA_ROWS)
+          getTreeAria(rows)
         }
       })
       const ceiling = theirs.longestMs / 4
