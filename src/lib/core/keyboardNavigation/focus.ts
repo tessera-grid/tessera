@@ -56,7 +56,13 @@ export const applyFollow = (t: NavTable) => {
   ) {
     return
   }
-  tracking.follow = undefined
+  // Следовать до конца кадра: эффективное состояние (ADR 0039) догоняет новые
+  // данные ещё одной перерисовкой, и индекс строки в ней может снова сдвинуться.
+  requestAnimationFrame(() => {
+    if (tracking.follow === follow) {
+      tracking.follow = undefined
+    }
+  })
   tracking.pending = true
   setPluginState(t, KEYBOARD_NAVIGATION, next)
 }
