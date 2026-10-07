@@ -31,6 +31,13 @@ import {
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
 
+/** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
+export const findDraggableRow = <TRow extends { id: string }>(
+  rows: readonly TRow[],
+  activeId: string | null | undefined,
+): TRow | undefined =>
+  activeId == null ? undefined : rows.find(row => row.id === activeId)
+
 export interface DndBodyWrapperProps {
   table: Table<any, any>
 }
@@ -80,7 +87,7 @@ export const DndBodyWrapper = ({
   const { rows } = table.getRowModel()
 
   const draggableRow = useMemo(
-    () => rows.find((row: any) => row.id === rowDragging.activeId),
+    () => findDraggableRow(rows, rowDragging.activeId),
     [rowDragging.activeId, rows],
   )
 

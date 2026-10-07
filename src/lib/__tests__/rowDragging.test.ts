@@ -14,6 +14,7 @@ import { rowGrouping } from '../plugins/rowGrouping'
 import { COLUMN_DRAGGING_ID, rowDragging } from '../plugins/rowDragging'
 import { __resetLogger } from '../core/logger'
 import { captureInertWarnings } from './inertWarnings'
+import { findDraggableRow } from '../grid/DndBodyWrapper'
 
 const build = (
   extraEntries: any[],
@@ -105,5 +106,20 @@ describe('rowDragging', () => {
     table.getRowModel().rows[1].getCanDrag()
     expect(warnings()).toHaveLength(1)
     expect(warnings()[0]).toContain('сортировк')
+  })
+})
+
+describe('rowDragging — поиск перетаскиваемой строки', () => {
+  it('D33: без активного перетаскивания тело не обходит строки в поисках перетаскиваемой', () => {
+    let reads = 0
+    const rows = new Proxy([{ id: 'a' }, { id: 'b' }], {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^\d+$/.test(key)) reads++
+        return Reflect.get(target, key, receiver)
+      },
+    })
+    expect(findDraggableRow(rows, null)).toBeUndefined()
+    expect(reads).toBe(0)
+    expect(findDraggableRow(rows, 'b')).toEqual({ id: 'b' })
   })
 })

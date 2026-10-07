@@ -382,7 +382,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       (RE61), `row-expanding-tree-lines` (RE62), модульный `rowNesting` (RE63–RE64)
       ([ADR 0059](docs/decisions/0059-row-nesting-indent.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
-      `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
+      `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md); D33 — модульный `rowDragging`),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
     - _Клавиатура:_ `keyboard-navigation` (KN1–KN28, KN30–KN31 — роль grid, roving tabindex, режим действия, Tab-выход,
       стрелки/Home/End/Page, пиновка под виртуализацией, фокус от указателя до конца нажатия,
