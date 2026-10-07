@@ -2,32 +2,41 @@
 // floating-ui-позиционирование, поэтому ActionMenu/ActionInlineMenu живут в
 // отдельном чанке. Обёртки эагерные: держат состояние `open` и рисуют
 // плейсхолдер-триггер, пока чанк грузится. Клик по плейсхолдеру ставит `open`, а
-// контролируемый impl открывается сразу после догрузки — без потери клика.
-import { lazy, Suspense, useState } from 'react'
+// контролируемый impl открывается сразу после догрузки — без потери клика. Замену
+// плейсхолдера ведёт состояние (`usePreloaded`), а не повтор Suspense-границы: React
+// может отложить этот повтор до следующего рендера кнопки, и тогда она сменится
+// посреди клика.
+import { Suspense, useState } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { preloadable, usePreloaded } from '../../core/preloadable'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
-import type { SlotAction } from '../../core/headerActions'
+import { preloadActionPanel, type SlotAction } from '../../core/headerActions'
 import type { ActionMenuProps } from './ActionMenu'
 import type { ActionInlineMenuProps } from './ActionInlineMenu'
 import type { ActionPanelProps } from './ActionPanel'
+import {
+  type PanelButtonState,
+  panelButtonProps,
+  usePanelOpening,
+} from './usePanelOpening'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
-const ActionMenuImpl = lazy(() =>
-  import('./ActionMenu').then(m => ({ default: m.ActionMenu })),
+const ActionMenuImpl = preloadable(() =>
+  import('./ActionMenu').then(m => m.ActionMenu),
 )
 
-const ActionInlineMenuImpl = lazy(() =>
-  import('./ActionInlineMenu').then(m => ({ default: m.ActionInlineMenu })),
+const ActionInlineMenuImpl = preloadable(() =>
+  import('./ActionInlineMenu').then(m => m.ActionInlineMenu),
 )
 
-const ActionPanelImpl = lazy(() =>
-  import('./ActionPanel').then(m => ({ default: m.ActionPanel })),
+const ActionPanelImpl = preloadable(() =>
+  import('./ActionPanel').then(m => m.ActionPanel),
 )
 
 type Variant = 'cell' | 'row'
@@ -78,6 +87,7 @@ const InlinePlaceholder = ({
   variant,
   open,
   onOpen,
+  loading,
   popup = 'menu',
 }: {
   action: SlotAction
@@ -85,6 +95,7 @@ const InlinePlaceholder = ({
   variant: Variant
   open: boolean
   onOpen: () => void
+  loading?: PanelButtonState
   popup?: 'menu' | 'dialog'
 }) => {
   const labels = useLocalization()
@@ -101,6 +112,7 @@ const InlinePlaceholder = ({
       aria-haspopup={popup}
       aria-expanded={open}
       onClick={onOpen}
+      {...panelButtonProps(loading)}
     >
       {action.icon(context)}
     </IconButton>
@@ -113,7 +125,7 @@ const InlinePlaceholder = ({
   return (
     <div
       className={clsx(wrapperBase, !open && hiddenClass)}
-      data-button-active={active}
+      data-button-active={active || !!loading?.pending}
     >
       {adornment ? (
         <span className={buttonStyles.anchor}>
@@ -134,18 +146,19 @@ export const ActionMenu = ({
   variant = 'cell',
 }: Omit<ActionMenuProps, 'open' | 'onOpenChange'>) => {
   const [open, setOpen] = useState(false)
+  const ready = usePreloaded(ActionMenuImpl)
+  const placeholder = (
+    <KebabPlaceholder
+      variant={variant}
+      open={open}
+      onOpen={() => setOpen(true)}
+    />
+  )
+  if (!ready) return placeholder
 
   return (
-    <Suspense
-      fallback={
-        <KebabPlaceholder
-          variant={variant}
-          open={open}
-          onOpen={() => setOpen(true)}
-        />
-      }
-    >
-      <ActionMenuImpl
+    <Suspense fallback={placeholder}>
+      <ActionMenuImpl.Component
         actions={actions}
         context={context}
         variant={variant}
@@ -163,20 +176,21 @@ export const ActionInlineMenu = ({
   variant = 'cell',
 }: Omit<ActionInlineMenuProps, 'open' | 'onOpenChange'>) => {
   const [open, setOpen] = useState(false)
+  const ready = usePreloaded(ActionInlineMenuImpl)
+  const placeholder = (
+    <InlinePlaceholder
+      action={action}
+      context={context}
+      variant={variant}
+      open={open}
+      onOpen={() => setOpen(true)}
+    />
+  )
+  if (!ready) return placeholder
 
   return (
-    <Suspense
-      fallback={
-        <InlinePlaceholder
-          action={action}
-          context={context}
-          variant={variant}
-          open={open}
-          onOpen={() => setOpen(true)}
-        />
-      }
-    >
-      <ActionInlineMenuImpl
+    <Suspense fallback={placeholder}>
+      <ActionInlineMenuImpl.Component
         action={action}
         context={context}
         variant={variant}
@@ -187,33 +201,53 @@ export const ActionInlineMenu = ({
   )
 }
 
-/** Инлайн-действие с панелью (поповер). Base UI-поповер грузится лениво. */
+/**
+ * Инлайн-действие с панелью (поповер). Base UI-поповер грузится лениво; поповер
+ * открывается, когда готово содержимое панели (`SlotAction.preload`).
+ */
 export const ActionPanel = ({
   action,
   context,
   variant = 'cell',
-}: Omit<ActionPanelProps, 'open' | 'onOpenChange'>) => {
+}: Omit<ActionPanelProps, 'open' | 'onOpenChange' | 'loading'>) => {
   const [open, setOpen] = useState(false)
+  const opening = usePanelOpening(context)
+  const onOpenChange = (next: boolean) => {
+    if (next) opening.request(action, () => setOpen(true))
+    else {
+      opening.cancel()
+      setOpen(false)
+    }
+  }
+  const loading: PanelButtonState = {
+    pending: opening.pending,
+    errorFlash: opening.errorFlash,
+    onIntent: () => preloadActionPanel(action, context),
+    onCancel: opening.cancel,
+  }
+  const ready = usePreloaded(ActionPanelImpl)
+  const placeholder = (
+    <InlinePlaceholder
+      action={action}
+      context={context}
+      variant={variant}
+      open={open}
+      onOpen={() => onOpenChange(true)}
+      loading={loading}
+      popup="dialog"
+    />
+  )
+  if (!ready) return placeholder
 
   return (
-    <Suspense
-      fallback={
-        <InlinePlaceholder
-          action={action}
-          context={context}
-          variant={variant}
-          open={open}
-          onOpen={() => setOpen(true)}
-          popup="dialog"
-        />
-      }
-    >
-      <ActionPanelImpl
+    <Suspense fallback={placeholder}>
+      <ActionPanelImpl.Component
         action={action}
         context={context}
         variant={variant}
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={onOpenChange}
+        loading={loading}
       />
     </Suspense>
   )

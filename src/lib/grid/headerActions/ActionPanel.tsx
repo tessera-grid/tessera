@@ -10,6 +10,7 @@ import { IconButton } from '../../ui/IconButton'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
+import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
 
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -20,6 +21,8 @@ export interface ActionPanelProps {
   variant?: 'cell' | 'row'
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Загрузка содержимого панели перед открытием (`SlotAction.preload`). */
+  loading?: PanelButtonState
 }
 
 export const ActionPanel = ({
@@ -28,6 +31,7 @@ export const ActionPanel = ({
   variant = 'cell',
   open,
   onOpenChange,
+  loading,
 }: ActionPanelProps) => {
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -45,6 +49,7 @@ export const ActionPanel = ({
           ref={triggerRef}
           className={action.className?.(context)}
           aria-label={ariaLabel}
+          {...panelButtonProps(loading)}
         >
           {action.icon(context)}
         </IconButton>
@@ -64,7 +69,7 @@ export const ActionPanel = ({
     >
       <div
         className={clsx(wrapperBase, hiddenClass)}
-        data-button-active={active || visible}
+        data-button-active={active || visible || !!loading?.pending}
       >
         {adornment ? (
           <span className={buttonStyles.anchor}>

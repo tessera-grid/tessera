@@ -30,6 +30,13 @@ export type {
   ActionPanelControls,
 } from './types'
 
+const noop = () => {}
+
+/** Начинает загрузку содержимого панели действия; ошибку загрузки глотает. */
+export const preloadActionPanel = (action: SlotAction, ctx: unknown) => {
+  void action.preload?.(ctx).catch(noop)
+}
+
 /** Пустой набор действий по всем слотам — база для реактивной свёртки плагинов. */
 export const createEmptySlotActions = (): SlotActions => ({
   leftHeaderSlot: [],

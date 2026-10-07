@@ -78,6 +78,11 @@ export interface SlotAction<
    * содержимым (у кебаба — у его кнопки), `onSelect` не вызывается.
    */
   panel?: (ctx: TCtx, controls: ActionPanelControls) => ReactNode
+  /**
+   * Загрузка содержимого `panel` (ленивые модули): поповер открывается после неё,
+   * а начинается она уже при наведении и фокусе кнопки.
+   */
+  preload?: (ctx: TCtx) => Promise<unknown>
 }
 
 /** Управление поповером действия с панелью. */

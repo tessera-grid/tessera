@@ -3,17 +3,20 @@
  * инлайн-кнопка и пункт кебаба открывают поповер фильтра колонки. Активный фильтр
  * виден по иконке, признаку `active` и доступному имени.
  */
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 
 import type { HeaderAction } from '../../core/headerActions'
+import { preloadable } from '../../core/preloadable'
 import { useIcons } from '../../ui/icons'
 import { DEFAULT_FILTER_DEBOUNCE_MS, filterTypeOf } from './conditions'
 import type { ColumnFilterDef } from './types'
 
 import '../../grid/cellControls/buttonVisibility.css'
 
-const FilterPanel = lazy(() =>
-  import('./FilterPanel').then(m => ({ default: m.FilterPanel })),
+const loadFilterPanelModule = () => import('./FilterPanel')
+
+const FilterPanel = preloadable(() =>
+  loadFilterPanelModule().then(m => m.FilterPanel),
 )
 
 const FilterIcon = ({ active }: { active: boolean }) => {
@@ -45,9 +48,17 @@ export const filterHeaderAction: HeaderAction = {
   className: () => 'column-filter__button',
   // Действие с панелью: выбор открывает поповер, а не вызывает обработчик.
   onSelect: () => {},
+  // Поповер открывается сразу с содержимым: панель и модуль её типа грузятся заранее.
+  preload: ({ column }) =>
+    Promise.all([
+      FilterPanel.load(),
+      loadFilterPanelModule().then(m =>
+        m.preloadFilterTypePanel(filterTypeOf(filterDefOf(column))),
+      ),
+    ]),
   panel: ({ column, table }, controls) => (
     <Suspense fallback={null}>
-      <FilterPanel
+      <FilterPanel.Component
         table={table}
         column={column as never}
         debounceMs={

@@ -16,6 +16,7 @@ import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
+import { usePanelOpening } from './usePanelOpening'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -43,10 +44,26 @@ export const ActionMenu = ({
   const [panelAction, setPanelAction] = useState<SlotAction | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelVisible, onPanelOpenChangeComplete] = useClosingVisible(panelOpen)
-  const openPanel = (action: SlotAction) => {
-    setPanelAction(action)
-    onOpenChange(false)
-    setPanelOpen(true)
+  // Меню закрывается вместе с открытием панели, когда её содержимое готово, и не
+  // возвращает фокус на кебаб: фокус забирает панель, а возврат закрыл бы её. Пока
+  // содержимое грузится, ожидание видно на кебабе; закрытие меню его отменяет.
+  const opening = usePanelOpening(context)
+  const panelTakesFocus = useRef(false)
+  const openPanel = (action: SlotAction) =>
+    opening.request(
+      action,
+      () => {
+        panelTakesFocus.current = true
+        setPanelAction(action)
+        onOpenChange(false)
+        setPanelOpen(true)
+      },
+      () => onOpenChange(false),
+    )
+  const onMenuOpenChange = (next: boolean) => {
+    if (next) panelTakesFocus.current = false
+    else opening.cancel()
+    onOpenChange(next)
   }
 
   const trigger = (
@@ -56,6 +73,8 @@ export const ActionMenu = ({
           ref={triggerRef}
           className={styles.trigger}
           aria-label={labels.headerMenu}
+          pending={opening.pending}
+          errorFlash={opening.errorFlash}
         >
           <MenuIcon width={16} height={16} />
         </IconButton>
@@ -66,7 +85,7 @@ export const ActionMenu = ({
   return (
     <Menu.Root
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={onMenuOpenChange}
       onOpenChangeComplete={onOpenChangeComplete}
     >
       {variant === 'row' ? (
@@ -93,6 +112,7 @@ export const ActionMenu = ({
         actions={actions}
         context={context}
         onOpenPanel={openPanel}
+        finalFocus={() => !panelTakesFocus.current}
       />
       {panelAction && (
         <Popover.Root

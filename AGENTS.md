@@ -383,8 +383,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0021](docs/decisions/0021-keyboard-navigation.md));
       `keyboard-wcag` (KB1–KB14 — соответствие WCAG 2.1.1 и замены клавиш для компактных клавиатур,
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
-    - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки,
-      [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md)).
+    - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки),
+      `action-panel-loading` (AM28–AM30 — ожидание загрузки панели, отмена, ошибка),
+      [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md).
     - _Скелет первой загрузки:_ `skeleton` (SL1–SL12 — колонки и ширины, служебные
       колонки, закрепление, шапка, строки по высоте, смена без сдвига, полоски, футер,
       без колонок, видимые колонки, панели, доступность), модульный `skeletonOptions`
@@ -415,8 +416,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       сводка, «показано N из M», «скрыто фильтром», сочетания с плагинами, заглушка,
       сервер, объявление, локализация, axe), модульные `filtering` (FL2, FL4–FL6, FL14,
       FL18, FL25–FL26, FL31 — условия, объединение через И, поиск, экспорт, `diagnose`),
-      дымовой `filtering-stories` (FL37 — история «Filtering — server»), перф FL35–FL36 —
-      в `interaction`, [ADR 0045](docs/decisions/0045-filtering.md).
+      дымовой `filtering-stories` (FL37 — история «Filtering — server»), `filter-panel-open`
+      (FL38–FL39 — первое открытие без пустого поповера), `filter-panel-preload` (FL40 —
+      загрузка панели при наведении и фокусе), перф FL35–FL36 — в `interaction`,
+      [ADR 0045](docs/decisions/0045-filtering.md).
     - _Подсказка поиска:_ `quick-search-hint` (QS1–QS2, QS4–QS5, QS8–QS9 — тултип и
       описание колонок поиска, недоступное поле, колонки для сервера), модульные
       `quickSearchHint.dom` (QS3, QS6–QS7), [ADR 0053](docs/decisions/0053-quick-search-columns-hint.md).

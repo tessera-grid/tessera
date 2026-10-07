@@ -7,7 +7,11 @@ import clsx from 'clsx'
 
 import { usePortalThemeClass } from '../../core/themeVariables'
 import { useLocalization } from '../../core/localization'
-import { type SlotAction, resolveMenuItems } from '../../core/headerActions'
+import {
+  type SlotAction,
+  preloadActionPanel,
+  resolveMenuItems,
+} from '../../core/headerActions'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
@@ -17,12 +21,15 @@ interface ActionMenuPopupProps {
   context: unknown
   /** Пункт действия с панелью открывает её вместо `onSelect`. */
   onOpenPanel?: (action: SlotAction) => void
+  /** Куда вернуть фокус при закрытии (Base UI `finalFocus`). */
+  finalFocus?: () => boolean
 }
 
 export const ActionMenuPopup = ({
   actions,
   context,
   onOpenPanel,
+  finalFocus,
 }: ActionMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
   const labels = useLocalization()
@@ -35,10 +42,16 @@ export const ActionMenuPopup = ({
         sideOffset={POPUP_SIDE_OFFSET}
         className={clsx(themeClass, styles.positioner)}
       >
-        <Menu.Popup className={clsx(themeClass, styles.popup)}>
+        <Menu.Popup
+          className={clsx(themeClass, styles.popup)}
+          finalFocus={finalFocus}
+        >
           {actions.map((action, index) => {
             const items = resolveMenuItems(action, context, labels)
             const groupLabel = action.menuGroupLabel?.(labels)
+            const preload = action.preload
+              ? () => preloadActionPanel(action, context)
+              : undefined
 
             return (
               <Menu.Group
@@ -56,11 +69,14 @@ export const ActionMenuPopup = ({
                     className={styles.item}
                     disabled={item.disabled}
                     label={item.label}
+                    closeOnClick={!(action.panel && onOpenPanel)}
                     onClick={
                       action.panel && onOpenPanel
                         ? () => onOpenPanel(action)
                         : item.onSelect
                     }
+                    onPointerEnter={preload}
+                    onFocus={preload}
                   >
                     <span className={styles.itemIcon} aria-hidden>
                       {item.icon}

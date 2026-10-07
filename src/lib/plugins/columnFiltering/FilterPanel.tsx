@@ -3,7 +3,7 @@
  * Ввод применяется через `debounceMs` после последнего нажатия, выбор условия и
  * булева значения — сразу. Нечисловой ввод в поле числа не применяется.
  */
-import { lazy, type RefObject, Suspense, useId, useState } from 'react'
+import { type RefObject, Suspense, useId, useState } from 'react'
 
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
@@ -11,6 +11,7 @@ import { RadioGroup } from '@base-ui/react/radio-group'
 import { setColumnFilterByUser } from '../../core/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
+import { preloadable } from '../../core/preloadable'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
 import { filterTypeOf } from './conditions'
 import { type FilterOperator, operatorLabel } from './describeFilter'
@@ -30,13 +31,24 @@ export interface FilterColumn {
   getFilterValue: () => unknown
 }
 
-const DateFilterPanel = lazy(() =>
-  import('./DateFilterPanel').then(m => ({ default: m.DateFilterPanel })),
+const DateFilterPanel = preloadable(() =>
+  import('./DateFilterPanel').then(m => m.DateFilterPanel),
 )
 
-const OptionFilterPanel = lazy(() =>
-  import('./OptionFilterPanel').then(m => ({ default: m.OptionFilterPanel })),
+const OptionFilterPanel = preloadable(() =>
+  import('./OptionFilterPanel').then(m => m.OptionFilterPanel),
 )
+
+/** Загрузка модуля панели под тип фильтра — календаря или чек-листа вариантов. */
+export const preloadFilterTypePanel = (
+  type: string | undefined,
+): Promise<unknown> | undefined => {
+  if (type === 'select' || type === 'multiselect' || type === 'lookup') {
+    return OptionFilterPanel.load()
+  }
+  if (type === 'date' || type === 'datetime') return DateFilterPanel.load()
+  return undefined
+}
 
 export interface FilterPanelProps {
   table: unknown
@@ -330,7 +342,7 @@ export const FilterPanel = (props: FilterPanelProps) => {
           />
         }
       >
-        <OptionFilterPanel {...props} type={type} />
+        <OptionFilterPanel.Component {...props} type={type} />
       </Suspense>
     )
   }
@@ -345,7 +357,7 @@ export const FilterPanel = (props: FilterPanelProps) => {
           />
         }
       >
-        <DateFilterPanel {...props} type={type} />
+        <DateFilterPanel.Component {...props} type={type} />
       </Suspense>
     )
   }

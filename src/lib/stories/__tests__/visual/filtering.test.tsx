@@ -200,11 +200,13 @@ describe('Фильтрация — фильтры колонок', () => {
       headerActionMenuOptions: { mode: 'always' },
     })
     expect(filterButton('name')).toBeNull()
-    const kebab = headCell('name').querySelector<HTMLElement>(
-      '[aria-label="Column options"]',
-    )!
     await userEvent.hover(headCell('name'))
-    await humanClick(kebab)
+    // Кнопку берём после наведения: заглушку кебаба сменяет кнопка из ленивого чанка.
+    await humanClick(
+      headCell('name').querySelector<HTMLElement>(
+        '[aria-label="Column options"]',
+      )!,
+    )
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
         el => el.textContent?.trim() === 'Filter',
