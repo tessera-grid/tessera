@@ -162,6 +162,7 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Storybook (сборка)        | `npm run build-storybook`    | Статическая сборка; хороший headless smoke-тест.                   |
 | Тесты                     | `npm test`                   | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка. |
 | Тесты (watch)             | `npm run test:watch`         | Vitest watch mode.                                                 |
+| Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, ADR 0040).             |
 | Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
 | Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                    |
 
@@ -243,16 +244,17 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 сначала самый дешёвый и быстрый сигнал — и исправляйте то, что выявляет каждый шаг, прежде
 чем двигаться дальше:
 
-| #   | Барьер             | Команда                      | Блокирующий?              |
-| --- | ------------------ | ---------------------------- | ------------------------- |
-| 1   | Формат             | `npm run format:check`       | да                        |
-| 2   | Линт               | `npm run lint`               | да                        |
-| 3   | Типы               | `npm run typecheck`          | да                        |
-| 4   | Требования ↔ тесты | `npm run check:requirements` | да                        |
-| 5   | Тесты              | `npm test` _(vitest)_        | да — **см. примечание**   |
-| 6   | Сборка библиотеки  | `npm run build`              | да                        |
-| 7   | Tree-shaking       | `npm run check:tree-shaking` | да                        |
-| 8   | Инварианты темы    | `npm run check:theme`        | да — **при правках темы** |
+| #   | Барьер             | Команда                      | Блокирующий?                                |
+| --- | ------------------ | ---------------------------- | ------------------------------------------- |
+| 1   | Формат             | `npm run format:check`       | да                                          |
+| 2   | Линт               | `npm run lint`               | да                                          |
+| 3   | Типы               | `npm run typecheck`          | да                                          |
+| 4   | Требования ↔ тесты | `npm run check:requirements` | да                                          |
+| 5   | Тесты              | `npm test` _(vitest)_        | да — **см. примечание**                     |
+| 6   | Сборка библиотеки  | `npm run build`              | да                                          |
+| 7   | Tree-shaking       | `npm run check:tree-shaking` | да                                          |
+| 8   | Инварианты темы    | `npm run check:theme`        | да — **при правках темы**                   |
+| 9   | Движки браузеров   | `npm run test:browsers`      | да — **при правках сессий правки и фокуса** |
 
 Это весь барьер: **format · lint · ts · requirements · tests · build · tree-shaking**. Шаг 4
 (`check:requirements`) сверяет таблицы требований принятых ADR с именами тестов: у
