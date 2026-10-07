@@ -445,8 +445,8 @@ const CASES: InteractionCase[] = [
       await openColumnsMenu()
     },
     // Смена набора колонок перерисовывает видимые строки 1000×1000 со всеми
-    // плагинами (~170 мс под ×4); одной горячей точки в профиле нет.
-    regressionCeiling: 250,
+    // плагинами (~200–250 мс под ×4, выбросы до ~310); одной горячей точки в профиле нет.
+    regressionCeiling: 320,
     act: async () => {
       columnsMenu()!
         .querySelector<HTMLElement>('[data-column-id] [role="checkbox"]')!
@@ -513,8 +513,9 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...SEARCH },
     // Проход «содержит» по 1 000 000 ячеек — сам по себе 70–350 мс под ×4 (в
-    // зависимости от совпадений); лишних перерисовок в профиле нет.
-    regressionCeiling: 550,
+    // зависимости от совпадений); лишних перерисовок в профиле нет. Вложенные моки —
+    // +27 % строк в модели: ~440–480 мс отдельно, до ~650 мс в полной матрице.
+    regressionCeiling: 750,
     prepare: async () => {
       await expect.poll(quickSearchInput).not.toBeNull()
     },
@@ -589,8 +590,8 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
     // Известный недостиг: ответ пересобирает исходную модель всех 100 000 корней, как
-    // смена data (~630–690 мс под ×4); инкрементальная сборка — отдельная задача.
-    regressionCeiling: 900,
+    // смена data (~240–290 мс под ×4); инкрементальная сборка — отдельная задача.
+    regressionCeiling: 450,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       lazyKids('item-id-0')

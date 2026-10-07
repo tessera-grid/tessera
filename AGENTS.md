@@ -333,7 +333,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
       `service-columns` (IV6/IV8/IV10 — сервисные колонки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md));
       `service-column-presence` (SC3–SC5, SC7, RE14–RE16, RA3) и модульные
-      `servicePresence.dom` (SC1–SC2, SC6, SC8–SC9) — показ служебных колонок по условию,
+      `servicePresence.dom` (SC1–SC2, SC6, SC8–SC9, SC11) — показ служебных колонок по условию,
       перф SC10 — в `first-render` ([ADR 0050](docs/decisions/0050-service-column-presence.md));
       модульные `slots` (IV12 — повторная регистрация слота по `id` на месте) и
       `reactivity.dom` (ST1 — перерисовка только подписчика среза,

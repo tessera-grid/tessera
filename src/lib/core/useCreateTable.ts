@@ -54,6 +54,10 @@ const DEFAULT_COLUMN = {
   maxSize: 750,
 }
 
+// Видимость служебных колонок сужается с первого рендера (ADR 0050). Константа: новое
+// значение на каждый рендер сбрасывало бы кэш сужения (SC11).
+const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
+
 /**
  * Ядровые (не плагинные) опции DataGrid (демо/стори типизируют ими свои args).
  * Плагинные фичи включаются через `plugins`.
@@ -232,8 +236,7 @@ export const useCreateTable = <
     getAtoms: () => tableRef.current?.atoms,
     inputs: [data, columnsSignature],
     context: { options: folded.options, slotActions: folded.slotActions },
-    // Видимость служебных колонок сужается с первого рендера (ADR 0050).
-    initial: { columnVisibility: {} },
+    initial: INITIAL_EFFECTIVE_STATE,
   })
 
   const controlledState = {

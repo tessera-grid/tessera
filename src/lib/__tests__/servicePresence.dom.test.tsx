@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Показ служебных колонок по условию (ADR 0050, SC1–SC2, SC6, SC8–SC9): условие
+ * Показ служебных колонок по условию (ADR 0050, SC1–SC2, SC6, SC8–SC9, SC11): условие
  * смотрит на исходные данные, скрытие — эффективное состояние видимости, сохранённый
  * срез не переписывается.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -173,6 +173,19 @@ describe('показ служебных колонок', () => {
     expect(visible(COLUMN_EXPANDING_ID)).toBe(true)
 
     mount(<Host data={flat} plugins={[rowExpanding()]} />)
+    expect(visible(COLUMN_EXPANDING_ID)).toBe(false)
+  })
+
+  it('SC11: перерисовка без смены данных, колонок и видимости не пересчитывает условие и сохраняет идентичность columnVisibility', () => {
+    const hasChildren = vi.fn(() => false)
+    mount(<Host data={flat} plugins={[rowExpanding({ hasChildren })]} />)
+    expect(visible(COLUMN_EXPANDING_ID)).toBe(false)
+    const visibility = captured.options.state.columnVisibility
+    const calls = hasChildren.mock.calls.length
+
+    mount(<Host data={flat} plugins={[rowExpanding({ hasChildren })]} />)
+    expect(hasChildren).toHaveBeenCalledTimes(calls)
+    expect(captured.options.state.columnVisibility).toBe(visibility)
     expect(visible(COLUMN_EXPANDING_ID)).toBe(false)
   })
 })
