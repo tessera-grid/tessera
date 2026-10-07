@@ -1,3 +1,12 @@
+import {
+  constructTable,
+  createSortedRowModel,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_basic,
+  tableFeatures,
+} from '@tanstack/react-table'
+import { storeReactivityBindings } from '../../../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { cleanup } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -18,6 +27,7 @@ import {
   SMALL,
 } from './perf-cases'
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
+import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import {
@@ -848,8 +858,8 @@ describe('Отзывчивость — сортировка по подписи'
       }
       const base = await measure(false)
       const labelled = await measure(true)
-      // Подпись сравнивается Intl.Collator, id — простым сравнением: ~+20% (база
-      // ~850 мс, по подписи ~1020–1080 мс под ×4); запас на шум замера.
+      // Подпись сравнивается Intl.Collator, id — простым сравнением: ~+20–30% (база
+      // ~490–565 мс, по подписи ~655–680 мс под ×4); запас на шум замера.
       const ceiling = Math.max(base.longestMs * 1.5, base.longestMs + 300)
       const record = (
         id: string,
@@ -882,6 +892,90 @@ describe('Отзывчивость — сортировка по подписи'
       expect(
         labelled.longestMs,
         `по подписи longest=${labelled.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Своя отсортированная модель (ADR 0064, SM7): построение модели на 100 000 строк —
+// смена направления сортировки и сразу модель — против createSortedRowModel TanStack
+// на тех же данных. Headless-таблицы без рендера: меряется только модель.
+const MODEL_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${(i * 7919) % 100_000}`,
+  num: (i * 104_729) % 1000,
+}))
+
+const sortedModelTable = (factory: () => unknown) =>
+  constructTable({
+    features: tableFeatures({
+      coreReactivityFeature: storeReactivityBindings(),
+      rowSortingFeature,
+      sortedRowModel: factory(),
+      sortFns: { alphanumeric: sortFn_alphanumeric, basic: sortFn_basic },
+    } as never),
+    data: MODEL_ROWS,
+    columns: [
+      { id: 'name', accessorKey: 'name', sortFn: 'alphanumeric' },
+      { id: 'num', accessorKey: 'num', sortFn: 'basic' },
+    ],
+    getRowId: (row: { id: string }) => row.id,
+  } as never) as unknown as {
+    setSorting: (sorting: { id: string; desc: boolean }[]) => void
+    getSortedRowModel: () => unknown
+  }
+
+describe('Своя отсортированная модель', () => {
+  test(
+    'SM7: построение модели на 100 000 строк — не дольше половины модели TanStack',
+    async () => {
+      const measure = async (factory: () => unknown) => {
+        const table = sortedModelTable(factory)
+        let desc = false
+        return measureInteractionWork(async () => {
+          desc = !desc
+          table.setSorting([
+            { id: 'name', desc },
+            { id: 'num', desc: false },
+          ])
+          table.getSortedRowModel()
+        })
+      }
+      const theirs = await measure(createSortedRowModel)
+      const ours = await measure(createTesseraSortedRowModel)
+      const ceiling = theirs.longestMs / 2
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×2',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('SM7-base', 'модель TanStack', theirs, false)
+      await record('SM7', 'модель Tessera', ours, true)
+
+      expect(
+        ours.longestMs,
+        `Tessera longest=${ours.longestMs.toFixed(1)}ms, TanStack ${theirs.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

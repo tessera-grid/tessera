@@ -355,6 +355,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `column-sorting-options` (OS8–OS9), модульный `optionLabelSort` (OS1–OS7, OS10),
       дымовой `sorting-stories` (OS12), перф OS11 — в `interaction` — сортировка по
       подписи вариантов ([ADR 0063](docs/decisions/0063-option-label-sorting.md)),
+      модульный `sortedRowModel` (SM1–SM6 — паритет своей модели с TanStack), перф SM7 —
+      в `interaction` ([ADR 0064](docs/decisions/0064-tessera-sorted-row-model.md)),
       `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md)),
       `column-dragging` (D14–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
@@ -542,7 +544,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     даты на 1000×1000, SF25–SF26 — фильтр варианта на 100 000 строк и открытие
     панели с 1000 вариантов, RE38 — приход 100 детей ленивой строки на 100 000 корней,
     RE50 — тот же приход ответом сервера с подсветкой против RE38
-    OS11 — сортировка 100 000 строк по подписи против сортировки по id
+    OS11 — сортировка 100 000 строк по подписи против сортировки по id;
+    SM7 — построение отсортированной модели на 100 000 строк против TanStack
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);

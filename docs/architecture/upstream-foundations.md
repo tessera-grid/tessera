@@ -115,14 +115,14 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
   порядок детей строки, и `cellSelectionFeature`: клик по ячейке этой строки не
   выделяет её. Строки без детей и строки, чей порядок детей не изменился, не
   затронуты.
-- **Обход.** Плагин `columnSorting` подключает не `createSortedRowModel()`, а
-  обёртку [`createTesseraSortedRowModel`](../../src/lib/plugins/columnSorting/sortedRowModel.ts):
-  на каждую новую модель она проходит `flatRows` и, если строка в `rowsById` не та же,
-  возвращает модель с исправленным `rowsById` (без копий модель отдаётся как есть).
-  Требование — CS24 ([ADR 0012](../decisions/0012-column-sorting.md)).
-- **Когда снять.** Когда upstream начнёт отдавать `rowsById` с копиями (или перестанет
-  копировать строки): тест CS24 зелёный на голом `createSortedRowModel()` — обёртку
-  удалить.
+- **Как устранено.** Плагин `columnSorting` подключает свою фабрику
+  [`createTesseraSortedRowModel`](../../src/lib/plugins/columnSorting/sortedRowModel.ts)
+  ([ADR 0064](../decisions/0064-tessera-sorted-row-model.md)) — ради скорости она
+  повторяет устройство модели TanStack и строит `rowsById` с копиями (SM5). Ошибка
+  upstream на Tessera больше не влияет; требование CS24
+  ([ADR 0012](../decisions/0012-column-sorting.md)) это проверяет.
+- **При обновлении TanStack.** Паритет порядка своей модели с `createSortedRowModel`
+  держат SM1–SM4 (одни сценарии через обе фабрики).
 
 ## Где находится Tessera
 

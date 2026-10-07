@@ -3,6 +3,8 @@
  * порядке, затем значения с подписью вне `options` — по алфавиту подписи, затем без
  * подписи — по строке значения, пустые — последними. Массив — поэлементно.
  */
+import { constructSortFn } from '@tanstack/react-table'
+
 import {
   type ColumnOption,
   type ColumnOptionsDef,
@@ -16,10 +18,6 @@ interface SortColumn {
   table: object
   columnDef: ColumnOptionsDef & { sortFn?: unknown; invertSorting?: boolean }
   getIsSorted: () => false | 'asc' | 'desc'
-}
-
-interface SortRow {
-  getValue: (columnId: string) => unknown
 }
 
 const collator = new Intl.Collator()
@@ -58,52 +56,55 @@ const compareKeys = ([groupA, placeA]: SortKey, [groupB, placeB]: SortKey) => {
     : collator.compare(placeA, placeB as string)
 }
 
-/** Функция сортировки колонки: пустые значения — после непустых в обе стороны. */
-export const optionLabelSortFn = (column: SortColumn) => {
-  // Ключи значений на один проход сортировки: он синхронный, подписи за это время не
-  // меняются; кэш сбрасывается после прохода.
-  let keys: Map<unknown, SortKey> | undefined
-  const cachedKey = (value: unknown) => {
-    if (!keys) {
-      keys = new Map()
-      queueMicrotask(() => {
-        keys = undefined
-      })
-    }
-    let key = keys.get(value)
-    if (!key) {
-      key = keyOf(column, value)
-      keys.set(value, key)
-    }
-    return key
+/** Ключ значения: пустое — отметка, массив — ключи элементов. */
+type ValueKey = typeof EMPTY | SortKey | SortKey[]
+
+const EMPTY = Symbol('empty')
+
+/** Одиночный ключ — список из одного: смесь значения и массива сравнивается поэлементно. */
+const asList = (key: SortKey | SortKey[]): SortKey[] =>
+  Array.isArray(key[0]) ? (key as SortKey[]) : [key as SortKey]
+
+const compareValueKeys = (a: SortKey | SortKey[], b: SortKey | SortKey[]) => {
+  const itemsA = asList(a)
+  const itemsB = asList(b)
+  const length = Math.min(itemsA.length, itemsB.length)
+  for (let i = 0; i < length; i++) {
+    const order = compareKeys(itemsA[i], itemsB[i])
+    if (order !== 0) return order
   }
-  const compareItems = (a: unknown, b: unknown) => {
-    if (!Array.isArray(a) || !Array.isArray(b)) {
-      return compareKeys(cachedKey(a), cachedKey(b))
-    }
-    const length = Math.min(a.length, b.length)
-    for (let i = 0; i < length; i++) {
-      const order = compareKeys(cachedKey(a[i]), cachedKey(b[i]))
-      if (order !== 0) return order
-    }
-    return a.length - b.length
-  }
-  return (rowA: SortRow, rowB: SortRow, columnId: string) => {
-    const a = rowA.getValue(columnId)
-    const b = rowB.getValue(columnId)
-    const emptyA = isEmptyOptionValue(a)
-    const emptyB = isEmptyOptionValue(b)
-    if (emptyA || emptyB) {
-      // TanStack обращает результат по убыванию и при invertSorting — заранее
-      // обращаем, чтобы пустые остались внизу.
-      const flipped =
-        (column.getIsSorted() === 'desc') !== !!column.columnDef.invertSorting
-      const order = Number(emptyA) - Number(emptyB)
-      return flipped ? -order : order
-    }
-    return compareItems(a, b)
-  }
+  return itemsA.length - itemsB.length
 }
+
+/**
+ * Функция сортировки колонки по контракту `constructSortFn`: ключ считается один раз
+ * на значение (`resolveDataValue`), пустые — после непустых в обе стороны.
+ */
+export const optionLabelSortFn = (column: SortColumn) =>
+  constructSortFn({
+    resolveDataValue: (value: unknown): ValueKey => {
+      if (isEmptyOptionValue(value)) return EMPTY
+      return Array.isArray(value)
+        ? value.map(item => keyOf(column, item))
+        : keyOf(column, value)
+    },
+    sort: (a: unknown, b: unknown) => {
+      const emptyA = a === EMPTY
+      const emptyB = b === EMPTY
+      if (emptyA || emptyB) {
+        // Модель обращает результат по убыванию и при invertSorting — заранее
+        // обращаем, чтобы пустые остались внизу.
+        const flipped =
+          (column.getIsSorted() === 'desc') !== !!column.columnDef.invertSorting
+        const order = Number(emptyA) - Number(emptyB)
+        return flipped ? -order : order
+      }
+      return compareValueKeys(
+        a as SortKey | SortKey[],
+        b as SortKey | SortKey[],
+      )
+    },
+  } as never)
 
 /** Колонке с вариантами без своей функции сортировки ставит сортировку по подписи. */
 export const optionLabelSortFeature = {

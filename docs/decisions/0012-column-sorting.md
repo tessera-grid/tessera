@@ -11,6 +11,8 @@
 - **Изменён:** 2026-10-08 — колонки с вариантами (`options`, `getOptionLabel`)
   сортируются по подписи, а не по значению, если у колонки нет своего `sortFn`
   ([ADR 0063](0063-option-label-sorting.md)).
+- **Изменён:** 2026-10-08 — своя фабрика отсортированной модели вместо обёртки
+  `createSortedRowModel` ([ADR 0064](0064-tessera-sorted-row-model.md)).
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен как слот поверх
     штатной модели сортировки TanStack (`getSortedRowModel`, `column.getIsSorted`,
