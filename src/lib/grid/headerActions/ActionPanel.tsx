@@ -7,6 +7,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
+import { Tooltip } from '../../ui/Tooltip'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
@@ -67,19 +68,21 @@ export const ActionPanel = ({
       onOpenChange={onOpenChange}
       onOpenChangeComplete={onOpenChangeComplete}
     >
-      <div
-        className={clsx(wrapperBase, hiddenClass)}
-        data-button-active={active || visible || !!loading?.pending}
-      >
-        {adornment ? (
-          <span className={buttonStyles.anchor}>
-            {button}
-            {adornment}
-          </span>
-        ) : (
-          button
-        )}
-      </div>
+      <Tooltip title={label}>
+        <div
+          className={clsx(wrapperBase, hiddenClass)}
+          data-button-active={active || visible || !!loading?.pending}
+        >
+          {adornment ? (
+            <span className={buttonStyles.anchor}>
+              {button}
+              {adornment}
+            </span>
+          ) : (
+            button
+          )}
+        </div>
+      </Tooltip>
       <ActionPanelPopup
         action={action}
         context={context}

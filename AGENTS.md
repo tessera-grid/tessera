@@ -385,6 +385,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
     - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки),
       `action-panel-loading` (AM28–AM30 — ожидание загрузки панели, отмена, ошибка),
+      `header-action-tooltips` (AM31 — тултип кнопок с панелью и мини-меню),
       [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md).
     - _Скелет первой загрузки:_ `skeleton` (SL1–SL12 — колонки и ширины, служебные
       колонки, закрепление, шапка, строки по высоте, смена без сдвига, полоски, футер,

@@ -13,6 +13,7 @@ import { useLocalization } from '../../core/localization'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { preloadable, usePreloaded } from '../../core/preloadable'
 import { IconButton } from '../../ui/IconButton'
+import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import { preloadActionPanel, type SlotAction } from '../../core/headerActions'
 import type { ActionMenuProps } from './ActionMenu'
@@ -138,19 +139,21 @@ const InlinePlaceholder = ({
   const wrapperBase = variant === 'row' ? 'row__button' : 'cell__button'
 
   return (
-    <div
-      className={clsx(wrapperBase, !open && hiddenClass)}
-      data-button-active={active || !!loading?.pending}
-    >
-      {adornment ? (
-        <span className={buttonStyles.anchor}>
-          {button}
-          {adornment}
-        </span>
-      ) : (
-        button
-      )}
-    </div>
+    <Tooltip title={label}>
+      <div
+        className={clsx(wrapperBase, !open && hiddenClass)}
+        data-button-active={active || !!loading?.pending}
+      >
+        {adornment ? (
+          <span className={buttonStyles.anchor}>
+            {button}
+            {adornment}
+          </span>
+        ) : (
+          button
+        )}
+      </div>
+    </Tooltip>
   )
 }
 
