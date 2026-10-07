@@ -69,6 +69,12 @@
   уровня, глубже — её тени со сдвигом на шаг `--tsr-comp-row-nesting-indent`
   (ADR 0059). Прямоугольники, а не градиент: стоп градиента в 1px пропадает при
   дробном масштабе страницы.
+- **Индикатор включённого действия** (ADR [0062](../decisions/0062-active-action-indicator.md)):
+  точка на кнопке заголовка и кебабе, номер приоритета сортировки, счётчики тулбара —
+  `--tsr-comp-active-indicator` (по умолчанию `--tsr-comp-loader-bar`), цифры —
+  `--tsr-comp-active-indicator-fg` (`--tsr-sys-surface`: белые цифры на синем тёмной
+  темы не держат 4.5:1). `Bubble` с `tone="active"`; тон по умолчанию — акцент
+  (счётчик перетаскиваемых строк).
 - **Подсветка пришедших строк** (ADR [0056](../decisions/0056-lazy-children-arrival-highlight.md)):
   слой `::after` строки тела с `data-arrived` — `--tsr-comp-row-arrival-color` (по
   умолчанию 16 % `--tsr-comp-loader-bar`), удержание `--tsr-comp-row-arrival-duration`

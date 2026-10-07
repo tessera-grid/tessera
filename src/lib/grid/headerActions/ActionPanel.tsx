@@ -9,6 +9,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import type { SlotAction } from '../../core/headerActions'
+import { actionDot } from './ActiveDot'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
@@ -53,6 +54,7 @@ export const ActionPanel = ({
           {...panelButtonProps(loading)}
         >
           {action.icon(context)}
+          {actionDot(!!action.active, active, !!adornment)}
         </IconButton>
       }
     />

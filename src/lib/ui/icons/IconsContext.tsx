@@ -28,11 +28,10 @@ import {
   MoreVertical,
   Pencil,
   Pin,
-  PinOff,
   Info,
 } from 'lucide-react'
 
-import { CheckboxOutlineIcon, FilterActiveIcon } from './icons'
+import { CheckboxOutlineIcon } from './icons'
 
 /**
  * Иконкам таблицы передают только размер и класс — этого достаточно и для
@@ -59,13 +58,15 @@ export interface TableIcons {
   sortDesc: IconComponent
   /** Закрепление колонки */
   pin: IconComponent
-  /** Закрепленная колонка */
+  /** Закреплённая колонка (по умолчанию — та же, что `pin`) */
   pinned: IconComponent
   /** Группировка */
   group: IconComponent
+  /** Сгруппированная колонка (по умолчанию — та же, что `group`) */
+  grouped: IconComponent
   /** Разворачивание строк */
   expand: IconComponent
-  /** Развернутая строка */
+  /** Раскрытая строка: по умолчанию тот же шеврон с поворотом; свой значок — без поворота */
   expanded: IconComponent
   /** Чекбокс — пустой */
   checkboxOutline: IconComponent
@@ -83,7 +84,7 @@ export interface TableIcons {
   download: IconComponent
   /** Кнопка фильтра в заголовке (`columnFiltering`) */
   filter: IconComponent
-  /** Кнопка фильтра при активном фильтре колонки */
+  /** Кнопка фильтра при активном фильтре колонки (по умолчанию — та же, что `filter`) */
   filterActive: IconComponent
   /** Поле быстрого поиска в тулбаре (`quickSearch`) */
   search: IconComponent
@@ -111,10 +112,11 @@ export const DEFAULT_ICONS: TableIcons = {
   sortAsc: ChevronUp,
   sortDesc: ChevronDown,
   pin: Pin,
-  pinned: PinOff,
+  pinned: Pin,
   group: Group,
+  grouped: Group,
   expand: ChevronDown,
-  expanded: ChevronUp,
+  expanded: ChevronDown,
   checkboxOutline: CheckboxOutlineIcon,
   checkboxChecked: Check,
   checkboxIndeterminate: Minus,
@@ -123,7 +125,8 @@ export const DEFAULT_ICONS: TableIcons = {
   columns: Columns3,
   download: Download,
   filter: Funnel,
-  filterActive: FilterActiveIcon,
+  // Та же воронка: включённый фильтр показывает точка (ADR 0062), а не смена значка.
+  filterActive: Funnel,
   search: Search,
   clear: X,
   info: Info,

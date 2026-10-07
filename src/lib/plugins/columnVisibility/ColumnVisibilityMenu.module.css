@@ -112,3 +112,14 @@
   color: var(--tsr-comp-control-disabled-color);
   cursor: default;
 }
+
+.icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+}

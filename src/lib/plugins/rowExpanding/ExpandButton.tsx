@@ -26,7 +26,10 @@ export const ExpandButton = ({
   errorFlash,
   onClick,
 }: ExpandButtonProps) => {
-  const { expand: ExpandIcon } = useIcons()
+  const { expand, expanded: expandedIcon } = useIcons()
+  // Свой значок раскрытой строки заменяет шеврон и не поворачивается (ADR 0062, AI14).
+  const swapped = expanded && expandedIcon !== expand
+  const ExpandIcon = swapped ? expandedIcon : expand
 
   const label = useLocalization().toggleRow
 
@@ -46,7 +49,7 @@ export const ExpandButton = ({
             width={20}
             height={20}
             className={clsx(styles.icon, {
-              [styles.expanded]: expanded,
+              [styles.expanded]: expanded && !swapped,
               [styles.disabled]: disabled && !expanded,
             })}
           />

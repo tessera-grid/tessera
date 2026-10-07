@@ -135,9 +135,11 @@ relative-якорь кнопки, круглая геометрия кнопки
   родителя) и `aria-hidden` (декоративная). Пропсы прокидываются, размер
   переопределяется через `width/height`.
 - **`TableIcons` / `DEFAULT_ICONS`** — полный набор иконок таблицы (drag, sort/
-  sortAsc/sortDesc, pin/pinned, group, expand/expanded, checkbox
-  outline/checked/indeterminate). Дефолты — из `lucide-react` плюс in-house
-  `CheckboxOutlineIcon`.
+  sortAsc/sortDesc, pin/pinned, group/grouped, expand/expanded, filter/filterActive,
+  checkbox outline/checked/indeterminate и др.). Дефолты — из `lucide-react` плюс
+  in-house `CheckboxOutlineIcon`. Ключ включённого состояния (`pinned`, `grouped`,
+  `expanded`, `filterActive`) по умолчанию равен базовому — включённое показывает
+  точка или поворот, а не смена значка ([ADR 0062](0062-active-action-indicator.md)).
 - **`IconsProvider` / `useIcons`** — точка переопределения: проп `icons` у
   `DataGrid` мержится поверх `DEFAULT_ICONS` (частичное переопределение —
   нетронутые ключи остаются дефолтными).

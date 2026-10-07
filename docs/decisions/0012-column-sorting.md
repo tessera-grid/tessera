@@ -92,7 +92,7 @@ column.getCanSort()`; при выключенном `enableColumnSorting` шта
 Кнопку описывает **дескриптор** `sortHeaderAction` (`sortHeaderAction.tsx`, ADR 0024) —
 данными; реактивность на срез сортировки (`getIsSorted()`, `getNextSortingOrder()`,
 `getCanSort()`) обеспечивает грид подпиской на `table.atoms.sorting`. Ядро подаёт его
-**инлайн** — циклящая иконка-кнопка `SortButton` с бейджем приоритета мультисорта
+**инлайн** — циклящая иконка-кнопка `ActionButton` с бейджем приоритета мультисорта
 (`adornment`) — либо строкой **кебаб-меню**, где `menuItems` разворачивает действие в
 пункты asc/desc/сброс. Инлайн-`onSelect` циклит сортировку:
 
@@ -105,7 +105,7 @@ onSelect: ({ column, table }, event) => {
 }
 ```
 
-`SortButton` (`SortButton.tsx`):
+Инлайн-кнопка (и тот же вид у публичного примитива `SortButton` из `/ui`):
 
 - **иконка направления** (16×16), переопределяема через
   `<DataGrid icons={{ sort, sortAsc, sortDesc }} />`:
@@ -113,7 +113,8 @@ onSelect: ({ column, table }, event) => {
   - `desc` → `sortDesc` (по умолчанию `ChevronDown`);
   - не отсортировано → `sort` (по умолчанию `ChevronsUpDown`);
 - в отсортированном состоянии кнопка красится в активный цвет
-  (`SortButton.module.css`: `.sorted { color: var(--tsr-comp-control-active-color) }`)
+  (`.sorted { color: var(--tsr-comp-control-active-color) }`), показывает точку
+  индикатора или номер приоритета на её месте ([ADR 0062](0062-active-action-indicator.md))
   и несёт `data-button-active` = `true`;
 - **тултип описывает следующее действие** (из локализации):
   не отсортировано → `sortDescending`; отсортировано `desc` → `sortAscending`;

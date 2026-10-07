@@ -90,11 +90,12 @@ const canPin = ({ column, table }: HeaderComponentProps): boolean => {
   return false
 }
 
-/** Тематизируемая иконка пина. */
-const PinActionIcon = () => {
-  const { pin: PinIcon } = useIcons()
+/** Тематизируемая иконка пина; `pinned` — у закреплённой колонки (ADR 0062, AI12). */
+const PinActionIcon = ({ pinned = false }: { pinned?: boolean }) => {
+  const { pin, pinned: pinnedIcon } = useIcons()
+  const Icon = pinned ? pinnedIcon : pin
 
-  return <PinIcon width={16} height={16} />
+  return <Icon width={16} height={16} />
 }
 
 /**
@@ -170,7 +171,11 @@ export const pinHeaderAction: HeaderAction = {
   slot: 'rightHeaderSlot',
   order: 0,
   visible: canPin,
-  icon: () => <PinActionIcon />,
+  icon: ctx => (
+    <PinActionIcon
+      pinned={!!getSegmentPinnedSide(getSegmentLeafColumns(ctx))}
+    />
+  ),
   label: (ctx, labels) =>
     getSegmentPinnedSide(getSegmentLeafColumns(ctx))
       ? labels.unpin

@@ -6,6 +6,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
+import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
 import styles from './GroupButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -18,7 +19,8 @@ export interface GroupButtonProps {
 
 export const GroupButton = memo(
   ({ isGrouped, onClick, disabled = false }: GroupButtonProps) => {
-    const { group: GroupIcon } = useIcons()
+    const { group, grouped } = useIcons()
+    const GroupIcon = isGrouped ? grouped : group
 
     const labels = useLocalization()
 
@@ -41,6 +43,7 @@ export const GroupButton = memo(
             aria-label={title}
           >
             <GroupIcon width={16} height={16} />
+            <ActiveDot shown={isGrouped} />
           </IconButton>
         </div>
       </Tooltip>

@@ -8,6 +8,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import type { SlotAction } from '../../core/headerActions'
+import { actionDot } from './ActiveDot'
 
 import styles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -47,6 +48,7 @@ export const ActionButton = ({
       aria-label={ariaLabel}
     >
       {action.icon(context)}
+      {actionDot(!!action.active, active, !!adornment)}
     </IconButton>
   )
 

@@ -10,12 +10,14 @@ import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
+import { renderHeaderButtons } from './header-buttons-helpers'
 // Контролы рендерятся без DataGrid — тему подключаем явно (иначе токены не заданы).
 import '../../../core/themeVariables/theme.css'
 
 // Матрица темизации, этап 3 — контролы шапки: сортировка/пиннинг/группировка
-// (base/active/hover), ресайз и drag (base/disabled). Standalone-рендер в обёртке
-// темы, состояние — пропом; сверка вычисленного стиля с резолвом токена, light+dark.
+// (base/active/hover), ресайз и drag (base/disabled). Публичные примитивы `/ui` —
+// standalone в обёртке темы, состояние пропом; настоящие кнопки шапки — в гриде,
+// включаются мышью. Сверка вычисленного стиля с резолвом токена, light+dark.
 
 const themeClass = (dark: boolean) =>
   dark ? 'data-grid-theme dark' : 'data-grid-theme'
@@ -70,6 +72,10 @@ describe('Theming matrix — header controls', () => {
       expect(read(btn, 'color')).toBe(
         resolveColor('--tsr-comp-control-color', dark),
       )
+      const grid = await renderHeaderButtons(mode)
+      expect(read(grid.button('sort'), 'color')).toBe(
+        resolveColor('--tsr-comp-control-color', dark),
+      )
     })
 
     test('TT-17 sort button sorted color = --tsr-comp-control-active-color', async () => {
@@ -81,6 +87,11 @@ describe('Theming matrix — header controls', () => {
       expect(read(btn, 'color')).toBe(
         resolveColor('--tsr-comp-control-active-color', dark),
       )
+      const grid = await renderHeaderButtons(mode)
+      await grid.activate('sort')
+      await expect
+        .poll(() => read(grid.button('sort'), 'color'))
+        .toBe(resolveColor('--tsr-comp-control-active-color', dark))
     })
 
     test('TT-18 sort button sorted hover bg = --tsr-comp-control-active-hover-bg', async () => {
@@ -96,6 +107,15 @@ describe('Theming matrix — header controls', () => {
           interval: 100,
         })
         .toBe(resolveColor('--tsr-comp-control-active-hover-bg', dark))
+      const grid = await renderHeaderButtons(mode)
+      await grid.activate('sort')
+      await userEvent.hover(grid.button('sort'))
+      await expect
+        .poll(() => read(grid.button('sort'), 'background-color'), {
+          timeout: 5000,
+          interval: 100,
+        })
+        .toBe(resolveColor('--tsr-comp-control-active-hover-bg', dark))
     })
 
     // --- PinButton -------------------------------------------------------------
@@ -105,6 +125,11 @@ describe('Theming matrix — header controls', () => {
       expect(read(btn, 'color')).toBe(
         resolveColor('--tsr-comp-control-active-color', dark),
       )
+      const grid = await renderHeaderButtons(mode)
+      await grid.activate('pin')
+      await expect
+        .poll(() => read(grid.button('pin'), 'color'))
+        .toBe(resolveColor('--tsr-comp-control-active-color', dark))
     })
 
     // --- GroupButton -----------------------------------------------------------
@@ -117,6 +142,11 @@ describe('Theming matrix — header controls', () => {
       expect(read(btn, 'color')).toBe(
         resolveColor('--tsr-comp-control-active-color', dark),
       )
+      const grid = await renderHeaderButtons(mode)
+      await grid.activate('group')
+      await expect
+        .poll(() => read(grid.button('group'), 'color'))
+        .toBe(resolveColor('--tsr-comp-control-active-color', dark))
     })
 
     // --- DragHandler -----------------------------------------------------------

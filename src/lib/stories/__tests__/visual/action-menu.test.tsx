@@ -18,7 +18,7 @@ import { composed } from '../stories'
 const HEAD_CELL = '.data-grid__head-cell'
 /** Заголовки реальных (не сервисных) колонок. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
-const KEBAB = '[aria-label="Column options"]'
+const KEBAB = '[aria-label^="Column options"]'
 const ROW_KEBAB = '[aria-label="Row options"]'
 const ACTION_CELL =
   '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'

@@ -32,7 +32,7 @@ export const FilterSummaryButton = ({ table }: ToolbarComponentProps) => {
     <span className={styles.icon}>
       <FilterIcon width={18} height={18} />
       {items.length > 0 && (
-        <Bubble size="sm" className={styles.count} aria-hidden>
+        <Bubble size="sm" tone="active" className={styles.count} aria-hidden>
           {items.length}
         </Bubble>
       )}

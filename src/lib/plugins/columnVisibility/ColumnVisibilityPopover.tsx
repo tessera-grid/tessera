@@ -3,7 +3,7 @@
  * управляет эагерная кнопка (`ColumnVisibilityButton`), поэтому клик до догрузки
  * не теряется. `Escape` и клик снаружи закрывают поповер, фокус — на кнопку.
  */
-import { useRef } from 'react'
+import { type ReactNode, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
@@ -11,7 +11,6 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { usePortalThemeClass } from '../../core/themeVariables'
 import type { Table } from '../../types'
-import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { ColumnVisibilityMenu } from './ColumnVisibilityMenu'
 
@@ -20,6 +19,9 @@ import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 export interface ColumnVisibilityPopoverProps {
   table: Table<any, any>
+  /** Подпись кнопки: с числом скрытых колонок, когда они есть. */
+  label: string
+  icon: ReactNode
   active: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -27,13 +29,14 @@ export interface ColumnVisibilityPopoverProps {
 
 export const ColumnVisibilityPopover = ({
   table,
+  label,
+  icon,
   active,
   open,
   onOpenChange,
 }: ColumnVisibilityPopoverProps) => {
   const themeClass = usePortalThemeClass()
   const labels = useLocalization()
-  const { columns: ColumnsIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -41,8 +44,8 @@ export const ColumnVisibilityPopover = ({
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <ToolbarButton
         ref={triggerRef}
-        label={labels.columns}
-        icon={<ColumnsIcon width={18} height={18} />}
+        label={label}
+        icon={icon}
         active={active}
         data-testid="column-visibility-button"
         render={<Popover.Trigger />}

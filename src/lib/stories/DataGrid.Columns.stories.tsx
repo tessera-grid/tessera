@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { filteringColumns, filteringData } from './__mocks__/filteringData'
 
 /** Истории колонок: размеры, сортировка, перетаскивание, закрепление, шапка. */
 const meta = {
@@ -124,6 +125,37 @@ export const HeaderActionMenu: StoryObj<StoryProps> = {
     containerHeight: 400,
     height: 300,
     maxHeight: 300,
+  },
+}
+
+// Индикатор включённого действия (ADR 0062): отсортируйте, отфильтруйте или закрепите
+// колонку — на её кнопке появится точка; скройте колонку — на «Колонках» число скрытых.
+const activeIndicatorArgs: Partial<StoryProps> = {
+  columnsOverride: filteringColumns,
+  dataOverride: filteringData,
+  enableColumnSorting: true,
+  enableColumnFiltering: true,
+  enableColumnPinning: true,
+  enableColumnVisibility: true,
+  containerHeight: 460,
+  height: 400,
+  maxHeight: 400,
+}
+
+export const ActiveActionIndicator: StoryObj<StoryProps> = {
+  name: 'Active action indicator',
+  args: activeIndicatorArgs,
+}
+
+// То же, но кнопки свёрнуты в кебаб: включённое действие видно точкой на кебабе, а
+// сам кебаб остаётся на виду без наведения. Shift+клик по сортировке — номер
+// приоритета вместо точки.
+export const ActiveActionIndicatorInMenu: StoryObj<StoryProps> = {
+  name: 'Active action indicator — in menu',
+  args: {
+    ...activeIndicatorArgs,
+    enableHeaderActionMenu: true,
+    headerActionMenuOptions: { mode: 'always' },
   },
 }
 

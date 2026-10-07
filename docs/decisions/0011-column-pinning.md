@@ -155,7 +155,7 @@ visible: ({ column, table }) => {
 
 UI-affordance объявляется **дескриптором** `slotActions` (`pinHeaderAction`,
 [ADR 0024](0024-slot-action-descriptor-and-menu.md)) в `rightHeaderSlot` (`order: 0`)
-— в правой части каждой ячейки заголовка; ядро подаёт его инлайн-кнопкой (`PinButton`)
+— в правой части каждой ячейки заголовка; ядро подаёт его инлайн-кнопкой (`ActionButton`)
 или строкой кебаб-меню:
 
 ```ts
@@ -255,7 +255,7 @@ end-закреплённые, и `BodyRowCells`/`HeadRow` адресуют их 
 Кнопку описывает **дескриптор** `pinHeaderAction` (`pinHeaderAction.tsx`, ADR 0024) —
 данными, а не опаковым компонентом. `visible` (см. выше) решает, показывать ли её;
 `active`/`label` берут `getSegmentPinnedSide`. Ядро подаёт дескриптор **инлайн** —
-иконка-кнопка `PinButton` (при `pinSides: 'both'` — поповер выбора стороны через
+иконка-кнопка `ActionButton` (при `pinSides: 'both'` — поповер выбора стороны через
 `inlineAsMenu`) — либо строкой **кебаб-меню** (`menuItems`); `onSelect` тумблит сторону:
 
 ```ts
@@ -265,13 +265,14 @@ onSelect: ctx => {
 }
 ```
 
-`PinButton` (`PinButton.tsx`):
+Инлайн-кнопка (и тот же вид у публичного примитива `PinButton` из `/ui`):
 
 - иконка `pin` (по умолчанию lucide `Pin`, переопределяема через
   `<DataGrid icons={{ pin }} />`) — **16×16**;
-- в закреплённом состоянии иконка **повёрнута на −45°** (`PinButton.module.css`:
-  `.pinned svg { rotate: -45deg }`) и красится в активный цвет
-  (`--tsr-comp-control-active-color`), `data-button-active` = `true`;
+- в закреплённом состоянии иконка не поворачивается, кнопка красится в активный
+  цвет (`--tsr-comp-control-active-color`), показывает точку индикатора и берёт
+  значок `pinned` (по умолчанию тот же `pin`, [ADR 0062](0062-active-action-indicator.md));
+  `data-button-active` = `true`;
 - тултип — `pin` / `unpin` из локализации (по умолчанию `Pin column` /
   `Unpin column`);
 - **видимость только при наведении** — кнопка присутствует в DOM всегда, но

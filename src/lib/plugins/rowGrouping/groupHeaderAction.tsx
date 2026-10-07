@@ -11,11 +11,12 @@ import { useIcons } from '../../ui/icons'
 import styles from '../../plugins/rowGrouping/GroupButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
-/** Тематизируемая иконка группировки (читает `useIcons` как компонент). */
-const GroupActionIcon = () => {
-  const { group: GroupIcon } = useIcons()
+/** Тематизируемая иконка группировки; `grouped` — у сгруппированной колонки (ADR 0062, AI13). */
+const GroupActionIcon = ({ grouped = false }: { grouped?: boolean }) => {
+  const { group, grouped: groupedIcon } = useIcons()
+  const Icon = grouped ? groupedIcon : group
 
-  return <GroupIcon width={16} height={16} />
+  return <Icon width={16} height={16} />
 }
 
 const isGrouped = ({ column }: HeaderComponentProps): boolean =>
@@ -26,7 +27,7 @@ export const groupHeaderAction: HeaderAction = {
   slot: 'rightHeaderSlot',
   order: 2,
   visible: ({ column }) => column.getCanGroup(),
-  icon: () => <GroupActionIcon />,
+  icon: ctx => <GroupActionIcon grouped={isGrouped(ctx)} />,
   label: (ctx, labels) => (isGrouped(ctx) ? labels.ungroup : labels.group),
   active: isGrouped,
   className: ctx =>
@@ -34,4 +35,14 @@ export const groupHeaderAction: HeaderAction = {
       [styles.active]: isGrouped(ctx),
     }),
   onSelect: ({ column }) => column.toggleGrouping(),
+  // Строка меню — на базовой иконке: включённое там показывает галочка.
+  menuItems: (ctx, labels) => [
+    {
+      id: 'rowGrouping',
+      label: isGrouped(ctx) ? labels.ungroup : labels.group,
+      icon: <GroupActionIcon />,
+      onSelect: () => ctx.column.toggleGrouping(),
+      active: isGrouped(ctx),
+    },
+  ],
 }

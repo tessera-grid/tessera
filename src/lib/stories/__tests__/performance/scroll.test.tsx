@@ -15,6 +15,7 @@ import {
   SMALL,
   CONTENT_SCROLL,
   submittedCellsSeed,
+  sortAllColumnsSeed,
 } from './perf-cases'
 import { makeData } from '../../__mocks__/data'
 
@@ -356,6 +357,71 @@ describe('Производительность прокрутки — линии
           )
           .toBeLessThanOrEqual(ceiling[axis])
       }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Индикатор активного действия (ADR 0062, AI10): 1000×1000 со всеми плагинами, у
+// каждого заголовка активна сортировка (номер приоритета), против той же выборки без
+// сортировки. Горизонтальная прокрутка монтирует заголовки с индикаторами.
+describe('Производительность прокрутки — индикатор активного действия', () => {
+  test(
+    'AI10: горизонтальная прокрутка 1000×1000 со всеми плагинами, где у каждого заголовка активна сортировка, — в пределах регресс-потолка; база без сортировки в дашборде',
+    async () => {
+      const measure = async (sorted: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...ALL_PLUGINS,
+          extraPlugins: sorted ? [sortAllColumnsSeed()] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('[data-sort-priority]') !== null)
+          .toBe(sorted)
+        // Медленно, без быстрой прокрутки: заголовки рисуются с кнопками, а не скелетами.
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return x
+      }
+
+      const base = await measure(false)
+      const sorted = await measure(true)
+      // Потолок — как у P8 по X (база того же грида).
+      const ceiling = 70
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              axis: 'x',
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              budgetMs: ceiling,
+              pass: !gated || r.p95Ms <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('AI10-base', 'заголовки без сортировки', base, false)
+      await record('AI10', 'сортировка по всем колонкам', sorted, true)
+
+      expect(
+        sorted.p95Ms,
+        `X p95=${sorted.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling})`,
+      ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
   )

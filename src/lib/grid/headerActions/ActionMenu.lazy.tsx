@@ -15,7 +15,12 @@ import { preloadable, usePreloaded } from '../../core/preloadable'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
-import { preloadActionPanel, type SlotAction } from '../../core/headerActions'
+import {
+  countActiveActions,
+  preloadActionPanel,
+  type SlotAction,
+} from '../../core/headerActions'
+import { ActiveDot, actionDot } from './ActiveDot'
 import type { ActionMenuProps } from './ActionMenu'
 import type { ActionInlineMenuProps } from './ActionInlineMenu'
 import type { ActionPanelProps } from './ActionPanel'
@@ -59,8 +64,10 @@ const KebabPlaceholder = ({
   open,
   onOpen,
   loading,
+  activeCount,
 }: {
   variant: Variant
+  activeCount: number
   open: boolean
   onOpen: () => void
   loading: PanelButtonState
@@ -72,17 +79,20 @@ const KebabPlaceholder = ({
   const trigger = (
     <IconButton
       className={styles.trigger}
-      aria-label={label}
+      aria-label={
+        activeCount ? labels.withActiveCount(label, activeCount) : label
+      }
       aria-haspopup="menu"
       aria-expanded={open}
       onClick={onOpen}
       {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
+      <ActiveDot shown={activeCount > 0} />
     </IconButton>
   )
 
-  const shown = open || loading.pending
+  const shown = open || loading.pending || activeCount > 0
   return (
     <Tooltip title={label}>
       {variant === 'row' ? (
@@ -136,6 +146,7 @@ const InlinePlaceholder = ({
       {...panelButtonProps(loading)}
     >
       {action.icon(context)}
+      {actionDot(!!action.active, active, !!adornment)}
     </IconButton>
   )
 
@@ -174,6 +185,7 @@ export const ActionMenu = ({
   const placeholder = (
     <KebabPlaceholder
       variant={variant}
+      activeCount={countActiveActions(actions, context)}
       open={menu.open}
       onOpen={() => menu.onOpenChange(true)}
       loading={loadingOf(menu)}

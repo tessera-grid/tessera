@@ -448,6 +448,11 @@
    * держит синий (info), чтобы активность читалась сразу. */
   --tsr-comp-loader-bar: var(--tsr-sys-info);
 
+  /* Знак «действие включено» (ADR 0062): точка на кнопке и счётчики — цветом полосы
+   * загрузки. Цифры — цветом поверхности: белые на синем тёмной темы не держат 4,5:1. */
+  --tsr-comp-active-indicator: var(--tsr-comp-loader-bar);
+  --tsr-comp-active-indicator-fg: var(--tsr-sys-surface);
+
   /* Tooltip — инверсная поверхность: тёмный пузырёк на light, светлый на dark
    * (роли fg/bg меняются местами). Полупрозрачность сохранена через color-mix. */
   --tsr-comp-tooltip-bg: color-mix(

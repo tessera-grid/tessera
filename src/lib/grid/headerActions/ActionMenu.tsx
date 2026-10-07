@@ -13,7 +13,8 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
-import type { SlotAction } from '../../core/headerActions'
+import { countActiveActions, type SlotAction } from '../../core/headerActions'
+import { ActiveDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
@@ -68,17 +69,23 @@ export const ActionMenu = ({
   }
 
   const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
+  // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения.
+  const activeCount = countActiveActions(actions, context)
+  const shown = visible || panelVisible || activeCount > 0
   const trigger = (
     <Menu.Trigger
       render={
         <IconButton
           ref={triggerRef}
           className={styles.trigger}
-          aria-label={label}
+          aria-label={
+            activeCount ? labels.withActiveCount(label, activeCount) : label
+          }
           pending={opening.pending}
           errorFlash={opening.errorFlash}
         >
           <MenuIcon width={16} height={16} />
+          <ActiveDot shown={activeCount > 0} />
         </IconButton>
       }
     />
@@ -92,12 +99,7 @@ export const ActionMenu = ({
     >
       <Tooltip title={label}>
         {variant === 'row' ? (
-          <div
-            className={clsx(
-              'row__button',
-              !visible && !panelVisible && 'row__button--hidden',
-            )}
-          >
+          <div className={clsx('row__button', !shown && 'row__button--hidden')}>
             {trigger}
           </div>
         ) : (
@@ -106,7 +108,7 @@ export const ActionMenu = ({
           // AM24, AM25).
           <div
             className="cell__button cell__button--hidden"
-            data-button-active={visible || panelVisible}
+            data-button-active={shown}
           >
             {trigger}
           </div>

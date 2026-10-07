@@ -2,13 +2,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--tsr-comp-accent);
-  color: #fff;
   border-radius: 32px;
   box-shadow: var(--tsr-comp-shadow-drop-bubble);
   font-variant-numeric: tabular-nums;
   user-select: none;
   pointer-events: none;
+}
+
+.accent {
+  background-color: var(--tsr-comp-accent);
+  color: #fff;
+}
+
+.active {
+  background-color: var(--tsr-comp-active-indicator);
+  color: var(--tsr-comp-active-indicator-fg);
 }
 
 .md {
@@ -25,4 +33,10 @@
   font-size: 0.625rem;
   font-weight: 600;
   line-height: 1;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
 }

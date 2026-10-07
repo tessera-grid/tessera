@@ -104,3 +104,27 @@ const EDITABLE_COLUMNS = ['age', 'visits', 'gender']
 
 /** Общий таймаут перф-теста (большой грид со всеми плагинами монтируется долго). */
 export const PERF_TIMEOUT = 60_000
+
+/**
+ * Засев мультисортировки по всем колонкам (ADR 0062, AI10): служебная запись один
+ * раз, когда колонки собраны, сортирует по каждой сортируемой колонке — у каждого
+ * заголовка номер приоритета. Через интерфейс набирать 1000 сортировок долго.
+ */
+export const sortAllColumnsSeed = (): TesseraFeatureEntry => {
+  let seeded = false
+  return {
+    id: 'perfSortAllColumns',
+    reconcile: table => {
+      const t = table as {
+        getAllLeafColumns: () => { id: string; getCanSort: () => boolean }[]
+        setSorting: (sorting: { id: string; desc: boolean }[]) => void
+      }
+      const sortable = t.getAllLeafColumns().filter(c => c.getCanSort())
+      if (seeded || sortable.length === 0) {
+        return
+      }
+      seeded = true
+      t.setSorting(sortable.map(c => ({ id: c.id, desc: false })))
+    },
+  }
+}

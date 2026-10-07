@@ -98,6 +98,7 @@ export const sortHeaderAction: HeaderAction = {
     return (
       <Bubble
         size="sm"
+        tone="active"
         className={clsx('column-sort__priority', styles.priority)}
         data-sort-priority={multi.position}
         aria-hidden

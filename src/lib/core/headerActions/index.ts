@@ -157,6 +157,16 @@ export const resolveActionLayout = ({
   }
 }
 
+/** Сколько применимых действий включено (`active`) — знак на кебабе (ADR 0062). */
+export const countActiveActions = (
+  actions: MenuAction[],
+  context: unknown,
+): number =>
+  actions.filter(
+    action =>
+      action.visible?.(context) !== false && action.active?.(context) === true,
+  ).length
+
 /**
  * Пункты подгруппы одного действия для меню: либо разворот `menuItems`, либо одна
  * строка из полей дескриптора. Чистая: поля уже вычислены с учётом `ctx`/`labels`.

@@ -8,6 +8,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import type { SlotAction } from '../../core/headerActions'
+import { actionDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { useClosingVisible } from './useClosingVisible'
 
@@ -45,6 +46,7 @@ export const ActionInlineMenu = ({
           aria-label={ariaLabel}
         >
           {action.icon(context)}
+          {actionDot(!!action.active, active, !!adornment)}
         </IconButton>
       }
     />

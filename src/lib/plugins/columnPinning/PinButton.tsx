@@ -6,6 +6,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
+import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
 import styles from './PinButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -18,7 +19,8 @@ export interface PinButtonProps {
 
 export const PinButton = memo(
   ({ isPinned, onClick, disabled = false }: PinButtonProps) => {
-    const { pin: PinIcon } = useIcons()
+    const { pin, pinned } = useIcons()
+    const PinIcon = isPinned ? pinned : pin
 
     const labels = useLocalization()
 
@@ -41,6 +43,7 @@ export const PinButton = memo(
             aria-label={title}
           >
             <PinIcon width={16} height={16} />
+            <ActiveDot shown={isPinned} />
           </IconButton>
         </div>
       </Tooltip>

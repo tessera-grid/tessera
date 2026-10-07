@@ -8,6 +8,7 @@ import { Bubble } from '../../ui/Bubble'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
+import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
 import styles from './SortButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -82,10 +83,13 @@ export const SortButton = memo(
               {operation === 'asc' && <SortAscIcon width={16} height={16} />}
               {operation === 'desc' && <SortDescIcon width={16} height={16} />}
               {!operation && <SortIcon width={16} height={16} />}
+              {/* Номер приоритета занимает место точки (ADR 0062). */}
+              {!showIndex && <ActiveDot shown={!!operation} />}
             </IconButton>
             {showIndex && (
               <Bubble
                 size="sm"
+                tone="active"
                 className={clsx('column-sort__priority', styles.priority)}
                 data-sort-priority={position}
                 aria-hidden

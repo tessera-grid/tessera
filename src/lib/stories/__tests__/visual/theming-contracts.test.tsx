@@ -8,6 +8,7 @@ import { describe, expect, test } from 'vitest'
 
 import { RowButton } from '../../../grid/Actions/RowButton'
 import { DragHandler } from '../../../grid/dnd/DragHandler'
+import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
@@ -16,6 +17,10 @@ import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 import { ToolbarButton } from '../../../ui/ToolbarButton'
 import '../../../core/themeVariables/theme.css'
+import {
+  type HeaderButtonKind,
+  renderHeaderButtons,
+} from './header-buttons-helpers'
 
 // Контракт стилевых признаков по СЕМЕЙСТВАМ компонентов. Проверяет,
 // что члены одного семейства делят единые признаки: кнопки/иконки (F1/F2) — единый
@@ -46,11 +51,14 @@ async function renderThemed(node: ReactNode) {
 const noop = () => {}
 
 // F1 (icon-контролы) + F2 (action-кнопки): все на базе IconButton, кроме
-// DragHandler (кастомный div, но обязан делить disabled-цвет).
+// DragHandler (кастомный div, но обязан делить disabled-цвет). Публичные примитивы
+// `/ui` рендерятся отдельно; настоящие кнопки шапки — в гриде (`grid`); у них нет
+// заблокированного состояния — его проверяет рендерер действий `ActionButton`.
 type Member = {
   name: string
-  sel: string
-  node: (disabled: boolean) => ReactNode
+  sel?: string
+  node?: (disabled: boolean) => ReactNode
+  grid?: HeaderButtonKind
 }
 
 const BUTTON_FAMILY: Member[] = [
@@ -98,6 +106,26 @@ const BUTTON_FAMILY: Member[] = [
       />
     ),
   },
+  {
+    name: 'ActionButton',
+    sel: 'button',
+    node: d => (
+      <ActionButton
+        action={{
+          id: 'probe',
+          slot: 'rightHeaderSlot',
+          icon: () => <span>i</span>,
+          label: () => 'Probe',
+          onSelect: noop,
+          disabled: () => d,
+        }}
+        context={{}}
+      />
+    ),
+  },
+  { name: 'Header sort', grid: 'sort' },
+  { name: 'Header pin', grid: 'pin' },
+  { name: 'Header group', grid: 'group' },
 ]
 
 // F4 (кнопка тулбара, ADR 0035): делит с F1/F2 disabled-цвет и transition, но не
@@ -112,12 +140,16 @@ const toolbarButton = async (disabled: boolean) =>
   ).querySelector<HTMLElement>('button')!
 
 const el = async (m: Member, disabled: boolean) =>
-  (await renderThemed(m.node(disabled))).querySelector<HTMLElement>(m.sel)!
+  m.grid
+    ? (await renderHeaderButtons()).button(m.grid)
+    : (await renderThemed(m.node!(disabled))).querySelector<HTMLElement>(
+        m.sel!,
+      )!
 
 describe('Style contract by component family', () => {
   test('TC-1 button family shares ONE disabled color = --tsr-comp-control-disabled-color', async () => {
     const expected = resolveColor('--tsr-comp-control-disabled-color')
-    for (const m of BUTTON_FAMILY) {
+    for (const m of BUTTON_FAMILY.filter(member => !member.grid)) {
       // eslint-disable-next-line no-await-in-loop
       const node = await el(m, true)
       expect(read(node, 'color'), `${m.name} disabled color`).toBe(expected)
@@ -158,7 +190,15 @@ describe('Style contract by component family', () => {
 
   // TC-6…TC-8 (ADR 0017): цвета и тени единые, радиус — по семейству.
   const colored = (name: string) =>
-    ['SortButton', 'PinButton', 'GroupButton', 'RowButton'].includes(name)
+    [
+      'SortButton',
+      'PinButton',
+      'GroupButton',
+      'RowButton',
+      'Header sort',
+      'Header pin',
+      'Header group',
+    ].includes(name)
 
   test('TC-6 button family shares ONE rest color = --tsr-comp-control-color', async () => {
     const expected = resolveColor('--tsr-comp-control-color')
@@ -176,6 +216,9 @@ describe('Style contract by component family', () => {
   test('TC-7 flat buttons share ONE hover layer = --tsr-comp-control-hover-bg; overlay buttons (row actions) show the light --tsr-comp-action-button-hover-bg over their opaque bg', async () => {
     const hover = resolveColor('--tsr-comp-control-hover-bg')
     const hovered = async (node: HTMLElement) => {
+      // Кнопка шапки проявляется наведением на свой заголовок — как у человека.
+      const head = node.closest<HTMLElement>('.data-grid__head-cell')
+      if (head) await userEvent.hover(head)
       await userEvent.hover(node)
       return node
     }

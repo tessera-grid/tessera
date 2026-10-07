@@ -4,6 +4,8 @@
   FL35–FL36 — известные недостиги)
 - **Дата:** 2026-10-02
 - **Связано:**
+  - [ADR 0062](0062-active-action-indicator.md) — счётчик «Фильтров» окрашен цветом
+    индикатора включённого действия.
   - [ADR 0035](0035-toolbar-and-column-visibility.md) — `toolbarSlot`, кнопка F4 и
     поповер: поле поиска и кнопка «Фильтры» — в тулбаре.
   - [ADR 0038](0038-pagination-and-status-bar.md) — `statusBarSlot` и счётчик выбранных

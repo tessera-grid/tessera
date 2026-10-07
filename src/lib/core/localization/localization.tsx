@@ -40,6 +40,8 @@ export interface TableLabels {
   toolbar: string
   /** Кнопка тулбара и доступное имя меню колонок (`columnVisibility`) */
   columns: string
+  /** Кнопка «Колонки», когда часть колонок скрыта (`hidden` — их число) */
+  columnsWithHidden: (hidden: number) => string
   /** Кнопка тулбара «Экспорт» (`export`) */
   export: string
   /** Заголовок оси «Строки» панели экспорта */
@@ -143,6 +145,8 @@ export interface TableLabels {
   headerMenu: string
   /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
   rowMenu: string
+  /** Доступное имя кебаба, в который свёрнуты включённые действия (`count` — их число) */
+  withActiveCount: (name: string, count: number) => string
   /** Доступное имя контекстного меню (`aria-label` на `role="menu"`) */
   contextMenu: string
   /** Объявление: модуль поповера или меню (`name` — подпись элемента) не загрузился */
@@ -256,6 +260,7 @@ export const DEFAULT_LABELS: TableLabels = {
   table: 'Data table',
   toolbar: 'Table toolbar',
   columns: 'Columns',
+  columnsWithHidden: hidden => `Columns, ${hidden} hidden`,
   export: 'Export',
   exportRows: 'Rows',
   exportColumns: 'Columns',
@@ -326,6 +331,7 @@ export const DEFAULT_LABELS: TableLabels = {
   selectAll: 'Select all rows',
   headerMenu: 'Column options',
   rowMenu: 'Row options',
+  withActiveCount: (name, count) => `${name}, ${count} active`,
   contextMenu: 'Context menu',
   loadFailed: name => `${name} failed to load. Try again.`,
   copy: 'Copy',
