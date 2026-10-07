@@ -103,8 +103,8 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
 
 ### Сортировка дерева: `rowsById` указывает на строку вне модели
 
-- **Версия:** `@tanstack/table-core` 9.2.4; в `main` на 2026-10-07 не исправлено, issue
-  в TanStack/table нет.
+- **Версия:** `@tanstack/table-core` 9.2.4 (установлена); в 9.2.6 и в `main` на
+  2026-10-07 не исправлено, issue в TanStack/table нет.
 - **Суть.** `createSortedRowModel` копирует строку, чьих детей переставила сортировка
   (`Object.create` + `copyInstancePropertiesWithoutMemos`), и кладёт копию в `rows` и
   `flatRows`, но `rowsById` возвращает от предыдущей модели — с оригиналом. Всё, что

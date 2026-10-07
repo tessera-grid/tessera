@@ -293,7 +293,7 @@ Tessera затевалась (highload-CRM-таблицы), — поэтому �
 Когда край закрыт или обнаружен новый — обновляйте этот список и соответствующий
 `docs/architecture/*.md`, держа их синхронными.
 
-- **Обход ошибки TanStack в сортировке дерева** — `createSortedRowModel` (9.2.4)
+- **Обход ошибки TanStack в сортировке дерева** — `createSortedRowModel` (9.2.4–9.2.6)
   отдаёт в `rowsById` оригинал строки, которую заменил копией; `columnSorting`
   исправляет `rowsById` обёрткой (CS24). Снять, когда исправят upstream — условие и
   воспроизведение в [upstream-foundations.md](architecture/upstream-foundations.md),
