@@ -91,8 +91,35 @@ export const useColumnVirtualizer = ({
     }
   }, [isResizingColumn, columnSizing, virtualizer])
 
-  return {
-    virtualColumns: virtualizer.getVirtualItems(),
-    bodyWidth: virtualizer.getTotalSize(),
+  // Пока тянут грип, тело и шапка не перерисовываются (MemoizedBody) и стоят на
+  // смещениях последней отрисовки до протяжки — смонтированные колонки сдвигаются на
+  // разницу текущего смещения и того (CR18). Снимок — копия: кэш размеров
+  // react-virtual переиспользует один массив и меняет его при пересчёте.
+  const virtualColumns = virtualizer.getVirtualItems()
+  const rendered = useRef<{ index: number; start: number }[]>([])
+  if (!isResizingColumn) {
+    rendered.current = virtualColumns.map(({ index, start }) => ({
+      index,
+      start,
+    }))
   }
+  const columnShifts: Record<string, number> = {}
+  let bodyWidth = virtualizer.getTotalSize()
+  if (isResizingColumn) {
+    const { paddingStart = 0, scrollMargin = 0 } = virtualizer.options
+    const starts: number[] = []
+    let offset = paddingStart + scrollMargin
+    for (const column of columnsRef.current) {
+      starts.push(offset)
+      offset += column.getSize()
+    }
+    bodyWidth = offset - scrollMargin
+    for (const { index, start } of rendered.current) {
+      const column = columnsRef.current[index]
+      const shift = column ? starts[index] - start : 0
+      if (column && shift !== 0) columnShifts[column.id] = shift
+    }
+  }
+
+  return { virtualColumns, bodyWidth, columnShifts }
 }

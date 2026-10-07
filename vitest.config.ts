@@ -11,7 +11,11 @@ import {
   releaseModule,
   routeModule,
 } from './src/lib/stories/__tests__/network.commands.ts'
-import { realDrag } from './src/lib/stories/__tests__/pointer.commands.ts'
+import {
+  realDrag,
+  realDragHold,
+  realMouseUp,
+} from './src/lib/stories/__tests__/pointer.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
@@ -80,6 +84,8 @@ export default defineConfig({
               axTree,
               reducedMotion,
               realDrag,
+              realDragHold,
+              realMouseUp,
               routeModule,
               releaseModule,
               heldModuleRequests,

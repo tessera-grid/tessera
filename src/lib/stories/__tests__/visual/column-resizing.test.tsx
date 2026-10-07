@@ -1,4 +1,4 @@
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
@@ -470,5 +470,58 @@ describe('Column Resizing — requirements', () => {
     expect(
       getComputedStyle(renderedDataCells(container)[1]).pointerEvents,
     ).not.toBe('none')
+  })
+
+  test('CR18: while dragging the grip the columns to the right follow its edge — header and body, without gap or overlap, mid-drag and after release', async () => {
+    const container = await renderColumnResizing()
+    const [first, ...rest] = renderedDataCells(container)
+    const columns = [first, ...rest.slice(0, 3)].map(colIndexOf)
+    const before = widthOf(first)
+    const head = (colIndex: string) =>
+      container.querySelector<HTMLElement>(
+        `${HEAD_CELL}[aria-colindex='${colIndex}']`,
+      )!
+    /** Правый край каждой колонки совпадает с левым краем следующей. */
+    const adjacent = () => {
+      for (const cellOf of [head, (i: string) => bodyCellAt(container, i)]) {
+        for (let i = 0; i < columns.length - 1; i++) {
+          const right = cellOf(columns[i]).getBoundingClientRect().right
+          const left = cellOf(columns[i + 1]).getBoundingClientRect().left
+          expect(
+            Math.abs(right - left),
+            `${columns[i]} → ${columns[i + 1]}`,
+          ).toBeLessThan(1)
+        }
+      }
+    }
+
+    await revealGrip(first)
+    const separator = gripOf(first)
+      .querySelector<HTMLElement>('[role="separator"]')!
+      .getBoundingClientRect()
+    const from = {
+      x: separator.left + separator.width / 2,
+      y: separator.top + separator.height / 2,
+    }
+    const pointer = commands as unknown as {
+      realDragHold: (from: object, to: object) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    await pointer.realDragHold(from, { x: from.x + 80, y: from.y })
+    try {
+      await expect
+        .poll(() => widthOf(head(columns[0])))
+        .toBeGreaterThan(before + 60)
+      await nextFrame()
+      adjacent()
+    } finally {
+      await pointer.realMouseUp()
+    }
+    await expect
+      .poll(() => container.querySelector('[data-resizing="true"]'))
+      .toBeNull()
+    await nextFrame()
+    await nextFrame()
+    adjacent()
   })
 })

@@ -26,6 +26,17 @@ export const getHeaderSizeVariable = (headerId: string) =>
 export const getColumnSizeVariable = (columnId: string) =>
   `--col-${columnId.replace(/\./, '\\.')}-size`
 
+/** Сдвиг центральной колонки, пока виртуализатор не пересчитал её смещение (CR18). */
+export const getColumnShiftVariable = (columnId: string) =>
+  `--col-${columnId.replace(/\./, '\\.')}-shift`
+
+/**
+ * `left` центральной виртуализированной ячейки: смещение виртуализатора плюс сдвиг
+ * колонок левее, ширины которых он ещё не учёл.
+ */
+export const getVirtualCellLeft = (columnId: string, left: number) =>
+  `calc(${left}px + var(${getColumnShiftVariable(columnId)}, 0px))`
+
 /** Сумма `--col-<id>-size` переменных как `calc(...)` (или '0px' для пустого набора). */
 const sumSizeVars = (columns: SizedColumn[]): string =>
   columns.length === 0
@@ -73,4 +84,13 @@ export const buildColumnSizeVars = (
   }
 
   return colSizes
+}
+
+/** CSS-переменные сдвига колонок по карте `columnId → px` (CR18). */
+export const columnShiftVars = (
+  shifts: Record<string, number>,
+): Record<string, string> => {
+  const vars: Record<string, string> = {}
+  for (const id in shifts) vars[getColumnShiftVariable(id)] = `${shifts[id]}px`
+  return vars
 }

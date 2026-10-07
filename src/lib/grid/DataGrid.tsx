@@ -42,6 +42,7 @@ import {
 } from '../core/virtualization'
 import { getRowDraggableStyles } from '../plugins/rowDragging'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
+import { columnShiftVars } from './columnSizes'
 import { useCellSelectionCopy } from './useCellSelectionCopy'
 import { DataGridTable } from './DataGridTable'
 import { StatusBar } from './StatusBar/StatusBar'
@@ -175,7 +176,7 @@ export const DataGrid = ({
     leafColumns,
   })
 
-  const { virtualColumns, bodyWidth } = useColumnVirtualizer({
+  const { virtualColumns, bodyWidth, columnShifts } = useColumnVirtualizer({
     table,
     getScrollElement,
     enabled: !hasNestedGroups,
@@ -354,7 +355,11 @@ export const DataGrid = ({
                       busy={showLinearProgress}
                       skeleton={showSkeleton}
                       loadingLabel={loadingLabel}
-                      style={{ ...columnSizes, ...virtualPaddingStyles }}
+                      style={{
+                        ...columnSizes,
+                        ...columnShiftVars(columnShifts),
+                        ...virtualPaddingStyles,
+                      }}
                     />
                     {showFilterStub && (
                       <FilterStub table={table} render={filterStub} />

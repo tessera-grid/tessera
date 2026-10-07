@@ -37,7 +37,11 @@ import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
 import { pinnedSideToDom } from './cellPinningParams'
 import { useSkeletonMode } from './skeletonMode'
-import { getColumnSizeVariable, getHeaderSizeVariable } from './columnSizes'
+import {
+  getColumnSizeVariable,
+  getHeaderSizeVariable,
+  getVirtualCellLeft,
+} from './columnSizes'
 import {
   getAriaSort,
   getDisabledSortable,
@@ -163,7 +167,7 @@ export const HeadCellView = ({
     // Центральный виртуализированный заголовок — только динамический left инлайн,
     // статику position/top/height задаёт CSS по data-virtual-cell.
     ...(absoluteLeft !== undefined
-      ? { left: absoluteLeft }
+      ? { left: getVirtualCellLeft(header.column.id, absoluteLeft) }
       : {
           minWidth: `var(${getHeaderSizeVariable(header.id)})`,
           left: startPinnedOffset,

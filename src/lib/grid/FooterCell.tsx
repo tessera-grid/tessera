@@ -11,7 +11,7 @@ import {
 } from '../core/keyboardNavigation'
 import type { Header } from '../types'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
-import { getHeaderSizeVariable } from './columnSizes'
+import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
 
 import styles from '../grid/FooterCell/FooterCell.module.css'
 
@@ -52,7 +52,7 @@ export const FooterCell = ({
         width: `var(${getHeaderSizeVariable(header.id)})`,
         // Как в теле: виртуальная центральная — по `left`, закреплённая — sticky-офсеты.
         ...(absoluteLeft !== undefined
-          ? { left: absoluteLeft }
+          ? { left: getVirtualCellLeft(header.column.id, absoluteLeft) }
           : {
               minWidth: `var(${getHeaderSizeVariable(header.id)})`,
               left: pinning.startPinnedOffset,

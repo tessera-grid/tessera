@@ -350,7 +350,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
       [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-sorting` (CS1–CS24, [ADR 0012](docs/decisions/0012-column-sorting.md)),
-      `column-resizing` (CR1–CR16, [ADR 0013](docs/decisions/0013-column-sizing.md)),
+      `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md)),
       `column-dragging` (D14–D30, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
       `columnNodes.dom` (ND8–ND9), `columnDragging` (ND6), `pluginDiagnostics` (ND11),

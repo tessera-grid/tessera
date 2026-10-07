@@ -24,7 +24,7 @@ import type { RegisterSlotParams } from '../core/createSlots'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getCellExpandingStyles, treeLineShadows } from './cellExpandingStyles'
-import { getColumnSizeVariable } from './columnSizes'
+import { getColumnSizeVariable, getVirtualCellLeft } from './columnSizes'
 
 import styles from '../grid/BodyCell/BodyCell.module.css'
 
@@ -175,7 +175,7 @@ export const BodyCell = memo(
           // статичные position/top/height задаёт CSS по data-virtual-cell (меньше
           // записей стиля на монтаж). Пиннутая/поточная — minWidth+sticky-офсеты.
           ...(absoluteLeft !== undefined
-            ? { left: absoluteLeft }
+            ? { left: getVirtualCellLeft(cell.column.id, absoluteLeft) }
             : {
                 minWidth: `var(${getColumnSizeVariable(cell.column.id)})`,
                 left: startPinnedOffset,

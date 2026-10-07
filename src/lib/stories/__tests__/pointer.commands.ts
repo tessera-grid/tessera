@@ -5,21 +5,25 @@ interface Point {
   y: number
 }
 
-// Настоящее перетаскивание мышью Playwright (ADR 0043, TQ3): нажатие, шаги движения и
-// отпускание. Координаты — клиентские в тестовом iframe; переводим в координаты страницы.
-export const realDrag: BrowserCommand<
-  [from: Point, to: Point, steps?: number]
-> = async ({ page }, from, to, steps = 12) => {
+type Page = Parameters<BrowserCommand<[]>>[0]['page']
+
+/** Клиентские координаты тестового iframe → координаты страницы Playwright. */
+const toPage = async (page: Page) => {
   // Тест рендерится в последнем дочернем iframe оркестратора Vitest.
   const frame = page.frames().at(-1)!
   const box = (await (await frame.frameElement()).boundingBox())!
   const width = await frame.evaluate(() => window.innerWidth)
   const scale = box.width / width
-  const at = ({ x, y }: Point) =>
-    [box.x + x * scale, box.y + y * scale] as const
+  return ({ x, y }: Point) => [box.x + x * scale, box.y + y * scale] as const
+}
 
-  await page.mouse.move(...at(from))
-  await page.mouse.down()
+const moveInSteps = async (
+  page: Page,
+  at: (point: Point) => readonly [number, number],
+  from: Point,
+  to: Point,
+  steps: number,
+) => {
   for (let step = 1; step <= steps; step++) {
     await page.mouse.move(
       ...at({
@@ -28,5 +32,31 @@ export const realDrag: BrowserCommand<
       }),
     )
   }
+}
+
+// Настоящее перетаскивание мышью Playwright (ADR 0043, TQ3): нажатие, шаги движения и
+// отпускание. Координаты — клиентские в тестовом iframe; переводим в координаты страницы.
+export const realDrag: BrowserCommand<
+  [from: Point, to: Point, steps?: number]
+> = async ({ page }, from, to, steps = 12) => {
+  const at = await toPage(page)
+  await page.mouse.move(...at(from))
+  await page.mouse.down()
+  await moveInSteps(page, at, from, to, steps)
+  await page.mouse.up()
+}
+
+// То же перетаскивание, но кнопка остаётся нажатой — проверить состояние посреди
+// протяжки; отпускание — `realMouseUp`.
+export const realDragHold: BrowserCommand<
+  [from: Point, to: Point, steps?: number]
+> = async ({ page }, from, to, steps = 12) => {
+  const at = await toPage(page)
+  await page.mouse.move(...at(from))
+  await page.mouse.down()
+  await moveInSteps(page, at, from, to, steps)
+}
+
+export const realMouseUp: BrowserCommand<[]> = async ({ page }) => {
   await page.mouse.up()
 }
