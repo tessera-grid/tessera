@@ -96,6 +96,34 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
 - **Drag overlay** — плавающий элемент, рендерящийся во время перетаскивания;
   Tessera рендерит для этого `OverlayHeadCell` / `OverlayBodyRow`.
 
+## Обходы апстрима
+
+Ошибки upstream, которые Tessera обходит композицией (без форка). У каждого обхода —
+условие снятия: проверяйте его при обновлении зависимости.
+
+### Сортировка дерева: `rowsById` указывает на строку вне модели
+
+- **Версия:** `@tanstack/table-core` 9.2.4; в `main` на 2026-10-07 не исправлено, issue
+  в TanStack/table нет.
+- **Суть.** `createSortedRowModel` копирует строку, чьих детей переставила сортировка
+  (`Object.create` + `copyInstancePropertiesWithoutMemos`), и кладёт копию в `rows` и
+  `flatRows`, но `rowsById` возвращает от предыдущей модели — с оригиналом. Всё, что
+  ищет строку по id, получает объект, которого нет в отображаемых строках: например,
+  `resolveRowIndex` выделения ячеек берёт `getPrePaginatedRowModel().rowsById[id]`,
+  `getDisplayIndex()` оригинала даёт `-1` — ячейка не выделяется и не копируется.
+- **Воспроизведение.** Дерево (`subRows`), клиентская сортировка, при которой меняется
+  порядок детей строки, и `cellSelectionFeature`: клик по ячейке этой строки не
+  выделяет её. Строки без детей и строки, чей порядок детей не изменился, не
+  затронуты.
+- **Обход.** Плагин `columnSorting` подключает не `createSortedRowModel()`, а
+  обёртку [`createTesseraSortedRowModel`](../../src/lib/plugins/columnSorting/sortedRowModel.ts):
+  на каждую новую модель она проходит `flatRows` и, если строка в `rowsById` не та же,
+  возвращает модель с исправленным `rowsById` (без копий модель отдаётся как есть).
+  Требование — CS24 ([ADR 0012](../decisions/0012-column-sorting.md)).
+- **Когда снять.** Когда upstream начнёт отдавать `rowsById` с копиями (или перестанет
+  копировать строки): тест CS24 зелёный на голом `createSortedRowModel()` — обёртку
+  удалить.
+
 ## Где находится Tessera
 
 ```mermaid

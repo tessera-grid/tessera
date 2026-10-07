@@ -569,3 +569,43 @@ describe('Column Sorting — multi-sort requirements', () => {
     expect(columnValues(container, colIndex)).toEqual(before)
   })
 })
+
+describe('Column Sorting — tree rows', () => {
+  const row = (id: string, country: string, subRows?: unknown[]) => ({
+    id,
+    country,
+    firstName: id,
+    lastName: id,
+    age: 30,
+    visits: 1,
+    gender: 'male',
+    total: 500,
+    ...(subRows && { subRows }),
+  })
+
+  test('CS24: after client sorting, a row whose children were reordered is found by id — its cell selects', async () => {
+    // Сортировка по убыванию переставит детей `parent` (A, B → B, A): TanStack
+    // подменит строку копией.
+    const container = await renderColumnSorting({
+      enableCellSelection: true,
+      dataOverride: [
+        row('parent', 'M', [row('child-a', 'A'), row('child-b', 'B')]),
+        row('other', 'Z'),
+      ],
+    })
+    const head = container.querySelector<HTMLElement>(
+      `${HEAD_CELL}[data-column-id="country"]`,
+    )!
+    await userEvent.click(await revealSort(head))
+    await expect.poll(() => ariaSortOf(head)).toBe('descending')
+
+    const cell = () =>
+      container.querySelector<HTMLElement>(
+        `[data-row-id="parent"] ${BODY_CELL}[data-column-id="country"]`,
+      )!
+    await userEvent.click(cell())
+    await expect
+      .poll(() => cell().getAttribute('data-cell-selected'))
+      .toBe('true')
+  })
+})

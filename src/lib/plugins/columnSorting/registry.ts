@@ -4,7 +4,6 @@
  * (`sortFns`, tree-shakeable) — здесь стандартный набор.
  */
 import {
-  createSortedRowModel,
   rowSortingFeature,
   sortFn_alphanumeric,
   sortFn_alphanumericCaseSensitive,
@@ -16,6 +15,7 @@ import {
 
 import { definePlugin } from '../../core/definePlugin'
 import { narrowSorting } from './narrowSorting'
+import { createTesseraSortedRowModel } from './sortedRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
@@ -74,7 +74,7 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   diagnose: neverInert,
   features: {
     rowSortingFeature,
-    sortedRowModel: createSortedRowModel(),
+    sortedRowModel: createTesseraSortedRowModel(),
     sortFns,
   },
   hooks: o => ({ onToggleColumnSort: o.onToggleColumnSort }),
