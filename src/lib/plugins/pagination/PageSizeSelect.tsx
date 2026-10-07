@@ -30,13 +30,17 @@ export const PageSizeSelect = ({
   onOpenChange,
 }: PageSizeSelectProps) => {
   const themeClass = usePortalThemeClass()
-  const trigger = useTriggerWidth()
+  const {
+    setTrigger,
+    onOpenChange: measureTrigger,
+    minWidth,
+  } = useTriggerWidth()
   return (
     <Select.Root
       value={pageSize}
       open={open}
       onOpenChange={next => {
-        trigger.onOpenChange(next)
+        measureTrigger(next)
         onOpenChange(next)
       }}
       onValueChange={value => {
@@ -47,7 +51,7 @@ export const PageSizeSelect = ({
     >
       <Select.Label className={styles.label}>{label}</Select.Label>
       <Select.Trigger
-        ref={trigger.ref}
+        ref={setTrigger}
         className={styles.trigger}
         data-testid="page-size-select"
       >
@@ -66,7 +70,7 @@ export const PageSizeSelect = ({
         >
           <Select.Popup
             className={clsx(themeClass, styles.popup)}
-            style={{ minWidth: trigger.minWidth }}
+            style={{ minWidth }}
           >
             <Select.List>
               {pageSizes.map(size => (

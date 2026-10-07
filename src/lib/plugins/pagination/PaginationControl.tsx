@@ -43,17 +43,19 @@ const PageSizeSelect = preloadable(() =>
 const PlaceholderButton = forwardRef<
   HTMLButtonElement,
   ButtonHTMLAttributes<HTMLButtonElement> & ButtonStatesProps
->(({ pending, errorFlash, onClick, className, ...rest }, ref) => {
-  const states = useButtonStates(ref, { pending, errorFlash }, onClick)
+>(({ pending, errorFlash, onClick, className, ...rest }, forwardedRef) => {
+  const {
+    ref: setButton,
+    className: ringClassName,
+    ...states
+  } = useButtonStates(forwardedRef, { pending, errorFlash }, onClick)
   return (
     <button
       type="button"
       {...rest}
-      ref={states.ref}
-      aria-busy={states['aria-busy']}
-      data-error-flash={states['data-error-flash']}
-      onClick={states.onClick}
-      className={clsx(styles.trigger, states.className, className)}
+      {...states}
+      ref={setButton}
+      className={clsx(styles.trigger, ringClassName, className)}
     />
   )
 })

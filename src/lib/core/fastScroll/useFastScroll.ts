@@ -1,23 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 
-const useScrollElement = (
-  getScrollElement: () => HTMLDivElement | null,
-): HTMLDivElement | null => {
-  const [element, setElement] = useState<HTMLDivElement | null>(null)
-
-  // Пере-считываем ссылку на скролл-контейнер после каждого рендера: узел может
-  // быть заменён без размонтирования DataGrid, и подписку нужно перевесить на
-  // актуальный элемент. `setElement` обновляет состояние только при смене узла
-  // (functional update возвращает прежнюю ссылку), поэтому цикла обновлений нет.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const next = getScrollElement()
-    setElement(prev => (prev === next ? prev : next))
-  })
-
-  return element
-}
-
 export const FAST_SCROLL_ENTER_VELOCITY_Y = 2000
 export const FAST_SCROLL_ENTER_VELOCITY_X = 4500
 
@@ -84,28 +66,18 @@ export const useFastScroll = ({
   const listenersRef = useRef<Set<() => void>>(new Set())
   const isFastScrollingRef = useRef(false)
 
-  const storeRef = useRef<FastScrollStore | null>(null)
-  if (storeRef.current === null) {
-    storeRef.current = {
-      subscribe: listener => {
-        listenersRef.current.add(listener)
+  const [store] = useState<FastScrollStore>(() => ({
+    subscribe: listener => {
+      listenersRef.current.add(listener)
 
-        return () => {
-          listenersRef.current.delete(listener)
-        }
-      },
-      getSnapshot: () => stateRef.current,
-    }
-  }
-  const store = storeRef.current
+      return () => {
+        listenersRef.current.delete(listener)
+      }
+    },
+    getSnapshot: () => stateRef.current,
+  }))
 
-  const element = useScrollElement(getScrollElement)
-
-  useEffect(() => {
-    if (!element) {
-      return
-    }
-
+  const listen = (element: HTMLDivElement) => {
     let lastTop = element.scrollTop
     let lastLeft = element.scrollLeft
     let enteredAt = 0
@@ -200,7 +172,31 @@ export const useFastScroll = ({
       clearTimeout(idleTimer)
       clearTimeout(exitTimer)
     }
-  }, [element])
+  }
+
+  // Узел скролла может смениться без размонтирования DataGrid: после каждого рендера
+  // подписка перевешивается, если узел другой.
+  const subscription = useRef<{
+    element: HTMLDivElement
+    unsubscribe: () => void
+  } | null>(null)
+  useEffect(() => {
+    const element = getScrollElement()
+    if (subscription.current?.element === element) {
+      return
+    }
+    subscription.current?.unsubscribe()
+    subscription.current = element
+      ? { element, unsubscribe: listen(element) }
+      : null
+  })
+  useEffect(() => {
+    const current = subscription
+    return () => {
+      current.current?.unsubscribe()
+      current.current = null
+    }
+  }, [])
 
   return store
 }

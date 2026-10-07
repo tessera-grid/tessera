@@ -111,10 +111,11 @@ export const useTableEffects = (
 
   // Дев-варн на коллизию id плагинов (DP5): id ключует hooks-scope, локальный state и
   // генерируемую фичу — дубль молча перезапишет их. Печатается один раз на набор.
+  const pluginIdsKey = plugins.map(entry => entry.id).join('|')
   const duplicateIds = useMemo(
     () => findDuplicatePluginIds(plugins),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по полному набору id
-    [plugins.map(entry => entry.id).join('|')],
+    [pluginIdsKey],
   )
   useEffect(() => {
     if (duplicateIds.length === 0) {

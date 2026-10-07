@@ -102,10 +102,17 @@ const useLoadedOptions = (
   })
   const [attempt, setAttempt] = useState(0)
 
+  // Новый запрос — сразу «загрузка» с прежними вариантами, ещё в этом рендере.
+  const request = [table, columnId, loadOptions, query, attempt]
+  const [lastRequest, setLastRequest] = useState(request)
+  if (request.some((value, index) => value !== lastRequest[index])) {
+    setLastRequest(request)
+    setLoaded(prev => ({ status: 'loading', options: prev.options }))
+  }
+
   useEffect(() => {
     if (!loadOptions) return
     const controller = new AbortController()
-    setLoaded(prev => ({ status: 'loading', options: prev.options }))
     loadOptions(query, { signal: controller.signal }).then(
       options => {
         if (controller.signal.aborted) return

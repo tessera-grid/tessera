@@ -29,17 +29,24 @@ export const OperatorSelect = <T extends string>({
 }: OperatorSelectProps<T>) => {
   const labels = useLocalization()
   const themeClass = usePortalThemeClass()
-  const trigger = useTriggerWidth(triggerRef)
+  const {
+    setTrigger,
+    onOpenChange: measureTrigger,
+    minWidth,
+  } = useTriggerWidth()
   return (
     <Select.Root
       value={value}
-      onOpenChange={trigger.onOpenChange}
+      onOpenChange={measureTrigger}
       onValueChange={next => {
         if (next !== null) onChange(next)
       }}
     >
       <Select.Trigger
-        ref={trigger.ref}
+        ref={node => {
+          setTrigger(node)
+          if (triggerRef) triggerRef.current = node
+        }}
         className={styles.trigger}
         aria-label={labels.filterCondition}
         data-testid="filter-operator"
@@ -59,7 +66,7 @@ export const OperatorSelect = <T extends string>({
         >
           <Select.Popup
             className={clsx(themeClass, styles.selectPopup)}
-            style={{ minWidth: trigger.minWidth }}
+            style={{ minWidth }}
           >
             <Select.List>
               {operators.map(operator => (

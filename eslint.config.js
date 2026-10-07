@@ -29,10 +29,8 @@ export default tseslint.config(
       reportUnusedDisableDirectives: 'off',
     },
     rules: {
-      // Классические правила hooks; новые строгие правила react-hooks 7
-      // (React Compiler) можно включить отдельной задачей
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      // Полный набор react-hooks 7, включая правила React Compiler.
+      ...reactHooks.configs['recommended-latest'].rules,
       '@typescript-eslint/no-explicit-any': 'off',
       // `interface X extends Y {}` — легитимный паттерн (declaration merging,
       // номинальные псевдонимы), пустое тело здесь не ошибка.
@@ -73,6 +71,24 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  // Сборка ядра читает и пишет хранилища аргументов плагинов, ref прежней таблицы и
+  // кэш сужения во время рендера: живые аргументы видят последнюю версию функций уже в
+  // этом рендере (ADR 0039). Сборка без этого — отдельная задача (roadmap).
+  {
+    files: ['src/lib/core/useCreateTable.ts', 'src/lib/core/effectiveState.ts'],
+    rules: {
+      'react-hooks/refs': 'off',
+    },
+  },
+  // Тестовые хосты отдают тесту экземпляр таблицы и сеттеры через переменные модуля —
+  // это канал наблюдения, а не состояние компонента.
+  {
+    files: ['src/**/__tests__/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/globals': 'off',
+      'react-hooks/immutability': 'off',
     },
   },
   // Демо-истории — послабления

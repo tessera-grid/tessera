@@ -6,6 +6,7 @@
 import { useCallback, useRef, useState } from 'react'
 
 import type { CellComponentProps } from '../../core/createSlots'
+import { useLatest } from '../../core/useLatest'
 import type { CellEditCancel, CellEditCommit } from '../../plugins'
 import type { Row } from '../../types'
 import { StoryComponent } from '../DataGridStory'
@@ -33,11 +34,6 @@ const writeCell = (
 const panelRow = { display: 'flex', gap: 8, alignItems: 'center' } as const
 
 /** Живое значение аргумента для колбэка, созданного один раз. */
-const useLatest = <T,>(value: T) => {
-  const ref = useRef(value)
-  ref.current = value
-  return ref
-}
 
 // --- 1. Правка с сервером (ADR 0041) ------------------------------------------
 // Ожидание — блик по контуру ячейки, отказ — вспышка и метка, успех — подсветка

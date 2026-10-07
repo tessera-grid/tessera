@@ -5,6 +5,8 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react'
 
+import { useLatest } from '../../core/useLatest'
+
 import type { ColumnFilterValue } from '../../plugins'
 import {
   filterTypeOf,
@@ -84,8 +86,7 @@ export const FilteringServerDemo = ({
     columnIds: [] as string[],
     seq: 0,
   })
-  const delay = useRef(serverDelayMs)
-  delay.current = serverDelayMs
+  const delay = useLatest(serverDelayMs)
 
   const refetch = useCallback(() => {
     const seq = ++request.current.seq
@@ -98,7 +99,7 @@ export const FilteringServerDemo = ({
       setRows(result)
       setLoading(false)
     }, delay.current)
-  }, [log])
+  }, [log, delay])
 
   const onFilterChange = useCallback(
     (filters: Filters) => {
@@ -176,8 +177,7 @@ export const FilteringLookupServerDemo = ({
   const [rows, setRows] = useState(OPTION_SERVER_DATA)
   const [loading, setLoading] = useState(false)
   const seq = useRef(0)
-  const delay = useRef(serverDelayMs)
-  delay.current = serverDelayMs
+  const delay = useLatest(serverDelayMs)
 
   const columns = useMemo(
     () =>
@@ -198,7 +198,7 @@ export const FilteringLookupServerDemo = ({
             }
           : column,
       ),
-    [log],
+    [log, delay],
   )
 
   const onFilterChange = useCallback(
@@ -214,7 +214,7 @@ export const FilteringLookupServerDemo = ({
         setLoading(false)
       }, delay.current)
     },
-    [log],
+    [log, delay],
   )
 
   return (

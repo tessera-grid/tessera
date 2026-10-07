@@ -3,45 +3,44 @@
  * последнего обращения, `flush` выполняет отложенный сразу. При размонтировании
  * отложенный вызов выполняется — ввод, сделанный перед закрытием, не теряется.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+import { useLatest } from './useLatest'
 
 export const useDebouncedCallback = <TArgs extends unknown[]>(
   callback: (...args: TArgs) => void,
   delayMs: number,
 ) => {
-  const callbackRef = useRef(callback)
-  const delayRef = useRef(delayMs)
+  const latest = useLatest({ callback, delayMs })
   const pendingRef = useRef<{
     timer: ReturnType<typeof setTimeout>
     args: TArgs
   } | null>(null)
 
-  useEffect(() => {
-    callbackRef.current = callback
-    delayRef.current = delayMs
-  })
-
-  const controls = useRef({
-    schedule: (...args: TArgs) => {
-      if (pendingRef.current) clearTimeout(pendingRef.current.timer)
-      pendingRef.current = {
-        args,
-        timer: setTimeout(() => controls.current.flush(), delayRef.current),
-      }
-    },
-    flush: () => {
+  const [controls] = useState(() => {
+    const flush = () => {
       const pending = pendingRef.current
       if (!pending) return
       clearTimeout(pending.timer)
       pendingRef.current = null
-      callbackRef.current(...pending.args)
-    },
-    cancel: () => {
-      if (pendingRef.current) clearTimeout(pendingRef.current.timer)
-      pendingRef.current = null
-    },
+      latest.current.callback(...pending.args)
+    }
+    return {
+      schedule: (...args: TArgs) => {
+        if (pendingRef.current) clearTimeout(pendingRef.current.timer)
+        pendingRef.current = {
+          args,
+          timer: setTimeout(flush, latest.current.delayMs),
+        }
+      },
+      flush,
+      cancel: () => {
+        if (pendingRef.current) clearTimeout(pendingRef.current.timer)
+        pendingRef.current = null
+      },
+    }
   })
-  useEffect(() => () => controls.current.flush(), [])
+  useEffect(() => () => controls.flush(), [controls])
 
-  return controls.current
+  return controls
 }

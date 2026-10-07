@@ -48,6 +48,7 @@ import {
   getHeaderPinning,
 } from './headCellParams'
 
+import { assignRef } from '../ui/assignRef'
 import headCellStyles from '../grid/HeadCell/HeadCell.module.css'
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 
@@ -150,9 +151,7 @@ export const HeadCellView = ({
   const setNodeRef = useCallback(
     (node: HTMLDivElement | null) => {
       setDragNodeRef?.(node)
-      if (navRef) {
-        navRef.current = node
-      }
+      assignRef(navRef, node)
     },
     [setDragNodeRef, navRef],
   )

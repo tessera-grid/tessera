@@ -141,6 +141,8 @@ export const DataGrid = ({
   // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
   // на корне. `null` без плагина — остаётся role=table без обработчиков.
   const keyboardNavigation = useKeyboardNavigationGrid(table, getScrollElement)
+  const guardBeforeRef = keyboardNavigation?.guardBeforeRef
+  const guardAfterRef = keyboardNavigation?.guardAfterRef
 
   // Смена страницы: тело к началу, активная ячейка — на первую строку (ADR 0038).
   usePageChange(table, state.pagination, rows.length, getScrollElement)
@@ -320,7 +322,7 @@ export const DataGrid = ({
                   )}
                   {keyboardNavigation && (
                     <div
-                      ref={keyboardNavigation.guardBeforeRef}
+                      ref={guardBeforeRef}
                       tabIndex={-1}
                       className={dataGridStyles['focus-guard']}
                       data-kn-guard="before"
@@ -367,7 +369,7 @@ export const DataGrid = ({
                   </div>
                   {keyboardNavigation && (
                     <div
-                      ref={keyboardNavigation.guardAfterRef}
+                      ref={guardAfterRef}
                       tabIndex={-1}
                       className={dataGridStyles['focus-guard']}
                       data-kn-guard="after"

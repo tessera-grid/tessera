@@ -6,6 +6,7 @@ import {
   useRef,
 } from 'react'
 
+import { assignRef } from '../assignRef'
 import { useErrorFlash } from './useErrorFlash'
 
 import styles from '../ringStates/ringStates.module.css'
@@ -29,11 +30,7 @@ export const useButtonStates = <T extends HTMLElement>(
   const ref = useCallback(
     (node: T | null) => {
       own.current = node
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(node)
-      } else if (forwardedRef) {
-        forwardedRef.current = node
-      }
+      assignRef(forwardedRef, node)
     },
     [forwardedRef],
   )

@@ -111,16 +111,12 @@ export const useData = ({
 }) => {
   const [data, setData] = useState<any[]>([])
 
+  // Данные приходят после монтирования, как с сервера: истории и замеры смены скелета
+  // на данные опираются на этот первый пустой рендер.
   useEffect(() => {
     if (skip) return
-
-    if (showStub) {
-      setData([])
-
-      return
-    }
-
-    setData(getData(count))
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- мок внешнего источника данных
+    setData(showStub ? [] : getData(count))
   }, [count, showStub, skip])
 
   return { data, setData }

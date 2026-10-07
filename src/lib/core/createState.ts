@@ -10,7 +10,7 @@
  * прокидываются как есть из `state`/`handlers` потребителя. Публичные контролируемые
  * хуки (useRowSelectionState и т.д.) сохранены для совместимости API.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
   type ColumnOrderState,
@@ -106,14 +106,16 @@ export const isSameColumnSizing = (
  * Контролируемый срез. `initial` синхронизируется в состояние, НО только при смене
  * ССЫЛКИ initial — поэтому дефолты хуков обязаны быть СТАБИЛЬНЫМИ модуль-константами
  * (инлайн-литерал `{}`/`[]` в дефолте параметра создаёт новую ссылку каждый рендер →
- * useEffect стреляет каждый рендер → setState → бесконечный цикл).
+ * состояние сбрасывается на каждом рендере → бесконечный цикл).
  */
 const useControlledSlice = <T>(initial: T): [T, OnChangeFn<T>] => {
   const [value, setValue] = useState<T>(initial)
+  const [lastInitial, setLastInitial] = useState(initial)
 
-  useEffect(() => {
+  if (lastInitial !== initial) {
+    setLastInitial(initial)
     setValue(initial)
-  }, [initial])
+  }
 
   return [value, setValue as OnChangeFn<T>]
 }

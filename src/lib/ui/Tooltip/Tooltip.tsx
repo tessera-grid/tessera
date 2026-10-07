@@ -1,16 +1,18 @@
 import {
-  cloneElement,
   lazy,
   Suspense,
   useCallback,
   useRef,
   useState,
+  type ElementType,
   type FocusEvent,
   type PointerEvent,
   type ReactElement,
   type ReactNode,
   type Ref,
 } from 'react'
+
+import { assignRef } from '../assignRef'
 
 export type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
 
@@ -36,20 +38,13 @@ const TooltipPopup = lazy(() => import('./TooltipImpl'))
 /** Пауза перед закрытием: указатель успевает перейти с триггера на подсказку. */
 const CLOSE_DELAY = 150
 
-const mergeRefs =
-  <T,>(...refs: (Ref<T> | undefined)[]) =>
-  (node: T) => {
-    for (const ref of refs) {
-      if (typeof ref === 'function') ref(node)
-      else if (ref) (ref as { current: T | null }).current = node
-    }
-  }
-
-const compose =
-  <E,>(...handlers: (((event: E) => void) | undefined)[]) =>
-  (event: E) => {
-    for (const handler of handlers) handler?.(event)
-  }
+interface TriggerProps {
+  ref?: Ref<HTMLElement>
+  onPointerEnter?: (event: PointerEvent) => void
+  onPointerLeave?: (event: PointerEvent) => void
+  onFocus?: (event: FocusEvent) => void
+  onBlur?: (event: FocusEvent) => void
+}
 
 /**
  * Подсказка на базе Base UI (фундамент shadcn). Нативная замена MUI Tooltip.
@@ -69,7 +64,23 @@ export const Tooltip = ({
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
 
-  const show = useCallback(() => {
+  // В React 19 ref живёт в props (обращение к element.ref устарело и предупреждает).
+  const {
+    ref: childRef,
+    onPointerEnter,
+    onPointerLeave,
+    onFocus,
+    onBlur,
+  } = children.props as TriggerProps
+  const setAnchor = useCallback(
+    (node: HTMLElement | null) => {
+      anchorRef.current = node
+      assignRef(childRef, node)
+    },
+    [childRef],
+  )
+
+  const show = () => {
     setMounted(true)
     clearTimeout(timer.current)
     if (delayDuration > 0) {
@@ -77,45 +88,49 @@ export const Tooltip = ({
     } else {
       setOpen(true)
     }
-  }, [delayDuration])
+  }
 
-  const hide = useCallback(() => {
+  const hide = () => {
     clearTimeout(timer.current)
     setOpen(false)
-  }, [])
+  }
 
-  const hideSoon = useCallback(() => {
+  const hideSoon = () => {
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setOpen(false), CLOSE_DELAY)
-  }, [])
+  }
 
-  const keepOpen = useCallback(() => clearTimeout(timer.current), [])
+  const keepOpen = () => clearTimeout(timer.current)
 
   if (disabled || !title) {
     return children
   }
 
-  // В React 19 ref живёт в props (обращение к element.ref устарело и предупреждает).
-  const childProps = children.props as {
-    ref?: Ref<HTMLElement>
-    onPointerEnter?: (event: PointerEvent) => void
-    onPointerLeave?: (event: PointerEvent) => void
-    onFocus?: (event: FocusEvent) => void
-    onBlur?: (event: FocusEvent) => void
-  }
-  const childRef = childProps.ref
-
-  const trigger = cloneElement(children, {
-    ref: mergeRefs(anchorRef, childRef),
-    onPointerEnter: compose(childProps.onPointerEnter, show),
-    onPointerLeave: compose(childProps.onPointerLeave, hideSoon),
-    onFocus: compose(childProps.onFocus, show),
-    onBlur: compose(childProps.onBlur, hide),
-  } as Partial<typeof childProps> & { ref: Ref<HTMLElement> })
+  const Trigger = children.type as ElementType
 
   return (
     <>
-      {trigger}
+      <Trigger
+        key={children.key}
+        {...(children.props as object)}
+        ref={setAnchor}
+        onPointerEnter={(event: PointerEvent) => {
+          onPointerEnter?.(event)
+          show()
+        }}
+        onPointerLeave={(event: PointerEvent) => {
+          onPointerLeave?.(event)
+          hideSoon()
+        }}
+        onFocus={(event: FocusEvent) => {
+          onFocus?.(event)
+          show()
+        }}
+        onBlur={(event: FocusEvent) => {
+          onBlur?.(event)
+          hide()
+        }}
+      />
       {mounted && (
         <Suspense fallback={null}>
           <TooltipPopup

@@ -15,7 +15,9 @@
  * каждый кадр → ре-рендер → (при смене identity `table`) пере-запуск эффекта →
  * cleanup → `cancelAnimationFrame` убивает rAF-цикл до первого кадра.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
+
+import { useLatest } from './useLatest'
 
 interface AutoScrollTable {
   getSelectedCellRangesData?: () => unknown
@@ -48,10 +50,8 @@ export const useCellSelectionAutoScroll = (
   getScrollElement: () => HTMLElement | null,
 ): void => {
   // Ref'ы держат актуальные table/getScrollElement, не пере-создавая эффект.
-  const tableRef = useRef(table)
-  tableRef.current = table
-  const getScrollRef = useRef(getScrollElement)
-  getScrollRef.current = getScrollElement
+  const tableRef = useLatest(table)
+  const getScrollRef = useLatest(getScrollElement)
 
   useEffect(() => {
     let raf = 0
@@ -155,5 +155,5 @@ export const useCellSelectionAutoScroll = (
       document.removeEventListener('mousedown', onDown, true)
       stop()
     }
-  }, [])
+  }, [tableRef, getScrollRef])
 }

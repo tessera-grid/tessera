@@ -3,7 +3,7 @@
  * на ширине своей колонки; бизнес-колбэк — из пропса `hooks` (инъекция
  * definePlugin).
  */
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 
 import {
   cancelColumnResize,
@@ -11,6 +11,7 @@ import {
 } from '../../core/cancelInteraction'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useSlice, useTableState } from '../../core/reactivity'
+import { useLatest } from '../../core/useLatest'
 import { ResizeHandler } from '../../plugins/columnSizing/ResizeHandler'
 import type { ColumnSizingHooks } from './types'
 
@@ -38,8 +39,7 @@ export const ColumnSizingComponent = ({
       cancelColumnResize(table, 'revoke')
     }
   }, [isResizing, canResize, table])
-  const latest = useRef({ table, isResizing })
-  latest.current = { table, isResizing }
+  const latest = useLatest({ table, isResizing })
   // Ручка ушла посреди протяжки (грид размонтирован) — цель недоступна.
   useEffect(
     () => () => {
@@ -47,7 +47,7 @@ export const ColumnSizingComponent = ({
         cancelColumnResize(latest.current.table, 'unavailable')
       }
     },
-    [],
+    [latest],
   )
 
   if (!canResize) {

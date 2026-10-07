@@ -8,7 +8,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { usePortalThemeClass } from '../../core/themeVariables'
-import type { SlotAction } from '../../core/headerActions'
+import type { ActionPanelControls, SlotAction } from '../../core/headerActions'
 
 import styles from '../../grid/headerActions/ActionPanel.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
@@ -20,6 +20,19 @@ interface ActionPanelPopupProps {
   anchorRef: RefObject<HTMLElement | null>
   close: () => void
 }
+
+interface PanelContentProps extends ActionPanelControls {
+  panel: NonNullable<SlotAction['panel']>
+  context: unknown
+}
+
+// Своим компонентом: панель получает ref пропом, а не вызовом во время рендера.
+const PanelContent = ({
+  panel,
+  context,
+  close,
+  initialFocusRef,
+}: PanelContentProps) => panel(context, { close, initialFocusRef })
 
 export const ActionPanelPopup = ({
   action,
@@ -47,7 +60,14 @@ export const ActionPanelPopup = ({
           className={clsx(themeClass, styles.popup)}
           data-action-panel={action.id}
         >
-          {action.panel?.(context, { close, initialFocusRef })}
+          {action.panel && (
+            <PanelContent
+              panel={action.panel}
+              context={context}
+              close={close}
+              initialFocusRef={initialFocusRef}
+            />
+          )}
         </Popover.Popup>
       </Popover.Positioner>
     </Popover.Portal>

@@ -5,6 +5,8 @@
  */
 import { useCallback, useRef, useState } from 'react'
 
+import { useLatest } from '../../core/useLatest'
+
 import type { ExportRequest } from '../../plugins'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
@@ -33,8 +35,7 @@ export const ExportServerDemo = ({
 }: ExportServerDemoProps) => {
   const { entries, log, clear } = useCallbackLog()
   const [page] = useState(() => makeData({ shape: 'flat', count: PAGE_SIZE }))
-  const settings = useRef({ serverDelayMs, serverFailMode })
-  settings.current = { serverDelayMs, serverFailMode }
+  const settings = useLatest({ serverDelayMs, serverFailMode })
 
   const onExport = useCallback(
     (request: ExportRequest) => {
@@ -59,7 +60,7 @@ export const ExportServerDemo = ({
         }, settings.current.serverDelayMs)
       })
     },
-    [log],
+    [log, settings],
   )
   const onExported = useCallback(
     (request: ExportRequest) =>
