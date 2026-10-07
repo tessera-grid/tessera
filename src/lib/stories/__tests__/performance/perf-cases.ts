@@ -40,6 +40,7 @@ export const ALL_PLUGINS: Record<string, boolean> = {
   enableRowActions: true,
   enableCellSelection: true,
   enableFooter: true,
+  enableKeyboardNavigation: true,
 }
 
 /**

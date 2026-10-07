@@ -42,6 +42,8 @@ interface ScrollCase {
   // Потолок регресс-гейта (p95 по осям, ≈2× baseline). Тест падает только при
   // превышении — это регистрация регресса, а не требование 60fps. Есть у всех кейсов.
   regressionCeiling: { y: number; x: number }
+  // Спокойная прокрутка той же выборки (CONTENT_SCROLL): ячейки рисуются содержимым.
+  content: { id: string; regressionCeiling: { y: number; x: number } }
 }
 
 const CASES: ScrollCase[] = [
@@ -52,6 +54,11 @@ const CASES: ScrollCase[] = [
     // baseline ~13/13мс (в бюджете 60fps), но под ×4 троттлингом одиночные спайки до
     // ~17мс на дисперсии — жёсткий 60fps флапал. Регресс-гейт с запасом ≈2×.
     regressionCeiling: { y: 24, x: 24 },
+    content: {
+      id: 'P10',
+      // база ~10/19мс
+      regressionCeiling: { y: 20, x: 38 },
+    },
   },
   {
     id: 'P4',
@@ -60,18 +67,33 @@ const CASES: ScrollCase[] = [
     // 1000 колонок под ×4 троттлингом — у самой границы 60fps (шумит 16–24мс);
     // регресс-гейт с запасом.
     regressionCeiling: { y: 26, x: 30 },
+    content: {
+      id: 'P11',
+      // база ~13/20мс
+      regressionCeiling: { y: 26, x: 40 },
+    },
   },
   {
     id: 'P7',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
     regressionCeiling: { y: 28, x: 45 },
+    content: {
+      id: 'P12',
+      // база ~21/35мс
+      regressionCeiling: { y: 40, x: 68 },
+    },
   },
   {
     id: 'P8',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
     regressionCeiling: { y: 34, x: 70 },
+    content: {
+      id: 'P13',
+      // база ~26/38мс
+      regressionCeiling: { y: 50, x: 75 },
+    },
   },
 ]
 
@@ -80,68 +102,93 @@ const CASES: ScrollCase[] = [
 const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
 
+const runScrollCase = async (
+  c: ScrollCase,
+  id: string,
+  label: string,
+  ceiling: { y: number; x: number },
+  speed?: typeof CONTENT_SCROLL,
+) => {
+  renderGrid(c.args)
+  await waitForGrid()
+
+  const y = await measureScrollWork('y', speed?.y)
+  const x = await measureScrollWork('x', speed?.x)
+
+  const size = c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'
+  await recordPerf({
+    id,
+    label,
+    operation: 'scroll',
+    size,
+    plugins: c.args.enableColumnSorting ? 'all' : 'none',
+    cpuThrottle: CPU_THROTTLE_RATE,
+    // Гейта 60fps нет: пробой потолка — это регресс (в дашборде 'regr', не
+    // 'xfail'), а не «ожидаемый недостиг».
+    knownShortfall: false,
+    metrics: [
+      {
+        axis: 'y',
+        kind: 'animation',
+        metric: 'p95',
+        valueMs: y.p95Ms,
+        budgetMs: ceiling.y,
+        pass: y.p95Ms <= ceiling.y,
+        ...y,
+      },
+      {
+        axis: 'x',
+        kind: 'animation',
+        metric: 'p95',
+        valueMs: x.p95Ms,
+        budgetMs: ceiling.x,
+        pass: x.p95Ms <= ceiling.x,
+        ...x,
+      },
+    ],
+  })
+
+  // soft — обе оси репортятся независимо; сверяем с регресс-потолком кейса
+  // (жёсткого 60fps-гейта нет, см. политику в шапке файла).
+  expect
+    .soft(
+      y.p95Ms,
+      `Y p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms over-budget=${y.tasksOverBudget}/${y.taskCount} (limit ${ceiling.y})`,
+    )
+    .toBeLessThanOrEqual(ceiling.y)
+  expect
+    .soft(
+      x.p95Ms,
+      `X p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms over-budget=${x.tasksOverBudget}/${x.taskCount} (limit ${ceiling.x})`,
+    )
+    .toBeLessThanOrEqual(ceiling.x)
+}
+
 describe('Производительность прокрутки', () => {
   for (const c of CASES) {
     test(
       `${c.id}: ${c.label}`,
-      async () => {
-        renderGrid(c.args)
-        await waitForGrid()
+      () => runScrollCase(c, c.id, c.label, c.regressionCeiling),
+      PERF_TIMEOUT,
+    )
+  }
+})
 
-        const y = await measureScrollWork('y')
-        const x = await measureScrollWork('x')
-
-        const budgetY = c.regressionCeiling.y
-        const budgetX = c.regressionCeiling.x
-        const size =
-          c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'
-        await recordPerf({
-          id: c.id,
-          label: c.label,
-          operation: 'scroll',
-          size,
-          plugins: c.args.enableColumnSorting ? 'all' : 'none',
-          cpuThrottle: CPU_THROTTLE_RATE,
-          // Гейта 60fps нет: пробой потолка — это регресс (в дашборде 'regr', не
-          // 'xfail'), а не «ожидаемый недостиг».
-          knownShortfall: false,
-          metrics: [
-            {
-              axis: 'y',
-              kind: 'animation',
-              metric: 'p95',
-              valueMs: y.p95Ms,
-              budgetMs: budgetY,
-              pass: y.p95Ms <= budgetY,
-              ...y,
-            },
-            {
-              axis: 'x',
-              kind: 'animation',
-              metric: 'p95',
-              valueMs: x.p95Ms,
-              budgetMs: budgetX,
-              pass: x.p95Ms <= budgetX,
-              ...x,
-            },
-          ],
-        })
-
-        // soft — обе оси репортятся независимо; сверяем с регресс-потолком кейса
-        // (жёсткого 60fps-гейта нет, см. политику в шапке файла).
-        expect
-          .soft(
-            y.p95Ms,
-            `Y p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms over-budget=${y.tasksOverBudget}/${y.taskCount} (limit ${budgetY})`,
-          )
-          .toBeLessThanOrEqual(budgetY)
-        expect
-          .soft(
-            x.p95Ms,
-            `X p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms over-budget=${x.tasksOverBudget}/${x.taskCount} (limit ${budgetX})`,
-          )
-          .toBeLessThanOrEqual(budgetX)
-      },
+// Спокойная прокрутка (P10–P13, ADR 0004): скорость ниже порога быстрой прокрутки —
+// ячейки рисуются содержимым, замер видит цену ячеек и плагинов, а не скелетов.
+describe('Производительность прокрутки — спокойная скорость', () => {
+  for (const c of CASES) {
+    const label = `${c.label}, спокойная прокрутка`
+    test(
+      `${c.content.id}: ${label}`,
+      () =>
+        runScrollCase(
+          c,
+          c.content.id,
+          label,
+          c.content.regressionCeiling,
+          CONTENT_SCROLL,
+        ),
       PERF_TIMEOUT,
     )
   }
