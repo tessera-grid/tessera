@@ -77,7 +77,8 @@ const CASES: ScrollCase[] = [
     id: 'P7',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    regressionCeiling: { y: 28, x: 45 },
+    // база с клавиатурной навигацией ~24/44мс
+    regressionCeiling: { y: 36, x: 64 },
     content: {
       id: 'P12',
       // база ~21/35мс
@@ -88,7 +89,8 @@ const CASES: ScrollCase[] = [
     id: 'P8',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    regressionCeiling: { y: 34, x: 70 },
+    // база с клавиатурной навигацией ~29/47мс
+    regressionCeiling: { y: 46, x: 70 },
     content: {
       id: 'P13',
       // база ~26/38мс
