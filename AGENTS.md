@@ -352,6 +352,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
       [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-sorting` (CS1–CS24, [ADR 0012](docs/decisions/0012-column-sorting.md)),
+      `column-sorting-options` (OS8–OS9), модульный `optionLabelSort` (OS1–OS7, OS10),
+      дымовой `sorting-stories` (OS12), перф OS11 — в `interaction` — сортировка по
+      подписи вариантов ([ADR 0063](docs/decisions/0063-option-label-sorting.md)),
       `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md)),
       `column-dragging` (D14–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
@@ -539,6 +542,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     даты на 1000×1000, SF25–SF26 — фильтр варианта на 100 000 строк и открытие
     панели с 1000 вариантов, RE38 — приход 100 детей ленивой строки на 100 000 корней,
     RE50 — тот же приход ответом сервера с подсветкой против RE38
+    OS11 — сортировка 100 000 строк по подписи против сортировки по id
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);

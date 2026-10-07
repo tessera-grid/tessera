@@ -15,6 +15,7 @@ import {
 
 import { definePlugin } from '../../core/definePlugin'
 import { narrowSorting } from './narrowSorting'
+import { optionLabelSortFeature } from './optionLabelSort'
 import { createTesseraSortedRowModel } from './sortedRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { sortKeyboardAction } from './keyboardActions'
@@ -74,6 +75,7 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   diagnose: neverInert,
   features: {
     rowSortingFeature,
+    optionLabelSortFeature,
     sortedRowModel: createTesseraSortedRowModel(),
     sortFns,
   },

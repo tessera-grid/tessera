@@ -63,20 +63,34 @@ export const isEmptyOptionValue = (value: unknown) =>
   value === '' ||
   (Array.isArray(value) && value.length === 0)
 
+/** Подпись одного значения вне `options`: `getOptionLabel`, затем кэш `loadOptions`. */
+export const extraOptionLabel = (
+  table: object,
+  column: OptionsColumn,
+  value: unknown,
+): string | undefined =>
+  column.columnDef.getOptionLabel?.(value as OptionValue) ??
+  loadedLabels.get(table)?.get(column.id)?.get(value)
+
+/** Подпись одного значения; `undefined` — подписи нет. */
+export const knownOptionLabel = (
+  table: object,
+  column: OptionsColumn,
+  value: unknown,
+): string | undefined => {
+  const { options } = column.columnDef
+  return (
+    (options ? labelMapOf(options).get(value) : undefined) ??
+    extraOptionLabel(table, column, value)
+  )
+}
+
 /** Подпись одного значения; без подписи — значение строкой. */
 export const optionLabelOf = (
   table: object,
   column: OptionsColumn,
   value: unknown,
-): string => {
-  const { options, getOptionLabel } = column.columnDef
-  const fromOptions = options ? labelMapOf(options).get(value) : undefined
-  if (fromOptions !== undefined) return fromOptions
-  const fromGetter = getOptionLabel?.(value as OptionValue)
-  if (fromGetter !== undefined) return fromGetter
-  const loaded = loadedLabels.get(table)?.get(column.id)?.get(value)
-  return loaded ?? String(value)
-}
+): string => knownOptionLabel(table, column, value) ?? String(value)
 
 /**
  * Текст значения колонки с вариантами: подпись, у массива — подписи через «, »;

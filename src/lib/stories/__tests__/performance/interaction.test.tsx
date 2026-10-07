@@ -20,6 +20,10 @@ import {
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
+import {
+  makeOptionFilteringData,
+  optionFilteringColumns,
+} from '../../__mocks__/filteringData'
 
 // Отзывчивость на ВЗАИМОДЕЙСТВИЕ (INP): выбор ОДНОЙ строки меняет только
 // срез rowSelection на одну запись — законной работы минимум (обновить одну строку и
@@ -806,5 +810,80 @@ describe('Отзывчивость — смена скелета на данны
       }
     },
     PERF_TIMEOUT,
+  )
+})
+
+// Сортировка по подписи (ADR 0063, OS11): первый клик сортировки колонки менеджера на
+// 100 000 строк — с подписями `getOptionLabel` против той же колонки без них
+// (сортировка по id). Каждый замер — свежий грид.
+const OPTION_SORT_DATA = makeOptionFilteringData(100_000)
+const managerColumn = (labelled: boolean) =>
+  optionFilteringColumns.map(column =>
+    column.id === 'managerId' && !labelled
+      ? { ...column, getOptionLabel: undefined, filter: undefined }
+      : column,
+  )
+
+describe('Отзывчивость — сортировка по подписи', () => {
+  test(
+    'OS11: сортировка 100 000 строк по колонке lookup — в пределах регресс-потолка против той же колонки без подписей',
+    async () => {
+      const measure = async (labelled: boolean) => {
+        await renderGrid({
+          ...ALL_PLUGINS,
+          columnsOverride: managerColumn(labelled),
+          dataOverride: OPTION_SORT_DATA,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const button = () =>
+          document.querySelector<HTMLElement>(
+            '.data-grid__head-cell[data-column-id="managerId"] .column-sort__button',
+          )
+        await expect.poll(button).toBeTruthy()
+        const result = await measureInteractionWork(async () =>
+          button()!.click(),
+        )
+        await cleanup()
+        return result
+      }
+      const base = await measure(false)
+      const labelled = await measure(true)
+      // Подпись сравнивается Intl.Collator, id — простым сравнением: ~+20% (база
+      // ~850 мс, по подписи ~1020–1080 мс под ×4); запас на шум замера.
+      const ceiling = Math.max(base.longestMs * 1.5, base.longestMs + 300)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×5',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('OS11-base', 'сортировка по id, без подписей', base, false)
+      await record('OS11', 'сортировка по подписи', labelled, true)
+
+      expect(
+        labelled.longestMs,
+        `по подписи longest=${labelled.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })

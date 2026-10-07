@@ -1,7 +1,12 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { filteringColumns, filteringData } from './__mocks__/filteringData'
+import {
+  filteringColumns,
+  filteringData,
+  optionFilteringColumns,
+  optionFilteringData,
+} from './__mocks__/filteringData'
 
 /** Истории колонок: размеры, сортировка, перетаскивание, закрепление, шапка. */
 const meta = {
@@ -57,6 +62,17 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
     containerHeight: 400,
     height: 300,
     maxHeight: 300,
+  },
+}
+
+export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
+  name: 'Sorting — option labels',
+  args: {
+    enableColumnSorting: true,
+    columnsOverride: optionFilteringColumns,
+    dataOverride: optionFilteringData,
+    // «Status» сортируется в порядке вариантов, «Tags» — поэлементно, «Manager» — по
+    // имени из справочника, а не по id. С группировкой в том же порядке идут группы.
   },
 }
 
