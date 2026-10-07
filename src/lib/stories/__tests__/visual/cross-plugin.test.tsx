@@ -29,6 +29,7 @@ const CHECKBOX = '.row-select-checkbox'
 const HEAD_CELL = '.data-grid__head-cell'
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 const KEBAB = '[aria-label="Column options"]'
+const ROW_KEBAB = '[aria-label="Row options"]'
 const ACTION_CELL =
   '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
 
@@ -143,7 +144,7 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
 
     // Row actions collapsed to a per-row kebab in the actions column.
     const actionCell = container.querySelector<HTMLElement>(ACTION_CELL)!
-    expect(actionCell.querySelector(KEBAB)).toBeTruthy()
+    expect(actionCell.querySelector(ROW_KEBAB)).toBeTruthy()
 
     // Header kebab opens the column controls…
     const headKebab = container.querySelector<HTMLElement>(
@@ -159,7 +160,7 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
     await expect.poll(() => menuTexts().length).toBe(0)
 
     // …and the row kebab independently opens the row actions.
-    await userEvent.click(actionCell.querySelector<HTMLElement>(KEBAB)!)
+    await userEvent.click(actionCell.querySelector<HTMLElement>(ROW_KEBAB)!)
     await expect
       .poll(() => menuTexts())
       .toEqual(expect.arrayContaining(['Edit', 'Duplicate', 'Delete']))

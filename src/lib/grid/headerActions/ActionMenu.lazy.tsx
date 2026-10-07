@@ -68,10 +68,11 @@ const KebabPlaceholder = ({
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
 
+  const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
   const trigger = (
     <IconButton
       className={styles.trigger}
-      aria-label={labels.headerMenu}
+      aria-label={label}
       aria-haspopup="menu"
       aria-expanded={open}
       onClick={onOpen}
@@ -82,17 +83,21 @@ const KebabPlaceholder = ({
   )
 
   const shown = open || loading.pending
-  return variant === 'row' ? (
-    <div className={clsx('row__button', !shown && 'row__button--hidden')}>
-      {trigger}
-    </div>
-  ) : (
-    <div
-      className="cell__button cell__button--hidden"
-      data-button-active={shown}
-    >
-      {trigger}
-    </div>
+  return (
+    <Tooltip title={label}>
+      {variant === 'row' ? (
+        <div className={clsx('row__button', !shown && 'row__button--hidden')}>
+          {trigger}
+        </div>
+      ) : (
+        <div
+          className="cell__button cell__button--hidden"
+          data-button-active={shown}
+        >
+          {trigger}
+        </div>
+      )}
+    </Tooltip>
   )
 }
 
@@ -163,10 +168,8 @@ export const ActionMenu = ({
   context,
   variant = 'cell',
 }: Omit<ActionMenuProps, 'open' | 'onOpenChange'>) => {
-  const menu = useLazyPopover(
-    context.table,
-    ActionMenuImpl,
-    labels => labels.headerMenu,
+  const menu = useLazyPopover(context.table, ActionMenuImpl, labels =>
+    variant === 'row' ? labels.rowMenu : labels.headerMenu,
   )
   const placeholder = (
     <KebabPlaceholder

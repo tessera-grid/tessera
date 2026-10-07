@@ -141,6 +141,8 @@ export interface TableLabels {
   selectAll: string
   /** Доступное имя кебаб-кнопки меню действий заголовка (`aria-label`/тултип) */
   headerMenu: string
+  /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
+  rowMenu: string
   /** Доступное имя контекстного меню (`aria-label` на `role="menu"`) */
   contextMenu: string
   /** Объявление: модуль поповера или меню (`name` — подпись элемента) не загрузился */
@@ -323,6 +325,7 @@ export const DEFAULT_LABELS: TableLabels = {
   selectRow: 'Select row',
   selectAll: 'Select all rows',
   headerMenu: 'Column options',
+  rowMenu: 'Row options',
   contextMenu: 'Context menu',
   loadFailed: name => `${name} failed to load. Try again.`,
   copy: 'Copy',

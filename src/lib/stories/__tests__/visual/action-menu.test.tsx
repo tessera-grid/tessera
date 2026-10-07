@@ -19,6 +19,7 @@ const HEAD_CELL = '.data-grid__head-cell'
 /** Заголовки реальных (не сервисных) колонок. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 const KEBAB = '[aria-label="Column options"]'
+const ROW_KEBAB = '[aria-label="Row options"]'
 const ACTION_CELL =
   '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
 
@@ -282,7 +283,7 @@ describe('Action menu — row', () => {
     const { container } = await renderRowMenu()
 
     const cell = container.querySelector<HTMLElement>(ACTION_CELL)!
-    const kebab = cell.querySelector<HTMLElement>(KEBAB)!
+    const kebab = cell.querySelector<HTMLElement>(ROW_KEBAB)!
     expect(kebab).toBeTruthy()
 
     await userEvent.click(kebab)
@@ -326,7 +327,7 @@ describe('Action menu — row', () => {
     expect(wrap().className).toContain('row__button--hidden')
 
     // Открываем меню → обёртка теряет --hidden (видима, даже когда курсор в портале).
-    await userEvent.click(cell.querySelector<HTMLElement>(KEBAB)!)
+    await userEvent.click(cell.querySelector<HTMLElement>(ROW_KEBAB)!)
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
     await expect
       .poll(() => wrap().className.includes('row__button--hidden'))
@@ -339,7 +340,7 @@ describe('Action menu — row', () => {
     const { container } = await renderRowMenu()
     const cells = () =>
       Array.from(container.querySelectorAll<HTMLElement>(ACTION_CELL))
-    const kebab = () => cells()[0].querySelector<HTMLElement>(KEBAB)!
+    const kebab = () => cells()[0].querySelector<HTMLElement>(ROW_KEBAB)!
     // Видимость чипа — по прозрачности значка: обёртка чипа не гаснет (ADR 0017, MO5).
     const opacity = () => {
       const color = getComputedStyle(kebab()).color

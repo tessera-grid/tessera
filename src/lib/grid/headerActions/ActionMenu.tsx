@@ -11,6 +11,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
+import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
@@ -66,13 +67,14 @@ export const ActionMenu = ({
     onOpenChange(next)
   }
 
+  const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
   const trigger = (
     <Menu.Trigger
       render={
         <IconButton
           ref={triggerRef}
           className={styles.trigger}
-          aria-label={labels.headerMenu}
+          aria-label={label}
           pending={opening.pending}
           errorFlash={opening.errorFlash}
         >
@@ -88,26 +90,28 @@ export const ActionMenu = ({
       onOpenChange={onMenuOpenChange}
       onOpenChangeComplete={onOpenChangeComplete}
     >
-      {variant === 'row' ? (
-        <div
-          className={clsx(
-            'row__button',
-            !visible && !panelVisible && 'row__button--hidden',
-          )}
-        >
-          {trigger}
-        </div>
-      ) : (
-        // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
-        // открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
-        // AM24, AM25).
-        <div
-          className="cell__button cell__button--hidden"
-          data-button-active={visible || panelVisible}
-        >
-          {trigger}
-        </div>
-      )}
+      <Tooltip title={label}>
+        {variant === 'row' ? (
+          <div
+            className={clsx(
+              'row__button',
+              !visible && !panelVisible && 'row__button--hidden',
+            )}
+          >
+            {trigger}
+          </div>
+        ) : (
+          // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
+          // открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
+          // AM24, AM25).
+          <div
+            className="cell__button cell__button--hidden"
+            data-button-active={visible || panelVisible}
+          >
+            {trigger}
+          </div>
+        )}
+      </Tooltip>
       <ActionMenuPopup
         actions={actions}
         context={context}
