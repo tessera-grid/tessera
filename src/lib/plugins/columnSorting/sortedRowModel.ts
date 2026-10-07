@@ -11,6 +11,8 @@ type SortedRowModelFactory = ReturnType<typeof createSortedRowModel>
 type SortedRowModel = ReturnType<ReturnType<SortedRowModelFactory>>
 
 const withClonedRowsById = (model: SortedRowModel): SortedRowModel => {
+  // Без вложенных строк копий нет — обход всех строк не нужен.
+  if (model.flatRows.length === model.rows.length) return model
   let rowsById: SortedRowModel['rowsById'] | undefined
   for (const row of model.flatRows) {
     if (model.rowsById[row.id] !== row) {
