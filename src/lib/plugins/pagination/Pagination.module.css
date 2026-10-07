@@ -16,6 +16,28 @@
   white-space: nowrap;
 }
 
+/* Компактная и двухстрочная нижняя панель (ADR 0038, SB7): подпись скрыта визуально и
+   остаётся доступным именем списка. */
+:global([data-status-bar-layout='compact']) .label,
+:global([data-status-bar-layout='stacked']) .label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* В двух строках панели пагинация, не помещаясь в строку, переносит кнопки ниже. */
+:global([data-status-bar-layout='stacked']) .pagination {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 4px;
+  padding-block: 8px;
+  max-width: 100%;
+}
+
 .trigger {
   display: inline-flex;
   align-items: center;

@@ -1,7 +1,7 @@
 import axe from 'axe-core'
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, onTestFinished, test, vi } from 'vitest'
 
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
@@ -411,6 +411,10 @@ describe('Row Selection — selected count', () => {
   })
 
   test('RS21: with nothing selected the text is empty and the panel stays (the grid height does not change)', async () => {
+    // RS21 — для панели в одну строку; узкая ширина — SB14.
+    const { innerWidth: width, innerHeight: height } = window
+    await page.viewport(1000, height)
+    onTestFinished(() => page.viewport(width, height))
     const { container } = await render(
       <composed.SelectedCount {...COUNT_GRID} />,
     )

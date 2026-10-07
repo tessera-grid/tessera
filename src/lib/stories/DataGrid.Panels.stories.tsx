@@ -49,6 +49,21 @@ export const PanelsFromPlugins: StoryObj<StoryProps> = {
   },
 }
 
+export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
+  name: 'Panels — narrow status bar',
+  // Узкая колонка (ADR 0038, SB7–SB13): нижняя панель в две строки — счётчик выбора
+  // сверху, пагинация снизу, кнопки переносятся. Выберите строки, чтобы появился
+  // счётчик; меняйте containerWidth, чтобы увидеть компактный и полный вид.
+  args: {
+    ...GRID,
+    containerWidth: 320,
+    enableRowSelection: true,
+    showSelectedCount: true,
+    enableColumnFiltering: true,
+    enablePagination: true,
+  },
+}
+
 export const PanelsOwnPager: StoryObj<StoryProps> = {
   name: 'Panels — status bar off (own pager)',
   args: GRID,

@@ -28,6 +28,7 @@ export const StoryComponent = memo(
     dataCount,
 
     containerHeight,
+    containerWidth,
     height,
     maxHeight,
     colorMode,
@@ -203,6 +204,10 @@ export const StoryComponent = memo(
         style={{
           padding: 16,
           height: containerHeight,
+          ...(containerWidth !== undefined && {
+            width: containerWidth,
+            boxSizing: 'border-box',
+          }),
           display: 'flex',
           flexDirection: 'column',
         }}

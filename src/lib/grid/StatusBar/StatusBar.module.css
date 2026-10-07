@@ -19,3 +19,38 @@
     margin-left: auto;
   }
 }
+
+/* Две строки на узкой ширине (ADR 0038, SB8): `start` сверху, `end` снизу. */
+.status-bar[data-status-bar-layout='stacked'] {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  height: auto;
+
+  & > .status-bar__side {
+    min-height: var(--tsr-comp-status-bar-height);
+    margin-left: 0;
+  }
+
+  /* Сторона без слотов строку не занимает; сторона со слотом держит строку, даже
+     когда её текст пуст (RS21, SB14). */
+  & > .status-bar__side:empty {
+    display: none;
+  }
+
+  & > .status-bar__side[data-align='end'] {
+    justify-content: flex-end;
+  }
+
+  /* Текст стороны `start` не шире строки (SB11). */
+  & > .status-bar__side[data-align='start'] {
+    overflow: hidden;
+
+    & > * {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

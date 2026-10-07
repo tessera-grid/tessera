@@ -413,7 +413,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), дымовой
       `panels-stories` (PB12 — история «Panels — status bar off (own pager)»),
       [ADR 0046](docs/decisions/0046-toolbar-and-status-bar-visibility.md).
-    - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB5 — модульный
+    - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB7–SB14 — узкая ширина — `status-bar-narrow`; SB5 — модульный
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).

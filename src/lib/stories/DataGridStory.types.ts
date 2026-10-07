@@ -42,6 +42,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   extraPlugins?: TesseraFeatureEntry[]
 
   containerHeight: number
+  /** Ширина контейнера истории, px; по умолчанию — вся ширина. */
+  containerWidth?: number
   height: DataGridProps['height']
   maxHeight: DataGridProps['maxHeight']
   colorMode: DataGridProps['colorMode']
