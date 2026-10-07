@@ -1,19 +1,28 @@
 // ContextMenu (эагерный): слушатель contextmenu + состояние открытия. Base UI-меню
-// (ContextMenuPopup) грузится лениво, монтируется только когда меню открыто —
-// floating-ui в базовый бандл не тянется. Рендерится DataGrid'ом при активном
+// (ContextMenuPopup) грузится лениво — floating-ui в базовый бандл не тянется: при
+// первом наведении на тело грида или фокусе внутри него, а правый клик до загрузки
+// открывает меню после неё (ADR 0061, LZ6–LZ10). Рендерится DataGrid'ом при активном
 // плагине contextMenu (`enableContextMenu`). ADR 0030.
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
+import { useLazyOpening } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
+import { preloadable } from '../../core/preloadable'
 import {
   resolveVisibleActions,
   type ContextMenuAction,
   type ContextMenuContext,
 } from '../../core/headerActions'
 
-const ContextMenuPopupImpl = lazy(() =>
-  import('./ContextMenuPopup').then(m => ({ default: m.ContextMenuPopup })),
+const ContextMenuPopupImpl = preloadable(() =>
+  import('./ContextMenuPopup').then(m => m.ContextMenuPopup),
 )
+
+const MENU_LOAD = {
+  load: ContextMenuPopupImpl.reload,
+  isReady: ContextMenuPopupImpl.isLoaded,
+  label: (labels: { contextMenu: string }) => labels.contextMenu,
+}
 
 const CELL = '.data-grid__body-cell[data-column-id]'
 
@@ -94,6 +103,57 @@ export interface ContextMenuProps {
 export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   const [state, setState] = useState<OpenState | null>(null)
   const labels = useLocalization()
+  const opening = useLazyOpening(table)
+  const { cancel, pending, request } = opening
+
+  // Модуль меню — при первом наведении на тело грида или фокусе внутри него.
+  useEffect(() => {
+    if (ContextMenuPopupImpl.isLoaded()) return
+    const onApproach = (event: Event) => {
+      const scroller = getScrollElement()
+      if (!scroller?.contains(event.target as Node)) return
+      void ContextMenuPopupImpl.load().catch(() => {})
+      stop()
+    }
+    const stop = () => {
+      document.removeEventListener('pointerover', onApproach, true)
+      document.removeEventListener('focusin', onApproach, true)
+    }
+    document.addEventListener('pointerover', onApproach, true)
+    document.addEventListener('focusin', onApproach, true)
+    return stop
+  }, [getScrollElement])
+
+  // Ожидание загрузки отменяют Escape, прокрутка грида пользователем (колесо,
+  // касание — не прокрутка к ячейке, которую фокусирует сам правый клик) и нажатие мимо.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') cancel()
+    }
+    const scroller = getScrollElement()
+    document.addEventListener('keydown', onKeyDown, true)
+    document.addEventListener('pointerdown', cancel, true)
+    scroller?.addEventListener('wheel', cancel, { passive: true })
+    scroller?.addEventListener('touchmove', cancel, { passive: true })
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true)
+      document.removeEventListener('pointerdown', cancel, true)
+      scroller?.removeEventListener('wheel', cancel)
+      scroller?.removeEventListener('touchmove', cancel)
+    }
+  })
+
+  // Долгое ожидание: курсор `progress` над гридом и `aria-busy` на нём.
+  useEffect(() => {
+    const scroller = getScrollElement()
+    if (!pending || !scroller) return
+    scroller.setAttribute('aria-busy', 'true')
+    scroller.setAttribute('data-lazy-pending', '')
+    return () => {
+      scroller.removeAttribute('aria-busy')
+      scroller.removeAttribute('data-lazy-pending')
+    }
+  }, [pending, getScrollElement])
 
   useEffect(() => {
     const t = table as ContextMenuTable
@@ -123,13 +183,14 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         return
       }
       event.preventDefault()
-      setState({ x: event.clientX, y: event.clientY, actions, context })
+      const next = { x: event.clientX, y: event.clientY, actions, context }
+      request(MENU_LOAD, () => setState(next))
     }
 
     document.addEventListener('contextmenu', onContextMenu, true)
     return () =>
       document.removeEventListener('contextmenu', onContextMenu, true)
-  }, [table, getScrollElement])
+  }, [table, getScrollElement, request])
 
   if (!state) {
     return null
@@ -137,7 +198,7 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
 
   return (
     <Suspense fallback={null}>
-      <ContextMenuPopupImpl
+      <ContextMenuPopupImpl.Component
         x={state.x}
         y={state.y}
         actions={state.actions}

@@ -3,12 +3,21 @@
  * «from–to of total», кнопки «первая/назад/вперёд/последняя». Размечен как
  * `navigation`; бизнес-колбэк — на действие пользователя.
  */
-import { lazy, Suspense, useEffect } from 'react'
+import {
+  type ButtonHTMLAttributes,
+  forwardRef,
+  Suspense,
+  useEffect,
+} from 'react'
 
 import type { PaginationState } from '@tanstack/react-table'
+import clsx from 'clsx'
 import { ChevronDown } from 'lucide-react'
 
 import { announceLabel } from '../../core/announcer'
+import { useLazyPopover } from '../../core/lazyOpening'
+import { preloadable } from '../../core/preloadable'
+import { type ButtonStatesProps, useButtonStates } from '../../ui/buttonStates'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
@@ -26,11 +35,28 @@ import {
 import { PageButton } from './PageButton'
 import styles from './Pagination.module.css'
 
-const PageSizeSelect = lazy(() =>
-  import('./PageSizeSelect').then(module => ({
-    default: module.PageSizeSelect,
-  })),
+const PageSizeSelect = preloadable(() =>
+  import('./PageSizeSelect').then(module => module.PageSizeSelect),
 )
+
+/** Кнопка-заглушка выбора размера до загрузки его модуля: ожидание и вспышка по контуру. */
+const PlaceholderButton = forwardRef<
+  HTMLButtonElement,
+  ButtonHTMLAttributes<HTMLButtonElement> & ButtonStatesProps
+>(({ pending, errorFlash, onClick, className, ...rest }, ref) => {
+  const states = useButtonStates(ref, { pending, errorFlash }, onClick)
+  return (
+    <button
+      type="button"
+      {...rest}
+      ref={states.ref}
+      aria-busy={states['aria-busy']}
+      data-error-flash={states['data-error-flash']}
+      onClick={states.onClick}
+      className={clsx(styles.trigger, states.className, className)}
+    />
+  )
+})
 
 const ICON_SIZE = 18
 /** Ширина скелета диапазона «1–25 of 1000» на время первой загрузки. */
@@ -48,6 +74,13 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const pageCount = inert ? 0 : t.getPageCount()
   const pageIndex = pagination?.pageIndex ?? 0
   const manual = !!t.options.manualPagination
+  // Заглушку сменяет выбор по состоянию: клик по ней до загрузки не теряется (PG20),
+  // ожидание и ошибка загрузки видны на ней (ADR 0061, LZ15–LZ16).
+  const sizeSelect = useLazyPopover(
+    table,
+    PageSizeSelect,
+    all => all.rowsPerPage,
+  )
 
   // Строк стало меньше, а страница осталась прежней — к последней существующей.
   useEffect(() => {
@@ -86,6 +119,20 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     announcePage(0, Math.max(1, Math.ceil(rowCount / size)))
   }
 
+  const sizePlaceholder = (
+    <>
+      <span className={styles.label}>{labels.rowsPerPage}</span>
+      <PlaceholderButton
+        aria-label={labels.rowsPerPage}
+        aria-haspopup="listbox"
+        {...sizeSelect.trigger}
+      >
+        {pageSize}
+        <ChevronDown width={14} height={14} className={styles.triggerIcon} />
+      </PlaceholderButton>
+    </>
+  )
+
   const empty = rowCount === 0
   const atStart = empty || pageIndex <= 0
   const atEnd = empty || pageIndex >= lastIndex
@@ -98,32 +145,20 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     >
       {pageSizesOption !== false && (
         <div className={styles.pageSize}>
-          <Suspense
-            fallback={
-              <>
-                <span className={styles.label}>{labels.rowsPerPage}</span>
-                <button
-                  type="button"
-                  className={styles.trigger}
-                  aria-label={labels.rowsPerPage}
-                >
-                  {pageSize}
-                  <ChevronDown
-                    width={14}
-                    height={14}
-                    className={styles.triggerIcon}
-                  />
-                </button>
-              </>
-            }
-          >
-            <PageSizeSelect
-              label={labels.rowsPerPage}
-              pageSize={pageSize}
-              pageSizes={resolvePageSizes(pageSizesOption ?? [], pageSize)}
-              onChange={changeSize}
-            />
-          </Suspense>
+          {sizeSelect.ready ? (
+            <Suspense fallback={sizePlaceholder}>
+              <PageSizeSelect.Component
+                label={labels.rowsPerPage}
+                pageSize={pageSize}
+                pageSizes={resolvePageSizes(pageSizesOption ?? [], pageSize)}
+                onChange={changeSize}
+                open={sizeSelect.open}
+                onOpenChange={sizeSelect.onOpenChange}
+              />
+            </Suspense>
+          ) : (
+            sizePlaceholder
+          )}
         </div>
       )}
       <span className={styles.range} data-testid="pagination-range">

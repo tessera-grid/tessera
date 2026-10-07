@@ -51,7 +51,7 @@ export const filterHeaderAction: HeaderAction = {
   // Поповер открывается сразу с содержимым: панель и модуль её типа грузятся заранее.
   preload: ({ column }) =>
     Promise.all([
-      FilterPanel.load(),
+      FilterPanel.reload(),
       loadFilterPanelModule().then(m =>
         m.preloadFilterTypePanel(filterTypeOf(filterDefOf(column))),
       ),

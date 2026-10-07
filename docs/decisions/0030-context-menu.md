@@ -3,6 +3,8 @@
 - **Статус:** Принято (первый срез реализован; клавиатурный вызов — `Shift+F10`/`ContextMenu` через `keyboardNavigation`, ADR 0021; touch/вставка — в плане)
 - **Дата:** 2026-09-22
 - **Связано:**
+  - [ADR 0061](0061-lazy-popover-loading.md) — загрузка модуля меню заранее, правый
+    клик до загрузки, ожидание, отмена и ошибка (LZ6–LZ10, LZ19–LZ20).
   - [ADR 0024](0024-slot-action-descriptor-and-menu.md) — единый дескриптор
     `SlotAction<TCtx>` (иконка/подпись/`onSelect`/`visible`/`disabled`/`active`/
     `menuItems`) и движок меню на Base UI (`resolveMenuItems`, `ActionMenu`).

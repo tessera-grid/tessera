@@ -80,7 +80,9 @@ Tessera поставляет **кастомную стратегию колли�
 [ADR 0034](../decisions/0034-wcag-22-dragging-and-target-size.md)). Пункты меню
 дают плагины (`ColumnDraggingComponent`, `RowDraggingComponent`) и вызывают ту же
 логику, что `Alt+Shift+стрелки` (`moveColumn.ts`, `moveRow.ts`). Попап
-(`grid/handleMenu`) грузится лениво и монтируется только открытым. Грип ширины
+(`grid/handleMenu`) грузится лениво — при наведении и фокусе на ручке — и монтируется
+только открытым; нажатие до загрузки открывает меню после неё, долгое ожидание видно
+на ручке ([ADR 0061](../decisions/0061-lazy-popover-loading.md)). Грип ширины
 `columnSizing` использует тот же попап.
 
 ## Отдача порядка потребителю

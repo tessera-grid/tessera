@@ -143,8 +143,8 @@ export interface TableLabels {
   headerMenu: string
   /** Доступное имя контекстного меню (`aria-label` на `role="menu"`) */
   contextMenu: string
-  /** Объявление: содержимое панели действия (`action` — его подпись) не загрузилось */
-  actionPanelLoadFailed: (action: string) => string
+  /** Объявление: модуль поповера или меню (`name` — подпись элемента) не загрузился */
+  loadFailed: (name: string) => string
   /** Пункт «Копировать» (контекстное меню / действия выделения) */
   copy: string
   /** Тултип и доступное имя кнопки правки ячейки (`cellEditing`) */
@@ -324,7 +324,7 @@ export const DEFAULT_LABELS: TableLabels = {
   selectAll: 'Select all rows',
   headerMenu: 'Column options',
   contextMenu: 'Context menu',
-  actionPanelLoadFailed: action => `${action} failed to load. Try again.`,
+  loadFailed: name => `${name} failed to load. Try again.`,
   copy: 'Copy',
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',

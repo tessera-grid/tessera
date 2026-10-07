@@ -391,6 +391,17 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       без колонок, видимые колонки, панели, доступность), модульный `skeletonOptions`
       (SL13), перф SL14 — в `first-render`, SL15 — в `interaction`
       ([ADR 0060](docs/decisions/0060-initial-loading-skeleton.md)).
+    - _Ленивые поповеры:_ по файлу на сценарий — модуль грузится один раз на документ:
+      `lazy-toolbar-load`, `lazy-toolbar-click`, `lazy-toolbar-pending`,
+      `lazy-toolbar-cancel`, `lazy-toolbar-error` (LZ1–LZ5 — кнопки тулбара),
+      `lazy-context-menu-hover`, `-focus`, `-open`, `-pending`, `-cancel`, `-error`
+      (LZ6–LZ10, LZ19 — контекстное меню), `lazy-handle-intent`, `-open`, `-pending`,
+      `-error` (LZ11–LZ14 — меню ручек и грипа), `lazy-page-size`, `-error`
+      (LZ15–LZ16), `lazy-a11y` (LZ17), `live-region-repeat` (LZ20), `lazy-kebab`,
+      `-kebab-error`, `-inline-menu`, `-panel-module` (LZ21–LZ24 — кнопки заголовка из
+      ленивого модуля), модульный
+      `preloadable` (LZ18); задержка и отказ загрузки модуля — команды
+      `network.commands.ts`, [ADR 0061](docs/decisions/0061-lazy-popover-loading.md).
     - _Тулбар и видимость колонок:_ `toolbar` (TB1–TB15 — рамка грида, тулбар,
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),
       [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md); порядок кнопок —
@@ -402,7 +413,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `panels-stories` (PB12 — история «Panels — status bar off (own pager)»),
       [ADR 0046](docs/decisions/0046-toolbar-and-status-bar-visibility.md).
     - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB5 — модульный
-      `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG1, PG5, PG8–PG10 —
+      `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,

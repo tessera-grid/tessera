@@ -5,7 +5,6 @@ import {
   memo,
   useCallback,
   useRef,
-  useState,
 } from 'react'
 
 import clsx from 'clsx'
@@ -15,7 +14,7 @@ import {
   resizeCancelReason,
   type SessionCancelReason,
 } from '../../core/cancelInteraction'
-import { HandleMenu } from '../../grid/handleMenu/HandleMenu'
+import { HandleMenu, useHandleMenu } from '../../grid/handleMenu/HandleMenu'
 import styles from './ResizeHandler.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
@@ -41,6 +40,8 @@ export interface ResizeSplitterProps {
   /** `undefined` — без верхней границы. */
   maxSize?: number
   disabled?: boolean
+  /** Таблица — для объявления ошибки загрузки меню (ADR 0061). */
+  table?: unknown
 }
 
 export const ResizeHandler = memo(
@@ -56,12 +57,15 @@ export const ResizeHandler = memo(
     minSize,
     maxSize,
     disabled = false,
+    table,
   }: ResizeSplitterProps) => {
     const labels = useLocalization()
     const wrapperRef = useRef<HTMLDivElement>(null)
     const separatorRef = useRef<HTMLSpanElement>(null)
     const pressedX = useRef<number | null>(null)
-    const [menuOpen, setMenuOpen] = useState(false)
+    // Грип тонкий — контура ожидания на нём не видно: `aria-busy` и курсор `progress`.
+    const menu = useHandleMenu(table, all => all.columnWidth)
+    const menuOpen = menu.open
 
     const onResizeStart = useCallback(
       (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
@@ -103,7 +107,7 @@ export const ResizeHandler = memo(
       ) {
         return
       }
-      setMenuOpen(true)
+      menu.request()
     }
 
     const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
@@ -114,6 +118,9 @@ export const ResizeHandler = memo(
         onResizeBy(step)
       } else if (event.key === 'Home') {
         onResetSize(event)
+      } else if (event.key === 'Escape') {
+        menu.trigger.onCancel()
+        return
       } else {
         return
       }
@@ -145,6 +152,7 @@ export const ResizeHandler = memo(
         <div
           ref={wrapperRef}
           onClick={onClick}
+          onPointerEnter={menu.trigger.onIntent}
           onMouseDown={onResizeStart}
           onTouchStart={onResizeStart}
           aria-disabled={disabled}
@@ -154,7 +162,8 @@ export const ResizeHandler = memo(
             'cell__button--hidden',
             'resize__handler--column',
           )}
-          data-button-active={isResizing || menuOpen}
+          data-button-active={isResizing || menuOpen || menu.trigger.pending}
+          data-lazy-pending={menu.trigger.pending || undefined}
         >
           <div
             className={clsx(
@@ -172,7 +181,10 @@ export const ResizeHandler = memo(
               aria-valuemin={minSize}
               aria-valuemax={maxSize}
               aria-disabled={disabled}
+              aria-busy={menu.trigger.pending || undefined}
               onKeyDown={disabled ? undefined : onKeyDown}
+              onFocus={menu.trigger.onIntent}
+              onBlur={menu.trigger.onCancel}
               className={styles.handler}
             />
           </div>
@@ -183,7 +195,7 @@ export const ResizeHandler = memo(
             focusTarget={separatorRef}
             label={labels.columnWidth}
             getItems={getMenuItems}
-            onClose={() => setMenuOpen(false)}
+            onClose={menu.close}
           />
         )}
       </>

@@ -102,6 +102,7 @@ export const ColumnSizingComponent = ({
       size={column.getSize()}
       minSize={minSize}
       maxSize={upperBound}
+      table={table}
     />
   )
 }

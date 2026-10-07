@@ -47,17 +47,14 @@ export const LiveRegion = ({
   rowCount,
   themeNode,
 }: LiveRegionProps) => {
-  const [message, setMessage] = useState('')
+  // Каждое объявление — новый узел: повтор того же текста тоже попадает в область.
+  const [message, setMessage] = useState({ text: '', id: 0 })
 
   useEffect(
     () =>
       registerAnnouncer(table, {
         labels,
-        // Сброс перед записью — чтобы повтор того же текста объявлялся снова.
-        say: text => {
-          setMessage('')
-          requestAnimationFrame(() => setMessage(text))
-        },
+        say: text => setMessage(current => ({ text, id: current.id + 1 })),
         token: name =>
           themeNode?.current
             ? getComputedStyle(themeNode.current).getPropertyValue(name)
@@ -142,7 +139,7 @@ export const LiveRegion = ({
       aria-atomic="true"
       className={dataGridStyles['visually-hidden']}
     >
-      {message}
+      <span key={message.id}>{message.text}</span>
     </div>
   )
 }

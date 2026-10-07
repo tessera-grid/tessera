@@ -42,6 +42,7 @@ export const ColumnDraggingComponent = ({
       type="column"
       disabled={zoneOf(header as never) !== false}
       label={labels.moveColumn}
+      table={table}
       getMenuItems={() => [
         item('moveLeft', labels.moveLeft, -1),
         item('moveRight', labels.moveRight, 1),

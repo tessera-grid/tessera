@@ -1,6 +1,7 @@
 /**
  * Выбор размера страницы на Base UI Select (PG4). Грузится отдельным чанком:
- * позиционирование тянет floating-ui.
+ * позиционирование тянет floating-ui. Открытие контролирует обёртка: клик по её
+ * заглушке до загрузки открывает список после неё (PG20).
  */
 import { Select } from '@base-ui/react/select'
 import clsx from 'clsx'
@@ -16,6 +17,8 @@ export interface PageSizeSelectProps {
   pageSize: number
   pageSizes: number[]
   onChange: (pageSize: number) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export const PageSizeSelect = ({
@@ -23,13 +26,19 @@ export const PageSizeSelect = ({
   pageSize,
   pageSizes,
   onChange,
+  open,
+  onOpenChange,
 }: PageSizeSelectProps) => {
   const themeClass = usePortalThemeClass()
   const trigger = useTriggerWidth()
   return (
     <Select.Root
       value={pageSize}
-      onOpenChange={trigger.onOpenChange}
+      open={open}
+      onOpenChange={next => {
+        trigger.onOpenChange(next)
+        onOpenChange(next)
+      }}
       onValueChange={value => {
         if (value !== null) {
           onChange(value)

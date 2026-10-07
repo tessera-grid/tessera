@@ -46,3 +46,9 @@
   user-select: none;
   transition: var(--tsr-comp-resize-handler-transition);
 }
+
+/* Ожидание загрузки меню ширины (ADR 0061, LZ13). */
+.wrapper[data-lazy-pending],
+.wrapper[data-lazy-pending] * {
+  cursor: progress;
+}

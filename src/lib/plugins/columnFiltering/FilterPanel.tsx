@@ -44,9 +44,9 @@ export const preloadFilterTypePanel = (
   type: string | undefined,
 ): Promise<unknown> | undefined => {
   if (type === 'select' || type === 'multiselect' || type === 'lookup') {
-    return OptionFilterPanel.load()
+    return OptionFilterPanel.reload()
   }
-  if (type === 'date' || type === 'datetime') return DateFilterPanel.load()
+  if (type === 'date' || type === 'datetime') return DateFilterPanel.reload()
   return undefined
 }
 

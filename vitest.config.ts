@@ -6,6 +6,11 @@ import { configDefaults, defineConfig } from 'vitest/config'
 
 import { axTree } from './src/lib/stories/__tests__/a11y.commands.ts'
 import { reducedMotion } from './src/lib/stories/__tests__/motion.commands.ts'
+import {
+  heldModuleRequests,
+  releaseModule,
+  routeModule,
+} from './src/lib/stories/__tests__/network.commands.ts'
 import { realDrag } from './src/lib/stories/__tests__/pointer.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
@@ -69,8 +74,16 @@ export default defineConfig({
               launchOptions: { channel: 'chromium' },
             }),
             instances: [{ browser: 'chromium' }],
-            // Дерево доступности Chromium через CDP (ADR 0033); настоящий drag мышью (TQ3).
-            commands: { axTree, reducedMotion, realDrag },
+            // Дерево доступности Chromium через CDP (ADR 0033); настоящий drag мышью (TQ3);
+            // задержка и отказ загрузки модуля (ADR 0061).
+            commands: {
+              axTree,
+              reducedMotion,
+              realDrag,
+              routeModule,
+              releaseModule,
+              heldModuleRequests,
+            },
           },
         },
       },

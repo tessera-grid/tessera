@@ -64,6 +64,7 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
       id={row.id}
       type="row"
       label={labels.moveRow}
+      table={table}
       getMenuItems={isMovableRow(row, table) ? getMenuItems : undefined}
     />
   )

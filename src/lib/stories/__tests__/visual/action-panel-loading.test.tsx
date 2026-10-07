@@ -6,7 +6,7 @@ import { definePlugin } from '../../../core/definePlugin'
 import type { HeaderAction } from '../../../core/headerActions'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { PANEL_PENDING_DELAY_MS } from '../../../grid/headerActions/usePanelOpening'
+import { LAZY_PENDING_DELAY_MS } from '../../../core/lazyOpening'
 import { headerActionMenu } from '../../../plugins'
 import { humanClick } from '../helpers'
 import { waitForGrid } from './core-helpers'
@@ -139,10 +139,10 @@ describe('Панель действия — загрузка содержимо�
     )
     watch.observe(head(), { attributes: true, subtree: true })
     await clickInline()
-    await sleep(PANEL_PENDING_DELAY_MS / 3)
+    await sleep(LAZY_PENDING_DELAY_MS / 3)
     load.resolve()
     await expect.poll(panel).not.toBeNull()
-    await sleep(PANEL_PENDING_DELAY_MS)
+    await sleep(LAZY_PENDING_DELAY_MS)
     watch.disconnect()
     expect(busy).not.toContain('true')
     await userEvent.keyboard('{Escape}')
@@ -197,7 +197,7 @@ describe('Панель действия — загрузка содержимо�
     expect(panel()).toBeNull()
   })
 
-  test('AM30: ошибка preload не открывает поповер — кнопка вспыхивает ошибкой, объявляется actionPanelLoadFailed; следующий клик снова зовёт preload', async () => {
+  test('AM30: ошибка preload не открывает поповер — кнопка вспыхивает ошибкой, объявляется loadFailed; следующий клик снова зовёт preload', async () => {
     await renderGrid(false)
     const region = document.querySelector<HTMLElement>(
       '[role="status"][aria-live="polite"]',

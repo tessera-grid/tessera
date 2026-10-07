@@ -10,6 +10,7 @@ import { Suspense, useState } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { useLazyPopover } from '../../core/lazyOpening'
 import { preloadable, usePreloaded } from '../../core/preloadable'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
@@ -41,15 +42,27 @@ const ActionPanelImpl = preloadable(() =>
 
 type Variant = 'cell' | 'row'
 
+/** Ожидание и ошибка загрузки модуля — для кнопки-заглушки (ADR 0061). */
+const loadingOf = (
+  popover: ReturnType<typeof useLazyPopover>,
+): PanelButtonState => ({
+  pending: popover.trigger.pending,
+  errorFlash: popover.trigger.errorFlash,
+  onIntent: () => {},
+  onCancel: popover.opening.cancel,
+})
+
 /** Фолбэк кебаб-триггера: тот же IconButton с иконкой ⋮, но без Base UI-обвязки. */
 const KebabPlaceholder = ({
   variant,
   open,
   onOpen,
+  loading,
 }: {
   variant: Variant
   open: boolean
   onOpen: () => void
+  loading: PanelButtonState
 }) => {
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
@@ -61,19 +74,21 @@ const KebabPlaceholder = ({
       aria-haspopup="menu"
       aria-expanded={open}
       onClick={onOpen}
+      {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
     </IconButton>
   )
 
+  const shown = open || loading.pending
   return variant === 'row' ? (
-    <div className={clsx('row__button', !open && 'row__button--hidden')}>
+    <div className={clsx('row__button', !shown && 'row__button--hidden')}>
       {trigger}
     </div>
   ) : (
     <div
       className="cell__button cell__button--hidden"
-      data-button-active={open}
+      data-button-active={shown}
     >
       {trigger}
     </div>
@@ -100,8 +115,8 @@ const InlinePlaceholder = ({
 }) => {
   const labels = useLocalization()
 
-  const ariaLabel =
-    action.ariaLabel?.(context, labels) ?? action.label(context, labels)
+  const label = action.label(context, labels)
+  const ariaLabel = action.ariaLabel?.(context, labels) ?? label
   const active = action.active?.(context) ?? false
   const adornment = action.adornment?.(context)
 
@@ -145,16 +160,20 @@ export const ActionMenu = ({
   context,
   variant = 'cell',
 }: Omit<ActionMenuProps, 'open' | 'onOpenChange'>) => {
-  const [open, setOpen] = useState(false)
-  const ready = usePreloaded(ActionMenuImpl)
+  const menu = useLazyPopover(
+    context.table,
+    ActionMenuImpl,
+    labels => labels.headerMenu,
+  )
   const placeholder = (
     <KebabPlaceholder
       variant={variant}
-      open={open}
-      onOpen={() => setOpen(true)}
+      open={menu.open}
+      onOpen={() => menu.onOpenChange(true)}
+      loading={loadingOf(menu)}
     />
   )
-  if (!ready) return placeholder
+  if (!menu.ready) return placeholder
 
   return (
     <Suspense fallback={placeholder}>
@@ -162,8 +181,8 @@ export const ActionMenu = ({
         actions={actions}
         context={context}
         variant={variant}
-        open={open}
-        onOpenChange={setOpen}
+        open={menu.open}
+        onOpenChange={menu.onOpenChange}
       />
     </Suspense>
   )
@@ -175,18 +194,20 @@ export const ActionInlineMenu = ({
   context,
   variant = 'cell',
 }: Omit<ActionInlineMenuProps, 'open' | 'onOpenChange'>) => {
-  const [open, setOpen] = useState(false)
-  const ready = usePreloaded(ActionInlineMenuImpl)
+  const menu = useLazyPopover(context.table, ActionInlineMenuImpl, labels =>
+    action.label(context, labels),
+  )
   const placeholder = (
     <InlinePlaceholder
       action={action}
       context={context}
       variant={variant}
-      open={open}
-      onOpen={() => setOpen(true)}
+      open={menu.open}
+      onOpen={() => menu.onOpenChange(true)}
+      loading={loadingOf(menu)}
     />
   )
-  if (!ready) return placeholder
+  if (!menu.ready) return placeholder
 
   return (
     <Suspense fallback={placeholder}>
@@ -194,8 +215,8 @@ export const ActionInlineMenu = ({
         action={action}
         context={context}
         variant={variant}
-        open={open}
-        onOpenChange={setOpen}
+        open={menu.open}
+        onOpenChange={menu.onOpenChange}
       />
     </Suspense>
   )
@@ -213,7 +234,8 @@ export const ActionPanel = ({
   const [open, setOpen] = useState(false)
   const opening = usePanelOpening(context)
   const onOpenChange = (next: boolean) => {
-    if (next) opening.request(action, () => setOpen(true))
+    if (next)
+      opening.request(action, () => setOpen(true), undefined, ActionPanelImpl)
     else {
       opening.cancel()
       setOpen(false)
