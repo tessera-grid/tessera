@@ -222,6 +222,8 @@ export interface PerfRecord {
   /** Известный недостиг: кейс намеренно не укладывается в порог RAIL (xfail). */
   knownShortfall: boolean
   metrics: PerfMetric[]
+  /** Попытка, с которой записан кейс (ставит команда): больше 1 — прошёл с повтора. */
+  attempts?: number
 }
 
 export interface PerfReport {
@@ -240,8 +242,13 @@ export const perfRecord: BrowserCommand<[record: PerfRecord]> = async (
   record,
 ) => {
   if (runRecords === null) runRecords = []
-  // Пере-запись кейса с тем же id (на случай повторного прогона файла) вместо дубля.
-  runRecords = [...runRecords.filter(r => r.id !== record.id), record]
+  // Повтор кейса (retry) переписывает запись и считает попытки — выброс виден в дашборде.
+  const previous = runRecords.find(r => r.id === record.id)
+  const attempts = (previous?.attempts ?? 0) + 1
+  runRecords = [
+    ...runRecords.filter(r => r.id !== record.id),
+    { ...record, attempts },
+  ]
 
   const report: PerfReport = {
     generatedAt: new Date().toISOString(),

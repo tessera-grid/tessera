@@ -46,12 +46,15 @@ const met = count('met')
 const regr = count('regr')
 const xfail = count('xfail')
 const throttle = records[0]?.cpuThrottle ?? 1
+// Кейсы, прошедшие только с повтора (retry перф-конфига): выброс или начало регрессии.
+const retried = records.filter(r => (r.attempts ?? 1) > 1).length
 
 const summaryCls = regr > 0 ? 'regr' : xfail > 0 ? 'xfail' : 'met'
 const summaryText =
   `${met}/${allStatuses.length} в бюджете` +
   (xfail ? ` · ${xfail} xfail` : '') +
-  (regr ? ` · ${regr} регрессий` : '')
+  (regr ? ` · ${regr} регрессий` : '') +
+  (retried ? ` · ${retried} с повтора` : '')
 
 const metricRow = (m, record) => {
   const st = statusOf(m, record)
@@ -89,6 +92,7 @@ const card = r => `
         <span class="card__id">${esc(r.id)}</span>
         <span class="card__label">${esc(r.label)}</span>
         ${r.knownShortfall ? '<span class="tag">известный недостиг</span>' : ''}
+        ${(r.attempts ?? 1) > 1 ? `<span class="tag">попытка ${r.attempts}</span>` : ''}
         <span class="card__meta">${esc(r.size)} · ${r.plugins === 'all' ? 'все плагины' : r.plugins === 'none' ? 'без плагинов' : esc(r.plugins)}</span>
       </header>
       ${r.metrics.map(m => metricRow(m, r)).join('')}
@@ -173,12 +177,15 @@ const html = `<!doctype html>
     </header>
     <p class="sub">Последний прогон: ${esc(generatedAt)}, CPU-троттлинг ×${throttle}
       (референс-девайс). Пороги — абсолютные из RAIL/CWV: прокрутка — Animation
-      (p95 ≤ 16.7&nbsp;мс/кадр), отрисовка — Load (≤ 1000&nbsp;мс до интерактивности).
+      (p95 ≤ 16.7&nbsp;мс/кадр), отрисовка — Load (≤ 1000&nbsp;мс до интерактивности),
+      взаимодействие — Response/INP (≤ 100&nbsp;мс; сравнительные кейсы — доля базы
+      в том же замере). <b>попытка 2</b> — кейс прошёл только с повтора.
       <b>XFAIL</b> — известный недостиг относительно этих порогов (цель зафиксирована),
       <b>РЕГРЕССИЯ</b> — неожиданный выход за порог. Метрика — реальная работа
       главного потока (CDP-трейс); числа зависят от машины.</p>
     ${section('Первая отрисовка', 'render')}
     ${section('Прокрутка', 'scroll')}
+    ${section('Взаимодействие', 'interaction')}
     <footer>Сгенерировано scripts/perf-report.mjs из performance-results/latest.json</footer>
   </div>
 </body>
@@ -187,5 +194,5 @@ const html = `<!doctype html>
 
 writeFileSync(htmlPath, html)
 console.log(
-  `Дашборд: ${htmlPath} (${met}/${allStatuses.length} в бюджете, ${xfail} xfail, ${regr} регрессий)`,
+  `Дашборд: ${htmlPath} (${met}/${allStatuses.length} в бюджете, ${xfail} xfail, ${regr} регрессий, ${retried} с повтора)`,
 )
