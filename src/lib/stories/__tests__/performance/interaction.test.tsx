@@ -1,5 +1,7 @@
 import {
   constructTable,
+  createCoreRowModel,
+  stockFeatures,
   createExpandedRowModel,
   createSortedRowModel,
   rowExpandingFeature,
@@ -31,6 +33,11 @@ import {
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
+import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
+import {
+  rowExpandingLazyFeature,
+  setLoadedAnswer,
+} from '../../../plugins/rowExpanding/lazyChildrenFeature'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import {
@@ -715,9 +722,10 @@ const CASES: InteractionCase[] = [
     label: 'приход 100 детей ленивой строки, 100 000×10, все плагины',
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
-    // Известный недостиг: ответ пересобирает модели и перерисовывает тело на 100 000
-    // корней (~480–620 мс под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
-    regressionCeiling: 800,
+    // Известный недостиг: ответ пересобирает модели (инкрементно, ADR 0067) и
+    // перерисовывает тело на 100 000 корней (~350–360 мс под ×4); план — «Дешёвый
+    // приход ленивых детей» в roadmap.
+    regressionCeiling: 500,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       LAZY_ROOTS.forEach(id => lazyKids(id))
@@ -1323,6 +1331,117 @@ describe('Отзывчивость взаимодействий — склейк
         batch.longTasks,
         `длинных задач в пачке: ${batch.longTasks}`,
       ).toBeLessThanOrEqual(2)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Инкрементальная исходная модель (ADR 0067, IM8): приход 100 детей у корня на 100 000
+// корней — сборка модели из прежней против полной сборки TanStack на тех же данных
+// (новая ссылка data — полная пересборка). Headless-таблицы без рендера со штатными
+// фичами TanStack — строка платит за их инициализацию, как в гриде; ответ
+// чередуется между двумя наборами детей, чтобы каждое действие его меняло.
+const LAZY_MODEL_ROOTS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${i}`,
+}))
+const lazyAnswer = (tag: string) =>
+  Array.from({ length: 100 }, (_, i) => ({
+    id: `r0-${tag}${i}`,
+    name: `Kid ${i}`,
+  }))
+const LAZY_ANSWERS = [lazyAnswer('a'), lazyAnswer('b')]
+
+describe('Инкрементальная исходная модель', () => {
+  test(
+    'IM8: сборка модели при приходе 100 детей на 100 000 корней — не дольше двух третей полной сборки',
+    async () => {
+      const columns = [{ id: 'name', accessorKey: 'name' }]
+      const getRowId = (row: { id: string }) => row.id
+
+      const incremental = async () => {
+        const table = constructTable({
+          features: tableFeatures({
+            ...stockFeatures,
+            coreReactivityFeature: storeReactivityBindings(),
+            rowExpandingLazyFeature,
+            coreRowModel: createLazyCoreRowModel(),
+          } as never),
+          data: LAZY_MODEL_ROOTS,
+          columns,
+          getRowId,
+        } as never) as unknown as { getCoreRowModel: () => unknown }
+        table.getCoreRowModel()
+        let turn = 0
+        return measureInteractionWork(async () => {
+          const kids = LAZY_ANSWERS[turn++ % 2]!
+          setLoadedAnswer(table, prev => ({ ...prev, r0: kids }))
+          table.getCoreRowModel()
+        })
+      }
+
+      const full = async () => {
+        let kids = LAZY_ANSWERS[0]!
+        const table = constructTable({
+          features: tableFeatures({
+            ...stockFeatures,
+            coreReactivityFeature: storeReactivityBindings(),
+            coreRowModel: createCoreRowModel(),
+          } as never),
+          data: LAZY_MODEL_ROOTS,
+          columns,
+          getRowId,
+          getSubRows: (row: { id: string }) =>
+            row.id === 'r0' ? kids : undefined,
+        } as never) as unknown as {
+          getCoreRowModel: () => unknown
+          options: { data: unknown }
+        }
+        table.getCoreRowModel()
+        let turn = 0
+        return measureInteractionWork(async () => {
+          kids = LAZY_ANSWERS[turn++ % 2]!
+          table.options.data = [...LAZY_MODEL_ROOTS]
+          table.getCoreRowModel()
+        })
+      }
+
+      const base = await full()
+      const ours = await incremental()
+      // Копия rowsById на 100 000 ключей — больше половины цены инкремента (ADR 0067).
+      const ceiling = (base.longestMs * 2) / 3
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000 корней',
+          plugins: 'rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('IM8-base', 'полная сборка TanStack', base, false)
+      await record('IM8', 'сборка из прежней модели', ours, true)
+
+      expect(
+        ours.longestMs,
+        `инкремент longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
   )
