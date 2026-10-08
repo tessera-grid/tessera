@@ -13,12 +13,12 @@ import {
   aggregationFn_sum,
   aggregationFn_unique,
   columnGroupingFeature,
-  createGroupedRowModel,
   rowAggregationFeature,
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
+import { createIdleAwareGroupedRowModel } from './groupedRowModel'
 import { groupHeaderAction } from './groupHeaderAction'
 
 /** Стандартный набор агрегаций. */
@@ -44,7 +44,7 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
   features: {
     columnGroupingFeature,
     rowAggregationFeature,
-    groupedRowModel: createGroupedRowModel(),
+    groupedRowModel: createIdleAwareGroupedRowModel(),
     aggregationFns,
   },
   // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).

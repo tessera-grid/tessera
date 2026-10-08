@@ -1,6 +1,8 @@
 import {
   constructTable,
   createCoreRowModel,
+  createFilteredRowModel,
+  createGroupedRowModel,
   stockFeatures,
   createExpandedRowModel,
   createSortedRowModel,
@@ -34,6 +36,8 @@ import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
+import { createSearchAwareFilteredRowModel } from '../../../core/filteredRowModel'
+import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGrouping/groupedRowModel'
 import {
   rowExpandingLazyFeature,
   setLoadedAnswer,
@@ -722,10 +726,10 @@ const CASES: InteractionCase[] = [
     label: 'приход 100 детей ленивой строки, 100 000×10, все плагины',
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
-    // Известный недостиг: ответ пересобирает модели (инкрементно, ADR 0067) и
-    // перерисовывает тело на 100 000 корней (~350–360 мс под ×4); план — «Дешёвый
-    // приход ленивых детей» в roadmap.
-    regressionCeiling: 500,
+    // Известный недостиг: ответ пересобирает модели (инкрементно, ADR 0067; без
+    // холостых проходов, ADR 0068) и перерисовывает тело на 100 000 корней (~290–360 мс
+    // под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
+    regressionCeiling: 450,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       LAZY_ROOTS.forEach(id => lazyKids(id))
@@ -1441,6 +1445,114 @@ describe('Инкрементальная исходная модель', () => {
       expect(
         ours.longestMs,
         `инкремент longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Холостые проходы (ADR 0068, PT7): фильтрация без фильтров и группировка без
+// группировки на 100 000 строк — обёртки Tessera против фабрик TanStack в том же
+// замере. Модель на входе чередуется между двумя готовыми исходными моделями: каждое
+// действие её меняет, а сборка исходной модели в замер не входит.
+const IDLE_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${i}`,
+  city: `City ${i % 50}`,
+}))
+
+describe('Холостые проходы фильтрации и группировки', () => {
+  test(
+    'PT7: холостые проходы фильтрации и группировки на 100 000 строк — не дольше десятой доли проходов TanStack',
+    async () => {
+      const columns = [
+        { id: 'name', accessorKey: 'name' },
+        { id: 'city', accessorKey: 'city' },
+      ]
+      const getRowId = (row: { id: string }) => row.id
+      const features = {
+        ...stockFeatures,
+        coreReactivityFeature: storeReactivityBindings(),
+      }
+      const source = constructTable({
+        features: tableFeatures({
+          ...features,
+          coreRowModel: createCoreRowModel(),
+        } as never),
+        data: IDLE_ROWS,
+        columns,
+        getRowId,
+      } as never) as unknown as {
+        getCoreRowModel: () => unknown
+        options: { data: unknown }
+      }
+      const inputs = [source.getCoreRowModel()]
+      source.options.data = [...IDLE_ROWS]
+      inputs.push(source.getCoreRowModel())
+
+      const passes = async (
+        filteredRowModel: unknown,
+        groupedRowModel: unknown,
+      ) => {
+        let turn = 0
+        const table = constructTable({
+          features: tableFeatures({
+            ...features,
+            coreRowModel: () => () => inputs[turn % 2],
+            filteredRowModel,
+            groupedRowModel,
+          } as never),
+          data: IDLE_ROWS,
+          columns,
+          getRowId,
+        } as never) as unknown as { getGroupedRowModel: () => unknown }
+        table.getGroupedRowModel()
+        return measureInteractionWork(async () => {
+          turn++
+          table.getGroupedRowModel()
+        })
+      }
+
+      const base = await passes(
+        createFilteredRowModel(),
+        createGroupedRowModel(),
+      )
+      const ours = await passes(
+        createSearchAwareFilteredRowModel(),
+        createIdleAwareGroupedRowModel(),
+      )
+      const ceiling = base.longestMs / 10
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000 строк',
+          plugins: 'columnFiltering, rowGrouping',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('PT7-base', 'холостые проходы TanStack', base, false)
+      await record('PT7', 'холостые проходы Tessera', ours, true)
+
+      expect(
+        ours.longestMs,
+        `Tessera longest=${ours.longestMs.toFixed(1)}ms, TanStack ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
