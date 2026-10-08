@@ -96,6 +96,59 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
 - **Drag overlay** — плавающий элемент, рендерящийся во время перетаскивания;
   Tessera рендерит для этого `OverlayHeadCell` / `OverlayBodyRow`.
 
+## Свои модели строк поверх TanStack
+
+Цепочка моделей TanStack (исходная → фильтрация → группировка → сортировка → раскрытие →
+страница) на любое изменение входа пересобирается с нуля, за время, пропорциональное
+числу строк; инкрементального API нет. Для ленивых детей это давало сотни миллисекунд
+на приход одного ответа на 100 000 корней. Tessera подменяет часть моделей своими
+фабриками в штатных слотах фич v9 — без форка и патчей — и пересчитывает только
+изменённое; во всех непривычных случаях фабрика откатывается на модель TanStack.
+
+| Слот                                  | Фабрика Tessera                                                                                                               | ADR                                                                                                              |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `coreRowModel`                        | [`createLazyCoreRowModel`](../../src/lib/plugins/rowExpanding/lazyCoreRowModel.ts) — сборка из прежней при смене ответов      | [0067](../decisions/0067-incremental-lazy-core-row-model.md), [0069](../decisions/0069-rowsbyid-handover.md)     |
+| `filteredRowModel`, `groupedRowModel` | [`skipIdlePasses`](../../src/lib/core/idleRowModel.ts) — без холостых проходов                                                | [0068](../decisions/0068-idle-filter-and-group-passes.md)                                                        |
+| `sortedRowModel`                      | [`createTesseraSortedRowModel`](../../src/lib/plugins/columnSorting/sortedRowModel.ts) — значения один раз, сборка из прошлой | [0064](../decisions/0064-tessera-sorted-row-model.md), [0072](../decisions/0072-incremental-sorted-row-model.md) |
+| `expandedRowModel`                    | [`createIncrementalExpandedRowModel`](../../src/lib/plugins/rowExpanding/expandedRowModel.ts) — обход затронутых корней       | [0070](../decisions/0070-incremental-expanded-row-model.md)                                                      |
+
+**Решение не целевое.** Фабрики встают в публичные слоты, но опираются на поведение
+TanStack, которого его API не обещает. Целевой путь — инкрементальное API в самом
+TanStack (вопрос в upstream) либо, если Tessera уйдёт в серверную модель строк, свой
+движок моделей без опоры на внутренности TanStack (см. roadmap).
+
+### На что опираемся и что это держит
+
+| Поведение TanStack                                                                                                                                         | Кто опирается                   | Тесты                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------- |
+| Строка переживает смену модели: кэш значений зависит от `original`, кэш листовых строк — от `subRows`, индекс отображения пересчитывается на каждой модели | исходная, сортировка, раскрытие | IM1–IM7, SM8–SM9, XM1–XM4 |
+| `constructRow(table, id, original, index, depth, subRows, parentId)` и `getRowId(original, index, parent)` — как в `accessRows`                            | исходная                        | IM1–IM5                   |
+| Новая строка создаётся с пустыми `columnFilters` и `columnFiltersMeta` (`initRowInstanceData`)                                                             | фильтрация                      | PT1–PT2, PT5              |
+| `depth` и `parentId` строк пишут только исходная модель и группировка                                                                                      | группировка                     | PT3–PT5                   |
+| Автосбросы страницы и раскрытия — микрозадачи после пересчёта, сравнивают модели на момент выполнения                                                      | фильтрация, группировка         | PT6                       |
+| `copyInstancePropertiesWithoutMemos` копирует строку для родителя с переставленными детьми                                                                 | сортировка                      | SM3, SM5, SM8             |
+| «Раскрыть всё» материализуется обходом `Object.values(getRowModel().rowsById)` с `row_getCanExpand`                                                        | исходная (передача словаря)     | IM11                      |
+| `expandRows`: строка, затем дети раскрытой (`row.getIsExpanded()`)                                                                                         | раскрытие                       | XM1–XM4                   |
+| Атом среза с тем же содержимым сохраняет ссылку (сравнение по значению)                                                                                    | сортировка (только скорость)    | SM12                      |
+| **`rowsById` модели никто не хранит между моделями**                                                                                                       | исходная, сортировка            | — (договор, см. ниже)     |
+
+Последнее — договор, а не тест: исходная модель и модель сортировки передают словарь
+`rowsById` новой модели и правят его на месте; прежней модели остаётся снимок по её
+`flatRows` ([ADR 0069](../decisions/0069-rowsbyid-handover.md)). Нижние модели TanStack
+передают ссылку на словарь дальше, поэтому их прежние результаты видят правки. Код
+Tessera читает `rowsById` только у текущей модели; сохранять словарь (или модель ради
+словаря) между пересчётами нельзя — см. [reactivity.md](reactivity.md).
+
+### При обновлении TanStack
+
+1. Прогнать паритет: `npx vitest run --config vitest.node.config.ts` — наборы
+   `lazyCoreRowModel.dom`, `idleRowModelPasses`, `sortedRowModel`, `expandedRowModel`.
+2. Сверить строки таблицы выше с исходниками новой версии: `accessRows`,
+   `initRowInstanceData` фильтрации, `resetRowRelationships`, `expandRows`,
+   `row_toggleExpanded`, автосбросы (`table_autoReset*`), `tableMemo`.
+3. Перф `npm run perf`: IM8, PT7, XM5, SM7, SM12 — выигрыш против фабрик TanStack в том
+   же замере.
+
 ## Обходы апстрима
 
 Ошибки upstream, которые Tessera обходит композицией (без форка). У каждого обхода —
