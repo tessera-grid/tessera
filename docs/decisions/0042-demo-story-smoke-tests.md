@@ -10,7 +10,7 @@
 ## Контекст
 
 Демо-истории с логикой (на 2026-10-08 — **Cells/Editing**, **Rows/Expanding**,
-**Plugin API**; до перегруппировки историй — группа Sessions & Async) — не обёртки над
+**Plugin API**, **Panels/Pagination — Server**; до перегруппировки историй — группа Sessions & Async) — не обёртки над
 аргументами, как остальные истории, а маленькие приложения: имитация сервера, журнал колбэков, данные,
 которые демо держит само. В них своя логика, и она может сломаться отдельно от
 библиотеки. Так уже было: правку в «Cells/Editing — Server (async)» закрывала гонка фокуса
@@ -31,10 +31,11 @@
 
 ## Требования
 
-| ID  | Требование                                                                                                                                  | Вид    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| DS1 | «Cells/Editing — Server (async)»: правка кнопкой и `Enter` — ячейка ждёт, затем показывает новое значение; в журнале `onCellEdit` и `saved` | visual |
-| DS2 | «Cells/Editing — Sessions»: изменение значения извне во время правки не закрывает редактор; `onCellEdit` в журнале с `original` и `current` | visual |
-| DS3 | «Plugin API — Drag & resize callbacks»: бросок строки мышью — `onRowDragEnd` в журнале                                                      | visual |
-| DS4 | «Rows/Expanding — Lazy load (async)»: раскрытие ждёт подгрузки (`aria-busy`), затем строка раскрыта; в журнале `onExpandRow` и `loaded`     | visual |
-| DS5 | «Plugin API — Arguments on the fly»: `maxDepth` ниже раскрытого уровня прячет раскрытие, возврат значения — возвращает                      | visual |
+| ID  | Требование                                                                                                                                                          | Вид    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| DS1 | «Cells/Editing — Server (async)»: правка кнопкой и `Enter` — ячейка ждёт, затем показывает новое значение; в журнале `onCellEdit` и `saved`                         | visual |
+| DS2 | «Cells/Editing — Sessions»: изменение значения извне во время правки не закрывает редактор; `onCellEdit` в журнале с `original` и `current`                         | visual |
+| DS3 | «Plugin API — Drag & resize callbacks»: бросок строки мышью — `onRowDragEnd` в журнале                                                                              | visual |
+| DS4 | «Rows/Expanding — Lazy load (async)»: раскрытие ждёт подгрузки (`aria-busy`), затем строка раскрыта; в журнале `onExpandRow` и `loaded`                             | visual |
+| DS5 | «Plugin API — Arguments on the fly»: `maxDepth` ниже раскрытого уровня прячет раскрытие, возврат значения — возвращает                                              | visual |
+| DS6 | «Panels/Pagination — Server»: следующая страница и сортировка приходят с «сервера», итог — из `paginationRowCount`; в журнале `onPageChange` и `onToggleColumnSort` | visual |

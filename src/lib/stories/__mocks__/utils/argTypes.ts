@@ -90,6 +90,11 @@ export const dataNestingType = radioControl(
   ['flat', 'nested'],
   'flat',
 )
+export const localeType = radioControl(
+  'Язык подписей грида: en — по умолчанию библиотеки, ru — русский словарь историй (`localization`)',
+  ['en', 'ru'],
+  'en',
+)
 export const containerHeightType = numberControl(
   'Высота контейнера вокруг грида, px',
   { min: 100, max: 1000, step: 100 },
@@ -274,6 +279,11 @@ export const headerActionMenuOptionsType = objectControl(
   'Меню заголовка: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
   "{ mode?: 'auto' | 'always'; threshold?: number }",
   {},
+)
+export const cellSelectionOptionsType = objectControl(
+  'Флаги выделения ячеек: `rangeSelection` — диапазон Shift-кликом, `dragSelection` — протяжкой, `multiRange` — несколько диапазонов с Ctrl/Cmd',
+  '{ rangeSelection?: boolean; dragSelection?: boolean; multiRange?: boolean }',
+  { rangeSelection: true, dragSelection: true, multiRange: true },
 )
 export const rowActionMenuOptionsType = objectControl(
   'Меню строки: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',

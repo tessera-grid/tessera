@@ -15,7 +15,6 @@ import {
 
 /** Тумблеры без контрола: функции и колбэки контролом не задать. */
 const WITHOUT_CONTROL: Record<string, string> = {
-  cellSelectionOptions: 'функция canSelectCell',
   rowExpandingHasChildren: 'функция',
   rowExpandingLoadChildren: 'функция',
   cellEditingCanEdit: 'функция',

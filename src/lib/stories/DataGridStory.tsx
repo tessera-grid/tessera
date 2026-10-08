@@ -12,6 +12,7 @@ import { useData } from './__mocks__/data'
 import type { CellEditCommit } from '../../lib/plugins/cellEditing/types'
 import type { CellComponentProps } from '../../lib/core/createSlots'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
+import { RU_LABELS } from './__mocks__/localization.ru'
 import { argsToPlugins } from './__mocks__/utils/argsToPlugins'
 import type { StoryProps } from './DataGridStory.types'
 
@@ -34,6 +35,8 @@ export const StoryComponent = memo(
     maxHeight,
     colorMode,
     localization,
+    locale,
+    icons,
 
     showStub,
     headerNesting,
@@ -61,6 +64,11 @@ export const StoryComponent = memo(
     ...options
   }: StoryProps) => {
     const columnsWithCount = useColumns(columnCount)
+    const labels = useMemo(
+      () =>
+        locale === 'ru' ? { ...RU_LABELS, ...localization } : localization,
+      [locale, localization],
+    )
 
     const columnsGetter = useMemo(() => {
       if (columnsOverride) {
@@ -239,7 +247,8 @@ export const StoryComponent = memo(
               height={height}
               maxHeight={maxHeight}
               colorMode={colorMode}
-              localization={localization}
+              localization={labels}
+              icons={icons}
               stub={<NoDataStub label="No Data!" />}
             />
           </CardContent>

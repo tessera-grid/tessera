@@ -1,8 +1,18 @@
 import { Meta, StoryObj } from '@storybook/react'
+import {
+  ArrowDownWideNarrow,
+  ArrowUpDown,
+  ArrowUpNarrowWide,
+  Ellipsis,
+  FileDown,
+  Grip,
+  ListFilter,
+  SlidersHorizontal,
+} from 'lucide-react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 
-/** Ядро грида: все тумблеры, скелет, загрузка, заглушка, футер. */
+/** Ядро грида: все тумблеры, скелет, загрузка, заглушка, футер, подписи и иконки. */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -63,4 +73,48 @@ export const WithFooter: StoryObj<StoryProps> = {
   args: {
     enableFooter: true,
   },
+}
+
+export const Localization: StoryObj<StoryProps> = {
+  name: 'Localization',
+  // Русский словарь подписей (`localization`): тулбар, фильтры, пагинация, экспорт,
+  // меню. Контрол `locale` переключает язык в любой истории.
+  args: {
+    locale: 'ru',
+    dataCount: 120,
+    enableColumnSorting: true,
+    enableColumnFiltering: true,
+    enableQuickSearch: true,
+    enableColumnVisibility: true,
+    enableExport: true,
+    enablePagination: true,
+    enableRowSelection: true,
+    showSelectedCount: true,
+    enableHeaderActionMenu: true,
+  },
+}
+
+export const CustomIcons: StoryObj<StoryProps> = {
+  name: 'Custom icons',
+  // Проп `icons` заменяет иконки по ключу, остальные — по умолчанию: сортировка,
+  // фильтр, перетаскивание, меню, экспорт.
+  args: {
+    icons: {
+      sort: ArrowUpDown,
+      sortAsc: ArrowUpNarrowWide,
+      sortDesc: ArrowDownWideNarrow,
+      filter: SlidersHorizontal,
+      filterActive: ListFilter,
+      drag: Grip,
+      menu: Ellipsis,
+      download: FileDown,
+    },
+    enableColumnSorting: true,
+    enableColumnFiltering: true,
+    enableRowDragging: true,
+    enableRowActions: true,
+    enableRowActionMenu: true,
+    enableExport: true,
+  },
+  argTypes: { icons: { control: false } },
 }

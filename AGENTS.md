@@ -448,7 +448,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Включение панелей:_ `panels` (PB1–PB5, PB10–PB11 — тулбар и нижняя панель по
       слотам, флаги-переопределения), `toolbar-chunk` (PB6 — ленивый модуль тулбара),
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), дымовой
-      `panels-stories` (PB12 — история «Panels/Status bar — Off (own pager)»),
+      `panels-stories` (PB12 — история «Panels/Status bar — Off (own pager)»; DS6 — «Panels/Pagination — Server», ADR 0042),
       [ADR 0046](docs/decisions/0046-toolbar-and-status-bar-visibility.md).
     - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB7–SB14 — узкая ширина — `status-bar-narrow`; SB5 — модульный
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
@@ -763,6 +763,9 @@ ADR и не с кода.** Прожарка — короткий диалог с
   Controls общей меты (`__mocks__/utils/dataGridControls.ts`) со значением по
   умолчанию, как у библиотеки; тумблер без контрола роняет страж `storyControls`.
   История задаёт только свои аргументы — остальные фичи переключаются из панели.
+- **Публичный примитив `/ui`** (экспорт `src/ui.ts`) — история `UI.<Компонент>.stories.tsx`
+  с заголовком `Tessera/UI/<Компонент>` на холсте `__mocks__/UiCanvas`: контролы по пропам,
+  варианты — состояния. Экспорт без истории роняет страж `uiStories`.
 - **Сценарий — отдельная история**: комбинации с другими плагинами, режимы (серверный,
   большие данные), крайние состояния (пусто, ошибка, ожидание), опции, меняющие
   результат. Так, у экспорта это: простой, с пресетами от плагинов, серверный.

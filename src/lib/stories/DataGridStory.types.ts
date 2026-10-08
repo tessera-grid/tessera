@@ -54,6 +54,10 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   colorMode: DataGridProps['colorMode']
   /** Подписи грида (переопределение части `DEFAULT_LABELS`). */
   localization?: DataGridProps['localization']
+  /** Свои иконки грида (переопределение части иконок по ключу). */
+  icons?: DataGridProps['icons']
+  /** Язык подписей: `ru` — русский словарь историй под `localization`. */
+  locale?: 'en' | 'ru'
 
   showStub: boolean
   /** Проверка значения редактора cellEditing (`validate`). */

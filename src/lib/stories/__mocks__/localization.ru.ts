@@ -1,0 +1,172 @@
+// Русский словарь подписей грида для историй: полный `TableLabels` — новая подпись
+// библиотеки без перевода роняет typecheck.
+import type { TableLabels } from '../../core/localization'
+
+/** Форма слова по числу: `plural(3, ['строка', 'строки', 'строк'])`. */
+const plural = (count: number, [one, few, many]: [string, string, string]) => {
+  const tens = count % 100
+  const units = count % 10
+  if (tens >= 11 && tens <= 14) return many
+  if (units === 1) return one
+  if (units >= 2 && units <= 4) return few
+  return many
+}
+
+const rows = (count: number) =>
+  `${count} ${plural(count, ['строка', 'строки', 'строк'])}`
+const cells = (count: number) =>
+  `${count} ${plural(count, ['ячейка', 'ячейки', 'ячеек'])}`
+
+const VIEW_FEATURES = { sorting: 'сортировкой', filtering: 'фильтрами' }
+
+export const RU_LABELS: TableLabels = {
+  toggleRow: 'Раскрыть строку',
+  pin: 'Закрепить колонку',
+  unpin: 'Открепить колонку',
+  pinLeft: 'Закрепить слева',
+  pinRight: 'Закрепить справа',
+  sortAscending: 'Сортировать по возрастанию',
+  sortDescending: 'Сортировать по убыванию',
+  clearSort: 'Сбросить сортировку',
+  sortPriority: (position, total) =>
+    `Приоритет сортировки ${position} из ${total}`,
+  group: 'Сгруппировать',
+  ungroup: 'Разгруппировать',
+  table: 'Таблица данных',
+  toolbar: 'Панель инструментов таблицы',
+  columns: 'Колонки',
+  columnsWithHidden: hidden => `Колонки, скрыто: ${hidden}`,
+  export: 'Экспорт',
+  exportRows: 'Строки',
+  exportColumns: 'Колонки',
+  exportFormat: 'Формат',
+  exportPresets: 'Быстрые наборы',
+  exportRun: 'Выгрузить',
+  exportColumnsVisible: 'Видимые колонки',
+  exportColumnsAll: 'Все колонки',
+  exportAll: 'Все данные',
+  exportView: features =>
+    `С ${features.map(feature => VIEW_FEATURES[feature]).join(' и ')}`,
+  exportPage: 'Текущая страница',
+  exportSelected: 'Выбранные строки',
+  filter: 'Фильтр',
+  filterActive: 'Фильтр, включён',
+  filterCondition: 'Условие',
+  filterValue: 'Значение',
+  filterFrom: 'От',
+  filterTo: 'До',
+  filterReset: 'Сбросить',
+  filterInvalidNumber: 'Введите число',
+  filterContains: 'Содержит',
+  filterEquals: 'Равно',
+  filterNotEquals: 'Не равно',
+  filterStartsWith: 'Начинается с',
+  filterEndsWith: 'Заканчивается на',
+  filterLessThan: 'Меньше',
+  filterLessThanOrEqual: 'Меньше или равно',
+  filterGreaterThan: 'Больше',
+  filterGreaterThanOrEqual: 'Больше или равно',
+  filterBetween: 'Между',
+  filterEmpty: 'Пусто',
+  filterNotEmpty: 'Не пусто',
+  filterAll: 'Все',
+  filterYes: 'Да',
+  filterNo: 'Нет',
+  filterOn: 'В дату',
+  filterBefore: 'До даты',
+  filterAfter: 'После даты',
+  filterPreset: 'Период',
+  filterPresetToday: 'Сегодня',
+  filterPresetYesterday: 'Вчера',
+  filterPresetLast7Days: 'Последние 7 дней',
+  filterPresetLast30Days: 'Последние 30 дней',
+  filterPresetThisMonth: 'Этот месяц',
+  filterPresetThisYear: 'Этот год',
+  filterTime: 'Время',
+  filterTimeFrom: 'Время начала',
+  filterTimeTo: 'Время конца',
+  previousMonth: 'Предыдущий месяц',
+  nextMonth: 'Следующий месяц',
+  filterAnyOf: 'Любое из',
+  filterAllOf: 'Все из',
+  filterNoneOf: 'Ни одного из',
+  filterSearchOptions: 'Поиск значений',
+  filterSelectAll: 'Выбрать все',
+  filterClearSelection: 'Очистить',
+  filterNoOptions: 'Нет значений',
+  filterLoadingOptions: 'Загрузка…',
+  filterOptionsError: 'Не удалось загрузить значения',
+  filterRetry: 'Повторить',
+  searchColumns: 'Поиск колонок',
+  noColumnsFound: 'Колонки не найдены',
+  showAllColumns: 'Показать все',
+  resetColumns: 'Сбросить',
+  hideColumn: 'Скрыть колонку',
+  hideGroup: 'Скрыть группу',
+  selectRow: 'Выбрать строку',
+  selectAll: 'Выбрать все строки',
+  headerMenu: 'Действия колонки',
+  rowMenu: 'Действия строки',
+  withActiveCount: (name, count) => `${name}, включено: ${count}`,
+  contextMenu: 'Контекстное меню',
+  loadFailed: name => `Не удалось загрузить «${name}». Попробуйте ещё раз.`,
+  copy: 'Копировать',
+  editCell: 'Изменить ячейку',
+  resizeColumn: 'Изменить ширину колонки',
+  editCellValue: column => `Изменить «${column}»`,
+  saveFailed: 'Не удалось сохранить',
+  announceSaveFailed: (column, error) => `${column}: ${error}`,
+  loadChildrenFailed: 'Неизвестная ошибка',
+  announceExpandFailed: error => `Не удалось загрузить: ${error}`,
+  announceChildrenLoaded: count =>
+    count === 0 ? 'Строк нет' : `Загружено: ${rows(count)}`,
+  loading: 'Загрузка',
+  announceSort: (column, direction) =>
+    column
+      ? `Сортировка по «${column}», ${direction === 'descending' ? 'по убыванию' : 'по возрастанию'}`
+      : 'Сортировка сброшена',
+  announceSelection: count => `Выбрано: ${rows(count)}`,
+  announceCopy: count => `Скопировано: ${cells(count)}`,
+  announceLoaded: count => `Загружено: ${rows(count)}`,
+  noData: 'Нет данных',
+  expandColumn: 'Раскрытие',
+  reorderColumn: 'Порядок',
+  rowActionsColumn: 'Действия',
+  moveColumn: 'Переместить колонку',
+  moveRow: 'Переместить строку',
+  moveLeft: 'Влево',
+  moveRight: 'Вправо',
+  moveUp: 'Вверх',
+  moveDown: 'Вниз',
+  indentRow: 'Вложить',
+  outdentRow: 'Вынести',
+  columnWidth: 'Ширина колонки',
+  widenColumn: 'Шире',
+  narrowColumn: 'Уже',
+  resetColumnWidth: 'Сбросить ширину',
+  pagination: 'Пагинация',
+  rowsPerPage: 'Строк на странице',
+  firstPage: 'Первая страница',
+  previousPage: 'Предыдущая страница',
+  nextPage: 'Следующая страница',
+  lastPage: 'Последняя страница',
+  pageRange: (from, to, total) => `${from}–${to} из ${total}`,
+  pageAnnouncement: (page, pages) => `Страница ${page} из ${pages}`,
+  selectedRows: count => `Выбрано: ${rows(count)}`,
+  selectedRowsHidden: count => `скрыто фильтрами: ${count}`,
+  search: 'Поиск',
+  clearSearch: 'Очистить поиск',
+  searchColumnsHint: columns => `Ищет в колонках: ${columns.join(', ')}`,
+  searchNoColumns: 'Нет колонок для поиска',
+  filters: (active, hidden) =>
+    active === 0
+      ? 'Фильтры'
+      : `Фильтры, включено: ${active}` +
+        (hidden > 0 ? `, на скрытых колонках: ${hidden}` : ''),
+  removeFilter: column => `Убрать фильтр: ${column}`,
+  noRowsMatchFilters: 'Нет строк под фильтры',
+  announceFilteredRows: count => rows(count),
+  resetFilters: 'Сбросить фильтры',
+  columnHidden: 'колонка скрыта',
+  filteredRows: (shown, total) => `Показано ${shown} из ${total}`,
+}

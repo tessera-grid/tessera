@@ -8,6 +8,7 @@ import type { InputType } from 'storybook/internal/csf'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import {
+  cellSelectionOptionsType,
   columnCountType,
   columnFilteringOptionsType,
   containerHeightType,
@@ -47,6 +48,7 @@ import {
   headerActionMenuOptionsType,
   headerNestingType,
   inCategory,
+  localeType,
   multiSortOptionsType,
   numberHeightType,
   numberMaxHeightType,
@@ -99,6 +101,7 @@ export const dataGridArgTypes = {
     enableToolbar: enableToolbarType,
     enableStatusBar: enableStatusBarType,
     enableAnnouncements: enableAnnouncementsType,
+    locale: localeType,
   }),
   ...inCategory(
     'Колонки',
@@ -189,6 +192,9 @@ export const dataGridArgTypes = {
   ...inCategory('Ячейки и клавиатура', {
     enableCellEditing: enableCellEditingType,
     enableCellSelection: enableCellSelectionType,
+    ...when('enableCellSelection', {
+      cellSelectionOptions: cellSelectionOptionsType,
+    }),
     enableContextMenu: enableContextMenuType,
     enableKeyboardNavigation: enableKeyboardNavigationType,
   }),
@@ -225,6 +231,7 @@ export const dataGridDefaultArgs = {
   enableLoading: false,
   enableFooter: false,
   enableAnnouncements: true,
+  locale: 'en',
 
   enableColumnSorting: false,
   enableSortingRemoval: true,
@@ -255,6 +262,11 @@ export const dataGridDefaultArgs = {
 
   enableCellEditing: false,
   enableCellSelection: false,
+  cellSelectionOptions: {
+    rangeSelection: true,
+    dragSelection: true,
+    multiRange: true,
+  },
   enableContextMenu: false,
   enableKeyboardNavigation: false,
 
