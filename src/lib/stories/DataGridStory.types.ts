@@ -4,7 +4,7 @@ import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { useColumns } from './__mocks__/columns'
-import type { DataNesting } from './__mocks__/data'
+import type { Nesting } from './__mocks__/data'
 import type { ColumnVisibilityHooks } from '../../lib/plugins/columnVisibility'
 import type { PaginationHooks } from '../../lib/plugins/pagination'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
@@ -17,8 +17,10 @@ export const DATA_COUNT = 10
 export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   columnCount: number
   dataCount: number
-  /** Вложенность генерируемого мока; по умолчанию плоский. */
-  dataNesting?: DataNesting
+  /** Вложенность генерируемого мока строк: `nested` — дети у каждой 10-й строки. */
+  dataNesting?: Nesting
+  /** Шапка генерируемых колонок: `nested` — группы заголовков. */
+  headerNesting?: Nesting
 
   /**
    * Явный набор данных вместо генерируемого по dataCount.
@@ -54,7 +56,6 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   localization?: DataGridProps['localization']
 
   showStub: boolean
-  showHeaderGroups: boolean
   /** Проверка значения редактора cellEditing (`validate`). */
   validateCellEdit?: (value: string) => string | null
 

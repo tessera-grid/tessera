@@ -178,7 +178,7 @@ export const ActiveActionIndicatorInMenu: StoryObj<StoryProps> = {
 export const HeaderGroups: StoryObj<StoryProps> = {
   name: 'Header Groups',
   args: {
-    showHeaderGroups: true,
+    headerNesting: 'nested',
   },
   parameters: {
     controls: {
@@ -194,7 +194,7 @@ export const HeaderGroupsShallowLeaves: StoryObj<StoryProps> = {
     // колонки растянуты до низа шапки (ADR 0049). Кебаб растянутого листа — тот же,
     // что в плоской шапке. Мок вложенный — колонка раскрытия видна.
     dataNesting: 'nested',
-    showHeaderGroups: true,
+    headerNesting: 'nested',
     enableRowSelection: true,
     enableRowExpanding: true,
     enableRowActions: true,
@@ -220,7 +220,7 @@ export const HeaderGroupsPinning: StoryObj<StoryProps> = {
     // Вложенная шапка + пиннинг: закрепляется только группа верхнего уровня
     // целиком. Узкий вьюпорт по горизонтали, чтобы sticky-закрепление
     // было видно при прокрутке.
-    showHeaderGroups: true,
+    headerNesting: 'nested',
     enableColumnPinning: true,
     dataCount: 40,
     containerHeight: 400,
@@ -240,7 +240,7 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
     // Reorder-out: под вложенной шапкой можно пиннить любую единицу —
     // лист или группу любого уровня; при закреплении листья цели вырываются к
     // левому краю, а спанящие шапки родителей режутся на сегменты.
-    showHeaderGroups: true,
+    headerNesting: 'nested',
     enableColumnPinning: true,
     enableLeafPinning: true,
     dataCount: 40,
@@ -263,7 +263,7 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
 export const HeaderGroupsDragging: StoryObj<StoryProps> = {
   name: 'Header Groups — dragging',
   args: {
-    showHeaderGroups: true,
+    headerNesting: 'nested',
     enableColumnDragging: true,
     enableRowDragging: true,
     dataCount: 40,

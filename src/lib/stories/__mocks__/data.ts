@@ -5,8 +5,8 @@ import { faker } from '@faker-js/faker'
 const today = new Date()
 
 export type DataShape = 'flat' | 'tree' | 'grouped'
-/** Вложенность мока историй: `nested` — дети у каждой 10-й строки верхнего уровня. */
-export type DataNesting = 'flat' | 'nested'
+/** Вложенность мока историй — строк (`dataNesting`) и шапки (`headerNesting`). */
+export type Nesting = 'flat' | 'nested'
 
 const makeRow = (id: string) => {
   const sexType = faker.person.sexType()
@@ -31,7 +31,7 @@ const makeRow = (id: string) => {
  * выключено, видны только строки верхнего уровня. По умолчанию — плоский: дерево
  * задаётся явно там, где оно предмет истории или теста.
  */
-export const getData = (count: number, nesting: DataNesting = 'flat') => {
+export const getData = (count: number, nesting: Nesting = 'flat') => {
   // Сид от объёма: данные истории не зависят от того, что генерировалось до неё.
   faker.seed(count)
   const rows: any[] = Array.from({ length: count }).map((_, i) =>
@@ -111,7 +111,7 @@ export const useData = ({
   skip = false,
 }: {
   count: number
-  nesting?: DataNesting
+  nesting?: Nesting
   showStub: boolean
   /** Данные пришли извне — не генерировать. */
   skip?: boolean

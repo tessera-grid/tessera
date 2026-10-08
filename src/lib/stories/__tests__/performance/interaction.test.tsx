@@ -407,7 +407,7 @@ const reopenVariantFilter = async () => {
 
 /** Вложенная шапка с перетаскиванием групп (ADR 0052, ND14). */
 const NESTED_DRAG = {
-  showHeaderGroups: true,
+  headerNesting: 'nested',
   enableColumnDragging: true,
   enableKeyboardNavigation: true,
   dataCount: 1000,

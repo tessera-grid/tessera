@@ -151,9 +151,9 @@ describe('Row expanding: tree lines', () => {
   test('RE54: the level line runs without gaps through adjacent deeper rows, including the row border', async () => {
     // Непрерывность, а не цвет: тёмная линия — разрыв на стыке был бы виден однозначно.
     restore = themeTokens({ '--tsr-comp-tree-line-color': 'rgb(0 0 0 / 0.4)' })
-    for (const showHeaderGroups of [false, true]) {
+    for (const headerNesting of ['flat', 'nested'] as const) {
       const screen = await render(
-        <composed.RowExpandingTreeLines showHeaderGroups={showHeaderGroups} />,
+        <composed.RowExpandingTreeLines headerNesting={headerNesting} />,
       )
       await waitTree()
       // Две соседние строки глубины ≥ 1 подряд.
@@ -181,13 +181,13 @@ describe('Row expanding: tree lines', () => {
       for (let y = from; y <= to; y += 1 / shot.scale) {
         if (!lineVisible(shot, x, y)) gaps.push(y)
       }
-      expect(gaps, `headerGroups=${showHeaderGroups}`).toEqual([])
+      expect(gaps, `headerNesting=${headerNesting}`).toEqual([])
       // Граница строки тоньше пикселя скриншота — её перекрытие проверяем по геометрии:
       // линия следующей строки начинается выше на ширину её верхней границы.
       expect(
         parseFloat(getComputedStyle(next, '::before').top) +
           parseFloat(getComputedStyle(next).borderTopWidth),
-        `headerGroups=${showHeaderGroups}`,
+        `headerNesting=${headerNesting}`,
       ).toBeCloseTo(0, 5)
       await screen.unmount()
     }

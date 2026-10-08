@@ -8,7 +8,6 @@ import {
   columnCountType,
   containerHeightType,
   dataCountType,
-  dataNestingType,
   enableAnnouncementsType,
   inCategory,
   paginationPageSizeType,
@@ -49,7 +48,6 @@ import {
   numberMaxHeightType,
   rowActionsOptionsType,
   serverColumnSortingType,
-  showHeaderGroupsType,
   showSelectedCountType,
   showStubType,
   skeletonOptionsType,
@@ -78,7 +76,6 @@ export const AllFeatures: StoryObj<StoryProps> = {
     height: 500,
     maxHeight: 500,
     showStub: false,
-    showHeaderGroups: false,
 
     enableSkeleton: false,
     skeletonOptions: DEFAULT_SKELETON_OPTIONS,
@@ -126,12 +123,10 @@ export const AllFeatures: StoryObj<StoryProps> = {
     ...inCategory('Данные и размеры', {
       columnCount: columnCountType,
       dataCount: dataCountType,
-      dataNesting: dataNestingType,
       containerHeight: containerHeightType,
       height: numberHeightType,
       maxHeight: numberMaxHeightType,
       showStub: showStubType,
-      showHeaderGroups: showHeaderGroupsType,
     }),
     ...inCategory('Ядро: панели и состояния', {
       enableSkeleton: enableSkeletonType,
@@ -313,7 +308,7 @@ export const ColumnVisibility: StoryObj<StoryProps> = {
   name: 'Column Visibility',
   args: {
     // Кнопка «Колонки» в тулбаре: поиск, дерево, «Показать все» / «Сбросить».
-    // Включите showHeaderGroups — меню покажет группы вложенной шапки.
+    // headerNesting: nested — меню покажет группы вложенной шапки.
     enableColumnVisibility: true,
     enableRowSelection: true,
   },
@@ -326,7 +321,7 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
     // Пин — обычное действие, остаётся кнопкой; «Скрыть колонку» (`placement:
     // 'menu'`) — только в кебабе. Кебаб считается в пороге (3) одной кнопкой:
     // включите enableColumnSorting — пин + сортировка + кебаб = 3, всё уйдёт в кебаб.
-    // Включите showHeaderGroups — у групп в кебабе появится «Скрыть группу».
+    // headerNesting: nested — у групп в кебабе появится «Скрыть группу».
     enableColumnVisibility: true,
     enableHeaderActionMenu: true,
     enableColumnPinning: true,

@@ -36,7 +36,7 @@ export const StoryComponent = memo(
     localization,
 
     showStub,
-    showHeaderGroups,
+    headerNesting,
     validateCellEdit,
 
     showBatchToolbar,
@@ -67,12 +67,12 @@ export const StoryComponent = memo(
         return columnsOverride
       }
 
-      if (showHeaderGroups) {
+      if (headerNesting === 'nested') {
         return groupedColumns
       }
 
       return columnsWithCount
-    }, [columnsOverride, showHeaderGroups, columnsWithCount])
+    }, [columnsOverride, headerNesting, columnsWithCount])
 
     const { data: mockData, setData: setMockData } = useData({
       count: dataCount,

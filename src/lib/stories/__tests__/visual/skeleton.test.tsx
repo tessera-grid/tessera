@@ -174,7 +174,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
 
   test('SL4: шапка скелета — настоящие названия и строки вложенной шапки, без кнопок плагинов; высота как после загрузки', async () => {
     const args: Args = {
-      showHeaderGroups: true,
+      headerNesting: 'nested',
       enableColumnSorting: true,
       enableColumnPinning: true,
       enableColumnFiltering: true,

@@ -86,7 +86,7 @@ export const dataCountType = numberControl(
   STORY_PARAM,
 )
 export const dataNestingType = radioControl(
-  'Вложенность мока: flat — плоский, nested — дети у каждой 10-й строки (видны с раскрытием строк)',
+  'Вложенность строк мока: flat — плоские, nested — дети у каждой 10-й строки (видны с раскрытием строк)',
   ['flat', 'nested'],
   'flat',
 )
@@ -108,8 +108,10 @@ export const numberMaxHeightType = numberControl(
 export const showStubType = booleanControl(
   'Пустые данные: грид показывает заглушку «нет данных»',
 )
-export const showHeaderGroupsType = booleanControl(
-  'Колонки с вложенной шапкой (группы заголовков)',
+export const headerNestingType = radioControl(
+  'Вложенность шапки: flat — плоская, nested — группы заголовков',
+  ['flat', 'nested'],
+  'flat',
 )
 
 // --- Ядро: панели и состояния -------------------------------------------------

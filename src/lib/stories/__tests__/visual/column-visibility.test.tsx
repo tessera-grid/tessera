@@ -141,7 +141,7 @@ describe('columnVisibility', () => {
   })
 
   test('CV3: the menu shows columns as a tree in display order; groups are indented by depth', async () => {
-    await renderPlugin({ showHeaderGroups: true })
+    await renderPlugin({ headerNesting: 'nested' })
     await openMenu()
     // Листья меню — в том же порядке, что колонки в строке грида (без служебных).
     const menuLeaves = [
@@ -257,7 +257,7 @@ describe('columnVisibility', () => {
 
     const nested = await renderPlugin({
       enableHeaderActionMenu: true,
-      showHeaderGroups: true,
+      headerNesting: 'nested',
     })
     await openKebab('name')
     expect(menuItem('Hide column')).toBeUndefined()

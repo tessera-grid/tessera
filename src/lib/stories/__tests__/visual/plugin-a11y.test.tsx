@@ -14,7 +14,7 @@ import { waitForGrid } from './core-helpers'
 
 type GridArgs = FeatureToggles & {
   enableToolbar?: boolean
-  showHeaderGroups?: boolean
+  headerNesting?: 'flat' | 'nested'
   columnsOverride?: typeof filteringColumns
   dataOverride?: typeof filteringData
 }

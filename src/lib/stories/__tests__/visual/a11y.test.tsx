@@ -173,7 +173,7 @@ describe('Доступность (a11y)', () => {
   })
 
   test('A9: под вложенной шапкой строки заголовков несут role="row" с aria-rowindex', async () => {
-    renderGrid({ showHeaderGroups: true, dataCount: 5 })
+    renderGrid({ headerNesting: 'nested', dataCount: 5 })
     await waitForGrid()
 
     const headRows = Array.from(

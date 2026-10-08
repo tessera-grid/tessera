@@ -404,7 +404,7 @@ describe('Column Resizing — requirements', () => {
   })
 
   test('CR15: multi-level headers make group headers non-resizable, leaves resizable', async () => {
-    const container = await renderColumnResizing({ showHeaderGroups: true })
+    const container = await renderColumnResizing({ headerNesting: 'nested' })
 
     const heads = Array.from(container.querySelectorAll<HTMLElement>(HEAD_CELL))
     // A group (spanning) header is not resizable and carries no grip…

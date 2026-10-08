@@ -120,7 +120,7 @@ describe('Toolbar', () => {
     expect(read(head(), 'border-top-width')).toBe('0px')
     await flat.unmount()
 
-    await mount(<Stories.WithToolbar {...GRID} showHeaderGroups />)
+    await mount(<Stories.WithToolbar {...GRID} headerNesting="nested" />)
     expect(head().dataset.layout).toBe('grid')
     expect(read(head(), 'border-top-width')).toBe('0px')
   })
