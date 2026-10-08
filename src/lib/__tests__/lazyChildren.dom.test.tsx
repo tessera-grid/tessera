@@ -86,13 +86,15 @@ const toggle = (id: string) =>
       readPluginHooks<Partial<RowExpandingHooks>>(captured, 'rowExpanding'),
     ),
   )
-// Ответ промиса и кадр, до которого копятся ответы (ADR 0066).
-const FRAME = 16
+// Кадр, до которого копятся ответы, и задача применения сразу после него (ADR 0066).
+const FRAME = 20
 const flush = () =>
   act(
     () =>
       new Promise(resolve =>
-        requestAnimationFrame(() => setTimeout(resolve, 0)),
+        requestAnimationFrame(() =>
+          setTimeout(() => setTimeout(resolve, 0), 0),
+        ),
       ),
   )
 

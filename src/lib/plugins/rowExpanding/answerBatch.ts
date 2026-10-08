@@ -1,6 +1,7 @@
 /**
  * Склейка ответов `loadChildren` (ADR 0066): успешные асинхронные ответы копятся до
- * кадра и применяются одной записью срезов — одна пересборка модели на пачку.
+ * кадра и применяются задачей сразу после него одной записью срезов — одна пересборка
+ * модели на пачку.
  */
 import { announceLabel } from '../../core/announcer'
 import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
@@ -92,16 +93,23 @@ export const enqueueAnswer = (
   const answers = [answer]
   queues.set(table.store, answers)
   let frame: number | undefined
+  let afterFrame: ReturnType<typeof setTimeout> | undefined
   const run = () => {
     if (frame !== undefined) {
       cancelAnimationFrame(frame)
     }
     clearTimeout(timer)
+    clearTimeout(afterFrame)
     queues.delete(table.store)
     apply(table, answers)
   }
   const timer = setTimeout(run, HIDDEN_TAB_FALLBACK_MS)
+  // Применение — задачей сразу после кадра: пересборка не задерживает кадр и не
+  // склеивается с его раскладкой в одну длинную задачу.
   if (typeof requestAnimationFrame === 'function') {
-    frame = requestAnimationFrame(run)
+    frame = requestAnimationFrame(() => {
+      frame = undefined
+      afterFrame = setTimeout(run, 0)
+    })
   }
 }
