@@ -18,10 +18,9 @@ import {
 } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import {
-  dataNestingType,
-  inCategory,
-  headerNestingType,
-} from './__mocks__/utils/argTypes'
+  dataGridArgTypes,
+  dataGridDefaultArgs,
+} from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 
 // --- Row Dragging demo scenario -----------------------------------------------
@@ -79,21 +78,10 @@ export const dataGridMeta = {
   args: {
     columnCount: COLUMN_COUNT,
     dataCount: DATA_COUNT,
-    dataNesting: 'flat',
-    headerNesting: 'flat',
+    ...dataGridDefaultArgs,
   },
-  // Форма мока в каждой истории: плоские или вложенные строки и шапка. Контрол
-  // скрыт, если история подаёт свои данные или колонки — тогда он ни на что не влияет.
-  argTypes: inCategory('Данные и размеры', {
-    dataNesting: {
-      ...dataNestingType,
-      if: { arg: 'dataOverride', exists: false },
-    },
-    headerNesting: {
-      ...headerNestingType,
-      if: { arg: 'columnsOverride', exists: false },
-    },
-  }),
+  // Полная панель Controls в каждой истории: история задаёт только своё.
+  argTypes: dataGridArgTypes,
   play: rowDraggingPlay,
   parameters: {
     backgrounds: { disable: true },

@@ -2,56 +2,6 @@ import { Meta, StoryObj } from '@storybook/react'
 import { Grid } from './_shims'
 import { statusBarDemoPlugins } from './statusBarDemo'
 import { toolbarDemoPlugins } from './toolbarDemo'
-import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../lib/plugins/rowActions'
-import { DEFAULT_SKELETON_OPTIONS } from '../../lib/core/skeletonOptions'
-import {
-  columnCountType,
-  containerHeightType,
-  dataCountType,
-  enableAnnouncementsType,
-  inCategory,
-  paginationPageSizeType,
-  rowActionsColumnType,
-  rowExpandingColumnType,
-  rowExpandingMaxDepthType,
-  rowExpandingTreeLinesType,
-  enableCellEditingType,
-  enableCellSelectionType,
-  enableColumnDraggingType,
-  enableColumnPinningType,
-  enableColumnResizingType,
-  enableColumnSortingType,
-  enableColumnVisibilityType,
-  enableContextMenuType,
-  enableExportType,
-  enableColumnFilteringType,
-  enableQuickSearchType,
-  enableHeaderActionMenuType,
-  enableKeyboardNavigationType,
-  enableLeafPinningType,
-  enablePaginationType,
-  enableRowActionMenuType,
-  enableFooterType,
-  enableToolbarType,
-  enableStatusBarType,
-  enableGroupingType,
-  enableLoadingType,
-  enableMultiSortType,
-  enableRowActionsType,
-  enableRowDraggingType,
-  enableRowExpandingType,
-  enableRowSelectionType,
-  enableSkeletonType,
-  enableSortingRemovalType,
-  enableSubRowSelectionType,
-  numberHeightType,
-  numberMaxHeightType,
-  rowActionsOptionsType,
-  serverColumnSortingType,
-  showSelectedCountType,
-  showStubType,
-  skeletonOptionsType,
-} from './__mocks__/utils/argTypes'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { RowGrouping } from './DataGrid.Rows.stories'
@@ -68,153 +18,14 @@ export default meta
 
 export const AllFeatures: StoryObj<StoryProps> = {
   name: 'All Features',
-  // Все тумблеры грида по группам панели Controls. Мок вложенный: дети у каждой 10-й
-  // строки видны с «Раскрытием строк»; ядро и плагины по умолчанию выключены.
+  // Все тумблеры грида по группам панели Controls (общие для всех историй). Мок
+  // вложенный: дети у каждой 10-й строки видны с «Раскрытием строк»; ядро и плагины
+  // по умолчанию выключены.
   args: {
     dataNesting: 'nested',
     containerHeight: 600,
     height: 500,
     maxHeight: 500,
-    showStub: false,
-
-    enableSkeleton: false,
-    skeletonOptions: DEFAULT_SKELETON_OPTIONS,
-    enableLoading: false,
-    enableFooter: false,
-    enableAnnouncements: true,
-
-    enableColumnSorting: false,
-    enableSortingRemoval: true,
-    enableMultiSort: true,
-    serverColumnSorting: false,
-    enableColumnResizing: false,
-    enableColumnDragging: false,
-    enableColumnPinning: false,
-    enableLeafPinning: false,
-    enableColumnVisibility: false,
-    enableHeaderActionMenu: false,
-
-    enableRowSelection: false,
-    enableSubRowSelection: false,
-    showSelectedCount: false,
-    enableRowExpanding: false,
-    rowExpandingMaxDepth: 1,
-    rowExpandingColumn: 'auto',
-    rowExpandingTreeLines: false,
-    enableRowDragging: false,
-    enableGrouping: false,
-    enableRowActions: false,
-    rowActionsOptions: DEFAULT_ROW_ACTIONS_OPTIONS,
-    rowActionsColumn: 'auto',
-    enableRowActionMenu: false,
-
-    enableCellEditing: false,
-    enableCellSelection: false,
-    enableContextMenu: false,
-    enableKeyboardNavigation: false,
-
-    enableQuickSearch: false,
-    enableColumnFiltering: false,
-    enablePagination: false,
-    paginationPageSize: 25,
-    enableExport: false,
-  },
-  argTypes: {
-    ...inCategory('Данные и размеры', {
-      columnCount: columnCountType,
-      dataCount: dataCountType,
-      containerHeight: containerHeightType,
-      height: numberHeightType,
-      maxHeight: numberMaxHeightType,
-      showStub: showStubType,
-    }),
-    ...inCategory('Ядро: панели и состояния', {
-      enableSkeleton: enableSkeletonType,
-      skeletonOptions: skeletonOptionsType,
-      enableLoading: enableLoadingType,
-      enableFooter: enableFooterType,
-      enableToolbar: enableToolbarType,
-      enableStatusBar: enableStatusBarType,
-      enableAnnouncements: enableAnnouncementsType,
-    }),
-    ...inCategory(
-      'Колонки',
-      {
-        enableColumnSorting: enableColumnSortingType,
-        enableSortingRemoval: enableSortingRemovalType,
-        enableMultiSort: enableMultiSortType,
-        serverColumnSorting: serverColumnSortingType,
-      },
-      'Сортировка',
-    ),
-    ...inCategory(
-      'Колонки',
-      {
-        enableColumnPinning: enableColumnPinningType,
-        enableLeafPinning: enableLeafPinningType,
-      },
-      'Закрепление',
-    ),
-    ...inCategory(
-      'Колонки',
-      {
-        enableColumnResizing: enableColumnResizingType,
-        enableColumnDragging: enableColumnDraggingType,
-        enableColumnVisibility: enableColumnVisibilityType,
-        enableHeaderActionMenu: enableHeaderActionMenuType,
-      },
-      'Ширина, порядок, видимость',
-    ),
-    ...inCategory(
-      'Строки',
-      {
-        enableRowSelection: enableRowSelectionType,
-        enableSubRowSelection: enableSubRowSelectionType,
-        showSelectedCount: showSelectedCountType,
-      },
-      'Выбор',
-    ),
-    ...inCategory(
-      'Строки',
-      {
-        enableRowExpanding: enableRowExpandingType,
-        rowExpandingMaxDepth: rowExpandingMaxDepthType,
-        rowExpandingColumn: rowExpandingColumnType,
-        rowExpandingTreeLines: rowExpandingTreeLinesType,
-      },
-      'Раскрытие',
-    ),
-    ...inCategory(
-      'Строки',
-      {
-        enableRowDragging: enableRowDraggingType,
-        enableGrouping: enableGroupingType,
-      },
-      'Порядок и группировка',
-    ),
-    ...inCategory(
-      'Строки',
-      {
-        enableRowActions: enableRowActionsType,
-        rowActionsOptions: rowActionsOptionsType,
-        rowActionsColumn: rowActionsColumnType,
-        enableRowActionMenu: enableRowActionMenuType,
-      },
-      'Действия',
-    ),
-    ...inCategory('Ячейки и клавиатура', {
-      enableCellEditing: enableCellEditingType,
-      enableCellSelection: enableCellSelectionType,
-      enableContextMenu: enableContextMenuType,
-      enableKeyboardNavigation: enableKeyboardNavigationType,
-    }),
-    ...inCategory('Поиск, фильтры, страницы, экспорт', {
-      enableQuickSearch: enableQuickSearchType,
-      enableColumnFiltering: enableColumnFilteringType,
-      enablePagination: enablePaginationType,
-      paginationPageSize: paginationPageSizeType,
-      enableExport: enableExportType,
-    }),
   },
 }
 
@@ -227,7 +38,6 @@ export const Skeletons: StoryObj<StoryProps> = {
     // Вложенный мок: колонка раскрытия появляется, только если есть строки с детьми.
     dataNesting: 'nested',
     enableSkeleton: true,
-    skeletonOptions: DEFAULT_SKELETON_OPTIONS,
     enableRowSelection: true,
     showSelectedCount: true,
     enableRowDragging: true,
@@ -237,13 +47,6 @@ export const Skeletons: StoryObj<StoryProps> = {
     enablePagination: true,
     enableFooter: true,
   },
-  argTypes: {
-    columnCount: columnCountType,
-    dataCount: dataCountType,
-
-    enableSkeleton: enableSkeletonType,
-    skeletonOptions: skeletonOptionsType,
-  },
 }
 
 export const Loading: StoryObj<StoryProps> = {
@@ -251,24 +54,12 @@ export const Loading: StoryObj<StoryProps> = {
   args: {
     enableLoading: true,
   },
-  argTypes: {
-    columnCount: columnCountType,
-    dataCount: dataCountType,
-
-    enableLoading: enableLoadingType,
-  },
 }
 
 export const Stub: StoryObj<StoryProps> = {
   name: 'Stub',
   args: {
     showStub: true,
-  },
-  argTypes: {
-    columnCount: columnCountType,
-    dataCount: dataCountType,
-
-    showStub: showStubType,
   },
 }
 

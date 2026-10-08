@@ -260,3 +260,51 @@ export const paginationPageSizeType = numberControl(
 export const enableExportType = booleanControl(
   'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
 )
+
+// --- Настройки плагинов (данные) ----------------------------------------------
+// Функции и колбэки (canEdit, loadChildren, on*) контролом не задать — у них свои
+// истории.
+
+export const multiSortOptionsType = objectControl(
+  'Мультисортировка: `max` — предел колонок, `removal`, `event` (`columnSorting({ multiSort })`)',
+  'ColumnMultiSortOptions',
+  {},
+)
+export const headerActionMenuOptionsType = objectControl(
+  'Меню заголовка: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
+  "{ mode?: 'auto' | 'always'; threshold?: number }",
+  {},
+)
+export const rowActionMenuOptionsType = objectControl(
+  'Меню строки: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
+  "{ mode?: 'auto' | 'always'; threshold?: number }",
+  {},
+)
+export const rowActionsDemoType = booleanControl(
+  'Демо-действия строки (правка, копия, удаление); выключено — плагин без действий',
+  true,
+)
+export const rowDraggingEnableType = booleanControl(
+  'Перетаскивание строк разрешено (`rowDragging({ enable })`)',
+  true,
+)
+export const columnFilteringOptionsType = objectControl(
+  'Фильтры колонок: `debounceMs` и др. (`columnFiltering({...})`)',
+  'ColumnFilteringOptions',
+  {},
+)
+export const quickSearchOptionsType = objectControl(
+  'Быстрый поиск: `debounceMs`, `placeholder` и др. (`quickSearch({...})`)',
+  'QuickSearchOptions',
+  {},
+)
+export const paginationPageSizesType = objectControl(
+  'Варианты размера страницы в нижней панели; `false` — без выбора (`pagination({ pageSizes })`)',
+  'number[] | false',
+  [10, 25, 50, 100],
+)
+export const exportOptionsType = objectControl(
+  'Экспорт: оси, быстрые наборы, `fileName` и др. (`dataExport({...})`)',
+  'ExportOptions',
+  {},
+)

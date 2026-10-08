@@ -2,10 +2,6 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import {
-  enableStatusBarType,
-  enableToolbarType,
-} from './__mocks__/utils/argTypes'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { OwnPagerDemo } from './demos/panelsDemos'
 
@@ -42,10 +38,6 @@ export const PanelsFromPlugins: StoryObj<StoryProps> = {
     enablePagination: true,
     enableRowSelection: true,
     showSelectedCount: true,
-  },
-  argTypes: {
-    enableToolbar: enableToolbarType,
-    enableStatusBar: enableStatusBarType,
   },
 }
 
