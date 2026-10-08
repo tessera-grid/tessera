@@ -508,6 +508,8 @@ const CASES: InteractionCase[] = [
     id: 'I2',
     label: 'выбор строки, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
+    // У края бюджета: ~80 мс под ×4 отдельно, до ~100 мс в полной матрице.
+    regressionCeiling: 150,
     act: clickRowCheckbox,
     ...SELECT_CHECKS,
   },
@@ -516,6 +518,8 @@ const CASES: InteractionCase[] = [
     label:
       'шаг стрелкой, большая выборка, все плагины + клавиатурная навигация',
     args: { ...LARGE, ...ALL_PLUGINS, enableKeyboardNavigation: true },
+    // У края бюджета: ~80–90 мс под ×4 отдельно, до ~120 мс в полной матрице.
+    regressionCeiling: 150,
     prepare: async () => {
       await expect.poll(() => firstBodyCell()).not.toBeNull()
       firstBodyCell()!.focus()

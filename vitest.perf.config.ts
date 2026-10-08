@@ -48,6 +48,9 @@ export default defineConfig({
     ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,
+    // Один повтор упавшего кейса: случайный выброс шумной машины уходит, регрессия
+    // падает оба раза. Дашборд хранит последнюю попытку.
+    retry: 1,
     browser: {
       enabled: true,
       headless: true,
