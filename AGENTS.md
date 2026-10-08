@@ -871,6 +871,8 @@ ADR и не с кода.** Прожарка — короткий диалог с
   `cva`, `tailwind-merge`, `clsx`, `lucide-react`) **бандлятся** в `dist`
   ([ADR 0003](docs/decisions/0003-formalize-tech-stack.md)). Держите
   `build.lib.cssFileName: 'style'`, чтобы экспорт `./style.css` сохранялся.
+  Ошибка генерации `.d.ts` роняет `npm run build` (`afterDiagnostic`, ADR 0003): тип,
+  попадающий в публичную декларацию, экспортируется из своего модуля.
 
 ### Публичный API — до 1.0, ломать, но флагать
 

@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
 const resolvePath = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))
 
-const STORY_TEST_GLOBS = ['src/lib/stories/**']
+const STORY_TEST_GLOBS = ['src/lib/stories/**', 'src/**/__tests__/**']
 
 // Storybook подхватывает этот конфиг — генерацию типов там отключаем
 const isStorybook = process.env.npm_lifecycle_event?.includes('storybook')
@@ -29,6 +29,15 @@ export default defineConfig({
         entryRoot: 'src',
         include: ['src'],
         exclude: STORY_TEST_GLOBS,
+        // Ошибка генерации декларации (TS4023 и т. п.) молча пропускает файл .d.ts —
+        // сборка падает, а не публикует ссылку на несуществующий файл.
+        afterDiagnostic: diagnostics => {
+          if (diagnostics.length > 0) {
+            throw new Error(
+              `dts: ${diagnostics.length} ошибок генерации деклараций`,
+            )
+          }
+        },
       }),
   ],
   build: {

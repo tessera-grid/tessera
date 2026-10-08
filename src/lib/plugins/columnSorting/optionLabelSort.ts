@@ -13,7 +13,7 @@ import {
   isEmptyOptionValue,
 } from '../../core/columnOptions'
 
-interface SortColumn {
+export interface SortColumn {
   id: string
   table: object
   columnDef: ColumnOptionsDef & { sortFn?: unknown; invertSorting?: boolean }
