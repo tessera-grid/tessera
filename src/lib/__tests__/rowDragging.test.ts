@@ -14,7 +14,7 @@ import { rowGrouping } from '../plugins/rowGrouping'
 import { COLUMN_DRAGGING_ID, rowDragging } from '../plugins/rowDragging'
 import { __resetLogger } from '../core/logger'
 import { captureInertWarnings } from './inertWarnings'
-import { findDraggableRow } from '../grid/DndBodyWrapper'
+import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
 
 const build = (
   extraEntries: any[],
@@ -121,5 +121,21 @@ describe('rowDragging — поиск перетаскиваемой строки
     expect(findDraggableRow(rows, null)).toBeUndefined()
     expect(reads).toBe(0)
     expect(findDraggableRow(rows, 'b')).toEqual({ id: 'b' })
+  })
+})
+
+describe('rowDragging — id для SortableContext', () => {
+  it('D34: items SortableContext тела — id строк окна виртуализатора в порядке индекса, а не все строки модели', () => {
+    const rows = Array.from({ length: 1000 }, (_, i) => ({ id: `r${i}` }))
+    // Окно 10–14 и закреплённая перетаскиваемая строка 500 (rangeExtractor).
+    const virtualRows = [10, 11, 12, 13, 14, 500].map(index => ({ index }))
+    expect(getSortableRowIds(rows, virtualRows)).toEqual([
+      'r10',
+      'r11',
+      'r12',
+      'r13',
+      'r14',
+      'r500',
+    ])
   })
 })

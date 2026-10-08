@@ -14,6 +14,7 @@ import {
 import {
   realDrag,
   realDragHold,
+  realMouseMove,
   realMouseUp,
 } from './src/lib/stories/__tests__/pointer.commands.ts'
 
@@ -85,6 +86,7 @@ export default defineConfig({
               reducedMotion,
               realDrag,
               realDragHold,
+              realMouseMove,
               realMouseUp,
               routeModule,
               releaseModule,

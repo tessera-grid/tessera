@@ -60,3 +60,10 @@ export const realDragHold: BrowserCommand<
 export const realMouseUp: BrowserCommand<[]> = async ({ page }) => {
   await page.mouse.up()
 }
+
+// Движение с нажатой кнопкой посреди `realDragHold` — без нового нажатия.
+export const realMouseMove: BrowserCommand<
+  [from: Point, to: Point, steps?: number]
+> = async ({ page }, from, to, steps = 12) => {
+  await moveInSteps(page, await toPage(page), from, to, steps)
+}

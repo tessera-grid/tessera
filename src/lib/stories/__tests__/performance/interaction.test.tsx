@@ -606,9 +606,9 @@ const CASES: InteractionCase[] = [
     label: 'приход 100 детей ленивой строки, 100 000×10, все плагины',
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
-    // Известный недостиг: ответ пересобирает исходную модель всех 100 000 корней, как
-    // смена data (~240–290 мс под ×4); инкрементальная сборка — отдельная задача.
-    regressionCeiling: 450,
+    // Известный недостиг: ответ пересобирает модели и перерисовывает тело на 100 000
+    // корней (~215–250 мс под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
+    regressionCeiling: 350,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       lazyKids('item-id-0')

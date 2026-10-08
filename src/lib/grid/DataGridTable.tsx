@@ -146,7 +146,11 @@ export const DataGridTable = ({
           isVirtualColumns={isVirtualColumns}
         />
       ) : (
-        <BodyDndBoundary table={table} enableRowDragging={enableRowDragging}>
+        <BodyDndBoundary
+          table={table}
+          enableRowDragging={enableRowDragging}
+          virtualRows={virtualRows}
+        >
           <MemoizedBody
             layout={layout}
             rows={rows}

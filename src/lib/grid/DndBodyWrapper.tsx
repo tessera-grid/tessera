@@ -14,7 +14,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext } from '@dnd-kit/sortable'
 
 import type { Table } from '../types'
 import { cancelDragLikeEscape } from '../core/cancelInteraction'
@@ -30,6 +30,7 @@ import {
   sensorOptions,
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
+import { windowedListSortingStrategy } from './dnd/windowedListSortingStrategy'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow extends { id: string }>(
@@ -38,8 +39,20 @@ export const findDraggableRow = <TRow extends { id: string }>(
 ): TRow | undefined =>
   activeId == null ? undefined : rows.find(row => row.id === activeId)
 
+/**
+ * id строк для `SortableContext` тела — только строки окна виртуализатора (D34):
+ * индексы и смещения dnd-kit нужны смонтированным строкам, перестановка считается
+ * по `virtualIndex` из данных строки.
+ */
+export const getSortableRowIds = (
+  rows: readonly { id: string }[],
+  virtualRows: readonly { index: number }[],
+): string[] => virtualRows.map(virtualRow => rows[virtualRow.index].id)
+
 export interface DndBodyWrapperProps {
   table: Table<any, any>
+  /** Окно виртуализатора строк: id для `SortableContext`. */
+  virtualRows: readonly { index: number }[]
 }
 
 export interface BodyDndBoundaryProps extends DndBodyWrapperProps {
@@ -52,6 +65,7 @@ export interface BodyDndBoundaryProps extends DndBodyWrapperProps {
 export const BodyDndBoundary = ({
   table,
   enableRowDragging,
+  virtualRows,
   children,
 }: PropsWithChildren<BodyDndBoundaryProps>) => {
   // Идущее перетаскивание держит обёртку, пока его не отменят (ADR 0039, RX14).
@@ -65,11 +79,16 @@ export const BodyDndBoundary = ({
     return children
   }
 
-  return <DndBodyWrapper table={table}>{children}</DndBodyWrapper>
+  return (
+    <DndBodyWrapper table={table} virtualRows={virtualRows}>
+      {children}
+    </DndBodyWrapper>
+  )
 }
 
 export const DndBodyWrapper = ({
   table,
+  virtualRows,
   children,
 }: PropsWithChildren<DndBodyWrapperProps>) => {
   const {
@@ -113,7 +132,10 @@ export const DndBodyWrapper = ({
     [draggableRow],
   )
 
-  const items = useMemo(() => rows.map((row: any) => row.id), [rows])
+  const items = useMemo(
+    () => getSortableRowIds(rows, virtualRows),
+    [rows, virtualRows],
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, sensorOptions),
@@ -138,7 +160,7 @@ export const DndBodyWrapper = ({
       <SortableContext
         id="data-grid-sortable-rows"
         items={items}
-        strategy={verticalListSortingStrategy}
+        strategy={windowedListSortingStrategy}
       >
         {children}
       </SortableContext>
