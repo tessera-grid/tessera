@@ -1,6 +1,6 @@
 /**
  * Headless/чистые проверки плагина cellSelection и ядровой сериализации буфера.
- * Требования CRS8, CRS10, CRS17–CRS22 из docs/decisions/0029-cell-range-selection.md — каждое
+ * Требования CRS8, CRS10, CRS17–CRS24 из docs/decisions/0029-cell-range-selection.md — каждое
  * отдельным именованным тестом (ADR 0009).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
@@ -19,12 +19,21 @@ import type { CellSelectionPredicateCell } from '../plugins/cellSelection/types'
 const fakeCell = (
   isActions = false,
   isRowActions = false,
+  columnId = 'name',
 ): CellSelectionPredicateCell => ({
+  id: `r1_${columnId}`,
   column: {
+    id: columnId,
     getIsActionsColumn: () => isActions,
     getIsRowActionsColumn: () => isRowActions,
   },
+  row: { id: 'r1', original: { name: 'Alice', age: 30 }, depth: 0 },
+  getValue: () => 'Alice',
 })
+
+const predicateOf = (options: object) =>
+  foldEntries([cellSelection(options)] as never).options
+    .enableCellSelection as (cell: CellSelectionPredicateCell) => boolean
 
 describe('cellSelection — сериализация буфера (CRS8)', () => {
   it('CRS18: TSV — колонки табом, строки переводом строки, регионы пустой строкой', () => {
@@ -97,14 +106,39 @@ describe('cellSelection — гейтинг и предикат (CRS10/CRS11)', (
     expect(predicate(fakeCell(false, true))).toBe(false) // row-actions column
   })
 
-  it('CRS22: пользовательский canSelectCell имеет приоритет над дефолтом', () => {
-    const { options } = foldEntries([
-      cellSelection({ canSelectCell: () => false }),
-    ] as never)
-    const predicate = options.enableCellSelection as (
-      cell: CellSelectionPredicateCell,
-    ) => boolean
-    expect(predicate(fakeCell())).toBe(false)
+  it('CRS22: пользовательский canSelectCell сужает выбор — запрещённая им ячейка не выделяется', () => {
+    const predicate = predicateOf({
+      canSelectCell: (cell: CellSelectionPredicateCell) =>
+        cell.column.id !== 'age',
+    })
+    expect(predicate(fakeCell(false, false, 'age'))).toBe(false)
+    expect(predicate(fakeCell(false, false, 'name'))).toBe(true)
+  })
+
+  it('CRS23: предикат получает id, column.id, row.id/original/depth и getValue() без приведения типа', () => {
+    const seen: unknown[] = []
+    const predicate = predicateOf({
+      canSelectCell: (cell: CellSelectionPredicateCell) => {
+        seen.push([
+          cell.id,
+          cell.column.id,
+          cell.row.id,
+          (cell.row.original as { age: number }).age,
+          cell.row.depth,
+          cell.getValue(),
+        ])
+        return true
+      },
+    })
+    predicate(fakeCell())
+    expect(seen).toEqual([['r1_name', 'name', 'r1', 30, 0, 'Alice']])
+  })
+
+  it('CRS24: служебные колонки не выделяются и при canSelectCell, разрешающем всё', () => {
+    const predicate = predicateOf({ canSelectCell: () => true })
+    expect(predicate(fakeCell())).toBe(true)
+    expect(predicate(fakeCell(true))).toBe(false)
+    expect(predicate(fakeCell(false, true))).toBe(false)
   })
 
   it('rangeSelection/dragSelection/multiRange — тумблеры прокидываются', () => {

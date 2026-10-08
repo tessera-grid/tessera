@@ -17,9 +17,9 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { copyContextAction } from './contextActions'
 import type { CellSelectionOptions, CellSelectionPredicateCell } from './types'
 
-/** По умолчанию сервисные колонки (действия) невыбираемы. */
-const defaultCanSelect = (cell: CellSelectionPredicateCell): boolean =>
-  !cell.column.getIsActionsColumn() && !cell.column.getIsRowActionsColumn()
+/** Сервисные колонки (действия) невыбираемы — граница плагина, не настройка. */
+const isServiceCell = (cell: CellSelectionPredicateCell): boolean =>
+  cell.column.getIsActionsColumn() || cell.column.getIsRowActionsColumn()
 
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 export const cellSelection = definePlugin<CellSelectionOptions>()({
@@ -32,11 +32,12 @@ export const cellSelection = definePlugin<CellSelectionOptions>()({
     // При disabled — все enable* жёстко false: v9 фиксирует набор фич на маунте,
     // рантайм-гейт present-but-disabled — только опцией (ADR 0010).
     const off = o.enabled === false
-    const canSelect = o.canSelectCell ?? defaultCanSelect
+    const canSelect = o.canSelectCell
     return {
       enableCellSelection: off
         ? false
-        : (cell: CellSelectionPredicateCell) => canSelect(cell),
+        : (cell: CellSelectionPredicateCell) =>
+            !isServiceCell(cell) && (canSelect?.(cell) ?? true),
       enableCellRangeSelection: off ? false : (o.rangeSelection ?? true),
       enableCellSelectionDrag: off ? false : (o.dragSelection ?? true),
       enableMultiCellRangeSelection: off ? false : (o.multiRange ?? true),

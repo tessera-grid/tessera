@@ -87,7 +87,12 @@ describe('живые аргументы фабрик', () => {
   })
 
   it('RX2: смена функции-аргумента действует со следующего вызова при стабильной ссылке; инлайн-массив с теми же значениями не пересчитывает модели', () => {
-    const cell = { column: { getIsActionsColumn: () => false } }
+    const cell = {
+      column: {
+        getIsActionsColumn: () => false,
+        getIsRowActionsColumn: () => false,
+      },
+    }
     mount({ canSelectCell: () => true })
     const predicate = captured.options.enableCellSelection
     const rows = captured.getRowModel()

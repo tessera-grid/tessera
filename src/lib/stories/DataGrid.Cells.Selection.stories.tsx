@@ -31,11 +31,10 @@ export const CellSelectionPredicate: StoryObj<StoryProps> = {
   args: {
     ...CellSelection.args,
     // `canSelectCell` запрещает выделять колонку Age: клик по ней не выделяет, а
-    // диапазон через неё её пропускает. Функцию в панели не задать — контрол скрыт.
+    // диапазон через неё её пропускает. Служебные колонки закрыты всегда, предикат
+    // только сужает. Функцию в панели не задать — контрол скрыт.
     cellSelectionOptions: {
-      // Публичный тип ячейки предиката не несёт `column.id` — приводим к живой форме.
-      canSelectCell: cell =>
-        (cell.column as unknown as { id: string }).id !== 'age',
+      canSelectCell: cell => cell.column.id !== 'age',
     },
   },
   argTypes: { cellSelectionOptions: { control: false } },
