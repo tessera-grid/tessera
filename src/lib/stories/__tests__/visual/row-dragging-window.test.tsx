@@ -58,10 +58,13 @@ const dragPastWindow = async (rows = 5) => {
   const sourceId = source.getAttribute('data-row-id')
   const rowHeight = source.getBoundingClientRect().height
   const box = scroller.getBoundingClientRect()
-  const bottom = { x: box.left + box.width / 2, y: box.bottom - 4 }
-  const middle = { x: bottom.x, y: box.top + box.height / 2 }
+  // Строго вертикально: сдвиг вправо — вложение строки, а у первой строки моков есть
+  // дети — группа глубже уровня не вкладывается, и бросок отменяется.
+  const handle = center(source.querySelector(HANDLE)!)
+  const bottom = { x: handle.x, y: box.bottom - 4 }
+  const middle = { x: handle.x, y: box.top + box.height / 2 }
 
-  await pointer.realDragHold(center(source.querySelector(HANDLE)!), bottom)
+  await pointer.realDragHold(handle, bottom)
   await expect
     .poll(() => scroller.scrollTop, { timeout: 10_000 })
     .toBeGreaterThan(rowHeight * rows)
