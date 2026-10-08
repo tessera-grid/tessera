@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import { usePortalThemeClass } from '../../core/themeVariables'
 import type { TableLabels } from '../../core/localization'
 import {
-  resolveMenuItems,
+  menuGroups,
   type ContextMenuAction,
   type ContextMenuContext,
 } from '../../core/headerActions'
@@ -60,43 +60,44 @@ export const ContextMenuPopup = ({
             aria-label={labels.contextMenu}
             className={clsx(themeClass, menuStyles.popup)}
           >
-            {actions.map((action, index) => {
-              const items = resolveMenuItems(action, context, labels)
-              const groupLabel = action.menuGroupLabel?.(labels)
-
-              return (
-                <Menu.Group
-                  key={action.id}
-                  className={clsx(
-                    menuStyles.group,
-                    index > 0 && menuStyles.divided,
-                  )}
-                >
-                  {groupLabel && (
-                    <Menu.GroupLabel className={menuStyles.groupLabel}>
-                      {groupLabel}
-                    </Menu.GroupLabel>
-                  )}
-                  {items.map(item => (
-                    <Menu.Item
-                      key={item.id}
-                      className={menuStyles.item}
-                      disabled={item.disabled}
-                      label={item.label}
-                      onClick={item.onSelect}
-                    >
-                      <span className={menuStyles.itemIcon} aria-hidden>
-                        {item.icon}
-                      </span>
-                      <span className={menuStyles.itemLabel}>{item.label}</span>
-                      <span className={menuStyles.itemCheck} aria-hidden>
-                        {item.active && <Check width={14} height={14} />}
-                      </span>
-                    </Menu.Item>
-                  ))}
-                </Menu.Group>
-              )
-            })}
+            {menuGroups(actions, context, labels).map(
+              ({ action, items, groupLabel, divided }) => {
+                return (
+                  <Menu.Group
+                    key={action.id}
+                    className={clsx(
+                      menuStyles.group,
+                      divided && menuStyles.divided,
+                    )}
+                  >
+                    {groupLabel && (
+                      <Menu.GroupLabel className={menuStyles.groupLabel}>
+                        {groupLabel}
+                      </Menu.GroupLabel>
+                    )}
+                    {items.map(item => (
+                      <Menu.Item
+                        key={item.id}
+                        className={menuStyles.item}
+                        disabled={item.disabled}
+                        label={item.label}
+                        onClick={item.onSelect}
+                      >
+                        <span className={menuStyles.itemIcon} aria-hidden>
+                          {item.icon}
+                        </span>
+                        <span className={menuStyles.itemLabel}>
+                          {item.label}
+                        </span>
+                        <span className={menuStyles.itemCheck} aria-hidden>
+                          {item.active && <Check width={14} height={14} />}
+                        </span>
+                      </Menu.Item>
+                    ))}
+                  </Menu.Group>
+                )
+              },
+            )}
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

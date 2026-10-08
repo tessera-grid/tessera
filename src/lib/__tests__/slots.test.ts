@@ -1,6 +1,6 @@
 /**
  * Юнит-покрытие слот-машинерии (чистые функции): раскладка действий слота и пункты
- * меню — ADR 0024, AM1–AM9, AM20–AM23.
+ * меню — ADR 0024, AM1–AM9, AM20–AM23, AM33.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, it, vi } from 'vitest'
@@ -10,6 +10,7 @@ import {
   createEmptySlotActions,
   registerSlotActionInto,
   resolveActionLayout,
+  menuDividers,
   resolveMenuItems,
 } from '../core/headerActions'
 import type { SlotAction } from '../core/headerActions'
@@ -294,5 +295,23 @@ describe('headerActions: resolveMenuItems', () => {
     )
     expect(items).toBe(expanded)
     expect(menuItems).toHaveBeenCalledWith(ctx, labels)
+  })
+})
+
+describe('menuDividers — разделители подгрупп меню', () => {
+  it('AM33: разделитель только рядом с составной подгруппой; одиночные действия подряд — без разделителей', () => {
+    const single = { items: 1, labeled: false }
+    expect(menuDividers([single, single, single])).toEqual([
+      false,
+      false,
+      false,
+    ])
+    expect(
+      menuDividers([single, { items: 3, labeled: false }, single, single]),
+    ).toEqual([false, true, true, false])
+    expect(menuDividers([single, { items: 1, labeled: true }, single])).toEqual(
+      [false, true, true],
+    )
+    expect(menuDividers([])).toEqual([])
   })
 })

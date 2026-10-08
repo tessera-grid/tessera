@@ -10,7 +10,7 @@ import { useLocalization } from '../../core/localization'
 import {
   type SlotAction,
   preloadActionPanel,
-  resolveMenuItems,
+  menuGroups,
 } from '../../core/headerActions'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
@@ -46,50 +46,50 @@ export const ActionMenuPopup = ({
           className={clsx(themeClass, styles.popup)}
           finalFocus={finalFocus}
         >
-          {actions.map((action, index) => {
-            const items = resolveMenuItems(action, context, labels)
-            const groupLabel = action.menuGroupLabel?.(labels)
-            const preload = action.preload
-              ? () => preloadActionPanel(action, context)
-              : undefined
+          {menuGroups(actions, context, labels).map(
+            ({ action, items, groupLabel, divided }) => {
+              const preload = action.preload
+                ? () => preloadActionPanel(action, context)
+                : undefined
 
-            return (
-              <Menu.Group
-                key={action.id}
-                className={clsx(styles.group, index > 0 && styles.divided)}
-              >
-                {groupLabel && (
-                  <Menu.GroupLabel className={styles.groupLabel}>
-                    {groupLabel}
-                  </Menu.GroupLabel>
-                )}
-                {items.map(item => (
-                  <Menu.Item
-                    key={item.id}
-                    className={styles.item}
-                    disabled={item.disabled}
-                    label={item.label}
-                    closeOnClick={!(action.panel && onOpenPanel)}
-                    onClick={
-                      action.panel && onOpenPanel
-                        ? () => onOpenPanel(action)
-                        : item.onSelect
-                    }
-                    onPointerEnter={preload}
-                    onFocus={preload}
-                  >
-                    <span className={styles.itemIcon} aria-hidden>
-                      {item.icon}
-                    </span>
-                    <span className={styles.itemLabel}>{item.label}</span>
-                    <span className={styles.itemCheck} aria-hidden>
-                      {item.active && <Check width={14} height={14} />}
-                    </span>
-                  </Menu.Item>
-                ))}
-              </Menu.Group>
-            )
-          })}
+              return (
+                <Menu.Group
+                  key={action.id}
+                  className={clsx(styles.group, divided && styles.divided)}
+                >
+                  {groupLabel && (
+                    <Menu.GroupLabel className={styles.groupLabel}>
+                      {groupLabel}
+                    </Menu.GroupLabel>
+                  )}
+                  {items.map(item => (
+                    <Menu.Item
+                      key={item.id}
+                      className={styles.item}
+                      disabled={item.disabled}
+                      label={item.label}
+                      closeOnClick={!(action.panel && onOpenPanel)}
+                      onClick={
+                        action.panel && onOpenPanel
+                          ? () => onOpenPanel(action)
+                          : item.onSelect
+                      }
+                      onPointerEnter={preload}
+                      onFocus={preload}
+                    >
+                      <span className={styles.itemIcon} aria-hidden>
+                        {item.icon}
+                      </span>
+                      <span className={styles.itemLabel}>{item.label}</span>
+                      <span className={styles.itemCheck} aria-hidden>
+                        {item.active && <Check width={14} height={14} />}
+                      </span>
+                    </Menu.Item>
+                  ))}
+                </Menu.Group>
+              )
+            },
+          )}
         </Menu.Popup>
       </Menu.Positioner>
     </Menu.Portal>

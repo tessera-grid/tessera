@@ -191,3 +191,41 @@ export const resolveMenuItems = (
     },
   ]
 }
+
+/** Подгруппа меню для правила разделителей: сколько пунктов и есть ли подпись. */
+export interface MenuGroupShape {
+  items: number
+  labeled: boolean
+}
+
+/**
+ * Разделитель перед подгруппой (ADR 0024): только если она или предыдущая составная —
+ * несколько пунктов или подпись. Подряд идущие одиночные действия — один список.
+ */
+export const menuDividers = (groups: MenuGroupShape[]): boolean[] => {
+  const compound = (group: MenuGroupShape) => group.items > 1 || group.labeled
+  return groups.map(
+    (group, index) =>
+      index > 0 && (compound(group) || compound(groups[index - 1]!)),
+  )
+}
+
+/** Подгруппы меню действий: пункты, подпись и разделитель перед каждой. */
+export const menuGroups = <A extends MenuAction>(
+  actions: A[],
+  context: unknown,
+  labels: TableLabels,
+) => {
+  const groups = actions.map(action => ({
+    action,
+    items: resolveMenuItems(action, context, labels),
+    groupLabel: action.menuGroupLabel?.(labels),
+  }))
+  const divided = menuDividers(
+    groups.map(group => ({
+      items: group.items.length,
+      labeled: !!group.groupLabel,
+    })),
+  )
+  return groups.map((group, index) => ({ ...group, divided: divided[index]! }))
+}

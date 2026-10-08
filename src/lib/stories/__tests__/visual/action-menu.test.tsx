@@ -295,6 +295,39 @@ describe('Action menu — row', () => {
     await closeMenu()
   })
 
+  test('AM34: три одиночных действия строки — без разделителей; в кебабе заголовка разделитель только у сортировки', async () => {
+    const divider = (group: Element) =>
+      getComputedStyle(group).borderTopWidth !== '0px'
+    const row = await renderRowMenu()
+    await userEvent.click(
+      row.container
+        .querySelector<HTMLElement>(ACTION_CELL)!
+        .querySelector<HTMLElement>(ROW_KEBAB)!,
+    )
+    await expect.poll(() => menuItems().length).toBe(3)
+    const rowGroups = [...document.querySelectorAll('[role="group"]')]
+    expect(rowGroups).toHaveLength(3)
+    expect(rowGroups.map(divider)).toEqual([false, false, false])
+    await closeMenu()
+    await row.unmount()
+
+    const header = await renderHeaderMenu()
+    await userEvent.click(
+      dataHeadCells(header.container)[0].querySelector<HTMLElement>(KEBAB)!,
+    )
+    await expect.poll(() => menuItems().length).toBeGreaterThan(3)
+    const groups = [...document.querySelectorAll('[role="group"]')]
+    const sizes = groups.map(
+      group => group.querySelectorAll('[role="menuitem"]').length,
+    )
+    const expected = sizes.map(
+      (size, index) => index > 0 && (size > 1 || sizes[index - 1]! > 1),
+    )
+    expect(sizes).toContain(3)
+    expect(groups.map(divider)).toEqual(expected)
+    await closeMenu()
+  })
+
   test('AM16: инлайн-действия строки — row__button (ревил по hover строки), не cell__button', async () => {
     const { container } = await renderRowMenu({ enableRowActionMenu: false })
 
