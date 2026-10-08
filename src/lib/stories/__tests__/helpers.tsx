@@ -143,11 +143,14 @@ export async function measureScrollWork(
     stepPx = 100,
     warmupFrames = 20,
     velocity,
+    fast = velocity === undefined,
   }: {
     frames?: number
     stepPx?: number
     warmupFrames?: number
     velocity?: number
+    /** Ожидается быстрая прокрутка (скелеты), иначе — содержимое ячеек. */
+    fast?: boolean
   } = {},
 ): Promise<ScrollWorkResult> {
   const scroller = getScroller()
@@ -185,7 +188,7 @@ export async function measureScrollWork(
   scroller.scrollLeft = 0
   await nextFrame()
   await nextFrame()
-  if (velocity !== undefined) {
+  if (!fast) {
     // Прыжок в начало — быстрая прокрутка; ждём её выхода, чтобы замер шёл в обычной.
     await new Promise(resolve => setTimeout(resolve, 600))
   }
@@ -196,16 +199,43 @@ export async function measureScrollWork(
   const total = distance()
   pos = 0
   last = performance.now()
+  let reached = 0
+  // Выборка кадров со скелетами: каждый SAMPLE_EVERY-й кадр, пока прокрутка идёт.
+  const samples: boolean[] = []
   for (let i = 1; i <= frames; i++) {
     const next = advance()
     setPos(next)
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
+    if (i % SAMPLE_EVERY === 0 && next < total) {
+      samples.push(document.querySelector(SKELETON_CELL) !== null)
+    }
+    reached = next
     if (next >= total) break
   }
 
-  return perfCommands.perfTraceStop(id)
+  const result = await perfCommands.perfTraceStop(id)
+  // Замер мерит заявленное: прокрутка была, ячейки при скорости ниже порога —
+  // содержимое, при шаге на кадр — скелеты быстрой прокрутки.
+  if (total <= 0 || reached < Math.min(total, 100)) {
+    throw new Error(
+      `measureScrollWork(${axis}): прокрутки почти не было (${reached.toFixed(0)} из ${total} px)`,
+    )
+  }
+  const skeletal = samples.filter(Boolean).length
+  const wrong = fast ? skeletal * 2 < samples.length : skeletal > 0
+  if (wrong) {
+    throw new Error(
+      `measureScrollWork(${axis}): ${fast ? 'быстрая' : 'спокойная'} прокрутка, кадров со скелетами ${skeletal} из ${samples.length}`,
+    )
+  }
+  return result
 }
+
+const SAMPLE_EVERY = 10
+
+/** Скелет ячейки тела при быстрой прокрутке. */
+const SKELETON_CELL = '.data-grid__body-cell [class*="skeleton"]'
 
 /**
  * Measure the REAL main-thread work of the INITIAL render (mount → first paint)
@@ -288,7 +318,17 @@ export async function measureTransitionWork(
  */
 export async function measureInteractionWork(
   trigger: () => Promise<void>,
-  { settleFrames = 6 }: { settleFrames?: number } = {},
+  {
+    settleFrames = 6,
+    afterWarmup,
+  }: {
+    settleFrames?: number
+    /**
+     * Вне трейса после прогрева: проверить, что прогрев сделал измеряемое (замер
+     * повторяет то же действие), и при нужде вернуть состояние.
+     */
+    afterWarmup?: () => void | Promise<void>
+  } = {},
 ): Promise<ScrollWorkResult> {
   // Warm-up: одно взаимодействие вне трейса (JIT + первый переход состояния).
   await trigger()
@@ -296,6 +336,7 @@ export async function measureInteractionWork(
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
   }
+  await afterWarmup?.()
 
   const id = `inp-${traceSeq++}-${Date.now()}`
   await perfCommands.perfTraceStart(id)

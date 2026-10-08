@@ -50,19 +50,43 @@ import {
 const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
 
-const firstRowCheckbox = () =>
+// Строка без детей: у каждой 10-й строки моков дети в данных, её выбор выбрал бы и их.
+const SELECT_ROW = 'item-id-1'
+const rowOf = (id: string) =>
   document.querySelector<HTMLElement>(
-    '.data-grid__body-row .row-select-checkbox',
+    `.data-grid__body-row[data-row-id='${id}']`,
   )
+const isRowSelected = (id: string) =>
+  rowOf(id)?.getAttribute('aria-selected') === 'true'
 
 const firstBodyCell = () =>
   document.querySelector<HTMLElement>(
     ".data-grid__body-row[data-index='0'] .data-grid__body-cell[data-kn-cell]",
   )
 
-const clickFirstRowCheckbox = async () => {
-  firstRowCheckbox()?.click()
+const clickRowCheckbox = async () => {
+  rowOf(SELECT_ROW)!.querySelector<HTMLElement>('.row-select-checkbox')!.click()
 }
+
+/** Прогрев выбрал одну строку, замер снял выбор. */
+const SELECT_CHECKS = {
+  afterWarmup: () => {
+    // Детей нет и в данных: выбор строки не выбирает потомков.
+    expect(
+      getData(2).find(row => row.id === SELECT_ROW)?.subRows,
+    ).toBeUndefined()
+    expect(isRowSelected(SELECT_ROW)).toBe(true)
+    expect(
+      document.querySelectorAll('.data-grid__body-row[aria-selected="true"]'),
+    ).toHaveLength(1)
+  },
+  verify: () => expect(isRowSelected(SELECT_ROW)).toBe(false),
+}
+
+/** Индекс строки активной (в фокусе) ячейки. */
+const activeRowIndex = () =>
+  document.activeElement?.closest<HTMLElement>('.data-grid__body-row')?.dataset
+    .index
 
 const pressArrowDown = async () => {
   document.activeElement?.dispatchEvent(
@@ -83,6 +107,11 @@ const columnsButton = () =>
   )
 const columnsMenu = () =>
   document.querySelector<HTMLElement>('[data-testid="column-visibility-menu"]')
+const firstColumnCheckbox = () =>
+  columnsMenu()?.querySelector<HTMLElement>(
+    '[data-column-id] [role="checkbox"]',
+  )
+const isColumnsMenuOpen = () => !!columnsMenu()?.hasAttribute('data-open')
 
 /** Поповер грузится лениво: ждём настоящий триггер Base UI. */
 const waitForColumnsButton = () =>
@@ -95,22 +124,33 @@ const openColumnsMenu = async () => {
   await expect.poll(() => columnsMenu()?.hasAttribute('data-open')).toBe(true)
 }
 
-/** Ввод в контролируемое поле React: нативный сеттер + событие input. */
+const columnsSearch = () =>
+  columnsMenu()!.querySelector<HTMLInputElement>('input')!
+
+/**
+ * Ввод в контролируемое поле React: нативный сеттер + событие input. Замер повторяет
+ * действие — запрос чередуется: тот же текст React изменением не считает.
+ */
 const typeIntoSearch = async () => {
-  const input = columnsMenu()!.querySelector<HTMLInputElement>('input')!
-  const setValue = Object.getOwnPropertyDescriptor(
+  const input = columnsSearch()
+  Object.getOwnPropertyDescriptor(
     HTMLInputElement.prototype,
     'value',
-  )!.set!
-  setValue.call(input, 'col_9')
+  )!.set!.call(input, input.value === 'col_9' ? 'col_8' : 'col_9')
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
+
+const columnItems = () =>
+  columnsMenu()?.querySelectorAll('[data-column-id]').length ?? 0
 
 // Пагинация (ADR 0038): кнопка «вперёд» и выбор размера страницы в нижней панели.
 const PAGINATION = { enablePagination: true }
 
 const pageButton = (action: string) =>
   document.querySelector<HTMLElement>(`[data-page-action="${action}"]`)
+const firstRowId = () =>
+  document.querySelector<HTMLElement>(".data-grid__body-row[data-index='0']")
+    ?.dataset.rowId
 const pageSizeTrigger = () =>
   document.querySelector<HTMLElement>('[data-testid="page-size-select"]')
 const pageSizeOption = (size: string) =>
@@ -134,6 +174,8 @@ const openExportPanel = async () => {
   await expect.poll(() => exportRunButton()).not.toBeNull()
 }
 
+let exports = 0
+
 /**
  * Скачивание в замере не нужно: подменяем клик по ссылке, сериализация остаётся.
  * Замер повторяет действие, а «Выгрузить» закрывает панель — перед повтором открываем её снова.
@@ -144,7 +186,9 @@ const exportWithoutDownload = async () => {
     await expect.poll(() => exportRunButton()).not.toBeNull()
   }
   const click = HTMLAnchorElement.prototype.click
-  HTMLAnchorElement.prototype.click = () => {}
+  HTMLAnchorElement.prototype.click = () => {
+    exports++
+  }
   try {
     exportRunButton()!.click()
   } finally {
@@ -249,6 +293,13 @@ const openDateFilter = async () => {
   button()!.click()
   await expect.poll(() => calendarDay(10)).not.toBeNull()
 }
+
+const isDaySelected = (day: number) =>
+  document
+    .querySelector(
+      `[data-testid="filter-calendar"] [data-day="${MONTH}-${pad(day)}"]`,
+    )
+    ?.hasAttribute('data-selected') ?? false
 
 let dateFlip = false
 const toggleCalendarDay = async () => {
@@ -429,6 +480,11 @@ interface InteractionCase {
   prepare?: () => Promise<void>
   /** Измеряемое взаимодействие. */
   act: () => Promise<void>
+  /**
+   * Вне трейса после прогрева (замер повторяет то же действие): проверить, что прогрев
+   * сделал измеряемое, и при нужде вернуть состояние.
+   */
+  afterWarmup?: () => void | Promise<void>
   /** Проверка после замера, что взаимодействие сделало то, что мерится. */
   verify?: () => void
   /**
@@ -445,13 +501,15 @@ const CASES: InteractionCase[] = [
     id: 'I1',
     label: 'выбор строки, небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    act: clickFirstRowCheckbox,
+    act: clickRowCheckbox,
+    ...SELECT_CHECKS,
   },
   {
     id: 'I2',
     label: 'выбор строки, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    act: clickFirstRowCheckbox,
+    act: clickRowCheckbox,
+    ...SELECT_CHECKS,
   },
   {
     id: 'I3',
@@ -463,6 +521,8 @@ const CASES: InteractionCase[] = [
       firstBodyCell()!.focus()
     },
     act: pressArrowDown,
+    afterWarmup: () => expect(activeRowIndex()).toBe('1'),
+    verify: () => expect(activeRowIndex()).toBe('2'),
   },
   {
     id: 'I4',
@@ -475,11 +535,12 @@ const CASES: InteractionCase[] = [
     // Смена набора колонок перерисовывает видимые строки 1000×1000 со всеми
     // плагинами (~200–250 мс под ×4, выбросы до ~310); одной горячей точки в профиле нет.
     regressionCeiling: 320,
-    act: async () => {
-      columnsMenu()!
-        .querySelector<HTMLElement>('[data-column-id] [role="checkbox"]')!
-        .click()
-    },
+    act: async () => firstColumnCheckbox()!.click(),
+    // Прогрев скрыл колонку, замер вернул.
+    afterWarmup: () =>
+      expect(firstColumnCheckbox()!.getAttribute('aria-checked')).toBe('false'),
+    verify: () =>
+      expect(firstColumnCheckbox()!.getAttribute('aria-checked')).toBe('true'),
   },
   {
     id: 'I5',
@@ -487,6 +548,13 @@ const CASES: InteractionCase[] = [
     args: { ...LARGE, ...ALL_PLUGINS, ...COLUMN_VISIBILITY },
     prepare: waitForColumnsButton,
     act: async () => columnsButton()!.click(),
+    // Прогрев открыл меню; закрываем вне замера — замер мерит открытие.
+    afterWarmup: async () => {
+      expect(isColumnsMenuOpen()).toBe(true)
+      columnsButton()!.click()
+      await expect.poll(columnsMenu).toBeNull()
+    },
+    verify: () => expect(isColumnsMenuOpen()).toBe(true),
   },
   {
     id: 'I6',
@@ -497,6 +565,11 @@ const CASES: InteractionCase[] = [
       await openColumnsMenu()
     },
     act: typeIntoSearch,
+    afterWarmup: () => {
+      expect(columnsSearch().value).toBe('col_9')
+      expect(columnItems()).toBeLessThan(LARGE.columnCount)
+    },
+    verify: () => expect(columnsSearch().value).toBe('col_8'),
   },
   {
     id: 'I7',
@@ -511,6 +584,8 @@ const CASES: InteractionCase[] = [
       await expect.poll(() => pageButton('next')).not.toBeNull()
     },
     act: async () => pageButton('next')!.click(),
+    afterWarmup: () => expect(firstRowId()).toBe('item-id-100'),
+    verify: () => expect(firstRowId()).toBe('item-id-200'),
   },
   {
     id: 'I8',
@@ -548,6 +623,8 @@ const CASES: InteractionCase[] = [
       await expect.poll(quickSearchInput).not.toBeNull()
     },
     act: async () => alternate(quickSearchInput()!, 'a', 'e'),
+    afterWarmup: () => expect(quickSearchInput()!.value).toBe('a'),
+    verify: () => expect(quickSearchInput()!.value).toBe('e'),
   },
   {
     id: 'FL36',
@@ -557,6 +634,8 @@ const CASES: InteractionCase[] = [
     regressionCeiling: 220,
     prepare: openCountryFilter,
     act: async () => alternate(filterValueInput()!, 'a', 'e'),
+    afterWarmup: () => expect(filterValueInput()!.value).toBe('a'),
+    verify: () => expect(filterValueInput()!.value).toBe('e'),
   },
   {
     id: 'DF22',
@@ -566,6 +645,8 @@ const CASES: InteractionCase[] = [
     regressionCeiling: 280,
     prepare: openDateFilter,
     act: toggleCalendarDay,
+    afterWarmup: () => expect(isDaySelected(10)).toBe(true),
+    verify: () => expect(isDaySelected(20)).toBe(true),
   },
   {
     id: 'SF25',
@@ -583,6 +664,12 @@ const CASES: InteractionCase[] = [
           ? 'female'
           : 'male',
       )!.click(),
+    afterWarmup: () =>
+      expect(optionCheckbox('male')!.getAttribute('aria-checked')).toBe('true'),
+    verify: () =>
+      expect(optionCheckbox('female')!.getAttribute('aria-checked')).toBe(
+        'true',
+      ),
   },
   {
     id: 'SF26',
@@ -599,8 +686,13 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     loadBudget: true,
     args: { ...EXPORT_SIZE, ...ALL_PLUGINS, ...EXPORT },
-    prepare: openExportPanel,
+    prepare: async () => {
+      exports = 0
+      await openExportPanel()
+    },
     act: exportWithoutDownload,
+    afterWarmup: () => expect(exports).toBe(1),
+    verify: () => expect(exports).toBe(2),
   },
   {
     id: 'ND14',
@@ -641,7 +733,9 @@ describe('Отзывчивость взаимодействий (INP)', () => {
         // Нативные события (а не userEvent) — чтобы НЕ мерить тяжёлые проверки
         // видимости userEvent (getComputedStyle/checkVisibility), а только работу
         // приложения: обработчик → обновление стейта → ре-рендер → коммит.
-        const result = await measureInteractionWork(c.act)
+        const result = await measureInteractionWork(c.act, {
+          afterWarmup: c.afterWarmup,
+        })
         c.verify?.()
         const budget =
           c.regressionCeiling ??
@@ -849,6 +943,11 @@ const managerColumn = (labelled: boolean) =>
       : column,
   )
 
+const sortOf = (columnId: string) =>
+  document
+    .querySelector(`.data-grid__head-cell[data-column-id="${columnId}"]`)
+    ?.getAttribute('aria-sort')
+
 describe('Отзывчивость — сортировка по подписи', () => {
   test(
     'OS11: сортировка 100 000 строк по колонке lookup — в пределах регресс-потолка против той же колонки без подписей',
@@ -865,9 +964,24 @@ describe('Отзывчивость — сортировка по подписи'
             '.data-grid__head-cell[data-column-id="managerId"] .column-sort__button',
           )
         await expect.poll(button).toBeTruthy()
-        const result = await measureInteractionWork(async () =>
-          button()!.click(),
+        // Прогрев сортирует другую колонку: замер — первый клик по колонке менеджера.
+        let warmed = false
+        const result = await measureInteractionWork(
+          async () => {
+            const target = warmed ? 'managerId' : 'name'
+            warmed = true
+            document
+              .querySelector<HTMLElement>(
+                `.data-grid__head-cell[data-column-id="${target}"] .column-sort__button`,
+              )!
+              .click()
+          },
+          { afterWarmup: () => expect(sortOf('name')).not.toBe('none') },
         )
+        expect([sortOf('managerId'), sortOf('name')]).toEqual([
+          expect.not.stringMatching(/^none$/),
+          'none',
+        ])
         await cleanup()
         return result
       }

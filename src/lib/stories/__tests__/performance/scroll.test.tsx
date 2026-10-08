@@ -14,6 +14,7 @@ import {
   PERF_TIMEOUT,
   SMALL,
   CONTENT_SCROLL,
+  FAST_SCROLL,
   submittedCellsSeed,
   sortAllColumnsSeed,
 } from './perf-cases'
@@ -51,9 +52,9 @@ const CASES: ScrollCase[] = [
     id: 'P2',
     label: 'небольшая выборка, без плагинов',
     args: { ...SMALL, ...NO_PLUGINS },
-    // baseline ~13/13мс (в бюджете 60fps), но под ×4 троттлингом одиночные спайки до
-    // ~17мс на дисперсии — жёсткий 60fps флапал. Регресс-гейт с запасом ≈2×.
-    regressionCeiling: { y: 24, x: 24 },
+    // база быстрой прокрутки (FAST_SCROLL) ~11/20мс; под ×4 троттлингом одиночные
+    // спайки — жёсткий 60fps флапал. Регресс-гейт с запасом ≈2×.
+    regressionCeiling: { y: 24, x: 40 },
     content: {
       id: 'P10',
       // база ~10/19мс
@@ -64,9 +65,9 @@ const CASES: ScrollCase[] = [
     id: 'P4',
     label: 'большая выборка, без плагинов',
     args: { ...LARGE, ...NO_PLUGINS },
-    // 1000 колонок под ×4 троттлингом — у самой границы 60fps (шумит 16–24мс);
-    // регресс-гейт с запасом.
-    regressionCeiling: { y: 26, x: 30 },
+    // база ~14/24мс: 1000 колонок под ×4 троттлингом — у границы 60fps; регресс-гейт
+    // с запасом.
+    regressionCeiling: { y: 28, x: 44 },
     content: {
       id: 'P11',
       // база ~13/20мс
@@ -77,8 +78,8 @@ const CASES: ScrollCase[] = [
     id: 'P7',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    // база с клавиатурной навигацией ~24/44мс
-    regressionCeiling: { y: 36, x: 64 },
+    // база с клавиатурной навигацией ~25/51мс
+    regressionCeiling: { y: 40, x: 80 },
     content: {
       id: 'P12',
       // база ~21/35мс
@@ -89,8 +90,8 @@ const CASES: ScrollCase[] = [
     id: 'P8',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    // база с клавиатурной навигацией ~29/47мс
-    regressionCeiling: { y: 46, x: 70 },
+    // база с клавиатурной навигацией ~32/52мс
+    regressionCeiling: { y: 50, x: 85 },
     content: {
       id: 'P13',
       // база ~26/38мс
@@ -109,13 +110,13 @@ const runScrollCase = async (
   id: string,
   label: string,
   ceiling: { y: number; x: number },
-  speed?: typeof CONTENT_SCROLL,
+  speed: typeof CONTENT_SCROLL | typeof FAST_SCROLL,
 ) => {
   renderGrid(c.args)
   await waitForGrid()
 
-  const y = await measureScrollWork('y', speed?.y)
-  const x = await measureScrollWork('x', speed?.x)
+  const y = await measureScrollWork('y', speed.y)
+  const x = await measureScrollWork('x', speed.x)
 
   const size = c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'
   await recordPerf({
@@ -170,7 +171,7 @@ describe('Производительность прокрутки', () => {
   for (const c of CASES) {
     test(
       `${c.id}: ${c.label}`,
-      () => runScrollCase(c, c.id, c.label, c.regressionCeiling),
+      () => runScrollCase(c, c.id, c.label, c.regressionCeiling, FAST_SCROLL),
       PERF_TIMEOUT,
     )
   }
@@ -436,7 +437,7 @@ describe('Производительность прокрутки — индик
 
       const base = await measure(false)
       const sorted = await measure(true)
-      // Потолок — как у P8 по X (база того же грида).
+      // Потолок — около P13 по X: спокойная прокрутка того же грида.
       const ceiling = 70
       const record = (
         id: string,
