@@ -1,7 +1,8 @@
 /**
  * Кнопка «Экспорт» в тулбаре (ADR 0044, EX1, EX6, EX28). Одна доступная комбинация —
  * клик выгружает сразу; иначе открывает панель настроек (лениво). Пока серверный
- * `onExport` в ожидании, кнопка `aria-busy`, серверная выгрузка заблокирована.
+ * `onExport` или асинхронный формат (XL7) в ожидании, кнопка `aria-busy` с бликом,
+ * серверная выгрузка заблокирована; отказ формата — вспышка.
  */
 import { Suspense, useRef, useState } from 'react'
 
@@ -23,9 +24,12 @@ const ExportPanel = preloadable(() =>
 export const ExportButton = ({ table }: ToolbarComponentProps) => {
   const labels = useLocalization()
   const { download: DownloadIcon } = useIcons()
-  const [busy, setBusy] = useState(false)
+  // Серверная выгрузка не блокирует кнопку (можно выгрузить страницу), клиентская — блокирует.
+  const [busy, setBusy] = useState<false | 'server' | 'client'>(false)
+  // Отказ асинхронного формата (XL7) — вспышка контура кнопки (ADR 0055).
+  const [failures, setFailures] = useState(0)
   // Ref, а не state: два клика подряд до перерисовки не должны запустить вторую выгрузку.
-  const running = useRef(false)
+  const running = useRef<false | 'server' | 'client'>(false)
 
   // Выбор строк меняет доступность значений оси «Строки».
   useTableState(table, state => state.rowSelection)
@@ -40,15 +44,18 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   )
 
   const start = (settings: ExportSettings, isServer: boolean) => {
-    if (isServer && running.current) return
+    // Идущая клиентская выгрузка блокирует любую; серверная — только серверную.
+    if (running.current === 'client' || (isServer && running.current)) return
     const pending = runExport(table, settings)
     if (pending) {
-      running.current = true
-      setBusy(true)
-      void pending.finally(() => {
-        running.current = false
-        setBusy(false)
-      })
+      running.current = isServer ? 'server' : 'client'
+      setBusy(isServer ? 'server' : 'client')
+      pending
+        .catch(() => setFailures(count => count + 1))
+        .finally(() => {
+          running.current = false
+          setBusy(false)
+        })
     }
   }
 
@@ -62,7 +69,9 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
         label={labels.export}
         icon={icon}
         disabled={busy && isServer}
-        aria-busy={busy || undefined}
+        pending={busy === 'client'}
+        errorFlash={failures}
+        aria-busy={!!busy || undefined}
         data-testid="export-button"
         onClick={() => start(single, isServer)}
       />
@@ -85,7 +94,9 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
       <ExportPanel.Component
         table={table}
         axes={axes}
-        busy={busy}
+        busy={!!busy}
+        pending={busy === 'client'}
+        failures={failures}
         open={popover.open}
         onOpenChange={popover.onOpenChange}
         onRun={start}

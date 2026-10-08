@@ -4,16 +4,30 @@ export type ExportRows = 'all' | 'view' | 'page' | 'selected'
 /** Значения оси «Колонки». */
 export type ExportColumns = 'visible' | 'all'
 
+/** Поле `filter` колонки, как его читает лист: тип и разбор даты (ADR 0073, §3). */
+export type ExportColumnFilter =
+  string | { type?: string; parse?: (value: unknown) => unknown }
+
 export interface ExportColumn {
   id: string
   header: string
+  /** Ширина колонки в гриде, px. */
+  size?: number
+  /** Сторона закрепления в гриде. */
+  pinned?: 'start' | 'end' | false
+  /** `columnDef.filter`: колонки `date` / `datetime` лист пишет датами. */
+  filter?: ExportColumnFilter
 }
 
 /** Данные выгрузки: колонки и строки значений в порядке колонок. */
 export interface ExportData {
   columns: ExportColumn[]
   rows: unknown[][]
+  /** Пояс дат грида (`columnFiltering({ timeZone })`); без него — браузера. */
+  timeZone?: string
 }
+
+export type ExportContent = string | Uint8Array | Blob
 
 export interface ExportFormat {
   id: string
@@ -22,7 +36,8 @@ export interface ExportFormat {
   /** Расширение файла без точки. */
   extension: string
   mimeType: string
-  serialize: (data: ExportData) => string | Uint8Array | Blob
+  /** Промис — выгрузка ждёт его, кнопка показывает ожидание (ADR 0073, §2). */
+  serialize: (data: ExportData) => ExportContent | Promise<ExportContent>
 }
 
 /** Настройки выгрузки: по одному значению в каждой оси. */

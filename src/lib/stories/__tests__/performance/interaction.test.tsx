@@ -43,6 +43,8 @@ import {
   rowExpandingLazyFeature,
   setLoadedAnswer,
 } from '../../../plugins/rowExpanding/lazyChildrenFeature'
+import { exportFormats } from '../../../plugins/dataExport'
+import { buildXlsx } from '../../../plugins/dataExport/xlsxBuild'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import {
@@ -1731,6 +1733,81 @@ describe('Сортировка из прошлой модели', () => {
       expect(
         ours.longestMs,
         `из прошлой longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Сборка .xlsx (ADR 0073, XL11): 100 000 × 10 — генератор кусками с отдачей потока и
+// сжатием вне его против CSV того же объёма в том же замере. Сбор данных из таблицы
+// общий для форматов и в замер не входит.
+const XLSX_COLUMNS = Array.from({ length: 10 }, (_, i) => ({
+  id: `c${i}`,
+  header: `Column ${i}`,
+  size: 120,
+  ...(i === 3 ? { filter: 'date' } : {}),
+}))
+const XLSX_ROWS = Array.from({ length: 100_000 }, (_, r) =>
+  XLSX_COLUMNS.map((_, c) =>
+    c === 0
+      ? `Name ${r}`
+      : c === 3
+        ? `2026-${String((r % 12) + 1).padStart(2, '0')}-15`
+        : c % 2
+          ? r * c
+          : `Value ${r % 97}`,
+  ),
+)
+
+describe('Экспорт в Excel', () => {
+  test(
+    'XL11: сборка .xlsx 100 000 × 10 — самая длинная задача главного потока не дольше 50 мс (база — CSV того же объёма)',
+    async () => {
+      const data = { columns: XLSX_COLUMNS, rows: XLSX_ROWS }
+      let csvSize = 0
+      let xlsxSize = 0
+      const base = await measureInteractionWork(async () => {
+        csvSize = exportFormats.csv().serialize(data).length
+      })
+      const ours = await measureInteractionWork(async () => {
+        xlsxSize = (await buildXlsx(data)).size
+      })
+      expect(csvSize).toBeGreaterThan(0)
+      expect(xlsxSize).toBeGreaterThan(0)
+
+      const ceiling = 50
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('XL11-base', 'сериализация CSV', base, false)
+      await record('XL11', 'сборка .xlsx кусками', ours, true)
+
+      expect(
+        ours.longestMs,
+        `xlsx longest=${ours.longestMs.toFixed(1)}ms tbt=${ours.tbtMs.toFixed(1)}ms, csv longest=${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

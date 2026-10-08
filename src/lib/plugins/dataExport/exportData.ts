@@ -27,8 +27,9 @@ interface ExportRow {
 
 interface ExportSourceColumn {
   id: string
-  columnDef: { header?: unknown } & ColumnOptionsDef
+  columnDef: { header?: unknown; filter?: unknown } & ColumnOptionsDef
   getIsVisible: () => boolean
+  getSize?: () => number
   getIsActionsColumn?: () => boolean
   getIsPinned?: () => false | 'start' | 'end'
 }
@@ -41,6 +42,7 @@ interface ExportTable {
   getRowModel: () => RowModel
   getPreExpandedRowModel?: () => RowModel
   getPrePaginatedRowModel?: () => RowModel
+  options?: { columnFilteringTimeZone?: string }
 }
 
 const PIN_ORDER = { start: 0, center: 1, end: 2 } as const
@@ -145,9 +147,16 @@ export const collectExportData = (
   const exportColumns: ExportColumn[] = leaves.map(column => ({
     id: column.id,
     header: headerOf(column),
+    size: column.getSize?.(),
+    pinned: column.getIsPinned?.() ?? false,
+    ...(column.columnDef.filter !== undefined
+      ? { filter: column.columnDef.filter as ExportColumn['filter'] }
+      : {}),
   }))
+  const timeZone = (table as ExportTable).options?.columnFilteringTimeZone
   return {
     columns: exportColumns,
+    ...(timeZone ? { timeZone } : {}),
     rows: exportRowsOf(table, rows).map(row =>
       leaves.map(column => {
         const value = row.getValue(column.id)

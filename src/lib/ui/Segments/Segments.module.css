@@ -1,0 +1,78 @@
+.track {
+  --_gap: 2px;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--_count), minmax(0, 1fr));
+  gap: var(--_gap);
+  box-sizing: border-box;
+  height: var(--tsr-comp-segments-height);
+  padding: var(--tsr-comp-segments-padding);
+  border-radius: var(--tsr-comp-segments-radius);
+  background-color: var(--tsr-comp-segments-track-bg);
+}
+
+/* Рамка выбранного: ширина сегмента, сдвиг на `--_index` сегментов вместе с промежутками. */
+.indicator {
+  position: absolute;
+  top: var(--tsr-comp-segments-padding);
+  bottom: var(--tsr-comp-segments-padding);
+  left: var(--tsr-comp-segments-padding);
+  width: calc(
+    (
+        100% - 2 * var(--tsr-comp-segments-padding) - (var(--_count) - 1) *
+          var(--_gap)
+      ) /
+      var(--_count)
+  );
+  border-radius: calc(
+    var(--tsr-comp-segments-radius) - var(--tsr-comp-segments-padding)
+  );
+  background-color: var(--tsr-comp-segments-selected-bg);
+  box-shadow: var(--tsr-comp-segments-selected-shadow);
+  transform: translateX(calc(var(--_index) * (100% + var(--_gap))));
+  transition: var(--tsr-comp-segments-indicator-transition);
+  pointer-events: none;
+}
+
+.segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 8px;
+  color: var(--tsr-comp-segments-color);
+  font: inherit;
+  background-color: transparent;
+  border: 0;
+  border-radius: calc(
+    var(--tsr-comp-segments-radius) - var(--tsr-comp-segments-padding)
+  );
+  cursor: pointer;
+  transition: var(--tsr-comp-segments-transition);
+}
+
+.segment[data-checked] {
+  color: var(--tsr-comp-segments-selected-color);
+}
+
+.segment:hover:not([data-checked]):not([data-disabled]) {
+  color: var(--tsr-comp-segments-selected-color);
+}
+
+.segment:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.segment[data-disabled] {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

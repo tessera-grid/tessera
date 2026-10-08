@@ -459,7 +459,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,
       строки и колонки, значения, CSV, защита от формул, `table.exportData`,
       [ADR 0044](docs/decisions/0044-export.md)); дымовой `export-stories` (EX34 — история
-      «Export — Server»); перф EX33 — в `interaction`.
+      «Export — Server»); перф EX33 — в `interaction`; Excel — модульный `xlsx` (XL1–XL6, XL8,
+      XL12 — файл читает ExcelJS: типы, даты, шапка, закрепление, сжатие, листы),
+      `export-xlsx` (XL7, XL9 — асинхронный формат в кнопке, выгрузка кликом),
+      `export-xlsx-lazy` (XL10 — генератор грузится при первой выгрузке), дымовой
+      `export-stories` (XL13), перф XL11 — в `interaction`
+      ([ADR 0073](docs/decisions/0073-xlsx-export.md)).
     - _Фильтрация:_ `filtering` (FL1, FL3, FL7–FL13, FL15–FL17, FL19–FL24, FL27–FL30,
       FL32–FL34 — кнопка и панель фильтра колонки, дебаунс, кебаб, клавиатура, поиск,
       сводка, «показано N из M», «скрыто фильтром», сочетания с плагинами, заглушка,
@@ -560,7 +565,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
       `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS16 —
       блик `pending` и вспышка контура `errorFlash` у `IconButton` и `ToolbarButton`,
-      [ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md)).
+      [ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md)); `segments` (SG1–SG4 —
+      сегменты `ui/Segments`: radiogroup, токены, axe, движение), SG5 — в модульном
+      `uiStories`; панель экспорта в виде меню — EP1–EP5 в `export`
+      ([ADR 0074](docs/decisions/0074-segments-and-export-panel-sections.md)).
   - **`performance/`** — матрица-куб 2×2×2 (операция × объём 30×500 / 1000×1000 ×
     плагины, требования P1–P8 из [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md);
     P9 — монтирование 30×100 000 без плагинов; P10–P13 — спокойная прокрутка тех же
@@ -579,7 +587,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     OS11 — сортировка 100 000 строк по подписи против сортировки по id;
     SM7 — построение отсортированной модели на 100 000 строк против TanStack;
     SM12 — приход 100 детей при активной сортировке против полной сортировки;
-    TA3 — счёт `aria-*` дерева на 100 000 строк против прежнего
+    TA3 — счёт `aria-*` дерева на 100 000 строк против прежнего;
+    XL11 — сборка `.xlsx` 100 000×10 против CSV
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);

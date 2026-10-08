@@ -30,7 +30,9 @@ const field = (value: unknown, sanitize: boolean): string => {
 export const csvFormat = ({
   bom = true,
   sanitizeFormulas = true,
-}: CsvFormatOptions = {}): ExportFormat => ({
+}: CsvFormatOptions = {}): Omit<ExportFormat, 'serialize'> & {
+  serialize: (data: ExportData) => string
+} => ({
   id: 'csv',
   label: 'CSV',
   extension: 'csv',

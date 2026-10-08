@@ -18,7 +18,12 @@ import {
   CircleAlert,
   Columns3,
   Download,
+  Eye,
   EyeOff,
+  FileText,
+  ListFilter,
+  Rows3,
+  SquareCheck,
   Funnel,
   Search,
   X,
@@ -104,6 +109,13 @@ export interface TableIcons {
   nextMonth: IconComponent
   /** Метка ячейки, сохранение которой отклонено сервером */
   saveFailed: IconComponent
+  /** Варианты осей панели экспорта (ADR 0074): строки и колонки */
+  exportRowsAll: IconComponent
+  exportRowsView: IconComponent
+  exportRowsPage: IconComponent
+  exportRowsSelected: IconComponent
+  exportColumnsVisible: IconComponent
+  exportColumnsAll: IconComponent
 }
 
 export const DEFAULT_ICONS: TableIcons = {
@@ -138,6 +150,12 @@ export const DEFAULT_ICONS: TableIcons = {
   previousMonth: ChevronLeft,
   nextMonth: ChevronRight,
   saveFailed: CircleAlert,
+  exportRowsAll: Rows3,
+  exportRowsView: ListFilter,
+  exportRowsPage: FileText,
+  exportRowsSelected: SquareCheck,
+  exportColumnsVisible: Eye,
+  exportColumnsAll: Columns3,
 }
 
 const IconsContext = createContext<TableIcons>(DEFAULT_ICONS)

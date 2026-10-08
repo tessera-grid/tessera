@@ -3,6 +3,11 @@ export {
   type CellEditButtonProps,
 } from './lib/grid/Actions/CellButton'
 export { RowButton, type RowButtonProps } from './lib/grid/Actions/RowButton'
+export {
+  Segments,
+  type SegmentOption,
+  type SegmentsProps,
+} from './lib/ui/Segments'
 export { Switch, type SwitchProps } from './lib/ui/Switch'
 export { ToolbarButton, type ToolbarButtonProps } from './lib/ui/ToolbarButton'
 

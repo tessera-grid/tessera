@@ -13,6 +13,7 @@ import {
 } from './exportData'
 import { exportConfigOf, settingsFromArg, whereOf } from './settings'
 import type {
+  ExportContent,
   ExportFormat,
   ExportHooks,
   ExportRequest,
@@ -64,7 +65,9 @@ const invoke = (
 
 /**
  * Выполняет выгрузку с настройками. Возвращает промис, пока потребитель не завершил
- * серверный `onExport` (EX28); иначе `undefined`. Отказ логируется и не пробрасывается.
+ * серверный `onExport` (EX28) или асинхронный формат не собран (XL7); иначе
+ * `undefined`. Отказ колбэка логируется и не пробрасывается; отказ формата —
+ * логируется и отклоняет промис.
  */
 export const runExport = (
   table: unknown,
@@ -95,14 +98,29 @@ export const runExport = (
     formatValue: config.formatValue,
   })
   const filename = filenameOf(table, settings, format)
-  downloadFile(format.serialize(data), filename, format)
-  return invoke(table, hooks.onExported, {
-    settings,
-    format,
-    columns: data.columns,
-    rowCount: data.rows.length,
-    filename,
-  })
+  const finish = (content: ExportContent) => {
+    downloadFile(content, filename, format)
+    return invoke(table, hooks.onExported, {
+      settings,
+      format,
+      columns: data.columns,
+      rowCount: data.rows.length,
+      filename,
+    })
+  }
+  const content = format.serialize(data)
+  if (!isThenable(content)) return finish(content)
+  // Асинхронный формат (xlsx): кнопка ждёт; отказ логируется и отклоняет промис.
+  return Promise.resolve(content).then(
+    resolved => finish(resolved),
+    (error: unknown) => {
+      logError(
+        table as never,
+        `dataExport: формат ${format.id} не собран: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      throw error
+    },
+  )
 }
 
 /** `table.exportData(arg?)` (EX30): тот же путь, что у «Выгрузить» в панели. */

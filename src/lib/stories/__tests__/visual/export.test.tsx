@@ -1,5 +1,5 @@
 import axe from 'axe-core'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
@@ -51,6 +51,10 @@ const captureDownloads = () => {
 }
 
 afterEach(() => vi.restoreAllMocks())
+
+const reducedMotion = (
+  commands as unknown as { reducedMotion: (reduce: boolean) => Promise<void> }
+).reducedMotion
 
 const button = () =>
   document.querySelector<HTMLButtonElement>('[data-testid="export-button"]')
@@ -324,7 +328,8 @@ describe('dataExport — скачивание', () => {
     expect(request.format.id).toBe('csv')
     expect(request.rowCount).toBe(2)
     expect(request.filename).toBe('people')
-    expect(request.columns).toEqual([
+    // Колонки несут и раскладку для листа (ADR 0073, §2): ширину, закрепление.
+    expect(request.columns).toMatchObject([
       { id: 'name', header: 'Name' },
       { id: 'note', header: 'Note' },
     ])
@@ -415,6 +420,182 @@ describe('dataExport — серверный режим', () => {
     await expect.poll(() => error.mock.calls.length).toBeGreaterThan(0)
     expect(String(error.mock.calls[0][0])).toContain('server down')
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
+  })
+})
+
+describe('dataExport — вид панели (ADR 0074)', () => {
+  const PRESETS = [
+    { id: 'everything', label: 'Everything', rows: 'all' as const },
+  ]
+  const groups = () => [...panel()!.children] as HTMLElement[]
+  const items = (axis: string) => [
+    ...panel()!.querySelectorAll<HTMLElement>(
+      `[data-testid="export-axis-${axis}"] [role="radio"]`,
+    ),
+  ]
+  /** Галочка пункта: всегда в разметке, показана у выбранного (`data-checked`). */
+  const checkOf = (item: HTMLElement) =>
+    item.lastElementChild!.firstElementChild as HTMLElement
+  const fullPanel = () =>
+    renderGrid({
+      extraPlugins: WITH_SCOPES,
+      options: {
+        formats: [exportFormats.csv(), JSON_FORMAT],
+        presets: PRESETS,
+      },
+    })
+
+  test('EP1: порядок — пресеты, «Формат» сегментами, «Строки», «Колонки»; «Выгрузить» последней', async () => {
+    await fullPanel()
+    await openPanel()
+    const order = groups().map(
+      el =>
+        el.dataset.testid ??
+        (el.querySelector('[data-testid^="export-preset-"]')
+          ? 'presets'
+          : el.querySelector('[data-testid="export-run"]')
+            ? 'run'
+            : '?'),
+    )
+    expect(order).toEqual([
+      'presets',
+      'export-axis-format',
+      'export-axis-rows',
+      'export-axis-columns',
+      'run',
+    ])
+    const format = panel()!.querySelector('[data-testid="export-axis-format"]')!
+    expect(format.querySelector('[role="radiogroup"]')).not.toBeNull()
+    expect(format.querySelectorAll('[role="radio"]')).toHaveLength(2)
+  })
+
+  test('EP2: группы как в меню действий — подпись и разделитель, без фона; левые края подписей, иконок и сегментов совпадают', async () => {
+    await fullPanel()
+    await openPanel()
+    const all = groups()
+    for (const [index, group] of all.entries()) {
+      const style = getComputedStyle(group)
+      expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+      expect(style.borderTopWidth).toBe(index === 0 ? '0px' : '1px')
+    }
+    for (const group of all.slice(0, -1)) {
+      const label = group.firstElementChild as HTMLElement
+      expect(getComputedStyle(label).textTransform).toBe('uppercase')
+    }
+    // Видимый край: у подписи — начало текста (после её отступа), у дорожки и иконки —
+    // внешний край.
+    const left = (el: HTMLElement, padded = false) =>
+      el.getBoundingClientRect().left +
+      (padded ? parseFloat(getComputedStyle(el).paddingLeft) : 0)
+    const label = (axis: string) =>
+      panel()!.querySelector<HTMLElement>(
+        `[data-testid="export-axis-${axis}"] > span`,
+      )!
+    const edge = left(label('format'), true)
+    expect(
+      left(
+        panel()!.querySelector<HTMLElement>(
+          '[data-testid="export-axis-format"] [role="radiogroup"]',
+        )!,
+      ),
+    ).toBeCloseTo(edge, 0)
+    expect(left(label('rows'), true)).toBeCloseTo(edge, 0)
+    expect(
+      left(items('rows')[0]!.firstElementChild as HTMLElement),
+    ).toBeCloseTo(edge, 0)
+  })
+
+  test('EP3: варианты — пункты с иконкой из icons и галочкой у выбранного; логика радиогруппы со стрелками и пропуском недоступного', async () => {
+    const RowsIcon = () => <svg data-testid="custom-rows-icon" />
+    await renderGrid({
+      extraPlugins: WITH_SCOPES,
+      icons: { exportRowsAll: RowsIcon },
+    })
+    await openPanel()
+    const rows = items('rows')
+    expect(rows.map(item => item.dataset.value)).toEqual([
+      'all',
+      'view',
+      'page',
+      'selected',
+    ])
+    expect(
+      rows[0]!.querySelector('[data-testid="custom-rows-icon"]'),
+    ).not.toBeNull()
+    expect(rows[1]!.firstElementChild!.querySelector('svg')).not.toBeNull()
+    const checked = () =>
+      items('rows')
+        .filter(item => item.getAttribute('aria-checked') === 'true')
+        .map(item => item.dataset.value)
+    const withCheck = () =>
+      items('rows')
+        .filter(item => checkOf(item).hasAttribute('data-checked'))
+        .map(item => item.dataset.value)
+    expect(checked()).toEqual(['all'])
+    expect(withCheck()).toEqual(['all'])
+
+    await userEvent.click(radio('rows', 'page')!)
+    await expect.poll(checked).toEqual(['page'])
+    expect(withCheck()).toEqual(['page'])
+
+    // «Выбранные» недоступны без выбора: стрелка вниз со страницы — на «Все данные».
+    radio('rows', 'page')!.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.poll(checked).toEqual(['all'])
+    expect(withCheck()).toEqual(['all'])
+  })
+
+  test('EP4: единственный доступный вариант оси выбран по умолчанию и отмечен галочкой', async () => {
+    await renderGrid({
+      options: { formats: [exportFormats.csv(), JSON_FORMAT] },
+    })
+    await openPanel()
+    const rows = items('rows')
+    expect(rows.map(item => item.dataset.value)).toEqual(['all'])
+    expect(rows[0]!.getAttribute('aria-checked')).toBe('true')
+    document.getAnimations().forEach(animation => animation.finish())
+    expect(checkOf(rows[0]!).hasAttribute('data-checked')).toBe(true)
+    expect(getComputedStyle(checkOf(rows[0]!)).opacity).toBe('1')
+  })
+  test('EP5: галочка выбранного проявляется анимацией токена --tsr-comp-popup-check-transition; у невыбранных скрыта; при «меньше движения» — сразу', async () => {
+    await renderGrid({ extraPlugins: WITH_SCOPES })
+    await openPanel()
+    const check = (value: string) =>
+      checkOf(items('rows').find(item => item.dataset.value === value)!)
+    document.getAnimations().forEach(animation => animation.finish())
+    expect(getComputedStyle(check('page')).opacity).toBe('0')
+    expect(getComputedStyle(check('all')).opacity).toBe('1')
+    const style = getComputedStyle(check('page'))
+    expect(style.transitionProperty).toBe('opacity, transform')
+
+    await userEvent.click(radio('rows', 'page')!)
+    await expect
+      .poll(() => check('page').hasAttribute('data-checked'))
+      .toBe(true)
+    // Появление идёт анимацией: прозрачность ещё в пути, затем — видна.
+    expect(
+      check('page')
+        .getAnimations()
+        .some(
+          animation =>
+            (animation as CSSTransition).transitionProperty === 'opacity',
+        ),
+    ).toBe(true)
+    document.getAnimations().forEach(animation => animation.finish())
+    expect(getComputedStyle(check('page')).opacity).toBe('1')
+    expect(getComputedStyle(check('all')).opacity).toBe('0')
+
+    await reducedMotion(true)
+    try {
+      await userEvent.click(radio('rows', 'all')!)
+      await expect
+        .poll(() => check('all').hasAttribute('data-checked'))
+        .toBe(true)
+      expect(check('all').getAnimations()).toHaveLength(0)
+      expect(getComputedStyle(check('all')).opacity).toBe('1')
+    } finally {
+      await reducedMotion(false)
+    }
   })
 })
 

@@ -1,11 +1,13 @@
 import { Meta, StoryObj } from '@storybook/react'
 
+import { exportFormats } from '../plugins/dataExport'
+
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { ExportServerDemo } from './demos/exportDemos'
 
-/** Экспорт данных (ADR 0044): панель настроек, быстрые наборы, серверный режим. */
+/** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим. */
 
 interface ExportArgs extends StoryProps {
   serverDelayMs?: number
@@ -74,6 +76,22 @@ export const ExportPresets: StoryObj<StoryProps> = {
       ],
     },
   },
+}
+
+export const ExportExcel: StoryObj<StoryProps> = {
+  name: 'Excel',
+  args: {
+    ...GRID,
+    dataCount: 200,
+    // Формат Excel подключён рядом с CSV (`exportFormats.xlsx()`): числа и даты в
+    // файле — типизированные ячейки, шапка закреплена, ширины — как в гриде. Закрепите
+    // колонку слева — в Excel она тоже закреплена. Генератор грузится при первой
+    // выгрузке в Excel.
+    enableColumnPinning: true,
+    enableColumnResizing: true,
+    exportOptions: { formats: [exportFormats.csv(), exportFormats.xlsx()] },
+  },
+  argTypes: { exportOptions: { control: false } },
 }
 
 export const ExportServer: StoryObj<ExportArgs> = {

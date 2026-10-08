@@ -173,7 +173,7 @@ const POPOVERS: Popover[] = [
         .toBe(1)
     },
     popup: () => query('[data-testid="export-panel"]')[0],
-    items: () => query('[data-testid="export-axis-rows"] label'),
+    items: () => query('[data-testid="export-axis-rows"] [role="radio"]'),
     gap: () =>
       gapFrom(
         query('[data-testid="export-button"]')[0].getBoundingClientRect(),

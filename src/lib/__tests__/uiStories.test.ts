@@ -41,4 +41,9 @@ describe('истории UI-примитивов', () => {
       components.filter(name => !titles.includes(`Tessera/UI/${name}`)),
     ).toEqual([])
   })
+
+  it('SG5: Segments экспортируется из /ui и имеет историю Tessera/UI/Segments', () => {
+    expect(uiExports()).toContain('Segments')
+    expect(uiStoryTitles()).toContain('Tessera/UI/Segments')
+  })
 })

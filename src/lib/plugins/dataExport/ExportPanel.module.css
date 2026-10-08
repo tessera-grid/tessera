@@ -8,18 +8,90 @@
   max-width: calc(100vw - 16px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
-.presets {
+/* Группы — как в меню действий (ADR 0074, EP2): подпись и разделитель между группами. */
+.group {
+  composes: group from '../../grid/headerActions/ActionMenu.module.css';
+}
+
+.group + .group,
+.footer {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+.groupLabel {
+  composes: groupLabel from '../../grid/headerActions/ActionMenu.module.css';
+}
+
+.items {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--tsr-comp-popup-divider-color);
+  flex-direction: column;
 }
 
-.preset,
+.item {
+  composes: item from '../../grid/headerActions/ActionMenu.module.css';
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.item:hover:not([data-disabled]) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 var(--tsr-comp-focus-ring-width)
+    var(--tsr-comp-focus-ring);
+}
+
+.item[data-disabled] {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.itemIcon {
+  composes: itemIcon from '../../grid/headerActions/ActionMenu.module.css';
+}
+
+.itemLabel {
+  composes: itemLabel from '../../grid/headerActions/ActionMenu.module.css';
+}
+
+.itemCheck {
+  composes: itemCheck from '../../grid/headerActions/ActionMenu.module.css';
+}
+
+/* Галочка всегда в разметке и проявляется у выбранного пункта (ADR 0074, EP5). */
+.check {
+  display: inline-flex;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: var(--tsr-comp-popup-check-transition);
+}
+
+.check[data-checked] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Край дорожки — по подписи группы и иконкам пунктов (отступ пункта поповера). */
+.segments {
+  margin: 2px 8px 4px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .run {
   height: var(--tsr-comp-popup-item-min-height);
   padding: 0 10px;
@@ -32,12 +104,10 @@
   transition: var(--tsr-comp-action-button-transition);
 }
 
-.preset:hover,
 .run:hover:not(:disabled) {
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
-.preset:focus-visible,
 .run:focus-visible {
   outline: none;
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
@@ -46,77 +116,4 @@
 .run:disabled {
   color: var(--tsr-comp-control-disabled-color);
   cursor: default;
-}
-
-.axis {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.axisLabel {
-  padding-inline: 8px;
-  font-weight: 600;
-}
-
-.group {
-  display: flex;
-  flex-direction: column;
-}
-
-.option {
-  composes: item from '../../ui/Popup/Popup.module.css';
-}
-
-.option:hover:not([data-disabled]) {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.radio {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  background-color: transparent;
-  border: 1px solid var(--tsr-comp-control-border);
-  border-radius: 50%;
-  cursor: inherit;
-}
-
-.radio[data-checked] {
-  border-color: var(--tsr-comp-control-active-color);
-}
-
-.radio[data-disabled] {
-  border-color: var(--tsr-comp-control-disabled-color);
-}
-
-/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
-.radio:focus-visible {
-  outline: none;
-  border-color: var(--tsr-comp-focus-ring);
-  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
-    var(--tsr-comp-focus-ring);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--tsr-comp-control-active-color);
-}
-
-.radio[data-disabled] .dot {
-  background-color: var(--tsr-comp-control-disabled-color);
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px solid var(--tsr-comp-popup-divider-color);
 }
