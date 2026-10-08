@@ -375,10 +375,11 @@ const moveNameGroup = async () => {
     .not.toBe(before)
 }
 
-// Ленивые дети (ADR 0054, RE38): две первые корневые строки помечены `hasChildren`,
+// Ленивые дети (ADR 0054, RE38): две корневые строки без детей в данных помечены
+// `hasChildren` (у каждой 10-й строки моков дети в данных — такая строка не ленивая),
 // `loadChildren` отдаёт заранее собранные 100 детей синхронно — замеряется приход
 // ответа: пересборка исходной модели 100 000 корней и отрисовка детей. Прогрев
-// раскрывает одну строку, замер — другую.
+// раскрывает нижнюю строку, замер — верхнюю.
 const LAZY_KIDS = 100
 const lazyKids = (() => {
   const rows = makeData({ shape: 'flat', count: LAZY_KIDS })
@@ -393,12 +394,20 @@ const lazyKids = (() => {
     return byParent.get(parentId)!
   }
 })()
+const LAZY_ROOTS = ['item-id-1', 'item-id-2']
 const LAZY_CHILDREN = {
   enableRowExpanding: true,
-  rowExpandingHasChildren: (row: { depth: number; index: number }) =>
-    row.depth === 0 && row.index < 2,
+  rowExpandingHasChildren: (row: { depth: number; id: string }) =>
+    row.depth === 0 && LAZY_ROOTS.includes(row.id),
   rowExpandingLoadChildren: (row: { id: string }) => lazyKids(row.id),
 }
+/** Замеренный приход показал детей ответа под верхней ленивой строкой. */
+const expectLazyArrival = () =>
+  expect(
+    document.querySelector(
+      `.data-grid__body-row[data-row-id='${LAZY_ROOTS[0]}-k0']`,
+    ),
+  ).not.toBeNull()
 // Нижняя свёрнутая ленивая строка: дети прогрева не вытесняют из окна ту, что выше.
 const collapsedLazyToggle = () =>
   [
@@ -406,7 +415,7 @@ const collapsedLazyToggle = () =>
       ".data-grid__body-row[data-expanded='false']",
     ),
   ]
-    .filter(row => ['item-id-0', 'item-id-1'].includes(row.dataset.rowId ?? ''))
+    .filter(row => LAZY_ROOTS.includes(row.dataset.rowId ?? ''))
     .sort((a, b) => Number(b.dataset.index) - Number(a.dataset.index))[0]
     ?.querySelector<HTMLElement>('.row-expand-button')
 
@@ -420,6 +429,8 @@ interface InteractionCase {
   prepare?: () => Promise<void>
   /** Измеряемое взаимодействие. */
   act: () => Promise<void>
+  /** Проверка после замера, что взаимодействие сделало то, что мерится. */
+  verify?: () => void
   /**
    * Известный недостиг: кейс сверяется с регресс-потолком, а не с бюджетом INP
    * (как P5/P6 в first-render).
@@ -607,14 +618,14 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
     // Известный недостиг: ответ пересобирает модели и перерисовывает тело на 100 000
-    // корней (~215–250 мс под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
-    regressionCeiling: 350,
+    // корней (~480–620 мс под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
+    regressionCeiling: 800,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
-      lazyKids('item-id-0')
-      lazyKids('item-id-1')
+      LAZY_ROOTS.forEach(id => lazyKids(id))
     },
     act: async () => collapsedLazyToggle()!.click(),
+    verify: expectLazyArrival,
   },
 ]
 
@@ -631,6 +642,7 @@ describe('Отзывчивость взаимодействий (INP)', () => {
         // видимости userEvent (getComputedStyle/checkVisibility), а только работу
         // приложения: обработчик → обновление стейта → ре-рендер → коммит.
         const result = await measureInteractionWork(c.act)
+        c.verify?.()
         const budget =
           c.regressionCeiling ??
           (c.loadBudget ? LOAD_BUDGET_MS : INTERACTION_BUDGET_MS)
@@ -695,11 +707,11 @@ describe('Отзывчивость взаимодействий — подсве
         } as Parameters<typeof renderGrid>[0])
         await waitForGrid()
         await expect.poll(collapsedLazyToggle).toBeTruthy()
-        lazyKids('item-id-0')
-        lazyKids('item-id-1')
+        LAZY_ROOTS.forEach(id => lazyKids(id))
         const result = await measureInteractionWork(async () =>
           collapsedLazyToggle()!.click(),
         )
+        expectLazyArrival()
         await cleanup()
         return result
       }
