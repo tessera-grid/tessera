@@ -4,6 +4,7 @@ import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { useColumns } from './__mocks__/columns'
+import type { DataNesting } from './__mocks__/data'
 import type { ColumnVisibilityHooks } from '../../lib/plugins/columnVisibility'
 import type { PaginationHooks } from '../../lib/plugins/pagination'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
@@ -16,6 +17,8 @@ export const DATA_COUNT = 10
 export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   columnCount: number
   dataCount: number
+  /** Вложенность генерируемого мока; по умолчанию плоский. */
+  dataNesting?: DataNesting
 
   /**
    * Явный набор данных вместо генерируемого по dataCount.

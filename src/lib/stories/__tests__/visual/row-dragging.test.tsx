@@ -315,14 +315,18 @@ describe('Row Dragging — requirements', () => {
 
 // --- Nested rows (subrows) ----------------------------------------------------
 // Вложенный drag реализован в reducer'е (splice по subRows/parentRow, depth), но
-// каноническая RowDragging-история плоская — здесь он проверяется на дереве.
+// каноническая RowDragging-история плоская — здесь он проверяется на вложенном моке.
 // Раскрытое дерево мока: item-id-0 (root) → [item-id-0-0 → item-id-0-0-0,
 // item-id-0-1, item-id-0-2], затем item-id-1. Проверка по стабильному data-row-id.
 
 describe('Row Dragging — nested rows (subrows)', () => {
   async function renderNested() {
     const { container } = await render(
-      <composed.RowDragging enableRowExpanding initialExpanded />,
+      <composed.RowDragging
+        dataNesting="nested"
+        enableRowExpanding
+        initialExpanded
+      />,
     )
     await expect
       .poll(() => container.querySelectorAll(ROW).length)

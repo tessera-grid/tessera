@@ -8,6 +8,7 @@ import {
   columnCountType,
   containerHeightType,
   dataCountType,
+  dataNestingType,
   enableAnnouncementsType,
   inCategory,
   paginationPageSizeType,
@@ -69,9 +70,10 @@ export default meta
 
 export const AllFeatures: StoryObj<StoryProps> = {
   name: 'All Features',
-  // Все тумблеры грида по группам панели Controls. Дети у каждой 10-й строки видны с
-  // «Раскрытием строк»; ядро и плагины по умолчанию выключены.
+  // Все тумблеры грида по группам панели Controls. Мок вложенный: дети у каждой 10-й
+  // строки видны с «Раскрытием строк»; ядро и плагины по умолчанию выключены.
   args: {
+    dataNesting: 'nested',
     containerHeight: 600,
     height: 500,
     maxHeight: 500,
@@ -124,6 +126,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
     ...inCategory('Данные и размеры', {
       columnCount: columnCountType,
       dataCount: dataCountType,
+      dataNesting: dataNestingType,
       containerHeight: containerHeightType,
       height: numberHeightType,
       maxHeight: numberMaxHeightType,
@@ -226,6 +229,8 @@ export const Skeletons: StoryObj<StoryProps> = {
   // закрепление, шапку и пагинатор. Выключите enableSkeleton — данные встанут на
   // место без сдвига; skeletonOptions.rowsCount числом задаёт строки вручную.
   args: {
+    // Вложенный мок: колонка раскрытия появляется, только если есть строки с детьми.
+    dataNesting: 'nested',
     enableSkeleton: true,
     skeletonOptions: DEFAULT_SKELETON_OPTIONS,
     enableRowSelection: true,
@@ -410,6 +415,7 @@ export const A11yRowMoving: StoryObj<StoryProps> = {
   name: 'A11y: Row Moving',
   args: {
     // Перестановка строк и колонок с клавиатуры (Alt+Shift+стрелки) на дереве.
+    dataNesting: 'nested',
     enableKeyboardNavigation: true,
     enableRowDragging: true,
     enableRowExpanding: true,

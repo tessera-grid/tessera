@@ -81,9 +81,14 @@ export const columnCountType = numberControl(
   STORY_PARAM,
 )
 export const dataCountType = numberControl(
-  'Количество строк верхнего уровня мока; у каждой 10-й есть дети (видны с раскрытием строк)',
+  'Количество строк верхнего уровня мока',
   { min: 0, max: 100_000, step: 10 },
   STORY_PARAM,
+)
+export const dataNestingType = radioControl(
+  'Вложенность мока: flat — плоский, nested — дети у каждой 10-й строки (видны с раскрытием строк)',
+  ['flat', 'nested'],
+  'flat',
 )
 export const containerHeightType = numberControl(
   'Высота контейнера вокруг грида, px',

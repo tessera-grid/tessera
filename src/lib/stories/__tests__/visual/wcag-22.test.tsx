@@ -157,6 +157,7 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
   test('DA4: при раскрытии строк меню даёт «Indent / Outdent» — вложение в группу выше и вынос обратно', async () => {
     await render(
       <Stories.RowDragging
+        dataNesting="nested"
         enableRowExpanding
         initialExpanded
         enableKeyboardNavigation

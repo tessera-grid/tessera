@@ -192,7 +192,8 @@ export const HeaderGroupsShallowLeaves: StoryObj<StoryProps> = {
   args: {
     // Листья разной глубины без групп-прокладок: Country, Visits и служебные
     // колонки растянуты до низа шапки (ADR 0049). Кебаб растянутого листа — тот же,
-    // что в плоской шапке.
+    // что в плоской шапке. Мок вложенный — колонка раскрытия видна.
+    dataNesting: 'nested',
     showHeaderGroups: true,
     enableRowSelection: true,
     enableRowExpanding: true,

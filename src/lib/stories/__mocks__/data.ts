@@ -5,6 +5,8 @@ import { faker } from '@faker-js/faker'
 const today = new Date()
 
 export type DataShape = 'flat' | 'tree' | 'grouped'
+/** Вложенность мока историй: `nested` — дети у каждой 10-й строки верхнего уровня. */
+export type DataNesting = 'flat' | 'nested'
 
 const makeRow = (id: string) => {
   const sexType = faker.person.sexType()
@@ -24,16 +26,19 @@ const makeRow = (id: string) => {
 }
 
 /**
- * Мок историй и тестов: `count` строк верхнего уровня; у каждой 10-й — дети, у
- * каждой 30-й — трое детей, и у первого из них свой ребёнок. Пока раскрытие
- * выключено, видны только строки верхнего уровня.
+ * Мок историй и тестов: `count` строк верхнего уровня. `nested` — у каждой 10-й
+ * дети, у каждой 30-й — трое детей, и у первого из них свой ребёнок; пока раскрытие
+ * выключено, видны только строки верхнего уровня. По умолчанию — плоский: дерево
+ * задаётся явно там, где оно предмет истории или теста.
  */
-export const getData = (count: number) => {
+export const getData = (count: number, nesting: DataNesting = 'flat') => {
   // Сид от объёма: данные истории не зависят от того, что генерировалось до неё.
   faker.seed(count)
   const rows: any[] = Array.from({ length: count }).map((_, i) =>
     makeRow(`item-id-${i}`),
   )
+
+  if (nesting === 'flat') return rows
 
   // Дети — после всех корней: значения корней не зависят от вложенности.
   rows.forEach((row, i) => {
@@ -101,10 +106,12 @@ export const makeData = ({
 
 export const useData = ({
   count,
+  nesting = 'flat',
   showStub,
   skip = false,
 }: {
   count: number
+  nesting?: DataNesting
   showStub: boolean
   /** Данные пришли извне — не генерировать. */
   skip?: boolean
@@ -116,8 +123,8 @@ export const useData = ({
   useEffect(() => {
     if (skip) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- мок внешнего источника данных
-    setData(showStub ? [] : getData(count))
-  }, [count, showStub, skip])
+    setData(showStub ? [] : getData(count, nesting))
+  }, [count, nesting, showStub, skip])
 
   return { data, setData }
 }

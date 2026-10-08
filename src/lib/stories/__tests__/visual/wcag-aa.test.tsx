@@ -377,6 +377,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   test('W12: Alt+Shift+→/← вкладывают строку в предыдущую группу и выносят обратно', async () => {
     await render(
       <Stories.RowDragging
+        dataNesting="nested"
         enableRowExpanding
         initialExpanded
         enableKeyboardNavigation

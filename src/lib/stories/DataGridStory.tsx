@@ -26,6 +26,7 @@ export const StoryComponent = memo(
   ({
     columnCount,
     dataCount,
+    dataNesting,
 
     containerHeight,
     containerWidth,
@@ -75,6 +76,7 @@ export const StoryComponent = memo(
 
     const { data: mockData, setData: setMockData } = useData({
       count: dataCount,
+      nesting: dataNesting,
       showStub,
       skip: dataOverride !== undefined,
     })

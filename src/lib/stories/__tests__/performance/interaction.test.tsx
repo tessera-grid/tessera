@@ -62,7 +62,7 @@ import {
 const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
 
-// Строка без детей: у каждой 10-й строки моков дети в данных, её выбор выбрал бы и их.
+// Строка без детей: выбор строки с детьми выбрал бы и их (мок по умолчанию плоский).
 const SELECT_ROW = 'item-id-1'
 const rowOf = (id: string) =>
   document.querySelector<HTMLElement>(
@@ -439,7 +439,7 @@ const moveNameGroup = async () => {
 }
 
 // Ленивые дети (ADR 0054, RE38): две корневые строки без детей в данных помечены
-// `hasChildren` (у каждой 10-й строки моков дети в данных — такая строка не ленивая),
+// `hasChildren` (мок по умолчанию плоский; строка с детьми в данных не была бы ленивой),
 // `loadChildren` отдаёт заранее собранные 100 детей синхронно — замеряется приход
 // ответа: пересборка исходной модели 100 000 корней и отрисовка детей. Прогрев
 // раскрывает нижнюю строку, замер — верхнюю.
@@ -632,9 +632,9 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...SEARCH },
     // Проход «содержит» по 1 000 000 ячеек — сам по себе 70–350 мс под ×4 (в
-    // зависимости от совпадений); лишних перерисовок в профиле нет. Вложенные моки —
-    // +27 % строк в модели: ~440–480 мс отдельно, до ~650 мс в полной матрице.
-    regressionCeiling: 750,
+    // зависимости от совпадений); лишних перерисовок в профиле нет. Кейс целиком —
+    // ~420–480 мс.
+    regressionCeiling: 600,
     prepare: async () => {
       await expect.poll(quickSearchInput).not.toBeNull()
     },
@@ -646,9 +646,8 @@ const CASES: InteractionCase[] = [
     id: 'FL36',
     label: 'применение фильтра колонки, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS, ...FILTERING },
-    // Как I4: перерисовка видимых строк на 1000 колонок. Вложенные моки — +23 % строк
-    // в модели: ~190–260 мс под ×4.
-    regressionCeiling: 300,
+    // Как I4: перерисовка видимых строк на 1000 колонок (~150–155 мс под ×4).
+    regressionCeiling: 220,
     prepare: openCountryFilter,
     act: async () => alternate(filterValueInput()!, 'a', 'e'),
     afterWarmup: () => expect(filterValueInput()!.value).toBe('a'),
@@ -671,9 +670,8 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...OPTION_FILTERING },
     // Как FL35: проход фильтра по 100 000 строкам и перерисовка; фасеты в замере не
-    // видны — без счётчиков столько же. Вложенные моки — +27 % строк в модели:
-    // ~510–660 мс под ×4.
-    regressionCeiling: 750,
+    // видны — без счётчиков столько же (~400–440 мс под ×4).
+    regressionCeiling: 600,
     prepare: openOptionFilter('gender'),
     // Прогрев отмечает «male», замер — «female»: оба щелчка применяют фильтр, а не снимают.
     act: async () =>
