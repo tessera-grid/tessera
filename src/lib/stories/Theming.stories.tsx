@@ -697,7 +697,7 @@ const PaletteBoard = memo(() => (
 PaletteBoard.displayName = 'PaletteBoard'
 
 export const Palette: StoryObj<ThemingArgs> = {
-  name: 'Палитра (свотчи)',
+  name: 'Palette (swatches)',
   render: () => <PaletteBoard />,
   // Контролы токенов относятся к Playground; для статичного борда прячем панель.
   parameters: { controls: { disable: true } },

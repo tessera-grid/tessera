@@ -118,11 +118,11 @@ TanStack берёт функцию из описания колонки (`column
 | OS9  | Группировка по колонке с вариантами и сортировка по ней упорядочивают строки-группы по подписи                     | visual |
 | OS10 | При серверной сортировке порядок строк не меняется                                                                 | unit   |
 | OS11 | Перф: сортировка 100 000 строк по колонке `lookup` — в пределах регресс-потолка против той же колонки без подписей | perf   |
-| OS12 | История «Sorting — option labels» показывает колонки `select` и `lookup`, отсортированные по подписи               | smoke  |
+| OS12 | История «Columns/Sorting — Option labels» показывает колонки `select` и `lookup`, отсортированные по подписи       | smoke  |
 
 ## План внедрения
 
 1. `knownOptionLabel` в `core/columnOptions.ts`; `optionLabelOf` — через него.
 2. Фича `optionLabelSort` в `plugins/columnSorting`, подключение в записи плагина.
-3. Тесты по таблице; история «Sorting — option labels».
+3. Тесты по таблице; история «Columns/Sorting — Option labels».
 4. Документация: ADR 0048 «Границы», ADR 0012, roadmap «Известные проблемы».

@@ -140,7 +140,7 @@
    трёх уровнях темы, инварианты `dist` (`check:theme`).
 3. Локализация `announceChildrenLoaded`, объявление в успешной ветке.
 4. Тесты: `row-expanding-lazy` (visual), `lazyChildren.dom` (unit), перф RE50 — в
-   `interaction`; история «Row Expanding — lazy children (server)» показывает
+   `interaction`; история «Rows/Expanding — Lazy children (server)» показывает
    подсветку.
 5. Документация: ADR 0054 (ссылка на 0056), `theming-and-overrides.md` (токены),
    roadmap (линии дерева — в «Запланировано»), AGENTS.md (наборы тестов),

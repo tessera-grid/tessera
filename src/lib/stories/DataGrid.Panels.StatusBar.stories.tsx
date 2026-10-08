@@ -1,19 +1,15 @@
 import { Meta, StoryObj } from '@storybook/react'
-
+import { statusBarDemoPlugins } from './statusBarDemo'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { OwnPagerDemo } from './demos/panelsDemos'
 
-/**
- * Тулбар и нижняя панель (ADR 0046): без флага панель есть, пока плагины дают ей
- * слоты; `enableToolbar` / `enableStatusBar` оставляют пустую панель или запрещают её.
- */
-
+/** Нижняя панель (ADR 0038): счётчик выбора, узкая ширина, своя пагинация вместо панели. */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/DataGrid/Panels',
+  title: 'Tessera/DataGrid/Panels/Status bar',
 } satisfies Meta<StoryProps>
 
 export default meta
@@ -26,23 +22,29 @@ const GRID = {
   maxHeight: 460,
 }
 
-export const PanelsFromPlugins: StoryObj<StoryProps> = {
-  name: 'Panels — from plugins',
+export const WithStatusBar: StoryObj<StoryProps> = {
+  name: 'Basic',
   args: {
-    ...GRID,
-    // Флагов нет: тулбар вызывают «Колонки» и «Экспорт», нижнюю панель — пагинация
-    // и счётчик выбора. Переключите enableToolbar / enableStatusBar в off — панель
-    // уйдёт (columnVisibility станет инертен), в on — останется и без плагинов.
-    enableColumnVisibility: true,
-    enableExport: true,
-    enablePagination: true,
+    // Демо-слоты нижней панели: один слева, два справа (порядок по `order`).
+    // Включите enableFooter — панель встанет под футером одной линией.
+    extraPlugins: statusBarDemoPlugins,
+  },
+}
+
+export const SelectedCount: StoryObj<StoryProps> = {
+  name: 'Selected count',
+  args: {
+    // Счётчик выбранных строк слева в нижней панели, пагинация справа: выбор на
+    // других страницах тоже считается.
     enableRowSelection: true,
     showSelectedCount: true,
+    enablePagination: true,
+    dataCount: 1000,
   },
 }
 
 export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
-  name: 'Panels — narrow status bar',
+  name: 'Narrow',
   // Узкая колонка (ADR 0038, SB7–SB13): нижняя панель в две строки — счётчик выбора
   // сверху, пагинация снизу, кнопки переносятся. Выберите строки, чтобы появился
   // счётчик; меняйте containerWidth, чтобы увидеть компактный и полный вид.
@@ -57,7 +59,7 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
 }
 
 export const PanelsOwnPager: StoryObj<StoryProps> = {
-  name: 'Panels — status bar off (own pager)',
+  name: 'Off (own pager)',
   args: GRID,
   // Нижняя панель запрещена, пагинация работает: свой пейджер над гридом листает
   // страницы через table.previousPage() / nextPage().

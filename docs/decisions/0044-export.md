@@ -303,7 +303,7 @@ columns»). Иконка: `download`. Кнопка и панель проход�
 | EX31 | Подписи — из `localization`, иконка — из `icons`; подпись — доступное имя и тултип кнопки                                                                                                                         | visual |
 | EX32 | Кнопка и панель проходят axe с `color-contrast` в обеих темах                                                                                                                                                     | visual |
 | EX33 | «Выгрузить» на 100 000 × 10 укладывается в бюджет Load (≤ 1000 мс) под ×4 CPU                                                                                                                                     | perf   |
-| EX34 | Демо-история «Export — server»: серверная выгрузка вызывает `onExport` и держит кнопку занятой до ответа, `page` скачивается и пишет `onExported` в журнал                                                        | visual |
+| EX34 | Демо-история «Export — Server»: серверная выгрузка вызывает `onExport` и держит кнопку занятой до ответа, `page` скачивается и пишет `onExported` в журнал                                                        | visual |
 
 ## План внедрения
 
@@ -315,4 +315,4 @@ columns»). Иконка: `download`. Кнопка и панель проход�
   клик при одном варианте (EX1, EX6–EX9, EX23, EX25, EX31–EX32).
 - **Фаза 4 — сервер.** `server`, занятость, отказ, `noOnExport` (EX26–EX29).
 - **Фаза 5 — перформанс и истории.** Кейс EX33; `DataGrid.Export.stories.tsx`:
-  «Export», «Export — presets», «Export — server» (EX34).
+  «Export», «Export — presets», «Export — Server» (EX34).

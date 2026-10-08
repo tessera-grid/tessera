@@ -57,7 +57,7 @@ const GRID = {
 }
 
 export const Filtering: StoryObj<StoryProps> = {
-  name: 'Filtering',
+  name: 'Basic',
   args: {
     ...GRID,
     // Воронка в заголовке открывает панель: «Name» и «City» — текст, «Age» — число
@@ -129,7 +129,7 @@ const TREE = [
 ]
 
 export const FilteringTree: StoryObj<StoryProps> = {
-  name: 'Filtering — tree',
+  name: 'Tree',
   args: {
     ...GRID,
     dataOverride: TREE,
@@ -142,7 +142,7 @@ export const FilteringTree: StoryObj<StoryProps> = {
 }
 
 export const FilteringCombined: StoryObj<StoryProps> = {
-  name: 'Filtering — with pagination, selection and export',
+  name: 'With pagination, selection and export',
   args: {
     ...GRID,
     dataOverride: makeFilteringData(200),
@@ -173,7 +173,7 @@ export const QuickSearchNoColumns: StoryObj<StoryProps> = {
 }
 
 export const FilteringEmpty: StoryObj<StoryProps> = {
-  name: 'Filtering — empty result',
+  name: 'Empty result',
   args: {
     ...GRID,
     // Наберите в поиске «zzz»: над пустым телом — «No rows match the filters» и сброс
@@ -182,7 +182,7 @@ export const FilteringEmpty: StoryObj<StoryProps> = {
 }
 
 export const FilteringServer: StoryObj<FilteringServerArgs> = {
-  name: 'Filtering — server',
+  name: 'Server',
   args: {
     ...GRID,
     serverDelayMs: 600,
@@ -199,7 +199,7 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
 }
 
 export const FilteringDates: StoryObj<FilteringDatesArgs> = {
-  name: 'Filtering — dates',
+  name: 'Dates',
   args: {
     ...GRID,
     columnsOverride: dateFilteringColumns,
@@ -242,7 +242,7 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
 }
 
 export const FilteringOptions: StoryObj<StoryProps> = {
-  name: 'Filtering — select & multiselect',
+  name: 'Select & multiselect',
   args: {
     ...GRID,
     columnsOverride: optionFilteringColumns,
@@ -255,7 +255,7 @@ export const FilteringOptions: StoryObj<StoryProps> = {
 }
 
 export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
-  name: 'Filtering — lookup (server)',
+  name: 'Lookup (server)',
   args: {
     ...GRID,
     serverDelayMs: 400,

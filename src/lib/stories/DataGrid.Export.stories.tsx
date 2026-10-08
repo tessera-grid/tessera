@@ -29,7 +29,7 @@ const GRID = {
 }
 
 export const Export: StoryObj<StoryProps> = {
-  name: 'Export',
+  name: 'Basic',
   args: {
     ...GRID,
     dataCount: 50,
@@ -40,7 +40,7 @@ export const Export: StoryObj<StoryProps> = {
 }
 
 export const ExportDirect: StoryObj<StoryProps> = {
-  name: 'Export — direct click',
+  name: 'Direct click',
   args: {
     ...GRID,
     dataCount: 50,
@@ -51,7 +51,7 @@ export const ExportDirect: StoryObj<StoryProps> = {
 }
 
 export const ExportPresets: StoryObj<StoryProps> = {
-  name: 'Export — settings and quick sets',
+  name: 'Settings and quick sets',
   args: {
     ...GRID,
     dataCount: 200,
@@ -77,7 +77,7 @@ export const ExportPresets: StoryObj<StoryProps> = {
 }
 
 export const ExportServer: StoryObj<ExportArgs> = {
-  name: 'Export — server',
+  name: 'Server',
   args: {
     ...GRID,
     // Страница из 1000 строк: «Текущая страница» скачивает клиент (onExported),

@@ -1,22 +1,54 @@
-// Истории DataGrid как фикстуры тестов: все группы в одном объекте.
+// Истории DataGrid как фикстуры тестов: все группы в одном объекте (по имени экспорта).
 import { composeStories } from '@storybook/react-vite'
 
-import * as cells from '../DataGrid.Cells.stories'
-import * as columns from '../DataGrid.Columns.stories'
+import * as accessibility from '../DataGrid.Accessibility.stories'
+import * as cellsContextMenu from '../DataGrid.Cells.ContextMenu.stories'
+import * as cellsEditing from '../DataGrid.Cells.Editing.stories'
+import * as cellsKeyboard from '../DataGrid.Cells.Keyboard.stories'
+import * as cellsSelection from '../DataGrid.Cells.Selection.stories'
+import * as columnsHeaderGroups from '../DataGrid.Columns.HeaderGroups.stories'
+import * as columnsHeaderMenu from '../DataGrid.Columns.HeaderMenu.stories'
+import * as columnsPinning from '../DataGrid.Columns.Pinning.stories'
+import * as columnsResizingDragging from '../DataGrid.Columns.ResizingDragging.stories'
+import * as columnsSorting from '../DataGrid.Columns.Sorting.stories'
+import * as columnsVisibility from '../DataGrid.Columns.Visibility.stories'
+import * as core from '../DataGrid.Core.stories'
 import * as exportStories from '../DataGrid.Export.stories'
-import * as filteringStories from '../DataGrid.Filtering.stories'
-import * as panelsStories from '../DataGrid.Panels.stories'
-import * as rows from '../DataGrid.Rows.stories'
-import * as sessions from '../DataGrid.Sessions.stories'
-import * as general from '../DataGrid.stories'
+import * as filtering from '../DataGrid.Filtering.stories'
+import * as panelsPagination from '../DataGrid.Panels.Pagination.stories'
+import * as panelsPresence from '../DataGrid.Panels.Presence.stories'
+import * as panelsStatusBar from '../DataGrid.Panels.StatusBar.stories'
+import * as panelsToolbar from '../DataGrid.Panels.Toolbar.stories'
+import * as pluginApi from '../DataGrid.PluginApi.stories'
+import * as rowsActions from '../DataGrid.Rows.Actions.stories'
+import * as rowsDragging from '../DataGrid.Rows.Dragging.stories'
+import * as rowsExpanding from '../DataGrid.Rows.Expanding.stories'
+import * as rowsGrouping from '../DataGrid.Rows.Grouping.stories'
+import * as rowsSelection from '../DataGrid.Rows.Selection.stories'
 
 export const composed = {
-  ...composeStories(general),
-  ...composeStories(columns),
-  ...composeStories(rows),
-  ...composeStories(cells),
-  ...composeStories(sessions),
+  ...composeStories(accessibility),
+  ...composeStories(cellsContextMenu),
+  ...composeStories(cellsEditing),
+  ...composeStories(cellsKeyboard),
+  ...composeStories(cellsSelection),
+  ...composeStories(columnsHeaderGroups),
+  ...composeStories(columnsHeaderMenu),
+  ...composeStories(columnsPinning),
+  ...composeStories(columnsResizingDragging),
+  ...composeStories(columnsSorting),
+  ...composeStories(columnsVisibility),
+  ...composeStories(core),
   ...composeStories(exportStories),
-  ...composeStories(filteringStories),
-  ...composeStories(panelsStories),
+  ...composeStories(filtering),
+  ...composeStories(panelsPagination),
+  ...composeStories(panelsPresence),
+  ...composeStories(panelsStatusBar),
+  ...composeStories(panelsToolbar),
+  ...composeStories(pluginApi),
+  ...composeStories(rowsActions),
+  ...composeStories(rowsDragging),
+  ...composeStories(rowsExpanding),
+  ...composeStories(rowsGrouping),
+  ...composeStories(rowsSelection),
 }

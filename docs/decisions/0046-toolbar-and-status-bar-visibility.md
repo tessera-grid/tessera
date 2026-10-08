@@ -127,7 +127,7 @@
 | PB9  | При `enableToolbar: false` `quickSearch` активен в `diagnose`, а программная смена `globalFilter` фильтрует строки                                  | unit   |
 | PB10 | При `enableStatusBar: false` пагинация делит строки на страницы без переключателя, `setPageIndex` и `setPageSize` меняют видимые строки             | visual |
 | PB11 | При `enableStatusBar: false` счётчик выбранных строк и «показано N из M» не рисуются, а `rowSelection` и `columnFiltering` активны в `diagnose`     | visual |
-| PB12 | Демо-история «Panels — status bar off (own pager)»: нижней панели нет, кнопки своего пейджера листают страницы                                      | visual |
+| PB12 | Демо-история «Panels/Status bar — Off (own pager)»: нижней панели нет, кнопки своего пейджера листают страницы                                      | visual |
 
 ## План внедрения
 
@@ -140,6 +140,6 @@
   отдельный файл: модуль грузится один раз на документ), модульные PB7–PB9 в
   `columnVisibility`, `export`, `filtering`. Переписаны TB3, TB4, SB1, FL15, FL18.
 - **Истории.** `enableToolbar` / `enableStatusBar` — тройной выбор «auto / on / off»;
-  группа `DataGrid.Panels.stories.tsx`: «Panels — from plugins» и «Panels — status bar
-  off (own pager)» (дымовой `visual/panels-stories`, PB12); явные `enableToolbar: true`
+  группа Panels: «Panels/Presence — From plugins» и «Panels/Status bar — Off (own
+  pager)» (дымовой `visual/panels-stories`, PB12); явные `enableToolbar: true`
   в историях, где тулбар и так вызывают плагины, убраны.

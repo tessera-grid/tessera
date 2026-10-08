@@ -227,7 +227,7 @@ columnFiltering({
 | DF18 | Быстрый поиск не обходит колонки `date` и `datetime`                                                                                                                      | unit   |
 | DF19 | `server: true`: грид не фильтрует даты; `onFilterChange` получает ISO-строки и пресеты как есть, после действия пользователя                                              | visual |
 | DF20 | Экспорт `view` учитывает фильтр дат                                                                                                                                       | unit   |
-| DF21 | Демо-история «Filtering — dates»: фильтр по `date` и `datetime`, пресет и смена `timeZone` меняют выборку и «показано N из M»                                             | visual |
+| DF21 | Демо-история «Filtering — Dates»: фильтр по `date` и `datetime`, пресет и смена `timeZone` меняют выборку и «показано N из M»                                             | visual |
 | DF22 | Применение фильтра даты на 1000 × 1000, все плагины, укладывается в бюджет INP (≤ 100 мс) под ×4 CPU                                                                      | perf   |
 
 ## План внедрения
@@ -239,5 +239,5 @@ columnFiltering({
 - **Фаза 2 — UI.** Ленивый модуль календаря, поповер, время, клавиатура, тема,
   локализация, сводка, axe (DF1, DF9–DF17).
 - **Фаза 3 — сервер, перф, истории.** DF19, DF22; в `DataGrid.Filtering.stories.tsx` —
-  «Filtering — dates» (DF21) с колонками `date` / `datetime` в демо-данных и
+  «Filtering — Dates» (DF21) с колонками `date` / `datetime` в демо-данных и
   переключателем пояса.

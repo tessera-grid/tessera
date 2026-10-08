@@ -176,6 +176,6 @@
    `--tsr-comp-cell-saved-*` в трёх уровнях темы, `check:theme`.
 4. Тесты: визуальные — в `async-callbacks`, модульные — в `asyncCallbacks`, перф CF12 —
    в `scroll` рядом с AS14; ADR 0041 — пометка «Изменён» и правка AS13.
-5. История «Sessions & Async» с асинхронной правкой показывает блик, вспышку и
+5. История «Cells/Editing — Server (async)» показывает блик, вспышку и
    подсветку; документация: `theming-and-overrides.md` (токены), AGENTS.md (наборы
    тестов), README решений, roadmap.

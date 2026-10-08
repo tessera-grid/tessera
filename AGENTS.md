@@ -448,7 +448,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Включение панелей:_ `panels` (PB1–PB5, PB10–PB11 — тулбар и нижняя панель по
       слотам, флаги-переопределения), `toolbar-chunk` (PB6 — ленивый модуль тулбара),
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), дымовой
-      `panels-stories` (PB12 — история «Panels — status bar off (own pager)»),
+      `panels-stories` (PB12 — история «Panels/Status bar — Off (own pager)»),
       [ADR 0046](docs/decisions/0046-toolbar-and-status-bar-visibility.md).
     - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB7–SB14 — узкая ширина — `status-bar-narrow`; SB5 — модульный
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
@@ -459,13 +459,13 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,
       строки и колонки, значения, CSV, защита от формул, `table.exportData`,
       [ADR 0044](docs/decisions/0044-export.md)); дымовой `export-stories` (EX34 — история
-      «Export — server»); перф EX33 — в `interaction`.
+      «Export — Server»); перф EX33 — в `interaction`.
     - _Фильтрация:_ `filtering` (FL1, FL3, FL7–FL13, FL15–FL17, FL19–FL24, FL27–FL30,
       FL32–FL34 — кнопка и панель фильтра колонки, дебаунс, кебаб, клавиатура, поиск,
       сводка, «показано N из M», «скрыто фильтром», сочетания с плагинами, заглушка,
       сервер, объявление, локализация, axe), модульные `filtering` (FL2, FL4–FL6, FL14,
       FL18, FL25–FL26, FL31 — условия, объединение через И, поиск, экспорт, `diagnose`),
-      дымовой `filtering-stories` (FL37 — история «Filtering — server»), `filter-panel-open`
+      дымовой `filtering-stories` (FL37 — история «Filtering — Server»), `filter-panel-open`
       (FL38–FL39 — первое открытие без пустого поповера), `filter-panel-preload` (FL40 —
       загрузка панели при наведении и фокусе), перф FL35–FL36 — в `interaction`,
       [ADR 0045](docs/decisions/0045-filtering.md).
@@ -477,15 +477,15 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       сервер), `date-filter-chunk` (DF14 — ленивый модуль календаря), модульные
       `filteringDates` (DF2–DF8, DF18, DF20 — разбор значений, условия, пресеты, пояс,
       сериализуемый срез, поиск, экспорт), дымовой `filtering-stories` (DF21 — история
-      «Filtering — dates»), перф DF22 — в `interaction`,
+      «Filtering — Dates»), перф DF22 — в `interaction`,
       [ADR 0047](docs/decisions/0047-date-filtering.md).
     - _Фильтр вариантов:_ `filtering-options` (SF1, SF6–SF7, SF9–SF13, SF15, SF18–SF21 —
       чек-лист, поиск, счётчики, виртуализация, клавиатура, справочник, подписи в
       ячейке и сводке, сервер, локализация, axe), `option-filter-chunk` (SF22 —
       ленивый модуль панели), модульные `filteringOptions` (SF2–SF5, SF8, SF14, SF16–SF17
       — варианты из данных, условия, срез, фасеты, подписи в поиске и экспорте),
-      дымовые `filtering-stories` (SF23–SF24 — истории «Filtering — select &
-      multiselect» и «Filtering — lookup (server)»), перф SF25–SF26 — в `interaction`,
+      дымовые `filtering-stories` (SF23–SF24 — истории «Filtering — Select &
+      multiselect» и «Filtering — Lookup (server)»), перф SF25–SF26 — в `interaction`,
       [ADR 0048](docs/decisions/0048-option-filtering.md).
     - _Тема и токены:_ `theming` (TH1–TH10,
       [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
@@ -543,8 +543,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       виртуализация, уменьшенное движение, объявления, контраст, токены), модульный
       `asyncCallbacks` (CF7 — отметки сохранения), перф CF12 — в `scroll`
       ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
-    - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты группы Sessions &
-      Async: сценарий истории в интерфейсе и журнале колбэков,
+    - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты демо-историй Cells/Editing,
+      Rows/Expanding, Plugin API: сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
     - _Автор плагина:_ модульные `definePlugin` (DP1, DP3, DP6–DP7, DP10–DP12, DP15, DP19 —
       запись, типы слотов и сервисной колонки), `definePlugin.dom` (DP8–DP9, DP17–DP18, DP20 —
@@ -754,9 +754,11 @@ ADR и не с кода.** Прожарка — короткий диалог с
 использования — тоже отдельная история.** Без историй фича не считается готовой: по
 ним потребитель и сам разработчик видят, как фича выглядит и работает.
 
-- **Фича — минимум одна история** в `src/lib/stories/` (`DataGrid.*.stories.tsx` по
-  группе), включающая её через тумблеры и аргументы, как соседние
-  (`enableColumnVisibility`, `enablePagination`). Новый плагин добавляется в
+- **Фича — минимум одна история**, включающая её через тумблеры и аргументы, как
+  соседние (`enableColumnVisibility`, `enablePagination`). Файл на фичу —
+  `src/lib/stories/DataGrid.<Группа>.<Фича>.stories.tsx` с заголовком
+  `Tessera/DataGrid/<Группа>/<Фича>`; название истории — вариант на английском (`Basic`,
+  `Tree lines`); имя экспорта уникально среди всех историй (тесты берут истории по нему). Новый плагин добавляется в
   `argsToPlugins` и в `StoryProps`, его тумблер и настройки-данные — в полную панель
   Controls общей меты (`__mocks__/utils/dataGridControls.ts`) со значением по
   умолчанию, как у библиотеки; тумблер без контрола роняет страж `storyControls`.

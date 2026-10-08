@@ -72,7 +72,7 @@ const expandAllType = {
 }
 
 const meta = {
-  title: 'Tessera/DataGrid/Data',
+  title: 'Tessera/DataGrid/Data & scale',
   parameters: {
     backgrounds: { disable: true },
     layout: 'fullscreen',

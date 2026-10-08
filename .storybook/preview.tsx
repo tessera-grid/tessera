@@ -38,6 +38,33 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
+    // Порядок групп: от ядра к фичам и служебным песочницам; внутри фичи — порядок
+    // экспортов файла (Basic первым).
+    options: {
+      storySort: {
+        order: [
+          'Tessera',
+          [
+            'DataGrid',
+            [
+              'Core',
+              'Columns',
+              'Rows',
+              'Cells',
+              'Filtering',
+              'Export',
+              'Panels',
+              'Accessibility',
+              'Plugin API',
+              'Data & scale',
+              'Sizing',
+            ],
+            'Theming',
+            'UI',
+          ],
+        ],
+      },
+    },
   },
   decorators: [
     (Story, context) => {

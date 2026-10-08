@@ -213,8 +213,8 @@ DF14), модульные — `__tests__/filteringOptions.test.ts`, перфор
 | SF20 | Подписи панели — из `localization`, иконки — из `icons`                                                                                                               | visual |
 | SF21 | Панель проходит axe с `color-contrast` в обеих темах (в том числе ожидание и ошибка); зона нажатия не меньше 24×24                                                    | visual |
 | SF22 | Модуль панели вариантов загружается при первом открытии такого фильтра; грид без колонок с вариантами его не загружает                                                | visual |
-| SF23 | Демо-история «Filtering — select & multiselect»: галочки, «содержит все» и фасетные счётчики меняют выборку и «показано N из M»                                       | visual |
-| SF24 | Демо-история «Filtering — lookup (server)»: поиск в панели зовёт `loadOptions` (журнал), выбор уходит в `onFilterChange`, сводка показывает подписи                   | visual |
+| SF23 | Демо-история «Filtering — Select & multiselect»: галочки, «содержит все» и фасетные счётчики меняют выборку и «показано N из M»                                       | visual |
+| SF24 | Демо-история «Filtering — Lookup (server)»: поиск в панели зовёт `loadOptions` (журнал), выбор уходит в `onFilterChange`, сводка показывает подписи                   | visual |
 | SF25 | Применение фильтра варианта на 100 000 × 10 с фасетами, все плагины, укладывается в бюджет INP (≤ 100 мс) под ×4 CPU                                                  | perf   |
 | SF26 | Открытие панели с 1000 вариантов укладывается в бюджет INP (≤ 100 мс) под ×4 CPU                                                                                      | perf   |
 
@@ -227,5 +227,5 @@ DF14), модульные — `__tests__/filteringOptions.test.ts`, перфор
   счётчики, виртуализация, клавиатура, сводка (SF1, SF6–SF11, SF18, SF22).
 - **Фаза 3 — справочник.** `loadOptions`, ожидание, ошибка, кэш подписей (SF12–SF13).
 - **Фаза 4 — сервер, вид, истории, перф.** SF19–SF21, SF23–SF26;
-  `DataGrid.Filtering.stories.tsx`: «Filtering — select & multiselect» и
-  «Filtering — lookup (server)».
+  `DataGrid.Filtering.stories.tsx`: «Filtering — Select & multiselect» и
+  «Filtering — Lookup (server)».
