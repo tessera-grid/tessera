@@ -4,10 +4,7 @@
  * ПОЛНОСТЬЮ заменяет дефолт, поэтому проверку `subRows` включаем сами; гейт
  * группировки — там же. Ленивые дети (ADR 0054) — своя исходная модель и срез ответов.
  */
-import {
-  createExpandedRowModel,
-  rowExpandingFeature,
-} from '@tanstack/react-table'
+import { rowExpandingFeature } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
@@ -17,6 +14,7 @@ import type {
 } from '../../core/servicePresence'
 import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
+import { createIncrementalExpandedRowModel } from './expandedRowModel'
 import { createLazyCoreRowModel } from './lazyCoreRowModel'
 import {
   readLoadedChildren,
@@ -91,7 +89,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     rowExpandingPendingFeature,
     rowExpandingLazyFeature,
     coreRowModel: createLazyCoreRowModel(),
-    expandedRowModel: createExpandedRowModel(),
+    expandedRowModel: createIncrementalExpandedRowModel(),
   },
   hooks: o => ({
     onExpandRow: o.onExpandRow,

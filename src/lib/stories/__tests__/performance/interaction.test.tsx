@@ -36,6 +36,7 @@ import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
+import { createIncrementalExpandedRowModel } from '../../../plugins/rowExpanding/expandedRowModel'
 import { createSearchAwareFilteredRowModel } from '../../../core/filteredRowModel'
 import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGrouping/groupedRowModel'
 import {
@@ -727,9 +728,10 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
     // Известный недостиг: ответ пересобирает модели (инкрементно, ADR 0067; без
-    // холостых проходов, ADR 0068; без копии rowsById, ADR 0069) и перерисовывает тело
-    // на 100 000 корней (~230 мс под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
-    regressionCeiling: 350,
+    // холостых проходов, ADR 0068; без копии rowsById, ADR 0069; раскрытие из прошлого,
+    // ADR 0070) и перерисовывает тело на 100 000 корней (~215–225 мс под ×4); план —
+    // «Дешёвый приход ленивых детей» в roadmap.
+    regressionCeiling: 300,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       LAZY_ROOTS.forEach(id => lazyKids(id))
@@ -1553,6 +1555,95 @@ describe('Холостые проходы фильтрации и группир
       expect(
         ours.longestMs,
         `Tessera longest=${ours.longestMs.toFixed(1)}ms, TanStack ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Инкрементальная модель раскрытия (ADR 0070, XM5): приход 100 детей у раскрытого корня
+// на 100 000 корней — пересчёт модели раскрытия против фабрики TanStack в том же замере.
+// Две входные модели собирает инкрементальная исходная модель (корни, кроме изменённого,
+// — те же объекты); модель на входе чередуется между ними, её сборка в замер не входит.
+describe('Инкрементальная модель раскрытия', () => {
+  test(
+    'XM5: пересчёт модели раскрытия после прихода 100 детей на 100 000 корней — не дольше четверти TanStack',
+    async () => {
+      const columns = [{ id: 'name', accessorKey: 'name' }]
+      const getRowId = (row: { id: string }) => row.id
+      const expanded = { r0: true, r50000: true }
+      const source = constructTable({
+        features: tableFeatures({
+          ...stockFeatures,
+          coreReactivityFeature: storeReactivityBindings(),
+          rowExpandingLazyFeature,
+          coreRowModel: createLazyCoreRowModel(),
+        } as never),
+        data: LAZY_MODEL_ROOTS,
+        columns,
+        getRowId,
+        initialState: { expanded },
+      } as never) as unknown as { getCoreRowModel: () => unknown }
+      const inputs = LAZY_ANSWERS.map(kids => {
+        setLoadedAnswer(source, prev => ({ ...prev, r0: kids }))
+        return source.getCoreRowModel()
+      })
+
+      const recompute = async (expandedRowModel: unknown) => {
+        let turn = 0
+        const table = constructTable({
+          features: tableFeatures({
+            ...stockFeatures,
+            coreReactivityFeature: storeReactivityBindings(),
+            coreRowModel: () => () => inputs[turn % 2],
+            expandedRowModel,
+          } as never),
+          data: LAZY_MODEL_ROOTS,
+          columns,
+          getRowId,
+          initialState: { expanded },
+        } as never) as unknown as { getExpandedRowModel: () => unknown }
+        table.getExpandedRowModel()
+        return measureInteractionWork(async () => {
+          turn++
+          table.getExpandedRowModel()
+        })
+      }
+
+      const base = await recompute(createExpandedRowModel())
+      const ours = await recompute(createIncrementalExpandedRowModel())
+      const ceiling = base.longestMs / 4
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000 корней',
+          plugins: 'rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('XM5-base', 'модель раскрытия TanStack', base, false)
+      await record('XM5', 'модель раскрытия из прошлой', ours, true)
+
+      expect(
+        ours.longestMs,
+        `инкремент longest=${ours.longestMs.toFixed(1)}ms, TanStack ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
