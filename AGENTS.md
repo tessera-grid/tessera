@@ -341,6 +341,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `reactivity.dom` (ST1 — перерисовка только подписчика среза,
       [ADR 0026](docs/decisions/0026-migrate-to-tanstack-v9.md)).
     - _Виртуализация:_ `virtualization` (V1–V11).
+    - _Быстрая прокрутка:_ `fast-scroll` (FS6–FS7 — скелеты только у смонтированных в
+      сессии, пауза главного потока при прокрутке колесом), модульный `fastScrollDetector`
+      (FS1–FS5 — скорость по жесту, догоняющие события, вход, выход, простой),
+      [ADR 0008](docs/decisions/0008-fast-scroll.md).
     - _Вложенная шапка:_ `header-spans` (HS2–HS6, HS9, HS11–HS13 — растянутые листья,
       служебные колонки, `aria-rowspan`/`aria-colspan`, пиннинг, axe, кебаб), модульные
       `headerSpans` (HS1, HS7–HS8, HS14 — позиция из `header.rowSpan` v9, полная

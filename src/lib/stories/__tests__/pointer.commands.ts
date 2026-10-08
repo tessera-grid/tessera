@@ -67,3 +67,18 @@ export const realMouseMove: BrowserCommand<
 > = async ({ page }, from, to, steps = 12) => {
   await moveInSteps(page, await toPage(page), from, to, steps)
 }
+
+// Настоящая прокрутка колесом (ADR 0008, FS7): `ticks` щелчков по `deltaY` px через
+// `intervalMs` по часам Node, не дожидаясь обработки каждого: пока главный поток
+// страницы стоит, щелчки копятся и приходят пачкой, как у пользователя.
+export const realWheel: BrowserCommand<
+  [at: Point, deltaY: number, ticks: number, intervalMs: number]
+> = async ({ page }, at, deltaY, ticks, intervalMs) => {
+  await page.mouse.move(...(await toPage(page))(at))
+  const sent: Promise<void>[] = []
+  for (let tick = 0; tick < ticks; tick++) {
+    sent.push(page.mouse.wheel(0, deltaY))
+    await new Promise(resolve => setTimeout(resolve, intervalMs))
+  }
+  await Promise.all(sent)
+}

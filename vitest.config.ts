@@ -16,6 +16,7 @@ import {
   realDragHold,
   realMouseMove,
   realMouseUp,
+  realWheel,
 } from './src/lib/stories/__tests__/pointer.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
@@ -88,6 +89,7 @@ export default defineConfig({
               realDragHold,
               realMouseMove,
               realMouseUp,
+              realWheel,
               routeModule,
               releaseModule,
               heldModuleRequests,
