@@ -42,6 +42,7 @@
   cursor: pointer;
   user-select: none;
   outline: none;
+  transition: var(--tsr-comp-popup-item-transition);
 }
 
 .item[data-highlighted] {

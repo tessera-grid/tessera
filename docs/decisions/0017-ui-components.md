@@ -392,16 +392,17 @@ Chromium) и рендерят компоненты напрямую, читая 
 
 **Контракт вида поповеров** (`theming-popups.test.tsx`)
 
-| ID  | Требование                                                                                                                               | Тест                                                        |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| PP1 | Поповеры делят единую поверхность: фон, цвет текста, рамка, радиус, тень, кегль, шрифт и transition                                      | ✔ `PP1 popover surfaces share ONE …`                        |
-| PP2 | Пункты поповеров делят единую высоту (`popup-item-min-height`), радиус и кегль                                                           | ✔ `PP2 popover items share ONE …`                           |
-| PP3 | Недоступный пункт гаснет цветом `control-disabled-color`, а не прозрачностью                                                             | ✔ `PP3 a disabled popover item fades …`                     |
-| PP4 | Поповеры открываются на едином расстоянии от якоря — `POPUP_SIDE_OFFSET` (4px): кебаб, контекстное меню, кнопки тулбара, список страницы | ✔ `PP4 popovers open at ONE distance …`                     |
-| PP5 | Поповеры в порталах следуют цветовой схеме грида: при `colorMode="dark"` тёмные фон и текст                                              | ✔ `PP5 popovers rendered in portals …`                      |
-| PP6 | Поверхность поповера без рамки: её отделяет только `shadow-action`                                                                       | ✔ `PP6 popover surfaces have no border …`                   |
-| PP7 | Пункты поповеров показывают курсор-указатель; недоступный пункт — обычный курсор                                                         | ✔ `PP7 popover items show the pointer cursor …`             |
-| PP8 | Открытие поповера не вызывает ошибку окна «ResizeObserver loop»; список Select не уже своего триггера                                    | ✔ `PP8 popovers open without a ResizeObserver loop error …` |
+| ID  | Требование                                                                                                                                | Тест                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| PP1 | Поповеры делят единую поверхность: фон, цвет текста, рамка, радиус, тень, кегль, шрифт и transition                                       | ✔ `PP1 popover surfaces share ONE …`                        |
+| PP2 | Пункты поповеров делят единую высоту (`popup-item-min-height`), радиус и кегль                                                            | ✔ `PP2 popover items share ONE …`                           |
+| PP3 | Недоступный пункт гаснет цветом `control-disabled-color`, а не прозрачностью                                                              | ✔ `PP3 a disabled popover item fades …`                     |
+| PP4 | Поповеры открываются на едином расстоянии от якоря — `POPUP_SIDE_OFFSET` (4px): кебаб, контекстное меню, кнопки тулбара, список страницы  | ✔ `PP4 popovers open at ONE distance …`                     |
+| PP5 | Поповеры в порталах следуют цветовой схеме грида: при `colorMode="dark"` тёмные фон и текст                                               | ✔ `PP5 popovers rendered in portals …`                      |
+| PP6 | Поверхность поповера без рамки: её отделяет только `shadow-action`                                                                        | ✔ `PP6 popover surfaces have no border …`                   |
+| PP7 | Пункты поповеров показывают курсор-указатель; недоступный пункт — обычный курсор                                                          | ✔ `PP7 popover items show the pointer cursor …`             |
+| PP8 | Открытие поповера не вызывает ошибку окна «ResizeObserver loop»; список Select не уже своего триггера                                     | ✔ `PP8 popovers open without a ResizeObserver loop error …` |
+| PP9 | Подсветка пункта поповера меняет фон переходом в темпе подсветки строки таблицы (длительность и кривая — как у `background-color` ячейки) | ✔ `PP9 popover item highlight transitions …`                |
 
 **Контракт движения** (`theming-motion.test.tsx`)
 

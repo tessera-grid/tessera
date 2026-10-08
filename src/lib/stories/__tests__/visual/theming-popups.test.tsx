@@ -390,6 +390,28 @@ describe('Popover family contract', () => {
     )
   })
 
+  test('PP9 popover item highlight transitions its background in the tempo of a table row hover', async () => {
+    await renderAll()
+    const cell = document.querySelector<HTMLElement>('.data-grid__body-cell')!
+    const timingOf = (el: Element) => {
+      const style = getComputedStyle(el)
+      const properties = style.transitionProperty.split(', ')
+      const index = properties.indexOf('background-color')
+      return index < 0
+        ? undefined
+        : {
+            duration: style.transitionDuration.split(', ')[index],
+            easing: style.transitionTimingFunction.split(', ')[index],
+          }
+    }
+    const row = timingOf(cell)
+    expect(row).toBeDefined()
+    const items = await collect(p => timingOf(p.items()[0]!))
+    for (const [name, timing] of items) {
+      expect(timing, ` item`).toEqual(row)
+    }
+  })
+
   test('PP4 popovers open at ONE distance from their anchor = the shared side offset', async () => {
     await renderAll()
     const gaps = await collect(p => p.gap())

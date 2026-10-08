@@ -181,6 +181,11 @@
   /* Hover кнопки «поверх контента»: светлый слой над непрозрачным фоном. */
   --tsr-comp-overlay-hover-transition: opacity var(--tsr-comp-motion-duration)
     var(--tsr-comp-motion-easing);
+  /* Подсветка пункта поповера — в темпе подсветки строки таблицы (ADR 0017, PP9). */
+  --tsr-comp-popup-item-transition:
+    background-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing),
+    color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
   --tsr-comp-resize-handler-transition: height var(--tsr-comp-motion-duration)
     var(--tsr-comp-motion-easing);
   --tsr-comp-action-button-transition:
