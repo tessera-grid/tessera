@@ -1,18 +1,19 @@
 /**
- * Даты фильтра (ADR 0047, §2–§4). Значения сравниваются в «стенных минутах» пояса:
- * `Date.UTC` от календарных полей, какими их видят часы в `timeZone`. Календарный день
- * (`'YYYY-MM-DD'`) и ISO без смещения — уже стенное время, пояс к ним не применяется;
- * момент (`Date`, миллисекунды, ISO со смещением) переводится в часы пояса.
+ * Даты фильтра (ADR 0047, §2–§4). Значения сравниваются в «стенных минутах» пояса —
+ * стенном времени ядра (`core/wallTime`) с точностью до минуты.
  */
+import {
+  DATE_ONLY,
+  WALL_TIME,
+  cellToWallValue,
+  instantToWallMs,
+  wallMsOf,
+} from '../../core/wallTime'
 import type { DateCellValue, DateFilter, DateFilterPreset } from './types'
 
 const MINUTES_PER_DAY = 1440
 
-const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
-const WALL_TIME =
-  /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/
-const WITH_OFFSET =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})$/
+const toMinutes = (ms: number) => Math.floor(ms / 60_000)
 
 const wallOf = (
   year: number,
@@ -21,91 +22,21 @@ const wallOf = (
   hour = 0,
   minute = 0,
 ): number | null => {
-  const ms = Date.UTC(year, month - 1, day, hour, minute)
-  const date = new Date(ms)
-  // Отсекает несуществующие даты: 2026-02-30 у `Date.UTC` — 2 марта.
-  return date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day &&
-    hour < 24 &&
-    minute < 60
-    ? ms / 60_000
-    : null
-}
-
-const formatters = new Map<string, Intl.DateTimeFormat | null>()
-
-const formatterOf = (timeZone: string) => {
-  if (!formatters.has(timeZone)) {
-    try {
-      formatters.set(
-        timeZone,
-        new Intl.DateTimeFormat('en-US', {
-          timeZone,
-          hourCycle: 'h23',
-          year: 'numeric',
-          month: 'numeric',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric',
-        }),
-      )
-    } catch {
-      // Неизвестный пояс — считаем в поясе браузера.
-      formatters.set(timeZone, null)
-    }
-  }
-  return formatters.get(timeZone)
+  const ms = wallMsOf(year, month, day, hour, minute)
+  return ms === null ? null : toMinutes(ms)
 }
 
 /** Момент в стенных минутах пояса; без пояса — пояса браузера. */
-export const instantToWall = (ms: number, timeZone?: string): number => {
-  const formatter = timeZone ? formatterOf(timeZone) : null
-  if (!formatter) {
-    const date = new Date(ms)
-    return (
-      Date.UTC(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        date.getHours(),
-        date.getMinutes(),
-      ) / 60_000
-    )
-  }
-  const parts: Record<string, number> = {}
-  for (const part of formatter.formatToParts(ms)) {
-    if (part.type !== 'literal') parts[part.type] = Number(part.value)
-  }
-  return (
-    Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) /
-    60_000
-  )
-}
+export const instantToWall = (ms: number, timeZone?: string): number =>
+  toMinutes(instantToWallMs(ms, timeZone))
 
 /** Значение ячейки в стенных минутах; `null` — пустое или неразбираемое. */
 export const cellToWall = (
   value: DateCellValue | unknown,
   timeZone?: string,
 ): number | null => {
-  if (value instanceof Date) {
-    const ms = value.getTime()
-    return Number.isNaN(ms) ? null : instantToWall(ms, timeZone)
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? instantToWall(value, timeZone) : null
-  }
-  if (typeof value !== 'string') return null
-  const text = value.trim()
-  const day = DATE_ONLY.exec(text)
-  if (day) return wallOf(+day[1], +day[2], +day[3])
-  const wall = WALL_TIME.exec(text)
-  if (wall) return wallOf(+wall[1], +wall[2], +wall[3], +wall[4], +wall[5])
-  if (WITH_OFFSET.test(text)) {
-    const ms = Date.parse(text)
-    return Number.isNaN(ms) ? null : instantToWall(ms, timeZone)
-  }
-  return null
+  const wall = cellToWallValue(value, timeZone)
+  return wall === null ? null : toMinutes(wall.ms)
 }
 
 interface FilterBound {
