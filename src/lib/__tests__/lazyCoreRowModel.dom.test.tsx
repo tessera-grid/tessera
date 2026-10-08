@@ -2,10 +2,15 @@
 /**
  * Инкрементальная исходная модель ленивых детей (ADR 0067; IM1–IM7): после смены
  * ответов модель грида совпадает с полной сборкой TanStack на тех же данных и ответах;
- * неизменённые строки — прежние объекты.
+ * неизменённые строки — прежние объекты. Словарь `rowsById` переходит новой модели
+ * (ADR 0069; IM9–IM11).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
-import { constructTable, tableFeatures } from '@tanstack/react-table'
+import {
+  constructTable,
+  rowExpandingFeature,
+  tableFeatures,
+} from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -75,6 +80,7 @@ const Host = (props: { answers: Record<string, unknown>; data: Node[] }) => {
     data: props.data,
     plugins: [
       rowExpanding({
+        maxDepth: 3,
         hasChildren,
         loadChildren: (row: { id: string }) =>
           props.answers[row.id] as Node[] | Promise<Node[]>,
@@ -216,5 +222,84 @@ describe('Инкрементальная исходная модель лени�
       expect(after.rowsById[id], id).not.toBe(before.rowsById[id])
     }
     expectParity([...ROWS])
+  })
+})
+
+/** Словарь модели: ключи и объекты строк. */
+const entries = (m: CoreModel) =>
+  Object.keys(m.rowsById)
+    .sort()
+    .map(id => [id, m.rowsById[id]] as const)
+
+describe('Словарь rowsById переходит новой модели (ADR 0069)', () => {
+  it('IM9: после прихода, замены и удаления ответа rowsById совпадает с полной сборкой', () => {
+    const answers: Record<string, unknown> = {
+      a: [node('a1', 1), node('a2')],
+      a1: [node('a1x')],
+    }
+    render(answers)
+    const expectIndex = () => {
+      const m = model()
+      expect(Object.keys(m.rowsById).sort()).toEqual(
+        Object.keys(
+          reference(ROWS, readLoadedChildren(captured)).rowsById,
+        ).sort(),
+      )
+      expect(Object.keys(m.rowsById)).toHaveLength(m.flatRows.length)
+      expect(m.flatRows.every(row => m.rowsById[row.id] === row)).toBe(true)
+    }
+    toggle('a')
+    toggle('a1')
+    expectIndex()
+    act(() => captured.setLoadedChildren('a', [node('a3')]))
+    expect(model().rowsById.a1x).toBeUndefined()
+    expectIndex()
+    act(() => captured.resetLoadedChildren('a'))
+    expect(model().rowsById.a3).toBeUndefined()
+    expectIndex()
+  })
+
+  it('IM10: прежняя модель после прихода не меняется — и после нескольких приходов подряд', () => {
+    render({ a: [node('a1', 1)], a1: [node('a1x')], b: [node('b1')] })
+    const first = model()
+    const firstEntries = entries(first)
+    toggle('a')
+    const second = model()
+    const secondEntries = entries(second)
+    toggle('a1')
+    toggle('b')
+    expect(entries(first)).toEqual(firstEntries)
+    expect(entries(second)).toEqual(secondEntries)
+    expect(first.rowsById.a1).toBeUndefined()
+    expect(second.rowsById.a1x).toBeUndefined()
+    expect(model().rowsById.a1x).toBeDefined()
+  })
+
+  it('IM11: свёртывание строки из «раскрыто всё» переносит в срез все раскрываемые строки, включая детей ответа', () => {
+    render({ a: [node('a1', 1)], a1: [node('a1x')] })
+    toggle('a')
+    toggle('a1')
+    // Обход TanStack — `Object.values(getRowModel().rowsById)`. Эталон — полная сборка
+    // TanStack с раскрытием на тех же ответах; срез грида — состояние React, поэтому
+    // действия разделены перерисовкой.
+    const answers = readLoadedChildren(captured)
+    const full = constructTable({
+      features: tableFeatures({
+        coreReactivityFeature: storeReactivityBindings(),
+        rowExpandingFeature,
+      } as never),
+      data: ROWS,
+      columns: columns as never,
+      getRowId: (row: Node) => row.id,
+      getSubRows: (row: Node) =>
+        row.subRows?.length ? row.subRows : (answers[row.id] as Node[]),
+    } as never) as any
+    full.setExpanded(true)
+    full.getRow('c1').toggleExpanded(false)
+    const expected = Object.keys(full.atoms.expanded.get()).sort()
+    expect(expected).toContain('a1')
+    act(() => captured.setExpanded(true))
+    act(() => captured.getRow('c1').toggleExpanded(false))
+    expect(Object.keys(captured.atoms.expanded.get()).sort()).toEqual(expected)
   })
 })

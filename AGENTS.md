@@ -386,6 +386,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       инкрементальная модель — модульные `lazyCoreRowModel.dom` (IM1–IM7 — паритет с
       полной сборкой TanStack, прежние объекты строк, смена `data`), перф IM8 — в
       `interaction` ([ADR 0067](docs/decisions/0067-incremental-lazy-core-row-model.md));
+      словарь строк переходит новой модели — модульные `lazyCoreRowModel.dom` (IM9–IM11 —
+      словарь после прихода, прежняя модель неизменна, обход TanStack)
+      ([ADR 0069](docs/decisions/0069-rowsbyid-handover.md));
       холостые проходы фильтрации и группировки — модульные `idleRowModelPasses`
       (PT1–PT6 — модель на входе без обхода строк, первый проход после снятия, паритет
       конвейера с TanStack, автосбросы), перф PT7 — в `interaction`

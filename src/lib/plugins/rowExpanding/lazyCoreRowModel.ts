@@ -2,7 +2,8 @@
  * Исходная модель строк с ленивыми детьми (ADR 0054): дети строки — из `subRows`
  * данных, иначе — сохранённый ответ `loadChildren`. Смена ответов при тех же `data`
  * собирает модель из прежней — пересобираются только изменённые поддеревья
- * (ADR 0067); смена `data` — полная сборка TanStack.
+ * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` —
+ * полная сборка TanStack.
  */
 import {
   constructRow,
@@ -37,6 +38,26 @@ interface CoreModel {
 }
 
 const UNSET = Symbol('unset')
+
+const indexRows = (flatRows: readonly ModelRow[]) => {
+  const rowsById = makeObjectMap<ModelRow>()
+  for (const row of flatRows) {
+    rowsById[row.id] = row
+  }
+  return rowsById
+}
+
+/** Словарь модели уходит новой; модели остаётся снимок по её `flatRows` при первом чтении. */
+const handOverRowsById = (model: CoreModel) => {
+  const { flatRows, rowsById } = model
+  let snapshot: Record<string, ModelRow> | undefined
+  Object.defineProperty(model, 'rowsById', {
+    configurable: true,
+    enumerable: true,
+    get: () => (snapshot ??= indexRows(flatRows)),
+  })
+  return rowsById
+}
 
 export const createLazyCoreRowModel =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>
@@ -131,6 +152,7 @@ export const createLazyCoreRowModel =
       answers: LoadedChildren,
       own: GetSubRows<TData> | undefined,
     ): CoreModel => {
+      const byId = prev.rowsById
       const changed = new Set<string>()
       for (const id of [...Object.keys(prevAnswers), ...Object.keys(answers)]) {
         if (prevAnswers[id] !== answers[id]) {
@@ -144,7 +166,7 @@ export const createLazyCoreRowModel =
           if (changed.has(id)) {
             return true
           }
-          id = prev.rowsById[id]?.parentId
+          id = byId[id]?.parentId
         }
         return false
       }
@@ -153,7 +175,7 @@ export const createLazyCoreRowModel =
       const changedTops = new Set<string>()
       const current = (row: ModelRow) => replaced.get(row.id) ?? row
       for (const id of changed) {
-        const row = prev.rowsById[id]
+        const row = byId[id]
         if (!row || !fromAnswer(row) || hasChangedAncestor(row)) {
           continue
         }
@@ -162,7 +184,7 @@ export const createLazyCoreRowModel =
         replaced.set(id, fresh)
         changedTops.add(id)
         for (let parentId = row.parentId; parentId !== undefined;) {
-          const parent = current(prev.rowsById[parentId]!)
+          const parent = current(byId[parentId]!)
           const copy = copyRow(parent)
           copy.originalSubRows = parent.originalSubRows
           copy.subRows = parent.subRows.map(current)
@@ -179,19 +201,27 @@ export const createLazyCoreRowModel =
       // на своих местах (порядок TanStack: строка, затем её потомки).
       let flatRows = prev.flatRows.slice()
       for (const [id, row] of replaced) {
-        const at = flatRows.indexOf(prev.rowsById[id]!)
+        const at = flatRows.indexOf(byId[id]!)
         if (!changedTops.has(id)) {
           flatRows[at] = row
           continue
         }
-        const removed = subtreeSize(prev.rowsById[id]!)
+        const removed = subtreeSize(byId[id]!)
         flatRows = flatRows
           .slice(0, at)
           .concat(subtree(row), flatRows.slice(at + removed))
       }
-      const rowsById = makeObjectMap<ModelRow>()
-      for (const row of flatRows) {
-        rowsById[row.id] = row
+      const oldTops = [...changedTops].map(id => byId[id]!)
+      const rowsById = handOverRowsById(prev)
+      for (const old of oldTops) {
+        for (const row of subtree(old)) {
+          delete rowsById[row.id]
+        }
+      }
+      for (const [id, row] of replaced) {
+        for (const fresh of changedTops.has(id) ? subtree(row) : [row]) {
+          rowsById[fresh.id] = fresh
+        }
       }
       return { rows, flatRows, rowsById }
     }

@@ -727,9 +727,9 @@ const CASES: InteractionCase[] = [
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
     // Известный недостиг: ответ пересобирает модели (инкрементно, ADR 0067; без
-    // холостых проходов, ADR 0068) и перерисовывает тело на 100 000 корней (~290–360 мс
-    // под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
-    regressionCeiling: 450,
+    // холостых проходов, ADR 0068; без копии rowsById, ADR 0069) и перерисовывает тело
+    // на 100 000 корней (~230 мс под ×4); план — «Дешёвый приход ленивых детей» в roadmap.
+    regressionCeiling: 350,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       LAZY_ROOTS.forEach(id => lazyKids(id))
@@ -1358,7 +1358,7 @@ const LAZY_ANSWERS = [lazyAnswer('a'), lazyAnswer('b')]
 
 describe('Инкрементальная исходная модель', () => {
   test(
-    'IM8: сборка модели при приходе 100 детей на 100 000 корней — не дольше двух третей полной сборки',
+    'IM8: сборка модели при приходе 100 детей на 100 000 корней — не дольше четверти полной сборки',
     async () => {
       const columns = [{ id: 'name', accessorKey: 'name' }]
       const getRowId = (row: { id: string }) => row.id
@@ -1412,8 +1412,8 @@ describe('Инкрементальная исходная модель', () => {
 
       const base = await full()
       const ours = await incremental()
-      // Копия rowsById на 100 000 ключей — больше половины цены инкремента (ADR 0067).
-      const ceiling = (base.longestMs * 2) / 3
+      // Словарь rowsById переходит новой модели без копии (ADR 0069).
+      const ceiling = base.longestMs / 4
       const record = (
         id: string,
         label: string,
