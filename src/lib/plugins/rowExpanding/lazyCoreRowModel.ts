@@ -5,12 +5,9 @@
  * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` —
  * полная сборка TanStack.
  */
-import {
-  constructRow,
-  createCoreRowModel,
-  makeObjectMap,
-} from '@tanstack/react-table'
+import { constructRow, createCoreRowModel } from '@tanstack/react-table'
 
+import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
 
@@ -38,26 +35,6 @@ interface CoreModel {
 }
 
 const UNSET = Symbol('unset')
-
-const indexRows = (flatRows: readonly ModelRow[]) => {
-  const rowsById = makeObjectMap<ModelRow>()
-  for (const row of flatRows) {
-    rowsById[row.id] = row
-  }
-  return rowsById
-}
-
-/** Словарь модели уходит новой; модели остаётся снимок по её `flatRows` при первом чтении. */
-const handOverRowsById = (model: CoreModel) => {
-  const { flatRows, rowsById } = model
-  let snapshot: Record<string, ModelRow> | undefined
-  Object.defineProperty(model, 'rowsById', {
-    configurable: true,
-    enumerable: true,
-    get: () => (snapshot ??= indexRows(flatRows)),
-  })
-  return rowsById
-}
 
 export const createLazyCoreRowModel =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>

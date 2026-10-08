@@ -1649,3 +1649,88 @@ describe('Инкрементальная модель раскрытия', () =>
     PERF_TIMEOUT * 2,
   )
 })
+
+// Сортировка из прошлой модели (ADR 0072, SM12): приход 100 детей ленивой строки на
+// 100 000 корней при активной сортировке по имени — сборка из прошлой против полной
+// сортировки в том же замере. Полную вызывает смена направления на каждом действии: срез
+// с тем же содержимым атом не меняет (сравнение по значению).
+// Headless-таблицы со штатными фичами TanStack и ленивой исходной моделью.
+const SORTED_ROOTS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${(i * 7919) % 100_000}`,
+}))
+
+describe('Сортировка из прошлой модели', () => {
+  test(
+    'SM12: приход 100 детей на 100 000 корней при активной сортировке — не дольше десятой доли полной сортировки',
+    async () => {
+      const sorting = [{ id: 'name', desc: false }]
+      const arrival = async (full: boolean) => {
+        const table = constructTable({
+          features: tableFeatures({
+            ...stockFeatures,
+            coreReactivityFeature: storeReactivityBindings(),
+            rowExpandingLazyFeature,
+            coreRowModel: createLazyCoreRowModel(),
+            sortedRowModel: createTesseraSortedRowModel(),
+            sortFns: { alphanumeric: sortFn_alphanumeric },
+          } as never),
+          data: SORTED_ROOTS,
+          columns: [
+            { id: 'name', accessorKey: 'name', sortFn: 'alphanumeric' },
+          ],
+          getRowId: (row: { id: string }) => row.id,
+          initialState: { sorting },
+        } as never) as unknown as {
+          getSortedRowModel: () => unknown
+          setSorting: (next: typeof sorting) => void
+        }
+        table.getSortedRowModel()
+        let turn = 0
+        return measureInteractionWork(async () => {
+          const kids = LAZY_ANSWERS[turn++ % 2]!
+          setLoadedAnswer(table, prev => ({ ...prev, r0: kids }))
+          if (full) table.setSorting([{ id: 'name', desc: turn % 2 === 0 }])
+          table.getSortedRowModel()
+        })
+      }
+
+      const base = await arrival(true)
+      const ours = await arrival(false)
+      const ceiling = base.longestMs / 10
+      const record = (
+        id: string,
+        label: string,
+        r: typeof ours,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000 корней',
+          plugins: 'rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('SM12-base', 'приход с полной сортировкой', base, false)
+      await record('SM12', 'приход с сортировкой из прошлой', ours, true)
+
+      expect(
+        ours.longestMs,
+        `из прошлой longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

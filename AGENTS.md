@@ -360,7 +360,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       дымовой `sorting-stories` (OS12), перф OS11 — в `interaction` — сортировка по
       подписи вариантов ([ADR 0063](docs/decisions/0063-option-label-sorting.md)),
       модульный `sortedRowModel` (SM1–SM6 — паритет своей модели с TanStack), перф SM7 —
-      в `interaction` ([ADR 0064](docs/decisions/0064-tessera-sorted-row-model.md)),
+      в `interaction` ([ADR 0064](docs/decisions/0064-tessera-sorted-row-model.md));
+      сортировка из прошлой модели — модульный `sortedRowModel` (SM8–SM11 — паритет с
+      полной сортировкой при приходе ответов, откат на полную, прежняя модель неизменна),
+      перф SM12 — в `interaction` ([ADR 0072](docs/decisions/0072-incremental-sorted-row-model.md)),
       `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md)),
       `column-dragging` (D14–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
@@ -575,6 +578,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     XM5 — пересчёт модели раскрытия после прихода на 100 000 корней против TanStack,
     OS11 — сортировка 100 000 строк по подписи против сортировки по id;
     SM7 — построение отсортированной модели на 100 000 строк против TanStack;
+    SM12 — приход 100 детей при активной сортировке против полной сортировки;
     TA3 — счёт `aria-*` дерева на 100 000 строк против прежнего
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
