@@ -1358,7 +1358,7 @@ const LAZY_ANSWERS = [lazyAnswer('a'), lazyAnswer('b')]
 
 describe('Инкрементальная исходная модель', () => {
   test(
-    'IM8: сборка модели при приходе 100 детей на 100 000 корней — не дольше четверти полной сборки',
+    'IM8: сборка модели при приходе 100 детей на 100 000 корней — не дольше четверти полной сборки и 75 мс',
     async () => {
       const columns = [{ id: 'name', accessorKey: 'name' }]
       const getRowId = (row: { id: string }) => row.id
@@ -1413,7 +1413,8 @@ describe('Инкрементальная исходная модель', () => {
       const base = await full()
       const ours = await incremental()
       // Словарь rowsById переходит новой модели без копии (ADR 0069).
-      const ceiling = base.longestMs / 4
+      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
+      const ceiling = Math.min(base.longestMs / 4, 75)
       const record = (
         id: string,
         label: string,
@@ -1463,7 +1464,7 @@ const IDLE_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
 
 describe('Холостые проходы фильтрации и группировки', () => {
   test(
-    'PT7: холостые проходы фильтрации и группировки на 100 000 строк — не дольше десятой доли проходов TanStack',
+    'PT7: холостые проходы фильтрации и группировки на 100 000 строк — не дольше десятой доли проходов TanStack и 10 мс',
     async () => {
       const columns = [
         { id: 'name', accessorKey: 'name' },
@@ -1521,7 +1522,8 @@ describe('Холостые проходы фильтрации и группир
         createSearchAwareFilteredRowModel(),
         createIdleAwareGroupedRowModel(),
       )
-      const ceiling = base.longestMs / 10
+      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
+      const ceiling = Math.min(base.longestMs / 10, 10)
       const record = (
         id: string,
         label: string,
@@ -1565,7 +1567,7 @@ describe('Холостые проходы фильтрации и группир
 // — те же объекты); модель на входе чередуется между ними, её сборка в замер не входит.
 describe('Инкрементальная модель раскрытия', () => {
   test(
-    'XM5: пересчёт модели раскрытия после прихода 100 детей на 100 000 корней — не дольше четверти TanStack',
+    'XM5: пересчёт модели раскрытия после прихода 100 детей на 100 000 корней — не дольше четверти TanStack и 20 мс',
     async () => {
       const columns = [{ id: 'name', accessorKey: 'name' }]
       const getRowId = (row: { id: string }) => row.id
@@ -1610,7 +1612,8 @@ describe('Инкрементальная модель раскрытия', () =>
 
       const base = await recompute(createExpandedRowModel())
       const ours = await recompute(createIncrementalExpandedRowModel())
-      const ceiling = base.longestMs / 4
+      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
+      const ceiling = Math.min(base.longestMs / 4, 20)
       const record = (
         id: string,
         label: string,
@@ -1660,7 +1663,7 @@ const SORTED_ROOTS = Array.from({ length: 100_000 }, (_, i) => ({
 
 describe('Сортировка из прошлой модели', () => {
   test(
-    'SM12: приход 100 детей на 100 000 корней при активной сортировке — не дольше десятой доли полной сортировки',
+    'SM12: приход 100 детей на 100 000 корней при активной сортировке — не дольше десятой доли полной сортировки и 100 мс',
     async () => {
       const sorting = [{ id: 'name', desc: false }]
       const arrival = async (full: boolean) => {
@@ -1695,7 +1698,8 @@ describe('Сортировка из прошлой модели', () => {
 
       const base = await arrival(true)
       const ours = await arrival(false)
-      const ceiling = base.longestMs / 10
+      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
+      const ceiling = Math.min(base.longestMs / 10, 100)
       const record = (
         id: string,
         label: string,
