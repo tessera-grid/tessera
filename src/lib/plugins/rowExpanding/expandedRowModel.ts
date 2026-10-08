@@ -51,8 +51,8 @@ const NO_EXPANDED: Record<string, boolean> = {}
 /** Сколько строк вставлять одним `splice`: аргументы вызова ограничены стеком. */
 const SPLICE_LIMIT = 10_000
 
-const isExpandedId = (expanded: Expanded, id: string) =>
-  expanded === true || (Object.hasOwn(expanded, id) && !!expanded[id])
+const isExpandedId = (expanded: Record<string, boolean>, id: string) =>
+  Object.hasOwn(expanded, id) && !!expanded[id]
 
 /** Строка и дети раскрытых строк — обход `expandRows` TanStack. */
 const walk = (row: ExpandRow, into: ExpandRow[]) => {
