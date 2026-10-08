@@ -186,8 +186,8 @@ export interface PerfMetric {
   axis?: 'y' | 'x'
   /** Модель порога: RAIL Animation (кадр 16.7мс) или Load (интерактивность 1000мс). */
   kind: 'animation' | 'load'
-  /** Какая величина сверяется с порогом: p95 (прокрутка) или longest (отрисовка). */
-  metric: 'p95' | 'longest'
+  /** Какая величина сверяется с порогом: p95 (прокрутка), longest (отрисовка) или tbt (пачка задач). */
+  metric: 'p95' | 'longest' | 'tbt'
   /** Значение проверяемой метрики, мс. */
   valueMs: number
   /** Абсолютный порог RAIL/CWV, мс. */

@@ -2,14 +2,16 @@
 /**
  * Ленивые дети строк (ADR 0054; RE19, RE21–RE22, RE26–RE29, RE34–RE36): ответ
  * `loadChildren` по строке, его согласование с данными и методы таблицы. Отметки
- * прихода (ADR 0056; RE43–RE44, RE51).
+ * прихода (ADR 0056; RE43–RE44, RE51). Склейка ответов (ADR 0066; RE65, RE67–RE72).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerAnnouncer } from '../core/announcer'
 import type { TesseraFeatureEntry } from '../core/features'
+import { DEFAULT_LABELS } from '../core/localization'
 import { readPluginHooks } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 import { rowExpanding, rowGrouping } from '../plugins'
@@ -84,7 +86,15 @@ const toggle = (id: string) =>
       readPluginHooks<Partial<RowExpandingHooks>>(captured, 'rowExpanding'),
     ),
   )
-const flush = () => act(() => new Promise(resolve => setTimeout(resolve, 0)))
+// Ответ промиса и кадр, до которого копятся ответы (ADR 0066).
+const FRAME = 16
+const flush = () =>
+  act(
+    () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => setTimeout(resolve, 0)),
+      ),
+  )
 
 const deferred = <T,>() => {
   let resolve!: (value: T) => void
@@ -326,10 +336,10 @@ describe('Ленивые дети строк (ADR 0054)', () => {
       const plugins = [rowExpanding({ hasChildren, loadChildren })]
       render({ plugins, data: lazy })
       toggle('a')
-      await act(() => vi.advanceTimersByTimeAsync(0))
+      await act(() => vi.advanceTimersByTimeAsync(FRAME))
       now.mockReturnValue(200)
       toggle('c')
-      await act(() => vi.advanceTimersByTimeAsync(0))
+      await act(() => vi.advanceTimersByTimeAsync(FRAME))
       expect(readRowArrivals(captured)).toEqual({ a1: 0, c1: 200 })
 
       // Время a1 вышло (300 мс по умолчанию), c1 — ещё нет.
@@ -344,5 +354,165 @@ describe('Ленивые дети строк (ADR 0054)', () => {
       now.mockRestore()
       vi.useRealTimers()
     }
+  })
+})
+
+describe('Склейка ответов loadChildren (ADR 0066)', () => {
+  const LAZY = [node('a', 1), node('c', 1), node('d', 1)]
+  type Answer = Node[] | Promise<Node[]>
+
+  /** Грид с тремя ленивыми строками; ответ строки задаёт `answers[rowId]`. */
+  const renderBatch = (answers: Record<string, () => Answer>) => {
+    const plugins = [
+      rowExpanding({
+        hasChildren,
+        loadChildren: (row: { id: string }) => answers[row.id]!(),
+      }),
+    ]
+    render({ plugins, data: LAZY })
+    return plugins
+  }
+  const tick = (ms = 1) => act(() => vi.advanceTimersByTimeAsync(ms))
+  const listen = () => {
+    const say = vi.fn()
+    registerAnnouncer(captured, { say, labels: DEFAULT_LABELS })
+    return say
+  }
+  const countWrites = (key: 'loadedChildren' | 'rowExpandPending') => {
+    const writes = { count: 0 }
+    captured.atoms[key].subscribe(() => writes.count++)
+    return writes
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  it('RE65: ответы нескольких строк, пришедшие отдельными задачами до кадра, применяются одной записью loadedChildren и одной rowExpandPending', async () => {
+    const answers = {
+      a: deferred<Node[]>(),
+      c: deferred<Node[]>(),
+      d: deferred<Node[]>(),
+    }
+    renderBatch({
+      a: () => answers.a.promise,
+      c: () => answers.c.promise,
+      d: () => answers.d.promise,
+    })
+    toggle('a')
+    toggle('c')
+    toggle('d')
+    const loaded = countWrites('loadedChildren')
+    const pending = countWrites('rowExpandPending')
+    answers.a.resolve([node('a1')])
+    await tick()
+    answers.c.resolve([node('c1')])
+    await tick()
+    answers.d.resolve([node('d1')])
+    await tick()
+    expect(loaded.count).toBe(0)
+    await tick(FRAME)
+    expect(loaded.count).toBe(1)
+    expect(pending.count).toBe(1)
+    expect([childIds('a'), childIds('c'), childIds('d')]).toEqual([
+      ['a1'],
+      ['c1'],
+      ['d1'],
+    ])
+    expect(coreRow('d').getIsExpandPending()).toBe(false)
+  })
+
+  it('RE67: синхронный ответ применяется в том же клике, пока в очереди ждёт ответ другой строки', async () => {
+    renderBatch({
+      a: () => Promise.resolve([node('a1')]),
+      c: () => [node('c1')],
+    })
+    toggle('a')
+    await tick()
+    toggle('c')
+    expect(childIds('c')).toEqual(['c1'])
+    expect(childIds('a')).toEqual([])
+    expect(coreRow('a').getIsExpandPending()).toBe(true)
+  })
+
+  it('RE68: отказ применяется сразу — сворачивание, вспышка, объявление, — пока в очереди ждёт ответ другой строки', async () => {
+    renderBatch({
+      a: () => Promise.resolve([node('a1')]),
+      c: () => Promise.reject(new Error('down')),
+    })
+    const say = listen()
+    toggle('a')
+    toggle('c')
+    await tick()
+    expect(coreRow('a').getIsExpandPending()).toBe(true)
+    expect(coreRow('c').getIsExpanded()).toBe(false)
+    expect(Object.keys(captured.atoms.rowExpandFailed.get())).toEqual(['c'])
+    expect(say).toHaveBeenCalledWith(
+      DEFAULT_LABELS.announceExpandFailed('down'),
+    )
+  })
+
+  it('RE69: на пачку — одно объявление с суммой детей строк пачки', async () => {
+    renderBatch({
+      a: () => Promise.resolve([node('a1'), node('a2')]),
+      c: () => Promise.resolve([node('c1'), node('c2'), node('c3')]),
+    })
+    const say = listen()
+    toggle('a')
+    await tick()
+    toggle('c')
+    await tick()
+    await tick(FRAME)
+    expect(say.mock.calls).toEqual([[DEFAULT_LABELS.announceChildrenLoaded(5)]])
+  })
+
+  it('RE70: ответ строки, ушедшей из data до кадра, не применяется, даже если строка вернулась', async () => {
+    const load = vi
+      .fn<() => Answer>()
+      .mockReturnValueOnce(Promise.resolve([node('a1')]))
+      .mockReturnValueOnce(new Promise(() => {}))
+    const plugins = renderBatch({ a: load })
+    toggle('a')
+    await tick()
+    // Строка ушла и вернулась, её раскрыли снова — ждёт новая попытка.
+    render({ plugins, data: LAZY.slice(1) })
+    render({ plugins, data: [...LAZY] })
+    toggle('a')
+    await tick(FRAME)
+    expect(readLoadedChildren(captured)).toEqual({})
+    expect(coreRow('a').getIsExpandPending()).toBe(true)
+  })
+
+  it('RE71: setLoadedChildren после прихода ответа и до кадра не затирается этим ответом; ожидание снимается', async () => {
+    const refresh = deferred<Node[]>()
+    const load = vi
+      .fn<() => Answer>()
+      .mockReturnValueOnce([node('a1')])
+      .mockReturnValueOnce(refresh.promise)
+    renderBatch({ a: load })
+    toggle('a')
+    toggle('a')
+    toggle('a')
+    refresh.resolve([node('a2')])
+    await tick()
+    act(() => captured.setLoadedChildren('a', [node('a9')]))
+    await tick(FRAME)
+    expect(childIds('a')).toEqual(['a9'])
+    expect(coreRow('a').getIsExpandPending()).toBe(false)
+  })
+
+  it('RE72: без кадра (вкладка скрыта) пачка применяется таймером не позже 100 мс', async () => {
+    vi.stubGlobal('requestAnimationFrame', () => 0)
+    renderBatch({ a: () => Promise.resolve([node('a1')]) })
+    toggle('a')
+    // Ответ пришёл, кадра нет: пачка ждёт таймера и применяется к 100 мс.
+    await tick()
+    expect(childIds('a')).toEqual([])
+    await tick(100)
+    expect(childIds('a')).toEqual(['a1'])
   })
 })

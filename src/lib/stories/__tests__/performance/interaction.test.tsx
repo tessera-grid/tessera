@@ -1091,3 +1091,105 @@ describe('aria-* дерева', () => {
     PERF_TIMEOUT,
   )
 })
+
+// Склейка ответов (ADR 0066, RE73): пять ответов `loadChildren`, пришедших отдельными
+// задачами до кадра, против одного ответа на том же гриде. Без склейки каждый ответ —
+// своя пересборка модели и перерисовка; пачка — одна длинная задача, а её TBT не
+// больше половины пяти приходов. Ответы — промисы, которые разрешает тест.
+describe('Отзывчивость взаимодействий — склейка ответов', () => {
+  test(
+    'RE73: пять ответов отдельными задачами на 100 000 корней — одна длинная задача, TBT не больше половины пяти приходов одного ответа',
+    async () => {
+      const resolvers = new Map<string, () => void>()
+      await renderGrid({
+        ...SEARCH_SIZE,
+        ...ALL_PLUGINS,
+        ...LAZY_CHILDREN,
+        rowExpandingHasChildren: (row: { depth: number; index: number }) =>
+          row.depth === 0 && row.index < 8,
+        rowExpandingLoadChildren: (row: { id: string }) =>
+          new Promise(resolve =>
+            resolvers.set(row.id, () => resolve(lazyKids(row.id))),
+          ),
+      } as Parameters<typeof renderGrid>[0])
+      await waitForGrid()
+      const toggleOf = (id: string) =>
+        document.querySelector<HTMLElement>(
+          `.data-grid__body-row[data-row-id='${id}'] .row-expand-button`,
+        )
+      const idle = () =>
+        !document.querySelector('.row-expand-button[aria-busy]')
+      /** Раскрыть строки (ожидание), затем под трейсом разрешить их ответы отдельными задачами. */
+      const arrive = async (ids: string[]) => {
+        await expect.poll(() => ids.every(id => toggleOf(id))).toBe(true)
+        ids.forEach(id => lazyKids(id))
+        ids.forEach(id => toggleOf(id)!.click())
+        await expect.poll(() => ids.every(id => resolvers.has(id))).toBe(true)
+        // Раскрытие (модель, тело, эффекты) не попадает в замер прихода.
+        for (let i = 0; i < 10; i++) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(requestAnimationFrame)
+        }
+        return measureTransitionWork(async () => {
+          ids.forEach(id => setTimeout(() => resolvers.get(id)!(), 0))
+        }, idle)
+      }
+      // Прогрев: JIT пути прихода. Ниже раскрываются строки снизу вверх — дети
+      // раскрытой строки не уводят остальные из окна.
+      await arrive(['item-id-7'])
+      const single = await arrive(['item-id-6'])
+      const batch = await arrive([
+        'item-id-5',
+        'item-id-4',
+        'item-id-3',
+        'item-id-2',
+        'item-id-1',
+      ])
+      await cleanup()
+      // Без склейки пять ответов — пять приходов (~5× TBT); пачка — одна задача, в которую
+      // может попасть сборка мусора, поэтому порог — половина пяти приходов.
+      const ceiling = single.tbtMs * 2.5
+      const record = (
+        id: string,
+        label: string,
+        r: typeof single,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'tbt',
+              valueMs: r.tbtMs,
+              budgetMs: ceiling,
+              pass: !gated || r.tbtMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('RE73-base', 'приход одного ответа промисом', single, false)
+      await record(
+        'RE73',
+        'пять ответов отдельными задачами до кадра',
+        batch,
+        true,
+      )
+
+      expect(
+        batch.tbtMs,
+        `пачка TBT=${batch.tbtMs.toFixed(1)}ms (long ${batch.longTasks}), один ответ TBT=${single.tbtMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+      expect(batch.longTasks, `длинных задач в пачке: ${batch.longTasks}`).toBe(
+        1,
+      )
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

@@ -191,7 +191,8 @@ rowExpanding({
   `table.resetLoadedChildren`.
 - **−** Приход ответа пересобирает исходную модель целиком: на 100 000 корней
   ~215–250 мс под ×4 CPU — известный недостиг RE38 с регресс-потолком 350 мс (roadmap,
-  «Известные проблемы»); направление — инкрементальная сборка.
+  «Известные проблемы»); асинхронные ответы, пришедшие до кадра, применяются пачкой
+  ([ADR 0066](0066-lazy-children-answer-batching.md)).
 - **Публичный API:** аргументы `hasChildren`, `loadChildren`; методы
   `table.setLoadedChildren`, `table.resetLoadedChildren`; ключи локализации
   `announceExpandFailed`, `loadChildrenFailed`. Ломающих изменений нет; поведение

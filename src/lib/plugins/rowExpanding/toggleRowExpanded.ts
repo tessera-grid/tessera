@@ -7,23 +7,15 @@ import {
   readLoadedChildren,
   setLoadedAnswer,
 } from './lazyChildrenFeature'
-import type { RowExpandPending } from './rowExpandingPendingFeature'
-import { markArrivals } from './rowArrivals'
+import { type BatchTable, enqueueAnswer } from './answerBatch'
 import type { RowExpandingHooks } from './types'
 
 type PendingRow = Row<any, any> & {
   getIsExpandPending?: () => boolean
-  table: {
-    getCoreRowModel: () => {
-      rowsById: Record<string, { subRows: { id: string }[] } | undefined>
-    }
-    atoms: { rowExpandPending?: { get: () => RowExpandPending } }
+  table: BatchTable & {
     options: {
       getSubRows?: (row: unknown, index: number) => unknown[] | undefined
     }
-    setRowExpandPending?: (
-      updater: (prev: RowExpandPending) => RowExpandPending,
-    ) => void
   }
 }
 
@@ -45,28 +37,6 @@ const storeAnswer = (table: unknown, rowId: string, rows: unknown) =>
     ...prev,
     [rowId]: Array.isArray(rows) ? rows : [],
   }))
-
-const childIds = (table: PendingRow['table'], rowId: string) =>
-  (table.getCoreRowModel().rowsById[rowId]?.subRows ?? []).map(row => row.id)
-
-/**
- * Асинхронный ответ (ADR 0056): сохранить, отметить детей, которых не было в прошлом
- * ответе, и объявить приход.
- */
-const storeArrival = (
-  table: PendingRow['table'],
-  rowId: string,
-  rows: unknown,
-) => {
-  const before = new Set(childIds(table, rowId))
-  storeAnswer(table, rowId, rows)
-  const after = childIds(table, rowId)
-  markArrivals(
-    table,
-    after.filter(id => !before.has(id)),
-  )
-  announceLabel(table, all => all.announceChildrenLoaded(after.length))
-}
 
 // Номер попытки сквозной: итог прежнего раскрытия не спутать с новым.
 let lastAttempt = 0
@@ -110,15 +80,17 @@ export const toggleRowExpanded = (
     if (table.atoms.rowExpandPending?.get()[row.id] !== attempt) {
       return
     }
+    // Ответ ленивой строки снимает ожидание вместе с пачкой ответов до кадра (ADR 0066).
+    if (ok && lazy) {
+      enqueueAnswer(table, row.id, attempt, value)
+      return
+    }
     setPending(prev => {
       const next = { ...prev }
       delete next[row.id]
       return next
     })
     if (ok) {
-      if (lazy) {
-        storeArrival(table, row.id, value)
-      }
       return
     }
     if (!(lazy && row.id in readLoadedChildren(table))) {

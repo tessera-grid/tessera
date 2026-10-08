@@ -15,7 +15,7 @@ import {
 } from './a11y-helpers'
 
 // Ленивые дети строк (ADR 0054): RE17–RE18, RE20, RE23–RE25, RE30–RE33, RE37, RE40;
-// подсветка прихода (ADR 0056): RE42, RE45–RE49.
+// подсветка прихода (ADR 0056): RE42, RE45–RE49; склейка ответов (ADR 0066): RE66.
 // Грид — история RowExpanding с данными без `subRows`; `hasChildren` читает
 // `childCount`, `loadChildren` отдаёт ответы, которыми управляет тест. Состояние
 // читается из контракта DOM: `data-row-id`, `data-expanded`, `aria-busy`,
@@ -585,5 +585,38 @@ describe('Row expanding: arrival highlight', () => {
       })
       expect(result.violations).toEqual([])
     })
+  })
+})
+
+describe('Row expanding: answer batching', () => {
+  let restore = () => {}
+  afterEach(() => {
+    restore()
+    restore = () => {}
+  })
+
+  test('RE66: several lazy rows expanded by click with answers arriving as separate tasks all show their children, stop waiting and highlight the new children', async () => {
+    restore = themeTokens({ '--tsr-comp-row-arrival-duration': '5000ms' })
+    const answers = { lazy: deferred<Person[]>(), other: deferred<Person[]>() }
+    await renderLazy(
+      row => answers[row.id as keyof typeof answers].promise as never,
+    )
+    await waitRow('other')
+    await humanClick(toggleOf('lazy')!)
+    await humanClick(toggleOf('other')!)
+    await expect
+      .poll(() => toggleOf('other')!.getAttribute('aria-busy'))
+      .toBe('true')
+    answers.lazy.resolve(kids('lazy', 2))
+    await wait(0)
+    answers.other.resolve(kids('other', 1))
+    await waitRow('other-c0')
+    for (const id of ['lazy-c0', 'lazy-c1', 'other-c0']) {
+      expect(arrived(id), id).toBe(true)
+    }
+    for (const id of ['lazy', 'other']) {
+      expect(rowOf(id)!.hasAttribute('aria-busy'), id).toBe(false)
+      expect(toggleOf(id)!.hasAttribute('aria-busy'), id).toBe(false)
+    }
   })
 })
