@@ -26,6 +26,7 @@ import * as rowsActions from '../DataGrid.Rows.Actions.stories'
 import * as rowsDragging from '../DataGrid.Rows.Dragging.stories'
 import * as rowsExpanding from '../DataGrid.Rows.Expanding.stories'
 import * as rowsGrouping from '../DataGrid.Rows.Grouping.stories'
+import * as rowsHighlight from '../DataGrid.Rows.Highlight.stories'
 import * as rowsSelection from '../DataGrid.Rows.Selection.stories'
 
 export const composed = {
@@ -54,5 +55,6 @@ export const composed = {
   ...composeStories(rowsDragging),
   ...composeStories(rowsExpanding),
   ...composeStories(rowsGrouping),
+  ...composeStories(rowsHighlight),
   ...composeStories(rowsSelection),
 }

@@ -62,6 +62,7 @@ const StoryGrid = memo(
     isAllRowsSelected,
 
     dataOverride,
+    bare,
     columnsOverride,
     initialGrouping,
     initialExpanded,
@@ -229,6 +230,41 @@ const StoryGrid = memo(
       ],
     })
 
+    const column = {
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+    } as const
+    const body = (
+      <>
+        {showBatchToolbar && (
+          <BatchToolbar
+            disabled={
+              !options.enableRowSelection || !!options.enableRowExpanding
+            }
+            onSelect={() => {
+              onRowSelectionChange(getSelectedData(!isAllRowsSelected))
+
+              updateArgs({
+                isAllRowsSelected: !isAllRowsSelected,
+              })
+            }}
+            isAllRowsSelected={isAllRowsSelected}
+            selectedDataCount={selectedDataCount}
+          />
+        )}
+        <DataGrid
+          table={table as never}
+          height={height}
+          maxHeight={maxHeight}
+          colorMode={colorMode}
+          localization={labels}
+          icons={icons}
+          stub={<NoDataStub label="No Data!" />}
+        />
+      </>
+    )
+
     return (
       <Grid
         style={{
@@ -242,37 +278,13 @@ const StoryGrid = memo(
           flexDirection: 'column',
         }}
       >
-        <Card style={{ height: '100%' }}>
-          <CardContent
-            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-          >
-            {showBatchToolbar && (
-              <BatchToolbar
-                disabled={
-                  !options.enableRowSelection || !!options.enableRowExpanding
-                }
-                onSelect={() => {
-                  onRowSelectionChange(getSelectedData(!isAllRowsSelected))
-
-                  updateArgs({
-                    isAllRowsSelected: !isAllRowsSelected,
-                  })
-                }}
-                isAllRowsSelected={isAllRowsSelected}
-                selectedDataCount={selectedDataCount}
-              />
-            )}
-            <DataGrid
-              table={table as never}
-              height={height}
-              maxHeight={maxHeight}
-              colorMode={colorMode}
-              localization={labels}
-              icons={icons}
-              stub={<NoDataStub label="No Data!" />}
-            />
-          </CardContent>
-        </Card>
+        {bare ? (
+          <div style={column}>{body}</div>
+        ) : (
+          <Card style={{ height: '100%' }}>
+            <CardContent style={column}>{body}</CardContent>
+          </Card>
+        )}
       </Grid>
     )
   },

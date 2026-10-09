@@ -20,6 +20,15 @@ export { COLUMN_SELECTION_ID } from './lib/plugins/rowSelection'
 export { COLUMN_EXPANDING_ID } from './lib/plugins/rowExpanding'
 export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
 
+// Публичная подсветка строк, ячеек и колонок (ADR 0080): `table.highlight`.
+export type {
+  HighlightHandle,
+  HighlightOptions,
+  HighlightShimmer,
+  HighlightTarget,
+  HighlightTone,
+} from './lib/core/highlights/highlightFeature'
+
 // Реактивность: подписки на состояние идут через атомы TanStack Store.
 export { useSlice, useTableState } from './lib/core/reactivity'
 

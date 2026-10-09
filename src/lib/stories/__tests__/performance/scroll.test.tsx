@@ -20,6 +20,7 @@ import {
   submittedCellsSeed,
   sortAllColumnsSeed,
   actionStatusSeed,
+  highlightSeed,
 } from './perf-cases'
 import { makeData } from '../../__mocks__/data'
 
@@ -609,6 +610,71 @@ describe('Производительность прокрутки — высот
         expect(
           compact[axis].p95Ms,
           `${axis} p95=${compact[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Публичная подсветка (ADR 0080, HL19): 1000×1000 без плагинов, спокойная прокрутка со
+// 100 залитыми строками и колонкой с бесконечным бликом против той же выборки без них.
+describe('Производительность прокрутки — подсветка', () => {
+  test(
+    'HL19: прокрутка 1000×1000 со 100 подсвеченными строками и колонкой с бликом — в пределах потолков P11; база без подсветки в дашборде',
+    async () => {
+      const measure = async (seeded: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: seeded ? [highlightSeed(LARGE.dataCount)] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(
+            () => document.querySelector('[data-highlight-shimmer]') !== null,
+          )
+          .toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const seeded = await measure(true)
+      const ceiling = { y: 26, x: 40 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('HL19-base', 'без подсветки', base, false)
+      await record('HL19', '100 строк и колонка с бликом', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          seeded[axis].p95Ms,
+          `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

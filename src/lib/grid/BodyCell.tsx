@@ -14,6 +14,13 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
+import {
+  cellHighlightKey,
+  columnHighlightKey,
+  type Highlights,
+  type HighlightTargetState,
+} from '../core/highlights/highlightFeature'
+import { highlightRender } from './highlight'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -65,15 +72,30 @@ export const BodyCell = memo(
     // зависят атрибуты/офсеты ячейки (пиннинг/размеры/порядок/видимость) — на смену
     // rowSelection/сортировки/раскрытия ячейка НЕ ре-рендерится (это лишняя работа;
     // контент-реактивность несут сам плагин-компонент ячейки и его useSelector).
-    useTableState(table as never, (state: unknown) => {
-      const s = state as Record<string, unknown>
-      return {
-        columnPinning: s.columnPinning,
-        columnSizing: s.columnSizing,
-        columnOrder: s.columnOrder,
-        columnVisibility: s.columnVisibility,
-      }
-    })
+    // Подсветка своей ячейки и своей колонки (ADR 0080) — в той же подписке.
+    const cellKey = cellHighlightKey(cell.row.id, cell.column.id)
+    const columnKey = columnHighlightKey(cell.column.id)
+    const { cellHighlight, columnHighlight } = useTableState(
+      table as never,
+      (state: unknown) => {
+        const s = state as Record<string, unknown> & { highlights?: Highlights }
+        return {
+          columnPinning: s.columnPinning,
+          columnSizing: s.columnSizing,
+          columnOrder: s.columnOrder,
+          columnVisibility: s.columnVisibility,
+          cellHighlight: s.highlights?.[cellKey],
+          columnHighlight: s.highlights?.[columnKey],
+        }
+      },
+    ) as {
+      cellHighlight?: HighlightTargetState
+      columnHighlight?: HighlightTargetState
+    }
+    const highlighted = highlightRender([
+      { layer: 'cell', state: cellHighlight },
+      { layer: 'column', state: columnHighlight, describe: false },
+    ])
 
     const {
       isStartPinned,
@@ -186,6 +208,7 @@ export const BodyCell = memo(
             '--tsr-tree-shadows': treeLineShadows(treeDepth),
           }),
           ...selectionStyle,
+          ...highlighted.style,
         }}
         tabIndex={nav ? nav.tabIndex : cellSel?.tabIndex}
         onFocus={nav?.onFocus}
@@ -213,6 +236,7 @@ export const BodyCell = memo(
         aria-selected={nav && cellSel ? cellSel.isSelected : undefined}
         data-cell-selected={cellSel?.isSelected || undefined}
         data-cell-focused={cellSel?.isFocused || undefined}
+        {...highlighted.attrs}
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}

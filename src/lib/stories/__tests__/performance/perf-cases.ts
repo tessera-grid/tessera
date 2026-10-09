@@ -190,3 +190,24 @@ export const sortAllColumnsSeed = (): TesseraFeatureEntry => {
     },
   }
 }
+
+/**
+ * Засев подсветки (ADR 0080, HL19): каждая 10-я строка залита, третья колонка — с
+ * бесконечным бликом. Через публичный `table.highlight` из `setup`, как плагин.
+ */
+export const highlightSeed = (rows: number): TesseraFeatureEntry => ({
+  id: 'perfHighlight',
+  setup: table => {
+    const t = table as {
+      highlight: (target: object, options?: object) => unknown
+      getAllLeafColumns: () => { id: string }[]
+    }
+    for (let i = 0; i < rows; i += 10) {
+      t.highlight({ row: `item-id-${i}` }, { tone: 'warning' })
+    }
+    t.highlight(
+      { column: t.getAllLeafColumns()[2]!.id },
+      { tone: 'success', shimmer: { repeat: 'infinite' } },
+    )
+  },
+})

@@ -46,7 +46,7 @@ describe('Token architecture — static invariants', () => {
     // нет прямых shadcn-имён и цветовых примитивов. Размерные примитивы
     // (--tsr-ref-space/radius) разрешены.
     const forbidden =
-      /var\(\s*--(foreground|background|card|muted|primary|primary-foreground|border|ring|destructive|info)\b|var\(\s*--tsr-ref-(neutral|blue|red)/
+      /var\(\s*--(foreground|background|card|muted|primary|primary-foreground|border|ring|destructive|info|warning|success)\b|var\(\s*--tsr-ref-(neutral|blue|red|amber|green)/
     const offending = [
       ...themeCss.matchAll(/(--tsr-comp-[a-z0-9-]+)\s*:\s*([\s\S]*?);/g),
     ]
@@ -76,6 +76,8 @@ describe('Token architecture — static invariants', () => {
       '--tsr-sys-ring',
       '--tsr-sys-danger',
       '--tsr-sys-info',
+      '--tsr-sys-warning',
+      '--tsr-sys-success',
     ]
     const darkBlock = themeCss.match(
       /:where\(\.data-grid-theme\.dark\)[\s\S]*?\{([\s\S]*?)\}/,
@@ -85,5 +87,27 @@ describe('Token architecture — static invariants', () => {
       r => !new RegExp(`${r}\\s*:`).test(darkBlock!),
     )
     expect(missing).toEqual([])
+  })
+
+  test('HL22: highlight tokens reference only semantic roles; no built-in tone sits on --tsr-sys-info', () => {
+    // Подсветка (ADR 0080): заливки и блик тонов — от ролей темы, синий занят
+    // выделением ячеек и приходом.
+    const tokens = [
+      ...themeCss.matchAll(
+        /(--tsr-comp-highlight-[a-z0-9-]+)\s*:\s*([\s\S]*?);/g,
+      ),
+    ]
+    expect(tokens.map(m => m[1])).toEqual(
+      expect.arrayContaining([
+        '--tsr-comp-highlight-danger-bg',
+        '--tsr-comp-highlight-warning-bg',
+        '--tsr-comp-highlight-success-bg',
+      ]),
+    )
+    const refs = tokens.flatMap(m =>
+      [...m[2]!.matchAll(/var\(\s*(--[a-z0-9-]+)/g)].map(r => r[1]!),
+    )
+    expect(refs.filter(ref => !ref.startsWith('--tsr-sys-'))).toEqual([])
+    expect(refs).not.toContain('--tsr-sys-info')
   })
 })

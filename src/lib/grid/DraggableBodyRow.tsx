@@ -15,6 +15,7 @@ import {
   useRowStateSubscription,
 } from './BodyRow'
 import { ItemDraggableWrapper } from './dnd'
+import { highlightRender } from './highlight'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 
@@ -25,7 +26,8 @@ import styles from '../grid/BodyRow/BodyRow.module.css'
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived } = useRowStateSubscription(row)
+  const { arrived, highlight } = useRowStateSubscription(row)
+  const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
@@ -103,12 +105,15 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
       data-arrived={arrived || undefined}
+      {...highlighted.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
       data-row-interact={isRowInteract}
       data-last-row={row.getIsLastRow()}
       data-layout={props.layout}
-      style={rowStyles}
+      style={
+        highlighted.style ? { ...rowStyles, ...highlighted.style } : rowStyles
+      }
     >
       <ItemDraggableWrapper
         isRowDraggingEnable={row.getCanDrag()}

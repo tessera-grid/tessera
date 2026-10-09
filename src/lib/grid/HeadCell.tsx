@@ -29,6 +29,7 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
+import { highlightRender, useColumnHighlight } from './highlight'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
 import type { CommonColumnDef } from '../core/commonFeature.types'
@@ -92,6 +93,18 @@ export const HeadCellView = ({
 
   // Коарс-подписка (TODO Phase D: сузить). Нужна для aria-sort/resizing/пиннинга.
   useTableState(table as never, (state: unknown) => state)
+
+  // Подсветка колонки (ADR 0080) — только у листа: группа над ним не подсвечивается.
+  const columnHighlight = useColumnHighlight(table, header.column.id)
+  const highlighted = highlightRender([
+    {
+      layer: 'column',
+      state:
+        header.isPlaceholder || header.column.columns.length > 0
+          ? undefined
+          : columnHighlight,
+    },
+  ])
 
   const {
     firstLeaf,
@@ -229,7 +242,10 @@ export const HeadCellView = ({
       onBlur={nav?.onBlur}
       {...(nav && { [NAV_CELL_ATTR]: '' })}
       data-kn-active={nav?.isActive || undefined}
-      style={cellStyles}
+      style={
+        highlighted.style ? { ...cellStyles, ...highlighted.style } : cellStyles
+      }
+      {...highlighted.attrs}
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
       role="columnheader"
       aria-labelledby={hasTitle ? titleId : undefined}

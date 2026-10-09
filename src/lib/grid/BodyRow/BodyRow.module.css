@@ -100,3 +100,67 @@
   outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
   outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
 }
+
+/*
+ * Подсветка строки (ADR 0080): слой фона строки поверх её цвета; закреплённые ячейки
+ * с непрозрачной подложкой повторяют его по унаследованной `--tsr-highlight-row`.
+ * Строка держит переход затухания и полосу блика — выше закреплённых ячеек, ниже слоя
+ * прихода.
+ */
+.body__row[data-highlight] {
+  background-image: linear-gradient(
+    var(--tsr-highlight-row),
+    var(--tsr-highlight-row)
+  );
+}
+
+.body__row[data-highlight-out] {
+  transition:
+    var(--tsr-comp-row-transition),
+    --tsr-highlight-row var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out);
+}
+
+.body__row[data-highlight-shimmer] {
+  container-type: inline-size;
+}
+
+.body__row[data-highlight-shimmer]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  /* Не шире 60 % цели: узкая ячейка не проскакивает за мгновение. */
+  width: min(var(--tsr-comp-highlight-shimmer-width), 60cqw);
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--tsr-highlight-shimmer),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: row-highlight-shimmer
+    var(
+      --tsr-highlight-shimmer-period,
+      var(--tsr-comp-highlight-shimmer-period)
+    )
+    var(--tsr-comp-motion-easing) var(--tsr-highlight-shimmer-repeat, 1);
+}
+
+@keyframes row-highlight-shimmer {
+  to {
+    transform: translateX(100cqw);
+  }
+}
+
+/*
+ * Пока грид прокручивается, полосы блика нет (ADR 0080, §5): кадр прокрутки и так
+ * занят. После остановки полоса стартует заново в общей фазе (ShimmerSync).
+ */
+:global(.data-grid__container[data-scrolling])
+  .body__row[data-highlight-shimmer]::before {
+  content: none;
+}

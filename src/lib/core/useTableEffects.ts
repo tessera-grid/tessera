@@ -11,6 +11,7 @@ import {
 } from './features'
 import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
 import { logWarn } from './logger'
+import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
 import {
   type PluginDiagnostic,
   reportPluginError,
@@ -80,6 +81,35 @@ export const useTableEffects = (
         reportPluginError(table, entry.id, error)
       }
     }
+  })
+
+  // Подсветка целей, ушедших из данных или колонок, снимается (ADR 0080, §1) — при
+  // новой ссылке `data`/`columns`. Скрытые фильтром и страницей строки остаются в
+  // core-модели и подсветку сохраняют.
+  const pruned = useRef<{ data?: unknown; columns?: unknown }>({})
+  useLayoutEffect(() => {
+    const t = table as {
+      options: { data?: unknown; columns?: unknown }
+      getCoreRowModel: () => { rowsById: Record<string, unknown> }
+      getGroupedRowModel?: () => { rowsById: Record<string, unknown> }
+      getAllFlatColumns: () => { id: string }[]
+    }
+    const { data, columns } = t.options
+    if (pruned.current.data === data && pruned.current.columns === columns) {
+      return
+    }
+    pruned.current = { data, columns }
+    if (Object.keys(readHighlights(table)).length === 0) {
+      return
+    }
+    const core = t.getCoreRowModel().rowsById
+    const grouped = t.getGroupedRowModel?.().rowsById
+    const columnIds = new Set(t.getAllFlatColumns().map(column => column.id))
+    pruneHighlights(
+      table,
+      id => id in core || (!!grouped && id in grouped),
+      id => columnIds.has(id),
+    )
   })
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.

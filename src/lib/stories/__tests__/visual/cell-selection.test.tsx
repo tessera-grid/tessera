@@ -213,8 +213,15 @@ describe('Cell Selection — mouse', () => {
     const anchor = cellAt(container, 0, 0)
     const other = cellAt(container, 1, 1)
     expect(isFocused(anchor)).toBe(true)
-    expect(getComputedStyle(anchor).backgroundImage).toBe('none')
-    expect(getComputedStyle(other).backgroundImage).not.toBe('none')
+    // Слои фона ячейки общие с подсветкой (ADR 0080): тинт — непрозрачный цвет среди них.
+    const tinted = (el: HTMLElement) =>
+      [
+        ...getComputedStyle(el).backgroundImage.matchAll(
+          /(?:rgba|color)\([^)]*\)/g,
+        ),
+      ].some(([color]) => !/(?:,\s*0|\/\s*0)\)$/.test(color))
+    expect(tinted(anchor)).toBe(false)
+    expect(tinted(other)).toBe(true)
   })
 })
 

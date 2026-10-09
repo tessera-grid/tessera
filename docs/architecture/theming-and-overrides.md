@@ -67,6 +67,17 @@
   блик (он остаётся виден на месте), а удержание вспышки отсчитывает таймер кнопки.
   Пока грид прокручивается (`data-scrolling`), блик кнопок на паузе — вращение угла
   градиента перерисовывает кольцо на каждом кадре (ADR [0078](../decisions/0078-async-menu-actions.md), MI25).
+- **Подсветка** (ADR [0080](../decisions/0080-highlight-api.md)): заливка тона —
+  `--tsr-comp-highlight-<tone>-bg` для `danger`/`warning`/`success` (роли
+  `--tsr-sys-danger`, новые `--tsr-sys-warning` и `--tsr-sys-success` с мостом к
+  `--warning`/`--success` потребителя); блик — `--tsr-comp-highlight-<tone>-shimmer`,
+  `-shimmer-width`, `-shimmer-period`; затухание — `--tsr-comp-highlight-fade-duration`.
+  Свой тон — токен `--tsr-comp-highlight-<имя>-bg` (и при желании `-shimmer`) в теме
+  приложения; синий и нейтральный не берите — их занимают выделение ячеек, приход и
+  состояния строк. Заливка — слой `background-image` под текстом и индикаторами:
+  строка рисует его своим фоном, ячейки с непрозрачной подложкой закрепления повторяют
+  его по `--tsr-highlight-row`; слои — зарегистрированные цветовые свойства, поэтому
+  снятие гаснет переходом. Блик всех элементов цели идёт в одной фазе (`startTime` с момента постановки); пока грид прокручивается (`data-scrolling`), полосы нет.
 - **Отказ действия меню** (ADR [0078](../decisions/0078-async-menu-actions.md)):
   `--tsr-comp-action-error-color` — иконка `actionFailed` упавшего пункта и
   отметка ошибки на кебабе (тон `error` у `Bubble`).

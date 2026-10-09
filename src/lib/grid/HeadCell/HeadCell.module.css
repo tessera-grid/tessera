@@ -182,3 +182,62 @@
  * Видимость hidden-кнопок ячейки — единый контракт в
  * grid/cellControls/buttonVisibility.css.
  */
+
+/* Подсветка колонки (ADR 0080): слой фона заголовка-листа. */
+.head__cell[data-column-highlight] {
+  background-image: linear-gradient(
+    var(--tsr-highlight-column),
+    var(--tsr-highlight-column)
+  );
+}
+
+.head__cell[data-column-highlight-out] {
+  transition:
+    var(--tsr-comp-head-cell-transition),
+    --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out);
+}
+
+.head__cell[data-highlight-shimmer] {
+  container-type: inline-size;
+}
+
+.head__cell[data-highlight-shimmer]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  /* Не шире 60 % цели: узкая ячейка не проскакивает за мгновение. */
+  width: min(var(--tsr-comp-highlight-shimmer-width), 60cqw);
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--tsr-highlight-shimmer),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: head-highlight-shimmer
+    var(
+      --tsr-highlight-shimmer-period,
+      var(--tsr-comp-highlight-shimmer-period)
+    )
+    var(--tsr-comp-motion-easing) var(--tsr-highlight-shimmer-repeat, 1);
+}
+
+@keyframes head-highlight-shimmer {
+  to {
+    transform: translateX(100cqw);
+  }
+}
+
+/*
+ * Пока грид прокручивается, полосы блика нет (ADR 0080, §5): кадр прокрутки и так
+ * занят. После остановки полоса стартует заново в общей фазе (ShimmerSync).
+ */
+:global(.data-grid__container[data-scrolling])
+  .head__cell[data-highlight-shimmer]::before {
+  content: none;
+}

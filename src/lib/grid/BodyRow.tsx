@@ -11,6 +11,12 @@ import type { Cell, Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import {
+  type Highlights,
+  type HighlightTargetState,
+  rowHighlightKey,
+} from '../core/highlights/highlightFeature'
+import { highlightRender } from './highlight'
+import {
   NAV_ROW_ATTR,
   useKeyboardNavigationRow,
 } from '../core/keyboardNavigation'
@@ -54,6 +60,7 @@ interface BodyRowCellsProps extends TableBodyRowProps {
  */
 export const useRowStateSubscription = (row: Row<any, any>) => {
   const table = (row as unknown as { table: never }).table
+  const highlightKey = rowHighlightKey(row.id)
   return useTableState(table, (state: unknown) => {
     const s = state as {
       rowSelection?: Record<string, boolean>
@@ -61,6 +68,7 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       grouping?: unknown
       rowExpandPending?: Record<string, number>
       rowArrivals?: Record<string, number>
+      highlights?: Highlights
     }
     return {
       selected: s.rowSelection?.[row.id] ?? false,
@@ -68,8 +76,9 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       grouping: s.grouping,
       expandPending: s.rowExpandPending?.[row.id] ?? 0,
       arrived: row.id in (s.rowArrivals ?? {}),
+      highlight: s.highlights?.[highlightKey],
     }
-  }) as { arrived: boolean }
+  }) as { arrived: boolean; highlight?: HighlightTargetState }
 }
 
 export const BodyRowCells = ({
@@ -176,7 +185,8 @@ export const getAriaSelected = (
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived } = useRowStateSubscription(row)
+  const { arrived, highlight } = useRowStateSubscription(row)
+  const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
@@ -223,11 +233,14 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
       data-arrived={arrived || undefined}
+      {...highlighted.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-interact
       data-last-row={row.getIsLastRow()}
       data-layout={layout}
-      style={rowStyles}
+      style={
+        highlighted.style ? { ...rowStyles, ...highlighted.style } : rowStyles
+      }
     >
       <BodyRowCells {...props} isRowInteract />
     </div>

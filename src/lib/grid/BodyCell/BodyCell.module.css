@@ -67,10 +67,7 @@
   &[data-cell-selected='true'] {
     /* Тинт поверх любого фона (в т.ч. sticky-подложки закреплённых ячеек):
        background-image рисуется над background-color, не затирая его. */
-    background-image: linear-gradient(
-      var(--tsr-comp-cell-selected-bg),
-      var(--tsr-comp-cell-selected-bg)
-    );
+    --tsr-cell-selection-tint: var(--tsr-comp-cell-selected-bg);
     /* Кромки по внешней границе выделения — inset box-shadow (без сдвига модели
        бокса); цвет стороны приходит инлайн-переменной, transparent для внутренних. */
     box-shadow:
@@ -84,7 +81,7 @@
      ячейки), отдельной обводки нет. Рамка одна — кромки box-shadow общего диапазона
      (у anchor-угла остаются его внешние стороны). */
   &[data-cell-selected='true'][data-cell-focused='true'] {
-    background-image: none;
+    --tsr-cell-selection-tint: transparent;
   }
 
   /* Активная ячейка клавиатурной навигации (плагин keyboardNavigation): контур
@@ -211,4 +208,101 @@
     [data-cell-of-first-row='true']
   )::before {
   --tsr-tree-line-overlap: 1px;
+}
+
+/*
+ * Слои фона ячейки поверх `background-color`: сверху вниз — тинт выделения ячеек,
+ * подсветка ячейки, колонки (ADR 0080, §2). Текст, кромки выделения и фокус-кольцо
+ * лежат выше и не тонируются. Подсветку строки рисует фон самой строки: прозрачные
+ * ячейки её пропускают, а свой слой строки получают только ячейки с непрозрачной
+ * подложкой закрепления — иначе прозрачная закреплённая ячейка поверх прокрученной
+ * удвоила бы тон.
+ */
+.body__cell:is(
+  [data-highlight],
+  [data-column-highlight],
+  [data-cell-selected='true']
+) {
+  background-image:
+    linear-gradient(
+      var(--tsr-cell-selection-tint, transparent),
+      var(--tsr-cell-selection-tint, transparent)
+    ),
+    linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
+    linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column));
+}
+
+.body__cell:is(
+    [data-cell-pinned='left'],
+    [data-cell-pinned='right']:not([data-actions-column-cell='true']),
+    [data-cell-pinned='right'][data-actions-column-cell='true']:not(
+        [data-cell-first-right-pinned='true']
+      )
+  ):is(
+    [data-highlight],
+    [data-column-highlight],
+    [data-cell-selected='true'],
+    :global(.data-grid__body-row[data-highlight]) *
+  ) {
+  background-image:
+    linear-gradient(
+      var(--tsr-cell-selection-tint, transparent),
+      var(--tsr-cell-selection-tint, transparent)
+    ),
+    linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
+    linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column)),
+    linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row));
+}
+
+.body__cell:is([data-highlight-out], [data-column-highlight-out]) {
+  transition:
+    var(--tsr-comp-row-transition),
+    --tsr-highlight-cell var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out);
+}
+
+.body__cell[data-highlight-shimmer] {
+  container-type: inline-size;
+}
+
+.body__cell[data-highlight-shimmer]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  /* Не шире 60 % цели: узкая ячейка не проскакивает за мгновение. */
+  width: min(var(--tsr-comp-highlight-shimmer-width), 60cqw);
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--tsr-highlight-shimmer),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: cell-highlight-shimmer
+    var(
+      --tsr-highlight-shimmer-period,
+      var(--tsr-comp-highlight-shimmer-period)
+    )
+    var(--tsr-comp-motion-easing) var(--tsr-highlight-shimmer-repeat, 1);
+}
+
+@keyframes cell-highlight-shimmer {
+  to {
+    transform: translateX(100cqw);
+  }
+}
+
+/*
+ * Пока грид прокручивается, полосы блика нет (ADR 0080, §5): кадр прокрутки и так
+ * занят. После остановки полоса стартует заново в общей фазе (ShimmerSync).
+ */
+:global(.data-grid__container[data-scrolling])
+  .body__cell[data-highlight-shimmer]::after {
+  content: none;
 }

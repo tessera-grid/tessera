@@ -12,6 +12,7 @@ import {
 import type { Header } from '../types'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
+import { highlightRender, useColumnHighlight } from './highlight'
 
 import styles from '../grid/FooterCell/FooterCell.module.css'
 
@@ -36,6 +37,11 @@ export const FooterCell = ({
     !header.isPlaceholder,
   )
   const pinning = getCellPinningParams(table as never, header.column as never)
+  // Подсветка колонки (ADR 0080); описание несёт заголовок.
+  const columnHighlight = useColumnHighlight(table, header.column.id)
+  const highlighted = highlightRender([
+    { layer: 'column', state: columnHighlight, describe: false },
+  ])
 
   return (
     <div
@@ -58,7 +64,9 @@ export const FooterCell = ({
               left: pinning.startPinnedOffset,
               right: pinning.endPinnedOffset,
             }),
+        ...highlighted.style,
       }}
+      {...highlighted.attrs}
       data-virtual-cell={absoluteLeft !== undefined || undefined}
       aria-colindex={getDisplayColumnIndex(table, header.column.id) + 1}
       data-column-id={header.column.id}
