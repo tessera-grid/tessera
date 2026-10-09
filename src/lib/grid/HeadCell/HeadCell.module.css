@@ -128,7 +128,11 @@
     border-left: 1px solid var(--tsr-comp-cell-pinned-border-color);
   }
 
-  /* Правый отступ для заголовков с ресайзером */
+  /* Правый отступ для заголовков с ресайзером: появляется тем же темпом, что кнопки. */
+
+  & :global(.data-grid__cell-wrapper-content) {
+    transition: var(--tsr-comp-reveal-size-transition);
+  }
 
   &:hover:is([data-column-resizable='true'])
     :global(.data-grid__cell-wrapper-content) {

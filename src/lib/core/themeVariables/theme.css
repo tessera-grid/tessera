@@ -174,6 +174,14 @@
   /* Проявление скрытых кнопок ячейки и строки: одно правило для обеих. */
   --tsr-comp-reveal-transition: opacity var(--tsr-comp-motion-duration)
     var(--tsr-comp-motion-easing-out);
+  /* Раскрытие ширины скрытой кнопки ячейки и отступа под грип: соседи сдвигаются
+   * плавно; `overflow` переключается посередине, чтобы кнопка не вылезала из своей ширины. */
+  --tsr-comp-reveal-size-transition:
+    flex-basis var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing-out),
+    padding-right var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing-out),
+    overflow var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing-out)
+      allow-discrete;
   /* Проявление «чипа» кнопки строки: значок и граница, тем же темпом; фон — сразу. */
   --tsr-comp-reveal-chip-transition:
     color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing-out),

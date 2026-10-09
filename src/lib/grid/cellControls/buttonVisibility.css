@@ -11,10 +11,16 @@
 
 /* Плавность появления hidden-кнопок */
 
-.data-grid__head-cell .cell__button,
-.data-grid__body-cell .cell__button,
 .data-grid__body-row .row__button {
   transition: var(--tsr-comp-reveal-transition);
+}
+
+/* Кнопка ячейки раскрывает и ширину: `interpolate-size` даёт переход до `auto`. */
+.data-grid__head-cell .cell__button,
+.data-grid__body-cell .cell__button {
+  interpolate-size: allow-keywords;
+  transition:
+    var(--tsr-comp-reveal-transition), var(--tsr-comp-reveal-size-transition);
 }
 
 /* Скрытие hidden-кнопок ячейки */
@@ -43,6 +49,8 @@
   flex: auto;
   overflow: unset;
   flex-shrink: 0;
+  /* Ширину ведёт только переход flex-basis, без скачка к ширине содержимого. */
+  min-width: 0;
 }
 
 :is(.data-grid__head-cell, .data-grid__body-cell):has(:focus-visible)
@@ -51,6 +59,7 @@
   flex: auto;
   overflow: unset;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 /*

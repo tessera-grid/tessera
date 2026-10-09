@@ -118,7 +118,9 @@ describe('Motion contract', () => {
       '--tsr-comp-motion-duration',
       'transition-duration',
     )
-    expect(read(cell, 'transition-property')).toBe('opacity')
+    expect(read(cell, 'transition-property')).toBe(
+      'opacity, flex-basis, padding-right, overflow',
+    )
     expect(read(chip, 'transition-property')).toBe('color, box-shadow')
     for (const el of [cell, chip]) {
       for (const part of list(read(el, 'transition-duration'))) {
@@ -201,6 +203,70 @@ describe('Motion contract', () => {
       expectInSync('hover')
       await userEvent.hover(document.body)
       expectInSync('leave')
+    } finally {
+      theme.style.removeProperty('--tsr-comp-motion-duration')
+    }
+  })
+
+  test('RW1 a hidden cell button of a body cell and a header passes through intermediate widths on hover instead of jumping', async () => {
+    await renderAll()
+    const theme = query('.data-grid-theme')[0]
+    // Длинный переход, чтобы замер попал в его середину независимо от задержек RPC.
+    theme.style.setProperty('--tsr-comp-motion-duration', '10s')
+    try {
+      for (const [name, cellSelector] of [
+        ['body cell', '.data-grid__body-cell'],
+        ['header', '.data-grid__head-cell'],
+      ] as const) {
+        const wrapper = query(
+          `${cellSelector} .cell__button--hidden:not([data-button-active='true'])`,
+        )[0]
+        expect(wrapper, `${name} has a hidden button`).toBeTruthy()
+        const full = wrapper
+          .querySelector('button')!
+          .getBoundingClientRect().width
+        expect(wrapper.getBoundingClientRect().width, `${name} hidden`).toBe(0)
+
+        await userEvent.hover(wrapper.closest(cellSelector)!)
+        await expect
+          .poll(() => wrapper.getBoundingClientRect().width)
+          .toBeGreaterThan(0)
+        expect(
+          wrapper.getBoundingClientRect().width,
+          `${name} mid-transition`,
+        ).toBeLessThan(full)
+        await userEvent.hover(document.body)
+      }
+    } finally {
+      theme.style.removeProperty('--tsr-comp-motion-duration')
+    }
+  })
+
+  test('RW2 the padding for the resize handle passes through intermediate values on header hover', async () => {
+    await render(<composed.ColumnResizing />)
+    await expect
+      .poll(
+        () =>
+          query('.data-grid__head-cell[data-column-resizable="true"]').length,
+      )
+      .toBeGreaterThan(0)
+    const cell = query('.data-grid__head-cell[data-column-resizable="true"]')[0]
+    const content = cell.querySelector<HTMLElement>(
+      '.data-grid__cell-wrapper-content',
+    )!
+    const theme = cell.closest<HTMLElement>('.data-grid-theme')!
+    const target = parseFloat(
+      resolve('--tsr-comp-resize-handler-width', 'padding-right'),
+    )
+    const before = parseFloat(read(content, 'padding-right'))
+    expect(before).toBeLessThan(target)
+    theme.style.setProperty('--tsr-comp-motion-duration', '10s')
+    try {
+      await userEvent.hover(cell)
+      await expect
+        .poll(() => parseFloat(read(content, 'padding-right')))
+        .toBeGreaterThan(before)
+      expect(parseFloat(read(content, 'padding-right'))).toBeLessThan(target)
     } finally {
       theme.style.removeProperty('--tsr-comp-motion-duration')
     }
