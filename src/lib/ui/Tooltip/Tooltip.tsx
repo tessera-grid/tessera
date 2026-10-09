@@ -2,6 +2,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ElementType,
@@ -35,6 +36,34 @@ export interface TooltipProps {
 // задерживает появление попапа, но не теряет наведение.
 const TooltipPopup = lazy(() => import('./TooltipImpl'))
 
+/**
+ * Последний ввод — клавиатура или указатель. Фокус открывает подсказку только после
+ * клавиатуры: меню возвращает фокус на свою кнопку и после выбора мышью, а браузерный
+ * `:focus-visible` при переводе фокуса скриптом наследует признак предыдущего элемента.
+ * Слушатели ставятся один раз, при первой подсказке, — импорт модуля их не ставит.
+ */
+let keyboardInput = false
+let tracking = false
+const trackInput = () => {
+  if (tracking) return
+  tracking = true
+  document.addEventListener(
+    'keydown',
+    event => {
+      if (!event.metaKey && !event.ctrlKey && !event.altKey)
+        keyboardInput = true
+    },
+    true,
+  )
+  document.addEventListener(
+    'pointerdown',
+    () => {
+      keyboardInput = false
+    },
+    true,
+  )
+}
+
 /** Пауза перед закрытием: указатель успевает перейти с триггера на подсказку. */
 const CLOSE_DELAY = 150
 
@@ -42,6 +71,7 @@ interface TriggerProps {
   ref?: Ref<HTMLElement>
   onPointerEnter?: (event: PointerEvent) => void
   onPointerLeave?: (event: PointerEvent) => void
+  onPointerDown?: (event: PointerEvent) => void
   onFocus?: (event: FocusEvent) => void
   onBlur?: (event: FocusEvent) => void
 }
@@ -59,6 +89,7 @@ export const Tooltip = ({
   delayDuration = 200,
 }: TooltipProps) => {
   const anchorRef = useRef<HTMLElement | null>(null)
+  useEffect(trackInput, [])
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   // Монтируем чанк попапа только после первого взаимодействия и держим смонтированным.
   const [mounted, setMounted] = useState(false)
@@ -69,6 +100,7 @@ export const Tooltip = ({
     ref: childRef,
     onPointerEnter,
     onPointerLeave,
+    onPointerDown,
     onFocus,
     onBlur,
   } = children.props as TriggerProps
@@ -122,9 +154,15 @@ export const Tooltip = ({
           onPointerLeave?.(event)
           hideSoon()
         }}
+        onPointerDown={(event: PointerEvent) => {
+          onPointerDown?.(event)
+          hide()
+        }}
         onFocus={(event: FocusEvent) => {
           onFocus?.(event)
-          show()
+          // Только фокус с клавиатуры: фокус от нажатия мышью или возвращённый после
+          // закрытия меню подсказку не открывает — указатель может быть уже далеко.
+          if (keyboardInput) show()
         }}
         onBlur={(event: FocusEvent) => {
           onBlur?.(event)

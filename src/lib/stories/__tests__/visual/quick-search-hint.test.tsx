@@ -62,7 +62,11 @@ describe('Quick search hint', () => {
     await userEvent.unhover(info())
     await expect.poll(tooltipText).not.toContain(HINT)
 
-    info().focus()
+    // Фокус с клавиатуры: подсказка от фокуса открывается только после ввода с клавиатуры.
+    // Тулбар — роуминг-фокус: к иконке после поля ведёт стрелка вправо.
+    input()!.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(info())
     await expect.poll(tooltipText, { timeout: 3000 }).toContain(HINT)
   })
 

@@ -2,6 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import { humanClick } from '../helpers'
 import { Bubble } from '@/lib/ui/Bubble'
 import { IconButton } from '@/lib/ui/IconButton'
 import { Tooltip } from '@/lib/ui/Tooltip'
@@ -91,7 +92,7 @@ describe('IconButton', () => {
   })
 })
 
-// --- Tooltip (TT1–TT4) --------------------------------------------------------
+// --- Tooltip (TT1–TT6) --------------------------------------------------------
 
 describe('Tooltip', () => {
   /** The open tooltip's positioner carries `data-side`; absent while closed. */
@@ -152,6 +153,46 @@ describe('Tooltip', () => {
     await userEvent.hover(container.querySelector('button')!)
     await expect.poll(() => openTooltip()).not.toBeNull()
     expect(openTooltip()!.getAttribute('data-side')).toBe('bottom')
+  })
+
+  test('TT5: focus opens the tooltip only after keyboard input', async () => {
+    const { container } = await render(
+      <div>
+        <button>before</button>
+        <Tooltip title="Hint text" delayDuration={0}>
+          <button>trigger</button>
+        </Tooltip>
+      </div>,
+    )
+    const [before, trigger] = [...container.querySelectorAll('button')]
+    // После мыши фокус переводит скрипт — как меню возвращает фокус на свою кнопку.
+    await humanClick(before!)
+    trigger!.focus()
+    await new Promise(resolve => setTimeout(resolve, 300))
+    expect(document.activeElement).toBe(trigger)
+    expect(openTooltip()).toBeNull()
+
+    // С клавиатуры — подсказка открывается.
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(before)
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(trigger)
+    await expect.poll(() => openTooltip()).not.toBeNull()
+  })
+
+  test('TT6: pressing the trigger hides the tooltip; it stays hidden while the pointer is on it', async () => {
+    const { container } = await render(
+      <Tooltip title="Hint text" delayDuration={0}>
+        <button>trigger</button>
+      </Tooltip>,
+    )
+    const trigger = container.querySelector('button')!
+    await userEvent.hover(trigger)
+    await expect.poll(() => openTooltip()).not.toBeNull()
+    await humanClick(trigger)
+    await expect.poll(() => openTooltip()).toBeNull()
+    await new Promise(resolve => setTimeout(resolve, 300))
+    expect(openTooltip()).toBeNull()
   })
 })
 

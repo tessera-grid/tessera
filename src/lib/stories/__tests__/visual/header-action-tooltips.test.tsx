@@ -106,3 +106,49 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     await expect.poll(tooltipShown('Row options')).toBe(true)
   })
 })
+
+describe('Тултип кебаба после меню', () => {
+  test('AM35: после Escape с клавиатуры тултип кебаба есть; после выбора пункта мышью фокус возвращается на кебаб без тултипа, указатель ушёл — тултипа нет', async () => {
+    await render(<composed.RowActionMenu />)
+    await waitForGrid()
+    const row = document.querySelectorAll<HTMLElement>(
+      '.data-grid__body-row',
+    )[1]!
+    const kebab = () =>
+      row.querySelector<HTMLElement>('[aria-label^="Row options"]')!
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+    const menuItems = () => [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ]
+    const away = () =>
+      userEvent.hover(
+        document.querySelectorAll<HTMLElement>('.data-grid__body-row')[4]!,
+      )
+
+    // Открыли мышью, закрыли Escape — фокус вернулся с клавиатуры, тултип есть.
+    await userEvent.hover(row)
+    await expect
+      .poll(() => row.querySelector('[aria-label^="Row options"]'))
+      .not.toBeNull()
+    await humanClick(kebab())
+    await expect.poll(() => menuItems().length).toBeGreaterThan(0)
+    expect(tooltipShown('Row options')()).toBe(false)
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => menuItems().length).toBe(0)
+    await expect.poll(tooltipShown('Row options')).toBe(true)
+    await away()
+
+    // Открыли и выбрали мышью — фокус вернулся на кебаб, тултипа нет и после ухода.
+    await userEvent.hover(row)
+    await humanClick(kebab())
+    await expect.poll(() => menuItems().length).toBeGreaterThan(0)
+    await humanClick(menuItems().find(el => el.textContent?.includes('Edit'))!)
+    await expect.poll(() => menuItems().length).toBe(0)
+    await expect.poll(() => document.activeElement).toBe(kebab())
+    await sleep(400)
+    expect(tooltipShown('Row options')()).toBe(false)
+    await away()
+    await sleep(400)
+    expect(tooltipShown('Row options')()).toBe(false)
+  })
+})
