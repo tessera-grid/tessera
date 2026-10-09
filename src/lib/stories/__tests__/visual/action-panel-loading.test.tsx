@@ -220,7 +220,7 @@ describe('Панель действия — загрузка содержимо�
       .toBe('on')
     await expect
       .poll(() => messages)
-      .toContain('Probe failed to load. Try again.')
+      .toContain("Couldn't load Probe. Try again.")
     await sleep(100)
     expect(panel()).toBeNull()
     expect(inlineButton().getAttribute('aria-busy')).toBeNull()

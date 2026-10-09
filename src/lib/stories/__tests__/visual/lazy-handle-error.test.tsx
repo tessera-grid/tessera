@@ -33,7 +33,7 @@ describe('Меню ручек — ошибка загрузки', () => {
     await expect.poll(flash).toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain('Move column failed to load. Try again.')
+      .toContain("Couldn't load Move column. Try again.")
     await sleep(100)
     expect(handleMenu()).toBeNull()
 
@@ -41,7 +41,7 @@ describe('Меню ручек — ошибка загрузки', () => {
     await humanClick(gripWrapper())
     await expect
       .poll(() => announcements.messages)
-      .toContain('Column width failed to load. Try again.')
+      .toContain("Couldn't load Column width. Try again.")
     expect(gripWrapper().querySelector('[data-error-flash]')).toBeNull()
     expect(gripWrapper().hasAttribute('data-error-flash')).toBe(false)
 

@@ -502,7 +502,7 @@ describe('Фильтр вариантов — справочник', () => {
     await openFilter('manager')
     const alert = () => panel()!.querySelector('[role="alert"]')
     await expect.poll(alert).not.toBeNull()
-    expect(alert()!.textContent).toContain('Could not load values')
+    expect(alert()!.textContent).toContain("Couldn't load values")
     expect(rowIds()).toEqual(['2', '5'])
     // Отмеченное значение показано и без ответа справочника.
     fail = false

@@ -538,7 +538,7 @@ describe('dataExport — вид панели (ADR 0074)', () => {
     await expect.poll(checked).toEqual(['page'])
     expect(withCheck()).toEqual(['page'])
 
-    // «Выбранные» недоступны без выбора: стрелка вниз со страницы — на «Все данные».
+    // «Выбранные» недоступны без выбора: стрелка вниз со страницы — на «Все строки».
     radio('rows', 'page')!.focus()
     await userEvent.keyboard('{ArrowDown}')
     await expect.poll(checked).toEqual(['all'])

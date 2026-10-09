@@ -29,7 +29,7 @@ describe('Размер страницы — ошибка загрузки', () =
     await expect.poll(flash).toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain('Rows per page failed to load. Try again.')
+      .toContain("Couldn't load Rows per page. Try again.")
     await sleep(100)
     expect(pageSizeOptions()).toBe(0)
     // Вспышка держится --tsr-comp-error-flash-duration (1200 мс).

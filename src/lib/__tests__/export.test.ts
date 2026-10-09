@@ -210,7 +210,7 @@ describe('dataExport — оси настроек', () => {
   })
 
   it('EX10: подпись view называет учитываемое, остальные — из локализации', () => {
-    expect(rowLabel(DEFAULT_LABELS, 'all', [])).toBe('All data')
+    expect(rowLabel(DEFAULT_LABELS, 'all', [])).toBe('All rows')
     expect(rowLabel(DEFAULT_LABELS, 'view', ['sorting'])).toBe('With sorting')
     expect(rowLabel(DEFAULT_LABELS, 'page', [])).toBe('Current page')
     expect(rowLabel(DEFAULT_LABELS, 'selected', [])).toBe('Selected rows')

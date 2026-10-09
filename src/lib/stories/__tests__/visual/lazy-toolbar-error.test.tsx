@@ -29,7 +29,7 @@ describe('Ленивые поповеры — ошибка загрузки', ()
       .toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain('Columns failed to load. Try again.')
+      .toContain("Couldn't load Columns. Try again.")
     await sleep(100)
     expect(columnsPopover()).toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()
@@ -48,7 +48,7 @@ describe('Ленивые поповеры — ошибка загрузки', ()
     announcements.stop()
     expect(
       announcements.messages.filter(
-        text => text === 'Columns failed to load. Try again.',
+        text => text === "Couldn't load Columns. Try again.",
       ).length,
     ).toBeGreaterThanOrEqual(1)
   })

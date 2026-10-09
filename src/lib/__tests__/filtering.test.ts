@@ -241,7 +241,7 @@ describe('фильтрация и экспорт', () => {
     const axes = resolveAxes(table)!
     expect(axes.rows.map(row => row.value)).toContain('view')
     expect(axes.viewBy).toEqual(['filtering'])
-    expect(rowLabel(DEFAULT_LABELS, 'view', axes.viewBy)).toBe('With filtering')
+    expect(rowLabel(DEFAULT_LABELS, 'view', axes.viewBy)).toBe('With filters')
 
     const exported = (scope: 'view' | 'selected') =>
       exportRowsOf(table, scope).map(row => row.id)

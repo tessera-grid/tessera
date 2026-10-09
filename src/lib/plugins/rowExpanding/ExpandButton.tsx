@@ -31,7 +31,8 @@ export const ExpandButton = ({
   const swapped = expanded && expandedIcon !== expand
   const ExpandIcon = swapped ? expandedIcon : expand
 
-  const label = useLocalization().toggleRow
+  const labels = useLocalization()
+  const label = expanded ? labels.collapseRow : labels.expandRow
 
   return (
     <Tooltip title={label} disabled={disabled}>

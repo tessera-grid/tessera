@@ -87,7 +87,7 @@
 - **Таблица** — `aria-label` из ключа `table` (дефолт `Data table`).
 - **Icon-кнопки** — `aria-label` из существующих ключей (`sortAscending`/
   `sortDescending`/`clearSort`, `pin`/`unpin`, `group`/`ungroup`,
-  `toggleRow` — постоянная, состояние в `aria-expanded`, [ADR 0015](0015-row-expanding.md),
+  `expandRow`/`collapseRow` — по состоянию, плюс `aria-expanded`, [ADR 0015](0015-row-expanding.md),
   RE13; `editCell` — кнопка правки `cellEditing`), то есть тот же
   текст, что и в тултипе. Ячеечные кнопки (`CellButton`) ставят `aria-label` из
   той же подписи, что и тултип, — хардкод английского текста в плагинах недопустим.

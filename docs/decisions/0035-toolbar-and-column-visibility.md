@@ -324,7 +324,7 @@ columnVisibility({
 - **Фаза 4 — перформанс.** Кейсы I4–I6 в перф-матрице.
 
 Новые ключи локализации: `toolbar` («Table toolbar»), `columns` («Columns»),
-`searchColumns` («Search columns»), `noColumnsFound` («No columns found»),
+`searchColumns` («Find column»), `noColumnsFound` («No columns found»),
 `showAllColumns` («Show all»), `resetColumns` («Reset»), `hideColumn` («Hide
 column»), `hideGroup` («Hide group»). Новая иконка: `columns` (по умолчанию —
 `Columns3` из lucide).

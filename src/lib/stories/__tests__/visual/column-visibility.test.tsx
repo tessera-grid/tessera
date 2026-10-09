@@ -131,7 +131,7 @@ describe('columnVisibility', () => {
     expect(menu()!.getAttribute('aria-label')).toBe('Columns')
     await expect
       .poll(() => document.activeElement?.getAttribute('aria-label'))
-      .toBe('Search columns')
+      .toBe('Find column')
 
     await userEvent.keyboard('{Escape}')
     await expect

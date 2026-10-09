@@ -52,7 +52,7 @@ const openPanel = async () => {
 }
 
 describe('Демо-история Export', () => {
-  test('EX34: «Export — server» — выгрузка «Все данные» уходит в onExport, кнопка занята до ответа сервера; «Текущая страница» скачивается и пишет onExported', async () => {
+  test('EX34: «Export — server» — выгрузка «Все строки» уходит в onExport, кнопка занята до ответа сервера; «Текущая страница» скачивается и пишет onExported', async () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:export-story')
     const clicks = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')

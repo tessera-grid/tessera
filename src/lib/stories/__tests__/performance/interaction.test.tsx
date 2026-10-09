@@ -172,7 +172,7 @@ const pageSizeOption = (size: string) =>
     option => option.textContent?.trim() === size,
   )
 
-// Экспорт (ADR 0044): «Выгрузить» в панели (строки «Все данные») сериализует всю таблицу синхронно.
+// Экспорт (ADR 0044): «Выгрузить» в панели (строки «Все строки») сериализует всю таблицу синхронно.
 const EXPORT = { enableToolbar: true, enableExport: true }
 const EXPORT_SIZE = { columnCount: 10, dataCount: 100_000 } as const
 
@@ -700,7 +700,7 @@ const CASES: InteractionCase[] = [
   },
   {
     id: 'EX33',
-    label: 'выгрузка «Все данные», 100 000×10, все плагины',
+    label: 'выгрузка «Все строки», 100 000×10, все плагины',
     size: '100 000×10',
     loadBudget: true,
     args: { ...EXPORT_SIZE, ...ALL_PLUGINS, ...EXPORT },

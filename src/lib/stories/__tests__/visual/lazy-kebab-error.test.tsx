@@ -40,7 +40,7 @@ describe('Кебаб заголовка — ошибка загрузки', () =
     await expect.poll(flash).toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain('Column options failed to load. Try again.')
+      .toContain("Couldn't load Column options. Try again.")
     await sleep(100)
     expect(document.querySelector('[role="menu"]')).toBeNull()
 

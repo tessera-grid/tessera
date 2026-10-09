@@ -5,11 +5,10 @@ import { ReactNode, createContext, useContext, useMemo } from 'react'
  * проп `localization` у DataGrid — для локализации или смены формулировок.
  */
 export interface TableLabels {
-  /**
-   * Имя и тултип кнопки раскрытия строки — одно в обоих состояниях: состояние несёт
-   * `aria-expanded` кнопки (ADR 0015, RE13).
-   */
-  toggleRow: string
+  /** Имя и тултип кнопки раскрытия у свёрнутой строки (ADR 0015, RE13) */
+  expandRow: string
+  /** Имя и тултип кнопки раскрытия у раскрытой строки */
+  collapseRow: string
   /** Тултип кнопки закрепления колонки */
   pin: string
   /** Тултип кнопки открепления колонки */
@@ -245,8 +244,11 @@ export interface TableLabels {
   filteredRows: (shown: number, total: number) => string
 }
 
+const VIEW_FEATURES = { sorting: 'sorting', filtering: 'filters' }
+
 export const DEFAULT_LABELS: TableLabels = {
-  toggleRow: 'Toggle row',
+  expandRow: 'Expand row',
+  collapseRow: 'Collapse row',
   pin: 'Pin column',
   unpin: 'Unpin column',
   pinLeft: 'Pin left',
@@ -269,8 +271,9 @@ export const DEFAULT_LABELS: TableLabels = {
   exportRun: 'Export',
   exportColumnsVisible: 'Visible columns',
   exportColumnsAll: 'All columns',
-  exportAll: 'All data',
-  exportView: features => `With ${features.join(' and ')}`,
+  exportAll: 'All rows',
+  exportView: features =>
+    `With ${features.map(feature => VIEW_FEATURES[feature]).join(' and ')}`,
   exportPage: 'Current page',
   exportSelected: 'Selected rows',
   filter: 'Filter',
@@ -307,21 +310,21 @@ export const DEFAULT_LABELS: TableLabels = {
   filterPresetThisMonth: 'This month',
   filterPresetThisYear: 'This year',
   filterTime: 'Time',
-  filterTimeFrom: 'Start time',
-  filterTimeTo: 'End time',
+  filterTimeFrom: 'Time from',
+  filterTimeTo: 'Time to',
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
   filterAnyOf: 'Any of',
-  filterAllOf: 'Has all of',
+  filterAllOf: 'All of',
   filterNoneOf: 'None of',
   filterSearchOptions: 'Search values',
   filterSelectAll: 'Select all',
-  filterClearSelection: 'Clear',
+  filterClearSelection: 'Clear selection',
   filterNoOptions: 'No values',
   filterLoadingOptions: 'Loading…',
-  filterOptionsError: 'Could not load values',
+  filterOptionsError: "Couldn't load values",
   filterRetry: 'Retry',
-  searchColumns: 'Search columns',
+  searchColumns: 'Find column',
   noColumnsFound: 'No columns found',
   showAllColumns: 'Show all',
   resetColumns: 'Reset',
@@ -333,7 +336,7 @@ export const DEFAULT_LABELS: TableLabels = {
   rowMenu: 'Row options',
   withActiveCount: (name, count) => `${name}, ${count} active`,
   contextMenu: 'Context menu',
-  loadFailed: name => `${name} failed to load. Try again.`,
+  loadFailed: name => `Couldn't load ${name}. Try again.`,
   copy: 'Copy',
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',
@@ -381,7 +384,7 @@ export const DEFAULT_LABELS: TableLabels = {
   selectedRowsHidden: count => `${count} hidden by filters`,
   search: 'Search',
   clearSearch: 'Clear search',
-  searchColumnsHint: columns => `Searches in: ${columns.join(', ')}`,
+  searchColumnsHint: columns => `Search in columns: ${columns.join(', ')}`,
   searchNoColumns: 'No columns to search',
   filters: (active, hidden) =>
     active === 0

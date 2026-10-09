@@ -9,6 +9,11 @@
   слышит «Collapse, развёрнуто», состояние дважды.
   2026-10-07 — шаг отступа 32 → 16px и токен `--tsr-comp-row-nesting-indent`
   ([ADR 0059](0059-row-nesting-indent.md)).
+  2026-10-09 — RE13 пересмотрен: подпись тоггла — действие по состоянию
+  (`expandRow` / `collapseRow`), `aria-expanded` остаётся. Постоянная подпись не
+  показывала зрячему состояние строки; повтор состояния у скринридера («Свернуть
+  строку, развёрнуто») признан меньшим злом. Ключ `toggleRow` удалён — ломающее
+  изменение `localization`.
 - **Связано:**
   - [ADR 0054](0054-lazy-row-children.md) — ленивые дети: `hasChildren` /
     `loadChildren`, строка раскрываема без `subRows`.
@@ -144,8 +149,8 @@ TanStack Table v9 несёт готовую модель раскрытия: с�
   `posinset`. Без навигации корень — `role="table"`, где ARIA не допускает
   `aria-expanded` у строки; там состояние раскрытия несёт **кнопка-тоггл**
   (`aria-expanded` на `.row-expand-button`, у неё оно есть всегда). Имя и тултип
-  тоггла — постоянная подпись `toggleRow`: состояние — в `aria-expanded`, а не в
-  тексте (RE13). Сделать корень
+  тоггла называют действие текущего состояния — `expandRow` у свёрнутой строки,
+  `collapseRow` у раскрытой; состояние дублирует `aria-expanded` (RE13). Сделать корень
   `treegrid` и без навигации нельзя: `treegrid` — интерактивный виджет, без
   управления фокусом роль обещала бы клавиатуру, которой нет.
 - **`.row-expand-button`** — стабильный класс тоггла (на `ExpandButton`), за
@@ -232,7 +237,7 @@ Chromium) и гоняют историю `RowExpanding` (детерминиро�
 | RE10 | В `treegrid` (с `keyboardNavigation`) `aria-expanded` строки отражает раскрытие, у листа его нет                                           | ✔ `RE10: in a treegrid …`                  |
 | RE11 | Шеврон тоггла смотрит вниз у свёрнутой строки и вверх у раскрытой                                                                          | ✔ `RE11: the toggle chevron points down …` |
 | RE12 | Без `keyboardNavigation` (`role="table"`) раскрытие — `aria-expanded` тоггла, у строк его нет; раскрытое дерево проходит axe в обеих темах | ✔ `RE12: without keyboard navigation …`    |
-| RE13 | Имя и тултип тоггла — одна постоянная подпись `toggleRow` в свёрнутом и раскрытом состоянии                                                | ✔ `RE13: the toggle name is constant …`    |
+| RE13 | Имя и тултип тоггла — действие по состоянию: `expandRow` у свёрнутой строки, `collapseRow` у раскрытой; состояние несёт `aria-expanded`    | ✔ `RE13: the toggle name and tooltip …`    |
 | RE41 | Поворот шеврона анимирован: переход `transform` длительностью `--tsr-comp-motion-duration`                                                 | ✔ `RE41: the chevron turn is animated …`   |
 
 См. [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм

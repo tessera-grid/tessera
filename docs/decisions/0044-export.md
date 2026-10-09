@@ -234,8 +234,8 @@ interface ExportData {
 локализации; оси — `radiogroup` с подписью. Ключи локализации: `export` («Export»),
 `exportRows` («Rows»), `exportColumns` («Columns»), `exportFormat` («Format»),
 `exportPresets` («Quick sets»), `exportRun` («Export»), значения оси «Строки» —
-`exportAll` («All data»), `exportView(features)` («With sorting», «With sorting and
-filtering»), `exportPage` («Current page»), `exportSelected` («Selected rows»), оси
+`exportAll` («All rows»), `exportView(features)` («With sorting», «With sorting and
+filters»), `exportPage` («Current page»), `exportSelected` («Selected rows»), оси
 «Колонки» — `exportColumnsVisible` («Visible columns»), `exportColumnsAll` («All
 columns»). Иконка: `download`. Кнопка и панель проходят axe с `color-contrast` в обеих
 темах.

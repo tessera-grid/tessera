@@ -352,22 +352,22 @@ describe('Row Expanding — accessibility', () => {
     }
   })
 
-  test('RE13: the toggle name is constant across states and matches its tooltip', async () => {
+  test('RE13: the toggle name and tooltip name the action of the current state, aria-expanded carries the state', async () => {
     const container = await renderRowExpanding()
     const toggle = () => rowToggle(firstExpandableRow(container))!
-    const label = DEFAULT_LABELS.toggleRow
 
-    expect(toggle().getAttribute('aria-label')).toBe(label)
+    expect(toggle().getAttribute('aria-label')).toBe(DEFAULT_LABELS.expandRow)
+    expect(toggle().getAttribute('aria-expanded')).toBe('false')
     await userEvent.hover(toggle())
-    expect(await waitForBodyText(label)).toBe(true)
+    expect(await waitForBodyText(DEFAULT_LABELS.expandRow)).toBe(true)
 
     await userEvent.click(toggle())
     await expect.poll(() => toggle().getAttribute('aria-expanded')).toBe('true')
-    expect(toggle().getAttribute('aria-label')).toBe(label)
+    expect(toggle().getAttribute('aria-label')).toBe(DEFAULT_LABELS.collapseRow)
     // Указатель уходит и возвращается — тултип открывается заново, уже раскрытой строки.
     await userEvent.hover(rowsTopDown(container).at(-1)!)
     await userEvent.hover(toggle())
-    expect(await waitForBodyText(label)).toBe(true)
+    expect(await waitForBodyText(DEFAULT_LABELS.collapseRow)).toBe(true)
 
     // Restore.
     await userEvent.click(toggle())

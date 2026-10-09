@@ -13,7 +13,7 @@ import { composed } from '../stories'
 // Подсказка быстрого поиска (ADR 0053): QS1–QS2, QS4–QS5, QS8–QS9. QS3, QS6–QS7 —
 // модульные (`src/lib/__tests__/quickSearchHint.dom.test.tsx`).
 
-const HINT = 'Searches in: Name, City, Age, Visits'
+const HINT = 'Search in columns: Name, City, Age, Visits'
 
 const input = () =>
   document.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
@@ -166,6 +166,6 @@ describe('Quick search hint', () => {
 
     await toggleColumn('age')
     await expect.poll(log).toContain('columnIds="name,city,visits"')
-    expect(description()).toBe('Searches in: Name, City, Visits')
+    expect(description()).toBe('Search in columns: Name, City, Visits')
   })
 })

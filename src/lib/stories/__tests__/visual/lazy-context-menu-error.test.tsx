@@ -17,7 +17,7 @@ import {
 
 afterEach(() => releaseModule(MODULE.contextMenu))
 
-const MESSAGE = 'Context menu failed to load. Try again.'
+const MESSAGE = "Couldn't load Context menu. Try again."
 
 describe('Контекстное меню — ошибка загрузки', () => {
   test('LZ10: ошибка загрузки контекстного меню — меню не открывается, объявление с подписью меню; следующий правый клик снова отвечает', async () => {
