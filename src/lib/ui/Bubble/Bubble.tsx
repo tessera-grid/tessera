@@ -7,8 +7,11 @@ import styles from './Bubble.module.css'
 export interface BubbleProps extends HTMLAttributes<HTMLSpanElement> {
   /** `dot` — точка без содержимого. */
   size?: 'sm' | 'md' | 'dot'
-  /** `active` — знак включённого состояния (ADR 0062), `accent` — прочие счётчики. */
-  tone?: 'accent' | 'active'
+  /**
+   * `active` — знак включённого состояния (ADR 0062), `error` — отказ действия
+   * (ADR 0078), `accent` — прочие счётчики.
+   */
+  tone?: 'accent' | 'active' | 'error'
   children?: ReactNode
 }
 

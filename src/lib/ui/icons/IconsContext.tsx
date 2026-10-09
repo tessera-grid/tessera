@@ -22,6 +22,7 @@ import {
   EyeOff,
   FileText,
   ListFilter,
+  Lock,
   Rows3,
   SquareCheck,
   Funnel,
@@ -109,6 +110,10 @@ export interface TableIcons {
   nextMonth: IconComponent
   /** Метка ячейки, сохранение которой отклонено сервером */
   saveFailed: IconComponent
+  /** Пункт меню, чьё действие отклонено (ADR 0078) */
+  actionFailed: IconComponent
+  /** Пункт меню, заблокированный с причиной (ADR 0078) */
+  actionBlocked: IconComponent
   /** Варианты осей панели экспорта (ADR 0074): строки и колонки */
   exportRowsAll: IconComponent
   exportRowsView: IconComponent
@@ -150,6 +155,8 @@ export const DEFAULT_ICONS: TableIcons = {
   previousMonth: ChevronLeft,
   nextMonth: ChevronRight,
   saveFailed: CircleAlert,
+  actionFailed: CircleAlert,
+  actionBlocked: Lock,
   exportRowsAll: Rows3,
   exportRowsView: ListFilter,
   exportRowsPage: FileText,

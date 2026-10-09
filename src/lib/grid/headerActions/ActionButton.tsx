@@ -5,9 +5,17 @@
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { logWarn } from '../../core/logger'
+import { useActionStatus } from './useActionStatus'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
-import type { SlotAction } from '../../core/headerActions'
+import {
+  actionStatusKey,
+  readSyncDisabled,
+  runMenuAction,
+  type ActionStatus,
+  type SlotAction,
+} from '../../core/headerActions'
 import { actionDot } from './ActiveDot'
 
 import styles from '../../grid/headerActions/ActionButton.module.css'
@@ -28,12 +36,24 @@ export const ActionButton = ({
   variant = 'cell',
 }: ActionButtonProps) => {
   const labels = useLocalization()
+  const entry = useActionStatus(
+    context.table,
+    (status: ActionStatus) => status[actionStatusKey(action, context)],
+  )
 
   if (action.visible?.(context) === false) {
     return null
   }
 
-  const disabled = action.disabled?.(context) ?? false
+  const syncDisabled = readSyncDisabled(action, context)
+  if (syncDisabled === 'async') {
+    logWarn(
+      context.table,
+      `Действие «${action.id}»: асинхронный disabled поддержан только в меню — инлайн-кнопка заблокирована (ADR 0078).`,
+      `async-disabled-inline:${action.id}`,
+    )
+  }
+  const disabled = syncDisabled !== false
   const active = action.active?.(context) ?? false
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
@@ -42,7 +62,11 @@ export const ActionButton = ({
   const button = (
     <IconButton
       className={action.className?.(context)}
-      onClick={event => action.onSelect(context, event)}
+      onClick={event =>
+        runMenuAction(action, context, event, { keepError: false })
+      }
+      pending={entry?.pending}
+      errorFlash={entry?.flash}
       disabled={disabled}
       aria-disabled={disabled}
       aria-label={ariaLabel}
@@ -59,7 +83,10 @@ export const ActionButton = ({
 
   return (
     <Tooltip title={label} disabled={disabled}>
-      <div className={wrapperClassName} data-button-active={active}>
+      <div
+        className={wrapperClassName}
+        data-button-active={active || !!entry?.pending}
+      >
         {adornment ? (
           <span className={styles.anchor}>
             {button}

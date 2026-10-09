@@ -27,3 +27,15 @@ export const actionDot = (
   active: boolean,
   hasAdornment: boolean,
 ) => (hasActive && !hasAdornment ? <ActiveDot shown={active} /> : null)
+
+/** Отметка отказа действия на кебабе (ADR 0078) — на месте точки включённых. */
+export const ErrorDot = ({ shown }: { shown: boolean }) => (
+  <Bubble
+    size="dot"
+    tone="error"
+    className={styles.dot}
+    data-error-indicator=""
+    data-shown={shown}
+    aria-hidden
+  />
+)

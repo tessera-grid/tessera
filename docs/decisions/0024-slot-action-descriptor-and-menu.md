@@ -5,6 +5,9 @@
 - **Связано:**
   - [ADR 0062](0062-active-action-indicator.md) — признак `active` виден точкой на
     инлайн-кнопке и на кебабе, в который свёрнуто включённое действие (AI1–AI4).
+  - [ADR 0078](0078-async-menu-actions.md) — `disabled` и `onSelect` могут вернуть
+    промис (проверка доступности, долгое действие), `disabled` — причину
+    (`DisabledResult`), `errorMessage`; пункты меню рисует `ActionMenuItems`.
   - [ADR 0010](0010-invert-core-plugins-registry.md) — presence-based композиция и
     декларативные `slots`. Действия-дескрипторы — **сестринский декларативный
     канал** (`RegistryEntry.slotActions`), свёрнутый ядром так же реактивно.

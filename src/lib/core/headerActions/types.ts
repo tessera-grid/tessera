@@ -33,12 +33,31 @@ export interface MenuAction<TCtx = any> {
   icon: (ctx: TCtx) => ReactNode
   /** Подпись: `aria-label`/тултип инлайн-кнопки и текст строки меню. */
   label: (ctx: TCtx, labels: TableLabels) => string
-  /** Обработчик выбора (клик по инлайн-кнопке/пункту). `event` — для модификаторов. */
-  onSelect: (ctx: TCtx, event?: MouseEvent<HTMLButtonElement>) => void
+  /**
+   * Обработчик выбора (клик по инлайн-кнопке/пункту). `event` — для модификаторов.
+   * Промис — долгое действие: ожидание и отказ видны на кебабе и пункте (ADR 0078).
+   */
+  onSelect: (
+    ctx: TCtx,
+    event?: MouseEvent<HTMLButtonElement>,
+  ) => void | Promise<unknown>
   /** Применимо ли действие в этом контексте (`false` убирает целиком). */
   visible?: (ctx: TCtx) => boolean
-  /** Заблокировано ли действие (пункт неактивен, но видим). */
-  disabled?: (ctx: TCtx) => boolean
+  /**
+   * Заблокировано ли действие (пункт неактивен, но видим) и почему. Промис — проверка
+   * в меню при наведении на кебаб и открытии; `signal` прерывается закрытием, отказ
+   * промиса — проверка не удалась (ADR 0078).
+   */
+  disabled?: (
+    ctx: TCtx,
+    signal: AbortSignal,
+  ) => DisabledResult | Promise<DisabledResult>
+  /** Текст отказа действия или проверки; без него — текст ошибки или подпись. */
+  errorMessage?: (
+    ctx: TCtx,
+    error: unknown,
+    labels: TableLabels,
+  ) => string | undefined
   /** Состояние-тумблер (закреплено/отсортировано/сгруппировано). */
   active?: (ctx: TCtx) => boolean
   /** Разворот действия в НЕСКОЛЬКО пунктов меню (напр. сортировка asc/desc/сброс). */
@@ -46,6 +65,18 @@ export interface MenuAction<TCtx = any> {
   /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */
   menuGroupLabel?: (labels: TableLabels) => string
 }
+
+/**
+ * Почему действие заблокировано (ADR 0078): `done` — уже сделано (галочка),
+ * `forbidden` — нельзя в принципе, например нет прав (замок). `reason` — текст тултипа.
+ */
+export interface DisabledState {
+  kind: 'done' | 'forbidden'
+  reason?: string
+}
+
+/** Ответ `disabled`: `true` — запрещено без текста. */
+export type DisabledResult = boolean | DisabledState
 
 /**
  * Декларативное действие слота — единственный источник правды для кнопки: иконка/

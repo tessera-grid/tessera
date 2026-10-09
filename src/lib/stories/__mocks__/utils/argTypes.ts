@@ -339,6 +339,10 @@ export const rowActionsDemoType = booleanControl(
   'Демо-действия строки (правка, копия, удаление); выключено — плагин без действий',
   true,
 )
+export const asyncActionsDemoType = booleanControl(
+  'Демо асинхронных действий: проверка доступности сервером, долгое удаление с отказом (ADR 0078)',
+  false,
+)
 export const rowDraggingEnableType = booleanControl(
   'Перетаскивание строк разрешено (`rowDragging({ enable })`)',
   true,

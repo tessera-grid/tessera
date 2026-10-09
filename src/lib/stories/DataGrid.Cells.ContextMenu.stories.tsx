@@ -24,3 +24,23 @@ export const ContextMenu: StoryObj<StoryProps> = {
     maxHeight: 460,
   },
 }
+
+/**
+ * Асинхронные пункты контекстного меню (ADR 0078): Share проверяет доступность при
+ * открытии — по номеру строки уже поделились (галочка), запрещено (замок), проверка
+ * упала (нажатие проверяет заново) или доступно; Recalculate идёт долго и отклоняется
+ * на каждой 3-й строке — ожидание и ошибка видны при следующем открытии той же ячейки.
+ */
+export const ContextMenuAsync: StoryObj<StoryProps> = {
+  name: 'Async items',
+  args: {
+    enableContextMenu: true,
+    enableCellSelection: true,
+    asyncActionsDemo: true,
+    columnCount: 8,
+    dataCount: 40,
+    containerHeight: 560,
+    height: 460,
+    maxHeight: 460,
+  },
+}

@@ -36,6 +36,10 @@ import type { RowActionsOptions } from '../../../../lib/plugins/rowActions/rowAc
 
 type RegistryEntry = TesseraFeatureEntry
 import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
+import {
+  asyncContextActionsDemo,
+  asyncRowActionsDemo,
+} from '../plugins/asyncActionsDemo/asyncActionsDemo'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
 // Storybook через настоящие фабрики. Тумблер → `enabled` фабрики; ядро само
@@ -123,6 +127,8 @@ export interface FeatureToggles {
   /** Режим колонки действий (ADR 0050). */
   /** `false` — демо-действий строки нет (колонка действий без надобности, ADR 0050). */
   rowActionsDemo?: boolean
+  /** Демо асинхронных действий строки и контекстного меню (ADR 0078). */
+  asyncActionsDemo?: boolean
   rowActionsColumn?: RowActionsPluginOptions['column']
   /** Предикат правки аргументом плагина (`cellEditing({ canEdit })`). */
   cellEditingCanEdit?: CellEditingOptions['canEdit']
@@ -235,6 +241,13 @@ export const argsToPlugins = (o: FeatureToggles) => {
       id: 'rowActionsDemo',
       enabled: o.rowActionsDemo !== false,
       slotActions: rowActionsDemo,
+    },
+    // Асинхронные действия (ADR 0078): проверка доступности и долгое действие.
+    {
+      id: 'asyncActionsDemo',
+      enabled: !!o.asyncActionsDemo,
+      slotActions: asyncRowActionsDemo,
+      contextMenuActions: asyncContextActionsDemo,
     },
   ] as const
 }

@@ -9,16 +9,16 @@ import { Menu } from '@base-ui/react/menu'
 import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
-import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import { countActiveActions, type SlotAction } from '../../core/headerActions'
-import { ActiveDot } from './ActiveDot'
+import { ActiveDot, ErrorDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { usePanelOpening } from './usePanelOpening'
+import { type KebabState, useMergedFlash } from './useKebabState'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -29,6 +29,10 @@ export interface ActionMenuProps {
   variant?: 'cell' | 'row'
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Сессия проверок, ждущие и упавшие действия (ADR 0078). */
+  kebab: KebabState
+  /** Вспышка от загрузки модуля и отказов действий. */
+  errorFlash?: number
 }
 
 export const ActionMenu = ({
@@ -37,9 +41,10 @@ export const ActionMenu = ({
   variant = 'cell',
   open,
   onOpenChange,
+  kebab,
+  errorFlash,
 }: ActionMenuProps) => {
   const { menu: MenuIcon } = useIcons()
-  const labels = useLocalization()
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
   const triggerRef = useRef<HTMLButtonElement>(null)
   // Действие с панелью, открытое из меню: поповер у кнопки кебаба.
@@ -68,24 +73,29 @@ export const ActionMenu = ({
     onOpenChange(next)
   }
 
-  const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
-  // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения.
+  // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения;
+  // ждущие и упавшие — блик, отметка ошибки и имя (ADR 0078).
   const activeCount = countActiveActions(actions, context)
-  const shown = visible || panelVisible || activeCount > 0
+  const shown =
+    visible || panelVisible || activeCount > 0 || kebab.running || kebab.failed
+  const flash = useMergedFlash(errorFlash, opening.errorFlash)
   const trigger = (
     <Menu.Trigger
       render={
         <IconButton
           ref={triggerRef}
           className={styles.trigger}
-          aria-label={
-            activeCount ? labels.withActiveCount(label, activeCount) : label
-          }
-          pending={opening.pending}
-          errorFlash={opening.errorFlash}
+          aria-label={kebab.ariaLabel}
+          pending={opening.pending || kebab.running}
+          errorFlash={flash}
+          onPointerEnter={kebab.intent}
+          onFocus={kebab.intent}
+          onPointerLeave={kebab.leave}
+          onBlur={kebab.leave}
         >
           <MenuIcon width={16} height={16} />
-          <ActiveDot shown={activeCount > 0} />
+          <ActiveDot shown={activeCount > 0 && !kebab.failed} />
+          <ErrorDot shown={kebab.failed} />
         </IconButton>
       }
     />
@@ -95,9 +105,12 @@ export const ActionMenu = ({
     <Menu.Root
       open={open}
       onOpenChange={onMenuOpenChange}
-      onOpenChangeComplete={onOpenChangeComplete}
+      onOpenChangeComplete={next => {
+        onOpenChangeComplete(next)
+        if (!next) kebab.closed()
+      }}
     >
-      <Tooltip title={label}>
+      <Tooltip title={kebab.title}>
         {variant === 'row' ? (
           <div className={clsx('row__button', !shown && 'row__button--hidden')}>
             {trigger}
@@ -117,6 +130,8 @@ export const ActionMenu = ({
       <ActionMenuPopup
         actions={actions}
         context={context}
+        session={kebab.session}
+        close={() => onMenuOpenChange(false)}
         onOpenPanel={openPanel}
         finalFocus={() => !panelTakesFocus.current}
       />

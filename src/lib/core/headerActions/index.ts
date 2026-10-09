@@ -11,6 +11,14 @@ import type {
   SlotActions,
   SlotMenuConfig,
 } from './types'
+import { readSyncDisabled } from './actionStatus'
+
+export * from './actionStatus'
+export {
+  actionStatusFeature,
+  type ActionStatus,
+  type ActionStatusEntry,
+} from './actionStatusFeature'
 
 export type {
   SlotName,
@@ -28,6 +36,8 @@ export type {
   ContextMenuContext,
   CellSelectionSummary,
   ActionPanelControls,
+  DisabledResult,
+  DisabledState,
 } from './types'
 
 const noop = () => {}
@@ -186,7 +196,7 @@ export const resolveMenuItems = (
       label: action.label(context, labels),
       icon: action.icon(context),
       onSelect: () => action.onSelect(context),
-      disabled: action.disabled?.(context) ?? false,
+      disabled: readSyncDisabled(action, context) !== false,
       active: action.active?.(context) ?? false,
     },
   ]

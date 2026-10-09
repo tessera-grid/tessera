@@ -9,10 +9,13 @@ import { useLazyOpening } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import {
+  clearSeenActionErrors,
+  markActionErrorsSeen,
   resolveVisibleActions,
   type ContextMenuAction,
   type ContextMenuContext,
 } from '../../core/headerActions'
+import { useAvailabilityChecks } from '../headerActions/useAvailabilityChecks'
 
 const ContextMenuPopupImpl = preloadable(() =>
   import('./ContextMenuPopup').then(m => m.ContextMenuPopup),
@@ -105,6 +108,9 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   const labels = useLocalization()
   const opening = useLazyOpening(table)
   const { cancel, pending, request } = opening
+  // Проверка доступности пунктов — с открытия до закрытия (ADR 0078).
+  const session = useAvailabilityChecks()
+  const { start: startChecks } = session
 
   // Модуль меню — при первом наведении на тело грида или фокусе внутри него.
   useEffect(() => {
@@ -184,13 +190,17 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       }
       event.preventDefault()
       const next = { x: event.clientX, y: event.clientY, actions, context }
-      request(MENU_LOAD, () => setState(next))
+      request(MENU_LOAD, () => {
+        startChecks(actions, context)
+        markActionErrorsSeen(actions, context)
+        setState(next)
+      })
     }
 
     document.addEventListener('contextmenu', onContextMenu, true)
     return () =>
       document.removeEventListener('contextmenu', onContextMenu, true)
-  }, [table, getScrollElement, request])
+  }, [table, getScrollElement, request, startChecks])
 
   if (!state) {
     return null
@@ -204,7 +214,12 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         actions={state.actions}
         context={state.context}
         labels={labels}
-        onClose={() => setState(null)}
+        session={session}
+        onClose={() => {
+          session.stop()
+          clearSeenActionErrors(state.actions, state.context)
+          setState(null)
+        }}
       />
     </Suspense>
   )

@@ -71,6 +71,7 @@ import {
   rowActionMenuOptionsType,
   rowActionsColumnType,
   rowActionsDemoType,
+  asyncActionsDemoType,
   rowActionsOptionsType,
   rowDraggingEnableType,
   rowExpandingColumnType,
@@ -194,6 +195,8 @@ export const dataGridArgTypes = {
     'Строки',
     {
       enableRowActions: enableRowActionsType,
+      // Без условия: асинхронные пункты нужны и контекстному меню без действий строки.
+      asyncActionsDemo: asyncActionsDemoType,
       ...when('enableRowActions', {
         rowActionsDemo: rowActionsDemoType,
         rowActionsOptions: rowActionsOptionsType,
@@ -275,6 +278,7 @@ export const dataGridDefaultArgs = {
   enableGrouping: false,
   enableRowActions: false,
   rowActionsDemo: true,
+  asyncActionsDemo: false,
   rowActionsOptions: DEFAULT_ROW_ACTIONS_OPTIONS,
   rowActionsColumn: 'auto',
   enableRowActionMenu: false,

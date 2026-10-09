@@ -20,7 +20,7 @@ import {
   preloadActionPanel,
   type SlotAction,
 } from '../../core/headerActions'
-import { ActiveDot, actionDot } from './ActiveDot'
+import { ActiveDot, ErrorDot, actionDot } from './ActiveDot'
 import type { ActionMenuProps } from './ActionMenu'
 import type { ActionInlineMenuProps } from './ActionInlineMenu'
 import type { ActionPanelProps } from './ActionPanel'
@@ -29,6 +29,7 @@ import {
   panelButtonProps,
   usePanelOpening,
 } from './usePanelOpening'
+import { type KebabState, useKebabState, useMergedFlash } from './useKebabState'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
@@ -65,36 +66,36 @@ const KebabPlaceholder = ({
   onOpen,
   loading,
   activeCount,
+  kebab,
 }: {
   variant: Variant
   activeCount: number
   open: boolean
   onOpen: () => void
   loading: PanelButtonState
+  kebab: KebabState
 }) => {
   const { menu: MenuIcon } = useIcons()
-  const labels = useLocalization()
 
-  const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
   const trigger = (
     <IconButton
       className={styles.trigger}
-      aria-label={
-        activeCount ? labels.withActiveCount(label, activeCount) : label
-      }
+      aria-label={kebab.ariaLabel}
       aria-haspopup="menu"
       aria-expanded={open}
       onClick={onOpen}
+      onPointerLeave={kebab.leave}
       {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
-      <ActiveDot shown={activeCount > 0} />
+      <ActiveDot shown={activeCount > 0 && !kebab.failed} />
+      <ErrorDot shown={kebab.failed} />
     </IconButton>
   )
 
-  const shown = open || loading.pending || activeCount > 0
+  const shown = open || loading.pending || activeCount > 0 || kebab.failed
   return (
-    <Tooltip title={label}>
+    <Tooltip title={kebab.title}>
       {variant === 'row' ? (
         <div className={clsx('row__button', !shown && 'row__button--hidden')}>
           {trigger}
@@ -178,17 +179,43 @@ export const ActionMenu = ({
   actions,
   context,
   variant = 'cell',
-}: Omit<ActionMenuProps, 'open' | 'onOpenChange'>) => {
+}: Pick<ActionMenuProps, 'actions' | 'context' | 'variant'>) => {
+  const labels = useLocalization()
   const menu = useLazyPopover(context.table, ActionMenuImpl, labels =>
     variant === 'row' ? labels.rowMenu : labels.headerMenu,
   )
+  const activeCount = countActiveActions(actions, context)
+  const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
+  const kebab = useKebabState(
+    actions,
+    context,
+    {
+      label,
+      ariaLabel: activeCount
+        ? labels.withActiveCount(label, activeCount)
+        : label,
+    },
+    menu.open,
+    menu.onOpenChange,
+  )
+  const flash = useMergedFlash(menu.trigger.errorFlash, kebab.flash)
+  const loading: PanelButtonState = {
+    pending: menu.trigger.pending || kebab.running,
+    errorFlash: flash,
+    onIntent: kebab.intent,
+    onCancel: () => {
+      menu.opening.cancel()
+      kebab.leave()
+    },
+  }
   const placeholder = (
     <KebabPlaceholder
       variant={variant}
-      activeCount={countActiveActions(actions, context)}
+      activeCount={activeCount}
       open={menu.open}
-      onOpen={() => menu.onOpenChange(true)}
-      loading={loadingOf(menu)}
+      onOpen={() => kebab.openChange(true)}
+      loading={loading}
+      kebab={kebab}
     />
   )
   if (!menu.ready) return placeholder
@@ -200,7 +227,9 @@ export const ActionMenu = ({
         context={context}
         variant={variant}
         open={menu.open}
-        onOpenChange={menu.onOpenChange}
+        onOpenChange={kebab.openChange}
+        kebab={kebab}
+        errorFlash={flash}
       />
     </Suspense>
   )

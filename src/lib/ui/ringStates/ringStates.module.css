@@ -115,3 +115,11 @@
     transform: translate(-50%, -50%) rotate(360deg);
   }
 }
+
+/*
+ * Пока грид прокручивается, блик кнопок стоит (ADR 0078): вращение угла градиента
+ * перерисовывает каждое кольцо на каждом кадре, а на прокрутке кадр и так занят.
+ */
+:global(.data-grid__container[data-scrolling]) .ring:not(.layer)::after {
+  animation-play-state: paused;
+}

@@ -92,7 +92,9 @@ describe('headerActions: registerSlotActionInto', () => {
     registerSlotActionInto(actions, action({ id: 'a', disabled: () => true }))
     expect(actions.rightHeaderSlot.map(a => a.id)).toEqual(['c', 'a', 'b'])
     expect(
-      actions.rightHeaderSlot.find(a => a.id === 'a')?.disabled?.({}),
+      actions.rightHeaderSlot
+        .find(a => a.id === 'a')
+        ?.disabled?.({}, new AbortController().signal),
     ).toBe(true)
   })
 })

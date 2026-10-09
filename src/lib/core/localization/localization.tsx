@@ -150,6 +150,22 @@ export interface TableLabels {
   contextMenu: string
   /** Объявление: модуль поповера или меню (`name` — подпись элемента) не загрузился */
   loadFailed: (name: string) => string
+  /** Описание пункта меню, чья доступность проверяется (ADR 0078) */
+  availabilityChecking: string
+  /** Причина блокировки пункта, если проверка доступности не удалась */
+  availabilityCheckFailed: string
+  /** Описание пункта меню, чьё действие выполняется */
+  actionRunning: string
+  /** Текст отказа действия меню, если ошибка его не несёт */
+  actionFailedFallback: string
+  /** Доступное имя и тултип кебаба: ждущие действия (`names` — их подписи через запятую) */
+  actionsRunning: (names: string) => string
+  /** Доступное имя и тултип кебаба: упавшие действия */
+  actionsFailed: (names: string) => string
+  /** Объявление: действие меню завершилось */
+  announceActionDone: (name: string) => string
+  /** Объявление: действие меню отклонено (`error` — текст отказа) */
+  announceActionFailed: (name: string, error: string) => string
   /** Пункт «Копировать» (контекстное меню / действия выделения) */
   copy: string
   /** Тултип и доступное имя кнопки правки ячейки (`cellEditing`) */
@@ -337,6 +353,14 @@ export const DEFAULT_LABELS: TableLabels = {
   withActiveCount: (name, count) => `${name}, ${count} active`,
   contextMenu: 'Context menu',
   loadFailed: name => `Couldn't load ${name}. Try again.`,
+  availabilityChecking: 'Checking availability',
+  availabilityCheckFailed: "Couldn't check availability",
+  actionRunning: 'In progress',
+  actionFailedFallback: 'Something went wrong',
+  actionsRunning: names => `Running: ${names}`,
+  actionsFailed: names => `Failed: ${names}`,
+  announceActionDone: name => `${name}: done`,
+  announceActionFailed: (name, error) => `${name} failed: ${error}`,
   copy: 'Copy',
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',

@@ -19,6 +19,7 @@ import {
   FAST_SCROLL,
   submittedCellsSeed,
   sortAllColumnsSeed,
+  actionStatusSeed,
 } from './perf-cases'
 import { makeData } from '../../__mocks__/data'
 
@@ -328,6 +329,77 @@ describe('Производительность прокрутки — блик �
         })
       await record('CF12-base', 'правка без отправленных ячеек', base, false)
       await record('CF12', '1500 ячеек в ожидании с бликом', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect
+          .soft(
+            seeded[axis].p95Ms,
+            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          )
+          .toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Ожидание и отказ действий в кебабах строк (ADR 0078, MI23): у всех 500 строк
+// «Delete» через строку ждёт (бесконечный блик) или упало (отметка ошибки) — против
+// той же выборки без состояний. Скорость ниже порога быстрой прокрутки.
+describe('Производительность прокрутки — ожидание и отказ действий меню', () => {
+  test(
+    'MI23: прокрутка 30×500 с ожиданием и отказами на 500 кебабах строк — в пределах регресс-потолка; база без них в дашборде',
+    async () => {
+      const args = {
+        ...SMALL,
+        enableRowActions: true,
+        enableRowActionMenu: true,
+      }
+      const errorMark = () =>
+        document.querySelector('[data-error-indicator][data-shown="true"]')
+      const measure = async (seeded: boolean) => {
+        const screen = renderGrid({
+          ...args,
+          extraPlugins: seeded ? [actionStatusSeed(SMALL.dataCount)] : [],
+        })
+        await waitForGrid()
+        await expect.poll(() => errorMark() !== null).toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const seeded = await measure(true)
+      // Потолок — как у RH8 при той же базе (y ~17мс, x ~26мс).
+      const ceiling = { y: 26, x: 40 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '30×500',
+          plugins: 'rowActions',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('MI23-base', 'кебабы строк без состояний', base, false)
+      await record('MI23', '500 кебабов в ожидании и с отказом', seeded, true)
 
       for (const axis of ['y', 'x'] as const) {
         expect

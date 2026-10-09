@@ -18,6 +18,8 @@ export {
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { setPluginState } from '../../../core/definePlugin'
 import { cellKey } from '../../../plugins/cellEditing/session'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns/actionColumnParams'
+import { type ActionStatus, actionStatusKey } from '../../../core/headerActions'
 
 /** Небольшая выборка: умеренный грид, переполняющий обе оси. */
 export const SMALL = { columnCount: 30, dataCount: 500 } as const
@@ -86,6 +88,40 @@ export const submittedCellsSeed = (
         }
       })
       setPluginState(table, 'cellEditing', { active: null, submitted })
+    },
+  }
+}
+
+/**
+ * Засев кебабов строк (ADR 0078, MI23): у первых `rows` строк действие «Delete»
+ * через строку ждёт или упало — блик и отметка ошибки на каждом смонтированном кебабе.
+ */
+export const actionStatusSeed = (rows: number): TesseraFeatureEntry => {
+  let seeded = false
+  return {
+    id: 'perfActionStatus',
+    reconcile: table => {
+      const t = table as {
+        getCoreRowModel: () => { rows: { id: string }[] }
+        setActionStatus?: (updater: () => ActionStatus) => void
+      }
+      const available = t.getCoreRowModel().rows
+      if (seeded || available.length === 0) {
+        return
+      }
+      seeded = true
+      const status: ActionStatus = {}
+      available.slice(0, rows).forEach((row, index) => {
+        const key = actionStatusKey(
+          { id: 'delete' },
+          { row, column: { id: ROW_ACTIONS_COLUMN_ID } },
+        )
+        status[key] =
+          index % 2 === 0
+            ? { pending: true }
+            : { failed: true, error: new Error('Server down'), flash: 1 }
+      })
+      t.setActionStatus?.(() => status)
     },
   }
 }

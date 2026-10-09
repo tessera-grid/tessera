@@ -48,10 +48,41 @@
   white-space: nowrap;
 }
 
+/* Заблокированный пункт с причиной принимает наведение — ради тултипа (ADR 0078). */
+.item[data-disabled][data-has-tooltip] {
+  pointer-events: auto;
+}
+
+/* Значок причины читается и на погашенном пункте. */
+.itemBlocked {
+  color: var(--tsr-comp-control-color);
+}
+
 .itemCheck {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
   width: 14px;
   color: var(--tsr-comp-accent);
+}
+
+.itemFailed {
+  color: var(--tsr-comp-action-error-color);
+}
+
+/* Ожидание пункта (ADR 0078): дуга цвета блика кнопок вращается на компоновщике. */
+.itemSpinner {
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--tsr-comp-pending-ring-color);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: itemSpin var(--tsr-comp-pending-ring-duration) linear infinite;
+}
+
+@keyframes itemSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }

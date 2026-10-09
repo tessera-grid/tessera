@@ -268,6 +268,8 @@
   /* Заливка контура красным и удержание вспышки (с начала заливки); гаснет переходом движения. */
   --tsr-comp-error-flash-fill-duration: 600ms;
   --tsr-comp-error-flash-duration: 1200ms;
+  /* Иконка упавшего пункта меню и отметка ошибки на кебабе (ADR 0078). */
+  --tsr-comp-action-error-color: var(--tsr-sys-danger);
   /* Подсветка пришедших ленивых детей (ADR 0056): держится, затем гаснет. */
   --tsr-comp-row-arrival-color: color-mix(
     in srgb,

@@ -45,3 +45,24 @@ export const RowActionMenu: StoryObj<StoryProps> = {
     maxHeight: 300,
   },
 }
+
+/**
+ * Асинхронные действия в кебабе строки (ADR 0078): Archive проверяет доступность на
+ * «сервере» — по номеру строки уже в архиве (галочка), нет прав (замок), проверка
+ * упала (иконка ошибки, нажатие проверяет заново) или доступно; Delete идёт долго,
+ * каждая 3-я строка его отклоняет. Выключите `enableRowActionMenu`, чтобы увидеть
+ * ожидание и отказ на инлайн-кнопках.
+ */
+export const RowActionsAsync: StoryObj<StoryProps> = {
+  name: 'Async actions',
+  args: {
+    enableRowActions: true,
+    enableRowActionMenu: true,
+    rowActionsDemo: false,
+    asyncActionsDemo: true,
+    dataCount: 30,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}

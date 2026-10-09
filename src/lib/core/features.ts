@@ -22,6 +22,7 @@ import {
 } from '@tanstack/react-table'
 
 import { commonFeature } from './commonFeature'
+import { actionStatusFeature } from './headerActions/actionStatusFeature'
 import type { ServiceColumn } from './createColumns'
 import {
   createEmptyRenderSlots,
@@ -325,6 +326,7 @@ type MergeFeatures<T extends readonly TesseraFeatureEntry[]> =
  */
 export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   commonFeature: typeof commonFeature
+  actionStatusFeature: typeof actionStatusFeature
   columnOrderingFeature: typeof columnOrderingFeature
   columnVisibilityFeature: typeof columnVisibilityFeature
   columnPinningFeature: typeof columnPinningFeature
@@ -344,6 +346,7 @@ export const buildTesseraFeatures = <
 ): TesseraFeatures<T> => {
   const merged: Record<string, unknown> = {
     commonFeature,
+    actionStatusFeature,
     columnOrderingFeature,
     columnVisibilityFeature,
     columnPinningFeature,
