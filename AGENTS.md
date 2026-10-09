@@ -360,7 +360,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       высота, без `columnDef.rowSpan`, `make` служебной колонки без глубины), HS10 — в `keyboard-wcag`,
       [ADR 0049](docs/decisions/0049-native-header-spans.md).
     - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19, CP30),
-      `column-pinning-right` (CP20–CP27, CP29), `column-pinning-footer`
+      `column-pinning-right` (CP20–CP27, CP29, CP34 — правые закреплённые ячейки следуют наведению и выбору строки), `column-pinning-footer`
       (CP31–CP33 — футер следует закреплению) — [ADR 0011](docs/decisions/0011-column-pinning.md),
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
       [ADR 0011](docs/decisions/0011-column-pinning.md)),

@@ -3,6 +3,9 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import { DEFAULT_LABELS } from '../../../core/localization'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { columnPinning, rowActions, rowSelection } from '../../../plugins'
 
 import {
   HEAD_CELL,
@@ -18,7 +21,7 @@ import {
   withWideViewport,
 } from './column-pinning-helpers'
 
-// CP20–CP27, CP29: закрепление справа, колонка действий, виртуализация.
+// CP20–CP27, CP29, CP34: закрепление справа, колонка действий, виртуализация.
 // Каждое требование — отдельный тест с ID из таблицы требований
 // docs/decisions/0011-column-pinning.md (правило именования — ADR 0009).
 // Селекторы и хелперы — column-pinning-helpers.tsx.
@@ -296,5 +299,101 @@ describe('Column Pinning — right side', () => {
         expect(head, id!).toEqual(body)
       }
     })
+  })
+})
+
+// CP34: непрозрачные ячейки справа (пользовательский пин и колонка действий в правом
+// блоке) следуют наведению и выбору строки так же, как закреплённые слева.
+interface Cp34Item {
+  id: string
+  a: string
+  b: string
+  c: string
+}
+const CP34_DATA: Cp34Item[] = Array.from({ length: 4 }, (_, i) => ({
+  id: `r${i}`,
+  a: `A${i}`,
+  b: `B${i}`,
+  c: `C${i}`,
+}))
+const cp34Actions = {
+  id: 'cp34Actions',
+  slotActions: [
+    {
+      id: 'open',
+      slot: 'actionRowSlot',
+      icon: () => <span aria-hidden>O</span>,
+      label: () => 'Open',
+      onSelect: () => {},
+    },
+  ],
+}
+const CP34_SELECTED = { r1: true, r2: true }
+const Cp34Grid = () => {
+  const table = useCreateTable({
+    columns: [
+      { id: 'a', accessorKey: 'a', header: 'A', size: 120 },
+      { id: 'b', accessorKey: 'b', header: 'B', size: 160 },
+      { id: 'c', accessorKey: 'c', header: 'C', size: 120 },
+    ] as never,
+    data: CP34_DATA,
+    getRowId: (row: Cp34Item) => row.id,
+    state: {
+      columnPinning: { start: ['a'], end: ['c'] },
+      rowSelection: CP34_SELECTED,
+    },
+    plugins: [
+      columnPinning(),
+      rowSelection(),
+      rowActions(),
+      cp34Actions,
+    ] as never,
+  } as never)
+  return (
+    <div style={{ width: 640, height: 320 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Column Pinning — right side, row states', () => {
+  test('CP34: right-pinned opaque cells (user pin and the actions column in the right block) follow row hover and selection like left-pinned ones', async () => {
+    await render(<Cp34Grid />)
+    const row = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${id}"]`,
+      )!
+    await expect.poll(() => row('r0')).toBeTruthy()
+    const bg = (id: string, column: string) =>
+      getComputedStyle(
+        row(id).querySelector<HTMLElement>(`[data-column-id="${column}"]`)!,
+      ).backgroundColor
+    const actions = row('r0').querySelector<HTMLElement>(
+      `[data-column-id="${ROW_ACTIONS_COLUMN_ID}"]`,
+    )!
+    expect(actions.dataset.cellPinned).toBe('right')
+    expect(actions.dataset.cellFirstRightPinned).not.toBe('true')
+
+    const sameAsLeft = async (id: string, state: string) => {
+      for (const column of ['c', ROW_ACTIONS_COLUMN_ID]) {
+        await expect
+          .poll(() => [state, column, bg(id, column)])
+          .toEqual([state, column, bg(id, 'a')])
+      }
+    }
+    // Покой: r0 — чётная, r3 — нечётная; r1 и r2 — выбранные.
+    const rest = { r0: bg('r0', 'a'), r1: bg('r1', 'a') }
+    await sameAsLeft('r0', 'покой')
+    await sameAsLeft('r3', 'покой, нечётная')
+    await sameAsLeft('r1', 'выбор')
+    await sameAsLeft('r2', 'выбор, нечётная')
+
+    await userEvent.hover(row('r0').querySelector('[data-column-id="b"]')!)
+    await expect.poll(() => bg('r0', 'a')).not.toBe(rest.r0)
+    await sameAsLeft('r0', 'наведение')
+
+    await userEvent.hover(row('r1').querySelector('[data-column-id="b"]')!)
+    await expect.poll(() => bg('r1', 'a')).not.toBe(rest.r1)
+    await sameAsLeft('r1', 'выбор и наведение')
   })
 })

@@ -32,26 +32,55 @@
     background-color: var(--tsr-comp-row-selected-hovered-bg);
   }
 
-  /* Бэкграунд ячейки закрепленной колонки слева и выбранной строки (selected + pinned) */
+  /*
+   * Закреплённые ячейки с непрозрачной подложкой — слева и справа (колонка действий —
+   * только в правом блоке, не одна) — повторяют наведение и выбор строки.
+   */
+
+  /* selected + pinned */
 
   &:is([data-selected='true'])
-    > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
+    > :global(
+      .data-grid__body-cell:is(
+        [data-cell-pinned='left'],
+        [data-cell-pinned='right']:not([data-actions-column-cell='true']),
+        [data-cell-pinned='right'][data-actions-column-cell='true']:not(
+            [data-cell-first-right-pinned='true']
+          )
+      )
+    ) {
     background-color: var(--tsr-comp-cell-pinned-bg) !important;
   }
 
-  /* Бэкграунд ячейки закрепленной колонки слева и выбранной строки при наведении (selected + hover + pinned) */
+  /* selected + hover + pinned */
 
   &:hover:is([data-selected='true'])
-    > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
+    > :global(
+      .data-grid__body-cell:is(
+        [data-cell-pinned='left'],
+        [data-cell-pinned='right']:not([data-actions-column-cell='true']),
+        [data-cell-pinned='right'][data-actions-column-cell='true']:not(
+            [data-cell-first-right-pinned='true']
+          )
+      )
+    ) {
     background-color: var(
       --tsr-comp-cell-pinned-selected-hovered-bg
     ) !important;
   }
 
-  /* Бэкграунд ячейки закрепленной колонки слева и невыбранной строки при наведении (not selected + hover + pinned) */
+  /* not selected + hover + pinned */
 
   &:hover:not([data-selected='true'])
-    > :global(.data-grid__body-cell:is([data-cell-pinned='left'])) {
+    > :global(
+      .data-grid__body-cell:is(
+        [data-cell-pinned='left'],
+        [data-cell-pinned='right']:not([data-actions-column-cell='true']),
+        [data-cell-pinned='right'][data-actions-column-cell='true']:not(
+            [data-cell-first-right-pinned='true']
+          )
+      )
+    ) {
     background-color: var(--tsr-comp-cell-pinned-hovered-bg) !important;
   }
 
