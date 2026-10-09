@@ -110,7 +110,7 @@ flowchart TB
 ячейки/заголовка. «Корзины» (`useCreateSlots`):
 
 `leftHeaderSlot`, `rightHeaderSlot`, `leftCellSlot`, `rightCellSlot`,
-`actionRowSlot`, `cellSlot`, `toolbarSlot`, `statusBarSlot`.
+`actionRowSlot`, `cellSlot`, `toolbarSlot`, `statusBarSlot`, `bodyEndSlot`.
 
 `toolbarSlot` — табличный слот верхнего тулбара (ADR 0035): компонент получает
 `{ table }` (контекста колонки нет), кнопки группируются полем `group`; группы идут
@@ -125,6 +125,17 @@ flowchart TB
 один активный слот (SB1); `enableStatusBar: true` / `false` это переопределяет
 (ADR 0046, PB3). Правило границы: сверху (тулбар) — контролы, снизу —
 сведения.
+
+`bodyEndSlot` — строки сразу за последней строкой тела, вне модели и вне
+виртуализатора строк ([ADR 0081](../decisions/0081-infinite-scroll.md)): компонент
+получает `{ table, layout, leafColumns, virtualColumns, isVirtualColumns,
+nextAriaRowIndex }`, чтобы его строки повторяли ширины, закрепление и окно колонок
+тела. Так лента (`infiniteScroll`) рисует хвост скелет-строк и строку ошибки
+(`SkeletonRows` из `grid/SkeletonBody`). Контрол такой строки с атрибутом
+`data-kn-body-end` получает фокус по `↓` с последней строки тела. Ядро читает и общие
+опции плагина с лишними строками: `getTotalRowCount` (`aria-rowcount` больше `data`
+или `-1`), `getBodyBusy` (`aria-busy` таблицы по срезу плагина), `partialData`
+(выгрузка подписывает «все строки» как загруженные), — не импортируя плагин.
 
 `cellSlot` — особый канал: его компонент-владелец получает собственный рендер
 ячейки пропсом `content` и решает, показать его как есть или заместить своим

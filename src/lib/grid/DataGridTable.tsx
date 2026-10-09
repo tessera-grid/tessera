@@ -8,6 +8,7 @@ import {
   type KeyboardNavigationGrid,
 } from '../core/keyboardNavigation'
 import { getRowWindow } from '../core/pagination'
+import { RenderSlot } from '../core/renderSlots'
 import type { Column, HeaderGroup, Row, Table } from '../types'
 import { BodyDndBoundary } from './DndBodyWrapper'
 import { MemoizedBody } from './Body'
@@ -80,7 +81,15 @@ export const DataGridTable = ({
     rightCellSlot,
     cellSlot,
     actionRowSlot,
+    bodyEndSlot,
   } = table.getRenderSlots() ?? {}
+  // Плагин, у которого строк больше, чем в data, задаёт итог сам (ADR 0081).
+  const totalRowCount = options.getTotalRowCount?.(table) as number | undefined
+  const ariaRowCount =
+    totalRowCount === -1
+      ? -1
+      : headerGroups.length + Math.max(totalRowCount ?? 0, rowWindow.total)
+  const bodyBusy = !!options.getBodyBusy?.(table.store.get())
 
   // Скелет — не таблица с данными: без роли и aria таблицы, загрузку объявляет статус.
   const tableAria = skeleton
@@ -92,8 +101,8 @@ export const DataGridTable = ({
             : 'grid'
           : 'table',
         'aria-label': label,
-        'aria-busy': busy || undefined,
-        'aria-rowcount': headerGroups.length + rowWindow.total,
+        'aria-busy': busy || bodyBusy || undefined,
+        'aria-rowcount': ariaRowCount,
         'aria-colcount': leafColumns.length,
         'aria-multiselectable':
           keyboardNavigation &&
@@ -169,6 +178,20 @@ export const DataGridTable = ({
             enableRowDragging={enableRowDragging}
           />
         </BodyDndBoundary>
+      )}
+      {!skeleton && (
+        <RenderSlot
+          slot={bodyEndSlot}
+          context={{
+            table,
+            layout,
+            leafColumns,
+            virtualColumns,
+            isVirtualColumns,
+            nextAriaRowIndex:
+              headerGroups.length + rowWindow.offset + rows.length + 1,
+          }}
+        />
       )}
       {options.enableFooter && !skeleton && (
         <MemoizedFooter

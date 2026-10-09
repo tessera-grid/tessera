@@ -41,6 +41,10 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   },
   rowActionMenu: { enableRowActionMenu: true, enableRowActions: true },
   pagination: { enablePagination: true },
+  infiniteScroll: {
+    enableInfiniteScroll: true,
+    infiniteScrollOptions: { hasMore: true, rowCount: 1000, loadedCount: true },
+  },
   quickSearch: { enableQuickSearch: true, enableToolbar: true },
   columnFiltering: {
     enableToolbar: true,

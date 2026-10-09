@@ -3,8 +3,11 @@
  * `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь рендера —
  * рендер идёт через нативный `FlexRender` (см. `component`).
  */
+import type { VirtualItem } from '@tanstack/react-virtual'
+
 import type {
   CellContext,
+  Column,
   ColumnDefTemplate,
   HeaderContext,
   Table,
@@ -20,6 +23,19 @@ export interface ToolbarComponentProps {
 }
 /** Пропсы компонента нижней панели — как у тулбара, таблица целиком. */
 export type StatusBarComponentProps = ToolbarComponentProps
+/**
+ * Пропсы компонента в конце тела (ADR 0081): строки вне модели повторяют ширины,
+ * закрепление и окно виртуализации колонок тела.
+ */
+export interface BodyEndComponentProps {
+  table: Table<any, any>
+  layout: 'grid' | 'flex'
+  leafColumns: Column<any, any, unknown>[]
+  virtualColumns: VirtualItem[]
+  isVirtualColumns: boolean
+  /** `aria-rowindex` строки сразу за последней строкой тела. */
+  nextAriaRowIndex: number
+}
 
 export interface RegisterSlotParams<TContext extends object> {
   /** Уникальный идентификатор плагина (ключ не должен быть динамическим). */
@@ -62,6 +78,8 @@ export type ToolbarSlot = RegisterSlotParams<ToolbarComponentProps>[]
 
 export type StatusBarSlot = RegisterSlotParams<StatusBarComponentProps>[]
 
+export type BodyEndSlot = RegisterSlotParams<BodyEndComponentProps>[]
+
 /**
  * Декларативное объявление слота плагином. Ядро собирает слоты
  * реактивно из активных плагинов — появление/исчезновение кнопки следует за
@@ -76,6 +94,7 @@ export type PluginSlot =
     })
   | (RegisterSlotParams<ToolbarComponentProps> & { slot: 'toolbarSlot' })
   | (RegisterSlotParams<StatusBarComponentProps> & { slot: 'statusBarSlot' })
+  | (RegisterSlotParams<BodyEndComponentProps> & { slot: 'bodyEndSlot' })
 
 export interface RenderSlots {
   /** Место под плагин в заголовке колонки слева от текста. */
@@ -98,4 +117,6 @@ export interface RenderSlots {
   toolbarSlot: ToolbarSlot
   /** Сведения о данных в нижней панели под таблицей (ADR 0038). */
   statusBarSlot: StatusBarSlot
+  /** Строки после последней строки тела, вне модели (ADR 0081). */
+  bodyEndSlot: BodyEndSlot
 }

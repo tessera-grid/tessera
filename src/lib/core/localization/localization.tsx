@@ -61,6 +61,8 @@ export interface TableLabels {
   exportPage: string
   /** Ось «Строки»: выбранные строки */
   exportSelected: string
+  /** Ось «Строки» при бесконечной прокрутке без серверной выгрузки: загруженные строки (ADR 0081) */
+  exportLoaded: (count: number) => string
   /** Ось «Колонки»: видимые колонки */
   exportColumnsVisible: string
   /** Ось «Колонки»: все колонки, включая скрытые */
@@ -238,6 +240,13 @@ export interface TableLabels {
   pageRange: (from: number, to: number, total: number) => string
   /** Объявление смены страницы */
   pageAnnouncement: (page: number, pages: number) => string
+  /** Счётчик загруженных строк в нижней панели (`infiniteScroll({ loadedCount })`); без `total` итог неизвестен */
+  loadedRows: (loaded: number, total?: number) => string
+  /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
+  loadMoreFailed: string
+  loadMoreRetry: string
+  /** Объявление прихода блока догрузки */
+  announceMoreLoaded: (count: number) => string
   /** Счётчик выбранных строк в нижней панели (`rowSelection({ selectedCount })`) */
   selectedRows: (count: number) => string
   /** Добавка к счётчику выбранных: выбранные строки, скрытые фильтром (ADR 0045) */
@@ -298,6 +307,7 @@ export const DEFAULT_LABELS: TableLabels = {
     `With ${features.map(feature => VIEW_FEATURES[feature]).join(' and ')}`,
   exportPage: 'Current page',
   exportSelected: 'Selected rows',
+  exportLoaded: count => `Loaded rows (${count.toLocaleString('en-US')})`,
   filter: 'Filter',
   filterActive: 'Filter, active',
   filterCondition: 'Condition',
@@ -412,6 +422,14 @@ export const DEFAULT_LABELS: TableLabels = {
   lastPage: 'Last page',
   pageRange: (from, to, total) => `${from}–${to} of ${total}`,
   pageAnnouncement: (page, pages) => `Page ${page} of ${pages}`,
+  loadedRows: (loaded, total) =>
+    total === undefined
+      ? `Loaded ${loaded.toLocaleString('en-US')}`
+      : `Loaded ${loaded.toLocaleString('en-US')} of ${total.toLocaleString('en-US')}`,
+  loadMoreFailed: "Couldn't load more rows",
+  loadMoreRetry: 'Retry',
+  announceMoreLoaded: count =>
+    count === 1 ? 'Loaded 1 more row' : `Loaded ${count} more rows`,
   selectedRows: count =>
     count === 1 ? '1 row selected' : `${count} rows selected`,
   selectedRowsHidden: count => `${count} hidden by filters`,

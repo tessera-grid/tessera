@@ -299,6 +299,14 @@ export const enableQuickSearchType = booleanControl(
 export const enableColumnFilteringType = booleanControl(
   'Фильтры колонок с полем filter: Country и имена — текст, Age, Visits, Total — число (плагин `columnFiltering`)',
 )
+export const enableInfiniteScrollType = booleanControl(
+  'Бесконечная прокрутка — лента: у края грид просит блок (плагин `infiniteScroll`); данные дописывает история',
+)
+export const infiniteScrollOptionsType = objectControl(
+  'Лента: `threshold` — за сколько строк до края просить блок, `loadedCount` — счётчик в нижней панели; `onLoadMore` и `hasMore` задаёт история (`infiniteScroll({...})`)',
+  'InfiniteScrollOptions',
+  {},
+)
 export const enablePaginationType = booleanControl(
   'Пагинация в нижней панели (плагин `pagination`)',
 )

@@ -78,6 +78,13 @@
   строка рисует его своим фоном, ячейки с непрозрачной подложкой закрепления повторяют
   его по `--tsr-highlight-row`; слои — зарегистрированные цветовые свойства, поэтому
   снятие гаснет переходом. Блик всех элементов цели идёт в одной фазе (`startTime` с момента постановки); пока грид прокручивается (`data-scrolling`), полосы нет.
+- **Лента** (ADR [0081](../decisions/0081-infinite-scroll.md)): блок ошибки догрузки в
+  конце списка — высота `--tsr-comp-load-more-height`, иконка
+  `--tsr-comp-load-more-icon-color` (из `--tsr-sys-danger`), заголовок
+  `--tsr-comp-load-more-title-color`, причина `--tsr-comp-load-more-reason-color`
+  (приглушённый текст); иконки — `icons.loadMoreFailed` и `icons.retry`; хвост
+  ожидания — те же статичные полоски `--tsr-comp-skeleton-bg`, что у скелет-ячеек
+  быстрой прокрутки.
 - **Отказ действия меню** (ADR [0078](../decisions/0078-async-menu-actions.md)):
   `--tsr-comp-action-error-color` — иконка `actionFailed` упавшего пункта и
   отметка ошибки на кебабе (тон `error` у `Bubble`).

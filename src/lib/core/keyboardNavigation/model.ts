@@ -33,6 +33,12 @@ export const NAV_ROW_ATTR = 'data-kn-row'
 /** `columnIndex` фокуса на самой строке `treegrid` (ADR 0032, W16). */
 export const ROW_FOCUS_COLUMN = -1
 
+/**
+ * Атрибут контрола в строке за последней строкой тела (`bodyEndSlot`): `↓` с
+ * последней строки переводит фокус в него (ADR 0081).
+ */
+export const NAV_BODY_END_ATTR = 'data-kn-body-end'
+
 export const NAV_TARGET_SELECTOR = `[${NAV_CELL_ATTR}], [${NAV_ROW_ATTR}]`
 
 export const SCROLLER_SELECTOR = '[data-resizing]'

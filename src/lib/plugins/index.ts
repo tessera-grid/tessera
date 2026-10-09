@@ -42,6 +42,11 @@ export {
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 export { pagination, type PaginationOptions } from './pagination'
 export {
+  infiniteScroll,
+  type InfiniteScrollOptions,
+  type InfiniteScrollLoadContext,
+} from './infiniteScroll'
+export {
   columnFiltering,
   type ColumnFilteringOptions,
   type BooleanFilter,
@@ -85,6 +90,7 @@ export type { RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'
 export type { PaginationHooks } from './pagination/types'
+export type { InfiniteScrollHooks } from './infiniteScroll/types'
 export type {
   CellEditingHooks,
   CellEditor,

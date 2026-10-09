@@ -50,8 +50,16 @@ interface SkeletonColumn {
   attrs: Record<string, unknown>
 }
 
-/** `shape`: строка тела — полоска или квадрат контрола; футер — полоска, где есть `footer`. */
-const cellContent = (column: Column<any, any, unknown>, shape: boolean) => {
+/**
+ * `shape`: строка тела — полоска или квадрат контрола; футер — полоска, где есть
+ * `footer`. `wave` — бегущий блик первой загрузки; хвост ленты статичен, как
+ * скелет-ячейки быстрой прокрутки.
+ */
+const cellContent = (
+  column: Column<any, any, unknown>,
+  shape: boolean,
+  wave: boolean,
+) => {
   if (column.getIsActionsColumn()) {
     return shape &&
       (column.columnDef as CommonColumnDef).skeletonCell === 'control' ? (
@@ -62,7 +70,7 @@ const cellContent = (column: Column<any, any, unknown>, shape: boolean) => {
     <Skeleton
       width={`${getSkeletonBarWidth(column.id)}%`}
       height={BAR_HEIGHT}
-      animation="wave"
+      animation={wave && 'wave'}
     />
   ) : null
 }
@@ -75,6 +83,7 @@ const getSkeletonColumns = (
   virtualColumns: VirtualItem[],
   isVirtualColumns: boolean,
   shape: (column: Column<any, any, unknown>) => boolean,
+  wave = true,
 ): SkeletonColumn[] => {
   const describe = (
     column: Column<any, any, unknown>,
@@ -92,7 +101,7 @@ const getSkeletonColumns = (
         isActionsColumn,
         isRowActionsColumn: column.getIsRowActionsColumn(),
       }),
-      content: cellContent(column, shape(column)),
+      content: cellContent(column, shape(column), wave),
       style: {
         width: size,
         ...(absoluteLeft !== undefined
@@ -200,6 +209,124 @@ const SkeletonCells = ({
   )
 }
 
+interface SkeletonRowsBlockProps {
+  layout: 'grid' | 'flex'
+  columns: SkeletonColumn[]
+  cellsVirtual: boolean
+  filler: ReactNode
+  rowCount: number
+  /** Номер первой строки: чётность полос продолжает тело. */
+  firstRowIndex?: number
+  className?: string
+  /** `false` — только высота блока, без строк (блок вне области прокрутки). */
+  cells?: boolean
+}
+
+/** Блок строк скелета высотой в `rowCount` строк темы. */
+const SkeletonRowsBlock = ({
+  layout,
+  columns,
+  cellsVirtual,
+  filler,
+  rowCount,
+  firstRowIndex = 0,
+  className,
+  cells = true,
+}: SkeletonRowsBlockProps) => (
+  <div
+    className={clsx(className, bodyStyles.body)}
+    data-layout={layout}
+    style={{ height: `calc(var(--tsr-comp-row-height) * ${rowCount})` }}
+  >
+    {Array.from({ length: cells ? rowCount : 0 }, (_, rowIndex) => (
+      <div
+        key={rowIndex}
+        className={clsx(
+          'data-grid__body-row--skeleton',
+          bodyRowStyles.body__row,
+        )}
+        data-row-odd={(firstRowIndex + rowIndex) % 2 !== 0}
+        data-layout={layout}
+        style={{
+          top: `calc(var(--tsr-comp-row-height) * ${rowIndex})`,
+        }}
+      >
+        <SkeletonCells
+          columns={columns}
+          isVirtualColumns={cellsVirtual}
+          className="data-grid__body-cell--skeleton"
+          moduleClassName={bodyCellStyles.body__cell}
+          rowIndex={firstRowIndex + rowIndex}
+          rowCount={firstRowIndex + rowCount}
+          filler={filler}
+        />
+      </div>
+    ))}
+  </div>
+)
+
+const bodyFillerOf = (
+  leafColumns: Column<any, any, unknown>[],
+  isVirtualColumns: boolean,
+) =>
+  !isVirtualColumns && needsRightFiller(leafColumns.at(-1)) ? (
+    <RightFillerBodyColumn hasBorderTop hasBorderRight />
+  ) : null
+
+export interface SkeletonRowsProps {
+  table: Table<any, any>
+  layout: 'grid' | 'flex'
+  leafColumns: Column<any, any, unknown>[]
+  virtualColumns: VirtualItem[]
+  isVirtualColumns: boolean
+  rowCount: number
+  /** Номер первой строки в теле: чётность полос продолжает тело. */
+  firstRowIndex: number
+  className?: string
+  /** `false` — хвост вне области прокрутки: только его высота, как у тела вне окна. */
+  cells?: boolean
+}
+
+/**
+ * Строки скелета после тела (хвост догрузки, ADR 0081): колонки, ширины и
+ * закрепление — как у тела. Скрыты от вспомогательных технологий и неинтерактивны.
+ */
+export const SkeletonRows = memo(
+  ({
+    table,
+    layout,
+    leafColumns,
+    virtualColumns,
+    isVirtualColumns,
+    rowCount,
+    firstRowIndex,
+    className,
+    cells = true,
+  }: SkeletonRowsProps) => (
+    <div aria-hidden="true" inert style={{ display: 'contents' }}>
+      <SkeletonRowsBlock
+        layout={layout}
+        columns={getSkeletonColumns(
+          table,
+          layout,
+          leafColumns,
+          virtualColumns,
+          isVirtualColumns,
+          () => true,
+          false,
+        )}
+        cellsVirtual={isVirtualColumns}
+        filler={bodyFillerOf(leafColumns, isVirtualColumns)}
+        rowCount={rowCount}
+        firstRowIndex={firstRowIndex}
+        className={className}
+        cells={cells}
+      />
+    </div>
+  ),
+)
+SkeletonRows.displayName = 'SkeletonRows'
+
 interface SkeletonBodyProps {
   table: Table<any, any>
   layout: 'grid' | 'flex'
@@ -287,11 +414,9 @@ export const SkeletonBody = memo(
           attrs: { 'data-layout': layout },
         }))
     const cellsVirtual = hasColumns && isVirtualColumns
-    const lastColumn = leafColumns.at(-1)
-    const bodyFiller =
-      hasColumns && !isVirtualColumns && needsRightFiller(lastColumn) ? (
-        <RightFillerBodyColumn hasBorderTop hasBorderRight />
-      ) : null
+    const bodyFiller = hasColumns
+      ? bodyFillerOf(leafColumns, isVirtualColumns)
+      : null
 
     const footerGroup = options.enableFooter
       ? table.getFooterGroups().at(0)
@@ -316,36 +441,13 @@ export const SkeletonBody = memo(
         inert
         style={{ display: 'contents' }}
       >
-        <div
-          className={bodyStyles.body}
-          data-layout={layout}
-          style={{ height: `calc(var(--tsr-comp-row-height) * ${rowCount})` }}
-        >
-          {Array.from({ length: rowCount }, (_, rowIndex) => (
-            <div
-              key={rowIndex}
-              className={clsx(
-                'data-grid__body-row--skeleton',
-                bodyRowStyles.body__row,
-              )}
-              data-row-odd={rowIndex % 2 !== 0}
-              data-layout={layout}
-              style={{
-                top: `calc(var(--tsr-comp-row-height) * ${rowIndex})`,
-              }}
-            >
-              <SkeletonCells
-                columns={columns}
-                isVirtualColumns={cellsVirtual}
-                className="data-grid__body-cell--skeleton"
-                moduleClassName={bodyCellStyles.body__cell}
-                rowIndex={rowIndex}
-                rowCount={rowCount}
-                filler={bodyFiller}
-              />
-            </div>
-          ))}
-        </div>
+        <SkeletonRowsBlock
+          layout={layout}
+          columns={columns}
+          cellsVirtual={cellsVirtual}
+          filler={bodyFiller}
+          rowCount={rowCount}
+        />
         {footerColumns && (
           <div
             className={clsx('data-grid__footer--skeleton', footerStyles.footer)}

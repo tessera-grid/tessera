@@ -11,11 +11,13 @@ export type {
   CellSlot,
   ToolbarSlot,
   StatusBarSlot,
+  BodyEndSlot,
   PluginSlot,
   HeaderComponentProps,
   CellComponentProps,
   ToolbarComponentProps,
   StatusBarComponentProps,
+  BodyEndComponentProps,
 } from './types'
 
 /** Пустой набор слотов — база, в которую ядро сворачивает объявления плагинов. */
@@ -28,6 +30,7 @@ export const createEmptyRenderSlots = (): RenderSlots => ({
   actionRowSlot: [],
   toolbarSlot: [],
   statusBarSlot: [],
+  bodyEndSlot: [],
 })
 
 /**

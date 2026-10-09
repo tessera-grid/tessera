@@ -26,7 +26,7 @@ const action = (
 })
 
 describe('createSlots: registerSlotInto', () => {
-  it('пустой набор содержит все восемь слотов', () => {
+  it('пустой набор содержит все девять слотов', () => {
     expect(Object.keys(createEmptyRenderSlots()).sort()).toEqual(
       [
         'actionRowSlot',
@@ -37,6 +37,7 @@ describe('createSlots: registerSlotInto', () => {
         'rightHeaderSlot',
         'toolbarSlot',
         'statusBarSlot',
+        'bodyEndSlot',
       ].sort(),
     )
   })

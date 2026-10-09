@@ -758,3 +758,84 @@ describe('Производительность — тултип обрезанн
     PERF_TIMEOUT * 2,
   )
 })
+
+// Лента (ADR 0081, IS17): 1000 колонок без плагинов, 8 строк и скелет-хвост ожидания в
+// окне с первого кадра (ответ не приходит) — против окна, полного строк, без ленты.
+// Хвост вне окна держит только высоту, поэтому замер ставит его в окно.
+describe('Производительность прокрутки — лента', () => {
+  test(
+    'IS17: спокойная прокрутка со скелет-хвостом в окне не хуже окна, полного строк, без ленты',
+    async () => {
+      const measure = async (feed: boolean) => {
+        const screen = renderGrid({
+          columnCount: 1000,
+          dataCount: feed ? 8 : 30,
+          ...NO_PLUGINS,
+          ...(feed && {
+            enableInfiniteScroll: true,
+            infiniteScrollOptions: {
+              hasMore: true,
+              threshold: 1000,
+              onLoadMore: () => new Promise<void>(() => {}),
+            },
+          }),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect
+          .poll(
+            () =>
+              document.querySelector(
+                '.data-grid__body--infinite-tail .data-grid__body-row--skeleton',
+              ) !== null,
+          )
+          .toBe(feed)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const feed = await measure(true)
+      // Скелет-строка не дороже строки с данными; шум p95 под троттлингом — до ~30%.
+      const ceiling = {
+        y: Math.max(base.y.p95Ms * 1.3, base.y.p95Ms + 4),
+        x: Math.max(base.x.p95Ms * 1.3, base.x.p95Ms + 4),
+      }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '8–30×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('IS17-base', 'окно строк без ленты', base, false)
+      await record('IS17', 'скелет-хвост ленты в окне', feed, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          feed[axis].p95Ms,
+          `${axis} p95=${feed[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

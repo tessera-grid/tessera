@@ -67,6 +67,15 @@ export interface CommonOptions {
   rowHeight?: number
   headerHeight?: number
   skeletonOptions?: SkeletonOptions
+  /**
+   * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
+   * `undefined` — строк столько, сколько в `data` (ADR 0081).
+   */
+  getTotalRowCount?: (table: unknown) => number | undefined
+  /** Тело ждёт данных плагина: `aria-busy` таблицы (ADR 0081). */
+  getBodyBusy?: (state: Record<string, unknown>) => boolean
+  /** В `data` загружена только часть строк сервера (лента, ADR 0081). */
+  partialData?: boolean
   /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
 }

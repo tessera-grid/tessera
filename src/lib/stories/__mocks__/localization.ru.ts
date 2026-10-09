@@ -50,6 +50,8 @@ export const RU_LABELS: TableLabels = {
     `С ${features.map(feature => VIEW_FEATURES[feature]).join(' и ')}`,
   exportPage: 'Текущая страница',
   exportSelected: 'Выбранные строки',
+  exportLoaded: count =>
+    `Загруженные строки (${count.toLocaleString('ru-RU')})`,
   filter: 'Фильтр',
   filterActive: 'Фильтр, включён',
   filterCondition: 'Условие',
@@ -164,6 +166,13 @@ export const RU_LABELS: TableLabels = {
   lastPage: 'Последняя страница',
   pageRange: (from, to, total) => `${from}–${to} из ${total}`,
   pageAnnouncement: (page, pages) => `Страница ${page} из ${pages}`,
+  loadedRows: (loaded, total) =>
+    total === undefined
+      ? `Загружено ${loaded.toLocaleString('ru-RU')}`
+      : `Загружено ${loaded.toLocaleString('ru-RU')} из ${total.toLocaleString('ru-RU')}`,
+  loadMoreFailed: 'Не удалось загрузить ещё строки',
+  loadMoreRetry: 'Повторить',
+  announceMoreLoaded: count => `Загружено ещё: ${rows(count)}`,
   selectedRows: count => `Выбрано: ${rows(count)}`,
   selectedRowsHidden: count => `скрыто фильтрами: ${count}`,
   search: 'Поиск',

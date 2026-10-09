@@ -11,6 +11,7 @@ import {
   columnVisibility,
   dataExport,
   headerActionMenu,
+  infiniteScroll,
   pagination,
   quickSearch,
   rowActionMenu,
@@ -26,6 +27,7 @@ import {
   type ColumnMultiSortOptions,
   type ColumnSizingOptions,
   type ExportOptions,
+  type InfiniteScrollOptions,
   type QuickSearchOptions,
   type RowActionsPluginOptions,
   type RowDraggingOptions,
@@ -108,6 +110,10 @@ export interface FeatureToggles {
   paginationPageSize?: number
   /** Варианты размера страницы пагинации (по умолчанию 10/25/50/100). */
   paginationPageSizes?: number[] | false
+  /** Бесконечная прокрутка — лента (ADR 0081). */
+  enableInfiniteScroll?: boolean
+  /** Настройка ленты: `onLoadMore`, `hasMore`, `rowCount`, `threshold`, `loadedCount`. */
+  infiniteScrollOptions?: Omit<InfiniteScrollOptions, 'enabled'>
   /** Тонкая настройка кебаба заголовка (`mode` / `threshold`). */
   headerActionMenuOptions?: { mode?: 'auto' | 'always'; threshold?: number }
   /** Тонкая настройка кебаба строки (`mode` / `threshold`). */
@@ -241,6 +247,10 @@ export const argsToPlugins = (o: FeatureToggles) => {
       pageSizes: o.paginationPageSizes,
       server: o.paginationServer,
       rowCount: o.paginationRowCount,
+    }),
+    infiniteScroll({
+      enabled: !!o.enableInfiniteScroll,
+      ...o.infiniteScrollOptions,
     }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.

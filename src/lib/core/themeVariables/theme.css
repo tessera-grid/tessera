@@ -269,6 +269,15 @@
   --tsr-comp-cell-font-size: 0.8125rem;
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
   --tsr-comp-cell-error-color: var(--tsr-sys-danger);
+  /* Блок ошибки догрузки ленты в конце списка (ADR 0081). */
+  --tsr-comp-load-more-height: calc(var(--tsr-comp-row-height) * 2.4);
+  --tsr-comp-load-more-icon-color: var(--tsr-sys-danger);
+  --tsr-comp-load-more-title-color: var(--tsr-sys-fg);
+  --tsr-comp-load-more-reason-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) 62%,
+    transparent
+  );
   /* Ожидание и отказ базовых кнопок (ADR 0055): блик по контуру, вспышка. */
   --tsr-comp-pending-ring-color: var(--tsr-comp-loader-bar);
   --tsr-comp-pending-ring-width: 2px;

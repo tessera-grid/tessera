@@ -30,6 +30,7 @@ import { skipHeaderSpans } from './header'
 import {
   ARROW_DIRECTIONS,
   KEYBOARD_NAVIGATION,
+  NAV_BODY_END_ATTR,
   NAV_TARGET_SELECTOR,
   type NavTable,
   ROW_FOCUS_COLUMN,
@@ -195,6 +196,22 @@ export const handleGridKeyDown = (
       event.preventDefault()
     }
     return
+  }
+
+  // `↓` с последней строки тела — в строку за ним (ошибка догрузки, ADR 0081).
+  if (
+    event.key === 'ArrowDown' &&
+    !modified &&
+    active.rowIndex === t.getRowModel().rows.length - 1
+  ) {
+    const bodyEnd = event.currentTarget.querySelector<HTMLElement>(
+      `[${NAV_BODY_END_ATTR}]`,
+    )
+    if (bodyEnd) {
+      event.preventDefault()
+      bodyEnd.focus()
+      return
+    }
   }
 
   const resolved = resolveNavigationKey(active, event, {

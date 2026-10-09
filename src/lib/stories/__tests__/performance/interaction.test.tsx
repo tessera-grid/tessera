@@ -13,7 +13,8 @@ import {
   tableFeatures,
 } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
-import { cleanup } from 'vitest-browser-react'
+import { useState } from 'react'
+import { cleanup, render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import {
@@ -45,6 +46,9 @@ import {
   setLoadedAnswer,
 } from '../../../plugins/rowExpanding/lazyChildrenFeature'
 import { exportFormats } from '../../../plugins/dataExport'
+import { infiniteScroll } from '../../../plugins/infiniteScroll'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
 import { buildXlsx } from '../../../plugins/dataExport/xlsxBuild'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
@@ -1909,5 +1913,119 @@ describe('Отзывчивость — разделы меню', () => {
       }
     },
     PERF_TIMEOUT,
+  )
+})
+
+// Лента (ADR 0081, IS16): ответ дописывает 100 строк к 100 000 загруженным — новая
+// `data` и полная пересборка модели (инкрементальные модели этот случай не покрывают)
+// плюс проверка края лентой — против подмены `data` той же длины на том же гриде.
+interface FeedRow {
+  id: string
+  a: string
+  b: number
+  c: string
+}
+const feedRows = (from: number, count: number): FeedRow[] =>
+  Array.from({ length: count }, (_, k) => ({
+    id: `f${from + k}`,
+    a: `Name ${from + k}`,
+    b: from + k,
+    c: `City ${(from + k) % 50}`,
+  }))
+const FEED_COLUMNS = [
+  { id: 'a', accessorKey: 'a', header: 'A', size: 200 },
+  { id: 'b', accessorKey: 'b', header: 'B', size: 120 },
+  { id: 'c', accessorKey: 'c', header: 'C', size: 200 },
+]
+let setFeedRows: (update: (prev: FeedRow[]) => FeedRow[]) => void
+let feedLength = 0
+const FeedGrid = ({ initial }: { initial: FeedRow[] }) => {
+  const [rows, setRows] = useState(initial)
+  setFeedRows = setRows
+  feedLength = rows.length
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: rows,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      infiniteScroll({
+        hasMore: true,
+        onLoadMore: () => new Promise<void>(() => {}),
+      }),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — лента', () => {
+  test(
+    'IS16: дописать блок из 100 строк к 100 000 не хуже подмены data той же длины',
+    async () => {
+      const measure = async (append: boolean) => {
+        const initial = feedRows(0, 100_000)
+        await render(<FeedGrid initial={initial} />)
+        await waitForGrid()
+        const result = await measureInteractionWork(
+          async () => {
+            setFeedRows(prev =>
+              append ? prev.concat(feedRows(prev.length, 100)) : prev.slice(),
+            )
+          },
+          {
+            afterWarmup: () =>
+              expect
+                .poll(
+                  () =>
+                    document.querySelectorAll('.data-grid__body-row').length >
+                    0,
+                )
+                .toBe(true),
+          },
+        )
+        // Прогрев и замер — по действию: дописано дважды по 100 строк.
+        await expect.poll(() => feedLength).toBe(append ? 100_200 : 100_000)
+        await cleanup()
+        return result
+      }
+      const base = await measure(false)
+      const fed = await measure(true)
+      const ceiling = Math.max(base.longestMs * 1.15, base.longestMs + 40)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×3',
+          plugins: 'infiniteScroll',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              budgetMs: ceiling,
+              pass: !gated || r.longestMs <= ceiling,
+              ...r,
+            },
+          ],
+        })
+      await record('IS16-base', 'подмена data той же длины', base, false)
+      await record('IS16', 'дописать 100 строк к 100 000', fed, true)
+      expect(
+        fed.longestMs,
+        `дописать longest=${fed.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })

@@ -166,6 +166,12 @@ export const ExportPanel = ({
   const choose = (next: ExportSettings) => setChosen(next)
   const isServer = whereOf(table, settings) === 'server'
 
+  // Лента без серверной выгрузки: «все строки» — только загруженные (ADR 0081).
+  const loaded =
+    !config.server && (table.options as { partialData?: boolean }).partialData
+      ? table.getCoreRowModel().rows.length
+      : undefined
+
   const columnLabel = (value: string) =>
     value === 'all' ? labels.exportColumnsAll : labels.exportColumnsVisible
   const formatLabel = (value: string) =>
@@ -234,7 +240,7 @@ export const ExportPanel = ({
               testId="export-axis-rows"
               choices={axes.rows}
               value={settings.rows}
-              labelOf={value => rowLabel(labels, value, axes.viewBy)}
+              labelOf={value => rowLabel(labels, value, axes.viewBy, loaded)}
               iconOf={value => {
                 const Icon = ROW_ICONS[value as ExportSettings['rows']](icons)
                 return <Icon width={16} height={16} />

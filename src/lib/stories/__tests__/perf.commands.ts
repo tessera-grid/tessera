@@ -218,6 +218,7 @@ export interface PerfRecord {
     | 'rowExpanding'
     | 'rowActions'
     | 'columnFiltering, rowGrouping'
+    | 'infiniteScroll'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
   cpuThrottle: number
   /** Известный недостиг: кейс намеренно не укладывается в порог RAIL (xfail). */

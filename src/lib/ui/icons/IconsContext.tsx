@@ -35,6 +35,7 @@ import {
   Pencil,
   Pin,
   Info,
+  RotateCw,
 } from 'lucide-react'
 
 import { CheckboxOutlineIcon } from './icons'
@@ -112,6 +113,9 @@ export interface TableIcons {
   saveFailed: IconComponent
   /** Пункт меню, чьё действие отклонено (ADR 0078) */
   actionFailed: IconComponent
+  /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
+  loadMoreFailed: IconComponent
+  retry: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
   actionBlocked: IconComponent
   /** Пункт-раздел меню и строка «назад» раздела (ADR 0079) */
@@ -159,6 +163,8 @@ export const DEFAULT_ICONS: TableIcons = {
   nextMonth: ChevronRight,
   saveFailed: CircleAlert,
   actionFailed: CircleAlert,
+  loadMoreFailed: CircleAlert,
+  retry: RotateCw,
   actionBlocked: Lock,
   submenu: ChevronRight,
   menuBack: ChevronLeft,
