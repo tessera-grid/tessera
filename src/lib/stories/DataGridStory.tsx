@@ -4,6 +4,8 @@ import { GroupingState, Updater, functionalUpdate } from '@tanstack/react-table'
 import { Card, CardContent, Grid, NoDataStub } from './_shims'
 import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
+import type { TesseraFeatureEntry } from '../../lib/core/features'
+import { argsKeyOf } from '../../lib/core/pluginArgs'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { DataGrid } from '../../lib/grid/DataGrid'
 import { BatchToolbar } from './BatchToolbar'
@@ -23,7 +25,21 @@ const expandingInitialState = {}
 // изменение видно сразу в ячейке.
 const CELL_EDITABLE_COLUMNS = ['age', 'visits', 'gender']
 
-export const StoryComponent = memo(
+/**
+ * Аргументы-договоры на время жизни (`server`, ADR 0039) таблица берёт при монтировании:
+ * смена такого аргумента из Controls пересоздаёт грид, как велит договор.
+ */
+const lifetimeKeyOf = (entries: readonly TesseraFeatureEntry[]) =>
+  entries
+    .flatMap(entry =>
+      (entry.lifetimeArgs ?? []).map(
+        key =>
+          `${entry.id}.${key}=${argsKeyOf((entry.args as Record<string, unknown> | undefined)?.[key])}`,
+      ),
+    )
+    .join('|')
+
+const StoryGrid = memo(
   ({
     columnCount,
     dataCount,
@@ -257,3 +273,13 @@ export const StoryComponent = memo(
     )
   },
 )
+
+export const StoryComponent = memo((props: StoryProps) => (
+  <StoryGrid
+    key={lifetimeKeyOf([
+      ...argsToPlugins(props),
+      ...(props.extraPlugins ?? []),
+    ])}
+    {...props}
+  />
+))

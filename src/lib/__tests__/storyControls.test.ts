@@ -8,6 +8,11 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
+import type { TesseraFeatureEntry } from '../core/features'
+import {
+  type FeatureToggles,
+  argsToPlugins,
+} from '../stories/__mocks__/utils/argsToPlugins'
 import {
   dataGridArgTypes,
   dataGridDefaultArgs,
@@ -42,6 +47,9 @@ const featureToggles = () => {
   return [...body.matchAll(/\n {2}(\w+)\??:/g)].map(match => match[1]!)
 }
 
+const entriesOf = (toggles: FeatureToggles): readonly TesseraFeatureEntry[] =>
+  argsToPlugins(toggles)
+
 describe('панель Controls историй DataGrid', () => {
   it('у каждого тумблера FeatureToggles есть контрол, кроме функций и колбэков', () => {
     const toggles = featureToggles()
@@ -54,6 +62,43 @@ describe('панель Controls историй DataGrid', () => {
       name => !toggles.includes(name) || name in dataGridArgTypes,
     )
     expect(stale).toEqual([])
+  })
+
+  it('значения по умолчанию дают ту же настройку плагинов, что фабрики без аргументов', () => {
+    const allOn = Object.fromEntries(
+      featureToggles()
+        .filter(name => name.startsWith('enable'))
+        .map(name => [name, true]),
+    )
+    const bare = entriesOf(allOn)
+    const withDefaults = entriesOf({ ...dataGridDefaultArgs, ...allOn })
+    // Замыкания фабрик новые на каждый вызов — функции сравниваются по имени.
+    const configured = (entries: readonly TesseraFeatureEntry[]) =>
+      JSON.stringify(
+        entries.map(entry => ({
+          id: entry.id,
+          options: entry.options,
+          actionMenu: entry.actionMenu,
+          slots: entry.slots?.map(slot => slot.id),
+        })),
+        (_, value: unknown) =>
+          typeof value === 'function'
+            ? `fn:${value.name}`
+            : value === undefined
+              ? 'undefined'
+              : value,
+        2,
+      )
+    expect(configured(withDefaults)).toEqual(configured(bare))
+  })
+
+  it('тумблер enableMultiSort выключает мультисорт и при заданном multiSortOptions', () => {
+    const sorting = entriesOf({
+      enableColumnSorting: true,
+      enableMultiSort: false,
+      multiSortOptions: { max: 2 },
+    }).find(entry => entry.id === 'columnSorting')!
+    expect(sorting.options?.enableMultiSort).toBe(false)
   })
 
   it('у каждого значения по умолчанию есть контрол', () => {

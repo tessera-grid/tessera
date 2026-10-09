@@ -1,9 +1,28 @@
 import type { InputType } from 'storybook/internal/csf'
 
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
+import { DEFAULT_HEADER_ACTION_MENU } from '../../../../lib/plugins/headerActionMenu'
+import { DEFAULT_ROW_ACTION_MENU } from '../../../../lib/plugins/rowActionMenu'
+import { DEFAULT_FILTER_DEBOUNCE_MS } from '../../../../lib/plugins/columnFiltering/conditions'
+import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../../../../lib/plugins/quickSearch/search'
+import {
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_PAGE_SIZES,
+} from '../../../../lib/plugins/pagination/registry'
+import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 
 const STORY_PARAM = 'параметр истории'
+
+/** Умолчания настроек-данных фильтров и поиска — те же, что у фабрик. */
+export const DEFAULT_COLUMN_FILTERING_OPTIONS = {
+  debounceMs: DEFAULT_FILTER_DEBOUNCE_MS,
+  filteredCount: false,
+}
+export const DEFAULT_QUICK_SEARCH_OPTIONS = {
+  debounceMs: DEFAULT_SEARCH_DEBOUNCE_MS,
+  filteredCount: false,
+}
 
 const numberControl = (
   description: string,
@@ -198,7 +217,7 @@ export const enableRowExpandingType = booleanControl(
 export const rowExpandingMaxDepthType = numberControl(
   'Сколько уровней раскрываемы от корня (`maxDepth`, нужен enableRowExpanding)',
   { min: 0, max: 10, step: 1 },
-  '1',
+  String(DEFAULT_MAX_EXPANDING_DEPTH),
 )
 export const rowExpandingColumnType = radioControl(
   'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`, нужен enableRowExpanding)',
@@ -260,7 +279,7 @@ export const enablePaginationType = booleanControl(
 export const paginationPageSizeType = numberControl(
   'Начальный размер страницы (`initialPageSize`, нужен enablePagination)',
   { min: 1, max: 1000, step: 5 },
-  '25',
+  String(DEFAULT_PAGE_SIZE),
 )
 export const enableExportType = booleanControl(
   'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
@@ -271,14 +290,14 @@ export const enableExportType = booleanControl(
 // истории.
 
 export const multiSortOptionsType = objectControl(
-  'Мультисортировка: `max` — предел колонок, `removal`, `event` (`columnSorting({ multiSort })`)',
+  'Мультисортировка: `max` — предел колонок (без него — без предела), `event` — жест, по умолчанию `shift` (`columnSorting({ multiSort })`, нужен enableMultiSort)',
   'ColumnMultiSortOptions',
   {},
 )
 export const headerActionMenuOptionsType = objectControl(
   'Меню заголовка: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
   "{ mode?: 'auto' | 'always'; threshold?: number }",
-  {},
+  DEFAULT_HEADER_ACTION_MENU,
 )
 export const cellSelectionOptionsType = objectControl(
   'Флаги выделения ячеек: `rangeSelection` — диапазон Shift-кликом, `dragSelection` — протяжкой, `multiRange` — несколько диапазонов с Ctrl/Cmd',
@@ -288,7 +307,7 @@ export const cellSelectionOptionsType = objectControl(
 export const rowActionMenuOptionsType = objectControl(
   'Меню строки: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
   "{ mode?: 'auto' | 'always'; threshold?: number }",
-  {},
+  DEFAULT_ROW_ACTION_MENU,
 )
 export const rowActionsDemoType = booleanControl(
   'Демо-действия строки (правка, копия, удаление); выключено — плагин без действий',
@@ -299,22 +318,22 @@ export const rowDraggingEnableType = booleanControl(
   true,
 )
 export const columnFilteringOptionsType = objectControl(
-  'Фильтры колонок: `debounceMs` и др. (`columnFiltering({...})`)',
+  'Фильтры колонок: `debounceMs` — задержка ввода, `filteredCount` — «показано N из M» в нижней панели, `timeZone` (`columnFiltering({...})`)',
   'ColumnFilteringOptions',
-  {},
+  DEFAULT_COLUMN_FILTERING_OPTIONS,
 )
 export const quickSearchOptionsType = objectControl(
-  'Быстрый поиск: `debounceMs`, `placeholder` и др. (`quickSearch({...})`)',
+  'Быстрый поиск: `debounceMs` — задержка ввода, `filteredCount` — «показано N из M» в нижней панели (`quickSearch({...})`)',
   'QuickSearchOptions',
-  {},
+  DEFAULT_QUICK_SEARCH_OPTIONS,
 )
 export const paginationPageSizesType = objectControl(
   'Варианты размера страницы в нижней панели; `false` — без выбора (`pagination({ pageSizes })`)',
   'number[] | false',
-  [10, 25, 50, 100],
+  DEFAULT_PAGE_SIZES,
 )
 export const exportOptionsType = objectControl(
-  'Экспорт: оси, быстрые наборы, `fileName` и др. (`dataExport({...})`)',
+  'Экспорт: `allow` — оси, `presets` — быстрые наборы, `filename` (по умолчанию `export`); форматы — функции, задаются в коде, по умолчанию только CSV (`dataExport({...})`)',
   'ExportOptions',
   {},
 )

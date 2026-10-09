@@ -6,8 +6,17 @@
 import type { InputType } from 'storybook/internal/csf'
 
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
+import { DEFAULT_HEADER_ACTION_MENU } from '../../../../lib/plugins/headerActionMenu'
+import { DEFAULT_ROW_ACTION_MENU } from '../../../../lib/plugins/rowActionMenu'
+import {
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_PAGE_SIZES,
+} from '../../../../lib/plugins/pagination/registry'
+import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import {
+  DEFAULT_COLUMN_FILTERING_OPTIONS,
+  DEFAULT_QUICK_SEARCH_OPTIONS,
   cellSelectionOptionsType,
   columnCountType,
   columnFilteringOptionsType,
@@ -243,12 +252,13 @@ export const dataGridDefaultArgs = {
   enableLeafPinning: false,
   enableColumnVisibility: false,
   enableHeaderActionMenu: false,
+  headerActionMenuOptions: DEFAULT_HEADER_ACTION_MENU,
 
   enableRowSelection: false,
   enableSubRowSelection: false,
   showSelectedCount: false,
   enableRowExpanding: false,
-  rowExpandingMaxDepth: 1,
+  rowExpandingMaxDepth: DEFAULT_MAX_EXPANDING_DEPTH,
   rowExpandingColumn: 'auto',
   rowExpandingTreeLines: false,
   enableRowDragging: false,
@@ -259,6 +269,7 @@ export const dataGridDefaultArgs = {
   rowActionsOptions: DEFAULT_ROW_ACTIONS_OPTIONS,
   rowActionsColumn: 'auto',
   enableRowActionMenu: false,
+  rowActionMenuOptions: DEFAULT_ROW_ACTION_MENU,
 
   enableCellEditing: false,
   enableCellSelection: false,
@@ -271,8 +282,11 @@ export const dataGridDefaultArgs = {
   enableKeyboardNavigation: false,
 
   enableQuickSearch: false,
+  quickSearchOptions: DEFAULT_QUICK_SEARCH_OPTIONS,
   enableColumnFiltering: false,
+  columnFilteringOptions: DEFAULT_COLUMN_FILTERING_OPTIONS,
   enablePagination: false,
-  paginationPageSize: 25,
+  paginationPageSize: DEFAULT_PAGE_SIZE,
+  paginationPageSizes: DEFAULT_PAGE_SIZES,
   enableExport: false,
 } as const

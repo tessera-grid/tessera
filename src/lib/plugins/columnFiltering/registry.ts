@@ -16,6 +16,7 @@ import { readPluginHooks } from '../../core/definePlugin'
 import type { ColumnFilterEntry } from '../../core/filtering'
 import type { PluginInertReason } from '../../core/pluginDiagnostics'
 import { columnFilterTypesFeature } from './columnFilterTypesFeature'
+import { DEFAULT_FILTER_DEBOUNCE_MS } from './conditions'
 import { filterHeaderAction } from './filterHeaderAction'
 import { FilterSummaryButton } from './FilterSummaryButton'
 import { filteredRowsCountSlot } from '../../grid/filtering/FilteredRowsCount'
@@ -100,7 +101,7 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
     enableColumnFilters: o.enabled !== false,
     // В дереве родитель виден, если фильтр проходит потомок (FL22).
     filterFromLeafRows: true,
-    columnFilteringDebounceMs: o.debounceMs,
+    columnFilteringDebounceMs: o.debounceMs ?? DEFAULT_FILTER_DEBOUNCE_MS,
     columnFilteringTimeZone: o.timeZone,
     columnFilteringDateLocale: o.dateLocale,
     columnFilteringServer: !!o.server,

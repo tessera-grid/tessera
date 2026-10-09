@@ -13,13 +13,18 @@ export interface RowActionMenuOptions {
   threshold?: number
 }
 
+export const DEFAULT_ROW_ACTION_MENU = {
+  mode: 'auto',
+  threshold: 2,
+} as const satisfies RowActionMenuOptions
+
 export const rowActionMenu = definePlugin<RowActionMenuOptions>()({
   id: 'rowActionMenu',
   diagnose: table => noSlotActionsReason(table, ['actionRowSlot']),
   features: {},
   actionMenu: o => ({
-    mode: o.mode ?? 'auto',
-    threshold: o.threshold ?? 2,
+    mode: o.mode ?? DEFAULT_ROW_ACTION_MENU.mode,
+    threshold: o.threshold ?? DEFAULT_ROW_ACTION_MENU.threshold,
     slots: ['actionRowSlot'],
   }),
 })

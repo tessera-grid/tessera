@@ -54,7 +54,7 @@ export interface FeatureToggles {
   serverColumnSorting?: boolean
   /** Мультисортировка (по умолчанию включена штатным жестом Shift+клик). */
   enableMultiSort?: boolean
-  /** Тонкая настройка мультисорта (`max` / `removal` / `event`) для тестов/историй. */
+  /** Тонкая настройка мультисорта (`max` / `event`) для тестов/историй. */
   multiSortOptions?: ColumnMultiSortOptions
   enableColumnPinning?: boolean
   /** Под вложенной шапкой пиннить отдельные листья (reorder-out). */
@@ -175,9 +175,9 @@ export const argsToPlugins = (o: FeatureToggles) => {
       enabled: !!o.enableColumnSorting,
       removal: o.enableSortingRemoval,
       server: o.serverColumnSorting,
-      // Объектная форма (если задана) имеет приоритет; иначе — булев тумблер
-      // (undefined → дефолт фабрики: мультисорт включён жестом Shift).
-      multiSort: o.multiSortOptions ?? o.enableMultiSort,
+      // Тумблер выключает мультисорт и при заданной объектной форме.
+      multiSort:
+        o.enableMultiSort === false ? false : (o.multiSortOptions ?? true),
     }),
     columnDragging({
       enabled: !!o.enableColumnDragging,

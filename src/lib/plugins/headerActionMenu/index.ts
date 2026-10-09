@@ -17,6 +17,11 @@ export interface HeaderActionMenuOptions {
   slots?: HeaderActionSlot[]
 }
 
+export const DEFAULT_HEADER_ACTION_MENU = {
+  mode: 'auto',
+  threshold: 3,
+} as const satisfies HeaderActionMenuOptions
+
 export const headerActionMenu = definePlugin<HeaderActionMenuOptions>()({
   id: 'headerActionMenu',
   diagnose: table =>
@@ -26,8 +31,8 @@ export const headerActionMenu = definePlugin<HeaderActionMenuOptions>()({
     ),
   features: {},
   actionMenu: o => ({
-    mode: o.mode ?? 'auto',
-    threshold: o.threshold ?? 3,
+    mode: o.mode ?? DEFAULT_HEADER_ACTION_MENU.mode,
+    threshold: o.threshold ?? DEFAULT_HEADER_ACTION_MENU.threshold,
     slots: o.slots ?? ['rightHeaderSlot'],
   }),
 })
