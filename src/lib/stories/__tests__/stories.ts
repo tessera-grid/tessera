@@ -24,6 +24,7 @@ import * as panelsStatusBar from '../DataGrid.Panels.StatusBar.stories'
 import * as panelsToolbar from '../DataGrid.Panels.Toolbar.stories'
 import * as pluginApi from '../DataGrid.PluginApi.stories'
 import * as rowsActions from '../DataGrid.Rows.Actions.stories'
+import * as rowsBackToTop from '../DataGrid.Rows.BackToTop.stories'
 import * as rowsDragging from '../DataGrid.Rows.Dragging.stories'
 import * as rowsExpanding from '../DataGrid.Rows.Expanding.stories'
 import * as rowsGrouping from '../DataGrid.Rows.Grouping.stories'
@@ -54,6 +55,7 @@ export const composed = {
   ...composeStories(panelsToolbar),
   ...composeStories(pluginApi),
   ...composeStories(rowsActions),
+  ...composeStories(rowsBackToTop),
   ...composeStories(rowsDragging),
   ...composeStories(rowsExpanding),
   ...composeStories(rowsGrouping),

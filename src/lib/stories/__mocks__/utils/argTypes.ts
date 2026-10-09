@@ -307,6 +307,14 @@ export const infiniteScrollOptionsType = objectControl(
   'InfiniteScrollOptions',
   {},
 )
+export const enableBackToTopType = booleanControl(
+  'Кнопка «наверх» в нижней панели: видна после прокрутки на два экрана, встаёт только в уже показанную панель (плагин `backToTop`)',
+)
+export const backToTopOptionsType = objectControl(
+  'Кнопка «наверх»: `threshold` — с какой прокрутки тела видна, px (`backToTop({...})`)',
+  'BackToTopOptions',
+  {},
+)
 export const enablePaginationType = booleanControl(
   'Пагинация в нижней панели (плагин `pagination`)',
 )

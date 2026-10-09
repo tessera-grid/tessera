@@ -172,6 +172,7 @@ export const RU_LABELS: TableLabels = {
       : `Загружено ${loaded.toLocaleString('ru-RU')} из ${total.toLocaleString('ru-RU')}`,
   loadMoreFailed: 'Не удалось загрузить ещё строки',
   loadMoreRetry: 'Повторить',
+  backToTop: 'Наверх',
   announceMoreLoaded: count => `Загружено ещё: ${rows(count)}`,
   selectedRows: count => `Выбрано: ${rows(count)}`,
   selectedRowsHidden: count => `скрыто фильтрами: ${count}`,

@@ -50,6 +50,7 @@ export const registerSlotInto = (
     countsAsHeaderAction,
     group,
     align,
+    showsPanel,
     pluginId,
   }: PluginSlot,
 ) => {
@@ -64,6 +65,7 @@ export const registerSlotInto = (
     currentSlot[pluginIndexInSlot].countsAsHeaderAction = countsAsHeaderAction
     currentSlot[pluginIndexInSlot].group = group
     currentSlot[pluginIndexInSlot].align = align
+    currentSlot[pluginIndexInSlot].showsPanel = showsPanel
     currentSlot[pluginIndexInSlot].pluginId = pluginId
 
     return
@@ -77,6 +79,7 @@ export const registerSlotInto = (
     countsAsHeaderAction,
     group,
     align,
+    showsPanel,
     pluginId,
   }
 

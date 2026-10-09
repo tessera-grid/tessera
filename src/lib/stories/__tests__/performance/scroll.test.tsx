@@ -839,3 +839,70 @@ describe('Производительность прокрутки — лента
     PERF_TIMEOUT * 2,
   )
 })
+
+// Кнопка «наверх» (ADR 0082, BT14): 1000×1000 с нижней панелью, спокойная прокрутка
+// с кнопкой против той же выборки без неё — подписка на прокрутку и пересечение порога.
+describe('Производительность прокрутки — кнопка «наверх»', () => {
+  test(
+    'BT14: прокрутка 1000×1000 с кнопкой «наверх» — в пределах потолков P11; база без кнопки в дашборде',
+    async () => {
+      const measure = async (withButton: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableStatusBar: true,
+          enableBackToTop: withButton,
+        })
+        await waitForGrid()
+        await expect
+          .poll(
+            () =>
+              document.querySelector('[data-testid="back-to-top"]') !== null,
+          )
+          .toBe(withButton)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const withButton = await measure(true)
+      const ceiling = { y: 26, x: 40 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'backToTop',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('BT14-base', 'нижняя панель без кнопки', base, false)
+      await record('BT14', 'нижняя панель с кнопкой «наверх»', withButton, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          withButton[axis].p95Ms,
+          `${axis} p95=${withButton[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

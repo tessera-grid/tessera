@@ -66,6 +66,11 @@ export interface RegisterSlotParams<TContext extends object> {
    * у панели — `'start'`, у тулбара — `'end'` (кнопки прижаты вправо).
    */
   align?: 'start' | 'end'
+  /**
+   * Вызывает ли запись нижнюю панель (`statusBarSlot`, ADR 0082). `false` — запись
+   * рисуется в панели, которую показали другие записи или флаг, но сама её не держит.
+   */
+  showsPanel?: boolean
   /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
   pluginId?: string
 }

@@ -47,6 +47,8 @@ import {
   enableMultiSortType,
   enablePaginationType,
   enableInfiniteScrollType,
+  enableBackToTopType,
+  backToTopOptionsType,
   infiniteScrollOptionsType,
   enableQuickSearchType,
   enableRowActionMenuType,
@@ -233,6 +235,8 @@ export const dataGridArgTypes = {
     ...when('enableInfiniteScroll', {
       infiniteScrollOptions: infiniteScrollOptionsType,
     }),
+    enableBackToTop: enableBackToTopType,
+    ...when('enableBackToTop', { backToTopOptions: backToTopOptionsType }),
     enableExport: enableExportType,
     ...when('enableExport', { exportOptions: exportOptionsType }),
   }),
@@ -301,5 +305,6 @@ export const dataGridDefaultArgs = {
   paginationPageSize: DEFAULT_PAGE_SIZE,
   paginationPageSizes: DEFAULT_PAGE_SIZES,
   enableInfiniteScroll: false,
+  enableBackToTop: false,
   enableExport: false,
 } as const

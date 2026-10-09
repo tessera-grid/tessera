@@ -46,6 +46,7 @@ export {
   type InfiniteScrollOptions,
   type InfiniteScrollLoadContext,
 } from './infiniteScroll'
+export { backToTop, type BackToTopOptions } from './backToTop'
 export {
   columnFiltering,
   type ColumnFilteringOptions,

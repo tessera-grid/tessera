@@ -1,0 +1,9 @@
+.slot {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* Место под кнопку держится и без неё: панель не меняет раскладку (BT4). */
+.slot:not([data-shown]) {
+  visibility: hidden;
+}

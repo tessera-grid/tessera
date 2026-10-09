@@ -35,7 +35,7 @@ import type { Column } from '../types'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
-import { resolvePanelVisible } from '../core/panels'
+import { countPanelSlots, resolvePanelVisible } from '../core/panels'
 import {
   useColumnVirtualizer,
   useColumnVirtualizerScroll,
@@ -131,7 +131,7 @@ export const DataGrid = ({
   )
   const hasStatusBar = resolvePanelVisible(
     (table.options as any).enableStatusBar,
-    statusBarSlot.length,
+    countPanelSlots(statusBarSlot),
   )
 
   const scrollableNodeRef = useRef<HTMLDivElement>(null)

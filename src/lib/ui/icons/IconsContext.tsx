@@ -7,6 +7,7 @@ import {
 } from 'react'
 
 import {
+  ArrowUpToLine,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -116,6 +117,8 @@ export interface TableIcons {
   /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
   loadMoreFailed: IconComponent
   retry: IconComponent
+  /** Кнопка «наверх» в нижней панели (ADR 0082) */
+  backToTop: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
   actionBlocked: IconComponent
   /** Пункт-раздел меню и строка «назад» раздела (ADR 0079) */
@@ -165,6 +168,7 @@ export const DEFAULT_ICONS: TableIcons = {
   actionFailed: CircleAlert,
   loadMoreFailed: CircleAlert,
   retry: RotateCw,
+  backToTop: ArrowUpToLine,
   actionBlocked: Lock,
   submenu: ChevronRight,
   menuBack: ChevronLeft,

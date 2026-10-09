@@ -1,4 +1,5 @@
 import {
+  backToTop,
   cellEditing,
   cellSelection,
   contextMenu,
@@ -20,6 +21,7 @@ import {
   rowExpanding,
   rowGrouping,
   rowSelection,
+  type BackToTopOptions,
   type CellEditingOptions,
   type CellSelectionOptions,
   type ColumnFilteringOptions,
@@ -114,6 +116,10 @@ export interface FeatureToggles {
   enableInfiniteScroll?: boolean
   /** Настройка ленты: `onLoadMore`, `hasMore`, `rowCount`, `threshold`, `loadedCount`. */
   infiniteScrollOptions?: Omit<InfiniteScrollOptions, 'enabled'>
+  /** Кнопка «наверх» в нижней панели (ADR 0082). */
+  enableBackToTop?: boolean
+  /** Настройка кнопки «наверх»: `threshold` — с какой прокрутки видна, px. */
+  backToTopOptions?: Omit<BackToTopOptions, 'enabled'>
   /** Тонкая настройка кебаба заголовка (`mode` / `threshold`). */
   headerActionMenuOptions?: { mode?: 'auto' | 'always'; threshold?: number }
   /** Тонкая настройка кебаба строки (`mode` / `threshold`). */
@@ -252,6 +258,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
       enabled: !!o.enableInfiniteScroll,
       ...o.infiniteScrollOptions,
     }),
+    backToTop({ enabled: !!o.enableBackToTop, ...o.backToTopOptions }),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
