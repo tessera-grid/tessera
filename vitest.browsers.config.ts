@@ -5,13 +5,17 @@ import base from './vitest.config'
 
 // Наборы, чьё поведение зависит от движка браузера, — в Firefox и WebKit (основной
 // `npm test` идёт в одном Chromium). Сессии правки: `blur` у удаляемого из DOM
-// редактора браузеры шлют по-разному (ADR 0040, SS3, SS7–SS9).
+// редактора браузеры шлют по-разному (ADR 0040, SS3, SS7–SS9). Вход в грид с
+// клавиатуры: Firefox держит прокручиваемые области в порядке Tab (ADR 0021, KN32).
 // Запуск: npm run test:browsers
 export default defineConfig({
   ...base,
   test: {
     name: 'engines',
-    include: ['src/lib/stories/__tests__/visual/action-sessions.test.tsx'],
+    include: [
+      'src/lib/stories/__tests__/visual/action-sessions.test.tsx',
+      'src/lib/stories/__tests__/visual/keyboard-entry.test.tsx',
+    ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,
     browser: {

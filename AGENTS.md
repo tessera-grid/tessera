@@ -428,7 +428,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Клавиатура:_ `keyboard-navigation` (KN1–KN28, KN30–KN31 — роль grid, roving tabindex, режим действия, Tab-выход,
       стрелки/Home/End/Page, пиновка под виртуализацией, фокус от указателя до конца нажатия,
       активная ячейка у приложения,
-      [ADR 0021](docs/decisions/0021-keyboard-navigation.md));
+      [ADR 0021](docs/decisions/0021-keyboard-navigation.md)); `keyboard-entry` (KN32 — вход
+      Tab/Shift+Tab снаружи без остановок и прокрутки, ещё и в `test:browsers`);
       `keyboard-wcag` (KB1–KB14 — соответствие WCAG 2.1.1 и замены клавиш для компактных клавиатур,
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
     - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки),

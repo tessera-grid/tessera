@@ -6,7 +6,8 @@
   min-height: var(--tsr-comp-row-height);
   gap: var(--tsr-comp-cell-content-gap);
   padding: var(--tsr-comp-cell-content-padding);
-  overflow-x: hidden;
+  /* Обе оси: прокручиваемая обёртка — остановка Tab в Firefox (KN32). */
+  overflow: hidden;
   box-shadow: inherit;
   box-sizing: border-box;
 }

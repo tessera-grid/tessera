@@ -185,7 +185,8 @@ describe('Кнопка «наверх»', () => {
     expect(shown()).toBe(false)
     await scrollTo(twoScreens - 20)
     expect(shown()).toBe(false)
-    await scrollTo(twoScreens)
+    // +1px: Firefox округляет прокрутку до долей пикселя.
+    await scrollTo(twoScreens + 1)
     expect(shown()).toBe(true)
     await scrollTo(0)
     expect(shown()).toBe(false)
@@ -296,10 +297,12 @@ describe('Кнопка «наверх»', () => {
   test('BT7: прыжок не меняет горизонтальную прокрутку; лента не выгружает и не перезапрашивает загруженное', async () => {
     await mount({ pageSize: 100, wide: true, width: 480 })
     await scrollTo(scroller().clientHeight * 3, 300)
+    const left = scroller().scrollLeft
+    expect(left).toBeGreaterThan(290)
     await humanClick(button()!)
     await frames()
     expect(scroller().scrollTop).toBe(0)
-    expect(scroller().scrollLeft).toBe(300)
+    expect(scroller().scrollLeft).toBe(left)
     await cleanup()
 
     await mount({ infinite: true })

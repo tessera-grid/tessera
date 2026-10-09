@@ -3,6 +3,7 @@
 // из общего store.
 import {
   type CSSProperties,
+  type FocusEvent,
   lazy,
   Suspense,
   useCallback,
@@ -64,6 +65,14 @@ import '../core/themeVariables/theme.css'
 const Toolbar = lazy(() =>
   import('./Toolbar/Toolbar').then(module => ({ default: module.Toolbar })),
 )
+
+/**
+ * Контейнер прокрутки при `keyboardNavigation` вне порядка Tab (KN32) и фокус не держит:
+ * клик по пустому месту, как и без `tabindex`, оставляет фокус в `body` (IS12).
+ */
+const releaseContainerFocus = (event: FocusEvent<HTMLDivElement>) => {
+  if (event.target === event.currentTarget) event.currentTarget.blur()
+}
 
 /**
  * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable), высоту и
@@ -357,6 +366,11 @@ export const DataGrid = ({
                       },
                     )}
                     ref={scrollableNodeRef}
+                    // Firefox держит прокручиваемую область в порядке Tab (KN32).
+                    tabIndex={keyboardNavigation ? -1 : undefined}
+                    onFocus={
+                      keyboardNavigation ? releaseContainerFocus : undefined
+                    }
                     data-resizing={isResizingColumns !== false}
                     onCopy={handleCopy}
                   >

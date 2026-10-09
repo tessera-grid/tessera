@@ -6,6 +6,7 @@
   font-size: var(--tsr-comp-cell-font-size);
   line-height: 1rem;
   text-overflow: ellipsis;
-  overflow-x: hidden;
+  /* Обе оси: с одной `overflow-x` вторая — `auto`, и Firefox делает обёртку остановкой Tab (KN32). */
+  overflow: hidden;
   white-space: nowrap;
 }
