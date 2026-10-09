@@ -42,11 +42,11 @@
     justify-content: flex-end;
   }
 
-  /* Текст стороны `start` не шире строки (SB11). */
+  /* Текст стороны `start` не шире строки (SB11); счётчики не обрезаются (TX7). */
   & > .status-bar__side[data-align='start'] {
     overflow: hidden;
 
-    & > * {
+    & > :not([data-status-count]) {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;

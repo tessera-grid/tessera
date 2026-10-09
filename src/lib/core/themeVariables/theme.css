@@ -483,6 +483,8 @@
   --tsr-comp-popup-color: var(--tsr-comp-control-color);
   --tsr-comp-popup-item-min-height: 32px;
   --tsr-comp-popup-item-radius: calc(var(--tsr-comp-control-radius) - 2px);
+  /* Предел ширины меню: длинная подпись пункта переносится (ADR 0083, TX1). */
+  --tsr-comp-popup-max-width: 320px;
   /* Разделители внутри меню и панелей: мягче границы контролов. */
   --tsr-comp-popup-divider-color: var(--tsr-sys-border);
   /* Сегменты (ADR 0074, SG2): дорожка, приподнятый выбранный сегмент. */

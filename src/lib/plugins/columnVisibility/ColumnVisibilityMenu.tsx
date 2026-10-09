@@ -12,6 +12,7 @@ import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { Tooltip } from '../../ui/Tooltip'
 import {
   type ColumnTreeNode,
   buildColumnTree,
@@ -74,7 +75,9 @@ const ColumnRow = ({
             toggle && setColumnsVisible(table, toggle.columnIds, toggle.visible)
           }
         />
-        <span className={styles.label}>{node.label}</span>
+        <Tooltip title={node.label} overflowOnly>
+          <span className={styles.label}>{node.label}</span>
+        </Tooltip>
       </label>
     </li>
   )

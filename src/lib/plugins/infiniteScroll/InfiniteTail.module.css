@@ -45,7 +45,18 @@
   font-weight: 500;
 }
 
+.error-text {
+  min-width: 0;
+}
+
+/* Причина — не больше двух строк, полный текст в тултипе (ADR 0083, TX10). */
 .error-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   margin-top: 2px;
   color: var(--tsr-comp-load-more-reason-color);
 }

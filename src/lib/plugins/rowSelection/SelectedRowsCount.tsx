@@ -9,6 +9,7 @@ import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
+import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
 
 /** Выбранные `id` среза, а не строки модели: выбор на других страницах тоже считается. */
@@ -51,10 +52,16 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   const count = countSelectedRows(selection)
   const hidden = count > 0 ? countHiddenSelectedRows(table, selection) : 0
 
+  // Пустой счётчик держит место слота: панель не теряет строку (RS21, SB14).
+  if (count === 0) return <span data-testid="selected-rows-count" />
+  const hiddenFull = hidden > 0 ? `, ${labels.selectedRowsHidden(hidden)}` : ''
+  const hiddenShort =
+    hidden > 0 ? `, ${labels.selectedRowsHiddenShort(hidden)}` : ''
   return (
-    <span data-testid="selected-rows-count">
-      {count > 0 ? labels.selectedRows(count) : ''}
-      {hidden > 0 ? `, ${labels.selectedRowsHidden(hidden)}` : ''}
-    </span>
+    <StatusBarCount
+      data-testid="selected-rows-count"
+      full={labels.selectedRows(count) + hiddenFull}
+      short={labels.selectedRowsShort(count) + hiddenShort}
+    />
   )
 }

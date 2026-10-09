@@ -27,6 +27,8 @@
   border: 1px solid var(--tsr-comp-control-border);
   border-radius: var(--tsr-comp-control-radius);
   outline: none;
+  /* Плейсхолдер в суженном поле — с многоточием (ADR 0083, TX9). */
+  text-overflow: ellipsis;
 }
 
 /* Свой крестик поля: нативную кнопку очистки `type="search"` прячем. */

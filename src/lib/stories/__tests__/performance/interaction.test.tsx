@@ -2029,3 +2029,95 @@ describe('Отзывчивость взаимодействий — лента',
     PERF_TIMEOUT * 2,
   )
 })
+
+// Длинный текст (ADR 0083, TX12): открытие кебаба строки с 20 пунктами, подписи
+// которых переносятся на несколько строк, против тех же пунктов с короткими подписями.
+describe('Отзывчивость — длинные подписи меню', () => {
+  test(
+    'TX12: открытие меню с 20 длинными пунктами — в бюджете INP; база с короткими в дашборде',
+    async () => {
+      const measure = async (long: boolean) => {
+        const actions: RowAction[] = Array.from({ length: 20 }, (_, i) => ({
+          id: `textAction${i}`,
+          slot: 'actionRowSlot',
+          order: i,
+          icon: () => null,
+          label: () =>
+            long
+              ? `Action ${i}: reassign the account to another manager in the same regional office`
+              : `Action ${i}`,
+          onSelect: () => {},
+        }))
+        const screen = renderGrid({
+          ...SMALL,
+          enableRowActions: true,
+          enableRowActionMenu: true,
+          actionsDemo: 'none',
+          extraPlugins: [{ id: 'textActions', slotActions: actions }],
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const kebab = () =>
+          document.querySelector<HTMLElement>('[aria-label^="Row options"]')
+        const open = () =>
+          document.querySelectorAll('[role="menuitem"]').length === 20
+        await expect.poll(kebab).not.toBeNull()
+        const result = await measureInteractionWork(
+          async () => kebab()!.click(),
+          {
+            afterWarmup: async () => {
+              expect(open()).toBe(true)
+              document.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+              )
+              ;(document.activeElement as HTMLElement | null)?.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+              )
+              await expect.poll(open).toBe(false)
+            },
+          },
+        )
+        expect(open()).toBe(true)
+        if (long) {
+          const label = document.querySelector('[class*="itemLabel"]')!
+          expect(label.getBoundingClientRect().height).toBeGreaterThan(
+            parseFloat(getComputedStyle(label).lineHeight) * 1.5,
+          )
+        }
+        ;(await screen).unmount()
+        return result
+      }
+
+      const base = await measure(false)
+      const long = await measure(true)
+      for (const [id, label, result, gated] of [
+        ['TX12-base', 'меню из 20 коротких пунктов', base, false],
+        ['TX12', 'меню из 20 пунктов с переносом подписи', long, true],
+      ] as const) {
+        await recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '30×500',
+          plugins: 'rowActions',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: result.longestMs,
+              budgetMs: INTERACTION_BUDGET_MS,
+              pass: !gated || result.longestMs <= INTERACTION_BUDGET_MS,
+              ...result,
+            },
+          ],
+        })
+      }
+      expect(
+        long.longestMs,
+        `TX12 longest (база ${base.longestMs.toFixed(1)}ms)`,
+      ).toBeLessThanOrEqual(INTERACTION_BUDGET_MS)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

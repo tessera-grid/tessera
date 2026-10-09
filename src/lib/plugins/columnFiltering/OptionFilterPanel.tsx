@@ -29,6 +29,7 @@ import { setColumnFilterByUser } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
 import { useIcons } from '../../ui/icons'
+import { Tooltip } from '../../ui/Tooltip'
 import { operatorLabel } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
 import { OperatorSelect } from './OperatorSelect'
@@ -404,7 +405,9 @@ export const OptionFilterPanel = ({
                             {checked && <CheckIcon />}
                           </Checkbox.Indicator>
                         </Checkbox.Root>
-                        <span className={styles.label}>{option.label}</span>
+                        <Tooltip title={option.label} overflowOnly>
+                          <span className={styles.label}>{option.label}</span>
+                        </Tooltip>
                         {counts && (
                           <span
                             className={styles.count}

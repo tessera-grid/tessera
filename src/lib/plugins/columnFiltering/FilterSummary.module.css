@@ -43,7 +43,16 @@
   font-weight: 600;
 }
 
-.condition,
+/* Условие — не больше двух строк, полный текст — в тултипе (ADR 0083, TX5). */
+.condition {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 .hidden {
   overflow: hidden;
   text-overflow: ellipsis;

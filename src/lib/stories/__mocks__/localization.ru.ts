@@ -176,6 +176,13 @@ export const RU_LABELS: TableLabels = {
   announceMoreLoaded: count => `Загружено ещё: ${rows(count)}`,
   selectedRows: count => `Выбрано: ${rows(count)}`,
   selectedRowsHidden: count => `скрыто фильтрами: ${count}`,
+  loadedRowsShort: (loaded, total) =>
+    total === undefined
+      ? loaded.toLocaleString('ru-RU')
+      : `${loaded.toLocaleString('ru-RU')} / ${total.toLocaleString('ru-RU')}`,
+  selectedRowsShort: count => `Выбрано: ${count}`,
+  selectedRowsHiddenShort: count => `скрыто: ${count}`,
+  filteredRowsShort: (shown, total) => `${shown} / ${total}`,
   search: 'Поиск',
   clearSearch: 'Очистить поиск',
   searchColumnsHint: columns => `Поиск по колонкам: ${columns.join(', ')}`,

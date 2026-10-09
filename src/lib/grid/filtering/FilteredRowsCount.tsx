@@ -8,6 +8,7 @@ import type { StatusBarComponentProps } from '../../core/createSlots'
 import { isFilteringActive } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
+import { StatusBarCount } from '../StatusBar/StatusBarCount'
 
 export const FILTERED_ROWS_COUNT_SLOT_ID = 'filteredRowsCount'
 
@@ -45,9 +46,11 @@ export const FilteredRowsCount = ({ table }: StatusBarComponentProps) => {
   if (!counts) return null
 
   return (
-    <span data-testid="filtered-rows-count">
-      {labels.filteredRows(counts.filtered, counts.total)}
-    </span>
+    <StatusBarCount
+      data-testid="filtered-rows-count"
+      full={labels.filteredRows(counts.filtered, counts.total)}
+      short={labels.filteredRowsShort(counts.filtered, counts.total)}
+    />
   )
 }
 

@@ -5,6 +5,7 @@
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { isSkeletonShown } from '../../core/skeletonOptions'
+import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
 
 export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
@@ -18,9 +19,12 @@ export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
   }
   const rowCount = (table.options as { infiniteScrollRowCount?: number })
     .infiniteScrollRowCount
+  const loaded = table.getCoreRowModel().rows.length
   return (
-    <span data-testid="loaded-rows-count">
-      {labels.loadedRows(table.getCoreRowModel().rows.length, rowCount)}
-    </span>
+    <StatusBarCount
+      data-testid="loaded-rows-count"
+      full={labels.loadedRows(loaded, rowCount)}
+      short={labels.loadedRowsShort(loaded, rowCount)}
+    />
   )
 }

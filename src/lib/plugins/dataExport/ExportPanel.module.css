@@ -5,7 +5,7 @@
 .popup {
   composes: popup from '../../ui/Popup/Popup.module.css';
   min-width: 240px;
-  max-width: calc(100vw - 16px);
+  max-width: min(var(--tsr-comp-popup-max-width), calc(100vw - 16px));
   display: flex;
   flex-direction: column;
 }

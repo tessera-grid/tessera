@@ -18,6 +18,7 @@ import type { Table } from '../../types'
 import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { ToolbarButton } from '../../ui/ToolbarButton'
+import { Tooltip } from '../../ui/Tooltip'
 import { optionLabelOf } from '../../core/columnOptions'
 import { describeFilter } from './describeFilter'
 import type { FilterSummaryItem } from './filterSummary'
@@ -74,42 +75,45 @@ export const FilterSummaryPopover = ({
             data-testid="filter-summary"
           >
             <ul className={styles.list}>
-              {items.map(item => (
-                <li
-                  key={item.columnId}
-                  className={styles.item}
-                  data-column-id={item.columnId}
-                  data-hidden-column={item.hidden || undefined}
-                >
-                  <span className={styles.text}>
-                    <span className={styles.header}>{item.header}</span>
-                    <span className={styles.condition}>
-                      {describeFilter(item.filter, labels, {
-                        locale,
-                        optionLabel: value =>
-                          optionLabelOf(table, item.column, value),
-                      })}
-                    </span>
-                    {item.hidden && (
-                      <span className={styles.hidden}>
-                        <HiddenIcon width={14} height={14} aria-hidden />
-                        {labels.columnHidden}
-                      </span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    className={styles.remove}
-                    aria-label={labels.removeFilter(item.header)}
-                    onClick={() =>
-                      setColumnFilterByUser(table, item.columnId, undefined)
-                    }
-                    data-testid="filter-summary-remove"
+              {items.map(item => {
+                const condition = describeFilter(item.filter, labels, {
+                  locale,
+                  optionLabel: value =>
+                    optionLabelOf(table, item.column, value),
+                })
+                return (
+                  <li
+                    key={item.columnId}
+                    className={styles.item}
+                    data-column-id={item.columnId}
+                    data-hidden-column={item.hidden || undefined}
                   >
-                    <ClearIcon width={14} height={14} />
-                  </button>
-                </li>
-              ))}
+                    <span className={styles.text}>
+                      <span className={styles.header}>{item.header}</span>
+                      <Tooltip title={condition} overflowOnly>
+                        <span className={styles.condition}>{condition}</span>
+                      </Tooltip>
+                      {item.hidden && (
+                        <span className={styles.hidden}>
+                          <HiddenIcon width={14} height={14} aria-hidden />
+                          {labels.columnHidden}
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.remove}
+                      aria-label={labels.removeFilter(item.header)}
+                      onClick={() =>
+                        setColumnFilterByUser(table, item.columnId, undefined)
+                      }
+                      data-testid="filter-summary-remove"
+                    >
+                      <ClearIcon width={14} height={14} />
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
             <div className={styles.footer}>
               <button

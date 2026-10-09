@@ -37,17 +37,22 @@ const COLUMNS = [
 const Grid = ({
   withStatusBar = true,
   localization,
+  extra = [],
 }: {
   withStatusBar?: boolean
   localization?: Record<string, unknown>
+  extra?: unknown[]
 }) => {
   const table = useCreateTable({
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
-    plugins: (withStatusBar
-      ? [rowSelection({ selectedCount: true }), pagination()]
-      : [rowSelection()]) as never,
+    plugins: [
+      ...(withStatusBar
+        ? [rowSelection({ selectedCount: true }), pagination()]
+        : [rowSelection()]),
+      ...extra,
+    ] as never,
   })
   return (
     <div data-testid="frame-host" style={{ width: 900, height: 420 }}>
@@ -211,23 +216,32 @@ describe('Нижняя панель — узкая ширина', () => {
   })
 
   test('SB11: текст стороны start в двух строках не шире строки — многоточие, полный текст в title', async () => {
-    const long = (count: number) =>
-      `${count} rows selected across every page of this very long result set`
-    await render(<Grid localization={{ selectedRows: long }} />)
+    // Текст слота приложения; счётчики встроенных плагинов не обрезаются (ADR 0083, TX7).
+    const long =
+      'Synced with the warehouse across every page of this long result set'
+    const note = {
+      id: 'note',
+      slots: [
+        {
+          id: 'note',
+          slot: 'statusBarSlot',
+          component: () => <span data-testid="note">{long}</span>,
+        },
+      ],
+    }
+    await render(<Grid extra={[note]} />)
     await waitForGrid()
-    await selectAll()
     await setFrameWidth(300)
     expect(layout()).toBe('stacked')
 
     const start = bar().querySelector<HTMLElement>('[data-align="start"]')!
-    const text = start.firstElementChild as HTMLElement
+    const text = start.querySelector<HTMLElement>('[data-testid="note"]')!
     expect(start.getBoundingClientRect().right).toBeLessThanOrEqual(
       frame().getBoundingClientRect().right + 0.5,
     )
     expect(getComputedStyle(text).textOverflow).toBe('ellipsis')
     expect(text.scrollWidth).toBeGreaterThan(text.clientWidth)
-    // «Выбрать все» в шапке выбирает строки страницы.
-    await expect.poll(() => start.title).toBe(long(25))
+    await expect.poll(() => start.title).toBe(long)
   })
 
   test('SB12: компактный и двухстрочный вид проходят axe с color-contrast в светлой и тёмной теме', async () => {
@@ -300,7 +314,15 @@ describe('Нижняя панель — узкая ширина', () => {
   })
 
   test('SB14: на узкой ширине появление текста стороны start переводит панель в две строки, а потом она держит высоту — пустой текст не возвращает её к одной строке', async () => {
-    await render(<Grid />)
+    // Короткая форма счётчика длиннее места в компактном виде (ADR 0083, TX6).
+    await render(
+      <Grid
+        localization={{
+          selectedRowsShort: (count: number) =>
+            `${count} selected on this page`,
+        }}
+      />,
+    )
     await waitForGrid()
     await narrowUntil('compact')
     const checkbox = () =>

@@ -35,6 +35,8 @@ export interface InfiniteScrollDemoProps extends StoryProps {
   knownTotal?: boolean
   /** Первая попытка каждого блока падает, повтор проходит. */
   failFirstAttempt?: boolean
+  /** Причина отказа «сервера». */
+  failureReason?: string
   /** Сортировка, фильтры колонок и поиск — на сервере. */
   serverQuery?: boolean
 }
@@ -96,6 +98,7 @@ export const InfiniteScrollDemo = ({
   blockSize = 50,
   knownTotal = true,
   failFirstAttempt: initialFailures = false,
+  failureReason = 'Server error: 503 Service Unavailable',
   serverQuery = false,
   ...args
 }: InfiniteScrollDemoProps) => {
@@ -119,7 +122,7 @@ export const InfiniteScrollDemo = ({
         }
         if (failures && !failed.has(loaded)) {
           failed.add(loaded)
-          reject(new Error('Server error: 503 Service Unavailable'))
+          reject(new Error(failureReason))
           return
         }
         const block = select(query.current).slice(loaded, loaded + blockSize)

@@ -242,6 +242,11 @@ export interface TableLabels {
   pageAnnouncement: (page: number, pages: number) => string
   /** Счётчик загруженных строк в нижней панели (`infiniteScroll({ loadedCount })`); без `total` итог неизвестен */
   loadedRows: (loaded: number, total?: number) => string
+  /** Короткие формы счётчиков в узкой нижней панели (ADR 0083, TX6); не обрезаются */
+  loadedRowsShort: (loaded: number, total?: number) => string
+  selectedRowsShort: (count: number) => string
+  selectedRowsHiddenShort: (count: number) => string
+  filteredRowsShort: (shown: number, total: number) => string
   /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
   loadMoreFailed: string
   loadMoreRetry: string
@@ -436,6 +441,13 @@ export const DEFAULT_LABELS: TableLabels = {
   selectedRows: count =>
     count === 1 ? '1 row selected' : `${count} rows selected`,
   selectedRowsHidden: count => `${count} hidden by filters`,
+  loadedRowsShort: (loaded, total) =>
+    total === undefined
+      ? loaded.toLocaleString('en-US')
+      : `${loaded.toLocaleString('en-US')} / ${total.toLocaleString('en-US')}`,
+  selectedRowsShort: count => `${count} selected`,
+  selectedRowsHiddenShort: count => `${count} hidden`,
+  filteredRowsShort: (shown, total) => `${shown} / ${total}`,
   search: 'Search',
   clearSearch: 'Clear search',
   searchColumnsHint: columns => `Search in columns: ${columns.join(', ')}`,

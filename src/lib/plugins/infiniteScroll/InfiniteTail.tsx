@@ -20,6 +20,7 @@ import {
 } from '../../core/keyboardNavigation'
 import { useLocalization } from '../../core/localization'
 import { useIcons } from '../../ui/icons'
+import { Tooltip } from '../../ui/Tooltip'
 import { useTableState } from '../../core/reactivity'
 import { SkeletonRows } from '../../grid/SkeletonBody'
 import { InfiniteLoader } from './loader'
@@ -208,12 +209,16 @@ export const InfiniteTail = ({
                   height={18}
                   aria-hidden="true"
                 />
-                <div>
+                <div className={styles['error-text']}>
                   <div className={styles['error-title']}>
                     {labels.loadMoreFailed}
                   </div>
                   {value.reason && (
-                    <div className={styles['error-reason']}>{value.reason}</div>
+                    <Tooltip title={value.reason} overflowOnly>
+                      <div className={styles['error-reason']}>
+                        {value.reason}
+                      </div>
+                    </Tooltip>
                   )}
                 </div>
               </div>

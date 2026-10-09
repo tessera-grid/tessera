@@ -14,6 +14,7 @@ import * as columnsResizingDragging from '../DataGrid.Columns.ResizingDragging.s
 import * as columnsSorting from '../DataGrid.Columns.Sorting.stories'
 import * as columnsVisibility from '../DataGrid.Columns.Visibility.stories'
 import * as core from '../DataGrid.Core.stories'
+import * as coreTextOverflow from '../DataGrid.Core.TextOverflow.stories'
 import * as dataInfiniteScroll from '../DataGrid.Data.InfiniteScroll.stories'
 import * as coreSizing from '../DataGrid.Core.Sizing.stories'
 import * as exportStories from '../DataGrid.Export.stories'
@@ -45,6 +46,7 @@ export const composed = {
   ...composeStories(columnsSorting),
   ...composeStories(columnsVisibility),
   ...composeStories(core),
+  ...composeStories(coreTextOverflow),
   ...composeStories(dataInfiniteScroll),
   ...composeStories(coreSizing),
   ...composeStories(exportStories),

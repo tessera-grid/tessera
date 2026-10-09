@@ -28,6 +28,29 @@ export interface TooltipProps {
   side?: TooltipSide
   /** Задержка перед показом, мс */
   delayDuration?: number
+  /** Показывать, только когда текст триггера обрезан `…` (ADR 0083). */
+  overflowOnly?: boolean
+}
+
+/**
+ * Текст шире или выше своего блока. Ширина — по `Range`: Firefox округляет
+ * `scrollWidth` вверх. Высота у `line-clamp` — по двум сигналам: Chromium и Firefox
+ * дают скрытые строки в `scrollHeight`, WebKit — только в `Range`; допуск в полстроки
+ * гасит разницу между высотой глифов и `line-height`.
+ */
+const isOverflowing = (element: HTMLElement | null) => {
+  if (!element) return false
+  const range = document.createRange()
+  range.selectNodeContents(element)
+  const text = range.getBoundingClientRect()
+  const box = element.getBoundingClientRect()
+  const style = getComputedStyle(element)
+  const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2
+  return (
+    text.width > box.width + 1 ||
+    element.scrollHeight > element.clientHeight + 1 ||
+    text.height > box.height + line / 2
+  )
 }
 
 // Base UI-попап тянет floating-ui-позиционирование — держим его в отдельном чанке
@@ -87,6 +110,7 @@ export const Tooltip = ({
   disabled = false,
   side = 'top',
   delayDuration = 200,
+  overflowOnly = false,
 }: TooltipProps) => {
   const anchorRef = useRef<HTMLElement | null>(null)
   useEffect(trackInput, [])
@@ -113,6 +137,7 @@ export const Tooltip = ({
   )
 
   const show = () => {
+    if (overflowOnly && !isOverflowing(anchorRef.current)) return
     setMounted(true)
     clearTimeout(timer.current)
     if (delayDuration > 0) {
