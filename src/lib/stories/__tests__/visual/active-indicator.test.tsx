@@ -19,7 +19,7 @@ import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
 import { Bubble } from '../../../ui/Bubble'
 import { IconsProvider } from '../../../ui/icons'
-import { humanClick } from '../helpers'
+import { humanClick, revealCellButtons } from '../helpers'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -164,7 +164,7 @@ const blur = () => (document.activeElement as HTMLElement | null)?.blur()
 
 /** Нажать кнопку заголовка мышью — с наведением на заголовок, как человек. */
 const pressInHead = async (id: string, target: () => HTMLElement) => {
-  await userEvent.hover(head(id))
+  await revealCellButtons(head(id))
   await userEvent.hover(target())
   await humanClick(target())
 }
@@ -258,7 +258,7 @@ describe('Индикатор активного действия', () => {
     await waitForGrid()
     const sort = (id: string) => button(id, 'column-sort__button')
     await pressInHead('age', () => sort('age'))
-    await userEvent.hover(head('name'))
+    await revealCellButtons(head('name'))
     await userEvent.keyboard('{Shift>}')
     await userEvent.click(sort('name'))
     await userEvent.keyboard('{/Shift}')
@@ -316,7 +316,7 @@ describe('Индикатор активного действия', () => {
       .toBe('Column options, 1 active')
     blur()
     await userEvent.unhover(head('age'))
-    await userEvent.hover(head('age'))
+    await revealCellButtons(head('age'))
     await userEvent.hover(kebab('age'))
     await expect.poll(tooltipShown('Column options')).toBe(true)
     await screen.unmount()

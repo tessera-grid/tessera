@@ -7,7 +7,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnVisibility } from '../../../plugins/columnVisibility'
-import { Stories } from '../helpers'
+import { Stories, revealCellButtons } from '../helpers'
 import axe from 'axe-core'
 
 import { AXE_OPTIONS } from './a11y-helpers'
@@ -93,6 +93,7 @@ const menuItem = (text: string) =>
   )
 const openKebab = async (id: string) => {
   await userEvent.keyboard('{Escape}')
+  await revealCellButtons(kebabOf(id)!.closest('.data-grid__head-cell')!)
   await userEvent.click(kebabOf(id)!)
   await expect
     .poll(() => document.querySelectorAll('[role="menuitem"]').length)

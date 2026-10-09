@@ -10,6 +10,7 @@ import {
   headCells,
   renderGrid,
   humanClick,
+  revealCellButtons,
 } from '../helpers'
 import {
   AXE_OPTIONS,
@@ -228,6 +229,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     await expect.poll(live).toBe(DEFAULT_LABELS.announceLoaded(5))
 
     // Сортировка.
+    await revealCellButtons(sortButton.closest('.data-grid__head-cell')!)
     await userEvent.click(sortButton)
     await expect.poll(live).toMatch(/^Sorted by .+, (ascending|descending)$/)
     expect(live()).toContain(

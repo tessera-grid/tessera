@@ -23,6 +23,17 @@
     var(--tsr-comp-reveal-transition), var(--tsr-comp-reveal-size-transition);
 }
 
+/* Во время прокрутки ячейки под курсором сменяются каждый кадр: ширина — мгновенно. */
+.data-grid__container[data-scrolling] .cell__button {
+  transition: var(--tsr-comp-reveal-transition);
+}
+
+.data-grid__container[data-scrolling]
+  .data-grid__head-cell
+  .data-grid__cell-wrapper-content {
+  transition: none;
+}
+
 /* Скрытие hidden-кнопок ячейки */
 
 .data-grid__head-cell .cell__button--hidden:not([data-button-active='true']),

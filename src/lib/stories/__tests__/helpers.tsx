@@ -22,6 +22,24 @@ export const HUMAN_PRESS_MS = 100
 export const humanClick = (element: Element) =>
   userEvent.click(element, { delay: HUMAN_PRESS_MS })
 
+/**
+ * Навести на ячейку и дождаться, пока её скрытые кнопки доедут до своей ширины
+ * (ADR 0076): клик по кнопке посреди раскрытия уходит мимо. Бесконечные анимации
+ * (кольцо ожидания) не ждём.
+ */
+export const revealCellButtons = async (cell: Element) => {
+  await userEvent.hover(cell)
+  await new Promise(resolve => requestAnimationFrame(resolve))
+  await Promise.all(
+    cell
+      .getAnimations({ subtree: true })
+      .filter(
+        animation => animation.effect?.getTiming().iterations !== Infinity,
+      )
+      .map(animation => animation.finished.catch(() => undefined)),
+  )
+}
+
 /** Stable DOM selectors — class names / roles are part of the component contract. */
 export const SEL = {
   scroller: '.data-grid__container',

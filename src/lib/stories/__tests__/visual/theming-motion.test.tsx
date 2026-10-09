@@ -81,6 +81,36 @@ const sampled = async (): Promise<[string, HTMLElement][]> => {
 
 const list = (value: string) => value.split(',').map(part => part.trim())
 
+/**
+ * Ячейка в видимой области и прокрутка улеглась: наведение Playwright не прокрутит
+ * грид, и раскрытие кнопок идёт плавно, а не как во время прокрутки (RW3).
+ */
+const pointer = commands as unknown as {
+  realMouseMove: (from: object, to: object, steps?: number) => Promise<void>
+}
+
+/** Настоящее движение мыши к центру элемента: в отличие от `hover`, грид не прокручивает. */
+const moveMouseTo = async (element: Element) => {
+  const rect = element.getBoundingClientRect()
+  await pointer.realMouseMove(
+    { x: 1, y: 1 },
+    { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+    4,
+  )
+}
+
+const settleIntoView = async (cell: Element) => {
+  cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  // Событие прокрутки приходит кадром позже самой прокрутки.
+  for (let i = 0; i < 2; i++) {
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+  const scroller = cell.closest('.data-grid__container')!
+  await expect
+    .poll(() => scroller.hasAttribute('data-scrolling'), { timeout: 2000 })
+    .toBe(false)
+}
+
 describe('Motion contract', () => {
   test('MO1 every transition is built from the motion tokens: one duration, the shared easing (or the entrance easing)', async () => {
     await renderAll()
@@ -227,7 +257,8 @@ describe('Motion contract', () => {
           .getBoundingClientRect().width
         expect(wrapper.getBoundingClientRect().width, `${name} hidden`).toBe(0)
 
-        await userEvent.hover(wrapper.closest(cellSelector)!)
+        await settleIntoView(wrapper.closest(cellSelector)!)
+        await moveMouseTo(wrapper.closest(cellSelector)!)
         await expect
           .poll(() => wrapper.getBoundingClientRect().width)
           .toBeGreaterThan(0)
@@ -238,6 +269,60 @@ describe('Motion contract', () => {
         await userEvent.hover(document.body)
       }
     } finally {
+      theme.style.removeProperty('--tsr-comp-motion-duration')
+    }
+  })
+
+  test('RW3 while the grid scrolls a hidden cell button opens to its full width at once, afterwards smoothly again', async () => {
+    await renderAll()
+    const theme = query('.data-grid-theme')[0]
+    const scroller = query('.data-grid__container')[0]
+    theme.style.setProperty('--tsr-comp-motion-duration', '10s')
+    const hiddenWrapper = () =>
+      query(
+        ".data-grid__body-cell .cell__button--hidden:not([data-button-active='true'])",
+      )[0]
+    // Прокрутка идёт всё время наведения: по пикселю туда-обратно.
+    let step = 1
+    const scrolling = setInterval(() => {
+      scroller.scrollTop += step
+      step = -step
+    }, 30)
+    try {
+      await expect
+        .poll(() => scroller.hasAttribute('data-scrolling'))
+        .toBe(true)
+      const wrapper = hiddenWrapper()
+      const full = wrapper
+        .querySelector('button')!
+        .getBoundingClientRect().width
+      await userEvent.hover(wrapper.closest('.data-grid__body-cell')!)
+      expect(scroller.hasAttribute('data-scrolling')).toBe(true)
+      expect(wrapper.getBoundingClientRect().width, 'while scrolling').toBe(
+        full,
+      )
+      clearInterval(scrolling)
+
+      await userEvent.hover(document.body)
+      const next = query(
+        ".data-grid__body-cell .cell__button--hidden:not([data-button-active='true'])",
+      ).find(
+        el =>
+          el !== wrapper &&
+          el.getBoundingClientRect().width === 0 &&
+          el.getBoundingClientRect().height > 0,
+      )!
+      await settleIntoView(next.closest('.data-grid__body-cell')!)
+      await moveMouseTo(next.closest('.data-grid__body-cell')!)
+      await expect
+        .poll(() => next.getBoundingClientRect().width)
+        .toBeGreaterThan(0)
+      expect(
+        next.getBoundingClientRect().width,
+        'after scrolling',
+      ).toBeLessThan(full)
+    } finally {
+      clearInterval(scrolling)
       theme.style.removeProperty('--tsr-comp-motion-duration')
     }
   })

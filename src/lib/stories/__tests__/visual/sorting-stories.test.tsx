@@ -1,7 +1,7 @@
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { bodyRows, humanClick } from '../helpers'
+import { bodyRows, humanClick, revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 
 // Дымовой тест истории «Sorting — option labels» (ADR 0063, OS12; по образцу ADR 0042):
@@ -25,6 +25,9 @@ describe('Демо-история Sorting', () => {
 
     // Первый клик — по убыванию (sortDescFirst таблицы): последний вариант — первым,
     // пустые — внизу (OS6).
+    await revealCellButtons(
+      sortButton('status').closest('.data-grid__head-cell')!,
+    )
     await humanClick(sortButton('status'))
     await expect.poll(() => firstRowText('status')).toBe('Lost')
     await humanClick(sortButton('status'))

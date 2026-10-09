@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import { bodyRows, humanClick } from '../helpers'
+import { bodyRows, humanClick, revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 
 // Дымовой тест демо-истории «Filtering — server» (ADR 0045, FL37; по образцу ADR 0042):
@@ -25,7 +25,7 @@ describe('Демо-история Filtering', () => {
     const head = document.querySelector<HTMLElement>(
       '.data-grid__head-cell[data-column-id="name"]',
     )!
-    await userEvent.hover(head)
+    await revealCellButtons(head)
     await humanClick(head.querySelector('.column-filter__button')!)
     const input = () =>
       document.querySelector<HTMLInputElement>('[data-testid="filter-value"]')
@@ -63,7 +63,7 @@ describe('Демо-история Filtering — dates', () => {
         const head = document.querySelector<HTMLElement>(
           `.data-grid__head-cell[data-column-id="${columnId}"]`,
         )!
-        await userEvent.hover(head)
+        await revealCellButtons(head)
         await humanClick(head.querySelector('.column-filter__button')!)
         await expect
           .poll(() => document.querySelector('[data-testid="filter-calendar"]'))
@@ -121,7 +121,7 @@ describe('Демо-истории Filtering — варианты', () => {
     const head = document.querySelector<HTMLElement>(
       `.data-grid__head-cell[data-column-id="${columnId}"]`,
     )!
-    await userEvent.hover(head)
+    await revealCellButtons(head)
     await humanClick(head.querySelector('.column-filter__button')!)
     await expect
       .poll(() => document.querySelector('[data-testid="filter-options"]'))

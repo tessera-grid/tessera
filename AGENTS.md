@@ -502,7 +502,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
       (TI-05… — статические инварианты токенов) —
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
-      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO6 — движение; RW1–RW2 — плавное раскрытие ширины кнопок ячейки и
+      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO6 — движение; RW1–RW3 — плавное раскрытие ширины кнопок ячейки, мгновенное во время прокрутки, и
       отступа под грип, [ADR 0076](docs/decisions/0076-smooth-cell-button-reveal.md)), `theming-popups` (PP1–PP8 — единый вид
       поповеров),
       [ADR 0017](docs/decisions/0017-ui-components.md)).

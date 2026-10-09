@@ -19,7 +19,7 @@ import {
   filteringColumns,
   makeFilteringData,
 } from '../../__mocks__/filteringData'
-import { bodyRows, humanClick, Stories } from '../helpers'
+import { bodyRows, humanClick, revealCellButtons, Stories } from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
 
 // Фильтрация (ADR 0045): кнопка фильтра в заголовке, панель условия, дебаунс,
@@ -75,7 +75,7 @@ const EDIT_COLUMNS = [
 const DRAG_HANDLE = '.drag__handler--column'
 
 const openFilter = async (columnId: string) => {
-  await userEvent.hover(headCell(columnId))
+  await revealCellButtons(headCell(columnId))
   await humanClick(filterButton(columnId)!)
   await expect.poll(panel).not.toBeNull()
 }
@@ -200,7 +200,7 @@ describe('Фильтрация — фильтры колонок', () => {
       headerActionMenuOptions: { mode: 'always' },
     })
     expect(filterButton('name')).toBeNull()
-    await userEvent.hover(headCell('name'))
+    await revealCellButtons(headCell('name'))
     // Кнопку берём после наведения: заглушку кебаба сменяет кнопка из ленивого чанка.
     await humanClick(
       headCell('name').querySelector<HTMLElement>(

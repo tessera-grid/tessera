@@ -15,6 +15,7 @@ import {
   pagination,
   rowSelection,
 } from '../../../plugins'
+import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 
 // Контракт единого вида поповеров (ADR 0017, PP1–PP3): кебаб, меню колонок, панель
@@ -88,7 +89,7 @@ const filterAnchor = (columnId: string) => {
 
 const openFilterPanel = async (columnId: string) => {
   // Скрытые кнопки заголовка проявляются по наведению — без него клик уходит мимо.
-  await userEvent.hover(
+  await revealCellButtons(
     query(`.data-grid__head-cell[data-column-id="${columnId}"]`)[0],
   )
   const anchor = filterAnchor(columnId)
@@ -112,6 +113,11 @@ const POPOVERS: Popover[] = [
   {
     name: 'action menu',
     open: async () => {
+      await revealCellButtons(
+        query('[aria-label="Column options"]')[0].closest(
+          '.data-grid__head-cell',
+        )!,
+      )
       await userEvent.click(query('[aria-label="Column options"]')[0])
       await expect
         .poll(() => query('[role="menuitem"]').length)

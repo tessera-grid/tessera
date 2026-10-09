@@ -50,6 +50,7 @@ import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
+import { ScrollingAttribute } from './ScrollingAttribute'
 import type { DataGridProps } from './dataGridTypes'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
@@ -317,6 +318,7 @@ export const DataGrid = ({
                   {showLinearProgress && (
                     <LinearProgress label={loadingLabel} />
                   )}
+                  <ScrollingAttribute getScrollElement={getScrollElement} />
                   {enableOverflowTooltip && (
                     <OverflowTooltip getScrollElement={getScrollElement} />
                   )}

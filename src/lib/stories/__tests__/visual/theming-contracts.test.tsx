@@ -16,6 +16,7 @@ import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 import { ToolbarButton } from '../../../ui/ToolbarButton'
+import { revealCellButtons } from '../helpers'
 import '../../../core/themeVariables/theme.css'
 import {
   type HeaderButtonKind,
@@ -218,7 +219,7 @@ describe('Style contract by component family', () => {
     const hovered = async (node: HTMLElement) => {
       // Кнопка шапки проявляется наведением на свой заголовок — как у человека.
       const head = node.closest<HTMLElement>('.data-grid__head-cell')
-      if (head) await userEvent.hover(head)
+      if (head) await revealCellButtons(head)
       await userEvent.hover(node)
       return node
     }
