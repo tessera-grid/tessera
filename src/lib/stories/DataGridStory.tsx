@@ -173,6 +173,7 @@ const StoryGrid = memo(
       enableToolbar: options.enableToolbar,
       enableStatusBar: options.enableStatusBar,
       enableAnnouncements: options.enableAnnouncements,
+      enableOverflowTooltip: options.enableOverflowTooltip,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.

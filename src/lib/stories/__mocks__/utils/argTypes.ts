@@ -165,6 +165,11 @@ export const enableAnnouncementsType = booleanControl(
   true,
 )
 
+export const enableOverflowTooltipType = booleanControl(
+  'Тултип с полным текстом у обрезанного многоточием текста ячейки (`enableOverflowTooltip`)',
+  true,
+)
+
 // --- Колонки -------------------------------------------------------------------
 
 export const enableColumnSortingType = booleanControl(

@@ -17,6 +17,7 @@ import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { ContextMenu } from './contextMenu/ContextMenu'
+import { OverflowTooltip } from './OverflowTooltip'
 import {
   DATA_GRID_THEME_CLASS,
   PortalThemeProvider,
@@ -114,6 +115,8 @@ export const DataGrid = ({
     | undefined
 
   const enableContextMenu = !!(table.options as any).enableContextMenu
+  const enableOverflowTooltip =
+    (table.options as any).enableOverflowTooltip !== false
   const renderVersion = ((table.options as any).pluginRenderVersion ??
     0) as number
   // Панели включают слоты плагинов; флаг их переопределяет (ADR 0046).
@@ -313,6 +316,9 @@ export const DataGrid = ({
                   {toolbar}
                   {showLinearProgress && (
                     <LinearProgress label={loadingLabel} />
+                  )}
+                  {enableOverflowTooltip && (
+                    <OverflowTooltip getScrollElement={getScrollElement} />
                   )}
                   {enableContextMenu && (
                     <ContextMenu

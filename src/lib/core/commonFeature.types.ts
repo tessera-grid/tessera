@@ -61,6 +61,8 @@ export interface CommonOptions {
   enableStatusBar?: boolean
   /** `false` — ядро не объявляет сортировку/выбор/копирование/загрузку. */
   enableAnnouncements?: boolean
+  /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
+  enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
   /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>

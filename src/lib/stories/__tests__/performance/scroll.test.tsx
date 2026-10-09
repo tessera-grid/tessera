@@ -1,7 +1,9 @@
+import { cleanup } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import {
   headCells,
+  measureRenderWork,
   measureScrollWork,
   recordPerf,
   renderGrid,
@@ -472,6 +474,83 @@ describe('Производительность прокрутки — индик
         sorted.p95Ms,
         `X p95=${sorted.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling})`,
       ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Тултип обрезанного текста (ADR 0075, OT11): 1000×1000 без плагинов, монтирование и
+// спокойная прокрутка с тултипом против той же выборки без него.
+describe('Производительность — тултип обрезанного текста', () => {
+  test(
+    'OT11: прокрутка и монтирование с тултипом обрезанного текста — в пределах потолков P11 и P3; база без тултипа в дашборде',
+    async () => {
+      const measure = async (enableOverflowTooltip: boolean) => {
+        const args = { ...LARGE, ...NO_PLUGINS, enableOverflowTooltip }
+        const mount = await measureRenderWork(
+          () => renderGrid(args),
+          () => headCells().length > 0,
+        )
+        await cleanup()
+        const screen = renderGrid(args)
+        await waitForGrid()
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { mount, y, x }
+      }
+
+      const base = await measure(false)
+      const withTooltip = await measure(true)
+      // Потолки — у P11 (спокойная прокрутка той же выборки) и P3 (её монтирование).
+      const ceiling = { y: 26, x: 40, mount: 350 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            ...(['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r[axis].p95Ms,
+              budgetMs: ceiling[axis],
+              pass: !gated || r[axis].p95Ms <= ceiling[axis],
+              ...r[axis],
+            })),
+            {
+              kind: 'load' as const,
+              metric: 'longest' as const,
+              valueMs: r.mount.longestMs,
+              budgetMs: ceiling.mount,
+              pass: !gated || r.mount.longestMs <= ceiling.mount,
+              ...r.mount,
+            },
+          ],
+        })
+      await record('OT11-base', 'без тултипа', base, false)
+      await record('OT11', 'с тултипом обрезанного текста', withTooltip, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          withTooltip[axis].p95Ms,
+          `${axis} p95=${withTooltip[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+      expect(
+        withTooltip.mount.longestMs,
+        `монтирование ${withTooltip.mount.longestMs.toFixed(0)}ms (база ${base.mount.longestMs.toFixed(0)}ms, потолок ${ceiling.mount})`,
+      ).toBeLessThanOrEqual(ceiling.mount)
     },
     PERF_TIMEOUT * 2,
   )

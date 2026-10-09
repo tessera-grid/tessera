@@ -69,6 +69,7 @@ export interface CreateDataGridOptions {
   enableToolbar?: boolean
   enableStatusBar?: boolean
   enableAnnouncements?: boolean
+  enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
   handlers?: Record<string, unknown>
 }
@@ -101,6 +102,8 @@ export type UseCreateTableParams<
   enableStatusBar?: boolean
   /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
   enableAnnouncements?: boolean
+  /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
+  enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
   defaultColumn?: { minSize?: number; maxSize?: number; size?: number }
 }
@@ -124,6 +127,7 @@ export const useCreateTable = <
   enableToolbar,
   enableStatusBar,
   enableAnnouncements,
+  enableOverflowTooltip,
   skeletonOptions,
   defaultColumn,
 }: UseCreateTableParams<TData, TEntries>) => {
@@ -292,6 +296,7 @@ export const useCreateTable = <
     enableToolbar,
     enableStatusBar,
     enableAnnouncements,
+    enableOverflowTooltip,
     skeletonOptions,
   }
 

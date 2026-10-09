@@ -24,6 +24,7 @@ import {
   dataCountType,
   dataNestingType,
   enableAnnouncementsType,
+  enableOverflowTooltipType,
   enableCellEditingType,
   enableCellSelectionType,
   enableColumnDraggingType,
@@ -110,6 +111,7 @@ export const dataGridArgTypes = {
     enableToolbar: enableToolbarType,
     enableStatusBar: enableStatusBarType,
     enableAnnouncements: enableAnnouncementsType,
+    enableOverflowTooltip: enableOverflowTooltipType,
     locale: localeType,
   }),
   ...inCategory(
@@ -240,6 +242,7 @@ export const dataGridDefaultArgs = {
   enableLoading: false,
   enableFooter: false,
   enableAnnouncements: true,
+  enableOverflowTooltip: true,
   locale: 'en',
 
   enableColumnSorting: false,

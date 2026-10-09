@@ -5,6 +5,7 @@ import * as accessibility from '../DataGrid.Accessibility.stories'
 import * as cellsContextMenu from '../DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditing from '../DataGrid.Cells.Editing.stories'
 import * as cellsKeyboard from '../DataGrid.Cells.Keyboard.stories'
+import * as cellsOverflowTooltip from '../DataGrid.Cells.OverflowTooltip.stories'
 import * as cellsSelection from '../DataGrid.Cells.Selection.stories'
 import * as columnsHeaderGroups from '../DataGrid.Columns.HeaderGroups.stories'
 import * as columnsHeaderMenu from '../DataGrid.Columns.HeaderMenu.stories'
@@ -31,6 +32,7 @@ export const composed = {
   ...composeStories(cellsContextMenu),
   ...composeStories(cellsEditing),
   ...composeStories(cellsKeyboard),
+  ...composeStories(cellsOverflowTooltip),
   ...composeStories(cellsSelection),
   ...composeStories(columnsHeaderGroups),
   ...composeStories(columnsHeaderMenu),
