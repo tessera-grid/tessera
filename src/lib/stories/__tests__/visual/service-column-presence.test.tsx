@@ -211,7 +211,9 @@ describe('Service column presence', () => {
   test('RA3: rowActions — no actions means no column; once an action is added the column is there', async () => {
     const view = await mount(<Stories.RowActionsWithoutActions />)
     expect(hasColumn(ROW_ACTIONS_COLUMN_ID)).toBe(false)
-    await view.rerender(<Stories.RowActionsWithoutActions rowActionsDemo />)
+    await view.rerender(
+      <Stories.RowActionsWithoutActions actionsDemo="basic" />,
+    )
     await expect.poll(() => hasColumn(ROW_ACTIONS_COLUMN_ID)).toBe(true)
   })
 })

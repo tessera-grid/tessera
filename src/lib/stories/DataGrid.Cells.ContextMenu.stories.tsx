@@ -36,7 +36,7 @@ export const ContextMenuAsync: StoryObj<StoryProps> = {
   args: {
     enableContextMenu: true,
     enableCellSelection: true,
-    asyncActionsDemo: true,
+    actionsDemo: 'async',
     columnCount: 8,
     dataCount: 40,
     containerHeight: 560,

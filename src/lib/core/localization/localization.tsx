@@ -166,6 +166,12 @@ export interface TableLabels {
   announceActionDone: (name: string) => string
   /** Объявление: действие меню отклонено (`error` — текст отказа) */
   announceActionFailed: (name: string, error: string) => string
+  /** Доступное имя строки «назад» раздела меню (ADR 0079) */
+  menuBack: (section: string) => string
+  /** Объявление: открыт раздел меню */
+  announceMenuSection: (section: string) => string
+  /** Строка раздела меню, чьи пункты не загрузились */
+  sectionLoadFailed: string
   /** Пункт «Копировать» (контекстное меню / действия выделения) */
   copy: string
   /** Тултип и доступное имя кнопки правки ячейки (`cellEditing`) */
@@ -361,6 +367,9 @@ export const DEFAULT_LABELS: TableLabels = {
   actionsFailed: names => `Failed: ${names}`,
   announceActionDone: name => `${name}: done`,
   announceActionFailed: (name, error) => `${name} failed: ${error}`,
+  menuBack: section => `Back, ${section}`,
+  announceMenuSection: section => `${section} menu`,
+  sectionLoadFailed: "Couldn't load",
   copy: 'Copy',
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',

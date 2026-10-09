@@ -33,6 +33,7 @@ import {
   SMALL,
 } from './perf-cases'
 import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
+import type { MenuAction, RowAction } from '../../../core/headerActions'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
@@ -1811,5 +1812,102 @@ describe('Экспорт в Excel', () => {
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// Вложенные разделы меню (ADR 0079, NM18): вход в раздел со 100 пунктами из кебаба
+// строки и возврат на корень — каждое в бюджете INP.
+describe('Отзывчивость — разделы меню', () => {
+  test(
+    'NM18: вход в раздел со 100 пунктами и возврат — в бюджете INP',
+    async () => {
+      const leaves: MenuAction[] = Array.from({ length: 100 }, (_, i) => ({
+        id: `perfLeaf${i}`,
+        icon: () => null,
+        label: () => `Destination ${i}`,
+        onSelect: () => {},
+      }))
+      const many: RowAction = {
+        id: 'perfSection',
+        slot: 'actionRowSlot',
+        order: 0,
+        icon: () => null,
+        label: () => 'Move to',
+        onSelect: () => {},
+        submenu: () => ({ title: 'Move to', items: leaves }),
+      }
+      renderGrid({
+        ...SMALL,
+        enableRowActions: true,
+        enableRowActionMenu: true,
+        extraPlugins: [{ id: 'perfSections', slotActions: [many] }],
+      } as Parameters<typeof renderGrid>[0])
+      await waitForGrid()
+
+      const menuItem = (label: string) =>
+        [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+          el => el.querySelector('[class*="itemLabel"]')?.textContent === label,
+        )
+      const backRow = () =>
+        document.querySelector<HTMLElement>('[data-menu-back]')
+      const kebab = () =>
+        document.querySelector<HTMLElement>('[aria-label^="Row options"]')
+      await expect.poll(kebab).not.toBeNull()
+      kebab()!.click()
+      await expect.poll(() => menuItem('Move to')).toBeTruthy()
+
+      const inSection = () => menuItem('Destination 99') !== undefined
+      const enter = await measureInteractionWork(
+        async () => menuItem('Move to')!.click(),
+        {
+          afterWarmup: async () => {
+            expect(inSection()).toBe(true)
+            backRow()!.click()
+            await expect.poll(inSection).toBe(false)
+          },
+        },
+      )
+      expect(inSection()).toBe(true)
+      const back = await measureInteractionWork(
+        async () => backRow()!.click(),
+        {
+          afterWarmup: async () => {
+            expect(inSection()).toBe(false)
+            menuItem('Move to')!.click()
+            await expect.poll(inSection).toBe(true)
+          },
+        },
+      )
+      expect(inSection()).toBe(false)
+
+      for (const [id, label, result] of [
+        ['NM18', 'вход в раздел со 100 пунктами', enter],
+        ['NM18-back', 'возврат из раздела со 100 пунктами', back],
+      ] as const) {
+        await recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '30×500',
+          plugins: 'rowActions',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: result.longestMs,
+              budgetMs: INTERACTION_BUDGET_MS,
+              pass: result.longestMs <= INTERACTION_BUDGET_MS,
+              ...result,
+            },
+          ],
+        })
+        expect
+          .soft(result.longestMs, `${id} longest`)
+          .toBeLessThanOrEqual(INTERACTION_BUDGET_MS)
+      }
+    },
+    PERF_TIMEOUT,
   )
 })

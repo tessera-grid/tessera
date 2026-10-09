@@ -3,7 +3,7 @@
 // проверку доступности, ожидание, причину блокировки (галочка «уже сделано», замок
 // «запрещено») и отказ действия или проверки — значком у правого края, текст в тултипе
 // (ADR 0078).
-import { useId } from 'react'
+import { type KeyboardEvent, useId, useReducer } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
 import { Check } from 'lucide-react'
@@ -11,6 +11,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { useActionStatus } from './useActionStatus'
+import type { MenuSections } from './useMenuSections'
 import {
   type ActionStatus,
   type ActionStatusEntry,
@@ -50,6 +51,10 @@ export interface ActionMenuItemsProps {
   close?: () => void
   /** Пункт действия с панелью открывает её вместо `onSelect`. */
   onOpenPanel?: (action: SlotAction) => void
+  /** Разделы меню (ADR 0079): вход, возврат, загрузка заранее. */
+  sections?: Pick<MenuSections, 'enter' | 'back' | 'preload'>
+  /** Умолчание раздела: `false` — выбор не закрывает меню (ADR 0079). */
+  closeOnSelect?: boolean
 }
 
 interface ItemProps {
@@ -61,6 +66,11 @@ interface ItemProps {
   onClick: () => void
   closeOnClick: boolean
   preload?: () => void
+  /** Пункт-раздел: шеврон и `hint`, `aria-haspopup`. */
+  section?: boolean
+  /** Флажок меню: пункт с `active`, не закрывающий меню. */
+  checkbox?: boolean
+  onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void
 }
 
 const ActionMenuItem = ({
@@ -72,9 +82,17 @@ const ActionMenuItem = ({
   onClick,
   closeOnClick,
   preload,
+  section = false,
+  checkbox = false,
+  onKeyDown,
 }: ItemProps) => {
   const labels = useLocalization()
-  const { actionFailed: FailedIcon, actionBlocked: BlockedIcon } = useIcons()
+  const {
+    actionFailed: FailedIcon,
+    actionBlocked: BlockedIcon,
+    submenu: SubmenuIcon,
+  } = useIcons()
+  const hint = section ? action.hint?.(context, labels) : undefined
   const descriptionId = useId()
 
   const running = !!entry?.pending
@@ -113,11 +131,24 @@ const ActionMenuItem = ({
       onClick={onClick}
       onPointerEnter={preload}
       onFocus={preload}
+      onKeyDown={onKeyDown}
+      aria-haspopup={section ? 'menu' : undefined}
+      // Только у флажка: `role={undefined}` перебил бы роль menuitem от Base UI.
+      {...(checkbox && {
+        role: 'menuitemcheckbox',
+        'aria-checked': !!item.active,
+      })}
+      data-action-id={action.id}
     >
       <span className={styles.itemIcon} aria-hidden>
         {item.icon}
       </span>
       <span className={styles.itemLabel}>{item.label}</span>
+      {hint && (
+        <span className={styles.itemHint} aria-hidden>
+          {hint}
+        </span>
+      )}
       <span
         className={clsx(
           styles.itemCheck,
@@ -136,6 +167,8 @@ const ActionMenuItem = ({
           <FailedIcon width={14} height={14} />
         ) : locked ? (
           <BlockedIcon width={14} height={14} />
+        ) : section ? (
+          <SubmenuIcon width={14} height={14} />
         ) : (
           (block?.kind === 'done' || item.active) && (
             <Check width={14} height={14} />
@@ -171,8 +204,13 @@ export const ActionMenuItems = ({
   session,
   close,
   onOpenPanel,
+  sections,
+  closeOnSelect: sectionCloses,
 }: ActionMenuItemsProps) => {
   const labels = useLocalization()
+  // Состояние пунктов часто живёт у приложения: после выбора без закрытия меню
+  // перерисовывает пункты само.
+  const [, refresh] = useReducer((count: number) => count + 1, 0)
   const status = useActionStatus(
     (context as { table: unknown }).table,
     (value: ActionStatus) => value,
@@ -182,9 +220,12 @@ export const ActionMenuItems = ({
     ({ action, items, groupLabel, divided }) => {
       const slotAction = action as SlotAction
       const withPanel = !!slotAction.panel && !!onOpenPanel
-      const preload = slotAction.preload
-        ? () => preloadActionPanel(slotAction, context)
-        : undefined
+      const section = !!action.submenu && !!sections && !action.menuItems
+      const preload = section
+        ? () => sections!.preload(action)
+        : slotAction.preload
+          ? () => preloadActionPanel(slotAction, context)
+          : undefined
       // Разворот `menuItems` несёт свои признаки пунктов — синхронные по контракту.
       const availability = action.menuItems
         ? IDLE
@@ -192,15 +233,36 @@ export const ActionMenuItems = ({
       const entry = action.menuItems
         ? undefined
         : status[actionStatusKey(action, context)]
-      const select = withPanel
-        ? () => onOpenPanel!(slotAction)
-        : () => runMenuAction(action, context)
+      const keepOpen =
+        !section &&
+        !withPanel &&
+        (action.closeOnSelect ?? sectionCloses ?? true) === false
+      const select = section
+        ? () => sections!.enter(action)
+        : withPanel
+          ? () => onOpenPanel!(slotAction)
+          : keepOpen
+            ? () => {
+                runMenuAction(action, context)
+                refresh()
+              }
+            : () => runMenuAction(action, context)
+      const onKeyDown = sections
+        ? (event: KeyboardEvent<HTMLElement>) => {
+            if (event.key === 'ArrowRight' && section) {
+              event.preventDefault()
+              sections.enter(action)
+            } else if (event.key === 'ArrowLeft' && sections.back()) {
+              event.preventDefault()
+            }
+          }
+        : undefined
       // Проверка не удалась: нажатие проверяет заново и при «можно» выполняет действие.
       const recheck = () =>
         session?.recheck(action, context, check => {
           if (check.status !== 'done' || blockOf(check.result)) return
           select()
-          if (!withPanel) close?.()
+          if (!withPanel && !section) close?.()
         })
 
       return (
@@ -221,8 +283,13 @@ export const ActionMenuItems = ({
               context={context}
               availability={availability}
               entry={entry}
-              closeOnClick={!withPanel && !availability.checkFailed}
+              closeOnClick={
+                !withPanel && !section && !keepOpen && !availability.checkFailed
+              }
+              checkbox={keepOpen && !!action.active}
               preload={preload}
+              section={section}
+              onKeyDown={onKeyDown}
               onClick={
                 action.menuItems
                   ? item.onSelect

@@ -73,7 +73,11 @@ export const runMenuAction = (
   if (!isThenable(result) || !table) return
 
   const name = (labels: TableLabels) => action.label(ctx, labels)
-  writeActionStatus(table, status => ({ ...status, [key]: { pending: true } }))
+  const menu = keepError
+  writeActionStatus(table, status => ({
+    ...status,
+    [key]: { pending: true, action, menu },
+  }))
   Promise.resolve(result).then(
     () => {
       writeActionStatus(table, status => without(status, [key]))
@@ -82,7 +86,7 @@ export const runMenuAction = (
     (error: unknown) => {
       flashSeq += 1
       const entry: ActionStatusEntry = keepError
-        ? { failed: true, error, flash: flashSeq }
+        ? { failed: true, error, flash: flashSeq, action, menu }
         : { flash: flashSeq }
       writeActionStatus(table, status => ({ ...status, [key]: entry }))
       announceLabel(table, labels =>
@@ -102,15 +106,21 @@ export interface KebabStatus {
   flash?: number
 }
 
+/** Записи меню этой цели — корня и разделов (ADR 0079). */
+const menuEntriesOf = (status: ActionStatus, ctx: unknown) => {
+  const prefix = `${actionTarget(ctx)}|`
+  return Object.entries(status).filter(
+    ([key, entry]) => key.startsWith(prefix) && entry.menu,
+  )
+}
+
 export const kebabStatus = (
   status: ActionStatus,
-  actions: MenuAction[],
   ctx: unknown,
 ): KebabStatus => {
   const result: KebabStatus = { running: [], failed: [] }
-  for (const action of actions) {
-    const entry = status[actionStatusKey(action, ctx)]
-    if (!entry) continue
+  for (const [, entry] of menuEntriesOf(status, ctx)) {
+    const action = entry.action!
     if (entry.pending) result.running.push(action)
     if (entry.failed && !entry.seen) result.failed.push(action)
     if (entry.flash !== undefined) {
@@ -139,10 +149,12 @@ export const kebabLabel = (
 }
 
 /** Меню открыто: отказы его действий показаны — отметка с кебаба снимается. */
-export const markActionErrorsSeen = (actions: MenuAction[], ctx: unknown) => {
-  const keys = actions.map(action => actionStatusKey(action, ctx))
+export const markActionErrorsSeen = (ctx: unknown) => {
   const status = readActionStatus(tableOf(ctx))
-  if (!keys.some(key => status[key]?.failed && !status[key]?.seen)) return
+  const keys = menuEntriesOf(status, ctx)
+    .filter(([, entry]) => entry.failed && !entry.seen)
+    .map(([key]) => key)
+  if (keys.length === 0) return
   writeActionStatus(tableOf(ctx), prev => {
     const next = { ...prev }
     keys.forEach(key => {
@@ -153,11 +165,10 @@ export const markActionErrorsSeen = (actions: MenuAction[], ctx: unknown) => {
 }
 
 /** Меню закрыто: увиденные отказы убираются. */
-export const clearSeenActionErrors = (actions: MenuAction[], ctx: unknown) => {
-  const status = readActionStatus(tableOf(ctx))
-  const keys = actions
-    .map(action => actionStatusKey(action, ctx))
-    .filter(key => status[key]?.failed && status[key]?.seen)
+export const clearSeenActionErrors = (ctx: unknown) => {
+  const keys = menuEntriesOf(readActionStatus(tableOf(ctx)), ctx)
+    .filter(([, entry]) => entry.failed && entry.seen)
+    .map(([key]) => key)
   if (keys.length > 0) {
     writeActionStatus(tableOf(ctx), prev => without(prev, keys))
   }

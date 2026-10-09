@@ -114,6 +114,9 @@ export interface TableIcons {
   actionFailed: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
   actionBlocked: IconComponent
+  /** Пункт-раздел меню и строка «назад» раздела (ADR 0079) */
+  submenu: IconComponent
+  menuBack: IconComponent
   /** Варианты осей панели экспорта (ADR 0074): строки и колонки */
   exportRowsAll: IconComponent
   exportRowsView: IconComponent
@@ -157,6 +160,8 @@ export const DEFAULT_ICONS: TableIcons = {
   saveFailed: CircleAlert,
   actionFailed: CircleAlert,
   actionBlocked: Lock,
+  submenu: ChevronRight,
+  menuBack: ChevronLeft,
   exportRowsAll: Rows3,
   exportRowsView: ListFilter,
   exportRowsPage: FileText,

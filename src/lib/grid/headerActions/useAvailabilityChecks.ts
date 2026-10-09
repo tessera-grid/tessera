@@ -14,11 +14,14 @@ import {
 export const useAvailabilityChecks = () => {
   const [checks, setChecks] = useState<AvailabilityChecks | null>(null)
   const session = useRef<AbortController | null>(null)
+  // Действия, уже проверенные в сессии: раздел при повторном входе не проверяется заново.
+  const checked = useRef(new Set<string>())
 
   const start = useCallback((actions: MenuAction[], context: unknown) => {
     if (session.current) return
     const controller = new AbortController()
     session.current = controller
+    checked.current = new Set(actions.map(action => action.id))
     setChecks(
       startAvailabilityChecks(
         actions,
@@ -66,9 +69,25 @@ export const useAvailabilityChecks = () => {
     [],
   )
 
+  /** Проверить пункты раздела, вошедшего в открытую сессию (ADR 0079). */
+  const extend = useCallback((actions: MenuAction[], context: unknown) => {
+    const controller = session.current
+    if (!controller) return
+    const fresh = actions.filter(action => !checked.current.has(action.id))
+    if (fresh.length === 0) return
+    fresh.forEach(action => checked.current.add(action.id))
+    const started = startAvailabilityChecks(
+      fresh,
+      context,
+      controller.signal,
+      (id, check) => setChecks(now => now && { ...now, [id]: check }),
+    )
+    setChecks(prev => prev && { ...prev, ...started })
+  }, [])
+
   useEffect(() => () => session.current?.abort(), [])
 
-  return { checks, start, stop, recheck }
+  return { checks, start, stop, recheck, extend }
 }
 
 export type AvailabilitySession = ReturnType<typeof useAvailabilityChecks>

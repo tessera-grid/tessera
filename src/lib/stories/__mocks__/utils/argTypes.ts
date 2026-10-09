@@ -335,14 +335,6 @@ export const rowActionMenuOptionsType = objectControl(
   "{ mode?: 'auto' | 'always'; threshold?: number }",
   DEFAULT_ROW_ACTION_MENU,
 )
-export const rowActionsDemoType = booleanControl(
-  'Демо-действия строки (правка, копия, удаление); выключено — плагин без действий',
-  true,
-)
-export const asyncActionsDemoType = booleanControl(
-  'Демо асинхронных действий: проверка доступности сервером, долгое удаление с отказом (ADR 0078)',
-  false,
-)
 export const rowDraggingEnableType = booleanControl(
   'Перетаскивание строк разрешено (`rowDragging({ enable })`)',
   true,

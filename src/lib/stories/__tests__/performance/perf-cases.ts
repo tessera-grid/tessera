@@ -19,7 +19,11 @@ import type { TesseraFeatureEntry } from '../../../core/features'
 import { setPluginState } from '../../../core/definePlugin'
 import { cellKey } from '../../../plugins/cellEditing/session'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns/actionColumnParams'
-import { type ActionStatus, actionStatusKey } from '../../../core/headerActions'
+import {
+  type ActionStatus,
+  type MenuAction,
+  actionStatusKey,
+} from '../../../core/headerActions'
 
 /** Небольшая выборка: умеренный грид, переполняющий обе оси. */
 export const SMALL = { columnCount: 30, dataCount: 500 } as const
@@ -104,12 +108,16 @@ export const actionStatusSeed = (rows: number): TesseraFeatureEntry => {
       const t = table as {
         getCoreRowModel: () => { rows: { id: string }[] }
         setActionStatus?: (updater: () => ActionStatus) => void
+        getSlotActions?: () => { actionRowSlot: MenuAction[] } | undefined
       }
       const available = t.getCoreRowModel().rows
       if (seeded || available.length === 0) {
         return
       }
       seeded = true
+      const action = t
+        .getSlotActions?.()
+        ?.actionRowSlot.find(entry => entry.id === 'delete')
       const status: ActionStatus = {}
       available.slice(0, rows).forEach((row, index) => {
         const key = actionStatusKey(
@@ -118,8 +126,14 @@ export const actionStatusSeed = (rows: number): TesseraFeatureEntry => {
         )
         status[key] =
           index % 2 === 0
-            ? { pending: true }
-            : { failed: true, error: new Error('Server down'), flash: 1 }
+            ? { pending: true, action, menu: true }
+            : {
+                failed: true,
+                error: new Error('Server down'),
+                flash: 1,
+                action,
+                menu: true,
+              }
       })
       t.setActionStatus?.(() => status)
     },

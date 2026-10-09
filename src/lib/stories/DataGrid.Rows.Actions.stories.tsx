@@ -19,14 +19,14 @@ export const RowActions: StoryObj<StoryProps> = {
 }
 
 /**
- * Плагин действий без единого действия: колонки действий нет (ADR 0050). Включите
- * `rowActionsDemo`, чтобы действия появились вместе с колонкой.
+ * Плагин действий без единого действия: колонки действий нет (ADR 0050). Колонку с
+ * действиями показывает история «Basic».
  */
 export const RowActionsWithoutActions: StoryObj<StoryProps> = {
   name: 'No actions',
   args: {
     enableRowActions: true,
-    rowActionsDemo: false,
+    actionsDemo: 'none',
   },
 }
 
@@ -58,8 +58,28 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
   args: {
     enableRowActions: true,
     enableRowActionMenu: true,
-    rowActionsDemo: false,
-    asyncActionsDemo: true,
+    actionsDemo: 'async',
+    dataCount: 30,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+}
+
+/**
+ * Вложенные разделы в кебабе строки и контекстном меню (ADR 0079) на операциях над
+ * записью: Status показывает текущее значение, Assign to грузит сотрудников с
+ * «сервера» и ведёт на третий уровень по командам, Labels — метки, которые расставляют
+ * по несколько: меню не закрывается после выбора, сохранение видно лоадером в пункте
+ * (первая загрузка падает — нажмите строку ошибки); Copy — что скопировать.
+ */
+export const RowActionsNested: StoryObj<StoryProps> = {
+  name: 'Nested sections',
+  args: {
+    enableRowActions: true,
+    enableRowActionMenu: true,
+    enableContextMenu: true,
+    actionsDemo: 'nested',
     dataCount: 30,
     containerHeight: 400,
     height: 300,

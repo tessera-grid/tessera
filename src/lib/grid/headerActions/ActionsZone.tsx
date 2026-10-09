@@ -71,7 +71,7 @@ export const ActionsZone = memo(
       key: `action-${action.id}`,
       node: action.panel ? (
         <ActionPanel action={action} context={context} variant={variant} />
-      ) : action.inlineAsMenu?.(context) ? (
+      ) : action.inlineAsMenu?.(context) || action.submenu ? (
         <ActionInlineMenu action={action} context={context} variant={variant} />
       ) : (
         <ActionButton action={action} context={context} variant={variant} />

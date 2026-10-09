@@ -64,6 +64,27 @@ export interface MenuAction<TCtx = any> {
   menuItems?: (ctx: TCtx, labels: TableLabels) => HeaderMenuItem[]
   /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */
   menuGroupLabel?: (labels: TableLabels) => string
+  /**
+   * Раздел: пункт ведёт на следующий уровень меню, `onSelect` не вызывается
+   * (ADR 0079).
+   */
+  submenu?: (ctx: TCtx, labels: TableLabels) => MenuSection<TCtx>
+  /** Значение пункта-раздела мелким текстом перед шевроном («Pin … Left»). */
+  hint?: (ctx: TCtx, labels: TableLabels) => string | undefined
+  /**
+   * `false` — выбор не закрывает меню (переопределяет умолчание раздела); пункт с
+   * `active` становится флажком меню (ADR 0079).
+   */
+  closeOnSelect?: boolean
+}
+
+/** Раздел меню (ADR 0079): пункты сразу или промисом — тогда со скелетом. */
+export interface MenuSection<TCtx = any> {
+  title: string
+  /** Умолчание для пунктов раздела: `false` — выбор не закрывает меню. */
+  closeOnSelect?: boolean
+  items:
+    MenuAction<TCtx>[] | ((signal: AbortSignal) => Promise<MenuAction<TCtx>[]>)
 }
 
 /**

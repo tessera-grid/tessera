@@ -34,6 +34,8 @@ const WITHOUT_CONTROL: Record<string, string> = {
   onCellEdit: 'колбэк',
   onEditCancel: 'колбэк',
   onConflict: 'колбэк',
+  actionsDemo:
+    'набор демо-действий задаёт история — у каждого набора своя история',
 }
 
 /** Ключи интерфейса `FeatureToggles` из исходника маппера. */

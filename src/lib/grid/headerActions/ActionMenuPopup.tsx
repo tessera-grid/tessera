@@ -6,6 +6,8 @@ import clsx from 'clsx'
 import { usePortalThemeClass } from '../../core/themeVariables'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
+import { ActionMenuSections } from './ActionMenuSections'
+import type { MenuSections } from './useMenuSections'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
@@ -19,6 +21,8 @@ interface ActionMenuPopupProps {
   close?: () => void
   /** Пункт действия с панелью открывает её вместо `onSelect`. */
   onOpenPanel?: (action: SlotAction) => void
+  /** Разделы меню (ADR 0079); без них — один уровень. */
+  sections?: MenuSections
   /** Куда вернуть фокус при закрытии (Base UI `finalFocus`). */
   finalFocus?: () => boolean
 }
@@ -29,6 +33,7 @@ export const ActionMenuPopup = ({
   session,
   close,
   onOpenPanel,
+  sections,
   finalFocus,
 }: ActionMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
@@ -44,14 +49,27 @@ export const ActionMenuPopup = ({
         <Menu.Popup
           className={clsx(themeClass, styles.popup)}
           finalFocus={finalFocus}
+          aria-label={
+            sections && sections.depth > 0 ? sections.level.title : undefined
+          }
         >
-          <ActionMenuItems
-            actions={actions}
-            context={context}
-            session={session}
-            close={close}
-            onOpenPanel={onOpenPanel}
-          />
+          {sections ? (
+            <ActionMenuSections
+              sections={sections}
+              context={context}
+              session={session}
+              close={close}
+              onOpenPanel={onOpenPanel}
+            />
+          ) : (
+            <ActionMenuItems
+              actions={actions}
+              context={context}
+              session={session}
+              close={close}
+              onOpenPanel={onOpenPanel}
+            />
+          )}
         </Menu.Popup>
       </Menu.Positioner>
     </Menu.Portal>

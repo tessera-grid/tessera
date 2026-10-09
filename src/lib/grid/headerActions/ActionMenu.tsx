@@ -9,6 +9,7 @@ import { Menu } from '@base-ui/react/menu'
 import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
+import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
@@ -19,6 +20,7 @@ import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { usePanelOpening } from './usePanelOpening'
 import { type KebabState, useMergedFlash } from './useKebabState'
+import { useMenuSections } from './useMenuSections'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -45,7 +47,12 @@ export const ActionMenu = ({
   errorFlash,
 }: ActionMenuProps) => {
   const { menu: MenuIcon } = useIcons()
+  const labels = useLocalization()
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
+  const { extend } = kebab.session
+  const sections = useMenuSections(actions, context, labels, undefined, items =>
+    extend(items, context),
+  )
   const triggerRef = useRef<HTMLButtonElement>(null)
   // Действие с панелью, открытое из меню: поповер у кнопки кебаба.
   const [panelAction, setPanelAction] = useState<SlotAction | null>(null)
@@ -67,9 +74,14 @@ export const ActionMenu = ({
       },
       () => onOpenChange(false),
     )
-  const onMenuOpenChange = (next: boolean) => {
+  const onMenuOpenChange = (next: boolean, details?: { reason?: string }) => {
+    // Escape в разделе — уровень выше, а не закрытие (ADR 0079).
+    if (!next && details?.reason === 'escape-key' && sections.back()) return
     if (next) panelTakesFocus.current = false
-    else opening.cancel()
+    else {
+      opening.cancel()
+      sections.abort()
+    }
     onOpenChange(next)
   }
 
@@ -107,7 +119,10 @@ export const ActionMenu = ({
       onOpenChange={onMenuOpenChange}
       onOpenChangeComplete={next => {
         onOpenChangeComplete(next)
-        if (!next) kebab.closed()
+        if (!next) {
+          kebab.closed()
+          sections.reset()
+        }
       }}
     >
       <Tooltip title={kebab.title}>
@@ -131,6 +146,7 @@ export const ActionMenu = ({
         actions={actions}
         context={context}
         session={kebab.session}
+        sections={sections}
         close={() => onMenuOpenChange(false)}
         onOpenPanel={openPanel}
         finalFocus={() => !panelTakesFocus.current}

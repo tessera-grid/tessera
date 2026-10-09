@@ -11,10 +11,9 @@ import type {
   ContextMenuAction,
   ContextMenuContext,
 } from '../../core/headerActions'
-import {
-  ActionMenuItems,
-  type ActionMenuItemsProps,
-} from '../headerActions/ActionMenuItems'
+import type { ActionMenuItemsProps } from '../headerActions/ActionMenuItems'
+import { ActionMenuSections } from '../headerActions/ActionMenuSections'
+import { useMenuSections } from '../headerActions/useMenuSections'
 
 import menuStyles from '../headerActions/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
@@ -28,6 +27,8 @@ export interface ContextMenuPopupProps {
   labels: TableLabels
   /** Сессия проверки доступности (ADR 0078). */
   session?: ActionMenuItemsProps['session']
+  /** Проверить пункты вошедшего раздела в сессии (ADR 0079). */
+  extendChecks?: (actions: ActionMenuItemsProps['actions']) => void
   onClose: () => void
 }
 
@@ -38,16 +39,26 @@ export const ContextMenuPopup = ({
   context,
   labels,
   session,
+  extendChecks,
   onClose,
 }: ContextMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
+  const sections = useMenuSections(
+    actions,
+    context,
+    labels,
+    undefined,
+    extendChecks,
+  )
   // Виртуальный якорь — точка курсора (нулевой прямоугольник у координат).
   const anchor = { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) }
 
   return (
     <Menu.Root
       open
-      onOpenChange={open => {
+      onOpenChange={(open, details) => {
+        // Escape в разделе — уровень выше, а не закрытие (ADR 0079).
+        if (!open && details.reason === 'escape-key' && sections.back()) return
         if (!open) {
           onClose()
         }
@@ -62,11 +73,13 @@ export const ContextMenuPopup = ({
           className={clsx(themeClass, menuStyles.positioner)}
         >
           <Menu.Popup
-            aria-label={labels.contextMenu}
+            aria-label={
+              sections.depth > 0 ? sections.level.title : labels.contextMenu
+            }
             className={clsx(themeClass, menuStyles.popup)}
           >
-            <ActionMenuItems
-              actions={actions}
+            <ActionMenuSections
+              sections={sections}
               context={context}
               session={session}
               close={onClose}

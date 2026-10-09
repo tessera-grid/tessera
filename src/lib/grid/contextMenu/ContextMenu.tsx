@@ -3,7 +3,7 @@
 // первом наведении на тело грида или фокусе внутри него, а правый клик до загрузки
 // открывает меню после неё (ADR 0061, LZ6–LZ10). Рендерится DataGrid'ом при активном
 // плагине contextMenu (`enableContextMenu`). ADR 0030.
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
@@ -110,7 +110,12 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   const { cancel, pending, request } = opening
   // Проверка доступности пунктов — с открытия до закрытия (ADR 0078).
   const session = useAvailabilityChecks()
-  const { start: startChecks } = session
+  const { start: startChecks, extend } = session
+  const openContext = state?.context
+  const extendContextChecks = useCallback(
+    (items: ContextMenuAction[]) => extend(items, openContext),
+    [extend, openContext],
+  )
 
   // Модуль меню — при первом наведении на тело грида или фокусе внутри него.
   useEffect(() => {
@@ -192,7 +197,7 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       const next = { x: event.clientX, y: event.clientY, actions, context }
       request(MENU_LOAD, () => {
         startChecks(actions, context)
-        markActionErrorsSeen(actions, context)
+        markActionErrorsSeen(context)
         setState(next)
       })
     }
@@ -215,9 +220,10 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         context={state.context}
         labels={labels}
         session={session}
+        extendChecks={extendContextChecks}
         onClose={() => {
           session.stop()
-          clearSeenActionErrors(state.actions, state.context)
+          clearSeenActionErrors(state.context)
           setState(null)
         }}
       />

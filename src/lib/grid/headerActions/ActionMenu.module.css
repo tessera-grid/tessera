@@ -86,3 +86,102 @@
     transform: rotate(360deg);
   }
 }
+
+/* Разделы меню (ADR 0079): окно следует размеру уровня переходом. */
+.sections {
+  position: relative;
+  /* clip, а не hidden: фокус пункта во въезжающем уровне не прокручивает окно. */
+  overflow: clip;
+  transition:
+    width var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    height var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+.level {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: calc(180px - 2 * var(--tsr-comp-popup-padding));
+}
+
+.ghostHost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.enterForward {
+  animation: sectionInFromEnd var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+.enterBack {
+  animation: sectionInFromStart var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+.leaveForward {
+  animation: sectionOutToStart var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing) forwards;
+}
+
+.leaveBack {
+  animation: sectionOutToEnd var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing) forwards;
+}
+
+@keyframes sectionInFromEnd {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sectionInFromStart {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes sectionOutToStart {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes sectionOutToEnd {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.backItem {
+  color: var(--tsr-comp-control-color);
+}
+
+/* Разделитель под строкой «назад» — как между подгруппами (.divided). */
+.separator {
+  flex-shrink: 0;
+  height: 1px;
+  margin: 4px 0;
+  background-color: var(--tsr-comp-popup-divider-color);
+}
+
+.itemHint {
+  font-size: 0.75rem;
+  color: var(--tsr-comp-control-color);
+  white-space: nowrap;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--tsr-comp-popup-item-min-height);
+  padding: 0 8px;
+}

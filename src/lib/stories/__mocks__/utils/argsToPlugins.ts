@@ -40,6 +40,10 @@ import {
   asyncContextActionsDemo,
   asyncRowActionsDemo,
 } from '../plugins/asyncActionsDemo/asyncActionsDemo'
+import {
+  nestedContextActionsDemo,
+  nestedRowActionsDemo,
+} from '../plugins/nestedActionsDemo/nestedActionsDemo'
 
 // Слой демо/тестов: композирует presence-based plugins из boolean-тумблеров
 // Storybook через настоящие фабрики. Тумблер → `enabled` фабрики; ядро само
@@ -126,9 +130,12 @@ export interface FeatureToggles {
   rowExpandingTreeLines?: boolean
   /** Режим колонки действий (ADR 0050). */
   /** `false` — демо-действий строки нет (колонка действий без надобности, ADR 0050). */
-  rowActionsDemo?: boolean
-  /** Демо асинхронных действий строки и контекстного меню (ADR 0078). */
-  asyncActionsDemo?: boolean
+  /**
+   * Набор демо-действий строки и контекстного меню — один за раз: `basic` (по
+   * умолчанию), `async` (ADR 0078), `nested` (ADR 0079), `none` — без действий.
+   * Задаёт история: каждый набор — свой сценарий, в панели Controls его нет.
+   */
+  actionsDemo?: 'basic' | 'async' | 'nested' | 'none'
   rowActionsColumn?: RowActionsPluginOptions['column']
   /** Предикат правки аргументом плагина (`cellEditing({ canEdit })`). */
   cellEditingCanEdit?: CellEditingOptions['canEdit']
@@ -239,15 +246,22 @@ export const argsToPlugins = (o: FeatureToggles) => {
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {
       id: 'rowActionsDemo',
-      enabled: o.rowActionsDemo !== false,
+      enabled: (o.actionsDemo ?? 'basic') === 'basic',
       slotActions: rowActionsDemo,
     },
     // Асинхронные действия (ADR 0078): проверка доступности и долгое действие.
     {
       id: 'asyncActionsDemo',
-      enabled: !!o.asyncActionsDemo,
+      enabled: o.actionsDemo === 'async',
       slotActions: asyncRowActionsDemo,
       contextMenuActions: asyncContextActionsDemo,
+    },
+    // Вложенные разделы меню (ADR 0079).
+    {
+      id: 'nestedActionsDemo',
+      enabled: o.actionsDemo === 'nested',
+      slotActions: nestedRowActionsDemo,
+      contextMenuActions: nestedContextActionsDemo,
     },
   ] as const
 }

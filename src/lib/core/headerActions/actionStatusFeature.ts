@@ -10,8 +10,13 @@ import {
 } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import type { MenuAction } from './types'
 
 export interface ActionStatusEntry {
+  /** Действие записи — для имени на кебабе (пункт раздела в корне меню не виден). */
+  action?: MenuAction
+  /** Запущено из меню: состояние видно на кебабе. */
+  menu?: boolean
   /** Действие ждёт своего промиса. */
   pending?: boolean
   /** Отказ, который держит отметку на кебабе и иконку в пункте. */

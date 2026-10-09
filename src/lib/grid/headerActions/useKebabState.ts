@@ -52,7 +52,10 @@ export interface KebabState {
   failed: boolean
   flash?: number
   /** Сессия проверки доступности: итоги и повторная проверка пункта. */
-  session: Pick<ReturnType<typeof useAvailabilityChecks>, 'checks' | 'recheck'>
+  session: Pick<
+    ReturnType<typeof useAvailabilityChecks>,
+    'checks' | 'recheck' | 'extend'
+  >
   /** Наведение или фокус: начать проверку доступности. */
   intent: () => void
   /** Указатель или фокус ушли: без открытого меню проверка прерывается. */
@@ -73,7 +76,7 @@ export const useKebabState = (
   const labels = useLocalization()
   const session = useAvailabilityChecks()
   const status = useActionStatus(context.table, (value: ActionStatus) => value)
-  const kebab = kebabStatus(status, actions, context)
+  const kebab = kebabStatus(status, context)
   const openRef = useLatest(open)
   // Фокус, вернувшийся на кебаб после закрытия, — не намерение открыть снова.
   const [returning, setReturning] = useState(false)
@@ -81,7 +84,7 @@ export const useKebabState = (
   const openChange = (next: boolean) => {
     if (next) {
       session.start(actions, context)
-      markActionErrorsSeen(actions, context)
+      markActionErrorsSeen(context)
     } else {
       session.stop()
       setReturning(true)
@@ -92,7 +95,7 @@ export const useKebabState = (
   // Отказ, пришедший при открытом меню, виден в пункте — отметка на кебабе не нужна.
   const unseen = kebab.failed.length
   useEffect(() => {
-    if (open && unseen > 0) markActionErrorsSeen(actions, context)
+    if (open && unseen > 0) markActionErrorsSeen(context)
   }, [open, unseen, actions, context])
 
   return {
@@ -101,7 +104,11 @@ export const useKebabState = (
     running: kebab.running.length > 0,
     failed: kebab.failed.length > 0,
     flash: kebab.flash,
-    session: { checks: session.checks, recheck: session.recheck },
+    session: {
+      checks: session.checks,
+      recheck: session.recheck,
+      extend: session.extend,
+    },
     intent: () => {
       if (!returning) session.start(actions, context)
     },
@@ -110,6 +117,6 @@ export const useKebabState = (
       if (!openRef.current) session.stop()
     },
     openChange,
-    closed: () => clearSeenActionErrors(actions, context),
+    closed: () => clearSeenActionErrors(context),
   }
 }

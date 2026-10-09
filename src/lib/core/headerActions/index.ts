@@ -14,6 +14,7 @@ import type {
 import { readSyncDisabled } from './actionStatus'
 
 export * from './actionStatus'
+export * from './menuSections'
 export {
   actionStatusFeature,
   type ActionStatus,
@@ -38,6 +39,7 @@ export type {
   ActionPanelControls,
   DisabledResult,
   DisabledState,
+  MenuSection,
 } from './types'
 
 const noop = () => {}
