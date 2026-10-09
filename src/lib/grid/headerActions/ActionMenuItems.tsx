@@ -82,6 +82,8 @@ const ActionMenuItem = ({
   const failed = !!entry?.failed && !running
   const checkFailed = availability.checkFailed && !pending
   const block = pending ? undefined : availability.block
+  // Замок без текста ничего не объясняет — запрет без причины только гасит пункт.
+  const locked = block?.kind === 'forbidden' && !!block.reason
   // Одиночный пункт: доступность — итог сессии; разворот `menuItems` — свои признаки.
   const disabled =
     (action.menuItems ? !!item.disabled : availability.disabled) || running
@@ -120,19 +122,19 @@ const ActionMenuItem = ({
         className={clsx(
           styles.itemCheck,
           (failed || checkFailed) && styles.itemFailed,
-          block?.kind === 'forbidden' && styles.itemBlocked,
+          locked && styles.itemBlocked,
         )}
         aria-hidden
         data-action-failed={failed || undefined}
         data-check-failed={checkFailed || undefined}
         data-action-done={block?.kind === 'done' || undefined}
-        data-action-blocked={block?.kind === 'forbidden' || undefined}
+        data-action-blocked={locked || undefined}
       >
         {pending ? (
           <span className={styles.itemSpinner} data-item-spinner="" />
         ) : failed || checkFailed ? (
           <FailedIcon width={14} height={14} />
-        ) : block?.kind === 'forbidden' ? (
+        ) : locked ? (
           <BlockedIcon width={14} height={14} />
         ) : (
           (block?.kind === 'done' || item.active) && (

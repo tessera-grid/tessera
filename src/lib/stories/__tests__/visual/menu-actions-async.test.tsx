@@ -387,7 +387,9 @@ describe('Проверка доступности пунктов', () => {
     expect(probe.checks.length).toBe(before + 1)
     expect(isPending(item('Archive'))).toBe(true)
     expect(items().length).toBeGreaterThan(0)
-    probe.lastCheck('archive').answer.resolve({ kind: 'forbidden' })
+    probe
+      .lastCheck('archive')
+      .answer.resolve({ kind: 'forbidden', reason: 'No rights' })
     await expect
       .poll(() => item('Archive')!.querySelector('[data-action-blocked]'))
       .not.toBeNull()
@@ -462,7 +464,7 @@ describe('Закрытие меню', () => {
 })
 
 describe('Причина блокировки и клавиатура', () => {
-  test('MI6: причина «запрещено» (true или kind forbidden) — замок у правого края на месте галочки, пункт заблокирован', async () => {
+  test('MI6: причина «запрещено» с текстом — замок у правого края на месте галочки; без текста (true или forbidden без reason) — пункт заблокирован без значка', async () => {
     const { probe } = await renderGrid()
     await openRowMenu()
     const locked = item('Locked')!
@@ -473,10 +475,20 @@ describe('Причина блокировки и клавиатура', () => {
     expect(locked.textContent).toBe('LLocked')
 
     probe.lastCheck('archive').answer.resolve(true)
-    await expect
-      .poll(() => item('Archive')!.querySelector('[data-action-blocked] svg'))
-      .not.toBeNull()
+    await expect.poll(() => isPending(item('Archive'))).toBe(false)
     expect(isDisabled(item('Archive'))).toBe(true)
+    expect(
+      item('Archive')!.querySelector('[class*="itemCheck"] svg'),
+    ).toBeNull()
+    await closeMenu()
+
+    await openRowMenu()
+    probe.lastCheck('archive').answer.resolve({ kind: 'forbidden' })
+    await expect.poll(() => isPending(item('Archive'))).toBe(false)
+    expect(isDisabled(item('Archive'))).toBe(true)
+    expect(
+      item('Archive')!.querySelector('[class*="itemCheck"] svg'),
+    ).toBeNull()
     expect(item('Edit')!.querySelector('[data-action-blocked]')).toBeNull()
     await closeMenu()
   })
