@@ -46,6 +46,11 @@
   background: transparent;
 }
 
+/* Угол, где сходятся полосы: без правила Chromium закрашивает его белым. */
+.table__container::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .table__container::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background-color: var(--tsr-comp-scrollbar-thumb);

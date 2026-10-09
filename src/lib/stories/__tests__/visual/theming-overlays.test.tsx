@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest'
 
 import type { ColorMode } from '../../../core/themeVariables'
 import { useCreateTable } from '../../../../lib/core/useCreateTable'
+import { DataGrid } from '../../../../lib/grid/DataGrid'
 import { OverlayBodyRow } from '../../../../lib/grid/OverlayBodyRow'
 import { OverlayHeadCell } from '../../../../lib/grid/OverlayHeadCell'
 import { getRowDraggableStyles } from '../../../../lib/plugins/rowDragging/getRowDraggableStyles'
@@ -154,5 +155,48 @@ describe('Theming matrix — DnD overlays & edges', () => {
     const darkV = resolveColor('--tsr-comp-scrollbar-thumb', true)
     expect(light).not.toBe('rgba(0, 0, 0, 0)')
     expect(light).not.toBe(darkV)
+  })
+
+  // TT-41: угол, где сходятся полосы прокрутки, — пустая область контейнера, как и
+  // дорожки: без своего правила Chromium закрашивает его белым квадратом. Headless
+  // Chromium тестов полосы прячет, а псевдоэлементы недоступны getComputedStyle (как
+  // TT-40), поэтому сверяем правила загруженных таблиц стилей.
+  test('TT-41 scrollbar corner of the grid container is transparent like the tracks', async () => {
+    const Grid = () => {
+      const table = useCreateTable({
+        columns: simpleColumns as never,
+        data: simpleData,
+      })
+      return <DataGrid table={table as never} height={200} />
+    }
+    await render(<Grid />)
+    const container = await expect
+      .poll(() => document.querySelector<HTMLElement>('.data-grid__container'))
+      .not.toBeNull()
+      .then(() => document.querySelector<HTMLElement>('.data-grid__container')!)
+    const pseudoBackground = (pseudo: string) =>
+      [...document.styleSheets]
+        .flatMap(sheet => {
+          try {
+            return [...sheet.cssRules]
+          } catch {
+            return []
+          }
+        })
+        .filter(
+          (rule): rule is CSSStyleRule =>
+            rule instanceof CSSStyleRule &&
+            rule.selectorText.endsWith(pseudo) &&
+            container.matches(rule.selectorText.slice(0, -pseudo.length)),
+        )
+        .map(rule => rule.style.backgroundColor || rule.style.background)
+    const transparent = (value: string) =>
+      value === 'transparent' || value === 'rgba(0, 0, 0, 0)'
+    expect(
+      pseudoBackground('::-webkit-scrollbar-track').some(transparent),
+    ).toBe(true)
+    expect(
+      pseudoBackground('::-webkit-scrollbar-corner').some(transparent),
+    ).toBe(true)
   })
 })
