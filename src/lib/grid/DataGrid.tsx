@@ -50,6 +50,7 @@ import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
+import { useRowHeights } from './useRowHeights'
 import { ScrollingAttribute } from './ScrollingAttribute'
 import type { DataGridProps } from './dataGridTypes'
 
@@ -135,6 +136,12 @@ export const DataGrid = ({
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const getScrollElement = useCallback(() => scrollableNodeRef.current, [])
+  // Ключ перечитывания токенов: тема и появление корня (без строк — ветка заглушки).
+  const heights = useRowHeights(
+    table,
+    wrapperRef,
+    `${colorMode}|${className}|${rows.length > 0}`,
+  )
 
   // Авто-прокрутка при drag-выделении ячеек у края/за пределами таблицы (инертно
   // без плагина cellSelection). См. core/cellSelectionAutoScroll.
@@ -191,6 +198,7 @@ export const DataGrid = ({
   const { virtualRows, bodyHeight } = useRowVirtualizer({
     table,
     getScrollElement,
+    rowHeight: heights.row,
   })
 
   const fastScrollStore = useFastScroll({ getScrollElement })
@@ -233,9 +241,10 @@ export const DataGrid = ({
   // переданный потребителем style. Дефолты токенов темы объявлены в theme.css.
   const wrapperStyles = {
     ...({
-      '--tsr-comp-head-height': `${headerGroupsDepth * 50 + headerGroupsDepth}px`,
+      '--tsr-comp-head-height': `${headerGroupsDepth * heights.head + headerGroupsDepth}px`,
       '--tsr-comp-body-height': `${bodyHeight}px`,
     } as CSSProperties),
+    ...heights.vars,
     ...draggableCssVariables,
     ...containerStyles,
     ...style,

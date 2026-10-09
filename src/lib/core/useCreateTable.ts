@@ -19,6 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
+import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
 import { getColumnsSignature, injectServiceColumns } from './createColumns'
 import {
@@ -49,11 +50,6 @@ import {
 import { useEffectiveState } from './effectiveState'
 import { useTableEffects } from './useTableEffects'
 
-const DEFAULT_COLUMN = {
-  minSize: 150,
-  maxSize: 750,
-}
-
 // Видимость служебных колонок сужается с первого рендера (ADR 0050). Константа: новое
 // значение на каждый рендер сбрасывало бы кэш сужения (SC11).
 const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
@@ -71,6 +67,9 @@ export interface CreateDataGridOptions {
   enableAnnouncements?: boolean
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
+  rowHeight?: number
+  headerHeight?: number
+  defaultColumn?: DefaultColumnSizing
   handlers?: Record<string, unknown>
 }
 
@@ -105,7 +104,12 @@ export type UseCreateTableParams<
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
-  defaultColumn?: { minSize?: number; maxSize?: number; size?: number }
+  /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
+  rowHeight?: number
+  /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
+  headerHeight?: number
+  /** Размеры колонок без своих; дополняет умолчания (`minSize` 48, `maxSize` 750). */
+  defaultColumn?: DefaultColumnSizing
 }
 
 const DEFAULT_ENTRIES = [] as const
@@ -129,6 +133,8 @@ export const useCreateTable = <
   enableAnnouncements,
   enableOverflowTooltip,
   skeletonOptions,
+  rowHeight,
+  headerHeight,
   defaultColumn,
 }: UseCreateTableParams<TData, TEntries>) => {
   // Состав набора — договор на время жизни таблицы (ADR 0039): добавленный позже
@@ -243,6 +249,17 @@ export const useCreateTable = <
     initial: INITIAL_EFFECTIVE_STATE,
   })
 
+  // По значениям: объект, собранный на каждый рендер, сбрасывал бы кэши колонок TanStack.
+  const resolvedDefaultColumn = useMemo(
+    () =>
+      resolveDefaultColumn({
+        size: defaultColumn?.size,
+        minSize: defaultColumn?.minSize,
+        maxSize: defaultColumn?.maxSize,
+      }),
+    [defaultColumn?.size, defaultColumn?.minSize, defaultColumn?.maxSize],
+  )
+
   const controlledState = {
     ...restState,
     ...effective.state,
@@ -258,7 +275,7 @@ export const useCreateTable = <
     getSubRows:
       getSubRows ??
       ((row: TData) => (row as { subRows?: TData[] }).subRows || []),
-    defaultColumn: defaultColumn ?? DEFAULT_COLUMN,
+    defaultColumn: resolvedDefaultColumn,
 
     // Фичевые опции плагинов (enableSorting и т.п.) — вливаются первыми, чтобы
     // явные поля ниже их не затирались.
@@ -298,6 +315,8 @@ export const useCreateTable = <
     enableAnnouncements,
     enableOverflowTooltip,
     skeletonOptions,
+    rowHeight,
+    headerHeight,
   }
 
   // Каст опций — компромисс динамической сборки (Q2): tableFeatures() валидирует

@@ -43,7 +43,12 @@
   наследует его от страницы: без этого в тёмной теме на странице без shadcn текст
   оставался тёмным на тёмном фоне.
 - Инлайн на обёртке остаются только РАНТАЙМ-переменные
-  (`--tsr-comp-head-height`, `--tsr-comp-body-height`, drag-офсеты).
+  (`--tsr-comp-head-height`, `--tsr-comp-body-height`, drag-офсеты) и токены высоты,
+  когда их задали пропы `rowHeight`/`headerHeight`.
+- **Высота строк и шапки** ([ADR 0077](../decisions/0077-row-height-and-default-column-width.md)):
+  `--tsr-comp-row-height` (50px) и `--tsr-comp-head-row-height` (по умолчанию — как
+  строки). Шапка переопределяет у себя `--tsr-comp-row-height` значением высоты шапки.
+  Тема может задать оба токена в CSS — грид прочтёт их для виртуализации.
 - **Рамка и тулбар** (ADR 0035): рамка грида — `--tsr-comp-frame-border-color` /
   `-border-width` / `-radius` (ширина `0` убирает рамку); тулбар —
   `--tsr-comp-toolbar-height` / `-padding-x` / `-gap` / `-bg` / `-divider-color`,

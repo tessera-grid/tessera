@@ -174,6 +174,9 @@ const StoryGrid = memo(
       enableStatusBar: options.enableStatusBar,
       enableAnnouncements: options.enableAnnouncements,
       enableOverflowTooltip: options.enableOverflowTooltip,
+      rowHeight: options.rowHeight,
+      headerHeight: options.headerHeight,
+      defaultColumn: options.defaultColumn,
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.

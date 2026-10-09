@@ -341,6 +341,11 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `reactivity.dom` (ST1 — перерисовка только подписчика среза,
       [ADR 0026](docs/decisions/0026-migrate-to-tanstack-v9.md)).
     - _Виртуализация:_ `virtualization` (V1–V11).
+    - _Высота строк и ширина колонок:_ `row-height` (RH1–RH6, RH9 — строки, шапка, токены
+      темы, 100 000 строк с первого кадра, смена на лету, PageUp/PageDown, содержимое без прокрутки при наименьшей высоте; CW2 —
+      `defaultColumn`), модульный `rowHeights` (RH7 — минимум, CW1 — слияние
+      умолчаний), перф RH8 — в `scroll`
+      ([ADR 0077](docs/decisions/0077-row-height-and-default-column-width.md)).
     - _Тултип обрезанного текста:_ `overflow-tooltip` (OT1–OT10 — тело, шапка, футер,
       сужение кнопками ячейки, клавиатурный фокус, кнопки, прокрутка и нажатие, правка
       и тач, уход из DOM, флаг, axe), перф OT11 — в `scroll`
@@ -602,7 +607,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     раскрытого дерева с линиями против того же дерева без них,
     [ADR 0058](docs/decisions/0058-tree-lines.md); AI10 — медленная горизонтальная
     прокрутка 1000×1000 с сортировкой по всем колонкам против той же выборки без неё,
-    [ADR 0062](docs/decisions/0062-active-action-indicator.md); OT11 — монтирование и
+    [ADR 0062](docs/decisions/0062-active-action-indicator.md); RH8 — спокойная прокрутка
+    1000×1000 при строках 40px против 50px,
+    [ADR 0077](docs/decisions/0077-row-height-and-default-column-width.md); OT11 — монтирование и
     спокойная прокрутка 1000×1000 с тултипом обрезанного текста против той же выборки без
     него, [ADR 0075](docs/decisions/0075-overflow-tooltip.md)).
 - **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →

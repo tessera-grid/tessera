@@ -56,7 +56,7 @@ describe('Ядро на TanStack — размеры и отступы', () => {
     // Явные размеры (seam columnsOverride) — сверяемся с поданными size, а не с
     // размерами дефолтного мока.
     renderGrid({
-      // Размеры в пределах дефолтного диапазона [minSize 150, maxSize 750] и
+      // Размеры в пределах дефолтного диапазона [minSize 48, maxSize 750] и
       // отличны от размеров дефолтного мока — чтобы тест доказывал использование
       // именно переданных size.
       columnsOverride: buildColumns([
@@ -93,6 +93,7 @@ describe('Ядро на TanStack — размеры и отступы', () => {
     const actionWrapper = actionCell.querySelector<HTMLElement>(
       '.data-grid__cell-wrapper-content',
     )!
-    expect(getComputedStyle(actionWrapper).padding).toBe('4px')
+    expect(getComputedStyle(actionWrapper).paddingLeft).toBe('4px')
+    expect(getComputedStyle(actionWrapper).paddingRight).toBe('4px')
   })
 })

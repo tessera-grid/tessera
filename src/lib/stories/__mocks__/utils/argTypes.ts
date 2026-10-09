@@ -11,6 +11,12 @@ import {
 } from '../../../../lib/plugins/pagination/registry'
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
+import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
+import {
+  DEFAULT_ROW_HEIGHT,
+  MIN_HEADER_HEIGHT,
+  MIN_ROW_HEIGHT,
+} from '../../../../lib/core/rowHeights'
 
 const STORY_PARAM = 'параметр истории'
 
@@ -131,6 +137,21 @@ export const numberMaxHeightType = numberControl(
 )
 export const showStubType = booleanControl(
   'Пустые данные: грид показывает заглушку «нет данных»',
+)
+export const rowHeightType = numberControl(
+  `Высота строк тела, футера и скелета (\`rowHeight\`), px; не ниже ${MIN_ROW_HEIGHT}`,
+  { min: MIN_ROW_HEIGHT, max: 120, step: 2 },
+  String(DEFAULT_ROW_HEIGHT),
+)
+export const headerHeightType = numberControl(
+  `Высота строки шапки (\`headerHeight\`), px; не ниже ${MIN_HEADER_HEIGHT}`,
+  { min: MIN_HEADER_HEIGHT, max: 120, step: 2 },
+  'как rowHeight',
+)
+export const defaultColumnType = objectControl(
+  'Размеры колонок без своих (`defaultColumn`): дополняет умолчания библиотеки',
+  '{ size?: number; minSize?: number; maxSize?: number }',
+  { size: 150, ...DEFAULT_COLUMN },
 )
 export const headerNestingType = radioControl(
   'Вложенность шапки: flat — плоская, nested — группы заголовков',

@@ -19,8 +19,10 @@
   justify-content: flex-end !important;
 }
 
+/* Только по горизонтали: по высоте содержимое центрируется, а отступ съедал бы место
+   кнопки при минимальной высоте строки (ADR 0077). */
 .cell__wrapper--small-padding {
-  padding: 4px !important;
+  padding: 0 4px !important;
 }
 
 .cell__wrapper--no-padding {

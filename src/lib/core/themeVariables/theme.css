@@ -204,6 +204,8 @@
 
   --tsr-comp-loader-height: 2px;
   --tsr-comp-row-height: 50px;
+  /* Высота строки шапки (ADR 0077): по умолчанию — как у строк тела. */
+  --tsr-comp-head-row-height: var(--tsr-comp-row-height);
 
   /* Шапка */
   --tsr-comp-head-bg: var(--tsr-sys-muted);

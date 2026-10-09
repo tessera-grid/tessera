@@ -63,6 +63,9 @@ export interface CommonOptions {
   enableAnnouncements?: boolean
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
+  /** Высота строк тела и шапки, px (ADR 0077). */
+  rowHeight?: number
+  headerHeight?: number
   skeletonOptions?: SkeletonOptions
   /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>

@@ -479,6 +479,71 @@ describe('Производительность прокрутки — индик
   )
 })
 
+// Высота строки (ADR 0077, RH8): 1000×1000 без плагинов, спокойная прокрутка при
+// строках 40px против той же выборки при 50px — в окне больше строк.
+describe('Производительность прокрутки — высота строки', () => {
+  test(
+    'RH8: прокрутка 1000×1000 при rowHeight 40 — в пределах потолков P11; база при 50px в дашборде',
+    async () => {
+      const measure = async (rowHeight: number) => {
+        const screen = renderGrid({ ...LARGE, ...NO_PLUGINS, rowHeight })
+        await waitForGrid()
+        await expect
+          .poll(() =>
+            Math.round(
+              document
+                .querySelector('.data-grid__body-row')!
+                .getBoundingClientRect().height,
+            ),
+          )
+          .toBe(rowHeight)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(50)
+      const compact = await measure(40)
+      const ceiling = { y: 26, x: 40 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('RH8-base', 'строки 50px', base, false)
+      await record('RH8', 'строки 40px', compact, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          compact[axis].p95Ms,
+          `${axis} p95=${compact[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Тултип обрезанного текста (ADR 0075, OT11): 1000×1000 без плагинов, монтирование и
 // спокойная прокрутка с тултипом против той же выборки без него.
 describe('Производительность — тултип обрезанного текста', () => {

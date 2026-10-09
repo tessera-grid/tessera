@@ -1,4 +1,6 @@
 .head {
+  /* Строки и ячейки шапки берут высоту шапки, а не строк тела (ADR 0077). */
+  --tsr-comp-row-height: var(--tsr-comp-head-row-height);
   display: grid;
   width: max-content;
   min-width: 100%;

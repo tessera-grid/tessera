@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
 
@@ -14,11 +14,14 @@ const ROWS_OVERSCAN = 5
 export interface RowVirtualizerParams {
   table: Table<any, any>
   getScrollElement: () => HTMLDivElement | null
+  /** Высота строки, px — оценка для ещё не замеренных строк (ADR 0077). */
+  rowHeight?: number
 }
 
 export const useRowVirtualizer = ({
   table,
   getScrollElement,
+  rowHeight = ESTIMATE_SIZE,
 }: RowVirtualizerParams) => {
   // rowDragging — uncontrolled слайс плагина rowDragging: при отсутствии
   // плагина среза нет в store, поэтому читаем activeId проекцией с ?.
@@ -40,9 +43,7 @@ export const useRowVirtualizer = ({
     return index === -1 ? undefined : index
   }, [rowDraggingActiveId])
 
-  const getEstimateSize = useCallback(() => {
-    return ESTIMATE_SIZE
-  }, [])
+  const getEstimateSize = useCallback(() => rowHeight, [rowHeight])
 
   const getItemKey = useCallback(
     (index: number) => rowsRef.current[index].id,
@@ -65,6 +66,15 @@ export const useRowVirtualizer = ({
     overscan: ROWS_OVERSCAN,
     rangeExtractor,
   })
+
+  // Новая высота: замеры строк прежней высоты больше не верны.
+  const measuredHeight = useRef(rowHeight)
+  useLayoutEffect(() => {
+    if (measuredHeight.current !== rowHeight) {
+      measuredHeight.current = rowHeight
+      virtualizer.measure()
+    }
+  }, [rowHeight, virtualizer])
 
   return {
     virtualRows: virtualizer.getVirtualItems(),
