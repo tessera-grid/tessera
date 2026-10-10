@@ -159,42 +159,60 @@ export const Tooltip = ({
 
   const keepOpen = () => clearTimeout(timer.current)
 
-  if (disabled || !title) {
-    return children
-  }
+  const active = !disabled && !!title
+  // Заголовок появился у триггера, уже сфокусированного с клавиатуры (причина пришла
+  // ответом), — события focus больше не будет, показываем сразу.
+  useEffect(() => {
+    const anchor = anchorRef.current
+    if (
+      active &&
+      keyboardInput &&
+      anchor &&
+      anchor === document.activeElement
+    ) {
+      setMounted(true)
+      setOpen(true)
+    }
+  }, [active])
 
   const Trigger = children.type as ElementType
+  const handlers = active && {
+    onPointerEnter: (event: PointerEvent) => {
+      onPointerEnter?.(event)
+      show()
+    },
+    onPointerLeave: (event: PointerEvent) => {
+      onPointerLeave?.(event)
+      hideSoon()
+    },
+    onPointerDown: (event: PointerEvent) => {
+      onPointerDown?.(event)
+      hide()
+    },
+    onFocus: (event: FocusEvent) => {
+      onFocus?.(event)
+      // Только фокус с клавиатуры: фокус от нажатия мышью или возвращённый после
+      // закрытия меню подсказку не открывает — указатель может быть уже далеко.
+      if (keyboardInput) show()
+    },
+    onBlur: (event: FocusEvent) => {
+      onBlur?.(event)
+      hide()
+    },
+  }
 
+  // Один элемент триггера при любом заголовке: появление подсказки не перемонтирует
+  // его — иначе фокус на нём теряется (Firefox, WebKit). Ключ — только заданный:
+  // `key={null}` стал бы ключом «null».
   return (
     <>
       <Trigger
-        key={children.key}
+        {...(children.key === null ? {} : { key: children.key })}
         {...(children.props as object)}
         ref={setAnchor}
-        onPointerEnter={(event: PointerEvent) => {
-          onPointerEnter?.(event)
-          show()
-        }}
-        onPointerLeave={(event: PointerEvent) => {
-          onPointerLeave?.(event)
-          hideSoon()
-        }}
-        onPointerDown={(event: PointerEvent) => {
-          onPointerDown?.(event)
-          hide()
-        }}
-        onFocus={(event: FocusEvent) => {
-          onFocus?.(event)
-          // Только фокус с клавиатуры: фокус от нажатия мышью или возвращённый после
-          // закрытия меню подсказку не открывает — указатель может быть уже далеко.
-          if (keyboardInput) show()
-        }}
-        onBlur={(event: FocusEvent) => {
-          onBlur?.(event)
-          hide()
-        }}
+        {...handlers}
       />
-      {mounted && (
+      {active && mounted && (
         <Suspense fallback={null}>
           <TooltipPopup
             open={open}
