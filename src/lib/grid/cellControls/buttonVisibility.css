@@ -15,10 +15,18 @@
   transition: var(--tsr-comp-reveal-transition);
 }
 
-/* Кнопка ячейки раскрывает и ширину: `interpolate-size` даёт переход до `auto`. */
+/*
+ * Кнопка ячейки раскрывает и ширину: колонка grid переходит 0fr → 1fr во всех движках
+ * (ADR 0084, CB6). Обёртка не сжимается и не растёт — ширину ведёт только колонка:
+ * переход основы flex к `auto` без `interpolate-size` прыгает.
+ */
 .data-grid__head-cell .cell__button,
 .data-grid__body-cell .cell__button {
-  interpolate-size: allow-keywords;
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* Кнопка держит свою ширину, обёртка её обрезает. */
+  justify-items: start;
   transition:
     var(--tsr-comp-reveal-transition), var(--tsr-comp-reveal-size-transition);
 }
@@ -39,7 +47,7 @@
 .data-grid__head-cell .cell__button--hidden:not([data-button-active='true']),
 .data-grid__body-cell .cell__button--hidden:not([data-button-active='true']) {
   min-width: 0;
-  flex: 1;
+  grid-template-columns: minmax(0, 0fr);
   opacity: 0;
   overflow: hidden;
 }
@@ -55,21 +63,32 @@
 .data-grid__body-cell:hover:is([data-cell-interact='true'])
   .cell__button--hidden:not([data-button-active='true']),
 :is(.data-grid__head-cell, .data-grid__body-cell):focus-visible
+  .cell__button--hidden:not([data-button-active='true']),
+:root[data-tsr-input='keyboard']
+  :is(.data-grid__head-cell, .data-grid__body-cell):focus
   .cell__button--hidden:not([data-button-active='true']) {
   opacity: 1;
-  flex: auto;
+  grid-template-columns: minmax(0, 1fr);
   overflow: unset;
-  flex-shrink: 0;
-  /* Ширину ведёт только переход flex-basis, без скачка к ширине содержимого. */
   min-width: 0;
 }
 
 :is(.data-grid__head-cell, .data-grid__body-cell):has(:focus-visible)
   .cell__button--hidden:not([data-button-active='true']) {
   opacity: 1;
-  flex: auto;
+  grid-template-columns: minmax(0, 1fr);
   overflow: unset;
-  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Клавиатурный ввод по признаку на корне — Firefox не даёт :focus-visible фокусу от
+   скрипта после мыши (ADR 0084). */
+:root[data-tsr-input='keyboard']
+  :is(.data-grid__head-cell, .data-grid__body-cell):has(:focus)
+  .cell__button--hidden:not([data-button-active='true']) {
+  opacity: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: unset;
   min-width: 0;
 }
 
@@ -120,6 +139,12 @@
   opacity: 1;
 }
 
+:root[data-tsr-input='keyboard']
+  .data-grid__body-row:has(:focus)
+  .row__button--hidden {
+  opacity: 1;
+}
+
 /*
  * Чип лежит поверх контента ячеек — в том числе поверх их кнопок (колонка действий
  * прозрачна). Проявление прозрачностью обёртки делало бы чип полупрозрачным, и кнопка
@@ -137,7 +162,11 @@
 }
 
 .data-grid__body-row:not(
-    :is(:hover[data-row-interact='true'], :has(:focus-visible))
+    :is(
+      :hover[data-row-interact='true'],
+      :has(:focus-visible),
+      :root[data-tsr-input='keyboard'] :has(:focus)
+    )
   )
   .row__button--hidden
   > button {

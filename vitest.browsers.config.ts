@@ -2,11 +2,14 @@ import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 import base from './vitest.config'
+import { testCommands } from './vitest.commands'
 
 // Наборы, чьё поведение зависит от движка браузера, — в Firefox и WebKit (основной
 // `npm test` идёт в одном Chromium). Сессии правки: `blur` у удаляемого из DOM
 // редактора браузеры шлют по-разному (ADR 0040, SS3, SS7–SS9). Вход в грид с
 // клавиатуры: Firefox держит прокручиваемые области в порядке Tab (ADR 0021, KN32).
+// Кольцо фокуса после мыши: Firefox не даёт :focus-visible фокусу от скрипта (CB5).
+// Раскрытие кнопок ячейки без возможностей только Chromium (CB6).
 // Запуск: npm run test:browsers
 export default defineConfig({
   ...base,
@@ -15,6 +18,8 @@ export default defineConfig({
     include: [
       'src/lib/stories/__tests__/visual/action-sessions.test.tsx',
       'src/lib/stories/__tests__/visual/keyboard-entry.test.tsx',
+      'src/lib/stories/__tests__/visual/focus-modality.test.tsx',
+      'src/lib/stories/__tests__/visual/reveal-engines.test.tsx',
     ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,
@@ -23,6 +28,7 @@ export default defineConfig({
       headless: true,
       provider: playwright(),
       instances: [{ browser: 'firefox' }, { browser: 'webkit' }],
+      commands: testCommands,
     },
   },
 })

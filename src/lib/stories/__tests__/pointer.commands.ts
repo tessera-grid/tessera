@@ -17,6 +17,9 @@ const toPage = async (page: Page) => {
   return ({ x, y }: Point) => [box.x + x * scale, box.y + y * scale] as const
 }
 
+/** Пауза между последним движением и отпусканием кнопки — чуть больше кадра. */
+const HUMAN_RELEASE_MS = 32
+
 const moveInSteps = async (
   page: Page,
   at: (point: Point) => readonly [number, number],
@@ -43,6 +46,9 @@ export const realDrag: BrowserCommand<
   await page.mouse.move(...at(from))
   await page.mouse.down()
   await moveInSteps(page, at, from, to, steps)
+  // Человек отпускает кнопку не в том же кадре, что последнее движение; WebKit без
+  // паузы не успевает обновить цель броска (ADR 0084).
+  await page.waitForTimeout(HUMAN_RELEASE_MS)
   await page.mouse.up()
 }
 
@@ -81,4 +87,41 @@ export const realWheel: BrowserCommand<
     await new Promise(resolve => setTimeout(resolve, intervalMs))
   }
   await Promise.all(sent)
+}
+
+// Касание пальцем (ADR 0084, CB4): контекст с `hasTouch` — мобильная эмуляция.
+export const realTap: BrowserCommand<[at: Point]> = async ({ page }, at) => {
+  await page.touchscreen.tap(...(await toPage(page))(at))
+}
+
+// Жест прокрутки пальцем: Playwright двигает палец только через CDP Chromium. Шаги
+// идут с паузой в кадр — без неё Chromium не превращает касания в прокрутку.
+export const realSwipe: BrowserCommand<
+  [from: Point, to: Point, steps?: number]
+> = async ({ page }, from, to, steps = 12) => {
+  const at = await toPage(page)
+  const session = await page.context().newCDPSession(page)
+  const finger = (point: Point) => {
+    const [x, y] = at(point)
+    return [{ x, y, id: 1 }]
+  }
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: finger(from),
+  })
+  for (let step = 1; step <= steps; step++) {
+    await page.waitForTimeout(16)
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: finger({
+        x: from.x + ((to.x - from.x) * step) / steps,
+        y: from.y + ((to.y - from.y) * step) / steps,
+      }),
+    })
+  }
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await session.detach()
 }

@@ -70,6 +70,12 @@ const sampled = async (): Promise<[string, HTMLElement][]> => {
   await expect
     .poll(() => query('[data-testid="column-visibility-menu"]').length)
     .toBe(1)
+  // Поповер на первом кадре открытия ещё в начальном состоянии перехода.
+  const popover = query('[data-testid="column-visibility-menu"]')[0]
+  await expect
+    .poll(() => popover.hasAttribute('data-starting-style'))
+    .toBe(false)
+  await new Promise(resolve => requestAnimationFrame(resolve))
   return [
     ...SAMPLES.map(([name, selector]) => [name, query(selector)[0]] as const),
     ['popover', query('[data-testid="column-visibility-menu"]')[0]] as const,
@@ -149,7 +155,7 @@ describe('Motion contract', () => {
       'transition-duration',
     )
     expect(read(cell, 'transition-property')).toBe(
-      'opacity, flex-basis, padding-right, overflow',
+      'opacity, grid-template-columns, flex-basis, padding-right, overflow',
     )
     expect(read(chip, 'transition-property')).toBe('color, box-shadow')
     for (const el of [cell, chip]) {
@@ -296,7 +302,10 @@ describe('Motion contract', () => {
       const full = wrapper
         .querySelector('button')!
         .getBoundingClientRect().width
-      await userEvent.hover(wrapper.closest('.data-grid__body-cell')!)
+      // Ячейка всё время сдвигается прокруткой — Playwright не ждёт неподвижности.
+      await userEvent.hover(wrapper.closest('.data-grid__body-cell')!, {
+        force: true,
+      })
       expect(scroller.hasAttribute('data-scrolling')).toBe(true)
       expect(wrapper.getBoundingClientRect().width, 'while scrolling').toBe(
         full,

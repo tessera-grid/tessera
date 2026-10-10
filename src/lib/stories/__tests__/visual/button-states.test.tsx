@@ -269,7 +269,10 @@ describe('Button states: error flash', () => {
       </Theme>,
     )
     const start = performance.now()
-    // Заливка без перехода: контур сразу сплошной.
+    // Заливка без перехода: через кадр контур сплошной (анимация 0.01 мс).
+    for (let i = 0; i < 2; i++) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
     expect(ring().backgroundImage).toContain(flashColor())
     expect(fillOf(ring().backgroundImage)).toBe(1)
     for (const part of ring().transitionDuration.split(',')) {

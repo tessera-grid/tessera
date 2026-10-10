@@ -449,6 +449,10 @@ describe('WCAG 2.5.8 и 2.4.7 — размер целей и видимость 
     // Клавиатурная модальность: контур только при :focus-visible.
     await userEvent.keyboard('{ArrowRight}{ArrowLeft}')
     await expect.poll(() => document.activeElement).toBe(head())
+    // Контур рисует отрисовка после нажатия — дождаться её.
+    await expect
+      .poll(() => getComputedStyle(head()!, '::after').borderRightStyle)
+      .toBe('solid')
 
     const ring = getComputedStyle(head()!, '::after')
     const grip = getComputedStyle(head()!.querySelector(RESIZE_GRIP)!)

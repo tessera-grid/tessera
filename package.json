@@ -34,11 +34,13 @@
     "check:theme": "node scripts/check-theme-dist.mjs",
     "check:requirements": "node scripts/check-requirements.mjs",
     "check:tree-shaking": "node scripts/check-tree-shaking.mjs",
+    "check:browsers": "node scripts/check-browsers.mjs",
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:browsers": "vitest run --config vitest.browsers.config.ts",
+    "test:engines": "vitest run --config vitest.engines.config.ts",
     "perf": "vitest run --config vitest.perf.config.ts && node scripts/perf-report.mjs",
     "perf:report": "node scripts/perf-report.mjs",
     "lint": "eslint .",
@@ -52,6 +54,14 @@
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 128",
+    "safari >= 16.4",
+    "ios_saf >= 16.4",
+    "last 1 and_chr version"
+  ],
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@daypicker/react": "^10.0.2",
@@ -81,6 +91,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/browser-playwright": "^4.1.11",
     "axe-core": "^4.13.0",
+    "doiuse": "^6.0.6",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",

@@ -150,7 +150,7 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
     const headKebab = container.querySelector<HTMLElement>(
       `${DATA_HEAD_CELL} ${KEBAB}`,
     )!
-    await userEvent.click(headKebab)
+    await humanClick(headKebab)
     await expect
       .poll(() => menuTexts())
       .toEqual(
@@ -160,7 +160,7 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
     await expect.poll(() => menuTexts().length).toBe(0)
 
     // …and the row kebab independently opens the row actions.
-    await userEvent.click(actionCell.querySelector<HTMLElement>(ROW_KEBAB)!)
+    await humanClick(actionCell.querySelector<HTMLElement>(ROW_KEBAB)!)
     await expect
       .poll(() => menuTexts())
       .toEqual(expect.arrayContaining(['Edit', 'Duplicate', 'Delete']))

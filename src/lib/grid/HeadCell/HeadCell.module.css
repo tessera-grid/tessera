@@ -22,7 +22,9 @@
   }
 
   /* Псевдоэлемент, а не outline: иначе грип ширины у края перекрыл бы контур. */
-  &[data-kn-cell][data-kn-active='true']:focus-visible::after {
+  &[data-kn-cell][data-kn-active='true']:focus-visible::after,
+  :root[data-tsr-input='keyboard']
+    &[data-kn-cell][data-kn-active='true']:focus::after {
     content: '';
     position: absolute;
     inset: 0;

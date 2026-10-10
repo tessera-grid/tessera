@@ -136,7 +136,8 @@
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
-.dayButton:focus-visible {
+.dayButton:focus-visible,
+:root[data-tsr-input='keyboard'] .dayButton:focus {
   outline: none;
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }

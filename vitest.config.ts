@@ -4,20 +4,8 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import { axTree } from './src/lib/stories/__tests__/a11y.commands.ts'
-import { reducedMotion } from './src/lib/stories/__tests__/motion.commands.ts'
-import {
-  heldModuleRequests,
-  releaseModule,
-  routeModule,
-} from './src/lib/stories/__tests__/network.commands.ts'
-import {
-  realDrag,
-  realDragHold,
-  realMouseMove,
-  realMouseUp,
-  realWheel,
-} from './src/lib/stories/__tests__/pointer.commands.ts'
+import { MOBILE_SUITE } from './src/lib/stories/__tests__/engines'
+import { testCommands } from './vitest.commands'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame
@@ -66,6 +54,8 @@ export default defineConfig({
             ...configDefaults.exclude,
             'src/lib/__tests__/**',
             'src/lib/stories/__tests__/performance/**',
+            // Касания — только в мобильной эмуляции `test:engines` (ADR 0084, CB4).
+            MOBILE_SUITE,
           ],
           setupFiles: ['./vitest.setup.ts'],
           // Файлы гоняются по одному: визуальные тесты сравнивают скриншоты реального
@@ -80,20 +70,7 @@ export default defineConfig({
               launchOptions: { channel: 'chromium' },
             }),
             instances: [{ browser: 'chromium' }],
-            // Дерево доступности Chromium через CDP (ADR 0033); настоящий drag мышью (TQ3);
-            // задержка и отказ загрузки модуля (ADR 0061).
-            commands: {
-              axTree,
-              reducedMotion,
-              realDrag,
-              realDragHold,
-              realMouseMove,
-              realMouseUp,
-              realWheel,
-              routeModule,
-              releaseModule,
-              heldModuleRequests,
-            },
+            commands: testCommands,
           },
         },
       },

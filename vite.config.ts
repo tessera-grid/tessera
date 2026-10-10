@@ -5,6 +5,8 @@ import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 import tailwindcss from '@tailwindcss/vite'
 
+import { BUILD_TARGET } from './browser-targets'
+
 const resolvePath = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))
 
@@ -41,6 +43,8 @@ export default defineConfig({
       }),
   ],
   build: {
+    // Порог поддерживаемых браузеров (ADR 0084, CB1).
+    target: BUILD_TARGET,
     // Единый dist/style.css вместо пофайлового сплита
     cssCodeSplit: false,
     lib: {

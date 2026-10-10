@@ -162,7 +162,9 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Storybook (сборка)        | `npm run build-storybook`    | Статическая сборка; хороший headless smoke-тест.                   |
 | Тесты                     | `npm test`                   | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка. |
 | Тесты (watch)             | `npm run test:watch`         | Vitest watch mode.                                                 |
-| Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, ADR 0040).             |
+| Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, фокус, ADR 0040/0084). |
+| Все наборы в движках      | `npm run test:engines`       | Firefox, WebKit, эмуляция iPhone/Pixel (ADR 0084). ~25 мин.        |
+| Порог браузеров в CSS     | `npm run check:browsers`     | После `build`: `dist/style.css` в `browserslist` (ADR 0084).       |
 | Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
 | Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                    |
 
@@ -244,19 +246,27 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 сначала самый дешёвый и быстрый сигнал — и исправляйте то, что выявляет каждый шаг, прежде
 чем двигаться дальше:
 
-| #   | Барьер             | Команда                      | Блокирующий?                                |
-| --- | ------------------ | ---------------------------- | ------------------------------------------- |
-| 1   | Формат             | `npm run format:check`       | да                                          |
-| 2   | Линт               | `npm run lint`               | да                                          |
-| 3   | Типы               | `npm run typecheck`          | да                                          |
-| 4   | Требования ↔ тесты | `npm run check:requirements` | да                                          |
-| 5   | Тесты              | `npm test` _(vitest)_        | да — **см. примечание**                     |
-| 6   | Сборка библиотеки  | `npm run build`              | да                                          |
-| 7   | Tree-shaking       | `npm run check:tree-shaking` | да                                          |
-| 8   | Инварианты темы    | `npm run check:theme`        | да — **при правках темы**                   |
-| 9   | Движки браузеров   | `npm run test:browsers`      | да — **при правках сессий правки и фокуса** |
+| #   | Барьер               | Команда                      | Блокирующий?                                |
+| --- | -------------------- | ---------------------------- | ------------------------------------------- |
+| 1   | Формат               | `npm run format:check`       | да                                          |
+| 2   | Линт                 | `npm run lint`               | да                                          |
+| 3   | Типы                 | `npm run typecheck`          | да                                          |
+| 4   | Требования ↔ тесты   | `npm run check:requirements` | да                                          |
+| 5   | Тесты                | `npm test` _(vitest)_        | да — **см. примечание**                     |
+| 6   | Сборка библиотеки    | `npm run build`              | да                                          |
+| 7   | Tree-shaking         | `npm run check:tree-shaking` | да                                          |
+| 8   | Инварианты темы      | `npm run check:theme`        | да — **при правках темы**                   |
+| 9   | Движки браузеров     | `npm run test:browsers`      | да — **при правках сессий правки и фокуса** |
+| 10  | Порог браузеров      | `npm run check:browsers`     | да                                          |
+| 11  | Все наборы в движках | `npm run test:engines`       | перед публикацией в npm                     |
 
-Это весь барьер: **format · lint · ts · requirements · tests · build · tree-shaking**. Шаг 4
+Это весь барьер: **format · lint · ts · requirements · tests · build · tree-shaking ·
+browsers**. Шаг 10 (`check:browsers`) — после `build`: собранный `dist/style.css` не
+выходит за порог браузеров `browserslist` (doiuse плюс свои правила, исключения с
+причиной — `scripts/browsers.ts`, ADR 0084). Шаг 11 (`test:engines`) — не барьер, но
+обязателен перед публикацией: все визуальные наборы в Firefox и WebKit, кроме
+исключений с причиной (`src/lib/stories/__tests__/engines.ts`), и мобильная эмуляция;
+агент предлагает его при правках CSS-раскладки, фокуса и клавиатуры. Шаг 4
 (`check:requirements`) сверяет таблицы требований принятых ADR с именами тестов: у
 каждого ID ровно один тест, у каждого ID в имени теста есть требование, ID не
 определён в нескольких ADR. Расхождения на момент ADR 0043 — в
@@ -608,6 +618,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       каналы слота и сервисной колонки, внешнее локальное состояние), `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
       владельцев `cellSlot`); визуальный `cell-editing` (CE1–CE6 — кнопка, редактор,
       состояние правки у приложения), [ADR 0028](docs/decisions/0028-define-plugin-authoring-api.md).
+    - _Кроссбраузерность:_ модульные `browserTargets` (CB1–CB2 — порог `browserslist` и
+      цели сборки, проверка CSS), `engines` (CB3 — наборы и команды движков); `mobile`
+      (CB4 — только `test:engines`, эмуляция iPhone и Pixel), `focus-modality` (CB5 —
+      кольцо фокуса после мыши), `reveal-engines` (CB6 — раскрытие кнопок ячейки во
+      всех движках); CB5–CB6 идут и в `test:browsers`
+      ([ADR 0084](docs/decisions/0084-cross-browser-support.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы,
       [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).

@@ -125,7 +125,9 @@
  */
 
 /* Фокус на строке treegrid (ADR 0032, W16): контур по токену фокуса. */
-.body__row[data-kn-row][data-kn-active='true']:focus-visible {
+.body__row[data-kn-row][data-kn-active='true']:focus-visible,
+:root[data-tsr-input='keyboard']
+  .body__row[data-kn-row][data-kn-active='true']:focus {
   outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
   outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
 }

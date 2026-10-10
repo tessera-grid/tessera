@@ -136,6 +136,8 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     cell.focus()
     await userEvent.keyboard('{ArrowRight}{ArrowLeft}')
     const active = document.activeElement as HTMLElement
+    // Активную ячейку размечает отрисовка после нажатия — дождаться её.
+    await expect.poll(() => getComputedStyle(active).outlineStyle).toBe('solid')
     await inBothThemes(async () => {
       const style = getComputedStyle(active)
       expect(style.outlineStyle).toBe('solid')

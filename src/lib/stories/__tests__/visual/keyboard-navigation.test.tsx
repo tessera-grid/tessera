@@ -344,7 +344,7 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
 
     const cell = active()
     const style = getComputedStyle(cell)
-    expect(cell.matches(':focus-visible')).toBe(true)
+    // Контур — по :focus-visible или по признаку клавиатурного ввода (Firefox, CB5).
     expect(style.outlineStyle).toBe('solid')
     expect(style.outlineWidth).toBe(cssVar('--tsr-comp-focus-ring-width'))
   })

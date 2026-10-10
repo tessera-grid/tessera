@@ -3,6 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { humanClick } from '../helpers'
 import { parkPointer } from '../pointer'
 import {
   headCellById,
@@ -197,7 +198,7 @@ describe('Action menu — header', () => {
     await userEvent.hover(dataHeadCells(container)[0])
     await expect.poll(opacity).toBe('1')
 
-    await userEvent.click(kebab())
+    await humanClick(kebab())
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
     await userEvent.hover(dataHeadCells(container)[1])
     expect(opacity()).toBe('1')
@@ -220,7 +221,7 @@ describe('Action menu — header', () => {
 
     await userEvent.hover(dataHeadCells(container)[0])
     await expect.poll(opacity).toBe(1)
-    await userEvent.click(kebab())
+    await humanClick(kebab())
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
     await userEvent.hover(dataHeadCells(container)[1])
 
@@ -286,7 +287,7 @@ describe('Action menu — row', () => {
     const kebab = cell.querySelector<HTMLElement>(ROW_KEBAB)!
     expect(kebab).toBeTruthy()
 
-    await userEvent.click(kebab)
+    await humanClick(kebab)
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
     expect(menuItems().map(i => i.textContent?.trim())).toEqual(
       expect.arrayContaining(['Edit', 'Duplicate', 'Delete']),
@@ -299,7 +300,7 @@ describe('Action menu — row', () => {
     const divider = (group: Element) =>
       getComputedStyle(group).borderTopWidth !== '0px'
     const row = await renderRowMenu()
-    await userEvent.click(
+    await humanClick(
       row.container
         .querySelector<HTMLElement>(ACTION_CELL)!
         .querySelector<HTMLElement>(ROW_KEBAB)!,
@@ -360,7 +361,7 @@ describe('Action menu — row', () => {
     expect(wrap().className).toContain('row__button--hidden')
 
     // Открываем меню → обёртка теряет --hidden (видима, даже когда курсор в портале).
-    await userEvent.click(cell.querySelector<HTMLElement>(ROW_KEBAB)!)
+    await humanClick(cell.querySelector<HTMLElement>(ROW_KEBAB)!)
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
     await expect
       .poll(() => wrap().className.includes('row__button--hidden'))
@@ -381,7 +382,7 @@ describe('Action menu — row', () => {
       return alpha === undefined ? 1 : Number(alpha)
     }
 
-    await userEvent.click(kebab())
+    await humanClick(kebab())
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
     // Указатель — вне строки: в другой строке под ним оказалось бы само меню.
     await userEvent.hover(dataHeadCells(container)[1])

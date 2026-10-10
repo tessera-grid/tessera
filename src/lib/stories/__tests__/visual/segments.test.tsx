@@ -178,10 +178,13 @@ describe('ui/Segments', () => {
       )
     expect(moving).toBe(true)
     document.getAnimations().forEach(animation => animation.finish())
-    expect(frame.getBoundingClientRect().left).toBeCloseTo(
-      segment('xlsx').getBoundingClientRect().left,
-      0,
-    )
+    // WebKit округляет сдвиг рамки до целого пикселя — допуск в пиксель.
+    expect(
+      Math.abs(
+        frame.getBoundingClientRect().left -
+          segment('xlsx').getBoundingClientRect().left,
+      ),
+    ).toBeLessThanOrEqual(1)
     expect(frame.getBoundingClientRect().left).toBeGreaterThan(startLeft)
     expect(frame.getBoundingClientRect().top).toBeCloseTo(
       segment('xlsx').getBoundingClientRect().top,

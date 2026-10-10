@@ -186,6 +186,8 @@
   /* Раскрытие ширины скрытой кнопки ячейки и отступа под грип: соседи сдвигаются
    * плавно; `overflow` переключается посередине, чтобы кнопка не вылезала из своей ширины. */
   --tsr-comp-reveal-size-transition:
+    grid-template-columns var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing-out),
     flex-basis var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing-out),
     padding-right var(--tsr-comp-motion-duration)
       var(--tsr-comp-motion-easing-out),

@@ -53,15 +53,22 @@
       var(--tsr-comp-motion-easing);
 }
 
-/* Вспышка: блик краснеет и заливает контур с того места, где был; `off` — гаснет. */
+/*
+ * Вспышка: блик краснеет и заливает контур; `off` — гаснет. Заливка — анимацией от
+ * блика, а не `@starting-style`: вспышка без ожидания тоже начинается с блика и в
+ * Firefox 128 и Safari 16.4 (ADR 0084).
+ */
 .ring[data-error-flash]::after {
   --tsr-ring-color: var(--tsr-comp-error-flash-color);
   --tsr-ring-fill: 100%;
+  animation:
+    pendingRing var(--tsr-comp-pending-ring-duration) linear infinite,
+    ringFillIn var(--tsr-comp-error-flash-fill-duration)
+      var(--tsr-comp-motion-easing);
 }
 
-/* Вспышка без предшествующего ожидания тоже начинается с блика. */
-@starting-style {
-  .ring[data-error-flash]::after {
+@keyframes ringFillIn {
+  from {
     --tsr-ring-fill: 0%;
   }
 }

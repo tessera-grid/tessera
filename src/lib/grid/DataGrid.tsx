@@ -7,6 +7,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -17,6 +18,7 @@ import clsx from 'clsx'
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
+import { trackInputModality } from '../core/inputModality'
 import { ContextMenu } from './contextMenu/ContextMenu'
 import { OverflowTooltip } from './OverflowTooltip'
 import {
@@ -158,6 +160,9 @@ export const DataGrid = ({
   useCellSelectionAutoScroll(table, getScrollElement)
 
   const handleCopy = useCellSelectionCopy(table)
+
+  // Кольцо фокуса по последнему вводу — и в Firefox после мыши (ADR 0084, CB5).
+  useEffect(trackInputModality, [])
 
   // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
   // на корне. `null` без плагина — остаётся role=table без обработчиков.

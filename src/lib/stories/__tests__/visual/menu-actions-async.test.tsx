@@ -696,8 +696,12 @@ describe('Отказ действия', () => {
     await userEvent.hover(item('Edit')!)
     await expect.poll(errorShown).toBe(false)
 
-    // С клавиатуры: переход стрелками на упавший пункт.
-    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    // С клавиатуры: переход стрелками на упавший пункт. Откуда начинают стрелки после
+    // наведения, решает движок (WebKit — не с пункта под указателем), поэтому идём до
+    // пункта, а не на заданное число шагов.
+    for (let i = 0; i < 6 && document.activeElement !== item('Remove'); i++) {
+      await userEvent.keyboard('{ArrowDown}')
+    }
     await expect.poll(() => document.activeElement).toBe(item('Remove'))
     await expect.poll(errorShown).toBe(true)
 

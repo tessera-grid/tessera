@@ -85,8 +85,11 @@
   }
 
   /* Активная ячейка клавиатурной навигации (плагин keyboardNavigation): контур
-     фокуса только при клавиатурной модальности (:focus-visible), по клику — нет. */
-  &[data-kn-cell][data-kn-active='true']:focus-visible {
+     фокуса только при клавиатурной модальности, по клику — нет. Признак ввода на
+     корне — для Firefox, где фокус от скрипта после мыши не :focus-visible (CB5). */
+  &[data-kn-cell][data-kn-active='true']:focus-visible,
+  :root[data-tsr-input='keyboard']
+    &[data-kn-cell][data-kn-active='true']:focus {
     outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
     outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
   }
