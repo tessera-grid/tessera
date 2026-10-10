@@ -622,7 +622,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       цели сборки, проверка CSS), `engines` (CB3 — наборы и команды движков); `mobile`
       (CB4 — только `test:engines`, эмуляция iPhone и Pixel), `focus-modality` (CB5 —
       кольцо фокуса после мыши), `reveal-engines` (CB6 — раскрытие кнопок ячейки во
-      всех движках); CB5–CB6 идут и в `test:browsers`
+      всех движках), `footer-row` (CB7 — строка футера — свой бокс, не
+      `display: contents`); CB5–CB6 идут и в `test:browsers`
       ([ADR 0084](docs/decisions/0084-cross-browser-support.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы,
