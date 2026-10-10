@@ -19,6 +19,8 @@ const toPage = async (page: Page) => {
 
 /** Пауза между последним движением и отпусканием кнопки — чуть больше кадра. */
 const HUMAN_RELEASE_MS = 32
+/** Шаг движения — раз в кадр, как у человека: цель броска считается по кадрам. */
+const HUMAN_STEP_MS = 16
 
 const moveInSteps = async (
   page: Page,
@@ -34,6 +36,7 @@ const moveInSteps = async (
         y: from.y + ((to.y - from.y) * step) / steps,
       }),
     )
+    await page.waitForTimeout(HUMAN_STEP_MS)
   }
 }
 

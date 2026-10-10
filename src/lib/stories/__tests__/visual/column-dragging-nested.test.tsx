@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { firePointer, nextFrame } from '../../rowDragging.dnd'
+import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 import { pinViaPopover, withWideViewport } from './column-pinning-helpers'
 
@@ -65,7 +66,8 @@ const leafOrder = () =>
 
 /** Протащить ручку узла настоящей мышью к точке `x` той же высоты. */
 const dragTo = async (id: string, x: number) => {
-  await userEvent.hover(head(id))
+  // Ручка раскрывается плавно (ADR 0076): нажатие посреди раскрытия уходит мимо.
+  await revealCellButtons(head(id))
   const from = center(handleOf(id))
   await realDrag(from, { x, y: from.y })
 }
