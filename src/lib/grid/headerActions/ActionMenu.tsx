@@ -17,7 +17,9 @@ import { countActiveActions, type SlotAction } from '../../core/headerActions'
 import { ActiveDot, ErrorDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
+import { useCloseOnGridScroll } from './useCloseOnGridScroll'
 import { useClosingVisible } from './useClosingVisible'
+import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 import { usePanelOpening } from './usePanelOpening'
 import { type KebabState, useMergedFlash } from './useKebabState'
 import { useMenuSections } from './useMenuSections'
@@ -74,7 +76,9 @@ export const ActionMenu = ({
       },
       () => onOpenChange(false),
     )
+  const leave = useMenuLeave()
   const onMenuOpenChange = (next: boolean, details?: { reason?: string }) => {
+    leave.track(next, details?.reason)
     // Escape в разделе — уровень выше, а не закрытие (ADR 0079).
     if (!next && details?.reason === 'escape-key' && sections.back()) return
     if (next) panelTakesFocus.current = false
@@ -84,6 +88,10 @@ export const ActionMenu = ({
     }
     onOpenChange(next)
   }
+
+  useCloseOnGridScroll(open, () =>
+    onMenuOpenChange(false, { reason: GRID_SCROLL_REASON }),
+  )
 
   // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения;
   // ждущие и упавшие — блик, отметка ошибки и имя (ADR 0078).
@@ -115,6 +123,7 @@ export const ActionMenu = ({
 
   return (
     <Menu.Root
+      modal={false}
       open={open}
       onOpenChange={onMenuOpenChange}
       onOpenChangeComplete={next => {
@@ -149,7 +158,7 @@ export const ActionMenu = ({
         sections={sections}
         close={() => onMenuOpenChange(false)}
         onOpenPanel={openPanel}
-        finalFocus={() => !panelTakesFocus.current}
+        finalFocus={() => !panelTakesFocus.current && leave.returnFocus()}
       />
       {panelAction && (
         <Popover.Root

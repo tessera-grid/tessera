@@ -13,6 +13,8 @@ import type {
 } from '../../core/headerActions'
 import type { ActionMenuItemsProps } from '../headerActions/ActionMenuItems'
 import { ActionMenuSections } from '../headerActions/ActionMenuSections'
+import { useCloseOnGridScroll } from '../headerActions/useCloseOnGridScroll'
+import { GRID_SCROLL_REASON, useMenuLeave } from '../headerActions/useMenuLeave'
 import { useMenuSections } from '../headerActions/useMenuSections'
 
 import menuStyles from '../headerActions/ActionMenu.module.css'
@@ -50,13 +52,20 @@ export const ContextMenuPopup = ({
     undefined,
     extendChecks,
   )
+  const leave = useMenuLeave()
+  useCloseOnGridScroll(true, () => {
+    leave.track(false, GRID_SCROLL_REASON)
+    onClose()
+  })
   // Виртуальный якорь — точка курсора (нулевой прямоугольник у координат).
   const anchor = { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) }
 
   return (
     <Menu.Root
+      modal={false}
       open
       onOpenChange={(open, details) => {
+        leave.track(open, details.reason)
         // Escape в разделе — уровень выше, а не закрытие (ADR 0079).
         if (!open && details.reason === 'escape-key' && sections.back()) return
         if (!open) {
@@ -77,6 +86,7 @@ export const ContextMenuPopup = ({
               sections.depth > 0 ? sections.level.title : labels.contextMenu
             }
             className={clsx(themeClass, menuStyles.popup)}
+            finalFocus={leave.returnFocus}
           >
             <ActionMenuSections
               sections={sections}

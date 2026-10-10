@@ -13,7 +13,9 @@ import type { SlotAction } from '../../core/headerActions'
 import { actionDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { useLatest } from '../../core/useLatest'
+import { useCloseOnGridScroll } from './useCloseOnGridScroll'
 import { useClosingVisible } from './useClosingVisible'
+import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 import { useAvailabilityChecks } from './useAvailabilityChecks'
 import { useMenuSections } from './useMenuSections'
 
@@ -54,7 +56,9 @@ export const ActionInlineMenu = ({
     if (open) opened.current()
   }, [open, opened])
 
+  const leave = useMenuLeave()
   const onMenuOpenChange = (next: boolean, details?: { reason?: string }) => {
+    leave.track(next, details?.reason)
     if (!next && details?.reason === 'escape-key' && sections.back()) return
     if (!next) {
       checks.stop()
@@ -62,6 +66,10 @@ export const ActionInlineMenu = ({
     }
     onOpenChange(next)
   }
+
+  useCloseOnGridScroll(open, () =>
+    onMenuOpenChange(false, { reason: GRID_SCROLL_REASON }),
+  )
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
@@ -88,6 +96,7 @@ export const ActionInlineMenu = ({
 
   return (
     <Menu.Root
+      modal={false}
       open={open}
       onOpenChange={onMenuOpenChange}
       onOpenChangeComplete={next => {
@@ -117,9 +126,14 @@ export const ActionInlineMenu = ({
           session={checks}
           sections={sections}
           close={() => onMenuOpenChange(false)}
+          finalFocus={leave.returnFocus}
         />
       ) : (
-        <ActionMenuPopup actions={[action]} context={context} />
+        <ActionMenuPopup
+          actions={[action]}
+          context={context}
+          finalFocus={leave.returnFocus}
+        />
       )}
     </Menu.Root>
   )

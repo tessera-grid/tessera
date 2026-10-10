@@ -9,6 +9,9 @@ import clsx from 'clsx'
 import { usePortalThemeClass } from '../../core/themeVariables'
 import type { HeaderMenuItem } from '../../core/headerActions'
 
+import { useCloseOnGridScroll } from '../headerActions/useCloseOnGridScroll'
+import { GRID_SCROLL_REASON, useMenuLeave } from '../headerActions/useMenuLeave'
+
 import menuStyles from '../headerActions/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
@@ -29,10 +32,17 @@ export const HandleMenuPopup = ({
   onClose,
 }: HandleMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
+  const leave = useMenuLeave()
+  useCloseOnGridScroll(true, () => {
+    leave.track(false, GRID_SCROLL_REASON)
+    onClose()
+  })
   return (
     <Menu.Root
+      modal={false}
       open
-      onOpenChange={open => {
+      onOpenChange={(open, details) => {
+        leave.track(open, details.reason)
         if (!open) {
           onClose()
         }
@@ -48,7 +58,9 @@ export const HandleMenuPopup = ({
         >
           <Menu.Popup
             aria-label={label}
-            finalFocus={focusTarget}
+            finalFocus={() =>
+              leave.returnFocus() && (focusTarget.current ?? true)
+            }
             className={clsx(themeClass, menuStyles.popup)}
           >
             <Menu.Group className={menuStyles.group}>
