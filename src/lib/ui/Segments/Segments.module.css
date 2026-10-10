@@ -76,3 +76,11 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* Высокая контрастность (ADR 0087): выбранный — `Highlight` токенами; наведение на
+   невыбранный — цвет текста, а не `HighlightText` выбранного. */
+@media (forced-colors: active) {
+  .segment:hover:not([data-checked]):not([data-disabled]) {
+    color: CanvasText;
+  }
+}

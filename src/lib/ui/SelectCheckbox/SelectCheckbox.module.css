@@ -64,3 +64,11 @@
   height: 14px;
   stroke-width: 3;
 }
+
+/* Высокая контрастность (ADR 0087): залитый флажок различим и на выбранной строке. */
+@media (forced-colors: active) {
+  .checkbox[data-checked],
+  .checkbox[data-indeterminate] {
+    border-color: HighlightText;
+  }
+}

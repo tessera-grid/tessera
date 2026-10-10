@@ -595,6 +595,35 @@
   }
 }
 
+/*
+ * Высокая контрастность Windows (ADR 0087): браузер заменяет цвета палитрой
+ * пользователя и снимает фоны, кроме заданных системным цветом. Токены состояний
+ * переходят на системные цвета — выбор и выделение `Highlight`, подсветка `Mark`,
+ * линии и скелет `GrayText`; остальное — правила режима в модулях.
+ */
+@media (forced-colors: active) {
+  :where(.data-grid-theme) {
+    --tsr-comp-row-bg: Canvas;
+    --tsr-comp-row-odd-bg: Canvas;
+    --tsr-comp-row-hovered-bg: Canvas;
+    --tsr-comp-row-selected-bg: Highlight;
+    --tsr-comp-row-selected-hovered-bg: Highlight;
+    --tsr-comp-cell-pinned-bg: Highlight;
+    --tsr-comp-cell-pinned-hovered-bg: Canvas;
+    --tsr-comp-cell-pinned-selected-hovered-bg: Highlight;
+    --tsr-comp-focus-ring: CanvasText;
+    --tsr-comp-pending-ring-color: Highlight;
+    --tsr-comp-error-flash-color: Mark;
+    --tsr-comp-tree-line-color: GrayText;
+    --tsr-comp-skeleton-bg: GrayText;
+    --tsr-comp-checkbox-checked-bg: Highlight;
+    --tsr-comp-checkbox-check-color: HighlightText;
+    --tsr-comp-switch-track-on: Highlight;
+    --tsr-comp-segments-selected-bg: Highlight;
+    --tsr-comp-segments-selected-color: HighlightText;
+  }
+}
+
 /* Слои подсветки (ADR 0080): цвет с начальным «прозрачным», чтобы снятие гасло
  * переходом; слой строки наследуется её ячейками. */
 @property --tsr-highlight-row {

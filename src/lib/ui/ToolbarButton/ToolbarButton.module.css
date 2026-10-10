@@ -37,3 +37,11 @@
   background-color: transparent;
   cursor: default;
 }
+
+/* Высокая контрастность (ADR 0087): активная кнопка — `Highlight`. */
+@media (forced-colors: active) {
+  .toolbarButton:is([data-active], [data-popup-open]) {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

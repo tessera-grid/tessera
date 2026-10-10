@@ -218,6 +218,7 @@ export interface PerfRecord {
     | 'rowExpanding'
     | 'rowActions'
     | 'columnFiltering, rowGrouping'
+    | 'rowSelection, rowExpanding, highlight'
     | 'infiniteScroll'
     | 'backToTop'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */

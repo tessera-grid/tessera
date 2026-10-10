@@ -119,3 +119,19 @@
   .footer__cell[data-highlight-shimmer]::after {
   content: none;
 }
+
+/* Высокая контрастность (ADR 0087): подсветка колонки — `Mark`, без блика. */
+@media (forced-colors: active) {
+  .footer__cell[data-column-highlight] {
+    background-color: Mark;
+  }
+
+  .footer__cell[data-column-highlight],
+  .footer__cell[data-column-highlight] * {
+    color: MarkText;
+  }
+
+  .footer__cell[data-highlight-shimmer]::after {
+    content: none;
+  }
+}

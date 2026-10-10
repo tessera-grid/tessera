@@ -10,3 +10,11 @@ export const reducedMotion: BrowserCommand<[reduce: boolean]> = async (
     reducedMotion: reduce ? 'reduce' : 'no-preference',
   })
 }
+
+// Эмуляция высокой контрастности Windows (`forced-colors: active`, ADR 0087).
+export const forcedColors: BrowserCommand<[active: boolean]> = async (
+  { page },
+  active,
+) => {
+  await page.emulateMedia({ forcedColors: active ? 'active' : 'none' })
+}

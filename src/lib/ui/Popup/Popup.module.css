@@ -55,3 +55,12 @@
   cursor: default;
   pointer-events: none;
 }
+
+/* Высокая контрастность (ADR 0087): пункт под указателем и клавиатурой — `Highlight`. */
+@media (forced-colors: active) {
+  .item[data-highlighted],
+  .item[data-highlighted] * {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

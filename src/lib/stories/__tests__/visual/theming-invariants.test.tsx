@@ -15,6 +15,31 @@ const moduleCss = import.meta.glob('../../../**/*.module.css', {
   eager: true,
 }) as Record<string, string>
 
+// Все CSS библиотеки, включая глобальные (не модули), — для стража HC11.
+const allCss = import.meta.glob('../../../**/*.css', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
+
+const FORCED_COLORS = /@media\s*\(\s*forced-colors\s*:\s*active\s*\)/
+
+/** CSS без комментариев и без блоков `@media (forced-colors: active)`. */
+const outsideForcedColors = (css: string) => {
+  let text = css.replace(/\/\*[\s\S]*?\*\//g, '')
+  for (;;) {
+    const start = text.search(FORCED_COLORS)
+    if (start < 0) return text
+    let depth = 0
+    let end = text.indexOf('{', start)
+    for (; end < text.length; end++) {
+      if (text[end] === '{') depth++
+      else if (text[end] === '}' && --depth === 0) break
+    }
+    text = text.slice(0, start) + text.slice(end + 1)
+  }
+}
+
 // Рантайм-переменные: задаются инлайн в DataGrid/хуках, а не в theme.css.
 const RUNTIME_ALLOWLIST = new Set([
   '--tsr-comp-head-height',
@@ -87,6 +112,20 @@ describe('Token architecture — static invariants', () => {
       r => !new RegExp(`${r}\\s*:`).test(darkBlock!),
     )
     expect(missing).toEqual([])
+  })
+
+  test('HC11: системные цвета и `forced-color-adjust` — только под `@media (forced-colors: active)`', () => {
+    // Высокая контрастность (ADR 0087): вне режима вид грида прежний.
+    const SYSTEM =
+      /(?<![-\w])(Canvas|CanvasText|Highlight|HighlightText|Mark|MarkText|GrayText|ButtonText|ButtonFace|ButtonBorder|forced-color-adjust)(?![-\w])/
+    const offending = Object.entries(allCss)
+      .filter(([, css]) => SYSTEM.test(outsideForcedColors(css)))
+      .map(([file]) => file)
+    expect(offending).toEqual([])
+    // Правила режима есть: страж не проходит вхолостую.
+    expect(Object.values(allCss).some(css => FORCED_COLORS.test(css))).toBe(
+      true,
+    )
   })
 
   test('HL22: highlight tokens reference only semantic roles; no built-in tone sits on --tsr-sys-info', () => {

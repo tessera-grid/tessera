@@ -328,3 +328,36 @@
   .body__cell[data-highlight-shimmer]::after {
   content: none;
 }
+
+/*
+ * Высокая контрастность (ADR 0087): выделенный диапазон — `Highlight`, ячейка-якорь —
+ * фон строки, как в Excel; подсветка ячейки и колонки — `Mark`. Кольцо фокуса — цветом
+ * текста своей заливки.
+ */
+@media (forced-colors: active) {
+  .body__cell[data-cell-selected='true']:not([data-cell-focused='true']) {
+    --tsr-comp-focus-ring: HighlightText;
+
+    background-color: Highlight;
+  }
+
+  .body__cell[data-cell-selected='true']:not([data-cell-focused='true']),
+  .body__cell[data-cell-selected='true']:not([data-cell-focused='true']) * {
+    color: HighlightText;
+  }
+
+  .body__cell:is([data-highlight], [data-column-highlight]) {
+    --tsr-comp-focus-ring: MarkText;
+
+    background-color: Mark;
+  }
+
+  .body__cell:is([data-highlight], [data-column-highlight]),
+  .body__cell:is([data-highlight], [data-column-highlight]) * {
+    color: MarkText;
+  }
+
+  .body__cell[data-highlight-shimmer]::after {
+    content: none;
+  }
+}

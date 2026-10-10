@@ -10,8 +10,9 @@ import {
   perfTraceStop,
 } from './src/lib/stories/__tests__/perf.commands'
 import { TOUCH_BLINK_SETTINGS } from './src/lib/stories/__tests__/engines'
+import { forcedColors } from './src/lib/stories/__tests__/motion.commands'
 
-const commands = { perfTraceStart, perfTraceStop, perfRecord }
+const commands = { perfTraceStart, perfTraceStop, perfRecord, forcedColors }
 /** Перф касаний (ADR 0086, TU13): тот же файл и в проекте без наведения. */
 const TOUCH_PERF = 'src/lib/stories/__tests__/performance/touch.test.tsx'
 

@@ -54,3 +54,19 @@
 .thumb[data-checked] {
   transform: translateX(calc(var(--_track-w) - var(--_thumb) - var(--_gap)));
 }
+
+/* Высокая контрастность (ADR 0087): дорожка с контуром, ползунок виден в обоих положениях. */
+@media (forced-colors: active) {
+  .switch {
+    outline: 1px solid ButtonText;
+    outline-offset: -1px;
+  }
+
+  .thumb {
+    background-color: ButtonText;
+  }
+
+  .thumb[data-checked] {
+    background-color: HighlightText;
+  }
+}

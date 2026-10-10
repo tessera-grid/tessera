@@ -195,3 +195,53 @@
   .body__row[data-highlight-shimmer]::before {
   content: none;
 }
+
+/*
+ * Высокая контрастность (ADR 0087): выбор — текст `HighlightText` на `Highlight`
+ * (фон — токенами темы), подсветка — `Mark`, наведение — контур без заливки. Кольцо
+ * фокуса на `Highlight` — `HighlightText`. Блик подсветки и слой прихода не рисуются.
+ */
+@media (forced-colors: active) {
+  .body__row:hover {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
+
+  .body__row[data-selected='true'] {
+    --tsr-comp-focus-ring: HighlightText;
+  }
+
+  .body__row[data-selected='true'],
+  .body__row[data-selected='true'] * {
+    color: HighlightText;
+  }
+
+  .body__row[data-highlight] {
+    --tsr-comp-focus-ring: MarkText;
+
+    background-color: Mark;
+  }
+
+  .body__row[data-highlight],
+  .body__row[data-highlight] * {
+    color: MarkText;
+  }
+
+  .body__row[data-highlight]
+    > :global(
+      .data-grid__body-cell:is(
+        [data-cell-pinned='left'],
+        [data-cell-pinned='right']
+      )
+    ) {
+    background-color: Mark !important;
+  }
+
+  .body__row[data-highlight-shimmer]::before {
+    content: none;
+  }
+
+  .body__row::after {
+    content: none;
+  }
+}

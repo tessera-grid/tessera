@@ -148,3 +148,13 @@
 :global(.data-grid__container[data-scrolling]) .ring:not(.layer)::after {
   animation-play-state: paused;
 }
+
+/*
+ * Высокая контрастность (ADR 0087): контур — градиент под маской, браузер снял бы его.
+ * Слой не перекрашивается, цвета — системные из токенов (`Highlight`, `Mark`).
+ */
+@media (forced-colors: active) {
+  .ring::after {
+    forced-color-adjust: none;
+  }
+}

@@ -1,7 +1,10 @@
 // Команды браузерных тестов — один объект для Chromium, движков и мобильной эмуляции
 // (ADR 0084, CB3): конфиг, переопределяющий `test`, их не теряет.
 import { axTree } from './src/lib/stories/__tests__/a11y.commands'
-import { reducedMotion } from './src/lib/stories/__tests__/motion.commands'
+import {
+  forcedColors,
+  reducedMotion,
+} from './src/lib/stories/__tests__/motion.commands'
 import {
   heldModuleRequests,
   releaseModule,
@@ -25,6 +28,7 @@ import {
 // задержка и отказ загрузки модуля (ADR 0061); касания мобильной эмуляции (ADR 0084).
 export const testCommands = {
   axTree,
+  forcedColors,
   reducedMotion,
   realDrag,
   realDragHold,
