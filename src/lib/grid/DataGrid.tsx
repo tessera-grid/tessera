@@ -20,6 +20,7 @@ import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { trackInputModality } from '../core/inputModality'
 import { trackStickyGeometry } from '../core/stickyGeometry'
+import { trackTouchedCell } from '../core/touchedCell'
 import { ContextMenu } from './contextMenu/ContextMenu'
 import { OverflowTooltip } from './OverflowTooltip'
 import {
@@ -165,6 +166,7 @@ export const DataGrid = ({
   // Кольцо фокуса по последнему вводу — и в Firefox после мыши (ADR 0084, CB5).
   useEffect(trackInputModality, [])
   useEffect(() => trackStickyGeometry(getScrollElement), [getScrollElement])
+  useEffect(() => trackTouchedCell(getScrollElement), [getScrollElement])
 
   // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
   // на корне. `null` без плагина — остаётся role=table без обработчиков.

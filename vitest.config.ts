@@ -4,7 +4,11 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import { MOBILE_SUITE } from './src/lib/stories/__tests__/engines'
+import {
+  MOBILE_SUITE,
+  TOUCH_BLINK_SETTINGS,
+  TOUCH_SUITE,
+} from './src/lib/stories/__tests__/engines'
 import { testCommands } from './vitest.commands'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
@@ -56,6 +60,7 @@ export default defineConfig({
             'src/lib/stories/__tests__/performance/**',
             // Касания — только в мобильной эмуляции `test:engines` (ADR 0084, CB4).
             MOBILE_SUITE,
+            TOUCH_SUITE,
           ],
           setupFiles: ['./vitest.setup.ts'],
           // Файлы гоняются по одному: визуальные тесты сравнивают скриншоты реального
@@ -68,6 +73,29 @@ export default defineConfig({
             // Реальный Chromium headless — визуальные тесты сверяют настоящий рендер.
             provider: playwright({
               launchOptions: { channel: 'chromium' },
+            }),
+            instances: [{ browser: 'chromium' }],
+            commands: testCommands,
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          // Экран с касаниями в Chromium (ADR 0086): без наведения, грубый указатель.
+          name: 'touch',
+          include: [TOUCH_SUITE],
+          setupFiles: ['./vitest.setup.ts'],
+          fileParallelism: false,
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({
+              launchOptions: {
+                channel: 'chromium',
+                args: [TOUCH_BLINK_SETTINGS],
+              },
+              contextOptions: { hasTouch: true },
             }),
             instances: [{ browser: 'chromium' }],
             commands: testCommands,

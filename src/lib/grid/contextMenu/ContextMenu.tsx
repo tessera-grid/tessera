@@ -3,7 +3,7 @@
 // первом наведении на тело грида или фокусе внутри него, а правый клик до загрузки
 // открывает меню после неё (ADR 0061, LZ6–LZ10). Рендерится DataGrid'ом при активном
 // плагине contextMenu (`enableContextMenu`). ADR 0030.
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
@@ -28,6 +28,9 @@ const MENU_LOAD = {
 }
 
 const CELL = '.data-grid__body-cell[data-column-id]'
+/** Долгое нажатие пальцем (ADR 0086, §5): удержание и допуск сдвига. */
+const LONG_PRESS_MS = 500
+const LONG_PRESS_SLOP = 10
 
 interface OpenState {
   x: number
@@ -105,6 +108,11 @@ export interface ContextMenuProps {
 
 export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   const [state, setState] = useState<OpenState | null>(null)
+  /** Пальцы на экране и открытие меню в точке — для долгого нажатия. */
+  const fingers = useRef(new Set<number>())
+  const openAtRef = useRef<
+    ((target: EventTarget | null, x: number, y: number) => boolean) | null
+  >(null)
   const labels = useLocalization()
   const opening = useLazyOpening(table)
   const { cancel, pending, request } = opening
@@ -166,24 +174,36 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
     }
   }, [pending, getScrollElement])
 
+  // Пункты есть — ячейки тела на касание не дают выноску iOS и выделение текста:
+  // долгое нажатие принадлежит меню (ADR 0086, TU8).
+  useEffect(() => {
+    const scroller = getScrollElement()
+    const has = ((table as ContextMenuTable).getContextMenuActions?.() ?? [])
+      .length
+    if (!scroller || !has) return
+    scroller.setAttribute('data-context-menu-touch', '')
+    return () => scroller.removeAttribute('data-context-menu-touch')
+  })
+
   useEffect(() => {
     const t = table as ContextMenuTable
-    const onContextMenu = (event: MouseEvent) => {
+    /** Открыть меню ячейки под `target` в точке; `false` — меню здесь нет (CM5). */
+    const openAt = (target: EventTarget | null, x: number, y: number) => {
       const scroller = getScrollElement()
-      const cellEl = (event.target as Element | null)?.closest?.(CELL)
+      const cellEl = (target as Element | null)?.closest?.(CELL)
       const rowEl = cellEl?.closest?.('[data-row-id]')
       // Вне тела нашего грида — уступаем нативному меню браузера.
       if (!scroller || !cellEl || !rowEl || !scroller.contains(cellEl)) {
-        return
+        return false
       }
       const rowId = rowEl.getAttribute('data-row-id')
       const columnId = cellEl.getAttribute('data-column-id')
       if (!rowId || !columnId) {
-        return
+        return false
       }
       const context = buildContext(t, rowId, columnId)
       if (!context) {
-        return
+        return false
       }
       const actions = resolveVisibleActions(
         t.getContextMenuActions?.() ?? [],
@@ -191,21 +211,128 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       )
       // Пустое меню — не открываем, уступаем нативному (CM5).
       if (actions.length === 0) {
-        return
+        return false
       }
-      event.preventDefault()
-      const next = { x: event.clientX, y: event.clientY, actions, context }
+      const next = { x, y, actions, context }
       request(MENU_LOAD, () => {
         startChecks(actions, context)
         markActionErrorsSeen(context)
         setState(next)
       })
+      return true
+    }
+
+    openAtRef.current = openAt
+
+    const onContextMenu = (event: MouseEvent) => {
+      // Палец на экране: нативный `contextmenu` касания (Android) — за долгим нажатием.
+      if (fingers.current.size > 0) {
+        const scroller = getScrollElement()
+        if (
+          scroller?.contains(event.target as Node | null) &&
+          scroller.hasAttribute('data-context-menu-touch')
+        ) {
+          event.preventDefault()
+        }
+        return
+      }
+      if (openAt(event.target, event.clientX, event.clientY)) {
+        event.preventDefault()
+      }
     }
 
     document.addEventListener('contextmenu', onContextMenu, true)
     return () =>
       document.removeEventListener('contextmenu', onContextMenu, true)
   }, [table, getScrollElement, request, startChecks])
+
+  // Долгое нажатие пальцем на ячейку тела открывает меню (ADR 0086, §5). Подписка
+  // одна на всё время жизни: перерисовка меню не рвёт начатое удержание.
+  useEffect(() => {
+    let press: {
+      id: number
+      x: number
+      y: number
+      timer: number
+      scroll: string
+    } | null = null
+    const scrollOf = (el: HTMLElement | null) =>
+      el ? `${el.scrollLeft}:${el.scrollTop}` : ''
+    /** Меню открыто удержанием: отпускание пальца — не нажатие мимо. */
+    let opened = false
+    const stopPress = () => {
+      if (press) window.clearTimeout(press.timer)
+      press = null
+    }
+    // Без отмены `touchend` браузер шлёт `mousedown` и `click` отпускания: фокус
+    // уходит из только что открытого немодального меню, и оно закрывается.
+    const onTouchEnd = (event: TouchEvent) => {
+      if (!opened || event.touches.length > 0) return
+      opened = false
+      if (event.cancelable) event.preventDefault()
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return
+      fingers.current.add(event.pointerId)
+      // Второй палец — жест, а не долгое нажатие.
+      if (press || fingers.current.size > 1) {
+        stopPress()
+        return
+      }
+      const scroller = getScrollElement()
+      const target = event.target as Element | null
+      if (!scroller?.contains(target) || !target?.closest(CELL)) return
+      const { clientX: x, clientY: y } = event
+      press = {
+        id: event.pointerId,
+        x,
+        y,
+        scroll: scrollOf(scroller),
+        timer: window.setTimeout(() => {
+          press = null
+          opened = !!openAtRef.current?.(target, x, y)
+        }, LONG_PRESS_MS),
+      }
+    }
+    const onPointerMove = (event: PointerEvent) => {
+      if (
+        press?.id === event.pointerId &&
+        Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+          LONG_PRESS_SLOP
+      ) {
+        stopPress()
+      }
+    }
+    const onPointerEnd = (event: PointerEvent) => {
+      fingers.current.delete(event.pointerId)
+      if (press?.id === event.pointerId) stopPress()
+    }
+
+    // Прокрутка отменяет удержание; сдвиг на пиксель и обратно перед нажатием
+    // (stickyGeometry, ADR 0085) позицию не меняет и не отменяет.
+    const onScroll = () => {
+      if (press && press.scroll !== scrollOf(getScrollElement())) stopPress()
+    }
+    const scroller = getScrollElement()
+    window.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('touchend', onTouchEnd, {
+      capture: true,
+      passive: false,
+    })
+    window.addEventListener('pointermove', onPointerMove, true)
+    window.addEventListener('pointerup', onPointerEnd, true)
+    window.addEventListener('pointercancel', onPointerEnd, true)
+    scroller?.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      stopPress()
+      window.removeEventListener('touchend', onTouchEnd, true)
+      window.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('pointermove', onPointerMove, true)
+      window.removeEventListener('pointerup', onPointerEnd, true)
+      window.removeEventListener('pointercancel', onPointerEnd, true)
+      scroller?.removeEventListener('scroll', onScroll)
+    }
+  }, [getScrollElement])
 
   if (!state) {
     return null

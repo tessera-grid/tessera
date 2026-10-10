@@ -56,6 +56,24 @@ export const DragHandler = ({
 
   const hasMenu = !!getMenuItems && !disabled
 
+  const movedFrom = (x: number, y: number) => {
+    const start = pressedAt.current
+    return (
+      !!start &&
+      Math.hypot(x - start.x, y - start.y) >= DRAG_ACTIVATION_DISTANCE
+    )
+  }
+
+  // Касание без сдвига — меню по отпусканию пальца. Отмена `touchend` гасит
+  // `mousedown` и `click` касания: первый закрыл бы меню как нажатие на триггер, а
+  // второго браузер не всегда присылает (ADR 0086, TU10).
+  const onMenuTouchEnd = (event: TouchEvent<HTMLSpanElement>) => {
+    const touch = event.changedTouches[0]
+    if (!touch || movedFrom(touch.clientX, touch.clientY)) return
+    if (event.cancelable) event.preventDefault()
+    menu.request()
+  }
+
   const onMenuClick = (event: MouseEvent<HTMLSpanElement>) => {
     const start = pressedAt.current
     pressedAt.current = null
@@ -97,6 +115,7 @@ export const DragHandler = ({
           'aria-busy': menu.trigger.pending || undefined,
           'data-error-flash': flash,
           onClick: onMenuClick,
+          onTouchEnd: onMenuTouchEnd,
           onKeyDown: onMenuKeyDown,
           onPointerEnter: menu.trigger.onIntent,
           onFocus: menu.trigger.onIntent,

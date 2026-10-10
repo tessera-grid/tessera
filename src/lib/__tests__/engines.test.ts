@@ -11,7 +11,12 @@ import browsersConfig from '../../../vitest.browsers.config'
 import { testCommands } from '../../../vitest.commands'
 import mainConfig from '../../../vitest.config'
 import enginesConfig from '../../../vitest.engines.config'
-import { ENGINE_EXCLUSIONS, MOBILE_SUITE } from '../stories/__tests__/engines'
+import {
+  ENGINE_EXCLUSIONS,
+  MOBILE_SUITE,
+  TOUCH_BLINK_SETTINGS,
+  TOUCH_SUITE,
+} from '../stories/__tests__/engines'
 
 interface ProjectTest {
   name?: string
@@ -38,8 +43,9 @@ describe('Прогон в движках', () => {
     const chromium = byName(mainConfig, 'browser')
     const engines = byName(enginesConfig, 'engines')
     const mobile = byName(enginesConfig, 'mobile')
+    const touch = byName(mainConfig, 'touch')
 
-    for (const project of [chromium, engines, mobile]) {
+    for (const project of [chromium, engines, mobile, touch]) {
       expect(project.browser!.commands).toBe(testCommands)
     }
     expect(
@@ -64,11 +70,17 @@ describe('Прогон в движках', () => {
       ),
     ).not.toContainEqual(expect.stringContaining('visual/'))
 
-    expect(mobile.include).toEqual([MOBILE_SUITE])
+    expect(mobile.include).toEqual([MOBILE_SUITE, TOUCH_SUITE])
     expect(mobile.browser!.instances!.map(i => i.name)).toEqual([
       'iphone',
       'pixel',
     ])
     expect(chromium.exclude).toContain(MOBILE_SUITE)
+
+    // Касания (ADR 0086): свой проект Chromium без наведения в `npm test`.
+    expect(chromium.exclude).toContain(TOUCH_SUITE)
+    expect(touch.include).toEqual([TOUCH_SUITE])
+    expect(TOUCH_BLINK_SETTINGS).toMatch(/primaryHoverType=1/)
+    expect(TOUCH_BLINK_SETTINGS).toMatch(/primaryPointerType=2/)
   })
 })

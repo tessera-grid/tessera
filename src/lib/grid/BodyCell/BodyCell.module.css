@@ -64,6 +64,16 @@
     -webkit-user-select: none;
   }
 
+  /* Долгое нажатие пальцем открывает контекстное меню (ADR 0086, TU8): без выноски
+     iOS и выделения текста, пока у меню есть пункты. */
+  @media (pointer: coarse) {
+    :global([data-context-menu-touch]) & {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+  }
+
   &[data-cell-selected='true'] {
     /* Тинт поверх любого фона (в т.ч. sticky-подложки закреплённых ячеек):
        background-image рисуется над background-color, не затирая его. */

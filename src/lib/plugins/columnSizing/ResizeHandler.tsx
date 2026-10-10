@@ -63,13 +63,18 @@ export const ResizeHandler = memo(
     const wrapperRef = useRef<HTMLDivElement>(null)
     const separatorRef = useRef<HTMLSpanElement>(null)
     const pressedX = useRef<number | null>(null)
+    /** Касание без сдвига уже открыло меню — `click` после него не повторяет. */
+    const tapped = useRef(false)
     // Грип тонкий — контура ожидания на нём не видно: `aria-busy` и курсор `progress`.
     const menu = useHandleMenu(table, all => all.columnWidth)
     const menuOpen = menu.open
 
     const onResizeStart = useCallback(
       (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
-        pressedX.current = 'clientX' in event ? event.clientX : null
+        tapped.current = false
+        const touchX =
+          'touches' in event ? event.touches[0]?.clientX : undefined
+        pressedX.current = 'clientX' in event ? event.clientX : (touchX ?? null)
         document.body.style.cursor = 'col-resize'
         onResize(event)
         const onKey = (evt: globalThis.KeyboardEvent) => {
@@ -77,7 +82,21 @@ export const ResizeHandler = memo(
             onEscape()
           }
         }
-        const listener = (evt: unknown) => {
+        const listener = (evt: Event) => {
+          // Касание без сдвига — меню ширины: после протяжки TanStack WebKit не шлёт
+          // `click` (ADR 0086, TU4).
+          if (evt.type === 'touchend' && touchX !== undefined) {
+            const endX = (evt as globalThis.TouchEvent).changedTouches[0]
+              ?.clientX
+            if (
+              !disabled &&
+              endX !== undefined &&
+              Math.abs(endX - touchX) < CLICK_TOLERANCE
+            ) {
+              tapped.current = true
+              menu.request()
+            }
+          }
           // Отмена — без бизнес-колбэка успеха (ADR 0040, §1).
           const reason = resizeCancelReason(evt)
           if (reason) {
@@ -94,13 +113,17 @@ export const ResizeHandler = memo(
         document.addEventListener('touchend', listener)
         document.addEventListener('keydown', onKey)
       },
-      [onResizeEnd, onResizeCancel, onEscape, onResize],
+      [onResizeEnd, onResizeCancel, onEscape, onResize, disabled, menu],
     )
 
     // Клик без сдвига — меню ширины (WCAG 2.5.7, ADR 0034); протяжка — ресайз.
     const onClick = (event: MouseEvent<HTMLDivElement>) => {
       const start = pressedX.current
       pressedX.current = null
+      if (tapped.current) {
+        tapped.current = false
+        return
+      }
       if (
         disabled ||
         (start !== null && Math.abs(event.clientX - start) >= CLICK_TOLERANCE)

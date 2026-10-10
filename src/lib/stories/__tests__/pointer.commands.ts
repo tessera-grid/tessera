@@ -128,3 +128,54 @@ export const realSwipe: BrowserCommand<
   })
   await session.detach()
 }
+
+type TouchType = 'touchStart' | 'touchMove' | 'touchEnd'
+
+type CDPSession = Awaited<
+  ReturnType<ReturnType<Page['context']>['newCDPSession']>
+>
+
+/** Сессия CDP на страницу: жест пальцем живёт в сессии, начавшей его. */
+const touchSessions = new WeakMap<Page, Promise<CDPSession>>()
+
+const sendTouch = async (page: Page, type: TouchType, fingers: Point[]) => {
+  const at = await toPage(page)
+  let session = touchSessions.get(page)
+  if (!session) {
+    session = page.context().newCDPSession(page)
+    touchSessions.set(page, session)
+  }
+  await (
+    await session
+  ).send('Input.dispatchTouchEvent', {
+    type,
+    touchPoints: fingers.map((point, id) => {
+      const [x, y] = at(point)
+      return { x, y, id }
+    }),
+  })
+}
+
+// Палец по шагам через CDP (только Chromium, ADR 0086): нажатие, движение и отпускание
+// отдельно — проверить состояние посреди жеста. Несколько точек — несколько пальцев.
+export const realTouchDown: BrowserCommand<[fingers: Point[]]> = async (
+  { page },
+  fingers,
+) => sendTouch(page, 'touchStart', fingers)
+
+export const realTouchMove: BrowserCommand<
+  [from: Point, to: Point, steps?: number]
+> = async ({ page }, from, to, steps = 12) => {
+  for (let step = 1; step <= steps; step++) {
+    await page.waitForTimeout(HUMAN_STEP_MS)
+    await sendTouch(page, 'touchMove', [
+      {
+        x: from.x + ((to.x - from.x) * step) / steps,
+        y: from.y + ((to.y - from.y) * step) / steps,
+      },
+    ])
+  }
+}
+
+export const realTouchUp: BrowserCommand<[]> = async ({ page }) =>
+  sendTouch(page, 'touchEnd', [])

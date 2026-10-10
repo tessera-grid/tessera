@@ -10,3 +10,11 @@
   overflow: hidden;
   white-space: nowrap;
 }
+
+/* Без наведения кнопки и грип видны всегда (ADR 0086): в узкой колонке сжимается
+   заголовок, а не уезжают под грип кнопки. */
+@media (hover: none) {
+  .cell__title {
+    min-width: 0;
+  }
+}

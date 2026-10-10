@@ -4,6 +4,16 @@
 /** Набор мобильной эмуляции: только проект `mobile`. */
 export const MOBILE_SUITE = 'src/lib/stories/__tests__/visual/mobile.test.tsx'
 
+/** Набор касаний (ADR 0086): проект `touch` в `npm test` и проект `mobile`. */
+export const TOUCH_SUITE = 'src/lib/stories/__tests__/visual/touch.test.tsx'
+
+/**
+ * Chromium как экран с касаниями: `hover: none` и `pointer: coarse`. Эмуляция касаний
+ * через CDP медиа-признаков не меняет — только настройки Blink при запуске.
+ */
+export const TOUCH_BLINK_SETTINGS =
+  '--blink-settings=primaryHoverType=1,availableHoverTypes=1,primaryPointerType=2,availablePointerTypes=2'
+
 export interface EngineExclusion {
   file: string
   reason: string
@@ -17,5 +27,9 @@ export const ENGINE_EXCLUSIONS: EngineExclusion[] = [
   {
     file: MOBILE_SUITE,
     reason: 'касания — проект mobile, эмуляция iPhone и Pixel',
+  },
+  {
+    file: TOUCH_SUITE,
+    reason: 'касания — проекты touch и mobile (ADR 0086)',
   },
 ]

@@ -5,6 +5,7 @@ import { configDefaults, defineConfig } from 'vitest/config'
 import {
   ENGINE_EXCLUSIONS,
   MOBILE_SUITE,
+  TOUCH_SUITE,
 } from './src/lib/stories/__tests__/engines'
 import base from './vitest.config'
 import { testCommands } from './vitest.commands'
@@ -49,7 +50,7 @@ export default defineConfig({
         test: {
           ...shared,
           name: 'mobile',
-          include: [MOBILE_SUITE],
+          include: [MOBILE_SUITE, TOUCH_SUITE],
           browser: {
             enabled: true,
             headless: true,

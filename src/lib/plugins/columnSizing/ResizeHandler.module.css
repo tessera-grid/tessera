@@ -7,6 +7,8 @@
   color: var(--tsr-comp-control-color);
   z-index: 1;
   width: var(--tsr-comp-resize-handler-width);
+  /* Палец тянет грип за всю обёртку, а не прокручивает грид (ADR 0086). */
+  touch-action: none;
 }
 
 .wrapper:hover .handler:not([aria-disabled='true']) {

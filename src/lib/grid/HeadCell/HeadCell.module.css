@@ -141,6 +141,14 @@
     padding-right: var(--tsr-comp-resize-handler-width) !important;
   }
 
+  /* Без наведения грип виден всегда (ADR 0086) — и отступ под него тоже. */
+  @media (hover: none) {
+    &:is([data-column-resizable='true'])
+      :global(.data-grid__cell-wrapper-content) {
+      padding-right: var(--tsr-comp-resize-handler-width) !important;
+    }
+  }
+
   /* Бэкграунд для заголовков и правого отступа с ресайзером при наведении */
 
   /* Хэндл виден без наведения (открыто его меню): непрозрачный фон маскирует контент. */

@@ -9,6 +9,11 @@ import {
   perfTraceStart,
   perfTraceStop,
 } from './src/lib/stories/__tests__/perf.commands'
+import { TOUCH_BLINK_SETTINGS } from './src/lib/stories/__tests__/engines'
+
+const commands = { perfTraceStart, perfTraceStop, perfRecord }
+/** Перф касаний (ADR 0086, TU13): тот же файл и в проекте без наведения. */
+const TOUCH_PERF = 'src/lib/stories/__tests__/performance/touch.test.tsx'
 
 // Перф-прогон против PRODUCTION-сборки React. Пользователь получает прод, поэтому
 // бюджеты RAIL сверяются с ним (общая практика: perf профилируют на prod-сборке).
@@ -43,22 +48,50 @@ export default defineConfig({
     },
   },
   test: {
-    include: [
-      'src/lib/stories/__tests__/performance/**/*.{test,spec}.{ts,tsx}',
-    ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,
     // Один повтор упавшего кейса: случайный выброс шумной машины уходит, регрессия
     // падает оба раза. Дашборд хранит последнюю попытку.
     retry: 1,
-    browser: {
-      enabled: true,
-      headless: true,
-      provider: playwright({
-        launchOptions: { channel: 'chromium' },
-      }),
-      instances: [{ browser: 'chromium' }],
-      commands: { perfTraceStart, perfTraceStop, perfRecord },
-    },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'perf',
+          include: [
+            'src/lib/stories/__tests__/performance/**/*.{test,spec}.{ts,tsx}',
+          ],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({
+              launchOptions: { channel: 'chromium' },
+            }),
+            instances: [{ browser: 'chromium' }],
+            commands,
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'perf-touch',
+          include: [TOUCH_PERF],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({
+              launchOptions: {
+                channel: 'chromium',
+                args: [TOUCH_BLINK_SETTINGS],
+              },
+              contextOptions: { hasTouch: true },
+            }),
+            instances: [{ browser: 'chromium' }],
+            commands,
+          },
+        },
+      },
+    ],
   },
 })

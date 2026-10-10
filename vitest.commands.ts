@@ -14,6 +14,9 @@ import {
   realMouseUp,
   realSwipe,
   realTap,
+  realTouchDown,
+  realTouchMove,
+  realTouchUp,
   realWheel,
 } from './src/lib/stories/__tests__/pointer.commands'
 
@@ -28,6 +31,9 @@ export const testCommands = {
   realMouseUp,
   realSwipe,
   realTap,
+  realTouchDown,
+  realTouchMove,
+  realTouchUp,
   realWheel,
   routeModule,
   releaseModule,
