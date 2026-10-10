@@ -4,12 +4,18 @@
   white-space: nowrap;
 }
 
-/* Короткая форма — без текста для вспомогательных технологий: его даёт полная. */
+.short {
+  display: none;
+}
+
+/* Короткая форма — в узле `aria-hidden`: вспомогательным технологиям текст даёт полная. */
 :where([data-status-bar-layout='compact'], [data-status-bar-layout='stacked'])
-  .count::after {
-  /* Запасное объявление — для движка без альтернативного текста у `content`. */
+  .short {
+  display: inline;
+}
+
+.short::after {
   content: attr(data-short);
-  content: attr(data-short) / '';
 }
 
 :where([data-status-bar-layout='compact'], [data-status-bar-layout='stacked'])

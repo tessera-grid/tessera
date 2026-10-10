@@ -359,12 +359,13 @@ describe('Row expanding: tree lines', () => {
     const shot = await snapshot()
     const x = lineX(cell, 0)
     const y = midY(cell)
-    // Красная, и ширина красной полосы — около 3px (по умолчанию была бы 1px).
+    // Красная, и ширина красной полосы — около 3px (по умолчанию была бы 1px). Ширина —
+    // по покрытию: доля красного в пикселях сглаженной при масштабе линии.
     const step = 1 / shot.scale
     let red = 0
     for (let dx = -2; dx <= 6; dx += step) {
       const [r, g, b] = shot.rgb(x + dx, y)
-      if (r! > 200 && g! + b! < 120) red++
+      if (r! > 200) red += 1 - (g! + b!) / 2 / r!
     }
     expect(red / shot.scale).toBeGreaterThanOrEqual(2)
   })

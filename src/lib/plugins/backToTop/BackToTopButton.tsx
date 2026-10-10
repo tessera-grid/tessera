@@ -50,6 +50,8 @@ export const BackToTopButton = ({ table }: StatusBarComponentProps) => {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onClick={() => {
+            // Safari не фокусирует кнопку по клику: без фокуса она скрылась бы сразу.
+            ref.current?.focus({ preventScroll: true })
             const scroller = findGridScroller(ref.current)
             if (past && scroller) {
               jumpToTop(table, scroller)

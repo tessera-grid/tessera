@@ -39,9 +39,9 @@ export const Footer = ({
       className={clsx('data-grid__footer', footerStyles.footer)}
       data-layout={layout}
     >
-      {/* display:contents — семантическая строка (rowgroup→row→cell) без
-          собственного бокса, чтобы ячейки остались треками общей grid/flex-сетки. */}
-      <div role="row" style={{ display: 'contents' }}>
+      {/* Строка — свой бокс, а не display: contents: такую строку Safari до 17 убирает
+          из дерева доступности (ADR 0084). */}
+      <div role="row" className={footerStyles.footer__row}>
         {isVirtualColumns ? (
           (() => {
             // Симметрично Head/Body: пиннутые — в потоке, центральные — position:absolute

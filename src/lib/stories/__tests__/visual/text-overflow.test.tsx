@@ -268,11 +268,16 @@ const expectWrappedMenu = (popup: HTMLElement, label: string) => {
   expect(rect(item).right).toBeLessThanOrEqual(rect(popup).right + 0.5)
 }
 
+/** Короткая форма счётчика — псевдоэлемент узла `aria-hidden`. */
+const shortOf = (count: HTMLElement) =>
+  count.querySelector<HTMLElement>('[aria-hidden="true"][data-short]')
+
 /** Видимый текст счётчика: полная форма или короткая из псевдоэлемента. */
 const shownForm = (count: HTMLElement) => {
-  const after = getComputedStyle(count, '::after').content
-  const short = after.match(/^"(.*)" \/ ""$/)?.[1]
-  return short ?? count.textContent
+  const short = shortOf(count)
+  return !short || getComputedStyle(short).display === 'none'
+    ? count.textContent
+    : getComputedStyle(short, '::after').content.replace(/^"(.*)"$/, '$1')
 }
 
 const selectAll = () =>
@@ -462,8 +467,8 @@ describe('Длинный текст', () => {
       '25 rows selected, 12 hidden by filters',
     )
     expect(
-      getComputedStyle(count('selected-rows-count'), '::after').content,
-    ).toMatch(/ \/ ""$/)
+      shortOf(count('selected-rows-count'))!.getAttribute('aria-hidden'),
+    ).toBe('true')
     await cleanup()
 
     await render(<Feed />)

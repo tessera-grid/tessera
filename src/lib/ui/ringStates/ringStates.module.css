@@ -73,7 +73,7 @@
   }
 }
 
-.states[data-error-flash='off']::after {
+.ring[data-error-flash='off']::after {
   opacity: 0;
 }
 

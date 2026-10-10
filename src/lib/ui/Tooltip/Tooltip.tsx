@@ -160,20 +160,25 @@ export const Tooltip = ({
   const keepOpen = () => clearTimeout(timer.current)
 
   const active = !disabled && !!title
-  // Заголовок появился у триггера, уже сфокусированного с клавиатуры (причина пришла
-  // ответом), — события focus больше не будет, показываем сразу.
+  // Заголовок появился у триггера, уже сфокусированного с клавиатуры или под курсором
+  // (причина пришла ответом), — событий focus и pointerenter больше не будет. Только
+  // появление, не монтирование: строки, проезжающие под курсором, подсказку не открывают.
+  const wasActive = useRef(active)
   useEffect(() => {
     const anchor = anchorRef.current
-    if (
-      active &&
-      keyboardInput &&
-      anchor &&
-      anchor === document.activeElement
-    ) {
+    const appeared = active && !wasActive.current
+    wasActive.current = active
+    if (!appeared || !anchor) {
+      return
+    }
+    const focused = keyboardInput && anchor === document.activeElement
+    const hovered =
+      anchor.matches(':hover') && (!overflowOnly || isOverflowing(anchor))
+    if (focused || hovered) {
       setMounted(true)
       setOpen(true)
     }
-  }, [active])
+  }, [active, overflowOnly])
 
   const Trigger = children.type as ElementType
   const handlers = active && {

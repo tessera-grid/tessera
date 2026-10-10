@@ -34,7 +34,8 @@ describe('Размер страницы — ожидание загрузки', 
 
     await humanClick(pageSizeButton())
     await expect.poll(busy).toBe('true')
-    pageSizeButton().blur()
+    // Уход фокуса — как у пользователя, Tab: Safari не фокусирует кнопку по клику.
+    await userEvent.tab()
     await expect.poll(busy).toBeNull()
 
     await releaseModule(MODULE.pageSize)

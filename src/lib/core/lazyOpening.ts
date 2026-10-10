@@ -43,15 +43,32 @@ export const useLazyOpening = (table: unknown) => {
     }
     let active = true
     const timer = setTimeout(() => setPending(true), LAZY_PENDING_DELAY_MS)
+    // Отмена слушается и на документе: Safari не фокусирует кнопку по клику, и её
+    // Escape и blur ожидание не отменили бы. Уход — Tab или нажатие указателем.
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape' || event.key === 'Tab') cancel()
+    }
+    const listen = (on: boolean) => {
+      if (on) {
+        document.addEventListener('keydown', onKeyDown, true)
+        document.addEventListener('pointerdown', cancel, true)
+      } else {
+        document.removeEventListener('keydown', onKeyDown, true)
+        document.removeEventListener('pointerdown', cancel, true)
+      }
+    }
+    listen(true)
     const finish = () => {
       active = false
       clearTimeout(timer)
+      listen(false)
       stop.current = undefined
       setPending(false)
     }
     stop.current = () => {
       active = false
       clearTimeout(timer)
+      listen(false)
     }
     lazy.load().then(
       () => {

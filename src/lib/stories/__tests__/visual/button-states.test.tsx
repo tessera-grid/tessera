@@ -288,6 +288,32 @@ describe('Button states: error flash', () => {
     expect(performance.now() - start).toBeLessThan(1100)
   })
 
+  test('BS17: after the hold the flash fades out with the motion transition instead of dropping', async () => {
+    const screen = await renderIcon({ errorFlash: 0 })
+    await screen.rerender(
+      <Theme style={FAST_FLASH}>
+        <IconButton aria-label="Load" errorFlash={1}>
+          {icon}
+        </IconButton>
+      </Theme>,
+    )
+    await expect
+      .poll(() => button().getAttribute('data-error-flash'), { timeout: 2000 })
+      .toBe('off')
+    // Гаснет: контур ещё есть, а прозрачность уходит к нулю переходом.
+    expect(ring().content).not.toBe('none')
+    await expect
+      .poll(() =>
+        button().getAttribute('data-error-flash') === 'off'
+          ? parseFloat(ring().opacity)
+          : 1,
+      )
+      .toBeLessThan(1)
+    await expect
+      .poll(() => button().hasAttribute('data-error-flash'), { timeout: 2000 })
+      .toBe(false)
+  })
+
   test('BS14: from pending, the shine of every switching button turns into the flash color where it stands and smoothly fills the whole outline', async () => {
     // Несколько кнопок переключаются одним коммитом — как кнопки одного запроса.
     const Group = ({ pending, flash }: { pending: boolean; flash: number }) => (

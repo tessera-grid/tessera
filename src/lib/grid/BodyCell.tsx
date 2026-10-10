@@ -30,7 +30,7 @@ import { RenderCellSlot, RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
-import { getCellExpandingStyles, treeLineShadows } from './cellExpandingStyles'
+import { getCellExpandingStyles, treeLineMasks } from './cellExpandingStyles'
 import { getColumnSizeVariable, getVirtualCellLeft } from './columnSizes'
 
 import styles from '../grid/BodyCell/BodyCell.module.css'
@@ -204,9 +204,7 @@ export const BodyCell = memo(
                 right: endPinnedOffset,
               }),
           paddingLeft,
-          ...(treeDepth && {
-            '--tsr-tree-shadows': treeLineShadows(treeDepth),
-          }),
+          ...(treeDepth && treeLineMasks(treeDepth)),
           ...selectionStyle,
           ...highlighted.style,
         }}

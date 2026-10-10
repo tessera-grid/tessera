@@ -350,7 +350,11 @@ describe('Кнопка «наверх»', () => {
       ].find(el => rect(el).top > rect(scroller()).top + 60)!
       const rowId = row.getAttribute('data-row-id')!
       await humanClick(row.querySelector('[data-column-id="b"]')!)
+      // Клик, как в Safari: нажатие на кнопку не даёт ей фокус.
+      const noFocus = (event: MouseEvent) => event.preventDefault()
+      button()!.addEventListener('mousedown', noFocus)
       await humanClick(button()!)
+      button()!.removeEventListener('mousedown', noFocus)
       await frames()
       expect(scroller().scrollTop).toBe(0)
       expect(document.activeElement).toBe(button())
@@ -370,7 +374,13 @@ describe('Кнопка «наверх»', () => {
       expect(active.getAttribute('data-column-id')).toBe('b')
       expect(rowId).not.toBe('r0')
 
-      await userEvent.tab({ shift: true })
+      // Tab в грид — с поля перед ним: обратный путь с кнопки в WebKit под Playwright
+      // непредсказуем (уходит по кругу), а вход в грид один для обоих направлений (KN32).
+      const before = document.createElement('input')
+      document.body.prepend(before)
+      before.focus()
+      await userEvent.tab()
+      before.remove()
       await frames()
       expect(document.activeElement).toBe(active)
       expect(scroller().scrollTop).toBe(0)

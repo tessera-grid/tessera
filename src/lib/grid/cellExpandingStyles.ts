@@ -37,14 +37,13 @@ export const getCellExpandingStyles = ({
 }
 
 /**
- * Линии дерева глубже первого уровня (ADR 0058): тени линии первого уровня со сдвигом
- * на шаг отступа; `none` — у строки первого уровня одна линия.
+ * Линии дерева (ADR 0058): слой маски на каждый уровень строки, сдвинутый на шаг
+ * отступа.
  */
-export const treeLineShadows = (depth: number): string =>
-  depth > 1
-    ? Array.from(
-        { length: depth - 1 },
-        (_, i) =>
-          `calc(var(${ROW_NESTING_INDENT_TOKEN}) * ${i + 1}) 0 0 0 var(--tsr-comp-tree-line-color)`,
-      ).join(', ')
-    : 'none'
+export const treeLineMasks = (depth: number) => ({
+  '--tsr-tree-masks': Array(depth).fill('var(--tsr-tree-line-mask)').join(', '),
+  '--tsr-tree-mask-positions': Array.from(
+    { length: depth },
+    (_, level) => `calc(var(${ROW_NESTING_INDENT_TOKEN}) * ${level}) 0`,
+  ).join(', '),
+})
