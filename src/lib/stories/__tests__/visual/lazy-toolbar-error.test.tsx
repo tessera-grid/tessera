@@ -33,12 +33,14 @@ describe('Ленивые поповеры — ошибка загрузки', ()
     await sleep(100)
     expect(columnsPopover()).toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()
-    // Вспышка держится --tsr-comp-error-flash-duration (1200 мс).
+    // Вспышка держится --tsr-comp-error-flash-duration (1200 мс), затем гаснет. Ждём
+    // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
+    // отдаёт отпускание кнопки группе тулбара по прежней раскладке.
     await expect
-      .poll(() => columnsButton().getAttribute('data-error-flash'), {
+      .poll(() => columnsButton().hasAttribute('data-error-flash'), {
         timeout: 3000,
       })
-      .not.toBe('on')
+      .toBe(false)
 
     // Следующий клик — новая попытка: снова вспышка, а не мёртвый клик.
     await humanClick(columnsButton())

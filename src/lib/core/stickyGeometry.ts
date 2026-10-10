@@ -6,7 +6,7 @@
  * отпускание кнопки с прямоугольником триггера и закрылось бы. Сдвиг прокрутки на
  * пиксель туда и обратно пересчитывает положение сразу; на экране ничего не меняется.
  */
-const syncStickyGeometry = (scroller: HTMLElement) => {
+export const syncStickyGeometry = (scroller: HTMLElement) => {
   const horizontal = scroller.scrollWidth > scroller.clientWidth
   const axis = horizontal ? 'scrollLeft' : 'scrollTop'
   const max = horizontal

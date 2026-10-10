@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import { DEFAULT_LABELS } from '../../../core/localization'
+import { syncStickyGeometry } from '../../../core/stickyGeometry'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnPinning, rowActions, rowSelection } from '../../../plugins'
@@ -182,6 +183,11 @@ describe('Column Pinning — right side', () => {
           el.getBoundingClientRect().width > 1,
       ),
     ).toBe(false)
+    // Firefox после перекладки отдаёт sticky-ячейкам незакреплённое положение, пока
+    // не прокрутят (ADR 0085) — пересчитать, как грид перед нажатием.
+    syncStickyGeometry(
+      container.querySelector<HTMLElement>('.data-grid__container')!,
+    )
     expect(Math.round(head.getBoundingClientRect().left)).toBe(
       Math.round(actionsBody(container).getBoundingClientRect().left),
     )
