@@ -8,7 +8,11 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { BROWSER_TARGETS, BUILD_TARGET } from '../../../browser-targets'
+import {
+  BROWSER_TARGETS,
+  BUILD_TARGET,
+  SAMSUNG_TARGET,
+} from '../../../browser-targets'
 import { checkCss, EXCEPTIONS } from '../../../scripts/browsers'
 import viteConfig from '../../../vite.config'
 
@@ -17,22 +21,27 @@ const { browserslist } = JSON.parse(
 ) as { browserslist: string[] }
 
 describe('Порог браузеров', () => {
-  it('CB1: browserslist фиксирует порог Chrome и Edge 111, Firefox 128, Safari и iOS Safari 16.4, Chrome на Android последний; build.target совпадает', () => {
+  it('CB1: browserslist фиксирует порог Chrome и Edge 111, Firefox 128, Safari и iOS Safari 17.1, Opera 97, Samsung Internet 22, Chrome и Opera на Android последние; build.target совпадает', () => {
     expect(browserslist).toEqual([
       `chrome >= ${BROWSER_TARGETS.chrome}`,
       `edge >= ${BROWSER_TARGETS.edge}`,
       `firefox >= ${BROWSER_TARGETS.firefox}`,
       `safari >= ${BROWSER_TARGETS.safari}`,
       `ios_saf >= ${BROWSER_TARGETS.ios}`,
+      `opera >= ${BROWSER_TARGETS.opera}`,
+      `samsung >= ${SAMSUNG_TARGET}`,
       'last 1 and_chr version',
+      'last 1 op_mob version',
     ])
     expect(BROWSER_TARGETS).toEqual({
       chrome: '111',
       edge: '111',
       firefox: '128',
-      safari: '16.4',
-      ios: '16.4',
+      safari: '17.1',
+      ios: '17.1',
+      opera: '97',
     })
+    expect(SAMSUNG_TARGET).toBe('22')
     expect(
       (viteConfig as { build?: { target?: unknown } }).build?.target,
     ).toEqual(BUILD_TARGET)
@@ -58,6 +67,9 @@ describe('Порог браузеров', () => {
     ])
     expect(await features('@starting-style{.a{opacity:0}}')).toEqual([
       'starting-style',
+    ])
+    expect(await features('.a{overflow-clip-margin:border-box}')).toEqual([
+      'overflow-clip-margin',
     ])
     expect(await features('.a{touch-action:pan-y}')).toEqual([])
     for (const [feature, reason] of Object.entries(EXCEPTIONS)) {

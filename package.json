@@ -58,9 +58,12 @@
     "chrome >= 111",
     "edge >= 111",
     "firefox >= 128",
-    "safari >= 16.4",
-    "ios_saf >= 16.4",
-    "last 1 and_chr version"
+    "safari >= 17.1",
+    "ios_saf >= 17.1",
+    "opera >= 97",
+    "samsung >= 22",
+    "last 1 and_chr version",
+    "last 1 op_mob version"
   ],
   "dependencies": {
     "@base-ui/react": "^1.7.0",

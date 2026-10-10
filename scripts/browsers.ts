@@ -47,13 +47,18 @@ export const EXTRA_RULES: ExtraRule[] = [
     atRule: rule => rule.name === 'starting-style',
   },
   {
+    feature: 'overflow-clip-margin',
+    message: 'overflow-clip-margin — Chrome 90+, Firefox 102+, нет в Safari',
+    decl: prop(/^overflow-clip-margin$/),
+  },
+  {
     feature: 'field-sizing',
     message: 'field-sizing — Chrome 123+, нет в Firefox и Safari',
     decl: prop(/^field-sizing$/),
   },
   {
     feature: 'anchor-positioning',
-    message: 'anchor positioning — Chrome 125+, нет в Firefox и Safari 16.4',
+    message: 'anchor positioning — Chrome 125+, нет в Firefox и Safari 17.1',
     decl: decl =>
       /^(anchor-name|position-anchor|position-area|position-try)/.test(
         decl.prop,
@@ -73,7 +78,7 @@ export const EXTRA_RULES: ExtraRule[] = [
   },
   {
     feature: 'scroll-driven-animations',
-    message: 'animation-timeline — Chrome 115+, нет в Firefox и Safari 16.4',
+    message: 'animation-timeline — Chrome 115+, нет в Firefox и Safari 17.1',
     decl: decl =>
       /^(animation-timeline|scroll-timeline|view-timeline)/.test(decl.prop),
   },
@@ -109,13 +114,11 @@ export const EXCEPTIONS: Record<string, string> = {
   'css-text-indent':
     'text-indent: 0 из preflight; частично — each-line/hanging',
   'css-display-contents':
-    'утилита Tailwind «contents» не используется гридом; строки ARIA на display: contents не держим',
+    'строки шапки на display: contents; частичность caniuse — дерево доступности, его WebKit дочинил в Safari 17.1 — пороге (ADR 0084)',
   'intrinsic-width':
     'частично в Firefox — значения stretch; используются fit-content/max-content',
   'css-clip-path':
     'частично — фигуры SVG; используется только inset() для скрытия текста',
-  'content-alt-text':
-    'короткая форма счётчика панели (ADR 0083): в Safari 16.4–17.3 запасное объявление — скринридер читает и короткую форму',
 }
 
 export const findUnsupported = async (
