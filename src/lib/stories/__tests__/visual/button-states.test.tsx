@@ -140,7 +140,7 @@ describe('Button states: pending ring', () => {
 
   test('BS3: the ring follows the button shape — round by default, square with an overridden radius', async () => {
     const screen = await renderIcon({ pending: true })
-    expect(ring().content).not.toBe('none')
+    expect(ring().opacity).toBe('1')
     expect(getComputedStyle(button()).borderRadius).toBe('50%')
     expect(ring().borderRadius).toBe('50%')
 
@@ -209,7 +209,6 @@ describe('Button states: pending ring', () => {
     const first = angle()
     await waitFrames(150)
     expect(angle()).toBe(first)
-    expect(ring().content).not.toBe('none')
     expect(ring().opacity).toBe('1')
     expect(ring().backgroundImage).toContain(
       token('--tsr-comp-pending-ring-color'),
@@ -239,7 +238,9 @@ describe('Button states: error flash', () => {
     await expect
       .poll(() => button().hasAttribute('data-error-flash'), { timeout: 2000 })
       .toBe(false)
-    expect(ring().content).toBe('none')
+    // Контур на месте, но не виден и не крутится (BS18).
+    expect(ring().opacity).toBe('0')
+    expect(ring().animationName).toBe('none')
     expect(getComputedStyle(button()).color).toBe(rest)
   })
 
@@ -300,8 +301,8 @@ describe('Button states: error flash', () => {
     await expect
       .poll(() => button().getAttribute('data-error-flash'), { timeout: 2000 })
       .toBe('off')
-    // Гаснет: контур ещё есть, а прозрачность уходит к нулю переходом.
-    expect(ring().content).not.toBe('none')
+    // Гаснет: контур ещё нарисован, а прозрачность уходит к нулю переходом.
+    expect(ring().backgroundImage).toContain('conic-gradient')
     await expect
       .poll(() =>
         button().getAttribute('data-error-flash') === 'off'

@@ -641,9 +641,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
-      `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS16 —
-      блик `pending` и вспышка контура `errorFlash` у `IconButton` и `ToolbarButton`,
-      [ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md)); `segments` (SG1–SG4 —
+      `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS17 —
+      блик `pending` и вспышка контура `errorFlash` у `IconButton` и `ToolbarButton`),
+      `ring-press` (BS18 — смена кольца посреди нажатия не теряет клик, ещё и в
+      `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md)); `segments` (SG1–SG4 —
       сегменты `ui/Segments`: radiogroup, токены, axe, движение), SG5 — в модульном
       `uiStories`; панель экспорта в виде меню — EP1–EP5 в `export`
       ([ADR 0074](docs/decisions/0074-segments-and-export-panel-sections.md)).

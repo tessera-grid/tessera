@@ -179,3 +179,13 @@ export const realTouchMove: BrowserCommand<
 
 export const realTouchUp: BrowserCommand<[]> = async ({ page }) =>
   sendTouch(page, 'touchEnd', [])
+
+// Нажатие кнопки мыши в точке без отпускания — проверить смену DOM посреди нажатия;
+// отпускание — `realMouseUp`.
+export const realMouseDown: BrowserCommand<[at: Point]> = async (
+  { page },
+  at,
+) => {
+  await page.mouse.move(...(await toPage(page))(at))
+  await page.mouse.down()
+}

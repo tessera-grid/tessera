@@ -21,6 +21,20 @@
   position: relative;
 }
 
+/*
+ * У кнопки контур есть всегда, состояния меняют только его вид: появление и исчезновение
+ * `::after` посреди нажатия перестраивает кадр, и Firefox, не успев его нарисовать,
+ * отдаёт отпускание кнопки родителю — клик теряется (ADR 0055, BS18).
+ */
+.ring:not(.layer)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+
 .ring:is([aria-busy='true'], [data-pending], [data-error-flash])::after {
   --tsr-ring-color: var(--tsr-comp-pending-ring-color);
   --tsr-ring-tail: color-mix(
@@ -46,11 +60,10 @@
     var(--tsr-ring-color) 80%,
     var(--tsr-ring-tail) 100%
   );
+  opacity: 1;
   animation: pendingRing var(--tsr-comp-pending-ring-duration) linear infinite;
-  transition:
-    var(--tsr-comp-reveal-transition),
-    --tsr-ring-fill var(--tsr-comp-error-flash-fill-duration)
-      var(--tsr-comp-motion-easing);
+  transition: --tsr-ring-fill var(--tsr-comp-error-flash-fill-duration)
+    var(--tsr-comp-motion-easing);
 }
 
 /*
@@ -73,8 +86,13 @@
   }
 }
 
+/* Гаснет переходом движения (BS17); появление блика и вспышки — сразу. */
 .ring[data-error-flash='off']::after {
   opacity: 0;
+  transition:
+    var(--tsr-comp-reveal-transition),
+    --tsr-ring-fill var(--tsr-comp-error-flash-fill-duration)
+      var(--tsr-comp-motion-easing);
 }
 
 @keyframes pendingRing {

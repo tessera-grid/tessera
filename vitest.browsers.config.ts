@@ -9,7 +9,8 @@ import { testCommands } from './vitest.commands'
 // редактора браузеры шлют по-разному (ADR 0040, SS3, SS7–SS9). Вход в грид с
 // клавиатуры: Firefox держит прокручиваемые области в порядке Tab (ADR 0021, KN32).
 // Кольцо фокуса после мыши: Firefox не даёт :focus-visible фокусу от скрипта (CB5).
-// Раскрытие кнопок ячейки без возможностей только Chromium (CB6).
+// Раскрытие кнопок ячейки без возможностей только Chromium (CB6). Смена кольца кнопки
+// посреди нажатия: Firefox терял клик (BS18).
 // Запуск: npm run test:browsers
 export default defineConfig({
   ...base,
@@ -20,6 +21,7 @@ export default defineConfig({
       'src/lib/stories/__tests__/visual/keyboard-entry.test.tsx',
       'src/lib/stories/__tests__/visual/focus-modality.test.tsx',
       'src/lib/stories/__tests__/visual/reveal-engines.test.tsx',
+      'src/lib/stories/__tests__/visual/ring-press.test.tsx',
     ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,

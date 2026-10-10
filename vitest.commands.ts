@@ -10,6 +10,7 @@ import {
 import {
   realDrag,
   realDragHold,
+  realMouseDown,
   realMouseMove,
   realMouseUp,
   realSwipe,
@@ -27,6 +28,7 @@ export const testCommands = {
   reducedMotion,
   realDrag,
   realDragHold,
+  realMouseDown,
   realMouseMove,
   realMouseUp,
   realSwipe,

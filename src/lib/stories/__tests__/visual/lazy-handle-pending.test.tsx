@@ -32,7 +32,7 @@ describe('Меню ручек — ожидание загрузки', () => {
     await humanClick(columnHandle())
     expect(handleBusy()).toBeNull()
     await expect.poll(handleBusy).toBe('true')
-    expect(getComputedStyle(columnHandle(), '::after').content).not.toBe('none')
+    expect(getComputedStyle(columnHandle(), '::after').opacity).toBe('1')
     const during = columnHandle().getBoundingClientRect()
     expect([during.left, during.top, during.width, during.height]).toEqual([
       before.left,
