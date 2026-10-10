@@ -1,5 +1,5 @@
 import type { BrowserCommand } from 'vitest/node'
-import type { Route } from 'playwright'
+import type { Page, Route } from 'playwright'
 
 // Задержка и отказ загрузки модуля (ADR 0061, §6): перехват запроса Playwright по
 // части адреса. `hold` держит запрос до `releaseModule`, `fail` обрывает каждый,
@@ -19,11 +19,19 @@ interface Interception {
   handler: (route: Route) => Promise<void> | void
 }
 
-const intercepted = new Map<string, Interception>()
+// Свой список на страницу: движки идут параллельно, и общий список отдал бы перехват
+// одного движка другому.
+const pages = new WeakMap<Page, Map<string, Interception>>()
+const interceptedOn = (page: Page) => {
+  let intercepted = pages.get(page)
+  if (!intercepted) pages.set(page, (intercepted = new Map()))
+  return intercepted
+}
 
 export const routeModule: BrowserCommand<
   [pattern: string, mode: Mode]
 > = async ({ page }, pattern, mode) => {
+  const intercepted = interceptedOn(page)
   const current = intercepted.get(pattern)
   if (current) {
     current.mode = mode
@@ -55,6 +63,7 @@ export const releaseModule: BrowserCommand<[pattern: string]> = async (
   { page },
   pattern,
 ) => {
+  const intercepted = interceptedOn(page)
   const interception = intercepted.get(pattern)
   if (!interception) return
   intercepted.delete(pattern)
@@ -67,6 +76,6 @@ export const releaseModule: BrowserCommand<[pattern: string]> = async (
 
 /** Сколько запросов модуля сейчас удержано. */
 export const heldModuleRequests: BrowserCommand<[pattern: string]> = async (
-  _context,
+  { page },
   pattern,
-) => intercepted.get(pattern)?.held.length ?? 0
+) => interceptedOn(page).get(pattern)?.held.length ?? 0

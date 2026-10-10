@@ -1,3 +1,4 @@
+import { commands } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -11,6 +12,11 @@ import { composed } from '../stories'
 // кромки — из инлайн-переменных `--tsr-sel-edge-*`. Взаимодействие — нативные
 // MouseEvent'ы (детерминированно, как DnD-хореография в других тестах): стоковые
 // хендлеры фичи читают модификаторы из `nativeEvent`.
+
+const pointer = commands as unknown as {
+  realDragHold: (from: object, to: object, steps?: number) => Promise<void>
+  realMouseUp: () => Promise<void>
+}
 
 // --- Selectors (part of the component contract) -------------------------------
 
@@ -153,21 +159,18 @@ describe('Cell Selection — mouse', () => {
     const scroller = container.querySelector<HTMLElement>(SCROLL_CONTAINER)!
     const rect = scroller.getBoundingClientRect()
 
-    // Begin a drag on the top-left cell, then hold the pointer BELOW the bottom
-    // edge — the rAF loop must scroll the container and extend the range.
-    fireMouse(cellAt(container, 0, 0), 'mousedown')
-    document.dispatchEvent(
-      new MouseEvent('mousemove', {
-        bubbles: true,
-        clientX: rect.left + 20,
-        clientY: rect.bottom + 60,
-      }),
+    // Настоящая мышь: нажатие на верхней левой ячейке, курсор держится НИЖЕ края —
+    // цикл rAF прокручивает контейнер и расширяет диапазон.
+    const start = cellAt(container, 0, 0).getBoundingClientRect()
+    await pointer.realDragHold(
+      { x: start.left + 10, y: start.top + start.height / 2 },
+      { x: rect.left + 20, y: rect.bottom + 20 },
     )
     await expect
       .poll(() => scroller.scrollTop, { timeout: 2000 })
       .toBeGreaterThan(0)
     await expect.poll(() => selectedCount(container)).toBeGreaterThan(1)
-    fireMouse(document, 'mouseup')
+    await pointer.realMouseUp()
   })
 
   test('CRS4: ctrl/cmd-click adds a separate rectangle (multi-range)', async () => {

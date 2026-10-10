@@ -900,6 +900,9 @@ describe('Меню, которое не закрывается', () => {
       .not.toBeNull()
     expect(item('Later')!.querySelector('[data-item-spinner]')).toBeNull()
     expect(items().length).toBeGreaterThan(0)
+    // Курсор уходит и возвращается: headless WebKit не шлёт наведение на элемент,
+    // появившийся под неподвижным курсором.
+    await userEvent.unhover(item('Later')!)
     await userEvent.hover(item('Later')!)
     await expect.poll(tooltipShown('Label was not saved')).toBe(true)
     await closeMenu()

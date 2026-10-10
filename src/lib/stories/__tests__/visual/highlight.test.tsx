@@ -649,89 +649,94 @@ describe('Подсветка: блик и прокрутка', () => {
 })
 
 describe('Подсветка и состояния строк', () => {
-  test('HL10: матрица состояний — оттенок тона, отличие от неподсвеченной, ховер и выбор различимы, полоса без разрывов', async () => {
-    await mount({ pinned: true, selected: ['r2'] })
-    // r0 — покой, r1 — нечётная, r2 — выбор; ховер — r0 и r2.
-    const kinds = (id: string) => [
-      cellEl(id, 'a'),
-      cellEl(id, 'b'),
-      cellEl(id, 'c'),
-    ]
-    const shots = async () => {
-      const result: Record<string, Shot> = { idle: await snapshot() }
-      for (const id of ['r0', 'r2']) {
-        await userEvent.hover(cellEl(id, 'b'))
+  test(
+    'HL10: матрица состояний — оттенок тона, отличие от неподсвеченной, ховер и выбор различимы, полоса без разрывов',
+    // Десятки снимков экрана: в WebKit снимок медленнее, общего тайм-аута мало.
+    { timeout: 60_000 },
+    async () => {
+      await mount({ pinned: true, selected: ['r2'] })
+      // r0 — покой, r1 — нечётная, r2 — выбор; ховер — r0 и r2.
+      const kinds = (id: string) => [
+        cellEl(id, 'a'),
+        cellEl(id, 'b'),
+        cellEl(id, 'c'),
+      ]
+      const shots = async () => {
+        const result: Record<string, Shot> = { idle: await snapshot() }
+        for (const id of ['r0', 'r2']) {
+          await userEvent.hover(cellEl(id, 'b'))
+          await sleep(250)
+          result[id] = await snapshot()
+        }
+        await userEvent.unhover(document.body)
         await sleep(250)
-        result[id] = await snapshot()
+        return result
       }
-      await userEvent.unhover(document.body)
-      await sleep(250)
-      return result
-    }
-    for (const dark of [false, true]) {
-      document.documentElement.classList.toggle('dark', dark)
-      await sleep(250)
-      const base = await shots()
-      for (const tone of TONES) {
-        await act(() =>
-          ['r0', 'r1', 'r2'].forEach(id =>
-            table.highlight({ row: id }, { tone, key: 'matrix' }),
-          ),
-        )
-        const lit = await shots()
-        const cases: [string, string, keyof typeof base][] = [
-          ['rest', 'r0', 'idle'],
-          ['odd', 'r1', 'idle'],
-          ['hover', 'r0', 'r0'],
-          ['selected', 'r2', 'idle'],
-          ['selected+hover', 'r2', 'r2'],
-        ]
-        for (const [state, id, shot] of cases) {
-          for (const el of kinds(id)) {
-            const label = `${dark ? 'dark' : 'light'} ${tone} ${state} ${el.dataset.columnId}`
-            const color = colorAt(lit[shot]!, el)
-            expect(hueGap(hue(color), TONE_HUE[tone]), label).toBeLessThan(25)
-            // Тон заметен: сдвиг от неподсвеченной ячейки — десятки уровней, а не шум.
-            expect(
-              distance(color, colorAt(base[shot]!, el)),
-              label,
-            ).toBeGreaterThan(30)
+      for (const dark of [false, true]) {
+        document.documentElement.classList.toggle('dark', dark)
+        await sleep(250)
+        const base = await shots()
+        for (const tone of TONES) {
+          await act(() =>
+            ['r0', 'r1', 'r2'].forEach(id =>
+              table.highlight({ row: id }, { tone, key: 'matrix' }),
+            ),
+          )
+          const lit = await shots()
+          const cases: [string, string, keyof typeof base][] = [
+            ['rest', 'r0', 'idle'],
+            ['odd', 'r1', 'idle'],
+            ['hover', 'r0', 'r0'],
+            ['selected', 'r2', 'idle'],
+            ['selected+hover', 'r2', 'r2'],
+          ]
+          for (const [state, id, shot] of cases) {
+            for (const el of kinds(id)) {
+              const label = `${dark ? 'dark' : 'light'} ${tone} ${state} ${el.dataset.columnId}`
+              const color = colorAt(lit[shot]!, el)
+              expect(hueGap(hue(color), TONE_HUE[tone]), label).toBeLessThan(25)
+              // Тон заметен: сдвиг от неподсвеченной ячейки — десятки уровней, а не шум.
+              expect(
+                distance(color, colorAt(base[shot]!, el)),
+                label,
+              ).toBeGreaterThan(30)
+            }
           }
-        }
-        // Под подсветкой состояние различимо там, где оно различимо без неё.
-        for (const [id, shot] of [
-          ['r0', 'r0'],
-          ['r2', 'r2'],
-          ['r2', 'idle'],
-        ] as const) {
-          for (const el of kinds(id)) {
-            const ref = shot === 'idle' ? 'r0' : id
-            const refEl = cellEl(ref, el.dataset.columnId!)
-            const plain = distance(
-              colorAt(base[shot]!, el),
-              colorAt(base.idle!, shot === 'idle' ? refEl : el),
-            )
-            // Шум сжатия скриншота — до пары уровней; различие меньше этого не проверяем.
-            if (plain < 6) continue
-            const label = `${dark ? 'dark' : 'light'} ${tone} ${id}/${shot} ${el.dataset.columnId}`
-            expect(
-              distance(
-                colorAt(lit[shot]!, el),
-                colorAt(lit.idle!, shot === 'idle' ? refEl : el),
-              ),
-              label,
-            ).toBeGreaterThanOrEqual(Math.floor(plain * 0.6))
+          // Под подсветкой состояние различимо там, где оно различимо без неё.
+          for (const [id, shot] of [
+            ['r0', 'r0'],
+            ['r2', 'r2'],
+            ['r2', 'idle'],
+          ] as const) {
+            for (const el of kinds(id)) {
+              const ref = shot === 'idle' ? 'r0' : id
+              const refEl = cellEl(ref, el.dataset.columnId!)
+              const plain = distance(
+                colorAt(base[shot]!, el),
+                colorAt(base.idle!, shot === 'idle' ? refEl : el),
+              )
+              // Шум сжатия скриншота — до пары уровней; различие меньше этого не проверяем.
+              if (plain < 6) continue
+              const label = `${dark ? 'dark' : 'light'} ${tone} ${id}/${shot} ${el.dataset.columnId}`
+              expect(
+                distance(
+                  colorAt(lit[shot]!, el),
+                  colorAt(lit.idle!, shot === 'idle' ? refEl : el),
+                ),
+                label,
+              ).toBeGreaterThanOrEqual(Math.floor(plain * 0.6))
+            }
           }
+          // Полоса без разрывов: стык закреплённой и обычной ячейки того же тона.
+          const left = cellEl('r0', 'a').getBoundingClientRect()
+          const seam = lit.idle!(left.right + 2, left.bottom - 8)
+          expect(hueGap(hue(seam), TONE_HUE[tone])).toBeLessThan(25)
+          await act(() => table.clearHighlights('matrix'))
+          await sleep(600)
         }
-        // Полоса без разрывов: стык закреплённой и обычной ячейки того же тона.
-        const left = cellEl('r0', 'a').getBoundingClientRect()
-        const seam = lit.idle!(left.right + 2, left.bottom - 8)
-        expect(hueGap(hue(seam), TONE_HUE[tone])).toBeLessThan(25)
-        await act(() => table.clearHighlights('matrix'))
-        await sleep(600)
       }
-    }
-  })
+    },
+  )
 
   test('HL11: текст, кромки выделения ячеек и фокус-кольцо под подсветкой не тонированы', async () => {
     const screen = await mount({ cells: true })

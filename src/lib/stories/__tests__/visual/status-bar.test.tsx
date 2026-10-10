@@ -81,7 +81,15 @@ describe('Status bar', () => {
     )
     const footer = document.querySelector<HTMLElement>('.data-grid__footer')!
     expect(read(footer, 'border-bottom-width')).toBe('0px')
-    expect(rect(footer).bottom).toBeCloseTo(rect(bar).top, 0)
+    // Между футером и панелью — только горизонтальная полоса прокрутки, если она видима
+    // (Windows, WebKit); без полосы футер стоит вплотную.
+    const scroller = getScroller()
+    const scrollbar =
+      scroller.offsetHeight -
+      scroller.clientHeight -
+      parseFloat(read(scroller, 'border-top-width')) -
+      parseFloat(read(scroller, 'border-bottom-width'))
+    expect(rect(footer).bottom + scrollbar).toBeCloseTo(rect(bar).top, 0)
   })
 
   test("SB4: align 'start' slots are pushed left, 'end' — right; within a side they follow order", async () => {

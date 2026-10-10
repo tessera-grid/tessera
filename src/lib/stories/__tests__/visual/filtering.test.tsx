@@ -380,6 +380,12 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => headCell('city')).toBeNull()
     expect(rowIds()).toEqual(['2', '7'])
+    // Меню доигрывает выход, и его подложка съела бы следующий клик.
+    await expect
+      .poll(() =>
+        document.querySelector('[data-testid="column-visibility-menu"]'),
+      )
+      .toBeNull()
 
     await expect
       .poll(() => summaryButton()!.getAttribute('aria-label'))
