@@ -1,4 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { expect, spyOn, userEvent } from 'storybook/test'
 
 import { exportFormats } from '../plugins/dataExport'
 
@@ -8,8 +9,13 @@ import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { ExportServerDemo } from './demos/exportDemos'
 import { vrStates } from './__mocks__/catalog'
 import {
+  byTestId,
+  callbackLog,
   expectPopupInCanvas,
   openPopup,
+  orderedRows,
+  settle,
+  until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 
@@ -98,6 +104,35 @@ export const ExportExcel: StoryObj<StoryProps> = {
     exportOptions: { formats: [exportFormats.csv(), exportFormats.xlsx()] },
   },
   argTypes: { exportOptions: { control: false } },
+  // Сценарий истории (ADR 0073, XL13): выгрузка в Excel скачивает export.xlsx с данными.
+  parameters: { requirements: ['XL13'] },
+  play: async ({ canvasElement }) => {
+    const download = interceptDownload()
+    try {
+      await waitForRows(canvasElement)
+      await openExport(canvasElement)
+      const xlsx = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="export-axis-format"] [role="radio"][data-value="xlsx"]',
+        )!
+      await userEvent.click(xlsx())
+      await until(() => expect(xlsx()).toHaveAttribute('aria-checked', 'true'))
+      await userEvent.click(byTestId('export-run')!)
+
+      await until(() => expect(download.names).toEqual(['export.xlsx']))
+      const bytes = new Uint8Array(await download.blobs[0]!.arrayBuffer())
+      expect([...bytes.slice(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04])
+      const firstCell = orderedRows(canvasElement)[0]!
+        .querySelector('.data-grid__body-cell')!
+        .textContent!.trim()
+      expect(await zipEntryText(bytes, 'xl/worksheets/sheet1.xml')).toContain(
+        `<t xml:space="preserve">${firstCell}</t>`,
+      )
+      await settle()
+    } finally {
+      download.restore()
+    }
+  },
 }
 
 export const ExportServer: StoryObj<ExportArgs> = {
@@ -119,12 +154,48 @@ export const ExportServer: StoryObj<ExportArgs> = {
     serverDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
     serverFailMode: { control: 'inline-radio', options: ['never', 'always'] },
   },
+  render: args => <ExportServerDemo {...normalizeArgs(args)} />,
+  // Дымовой сценарий (ADR 0044, EX34): «Все строки» уходят в onExport, кнопка занята до
+  // ответа; «Текущая страница» скачивается и пишет onExported.
   parameters: {
     controls: {
       exclude: ['columnCount', 'dataCount', 'colorMode'],
     },
+    requirements: ['EX34'],
   },
-  render: args => <ExportServerDemo {...normalizeArgs(args)} />,
+  play: async ({ canvasElement }) => {
+    const download = interceptDownload()
+    try {
+      await waitForRows(canvasElement)
+      await openExport(canvasElement)
+      await userEvent.click(byTestId('export-run')!)
+      await until(() =>
+        expect(exportButton()).toHaveAttribute('aria-busy', 'true'),
+      )
+      expect(callbackLog()).toContain('onExport')
+      expect(callbackLog()).toContain('rows="all"')
+      expect(download.names).toEqual([])
+
+      await until(() => expect(exportButton()).not.toHaveAttribute('aria-busy'))
+      expect(callbackLog()).toContain('export "all" ready')
+
+      await openExport(canvasElement)
+      const page = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="export-axis-rows"] [role="radio"][data-value="page"]',
+        )!
+      await userEvent.click(page())
+      await until(() => expect(page()).toHaveAttribute('aria-checked', 'true'))
+      await userEvent.click(byTestId('export-run')!)
+      await until(() => expect(download.names).toHaveLength(1))
+      expect(callbackLog()).toContain('onExported')
+      expect(callbackLog()).toContain('rows="page"')
+      expect(callbackLog()).toContain('rowCount=25')
+      await settle()
+    } finally {
+      download.restore()
+    }
+  },
 }
 
 /** Открытая панель экспорта (ADR 0093, VR6). */
@@ -139,4 +210,62 @@ export const ExportStatePanel: StoryObj<StoryProps> = {
     )
     expectPopupInCanvas(canvasElement, panel)
   },
+}
+
+function exportButton() {
+  return byTestId('export-button')
+}
+
+async function openExport(canvas: HTMLElement) {
+  await openPopup(() =>
+    canvas.querySelector<HTMLElement>('[data-testid="export-button"]'),
+  )
+}
+
+/**
+ * Перехват скачивания: файл не уходит в загрузки ни в живом Storybook, ни в тестах — его
+ * имя и содержимое остаются `play`.
+ */
+function interceptDownload() {
+  const names: string[] = []
+  const blobs: Blob[] = []
+  const url = spyOn(URL, 'createObjectURL').mockImplementation(value => {
+    blobs.push(value as Blob)
+    return 'blob:export-story'
+  })
+  const click = spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+    function (this: HTMLAnchorElement) {
+      names.push(this.download)
+    },
+  )
+  return {
+    names,
+    blobs,
+    restore: () => {
+      url.mockRestore()
+      click.mockRestore()
+    },
+  }
+}
+
+/** Текст записи zip по локальным заголовкам; deflate — встроенным `DecompressionStream`. */
+async function zipEntryText(bytes: Uint8Array, name: string) {
+  const view = new DataView(bytes.buffer)
+  for (let at = 0; view.getUint32(at, true) === 0x04034b50;) {
+    const method = view.getUint16(at + 8, true)
+    const size = view.getUint32(at + 18, true)
+    const nameLength = view.getUint16(at + 26, true)
+    const start = at + 30 + nameLength
+    const entry = new TextDecoder().decode(bytes.slice(at + 30, start))
+    if (entry === name) {
+      const stream = new Blob([bytes.slice(start, start + size)]).stream()
+      return new Response(
+        method === 8
+          ? stream.pipeThrough(new DecompressionStream('deflate-raw'))
+          : stream,
+      ).text()
+    }
+    at = start + size
+  }
+  return ''
 }

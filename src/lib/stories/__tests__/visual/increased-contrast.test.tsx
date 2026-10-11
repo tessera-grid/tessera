@@ -695,24 +695,4 @@ describe('Повышенный контраст (ADR 0088)', () => {
     }
     await screen.unmount()
   })
-
-  test('MC11: истории «Increased contrast» — режим и рецепт приложения', async () => {
-    const basic = await render(<composed.IncreasedContrast />)
-    await expect
-      .poll(() =>
-        document.querySelector('.data-grid__body-row[data-selected="true"]'),
-      )
-      .not.toBeNull()
-    expect(wrapper().getAttribute('data-tsr-contrast')).toBe('more')
-    const selected = document.querySelector<HTMLElement>(
-      '.data-grid__body-row[data-selected="true"]',
-    )!
-    expect(style(selected).outlineStyle).toBe('solid')
-    expect(document.querySelector('[data-tree-depth]')).not.toBeNull()
-    await basic.unmount()
-
-    await render(<composed.IncreasedContrastRecipe />)
-    await waitRows()
-    expect(style(wrapper()).borderTopColor).toBe('rgb(29, 78, 216)')
-  })
 })

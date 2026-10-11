@@ -1,4 +1,13 @@
-import { type PropsWithChildren, useLayoutEffect } from 'react'
+import {
+  type PropsWithChildren,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react'
+import type { Args } from '@storybook/react'
+import { UPDATE_STORY_ARGS } from 'storybook/internal/core-events'
+import { addons } from 'storybook/preview-api'
 
 // Оси каталога визуальных состояний (ADR 0093, §1, VR9, VR16): тема, палитра, контраст
 // и ширина. Ширина — режим Chromatic (`viewport`), остальное — глобалы Storybook.
@@ -26,6 +35,7 @@ export const CATALOG_STATES = {
     'pending',
     'error',
     'highlight',
+    'cellRange',
     'treeLines',
     'groups',
     'pinnedStart',
@@ -33,7 +43,14 @@ export const CATALOG_STATES = {
     'skeleton',
     'empty',
   ],
-  head: ['sorting', 'activeIndicator', 'nested', 'kebab', 'resizeHandle'],
+  head: [
+    'sorting',
+    'activeIndicator',
+    'nested',
+    'kebab',
+    'resizeHandle',
+    'footer',
+  ],
   overlay: [
     'menu',
     'submenu',
@@ -141,4 +158,47 @@ export const CatalogEnvironment = ({
     }
   }, [catalog, palette])
   return children
+}
+
+/** Событие `updateArgs` из `catalogPlay` для `PlayArgs`. */
+export const PLAY_ARGS = 'tessera/play-args'
+
+export interface ArgsUpdate {
+  storyId: string
+  updatedArgs: Args
+}
+
+/**
+ * Смена аргументов из `render` без хука Storybook `useArgs`: история, которой `play` меняет
+ * аргументы, перерисовывается `PlayArgs` — силами React, вне хуков Storybook.
+ */
+export const argsUpdater = (storyId: string) => (updatedArgs: Args) =>
+  addons
+    .getChannel()
+    .emit(UPDATE_STORY_ARGS, { storyId, updatedArgs } satisfies ArgsUpdate)
+
+/**
+ * Аргументы, поменянные `play`, в проектах каталога: переносимые истории Vitest смену
+ * аргументов не обрабатывают — история перерисовывается здесь. Живой Storybook и
+ * Chromatic перерисовывают её сами.
+ */
+export const PlayArgs = ({
+  storyId,
+  children,
+}: {
+  storyId: string
+  children: (updates: Args) => ReactNode
+}) => {
+  const [updates, setUpdates] = useState<Args>({})
+  useEffect(() => {
+    const channel = addons.getChannel()
+    const onUpdate = (event: ArgsUpdate) => {
+      if (event.storyId === storyId) {
+        setUpdates(prev => ({ ...prev, ...event.updatedArgs }))
+      }
+    }
+    channel.on(PLAY_ARGS, onUpdate)
+    return () => channel.off(PLAY_ARGS, onUpdate)
+  }, [storyId])
+  return children(updates)
 }

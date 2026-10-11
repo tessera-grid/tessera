@@ -427,25 +427,4 @@ describe('Источник темы и её смена (ADR 0090)', () => {
       }
     }
   })
-
-  test('TM12: история Theming/Theme sources рендерит гриды каждого источника', async () => {
-    await render(<composed.ThemeSources />)
-    await expect
-      .poll(() => document.querySelectorAll('[data-testid^="source-"]').length)
-      .toBe(4)
-    const schemes = [
-      ...document.querySelectorAll<HTMLElement>('[data-testid^="source-"]'),
-    ].map(source => [
-      source.dataset.testid,
-      schemeOf(
-        source.querySelector('.data-grid-theme[class*="theme-wrapper"]')!,
-      ),
-    ])
-    expect(Object.fromEntries(schemes)).toEqual({
-      'source-auto': 'light',
-      'source-prop-dark': 'dark',
-      'source-container-dark': 'dark',
-      'source-light-in-dark': 'light',
-    })
-  })
 })

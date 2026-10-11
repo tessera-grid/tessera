@@ -9,8 +9,10 @@ import {
 import { expect, waitFor, userEvent } from 'storybook/test'
 import {
   expectPopupInCanvas,
+  firstRowText,
   headCell,
   settle,
+  until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 
@@ -66,6 +68,26 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
     dataOverride: optionFilteringData,
     // «Status» сортируется в порядке вариантов, «Tags» — поэлементно, «Manager» — по
     // имени из справочника, а не по id. С группировкой в том же порядке идут группы.
+  },
+  // Сценарий истории (ADR 0063, OS12): Manager — имена, Status — в порядке вариантов.
+  parameters: { requirements: ['OS12'] },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    expect(firstRowText(canvasElement, 'managerId')).not.toMatch(/^m[0-9]+$/)
+    const sort = () =>
+      headCell(canvasElement, 'status').querySelector<HTMLElement>(
+        '.column-sort__button',
+      )!
+    // Первое нажатие — по убыванию (sortDescFirst таблицы): последний вариант — первым.
+    await userEvent.click(sort())
+    await until(() =>
+      expect(firstRowText(canvasElement, 'status')).toBe('Lost'),
+    )
+    await userEvent.click(sort())
+    await until(() =>
+      expect(firstRowText(canvasElement, 'status')).toBe('Lead'),
+    )
+    await settle()
   },
 }
 

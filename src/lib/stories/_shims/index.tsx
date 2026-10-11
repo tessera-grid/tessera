@@ -83,7 +83,8 @@ export const NoDataStub = ({ label }: { label: ReactNode }) => (
       alignItems: 'center',
       justifyContent: 'center',
       height: '100%',
-      color: 'var(--muted-foreground)',
+      // Токен текста грида: повышенный контраст поднимает его до 7:1 (ADR 0088).
+      color: 'var(--tsr-comp-control-color)',
     }}
   >
     {label}

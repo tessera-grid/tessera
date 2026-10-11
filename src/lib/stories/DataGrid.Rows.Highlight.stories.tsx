@@ -4,9 +4,17 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { HighlightDemo } from './demos/highlightDemos'
-import { expect, waitFor } from 'storybook/test'
+import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
-import { settle, waitForRows } from './__mocks__/catalogPlay'
+import {
+  bodyRow,
+  headCell,
+  orderedRows,
+  settle,
+  sleep,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /**
  * Публичная подсветка (ADR 0080): «Delete» в строке подсвечивает её красным, пока
@@ -35,6 +43,90 @@ export const RowHighlight: StoryObj<StoryProps> = {
   },
   render: function Render(args) {
     return <HighlightDemo {...args} />
+  },
+  // Дымовой тест (ADR 0080, HL21): удаление с подсветкой до подтверждения, поиск,
+  // вспышка и блик.
+  parameters: { requirements: ['HL21'] },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const row = (id: string) => bodyRow(canvasElement, id)
+    const remove = async (id: string) => {
+      await userEvent.hover(row(id))
+      await userEvent.click(
+        row(id).querySelector<HTMLElement>('button[aria-label="Удалить"]')!,
+      )
+    }
+    const [first, , second] = orderedRows(canvasElement).map(
+      r => r.dataset.rowId!,
+    )
+    const gridTop = () =>
+      canvasElement
+        .querySelector('.data-grid__container')!
+        .getBoundingClientRect().top
+    const top = gridTop()
+
+    await remove(first!)
+    await until(() =>
+      expect(row(first!)).toHaveAttribute('data-highlight', 'danger'),
+    )
+    // Подтверждение — в строке заголовка демо: таблица не сдвигается.
+    expect(gridTop()).toBe(top)
+    // Подсветка держится, пока удаление не подтверждено, — дольше затухания.
+    await sleep(800)
+    expect(row(first!)).toHaveAttribute('data-highlight', 'danger')
+    expect(row(first!)).not.toHaveAttribute('data-highlight-out')
+
+    // Вторая строка встаёт в ту же очередь, повторное нажатие первой — не дубль.
+    await remove(second!)
+    await remove(first!)
+    const confirm = () =>
+      screen.getByRole('group', { name: 'Подтверждение удаления' })
+    await until(() => expect(confirm()).toHaveTextContent('Удалить 2 строки?'))
+    expect(row(second!)).toHaveAttribute('data-highlight', 'danger')
+    await userEvent.click(
+      within(confirm()).getByRole('button', { name: 'Отмена' }),
+    )
+    const faded = (id: string) =>
+      row(id).hasAttribute('data-highlight-out') ||
+      !row(id).hasAttribute('data-highlight')
+    await until(() => expect(faded(first!) && faded(second!)).toBe(true))
+
+    await remove(first!)
+    await userEvent.click(
+      within(confirm()).getByRole('button', { name: 'Удалить' }),
+    )
+    await until(() => expect(row(first!)).toBeNull())
+
+    // Остальные шаги — в свёрнутом аккордеоне «Демо».
+    await userEvent.click(screen.getByRole('button', { name: /Демо/ }))
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Поиск по имени и стране' }),
+      'a',
+    )
+    await until(() =>
+      expect(
+        canvasElement.querySelectorAll(
+          '.data-grid__body-cell[data-highlight="warning"]',
+        ).length,
+      ).toBeGreaterThan(0),
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Подсветить ячейку' }),
+    )
+    await until(() =>
+      expect(
+        canvasElement.querySelectorAll(
+          '.data-grid__body-cell[data-highlight="success"]',
+        ),
+      ).toHaveLength(1),
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Включить блик' }))
+    await until(() =>
+      expect(headCell(canvasElement, 'total')).toHaveAttribute(
+        'data-highlight-shimmer',
+      ),
+    )
+    await settle()
   },
 }
 

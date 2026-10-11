@@ -2,6 +2,11 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { expect } from 'storybook/test'
+import { settle, until, waitForRows } from './__mocks__/catalogPlay'
+
+const gridTheme = (canvas: HTMLElement) =>
+  canvas.querySelector<HTMLElement>('.data-grid-theme[class*="theme-wrapper"]')!
 
 /** Две выбранные строки — один раз, как только появились строки. */
 const selectionDemo: TesseraFeatureEntry = {
@@ -60,6 +65,22 @@ const args: Partial<StoryProps> = {
 export const IncreasedContrast: StoryObj<StoryProps> = {
   name: 'Basic',
   args,
+  // Дымовой тест (ADR 0088, MC11): режим включён, выбор — контуром, дерево на месте.
+  parameters: { requirements: ['MC11'] },
+  play: async ({ canvasElement }) => {
+    const selected = () =>
+      canvasElement.querySelector<HTMLElement>(
+        '.data-grid__body-row[data-selected="true"]',
+      )
+    await until(() => expect(selected()).not.toBeNull())
+    expect(gridTheme(canvasElement)).toHaveAttribute(
+      'data-tsr-contrast',
+      'more',
+    )
+    expect(getComputedStyle(selected()!).outlineStyle).toBe('solid')
+    expect(canvasElement.querySelector('[data-tree-depth]')).not.toBeNull()
+    await settle()
+  },
 }
 
 /**
@@ -85,4 +106,11 @@ export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
       </div>
     ),
   ],
+  // Рамка палитры приложения перебивает надстройку.
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    expect(getComputedStyle(gridTheme(canvasElement)).borderTopColor).toBe(
+      'rgb(29, 78, 216)',
+    )
+  },
 }

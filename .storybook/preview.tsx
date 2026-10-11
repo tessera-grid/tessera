@@ -14,6 +14,7 @@ import {
   CatalogEnvironment,
   type Contrast,
   type Palette,
+  PlayArgs,
 } from '../src/lib/stories/__mocks__/catalog'
 import { pinClock } from '../src/lib/stories/__mocks__/clock'
 import './catalog.css'
@@ -167,7 +168,13 @@ const preview: Preview = {
           }
         >
           <CatalogEnvironment catalog={catalog} palette={palette}>
-            <Story />
+            {catalog ? (
+              <PlayArgs storyId={context.id}>
+                {updates => <Story args={{ ...context.args, ...updates }} />}
+              </PlayArgs>
+            ) : (
+              <Story />
+            )}
           </CatalogEnvironment>
         </div>
       )

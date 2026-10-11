@@ -316,36 +316,6 @@ describe('Row expanding: lazy children', () => {
     expect(rowOf('p')!.getAttribute('data-expanded')).toBe('false')
     await expect.poll(liveText).toContain("Couldn't load: No access")
   })
-
-  test('RE40: the story "Row expanding — lazy children (server)" loads children, refreshes on re-expand, turns the empty node into a leaf and flashes on failure; the log shows it', async () => {
-    await render(<composed.RowExpandingLazyChildren loadDelayMs={50} />)
-    const log = () => document.body.textContent ?? ''
-    await waitRow('node-0')
-    await humanClick(toggleOf('node-0')!)
-    await waitRow('node-0-0')
-    await expect.poll(log).toContain('children of node-0: 3')
-    await humanClick(toggleOf('node-0')!)
-    await humanClick(toggleOf('node-0')!)
-    expect(rowOf('node-0-0')).not.toBeNull()
-    await expect
-      .poll(() => log().split('loadChildren').length - 1)
-      .toBeGreaterThanOrEqual(2)
-
-    await humanClick(toggleOf('node-3')!)
-    await expect.poll(() => toggleOf('node-3')).toBeNull()
-    await expect.poll(log).toContain('children of node-3: 0')
-
-    await humanClick(
-      [...document.querySelectorAll('button')].find(
-        b => b.textContent === 'Fail next load',
-      )!,
-    )
-    await humanClick(toggleOf('node-1')!)
-    await expect
-      .poll(() => toggleOf('node-1')!.getAttribute('data-error-flash'))
-      .toBe('on')
-    await expect.poll(log).toContain('children of node-1 failed to load')
-  })
 })
 
 const reducedMotion = (

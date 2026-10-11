@@ -3,7 +3,7 @@
  * `storybook` и `storybook-dark` — рендер, `play` и axe.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -14,7 +14,9 @@ import {
   SNAPSHOT_BUDGET,
   countSnapshots,
   handMadeModes,
+  isStoryTestFile,
   storyExports,
+  storyTests,
   unexplainedSkips,
 } from '../../../scripts/catalog'
 import mainConfig from '../../../vitest.config'
@@ -27,7 +29,7 @@ import {
   WIDTHS,
   vrModes,
 } from '../stories/__mocks__/catalog'
-import { A11Y_EXCLUSIONS } from '../stories/__tests__/catalog'
+import { A11Y_EXCLUSIONS, KEPT_STORY_TESTS } from '../stories/__tests__/catalog'
 
 const ROOT = join(__dirname, '..', '..', '..')
 const STORIES_DIR = join(ROOT, 'src/lib/stories')
@@ -204,11 +206,11 @@ describe('Каталог визуальных состояний', () => {
     )
   })
 
-  it('VR4: тело — наведение, выбор, фокус, правка, ожидание и ошибка, подсветка, дерево с линиями, группы, закрепление слева и справа, скелет, пустое состояние — истории каталога', () => {
+  it('VR4: тело — наведение обычной и выбранной строки, выбор, фокус, правка, ожидание и ошибка, подсветка, диапазон ячеек, дерево с линиями, группы, закрепление слева и справа, скелет, пустое состояние — истории каталога', () => {
     expect(missingStates('body')).toEqual([])
   })
 
-  it('VR5: шапка — сортировка, индикаторы включённого действия, вложенная шапка, кебаб, ручка ширины — истории каталога', () => {
+  it('VR5: шапка и футер — сортировка, индикаторы включённого действия, вложенная шапка, кебаб, ручка ширины, строка футера — истории каталога', () => {
     expect(missingStates('head')).toEqual([])
   })
 
@@ -226,7 +228,56 @@ describe('Каталог визуальных состояний', () => {
   it('VR7: панели — тулбар, нижняя панель, пагинация, узкая ширина — истории каталога', () => {
     expect(missingStates('panel')).toEqual([])
   })
+
+  it('VR13: дымовые тесты историй ADR 0042 и тесты «история …» — play-функции своих историй; отдельных файлов *-stories.test.tsx нет', () => {
+    const tests = testFiles()
+    expect(tests.filter(t => isStoryTestFile(t.file))).toEqual([])
+    // Тест о демо-истории в наборе фичи — только из списка с причиной.
+    const found = storyTests(tests)
+    expect(found.filter(id => !(id in KEPT_STORY_TESTS))).toEqual([])
+    expect(
+      Object.keys(KEPT_STORY_TESTS).filter(id => !found.includes(id)),
+    ).toEqual([])
+    for (const reason of Object.values(KEPT_STORY_TESTS)) {
+      expect(reason.trim().length).toBeGreaterThan(10)
+    }
+    // Страж видит тест истории по-русски и по-английски, но не упоминание историй.
+    // Имена собраны помощником: сверка требований не читает их как тесты.
+    const named = (name: string) => `test('${name}', () => {})`
+    expect(
+      storyTests([
+        {
+          file: 'x',
+          text: [
+            named('ZZ1: история «Basic» рендерится'),
+            named('ZZ2: the "Basic" story renders'),
+            named('ZZ3: две отрисовки одной истории дают одно'),
+          ].join('\n'),
+        },
+      ]),
+    ).toEqual(['ZZ1', 'ZZ2'])
+    expect(isStoryTestFile('visual/panels-stories.test.tsx')).toBe(true)
+
+    // Дымовые тесты ADR 0042 — в параметрах историй.
+    const inStories = storyFiles().flatMap(file =>
+      [...file.text.matchAll(/requirements:\s*\[([^\]]*)\]/g)].flatMap(m =>
+        [...m[1]!.matchAll(/'(\w+)'/g)].map(id => id[1]!),
+      ),
+    )
+    expect(inStories).toEqual(
+      expect.arrayContaining(['DS1', 'DS2', 'DS3', 'DS4', 'DS5', 'DS6']),
+    )
+  })
 })
+
+/** Тесты на историях: имя относительно `src/lib/stories/__tests__` и текст. */
+const testFiles = () => {
+  const dir = join(STORIES_DIR, '__tests__')
+  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    .filter(file => /\.test\.tsx?$/.test(file))
+    .filter(file => statSync(join(dir, file)).isFile())
+    .map(file => ({ file, text: readFileSync(join(dir, file), 'utf8') }))
+}
 
 /** Состояния каталога, которые показывают истории (`vrStates(...)` в параметрах). */
 const statesOf = () =>

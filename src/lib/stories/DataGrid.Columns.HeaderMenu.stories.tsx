@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
-import { userEvent } from 'storybook/test'
+import { expect, userEvent } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { filteringColumns, filteringData } from './__mocks__/filteringData'
@@ -9,6 +9,8 @@ import {
   expectPopupInCanvas,
   headCell,
   openPopup,
+  settle,
+  until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 
@@ -93,9 +95,9 @@ export const HeaderMenuStateKebab: StoryObj<StoryProps> = {
     pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
   },
   args: HEADER_MENU_ARGS,
-  play: async ({ canvasElement, parameters }) => {
+  play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)
-    await applyPseudoStates(parameters.pseudo)
+    await applyPseudoStates(id, parameters.pseudo)
   },
 }
 
@@ -113,6 +115,12 @@ export const HeaderMenuStateOpen: StoryObj<StoryProps> = {
       () => head.querySelector<HTMLElement>('[aria-label^="Column options"]'),
       'menu',
     )
+    // Первый пункт — под клавиатурой: вид пункта под указателем.
+    await userEvent.keyboard('{ArrowDown}')
+    await until(() =>
+      expect(menu.querySelector('[data-highlighted]')).not.toBeNull(),
+    )
+    await settle()
     expectPopupInCanvas(canvasElement, menu)
   },
 }

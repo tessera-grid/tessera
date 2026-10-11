@@ -328,8 +328,9 @@ CSS-модули. Storybook — инструмент отладки, а не ш�
 - **TQ6 — перф нового массового состояния** против базы без него (как AS14).
 - **TQ7 — гарантии `docs/architecture`** («один раз», «никогда», «не перерисовывает»)
   ссылаются на требование с тестом или записаны в «Известные проблемы».
-- **TQ8 — истории с логикой** (сервер, журнал, свои данные) — дымовой тест; модуль
-  историй ничего не делает при импорте.
+- **TQ8 — истории с логикой** (сервер, журнал, свои данные) — дымовой сценарий в `play`
+  самой истории с ID в `parameters.requirements` (ADR 0093, VR13); модуль историй ничего
+  не делает при импорте.
 - **TQ9 — поведение, а не устройство.** Визуальные тесты не утверждают о форме
   внутренних срезов — это только модульные тесты модуля-владельца.
 
@@ -394,7 +395,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-sorting` (CS1–CS24, [ADR 0012](docs/decisions/0012-column-sorting.md)),
       `column-sorting-options` (OS8–OS9), модульный `optionLabelSort` (OS1–OS7, OS10),
-      дымовой `sorting-stories` (OS12), перф OS11 — в `interaction` — сортировка по
+      `play` истории «Option labels» (OS12), перф OS11 — в `interaction` — сортировка по
       подписи вариантов ([ADR 0063](docs/decisions/0063-option-label-sorting.md)),
       модульный `sortedRowModel` (SM1–SM6 — паритет своей модели с TanStack), перф SM7 —
       в `interaction` ([ADR 0064](docs/decisions/0064-tessera-sorted-row-model.md));
@@ -485,8 +486,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       порталы, вид вне режима и `forced-colors` поверх, истории), перф MC10 —
       `performance/increased-contrast` ([ADR 0088](docs/decisions/0088-increased-contrast.md)).
     - _Матрица контраста:_ `contrast-matrix` (CX1–CX8 — WCAG-пороги текста, иконок и
-      флажков по отрисованным состояниям тела, наложений, шапки и футера, панелей и
-      поповеров в двух палитрах, темах и режимах; axe `color-contrast` с падением на
+      флажков по историям-состояниям каталога — тело, наложения, шапка и футер, панели,
+      поповеры — в двух палитрах, темах и режимах, VR14; axe `color-contrast` с падением на
       `incomplete`; база `contrast-baseline.json` только сокращается). Фон считает
       `effectiveBg` из `a11y-helpers` — до холста страницы
       ([ADR 0089](docs/decisions/0089-contrast-matrix.md)).
@@ -556,8 +557,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0051](docs/decisions/0051-toolbar-button-order.md).
     - _Включение панелей:_ `panels` (PB1–PB5, PB10–PB11 — тулбар и нижняя панель по
       слотам, флаги-переопределения), `toolbar-chunk` (PB6 — ленивый модуль тулбара),
-      модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), дымовой
-      `panels-stories` (PB12 — история «Panels/Status bar — Off (own pager)»; DS6 — «Panels/Pagination — Server», ADR 0042),
+      модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), `play` историй
+      (PB12 — «Panels/Status bar — Off (own pager)»; DS6 — «Panels/Pagination — Server», ADR 0042),
       [ADR 0046](docs/decisions/0046-toolbar-and-status-bar-visibility.md).
     - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB7–SB14 — узкая ширина — `status-bar-narrow`; SB5 — модульный
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
@@ -567,19 +568,18 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),
       модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,
       строки и колонки, значения, CSV, защита от формул, `table.exportData`,
-      [ADR 0044](docs/decisions/0044-export.md)); дымовой `export-stories` (EX34 — история
-      «Export — Server»); перф EX33 — в `interaction`; Excel — модульный `xlsx` (XL1–XL6, XL8,
+      [ADR 0044](docs/decisions/0044-export.md)); `play` истории «Export — Server» (EX34); перф EX33 — в `interaction`; Excel — модульный `xlsx` (XL1–XL6, XL8,
       XL12 — файл читает ExcelJS: типы, даты, шапка, закрепление, сжатие, листы),
       `export-xlsx` (XL7, XL9 — асинхронный формат в кнопке, выгрузка кликом),
-      `export-xlsx-lazy` (XL10 — генератор грузится при первой выгрузке), дымовой
-      `export-stories` (XL13), перф XL11 — в `interaction`
+      `export-xlsx-lazy` (XL10 — генератор грузится при первой выгрузке), `play`
+      истории «Export — Excel» (XL13), перф XL11 — в `interaction`
       ([ADR 0073](docs/decisions/0073-xlsx-export.md)).
     - _Фильтрация:_ `filtering` (FL1, FL3, FL7–FL13, FL15–FL17, FL19–FL24, FL27–FL30,
       FL32–FL34 — кнопка и панель фильтра колонки, дебаунс, кебаб, клавиатура, поиск,
       сводка, «показано N из M», «скрыто фильтром», сочетания с плагинами, заглушка,
       сервер, объявление, локализация, axe), модульные `filtering` (FL2, FL4–FL6, FL14,
       FL18, FL25–FL26, FL31 — условия, объединение через И, поиск, экспорт, `diagnose`),
-      дымовой `filtering-stories` (FL37 — история «Filtering — Server»), `filter-panel-open`
+      `play` истории «Filtering — Server» (FL37), `filter-panel-open`
       (FL38–FL39 — первое открытие без пустого поповера), `filter-panel-preload` (FL40 —
       загрузка панели при наведении и фокусе), перф FL35–FL36 — в `interaction`,
       [ADR 0045](docs/decisions/0045-filtering.md).
@@ -590,16 +590,15 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       даты, календарь, время, клавиатура, тема, движение, локализация, сводка, axe,
       сервер), `date-filter-chunk` (DF14 — ленивый модуль календаря), модульные
       `filteringDates` (DF2–DF8, DF18, DF20 — разбор значений, условия, пресеты, пояс,
-      сериализуемый срез, поиск, экспорт), дымовой `filtering-stories` (DF21 — история
-      «Filtering — Dates»), перф DF22 — в `interaction`,
+      сериализуемый срез, поиск, экспорт), `play` истории «Filtering — Dates» (DF21), перф DF22 — в `interaction`,
       [ADR 0047](docs/decisions/0047-date-filtering.md).
     - _Фильтр вариантов:_ `filtering-options` (SF1, SF6–SF7, SF9–SF13, SF15, SF18–SF21 —
       чек-лист, поиск, счётчики, виртуализация, клавиатура, справочник, подписи в
       ячейке и сводке, сервер, локализация, axe), `option-filter-chunk` (SF22 —
       ленивый модуль панели), модульные `filteringOptions` (SF2–SF5, SF8, SF14, SF16–SF17
       — варианты из данных, условия, срез, фасеты, подписи в поиске и экспорте),
-      дымовые `filtering-stories` (SF23–SF24 — истории «Filtering — Select &
-      multiselect» и «Filtering — Lookup (server)»), перф SF25–SF26 — в `interaction`,
+      `play` историй «Filtering — Select & multiselect» и «Filtering — Lookup (server)»
+      (SF23–SF24), перф SF25–SF26 — в `interaction`,
       [ADR 0048](docs/decisions/0048-option-filtering.md).
     - _Тема и токены:_ `theming` (TH1–TH11,
       [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
@@ -658,9 +657,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       виртуализация, уменьшенное движение, объявления, контраст, токены), модульный
       `asyncCallbacks` (CF7 — отметки сохранения), перф CF12 — в `scroll`
       ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
-    - _Демо-истории:_ `sessions-stories` (DS1–DS5 — дымовые тесты демо-историй Cells/Editing,
-      Rows/Expanding, Plugin API: сценарий истории в интерфейсе и журнале колбэков,
-      [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md)).
+    - _Демо-истории:_ `play` историй Cells/Editing, Rows/Expanding, Plugin API (DS1–DS5 —
+      сценарий истории в интерфейсе и журнале колбэков,
+      [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md); отдельных файлов
+      `*-stories.test.tsx` нет — страж VR13, [ADR 0093](docs/decisions/0093-visual-state-catalog.md)).
     - _Автор плагина:_ модульные `definePlugin` (DP1, DP3, DP6–DP7, DP10–DP12, DP15, DP19 —
       запись, типы слотов и сервисной колонки), `definePlugin.dom` (DP8–DP9, DP17–DP18, DP20 —
       каналы слота и сервисной колонки, внешнее локальное состояние), `pluginWarnings` (DP5 — дубль `id`; DP16 — дев-варн на нескольких
@@ -917,7 +917,8 @@ ADR и не с кода.** Прожарка — короткий диалог с
 состояние — история `State: …` с `parameters: vrStates('area.state')` из реестра
 `CATALOG_STATES` (`__mocks__/catalog.tsx`): `play` доводит грид до состояния
 помощниками `__mocks__/catalogPlay.ts` (`openPopup` и `expectPopupInCanvas` для меню и
-панелей, `applyPseudoStates` для наведения и фокуса).
+панелей, `applyPseudoStates(id, …)` для наведения и фокуса). Матрица контраста обходит истории
+реестра (VR14): новое состояние попадает и в неё.
 
 - **Фича — минимум одна история**, включающая её через тумблеры и аргументы, как
   соседние (`enableColumnVisibility`, `enablePagination`). Файл на фичу —
@@ -934,8 +935,13 @@ ADR и не с кода.** Прожарка — короткий диалог с
 - **Сценарий — отдельная история**: комбинации с другими плагинами, режимы (серверный,
   большие данные), крайние состояния (пусто, ошибка, ожидание), опции, меняющие
   результат. Так, у экспорта это: простой, с пресетами от плагинов, серверный.
-- **История с логикой** (сервер, журнал колбэков, свои данные) получает дымовой тест
-  по [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md) и [ADR 0043](docs/decisions/0043-honest-test-coverage.md) (TQ8).
+- **История с логикой** (сервер, журнал колбэков, свои данные) получает дымовой
+  сценарий в своём `play` по [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md) и
+  [ADR 0043](docs/decisions/0043-honest-test-coverage.md) (TQ8): ID требования — в
+  `parameters.requirements`, отдельного файла `*-stories.test.tsx` нет (страж VR13).
+  Аргументы посреди сценария меняет `updateArgs` из `__mocks__/catalogPlay.ts`; такая
+  история в `render` берёт `argsUpdater(id)` вместо `useArgs`. Тест о демо-истории в
+  наборе фичи — только с причиной в `KEPT_STORY_TESTS` (`__tests__/catalog.ts`).
 - **В комментарии истории** — одна-две строки: что показывает и что включить, чтобы
   увидеть вариации.
 - Истории — не замена visual-тестам: корректность по-прежнему гарантируют тесты.

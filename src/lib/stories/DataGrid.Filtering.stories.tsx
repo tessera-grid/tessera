@@ -1,7 +1,6 @@
 import { ru } from '@daypicker/react/locale/ru'
 import { Meta, StoryObj } from '@storybook/react'
-import { userEvent } from 'storybook/test'
-import { useArgs } from 'storybook/preview-api'
+import { expect, userEvent } from 'storybook/test'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
@@ -20,11 +19,17 @@ import {
   FilteringLookupServerDemo,
   FilteringServerDemo,
 } from './demos/filteringDemos'
-import { vrStates } from './__mocks__/catalog'
+import { argsUpdater, vrStates } from './__mocks__/catalog'
 import {
+  byTestId,
+  callbackLog,
   expectPopupInCanvas,
+  firstRowText,
   headCell,
   openPopup,
+  settle,
+  until,
+  updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
 
@@ -204,6 +209,29 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
   },
   render: args => <FilteringServerDemo {...normalizeArgs(args)} />,
+  // Дымовой сценарий (ADR 0045, FL37): фильтр и поиск уходят колбэками после дебаунса,
+  // данные перезапрашиваются, «показано N из M» — из ответа.
+  parameters: { requirements: ['FL37'] },
+  play: async ({ canvasElement }) => {
+    const firstName = () => firstRowText(canvasElement, 'name')
+    await openFilter(canvasElement, 'name')
+    await userEvent.type(byTestId('filter-value')!, 'bob')
+    await closeFilter()
+
+    await until(() => expect(callbackLog()).toContain('onFilterChange'))
+    expect(callbackLog()).toContain('"value":"bob"')
+    await until(() => expect(callbackLog()).toContain('server'))
+    await until(() => expect(firstName()).toBe('Bob 1'))
+    expect(filteredCount()).toBe('Showing 29 of 200')
+
+    await userEvent.type(byTestId('quick-search')!, 'paris')
+    await until(() => expect(callbackLog()).toContain('onSearchChange'))
+    expect(callbackLog()).toContain('search="paris"')
+    // Bob — каждая 7-я строка, Paris — каждая 5-я: оба — каждая 35-я.
+    await until(() => expect(filteredCount()).toBe('Showing 6 of 200'))
+    expect(firstName()).toBe('Bob 15')
+    await settle()
+  },
 }
 
 export const FilteringDates: StoryObj<FilteringDatesArgs> = {
@@ -233,12 +261,57 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
     },
     dateLocale: { control: { type: 'inline-radio' }, options: ['en-US', 'ru'] },
   },
-  render: function Render({ timeZone, dateLocale, ...args }) {
-    const [, updateArgs] = useArgs()
+  // Дымовой сценарий (ADR 0047, DF21): дни date и datetime, условие и смена timeZone
+  // меняют выборку и «показано N из M».
+  parameters: { requirements: ['DF21'] },
+  play: async ({ canvasElement, id }) => {
+    const calendar = async (column: string) => {
+      await openFilter(canvasElement, column)
+      await until(() => expect(byTestId('filter-calendar')).not.toBeNull())
+    }
+    const selects = () =>
+      byTestId('filter-calendar')!.querySelectorAll<HTMLSelectElement>('select')
+    const pickDay = async (year: string, day: string) => {
+      await userEvent.selectOptions(selects()[1]!, year)
+      // Месяцы — номера с нуля: март.
+      await userEvent.selectOptions(selects()[0]!, '2')
+      await userEvent.click(
+        document.querySelector(`[data-day="${day}"] button`)!,
+      )
+    }
+
+    // datetime: 15 марта по UTC — все 20 строк этого дня.
+    await calendar('createdAt')
+    await pickDay('2026', '2026-03-15')
+    await until(() => expect(filteredCount()).toBe('Showing 20 of 60'))
+    await closeFilter()
+
+    // В Токио строки после 15:00 UTC уходят на 16-е.
+    await updateArgs(id, { timeZone: 'Asia/Tokyo' })
+    await until(() => expect(filteredCount()).toBe('Showing 14 of 60'))
+
+    // date: «до 1 марта 1980» вдобавок к фильтру дат создания.
+    await calendar('birthDate')
+    await userEvent.click(
+      document.querySelector<HTMLElement>(
+        '[data-testid="filter-panel"] [data-testid="filter-operator"]',
+      )!,
+    )
+    const before = () =>
+      document.querySelector<HTMLElement>('[data-operator="before"]')
+    await until(() => expect(before()).not.toBeNull())
+    await userEvent.click(before()!)
+    await pickDay('1980', '1980-03-01')
+    await until(() => expect(filteredCount()).toMatch(/^Showing [1-9] of 60$/))
+    await closeFilter()
+    await settle()
+  },
+  // Без хуков Storybook: `play` меняет пояс, и в каталоге историю перерисовывает React.
+  render: function Render({ timeZone, dateLocale, ...args }, { id }) {
     return (
       <StoryComponent
         {...normalizeArgs(args)}
-        updateArgs={updateArgs}
+        updateArgs={argsUpdater(id)}
         columnFilteringOptions={{
           ...args.columnFilteringOptions,
           timeZone: timeZone === 'browser' ? undefined : timeZone,
@@ -260,6 +333,41 @@ export const FilteringOptions: StoryObj<StoryProps> = {
     // вариантов — счётчики строк с учётом остальных фильтров. Ячейки показывают
     // подписи, поиск и экспорт — тоже.
   },
+  // Дымовой сценарий (ADR 0048, SF23): галочки, «содержит все» и фасетные счётчики
+  // меняют выборку и «показано N из M».
+  parameters: { requirements: ['SF23'] },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    expect(firstRowText(canvasElement, 'status')).toBe('Lead')
+
+    await openOptions(canvasElement, 'status')
+    await userEvent.click(checkboxOf('won'))
+    await until(() => expect(filteredCount()).toMatch(/^Showing \d+ of 60$/))
+    const afterStatus = filteredCount()
+    await closeFilter()
+
+    await openOptions(canvasElement, 'tags')
+    const vip = Number(
+      optionOf('vip')!.querySelector('[data-testid="filter-option-count"]')!
+        .textContent,
+    )
+    expect(vip).toBeGreaterThan(0)
+    expect(vip).toBeLessThan(30)
+    await userEvent.click(
+      document.querySelector<HTMLElement>(
+        '[data-testid="filter-panel"] [data-testid="filter-operator"]',
+      )!,
+    )
+    const allOf = () =>
+      document.querySelector<HTMLElement>('[data-operator="allOf"]')
+    await until(() => expect(allOf()).not.toBeNull())
+    await userEvent.click(allOf()!)
+    await userEvent.click(checkboxOf('vip'))
+    await userEvent.click(checkboxOf('partner'))
+    await until(() => expect(filteredCount()).not.toBe(afterStatus))
+    expect(filteredCount()).toMatch(/^Showing \d+ of 60$/)
+    await settle()
+  },
 }
 
 export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
@@ -275,10 +383,45 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
     serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
   },
   render: args => <FilteringLookupServerDemo {...normalizeArgs(args)} />,
+  // Дымовой сценарий (ADR 0048, SF24): поиск в панели зовёт loadOptions, выбор уходит в
+  // onFilterChange, сводка показывает подписи.
+  parameters: { requirements: ['SF24'] },
+  play: async ({ canvasElement }) => {
+    await openOptions(canvasElement, 'managerId')
+    await until(() => expect(callbackLog()).toContain('loadOptions'))
+    await userEvent.type(byTestId('filter-options-search')!, 'alice')
+    await until(() => expect(callbackLog()).toContain('search="alice"'))
+    // Справочник сузился до найденных: в списке только Alice.
+    const names = () =>
+      [
+        ...document.querySelectorAll(
+          '[data-testid="filter-panel"] [data-option-index]',
+        ),
+      ].map(item => item.textContent ?? '')
+    await until(() =>
+      expect(
+        names().length > 0 && names().every(name => name.startsWith('Alice')),
+      ).toBe(true),
+    )
+    await userEvent.click(checkboxOf('m0'))
+    await until(() => expect(callbackLog()).toContain('onFilterChange'))
+    expect(callbackLog()).toContain('"value":["m0"]')
+    await until(() => expect(callbackLog()).toMatch(/server\s+\d+ of 200 rows/))
+    await closeFilter()
+
+    await until(() => expect(byTestId('filter-summary-button')).not.toBeNull())
+    await userEvent.click(byTestId('filter-summary-button')!)
+    await until(() =>
+      expect(byTestId('filter-summary')).toHaveTextContent(
+        'Any of: Alice Moss',
+      ),
+    )
+    await settle()
+  },
 }
 
 /** Открывает панель фильтра колонки: наведение раскрывает кнопку и грузит модуль. */
-const openFilter = async (canvas: HTMLElement, column: string) => {
+async function openFilter(canvas: HTMLElement, column: string) {
   await waitForRows(canvas)
   const head = headCell(canvas, column)
   await userEvent.hover(head)
@@ -288,6 +431,31 @@ const openFilter = async (canvas: HTMLElement, column: string) => {
     ),
   )
   expectPopupInCanvas(canvas, panel)
+}
+
+/** Открывает панель фильтра вариантов и ждёт список. */
+async function openOptions(canvas: HTMLElement, column: string) {
+  await openFilter(canvas, column)
+  await until(() => expect(byTestId('filter-options')).not.toBeNull())
+}
+
+async function closeFilter() {
+  await userEvent.keyboard('{Escape}')
+  await until(() => expect(byTestId('filter-panel')).toBeNull())
+}
+
+function filteredCount() {
+  return byTestId('filtered-rows-count')?.textContent ?? null
+}
+
+function optionOf(value: string) {
+  return document.querySelector<HTMLElement>(
+    `[data-testid="filter-panel"] [data-option-index][data-value="${value}"]`,
+  )
+}
+
+function checkboxOf(value: string) {
+  return optionOf(value)!.querySelector<HTMLElement>('[role="checkbox"]')!
 }
 
 /** Открытая панель текстового фильтра (ADR 0093, VR6). */

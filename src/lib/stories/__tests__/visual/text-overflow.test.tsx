@@ -615,40 +615,4 @@ describe('Длинный текст', () => {
       'счётчик',
     )
   })
-
-  test('TX13: истории «Text overflow» — меню с переносом и причина отказа в две строки', async () => {
-    await render(<composed.TextOverflow />)
-    await waitForGrid()
-    const row = document.querySelector<HTMLElement>('.data-grid__body-row')!
-    await userEvent.hover(row.querySelector('[data-column-id="account"]')!)
-    const kebab = () =>
-      row.querySelector<HTMLElement>('[aria-label^="Row options"]')
-    await expect.poll(kebab).not.toBeNull()
-    await humanClick(kebab()!)
-    await expect.poll(() => items().length).toBeGreaterThan(0)
-    await settle()
-    expect(rect(menu()!).width).toBeLessThanOrEqual(320.5)
-    expect(
-      isWrapped(
-        itemByText(
-          'Reassign the account to another manager in the same regional office',
-        ),
-      ),
-    ).toBe(true)
-    await closeMenu()
-    await cleanup()
-
-    await render(<composed.TextOverflowFeedError serverDelayMs={0} />)
-    await waitForGrid()
-    const scroller = document.querySelector<HTMLElement>(
-      '.data-grid__container',
-    )!
-    scroller.scrollTop = scroller.scrollHeight
-    const reason = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="infinite-scroll-error"] [class*="error-reason"]',
-      )
-    await expect.poll(reason).not.toBeNull()
-    expect(clipped(reason()!)).toBe(true)
-  })
 })

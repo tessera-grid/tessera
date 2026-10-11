@@ -76,8 +76,8 @@ export const ResizingStateHandle: StoryObj<StoryProps> = {
     height: 300,
     maxHeight: 300,
   },
-  play: async ({ canvasElement, parameters }) => {
+  play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)
-    await applyPseudoStates(parameters.pseudo)
+    await applyPseudoStates(id, parameters.pseudo)
   },
 }

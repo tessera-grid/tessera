@@ -9,7 +9,16 @@ import {
   RowExpandingLazyDemo,
   type ServerFailMode,
 } from './demos/sessionDemos'
+import { expect, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
+import {
+  bodyRow,
+  callbackLog,
+  rowAt,
+  settle,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Раскрытие строк (ADR 0015, ADR 0054, ADR 0058): дерево, линии, плоские данные, ленивые дети. */
 const meta = {
@@ -162,7 +171,19 @@ export const RowExpandingLazy: StoryObj<SessionsArgs> = {
     loadDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
     loadFailMode: failModeControl,
   },
-  parameters: hideDataControls,
+  // Дымовой сценарий (ADR 0042, DS4): раскрытие ждёт подгрузки, затем строка раскрыта.
+  parameters: { ...hideDataControls, requirements: ['DS4'] },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const row = () => rowAt(canvasElement, 0)
+    await userEvent.click(row().querySelector('.row-expand-button')!)
+    await until(() => expect(row()).toHaveAttribute('aria-busy', 'true'))
+    await until(() => expect(row()).not.toHaveAttribute('aria-busy'))
+    expect(row()).toHaveAttribute('data-expanded', 'true')
+    expect(callbackLog()).toContain('onExpandRow')
+    expect(callbackLog()).toContain('loaded')
+    await settle()
+  },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (
@@ -191,7 +212,48 @@ export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
     loadDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
     loadFailMode: failModeControl,
   },
-  parameters: hideDataControls,
+  // Сценарий истории (ADR 0054, RE40): приход детей, обновление при повторном
+  // раскрытии, пустой ответ делает строку листом, отказ — вспышка тоггла; всё в журнале.
+  parameters: { ...hideDataControls, requirements: ['RE40'] },
+  play: async ({ canvasElement }) => {
+    const log = () => canvasElement.ownerDocument.body.textContent ?? ''
+    const row = (id: string) => bodyRow(canvasElement, id)
+    const toggle = (id: string) =>
+      row(id)?.querySelector<HTMLElement>('.row-expand-button') ?? null
+    await until(() => expect(row('node-0')).not.toBeNull())
+
+    await userEvent.click(toggle('node-0')!)
+    await until(() => expect(row('node-0-0')).not.toBeNull())
+    await until(() => expect(log()).toContain('children of node-0: 3'))
+    await userEvent.click(toggle('node-0')!)
+    await userEvent.click(toggle('node-0')!)
+    expect(row('node-0-0')).not.toBeNull()
+    await until(() =>
+      expect(log().split('loadChildren').length - 1).toBeGreaterThanOrEqual(2),
+    )
+
+    await userEvent.click(toggle('node-3')!)
+    await until(() => expect(toggle('node-3')).toBeNull())
+    await until(() => expect(log()).toContain('children of node-3: 0'))
+
+    await userEvent.click(
+      [...canvasElement.ownerDocument.querySelectorAll('button')].find(
+        button => button.textContent === 'Fail next load',
+      )!,
+    )
+    await userEvent.click(toggle('node-1')!)
+    await until(() =>
+      expect(toggle('node-1')).toHaveAttribute('data-error-flash', 'on'),
+    )
+    await until(() =>
+      expect(log()).toContain('children of node-1 failed to load'),
+    )
+    // Вспышка отказа отгорела — история в покое.
+    await until(() =>
+      expect(toggle('node-1')).not.toHaveAttribute('data-error-flash', 'on'),
+    )
+    await settle()
+  },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (

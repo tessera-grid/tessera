@@ -10,7 +10,13 @@ import {
 } from './demos/sessionDemos'
 import { expect, waitFor, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
-import { bodyCell, settle, waitForRows } from './__mocks__/catalogPlay'
+import {
+  callbackLog,
+  rowAt,
+  settle,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Правка ячеек (ADR 0028, ADR 0040, ADR 0041): базовая, с сервером, сессии с журналом колбэков. */
 const meta = {
@@ -90,7 +96,21 @@ export const CellEditingServer: StoryObj<SessionsArgs> = {
     serverDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
     serverFailMode: failModeControl,
   },
-  parameters: hideDataControls,
+  // Дымовой сценарий (ADR 0042, DS1): ячейка ждёт сервера, затем показывает новое значение.
+  parameters: { ...hideDataControls, requirements: ['DS1'] },
+  play: async ({ canvasElement }) => {
+    const cell = await editCell(canvasElement, { row: 0, value: '77' })
+    await until(() =>
+      expect(cell().querySelector('[aria-busy="true"]')).not.toBeNull(),
+    )
+    await until(() =>
+      expect(cell().querySelector('[aria-busy="true"]')).toBeNull(),
+    )
+    expect(cell()).toHaveTextContent('77')
+    expect(callbackLog()).toContain('onCellEdit')
+    expect(callbackLog()).toContain('saved age of row-0')
+    await settle()
+  },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (
@@ -114,7 +134,28 @@ export const CellEditingSessions: StoryObj<SessionsArgs> = {
   argTypes: {
     conflictMode: { control: 'inline-radio', options: ['commit', 'block'] },
   },
-  parameters: hideDataControls,
+  // Дымовой сценарий (ADR 0042, DS2): изменение извне не закрывает редактор.
+  parameters: { ...hideDataControls, requirements: ['DS2'] },
+  play: async ({ canvasElement }) => {
+    const cell = await editCell(canvasElement, {
+      row: 0,
+      value: '55',
+      submit: false,
+    })
+    const input = cell().querySelector('input')
+    await userEvent.click(
+      [...canvasElement.ownerDocument.querySelectorAll('button')].find(
+        button => button.textContent === 'Change first row age externally',
+      )!,
+    )
+    await until(() => expect(callbackLog()).toContain('external'))
+    expect(document.activeElement).toBe(input)
+
+    await userEvent.keyboard('{Enter}')
+    await until(() => expect(callbackLog()).toContain('onCellEdit'))
+    expect(callbackLog()).toMatch(/value="55" original=\d+ current=\d+/)
+    await settle()
+  },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (
@@ -136,17 +177,34 @@ const EDITING_ARGS = {
   maxHeight: 360,
 }
 
-/** Открывает правку ячейки клавишей F2 и, если задано, сохраняет новое значение. */
-const editCell = async (canvas: HTMLElement, value?: string) => {
+/** Ячейка `age` строки: вход в правку и сохранение перемонтируют её содержимое. */
+const ageCell = (canvas: HTMLElement, row: number) => () =>
+  rowAt(canvas, row).querySelector<HTMLElement>(
+    '.data-grid__body-cell[data-column-id="age"]',
+  )!
+
+/**
+ * Открывает правку ячейки клавишей F2 и, если задано, набирает значение; `submit` —
+ * сохраняет его Enter.
+ */
+const editCell = async (
+  canvas: HTMLElement,
+  {
+    row = 1,
+    value,
+    submit = true,
+  }: { row?: number; value?: string; submit?: boolean } = {},
+) => {
   await waitForRows(canvas)
-  // Ячейку ищем заново: вход в правку и сохранение перемонтируют её содержимое.
-  const cell = () => bodyCell(canvas, 'item-id-1', 'age')
+  const cell = ageCell(canvas, row)
   cell().focus()
-  await waitFor(() => expect(cell()).toHaveAttribute('data-kn-active', 'true'))
+  await until(() => expect(cell()).toHaveAttribute('data-kn-active', 'true'))
   await userEvent.keyboard('{F2}')
-  await waitFor(() => expect(cell().querySelector('input')).not.toBeNull())
+  await until(() => expect(cell().querySelector('input')).not.toBeNull())
   if (value !== undefined) {
-    await userEvent.keyboard(`{Control>}a{/Control}${value}{Enter}`)
+    await userEvent.keyboard(
+      `{Control>}a{/Control}${value}${submit ? '{Enter}' : ''}`,
+    )
   }
   return cell
 }
@@ -173,7 +231,7 @@ export const EditingStateSaving: StoryObj<StoryProps> = {
     onCellEdit: () => new Promise<void>(() => {}),
   },
   play: async ({ canvasElement }) => {
-    const cell = await editCell(canvasElement, '41')
+    const cell = await editCell(canvasElement, { value: '41' })
     await waitFor(() =>
       expect(cell().querySelector('[aria-busy="true"]')).not.toBeNull(),
     )
@@ -191,7 +249,7 @@ export const EditingStateError: StoryObj<StoryProps> = {
     onCellEdit: () => Promise.reject(new Error('The server refused the value')),
   },
   play: async ({ canvasElement }) => {
-    const cell = await editCell(canvasElement, '42')
+    const cell = await editCell(canvasElement, { value: '42' })
     await waitFor(() => expect(cell().querySelector('input')).toBeNull())
     await waitFor(() =>
       expect(cell().querySelector('[aria-invalid="true"]')).not.toBeNull(),

@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { useArgs } from 'storybook/preview-api'
+import { expect, userEvent } from 'storybook/test'
 import type { CellComponentProps } from '../../lib/core/createSlots'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
@@ -12,6 +13,15 @@ import {
   canEditDemoCell,
   type ServerFailMode,
 } from './demos/sessionDemos'
+import { argsUpdater } from './__mocks__/catalog'
+import {
+  callbackLog,
+  rowAt,
+  until,
+  updateArgs,
+  waitForRows,
+} from './__mocks__/catalogPlay'
+import { OVERLAY, dragRowOnto, rowIdOrder } from './rowDragging.dnd'
 
 /** API плагинов: аргументы на лету (ADR 0039), колбэки сессий перетаскивания и ширины (ADR 0040). */
 const meta = {
@@ -92,19 +102,36 @@ export const ReactiveArgs: StoryObj<SessionsArgs> = {
       options: ['default', 'small', 'hidden'],
     },
   },
-  parameters: hideDataControls,
-  render: function Render({
-    multiSortMax,
-    allowEditing,
-    pageSizesPreset = 'default',
-    ...args
-  }) {
-    const [, updateArgs] = useArgs()
+  // Дымовой сценарий (ADR 0042, DS5): глубже maxDepth раскрытие скрыто, а не стёрто.
+  parameters: { ...hideDataControls, requirements: ['DS5'] },
+  play: async ({ canvasElement, id }) => {
+    await waitForRows(canvasElement)
+    const expanded = (index: number) =>
+      rowAt(canvasElement, index).getAttribute('data-expanded')
+    for (const index of [0, 1]) {
+      await userEvent.click(
+        rowAt(canvasElement, index).querySelector('.row-expand-button')!,
+      )
+      await until(() => expect(expanded(index)).toBe('true'))
+    }
+
+    await updateArgs(id, { rowExpandingMaxDepth: 1 })
+    await until(() => expect(expanded(1)).toBeNull())
+    expect(expanded(0)).toBe('true')
+
+    await updateArgs(id, { rowExpandingMaxDepth: 3 })
+    await until(() => expect(expanded(1)).toBe('true'))
+  },
+  // Без хуков Storybook: `play` меняет аргументы, и в каталоге историю перерисовывает React.
+  render: function Render(
+    { multiSortMax, allowEditing, pageSizesPreset = 'default', ...args },
+    { id },
+  ) {
     const [data] = useState(makeReactiveTree)
     return (
       <StoryComponent
         {...normalizeArgs(args)}
-        updateArgs={updateArgs}
+        updateArgs={argsUpdater(id)}
         dataOverride={data}
         multiSortOptions={{ max: multiSortMax }}
         cellEditingCanEdit={allowEditing ? canEditDemoCell : denyEditing}
@@ -127,7 +154,17 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
     enableColumnDragging: true,
     enableColumnResizing: true,
   },
-  parameters: hideDataControls,
+  // Дымовой сценарий (ADR 0042, DS3): бросок строки мышью пишет onRowDragEnd в журнал.
+  parameters: { ...hideDataControls, requirements: ['DS3'] },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const [dropped] = rowIdOrder(canvasElement)
+    await dragRowOnto(rowAt(canvasElement, 0), rowAt(canvasElement, 3))
+    await until(() => expect(callbackLog()).toContain('onRowDragEnd'))
+    expect(callbackLog()).toContain(`rowId="${dropped}"`)
+    // Облако долетело — история в покое.
+    await until(() => expect(canvasElement.querySelector(OVERLAY)).toBeNull())
+  },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (

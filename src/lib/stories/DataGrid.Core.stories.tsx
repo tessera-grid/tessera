@@ -13,8 +13,13 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrModes, vrStates } from './__mocks__/catalog'
 import { getData } from './__mocks__/data'
-import { expect, waitFor } from 'storybook/test'
-import { waitForRows, applyPseudoStates } from './__mocks__/catalogPlay'
+import { expect, userEvent, waitFor } from 'storybook/test'
+import {
+  applyPseudoStates,
+  bodyRow,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Ядро грида: все тумблеры, скелет, загрузка, заглушка, футер, подписи и иконки. */
 const meta = {
@@ -76,6 +81,7 @@ export const Stub: StoryObj<StoryProps> = {
 
 export const WithFooter: StoryObj<StoryProps> = {
   name: 'Footer',
+  parameters: vrStates('head.footer'),
   args: {
     enableFooter: true,
   },
@@ -125,8 +131,13 @@ export const CustomIcons: StoryObj<StoryProps> = {
   argTypes: { icons: { control: false } },
 }
 
-/** Наведённая строка (ADR 0093, VR4, VR8): наведение — псевдо-состояние, а не курсор. */
-const HOVERED_ROW = '.data-grid__body-row[data-row-id="item-id-2"]'
+/**
+ * Наведённые строки (ADR 0093, VR4, VR8): обычная и выбранная; наведение — псевдо-состояние,
+ * а не курсор.
+ */
+const HOVERED_ROWS = ['item-id-2', 'item-id-4'].map(
+  id => `.data-grid__body-row[data-row-id="${id}"]`,
+)
 
 export const CoreStateHoveredRow: StoryObj<StoryProps> = {
   name: 'State: hovered row',
@@ -135,7 +146,7 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
     ...vrStates('body.hover'),
     requirements: ['VR8'],
     pseudo: {
-      hover: [HOVERED_ROW, `${HOVERED_ROW} .data-grid__body-cell`],
+      hover: HOVERED_ROWS.flatMap(row => [row, `${row} .data-grid__body-cell`]),
     },
   }),
   args: {
@@ -149,9 +160,19 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
     height: 360,
     maxHeight: 360,
   },
-  play: async ({ canvasElement, parameters }) => {
+  play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)
-    await applyPseudoStates(parameters.pseudo)
+    await userEvent.click(
+      bodyRow(canvasElement, 'item-id-4').querySelector('[role="checkbox"]')!,
+    )
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    await until(() =>
+      expect(bodyRow(canvasElement, 'item-id-4')).toHaveAttribute(
+        'data-selected',
+        'true',
+      ),
+    )
+    await applyPseudoStates(id, parameters.pseudo)
     // Кнопки наведённой строки видны, у соседней — нет: вид не зависит от указателя.
     const hidden = (row: string) =>
       [

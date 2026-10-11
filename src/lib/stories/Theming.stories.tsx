@@ -16,6 +16,8 @@ import {
 } from '../../lib/plugins'
 import { useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
+import { expect } from 'storybook/test'
+import { settle, until } from './__mocks__/catalogPlay'
 
 // История витрины темизации: контролы Storybook меняют цвет токена, значение
 // прокидывается в грид инлайн-`style` обёртки (бьёт дефолты слоя из theme.css).
@@ -809,5 +811,28 @@ export const ThemeSources: StoryObj<{ appPalette: boolean }> = {
       control: { type: 'boolean' },
     },
   },
-  parameters: { controls: { include: ['appPalette'] } },
+  // Дымовой тест (ADR 0090, TM12): у каждого источника — своя схема; `auto` следует
+  // теме страницы.
+  parameters: { controls: { include: ['appPalette'] }, requirements: ['TM12'] },
+  play: async ({ canvasElement, globals }) => {
+    const sources = () => [
+      ...canvasElement.querySelectorAll<HTMLElement>(
+        '[data-testid^="source-"]',
+      ),
+    ]
+    await until(() => expect(sources()).toHaveLength(4))
+    const schemes = sources().map(source => [
+      source.dataset.testid,
+      getComputedStyle(
+        source.querySelector('.data-grid-theme[class*="theme-wrapper"]')!,
+      ).colorScheme,
+    ])
+    expect(Object.fromEntries(schemes)).toEqual({
+      'source-auto': globals.theme === 'dark' ? 'dark' : 'light',
+      'source-prop-dark': 'dark',
+      'source-container-dark': 'dark',
+      'source-light-in-dark': 'light',
+    })
+    await settle()
+  },
 }

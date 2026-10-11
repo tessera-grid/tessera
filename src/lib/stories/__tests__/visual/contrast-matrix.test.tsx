@@ -1,19 +1,19 @@
 import axe from 'axe-core'
-import { userEvent } from 'vitest/browser'
-import { afterEach, describe, expect, test } from 'vitest'
+import { composeStories } from '@storybook/react-vite'
+import { addons, composeConfigs, mockChannel } from 'storybook/preview-api'
+import { render } from 'vitest-browser-react'
+import { beforeAll, describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
-import type { TesseraFeatureEntry } from '../../../core/features'
-import { renderGrid } from '../helpers'
-import { submittedCellsSeed } from '../performance/perf-cases'
 import baseline from './contrast-baseline.json'
 import { contrast, effectiveBg, toRgba } from './a11y-helpers'
-import { PALETTE_ROLES } from '../../__mocks__/catalog'
+import { CATALOG_STATES, PALETTE_ROLES } from '../../__mocks__/catalog'
 
-// Матрица контраста (ADR 0089, CX1–CX8): WCAG-пороги по отрисованным состояниям грида в
-// двух палитрах, двух темах и двух режимах. Текст — 4,5:1 (крупный — 3:1), в повышенном
-// контрасте 7:1 (4,5:1); иконки и границы контролов — 3:1. Нарушения, которым нужно
-// решение по дизайну, — в `contrast-baseline.json` с причиной; база только сокращается.
+// Матрица контраста (ADR 0089, CX1–CX8) по каталогу визуальных состояний (ADR 0093,
+// VR14): каждая история-состояние — в двух палитрах, двух темах и двух режимах. Текст —
+// 4,5:1 (крупный — 3:1), в повышенном контрасте 7:1 (4,5:1); иконки и границы контролов —
+// 3:1. Нарушения, которым нужно решение по дизайну, — в `contrast-baseline.json` с
+// причиной; база только сокращается.
 
 type Palette = 'tessera' | 'stories'
 type Theme = 'light' | 'dark'
@@ -58,8 +58,6 @@ const resetCombo = () => {
   html.removeAttribute('data-tsr-contrast')
   for (const role of PALETTE_ROLES) html.style.removeProperty(role)
 }
-
-afterEach(resetCombo)
 
 // --- Обход узлов -------------------------------------------------------------------
 
@@ -140,7 +138,9 @@ const auditRoots = (scenario: string, combo: Combo, roots: Element[]) => {
   for (const root of roots) {
     for (const el of root.querySelectorAll('*')) {
       if (!visible(el) || disabled(el)) continue
-      if (ownText(el)) {
+      // Прозрачная краска не рисует ничего: так скрыты кнопки строки до наведения.
+      const painted = (color: string) => toRgba(color)[3]! > 0
+      if (ownText(el) && painted(style(el).color)) {
         const need = isLarge(el) ? (more ? 4.5 : 3) : more ? 7 : 4.5
         report(
           'text',
@@ -153,7 +153,12 @@ const auditRoots = (scenario: string, combo: Combo, roots: Element[]) => {
       if (el instanceof SVGSVGElement && el.closest(CONTROLS)) {
         const s = style(el)
         const paint = s.stroke !== 'none' ? s.stroke : s.fill
-        if (paint && paint !== 'none' && !paint.startsWith('url')) {
+        if (
+          paint &&
+          paint !== 'none' &&
+          !paint.startsWith('url') &&
+          painted(paint)
+        ) {
           report('icon', el, contrast(toRgba(paint), effectiveBg(el)), 3)
         }
       }
@@ -172,391 +177,277 @@ const auditRoots = (scenario: string, combo: Combo, roots: Element[]) => {
   return { findings: [...found.values()], checked }
 }
 
+// --- axe (CX7) ----------------------------------------------------------------------
+
+/**
+ * Разобранные причины, по которым axe не считает контраст (`messageKey` проверки):
+ * каждую закрывает свой расчёт CX1–CX5, у каждой — обоснование. Ошибка axe
+ * (`error-occurred`) снимает правило целиком — разобранной не бывает.
+ */
+const ALLOWED_INCOMPLETE: Record<string, string> = {
+  bgGradient:
+    'фон ячейки — сплошные слои подсветки и диапазона; effectiveBg складывает их, CX2',
+  pseudoContent:
+    'линии дерева и отметки — псевдоэлементы без текста; текст строки считает CX1',
+  shortTextContent:
+    'номер приоритета и счётчики из одной-двух цифр; их контраст считает CX3–CX4',
+  elmPartiallyObscured:
+    'пункты за краем прокручиваемого списка панели; их контраст считает CX5 без учёта прокрутки',
+  bgOverlap:
+    'в стопке под текстом — прозрачный слой блика ячейки или грид под непрозрачным поповером; фон — у предков, его складывает effectiveBg, CX1–CX5',
+}
+
+const reasonOf = (node: axe.NodeResult) => {
+  const check = [...node.any, ...node.all, ...node.none][0]
+  return check?.id === 'error-occurred'
+    ? `ошибка axe: ${(check.data as { message?: string } | null)?.message}`
+    : (check?.data as { messageKey?: string } | null)?.messageKey
+}
+
+const nodeName = (node: axe.NodeResult) => {
+  const el = document.querySelector(node.target.join(' '))
+  return el ? describeNode(el) : node.target.join(' ')
+}
+
+// --- Каталог ------------------------------------------------------------------------
+
+type Requirement = 'CX1' | 'CX2' | 'CX3' | 'CX4' | 'CX5'
+
+/** Наложения поверх тела — CX2, остальное тело — CX1. */
+const OVERLAID = ['highlight', 'cellRange', 'pending', 'error']
+
+const requirementOf = (state: string): Requirement => {
+  const [area, name] = state.split('.') as [string, string]
+  if (area === 'head') return 'CX3'
+  if (area === 'panel') return 'CX4'
+  if (area === 'overlay') return 'CX5'
+  return OVERLAID.includes(name) ? 'CX2' : 'CX1'
+}
+
+/** История из `composeStories`: компонент, параметры и `play`. */
+interface ComposedState {
+  (): React.JSX.Element
+  storyName?: string
+  parameters: { vrStates?: string[] }
+  play?: (context: { canvasElement: HTMLElement }) => Promise<void>
+}
+
+interface CatalogStory {
+  title: string
+  name: string
+  states: string[]
+  Story: ComposedState
+}
+
+/** Истории-состояния каталога: с псевдо-состояниями и на холсте каталога, как в Vitest. */
+const catalogStories = async (): Promise<CatalogStory[]> => {
+  // Аддон псевдо-состояний берёт канал при импорте, а `play` шлёт в него событие
+  // отрисовки: канал ставится до импорта, иначе каждый `getChannel` даёт новый.
+  if (!addons.hasChannel()) addons.setChannel(mockChannel())
+  const pseudoStates = await import('storybook-addon-pseudo-states/preview')
+  const modules = import.meta.glob<Record<string, unknown>>(
+    '../../*.stories.tsx',
+    { eager: true },
+  )
+  const annotations = composeConfigs([
+    pseudoStates,
+    { initialGlobals: { catalog: true } },
+  ])
+  return Object.values(modules).flatMap(module => {
+    const title = (module.default as { title: string }).title
+    const stories = Object.values(
+      composeStories(
+        module as Parameters<typeof composeStories>[0],
+        annotations,
+      ),
+    ) as unknown as ComposedState[]
+    return stories
+      .filter(Story => Story.parameters.vrStates)
+      .map(Story => ({
+        title,
+        name: Story.storyName!,
+        states: Story.parameters.vrStates!,
+        Story,
+      }))
+  })
+}
+
+const gridsAndPopups = (container: HTMLElement) => {
+  const grids = [
+    ...container.querySelectorAll('.data-grid-theme[class*="theme-wrapper"]'),
+  ]
+  const popups = [
+    ...document.querySelectorAll('[role="menu"], [role="dialog"], [data-side]'),
+  ].filter(el => !container.contains(el))
+  const outer = popups.filter(
+    el => !popups.some(other => other !== el && other.contains(el)),
+  )
+  return { grids, popups: outer }
+}
+
+interface StoryAudit {
+  story: string
+  requirement: Requirement
+  states: string[]
+  /** Проверенных узлов по сочетаниям: холостой проход — не проверка. */
+  checked: Record<string, number>
+}
+
+const audits: StoryAudit[] = []
+const findings: Record<Requirement, Finding[]> = {
+  CX1: [],
+  CX2: [],
+  CX3: [],
+  CX4: [],
+  CX5: [],
+}
+const axeProblems: string[] = []
+
 // --- База известных нарушений (CX8) -------------------------------------------------
 
 const known = baseline as Record<string, string>
 const seen = new Set<string>()
-const ranScenarios = new Set<string>()
 
-const expectClean = (findings: Finding[]) => {
-  for (const f of findings) seen.add(f.key)
-  const unexpected = findings
+const expectClean = (list: Finding[]) => {
+  for (const f of list) seen.add(f.key)
+  const unexpected = list
     .filter(f => !(f.key in known))
     .map(f => `${f.key} — ${f.ratio.toFixed(2)}:1 < ${f.need}:1`)
   expect(unexpected).toEqual([])
 }
 
-/** Прогнать проверку во всех сочетаниях; `prepare` — состояние после переключения. */
-const acrossCombos = async (
-  scenario: string,
-  roots: () => Element[],
-  prepare?: () => Promise<void>,
-) => {
-  ranScenarios.add(scenario)
-  const findings: Finding[] = []
-  for (const combo of COMBOS) {
-    await applyCombo(combo)
-    await prepare?.()
-    const audit = auditRoots(scenario, combo, roots())
-    // Холостой проход (корни пусты, узлы скрыты) — не проверка.
-    expect(audit.checked, `${scenario} | ${comboLabel(combo)}`).toBeGreaterThan(
-      0,
-    )
-    findings.push(...audit.findings)
+const auditedFor = (requirement: Requirement) => {
+  const own = audits.filter(a => a.requirement === requirement)
+  expect(own.length, requirement).toBeGreaterThan(0)
+  for (const audit of own) {
+    for (const combo of COMBOS) {
+      expect(
+        audit.checked[comboLabel(combo)],
+        `${audit.story} | ${comboLabel(combo)}`,
+      ).toBeGreaterThan(0)
+    }
   }
-  resetCombo()
-  return findings
 }
 
-// --- Гриды сценариев ----------------------------------------------------------------
+describe('Матрица контраста (ADR 0089) по каталогу (ADR 0093)', () => {
+  // Один проход: история рисуется и доводится до состояния один раз, затем все
+  // сочетания — пороги CX1–CX5 и axe CX7.
+  beforeAll(async () => {
+    for (const { title, name, states, Story } of await catalogStories()) {
+      const requirement = requirementOf(states[0]!)
+      const story = `${title.replace('Tessera/', '')}/${name}`
+      const screen = await render(<Story />)
+      await Story.play?.({ canvasElement: screen.container })
+      const audit: StoryAudit = { story, requirement, states, checked: {} }
+      for (const combo of COMBOS) {
+        await applyCombo(combo)
+        const { grids, popups } = gridsAndPopups(screen.container)
+        const roots = [...grids, ...popups]
+        const result = auditRoots(`${requirement} ${story}`, combo, roots)
+        audit.checked[comboLabel(combo)] = result.checked
+        findings[requirement].push(...result.findings)
 
-type SeedTable = {
-  getCoreRowModel: () => { rows: unknown[] }
-  getRowModel: () => { rows: { id: string }[] }
-  getAllLeafColumns: () => {
-    id: string
-    columnDef: { accessorKey?: unknown; accessorFn?: unknown }
-  }[]
-  setColumnPinning: (value: { start: string[]; end: string[] }) => void
-  setRowSelection?: (value: Record<string, boolean>) => void
-  setSorting?: (value: { id: string; desc: boolean }[]) => void
-  highlight: (target: object, options?: object) => unknown
-}
-
-const dataColumns = (t: SeedTable) =>
-  t
-    .getAllLeafColumns()
-    .filter(c => c.columnDef.accessorKey != null || c.columnDef.accessorFn)
-    .map(c => c.id)
-
-/** Состояния матрицы — как только появились строки (история подаёт данные эффектом). */
-const seed = (apply: (t: SeedTable) => void): TesseraFeatureEntry => ({
-  id: 'contrastMatrixSeed',
-  setup: table => {
-    const t = table as unknown as SeedTable
-    let handle = 0
-    const run = () => {
-      if (t.getCoreRowModel().rows.length === 0) {
-        handle = requestAnimationFrame(run)
-        return
+        const rule =
+          combo.mode === 'more' ? 'color-contrast-enhanced' : 'color-contrast'
+        // Под открытым поповером текст грида перекрыт — axe его не считает; тот же
+        // грид без поповера проверяют истории тела и шапки.
+        for (const root of requirement === 'CX5' ? popups : roots) {
+          const result = await axe.run(root, { runOnly: [rule] })
+          for (const v of result.violations) {
+            for (const node of v.nodes) {
+              const key = `CX7 ${story} | ${comboLabel(combo)} | axe | ${nodeName(node)}`
+              seen.add(key)
+              if (!(key in known)) {
+                axeProblems.push(`${key}: ${node.failureSummary}`)
+              }
+            }
+          }
+          for (const v of result.incomplete) {
+            for (const node of v.nodes) {
+              const reason = reasonOf(node)
+              if (reason && reason in ALLOWED_INCOMPLETE) continue
+              axeProblems.push(
+                `CX7 incomplete ${story} | ${comboLabel(combo)} | ${nodeName(node)} | ${reason ?? 'без причины'}`,
+              )
+            }
+          }
+        }
       }
-      apply(t)
+      resetCombo()
+      audits.push(audit)
+      await screen.unmount()
     }
-    run()
-    return () => cancelAnimationFrame(handle)
-  },
-})
+  }, 900_000)
 
-/** Ячейка закреплена слева или справа. */
-const pinned = (cell: Element) =>
-  ['left', 'right'].includes(cell.getAttribute('data-cell-pinned') ?? '')
-
-const bodyRows = () => [
-  ...document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
-]
-const wrapper = () =>
-  document.querySelector<HTMLElement>(
-    '.data-grid-theme[class*="theme-wrapper"]',
-  )!
-
-/** Грид состояний тела, шапки, футера и панелей. */
-const mountStates = async () => {
-  const screen = await renderGrid({
-    columnCount: 6,
-    dataCount: 40,
-    containerHeight: 640,
-    height: 560,
-    enableRowSelection: true,
-    showSelectedCount: true,
-    enableRowDragging: true,
-    enableRowActionMenu: true,
-    enableColumnPinning: true,
-    enableColumnSorting: true,
-    enableColumnVisibility: true,
-    enableQuickSearch: true,
-    enableKeyboardNavigation: true,
-    enablePagination: true,
-    enableFooter: true,
-    extraPlugins: [
-      seed(t => {
-        const columns = dataColumns(t)
-        t.setColumnPinning({ start: [columns[0]!], end: [columns.at(-1)!] })
-      }),
-    ],
-  })
-  await expect.poll(() => bodyRows().length).toBeGreaterThan(8)
-  // Активная сортировка и выбор двух строк — настоящими нажатиями.
-  const sortable = () =>
-    [...document.querySelectorAll<HTMLElement>('.data-grid__head-cell')].find(
-      h => !pinned(h) && h.querySelector('.column-sort__button'),
-    )
-  await expect.poll(sortable).toBeTruthy()
-  const head = sortable()!
-  await userEvent.hover(head)
-  await userEvent.click(
-    head.querySelector<HTMLElement>('.column-sort__button')!,
-  )
-  await expect
-    .poll(() =>
-      document.querySelector(
-        '[aria-sort="ascending"], [aria-sort="descending"]',
-      ),
-    )
-    .not.toBeNull()
-  for (const row of bodyRows().slice(2, 4)) {
-    await userEvent.click(row.querySelector<HTMLElement>('[role="checkbox"]')!)
-  }
-  await expect
-    .poll(() => document.querySelectorAll('[data-selected="true"]').length)
-    .toBeGreaterThanOrEqual(2)
-  await frame()
-  return screen
-}
-
-const hoverRow = async (selected: boolean) => {
-  const row = bodyRows().find(
-    r =>
-      (r.getAttribute('data-selected') === 'true') === selected &&
-      bodyRows().indexOf(r) > 1,
-  )!
-  const cell = [
-    ...row.querySelectorAll<HTMLElement>('.data-grid__body-cell'),
-  ].find(c => !pinned(c))!
-  await userEvent.hover(cell)
-}
-
-const focusActiveCell = async () => {
-  const row = bodyRows()[6]!
-  const cell = [
-    ...row.querySelectorAll<HTMLElement>('.data-grid__body-cell'),
-  ].find(c => !pinned(c))!
-  cell.focus()
-  await userEvent.keyboard('{ArrowRight}{ArrowLeft}')
-}
-
-const parkPointer = async () => {
-  const park = document.createElement('div')
-  park.style.cssText =
-    'position:fixed;top:0;left:0;width:6px;height:6px;z-index:2147483647'
-  document.body.append(park)
-  await userEvent.hover(park)
-  park.remove()
-}
-
-const headAndFooter = () => [
-  ...document.querySelectorAll('.data-grid__head-cell'),
-  ...document.querySelectorAll('[class*="footer"]'),
-]
-
-const panels = () =>
-  [
-    wrapper().querySelector('[role="toolbar"]'),
-    wrapper().querySelector('[data-status-bar] [class*="status"]') ??
-      [...wrapper().children].at(-1),
-  ].filter((el): el is Element => !!el)
-
-describe('Матрица контраста (ADR 0089)', () => {
-  test('CX1: тело — текст, иконки и флажки во всех состояниях строки и видах ячейки, обе темы, оба режима', async () => {
-    await mountStates()
-    await focusActiveCell()
-    const findings: Finding[] = []
-    for (const selected of [false, true]) {
-      await hoverRow(selected)
-      findings.push(
-        ...(await acrossCombos(
-          `CX1 hover-${selected ? 'selected' : 'plain'}`,
-          bodyRows,
-        )),
-      )
-    }
-    expectClean(findings)
+  test('CX1: тело — текст, иконки и флажки во всех состояниях строки и видах ячейки, обе темы, оба режима', () => {
+    auditedFor('CX1')
+    expectClean(findings.CX1)
   })
 
-  test('CX2: наложения — подсветка трёх тонов, диапазон ячеек, ожидание и ошибка ячейки', async () => {
-    let table: SeedTable | undefined
-    await renderGrid({
-      columnCount: 6,
-      dataCount: 30,
-      enableCellEditing: true,
-      enableCellSelection: true,
-      enableColumnPinning: true,
-      extraPlugins: [
-        submittedCellsSeed(6, 'mixed'),
-        seed(t => {
-          table = t
-          t.setColumnPinning({ start: [dataColumns(t)[0]!], end: [] })
-        }),
-      ],
-    })
-    await expect.poll(() => bodyRows().length).toBeGreaterThan(14)
-    // Подсветки — после того как история подала данные: цель должна быть в модели.
-    const rowId = (index: number) =>
-      bodyRows()[index]!.getAttribute('data-row-id')!
-    const columns = dataColumns(table!)
-    table!.highlight({ row: rowId(7) }, { tone: 'danger' })
-    table!.highlight({ row: rowId(8) }, { tone: 'warning' })
-    table!.highlight({ cell: [rowId(9), columns[2]!] }, { tone: 'success' })
-    table!.highlight({ column: columns[3]! }, { tone: 'success' })
-    await expect
-      .poll(() =>
-        [7, 8].every(i => bodyRows()[i]!.hasAttribute('data-highlight')),
-      )
-      .toBe(true)
-    await expect
-      .poll(
-        () =>
-          document.querySelectorAll(
-            `.data-grid__body-cell[data-column-id="${columns[3]}"][data-column-highlight]`,
-          ).length,
-      )
-      .toBeGreaterThan(0)
-    // Диапазон ячеек: нажатие и Shift-нажатие — подготовка состояния.
-    const cellAt = (row: number, col: number) =>
-      bodyRows()[row]!.querySelectorAll<HTMLElement>(
-        '.data-grid__body-cell:not([data-cell-pinned="left"]):not([data-cell-pinned="right"])',
-      )[col]!
-    const press = (cell: HTMLElement, shiftKey = false) => {
-      const init = { bubbles: true, cancelable: true, button: 0, shiftKey }
-      cell.dispatchEvent(new MouseEvent('mousedown', init))
-      document.dispatchEvent(new MouseEvent('mouseup', init))
-    }
-    press(cellAt(11, 1))
-    press(cellAt(13, 2), true)
-    await expect
-      .poll(() => document.querySelector('[data-cell-selected="true"]'))
-      .not.toBeNull()
-    await parkPointer()
-    // Все наложения на месте перед проходом.
-    expect(
-      document.querySelectorAll('.data-grid__body-row[data-highlight]').length,
-    ).toBe(2)
-    expect(document.querySelector('[data-column-highlight]')).not.toBeNull()
-    expectClean(await acrossCombos('CX2 overlays', bodyRows))
+  test('CX2: наложения — подсветка трёх тонов, диапазон ячеек, ожидание и ошибка ячейки', () => {
+    auditedFor('CX2')
+    expectClean(findings.CX2)
   })
 
-  test('CX3: шапка и футер — покой, наведение, активная сортировка, закрепление', async () => {
-    await mountStates()
-    await parkPointer()
-    const findings = await acrossCombos('CX3 rest', headAndFooter)
-    const head = [
-      ...document.querySelectorAll<HTMLElement>('.data-grid__head-cell'),
-    ].find(c => !pinned(c) && c.offsetWidth > 40)!
-    await userEvent.hover(head)
-    findings.push(...(await acrossCombos('CX3 hover', headAndFooter)))
-    expect(
-      document.querySelector('[aria-sort]:not([aria-sort="none"])'),
-    ).not.toBeNull()
-    expectClean(findings)
+  test('CX3: шапка и футер — покой, наведение, активная сортировка, закрепление', () => {
+    auditedFor('CX3')
+    expectClean(findings.CX3)
   })
 
-  test('CX4: панели — тулбар, быстрый поиск, пагинация, счётчик выбранного', async () => {
-    await mountStates()
-    await parkPointer()
-    expect(wrapper().querySelector('[role="toolbar"] input')).not.toBeNull()
-    expect(panels().length).toBe(2)
-    expectClean(await acrossCombos('CX4 panels', panels))
+  test('CX4: панели — тулбар, быстрый поиск, пагинация, счётчик выбранного', () => {
+    auditedFor('CX4')
+    expectClean(findings.CX4)
   })
 
-  test('CX5: поповеры — пункт в покое, под указателем и выбранный, тултип', async () => {
-    await mountStates()
-    // Меню «Колонки»: пункты-флажки, выбранные и нет, один под клавиатурой.
-    const columnsButton = wrapper().querySelector<HTMLElement>(
-      '[role="toolbar"] button[aria-haspopup]',
-    )!
-    columnsButton.focus()
-    await userEvent.keyboard('{Enter}')
-    const popup = () =>
-      document.querySelector('[role="menu"], [role="dialog"], [data-side]')
-    await expect.poll(popup).not.toBeNull()
-    await userEvent.keyboard('{ArrowDown}')
-    const menu = popup()!
-    const findings = await acrossCombos('CX5 menu', () => [popup()!])
-    expect(
-      menu.querySelector('[aria-checked="true"], [data-checked]'),
-    ).not.toBeNull()
-    await userEvent.keyboard('{Escape}')
-    await expect.poll(popup).toBeNull()
-
-    // Тултип кнопки тулбара.
-    await userEvent.hover(columnsButton)
-    const tooltip = () =>
-      [...document.querySelectorAll<HTMLElement>('[data-side]')].find(el =>
-        el.textContent?.trim(),
-      )
-    await expect.poll(tooltip).toBeTruthy()
-    findings.push(...(await acrossCombos('CX5 tooltip', () => [tooltip()!])))
-    expectClean(findings)
+  test('CX5: поповеры — пункт в покое, под указателем и выбранный, тултип', () => {
+    auditedFor('CX5')
+    expectClean(findings.CX5)
   })
 
   test('CX6: матрица идёт на двух палитрах — запасной и палитре историй', async () => {
-    await mountStates()
+    const [{ Story }] = await catalogStories()
+    const screen = await render(<Story />)
+    const wrapper = () =>
+      screen.container.querySelector(
+        '.data-grid-theme[class*="theme-wrapper"]',
+      )!
+    await expect.poll(wrapper).toBeTruthy()
     const border = async (palette: Palette) => {
       await applyCombo({ palette, theme: 'light', mode: 'more' })
       return style(wrapper()).borderTopColor
     }
     // Палитры различаются там, где надстройка поднимает запасную роль.
     expect(await border('tessera')).not.toBe(await border('stories'))
+    resetCombo()
     expect(COMBOS.map(comboLabel)).toHaveLength(8)
     expect(new Set(COMBOS.map(c => c.palette))).toEqual(
       new Set(['tessera', 'stories']),
     )
   })
 
-  test('CX7: axe — нарушений нет, incomplete на тексте только по разобранным причинам', async () => {
-    await mountStates()
-    await focusActiveCell()
-    await hoverRow(true)
-    // Разобранные причины, по которым axe не считает контраст (`messageKey` проверки):
-    // каждую закрывает свой расчёт CX1–CX5, у каждой — обоснование. Ошибка axe
-    // (`error-occurred`) снимает правило целиком — разобранной не бывает.
-    const ALLOWED: Record<string, string> = {}
-    const reasonOf = (node: axe.NodeResult) => {
-      const check = [...node.any, ...node.all, ...node.none][0]
-      return check?.id === 'error-occurred'
-        ? `ошибка axe: ${(check.data as { message?: string } | null)?.message}`
-        : (check?.data as { messageKey?: string } | null)?.messageKey
+  test('CX7: axe — нарушений нет, incomplete на тексте только по разобранным причинам', () => {
+    expect(audits.length).toBeGreaterThan(0)
+    expect(axeProblems).toEqual([])
+  })
+
+  test('VR14: матрица контраста обходит истории каталога в двух темах, палитрах и режимах контраста', () => {
+    const audited = new Set(audits.flatMap(a => a.states))
+    const registry = Object.entries(CATALOG_STATES).flatMap(([area, states]) =>
+      states.map(state => `${area}.${state}`),
+    )
+    expect(registry.filter(state => !audited.has(state))).toEqual([])
+    for (const audit of audits) {
+      expect(Object.keys(audit.checked).sort(), audit.story).toEqual(
+        COMBOS.map(comboLabel).sort(),
+      )
     }
-    const nodeName = (node: axe.NodeResult) => {
-      const el = document.querySelector(node.target.join(' '))
-      return el ? describeNode(el) : node.target.join(' ')
-    }
-    const problems: string[] = []
-    for (const combo of COMBOS) {
-      await applyCombo(combo)
-      const rule =
-        combo.mode === 'more' ? 'color-contrast-enhanced' : 'color-contrast'
-      const result = await axe.run(wrapper(), { runOnly: [rule] })
-      for (const v of result.violations) {
-        for (const node of v.nodes) {
-          const key = `CX7 | ${comboLabel(combo)} | axe | ${nodeName(node)}`
-          seen.add(key)
-          if (!(key in known)) problems.push(`${key}: ${node.failureSummary}`)
-        }
-      }
-      for (const v of result.incomplete) {
-        for (const node of v.nodes) {
-          const reason = reasonOf(node)
-          if (reason && reason in ALLOWED) continue
-          problems.push(
-            `CX7 incomplete | ${comboLabel(combo)} | ${nodeName(node)} | ${reason ?? 'без причины'}`,
-          )
-        }
-      }
-    }
-    ranScenarios.add('CX7')
-    resetCombo()
-    expect(problems).toEqual([])
   })
 
   test('CX8: база известных нарушений только сокращается', () => {
-    // У каждой записи — причина; запись прогнанного сценария, которой больше нет, — устарела.
+    // У каждой записи — причина; запись, которой больше нет в прогоне, — устарела.
     expect(
       Object.entries(known).filter(([, reason]) => !reason.trim()),
     ).toEqual([])
-    const stale = Object.keys(known).filter(key => {
-      const scenario = key.split(' | ')[0]!
-      return ranScenarios.has(scenario) && !seen.has(key)
-    })
-    expect(stale).toEqual([])
+    expect(Object.keys(known).filter(key => !seen.has(key))).toEqual([])
   })
 })

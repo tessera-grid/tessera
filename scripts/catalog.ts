@@ -72,3 +72,17 @@ export const handMadeModes = (files: StoryFile[]) =>
         /\bmodes:/.test(story.body),
     )
     .map(story => `${story.file}:${story.name}`)
+
+/** Файл дымовых тестов историй — их место в `play` самих историй (VR13). */
+export const isStoryTestFile = (file: string) =>
+  /-stories\.test\.tsx?$/.test(file)
+
+/** Тест о демо-истории: имя называет историю — «история …», `the "…" story`. */
+const STORY_TEST =
+  /\btest\(\s*(['"`])([A-Z]+\d+): (?:(?!\1)[^\n])*?(?:истори[яи]\s+[«"A-Z]|stor(?:y|ies)\s+["«]|["»]\s+stor(?:y|ies)\b)/g
+
+/** ID тестов о демо-историях в файлах тестов (VR13). */
+export const storyTests = (files: StoryFile[]) =>
+  files.flatMap(({ text }) =>
+    [...text.matchAll(STORY_TEST)].map(match => match[2]!),
+  )

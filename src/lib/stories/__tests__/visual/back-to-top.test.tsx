@@ -442,27 +442,4 @@ describe('Кнопка «наверх»', () => {
     expect(button()!.getAttribute('aria-disabled')).toBe('true')
     await run('aria-disabled')
   })
-
-  test('BT15: истории «Pagination» и «Infinite scroll» — кнопка после прокрутки возвращает в начало', async () => {
-    await render(<composed.BackToTopPagination />)
-    await expect.poll(() => button()).not.toBeNull()
-    await scrollPast()
-    expect(shown()).toBe(true)
-    await humanClick(button()!)
-    await expect.poll(() => scroller().scrollTop).toBe(0)
-    await cleanup()
-
-    await render(<composed.BackToTopInfiniteScroll serverDelayMs={0} />)
-    await expect
-      .poll(
-        () =>
-          document.querySelector('[data-testid="loaded-rows-count"]')
-            ?.textContent,
-      )
-      .toBe('Loaded 100 of 1,000')
-    await scrollPast()
-    expect(shown()).toBe(true)
-    await humanClick(button()!)
-    await expect.poll(() => scroller().scrollTop).toBe(0)
-  })
 })

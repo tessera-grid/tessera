@@ -6,6 +6,23 @@ import {
   InfiniteScrollDemo,
   type InfiniteScrollDemoProps,
 } from './demos/infiniteScrollDemos'
+import { expect, userEvent } from 'storybook/test'
+import { byTestId, settle, until, waitForRows } from './__mocks__/catalogPlay'
+
+/** Прокрутка на два экрана показывает кнопку, нажатие возвращает в начало. */
+const backToTop = async (canvas: HTMLElement) => {
+  await waitForRows(canvas)
+  const scroller = canvas.querySelector<HTMLElement>('.data-grid__container')!
+  const button = () => byTestId('back-to-top')
+  scroller.scrollTo({
+    top: scroller.clientHeight * 2 + 200,
+    behavior: 'instant',
+  })
+  await until(() => expect(button()).toBeVisible())
+  await userEvent.click(button()!)
+  await until(() => expect(scroller.scrollTop).toBe(0))
+  await settle()
+}
 
 /**
  * Кнопка «наверх» (ADR 0082): справа в нижней панели, видна после прокрутки на два
@@ -32,6 +49,7 @@ export const BackToTopPagination: StoryObj<StoryProps> = {
     paginationPageSize: 100,
     dataCount: 1000,
   },
+  play: ({ canvasElement }) => backToTop(canvasElement),
 }
 
 export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
@@ -50,4 +68,14 @@ export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
     blockSize: { control: { type: 'range', min: 5, max: 200, step: 5 } },
   },
   render: args => <InfiniteScrollDemo {...normalizeArgs(args)} />,
+  // Дымовой тест ленты (ADR 0082, BT15): кнопка после прокрутки возвращает в начало.
+  parameters: { requirements: ['BT15'] },
+  play: async ({ canvasElement }) => {
+    await until(() =>
+      expect(byTestId('loaded-rows-count')).toHaveTextContent(
+        'Loaded 100 of 1,000',
+      ),
+    )
+    await backToTop(canvasElement)
+  },
 }
