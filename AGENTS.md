@@ -472,6 +472,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       3:1, тексты 7:1, правило приложения главнее, проп `contrast` и атрибут на предке,
       порталы, вид вне режима и `forced-colors` поверх, истории), перф MC10 —
       `performance/increased-contrast` ([ADR 0088](docs/decisions/0088-increased-contrast.md)).
+    - _Матрица контраста:_ `contrast-matrix` (CX1–CX8 — WCAG-пороги текста, иконок и
+      флажков по отрисованным состояниям тела, наложений, шапки и футера, панелей и
+      поповеров в двух палитрах, темах и режимах; axe `color-contrast` с падением на
+      `incomplete`; база `contrast-baseline.json` только сокращается). Фон считает
+      `effectiveBg` из `a11y-helpers` — до холста страницы
+      ([ADR 0089](docs/decisions/0089-contrast-matrix.md)).
     - _Касания:_ `touch` (TU1–TU12, TU14 — кнопки шапки без наведения, кнопки
       тронутой ячейки, грип и ручки пальцем, долгое нажатие для контекстного меню,
       зона нажатия во всю высоту ячейки, axe, история `Touch`) — проект `touch` в
@@ -572,7 +578,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       дымовые `filtering-stories` (SF23–SF24 — истории «Filtering — Select &
       multiselect» и «Filtering — Lookup (server)»), перф SF25–SF26 — в `interaction`,
       [ADR 0048](docs/decisions/0048-option-filtering.md).
-    - _Тема и токены:_ `theming` (TH1–TH10,
+    - _Тема и токены:_ `theming` (TH1–TH11,
       [ADR 0018](docs/decisions/0018-external-theming.md)), `theming-palette` (PL1–PL3);
       матрица `theming-matrix` / `theming-controls` / `theming-header-controls` /
       `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
