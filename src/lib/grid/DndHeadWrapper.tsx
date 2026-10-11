@@ -1,12 +1,7 @@
 // DnD-обвязка хедера. HeadDndBoundary монтирует DndContext + SortableContext только
 // при enableColumnDragging (иначе цена useSortable платится на каждую ячейку).
 // Состояние overlay читается из атома columnDraggingActiveId.
-import {
-  type PropsWithChildren,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { type PropsWithChildren, useMemo, useState } from 'react'
 
 import {
   type CollisionDetection,
@@ -39,6 +34,7 @@ import { horizontalCollisionDetection } from './dnd/collisionDetection'
 import { OverlayHeadCell } from './OverlayHeadCell'
 import { NodeShiftContext, createNodeShiftStore } from './dnd/nodeShift'
 import { nodeIdOf, zoneOf } from '../core/columnNodes'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 /** Столкновения — только с соседями активного узла (ADR 0052, ND3). */
 const siblingCollisionDetection: CollisionDetection = args => {
@@ -124,7 +120,7 @@ export const DndHeadWrapper = ({
         draggableHeader?.column as { getCanDrag?: () => boolean } | undefined
       )?.getCanDrag?.())
   const lost = !draggableHeader
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (forbidden) {
       cancelDragLikeEscape(lost ? 'unavailable' : 'revoke')
     }
@@ -147,7 +143,7 @@ export const DndHeadWrapper = ({
   const activeNodeId = draggableHeader
     ? nodeIdOf(draggableHeader.column, zoneOf(draggableHeader as never))
     : null
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     shiftStore.setActive(activeNodeId)
   }, [shiftStore, activeNodeId])
 

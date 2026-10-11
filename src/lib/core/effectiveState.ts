@@ -7,9 +7,10 @@
  * параметр — вернулось прежнее состояние; контролируемому потребителю `on*Change`
  * из-за сужения не приходит.
  */
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { functionalUpdate } from '@tanstack/react-table'
+import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
 
 /** Текущая свёртка набора (опции, действия слотов) — свежее, чем опции `table`. */
 export interface NarrowContext {
@@ -166,7 +167,7 @@ export const useEffectiveState = ({
   // коммита; `tick` перезапускает проверку после каждой принудительной перерисовки.
   // Предел — если данные новые каждый рендер (не мемоизированы), таблица никогда не
   // «свежая», и без предела это был бы бесконечный цикл.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!pending) {
       forced.current = 0
       return

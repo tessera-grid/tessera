@@ -2,7 +2,7 @@
  * Эффекты после создания таблицы: императивный сетап плагинов, дев-варны об
  * инертных плагинах и конфликтах набора, сброс выбора строк при смене его опций.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import {
   findDuplicatePluginIds,
@@ -17,6 +17,7 @@ import {
   reportPluginError,
   warnInertPlugins,
 } from './pluginDiagnostics'
+import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
 
 export const useTableEffects = (
   table: unknown,
@@ -45,7 +46,7 @@ export const useTableEffects = (
   // Внешнее значение локального состояния плагина — в срез до отрисовки кадра, только
   // при новой ссылке: та же ссылка не затирает изменения изнутри (ADR 0028, DP8).
   const syncedStates = useRef(new Map<string, unknown>())
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     for (const entry of plugins) {
       const external = entry.controlledState
       if (
@@ -63,7 +64,7 @@ export const useTableEffects = (
 
   // Согласование состояния плагинов с таблицей — после каждого рендера, и у
   // выключенных записей (ADR 0040, §2).
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     for (const entry of plugins) {
       if (!entry.reconcile) {
         continue
@@ -87,7 +88,7 @@ export const useTableEffects = (
   // новой ссылке `data`/`columns`. Скрытые фильтром и страницей строки остаются в
   // core-модели и подсветку сохраняют.
   const pruned = useRef<{ data?: unknown; columns?: unknown }>({})
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const t = table as {
       options: { data?: unknown; columns?: unknown }
       getCoreRowModel: () => { rowsById: Record<string, unknown> }

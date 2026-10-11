@@ -5,7 +5,6 @@ import {
   type CSSProperties,
   type ReactNode,
   memo,
-  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -35,6 +34,8 @@ import bodyRowStyles from '../grid/BodyRow/BodyRow.module.css'
 import bodyCellStyles from '../grid/BodyCell/BodyCell.module.css'
 import footerStyles from '../grid/Footer/Footer.module.css'
 import footerCellStyles from '../grid/FooterCell/FooterCell.module.css'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { inertProp } from '../core/inertProp'
 
 /** Сторона квадрата на месте контрола служебной колонки, px. */
 const CONTROL_SIZE = 16
@@ -303,7 +304,11 @@ export const SkeletonRows = memo(
     className,
     cells = true,
   }: SkeletonRowsProps) => (
-    <div aria-hidden="true" inert style={{ display: 'contents' }}>
+    <div
+      aria-hidden="true"
+      {...inertProp(true)}
+      style={{ display: 'contents' }}
+    >
       <SkeletonRowsBlock
         layout={layout}
         columns={getSkeletonColumns(
@@ -364,7 +369,7 @@ export const SkeletonBody = memo(
 
     // Строки по высоте области прокрутки: минус шапка и футер.
     const [space, setSpace] = useState<{ body: number; row: number }>()
-    useLayoutEffect(() => {
+    useIsomorphicLayoutEffect(() => {
       const scroller = rootRef.current?.closest<HTMLElement>(
         '.data-grid__container',
       )
@@ -438,7 +443,7 @@ export const SkeletonBody = memo(
         ref={rootRef}
         className="data-grid__body--skeleton"
         aria-hidden="true"
-        inert
+        {...inertProp(true)}
         style={{ display: 'contents' }}
       >
         <SkeletonRowsBlock

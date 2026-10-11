@@ -8,7 +8,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -28,6 +27,7 @@ import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
 import styles from './InfiniteTail.module.css'
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 
 interface InfiniteOptions {
   infiniteScrollHasMore?: boolean
@@ -63,7 +63,7 @@ export const InfiniteTail = ({
   const [loader] = useState(() => new InfiniteLoader())
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     loader.update({
       table,
       hooks,

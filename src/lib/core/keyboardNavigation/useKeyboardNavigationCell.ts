@@ -2,7 +2,6 @@ import {
   type FocusEvent as ReactFocusEvent,
   type RefObject,
   useCallback,
-  useLayoutEffect,
   useRef,
 } from 'react'
 
@@ -24,6 +23,7 @@ import {
   isTreeGrid,
   resolveActive,
 } from './model'
+import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 
 /**
  * Индекс активной строки/колонки для пиновки в `rangeExtractor`; `undefined` без
@@ -82,7 +82,7 @@ export const useKeyboardNavigationCell = (
     )
   }) as boolean | null
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = ref.current
     if (!isActive || !el) {
       return
@@ -191,7 +191,7 @@ export const useKeyboardNavigationRow = (
     )
   }) as boolean | null
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = ref.current
     if (!isActive || !el) {
       return

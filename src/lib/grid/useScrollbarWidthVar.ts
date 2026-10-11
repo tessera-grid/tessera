@@ -1,4 +1,5 @@
-import { type RefObject, useLayoutEffect } from 'react'
+import { type RefObject } from 'react'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 export const SCROLLBAR_WIDTH_VAR = '--tsr-comp-scrollbar-actual-width'
 
@@ -19,7 +20,7 @@ export const useScrollbarWidthVar = (
   targetRef: RefObject<HTMLElement | null>,
   enabled = true,
 ) => {
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = getScrollElement()
     const target = targetRef.current
 

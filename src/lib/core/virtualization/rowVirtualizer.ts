@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
 
@@ -8,6 +8,7 @@ import { useTableState } from '../reactivity'
 import { ESTIMATE_SIZE } from './measureRows'
 import { rowMeasureElement } from './rowMeasureElement'
 import { useRowRangeExtractor } from './rowRangeExtractor'
+import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 
 const ROWS_OVERSCAN = 5
 
@@ -69,7 +70,7 @@ export const useRowVirtualizer = ({
 
   // Новая высота: замеры строк прежней высоты больше не верны.
   const measuredHeight = useRef(rowHeight)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (measuredHeight.current !== rowHeight) {
       measuredHeight.current = rowHeight
       virtualizer.measure()

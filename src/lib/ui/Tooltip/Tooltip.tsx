@@ -14,6 +14,7 @@ import {
 } from 'react'
 
 import { assignRef } from '../assignRef'
+import { REACT_MAJOR } from '../../core/reactVersion'
 
 export type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
 
@@ -90,6 +91,13 @@ const trackInput = () => {
 /** Пауза перед закрытием: указатель успевает перейти с триггера на подсказку. */
 const CLOSE_DELAY = 150
 
+// React 19 кладёт ref элемента в props, React 18 — в `element.ref` (в 19 обращение к нему предупреждает).
+
+const elementRef = (element: ReactElement): Ref<HTMLElement> | undefined =>
+  REACT_MAJOR >= 19
+    ? (element.props as TriggerProps).ref
+    : (element as unknown as { ref?: Ref<HTMLElement> }).ref
+
 interface TriggerProps {
   ref?: Ref<HTMLElement>
   onPointerEnter?: (event: PointerEvent) => void
@@ -119,15 +127,9 @@ export const Tooltip = ({
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
 
-  // В React 19 ref живёт в props (обращение к element.ref устарело и предупреждает).
-  const {
-    ref: childRef,
-    onPointerEnter,
-    onPointerLeave,
-    onPointerDown,
-    onFocus,
-    onBlur,
-  } = children.props as TriggerProps
+  const childRef = elementRef(children)
+  const { onPointerEnter, onPointerLeave, onPointerDown, onFocus, onBlur } =
+    children.props as TriggerProps
   const setAnchor = useCallback(
     (node: HTMLElement | null) => {
       anchorRef.current = node

@@ -4,7 +4,6 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -18,6 +17,7 @@ import {
   portalThemeClass,
 } from './portalTheme'
 import type { ColorMode, ContrastMode } from './types'
+import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 
 const SWITCHING_ATTRIBUTE = 'data-tsr-theme-switching'
 let switchId = 0
@@ -108,7 +108,7 @@ export const ThemeScope = ({
   const dark = colorMode === 'dark' || (colorMode === 'auto' && ancestorDark)
 
   const props = useRef({ colorMode, contrast })
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const previous = props.current
     if (previous.colorMode === colorMode && previous.contrast === contrast) {
       return
@@ -117,7 +117,7 @@ export const ThemeScope = ({
     suppressThemeTransitions()
   }, [colorMode, contrast])
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const parent = rootRef.current?.parentElement
     if (!parent) return
     const read = () => setAncestorDark(!!parent.closest('.dark'))

@@ -2,7 +2,8 @@
 // одна строка без необязательных подписей, `stacked` — две строки. Вид спускается на
 // ступень, когда содержимое шире панели, и поднимается, только когда ширина покрывает
 // запомненную ширину содержимого в более полном виде — без мерцания.
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 
 export type StatusBarLayout = 'full' | 'compact' | 'stacked'
 
@@ -25,7 +26,7 @@ export const useStatusBarLayout = () => {
   // Ширина, нужная содержимому в полном и компактном виде.
   const needed = useRef<Partial<Record<StatusBarLayout, number>>>({})
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const bar = barRef.current
     const start = startRef.current
     const end = endRef.current
@@ -96,7 +97,7 @@ export const useStatusBarLayout = () => {
   }, [layout])
 
   // В двух строках контейнер прокрутки уменьшается на реальную высоту панели.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const bar = barRef.current
     const wrapper = bar?.parentElement
     if (!bar || !wrapper || layout !== 'stacked') return

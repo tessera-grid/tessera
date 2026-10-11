@@ -1,10 +1,4 @@
-import {
-  memo,
-  useContext,
-  useLayoutEffect,
-  useMemo,
-  useSyncExternalStore,
-} from 'react'
+import { memo, useContext, useMemo, useSyncExternalStore } from 'react'
 
 import { useSortable } from '@dnd-kit/sortable'
 
@@ -17,6 +11,7 @@ import {
 import { HeadCellView, type TableHeadCellProps } from './HeadCell'
 import { NodeShiftContext, noopSubscribe } from './dnd/nodeShift'
 import { getDisabledSortable } from './headCellParams'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 /**
  * Ячейка заголовка с включённым Drag&Drop: регистрирует узел (лист или группу) в
@@ -51,7 +46,7 @@ export const DraggableHeadCell = memo((props: TableHeadCellProps) => {
 
   const ownX = disabledSortable ? 0 : (transform?.x ?? 0)
   const store = useContext(NodeShiftContext)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (isGroup) store?.set(nodeId, ownX)
   }, [store, isGroup, nodeId, ownX])
 

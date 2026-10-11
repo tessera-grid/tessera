@@ -1,12 +1,6 @@
 // Высота строк тела и шапки (ADR 0077): пропы выставляют токены на корне грида; без
 // пропов числа для раскладки читаются из токенов темы до первой отрисовки.
-import {
-  type CSSProperties,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useState,
-} from 'react'
+import { type CSSProperties, type RefObject, useEffect, useState } from 'react'
 
 import { logWarn } from '../core/logger'
 import {
@@ -16,6 +10,7 @@ import {
   readHeightVar,
   resolveRowHeights,
 } from '../core/rowHeights'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 export interface RowHeights {
   row: number
@@ -48,7 +43,7 @@ export const useRowHeights = (
   }, [warningsKey])
 
   // Токены корня — с учётом пропов и CSS темы; до отрисовки, без кадра со старой высотой.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const node = wrapperRef.current
     if (!node) {
       return

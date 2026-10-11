@@ -31,6 +31,11 @@ export default tseslint.config(
     rules: {
       // Полный набор react-hooks 7, включая правила React Compiler.
       ...reactHooks.configs['recommended-latest'].rules,
+      // Изоморфный эффект раскладки (ADR 0091) проверяется как useLayoutEffect.
+      'react-hooks/exhaustive-deps': [
+        'warn',
+        { additionalHooks: '(useIsomorphicLayoutEffect)' },
+      ],
       '@typescript-eslint/no-explicit-any': 'off',
       // `interface X extends Y {}` — легитимный паттерн (declaration merging,
       // номинальные псевдонимы), пустое тело здесь не ошибка.

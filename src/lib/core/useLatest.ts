@@ -1,4 +1,5 @@
-import { type RefObject, useLayoutEffect, useRef } from 'react'
+import { type RefObject, useRef } from 'react'
+import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
 
 /**
  * Ref на последнее значение для эффектов и обработчиков: пишется после коммита, а не
@@ -6,7 +7,7 @@ import { type RefObject, useLayoutEffect, useRef } from 'react'
  */
 export const useLatest = <T>(value: T): RefObject<T> => {
   const ref = useRef(value)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     ref.current = value
   })
   return ref

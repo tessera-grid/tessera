@@ -10,6 +10,7 @@ import type { HeaderSlot } from '../core/createSlots'
 import { HeadRow } from './HeadRow'
 
 import styles from '../grid/Head/Head.module.css'
+import { inertProp } from '../core/inertProp'
 
 interface TableHeadProps {
   layout: 'grid' | 'flex'
@@ -44,7 +45,7 @@ export const Head = ({
     role="rowgroup"
     data-layout={layout}
     aria-hidden={skeleton || undefined}
-    inert={skeleton}
+    {...inertProp(!!skeleton)}
   >
     {headerGroups.map(headerGroup => (
       <HeadRow

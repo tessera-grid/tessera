@@ -2,7 +2,7 @@
 // при enableRowDragging (иначе цена useSortable платится на каждый смонтированный
 // ряд). Состояние overlay читается из атома rowDragging; геометрия
 // переупорядочивания — getRowDraggingEvents.
-import { type PropsWithChildren, useMemo, useLayoutEffect } from 'react'
+import { type PropsWithChildren, useMemo } from 'react'
 
 import {
   DndContext,
@@ -31,6 +31,7 @@ import {
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
 import { windowedListSortingStrategy } from './dnd/windowedListSortingStrategy'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow extends { id: string }>(
@@ -118,7 +119,7 @@ export const DndBodyWrapper = ({
         draggableRow as { getCanDrag?: () => boolean } | undefined
       )?.getCanDrag?.())
   const lost = !draggableRow
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (forbidden) {
       cancelDragLikeEscape(lost ? 'unavailable' : 'revoke')
     }

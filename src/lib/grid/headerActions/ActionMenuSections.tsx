@@ -1,7 +1,7 @@
 // ActionMenuSections: текущий уровень меню с разделами (ADR 0079). Новый уровень
 // приезжает сдвигом, уходящий — снимок разметки в отдельном слое; окно подстраивает
 // размер под уровень переходом. Строка «назад», скелет загрузки и повтор после отказа.
-import { useId, useLayoutEffect, useRef } from 'react'
+import { useId, useRef } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
@@ -15,6 +15,7 @@ import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import type { MenuSections } from './useMenuSections'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 
 interface ActionMenuSectionsProps extends Omit<
   ActionMenuItemsProps,
@@ -38,7 +39,7 @@ export const ActionMenuSections = ({
   const loaded = level.items.status === 'done' ? level.items.items : null
 
   // Окно следует размеру уровня: переход ширины и высоты — в CSS.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const wrap = wrapRef.current
     const current = levelRef.current
     if (!wrap || !current) return
@@ -53,7 +54,7 @@ export const ActionMenuSections = ({
   }, [levelKey, levelRef])
 
   // Фокус после смены уровня: вход — первый пункт, возврат — пункт, из которого вошли.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!direction) return
     const current = levelRef.current
     const target =

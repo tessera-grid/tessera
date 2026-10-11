@@ -14,6 +14,7 @@ import { getHeaderSizeVariable } from './columnSizes'
 import { ActionsZone } from './headerActions/ActionsZone'
 
 import styles from '../grid/HeadCell/OverlayHeadCell.module.css'
+import { inertProp } from '../core/inertProp'
 
 interface OverlayHeadCellProps {
   header: Header<any, any, unknown>
@@ -52,7 +53,7 @@ export const OverlayHeadCell = memo(
         data-index={header.index}
         style={cellStyles}
         // Призрак — визуальный клон: ни в дереве доступности, ни в фокусе (ADR 0052, ND13).
-        inert
+        {...inertProp(true)}
         data-column-resizable={enableResizingColumn}
         data-actions-column-cell={isActionsColumn}
       >

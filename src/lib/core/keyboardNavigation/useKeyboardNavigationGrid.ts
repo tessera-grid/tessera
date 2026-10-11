@@ -3,7 +3,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
   useCallback,
-  useLayoutEffect,
   useRef,
 } from 'react'
 
@@ -15,6 +14,7 @@ import {
   type NavTable,
   isKeyboardNavigationEnabled,
 } from './model'
+import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 
 export interface KeyboardNavigationGrid {
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void
@@ -38,7 +38,7 @@ export const useKeyboardNavigationGrid = (
   const guardAfterRef = useRef<HTMLDivElement>(null)
 
   // Перестановка строки применяется, когда потребитель вернёт новые данные.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (isKeyboardNavigationEnabled(table)) {
       applyFollow(table as NavTable)
     }

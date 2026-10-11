@@ -8,7 +8,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
 } from 'react'
@@ -64,6 +63,7 @@ import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 // Токены темы (`.data-grid-theme`: --tsr-ref/sys/comp, light/dark) как ГЛОБАЛЬНЫЙ
 // (не-модульный) CSS side-effect отсюда — чтобы классы шиппились не захешированными.
 import '../core/themeVariables/theme.css'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 // Base UI Toolbar — около 6.5 KB gzip; грузим, только когда тулбар показывается.
 const Toolbar = lazy(() =>
@@ -123,7 +123,7 @@ export const DataGrid = ({
   const resizeLost =
     isResizingColumns !== false &&
     !leafColumns.some(column => column.id === isResizingColumns)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (resizeLost) {
       cancelColumnResize(table, 'unavailable')
     }
