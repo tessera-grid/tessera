@@ -467,6 +467,11 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       и вспышка, линии дерева и скелет `GrayText`, меню и примитивы, история; эмуляция
       в Chromium и Firefox), HC11 — в `theming-invariants`, перф HC12 —
       `performance/forced-colors` ([ADR 0087](docs/decisions/0087-forced-colors.md)).
+    - _Повышенный контраст:_ `increased-contrast` (MC1–MC9, MC11 — рычаги тонов,
+      тона без текста и рамки не ниже 3:1, контур там, где заливка за текстом не даёт
+      3:1, тексты 7:1, правило приложения главнее, проп `contrast` и атрибут на предке,
+      порталы, вид вне режима и `forced-colors` поверх, истории), перф MC10 —
+      `performance/increased-contrast` ([ADR 0088](docs/decisions/0088-increased-contrast.md)).
     - _Касания:_ `touch` (TU1–TU12, TU14 — кнопки шапки без наведения, кнопки
       тронутой ячейки, грип и ручки пальцем, долгое нажатие для контекстного меню,
       зона нажатия во всю высоту ячейки, axe, история `Touch`) — проект `touch` в
