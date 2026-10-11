@@ -36,7 +36,7 @@ import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
-import type { Column } from '../types'
+import type { Column, Table } from '../types'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
@@ -83,7 +83,7 @@ const releaseContainerFocus = (event: FocusEvent<HTMLDivElement>) => {
  * ReactNode-заглушку при отсутствии данных.
  */
 export const DataGrid = ({
-  table,
+  table: tableProp,
   height = '100%',
   maxHeight = '100%',
   stub,
@@ -95,6 +95,7 @@ export const DataGrid = ({
   className,
   style,
 }: DataGridProps) => {
+  const table = tableProp as unknown as Table<any, any>
   // Реактивная подписка корня на СТРУКТУРНЫЕ срезы (всё, кроме rowSelection): смена
   // выбора строк не перестраивает раскладку/модель — её несут сами строки и чекбоксы
   // (useSelector в компонентах), поэтому корню на неё ре-рендериться незачем. Прочие

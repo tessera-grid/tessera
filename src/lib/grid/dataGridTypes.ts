@@ -4,14 +4,22 @@ import type { CSSProperties, ReactNode } from 'react'
 import type { TableLabels } from '../core/localization'
 import type { ColorMode, ContrastMode } from '../core/themeVariables'
 import type { TableIcons } from '../ui/icons'
-import type { Table } from '../types'
+import type { PluginDiagnostic } from '../core/pluginDiagnostics'
+
+/**
+ * Таблица из `useCreateTable` (ADR 0091): тип по форме, без параметров TanStack —
+ * таблица с конкретными плагинами и данными к `Table<any, any>` не подходит.
+ */
+export interface DataGridTable {
+  getPluginDiagnostics: () => PluginDiagnostic[]
+}
 
 export interface DataGridProps {
   /** Инстанс таблицы, возвращаемый useCreateTable. */
-  table: Table<any, any>
+  table: DataGridTable
   /**
-   * Цветовая схема таблицы (light/dark).
-   * @default 'light'
+   * Тема (ADR 0090): 'auto' — по `.dark` у предка, 'light' и 'dark' — всегда.
+   * @default 'auto'
    */
   colorMode?: ColorMode
   /**

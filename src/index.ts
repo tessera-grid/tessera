@@ -88,7 +88,10 @@ export type {
 } from './lib/core/headerActions'
 
 export { DataGrid } from './lib/grid/DataGrid'
-export { type DataGridProps } from './lib/grid/dataGridTypes'
+export {
+  type DataGridProps,
+  type DataGridTable,
+} from './lib/grid/dataGridTypes'
 
 // Тема: якорь-класс с дефолтами токенов `--tsr-comp-*` (переопределяемых извне
 // обычным CSS), типы цветовой схемы и режима контраста.
