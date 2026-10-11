@@ -714,6 +714,11 @@
     --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
     --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
     --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+    --tsr-comp-active-indicator: color-mix(
+      in oklch,
+      var(--tsr-sys-info) 55%,
+      var(--tsr-sys-fg)
+    );
   }
 }
 
@@ -764,6 +769,11 @@
   --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
   --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
   --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+  --tsr-comp-active-indicator: color-mix(
+    in oklch,
+    var(--tsr-sys-info) 55%,
+    var(--tsr-sys-fg)
+  );
 }
 
 /*
