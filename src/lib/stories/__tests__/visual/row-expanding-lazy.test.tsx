@@ -5,7 +5,12 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 import { composed } from '../stories'
-import { humanClick, scrollToEnd, getScroller } from '../helpers'
+import {
+  getScroller,
+  humanClick,
+  revealCellButtons,
+  scrollToEnd,
+} from '../helpers'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -247,6 +252,8 @@ describe('Row expanding: lazy children', () => {
     const sort = document.querySelector<HTMLElement>(
       ".data-grid__head-cell[data-column-id='firstName'] .column-sort__button",
     )!
+    // Клик посреди раскрытия кнопки уходит мимо (ADR 0076).
+    await revealCellButtons(sort.closest('.data-grid__head-cell')!)
     await humanClick(sort)
     await humanClick(sort)
     await waitRow('lazy-c1')

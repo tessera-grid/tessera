@@ -1,7 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { humanClick } from '../helpers'
+import { humanClick, revealCellButtons } from '../helpers'
 import { headCellById, renderColumnPinning } from './column-pinning-helpers'
 import { MODULE, holdModule, releaseModule, sleep } from './lazy-helpers'
 
@@ -18,7 +18,8 @@ describe('Инлайн-кнопка с мини-меню — загрузка м
     const cell = () => headCellById(container, 'firstName')
     const pin = () => cell().querySelector<HTMLElement>('.column-pin__button')!
 
-    await userEvent.hover(cell())
+    // Клик посреди раскрытия кнопки уходит мимо (ADR 0076).
+    await revealCellButtons(cell())
     await humanClick(pin())
     await expect.poll(() => pin().getAttribute('aria-busy')).toBe('true')
     await sleep(50)

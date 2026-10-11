@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnFiltering } from '../../../plugins'
-import { humanClick, renderGrid } from '../helpers'
+import { humanClick, renderGrid, revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 import { headCellById, renderColumnPinning } from './column-pinning-helpers'
 import { waitForGrid } from './core-helpers'
@@ -44,7 +44,8 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     )!
     const filter = () =>
       head.querySelector<HTMLElement>('.column-filter__button')!
-    await userEvent.hover(head)
+    // Кнопка раскрывается по ширине (ADR 0076): наведение — после раскрытия.
+    await revealCellButtons(head)
     await userEvent.hover(filter())
     await expect.poll(tooltipShown('Filter')).toBe(true)
 
@@ -59,7 +60,7 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     const container = await renderColumnPinning()
     const cell = headCellById(container, 'firstName')
     const pin = () => cell.querySelector<HTMLElement>('.column-pin__button')!
-    await userEvent.hover(cell)
+    await revealCellButtons(cell)
     await userEvent.hover(pin())
     await expect.poll(tooltipShown('Pin column')).toBe(true)
 
