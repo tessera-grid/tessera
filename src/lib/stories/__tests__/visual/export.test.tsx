@@ -645,6 +645,13 @@ describe('dataExport — подписи и доступность', () => {
         },
       })
       await openPanel()
+      // Контраст — по конечным цветам, а не посреди проявления поповера.
+      document
+        .getAnimations()
+        .filter(
+          animation => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .forEach(animation => animation.finish())
 
       const { violations } = await axe.run(
         {

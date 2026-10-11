@@ -421,6 +421,12 @@
     var(--tsr-sys-bg)
   );
   --tsr-comp-control-active-color: var(--tsr-sys-fg);
+  /* Подпись группы в меню и панелях: приглушённый текст не ниже 4.5:1 (ADR 0089). */
+  --tsr-comp-popup-group-label-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) 70%,
+    transparent
+  );
   --tsr-comp-control-active-hover-bg: color-mix(
     in oklch,
     var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 2),
@@ -685,6 +691,11 @@
       var(--tsr-sys-fg) 85%,
       transparent
     );
+    --tsr-comp-popup-group-label-color: color-mix(
+      in srgb,
+      var(--tsr-sys-fg) 85%,
+      transparent
+    );
     --tsr-comp-scrollbar-thumb: color-mix(
       in oklch,
       var(--tsr-sys-fg) var(--tsr-sys-tint-fill),
@@ -726,6 +737,11 @@
     var(--tsr-sys-bg)
   );
   --tsr-comp-load-more-reason-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) 85%,
+    transparent
+  );
+  --tsr-comp-popup-group-label-color: color-mix(
     in srgb,
     var(--tsr-sys-fg) 85%,
     transparent
