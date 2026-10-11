@@ -169,6 +169,14 @@ export const skeletonOptionsType = objectControl(
   'SkeletonOptions',
   DEFAULT_SKELETON_OPTIONS,
 )
+/** Повышенный контраст (ADR 0088): по системе, всегда или никогда. */
+export const contrastType: InputType = {
+  control: 'inline-radio',
+  options: ['auto', 'more', 'standard'],
+  description:
+    'Повышенный контраст (`contrast`): `auto` — по `prefers-contrast: more`, `more` — всегда, `standard` — никогда',
+  table: { defaultValue: { summary: 'auto' } },
+}
 export const enableLoadingType = booleanControl(
   'Прогресс-бар загрузки над телом грида (`enableLoading`)',
 )

@@ -18,3 +18,11 @@ export const forcedColors: BrowserCommand<[active: boolean]> = async (
 ) => {
   await page.emulateMedia({ forcedColors: active ? 'active' : 'none' })
 }
+
+// Эмуляция системной просьбы о контрасте (`prefers-contrast: more`, ADR 0088).
+export const moreContrast: BrowserCommand<[active: boolean]> = async (
+  { page },
+  active,
+) => {
+  await page.emulateMedia({ contrast: active ? 'more' : 'no-preference' })
+}

@@ -13,13 +13,15 @@
   padding: var(--tsr-comp-popup-padding);
   background-color: var(--tsr-comp-popup-bg);
   color: var(--tsr-comp-popup-color);
-  /* Без рамки: поверхность отделяет тень (и в тёмной теме — более светлый фон). */
+  /* Без рамки: поверхность отделяет тень (и в тёмной теме — более светлый фон);
+   * в режиме контраста — ещё и контур (ADR 0088). */
   border: 0;
   border-radius: var(--tsr-comp-control-radius);
   box-shadow: var(--tsr-comp-shadow-action);
   font-family: var(--tsr-comp-font-family);
   font-size: var(--tsr-comp-popup-font-size);
-  outline: none;
+  outline: var(--tsr-comp-popup-outline);
+  outline-offset: -1px;
   transform-origin: var(--transform-origin);
   transition: var(--tsr-comp-tooltip-transition);
 }
@@ -47,6 +49,8 @@
 
 .item[data-highlighted] {
   background-color: var(--tsr-comp-control-hover-bg);
+  outline: var(--tsr-comp-popup-item-highlighted-outline);
+  outline-offset: -1px;
 }
 
 /* Недоступный пункт гаснет цветом, как кнопки (ADR 0017), а не прозрачностью. */

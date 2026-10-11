@@ -74,21 +74,36 @@
   /* Размерные роли — t-shirt из ref, мост к shadcn `--radius-md`. */
   --tsr-sys-radius: var(--radius-md, var(--tsr-ref-radius-md));
 
-  /* Производные интеракций — ОДИН рычаг интенсивности. Объявлены один раз;
-   * в dark пересчитываются сами, т.к. ссылаются на --tsr-sys-fg. */
+  /* Рычаги тонов грида (ADR 0088): доля цвета текста в смешении. Из них выводятся
+   * наведение, выбор, подложка закреплённых, линии дерева и заливки без текста. */
+  --tsr-sys-tint-hover: 4%;
+  --tsr-sys-tint-selected: 6%;
+  --tsr-sys-tint-pinned: 3%;
+  --tsr-sys-tint-line: 3%;
+  --tsr-sys-tint-fill: 10%;
+  /* Тонкая линия грида: линии дерева, в режиме контраста — разделители и контуры. */
+  --tsr-sys-line: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-line),
+    transparent
+  );
+
+  /* Производные интеракций. Объявлены один раз; в dark пересчитываются сами, т.к.
+   * ссылаются на --tsr-sys-fg. */
   --tsr-sys-overlay-hover: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 4%,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-hover),
     transparent
   );
   --tsr-sys-overlay-selected: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 6%,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-selected),
     transparent
   );
   --tsr-sys-overlay-selected-strong: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 10%,
+    var(--tsr-sys-fg)
+      calc(var(--tsr-sys-tint-selected) + var(--tsr-sys-tint-hover)),
     transparent
   );
 
@@ -147,12 +162,12 @@
   --tsr-comp-scrollbar-width: 6px;
   --tsr-comp-scrollbar-thumb: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 25%,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) * 2.5),
     transparent
   );
   --tsr-comp-scrollbar-thumb-hover: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 40%,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) * 4),
     transparent
   );
   --tsr-comp-resize-handler-width: 24px;
@@ -225,7 +240,7 @@
   --tsr-comp-head-cell-hovered-bg: color-mix(
     in oklch,
     var(--tsr-sys-muted),
-    var(--tsr-sys-fg) 8%
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 2)
   );
   --tsr-comp-draggable-cell-bg: var(--tsr-sys-bg);
 
@@ -235,6 +250,12 @@
   --tsr-comp-row-hovered-bg: var(--tsr-sys-overlay-hover);
   --tsr-comp-row-selected-bg: var(--tsr-sys-overlay-selected);
   --tsr-comp-row-selected-hovered-bg: var(--tsr-sys-overlay-selected-strong);
+  /* Контур строки (ADR 0088): в режиме контраста добирает различимость, которую
+   * заливка за текстом дать не может. Значение — `outline` целиком. */
+  --tsr-comp-row-hovered-outline: none;
+  --tsr-comp-row-selected-outline: none;
+  /* Разделители ячеек, строк шапки и футера. */
+  --tsr-comp-cell-divider-color: var(--tsr-sys-overlay-hover);
 
   /* Ячейки / закрепление */
   --tsr-comp-cell-outline-color: var(--tsr-sys-accent);
@@ -253,17 +274,23 @@
   --tsr-comp-cell-pinned-bg: color-mix(
     in oklch,
     var(--tsr-sys-surface),
-    var(--tsr-sys-fg) 9%
+    var(--tsr-sys-fg)
+      calc(var(--tsr-sys-tint-pinned) + var(--tsr-sys-tint-selected))
   );
   --tsr-comp-cell-pinned-hovered-bg: color-mix(
     in oklch,
     var(--tsr-sys-surface),
-    var(--tsr-sys-fg) 7%
+    var(--tsr-sys-fg)
+      calc(var(--tsr-sys-tint-pinned) + var(--tsr-sys-tint-hover))
   );
   --tsr-comp-cell-pinned-selected-hovered-bg: color-mix(
     in oklch,
     var(--tsr-sys-surface),
-    var(--tsr-sys-fg) 13%
+    var(--tsr-sys-fg)
+      calc(
+        var(--tsr-sys-tint-pinned) + var(--tsr-sys-tint-selected) +
+          var(--tsr-sys-tint-hover)
+      )
   );
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
   --tsr-comp-cell-content-padding: 0px var(--tsr-ref-space-4);
@@ -340,11 +367,7 @@
   /* Шаг отступа уровня вложенности строк (ADR 0059). */
   --tsr-comp-row-nesting-indent: 16px;
   /* Линии дерева (ADR 0058): направляющие по уровням в отступе первой колонки. */
-  --tsr-comp-tree-line-color: color-mix(
-    in srgb,
-    var(--tsr-sys-fg) 3%,
-    transparent
-  );
+  --tsr-comp-tree-line-color: var(--tsr-sys-line);
   --tsr-comp-tree-line-width: 1px;
   /* Толщина блика ожидания на ячейке — тоньше, чем у кнопок (ADR 0057). */
   --tsr-comp-cell-pending-ring-width: 1px;
@@ -362,12 +385,12 @@
   --tsr-comp-cell-odd-pinned-left-bg: color-mix(
     in oklch,
     var(--tsr-sys-bg),
-    var(--tsr-sys-fg) 3%
+    var(--tsr-sys-fg) var(--tsr-sys-tint-pinned)
   );
   --tsr-comp-cell-pinned-left-bg: color-mix(
     in oklch,
     var(--tsr-sys-surface),
-    var(--tsr-sys-fg) 3%
+    var(--tsr-sys-fg) var(--tsr-sys-tint-pinned)
   );
   /* Закреплённый заголовок — тот же фон, что у шапки. */
   --tsr-comp-head-cell-pinned-bg: var(--tsr-comp-head-bg);
@@ -389,12 +412,12 @@
   --tsr-comp-control-active-color: var(--tsr-sys-fg);
   --tsr-comp-control-active-hover-bg: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 8%,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 2),
     transparent
   );
   --tsr-comp-control-hover-bg: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 5%,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 1.25),
     transparent
   );
   --tsr-comp-control-disabled-color: color-mix(
@@ -433,11 +456,14 @@
   /* Switch — монохром: accent-трек во включённом, thumb цвета surface. */
   --tsr-comp-switch-track-off: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 25%,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) * 2.5),
     transparent
   );
   --tsr-comp-switch-track-on: var(--tsr-sys-accent);
   --tsr-comp-switch-thumb: var(--tsr-sys-surface);
+  --tsr-comp-switch-thumb-off: var(--tsr-comp-switch-thumb);
+  /* Контур выключенного (ADR 0088) — `outline` целиком. */
+  --tsr-comp-switch-off-outline: none;
 
   /* Кнопки действий. Цвет значка — псевдоним канона `control-color`. Фон, hover и
    * тень — вариант «поверх контента» (кнопки действий строки над прозрачной колонкой
@@ -447,7 +473,7 @@
   --tsr-comp-action-button-hover-bg: color-mix(
     in oklch,
     var(--tsr-sys-elevated),
-    var(--tsr-sys-fg) 6%
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 1.5)
   );
 
   /* Цвет текста грида (ADR 0018, TH10): задаётся на корне, а не наследуется от страницы. */
@@ -489,6 +515,9 @@
   --tsr-comp-popup-max-width: 320px;
   /* Разделители внутри меню и панелей: мягче границы контролов. */
   --tsr-comp-popup-divider-color: var(--tsr-sys-border);
+  /* Рамка поверхности и пункта под указателем (ADR 0088) — `outline` целиком. */
+  --tsr-comp-popup-outline: none;
+  --tsr-comp-popup-item-highlighted-outline: none;
   /* Сегменты (ADR 0074, SG2): дорожка, приподнятый выбранный сегмент. */
   --tsr-comp-segments-height: 28px;
   --tsr-comp-segments-padding: 2px;
@@ -498,6 +527,7 @@
     var(--tsr-sys-fg) 10%,
     transparent
   );
+  --tsr-comp-segments-track-outline: none;
   --tsr-comp-segments-color: var(--tsr-comp-control-color);
   --tsr-comp-segments-selected-bg: var(--tsr-sys-elevated);
   --tsr-comp-segments-selected-color: var(--tsr-sys-fg);
@@ -530,12 +560,12 @@
   /* Загрузка */
   --tsr-comp-skeleton-bg: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 10%,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-fill),
     transparent
   );
   --tsr-comp-skeleton-wave: color-mix(
     in oklch,
-    var(--tsr-sys-fg) 5%,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) / 2),
     transparent
   );
   --tsr-comp-loader-track: color-mix(
@@ -596,6 +626,105 @@
 }
 
 /*
+ * Повышенный контраст (ADR 0088): система просит контраста (`prefers-contrast: more`)
+ * или грид получил `contrast="more"` (атрибут `data-tsr-contrast` на обёртке, портале
+ * или предке). Поднимаются рычаги тонов, запасная рамка и тексты грида; роли из палитры
+ * shadcn приложения не меняются. Тело одно на оба пути — держите их одинаковыми (MC7).
+ * Тон за текстом держит 7:1 для текста, различимость 3:1 добирает контур.
+ */
+@media (prefers-contrast: more) {
+  :where(
+    .data-grid-theme:not(
+      [data-tsr-contrast='standard'],
+      [data-tsr-contrast='standard'] *
+    )
+  ) {
+    --tsr-sys-tint-hover: 8%;
+    --tsr-sys-tint-selected: 12%;
+    --tsr-sys-tint-pinned: 6%;
+    --tsr-sys-tint-line: 55%;
+    --tsr-sys-tint-fill: 50%;
+    --tsr-sys-border: var(
+      --border,
+      color-mix(in oklch, var(--tsr-sys-fg) 55%, transparent)
+    );
+    --tsr-comp-cell-divider-color: var(--tsr-sys-line);
+    --tsr-comp-control-color: color-mix(
+      in oklch,
+      var(--tsr-sys-fg) 92%,
+      var(--tsr-sys-bg)
+    );
+    --tsr-comp-load-more-reason-color: color-mix(
+      in srgb,
+      var(--tsr-sys-fg) 85%,
+      transparent
+    );
+    --tsr-comp-scrollbar-thumb: color-mix(
+      in oklch,
+      var(--tsr-sys-fg) var(--tsr-sys-tint-fill),
+      transparent
+    );
+    --tsr-comp-scrollbar-thumb-hover: color-mix(
+      in oklch,
+      var(--tsr-sys-fg) 75%,
+      transparent
+    );
+    --tsr-comp-switch-track-off: transparent;
+    --tsr-comp-switch-thumb-off: var(--tsr-comp-control-border);
+    --tsr-comp-switch-off-outline: 1px solid var(--tsr-comp-control-border);
+    --tsr-comp-segments-track-outline: 1px solid var(--tsr-sys-line);
+    --tsr-comp-row-hovered-outline: 1px solid var(--tsr-sys-line);
+    --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
+    --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
+    --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+  }
+}
+
+:where(
+  .data-grid-theme[data-tsr-contrast='more'],
+  [data-tsr-contrast='more'] .data-grid-theme:not([data-tsr-contrast])
+) {
+  --tsr-sys-tint-hover: 8%;
+  --tsr-sys-tint-selected: 12%;
+  --tsr-sys-tint-pinned: 6%;
+  --tsr-sys-tint-line: 55%;
+  --tsr-sys-tint-fill: 50%;
+  --tsr-sys-border: var(
+    --border,
+    color-mix(in oklch, var(--tsr-sys-fg) 55%, transparent)
+  );
+  --tsr-comp-cell-divider-color: var(--tsr-sys-line);
+  --tsr-comp-control-color: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) 92%,
+    var(--tsr-sys-bg)
+  );
+  --tsr-comp-load-more-reason-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) 85%,
+    transparent
+  );
+  --tsr-comp-scrollbar-thumb: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-fill),
+    transparent
+  );
+  --tsr-comp-scrollbar-thumb-hover: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) 75%,
+    transparent
+  );
+  --tsr-comp-switch-track-off: transparent;
+  --tsr-comp-switch-thumb-off: var(--tsr-comp-control-border);
+  --tsr-comp-switch-off-outline: 1px solid var(--tsr-comp-control-border);
+  --tsr-comp-segments-track-outline: 1px solid var(--tsr-sys-line);
+  --tsr-comp-row-hovered-outline: 1px solid var(--tsr-sys-line);
+  --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
+  --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
+  --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+}
+
+/*
  * Высокая контрастность Windows (ADR 0087): браузер заменяет цвета палитрой
  * пользователя и снимает фоны, кроме заданных системным цветом. Токены состояний
  * переходят на системные цвета — выбор и выделение `Highlight`, подсветка `Mark`,
@@ -621,6 +750,12 @@
     --tsr-comp-switch-track-on: Highlight;
     --tsr-comp-segments-selected-bg: Highlight;
     --tsr-comp-segments-selected-color: HighlightText;
+    /* Контуры повышенного контраста (ADR 0088) здесь не рисуются. */
+    --tsr-comp-row-hovered-outline: none;
+    --tsr-comp-row-selected-outline: none;
+    --tsr-comp-popup-outline: none;
+    --tsr-comp-popup-item-highlighted-outline: none;
+    --tsr-comp-segments-track-outline: none;
   }
 }
 

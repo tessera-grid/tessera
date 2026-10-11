@@ -5,7 +5,10 @@
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { TableLabels } from '../../core/localization'
 import type {
   ContextMenuAction,
@@ -45,6 +48,7 @@ export const ContextMenuPopup = ({
   onClose,
 }: ContextMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   const sections = useMenuSections(
     actions,
     context,
@@ -80,6 +84,7 @@ export const ContextMenuPopup = ({
           align="start"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, menuStyles.positioner)}
+          data-tsr-contrast={contrast}
         >
           <Menu.Popup
             aria-label={

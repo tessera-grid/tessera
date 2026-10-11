@@ -10,6 +10,8 @@
   padding: var(--tsr-comp-segments-padding);
   border-radius: var(--tsr-comp-segments-radius);
   background-color: var(--tsr-comp-segments-track-bg);
+  outline: var(--tsr-comp-segments-track-outline);
+  outline-offset: -1px;
 }
 
 /* Рамка выбранного: ширина сегмента, сдвиг на `--_index` сегментов вместе с промежутками. */

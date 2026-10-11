@@ -2,7 +2,10 @@ import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
 import clsx from 'clsx'
 import type { ReactNode, RefObject } from 'react'
 
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { TooltipSide } from './Tooltip'
 import styles from './Tooltip.module.css'
 
@@ -35,6 +38,7 @@ const TooltipPopup = ({
   onPointerLeave,
 }: TooltipPopupProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   return (
     <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
       <BaseTooltip.Portal>
@@ -43,6 +47,7 @@ const TooltipPopup = ({
           side={side}
           sideOffset={6}
           className={clsx(themeClass, styles.positioner)}
+          data-tsr-contrast={contrast}
         >
           <BaseTooltip.Popup
             className={clsx(themeClass, styles.content)}

@@ -7,7 +7,7 @@
   display: flex;
   height: var(--tsr-comp-load-more-height);
   background-color: var(--tsr-comp-row-bg);
-  border-top: 1px solid var(--tsr-comp-row-hovered-bg);
+  border-top: 1px solid var(--tsr-comp-cell-divider-color);
 }
 
 /* Ширина видимой области и прилипание к её левому краю: блок по центру экрана и при горизонтальной прокрутке. */

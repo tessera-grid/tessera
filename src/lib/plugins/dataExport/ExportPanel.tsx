@@ -12,7 +12,10 @@ import clsx from 'clsx'
 import { Check } from 'lucide-react'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { Table } from '../../types'
 import { type TableIcons, useIcons } from '../../ui/icons'
 import { Segments } from '../../ui/Segments'
@@ -152,6 +155,7 @@ export const ExportPanel = ({
   onRun,
 }: ExportPanelProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   const labels = useLocalization()
   const icons = useIcons()
   const DownloadIcon = icons.download
@@ -197,6 +201,7 @@ export const ExportPanel = ({
           align="end"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, styles.positioner)}
+          data-tsr-contrast={contrast}
         >
           <Popover.Popup
             aria-label={labels.export}

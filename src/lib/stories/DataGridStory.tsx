@@ -50,6 +50,7 @@ const StoryGrid = memo(
     height,
     maxHeight,
     colorMode,
+    contrast,
     localization,
     locale,
     icons,
@@ -258,6 +259,7 @@ const StoryGrid = memo(
           height={height}
           maxHeight={maxHeight}
           colorMode={colorMode}
+          contrast={contrast}
           localization={labels}
           icons={icons}
           stub={<NoDataStub label="No Data!" />}

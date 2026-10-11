@@ -3,7 +3,10 @@
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import { ActionMenuSections } from './ActionMenuSections'
@@ -37,6 +40,7 @@ export const ActionMenuPopup = ({
   finalFocus,
 }: ActionMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
 
   return (
     <Menu.Portal>
@@ -45,6 +49,7 @@ export const ActionMenuPopup = ({
         align="end"
         sideOffset={POPUP_SIDE_OFFSET}
         className={clsx(themeClass, styles.positioner)}
+        data-tsr-contrast={contrast}
       >
         <Menu.Popup
           className={clsx(themeClass, styles.popup)}

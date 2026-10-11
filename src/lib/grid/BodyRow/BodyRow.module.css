@@ -18,12 +18,16 @@
 
   &:hover {
     background-color: var(--tsr-comp-row-hovered-bg);
+    outline: var(--tsr-comp-row-hovered-outline);
+    outline-offset: -1px;
   }
 
   /* Бэкграунд выбранной строки (selected) */
 
   &:is([data-selected='true']) {
     background-color: var(--tsr-comp-row-selected-bg);
+    outline: var(--tsr-comp-row-selected-outline);
+    outline-offset: -1px;
   }
 
   /* Бэкграунд выбранной строки при наведении (selected + hover) */

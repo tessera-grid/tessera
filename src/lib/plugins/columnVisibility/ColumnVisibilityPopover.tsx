@@ -9,7 +9,10 @@ import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { Table } from '../../types'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { ColumnVisibilityMenu } from './ColumnVisibilityMenu'
@@ -36,6 +39,7 @@ export const ColumnVisibilityPopover = ({
   onOpenChange,
 }: ColumnVisibilityPopoverProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -56,6 +60,7 @@ export const ColumnVisibilityPopover = ({
           align="end"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, styles.positioner)}
+          data-tsr-contrast={contrast}
         >
           <Popover.Popup
             aria-label={labels.columns}

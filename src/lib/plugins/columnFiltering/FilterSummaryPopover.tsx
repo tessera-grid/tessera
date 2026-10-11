@@ -13,7 +13,10 @@ import {
   setColumnFiltersByUser,
 } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { Table } from '../../types'
 import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
@@ -43,6 +46,7 @@ export const FilterSummaryPopover = ({
   onOpenChange,
 }: FilterSummaryPopoverProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   const labels = useLocalization()
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -67,6 +71,7 @@ export const FilterSummaryPopover = ({
           align="end"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, styles.positioner)}
+          data-tsr-contrast={contrast}
         >
           <Popover.Popup
             aria-label={labels.filters(0, 0)}

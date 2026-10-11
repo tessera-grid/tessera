@@ -91,10 +91,11 @@ export { DataGrid } from './lib/grid/DataGrid'
 export { type DataGridProps } from './lib/grid/dataGridTypes'
 
 // Тема: якорь-класс с дефолтами токенов `--tsr-comp-*` (переопределяемых извне
-// обычным CSS) и тип цветовой схемы.
+// обычным CSS), типы цветовой схемы и режима контраста.
 export {
   DATA_GRID_THEME_CLASS,
   type ColorMode,
+  type ContrastMode,
 } from './lib/core/themeVariables'
 
 export {

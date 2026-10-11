@@ -6,7 +6,10 @@ import clsx from 'clsx'
 import { Check, ChevronDown } from 'lucide-react'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
 
@@ -29,6 +32,7 @@ export const OperatorSelect = <T extends string>({
 }: OperatorSelectProps<T>) => {
   const labels = useLocalization()
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   const {
     setTrigger,
     onOpenChange: measureTrigger,
@@ -63,6 +67,7 @@ export const OperatorSelect = <T extends string>({
           sideOffset={POPUP_SIDE_OFFSET}
           alignItemWithTrigger={false}
           className={clsx(themeClass, styles.selectPositioner)}
+          data-tsr-contrast={contrast}
         >
           <Select.Popup
             className={clsx(themeClass, styles.selectPopup)}

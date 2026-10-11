@@ -2,7 +2,7 @@ import type { FilterStubRender } from './filtering/FilterStub'
 import type { CSSProperties, ReactNode } from 'react'
 
 import type { TableLabels } from '../core/localization'
-import type { ColorMode } from '../core/themeVariables'
+import type { ColorMode, ContrastMode } from '../core/themeVariables'
 import type { TableIcons } from '../ui/icons'
 import type { Table } from '../types'
 
@@ -14,6 +14,12 @@ export interface DataGridProps {
    * @default 'light'
    */
   colorMode?: ColorMode
+  /**
+   * Повышенный контраст (ADR 0088): 'auto' — по системной настройке
+   * prefers-contrast: more, 'more' — всегда, 'standard' — никогда.
+   * @default 'auto'
+   */
+  contrast?: ContrastMode
   /** Переопределение иконок таблицы. */
   icons?: Partial<TableIcons>
   /** Переопределение подписей элементов управления (локализация). */

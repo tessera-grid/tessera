@@ -23,15 +23,15 @@
 
   &:is([data-layout='grid']) {
     &:is([data-first-cell-in-row='true']) {
-      border-left: 1px solid var(--tsr-comp-row-hovered-bg);
+      border-left: 1px solid var(--tsr-comp-cell-divider-color);
     }
 
     /*&:not([data-last-cell-in-row='true']) {*/
-    border-right: 1px solid var(--tsr-comp-row-hovered-bg);
+    border-right: 1px solid var(--tsr-comp-cell-divider-color);
     /*}*/
 
     &:not([data-cell-of-first-row='true']) {
-      border-top: 1px solid var(--tsr-comp-row-hovered-bg);
+      border-top: 1px solid var(--tsr-comp-cell-divider-color);
     }
   }
 

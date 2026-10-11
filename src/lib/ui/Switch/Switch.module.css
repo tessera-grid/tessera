@@ -23,6 +23,11 @@
 }
 
 /* base-ui выставляет data-checked (не radix data-state), как и у чекбокса. */
+.switch:not([data-checked]) {
+  outline: var(--tsr-comp-switch-off-outline);
+  outline-offset: -1px;
+}
+
 .switch[data-checked] {
   background-color: var(--tsr-comp-switch-track-on);
 }
@@ -43,7 +48,7 @@
   width: var(--_thumb);
   height: var(--_thumb);
   border-radius: 50%;
-  background-color: var(--tsr-comp-switch-thumb);
+  background-color: var(--tsr-comp-switch-thumb-off);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transform: translateX(var(--_gap));
   transition: transform var(--tsr-comp-motion-duration)
@@ -52,12 +57,14 @@
 }
 
 .thumb[data-checked] {
+  background-color: var(--tsr-comp-switch-thumb);
   transform: translateX(calc(var(--_track-w) - var(--_thumb) - var(--_gap)));
 }
 
 /* Высокая контрастность (ADR 0087): дорожка с контуром, ползунок виден в обоих положениях. */
 @media (forced-colors: active) {
-  .switch {
+  .switch,
+  .switch:not([data-checked]) {
     outline: 1px solid ButtonText;
     outline-offset: -1px;
   }

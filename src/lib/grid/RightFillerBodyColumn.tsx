@@ -17,13 +17,13 @@ export const RightFillerBodyColumn = memo(
         style={{
           flex: 1,
           borderTop: hasBorderTop
-            ? '1px solid var(--tsr-comp-row-hovered-bg)'
+            ? '1px solid var(--tsr-comp-cell-divider-color)'
             : undefined,
           borderBottom: hasBorderBottom
-            ? '1px solid var(--tsr-comp-row-hovered-bg)'
+            ? '1px solid var(--tsr-comp-cell-divider-color)'
             : undefined,
           borderRight: hasBorderRight
-            ? '1px solid var(--tsr-comp-row-hovered-bg)'
+            ? '1px solid var(--tsr-comp-cell-divider-color)'
             : undefined,
         }}
       />

@@ -5,6 +5,6 @@
   height: var(--tsr-comp-body-height);
 
   &:is([data-layout='grid']) {
-    border-bottom: 1px solid var(--tsr-comp-row-hovered-bg);
+    border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
   }
 }

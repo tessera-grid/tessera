@@ -3,6 +3,7 @@
 import { axTree } from './src/lib/stories/__tests__/a11y.commands'
 import {
   forcedColors,
+  moreContrast,
   reducedMotion,
 } from './src/lib/stories/__tests__/motion.commands'
 import {
@@ -29,6 +30,7 @@ import {
 export const testCommands = {
   axTree,
   forcedColors,
+  moreContrast,
   reducedMotion,
   realDrag,
   realDragHold,

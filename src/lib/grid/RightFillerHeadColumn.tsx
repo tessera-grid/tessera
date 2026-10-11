@@ -17,10 +17,10 @@ export const RightFillerHeadColumn = memo(
         style={{
           gridRow,
           borderBottom: hasBorderBottom
-            ? '1px solid var(--tsr-comp-row-hovered-bg)'
+            ? '1px solid var(--tsr-comp-cell-divider-color)'
             : undefined,
           borderRight: hasBorderRight
-            ? '1px solid var(--tsr-comp-row-hovered-bg)'
+            ? '1px solid var(--tsr-comp-cell-divider-color)'
             : undefined,
         }}
       />

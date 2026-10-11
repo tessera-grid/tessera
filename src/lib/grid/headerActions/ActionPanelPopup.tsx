@@ -7,7 +7,10 @@ import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeClass } from '../../core/themeVariables'
+import {
+  usePortalContrast,
+  usePortalThemeClass,
+} from '../../core/themeVariables'
 import type { ActionPanelControls, SlotAction } from '../../core/headerActions'
 
 import styles from '../../grid/headerActions/ActionPanel.module.css'
@@ -41,6 +44,7 @@ export const ActionPanelPopup = ({
   close,
 }: ActionPanelPopupProps) => {
   const themeClass = usePortalThemeClass()
+  const contrast = usePortalContrast()
   const labels = useLocalization()
   const initialFocusRef = useRef<HTMLElement | null>(null)
 
@@ -52,6 +56,7 @@ export const ActionPanelPopup = ({
         align="end"
         sideOffset={POPUP_SIDE_OFFSET}
         className={clsx(themeClass, styles.positioner)}
+        data-tsr-contrast={contrast}
       >
         <Popover.Popup
           aria-label={action.label(context, labels)}
