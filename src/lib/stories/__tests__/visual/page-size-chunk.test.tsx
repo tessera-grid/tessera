@@ -40,7 +40,7 @@ describe('Page size chunk', () => {
       document.querySelector('[data-testid="page-size-select"]'),
     ).toBeNull()
     const placeholder = document.querySelector<HTMLElement>(
-      'nav[data-testid="pagination"] button[aria-label="Rows per page"]',
+      'nav[data-testid="pagination"] button[aria-haspopup="listbox"]:not([data-testid="page-size-select"])',
     )
     expect(placeholder).not.toBeNull()
     placeholder!.click()

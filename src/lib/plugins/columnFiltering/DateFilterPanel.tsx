@@ -9,6 +9,7 @@ import {
   type DateRange,
   DayPicker,
   type DayPickerLocale,
+  labelDayButton,
   TZDate,
 } from '@daypicker/react'
 import { Radio } from '@base-ui/react/radio'
@@ -283,6 +284,9 @@ export const DateFilterPanel = ({
     labels: {
       labelPrevious: () => labels.previousMonth,
       labelNext: () => labels.nextMonth,
+      // Имя дня начинается с видимого числа (WCAG 2.5.3), дальше — полная дата.
+      labelDayButton: (...args: Parameters<typeof labelDayButton>) =>
+        `${args[3]?.format(args[0], 'd') ?? args[0].getDate()}, ${labelDayButton(...args)}`,
     },
     'data-testid': 'filter-calendar',
   }

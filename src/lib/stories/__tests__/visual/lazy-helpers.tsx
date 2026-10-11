@@ -84,7 +84,7 @@ export const exportButton = () =>
   document.querySelector<HTMLElement>('[data-testid="export-button"]')!
 export const pageSizeButton = () =>
   document.querySelector<HTMLElement>(
-    'nav[data-testid="pagination"] button[aria-label="Rows per page"]',
+    'nav[data-testid="pagination"] button[aria-haspopup="listbox"]:not([data-testid="page-size-select"])',
   )!
 export const columnsPopover = () =>
   document.querySelector('[role="dialog"] [role="checkbox"]')

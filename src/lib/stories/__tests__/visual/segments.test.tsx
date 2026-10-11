@@ -34,7 +34,11 @@ const Harness = ({
 }) => {
   const [value, setValue] = useState(options[0]!.value)
   return (
-    <div className={DATA_GRID_THEME_CLASS} style={{ width, padding: 16 }}>
+    // Примитив лежит на поверхности темы (поповер, тулбар), а не на странице.
+    <div
+      className={DATA_GRID_THEME_CLASS}
+      style={{ width, padding: 16, background: 'var(--tsr-sys-surface)' }}
+    >
       <button type="button" data-testid="before">
         before
       </button>

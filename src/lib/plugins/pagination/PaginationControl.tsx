@@ -8,6 +8,7 @@ import {
   forwardRef,
   Suspense,
   useEffect,
+  useId,
 } from 'react'
 
 import type { PaginationState } from '@tanstack/react-table'
@@ -83,6 +84,8 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     PageSizeSelect,
     all => all.rowsPerPage,
   )
+  const sizeLabelId = useId()
+  const sizeTriggerId = useId()
 
   // Строк стало меньше, а страница осталась прежней — к последней существующей.
   useEffect(() => {
@@ -123,9 +126,13 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
 
   const sizePlaceholder = (
     <>
-      <span className={styles.label}>{labels.rowsPerPage}</span>
+      <span id={sizeLabelId} className={styles.label}>
+        {labels.rowsPerPage}
+      </span>
+      {/* Имя — подпись и видимое значение, как у настоящего списка (WCAG 2.5.3). */}
       <PlaceholderButton
-        aria-label={labels.rowsPerPage}
+        id={sizeTriggerId}
+        aria-labelledby={`${sizeLabelId} ${sizeTriggerId}`}
         aria-haspopup="listbox"
         {...sizeSelect.trigger}
       >

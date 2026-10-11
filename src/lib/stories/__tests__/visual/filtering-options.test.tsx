@@ -660,8 +660,13 @@ describe('Фильтр вариантов — подписи и вид', () => {
         />,
       )
       await waitForGrid()
-      const axeOf = async () =>
-        (
+      const axeOf = async () => {
+        // Поповер проявляется переходом — axe проверяет конечный вид.
+        document
+          .getAnimations()
+          .filter(a => a.effect?.getTiming().iterations !== Infinity)
+          .forEach(a => a.finish())
+        return (
           await axe.run(panel()!.closest('[role="dialog"]')!, {
             ...AXE_OPTIONS,
             rules: {
@@ -670,6 +675,7 @@ describe('Фильтр вариантов — подписи и вид', () => {
             },
           })
         ).violations
+      }
       const settle = () => new Promise(resolve => setTimeout(resolve, 400))
       const buttonsAreLarge = () => {
         for (const el of panel()!.querySelectorAll<HTMLElement>('button')) {
