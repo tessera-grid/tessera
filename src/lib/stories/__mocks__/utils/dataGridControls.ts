@@ -14,6 +14,7 @@ import {
 } from '../../../../lib/plugins/pagination/registry'
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
+import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
 import {
   DEFAULT_COLUMN_FILTERING_OPTIONS,
   DEFAULT_QUICK_SEARCH_OPTIONS,
@@ -245,18 +246,35 @@ export const dataGridArgTypes = {
 }
 
 /**
+ * Вариант «auto» флага панели (ADR 0046): в Controls это строка радио, а до истории
+ * `mapping` доносит `undefined` — тип аргумента после него.
+ */
+const PANEL_AUTO = 'auto' as unknown as undefined
+
+/**
+ * Флаг панели для грида: истории, отрисованные мимо Storybook (тесты), получают «auto»
+ * без `mapping` — это «не задано».
+ */
+export const panelFlag = (value: boolean | undefined) =>
+  value === PANEL_AUTO ? undefined : value
+
+/**
  * Значения по умолчанию — те же, что у библиотеки без аргумента: история ведёт себя
- * как раньше. Раскладку (высоты) и флаги панелей (`auto` = не задано) не задаём.
+ * как раньше. Высоты не задаём: без них грид берёт их из токенов темы и раскладки.
  */
 export const dataGridDefaultArgs = {
   dataNesting: 'flat',
   headerNesting: 'flat',
   showStub: false,
+  defaultColumn: { size: 150, ...DEFAULT_COLUMN },
 
   enableSkeleton: false,
   skeletonOptions: DEFAULT_SKELETON_OPTIONS,
   enableLoading: false,
+  contrast: 'auto',
   enableFooter: false,
+  enableToolbar: PANEL_AUTO,
+  enableStatusBar: PANEL_AUTO,
   enableAnnouncements: true,
   enableOverflowTooltip: true,
   locale: 'en',
@@ -264,6 +282,7 @@ export const dataGridDefaultArgs = {
   enableColumnSorting: false,
   enableSortingRemoval: true,
   enableMultiSort: true,
+  multiSortOptions: {},
   serverColumnSorting: false,
   enableColumnResizing: false,
   enableColumnDragging: false,
@@ -307,6 +326,9 @@ export const dataGridDefaultArgs = {
   paginationPageSize: DEFAULT_PAGE_SIZE,
   paginationPageSizes: DEFAULT_PAGE_SIZES,
   enableInfiniteScroll: false,
+  infiniteScrollOptions: {},
   enableBackToTop: false,
+  backToTopOptions: {},
   enableExport: false,
+  exportOptions: {},
 } as const

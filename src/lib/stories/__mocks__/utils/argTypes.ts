@@ -14,8 +14,10 @@ import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
 import {
   DEFAULT_ROW_HEIGHT,
+  HEAD_ROW_HEIGHT_VAR,
   MIN_HEADER_HEIGHT,
   MIN_ROW_HEIGHT,
+  ROW_HEIGHT_VAR,
 } from '../../../../lib/core/rowHeights'
 
 const STORY_PARAM = 'параметр истории'
@@ -141,12 +143,12 @@ export const showStubType = booleanControl(
 export const rowHeightType = numberControl(
   `Высота строк тела, футера и скелета (\`rowHeight\`), px; не ниже ${MIN_ROW_HEIGHT}`,
   { min: MIN_ROW_HEIGHT, max: 120, step: 2 },
-  String(DEFAULT_ROW_HEIGHT),
+  `токен темы ${ROW_HEIGHT_VAR}, иначе ${DEFAULT_ROW_HEIGHT}`,
 )
 export const headerHeightType = numberControl(
   `Высота строки шапки (\`headerHeight\`), px; не ниже ${MIN_HEADER_HEIGHT}`,
   { min: MIN_HEADER_HEIGHT, max: 120, step: 2 },
-  'как rowHeight',
+  `токен темы ${HEAD_ROW_HEIGHT_VAR}, иначе как rowHeight`,
 )
 export const defaultColumnType = objectControl(
   'Размеры колонок без своих (`defaultColumn`): дополняет умолчания библиотеки',

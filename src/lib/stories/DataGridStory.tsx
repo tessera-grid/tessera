@@ -2,6 +2,7 @@
 import { memo, useCallback, useMemo, useState } from 'react'
 import { GroupingState, Updater, functionalUpdate } from '@tanstack/react-table'
 import { Grid, NoDataStub } from './_shims'
+import { panelFlag } from './__mocks__/utils/dataGridControls'
 import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
@@ -171,8 +172,8 @@ const StoryGrid = memo(
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
       enableFooter: options.enableFooter,
-      enableToolbar: options.enableToolbar,
-      enableStatusBar: options.enableStatusBar,
+      enableToolbar: panelFlag(options.enableToolbar),
+      enableStatusBar: panelFlag(options.enableStatusBar),
       enableAnnouncements: options.enableAnnouncements,
       enableOverflowTooltip: options.enableOverflowTooltip,
       rowHeight: options.rowHeight,
