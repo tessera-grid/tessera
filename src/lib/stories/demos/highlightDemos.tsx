@@ -262,12 +262,7 @@ export const HighlightDemo = (args: StoryProps) => {
           </DemoButton>
         </DemoItem>
       </DemoPanel>
-      <StoryComponent
-        {...args}
-        bare
-        dataOverride={data}
-        extraPlugins={plugins}
-      />
+      <StoryComponent {...args} dataOverride={data} extraPlugins={plugins} />
     </div>
   )
 }

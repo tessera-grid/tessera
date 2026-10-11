@@ -2,7 +2,7 @@ import { CSSProperties, memo, useLayoutEffect, useRef, useState } from 'react'
 
 import { Meta, StoryObj } from '@storybook/react'
 
-import { Card, CardContent, Grid } from './_shims'
+import { Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import { useRowSelectionState } from '../../lib/core/createState'
 import { useCreateTable } from '../../lib/core/useCreateTable'
@@ -487,19 +487,15 @@ const ThemingDemo = memo((args: ThemingArgs) => {
         flexDirection: 'column',
       }}
     >
-      <Card style={{ height: '100%' }}>
-        <CardContent
-          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-        >
-          <DataGrid
-            table={table as never}
-            height={400}
-            maxHeight={400}
-            colorMode={args.colorMode}
-            style={buildThemeStyle(args)}
-          />
-        </CardContent>
-      </Card>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <DataGrid
+          table={table as never}
+          height={400}
+          maxHeight={400}
+          colorMode={args.colorMode}
+          style={buildThemeStyle(args)}
+        />
+      </div>
     </Grid>
   )
 })

@@ -210,7 +210,6 @@ export const InfiniteScrollDemo = ({
       </DemoPanel>
       <StoryComponent
         {...args}
-        bare
         columnsOverride={filteringColumns}
         dataOverride={rows}
         enableLoading={loading}

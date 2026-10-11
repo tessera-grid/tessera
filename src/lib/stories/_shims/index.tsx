@@ -1,7 +1,7 @@
 /**
  * Нейтральные заглушки для демо-историй: кнопки — нативные `<button>`,
  * переключатель догфудит библиотечный `Switch`, иконки — lucide. Оформление
- * берёт цвета из токенов темы (--card / --border / --muted-foreground / --radius).
+ * берёт цвета из токенов темы.
  */
 import { ChangeEvent, CSSProperties, ReactNode, useId } from 'react'
 
@@ -26,22 +26,6 @@ const Div = ({ children, style, className }: BoxProps) => (
 )
 
 export const Grid = Div
-export const Card = ({ children, style, className }: BoxProps) => (
-  <div
-    className={className}
-    style={{
-      border: '1px solid var(--border)',
-      padding: 16,
-      borderRadius: 'var(--radius)',
-      background: 'var(--card)',
-      color: 'var(--card-foreground)',
-      ...style,
-    }}
-  >
-    {children}
-  </div>
-)
-export const CardContent = Div
 export const Box = Div
 
 /* ---------- Controls ---------- */

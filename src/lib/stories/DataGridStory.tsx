@@ -1,7 +1,7 @@
 // Демо-компонент историй DataGrid: собирает таблицу из аргументов Storybook.
 import { memo, useCallback, useMemo, useState } from 'react'
 import { GroupingState, Updater, functionalUpdate } from '@tanstack/react-table'
-import { Card, CardContent, Grid, NoDataStub } from './_shims'
+import { Grid, NoDataStub } from './_shims'
 import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
@@ -63,7 +63,6 @@ const StoryGrid = memo(
     isAllRowsSelected,
 
     dataOverride,
-    bare,
     columnsOverride,
     initialGrouping,
     initialExpanded,
@@ -280,13 +279,7 @@ const StoryGrid = memo(
           flexDirection: 'column',
         }}
       >
-        {bare ? (
-          <div style={column}>{body}</div>
-        ) : (
-          <Card style={{ height: '100%' }}>
-            <CardContent style={column}>{body}</CardContent>
-          </Card>
-        )}
+        <div style={column}>{body}</div>
       </Grid>
     )
   },

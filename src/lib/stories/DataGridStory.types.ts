@@ -27,8 +27,6 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * Используется группой Sizing/Data для параметризованных данных.
    */
   dataOverride?: any[]
-  /** Грид без карточки-обёртки: у демо своя панель над ним. */
-  bare?: boolean
   /**
    * Явный набор колонок вместо генерируемого `useColumns(columnCount)`. Даёт
    * тестам seam, чтобы подать колонки с известными `header`/`size` и сверяться с
