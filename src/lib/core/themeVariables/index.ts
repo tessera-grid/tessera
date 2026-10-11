@@ -6,8 +6,10 @@ export {
 export {
   PortalThemeProvider,
   contrastAttribute,
-  PortalContrastProvider,
+  PortalThemeDataProvider,
+  type PortalThemeData,
   portalThemeClass,
-  usePortalContrast,
   usePortalThemeClass,
+  usePortalThemeData,
 } from './portalTheme'
+export { ThemeScope, suppressThemeTransitions } from './themeSource'

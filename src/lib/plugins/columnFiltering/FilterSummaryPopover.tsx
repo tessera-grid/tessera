@@ -14,7 +14,7 @@ import {
 } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { Table } from '../../types'
@@ -46,7 +46,7 @@ export const FilterSummaryPopover = ({
   onOpenChange,
 }: FilterSummaryPopoverProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -71,7 +71,7 @@ export const FilterSummaryPopover = ({
           align="end"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, styles.positioner)}
-          data-tsr-contrast={contrast}
+          {...themeData}
         >
           <Popover.Popup
             aria-label={labels.filters(0, 0)}

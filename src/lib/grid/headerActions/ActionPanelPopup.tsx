@@ -8,7 +8,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { ActionPanelControls, SlotAction } from '../../core/headerActions'
@@ -44,7 +44,7 @@ export const ActionPanelPopup = ({
   close,
 }: ActionPanelPopupProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const initialFocusRef = useRef<HTMLElement | null>(null)
 
@@ -56,7 +56,7 @@ export const ActionPanelPopup = ({
         align="end"
         sideOffset={POPUP_SIDE_OFFSET}
         className={clsx(themeClass, styles.positioner)}
-        data-tsr-contrast={contrast}
+        {...themeData}
       >
         <Popover.Popup
           aria-label={action.label(context, labels)}

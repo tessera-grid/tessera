@@ -478,6 +478,11 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `incomplete`; база `contrast-baseline.json` только сокращается). Фон считает
       `effectiveBg` из `a11y-helpers` — до холста страницы
       ([ADR 0089](docs/decisions/0089-contrast-matrix.md)).
+    - _Источник и смена темы:_ `theme-source` (TM1–TM10, TM12 — смена темы пропом и
+      `.dark` у предка в одном кадре, плавное наведение, `colorMode` `auto`/`dark`/`light`,
+      порталы и `color-scheme` по фактической теме, предупреждение о смеси палитр, axe,
+      история `Theming/Theme sources`), перф TM11 — `performance/theme-source`
+      ([ADR 0090](docs/decisions/0090-theme-source-and-switching.md)).
     - _Касания:_ `touch` (TU1–TU12, TU14 — кнопки шапки без наведения, кнопки
       тронутой ячейки, грип и ручки пальцем, долгое нажатие для контекстного меню,
       зона нажатия во всю высоту ячейки, axe, история `Touch`) — проект `touch` в

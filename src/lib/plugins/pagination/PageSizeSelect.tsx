@@ -8,7 +8,7 @@ import clsx from 'clsx'
 import { Check, ChevronDown } from 'lucide-react'
 
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import styles from './Pagination.module.css'
@@ -33,7 +33,7 @@ export const PageSizeSelect = ({
   onOpenChange,
 }: PageSizeSelectProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   const {
     setTrigger,
     onOpenChange: measureTrigger,
@@ -71,7 +71,7 @@ export const PageSizeSelect = ({
           sideOffset={POPUP_SIDE_OFFSET}
           alignItemWithTrigger={false}
           className={clsx(themeClass, styles.positioner)}
-          data-tsr-contrast={contrast}
+          {...themeData}
         >
           <Select.Popup
             className={clsx(themeClass, styles.popup)}

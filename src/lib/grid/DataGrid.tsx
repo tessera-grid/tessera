@@ -26,9 +26,7 @@ import { OverflowTooltip } from './OverflowTooltip'
 import {
   DATA_GRID_THEME_CLASS,
   contrastAttribute,
-  PortalContrastProvider,
-  PortalThemeProvider,
-  portalThemeClass,
+  ThemeScope,
 } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
@@ -90,7 +88,7 @@ export const DataGrid = ({
   maxHeight = '100%',
   stub,
   filterStub,
-  colorMode = 'light',
+  colorMode = 'auto',
   contrast = 'auto',
   icons,
   localization,
@@ -276,6 +274,7 @@ export const DataGrid = ({
     dark: colorMode === 'dark',
   })
   const contrastAttr = contrastAttribute(contrast)
+  const colorModeAttr = colorMode === 'light' ? 'light' : undefined
 
   // LiveRegion — первым во фрагменте обеих веток: переживает переход в заглушку
   // и объявляет пустой результат.
@@ -290,36 +289,41 @@ export const DataGrid = ({
           themeNode={scrollableNodeRef}
         />
         <PluginRenderVersionContext.Provider value={renderVersion}>
-          <PortalThemeProvider value={portalThemeClass(colorMode)}>
-            <PortalContrastProvider value={contrastAttr}>
-              <IconsProvider icons={icons}>
-                <LocalizationProvider localization={localization}>
+          <ThemeScope
+            colorMode={colorMode}
+            contrast={contrast}
+            rootRef={wrapperRef}
+            host={table as never}
+          >
+            <IconsProvider icons={icons}>
+              <LocalizationProvider localization={localization}>
+                <div
+                  ref={wrapperRef}
+                  className={clsx(
+                    dataGridStyles['table__theme-wrapper'],
+                    themeClassName,
+                  )}
+                  data-tsr-contrast={contrastAttr}
+                  data-tsr-color-mode={colorModeAttr}
+                  data-toolbar={enableToolbar || undefined}
+                  data-status-bar={hasStatusBar || undefined}
+                  style={{ ...containerStyles, ...style }}
+                >
+                  {toolbar}
                   <div
                     className={clsx(
-                      dataGridStyles['table__theme-wrapper'],
-                      themeClassName,
+                      'data-grid__container',
+                      dataGridStyles['table__stub-container'],
                     )}
-                    data-tsr-contrast={contrastAttr}
-                    data-toolbar={enableToolbar || undefined}
-                    data-status-bar={hasStatusBar || undefined}
-                    style={{ ...containerStyles, ...style }}
+                    ref={scrollableNodeRef}
                   >
-                    {toolbar}
-                    <div
-                      className={clsx(
-                        'data-grid__container',
-                        dataGridStyles['table__stub-container'],
-                      )}
-                      ref={scrollableNodeRef}
-                    >
-                      <div className={dataGridStyles.table__stub}>{stub}</div>
-                    </div>
-                    {statusBar}
+                    <div className={dataGridStyles.table__stub}>{stub}</div>
                   </div>
-                </LocalizationProvider>
-              </IconsProvider>
-            </PortalContrastProvider>
-          </PortalThemeProvider>
+                  {statusBar}
+                </div>
+              </LocalizationProvider>
+            </IconsProvider>
+          </ThemeScope>
         </PluginRenderVersionContext.Provider>
       </>
     )
@@ -335,104 +339,108 @@ export const DataGrid = ({
         themeNode={scrollableNodeRef}
       />
       <PluginRenderVersionContext.Provider value={renderVersion}>
-        <PortalThemeProvider value={portalThemeClass(colorMode)}>
-          <PortalContrastProvider value={contrastAttr}>
-            <IconsProvider icons={icons}>
-              <LocalizationProvider localization={localization}>
-                <FastScrollProvider store={fastScrollStore}>
-                  <div
-                    ref={wrapperRef}
-                    className={clsx(
-                      dataGridStyles['table__theme-wrapper'],
-                      themeClassName,
-                    )}
-                    data-tsr-contrast={contrastAttr}
-                    data-toolbar={enableToolbar || undefined}
-                    data-status-bar={hasStatusBar || undefined}
-                    style={wrapperStyles}
-                  >
-                    {toolbar}
-                    {showLinearProgress && (
-                      <LinearProgress label={loadingLabel} />
-                    )}
-                    <ScrollingAttribute getScrollElement={getScrollElement} />
-                    <ShimmerSync getScrollElement={getScrollElement} />
-                    {enableOverflowTooltip && (
-                      <OverflowTooltip getScrollElement={getScrollElement} />
-                    )}
-                    {enableContextMenu && (
-                      <ContextMenu
-                        table={table}
-                        getScrollElement={getScrollElement}
-                      />
-                    )}
-                    {keyboardNavigation && (
-                      <div
-                        ref={guardBeforeRef}
-                        tabIndex={-1}
-                        className={dataGridStyles['focus-guard']}
-                        data-kn-guard="before"
-                      />
-                    )}
+        <ThemeScope
+          colorMode={colorMode}
+          contrast={contrast}
+          rootRef={wrapperRef}
+          host={table as never}
+        >
+          <IconsProvider icons={icons}>
+            <LocalizationProvider localization={localization}>
+              <FastScrollProvider store={fastScrollStore}>
+                <div
+                  ref={wrapperRef}
+                  className={clsx(
+                    dataGridStyles['table__theme-wrapper'],
+                    themeClassName,
+                  )}
+                  data-tsr-contrast={contrastAttr}
+                  data-tsr-color-mode={colorModeAttr}
+                  data-toolbar={enableToolbar || undefined}
+                  data-status-bar={hasStatusBar || undefined}
+                  style={wrapperStyles}
+                >
+                  {toolbar}
+                  {showLinearProgress && (
+                    <LinearProgress label={loadingLabel} />
+                  )}
+                  <ScrollingAttribute getScrollElement={getScrollElement} />
+                  <ShimmerSync getScrollElement={getScrollElement} />
+                  {enableOverflowTooltip && (
+                    <OverflowTooltip getScrollElement={getScrollElement} />
+                  )}
+                  {enableContextMenu && (
+                    <ContextMenu
+                      table={table}
+                      getScrollElement={getScrollElement}
+                    />
+                  )}
+                  {keyboardNavigation && (
                     <div
-                      className={clsx(
-                        'data-grid__container',
-                        dataGridStyles.table__container,
-                        {
-                          [dataGridStyles['table__container--skeleton']]:
-                            showSkeleton,
-                        },
-                      )}
-                      ref={scrollableNodeRef}
-                      // Firefox держит прокручиваемую область в порядке Tab (KN32).
-                      tabIndex={keyboardNavigation ? -1 : undefined}
-                      onFocus={
-                        keyboardNavigation ? releaseContainerFocus : undefined
-                      }
-                      data-resizing={isResizingColumns !== false}
-                      onCopy={handleCopy}
-                    >
-                      <DataGridTable
-                        table={table}
-                        layout={layout}
-                        headStyles={headStyles}
-                        headerGroups={headerGroups}
-                        rows={rows}
-                        leafColumns={leafColumns}
-                        virtualRows={virtualRows}
-                        virtualColumns={virtualColumns}
-                        isVirtualColumns={!hasNestedGroups}
-                        isResizingColumns={isResizingColumns}
-                        keyboardNavigation={keyboardNavigation}
-                        label={tableLabel}
-                        busy={showLinearProgress}
-                        skeleton={showSkeleton}
-                        loadingLabel={loadingLabel}
-                        style={{
-                          ...columnSizes,
-                          ...columnShiftVars(columnShifts),
-                          ...virtualPaddingStyles,
-                        }}
-                      />
-                      {showFilterStub && (
-                        <FilterStub table={table} render={filterStub} />
-                      )}
-                    </div>
-                    {keyboardNavigation && (
-                      <div
-                        ref={guardAfterRef}
-                        tabIndex={-1}
-                        className={dataGridStyles['focus-guard']}
-                        data-kn-guard="after"
-                      />
+                      ref={guardBeforeRef}
+                      tabIndex={-1}
+                      className={dataGridStyles['focus-guard']}
+                      data-kn-guard="before"
+                    />
+                  )}
+                  <div
+                    className={clsx(
+                      'data-grid__container',
+                      dataGridStyles.table__container,
+                      {
+                        [dataGridStyles['table__container--skeleton']]:
+                          showSkeleton,
+                      },
                     )}
-                    {statusBar}
+                    ref={scrollableNodeRef}
+                    // Firefox держит прокручиваемую область в порядке Tab (KN32).
+                    tabIndex={keyboardNavigation ? -1 : undefined}
+                    onFocus={
+                      keyboardNavigation ? releaseContainerFocus : undefined
+                    }
+                    data-resizing={isResizingColumns !== false}
+                    onCopy={handleCopy}
+                  >
+                    <DataGridTable
+                      table={table}
+                      layout={layout}
+                      headStyles={headStyles}
+                      headerGroups={headerGroups}
+                      rows={rows}
+                      leafColumns={leafColumns}
+                      virtualRows={virtualRows}
+                      virtualColumns={virtualColumns}
+                      isVirtualColumns={!hasNestedGroups}
+                      isResizingColumns={isResizingColumns}
+                      keyboardNavigation={keyboardNavigation}
+                      label={tableLabel}
+                      busy={showLinearProgress}
+                      skeleton={showSkeleton}
+                      loadingLabel={loadingLabel}
+                      style={{
+                        ...columnSizes,
+                        ...columnShiftVars(columnShifts),
+                        ...virtualPaddingStyles,
+                      }}
+                    />
+                    {showFilterStub && (
+                      <FilterStub table={table} render={filterStub} />
+                    )}
                   </div>
-                </FastScrollProvider>
-              </LocalizationProvider>
-            </IconsProvider>
-          </PortalContrastProvider>
-        </PortalThemeProvider>
+                  {keyboardNavigation && (
+                    <div
+                      ref={guardAfterRef}
+                      tabIndex={-1}
+                      className={dataGridStyles['focus-guard']}
+                      data-kn-guard="after"
+                    />
+                  )}
+                  {statusBar}
+                </div>
+              </FastScrollProvider>
+            </LocalizationProvider>
+          </IconsProvider>
+        </ThemeScope>
       </PluginRenderVersionContext.Provider>
     </>
   )

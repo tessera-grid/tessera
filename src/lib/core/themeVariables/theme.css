@@ -13,7 +13,7 @@
  *
  * Тема-зависимость — только в Semantic: light/dark переключают, какой primitive
  * играет роль. Selectors dark: класс `.dark` на обёртке (`colorMode="dark"`) или
- * на её предке. Всё объявлено через `:where()` (нулевая специфичность) — правило
+ * на её предке, кроме `colorMode="light"` (ADR 0090). Всё объявлено через `:where()` (нулевая специфичность) — правило
  * или `style` потребителя (спец. ≥ 0,1,0) перебивает дефолт без `!important`.
  * Рантайм-переменные (высоты шапки/тела, drag-офсеты) сюда НЕ входят — их DataGrid
  * вешает инлайн. См. ADR 0018 (шиппинг слоя) и ADR 0019 (архитектура токенов).
@@ -71,6 +71,10 @@
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-500));
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
 
+  /* Схема темы (ADR 0090): `color-scheme` грида и порталов — нативные полосы
+   * прокрутки и поля; по ней же порталы и проверка палитры узнают фактическую тему. */
+  --tsr-sys-scheme: light;
+
   /* Размерные роли — t-shirt из ref, мост к shadcn `--radius-md`. */
   --tsr-sys-radius: var(--radius-md, var(--tsr-ref-radius-md));
 
@@ -119,7 +123,14 @@
 /* Dark: переопределяем ТОЛЬКО primitive-слот роли; мост var(--shadcn,…) сохранён,
  * поэтому shadcn-палитра потребителя по-прежнему побеждает и в тёмном режиме. */
 :where(.data-grid-theme.dark),
-:where(.dark .data-grid-theme) {
+:where(
+  .dark
+    .data-grid-theme:not(
+      [data-tsr-color-mode='light'],
+      [data-tsr-color-mode='light'] *
+    )
+) {
+  --tsr-sys-scheme: dark;
   --tsr-sys-fg: var(--foreground, var(--tsr-ref-neutral-50));
   --tsr-sys-bg: var(--background, var(--tsr-ref-neutral-950));
   --tsr-sys-surface: var(--card, var(--tsr-ref-neutral-900));
@@ -611,6 +622,19 @@
   --tsr-comp-shadow-action: 0px 0px 4px 2px var(--tsr-sys-shadow-elevated);
 }
 
+:where(.data-grid-theme) {
+  color-scheme: var(--tsr-sys-scheme);
+}
+
+/* Смена темы (ADR 0090): на кадр смены грид гасит переходы, и цвета темы меняются
+ * сразу, а не переходом из старых цветов. Атрибут на `<html>` ставит и снимает грид. */
+:root[data-tsr-theme-switching] .data-grid-theme,
+:root[data-tsr-theme-switching] .data-grid-theme *,
+:root[data-tsr-theme-switching] .data-grid-theme *::before,
+:root[data-tsr-theme-switching] .data-grid-theme *::after {
+  transition: none !important;
+}
+
 /* Единый гаситель движения (ADR 0017, MO3): система просит меньше анимации — все
  * переходы и бесконечные анимации грида, включая порталы (у них тот же класс темы),
  * выключаются одним правилом, а не по компонентам. */
@@ -724,6 +748,37 @@
   --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
   --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
   --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+}
+
+/*
+ * Светлая тема под тёмным предком (ADR 0090, `colorMode="light"`): палитра
+ * приложения внутри тёмного поддерева унаследована тёмной, а светлой здесь нет —
+ * роли берут запасные светлые значения грида, без моста к shadcn.
+ */
+:where(
+  .dark
+    .data-grid-theme:is(
+      [data-tsr-color-mode='light'],
+      [data-tsr-color-mode='light'] *
+    )
+) {
+  --tsr-sys-fg: var(--tsr-ref-neutral-900);
+  --tsr-sys-bg: var(--tsr-ref-neutral-50);
+  --tsr-sys-surface: var(--tsr-ref-neutral-0);
+  --tsr-sys-muted: var(--tsr-ref-neutral-100);
+  --tsr-sys-accent: var(--tsr-ref-neutral-900);
+  --tsr-sys-accent-fg: var(--tsr-ref-neutral-0);
+  /* ~`neutral-200` на белом; в повышенном контрасте (ADR 0088) — рычаг линий, 3:1. */
+  --tsr-sys-border: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) max(9%, var(--tsr-sys-tint-line)),
+    transparent
+  );
+  --tsr-sys-ring: var(--tsr-ref-neutral-900);
+  --tsr-sys-danger: var(--tsr-ref-red-500);
+  --tsr-sys-info: var(--tsr-ref-blue-500);
+  --tsr-sys-warning: var(--tsr-ref-amber-500);
+  --tsr-sys-success: var(--tsr-ref-green-500);
 }
 
 /*

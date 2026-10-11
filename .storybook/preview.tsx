@@ -71,8 +71,9 @@ const preview: Preview = {
       const theme: ThemeName =
         context.globals.theme === 'dark' ? 'dark' : 'light'
 
-      // Держим colorMode грида в синхроне с тумблером тулбара.
-      context.args.colorMode = theme
+      // Держим colorMode грида в синхроне с тумблером тулбара. Светлый — 'auto': тест,
+      // ставящий `.dark` на <html>, получает тёмный грид (ADR 0090).
+      context.args.colorMode = theme === 'dark' ? 'dark' : 'auto'
 
       return (
         // Класс `dark` активирует токены .dark из global.css для всего канваса —

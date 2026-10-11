@@ -13,7 +13,7 @@ import { Check } from 'lucide-react'
 
 import { useLocalization } from '../../core/localization'
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { Table } from '../../types'
@@ -155,7 +155,7 @@ export const ExportPanel = ({
   onRun,
 }: ExportPanelProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const icons = useIcons()
   const DownloadIcon = icons.download
@@ -201,7 +201,7 @@ export const ExportPanel = ({
           align="end"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, styles.positioner)}
-          data-tsr-contrast={contrast}
+          {...themeData}
         >
           <Popover.Popup
             aria-label={labels.export}

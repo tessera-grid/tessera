@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import type { ReactNode, RefObject } from 'react'
 
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { TooltipSide } from './Tooltip'
@@ -38,7 +38,7 @@ const TooltipPopup = ({
   onPointerLeave,
 }: TooltipPopupProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   return (
     <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
       <BaseTooltip.Portal>
@@ -47,7 +47,7 @@ const TooltipPopup = ({
           side={side}
           sideOffset={6}
           className={clsx(themeClass, styles.positioner)}
-          data-tsr-contrast={contrast}
+          {...themeData}
         >
           <BaseTooltip.Popup
             className={clsx(themeClass, styles.content)}

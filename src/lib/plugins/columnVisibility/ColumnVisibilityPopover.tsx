@@ -10,7 +10,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { Table } from '../../types'
@@ -39,7 +39,7 @@ export const ColumnVisibilityPopover = ({
   onOpenChange,
 }: ColumnVisibilityPopoverProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -60,7 +60,7 @@ export const ColumnVisibilityPopover = ({
           align="end"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, styles.positioner)}
-          data-tsr-contrast={contrast}
+          {...themeData}
         >
           <Popover.Popup
             aria-label={labels.columns}

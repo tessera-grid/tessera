@@ -112,7 +112,9 @@ semantic → component; см. ADR 0019); значения собираются �
   `grep -c '_data-grid-theme_' dist/style.css` = 0 И присутствует литеральный
   `:where(.data-grid-theme)`.
 
-**Контракт colorMode.** Для потребителя со своим shadcn (плоский `.dark {…}`)
+**Контракт colorMode.** Значения и смена темы уточнены в
+[ADR 0090](0090-theme-source-and-switching.md): `'auto' | 'light' | 'dark'`, по умолчанию
+`'auto'`. Для потребителя со своим shadcn (плоский `.dark {…}`)
 `colorMode="dark"` вешает `.dark` на обёртку → его же правило матчит её и флипает
 и апстрим-токены. Ниша: если его dark-токены заданы только как `html.dark`/
 `:root.dark` (не матчат обёртку) и приложение в light — грид возьмёт свои тёмные

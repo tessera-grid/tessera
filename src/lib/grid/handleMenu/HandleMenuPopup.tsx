@@ -7,7 +7,7 @@ import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
 import {
-  usePortalContrast,
+  usePortalThemeData,
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { HeaderMenuItem } from '../../core/headerActions'
@@ -35,7 +35,7 @@ export const HandleMenuPopup = ({
   onClose,
 }: HandleMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
-  const contrast = usePortalContrast()
+  const themeData = usePortalThemeData()
   const leave = useMenuLeave()
   useCloseOnGridScroll(true, () => {
     leave.track(false, GRID_SCROLL_REASON)
@@ -59,7 +59,7 @@ export const HandleMenuPopup = ({
           align="start"
           sideOffset={POPUP_SIDE_OFFSET}
           className={clsx(themeClass, menuStyles.positioner)}
-          data-tsr-contrast={contrast}
+          {...themeData}
         >
           <Menu.Popup
             aria-label={label}

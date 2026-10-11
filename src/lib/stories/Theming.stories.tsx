@@ -702,3 +702,112 @@ export const Palette: StoryObj<ThemingArgs> = {
   // Контролы токенов относятся к Playground; для статичного борда прячем панель.
   parameters: { controls: { disable: true } },
 }
+
+// ============================================================================
+// Источники темы (ADR 0090): `colorMode` по умолчанию следует `.dark` предка,
+// проп навязывает тёмную, `.dark` на контейнере, светлая под тёмным контейнером.
+// Тумблер «Палитра приложения» снимает роли shadcn — грид остаётся на своих.
+// ============================================================================
+
+const SOURCE_PALETTE_OFF = Object.fromEntries(
+  [
+    '--foreground',
+    '--background',
+    '--card',
+    '--muted',
+    '--primary',
+    '--primary-foreground',
+    '--border',
+    '--ring',
+  ].map(name => [name, 'initial']),
+) as CSSProperties
+
+const SourceGrid = memo(
+  ({ colorMode }: { colorMode?: 'auto' | 'light' | 'dark' }) => {
+    const columns = useColumns(4)
+    const { data } = useData({ count: 8, showStub: false })
+    const table = useCreateTable({
+      columns: columns as never,
+      data,
+      plugins: [rowSelection(), columnSorting()],
+    })
+    return (
+      <DataGrid
+        table={table as never}
+        height={260}
+        maxHeight={260}
+        colorMode={colorMode}
+      />
+    )
+  },
+)
+
+SourceGrid.displayName = 'SourceGrid'
+
+const SOURCES: {
+  id: string
+  title: string
+  dark: boolean
+  colorMode?: 'light' | 'dark'
+}[] = [
+  { id: 'auto', title: 'colorMode="auto" — по странице', dark: false },
+  {
+    id: 'prop-dark',
+    title: 'colorMode="dark"',
+    dark: false,
+    colorMode: 'dark',
+  },
+  { id: 'container-dark', title: '.dark на контейнере', dark: true },
+  {
+    id: 'light-in-dark',
+    title: 'colorMode="light" в тёмном контейнере',
+    dark: true,
+    colorMode: 'light',
+  },
+]
+
+const ThemeSourcesBoard = ({ appPalette }: { appPalette: boolean }) => (
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      gap: 16,
+      padding: 16,
+      ...(appPalette ? {} : SOURCE_PALETTE_OFF),
+    }}
+  >
+    {SOURCES.map(({ id, title, dark, colorMode }) => (
+      <section
+        key={id}
+        className={dark ? 'dark' : undefined}
+        data-testid={`source-${id}`}
+        style={{
+          padding: 12,
+          borderRadius: 8,
+          background: 'var(--background, #fff)',
+          color: 'var(--foreground, #171717)',
+        }}
+      >
+        <h3 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 500 }}>
+          {title}
+        </h3>
+        <SourceGrid colorMode={colorMode} />
+      </section>
+    ))}
+  </div>
+)
+
+export const ThemeSources: StoryObj<{ appPalette: boolean }> = {
+  name: 'Theme sources',
+  render: args => <ThemeSourcesBoard appPalette={args.appPalette} />,
+  args: { appPalette: true },
+  argTypes: {
+    appPalette: {
+      name: 'Палитра приложения',
+      description:
+        'Роли shadcn приложения; выключено — грид на своих значениях.',
+      control: { type: 'boolean' },
+    },
+  },
+  parameters: { controls: { include: ['appPalette'] } },
+}

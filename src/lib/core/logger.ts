@@ -37,7 +37,7 @@ const defaultLevel = (): LogLevel => (isProduction() ? 'silent' : 'warn')
 // поэтому предупреждение с ключом-причиной не спамит.
 const emitted = new Set<string>()
 
-interface LoggerHost {
+export interface LoggerHost {
   options?: { logLevel?: LogLevel }
 }
 
@@ -67,6 +67,13 @@ const write = (
 
   CONSOLE[level](`[tessera] ${message}`)
 }
+
+/** Сообщение уровня `level` будет напечатано: дорогую проверку без печати можно пропустить. */
+export const shouldLog = (
+  host: LoggerHost,
+  level: Exclude<LogLevel, 'silent'>,
+): boolean =>
+  LEVEL_WEIGHT[level] <= LEVEL_WEIGHT[host.options?.logLevel ?? defaultLevel()]
 
 /**
  * Пишут `console.*` через порог `host.options.logLevel`. `host` — обычно
