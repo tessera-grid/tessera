@@ -167,7 +167,7 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 | TT-27t | Бегунок переключателя = `--tsr-comp-switch-thumb`                                                      | ✔ `theming-controls.test.tsx`        |
 | TT-29  | Цвет и фон кнопки действия строки — из токенов контрола                                                | ✔ `theming-controls.test.tsx`        |
 | TT-32  | Фон иконки-кнопки при наведении = `--tsr-comp-control-hover-bg`                                        | ✔ `theming-controls.test.tsx`        |
-| TT-33  | Трек `LinearProgress` = `--tsr-comp-loader-track`                                                      | ✔ `theming-loading.test.tsx`         |
+| TT-33  | Трек `LinearProgress` = `--tsr-comp-loader-track` (дорожки нет с ADR 0094)                             | → GL11                               |
 | TT-33b | Бар `LinearProgress` = `--tsr-comp-loader-bar`                                                         | ✔ `theming-loading.test.tsx`         |
 | TT-34  | Фон `Skeleton` = `--tsr-comp-skeleton-bg`                                                              | ✔ `theming-loading.test.tsx`         |
 | TT-35  | Оверлей перетаскивания строки: `--tsr-comp-draggable-cell-bg`, прозрачность и `--tsr-comp-shadow-drag` | ✔ `theming-overlays.test.tsx`        |
