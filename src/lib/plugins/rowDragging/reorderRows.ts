@@ -13,6 +13,19 @@ export interface RowMove {
   currentDepth: number
 }
 
+/**
+ * Группа с копией `subRows` на месте исходной: перенос меняет копии, а не данные
+ * приложения — обновитель чистый и выдерживает повторный вызов (StrictMode).
+ */
+const ownGroup = (newArray: any[], id: string | undefined) => {
+  const index = newArray.findIndex(row => row.id === id)
+  newArray[index] = {
+    ...newArray[index],
+    subRows: [...newArray[index].subRows],
+  }
+  return newArray[index]
+}
+
 /** Из root в root. */
 const moveRootToRoot = (newArray: any[], move: RowMove) => {
   const { activeOriginalIndex, overOriginalIndex, targetItem } = move
@@ -52,11 +65,13 @@ const moveRootToRoot = (newArray: any[], move: RowMove) => {
 /** Из группы в группу (или в рамках одной группы). */
 const moveGroupToGroup = (newArray: any[], move: RowMove) => {
   const { activeParentId, overParentId, activeOriginalIndex, targetItem } = move
-  const activeParentIndex = newArray.findIndex(row => row.id === activeParentId)
+  const activeParent = ownGroup(newArray, activeParentId)
+  const activeItem = {
+    ...activeParent.subRows[activeOriginalIndex],
+    parentId: overParentId,
+  }
 
-  const activeItem = newArray[activeParentIndex].subRows[activeOriginalIndex]
-
-  newArray[activeParentIndex].subRows.splice(activeOriginalIndex, 1)
+  activeParent.subRows.splice(activeOriginalIndex, 1)
 
   // Новый индекс в целевой группе: в начало, если группа была свёрнута
   // (или подстрока перемещается под начало раскрытой группы), иначе целевой
@@ -65,12 +80,11 @@ const moveGroupToGroup = (newArray: any[], move: RowMove) => {
       ? 0
       : getNewOriginalIndex(move.overOriginalIndex, move.isDownMove)
 
-  activeItem.parentId = overParentId
-
-  // Индекс целевой группы ищем непосредственно перед вставкой (выше много splice)
-  const overParentIndex = newArray.findIndex(row => row.id === overParentId)
-
-  newArray[overParentIndex].subRows.splice(newIndexInGroup, 0, activeItem)
+  const overParent =
+    overParentId === activeParentId
+      ? activeParent
+      : ownGroup(newArray, overParentId)
+  overParent.subRows.splice(newIndexInGroup, 0, activeItem)
 
   return newArray
 }
@@ -83,11 +97,10 @@ const moveGroupToRoot = (
 ) => {
   const { activeParentId, activeOriginalIndex, overOriginalIndex, targetItem } =
     move
-  const activeParentIndex = newArray.findIndex(row => row.id === activeParentId)
+  const activeParent = ownGroup(newArray, activeParentId)
+  const activeItem = activeParent.subRows[activeOriginalIndex]
 
-  const activeItem = newArray[activeParentIndex].subRows[activeOriginalIndex]
-
-  newArray[activeParentIndex].subRows.splice(activeOriginalIndex, 1)
+  activeParent.subRows.splice(activeOriginalIndex, 1)
 
   // targetItem отсутствует только при движении снизу вверх на первый индекс таблицы
   if (!targetItem) {
@@ -123,7 +136,10 @@ const moveGroupToRoot = (
   if (targetItem.getIsLastSubRow() && move.currentDepth === 0) {
     const nextIndexAfterExpandedGroup = targetItem.getParentRow()!.index + 1
 
-    newArray.splice(nextIndexAfterExpandedGroup, 0, activeItem)
+    newArray.splice(nextIndexAfterExpandedGroup, 0, {
+      ...activeItem,
+      parentId: undefined,
+    })
 
     return newArray
   }
@@ -135,7 +151,10 @@ const moveGroupToRoot = (
 const moveRootToGroup = (newArray: any[], move: RowMove) => {
   const { overParentId, activeOriginalIndex, overOriginalIndex, targetItem } =
     move
-  const activeItem = newArray[activeOriginalIndex]
+  const activeItem = {
+    ...newArray[activeOriginalIndex],
+    parentId: overParentId,
+  }
 
   newArray.splice(activeOriginalIndex, 1)
 
@@ -143,11 +162,11 @@ const moveRootToGroup = (newArray: any[], move: RowMove) => {
   const newIndexInGroup =
     targetItem?.id === overParentId ? 0 : overOriginalIndex + 1
 
-  activeItem.parentId = overParentId
-
-  const overParentIndex = newArray.findIndex(row => row.id === overParentId)
-
-  newArray[overParentIndex].subRows.splice(newIndexInGroup, 0, activeItem)
+  ownGroup(newArray, overParentId).subRows.splice(
+    newIndexInGroup,
+    0,
+    activeItem,
+  )
 
   return newArray
 }

@@ -15,6 +15,7 @@ import { COLUMN_DRAGGING_ID, rowDragging } from '../plugins/rowDragging'
 import { __resetLogger } from '../core/logger'
 import { captureInertWarnings } from './inertWarnings'
 import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
+import { reorderRows } from '../plugins/rowDragging/reorderRows'
 
 const build = (
   extraEntries: any[],
@@ -136,6 +137,77 @@ describe('rowDragging — id для SortableContext', () => {
       'r13',
       'r14',
       'r500',
+    ])
+  })
+})
+
+describe('reorderRows — чистый обновитель (ADR 0091)', () => {
+  const tree = () => [
+    {
+      id: 'a',
+      subRows: [
+        { id: 'a1', parentId: 'a', subRows: [] },
+        { id: 'a2', parentId: 'a', subRows: [] },
+        { id: 'a3', parentId: 'a', subRows: [] },
+      ],
+    },
+    { id: 'b', subRows: [{ id: 'b1', parentId: 'b', subRows: [] }] },
+    { id: 'c', subRows: [] },
+  ]
+  const target = (id: string, index: number, parentId?: string) =>
+    ({
+      id,
+      index,
+      parentId,
+      getIsLastSubRow: () => false,
+      getParentRow: () => undefined,
+    }) as never
+
+  it('EV10: перенос подстроки и строки не меняет prev, повторный вызов даёт тот же результат', () => {
+    const moves = [
+      // В своей группе: a1 за a2.
+      {
+        activeParentId: 'a',
+        overParentId: 'a',
+        activeOriginalIndex: 0,
+        overOriginalIndex: 1,
+        targetItem: target('a2', 1, 'a'),
+        isDownMove: true,
+        currentDepth: 1,
+      },
+      // Из группы a в группу b.
+      {
+        activeParentId: 'a',
+        overParentId: 'b',
+        activeOriginalIndex: 1,
+        overOriginalIndex: 0,
+        targetItem: target('b1', 0, 'b'),
+        isDownMove: true,
+        currentDepth: 1,
+      },
+      // Из корня в группу b.
+      {
+        overParentId: 'b',
+        activeOriginalIndex: 2,
+        overOriginalIndex: 0,
+        targetItem: target('b1', 0, 'b'),
+        isDownMove: false,
+        currentDepth: 1,
+      },
+    ]
+    for (const move of moves) {
+      const prev = tree()
+      const snapshot = structuredClone(prev)
+      const first = reorderRows(prev, move)
+      const second = reorderRows(prev, move)
+      expect(prev, JSON.stringify(move)).toEqual(snapshot)
+      expect(second).toEqual(first)
+    }
+    const within = reorderRows(tree(), moves[0]!)
+    expect(within[0].subRows.map((row: { id: string }) => row.id)).toEqual([
+      'a2',
+      'a1',
+      'a3',
     ])
   })
 })
