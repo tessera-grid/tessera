@@ -11,8 +11,11 @@ import {
 } from './src/lib/stories/__tests__/perf.commands'
 import { TOUCH_BLINK_SETTINGS } from './src/lib/stories/__tests__/engines'
 import { forcedColors } from './src/lib/stories/__tests__/motion.commands'
+import { testCommands } from './vitest.commands'
 
 const commands = { perfTraceStart, perfTraceStop, perfRecord, forcedColors }
+/** Набор утечек (ADR 0092, LK14): dev-сборка React держит отладочные ссылки. */
+const MEMORY = 'src/lib/stories/__tests__/memory/**/*.test.tsx'
 /** Перф касаний (ADR 0086, TU13): тот же файл и в проекте без наведения. */
 const TOUCH_PERF = 'src/lib/stories/__tests__/performance/touch.test.tsx'
 
@@ -90,6 +93,22 @@ export default defineConfig({
             }),
             instances: [{ browser: 'chromium' }],
             commands,
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'memory-prod',
+          include: [MEMORY],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({
+              launchOptions: { channel: 'chromium' },
+            }),
+            instances: [{ browser: 'chromium' }],
+            commands: testCommands,
           },
         },
       },

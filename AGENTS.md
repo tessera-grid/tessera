@@ -345,7 +345,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
   `performance-results/index.html` (кейсы P1–P8, бары «значение vs бюджет», p95/p99/
   longest/над-бюджетом); `npm run perf:report` пересобирает борд из последнего
   `performance-results/latest.json` без прогона. Каталог в `.gitignore`.
-- Наборы разложены по виду в две папки под `src/lib/stories/__tests__/` (см.
+- Наборы разложены по виду в три папки под `src/lib/stories/__tests__/` (см.
   [ADR 0009](docs/decisions/0009-test-coverage-visual-and-performance.md)). Общие
   `helpers.tsx`, `perf.commands.ts`, `perf.constants.ts` — в корне `__tests__/`;
   оси перф-матрицы — в `performance/perf-cases.ts`. Один тест = одно требование,
@@ -727,6 +727,16 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     [ADR 0081](docs/decisions/0081-infinite-scroll.md); BT14 — спокойная прокрутка
     1000×1000 с кнопкой «наверх» против той же выборки без неё,
     [ADR 0082](docs/decisions/0082-back-to-top.md)).
+  - **`memory/`** — утечки памяти, только Chromium (CDP): `unmount` (LK1–LK4 —
+    размонтирование в разных состояниях и посреди отложенной работы), `recreate`
+    (LK5–LK6 — смена данных, колонок и плагинов), `session` (LK7–LK9, LK13 — долгая
+    сессия: узлы, обработчики, куча и состояние по наклону), `handlers` (LK15 — кнопка не
+    держит обработчики прошлых рендеров), `detector` (LK11–LK12 —
+    детектор ловит подсаженные утечки и печатает путь удержания); модульный `memory`
+    (LK10 — страж кэшей уровня модуля, LK14 — проект `memory-prod` в `npm run perf`).
+    Грид монтируется своим корнем, мышь — по координатам: `expect.poll` и `userEvent` с
+    элементом Vitest держит до конца теста. Удержания вне кода грида — с причиной в
+    `leaks.ts` ([ADR 0092](docs/decisions/0092-memory-leaks.md)).
 - **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →
   Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс), взаимодействие →
   Response/INP (≤ 100мс). Замер под **×4 CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается
