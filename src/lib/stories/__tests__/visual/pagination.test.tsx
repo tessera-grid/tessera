@@ -238,8 +238,27 @@ describe('Pagination', () => {
     expect(document.activeElement).toBe(first)
 
     await expect.poll(sizeTrigger).not.toBeNull()
-    const labelId = sizeTrigger()!.getAttribute('aria-labelledby')!
-    expect(document.getElementById(labelId)!.textContent).toBe('Rows per page')
+    const [labelId] = sizeTrigger()!.getAttribute('aria-labelledby')!.split(' ')
+    expect(document.getElementById(labelId!)!.textContent).toBe('Rows per page')
+  })
+
+  test('PG21: загруженный выбор размера страницы, как и заглушка до загрузки, назван подписью и значением', async () => {
+    await renderPagination()
+    await expect.poll(sizeTrigger).not.toBeNull()
+    // Клик грузит модуль списка: после закрытия на месте заглушки — настоящий список.
+    await userEvent.click(sizeTrigger()!)
+    await expect
+      .poll(() => document.querySelector('[role="listbox"]'))
+      .not.toBeNull()
+    await userEvent.keyboard('{Escape}')
+    await expect
+      .poll(() => sizeTrigger()?.getAttribute('role'))
+      .toBe('combobox')
+    const name = (sizeTrigger()!.getAttribute('aria-labelledby') ?? '')
+      .split(' ')
+      .map(id => document.getElementById(id)?.textContent?.trim())
+      .join(' ')
+    expect(name).toBe('Rows per page 25')
   })
 
   test('PG14: a page change is announced in the live region: "Page N of M"', async () => {

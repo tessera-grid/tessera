@@ -3,6 +3,8 @@
  * позиционирование тянет floating-ui. Открытие контролирует обёртка: клик по её
  * заглушке до загрузки открывает список после неё (PG20).
  */
+import { useId } from 'react'
+
 import { Select } from '@base-ui/react/select'
 import clsx from 'clsx'
 import { Check, ChevronDown } from 'lucide-react'
@@ -32,6 +34,8 @@ export const PageSizeSelect = ({
   open,
   onOpenChange,
 }: PageSizeSelectProps) => {
+  const labelId = useId()
+  const triggerId = useId()
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
   const {
@@ -53,8 +57,14 @@ export const PageSizeSelect = ({
         }
       }}
     >
-      <Select.Label className={styles.label}>{label}</Select.Label>
+      {/* Своя подпись, а не Select.Label: Base UI заменяет её id своим. */}
+      <span id={labelId} className={styles.label}>
+        {label}
+      </span>
+      {/* Имя — подпись и видимое значение, как у заглушки до загрузки (WCAG 2.5.3, PG21). */}
       <Select.Trigger
+        id={triggerId}
+        aria-labelledby={`${labelId} ${triggerId}`}
         ref={setTrigger}
         className={styles.trigger}
         data-testid="page-size-select"
