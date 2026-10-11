@@ -1,8 +1,13 @@
 import { fileURLToPath } from 'node:url'
 
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
-import { configDefaults, defineConfig } from 'vitest/config'
+import {
+  configDefaults,
+  defineConfig,
+  type TestProjectInlineConfiguration,
+} from 'vitest/config'
 
 import {
   MOBILE_SUITE,
@@ -102,6 +107,27 @@ export default defineConfig({
           },
         },
       },
+      // Каталог визуальных состояний (ADR 0093, VR1–VR2): каждая история — тест в
+      // Chromium: рендер, `play` и axe; светлая и тёмная тема — по проекту.
+      ...(['light', 'dark'] as const).map(
+        (theme): TestProjectInlineConfiguration => ({
+          extends: true,
+          plugins: [storybookTest({ initialGlobals: { theme } })],
+          test: {
+            name: theme === 'light' ? 'storybook' : 'storybook-dark',
+            setupFiles: ['./.storybook/vitest.setup.ts'],
+            fileParallelism: false,
+            browser: {
+              enabled: true,
+              headless: true,
+              provider: playwright({
+                launchOptions: { channel: 'chromium' },
+              }),
+              instances: [{ browser: 'chromium' }],
+            },
+          },
+        }),
+      ),
       './vitest.node.config.ts',
     ],
   },

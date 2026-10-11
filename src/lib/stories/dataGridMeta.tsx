@@ -4,6 +4,7 @@ import { useArgs } from 'storybook/preview-api'
 import { expect, waitFor } from 'storybook/test'
 import {
   HANDLE,
+  OVERLAY,
   ROW,
   beginDrag,
   firePointer,
@@ -69,6 +70,9 @@ const rowDraggingPlay: NonNullable<Meta<StoryProps>['play']> = async ({
     await waitFor(() =>
       expect(rowSignatures(canvas).join('¦')).not.toBe(before.join('¦')),
     )
+    // История заканчивается в покое: облако долетело, слот строки снова обычный —
+    // по нему каталог проверяет axe и снимает снимок (ADR 0093).
+    await waitFor(() => expect(canvas.querySelector(OVERLAY)).toBeNull())
   })
 }
 

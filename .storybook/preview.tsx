@@ -9,9 +9,14 @@ import '@fontsource/inter/600.css'
 // Тема shadcn (токены :root/.dark + Tailwind-утилиты) — из неё выводятся и
 // --data-grid-*, и стили shadcn-компонентов внутри демо.
 import '../src/styles/global.css'
+import { pinClock } from '../src/lib/stories/__mocks__/clock'
 
 const INTER_STACK =
   "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+
+// Дата историй закреплена до импорта моков: данные, «сегодня» фильтра дат и календарь
+// одинаковы при каждой загрузке (ADR 0093, VR3).
+pinClock()
 
 type ThemeName = 'light' | 'dark'
 
@@ -32,6 +37,19 @@ const preview: Preview = {
     },
   },
   parameters: {
+    // axe по каждой истории каталога — падение на нарушении, `color-contrast` включён
+    // (ADR 0093, VR2). Как в наборах доступности (ADR 0020): `region` — правило
+    // страницы, а не встраиваемого грида; `scrollable-region-focusable` — без
+    // keyboardNavigation грид только для чтения, с ним правило проверяет A7.
+    a11y: {
+      test: 'error',
+      options: {
+        rules: {
+          region: { enabled: false },
+          'scrollable-region-focusable': { enabled: false },
+        },
+      },
+    },
     controls: {
       matchers: {
         color: /(background|color)$/i,
@@ -72,8 +90,11 @@ const preview: Preview = {
         context.globals.theme === 'dark' ? 'dark' : 'light'
 
       // Держим colorMode грида в синхроне с тумблером тулбара. Светлый — 'auto': тест,
-      // ставящий `.dark` на <html>, получает тёмный грид (ADR 0090).
-      context.args.colorMode = theme === 'dark' ? 'dark' : 'auto'
+      // ставящий `.dark` на <html>, получает тёмный грид (ADR 0090). Только у историй
+      // грида: примитивы `/ui` отдали бы проп в DOM.
+      if ('colorMode' in context.argTypes) {
+        context.args.colorMode = theme === 'dark' ? 'dark' : 'auto'
+      }
 
       return (
         // Класс `dark` активирует токены .dark из global.css для всего канваса —
