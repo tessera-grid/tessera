@@ -372,12 +372,13 @@ Chromium) и рендерят компоненты напрямую, читая 
 
 **`Bubble`**
 
-| ID  | Требование                                                                 | Тест                                            |
-| --- | -------------------------------------------------------------------------- | ----------------------------------------------- |
-| BU1 | Рендерит `<span>` с переданным содержимым                                  | ✔ `BU1: renders its content in a span`          |
-| BU2 | Неинтерактивный оверлей (`pointer-events: none`) — не ворует клики у якоря | ✔ `BU2: is a non-interactive overlay …`         |
-| BU3 | `sm` компактнее дефолтного `md` (меньший кегль)                            | ✔ `BU3: \`sm\` is more compact …`               |
-| BU4 | Прокидывает `className` и произвольные атрибуты (`data-*`, `aria-hidden`)  | ✔ `BU4: forwards className and arbitrary props` |
+| ID  | Требование                                                                                        | Тест                                            |
+| --- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| BU1 | Рендерит `<span>` с переданным содержимым                                                         | ✔ `BU1: renders its content in a span`          |
+| BU2 | Неинтерактивный оверлей (`pointer-events: none`) — не ворует клики у якоря                        | ✔ `BU2: is a non-interactive overlay …`         |
+| BU3 | `sm` компактнее дефолтного `md` (меньший кегль)                                                   | ✔ `BU3: \`sm\` is more compact …`               |
+| BU4 | Прокидывает `className` и произвольные атрибуты (`data-*`, `aria-hidden`)                         | ✔ `BU4: forwards className and arbitrary props` |
+| AB1 | `RowButton` и `CellButton`: доступное имя кнопки — `title` (`aria-label`), тултип его не заменяет | visual                                          |
 
 **Иконки**
 

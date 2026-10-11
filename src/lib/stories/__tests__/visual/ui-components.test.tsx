@@ -4,6 +4,8 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { humanClick } from '../helpers'
 import { Bubble } from '@/lib/ui/Bubble'
+import { CellButton } from '@/lib/grid/Actions/CellButton'
+import { RowButton } from '@/lib/grid/Actions/RowButton'
 import { IconButton } from '@/lib/ui/IconButton'
 import { Tooltip } from '@/lib/ui/Tooltip'
 import { Switch } from '@/lib/ui/Switch'
@@ -93,6 +95,23 @@ describe('IconButton', () => {
 })
 
 // --- Tooltip (TT1–TT6) --------------------------------------------------------
+
+describe('Кнопки действий', () => {
+  test('AB1: у RowButton и CellButton доступное имя кнопки — title', async () => {
+    const screen = await render(
+      <>
+        <RowButton title="Row options" icon={<span />} onClick={() => {}} />
+        <CellButton title="Edit cell" icon={<span />} onClick={() => {}} />
+      </>,
+    )
+    expect(
+      [...document.querySelectorAll('button')].map(button =>
+        button.getAttribute('aria-label'),
+      ),
+    ).toEqual(['Row options', 'Edit cell'])
+    await screen.unmount()
+  })
+})
 
 describe('Tooltip', () => {
   /** The open tooltip's positioner carries `data-side`; absent while closed. */

@@ -39,6 +39,7 @@ export const RowButton = memo(
             data-testid={testId}
             className={styles.root}
             disabledClassName={styles.disabled}
+            aria-label={title}
             onClick={onClick}
             disabled={disabled}
           >
