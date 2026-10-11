@@ -57,6 +57,7 @@
     "test:watch": "vitest",
     "test:browsers": "vitest run --config vitest.browsers.config.ts",
     "test:engines": "vitest run --config vitest.engines.config.ts",
+    "test:react18": "npm ci --prefix tools/react18 --no-audit --no-fund && vitest run --config vitest.react18.config.ts",
     "perf": "vitest run --config vitest.perf.config.ts && node scripts/perf-report.mjs",
     "perf:report": "node scripts/perf-report.mjs",
     "lint": "eslint .",

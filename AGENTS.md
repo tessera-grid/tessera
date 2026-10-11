@@ -165,6 +165,8 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, фокус, ADR 0040/0084). |
 | Все наборы в движках      | `npm run test:engines`       | Firefox, WebKit, эмуляция iPhone/Pixel (ADR 0084). ~25 мин.        |
 | Порог браузеров в CSS     | `npm run check:browsers`     | После `build`: `dist/style.css` в `browserslist` (ADR 0084).       |
+| Наборы на React 18        | `npm run test:react18`       | Браузерные наборы и SSR на React 18 из `tools/react18` (ADR 0091). |
+| Пакет у потребителя       | `npm run check:package`      | После `build`: publint, attw, фикстуры из npm (ADR 0091). Сеть.    |
 | Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
 | Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                    |
 
@@ -259,9 +261,18 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | 9   | Движки браузеров     | `npm run test:browsers`      | да — **при правках сессий правки и фокуса** |
 | 10  | Порог браузеров      | `npm run check:browsers`     | да                                          |
 | 11  | Все наборы в движках | `npm run test:engines`       | перед публикацией в npm                     |
+| 12  | Наборы на React 18   | `npm run test:react18`       | перед публикацией в npm                     |
+| 13  | Пакет у потребителя  | `npm run check:package`      | перед публикацией в npm                     |
 
 Это весь барьер: **format · lint · ts · requirements · tests · build · tree-shaking ·
-browsers**. Шаг 10 (`check:browsers`) — после `build`: собранный `dist/style.css` не
+browsers**. Шаги 12–13 — не барьер, но обязательны перед публикацией
+([ADR 0091](docs/decisions/0091-environment-compatibility.md)): `test:react18` гоняет
+браузерные наборы и серверный рендер на React 18 (исключения с причиной —
+`src/lib/stories/__tests__/react18.ts`); `check:package` после `build` проверяет архив
+`npm pack` publint и arethetypeswrong, директиву `'use client'` во входах и ставит
+архив в приложения-фикстуры из npm — нужна сеть. Браузерные тесты идут в
+**StrictMode** (`vitest.setup.ts`): эффекты и обновители состояния запускаются дважды —
+тест, считающий вызовы, считает живые, а не все. Шаг 10 (`check:browsers`) — после `build`: собранный `dist/style.css` не
 выходит за порог браузеров `browserslist` (doiuse плюс свои правила, исключения с
 причиной — `scripts/browsers.ts`, ADR 0084). Шаг 11 (`test:engines`) — не барьер, но
 обязателен перед публикацией: все визуальные наборы в Firefox и WebKit, кроме
@@ -483,6 +494,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       порталы и `color-scheme` по фактической теме, предупреждение о смеси палитр, axe,
       история `Theming/Theme sources`), перф TM11 — `performance/theme-source`
       ([ADR 0090](docs/decisions/0090-theme-source-and-switching.md)).
+    - _Совместимость окружений:_ `environment` (EV2 — ref триггера `Tooltip`, EV3 —
+      StrictMode в тестах, EV5 — гидратация серверного HTML), модульные `ssr` (EV4,
+      EV6 — серверный рендер и импорт без DOM; в `test:react18` — на React 18),
+      `react18` (EV1), `packageChecks` (EV7–EV9 — фикстуры, декларации, `'use client'`),
+      `rowDragging` (EV10 — чистый `reorderRows`)
+      ([ADR 0091](docs/decisions/0091-environment-compatibility.md)).
     - _Касания:_ `touch` (TU1–TU12, TU14 — кнопки шапки без наведения, кнопки
       тронутой ячейки, грип и ручки пальцем, долгое нажатие для контекстного меню,
       зона нажатия во всю высоту ячейки, axe, история `Touch`) — проект `touch` в

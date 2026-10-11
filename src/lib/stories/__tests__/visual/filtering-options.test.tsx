@@ -464,16 +464,18 @@ describe('Фильтр вариантов — справочник', () => {
       .not.toBeNull()
     expect(panel()!.textContent).toContain('Loading…')
     await expect.poll(optionValues).toEqual(['m1', 'm2', 'm3'])
-    expect(load).toHaveBeenCalledTimes(1)
-    expect(load.mock.calls[0][0]).toBe('')
+    // StrictMode (ADR 0091) запускает эффект дважды: первый вызов отменён сразу.
+    const live = () => signals.filter(call => !call.signal.aborted)
+    expect(live().map(call => call.search)).toEqual([''])
     expect(panel()!.querySelector('[aria-busy="true"]')).toBeNull()
 
+    const opened = load.mock.calls.length
     await userEvent.type(search()!, 'a')
-    await expect.poll(() => load.mock.calls.length).toBe(2)
+    await expect.poll(() => load.mock.calls.length).toBe(opened + 1)
     await userEvent.type(search()!, 'l')
-    await expect.poll(() => load.mock.calls.length).toBe(3)
-    expect(signals[1]).toMatchObject({ search: 'a' })
-    expect(signals[1].signal.aborted).toBe(true)
+    await expect.poll(() => load.mock.calls.length).toBe(opened + 2)
+    expect(signals[opened]).toMatchObject({ search: 'a' })
+    expect(signals[opened]!.signal.aborted).toBe(true)
     await expect.poll(optionValues).toEqual(['m1', 'm3'])
     await new Promise(resolve => setTimeout(resolve, 700))
     expect(optionValues()).toEqual(['m1', 'm3'])
@@ -506,8 +508,9 @@ describe('Фильтр вариантов — справочник', () => {
     expect(rowIds()).toEqual(['2', '5'])
     // Отмеченное значение показано и без ответа справочника.
     fail = false
+    const opened = load.mock.calls.length
     await humanClick(byTestId('filter-options-retry')!)
-    expect(load).toHaveBeenCalledTimes(2)
+    expect(load).toHaveBeenCalledTimes(opened + 1)
     await expect.poll(optionValues).toEqual(['m1', 'm2', 'm3'])
     expect(checkbox('m2').getAttribute('aria-checked')).toBe('true')
     expect(rowIds()).toEqual(['2', '5'])
