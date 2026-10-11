@@ -8,6 +8,8 @@ export interface Requirement {
   tested: boolean
   /** Требования, чьи тесты покрывают это (ячейка `→ ID, ID`). */
   coveredBy?: string[]
+  /** Запланировано на этап внедрения (вид `этап N`): теста ещё нет. */
+  planned?: boolean
 }
 
 export interface TestName {
@@ -17,7 +19,7 @@ export interface TestName {
 }
 
 export type ProblemKind =
-  'missing' | 'duplicate' | 'unknown' | 'collision' | 'reference'
+  'missing' | 'duplicate' | 'unknown' | 'collision' | 'reference' | 'planned'
 
 export interface Problem {
   kind: ProblemKind
@@ -39,6 +41,9 @@ const UNTESTED_KINDS = new Set([
   'линт',
   'скрипт',
 ])
+
+/** Начало ячейки вида у требования, запланированного на этап внедрения ADR. */
+const PLANNED_KIND = 'этап'
 
 const ID = '[A-Z][A-Za-z]*-?\\d+[a-z]?'
 const ID_CELL = new RegExp(`^${ID}$`)
@@ -82,6 +87,10 @@ export const parseRequirements = (text: string, adr: string): Requirement[] => {
     if (covered) {
       const coveredBy = covered.split(',').map(ref => ref.trim())
       result.push({ id, adr, tested: false, coveredBy })
+      continue
+    }
+    if (kind.startsWith(PLANNED_KIND)) {
+      result.push({ id, adr, tested: false, planned: true })
       continue
     }
     const untested = [...UNTESTED_KINDS].some(word => kind.startsWith(word))
@@ -158,6 +167,12 @@ export const findProblems = (
     )
     if (broken.length > 0) {
       problems.push({ kind: 'reference', id: r.id, detail: broken.join(', ') })
+    }
+  }
+  for (const r of requirements) {
+    const found = testsById.get(r.id)
+    if (r.planned && found) {
+      problems.push({ kind: 'planned', id: r.id, detail: where(found) })
     }
   }
   for (const [id, found] of testsById) {

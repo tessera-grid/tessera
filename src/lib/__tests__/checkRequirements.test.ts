@@ -19,7 +19,7 @@ ${rows}
 `
 
 describe('Сверка требований и тестов', () => {
-  it('TQ10: находит пропуск, дубль, неизвестный ID, коллизию, битую ссылку → и устаревшую запись базы; ссылки, ревью и непринятые ADR не считает', () => {
+  it('TQ10: находит пропуск, дубль, неизвестный ID, коллизию, битую ссылку →, тест у требования «этап N» и устаревшую запись базы; ссылки, ревью, этапы без теста и непринятые ADR не считает', () => {
     const requirements = [
       ...parseRequirements(
         adr(
@@ -35,6 +35,8 @@ describe('Сверка требований и тестов', () => {
             '| XX1 | коллизия | unit |',
             '| AA6 | покрыто чужим тестом | → AA1 |',
             '| AA7 | битая ссылка | `→ AA1, QQ1` |',
+            '| AA8 | запланировано | этап 2 |',
+            '| AA9 | этап сделан | этап 3 |',
           ].join('\n'),
         ),
         'a.md',
@@ -67,6 +69,8 @@ describe('Сверка требований и тестов', () => {
       'XX1',
       'AA6',
       'AA7',
+      'AA8',
+      'AA9',
       'XX1',
       'DD1',
       'DD3',
@@ -87,13 +91,21 @@ describe('Сверка требований и тестов', () => {
         call('it', 'AA3: первый'),
         call('test.fails', 'AA3: второй'),
         call('test', 'ZZ9: без требования'),
+        call('test', 'AA9: тест уже есть'),
         call('test', 'описание без ID'),
         "const CASES = [{ id: 'XX1' }]",
         `for (const c of CASES) ${call('test', '$' + '{c.id}: кейс', '`')}`,
       ].join('\n'),
       't.test.ts',
     )
-    expect(tests.map(t => t.id)).toEqual(['AA1', 'AA3', 'AA3', 'ZZ9', 'XX1'])
+    expect(tests.map(t => t.id)).toEqual([
+      'AA1',
+      'AA3',
+      'AA3',
+      'ZZ9',
+      'AA9',
+      'XX1',
+    ])
 
     const problems = findProblems(requirements, tests)
     expect(problems.map(p => `${p.kind}:${p.id}`)).toEqual([
@@ -101,6 +113,7 @@ describe('Сверка требований и тестов', () => {
       'duplicate:AA3',
       'missing:AA2',
       'missing:DD2',
+      'planned:AA9',
       'reference:AA7',
       'unknown:ZZ9',
     ])
@@ -113,6 +126,7 @@ describe('Сверка требований и тестов', () => {
       'collision:XX1',
       'duplicate:AA3',
       'missing:DD2',
+      'planned:AA9',
       'reference:AA7',
       'unknown:ZZ9',
     ])
