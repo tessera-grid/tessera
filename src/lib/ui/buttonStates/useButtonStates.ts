@@ -18,15 +18,13 @@ export interface ButtonStatesProps {
   errorFlash?: number
 }
 
-/** Ожидание и вспышка ошибки базовой кнопки (ADR 0055). */
-export const useButtonStates = <T extends HTMLElement>(
-  forwardedRef: ForwardedRef<T>,
-  { pending = false, errorFlash }: ButtonStatesProps,
-  onClick: MouseEventHandler<T> | undefined,
-) => {
+/**
+ * Свой ref кнопки и переданный снаружи. Отдельный хук: стабильный колбэк живёт, пока
+ * смонтирована кнопка, и в общем с `handleClick` контексте держал бы `onClick` первого
+ * рендера, а с ним — строку и данные, которые тот замкнул (ADR 0092).
+ */
+const useOwnRef = <T extends HTMLElement>(forwardedRef: ForwardedRef<T>) => {
   const own = useRef<T | null>(null)
-  const flash = useErrorFlash(own, errorFlash)
-
   const ref = useCallback(
     (node: T | null) => {
       own.current = node
@@ -34,6 +32,17 @@ export const useButtonStates = <T extends HTMLElement>(
     },
     [forwardedRef],
   )
+  return { own, ref }
+}
+
+/** Ожидание и вспышка ошибки базовой кнопки (ADR 0055). */
+export const useButtonStates = <T extends HTMLElement>(
+  forwardedRef: ForwardedRef<T>,
+  { pending = false, errorFlash }: ButtonStatesProps,
+  onClick: MouseEventHandler<T> | undefined,
+) => {
+  const { own, ref } = useOwnRef(forwardedRef)
+  const flash = useErrorFlash(own, errorFlash)
 
   const handleClick = (event: MouseEvent<T>) => {
     if (pending) {
