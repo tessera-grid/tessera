@@ -910,10 +910,14 @@ ADR и не с кода.** Прожарка — короткий диалог с
 дожидается конца анимаций, иначе axe и снимок застанут промежуточный кадр. Дата
 страницы закреплена (`__mocks__/clock.ts`), моки — с зерном. История вне axe — только
 с причиной в `__tests__/catalog.ts`. Узловая история (тело, шапка, меню) —
-`withVrModes(...)` из `__mocks__/catalog.tsx`: снимок во всех режимах осей; режимы и тег
-вручную не ставятся. История вне снимков — `chromatic.disableSnapshot` с причиной
+тег `vr-modes` вместе с `parameters: vrModes(...)` из `__mocks__/catalog.tsx`: снимок во
+всех режимах осей; режимы вручную не ставятся. История вне снимков — `chromatic.disableSnapshot` с причиной
 `vrSkipReason`; бюджет снимков — `scripts/catalog.ts`. История, доказывающая требование,
-несёт его ID в `parameters.requirements` — сверка требований считает её тестом.
+несёт его ID в `parameters.requirements` — сверка требований считает её тестом. Новое видимое
+состояние — история `State: …` с `parameters: vrStates('area.state')` из реестра
+`CATALOG_STATES` (`__mocks__/catalog.tsx`): `play` доводит грид до состояния
+помощниками `__mocks__/catalogPlay.ts` (`openPopup` и `expectPopupInCanvas` для меню и
+панелей, `applyPseudoStates` для наведения и фокуса).
 
 - **Фича — минимум одна история**, включающая её через тумблеры и аргументы, как
   соседние (`enableColumnVisibility`, `enablePagination`). Файл на фичу —

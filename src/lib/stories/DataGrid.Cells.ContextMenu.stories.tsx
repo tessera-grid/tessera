@@ -1,6 +1,16 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { userEvent } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { vrStates } from './__mocks__/catalog'
+import {
+  bodyCell,
+  expectPopupInCanvas,
+  settle,
+  sleep,
+  waitForPopup,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Контекстное меню (ADR 0030). */
 const meta = {
@@ -42,5 +52,30 @@ export const ContextMenuAsync: StoryObj<StoryProps> = {
     containerHeight: 560,
     height: 460,
     maxHeight: 460,
+  },
+}
+
+/** Открытое контекстное меню ячейки (ADR 0093, VR6). */
+export const ContextMenuStateOpen: StoryObj<StoryProps> = {
+  name: 'State: open',
+  parameters: vrStates('overlay.contextMenu'),
+  args: {
+    enableContextMenu: true,
+    enableCellSelection: true,
+    columnCount: 8,
+    dataCount: 20,
+    containerHeight: 460,
+    height: 360,
+    maxHeight: 360,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const cell = bodyCell(canvasElement, 'item-id-1', 'firstName')
+    await userEvent.hover(cell)
+    await sleep(500)
+    await userEvent.pointer({ keys: '[MouseRight]', target: cell })
+    const menu = await waitForPopup('menu')
+    await settle()
+    expectPopupInCanvas(canvasElement, menu)
   },
 }

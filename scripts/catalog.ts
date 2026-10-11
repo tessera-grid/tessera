@@ -36,7 +36,8 @@ export const storyExports = ({ file, text }: StoryFile): StoryExport[] => {
 }
 
 const skipsSnapshot = (body: string) => /disableSnapshot:\s*true/.test(body)
-const hasVrModes = (body: string) => /\bwithVrModes\(/.test(body)
+const hasVrModes = (body: string) => /\bvrModes\(/.test(body)
+const hasVrTag = (body: string) => /['"]vr-modes['"]/.test(body)
 
 /** Снимков у истории: пропущенная — 0, узловая — по режиму на каждый, прочие — 1. */
 export const snapshotsOf = (story: StoryExport, fullModes: number) =>
@@ -58,13 +59,16 @@ export const unexplainedSkips = (files: StoryFile[]) =>
     })
     .map(story => `${story.file}:${story.name}`)
 
-/** Режимы или тег `vr-modes`, заданные вручную, а не `withVrModes` (VR9). */
+/**
+ * Режимы не вместе с тегом (VR9): тег `vr-modes` без `vrModes(...)`, `vrModes(...)` без
+ * тега или режимы, заданные вручную.
+ */
 export const handMadeModes = (files: StoryFile[]) =>
   files
     .flatMap(storyExports)
     .filter(
       story =>
-        !hasVrModes(story.body) &&
-        (/['"]vr-modes['"]/.test(story.body) || /\bmodes:/.test(story.body)),
+        hasVrTag(story.body) !== hasVrModes(story.body) ||
+        /\bmodes:/.test(story.body),
     )
     .map(story => `${story.file}:${story.name}`)

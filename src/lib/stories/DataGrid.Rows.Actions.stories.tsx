@@ -1,6 +1,15 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { expect, waitFor, userEvent } from 'storybook/test'
+import { vrStates } from './__mocks__/catalog'
+import {
+  bodyRow,
+  expectPopupInCanvas,
+  openPopup,
+  settle,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Действия строки (ADR 0025): кнопки, без действий, меню строки. */
 const meta = {
@@ -84,5 +93,51 @@ export const RowActionsNested: StoryObj<StoryProps> = {
     containerHeight: 400,
     height: 300,
     maxHeight: 300,
+  },
+}
+
+/** Открытый вложенный раздел меню строки (ADR 0093, VR6). */
+export const ActionsStateSection: StoryObj<StoryProps> = {
+  name: 'State: nested section',
+  parameters: vrStates('overlay.submenu'),
+  args: {
+    enableRowActions: true,
+    enableRowActionMenu: true,
+    actionsDemo: 'nested',
+    dataCount: 20,
+    containerHeight: 460,
+    height: 360,
+    maxHeight: 360,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const row = bodyRow(canvasElement, 'item-id-1')
+    await userEvent.hover(row)
+    const menu = await openPopup(
+      () =>
+        bodyRow(canvasElement, 'item-id-1').querySelector<HTMLElement>(
+          '[aria-label^="Row options"]',
+        ),
+      'menu',
+    )
+    await userEvent.click(
+      [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(item =>
+        item.textContent?.includes('Status'),
+      )!,
+    )
+    // Раздел «Status» открыт: в меню — пункты статусов.
+    await waitFor(() =>
+      expect(
+        [
+          ...document.querySelectorAll(
+            '[role="menuitemradio"], [role="menuitem"]',
+          ),
+        ]
+          .map(item => item.textContent?.trim())
+          .some(text => text?.startsWith('Archived')),
+      ).toBe(true),
+    )
+    await settle()
+    expectPopupInCanvas(canvasElement, document.querySelector('[role="menu"]')!)
   },
 }

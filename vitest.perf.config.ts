@@ -45,6 +45,10 @@ export default defineConfig({
       '@base-ui/react/checkbox',
       '@tanstack/react-table',
       '@tanstack/react-store',
+      // Помощники историй каталога (ADR 0093) — как в vitest.config.ts.
+      'storybook/internal/core-events',
+      'storybook/preview-api',
+      'storybook/test',
     ],
     // Прод-пребандл: esbuild режет dev-ветки React (NODE_ENV) → production-рантайм.
     esbuildOptions: {

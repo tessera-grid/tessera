@@ -6,6 +6,12 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { ExportServerDemo } from './demos/exportDemos'
+import { vrStates } from './__mocks__/catalog'
+import {
+  expectPopupInCanvas,
+  openPopup,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим. */
 
@@ -119,4 +125,18 @@ export const ExportServer: StoryObj<ExportArgs> = {
     },
   },
   render: args => <ExportServerDemo {...normalizeArgs(args)} />,
+}
+
+/** Открытая панель экспорта (ADR 0093, VR6). */
+export const ExportStatePanel: StoryObj<StoryProps> = {
+  name: 'State: export panel',
+  parameters: vrStates('overlay.export'),
+  args: { ...GRID, dataCount: 20 },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const panel = await openPopup(() =>
+      canvasElement.querySelector<HTMLElement>('[data-testid="export-button"]'),
+    )
+    expectPopupInCanvas(canvasElement, panel)
+  },
 }

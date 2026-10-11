@@ -8,6 +8,9 @@ import {
   CellEditingSessionsDemo,
   type ServerFailMode,
 } from './demos/sessionDemos'
+import { expect, waitFor, userEvent } from 'storybook/test'
+import { vrStates } from './__mocks__/catalog'
+import { bodyCell, settle, waitForRows } from './__mocks__/catalogPlay'
 
 /** Правка ячеек (ADR 0028, ADR 0040, ADR 0041): базовая, с сервером, сессии с журналом колбэков. */
 const meta = {
@@ -120,5 +123,79 @@ export const CellEditingSessions: StoryObj<SessionsArgs> = {
         updateArgs={updateArgs}
       />
     )
+  },
+}
+
+const EDITING_ARGS = {
+  enableCellEditing: true,
+  enableKeyboardNavigation: true,
+  columnCount: 6,
+  dataCount: 10,
+  containerHeight: 460,
+  height: 360,
+  maxHeight: 360,
+}
+
+/** Открывает правку ячейки клавишей F2 и, если задано, сохраняет новое значение. */
+const editCell = async (canvas: HTMLElement, value?: string) => {
+  await waitForRows(canvas)
+  // Ячейку ищем заново: вход в правку и сохранение перемонтируют её содержимое.
+  const cell = () => bodyCell(canvas, 'item-id-1', 'age')
+  cell().focus()
+  await waitFor(() => expect(cell()).toHaveAttribute('data-kn-active', 'true'))
+  await userEvent.keyboard('{F2}')
+  await waitFor(() => expect(cell().querySelector('input')).not.toBeNull())
+  if (value !== undefined) {
+    await userEvent.keyboard(`{Control>}a{/Control}${value}{Enter}`)
+  }
+  return cell
+}
+
+/** Ячейка в правке (ADR 0093, VR4). */
+export const EditingStateEditing: StoryObj<StoryProps> = {
+  name: 'State: editing',
+  parameters: vrStates('body.editing'),
+  args: EDITING_ARGS,
+  play: async ({ canvasElement }) => {
+    await editCell(canvasElement)
+    await settle()
+  },
+}
+
+/** Ячейка ждёт сервера (ADR 0093, VR4): `onCellEdit` не отвечает. */
+export const EditingStateSaving: StoryObj<StoryProps> = {
+  name: 'State: saving',
+  parameters: vrStates('body.pending'),
+  args: {
+    ...EDITING_ARGS,
+    // Свой предикат отключает демо-хуки правки: колбэк истории доходит до плагина.
+    cellEditingCanEdit: () => true,
+    onCellEdit: () => new Promise<void>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const cell = await editCell(canvasElement, '41')
+    await waitFor(() =>
+      expect(cell().querySelector('[aria-busy="true"]')).not.toBeNull(),
+    )
+    await settle()
+  },
+}
+
+/** Сервер отказал в сохранении (ADR 0093, VR4): ячейка с отметкой ошибки. */
+export const EditingStateError: StoryObj<StoryProps> = {
+  name: 'State: save error',
+  parameters: vrStates('body.error'),
+  args: {
+    ...EDITING_ARGS,
+    cellEditingCanEdit: () => true,
+    onCellEdit: () => Promise.reject(new Error('The server refused the value')),
+  },
+  play: async ({ canvasElement }) => {
+    const cell = await editCell(canvasElement, '42')
+    await waitFor(() => expect(cell().querySelector('input')).toBeNull())
+    await waitFor(() =>
+      expect(cell().querySelector('[aria-invalid="true"]')).not.toBeNull(),
+    )
+    await settle()
   },
 }

@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { vrStates } from './__mocks__/catalog'
 
 /** Вложенная шапка (ADR 0049): группы заголовков, листья разной глубины. */
 const meta = {
@@ -17,6 +18,7 @@ export const HeaderGroups: StoryObj<StoryProps> = {
     headerNesting: 'nested',
   },
   parameters: {
+    ...vrStates('head.nested'),
     controls: {
       exclude: ['columnCount'],
     },

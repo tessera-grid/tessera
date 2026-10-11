@@ -1,8 +1,10 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { withVrModes } from './__mocks__/catalog'
+import { vrModes, vrStates } from './__mocks__/catalog'
 import { makeData } from './__mocks__/data'
+import { expect, waitFor, userEvent } from 'storybook/test'
+import { bodyRow, settle, waitForRows } from './__mocks__/catalogPlay'
 
 /** Выбор строк (ADR 0014): флажки, пакетный тулбар, дочерние строки. */
 const meta = {
@@ -22,8 +24,7 @@ const subRowSelectionTree = makeData({
   breadth: 3,
 })
 
-// Узловая история: снимается во всех режимах осей каталога (ADR 0093, VR9).
-export const RowSelection: StoryObj<StoryProps> = withVrModes({
+export const RowSelection: StoryObj<StoryProps> = {
   name: 'Basic',
   args: {
     enableRowSelection: true,
@@ -35,7 +36,7 @@ export const RowSelection: StoryObj<StoryProps> = withVrModes({
     height: 460,
     maxHeight: 460,
   },
-})
+}
 
 export const BatchRowSelection: StoryObj<StoryProps> = {
   name: 'Batch toolbar',
@@ -67,5 +68,35 @@ export const SubRowSelection: StoryObj<StoryProps> = {
     controls: {
       exclude: ['columnCount', 'dataCount', 'dataOverride', 'initialExpanded'],
     },
+  },
+}
+
+/** Выбранные строки (ADR 0093, VR4): две строки отмечены флажками. */
+export const RowSelectionStateSelected: StoryObj<StoryProps> = {
+  name: 'State: selected rows',
+  tags: ['vr-modes'],
+  parameters: vrModes(vrStates('body.selection')),
+  args: {
+    enableRowSelection: true,
+    dataCount: 10,
+    containerHeight: 460,
+    height: 360,
+    maxHeight: 360,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    for (const row of ['item-id-1', 'item-id-2']) {
+      await userEvent.click(
+        bodyRow(canvasElement, row).querySelector<HTMLElement>(
+          '[role="checkbox"]',
+        )!,
+      )
+    }
+    await waitFor(() =>
+      expect(
+        bodyRow(canvasElement, 'item-id-2').querySelector('[role="checkbox"]'),
+      ).toHaveAttribute('aria-checked', 'true'),
+    )
+    await settle()
   },
 }

@@ -19,12 +19,13 @@ import {
 } from '../../../scripts/catalog'
 import mainConfig from '../../../vitest.config'
 import {
+  CATALOG_STATES,
   CONTRASTS,
   FULL_MODES,
   PALETTES,
   THEMES,
   WIDTHS,
-  withVrModes,
+  vrModes,
 } from '../stories/__mocks__/catalog'
 import { A11Y_EXCLUSIONS } from '../stories/__tests__/catalog'
 
@@ -139,24 +140,29 @@ describe('Каталог визуальных состояний', () => {
     ).toBe(modes.length)
     expect(modes.every(m => m.catalog)).toBe(true)
 
-    const story = withVrModes({ name: 'X', tags: ['own'] })
-    expect(story.tags).toEqual(['own', 'vr-modes'])
-    expect(
-      (story.parameters as { chromatic: { modes: unknown } }).chromatic.modes,
-    ).toBe(FULL_MODES)
+    const parameters = vrModes({ own: 1, chromatic: { delay: 5 } })
+    expect(parameters).toEqual({
+      own: 1,
+      chromatic: { delay: 5, modes: FULL_MODES },
+    })
 
-    // В каталоге есть узловые истории, режимы вручную не задаются.
+    // В каталоге есть узловые истории; тег и режимы — только вместе.
     const files = storyFiles()
     expect(
-      files.flatMap(storyExports).filter(s => /\bwithVrModes\(/.test(s.body))
+      files.flatMap(storyExports).filter(s => /\bvrModes\(/.test(s.body))
         .length,
     ).toBeGreaterThan(0)
     expect(handMadeModes(files)).toEqual([])
     expect(
       handMadeModes([
         { file: 'x', text: "export const X = { tags: ['vr-modes'] }" },
+        { file: 'x', text: 'export const Y = { parameters: vrModes() }' },
+        {
+          file: 'x',
+          text: 'export const Z = { parameters: { chromatic: { modes: {} } } }',
+        },
       ]),
-    ).toEqual(['x:X'])
+    ).toEqual(['x:X', 'x:Y', 'x:Z'])
 
     const forced = files
       .flatMap(storyExports)
@@ -184,7 +190,7 @@ describe('Каталог визуальных состояний', () => {
         file: 'x',
         text: [
           'export const A = {}',
-          'export const B = withVrModes({})',
+          "export const B = { tags: ['vr-modes'], parameters: vrModes() }",
           'export const C = { parameters: { chromatic: { disableSnapshot: true } } }',
         ].join('\n'),
       },
@@ -197,4 +203,49 @@ describe('Каталог визуальных состояний', () => {
       SNAPSHOT_BUDGET,
     )
   })
+
+  it('VR4: тело — наведение, выбор, фокус, правка, ожидание и ошибка, подсветка, дерево с линиями, группы, закрепление слева и справа, скелет, пустое состояние — истории каталога', () => {
+    expect(missingStates('body')).toEqual([])
+  })
+
+  it('VR5: шапка — сортировка, индикаторы включённого действия, вложенная шапка, кебаб, ручка ширины — истории каталога', () => {
+    expect(missingStates('head')).toEqual([])
+  })
+
+  it('VR6: наложения — меню, вложенный раздел, контекстное меню, панели фильтров текста, даты и вариантов, экспорт, «Колонки», тултип — истории каталога; поповер целиком внутри холста истории', () => {
+    expect(missingStates('overlay')).toEqual([])
+    // История наложения открывает его в play и проверяет вмещение в холст.
+    for (const story of statesOf().filter(s =>
+      s.state.startsWith('overlay.'),
+    )) {
+      expect(story.body, story.where).toMatch(/\bplay:/)
+      expect(story.text, story.where).toMatch(/\bexpectPopupInCanvas\(/)
+    }
+  })
+
+  it('VR7: панели — тулбар, нижняя панель, пагинация, узкая ширина — истории каталога', () => {
+    expect(missingStates('panel')).toEqual([])
+  })
 })
+
+/** Состояния каталога, которые показывают истории (`vrStates(...)` в параметрах). */
+const statesOf = () =>
+  storyFiles().flatMap(file =>
+    storyExports(file).flatMap(story =>
+      [...story.body.matchAll(/\bvrStates\(([^)]*)\)/g)].flatMap(call =>
+        [...call[1]!.matchAll(/'([\w.]+)'/g)].map(state => ({
+          state: state[1]!,
+          where: `${story.file}:${story.name}`,
+          body: story.body,
+          text: file.text,
+        })),
+      ),
+    ),
+  )
+
+const missingStates = (area: keyof typeof CATALOG_STATES) => {
+  const shown = new Set(statesOf().map(s => s.state))
+  return CATALOG_STATES[area]
+    .map(state => `${area}.${state}`)
+    .filter(state => !shown.has(state))
+}

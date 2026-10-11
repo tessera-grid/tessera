@@ -4,6 +4,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { OwnPagerDemo } from './demos/panelsDemos'
+import { vrStates } from './__mocks__/catalog'
 
 /** Нижняя панель (ADR 0038): счётчик выбора, узкая ширина, своя пагинация вместо панели. */
 const meta = {
@@ -24,6 +25,7 @@ const GRID = {
 
 export const WithStatusBar: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: vrStates('panel.statusBar'),
   args: {
     // Демо-слоты нижней панели: один слева, два справа (порядок по `order`).
     // Включите enableFooter — панель встанет под футером одной линией.
@@ -45,6 +47,7 @@ export const SelectedCount: StoryObj<StoryProps> = {
 
 export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
   name: 'Narrow',
+  parameters: vrStates('panel.narrow'),
   // Узкая колонка (ADR 0038, SB7–SB13): нижняя панель в две строки — счётчик выбора
   // сверху, пагинация снизу, кнопки переносятся. Выберите строки, чтобы появился
   // счётчик; меняйте containerWidth, чтобы увидеть компактный и полный вид.

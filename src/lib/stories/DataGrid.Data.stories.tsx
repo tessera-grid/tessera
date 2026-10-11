@@ -7,6 +7,7 @@ import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { StoryComponent } from './DataGridStory'
 import { makeData } from './__mocks__/data'
 import { columnCountType } from './__mocks__/utils/argTypes'
+import { vrStates } from './__mocks__/catalog'
 
 /**
  * Истории про форму данных.
@@ -219,6 +220,7 @@ export const TreeAtScale: StoryObj<DataArgs> = {
  */
 export const Grouped: StoryObj<DataArgs> = {
   name: 'Grouped & aggregated',
+  parameters: vrStates('body.groups'),
   args: {
     dataShape: 'grouped',
     count: 60,

@@ -13,6 +13,49 @@ export const WIDTHS = { desktop: 1280, phone: 390 } as const
 export type Palette = (typeof PALETTES)[number]
 export type Contrast = (typeof CONTRASTS)[number]
 
+/**
+ * Состояния каталога (ADR 0093, VR4–VR7): у каждого — история с `parameters.vrStates`,
+ * которая показывает его в покое.
+ */
+export const CATALOG_STATES = {
+  body: [
+    'hover',
+    'selection',
+    'focus',
+    'editing',
+    'pending',
+    'error',
+    'highlight',
+    'treeLines',
+    'groups',
+    'pinnedStart',
+    'pinnedEnd',
+    'skeleton',
+    'empty',
+  ],
+  head: ['sorting', 'activeIndicator', 'nested', 'kebab', 'resizeHandle'],
+  overlay: [
+    'menu',
+    'submenu',
+    'contextMenu',
+    'filterText',
+    'filterDate',
+    'filterOptions',
+    'export',
+    'columns',
+    'tooltip',
+  ],
+  panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
+} as const
+
+type Area = keyof typeof CATALOG_STATES
+export type CatalogState = {
+  [A in Area]: `${A}.${(typeof CATALOG_STATES)[A][number]}`
+}[Area]
+
+/** Параметры истории-состояния каталога. */
+export const vrStates = (...states: CatalogState[]) => ({ vrStates: states })
+
 /** Роли shadcn, которые мост темы берёт из палитры приложения (ADR 0089). */
 export const PALETTE_ROLES = [
   '--foreground',
@@ -62,24 +105,15 @@ export const FULL_MODES: Record<string, Mode> = Object.fromEntries(
   ),
 )
 
-interface StoryAnnotations {
-  tags?: string[]
-  parameters?: Record<string, unknown>
-  [annotation: string]: unknown
-}
-
-/** Узловая история: снимается во всех режимах осей (тег `vr-modes`). */
-export const withVrModes = <T extends StoryAnnotations>(
-  story: T,
-): T & Required<Pick<StoryAnnotations, 'tags' | 'parameters'>> => ({
-  ...story,
-  tags: [...(story.tags ?? []), 'vr-modes'],
-  parameters: {
-    ...story.parameters,
-    chromatic: {
-      ...(story.parameters?.chromatic as object | undefined),
-      modes: FULL_MODES,
-    },
+/**
+ * Параметры узловой истории: снимок во всех режимах осей. История ставит рядом тег
+ * `vr-modes` — статично, чтобы его видел индексатор Storybook (VR9).
+ */
+export const vrModes = (parameters: Record<string, unknown> = {}) => ({
+  ...parameters,
+  chromatic: {
+    ...(parameters.chromatic as object | undefined),
+    modes: FULL_MODES,
   },
 })
 

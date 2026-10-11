@@ -9,6 +9,7 @@ import {
   RowExpandingLazyDemo,
   type ServerFailMode,
 } from './demos/sessionDemos'
+import { vrStates } from './__mocks__/catalog'
 
 /** Раскрытие строк (ADR 0015, ADR 0054, ADR 0058): дерево, линии, плоские данные, ленивые дети. */
 const meta = {
@@ -109,6 +110,7 @@ export const RowExpandingTreeLines: StoryObj<StoryProps> = {
     maxHeight: 540,
   },
   parameters: {
+    ...vrStates('body.treeLines'),
     controls: {
       exclude: ['columnCount', 'dataCount', 'dataOverride'],
     },

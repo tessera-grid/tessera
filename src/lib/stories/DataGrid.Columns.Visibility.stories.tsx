@@ -1,6 +1,12 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { vrStates } from './__mocks__/catalog'
+import {
+  expectPopupInCanvas,
+  openPopup,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Видимость колонок (ADR 0035): меню «Колонки», вместе с меню заголовка. */
 const meta = {
@@ -33,5 +39,27 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
     enableHeaderActionMenu: true,
     enableColumnPinning: true,
     enableRowSelection: true,
+  },
+}
+
+/** Открытое меню «Колонки» (ADR 0093, VR6). */
+export const VisibilityStatePanel: StoryObj<StoryProps> = {
+  name: 'State: columns panel',
+  parameters: vrStates('overlay.columns'),
+  args: {
+    enableColumnVisibility: true,
+    dataCount: 20,
+    containerHeight: 460,
+    height: 360,
+    maxHeight: 360,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const panel = await openPopup(() =>
+      canvasElement.querySelector<HTMLElement>(
+        '[data-testid="column-visibility-button"]',
+      ),
+    )
+    expectPopupInCanvas(canvasElement, panel)
   },
 }

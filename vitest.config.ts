@@ -45,6 +45,11 @@ export default defineConfig({
       '@base-ui/react/checkbox',
       '@tanstack/react-table',
       '@tanstack/react-store',
+      // Помощники историй каталога (ADR 0093): без пребандла Vite перестраивает зависимости
+      // посреди прогона, и следующий набор не загружается.
+      'storybook/internal/core-events',
+      'storybook/preview-api',
+      'storybook/test',
     ],
   },
   test: {

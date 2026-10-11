@@ -1,11 +1,18 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { withVrModes } from './__mocks__/catalog'
+import { vrModes, vrStates } from './__mocks__/catalog'
 import {
   optionFilteringColumns,
   optionFilteringData,
 } from './__mocks__/filteringData'
+import { expect, waitFor, userEvent } from 'storybook/test'
+import {
+  expectPopupInCanvas,
+  headCell,
+  settle,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Сортировка колонок (ADR 0012, ADR 0063): одна и несколько колонок, без снятия, по подписи вариантов. */
 const meta = {
@@ -16,8 +23,7 @@ const meta = {
 
 export default meta
 
-// Узловая история: снимается во всех режимах осей каталога (ADR 0093, VR9).
-export const ColumnSorting: StoryObj<StoryProps> = withVrModes({
+export const ColumnSorting: StoryObj<StoryProps> = {
   name: 'Basic',
   args: {
     enableColumnSorting: true,
@@ -28,7 +34,7 @@ export const ColumnSorting: StoryObj<StoryProps> = withVrModes({
     height: 300,
     maxHeight: 300,
   },
-})
+}
 
 export const ColumnSortingNotRemovable: StoryObj<StoryProps> = {
   name: 'Not removable',
@@ -60,5 +66,74 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
     dataOverride: optionFilteringData,
     // «Status» сортируется в порядке вариантов, «Tags» — поэлементно, «Manager» — по
     // имени из справочника, а не по id. С группировкой в том же порядке идут группы.
+  },
+}
+
+/** Отсортировано по двум колонкам (ADR 0093, VR5): номер приоритета у второй. */
+export const SortingStateSorted: StoryObj<StoryProps> = {
+  name: 'State: sorted',
+  tags: ['vr-modes'],
+  parameters: vrModes(vrStates('head.sorting')),
+  args: {
+    enableColumnSorting: true,
+    enableMultiSort: true,
+    dataCount: 20,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const sort = (column: string) =>
+      headCell(canvasElement, column).querySelector<HTMLElement>(
+        '.column-sort__button',
+      )!
+    // Один экземпляр: Shift держится между нажатием клавиши и кликом.
+    const user = userEvent.setup()
+    await user.click(sort('country'))
+    await user.keyboard('{Shift>}')
+    await user.click(sort('firstName'))
+    await user.keyboard('{/Shift}')
+    await waitFor(() =>
+      expect(
+        headCell(canvasElement, 'firstName').querySelector(
+          '.column-sort__priority',
+        ),
+      ).not.toBeNull(),
+    )
+    await settle()
+  },
+}
+
+/** Тултип кнопки шапки (ADR 0093, VR6). */
+export const SortingStateTooltip: StoryObj<StoryProps> = {
+  name: 'State: tooltip',
+  parameters: vrStates('overlay.tooltip'),
+  args: {
+    enableColumnSorting: true,
+    dataCount: 20,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const head = headCell(canvasElement, 'country')
+    await userEvent.hover(head)
+    await userEvent.hover(
+      head.querySelector<HTMLElement>('.column-sort__button')!,
+    )
+    const tooltip = await waitFor(
+      () => {
+        const found = [
+          ...document.querySelectorAll<HTMLElement>('[data-side]'),
+        ].find(el => el.textContent?.trim())
+        expect(found).toBeDefined()
+        return found!
+      },
+      { timeout: 5000 },
+    )
+    await settle()
+    expectPopupInCanvas(canvasElement, tooltip)
   },
 }

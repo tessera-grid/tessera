@@ -3,6 +3,7 @@ import { toolbarDemoPlugins } from './toolbarDemo'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { filteringColumns, filteringData } from './__mocks__/filteringData'
+import { vrStates } from './__mocks__/catalog'
 
 /** Тулбар (ADR 0035, ADR 0051): кнопки плагинов, все кнопки, пустой тулбар. */
 const meta = {
@@ -25,6 +26,7 @@ export const WithToolbar: StoryObj<StoryProps> = {
 
 export const ToolbarAllButtons: StoryObj<StoryProps> = {
   name: 'All buttons',
+  parameters: vrStates('panel.toolbar'),
   args: {
     // Все встроенные кнопки разом (ADR 0051): слева поиск и «Фильтры», справа
     // «Колонки», затем «Экспорт». Порядок задают группы search → view → data, а не

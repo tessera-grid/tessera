@@ -6,6 +6,7 @@ import {
   ServerPaginationDemo,
   type ServerPaginationDemoProps,
 } from './demos/panelsDemos'
+import { vrStates } from './__mocks__/catalog'
 
 /** Пагинация (ADR 0038): на клиенте и серверная с сортировкой. */
 const meta = {
@@ -18,6 +19,7 @@ export default meta
 
 export const Pagination: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: vrStates('panel.pagination'),
   args: {
     // Пагинация в нижней панели: размер страницы, диапазон и кнопки. Включите
     // enableColumnSorting — смена сортировки вернёт на первую страницу.

@@ -1,5 +1,6 @@
 import { ru } from '@daypicker/react/locale/ru'
 import { Meta, StoryObj } from '@storybook/react'
+import { userEvent } from 'storybook/test'
 import { useArgs } from 'storybook/preview-api'
 
 import type { StoryProps } from './DataGridStory.types'
@@ -19,6 +20,13 @@ import {
   FilteringLookupServerDemo,
   FilteringServerDemo,
 } from './demos/filteringDemos'
+import { vrStates } from './__mocks__/catalog'
+import {
+  expectPopupInCanvas,
+  headCell,
+  openPopup,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 interface FilteringServerArgs extends StoryProps {
   serverDelayMs?: number
@@ -267,4 +275,41 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
     serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
   },
   render: args => <FilteringLookupServerDemo {...normalizeArgs(args)} />,
+}
+
+/** Открывает панель фильтра колонки: наведение раскрывает кнопку и грузит модуль. */
+const openFilter = async (canvas: HTMLElement, column: string) => {
+  await waitForRows(canvas)
+  const head = headCell(canvas, column)
+  await userEvent.hover(head)
+  const panel = await openPopup(() =>
+    headCell(canvas, column).querySelector<HTMLElement>(
+      '.column-filter__button',
+    ),
+  )
+  expectPopupInCanvas(canvas, panel)
+}
+
+/** Открытая панель текстового фильтра (ADR 0093, VR6). */
+export const FilteringStateText: StoryObj<StoryProps> = {
+  name: 'State: text filter',
+  parameters: vrStates('overlay.filterText'),
+  args: GRID,
+  play: ({ canvasElement }) => openFilter(canvasElement, 'name'),
+}
+
+/** Открытая панель фильтра даты с календарём (ADR 0093, VR6). */
+export const FilteringStateDate: StoryObj<FilteringDatesArgs> = {
+  ...FilteringDates,
+  name: 'State: date filter',
+  parameters: vrStates('overlay.filterDate'),
+  play: ({ canvasElement }) => openFilter(canvasElement, 'createdAt'),
+}
+
+/** Открытая панель фильтра вариантов (ADR 0093, VR6). */
+export const FilteringStateOptions: StoryObj<StoryProps> = {
+  ...FilteringOptions,
+  name: 'State: options filter',
+  parameters: vrStates('overlay.filterOptions'),
+  play: ({ canvasElement }) => openFilter(canvasElement, 'status'),
 }

@@ -1,6 +1,14 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { expect, waitFor, userEvent } from 'storybook/test'
+import { vrStates } from './__mocks__/catalog'
+import {
+  bodyCell,
+  headCell,
+  settle,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 
 /** Закрепление колонок (ADR 0011): с одной и двух сторон, под вложенной шапкой, листья. */
 const meta = {
@@ -84,5 +92,35 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
     controls: {
       exclude: ['columnCount'],
     },
+  },
+}
+
+/** Колонки закреплены слева и справа (ADR 0093, VR4): справа — колонка действий. */
+export const PinningStateBothSides: StoryObj<StoryProps> = {
+  name: 'State: pinned both sides',
+  parameters: vrStates('body.pinnedStart', 'body.pinnedEnd'),
+  args: {
+    enableColumnPinning: true,
+    enableRowActions: true,
+    enableRowSelection: true,
+    dataCount: 30,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    await userEvent.click(
+      headCell(canvasElement, 'country').querySelector<HTMLElement>(
+        '.column-pin__button',
+      )!,
+    )
+    await waitFor(() =>
+      expect(bodyCell(canvasElement, 'item-id-0', 'country')).toHaveAttribute(
+        'data-cell-pinned',
+        'left',
+      ),
+    )
+    await settle()
   },
 }

@@ -75,14 +75,20 @@ const preview: Preview = {
   },
   parameters: {
     // Снимки Chromatic (ADR 0093, §6): каждая история — в базовом режиме, узловые —
-    // во всех режимах осей (`withVrModes`); движение уменьшено.
+    // во всех режимах осей (тег `vr-modes` и `vrModes`); движение уменьшено.
     chromatic: { modes: BASE_MODES, prefersReducedMotion: 'reduce' },
+    // Псевдо-состояния наведения и фокуса (ADR 0093, VR8) ищут узлы во всём `body`:
+    // в проектах каталога корня `#storybook-root` нет, а порталы лежат вне него.
+    pseudo: { rootSelector: 'body' },
     // axe по каждой истории каталога — падение на нарушении, `color-contrast` включён
     // (ADR 0093, VR2). Как в наборах доступности (ADR 0020): `region` — правило
     // страницы, а не встраиваемого грида; `scrollable-region-focusable` — без
     // keyboardNavigation грид только для чтения, с ним правило проверяет A7.
+    // Стражи фокуса Base UI (aria-hidden + tabindex=0) — штатная ловушка фокуса
+    // поповера, aria-hidden-focus на них — ложное срабатывание (CV17).
     a11y: {
       test: 'error',
+      context: { exclude: [['[data-base-ui-focus-guard]']] },
       options: {
         rules: {
           region: { enabled: false },

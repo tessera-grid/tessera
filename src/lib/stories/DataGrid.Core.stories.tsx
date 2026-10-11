@@ -11,6 +11,10 @@ import {
 } from 'lucide-react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { vrModes, vrStates } from './__mocks__/catalog'
+import { getData } from './__mocks__/data'
+import { expect, waitFor } from 'storybook/test'
+import { waitForRows, applyPseudoStates } from './__mocks__/catalogPlay'
 
 /** Ядро грида: все тумблеры, скелет, загрузка, заглушка, футер, подписи и иконки. */
 const meta = {
@@ -36,6 +40,7 @@ export const AllFeatures: StoryObj<StoryProps> = {
 
 export const Skeletons: StoryObj<StoryProps> = {
   name: 'Skeleton',
+  parameters: vrStates('body.skeleton'),
   // Скелет первой загрузки повторяет раскладку грида (ADR 0060): служебные колонки,
   // закрепление, шапку и пагинатор. Выключите enableSkeleton — данные встанут на
   // место без сдвига; skeletonOptions.rowsCount числом задаёт строки вручную.
@@ -63,6 +68,7 @@ export const Loading: StoryObj<StoryProps> = {
 
 export const Stub: StoryObj<StoryProps> = {
   name: 'Empty (stub)',
+  parameters: vrStates('body.empty'),
   args: {
     showStub: true,
   },
@@ -117,4 +123,43 @@ export const CustomIcons: StoryObj<StoryProps> = {
     enableExport: true,
   },
   argTypes: { icons: { control: false } },
+}
+
+/** Наведённая строка (ADR 0093, VR4, VR8): наведение — псевдо-состояние, а не курсор. */
+const HOVERED_ROW = '.data-grid__body-row[data-row-id="item-id-2"]'
+
+export const CoreStateHoveredRow: StoryObj<StoryProps> = {
+  name: 'State: hovered row',
+  tags: ['vr-modes'],
+  parameters: vrModes({
+    ...vrStates('body.hover'),
+    requirements: ['VR8'],
+    pseudo: {
+      hover: [HOVERED_ROW, `${HOVERED_ROW} .data-grid__body-cell`],
+    },
+  }),
+  args: {
+    enableRowSelection: true,
+    enableCellEditing: true,
+    enableRowActions: true,
+    // Строки — с первого рендера: псевдо-состояние ставится на смонтированные узлы.
+    dataOverride: getData(12),
+    dataCount: 12,
+    containerHeight: 460,
+    height: 360,
+    maxHeight: 360,
+  },
+  play: async ({ canvasElement, parameters }) => {
+    await waitForRows(canvasElement)
+    await applyPseudoStates(parameters.pseudo)
+    // Кнопки наведённой строки видны, у соседней — нет: вид не зависит от указателя.
+    const hidden = (row: string) =>
+      [
+        ...canvasElement.querySelectorAll<HTMLElement>(
+          `.data-grid__body-row[data-row-id="${row}"] .cell__button--hidden`,
+        ),
+      ].map(button => getComputedStyle(button).opacity)
+    await waitFor(() => expect(hidden('item-id-2')).toContain('1'))
+    expect(hidden('item-id-3').every(opacity => opacity === '0')).toBe(true)
+  },
 }

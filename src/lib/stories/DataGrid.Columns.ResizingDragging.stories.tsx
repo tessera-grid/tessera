@@ -1,6 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { vrStates } from './__mocks__/catalog'
+import { applyPseudoStates, waitForRows } from './__mocks__/catalogPlay'
 
 /** Ширина и порядок колонок (ADR 0013, ADR 0006, ADR 0052): протяжка, перетаскивание, под вложенной шапкой. */
 const meta = {
@@ -57,5 +59,25 @@ export const HeaderGroupsDragging: StoryObj<StoryProps> = {
     controls: {
       exclude: ['columnCount'],
     },
+  },
+}
+
+/** Ручка ширины под наведением (ADR 0093, VR5): наведение — псевдо-состояние. */
+export const ResizingStateHandle: StoryObj<StoryProps> = {
+  name: 'State: resize handle',
+  parameters: {
+    ...vrStates('head.resizeHandle'),
+    pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
+  },
+  args: {
+    enableColumnResizing: true,
+    dataCount: 20,
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  play: async ({ canvasElement, parameters }) => {
+    await waitForRows(canvasElement)
+    await applyPseudoStates(parameters.pseudo)
   },
 }
