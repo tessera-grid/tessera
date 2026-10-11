@@ -1,3 +1,4 @@
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
@@ -6,6 +7,10 @@ import dts from 'vite-plugin-dts'
 import tailwindcss from '@tailwindcss/vite'
 
 import { BUILD_TARGET } from './browser-targets'
+import {
+  withExtensions,
+  writeCommonJsDeclarations,
+} from './scripts/declarations'
 
 const resolvePath = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))
@@ -31,6 +36,20 @@ export default defineConfig({
         entryRoot: 'src',
         include: ['src'],
         exclude: STORY_TEST_GLOBS,
+        // Импорты деклараций с расширением и копия в .d.cts для require (ADR 0091).
+        beforeWriteFile: (filePath, content) => ({
+          filePath,
+          content: withExtensions(
+            content,
+            join(
+              resolvePath('src'),
+              relative(resolvePath('dist'), dirname(filePath)),
+            ),
+          ),
+        }),
+        afterBuild: () => {
+          writeCommonJsDeclarations(resolvePath('dist'))
+        },
         // Ошибка генерации декларации (TS4023 и т. п.) молча пропускает файл .d.ts —
         // сборка падает, а не публикует ссылку на несуществующий файл.
         afterDiagnostic: diagnostics => {
@@ -73,7 +92,12 @@ export default defineConfig({
       ],
       // Модуль на файл: сборщик потребителя выбрасывает модули неиспользуемых
       // плагинов целиком (sideEffects в package.json — только CSS), ADR 0010, IV3.
-      output: { preserveModules: true, preserveModulesRoot: 'src' },
+      output: {
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        // Входы — клиентские модули для серверных компонентов (ADR 0091, EV9).
+        banner: chunk => (chunk.isEntry ? "'use client';" : ''),
+      },
     },
     sourcemap: true,
     emptyOutDir: true,

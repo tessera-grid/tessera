@@ -13,19 +13,34 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./plugins": {
-      "types": "./dist/plugins.d.ts",
-      "import": "./dist/plugins.js",
-      "require": "./dist/plugins.cjs"
+      "import": {
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.js"
+      },
+      "require": {
+        "types": "./dist/plugins.d.cts",
+        "default": "./dist/plugins.cjs"
+      }
     },
     "./ui": {
-      "types": "./dist/ui.d.ts",
-      "import": "./dist/ui.js",
-      "require": "./dist/ui.cjs"
+      "import": {
+        "types": "./dist/ui.d.ts",
+        "default": "./dist/ui.js"
+      },
+      "require": {
+        "types": "./dist/ui.d.cts",
+        "default": "./dist/ui.cjs"
+      }
     },
     "./style.css": "./dist/style.css"
   },
@@ -35,6 +50,7 @@
     "check:requirements": "node scripts/check-requirements.mjs",
     "check:tree-shaking": "node scripts/check-tree-shaking.mjs",
     "check:browsers": "node scripts/check-browsers.mjs",
+    "check:package": "node scripts/check-package.mjs",
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -79,6 +95,7 @@
     "lucide-react": "^1.28.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.5.0",
     "@fontsource/inter": "^5.3.0",
@@ -103,6 +120,7 @@
     "happy-dom": "^20.14.5",
     "playwright": "^1.62.1",
     "prettier": "3.9.6",
+    "publint": "^0.3.25",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "shadcn": "^4.16.1",
