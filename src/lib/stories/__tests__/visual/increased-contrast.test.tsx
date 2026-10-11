@@ -19,7 +19,13 @@ import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
 import { renderGrid } from '../helpers'
 import { composed } from '../stories'
-import { contrast, inBothThemes, toRgba } from './a11y-helpers'
+import {
+  contrast,
+  effectiveBg,
+  inBothThemes,
+  resolveColor as resolve,
+  toRgba,
+} from './a11y-helpers'
 
 // Повышенный контраст (ADR 0088, MC1–MC9, MC11): рычаги тонов, надстройка по
 // `prefers-contrast: more` (эмуляция Playwright) и пропу `contrast`. Контраст — по
@@ -38,36 +44,6 @@ afterEach(async () => {
 
 const style = (el: Element, pseudo?: string) => getComputedStyle(el, pseudo)
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
-
-/** Значение выражения цвета (токен, `color-mix`) в контексте элемента. */
-const resolve = (parent: Element, value: string) => {
-  const probe = document.createElement('span')
-  probe.style.backgroundColor = value
-  parent.append(probe)
-  const color = style(probe).backgroundColor
-  probe.remove()
-  return color
-}
-
-const over = (top: number[], bottom: number[]) =>
-  [0, 1, 2].map(i => top[i]! * top[3]! + bottom[i]! * (1 - top[3]!)).concat(1)
-
-/** Видимый фон элемента: его заливка и заливки предков до корня темы, наложенные. */
-const effectiveBg = (el: Element): number[] => {
-  const theme = el.closest('.data-grid-theme')
-  const layers: number[][] = []
-  for (let e: Element | null = el; e; e = e.parentElement) {
-    const color = toRgba(style(e).backgroundColor)
-    if (color[3]! > 0) layers.push(color)
-    if (color[3]! > 0.99 || e === theme) break
-  }
-  let base =
-    layers.length && layers.at(-1)![3]! > 0.99
-      ? layers.pop()!
-      : toRgba(resolve(theme ?? document.body, 'var(--tsr-sys-surface)'))
-  for (const layer of layers.reverse()) base = over(layer, base)
-  return base
-}
 
 /** Контраст двух цветов, второй — непрозрачный фон. */
 const ratio = (fg: string, bg: number[]) => contrast(toRgba(fg), bg)

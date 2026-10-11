@@ -90,3 +90,59 @@ export const inBothThemes = async (check: () => Promise<void>) => {
     }
   }
 }
+
+/** Значение выражения цвета (токен, `color-mix`) в контексте элемента. */
+export const resolveColor = (parent: Element, value: string) => {
+  const probe = document.createElement('span')
+  probe.style.backgroundColor = value
+  parent.append(probe)
+  const color = getComputedStyle(probe).backgroundColor
+  probe.remove()
+  return color
+}
+
+const over = (top: number[], bottom: number[]) =>
+  [0, 1, 2].map(i => top[i]! * top[3]! + bottom[i]! * (1 - top[3]!)).concat(1)
+
+/**
+ * Слои подсветки (ADR 0080) — однотонные `linear-gradient`, верхний первым; другие
+ * картинки фона не учитываются.
+ */
+const solidLayers = (image: string): number[][] =>
+  image === 'none'
+    ? []
+    : image.split(/,\s*(?=linear-gradient\()/).flatMap(layer => {
+        if (!layer.startsWith('linear-gradient(') || !layer.endsWith(')')) {
+          return []
+        }
+        const inner = layer.slice('linear-gradient('.length, -1)
+        const half = (inner.length - 2) / 2
+        const first = inner.slice(0, half)
+        return Number.isInteger(half) &&
+          inner.slice(half, half + 2) === ', ' &&
+          first === inner.slice(half + 2)
+          ? [toRgba(first)]
+          : []
+      })
+/**
+ * Видимый фон элемента: заливки и однотонные градиенты его и всех предков до первого
+ * непрозрачного слоя; под ними — белый холст страницы.
+ */
+export const effectiveBg = (el: Element): number[] => {
+  const layers: number[][] = []
+  for (let e: Element | null = el; e; e = e.parentElement) {
+    const style = getComputedStyle(e)
+    for (const layer of solidLayers(style.backgroundImage)) {
+      if (layer[3]! > 0) layers.push(layer)
+    }
+    const color = toRgba(style.backgroundColor)
+    if (color[3]! > 0) layers.push(color)
+    if ((layers.at(-1)?.[3] ?? 0) > 0.99) break
+  }
+  let base =
+    layers.length && layers.at(-1)![3]! > 0.99
+      ? layers.pop()!
+      : [255, 255, 255, 1]
+  for (const layer of layers.reverse()) base = over(layer, base)
+  return base
+}

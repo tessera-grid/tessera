@@ -1,11 +1,14 @@
 import { composeStories } from '@storybook/react-vite'
 import type { CSSProperties } from 'react'
+import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
+import { rowSelection } from '../../../plugins'
 import * as stories from '../../Theming.stories'
+import { contrast, effectiveBg, toRgba } from './a11y-helpers'
 
 // Каждое требование темизации — отдельный именованный тест:
 // TH1–TH8 (внешняя темизация + тёмный режим), TK1–TK4 (уровни токенов
@@ -171,6 +174,64 @@ describe('Theming — external customization + token tiers', () => {
       await expect.poll(() => cell && head).toBeTruthy()
       expect(getComputedStyle(cell!).color, `${colorMode} cell`).toBe(fg)
       expect(getComputedStyle(head!).color, `${colorMode} head`).toBe(fg)
+      await unmount()
+    }
+  })
+
+  test('TH11: the grid paints its own background — a selected and a hovered row stay readable on a page of the other theme', async () => {
+    // Белая страница без shadcn, тёмный грид: полупрозрачные наведение и выбор строки
+    // смешиваются с фоном темы, а не страницы.
+    const Grid = ({ colorMode }: { colorMode: 'light' | 'dark' }) => {
+      const table = useCreateTable({
+        columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }],
+        data: [
+          { id: '1', name: 'Ann' },
+          { id: '2', name: 'Bob' },
+        ],
+        getRowId: (row: { id: string }) => row.id,
+        state: { rowSelection: { '1': true } } as never,
+        plugins: [rowSelection()] as never,
+      })
+      const page = colorMode === 'dark' ? '#ffffff' : '#000000'
+      return (
+        <div style={{ height: 200, background: page }}>
+          <DataGrid
+            table={table as never}
+            colorMode={colorMode}
+            style={
+              {
+                '--foreground': 'initial',
+                '--background': 'initial',
+                '--card': 'initial',
+              } as CSSProperties
+            }
+          />
+        </div>
+      )
+    }
+    for (const colorMode of ['dark', 'light'] as const) {
+      const { container, unmount } = await render(
+        <Grid colorMode={colorMode} />,
+      )
+      const row = (id: string) =>
+        container.querySelector<HTMLElement>(
+          `.data-grid__body-row[data-row-id="${id}"]`,
+        )
+      await expect.poll(() => row('1') && row('2')).toBeTruthy()
+      await userEvent.hover(row('2')!.querySelector('.data-grid__body-cell')!)
+      for (const id of ['1', '2']) {
+        const title = row(id)!.querySelector('.data-grid__cell-wrapper-title')!
+        await expect
+          .poll(
+            () =>
+              contrast(
+                toRgba(getComputedStyle(title).color),
+                effectiveBg(title),
+              ),
+            { message: `${colorMode} row ${id}` },
+          )
+          .toBeGreaterThanOrEqual(4.5)
+      }
       await unmount()
     }
   })
