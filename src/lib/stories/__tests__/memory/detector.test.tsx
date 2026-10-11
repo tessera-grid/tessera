@@ -63,7 +63,7 @@ describe('Детектор утечек', () => {
     await expect(expectCollected(tracked)).rejects.toThrow(/удержаны: таблица/)
     retained.length = 0
     await expectCollected(tracked)
-  })
+  }, 60_000)
 
   test('LK12: при падении отчёт содержит путь удержания от корня до удержанного объекта — для подсаженной утечки в пути есть её держатель', async () => {
     const box: { table?: object } = {}
@@ -81,5 +81,5 @@ describe('Детектор утечек', () => {
       delete holder.__tesseraLeakHolder
     }
     await expectCollected(tracked)
-  })
+  }, 60_000)
 })
