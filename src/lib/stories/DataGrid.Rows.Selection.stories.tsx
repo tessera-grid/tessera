@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { withVrModes } from './__mocks__/catalog'
 import { makeData } from './__mocks__/data'
 
 /** Выбор строк (ADR 0014): флажки, пакетный тулбар, дочерние строки. */
@@ -21,7 +22,8 @@ const subRowSelectionTree = makeData({
   breadth: 3,
 })
 
-export const RowSelection: StoryObj<StoryProps> = {
+// Узловая история: снимается во всех режимах осей каталога (ADR 0093, VR9).
+export const RowSelection: StoryObj<StoryProps> = withVrModes({
   name: 'Basic',
   args: {
     enableRowSelection: true,
@@ -33,7 +35,7 @@ export const RowSelection: StoryObj<StoryProps> = {
     height: 460,
     maxHeight: 460,
   },
-}
+})
 
 export const BatchRowSelection: StoryObj<StoryProps> = {
   name: 'Batch toolbar',

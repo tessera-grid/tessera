@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { withVrModes } from './__mocks__/catalog'
 import {
   optionFilteringColumns,
   optionFilteringData,
@@ -15,7 +16,8 @@ const meta = {
 
 export default meta
 
-export const ColumnSorting: StoryObj<StoryProps> = {
+// Узловая история: снимается во всех режимах осей каталога (ADR 0093, VR9).
+export const ColumnSorting: StoryObj<StoryProps> = withVrModes({
   name: 'Basic',
   args: {
     enableColumnSorting: true,
@@ -26,7 +28,7 @@ export const ColumnSorting: StoryObj<StoryProps> = {
     height: 300,
     maxHeight: 300,
   },
-}
+})
 
 export const ColumnSortingNotRemovable: StoryObj<StoryProps> = {
   name: 'Not removable',

@@ -4,6 +4,7 @@ import {
   compareWithBaseline,
   findProblems,
   parseRequirements,
+  parseStoryRequirements,
   parseTestNames,
 } from '../../../scripts/requirements'
 
@@ -131,5 +132,36 @@ describe('Сверка требований и тестов', () => {
       'unknown:ZZ9',
     ])
     expect(stale.map(e => `${e.kind}:${e.id}`)).toEqual(['missing:AA1'])
+  })
+
+  it('VR12: check:requirements читает ID требований из parameters.requirements историй — пропуск, дубль и неизвестный ID ловятся как у тестов', () => {
+    const requirements = parseRequirements(
+      adr(
+        'Принято',
+        [
+          '| SS1 | есть история | visual |',
+          '| SS2 | нет ни теста, ни истории | visual |',
+          '| SS3 | история и тест | visual |',
+        ].join('\n'),
+      ),
+      's.md',
+    )
+    // История собрана из частей, чтобы сверка не приняла фикстуру за настоящую.
+    const story = (ids: string) =>
+      `export const S = { parameters: { requir` + `ements: [${ids}] } }`
+    const stories = parseStoryRequirements(
+      [story("'SS1'"), story("'SS3', 'ZZ8'")].join('\n'),
+      'x.stories.tsx',
+    )
+    expect(stories.map(s => `${s.id}@${s.line}`)).toEqual([
+      'SS1@1',
+      'SS3@2',
+      'ZZ8@2',
+    ])
+    const call = `te` + `st('SS3: тест', () => {})`
+    const tests = [...parseTestNames(call, 't.test.ts'), ...stories]
+    expect(
+      findProblems(requirements, tests).map(p => `${p.kind}:${p.id}`),
+    ).toEqual(['duplicate:SS3', 'missing:SS2', 'unknown:ZZ8'])
   })
 })

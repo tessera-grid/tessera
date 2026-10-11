@@ -126,6 +126,27 @@ export const parseTestNames = (text: string, file: string): TestName[] => {
   return result
 }
 
+const STORY_REQUIREMENTS = /\brequirements:\s*\[([^\]]*)\]/g
+const QUOTED_ID = new RegExp(`['"](${ID})['"]`, 'g')
+
+/**
+ * ID из историй каталога (ADR 0093, VR12): история с `parameters.requirements: ['ID']`
+ * — тест требования: каталог прогоняет её рендер, `play` и axe.
+ */
+export const parseStoryRequirements = (
+  text: string,
+  file: string,
+): TestName[] => {
+  const result: TestName[] = []
+  const lineOf = (index: number) => text.slice(0, index).split('\n').length
+  for (const match of text.matchAll(STORY_REQUIREMENTS)) {
+    for (const id of match[1].matchAll(QUOTED_ID)) {
+      result.push({ id: id[1], file, line: lineOf(match.index) })
+    }
+  }
+  return result
+}
+
 /** Расхождения требований и тестов. */
 export const findProblems = (
   requirements: Requirement[],

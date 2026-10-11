@@ -8,6 +8,7 @@ import { renderGrid } from '../helpers'
 import { submittedCellsSeed } from '../performance/perf-cases'
 import baseline from './contrast-baseline.json'
 import { contrast, effectiveBg, toRgba } from './a11y-helpers'
+import { PALETTE_ROLES } from '../../__mocks__/catalog'
 
 // Матрица контраста (ADR 0089, CX1–CX8): WCAG-пороги по отрисованным состояниям грида в
 // двух палитрах, двух темах и двух режимах. Текст — 4,5:1 (крупный — 3:1), в повышенном
@@ -29,22 +30,6 @@ const COMBOS: Combo[] = (['tessera', 'stories'] as const).flatMap(palette =>
   ),
 )
 const comboLabel = (c: Combo) => `${c.palette}/${c.theme}/${c.mode}`
-
-/** Роли shadcn, которые мост темы берёт из палитры приложения. */
-const PALETTE_ROLES = [
-  '--foreground',
-  '--background',
-  '--card',
-  '--muted',
-  '--primary',
-  '--primary-foreground',
-  '--border',
-  '--ring',
-  '--destructive',
-  '--info',
-  '--warning',
-  '--success',
-]
 
 const html = document.documentElement
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))

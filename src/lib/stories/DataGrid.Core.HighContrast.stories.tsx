@@ -49,6 +49,8 @@ export default meta
 
 export const HighContrast: StoryObj<StoryProps> = {
   name: 'Basic',
+  // Снимок Chromatic — с эмуляцией высокой контрастности (ADR 0093, VR9).
+  parameters: { chromatic: { forcedColors: 'active' } },
   args: {
     dataNesting: 'nested',
     enableRowExpanding: true,

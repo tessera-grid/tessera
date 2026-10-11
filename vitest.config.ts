@@ -112,7 +112,9 @@ export default defineConfig({
       ...(['light', 'dark'] as const).map(
         (theme): TestProjectInlineConfiguration => ({
           extends: true,
-          plugins: [storybookTest({ initialGlobals: { theme } })],
+          plugins: [
+            storybookTest({ initialGlobals: { theme, catalog: true } }),
+          ],
           test: {
             name: theme === 'light' ? 'storybook' : 'storybook-dark',
             setupFiles: ['./.storybook/vitest.setup.ts'],
@@ -122,6 +124,8 @@ export default defineConfig({
               headless: true,
               provider: playwright({
                 launchOptions: { channel: 'chromium' },
+                // Холст каталога — с уменьшенным движением, как снимки Chromatic (VR16).
+                contextOptions: { reducedMotion: 'reduce' },
               }),
               instances: [{ browser: 'chromium' }],
             },

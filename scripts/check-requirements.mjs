@@ -11,6 +11,7 @@ import {
   compareWithBaseline,
   findProblems,
   parseRequirements,
+  parseStoryRequirements,
   parseTestNames,
 } from './requirements.ts'
 
@@ -31,9 +32,15 @@ const read = file => readFileSync(resolve(root, file), 'utf8')
 const requirements = tracked('docs/decisions/0*.md').flatMap(file =>
   parseRequirements(read(file), file),
 )
-const tests = tracked('src/*.test.ts', 'src/*.test.tsx').flatMap(file =>
-  parseTestNames(read(file), file),
-)
+const tests = [
+  ...tracked('src/*.test.ts', 'src/*.test.tsx').flatMap(file =>
+    parseTestNames(read(file), file),
+  ),
+  // Истории каталога с `parameters.requirements` (ADR 0093, VR12).
+  ...tracked('src/*.stories.tsx').flatMap(file =>
+    parseStoryRequirements(read(file), file),
+  ),
+]
 const baseline = JSON.parse(read('scripts/requirements-baseline.json'))
 const problems = findProblems(requirements, tests)
 const { fresh, stale } = compareWithBaseline(problems, baseline)
