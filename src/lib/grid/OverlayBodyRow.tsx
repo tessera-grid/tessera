@@ -5,6 +5,7 @@ import { memo } from 'react'
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
+import { inertProp } from '../core/inertProp'
 import { Bubble } from '../ui/Bubble'
 import { CellWrapperContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -27,6 +28,8 @@ export const OverlayBodyRow = memo(
           'data-grid-body__row',
           styles['body__row--overlay__container'],
         )}
+        // Облако — визуальный клон: ни в дереве доступности, ни в фокусе (ADR 0006, D37).
+        {...inertProp(true)}
       >
         <div className={styles['body__row--overlay']}>
           <CellWrapperContent noPadding>

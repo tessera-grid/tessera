@@ -19,6 +19,7 @@ import {
   rowIdOrder,
   sortedRows,
 } from '../../rowDragging.dnd'
+import { violations } from './a11y-helpers'
 
 // Every Row Dragging requirement is its own named test, prefixed with its spec ID
 // (D1–D14, the row block of the shared drag & drop requirements table in
@@ -154,6 +155,31 @@ describe('Row Dragging — requirements', () => {
       await expect
         .poll(() => container.querySelector(OVERLAY) !== null)
         .toBe(true)
+    } finally {
+      firePointer('pointerup', document, hx, ty)
+    }
+  })
+
+  test('D37: облако перетаскивания строки — визуальный клон вне дерева доступности и фокуса: пока оно на экране, axe по таблице без нарушений', async () => {
+    const container = await renderRowDragging()
+    const rows = sortedRows(container)
+    const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
+    const target = rows[3]
+
+    const { hx } = await beginDrag(handle)
+    const tr = target.getBoundingClientRect()
+    const ty = tr.top + tr.height / 2
+    firePointer('pointermove', document, hx, ty)
+    await nextFrame()
+    await nextFrame()
+    try {
+      await expect
+        .poll(() => container.querySelector(OVERLAY) !== null)
+        .toBe(true)
+      expect(
+        container.querySelector(OVERLAY)!.closest('[inert]'),
+      ).not.toBeNull()
+      expect((await violations()).map(found => found.id)).toEqual([])
     } finally {
       firePointer('pointerup', document, hx, ty)
     }

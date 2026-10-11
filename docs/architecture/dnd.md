@@ -24,6 +24,11 @@ Head и body оборачиваются в отдельные обёртки, к
 > `role="table"`, где axe допускает только строки (`aria-required-children`). Обе
 > обёртки передают `accessibility={dndAccessibility}` (`grid/dnd/parameters.ts`),
 > и dnd-kit порталит эту разметку в `document.body` (ADR 0036, PQ4).
+>
+> Облака перетаскивания (`OverlayBodyRow`, `OverlayHeadCell`) тоже рисуются внутри
+> таблицы, пока идёт перетаскивание и анимация броска, и ролей строк у них нет. Оба —
+> визуальные клоны и помечены `inert`: вне дерева доступности и фокуса (ADR 0052, ND13;
+> ADR 0006, D37).
 
 ```mermaid
 flowchart TB
