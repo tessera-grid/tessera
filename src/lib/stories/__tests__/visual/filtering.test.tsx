@@ -53,9 +53,19 @@ const field = (key: 'value' | 'from' | 'to') =>
 const radio = (value: string) =>
   panel()!.querySelector<HTMLElement>(`[data-value="${value}"]`)!
 
+/**
+ * Ленивый тулбар (ADR 0061) загружен: заглушки нет. Без ожидания тест зависел бы от того,
+ * успел ли модуль загрузить предыдущий тест.
+ */
+const waitForToolbar = () =>
+  expect
+    .poll(() => document.querySelector('[class*="toolbar-placeholder"]'))
+    .toBeNull()
+
 const renderFiltering = async (args: Record<string, unknown> = {}) => {
   const screen = await render(<Stories.Filtering {...GRID} {...args} />)
   await waitForGrid()
+  await waitForToolbar()
   await expect.poll(rowIds).toEqual(ALL)
   return screen
 }
@@ -64,6 +74,7 @@ const renderFiltering = async (args: Record<string, unknown> = {}) => {
 const renderFilteringWith = async (args: Record<string, unknown>) => {
   const screen = await render(<Stories.Filtering {...GRID} {...args} />)
   await waitForGrid()
+  await waitForToolbar()
   return screen
 }
 
@@ -662,6 +673,7 @@ describe('Фильтрация — сочетания с плагинами', ()
     }
     await render(<EditingGrid />)
     await waitForGrid()
+    await waitForToolbar()
     await openFilter('age')
     await userEvent.type(field('value')!, '25')
     await userEvent.keyboard('{Escape}')
@@ -749,6 +761,7 @@ describe('Фильтрация — пустой результат, сервер
 
     // Пустые данные: строк нет, `waitForGrid` не дождётся.
     await render(<Stories.Filtering {...GRID} {...TOOLBAR} dataOverride={[]} />)
+    await waitForToolbar()
     await expect
       .poll(() => document.body.textContent?.includes('No Data!'))
       .toBe(true)
@@ -764,6 +777,7 @@ describe('Фильтрация — пустой результат, сервер
       />,
     )
     await waitForGrid()
+    await waitForToolbar()
     await applyTextFilter('name', 'zzz')
     await expect
       .poll(() => document.querySelector('[data-testid="custom-stub"]'))
@@ -784,6 +798,7 @@ describe('Фильтрация — пустой результат, сервер
       />,
     )
     await waitForGrid()
+    await waitForToolbar()
     await applyTextFilter('name', 'zzz')
     const custom = () =>
       document.querySelector<HTMLElement>('[data-testid="custom-reset"]')
@@ -802,6 +817,7 @@ describe('Фильтрация — пустой результат, сервер
     ] as const
     await render(<DirectGrid plugins={plugins} onTable={t => (table = t)} />)
     await waitForGrid()
+    await waitForToolbar()
 
     await openFilter('name')
     await userEvent.type(field('value')!, 'alice')
@@ -845,6 +861,7 @@ describe('Фильтрация — пустой результат, сервер
       />,
     )
     await waitForGrid()
+    await waitForToolbar()
     const checkbox = document.querySelector<HTMLElement>(
       '.data-grid__body-row[data-row-id="item-id-1"] [role="checkbox"]',
     )!
@@ -870,6 +887,7 @@ describe('Фильтрация — пустой результат, сервер
       />,
     )
     await waitForGrid()
+    await waitForToolbar()
     await applyTextFilter('name', 'alice')
     await new Promise(resolve => setTimeout(resolve, 100))
     expect(filteredCount()).toBeNull()
@@ -919,6 +937,7 @@ describe('Фильтрация — пустой результат, сервер
       />,
     )
     await waitForGrid()
+    await waitForToolbar()
     expect(filterButton('name')!.getAttribute('aria-label')).toBe('Фильтр')
     expect(
       filterButton('name')!.querySelector('[data-testid="custom-filter-icon"]'),
@@ -945,6 +964,7 @@ describe('Фильтрация — пустой результат, сервер
       const plugins = [columnFiltering({ debounceMs: 0 }), quickSearch()]
       await render(<DirectGrid plugins={plugins} colorMode={colorMode} />)
       await waitForGrid()
+      await waitForToolbar()
       const axeOf = async (root: Element) =>
         (await axe.run(root, AXE_OPTIONS)).violations
       const wrapper = () =>
