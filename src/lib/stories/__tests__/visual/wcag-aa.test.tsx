@@ -57,6 +57,10 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   test('W2: индикатор загрузки назван, грид несёт aria-busy', async () => {
     await renderGrid({ columnCount: 4, dataCount: 5, enableLoading: true })
     await waitForGrid()
+    // Индикатор — после задержки показа (ADR 0094, GL5).
+    await expect
+      .poll(() => document.querySelector('[role="progressbar"]'))
+      .not.toBeNull()
 
     const progress = document.querySelector('[role="progressbar"]')!
     expect(progress.getAttribute('aria-label')).toBe(DEFAULT_LABELS.loading)

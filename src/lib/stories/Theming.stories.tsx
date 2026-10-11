@@ -294,16 +294,10 @@ const GRID_TOKENS: TokenControl[] = [
     desc: 'Базовый цвет скелетон-заглушки при загрузке.',
   },
   {
-    token: '--tsr-comp-loader-track',
-    arg: 'loaderTrack',
-    label: 'loader-track',
-    desc: 'Цвет дорожки линейного прогресс-бара.',
-  },
-  {
     token: '--tsr-comp-loader-bar',
     arg: 'loaderBar',
     label: 'loader-bar',
-    desc: 'Цвет бегущей полосы прогресс-бара.',
+    desc: 'Цвет свечения обновления данных под шапкой (оттенки выводятся из него).',
   },
   {
     token: '--tsr-comp-scrollbar-thumb',

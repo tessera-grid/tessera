@@ -17,6 +17,7 @@ import { expect, userEvent, waitFor } from 'storybook/test'
 import {
   applyPseudoStates,
   bodyRow,
+  settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
@@ -64,8 +65,23 @@ export const Skeletons: StoryObj<StoryProps> = {
   },
 }
 
+/**
+ * Обновление данных (ADR 0094): свечение под шапкой и приглушённое тело — во всех
+ * режимах осей. Показ — после задержки `loadingOptions.delayMs`.
+ */
 export const Loading: StoryObj<StoryProps> = {
   name: 'Loading',
+  tags: ['vr-modes'],
+  parameters: vrModes(vrStates('body.refreshing')),
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    await until(() =>
+      expect(
+        canvasElement.querySelector('[data-refreshing] .data-grid__loader'),
+      ).not.toBeNull(),
+    )
+    await settle()
+  },
   args: {
     enableLoading: true,
   },

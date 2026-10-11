@@ -63,16 +63,21 @@ const resetCombo = () => {
 
 const style = (el: Element) => getComputedStyle(el)
 
-/** Элемент виден: есть размер, не скрыт, суммарная прозрачность предков не гасит. */
-const visible = (el: Element) => {
-  const rect = el.getBoundingClientRect()
-  if (rect.width <= 1 || rect.height <= 1) return false
-  if (style(el).visibility !== 'visible') return false
+/** Суммарная прозрачность элемента и предков. */
+const opacityOf = (el: Element) => {
   let opacity = 1
   for (let e: Element | null = el; e; e = e.parentElement) {
     opacity *= Number(style(e).opacity)
   }
-  return opacity >= 0.9
+  return opacity
+}
+
+/** Элемент виден: есть размер, не скрыт, прозрачность не ниже `min`. */
+const visible = (el: Element, min = 0.9) => {
+  const rect = el.getBoundingClientRect()
+  if (rect.width <= 1 || rect.height <= 1) return false
+  if (style(el).visibility !== 'visible') return false
+  return opacityOf(el) >= min
 }
 
 /** Выключенное WCAG освобождает от контраста. */
@@ -123,8 +128,16 @@ interface Finding {
   need: number
 }
 
-/** Нарушения порогов в корнях для одного сочетания. */
-const auditRoots = (scenario: string, combo: Combo, roots: Element[]) => {
+/**
+ * Нарушения порогов в корнях для одного сочетания. `dim` — приглушённое тело при
+ * обновлении данных (ADR 0094, GL12): его тексты сводятся по прозрачности и держат 3:1.
+ */
+const auditRoots = (
+  scenario: string,
+  combo: Combo,
+  roots: Element[],
+  dim?: number,
+) => {
   const more = combo.mode === 'more'
   const found = new Map<string, Finding>()
   let checked = 0
@@ -137,10 +150,25 @@ const auditRoots = (scenario: string, combo: Combo, roots: Element[]) => {
   }
   for (const root of roots) {
     for (const el of root.querySelectorAll('*')) {
-      if (!visible(el) || disabled(el)) continue
+      if (disabled(el)) continue
       // Прозрачная краска не рисует ничего: так скрыты кнопки строки до наведения.
       const painted = (color: string) => toRgba(color)[3]! > 0
-      if (ownText(el) && painted(style(el).color)) {
+      const dimmed = dim !== undefined && !!el.closest('.data-grid__body')
+      if (
+        dimmed &&
+        visible(el, dim * 0.9) &&
+        ownText(el) &&
+        painted(style(el).color)
+      ) {
+        const bg = effectiveBg(el)
+        const opacity = opacityOf(el)
+        const shown = toRgba(style(el).color)
+          .slice(0, 3)
+          .map((c, i) => c * opacity + bg[i]! * (1 - opacity))
+        report('text', el, contrast([...shown, 1], bg), 3)
+      }
+      if (!visible(el)) continue
+      if (!dimmed && ownText(el) && painted(style(el).color)) {
         const need = isLarge(el) ? (more ? 4.5 : 3) : more ? 7 : 4.5
         report(
           'text',
@@ -343,7 +371,13 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
         await applyCombo(combo)
         const { grids, popups } = gridsAndPopups(screen.container)
         const roots = [...grids, ...popups]
-        const result = auditRoots(`${requirement} ${story}`, combo, roots)
+        const dim = states.includes('body.refreshing')
+          ? Number(
+              style(screen.container.querySelector('.data-grid__body')!)
+                .opacity,
+            )
+          : undefined
+        const result = auditRoots(`${requirement} ${story}`, combo, roots, dim)
         audit.checked[comboLabel(combo)] = result.checked
         findings[requirement].push(...result.findings)
 
@@ -352,7 +386,16 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
         // Под открытым поповером текст грида перекрыт — axe его не считает; тот же
         // грид без поповера проверяют истории тела и шапки.
         for (const root of requirement === 'CX5' ? popups : roots) {
-          const result = await axe.run(root, { runOnly: [rule] })
+          // Приглушённое тело обновления держит 3:1 (ADR 0094, GL12) — его считает
+          // аудит выше; пороги axe к нему не относятся.
+          const dimmedBody =
+            dim === undefined
+              ? []
+              : [...root.querySelectorAll('.data-grid__body')]
+          const result = await axe.run(
+            { include: [root], exclude: dimmedBody },
+            { runOnly: [rule] },
+          )
           for (const v of result.violations) {
             for (const node of v.nodes) {
               const key = `CX7 ${story} | ${comboLabel(combo)} | axe | ${nodeName(node)}`

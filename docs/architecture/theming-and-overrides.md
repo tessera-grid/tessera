@@ -102,6 +102,13 @@
   по слою на уровень со сдвигом на шаг `--tsr-comp-row-nesting-indent` (ADR 0059).
   Маска, а не прямоугольник, тень или стоп градиента: те в 1px при дробном масштабе
   схлопываются в ноль (ADR 0084).
+- **Обновление данных** (ADR [0094](../decisions/0094-loading-glow.md)): свечение под
+  шапкой — оттенки `--tsr-comp-loader-glow-1…4` (по умолчанию синий `--tsr-comp-loader-bar`,
+  `--tsr-sys-info-sky`, `-indigo`, `-violet` с силой `--tsr-comp-loader-glow-opacity`,
+  у тёмной темы — `--tsr-sys-glow-strength` 100 %), глубина `--tsr-comp-loader-glow-size`,
+  проход цветов `--tsr-comp-loader-duration`, пульсация при уменьшенном движении
+  `--tsr-comp-loader-pulse-duration`; линия высокой контрастности —
+  `--tsr-comp-loader-height`; приглушение тела и футера — `--tsr-comp-loader-dim-opacity`.
 - **Индикатор включённого действия** (ADR [0062](../decisions/0062-active-action-indicator.md)):
   точка на кнопке заголовка и кебабе, номер приоритета сортировки, счётчики тулбара —
   `--tsr-comp-active-indicator` (по умолчанию `--tsr-comp-loader-bar`), цифры —

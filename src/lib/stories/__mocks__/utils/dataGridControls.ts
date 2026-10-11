@@ -15,6 +15,7 @@ import {
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
+import { DEFAULT_LOADING_OPTIONS } from '../../../../lib/core/loadingDisplay'
 import {
   DEFAULT_COLUMN_FILTERING_OPTIONS,
   DEFAULT_QUICK_SEARCH_OPTIONS,
@@ -46,6 +47,7 @@ import {
   enableKeyboardNavigationType,
   enableLeafPinningType,
   enableLoadingType,
+  loadingOptionsType,
   enableMultiSortType,
   enablePaginationType,
   enableInfiniteScrollType,
@@ -118,6 +120,7 @@ export const dataGridArgTypes = {
     enableSkeleton: enableSkeletonType,
     ...when('enableSkeleton', { skeletonOptions: skeletonOptionsType }),
     enableLoading: enableLoadingType,
+    ...when('enableLoading', { loadingOptions: loadingOptionsType }),
     contrast: contrastType,
     enableFooter: enableFooterType,
     enableToolbar: enableToolbarType,
@@ -271,6 +274,7 @@ export const dataGridDefaultArgs = {
   enableSkeleton: false,
   skeletonOptions: DEFAULT_SKELETON_OPTIONS,
   enableLoading: false,
+  loadingOptions: DEFAULT_LOADING_OPTIONS,
   contrast: 'auto',
   enableFooter: false,
   enableToolbar: PANEL_AUTO,

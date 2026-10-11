@@ -35,6 +35,7 @@ import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
+import { useLoadingDisplay } from './useLoadingDisplay'
 import type { Column, Table } from '../types'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
@@ -253,6 +254,11 @@ export const DataGrid = ({
 
   const showLinearProgress =
     (table.options as any).enableLoading && !showSkeleton
+  // Свечение и приглушение — с задержкой и минимумом; aria-busy и объявление — сразу.
+  const refreshing = useLoadingDisplay(
+    !!showLinearProgress,
+    (table.options as any).loadingOptions,
+  )
 
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
@@ -359,12 +365,11 @@ export const DataGrid = ({
                   data-tsr-color-mode={colorModeAttr}
                   data-toolbar={enableToolbar || undefined}
                   data-status-bar={hasStatusBar || undefined}
+                  data-refreshing={refreshing || undefined}
                   style={wrapperStyles}
                 >
                   {toolbar}
-                  {showLinearProgress && (
-                    <LinearProgress label={loadingLabel} />
-                  )}
+                  {refreshing && <LinearProgress label={loadingLabel} />}
                   <ScrollingAttribute getScrollElement={getScrollElement} />
                   <ShimmerSync getScrollElement={getScrollElement} />
                   {enableOverflowTooltip && (

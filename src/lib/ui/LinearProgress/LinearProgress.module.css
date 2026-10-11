@@ -9,36 +9,100 @@
     100% -
       var(--tsr-comp-scrollbar-actual-width, var(--tsr-comp-scrollbar-width))
   );
-  transform: translateY(
-    calc(var(--tsr-comp-head-height) - var(--tsr-comp-loader-height))
-  );
+  /* Свет начинается у нижней границы шапки и уходит вниз, на тело. */
+  transform: translateY(var(--tsr-comp-head-height));
   z-index: var(--tsr-comp-z-index-loader);
   opacity: var(--tsr-comp-opacity);
-  height: var(--tsr-comp-loader-height);
+  height: var(--tsr-comp-loader-glow-size);
   overflow: hidden;
-  background-color: var(--tsr-comp-loader-track);
+  pointer-events: none;
 }
 
-.bar {
+/*
+ * Полоса оттенков синего на границе шапки, размытая один раз: видна её нижняя
+ * половина — свет. Полоса вдвое шире грида и повторяет узор через половину, поэтому
+ * сдвиг на половину зациклен без шва.
+ */
+.glow {
   position: absolute;
-  height: 100%;
-  width: 100%;
-  background-color: var(--tsr-comp-loader-bar);
-  transform-origin: left center;
-  animation: data-grid-linear-progress 1.5s
-    cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+  top: calc(var(--tsr-comp-loader-glow-size) / -3);
+  left: 0;
+  width: 200%;
+  height: calc(var(--tsr-comp-loader-glow-size) * 2 / 3);
+  filter: blur(calc(var(--tsr-comp-loader-glow-size) / 3));
 }
 
-@keyframes data-grid-linear-progress {
-  0% {
-    transform: translateX(-100%) scaleX(0.4);
+.flow {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tsr-comp-loader-glow-1) 0%,
+    var(--tsr-comp-loader-glow-2) 12.5%,
+    var(--tsr-comp-loader-glow-3) 25%,
+    var(--tsr-comp-loader-glow-4) 37.5%,
+    var(--tsr-comp-loader-glow-1) 50%
+  );
+  animation:
+    data-grid-loader-flow var(--tsr-comp-loader-duration) linear infinite,
+    data-grid-loader-breathe calc(var(--tsr-comp-loader-duration) * 0.71)
+      ease-in-out infinite alternate;
+}
+
+/* Встречный слой медленнее и со своим дыханием: узор не повторяется заметно. */
+.counter {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--tsr-comp-loader-glow-2) 15%,
+    transparent 30%,
+    var(--tsr-comp-loader-glow-3) 40%,
+    transparent 50%
+  );
+  animation:
+    data-grid-loader-flow calc(var(--tsr-comp-loader-duration) * 1.63) linear
+      infinite reverse,
+    data-grid-loader-breathe calc(var(--tsr-comp-loader-duration) * 1.17)
+      ease-in-out infinite alternate-reverse;
+}
+
+/* Линия только для высокой контрастности: там теней нет. Цвет — токен загрузки. */
+.line {
+  display: none;
+  background-color: var(--tsr-comp-loader-bar);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tsr-comp-loader-height);
+}
+
+@keyframes data-grid-loader-flow {
+  from {
+    transform: translateX(0);
   }
 
-  50% {
-    transform: translateX(20%) scaleX(0.6);
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes data-grid-loader-breathe {
+  from {
+    opacity: 0.55;
   }
 
-  100% {
-    transform: translateX(100%) scaleX(0.5);
+  to {
+    opacity: 1;
+  }
+}
+
+/* Высокая контрастность (ADR 0087): теней нет — линия во всю ширину цветом выбора. */
+@media (forced-colors: active) {
+  .glow {
+    display: none;
+  }
+
+  .line {
+    display: block;
+    background-color: Highlight;
   }
 }

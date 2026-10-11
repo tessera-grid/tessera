@@ -19,8 +19,8 @@ import { contrast, effectiveBg, toRgba } from './a11y-helpers'
 
 const composed = composeStories(stories)
 
-/** Полоса линейного прогресса — дочерний div контейнера `role="progressbar"`. */
-const LOADER_BAR = '[role="progressbar"] > div'
+/** Бегущая линия индикатора загрузки (ADR 0094). */
+const LOADER_BAR = '.data-grid__loader-line'
 const THEME_WRAPPER = `.${'data-grid-theme'}`
 
 type Args = Partial<Parameters<typeof composed.Playground>[0]>

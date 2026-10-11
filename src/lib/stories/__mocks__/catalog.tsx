@@ -36,6 +36,7 @@ export const CATALOG_STATES = {
     'error',
     'highlight',
     'cellRange',
+    'refreshing',
     'treeLines',
     'groups',
     'pinnedStart',

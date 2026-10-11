@@ -29,6 +29,7 @@ import type {
   PluginDiagnosticSource,
 } from './pluginDiagnostics'
 import type { SkeletonOptions } from './skeletonOptions'
+import type { LoadingOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
 /** Бизнес-контракт хуков. */
@@ -67,6 +68,8 @@ export interface CommonOptions {
   rowHeight?: number
   headerHeight?: number
   skeletonOptions?: SkeletonOptions
+  /** Задержка и минимум показа обновления (ADR 0094). */
+  loadingOptions?: LoadingOptions
   /**
    * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
    * `undefined` — строк столько, сколько в `data` (ADR 0081).

@@ -41,7 +41,8 @@
   outline: 1px solid transparent;
   outline-offset: -1px;
 
-  &:hover:not([data-actions-column-cell='true']):is(
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    &:hover:not([data-actions-column-cell='true']):is(
       [data-cell-interact='true']
     ) {
     outline-color: var(--tsr-comp-cell-outline-color);

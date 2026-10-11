@@ -187,10 +187,18 @@ describe('Toolbar', () => {
       rect(head()).bottom
 
     const plain = await render(<Stories.AllFeatures {...GRID} enableLoading />)
+    // Индикатор — после задержки показа (ADR 0094, GL5).
+    await expect
+      .poll(() => document.querySelector('[role="progressbar"]'))
+      .not.toBeNull()
     const withoutToolbar = offsetFromHead()
     await plain.unmount()
 
     await mount(<Stories.WithToolbar {...GRID} enableLoading />)
+    // Индикатор — после задержки показа (ADR 0094, GL5).
+    await expect
+      .poll(() => document.querySelector('[role="progressbar"]'))
+      .not.toBeNull()
     expect(offsetFromHead()).toBe(withoutToolbar)
     expect(
       rect(document.querySelector('[role="progressbar"]')!).top,

@@ -171,6 +171,7 @@ const StoryGrid = memo(
       enableSkeleton: options.enableSkeleton,
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
+      loadingOptions: options.loadingOptions,
       enableFooter: options.enableFooter,
       enableToolbar: panelFlag(options.enableToolbar),
       enableStatusBar: panelFlag(options.enableStatusBar),

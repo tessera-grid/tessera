@@ -19,6 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
+import type { LoadingOptions } from './loadingDisplay'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
 import { getColumnsSignature, injectServiceColumns } from './createColumns'
@@ -67,6 +68,7 @@ export interface CreateDataGridOptions {
   enableAnnouncements?: boolean
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
+  loadingOptions?: LoadingOptions
   rowHeight?: number
   headerHeight?: number
   defaultColumn?: DefaultColumnSizing
@@ -104,6 +106,8 @@ export type UseCreateTableParams<
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
+  /** Задержка и минимум показа обновления при `enableLoading` (ADR 0094). */
+  loadingOptions?: LoadingOptions
   /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
   rowHeight?: number
   /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
@@ -133,6 +137,7 @@ export const useCreateTable = <
   enableAnnouncements,
   enableOverflowTooltip,
   skeletonOptions,
+  loadingOptions,
   rowHeight,
   headerHeight,
   defaultColumn,
@@ -315,6 +320,7 @@ export const useCreateTable = <
     enableAnnouncements,
     enableOverflowTooltip,
     skeletonOptions,
+    loadingOptions,
     rowHeight,
     headerHeight,
   }

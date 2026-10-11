@@ -102,6 +102,10 @@ describe('Дерево доступности (AX)', () => {
   test('AX4: загрузка — корень busy, progressbar "Loading"', async () => {
     await renderGrid({ columnCount: 3, dataCount: 3, enableLoading: true })
     await waitForGrid()
+    // Индикатор — после задержки показа (ADR 0094, GL5).
+    await expect
+      .poll(() => document.querySelector('[role="progressbar"]'))
+      .not.toBeNull()
 
     expect(
       pick(await axTree('document'), ['table', 'progressbar']),

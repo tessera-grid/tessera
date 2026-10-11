@@ -11,6 +11,7 @@ import {
 } from '../../../../lib/plugins/pagination/registry'
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
+import { DEFAULT_LOADING_OPTIONS } from '../../../../lib/core/loadingDisplay'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
 import {
   DEFAULT_ROW_HEIGHT,
@@ -180,7 +181,12 @@ export const contrastType: InputType = {
   table: { defaultValue: { summary: 'auto' } },
 }
 export const enableLoadingType = booleanControl(
-  'Прогресс-бар загрузки над телом грида (`enableLoading`)',
+  'Обновление данных (`enableLoading`): свечение под шапкой и приглушение тела (ADR 0094)',
+)
+export const loadingOptionsType = objectControl(
+  'Показ обновления: `delayMs` — задержка, `minDurationMs` — минимум показа, мс',
+  'LoadingOptions',
+  DEFAULT_LOADING_OPTIONS,
 )
 export const enableFooterType = booleanControl(
   'Футер с агрегированными значениями колонок (`enableFooter`)',

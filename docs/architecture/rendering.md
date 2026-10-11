@@ -255,8 +255,12 @@ start` — кнопка держит свою ширину, обёртка её 
   единственный источник: скелет снимается в том же рендере, без задержки.
 - Отдельно от него — скелеты ячеек при быстрой прокрутке (`FastScrollProvider`,
   [ADR 0008](../decisions/0008-fast-scroll.md)).
-- `enableLoading` → полоса `LinearProgress` под заголовком для асинхронных
-  обновлений.
+- `enableLoading` → обновление данных при старых строках (ADR [0094](../decisions/0094-loading-glow.md)):
+  свечение под шапкой (`LinearProgress`), приглушённые тело и строка футера
+  (`data-refreshing` на обёртке), тело без откликов на наведение. Показ — через
+  `loadingOptions.delayMs` и не короче `minDurationMs` (`useLoadingDisplay`);
+  `aria-busy` и объявление — по флагу сразу. Рецепт с TanStack Query:
+  `enableSkeleton: isLoading`, `enableLoading: isFetching && !isLoading`.
 
 ### Ленивые поповеры и меню
 

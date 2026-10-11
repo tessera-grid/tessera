@@ -8,3 +8,13 @@
     border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
   }
 }
+
+/* Обновление данных (ADR 0094): строки приглушены — они скоро заменятся. */
+.body {
+  transition: opacity var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+:global(.data-grid-theme[data-refreshing]) .body {
+  opacity: var(--tsr-comp-loader-dim-opacity);
+}

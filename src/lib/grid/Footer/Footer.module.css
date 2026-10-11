@@ -18,3 +18,14 @@
   flex: 1 0 auto;
   height: 100%;
 }
+
+/* Обновление данных (ADR 0094): приглушена строка, а не футер — его фон закрывает
+ * строки тела, прокрученные под него. */
+.footer__row {
+  transition: opacity var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+:global(.data-grid-theme[data-refreshing]) .footer__row {
+  opacity: var(--tsr-comp-loader-dim-opacity);
+}

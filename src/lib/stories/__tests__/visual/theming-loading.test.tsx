@@ -59,17 +59,9 @@ describe('Theming matrix — loading / tooltip / icons', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 
-    test('TT-33 linear progress track = --tsr-comp-loader-track', async () => {
-      const c = await renderThemed(<LinearProgress label="Loading" />, dark)
-      const track = c.querySelector('[role="progressbar"]')!
-      expect(read(track, 'background-color')).toBe(
-        resolveColor('--tsr-comp-loader-track', dark),
-      )
-    })
-
     test('TT-33b linear progress bar = --tsr-comp-loader-bar', async () => {
       const c = await renderThemed(<LinearProgress label="Loading" />, dark)
-      const bar = c.querySelector('[role="progressbar"] > div')!
+      const bar = c.querySelector('.data-grid__loader-line')!
       expect(read(bar, 'background-color')).toBe(
         resolveColor('--tsr-comp-loader-bar', dark),
       )

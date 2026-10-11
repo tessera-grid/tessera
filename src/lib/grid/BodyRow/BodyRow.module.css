@@ -14,9 +14,9 @@
     background-color: var(--tsr-comp-row-odd-bg);
   }
 
-  /* Бэкграунд строки при наведении (hover) */
+  /* Бэкграунд строки при наведении (hover); во время обновления данных — нет (ADR 0094). */
 
-  &:hover {
+  :where(:global(.data-grid-theme):not([data-refreshing])) &:hover {
     background-color: var(--tsr-comp-row-hovered-bg);
     outline: var(--tsr-comp-row-hovered-outline);
     outline-offset: -1px;
@@ -32,7 +32,8 @@
 
   /* Бэкграунд выбранной строки при наведении (selected + hover) */
 
-  &:hover:is([data-selected='true']) {
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    &:hover:is([data-selected='true']) {
     background-color: var(--tsr-comp-row-selected-hovered-bg);
   }
 
@@ -58,7 +59,8 @@
 
   /* selected + hover + pinned */
 
-  &:hover:is([data-selected='true'])
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    &:hover:is([data-selected='true'])
     > :global(
       .data-grid__body-cell:is(
         [data-cell-pinned='left'],
@@ -75,7 +77,8 @@
 
   /* not selected + hover + pinned */
 
-  &:hover:not([data-selected='true'])
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    &:hover:not([data-selected='true'])
     > :global(
       .data-grid__body-cell:is(
         [data-cell-pinned='left'],
@@ -206,7 +209,7 @@
  * фокуса на `Highlight` — `HighlightText`. Блик подсветки и слой прихода не рисуются.
  */
 @media (forced-colors: active) {
-  .body__row:hover {
+  :where(:global(.data-grid-theme):not([data-refreshing])) .body__row:hover {
     outline: 1px solid Highlight;
     outline-offset: -1px;
   }

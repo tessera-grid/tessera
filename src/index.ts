@@ -4,6 +4,7 @@ export {
 } from './lib/core/useCreateTable'
 export type { TesseraFeatures } from './lib/core/features'
 export type { SkeletonOptions } from './lib/core/skeletonOptions'
+export type { LoadingOptions } from './lib/core/loadingDisplay'
 export type {
   ColumnOption,
   ColumnOptionsDef,

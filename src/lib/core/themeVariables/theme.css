@@ -41,6 +41,12 @@
   --tsr-ref-amber-500: #f59e0b;
   --tsr-ref-green-400: #4ade80;
   --tsr-ref-green-500: #22c55e;
+  --tsr-ref-sky-400: #38bdf8;
+  --tsr-ref-sky-500: #0ea5e9;
+  --tsr-ref-indigo-400: #818cf8;
+  --tsr-ref-indigo-500: #6366f1;
+  --tsr-ref-violet-400: #a78bfa;
+  --tsr-ref-violet-500: #8b5cf6;
 
   --tsr-ref-space-1: 4px;
   --tsr-ref-space-4: 16px;
@@ -67,6 +73,12 @@
   --tsr-sys-ring: var(--ring, var(--tsr-ref-neutral-900));
   --tsr-sys-danger: var(--destructive, var(--tsr-ref-red-500));
   --tsr-sys-info: var(--info, var(--tsr-ref-blue-500));
+  /* Оттенки свечения загрузки рядом с info (ADR 0094). */
+  --tsr-sys-info-sky: var(--tsr-ref-sky-500);
+  --tsr-sys-info-indigo: var(--tsr-ref-indigo-500);
+  --tsr-sys-info-violet: var(--tsr-ref-violet-500);
+  /* Сила свечения загрузки: на тёмном фоне свет нужен плотнее. */
+  --tsr-sys-glow-strength: 70%;
   /* Тоны подсветки (ADR 0080): внимание и подтверждение. */
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-500));
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
@@ -144,6 +156,11 @@
   --tsr-sys-ring: var(--ring, var(--tsr-ref-neutral-300));
   --tsr-sys-danger: var(--destructive, var(--tsr-ref-red-400));
   --tsr-sys-info: var(--info, var(--tsr-ref-blue-400));
+  /* Оттенки свечения загрузки рядом с info (ADR 0094). */
+  --tsr-sys-info-sky: var(--tsr-ref-sky-400);
+  --tsr-sys-info-indigo: var(--tsr-ref-indigo-400);
+  --tsr-sys-info-violet: var(--tsr-ref-violet-400);
+  --tsr-sys-glow-strength: 100%;
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-400));
   --tsr-sys-success: var(--success, var(--tsr-ref-green-400));
   --tsr-sys-elevated: color-mix(
@@ -240,6 +257,14 @@
     color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
 
   --tsr-comp-loader-height: 2px;
+  /* Свечение загрузки (ADR 0094): насколько вниз от шапки и насколько ярко. */
+  --tsr-comp-loader-glow-size: 24px;
+  --tsr-comp-loader-glow-opacity: var(--tsr-sys-glow-strength);
+  /* Проход цветов вдоль шапки; при уменьшенном движении — период пульсации. */
+  --tsr-comp-loader-duration: 2s;
+  --tsr-comp-loader-pulse-duration: 2.4s;
+  /* Приглушение тела и футера, пока данные обновляются (ADR 0094). */
+  --tsr-comp-loader-dim-opacity: 0.6;
   --tsr-comp-row-height: 50px;
   /* Высота строки шапки (ADR 0077): по умолчанию — как у строк тела. */
   --tsr-comp-head-row-height: var(--tsr-comp-row-height);
@@ -587,14 +612,32 @@
     var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) / 2),
     transparent
   );
-  --tsr-comp-loader-track: color-mix(
-    in oklch,
-    var(--tsr-sys-fg) 10%,
-    transparent
-  );
   /* Загрузка — статус, а не бренд-акцент (как ошибка остаётся красной): полоса
    * держит синий (info), чтобы активность читалась сразу. */
   --tsr-comp-loader-bar: var(--tsr-sys-info);
+  /* Свечение загрузки (ADR 0094) — цвет полосы с силой свечения. */
+  --tsr-comp-loader-glow-color: color-mix(
+    in oklch,
+    var(--tsr-comp-loader-bar) var(--tsr-comp-loader-glow-opacity),
+    transparent
+  );
+  /* Оттенки переливания по кругу: синий, голубой, индиго, фиолетовый. */
+  --tsr-comp-loader-glow-1: var(--tsr-comp-loader-glow-color);
+  --tsr-comp-loader-glow-2: color-mix(
+    in oklch,
+    var(--tsr-sys-info-sky) var(--tsr-comp-loader-glow-opacity),
+    transparent
+  );
+  --tsr-comp-loader-glow-3: color-mix(
+    in oklch,
+    var(--tsr-sys-info-indigo) var(--tsr-comp-loader-glow-opacity),
+    transparent
+  );
+  --tsr-comp-loader-glow-4: color-mix(
+    in oklch,
+    var(--tsr-sys-info-violet) var(--tsr-comp-loader-glow-opacity),
+    transparent
+  );
 
   /* Знак «действие включено» (ADR 0062): точка на кнопке и счётчики — цветом полосы
    * загрузки. Цифры — цветом поверхности: белые на синем тёмной темы не держат 4,5:1. */
@@ -654,6 +697,26 @@
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  /* Исключение (ADR 0094, GL4): загрузка не замирает — свечение во всю ширину
+   * медленно меняет яркость без смещения. */
+  .data-grid-theme .data-grid__loader-glow {
+    animation-name: data-grid-loader-pulse !important;
+    animation-duration: var(--tsr-comp-loader-pulse-duration) !important;
+    animation-timing-function: ease-in-out !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+@keyframes data-grid-loader-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
   }
 }
 
@@ -803,6 +866,11 @@
   --tsr-sys-ring: var(--tsr-ref-neutral-900);
   --tsr-sys-danger: var(--tsr-ref-red-500);
   --tsr-sys-info: var(--tsr-ref-blue-500);
+  /* Оттенки свечения загрузки рядом с info (ADR 0094). */
+  --tsr-sys-info-sky: var(--tsr-ref-sky-500);
+  --tsr-sys-info-indigo: var(--tsr-ref-indigo-500);
+  --tsr-sys-info-violet: var(--tsr-ref-violet-500);
+  --tsr-sys-glow-strength: 70%;
   --tsr-sys-warning: var(--tsr-ref-amber-500);
   --tsr-sys-success: var(--tsr-ref-green-500);
 }

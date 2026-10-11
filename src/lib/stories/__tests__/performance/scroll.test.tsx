@@ -906,3 +906,66 @@ describe('Производительность прокрутки — кнопк
     PERF_TIMEOUT * 2,
   )
 })
+
+// Обновление данных (ADR 0094, GL13): 1000×1000, спокойная прокрутка со свечением и
+// приглушённым телом против той же выборки без обновления.
+describe('Производительность прокрутки — свечение загрузки', () => {
+  test(
+    'GL13: прокрутка 1000×1000 во время обновления данных — в пределах потолков P11; база без обновления в дашборде',
+    async () => {
+      const measure = async (loading: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableLoading: loading,
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('.data-grid__loader') !== null)
+          .toBe(loading)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const base = await measure(false)
+      const loading = await measure(true)
+      const ceiling = { y: 26, x: 40 }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'loading',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          knownShortfall: false,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            budgetMs: ceiling[axis],
+            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            ...r[axis],
+          })),
+        })
+      await record('GL13-base', 'без обновления', base, false)
+      await record('GL13', 'обновление: свечение и приглушение', loading, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          loading[axis].p95Ms,
+          `${axis} p95=${loading[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
