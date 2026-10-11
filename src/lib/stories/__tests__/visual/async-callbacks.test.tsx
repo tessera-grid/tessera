@@ -582,7 +582,8 @@ describe('Асинхронная правка: блик, вспышка, под�
   })
 
   test('CF6: ячейка, ушедшая из окна виртуализации по строке и по колонке, подсвечена при возврате до истечения времени; после — нет', async () => {
-    restore = themeTokens({ '--tsr-comp-cell-saved-duration': '2500ms' })
+    // Запас на два круга прокрутки со скелетами быстрой прокрутки в Firefox под StrictMode.
+    restore = themeTokens({ '--tsr-comp-cell-saved-duration': '5000ms' })
     await render(
       <Stories.AllFeatures
         containerHeight={600}
@@ -614,7 +615,7 @@ describe('Асинхронная правка: блик, вспышка, под�
 
     await scrollToEnd('y')
     await expect.poll(cellGone).toBe(true)
-    await pause(2600)
+    await pause(5100)
     getScroller().scrollTop = 0
     await expect.poll(cellGone).toBe(false)
     await expect

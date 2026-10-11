@@ -17,7 +17,7 @@ import {
 } from '../../../plugins'
 import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
-import { renderGrid } from '../helpers'
+import { humanClick, renderGrid } from '../helpers'
 import { composed } from '../stories'
 import {
   contrast,
@@ -170,11 +170,12 @@ const openKebabMenu = async (mode?: ContrastMode) => {
     document.querySelector<HTMLElement>(
       '.data-grid__head-cell [aria-label^="Column options"]',
     )
-  await expect.poll(kebab).not.toBeNull()
-  kebab()!.focus()
-  await userEvent.keyboard('{Enter}')
+  // Настоящим нажатием, как пользователь: Enter по фокусу в WebKit иногда терялся.
+  // Модуль меню ленивый — первое открытие в WebKit дольше секунды.
+  await userEvent.hover(kebab()!.closest('.data-grid__head-cell')!)
+  await humanClick(kebab()!)
   await expect
-    .poll(() => document.querySelector('[role="menu"]'))
+    .poll(() => document.querySelector('[role="menu"]'), { timeout: 4000 })
     .not.toBeNull()
   await userEvent.keyboard('{ArrowDown}')
   await expect

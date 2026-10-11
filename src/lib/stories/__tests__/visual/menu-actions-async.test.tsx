@@ -274,7 +274,8 @@ const openRowMenu = async (id = 'r1') => {
   await userEvent.hover(nameCell(id))
   await expect.poll(() => rowKebab(id)).not.toBeNull()
   await humanClick(rowKebab(id)!)
-  await expect.poll(() => items().length).toBeGreaterThan(0)
+  // Модуль меню ленивый: под нагрузкой полного прогона Firefox открывает дольше секунды.
+  await expect.poll(() => items().length, { timeout: 4000 }).toBeGreaterThan(0)
 }
 const closeMenu = async () => {
   await userEvent.keyboard('{Escape}')
