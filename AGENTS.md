@@ -686,7 +686,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `display: contents`); CB5–CB6 идут и в `test:browsers`
       ([ADR 0084](docs/decisions/0084-cross-browser-support.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
-      неизвестный ID, коллизия, устаревшая запись базы,
+      неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
+      дерева, удалённый непроиндексированный файл не роняет сверку,
       [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).

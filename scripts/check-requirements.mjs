@@ -3,7 +3,6 @@
 // на момент принятия — в requirements-baseline.json; список только сокращается.
 // Запуск: `npm run check:requirements`.
 
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -14,19 +13,10 @@ import {
   parseStoryRequirements,
   parseTestNames,
 } from './requirements.ts'
+import { listSources } from './requirementSources.ts'
 
 const root = process.cwd()
-const tracked = (...patterns) =>
-  execFileSync(
-    'git',
-    ['ls-files', '--cached', '--others', '--exclude-standard', ...patterns],
-    {
-      cwd: root,
-      encoding: 'utf8',
-    },
-  )
-    .split('\n')
-    .filter(Boolean)
+const tracked = (...patterns) => listSources(root, patterns)
 const read = file => readFileSync(resolve(root, file), 'utf8')
 
 const requirements = tracked('docs/decisions/0*.md').flatMap(file =>

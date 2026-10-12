@@ -1,3 +1,8 @@
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -7,6 +12,7 @@ import {
   parseStoryRequirements,
   parseTestNames,
 } from '../../../scripts/requirements'
+import { listSources } from '../../../scripts/requirementSources'
 
 // Сверка «требование ↔ тест» (ADR 0043, TQ10).
 
@@ -163,5 +169,31 @@ describe('Сверка требований и тестов', () => {
     expect(
       findProblems(requirements, tests).map(p => `${p.kind}:${p.id}`),
     ).toEqual(['duplicate:SS3', 'missing:SS2', 'unknown:ZZ8'])
+  })
+
+  it('TQ11: источники сверки — рабочее дерево: удалённый, но не проиндексированный файл не читается и не роняет сверку, новый неотслеживаемый — читается', () => {
+    const root = mkdtempSync(join(tmpdir(), 'tsr-sources-'))
+    const git = (...args: string[]) =>
+      execFileSync(
+        'git',
+        ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args],
+        { cwd: root, encoding: 'utf8' },
+      )
+    try {
+      git('init', '-q')
+      writeFileSync(join(root, 'kept.md'), 'kept')
+      writeFileSync(join(root, 'deleted.md'), 'deleted')
+      git('add', '.')
+      git('commit', '-q', '-m', 'init')
+      // Удалён на диске, удаление не проиндексировано — индекс его ещё помнит.
+      unlinkSync(join(root, 'deleted.md'))
+      writeFileSync(join(root, 'fresh.md'), 'fresh')
+      expect(listSources(root, ['*.md']).sort()).toEqual([
+        'fresh.md',
+        'kept.md',
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
