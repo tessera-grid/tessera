@@ -219,8 +219,6 @@ const ALLOWED_INCOMPLETE: Record<string, string> = {
     'линии дерева и отметки — псевдоэлементы без текста; текст строки считает CX1',
   shortTextContent:
     'номер приоритета и счётчики из одной-двух цифр; их контраст считает CX3–CX4',
-  elmPartiallyObscured:
-    'пункты за краем прокручиваемого списка панели; их контраст считает CX5 без учёта прокрутки',
   bgOverlap:
     'в стопке под текстом — прозрачный слой блика ячейки или грид под непрозрачным поповером; фон — у предков, его складывает effectiveBg, CX1–CX5',
 }
@@ -230,6 +228,27 @@ const reasonOf = (node: axe.NodeResult) => {
   return check?.id === 'error-occurred'
     ? `ошибка axe: ${(check.data as { message?: string } | null)?.message}`
     : (check?.data as { messageKey?: string } | null)?.messageKey
+}
+
+/**
+ * Узел у края прокрутки (`elmPartiallyObscured`) axe не считает: узел прокручивается в
+ * поле зрения и проверяется отдельно, прокрутка предков затем возвращается.
+ */
+const runUnobscured = async (node: axe.NodeResult, rule: string) => {
+  const el = document.querySelector(node.target.join(' '))!
+  const scrolled: [Element, number, number][] = []
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    scrolled.push([p, p.scrollTop, p.scrollLeft])
+  }
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  try {
+    return await axe.run({ include: [el] }, { runOnly: [rule] })
+  } finally {
+    for (const [p, top, left] of scrolled) {
+      p.scrollTop = top
+      p.scrollLeft = left
+    }
+  }
 }
 
 const nodeName = (node: axe.NodeResult) => {
@@ -396,24 +415,33 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
             { include: [root], exclude: dimmedBody },
             { runOnly: [rule] },
           )
-          for (const v of result.violations) {
-            for (const node of v.nodes) {
-              const key = `CX7 ${story} | ${comboLabel(combo)} | axe | ${nodeName(node)}`
-              seen.add(key)
-              if (!(key in known)) {
-                axeProblems.push(`${key}: ${node.failureSummary}`)
+          const obscured: axe.NodeResult[] = []
+          const collect = (outcome: axe.AxeResults) => {
+            for (const v of outcome.violations) {
+              for (const node of v.nodes) {
+                const key = `CX7 ${story} | ${comboLabel(combo)} | axe | ${nodeName(node)}`
+                seen.add(key)
+                if (!(key in known)) {
+                  axeProblems.push(`${key}: ${node.failureSummary}`)
+                }
+              }
+            }
+            for (const v of outcome.incomplete) {
+              for (const node of v.nodes) {
+                const reason = reasonOf(node)
+                if (reason && reason in ALLOWED_INCOMPLETE) continue
+                if (reason === 'elmPartiallyObscured' && outcome === result) {
+                  obscured.push(node)
+                  continue
+                }
+                axeProblems.push(
+                  `CX7 incomplete ${story} | ${comboLabel(combo)} | ${nodeName(node)} | ${reason ?? 'без причины'}`,
+                )
               }
             }
           }
-          for (const v of result.incomplete) {
-            for (const node of v.nodes) {
-              const reason = reasonOf(node)
-              if (reason && reason in ALLOWED_INCOMPLETE) continue
-              axeProblems.push(
-                `CX7 incomplete ${story} | ${comboLabel(combo)} | ${nodeName(node)} | ${reason ?? 'без причины'}`,
-              )
-            }
-          }
+          collect(result)
+          for (const node of obscured) collect(await runUnobscured(node, rule))
         }
       }
       resetCombo()
