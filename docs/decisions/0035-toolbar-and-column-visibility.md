@@ -2,6 +2,11 @@
 
 - **Статус:** Принято (реализовано, фазы 1–4; I4 — известный недостиг)
 - **Дата:** 2026-09-29
+- **Изменено:** [ADR 0098](0098-button-system.md) (2026-10-12) — `ToolbarButton`
+  собирается из `IconButton` (`shape="square"`): размер `--tsr-comp-button-size`,
+  скругление `--tsr-comp-button-radius-square` (`--tsr-comp-toolbar-button-radius`
+  удалён); тултип — у базы; активная кнопка — цвет и точка, фон — при наведении и пока
+  открыт её поповер.
 - **Связано:**
   - [ADR 0062](0062-active-action-indicator.md) — число скрытых колонок пузырьком на
     кнопке «Колонки» (AI7).
@@ -257,7 +262,7 @@ columnVisibility({
 
 | ID   | Требование                                                                                                                     | Вид    |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| TB13 | `ToolbarButton` квадратная, радиус `--tsr-comp-toolbar-button-radius`, размер `--tsr-comp-toolbar-button-size` (≥ 24×24)       | visual |
+| TB13 | `ToolbarButton` квадратная, радиус `--tsr-comp-button-radius-square`, размер `--tsr-comp-toolbar-button-size` (≥ 24×24)        | visual |
 | TB14 | Цвета состояний F4: покой, hover, активное, disabled (`control-disabled-color`), фокус (`focus-ring`); переход — единый (TC-2) | visual |
 | TB15 | Подпись кнопки — тултип и доступное имя                                                                                        | visual |
 

@@ -57,9 +57,15 @@
 - **Рамка и тулбар** (ADR 0035): рамка грида — `--tsr-comp-frame-border-color` /
   `-border-width` / `-radius` (ширина `0` убирает рамку); тулбар —
   `--tsr-comp-toolbar-height` / `-padding-x` / `-gap` / `-bg` / `-divider-color`,
-  кнопки F4 — `--tsr-comp-toolbar-button-size` / `-button-radius`.
+  высота контролов панелей — `--tsr-comp-toolbar-button-size` (размер кнопок кита).
   `--tsr-comp-toolbar-offset` выставляет сам грид при `enableToolbar` — его не
   переопределяют.
+- **Кнопки кита** (ADR [0098](../decisions/0098-button-system.md)): `Button` и
+  `IconButton` делят `--tsr-comp-button-size` (32px), `-icon-size` (16px), формы
+  `-radius-circle` (50%) и `-radius-square` (`--tsr-comp-control-radius`) и цвет
+  покоя `-color`; у `Button` ещё `-padding-x` / `-gap` / `-border` (ADR
+  [0097](../decisions/0097-text-button.md)). Все кнопки грида и плагинов собраны из
+  этих двух баз — тема меняет их разом.
 - **Нижняя панель** (ADR 0038): `--tsr-comp-status-bar-height` / `-padding-x` /
   `-gap` / `-bg` / `-divider-color`. `--tsr-comp-status-bar-offset` выставляет сам
   грид, когда есть `statusBarSlot`, — его не переопределяют.
