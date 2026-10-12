@@ -4,7 +4,9 @@ import { afterEach, describe, expect, test } from 'vitest'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { measureScrollWork, recordPerf, renderGrid } from '../helpers'
 import { waitForGrid } from '../visual/core-helpers'
+import { againstBase, axesCeiling, medianAxes } from './baseline'
 import {
+  ANIMATION_BUDGET_MS,
   CONTENT_SCROLL,
   CPU_THROTTLE_RATE,
   LARGE,
@@ -14,7 +16,7 @@ import {
 
 // Высокая контрастность (ADR 0087, HC12): спокойная прокрутка 1000×1000 с выбранными
 // строками, подсветкой и линиями дерева в `forced-colors: active` против того же грида
-// в обычном режиме. Потолок — как у HL19 (1000×1000 с подсветкой).
+// в обычном режиме.
 
 const fc = commands as unknown as {
   forcedColors: (active: boolean) => Promise<void>
@@ -41,11 +43,12 @@ const selectionSeed = (rows: number): TesseraFeatureEntry => {
   }
 }
 
-const CEILING = { y: 26, x: 40 }
+/** Цена режима против того же грида в обычном режиме (ADR 0099, §1а). */
+const HC12_COST = { ratio: 1.3, plusMs: 4 }
 
 describe('Производительность прокрутки — высокая контрастность', () => {
   test(
-    'HC12: прокрутка 1000×1000 с выбором, подсветкой и линиями дерева в forced-colors — в пределах потолка HL19; база в обычном режиме в дашборде',
+    'HC12: прокрутка 1000×1000 с выбором, подсветкой и линиями дерева в forced-colors не дороже того же грида в обычном режиме',
     async () => {
       const measure = async (forced: boolean) => {
         await fc.forcedColors(forced)
@@ -75,8 +78,10 @@ describe('Производительность прокрутки — высок
         return { y, x }
       }
 
-      const base = await measure(false)
-      const forced = await measure(true)
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const forced = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, HC12_COST)
       const record = (
         id: string,
         label: string,
@@ -90,14 +95,13 @@ describe('Производительность прокрутки — высок
           size: '1000×1000',
           plugins: 'rowSelection, rowExpanding, highlight',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: CEILING[axis],
-            pass: !gated || r[axis].p95Ms <= CEILING[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -107,8 +111,8 @@ describe('Производительность прокрутки — высок
       for (const axis of ['y', 'x'] as const) {
         expect(
           forced[axis].p95Ms,
-          `${axis} p95=${forced[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${CEILING[axis]})`,
-        ).toBeLessThanOrEqual(CEILING[axis])
+          `${axis} p95=${forced[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,

@@ -19,6 +19,13 @@ import {
 /** Порог кадра 60fps в мс (RAIL Animation). */
 const FRAME_BUDGET_MS = FRAME_BUDGET_60FPS
 
+/**
+ * Подмешанная работа (ADR 0099, PF16): `perf:compare` на стороне B растягивает
+ * длительности задач на заданный процент — проверка чувствительности сравнения.
+ */
+const INJECTED_SCALE =
+  1 + Number(process.env.TESSERA_PERF_INJECT_PCT ?? 0) / 100
+
 /** Мелкие задачи (mojo/микротаски) — не кадровая работа; отсекаем при перцентилях. */
 const SUBSTANTIAL_TASK_MS = 1
 
@@ -142,7 +149,7 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
     const key = `${e.pid}:${e.tid}`
     if (!rendererMains.has(key)) continue
     const list = byThread.get(key) ?? []
-    list.push(e.dur / 1000)
+    list.push((e.dur / 1000) * INJECTED_SCALE)
     byThread.set(key, list)
   }
 
@@ -184,15 +191,16 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
 /** Одна измеренная величина кейса (ось для прокрутки; для отрисовки оси нет). */
 export interface PerfMetric {
   axis?: 'y' | 'x'
-  /** Модель порога: RAIL Animation (кадр 16.7мс) или Load (интерактивность 1000мс). */
+  /** Модель цели: RAIL Animation (кадр 16.7мс) или Load (интерактивность 1000мс). */
   kind: 'animation' | 'load'
-  /** Какая величина сверяется с порогом: p95 (прокрутка), longest (отрисовка) или tbt (пачка задач). */
+  /** Какая величина сверяется: p95 (прокрутка), longest (отрисовка) или tbt (пачка задач). */
   metric: 'p95' | 'longest' | 'tbt'
-  /** Значение проверяемой метрики, мс. */
+  /** Значение метрики, мс. */
   valueMs: number
-  /** Абсолютный порог RAIL/CWV, мс. */
-  budgetMs: number
-  pass: boolean
+  /** Цель RAIL/CWV, мс: в дашборде — «в цели» или «вне цели», без гейта (ADR 0099). */
+  targetMs: number
+  /** Потолок против базы того же теста, мс (ADR 0099, §1а) — гейт кейса фичи. */
+  ceilingMs?: number
   p95Ms: number
   p99Ms: number
   longestMs: number
@@ -202,7 +210,7 @@ export interface PerfMetric {
   taskCount: number
 }
 
-/** Результат одного перф-кейса (P1–P8). */
+/** Результат одного перф-кейса. */
 export interface PerfRecord {
   id: string
   label: string
@@ -224,8 +232,6 @@ export interface PerfRecord {
     | 'loading'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
   cpuThrottle: number
-  /** Известный недостиг: кейс намеренно не укладывается в порог RAIL (xfail). */
-  knownShortfall: boolean
   metrics: PerfMetric[]
   /** Попытка, с которой записан кейс (ставит команда): больше 1 — прошёл с повтора. */
   attempts?: number
@@ -236,7 +242,11 @@ export interface PerfReport {
   records: PerfRecord[]
 }
 
-const RESULTS_PATH = resolve(process.cwd(), 'performance-results/latest.json')
+/** `perf:compare` пишет каждый прогон в свой файл (ADR 0099, PF13). */
+const RESULTS_PATH = resolve(
+  process.cwd(),
+  process.env.TESSERA_PERF_RESULTS ?? 'performance-results/latest.json',
+)
 
 // null → в этом процессе `vitest run` ещё не было записей; первая запись начинает
 // новый прогон с чистого листа (семантика «только последний прогон»).

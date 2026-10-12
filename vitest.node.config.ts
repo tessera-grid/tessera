@@ -13,6 +13,8 @@ export default defineConfig({
   test: {
     name: 'unit',
     include: ['src/lib/__tests__/**/*.test.{ts,tsx}'],
+    // Самопроверка perf:compare — настоящие прогоны, `npm run perf:selftest`.
+    exclude: ['**/node_modules/**', 'src/lib/__tests__/**/*.selftest.test.ts'],
     // node по умолчанию; DOM-тесты реактивности задают happy-dom докблоком
     // `// @vitest-environment happy-dom` пофайлово.
     environment: 'node',

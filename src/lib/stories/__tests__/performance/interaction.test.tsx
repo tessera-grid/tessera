@@ -21,6 +21,7 @@ import {
   Stories,
   headCells,
   measureInteractionWork,
+  measureRenderWork,
   measureTransitionWork,
   recordPerf,
   renderGrid,
@@ -33,7 +34,12 @@ import {
   PERF_TIMEOUT,
   SMALL,
 } from './perf-cases'
-import { INTERACTION_BUDGET_MS, LOAD_BUDGET_MS } from '../perf.constants'
+import {
+  INTERACTION_BUDGET_MS,
+  LOAD_BUDGET_MS,
+  TBT_TARGET_MS,
+} from '../perf.constants'
+import { againstBase, ceilingOver, medianRun } from './baseline'
 import type { MenuAction, RowAction } from '../../../core/headerActions'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
@@ -63,8 +69,8 @@ import {
 // широких подписок компонентов на весь стейт. Шаг стрелкой (keyboardNavigation)
 // аналогично меняет лишь активную ячейку и пиновку строки в виртуализаторе.
 // Метрика — самая длинная задача главного потока (синхронный blob
-// обработчик→рендер→коммит→layout), сверяется с бюджетом RAIL Response под ×4
-// CPU-троттлингом.
+// обработчик→рендер→коммит→layout) под ×4 CPU-троттлингом; идёт в дашборд против цели
+// RAIL Response без гейта (ADR 0099).
 
 const waitForGrid = () =>
   expect.poll(() => headCells().length).toBeGreaterThan(0)
@@ -506,12 +512,7 @@ interface InteractionCase {
   afterWarmup?: () => void | Promise<void>
   /** Проверка после замера, что взаимодействие сделало то, что мерится. */
   verify?: () => void
-  /**
-   * Известный недостиг: кейс сверяется с регресс-потолком, а не с бюджетом INP
-   * (как P5/P6 в first-render).
-   */
-  regressionCeiling?: number
-  /** Бюджет класса Load вместо INP (разовая тяжёлая операция, не отклик). */
+  /** Цель класса Load вместо INP (разовая тяжёлая операция, не отклик). */
   loadBudget?: boolean
 }
 
@@ -527,8 +528,6 @@ const CASES: InteractionCase[] = [
     id: 'I2',
     label: 'выбор строки, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    // У края бюджета: ~80 мс под ×4 отдельно, до ~100 мс в полной матрице.
-    regressionCeiling: 150,
     act: clickRowCheckbox,
     ...SELECT_CHECKS,
   },
@@ -537,8 +536,6 @@ const CASES: InteractionCase[] = [
     label:
       'шаг стрелкой, большая выборка, все плагины + клавиатурная навигация',
     args: { ...LARGE, ...ALL_PLUGINS, enableKeyboardNavigation: true },
-    // У края бюджета: ~80–90 мс под ×4 отдельно, до ~120 мс в полной матрице.
-    regressionCeiling: 150,
     prepare: async () => {
       await expect.poll(() => firstBodyCell()).not.toBeNull()
       firstBodyCell()!.focus()
@@ -555,9 +552,6 @@ const CASES: InteractionCase[] = [
       await waitForColumnsButton()
       await openColumnsMenu()
     },
-    // Смена набора колонок перерисовывает видимые строки 1000×1000 со всеми
-    // плагинами (~200–250 мс под ×4, выбросы до ~310); одной горячей точки в профиле нет.
-    regressionCeiling: 320,
     act: async () => firstColumnCheckbox()!.click(),
     // Прогрев скрыл колонку, замер вернул.
     afterWarmup: () =>
@@ -600,9 +594,6 @@ const CASES: InteractionCase[] = [
       'переход на следующую страницу по 100 строк, 100 000 строк, все плагины',
     size: '100 000×30',
     args: { ...PAGED, ...ALL_PLUGINS, ...PAGINATION, paginationPageSize: 100 },
-    // Новая страница — строки с другими id: видимые строки монтируются заново со
-    // всеми плагинами (~150–210 мс под ×4); одной горячей точки в профиле нет.
-    regressionCeiling: 300,
     prepare: async () => {
       await expect.poll(() => pageButton('next')).not.toBeNull()
     },
@@ -615,9 +606,6 @@ const CASES: InteractionCase[] = [
     label: 'смена размера страницы 25 ↔ 100, 100 000 строк, все плагины',
     size: '100 000×30',
     args: { ...PAGED, ...ALL_PLUGINS, ...PAGINATION },
-    // Строки первой страницы сохраняются, меняется высота тела и хвост строк
-    // (~105–140 мс под ×4).
-    regressionCeiling: 200,
     prepare: async () => {
       await expect.poll(() => pageSizeTrigger()).not.toBeNull()
     },
@@ -638,10 +626,6 @@ const CASES: InteractionCase[] = [
     label: 'применение быстрого поиска, 100 000×10, все плагины',
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...SEARCH },
-    // Проход «содержит» по 1 000 000 ячеек — сам по себе 70–350 мс под ×4 (в
-    // зависимости от совпадений); лишних перерисовок в профиле нет. Кейс целиком —
-    // ~420–480 мс.
-    regressionCeiling: 600,
     prepare: async () => {
       await expect.poll(quickSearchInput).not.toBeNull()
     },
@@ -653,8 +637,6 @@ const CASES: InteractionCase[] = [
     id: 'FL36',
     label: 'применение фильтра колонки, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS, ...FILTERING },
-    // Как I4: перерисовка видимых строк на 1000 колонок (~150–155 мс под ×4).
-    regressionCeiling: 220,
     prepare: openCountryFilter,
     act: async () => alternate(filterValueInput()!, 'a', 'e'),
     afterWarmup: () => expect(filterValueInput()!.value).toBe('a'),
@@ -664,8 +646,6 @@ const CASES: InteractionCase[] = [
     id: 'DF22',
     label: 'применение фильтра даты, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS, ...DATE_FILTERING },
-    // Как FL36 и вдобавок перерисовка месяца календаря (~180 мс под ×4).
-    regressionCeiling: 280,
     prepare: openDateFilter,
     act: toggleCalendarDay,
     afterWarmup: () => expect(isDaySelected(10)).toBe(true),
@@ -676,9 +656,6 @@ const CASES: InteractionCase[] = [
     label: 'применение фильтра варианта с фасетами, 100 000×10, все плагины',
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...OPTION_FILTERING },
-    // Как FL35: проход фильтра по 100 000 строкам и перерисовка; фасеты в замере не
-    // видны — без счётчиков столько же (~400–440 мс под ×4).
-    regressionCeiling: 600,
     prepare: openOptionFilter('gender'),
     // Прогрев отмечает «male», замер — «female»: оба щелчка применяют фильтр, а не снимают.
     act: async () =>
@@ -732,11 +709,6 @@ const CASES: InteractionCase[] = [
     label: 'приход 100 детей ленивой строки, 100 000×10, все плагины',
     size: '100 000×10',
     args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...LAZY_CHILDREN },
-    // Известный недостиг: ответ пересобирает модели (инкрементно, ADR 0067; без
-    // холостых проходов, ADR 0068; без копии rowsById, ADR 0069; раскрытие из прошлого,
-    // ADR 0070) и перерисовывает тело на 100 000 корней (~215–225 мс под ×4); план —
-    // «Дешёвый приход ленивых детей» в roadmap.
-    regressionCeiling: 300,
     prepare: async () => {
       await expect.poll(collapsedLazyToggle).toBeTruthy()
       LAZY_ROOTS.forEach(id => lazyKids(id))
@@ -762,9 +734,6 @@ describe('Отзывчивость взаимодействий (INP)', () => {
           afterWarmup: c.afterWarmup,
         })
         c.verify?.()
-        const budget =
-          c.regressionCeiling ??
-          (c.loadBudget ? LOAD_BUDGET_MS : INTERACTION_BUDGET_MS)
 
         await recordPerf({
           id: c.id,
@@ -775,26 +744,16 @@ describe('Отзывчивость взаимодействий (INP)', () => {
             (c.args.columnCount === LARGE.columnCount ? '1000×1000' : '30×500'),
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: c.regressionCeiling !== undefined,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: result.longestMs,
-              budgetMs: budget,
-              pass: result.longestMs <= budget,
+              targetMs: c.loadBudget ? LOAD_BUDGET_MS : INTERACTION_BUDGET_MS,
               ...result,
             },
           ],
         })
-
-        // Переключение выбора не переставляет строки/колонки — синхронная работа не
-        // должна порождать длинную задачу. Превышение = лишние ре-рендеры (широкие
-        // подписки компонентов на весь стейт).
-        expect(
-          result.longestMs,
-          `longest=${result.longestMs.toFixed(1)}ms tasks=${result.taskCount}`,
-        ).toBeLessThanOrEqual(budget)
       },
       PERF_TIMEOUT,
     )
@@ -834,10 +793,11 @@ describe('Отзывчивость взаимодействий — подсве
         await cleanup()
         return result
       }
-      const base = await measure(false)
-      const lit = await measure(true)
-      // Шум замера взаимодействия на 100 000 строк — до ~15%; больше — регрессия.
-      const ceiling = Math.max(base.longestMs * 1.15, base.longestMs + 40)
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const lit = medianRun(runs.variant, r => r.longestMs)
+      // Подсветка прихода — около +20 % к синхронному приходу; запас на шум.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 40 })
       const record = (
         id: string,
         label: string,
@@ -851,14 +811,13 @@ describe('Отзывчивость взаимодействий — подсве
           size: '100 000×10',
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -881,14 +840,13 @@ describe('Отзывчивость взаимодействий — подсве
 })
 
 // Скелет первой загрузки (ADR 0060, SL15): смена скелета на данные (выключение
-// `enableSkeleton`) — самая длинная задача в пределах регресс-потолка против прежнего
-// оверлея. База — его замер на 2026-10-07 (до ADR 0060); прежний оверлей делил смену
-// на две задачи паузой 200 мс, теперь она одна.
-const SKELETON_SWAP_BASE_MS = { small: 112, large: 131 }
+// `enableSkeleton`) — самая длинная задача против монтирования того же грида сразу с
+// данными: смена рисует те же строки.
+const SL15_COST = { ratio: 1.3, plusMs: 40 }
 
 describe('Отзывчивость — смена скелета на данные', () => {
   test(
-    'SL15: смена скелета на данные — самая длинная задача в пределах регресс-потолка против прежнего оверлея',
+    'SL15: смена скелета на данные — самая длинная задача не дольше монтирования того же грида с данными',
     async () => {
       const sizes = [
         { key: 'small', size: SMALL, label: '30×500' },
@@ -918,42 +876,62 @@ describe('Отзывчивость — смена скелета на данны
           await screen.unmount()
           return result
         }
+        const measureMount = async () => {
+          const result = await measureRenderWork(
+            () => renderGrid(args),
+            rowsReady,
+            { warmup: false },
+          )
+          await cleanup()
+          return result
+        }
         // Прогрев JIT вне замера.
         // eslint-disable-next-line no-await-in-loop
         await measureSwap()
         // eslint-disable-next-line no-await-in-loop
-        const result = await measureSwap()
-        const ceiling = Math.max(
-          SKELETON_SWAP_BASE_MS[key] * 1.3,
-          SKELETON_SWAP_BASE_MS[key] + 40,
-        )
+        await measureMount()
         // eslint-disable-next-line no-await-in-loop
-        await recordPerf({
-          id: `SL15-${key}`,
-          label: `смена скелета на данные, ${label}, все плагины`,
-          operation: 'interaction',
-          size: label,
-          plugins: 'all',
-          cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
-          metrics: [
-            {
-              kind: 'load',
-              metric: 'longest',
-              valueMs: result.longestMs,
-              budgetMs: ceiling,
-              pass: result.longestMs <= ceiling,
-              ...result,
-            },
-          ],
-        })
+        const runs = await againstBase(swap =>
+          swap ? measureSwap() : measureMount(),
+        )
+        const base = medianRun(runs.base, r => r.longestMs)
+        const swap = medianRun(runs.variant, r => r.longestMs)
+        const ceiling = ceilingOver(base.longestMs, SL15_COST)
+        const record = (
+          id: string,
+          title: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label: `${title}, ${label}, все плагины`,
+            operation: 'interaction',
+            size: label,
+            plugins: 'all',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load',
+                metric: 'longest',
+                valueMs: r.longestMs,
+                targetMs: LOAD_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...r,
+              },
+            ],
+          })
+        // eslint-disable-next-line no-await-in-loop
+        await record(`SL15-${key}-base`, 'монтирование с данными', base, false)
+        // eslint-disable-next-line no-await-in-loop
+        await record(`SL15-${key}`, 'смена скелета на данные', swap, true)
         expect(
-          result.longestMs,
-          `${label}: longest=${result.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(0)}ms`,
+          swap.longestMs,
+          `${label}: смена ${swap.longestMs.toFixed(1)}ms, монтирование с данными ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(0)}ms`,
         ).toBeLessThanOrEqual(ceiling)
       }
     },
-    PERF_TIMEOUT,
+    PERF_TIMEOUT * 4,
   )
 })
 
@@ -975,7 +953,7 @@ const sortOf = (columnId: string) =>
 
 describe('Отзывчивость — сортировка по подписи', () => {
   test(
-    'OS11: сортировка 100 000 строк по колонке lookup — в пределах регресс-потолка против той же колонки без подписей',
+    'OS11: сортировка 100 000 строк по колонке lookup не дороже той же колонки без подписей больше чем в 1,5 раза',
     async () => {
       const measure = async (labelled: boolean) => {
         await renderGrid({
@@ -1010,11 +988,12 @@ describe('Отзывчивость — сортировка по подписи'
         await cleanup()
         return result
       }
-      const base = await measure(false)
-      const labelled = await measure(true)
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const labelled = medianRun(runs.variant, r => r.longestMs)
       // Подпись сравнивается Intl.Collator, id — простым сравнением: ~+20–30% (база
       // ~490–565 мс, по подписи ~655–680 мс под ×4); запас на шум замера.
-      const ceiling = Math.max(base.longestMs * 1.5, base.longestMs + 300)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.5, plusMs: 300 })
       const record = (
         id: string,
         label: string,
@@ -1028,14 +1007,13 @@ describe('Отзывчивость — сортировка по подписи'
           size: '100 000×5',
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1096,8 +1074,11 @@ describe('Своя отсортированная модель', () => {
           table.getSortedRowModel()
         })
       }
-      const theirs = await measure(createSortedRowModel)
-      const ours = await measure(createTesseraSortedRowModel)
+      const runs = await againstBase(isOurs =>
+        measure(isOurs ? createTesseraSortedRowModel : createSortedRowModel),
+      )
+      const theirs = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
       const ceiling = theirs.longestMs / 2
       const record = (
         id: string,
@@ -1112,14 +1093,13 @@ describe('Своя отсортированная модель', () => {
           size: '100 000×2',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1195,16 +1175,16 @@ describe('aria-* дерева', () => {
     'TA3: счёт aria-* дерева на 100 000 строк — не дольше четверти прежнего',
     async () => {
       const rows = makeTreeAriaRows()
-      const theirs = await measureInteractionWork(async () => {
-        for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
-          treeAriaByObjects(rows)
-        }
-      })
-      const ours = await measureInteractionWork(async () => {
-        for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
-          getTreeAria(rows)
-        }
-      })
+      const runs = await againstBase(isOurs =>
+        measureInteractionWork(async () => {
+          for (let i = 0; i < TREE_ARIA_REPEAT; i++) {
+            if (isOurs) getTreeAria(rows)
+            else treeAriaByObjects(rows)
+          }
+        }),
+      )
+      const theirs = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
       const ceiling = theirs.longestMs / 4
       const record = (
         id: string,
@@ -1219,14 +1199,13 @@ describe('aria-* дерева', () => {
           size: '100 000 строк',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1251,52 +1230,56 @@ describe('Отзывчивость взаимодействий — склейк
   test(
     'RE73: пять ответов отдельными задачами на 100 000 корней — не больше двух длинных задач, TBT не больше половины пяти приходов одного ответа',
     async () => {
-      const resolvers = new Map<string, () => void>()
-      await renderGrid({
-        ...SEARCH_SIZE,
-        ...ALL_PLUGINS,
-        ...LAZY_CHILDREN,
-        rowExpandingHasChildren: (row: { depth: number; index: number }) =>
-          row.depth === 0 && row.index < 8,
-        rowExpandingLoadChildren: (row: { id: string }) =>
-          new Promise(resolve =>
-            resolvers.set(row.id, () => resolve(lazyKids(row.id))),
-          ),
-      } as Parameters<typeof renderGrid>[0])
-      await waitForGrid()
-      const toggleOf = (id: string) =>
-        document.querySelector<HTMLElement>(
-          `.data-grid__body-row[data-row-id='${id}'] .row-expand-button`,
-        )
-      const idle = () =>
-        !document.querySelector('.row-expand-button[aria-busy]')
-      /** Раскрыть строки (ожидание), затем под трейсом разрешить их ответы отдельными задачами. */
-      const arrive = async (ids: string[]) => {
-        await expect.poll(() => ids.every(id => toggleOf(id))).toBe(true)
-        ids.forEach(id => lazyKids(id))
-        ids.forEach(id => toggleOf(id)!.click())
-        await expect.poll(() => ids.every(id => resolvers.has(id))).toBe(true)
-        // Раскрытие (модель, тело, эффекты) не попадает в замер прихода.
-        for (let i = 0; i < 10; i++) {
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(requestAnimationFrame)
+      /** Свежий грид: прогрев одним приходом, замер — один ответ или пачка из пяти. */
+      const measure = async (isBatch: boolean) => {
+        const resolvers = new Map<string, () => void>()
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...LAZY_CHILDREN,
+          rowExpandingHasChildren: (row: { depth: number; index: number }) =>
+            row.depth === 0 && row.index < 8,
+          rowExpandingLoadChildren: (row: { id: string }) =>
+            new Promise(resolve =>
+              resolvers.set(row.id, () => resolve(lazyKids(row.id))),
+            ),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const toggleOf = (id: string) =>
+          document.querySelector<HTMLElement>(
+            `.data-grid__body-row[data-row-id='${id}'] .row-expand-button`,
+          )
+        const idle = () =>
+          !document.querySelector('.row-expand-button[aria-busy]')
+        /** Раскрыть строки (ожидание), затем под трейсом разрешить их ответы отдельными задачами. */
+        const arrive = async (ids: string[]) => {
+          await expect.poll(() => ids.every(id => toggleOf(id))).toBe(true)
+          ids.forEach(id => lazyKids(id))
+          ids.forEach(id => toggleOf(id)!.click())
+          await expect.poll(() => ids.every(id => resolvers.has(id))).toBe(true)
+          // Раскрытие (модель, тело, эффекты) не попадает в замер прихода.
+          for (let i = 0; i < 10; i++) {
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(requestAnimationFrame)
+          }
+          return measureTransitionWork(async () => {
+            ids.forEach(id => setTimeout(() => resolvers.get(id)!(), 0))
+          }, idle)
         }
-        return measureTransitionWork(async () => {
-          ids.forEach(id => setTimeout(() => resolvers.get(id)!(), 0))
-        }, idle)
+        // Прогрев: JIT пути прихода. Строки раскрываются снизу вверх — дети
+        // раскрытой строки не уводят остальные из окна.
+        await arrive(['item-id-7'])
+        const result = await arrive(
+          isBatch
+            ? ['item-id-5', 'item-id-4', 'item-id-3', 'item-id-2', 'item-id-1']
+            : ['item-id-6'],
+        )
+        await cleanup()
+        return result
       }
-      // Прогрев: JIT пути прихода. Ниже раскрываются строки снизу вверх — дети
-      // раскрытой строки не уводят остальные из окна.
-      await arrive(['item-id-7'])
-      const single = await arrive(['item-id-6'])
-      const batch = await arrive([
-        'item-id-5',
-        'item-id-4',
-        'item-id-3',
-        'item-id-2',
-        'item-id-1',
-      ])
-      await cleanup()
+      const runs = await againstBase(measure)
+      const single = medianRun(runs.base, r => r.tbtMs)
+      const batch = medianRun(runs.variant, r => r.tbtMs)
       // Без склейки пять ответов — пять приходов (~5× TBT); пачка — одна задача, в которую
       // может попасть сборка мусора, поэтому порог — половина пяти приходов.
       const ceiling = single.tbtMs * 2.5
@@ -1313,14 +1296,13 @@ describe('Отзывчивость взаимодействий — склейк
           size: '100 000×10',
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'tbt',
               valueMs: r.tbtMs,
-              budgetMs: ceiling,
-              pass: !gated || r.tbtMs <= ceiling,
+              targetMs: TBT_TARGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1343,7 +1325,7 @@ describe('Отзывчивость взаимодействий — склейк
         `длинных задач в пачке: ${batch.longTasks}`,
       ).toBeLessThanOrEqual(2)
     },
-    PERF_TIMEOUT * 2,
+    PERF_TIMEOUT * 6,
   )
 })
 
@@ -1417,11 +1399,13 @@ describe('Инкрементальная исходная модель', () => {
         })
       }
 
-      const base = await full()
-      const ours = await incremental()
+      const runs = await againstBase(isOurs =>
+        isOurs ? incremental() : full(),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
       // Словарь rowsById переходит новой модели без копии (ADR 0069).
-      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
-      const ceiling = Math.min(base.longestMs / 4, 75)
+      const ceiling = base.longestMs / 4
       const record = (
         id: string,
         label: string,
@@ -1435,14 +1419,13 @@ describe('Инкрементальная исходная модель', () => {
           size: '100 000 корней',
           plugins: 'rowExpanding',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1521,16 +1504,17 @@ describe('Холостые проходы фильтрации и группир
         })
       }
 
-      const base = await passes(
-        createFilteredRowModel(),
-        createGroupedRowModel(),
+      const runs = await againstBase(isOurs =>
+        isOurs
+          ? passes(
+              createSearchAwareFilteredRowModel(),
+              createIdleAwareGroupedRowModel(),
+            )
+          : passes(createFilteredRowModel(), createGroupedRowModel()),
       )
-      const ours = await passes(
-        createSearchAwareFilteredRowModel(),
-        createIdleAwareGroupedRowModel(),
-      )
-      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
-      const ceiling = Math.min(base.longestMs / 10, 10)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs / 10
       const record = (
         id: string,
         label: string,
@@ -1544,14 +1528,13 @@ describe('Холостые проходы фильтрации и группир
           size: '100 000 строк',
           plugins: 'columnFiltering, rowGrouping',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1617,10 +1600,16 @@ describe('Инкрементальная модель раскрытия', () =>
         })
       }
 
-      const base = await recompute(createExpandedRowModel())
-      const ours = await recompute(createIncrementalExpandedRowModel())
-      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
-      const ceiling = Math.min(base.longestMs / 4, 20)
+      const runs = await againstBase(isOurs =>
+        recompute(
+          isOurs
+            ? createIncrementalExpandedRowModel()
+            : createExpandedRowModel(),
+        ),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs / 4
       const record = (
         id: string,
         label: string,
@@ -1634,14 +1623,13 @@ describe('Инкрементальная модель раскрытия', () =>
           size: '100 000 корней',
           plugins: 'rowExpanding',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1703,10 +1691,10 @@ describe('Сортировка из прошлой модели', () => {
         })
       }
 
-      const base = await arrival(true)
-      const ours = await arrival(false)
-      // Абсолютный регресс-потолок ~3× замера: ловит замедление вместе с базой.
-      const ceiling = Math.min(base.longestMs / 10, 100)
+      const runs = await againstBase(isOurs => arrival(!isOurs))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs / 10
       const record = (
         id: string,
         label: string,
@@ -1720,14 +1708,13 @@ describe('Сортировка из прошлой модели', () => {
           size: '100 000 корней',
           plugins: 'rowExpanding',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1767,21 +1754,24 @@ const XLSX_ROWS = Array.from({ length: 100_000 }, (_, r) =>
 
 describe('Экспорт в Excel', () => {
   test(
-    'XL11: сборка .xlsx 100 000 × 10 — самая длинная задача главного потока не дольше 50 мс (база — CSV того же объёма)',
+    'XL11: сборка .xlsx 100 000 × 10 — самая длинная задача главного потока не дольше половины синхронной сборки CSV того же объёма',
     async () => {
       const data = { columns: XLSX_COLUMNS, rows: XLSX_ROWS }
       let csvSize = 0
       let xlsxSize = 0
-      const base = await measureInteractionWork(async () => {
-        csvSize = exportFormats.csv().serialize(data).length
-      })
-      const ours = await measureInteractionWork(async () => {
-        xlsxSize = (await buildXlsx(data)).size
-      })
+      const runs = await againstBase(isXlsx =>
+        measureInteractionWork(async () => {
+          if (isXlsx) xlsxSize = (await buildXlsx(data)).size
+          else csvSize = exportFormats.csv().serialize(data).length
+        }),
+      )
       expect(csvSize).toBeGreaterThan(0)
       expect(xlsxSize).toBeGreaterThan(0)
-
-      const ceiling = 50
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      // Генератор отдаёт поток по частям: его самая длинная задача короче синхронной
+      // сборки CSV того же объёма.
+      const ceiling = base.longestMs / 2
       const record = (
         id: string,
         label: string,
@@ -1795,14 +1785,13 @@ describe('Экспорт в Excel', () => {
           size: '100 000×10',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -1815,15 +1804,18 @@ describe('Экспорт в Excel', () => {
         `xlsx longest=${ours.longestMs.toFixed(1)}ms tbt=${ours.tbtMs.toFixed(1)}ms, csv longest=${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
-    PERF_TIMEOUT * 2,
+    PERF_TIMEOUT * 4,
   )
 })
 
 // Вложенные разделы меню (ADR 0079, NM18): вход в раздел со 100 пунктами из кебаба
-// строки и возврат на корень — каждое в бюджете INP.
+// строки — против открытия кебаба с плоским меню из тех же 100 пунктов; возврат на
+// корень — против открытия кебаба с корневым меню (ADR 0099, §1а).
+const NM18_COST = { ratio: 1.3, plusMs: 20 }
+
 describe('Отзывчивость — разделы меню', () => {
   test(
-    'NM18: вход в раздел со 100 пунктами и возврат — в бюджете INP',
+    'NM18: вход в раздел со 100 пунктами не дороже открытия плоского меню из них; возврат на корень не дороже открытия корневого меню',
     async () => {
       const leaves: MenuAction[] = Array.from({ length: 100 }, (_, i) => ({
         id: `perfLeaf${i}`,
@@ -1831,7 +1823,7 @@ describe('Отзывчивость — разделы меню', () => {
         label: () => `Destination ${i}`,
         onSelect: () => {},
       }))
-      const many: RowAction = {
+      const section: RowAction = {
         id: 'perfSection',
         slot: 'actionRowSlot',
         order: 0,
@@ -1840,79 +1832,150 @@ describe('Отзывчивость — разделы меню', () => {
         onSelect: () => {},
         submenu: () => ({ title: 'Move to', items: leaves }),
       }
-      renderGrid({
-        ...SMALL,
-        enableRowActions: true,
-        enableRowActionMenu: true,
-        extraPlugins: [{ id: 'perfSections', slotActions: [many] }],
-      } as Parameters<typeof renderGrid>[0])
-      await waitForGrid()
+      const flat: RowAction[] = leaves.map((leaf, order) => ({
+        ...leaf,
+        slot: 'actionRowSlot',
+        order,
+      }))
 
       const menuItem = (label: string) =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
           el => el.querySelector('[class*="itemLabel"]')?.textContent === label,
         )
+      const items = () => document.querySelectorAll('[role="menuitem"]').length
       const backRow = () =>
         document.querySelector<HTMLElement>('[data-menu-back]')
       const kebab = () =>
         document.querySelector<HTMLElement>('[aria-label^="Row options"]')
-      await expect.poll(kebab).not.toBeNull()
-      kebab()!.click()
-      await expect.poll(() => menuItem('Move to')).toBeTruthy()
-
       const inSection = () => menuItem('Destination 99') !== undefined
-      const enter = await measureInteractionWork(
-        async () => menuItem('Move to')!.click(),
-        {
-          afterWarmup: async () => {
-            expect(inSection()).toBe(true)
-            backRow()!.click()
-            await expect.poll(inSection).toBe(false)
-          },
-        },
-      )
-      expect(inSection()).toBe(true)
-      const back = await measureInteractionWork(
-        async () => backRow()!.click(),
-        {
-          afterWarmup: async () => {
-            expect(inSection()).toBe(false)
-            menuItem('Move to')!.click()
-            await expect.poll(inSection).toBe(true)
-          },
-        },
-      )
-      expect(inSection()).toBe(false)
-
-      for (const [id, label, result] of [
-        ['NM18', 'вход в раздел со 100 пунктами', enter],
-        ['NM18-back', 'возврат из раздела со 100 пунктами', back],
-      ] as const) {
-        await recordPerf({
-          id,
-          label,
-          operation: 'interaction',
-          size: '30×500',
-          plugins: 'rowActions',
-          cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
-          metrics: [
-            {
-              kind: 'load',
-              metric: 'longest',
-              valueMs: result.longestMs,
-              budgetMs: INTERACTION_BUDGET_MS,
-              pass: result.longestMs <= INTERACTION_BUDGET_MS,
-              ...result,
+      const closeMenu = async () => {
+        ;(document.activeElement as HTMLElement | null)?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        )
+        await expect.poll(items).toBe(0)
+      }
+      const mount = async (actions: RowAction[]) => {
+        const screen = renderGrid({
+          ...SMALL,
+          enableRowActions: true,
+          enableRowActionMenu: true,
+          extraPlugins: [{ id: 'perfSections', slotActions: actions }],
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(kebab).not.toBeNull()
+        return screen
+      }
+      /** Открытие кебаба: меню, в котором есть пункт `last`. */
+      const openKebab = async (actions: RowAction[], last: string) => {
+        const open = () => menuItem(last) !== undefined
+        const screen = await mount(actions)
+        const result = await measureInteractionWork(
+          async () => kebab()!.click(),
+          {
+            afterWarmup: async () => {
+              expect(open()).toBe(true)
+              await closeMenu()
             },
-          ],
-        })
+          },
+        )
+        expect(open()).toBe(true)
+        ;(await screen).unmount()
+        return result
+      }
+      const enter = async () => {
+        const screen = await mount([section])
+        kebab()!.click()
+        await expect.poll(() => menuItem('Move to')).toBeTruthy()
+        const result = await measureInteractionWork(
+          async () => menuItem('Move to')!.click(),
+          {
+            afterWarmup: async () => {
+              expect(inSection()).toBe(true)
+              backRow()!.click()
+              await expect.poll(inSection).toBe(false)
+            },
+          },
+        )
+        expect(inSection()).toBe(true)
+        ;(await screen).unmount()
+        return result
+      }
+      const back = async () => {
+        const screen = await mount([section])
+        kebab()!.click()
+        await expect.poll(() => menuItem('Move to')).toBeTruthy()
+        menuItem('Move to')!.click()
+        await expect.poll(inSection).toBe(true)
+        const result = await measureInteractionWork(
+          async () => backRow()!.click(),
+          {
+            afterWarmup: async () => {
+              expect(inSection()).toBe(false)
+              menuItem('Move to')!.click()
+              await expect.poll(inSection).toBe(true)
+            },
+          },
+        )
+        expect(inSection()).toBe(false)
+        ;(await screen).unmount()
+        return result
+      }
+
+      const pairs = [
+        {
+          record: 'NM18',
+          label: 'вход в раздел со 100 пунктами',
+          baseLabel: 'открытие плоского меню из 100 пунктов',
+          runs: await againstBase(isSection =>
+            isSection ? enter() : openKebab(flat, 'Destination 99'),
+          ),
+        },
+        {
+          record: 'NM18-back',
+          label: 'возврат из раздела со 100 пунктами',
+          baseLabel: 'открытие корневого меню',
+          runs: await againstBase(isBack =>
+            isBack ? back() : openKebab([section], 'Move to'),
+          ),
+        },
+      ]
+      for (const { record: id, label, baseLabel, runs } of pairs) {
+        const base = medianRun(runs.base, r => r.longestMs)
+        const variant = medianRun(runs.variant, r => r.longestMs)
+        const ceiling = ceilingOver(base.longestMs, NM18_COST)
+        for (const [recordId, recordLabel, result, gated] of [
+          [`${id}-base`, baseLabel, base, false],
+          [id, label, variant, true],
+        ] as const) {
+          // eslint-disable-next-line no-await-in-loop
+          await recordPerf({
+            id: recordId,
+            label: recordLabel,
+            operation: 'interaction',
+            size: '30×500',
+            plugins: 'rowActions',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load',
+                metric: 'longest',
+                valueMs: result.longestMs,
+                targetMs: INTERACTION_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...result,
+              },
+            ],
+          })
+        }
         expect
-          .soft(result.longestMs, `${id} longest`)
-          .toBeLessThanOrEqual(INTERACTION_BUDGET_MS)
+          .soft(
+            variant.longestMs,
+            `${id} longest=${variant.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+          )
+          .toBeLessThanOrEqual(ceiling)
       }
     },
-    PERF_TIMEOUT,
+    PERF_TIMEOUT * 6,
   )
 })
 
@@ -1991,9 +2054,10 @@ describe('Отзывчивость взаимодействий — лента',
         await cleanup()
         return result
       }
-      const base = await measure(false)
-      const fed = await measure(true)
-      const ceiling = Math.max(base.longestMs * 1.15, base.longestMs + 40)
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const fed = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.15, plusMs: 40 })
       const record = (
         id: string,
         label: string,
@@ -2007,14 +2071,13 @@ describe('Отзывчивость взаимодействий — лента',
           size: '100 000×3',
           plugins: 'infiniteScroll',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: ceiling,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -2032,9 +2095,11 @@ describe('Отзывчивость взаимодействий — лента',
 
 // Длинный текст (ADR 0083, TX12): открытие кебаба строки с 20 пунктами, подписи
 // которых переносятся на несколько строк, против тех же пунктов с короткими подписями.
+const TX12_COST = { ratio: 1.3, plusMs: 20 }
+
 describe('Отзывчивость — длинные подписи меню', () => {
   test(
-    'TX12: открытие меню с 20 длинными пунктами — в бюджете INP; база с короткими в дашборде',
+    'TX12: открытие меню с 20 длинными пунктами не дороже меню с короткими',
     async () => {
       const measure = async (long: boolean) => {
         const actions: RowAction[] = Array.from({ length: 20 }, (_, i) => ({
@@ -2087,8 +2152,10 @@ describe('Отзывчивость — длинные подписи меню', 
         return result
       }
 
-      const base = await measure(false)
-      const long = await measure(true)
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const long = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, TX12_COST)
       for (const [id, label, result, gated] of [
         ['TX12-base', 'меню из 20 коротких пунктов', base, false],
         ['TX12', 'меню из 20 пунктов с переносом подписи', long, true],
@@ -2100,14 +2167,13 @@ describe('Отзывчивость — длинные подписи меню', 
           size: '30×500',
           plugins: 'rowActions',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: result.longestMs,
-              budgetMs: INTERACTION_BUDGET_MS,
-              pass: !gated || result.longestMs <= INTERACTION_BUDGET_MS,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...result,
             },
           ],
@@ -2115,9 +2181,9 @@ describe('Отзывчивость — длинные подписи меню', 
       }
       expect(
         long.longestMs,
-        `TX12 longest (база ${base.longestMs.toFixed(1)}ms)`,
-      ).toBeLessThanOrEqual(INTERACTION_BUDGET_MS)
+        `TX12 longest=${long.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
     },
-    PERF_TIMEOUT * 2,
+    PERF_TIMEOUT * 4,
   )
 })

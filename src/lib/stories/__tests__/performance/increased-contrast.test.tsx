@@ -3,7 +3,9 @@ import { describe, expect, test } from 'vitest'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { measureScrollWork, recordPerf, renderGrid } from '../helpers'
 import { waitForGrid } from '../visual/core-helpers'
+import { againstBase, axesCeiling, medianAxes } from './baseline'
 import {
+  ANIMATION_BUDGET_MS,
   CONTENT_SCROLL,
   CPU_THROTTLE_RATE,
   LARGE,
@@ -13,7 +15,7 @@ import {
 
 // Повышенный контраст (ADR 0088, MC10): спокойная прокрутка 1000×1000 с выбранными
 // строками, подсветкой и линиями дерева при `contrast="more"` (контуры строк, плотные
-// линии) против того же грида в обычном режиме. Потолок — как у HC12.
+// линии) против того же грида в обычном режиме.
 
 /** Каждая 10-я строка выбрана — один раз, когда появились строки. */
 const selectionSeed = (rows: number): TesseraFeatureEntry => {
@@ -34,11 +36,12 @@ const selectionSeed = (rows: number): TesseraFeatureEntry => {
   }
 }
 
-const CEILING = { y: 26, x: 40 }
+/** Цена режима против того же грида в обычном режиме (ADR 0099, §1а). */
+const MC10_COST = { ratio: 1.3, plusMs: 4 }
 
 describe('Производительность прокрутки — повышенный контраст', () => {
   test(
-    'MC10: прокрутка 1000×1000 с выбором, подсветкой и линиями дерева при повышенном контрасте — в пределах потолка HC12; база в обычном режиме в дашборде',
+    'MC10: прокрутка 1000×1000 с выбором, подсветкой и линиями дерева при повышенном контрасте не дороже того же грида в обычном режиме',
     async () => {
       const measure = async (more: boolean) => {
         const screen = renderGrid({
@@ -68,8 +71,10 @@ describe('Производительность прокрутки — повыш
         return { y, x }
       }
 
-      const base = await measure(false)
-      const more = await measure(true)
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const more = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, MC10_COST)
       const record = (
         id: string,
         label: string,
@@ -83,14 +88,13 @@ describe('Производительность прокрутки — повыш
           size: '1000×1000',
           plugins: 'rowSelection, rowExpanding, highlight',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: CEILING[axis],
-            pass: !gated || r[axis].p95Ms <= CEILING[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -100,8 +104,8 @@ describe('Производительность прокрутки — повыш
       for (const axis of ['y', 'x'] as const) {
         expect(
           more[axis].p95Ms,
-          `${axis} p95=${more[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${CEILING[axis]})`,
-        ).toBeLessThanOrEqual(CEILING[axis])
+          `${axis} p95=${more[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,

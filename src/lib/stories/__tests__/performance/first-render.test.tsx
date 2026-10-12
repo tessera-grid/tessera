@@ -1,6 +1,8 @@
 import { cleanup } from 'vitest-browser-react'
 import { beforeAll, describe, expect, test } from 'vitest'
 
+import { againstBase, ceilingOver, medianRun } from './baseline'
+
 import {
   headCells,
   measureRenderWork,
@@ -24,19 +26,13 @@ import {
 // Метрика — самая длинная задача монтирования (CDP-трейс), под ×4 CPU-троттлингом.
 // Дополнительно фиксируются long tasks (> 50мс) и TBT — сигнал готовности к INP.
 //
-// ПОЛИТИКА ПОРОГОВ (симметрично scroll, см. память perf-methodology):
-//  - БЕЗ плагинов (P1/P3) — абсолютный гейт RAIL Load: longest ≤ 1000мс.
-//  - СО всеми плагинами (P5/P6) — фиксируем + регресс-гейт: сверяемся с ПОТОЛКОМ
-//    (заметно выше текущего уровня, но много ниже 1000), чтобы ловить реальную
-//    деградацию, которую свободный Load-бюджет пропустил бы. Реальные значения пишутся
-//    в дашборд для наблюдения за трендом.
+// Время матрицу не гейтит (ADR 0099, PF1): значение идёт в дашборд против цели RAIL
+// Load, регрессии ловит `perf:compare`. Кейс фичи гейтится против базы того же теста.
 
 interface RenderCase {
   id: string
   label: string
   args: Record<string, number | boolean>
-  // Потолок регресс-гейта для фичастых кейсов. Нет → абсолютный Load-бюджет 1000мс.
-  regressionCeiling?: number
   /** Данные генерируются до замера: меряется монтирование, а не faker. */
   pregenerated?: boolean
 }
@@ -56,13 +52,11 @@ const CASES: RenderCase[] = [
     id: 'P5',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    regressionCeiling: 350,
   },
   {
     id: 'P6',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    regressionCeiling: 500,
   },
   {
     // Колонка раскрытия по условию (ADR 0050): проход по корням и одна повторная
@@ -70,7 +64,6 @@ const CASES: RenderCase[] = [
     id: 'SC10',
     label: 'большая выборка, все плагины, колонка раскрытия по условию',
     args: { ...LARGE, ...ALL_PLUGINS, enableRowExpanding: true },
-    regressionCeiling: 500,
   },
   {
     id: 'P9',
@@ -105,10 +98,6 @@ describe('Производительность первой отрисовки',
           () => headCells().length > 0,
           { warmup: false },
         )
-        const { longestMs, longTasks, tbtMs } = result
-        const budget = c.regressionCeiling ?? LOAD_BUDGET_MS
-        const pass = longestMs <= budget
-
         await recordPerf({
           id: c.id,
           label: c.label,
@@ -121,24 +110,16 @@ describe('Производительность первой отрисовки',
                 : '30×500',
           plugins: c.args.enableColumnSorting ? 'all' : 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          // Фичастые кейсы сверяются с регресс-потолком, а не с абсолютным Load.
-          knownShortfall: c.regressionCeiling !== undefined,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
-              valueMs: longestMs,
-              budgetMs: budget,
-              pass,
+              valueMs: result.longestMs,
+              targetMs: LOAD_BUDGET_MS,
               ...result,
             },
           ],
         })
-
-        expect(
-          longestMs,
-          `render longest=${longestMs.toFixed(1)}ms (limit ${budget}ms, ×${CPU_THROTTLE_RATE}) longTasks=${longTasks} tbt=${tbtMs.toFixed(1)}ms`,
-        ).toBeLessThanOrEqual(budget)
       },
       PERF_TIMEOUT,
     )
@@ -176,13 +157,14 @@ describe('Производительность первой отрисовки �
           () => headCells().length > 0,
           { warmup: false },
         )
-        cleanup()
+        await cleanup()
         return result
       }
-      const base = await measure(false)
-      const lazy = await measure(true)
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const lazy = medianRun(runs.variant, r => r.longestMs)
       // Шум замера монтирования — до ~30% между прогонами; больше — регрессия.
-      const ceiling = Math.max(base.longestMs * 1.3, base.longestMs + 40)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 40 })
       const record = (
         id: string,
         label: string,
@@ -196,14 +178,13 @@ describe('Производительность первой отрисовки �
           size: '30×100 000',
           plugins: 'rowExpanding',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               kind: 'load',
               metric: 'longest',
               valueMs: r.longestMs,
-              budgetMs: gated ? ceiling : LOAD_BUDGET_MS,
-              pass: !gated || r.longestMs <= ceiling,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -225,55 +206,71 @@ describe('Производительность первой отрисовки �
   )
 })
 
-// Скелет первой загрузки (ADR 0060, SL14): монтирование со скелетом против прежнего
-// оверлея. База — замер прежнего оверлея на 2026-10-07 (до ADR 0060); потолок —
-// база с запасом на шум, как у RE39.
-const SKELETON_MOUNT_BASE_MS = { small: 80, large: 326 }
-const skeletonCeiling = (base: number) => Math.max(base * 1.3, base + 40)
-
+// Скелет первой загрузки (ADR 0060, SL14): монтирование со скелетом против того же
+// грида, смонтированного сразу с данными, — скелет не дороже строк.
 describe('Производительность первой отрисовки — скелет', () => {
   test(
-    'SL14: монтирование со скелетом на 30×500 и 1000×1000 колонок — в пределах регресс-потолка против прежнего оверлея',
+    'SL14: монтирование со скелетом на 30×500 и 1000×1000 колонок не дольше монтирования с данными',
     async () => {
       const sizes = [
         { key: 'small', size: SMALL, label: '30×500' },
         { key: 'large', size: LARGE, label: '1000×1000' },
       ] as const
       for (const { key, size, label } of sizes) {
+        const measure = async (skeleton: boolean) => {
+          const result = await measureRenderWork(
+            () =>
+              renderGrid({ ...size, ...ALL_PLUGINS, enableSkeleton: skeleton }),
+            () =>
+              !!document.querySelector(
+                skeleton
+                  ? '.data-grid__body--skeleton'
+                  : '.data-grid__body-row',
+              ),
+            { warmup: true },
+          )
+          await cleanup()
+          return result
+        }
         // eslint-disable-next-line no-await-in-loop
-        const result = await measureRenderWork(
-          () => renderGrid({ ...size, ...ALL_PLUGINS, enableSkeleton: true }),
-          () => !!document.querySelector('.data-grid__body--skeleton'),
-          { warmup: true },
-        )
-        cleanup()
-        const ceiling = skeletonCeiling(SKELETON_MOUNT_BASE_MS[key])
+        const runs = await againstBase(measure)
+        const base = medianRun(runs.base, r => r.longestMs)
+        const skeleton = medianRun(runs.variant, r => r.longestMs)
+        const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 40 })
+        const record = (
+          id: string,
+          title: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label: `${title}, ${label}, все плагины`,
+            operation: 'render',
+            size: label,
+            plugins: 'all',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load',
+                metric: 'longest',
+                valueMs: r.longestMs,
+                targetMs: LOAD_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...r,
+              },
+            ],
+          })
         // eslint-disable-next-line no-await-in-loop
-        await recordPerf({
-          id: `SL14-${key}`,
-          label: `монтирование со скелетом, ${label}, все плагины`,
-          operation: 'render',
-          size: label,
-          plugins: 'all',
-          cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
-          metrics: [
-            {
-              kind: 'load',
-              metric: 'longest',
-              valueMs: result.longestMs,
-              budgetMs: ceiling,
-              pass: result.longestMs <= ceiling,
-              ...result,
-            },
-          ],
-        })
+        await record(`SL14-${key}-base`, 'монтирование с данными', base, false)
+        // eslint-disable-next-line no-await-in-loop
+        await record(`SL14-${key}`, 'монтирование со скелетом', skeleton, true)
         expect(
-          result.longestMs,
-          `${label}: longest=${result.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(0)}ms`,
+          skeleton.longestMs,
+          `${label}: со скелетом ${skeleton.longestMs.toFixed(1)}ms, с данными ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(0)}ms`,
         ).toBeLessThanOrEqual(ceiling)
       }
     },
-    PERF_TIMEOUT,
+    PERF_TIMEOUT * 4,
   )
 })

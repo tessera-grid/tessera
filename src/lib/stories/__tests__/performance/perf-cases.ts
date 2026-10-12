@@ -13,6 +13,7 @@ export {
   FRAME_BUDGET_60FPS,
   LOAD_BUDGET_MS,
   LONG_TASK_MS,
+  PR_CASES,
 } from '../perf.constants'
 
 import type { TesseraFeatureEntry } from '../../../core/features'

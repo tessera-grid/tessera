@@ -4,6 +4,7 @@ import { measureScrollWork, recordPerf, renderGrid } from '../helpers'
 import { waitForGrid } from '../visual/core-helpers'
 import {
   ALL_PLUGINS,
+  ANIMATION_BUDGET_MS,
   CONTENT_SCROLL,
   CPU_THROTTLE_RATE,
   LARGE,
@@ -15,12 +16,10 @@ import {
 // всю высоту ячейки. Файл идёт в двух проектах перф-конфига: в обычном Chromium пишет
 // базу `TU13-base`, в проекте касаний — `TU13`; медиа-признаки во время работы не
 // переключаются.
-/** Регресс-потолок P13 — та же выборка со всеми плагинами, вне бюджета RAIL. */
-const CEILING = { y: 50, x: 75 }
 
 describe('Производительность прокрутки — касания', () => {
   test(
-    'TU13: прокрутка 1000×1000 без наведения — в пределах потолков P13; база с мышью в дашборде',
+    'TU13: прокрутка 1000×1000 без наведения меряется и пишется в дашборд рядом с базой с мышью',
     async () => {
       const touch = matchMedia('(hover: none) and (pointer: coarse)').matches
       const screen = renderGrid({ ...LARGE, ...ALL_PLUGINS })
@@ -37,23 +36,15 @@ describe('Производительность прокрутки — касан
         size: '1000×1000',
         plugins: 'all',
         cpuThrottle: CPU_THROTTLE_RATE,
-        knownShortfall: true,
         metrics: (['y', 'x'] as const).map(axis => ({
           axis,
           kind: 'animation' as const,
           metric: 'p95' as const,
           valueMs: result[axis].p95Ms,
-          budgetMs: CEILING[axis],
-          pass: result[axis].p95Ms <= CEILING[axis],
+          targetMs: ANIMATION_BUDGET_MS,
           ...result[axis],
         })),
       })
-      for (const axis of ['y', 'x'] as const) {
-        expect(
-          result[axis].p95Ms,
-          `${axis} p95=${result[axis].p95Ms.toFixed(1)}ms, потолок ${CEILING[axis]}`,
-        ).toBeLessThanOrEqual(CEILING[axis])
-      }
     },
     PERF_TIMEOUT * 2,
   )

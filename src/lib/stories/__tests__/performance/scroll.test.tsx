@@ -9,9 +9,18 @@ import {
   renderGrid,
 } from '../helpers'
 import {
+  againstBase,
+  axesCeiling,
+  ceilingOver,
+  medianAxes,
+  medianRun,
+} from './baseline'
+import {
   ALL_PLUGINS,
+  ANIMATION_BUDGET_MS,
   CPU_THROTTLE_RATE,
   LARGE,
+  LOAD_BUDGET_MS,
   NO_PLUGINS,
   PERF_TIMEOUT,
   SMALL,
@@ -27,28 +36,16 @@ import { makeData } from '../../__mocks__/data'
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
 // PROD-сборке под ×4 CPU-троттлингом, метрика p95 работы на кадр по обеим осям.
 //
-// ПОЛИТИКА ПОРОГОВ (см. память perf-methodology):
-//  - Жёсткого гейта 60fps НЕТ ни у одного кейса. Под ×4 троттлингом p95 шумит, и
-//    требование p95 ≤ 16.67мс флапало даже на небольшом гриде (P2: baseline ~13мс,
-//    но одиночные спайки до ~17мс — это дисперсия замера, а не регресс).
-//  - Вместо этого у КАЖДОГО кейса РЕГРЕСС-ГЕЙТ: потолок заметно выше текущего p95
-//    (≈2× baseline). Тест падает только на реальной деградации, а не на разбросе.
-//    Реальные p95 пишутся в дашборд — тренд к эталону 60fps виден и без гейта.
-//  - Почему 60fps на масштабе недостижим в принципе: под ×4 троттлингом даже
-//    1000-колоночный грид (без плагинов!) на горизонтальном скролле у самой границы
-//    60fps, а «широкий × все плагины» — за пределами DOM-архитектуры (ведущие
-//    DOM-гриды дают ~27–38fps на скролле даже без троттлинга на быстром M4; 60fps на
-//    масштабе — только canvas).
+// Время матрицу не гейтит (ADR 0099, PF1): p95 идёт в дашборд против цели RAIL
+// Animation, регрессии ловит `perf:compare`. Кейс фичи гейтится против базы того же
+// теста (`againstBase`, PF22).
 
 interface ScrollCase {
   id: string
   label: string
   args: Record<string, number | boolean>
-  // Потолок регресс-гейта (p95 по осям, ≈2× baseline). Тест падает только при
-  // превышении — это регистрация регресса, а не требование 60fps. Есть у всех кейсов.
-  regressionCeiling: { y: number; x: number }
-  // Спокойная прокрутка той же выборки (CONTENT_SCROLL): ячейки рисуются содержимым.
-  content: { id: string; regressionCeiling: { y: number; x: number } }
+  /** Спокойная прокрутка той же выборки (CONTENT_SCROLL): ячейки рисуются содержимым. */
+  content: { id: string }
 }
 
 const CASES: ScrollCase[] = [
@@ -56,51 +53,25 @@ const CASES: ScrollCase[] = [
     id: 'P2',
     label: 'небольшая выборка, без плагинов',
     args: { ...SMALL, ...NO_PLUGINS },
-    // база быстрой прокрутки (FAST_SCROLL) ~11/20мс; под ×4 троттлингом одиночные
-    // спайки — жёсткий 60fps флапал. Регресс-гейт с запасом ≈2×.
-    regressionCeiling: { y: 24, x: 40 },
-    content: {
-      id: 'P10',
-      // база ~10/19мс
-      regressionCeiling: { y: 20, x: 38 },
-    },
+    content: { id: 'P10' },
   },
   {
     id: 'P4',
     label: 'большая выборка, без плагинов',
     args: { ...LARGE, ...NO_PLUGINS },
-    // база ~14/24мс: 1000 колонок под ×4 троттлингом — у границы 60fps; регресс-гейт
-    // с запасом.
-    regressionCeiling: { y: 28, x: 44 },
-    content: {
-      id: 'P11',
-      // база ~13/20мс
-      regressionCeiling: { y: 26, x: 40 },
-    },
+    content: { id: 'P11' },
   },
   {
     id: 'P7',
     label: 'небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
-    // база с клавиатурной навигацией ~25/51мс
-    regressionCeiling: { y: 40, x: 80 },
-    content: {
-      id: 'P12',
-      // база ~21/35мс
-      regressionCeiling: { y: 40, x: 68 },
-    },
+    content: { id: 'P12' },
   },
   {
     id: 'P8',
     label: 'большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
-    // база с клавиатурной навигацией ~32/52мс
-    regressionCeiling: { y: 50, x: 85 },
-    content: {
-      id: 'P13',
-      // база ~26/38мс
-      regressionCeiling: { y: 50, x: 75 },
-    },
+    content: { id: 'P13' },
   },
 ]
 
@@ -113,7 +84,6 @@ const runScrollCase = async (
   c: ScrollCase,
   id: string,
   label: string,
-  ceiling: { y: number; x: number },
   speed: typeof CONTENT_SCROLL | typeof FAST_SCROLL,
 ) => {
   renderGrid(c.args)
@@ -130,17 +100,13 @@ const runScrollCase = async (
     size,
     plugins: c.args.enableColumnSorting ? 'all' : 'none',
     cpuThrottle: CPU_THROTTLE_RATE,
-    // Гейта 60fps нет: пробой потолка — это регресс (в дашборде 'regr', не
-    // 'xfail'), а не «ожидаемый недостиг».
-    knownShortfall: false,
     metrics: [
       {
         axis: 'y',
         kind: 'animation',
         metric: 'p95',
         valueMs: y.p95Ms,
-        budgetMs: ceiling.y,
-        pass: y.p95Ms <= ceiling.y,
+        targetMs: ANIMATION_BUDGET_MS,
         ...y,
       },
       {
@@ -148,34 +114,18 @@ const runScrollCase = async (
         kind: 'animation',
         metric: 'p95',
         valueMs: x.p95Ms,
-        budgetMs: ceiling.x,
-        pass: x.p95Ms <= ceiling.x,
+        targetMs: ANIMATION_BUDGET_MS,
         ...x,
       },
     ],
   })
-
-  // soft — обе оси репортятся независимо; сверяем с регресс-потолком кейса
-  // (жёсткого 60fps-гейта нет, см. политику в шапке файла).
-  expect
-    .soft(
-      y.p95Ms,
-      `Y p95=${y.p95Ms.toFixed(1)}ms longest=${y.longestMs.toFixed(1)}ms over-budget=${y.tasksOverBudget}/${y.taskCount} (limit ${ceiling.y})`,
-    )
-    .toBeLessThanOrEqual(ceiling.y)
-  expect
-    .soft(
-      x.p95Ms,
-      `X p95=${x.p95Ms.toFixed(1)}ms longest=${x.longestMs.toFixed(1)}ms over-budget=${x.tasksOverBudget}/${x.taskCount} (limit ${ceiling.x})`,
-    )
-    .toBeLessThanOrEqual(ceiling.x)
 }
 
 describe('Производительность прокрутки', () => {
   for (const c of CASES) {
     test(
       `${c.id}: ${c.label}`,
-      () => runScrollCase(c, c.id, c.label, c.regressionCeiling, FAST_SCROLL),
+      () => runScrollCase(c, c.id, c.label, FAST_SCROLL),
       PERF_TIMEOUT,
     )
   }
@@ -188,25 +138,31 @@ describe('Производительность прокрутки — споко
     const label = `${c.label}, спокойная прокрутка`
     test(
       `${c.content.id}: ${label}`,
-      () =>
-        runScrollCase(
-          c,
-          c.content.id,
-          label,
-          c.content.regressionCeiling,
-          CONTENT_SCROLL,
-        ),
+      () => runScrollCase(c, c.content.id, label, CONTENT_SCROLL),
       PERF_TIMEOUT,
     )
   }
 })
+
+// Цена фичи против базы того же теста (ADR 0099, §1а): во столько раз или на столько мс.
+const AS14_COST = { ratio: 3, plusMs: 4 }
+const CF12_COST = { ratio: 3, plusMs: 4 }
+const MI23_COST = { ratio: 1.3, plusMs: 4 }
+const RE60_COST = { ratio: 1.3, plusMs: 4 }
+const AI10_COST = { ratio: 1.3, plusMs: 4 }
+const RH8_COST = { ratio: 1.3, plusMs: 4 }
+const HL19_COST = { ratio: 1.3, plusMs: 4 }
+const OT11_COST = { ratio: 1.3, plusMs: 4 }
+const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
+const BT14_COST = { ratio: 1.3, plusMs: 4 }
+const GL13_COST = { ratio: 1.3, plusMs: 4 }
 
 // Прокрутка с отправленными ячейками правки (ADR 0041, AS14): 500 строк × 3 колонки
 // в ожидании и «ошибке» против той же выборки без них — видна цена новых состояний.
 // Скорость ниже порога быстрой прокрутки (CONTENT_SCROLL): иначе ячейки — скелеты.
 describe('Производительность прокрутки — ожидание и «ошибка» правки', () => {
   test(
-    'AS14: прокрутка небольшой выборки с 1500 отправленными ячейками — в пределах регресс-потолка; база без них в дашборде',
+    'AS14: прокрутка небольшой выборки с 1500 отправленными ячейками не дороже той же выборки без них больше чем в 3 раза',
     async () => {
       const args = { ...SMALL, enableCellEditing: true }
       const measure = async (seeded: boolean) => {
@@ -227,10 +183,10 @@ describe('Производительность прокрутки — ожида
         return { y, x }
       }
 
-      const base = await measure(false)
-      const seeded = await measure(true)
-      // Регресс-потолок ≈2× замера базы (y ~12мс, x ~19–21мс), как у P2/P7.
-      const ceiling = { y: 24, x: 35 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, AS14_COST)
       const record = (
         id: string,
         label: string,
@@ -244,14 +200,13 @@ describe('Производительность прокрутки — ожида
           size: '30×500',
           plugins: 'cellEditing',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -262,7 +217,7 @@ describe('Производительность прокрутки — ожида
         expect
           .soft(
             seeded[axis].p95Ms,
-            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
           )
           .toBeLessThanOrEqual(ceiling[axis])
       }
@@ -276,7 +231,7 @@ describe('Производительность прокрутки — ожида
 // выборки без отправленных ячеек.
 describe('Производительность прокрутки — блик ожидания правки', () => {
   test(
-    'CF12: прокрутка с 1500 ячейками в ожидании (блик) — в пределах регресс-потолка; база без них в дашборде',
+    'CF12: прокрутка с 1500 ячейками в ожидании не дороже той же выборки без них больше чем в 3 раза',
     async () => {
       const args = { ...SMALL, enableCellEditing: true }
       const measure = async (seeded: boolean) => {
@@ -300,10 +255,10 @@ describe('Производительность прокрутки — блик �
         return { y, x }
       }
 
-      const base = await measure(false)
-      const seeded = await measure(true)
-      // Потолок — как у AS14 (≈2× замера базы).
-      const ceiling = { y: 24, x: 35 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, CF12_COST)
       const record = (
         id: string,
         label: string,
@@ -317,14 +272,13 @@ describe('Производительность прокрутки — блик �
           size: '30×500',
           plugins: 'cellEditing',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -335,7 +289,7 @@ describe('Производительность прокрутки — блик �
         expect
           .soft(
             seeded[axis].p95Ms,
-            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
           )
           .toBeLessThanOrEqual(ceiling[axis])
       }
@@ -349,7 +303,7 @@ describe('Производительность прокрутки — блик �
 // той же выборки без состояний. Скорость ниже порога быстрой прокрутки.
 describe('Производительность прокрутки — ожидание и отказ действий меню', () => {
   test(
-    'MI23: прокрутка 30×500 с ожиданием и отказами на 500 кебабах строк — в пределах регресс-потолка; база без них в дашборде',
+    'MI23: прокрутка 30×500 с ожиданием и отказами на 500 кебабах строк не дороже той же выборки без них',
     async () => {
       const args = {
         ...SMALL,
@@ -371,10 +325,10 @@ describe('Производительность прокрутки — ожида
         return { y, x }
       }
 
-      const base = await measure(false)
-      const seeded = await measure(true)
-      // Потолок — как у RH8 при той же базе (y ~17мс, x ~26мс).
-      const ceiling = { y: 26, x: 40 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, MI23_COST)
       const record = (
         id: string,
         label: string,
@@ -388,14 +342,13 @@ describe('Производительность прокрутки — ожида
           size: '30×500',
           plugins: 'rowActions',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -406,7 +359,7 @@ describe('Производительность прокрутки — ожида
         expect
           .soft(
             seeded[axis].p95Ms,
-            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+            `${axis.toUpperCase()} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
           )
           .toBeLessThanOrEqual(ceiling[axis])
       }
@@ -420,7 +373,7 @@ describe('Производительность прокрутки — ожида
 // прокрутки — ячейки отступа рисуются, а не заменяются скелетами.
 describe('Производительность прокрутки — линии дерева', () => {
   test(
-    'RE60: прокрутка раскрытого дерева с линиями — в пределах регресс-потолка; база без линий в дашборде',
+    'RE60: прокрутка раскрытого дерева с линиями не дороже того же дерева без линий',
     async () => {
       const tree = makeData({ shape: 'tree', count: 50, depth: 3, breadth: 3 })
       const measure = async (treeLines: boolean) => {
@@ -443,10 +396,10 @@ describe('Производительность прокрутки — линии
         return { y, x }
       }
 
-      const base = await measure(false)
-      const lined = await measure(true)
-      // Потолок ≈2× замера базы (y ~10мс, x ~15мс).
-      const ceiling = { y: 20, x: 31 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const lined = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, RE60_COST)
       const record = (
         id: string,
         label: string,
@@ -460,14 +413,13 @@ describe('Производительность прокрутки — линии
           size: '650 строк дерева',
           plugins: 'rowExpanding',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -478,7 +430,7 @@ describe('Производительность прокрутки — линии
         expect
           .soft(
             lined[axis].p95Ms,
-            `${axis.toUpperCase()} p95=${lined[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+            `${axis.toUpperCase()} p95=${lined[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
           )
           .toBeLessThanOrEqual(ceiling[axis])
       }
@@ -492,7 +444,7 @@ describe('Производительность прокрутки — линии
 // сортировки. Горизонтальная прокрутка монтирует заголовки с индикаторами.
 describe('Производительность прокрутки — индикатор активного действия', () => {
   test(
-    'AI10: горизонтальная прокрутка 1000×1000 со всеми плагинами, где у каждого заголовка активна сортировка, — в пределах регресс-потолка; база без сортировки в дашборде',
+    'AI10: горизонтальная прокрутка 1000×1000 со всеми плагинами, где у каждого заголовка активна сортировка, не дороже той же выборки без сортировки',
     async () => {
       const measure = async (sorted: boolean) => {
         const screen = renderGrid({
@@ -510,10 +462,10 @@ describe('Производительность прокрутки — индик
         return x
       }
 
-      const base = await measure(false)
-      const sorted = await measure(true)
-      // Потолок — около P13 по X: спокойная прокрутка того же грида.
-      const ceiling = 70
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const sorted = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, AI10_COST)
       const record = (
         id: string,
         label: string,
@@ -527,15 +479,14 @@ describe('Производительность прокрутки — индик
           size: '1000×1000',
           plugins: 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             {
               axis: 'x',
               kind: 'animation' as const,
               metric: 'p95' as const,
               valueMs: r.p95Ms,
-              budgetMs: ceiling,
-              pass: !gated || r.p95Ms <= ceiling,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
               ...r,
             },
           ],
@@ -545,7 +496,7 @@ describe('Производительность прокрутки — индик
 
       expect(
         sorted.p95Ms,
-        `X p95=${sorted.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling})`,
+        `X p95=${sorted.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
@@ -556,7 +507,7 @@ describe('Производительность прокрутки — индик
 // строках 40px против той же выборки при 50px — в окне больше строк.
 describe('Производительность прокрутки — высота строки', () => {
   test(
-    'RH8: прокрутка 1000×1000 при rowHeight 40 — в пределах потолков P11; база при 50px в дашборде',
+    'RH8: прокрутка 1000×1000 при rowHeight 40 не дороже той же выборки при 50px',
     async () => {
       const measure = async (rowHeight: number) => {
         const screen = renderGrid({ ...LARGE, ...NO_PLUGINS, rowHeight })
@@ -576,9 +527,10 @@ describe('Производительность прокрутки — высот
         return { y, x }
       }
 
-      const base = await measure(50)
-      const compact = await measure(40)
-      const ceiling = { y: 26, x: 40 }
+      const runs = await againstBase(compact => measure(compact ? 40 : 50))
+      const base = medianAxes(runs.base)
+      const compact = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, RH8_COST)
       const record = (
         id: string,
         label: string,
@@ -592,14 +544,13 @@ describe('Производительность прокрутки — высот
           size: '1000×1000',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -609,7 +560,7 @@ describe('Производительность прокрутки — высот
       for (const axis of ['y', 'x'] as const) {
         expect(
           compact[axis].p95Ms,
-          `${axis} p95=${compact[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          `${axis} p95=${compact[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
@@ -621,7 +572,7 @@ describe('Производительность прокрутки — высот
 // 100 залитыми строками и колонкой с бесконечным бликом против той же выборки без них.
 describe('Производительность прокрутки — подсветка', () => {
   test(
-    'HL19: прокрутка 1000×1000 со 100 подсвеченными строками и колонкой с бликом — в пределах потолков P11; база без подсветки в дашборде',
+    'HL19: прокрутка 1000×1000 со 100 подсвеченными строками и колонкой с бликом не дороже той же выборки без подсветки',
     async () => {
       const measure = async (seeded: boolean) => {
         const screen = renderGrid({
@@ -641,9 +592,10 @@ describe('Производительность прокрутки — подсв
         return { y, x }
       }
 
-      const base = await measure(false)
-      const seeded = await measure(true)
-      const ceiling = { y: 26, x: 40 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, HL19_COST)
       const record = (
         id: string,
         label: string,
@@ -657,14 +609,13 @@ describe('Производительность прокрутки — подсв
           size: '1000×1000',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -674,7 +625,7 @@ describe('Производительность прокрутки — подсв
       for (const axis of ['y', 'x'] as const) {
         expect(
           seeded[axis].p95Ms,
-          `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
@@ -686,7 +637,7 @@ describe('Производительность прокрутки — подсв
 // спокойная прокрутка с тултипом против той же выборки без него.
 describe('Производительность — тултип обрезанного текста', () => {
   test(
-    'OT11: прокрутка и монтирование с тултипом обрезанного текста — в пределах потолков P11 и P3; база без тултипа в дашборде',
+    'OT11: прокрутка и монтирование с тултипом обрезанного текста не дороже, чем без него',
     async () => {
       const measure = async (enableOverflowTooltip: boolean) => {
         const args = { ...LARGE, ...NO_PLUGINS, enableOverflowTooltip }
@@ -703,10 +654,20 @@ describe('Производительность — тултип обрезанн
         return { mount, y, x }
       }
 
-      const base = await measure(false)
-      const withTooltip = await measure(true)
-      // Потолки — у P11 (спокойная прокрутка той же выборки) и P3 (её монтирование).
-      const ceiling = { y: 26, x: 40, mount: 350 }
+      const runs = await againstBase(measure)
+      const pick = (side: typeof runs.base) => ({
+        ...medianAxes(side),
+        mount: medianRun(
+          side.map(run => run.mount),
+          r => r.longestMs,
+        ),
+      })
+      const base = pick(runs.base)
+      const withTooltip = pick(runs.variant)
+      const ceiling = {
+        ...axesCeiling(base, OT11_COST),
+        mount: ceilingOver(base.mount.longestMs, OT11_MOUNT_COST),
+      }
       const record = (
         id: string,
         label: string,
@@ -720,23 +681,22 @@ describe('Производительность — тултип обрезанн
           size: '1000×1000',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: [
             ...(['y', 'x'] as const).map(axis => ({
               axis,
               kind: 'animation' as const,
               metric: 'p95' as const,
               valueMs: r[axis].p95Ms,
-              budgetMs: ceiling[axis],
-              pass: !gated || r[axis].p95Ms <= ceiling[axis],
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
               ...r[axis],
             })),
             {
               kind: 'load' as const,
               metric: 'longest' as const,
               valueMs: r.mount.longestMs,
-              budgetMs: ceiling.mount,
-              pass: !gated || r.mount.longestMs <= ceiling.mount,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling.mount : undefined,
               ...r.mount,
             },
           ],
@@ -747,12 +707,12 @@ describe('Производительность — тултип обрезанн
       for (const axis of ['y', 'x'] as const) {
         expect(
           withTooltip[axis].p95Ms,
-          `${axis} p95=${withTooltip[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          `${axis} p95=${withTooltip[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
       expect(
         withTooltip.mount.longestMs,
-        `монтирование ${withTooltip.mount.longestMs.toFixed(0)}ms (база ${base.mount.longestMs.toFixed(0)}ms, потолок ${ceiling.mount})`,
+        `монтирование ${withTooltip.mount.longestMs.toFixed(0)}ms (база ${base.mount.longestMs.toFixed(0)}ms, потолок ${ceiling.mount.toFixed(0)})`,
       ).toBeLessThanOrEqual(ceiling.mount)
     },
     PERF_TIMEOUT * 2,
@@ -795,13 +755,11 @@ describe('Производительность прокрутки — лента
         return { y, x }
       }
 
-      const base = await measure(false)
-      const feed = await measure(true)
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const feed = medianAxes(runs.variant)
       // Скелет-строка не дороже строки с данными; шум p95 под троттлингом — до ~30%.
-      const ceiling = {
-        y: Math.max(base.y.p95Ms * 1.3, base.y.p95Ms + 4),
-        x: Math.max(base.x.p95Ms * 1.3, base.x.p95Ms + 4),
-      }
+      const ceiling = axesCeiling(base, { ratio: 1.3, plusMs: 4 })
       const record = (
         id: string,
         label: string,
@@ -815,14 +773,13 @@ describe('Производительность прокрутки — лента
           size: '8–30×1000',
           plugins: 'none',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -844,7 +801,7 @@ describe('Производительность прокрутки — лента
 // с кнопкой против той же выборки без неё — подписка на прокрутку и пересечение порога.
 describe('Производительность прокрутки — кнопка «наверх»', () => {
   test(
-    'BT14: прокрутка 1000×1000 с кнопкой «наверх» — в пределах потолков P11; база без кнопки в дашборде',
+    'BT14: прокрутка 1000×1000 с кнопкой «наверх» не дороже той же выборки без неё',
     async () => {
       const measure = async (withButton: boolean) => {
         const screen = renderGrid({
@@ -866,9 +823,10 @@ describe('Производительность прокрутки — кнопк
         return { y, x }
       }
 
-      const base = await measure(false)
-      const withButton = await measure(true)
-      const ceiling = { y: 26, x: 40 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const withButton = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, BT14_COST)
       const record = (
         id: string,
         label: string,
@@ -882,14 +840,13 @@ describe('Производительность прокрутки — кнопк
           size: '1000×1000',
           plugins: 'backToTop',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -899,7 +856,7 @@ describe('Производительность прокрутки — кнопк
       for (const axis of ['y', 'x'] as const) {
         expect(
           withButton[axis].p95Ms,
-          `${axis} p95=${withButton[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          `${axis} p95=${withButton[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
@@ -911,7 +868,7 @@ describe('Производительность прокрутки — кнопк
 // приглушённым телом против той же выборки без обновления.
 describe('Производительность прокрутки — свечение загрузки', () => {
   test(
-    'GL13: прокрутка 1000×1000 во время обновления данных — в пределах потолков P11; база без обновления в дашборде',
+    'GL13: прокрутка 1000×1000 во время обновления данных не дороже той же выборки без него',
     async () => {
       const measure = async (loading: boolean) => {
         const screen = renderGrid({
@@ -929,9 +886,10 @@ describe('Производительность прокрутки — свече
         return { y, x }
       }
 
-      const base = await measure(false)
-      const loading = await measure(true)
-      const ceiling = { y: 26, x: 40 }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const loading = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, GL13_COST)
       const record = (
         id: string,
         label: string,
@@ -945,14 +903,13 @@ describe('Производительность прокрутки — свече
           size: '1000×1000',
           plugins: 'loading',
           cpuThrottle: CPU_THROTTLE_RATE,
-          knownShortfall: false,
           metrics: (['y', 'x'] as const).map(axis => ({
             axis,
             kind: 'animation' as const,
             metric: 'p95' as const,
             valueMs: r[axis].p95Ms,
-            budgetMs: ceiling[axis],
-            pass: !gated || r[axis].p95Ms <= ceiling[axis],
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
             ...r[axis],
           })),
         })
@@ -962,7 +919,7 @@ describe('Производительность прокрутки — свече
       for (const axis of ['y', 'x'] as const) {
         expect(
           loading[axis].p95Ms,
-          `${axis} p95=${loading[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis]})`,
+          `${axis} p95=${loading[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
