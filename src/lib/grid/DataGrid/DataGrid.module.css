@@ -61,6 +61,11 @@
   background-color: var(--tsr-comp-scrollbar-thumb-hover);
 }
 
+/* Ошибка первой загрузки (ADR 0096): заглушка под шапкой во всю ширину, а не сбоку. */
+.table__container[data-load-failed] {
+  flex-direction: column;
+}
+
 .table__stub-container {
   height: calc(
     100% - var(--tsr-comp-toolbar-offset) - var(--tsr-comp-status-bar-offset)

@@ -19,6 +19,58 @@
 }
 
 /*
+ * Синее свечение появляется и уходит плавно (`data-leaving` держит его на время ухода)
+ * и гаснет, когда его сменяет красный свет ошибки (ADR 0096).
+ */
+.glows {
+  position: absolute;
+  inset: 0;
+  animation: loader-fade-in var(--tsr-comp-loader-fade-duration)
+    var(--tsr-comp-motion-easing-out);
+  transition: opacity var(--tsr-comp-error-flash-fill-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+.glows[data-leaving] {
+  opacity: 0;
+  transition: opacity var(--tsr-comp-loader-fade-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+@keyframes loader-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.linear-progress[data-error-flash] .glows {
+  opacity: 0;
+}
+
+/*
+ * Красный свет ошибки загрузки (ADR 0096): та же размытая полоса, но ровная и цвета
+ * ошибки. Нарастает за время заливки, держится, гаснет переходом движения.
+ */
+.linear-progress::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--tsr-comp-loader-glow-size) / -3);
+  left: 0;
+  right: 0;
+  height: calc(var(--tsr-comp-loader-glow-size) * 2 / 3);
+  background-color: var(--tsr-comp-load-error-glow);
+  filter: blur(calc(var(--tsr-comp-loader-glow-size) / 3));
+  opacity: 0;
+  transition: var(--tsr-comp-reveal-transition);
+}
+
+.linear-progress[data-error-flash='on']::after {
+  opacity: 1;
+  transition: opacity var(--tsr-comp-error-flash-fill-duration)
+    var(--tsr-comp-motion-easing);
+}
+
+/*
  * Полоса оттенков синего на границе шапки, размытая один раз: видна её нижняя
  * половина — свет. Полоса вдвое шире грида и повторяет узор через половину, поэтому
  * сдвиг на половину зациклен без шва.
@@ -67,12 +119,20 @@
 /* Линия только для высокой контрастности: там теней нет. Цвет — токен загрузки. */
 .line {
   display: none;
+  animation: loader-fade-in var(--tsr-comp-loader-fade-duration)
+    var(--tsr-comp-motion-easing-out);
+  transition: opacity var(--tsr-comp-loader-fade-duration)
+    var(--tsr-comp-motion-easing);
   background-color: var(--tsr-comp-loader-bar);
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: var(--tsr-comp-loader-height);
+}
+
+.line[data-leaving] {
+  opacity: 0;
 }
 
 @keyframes data-grid-loader-flow {
@@ -97,12 +157,19 @@
 
 /* Высокая контрастность (ADR 0087): теней нет — линия во всю ширину цветом выбора. */
 @media (forced-colors: active) {
-  .glow {
+  .glow,
+  .linear-progress::after {
     display: none;
   }
 
   .line {
     display: block;
     background-color: Highlight;
+  }
+
+  /* Ошибка — та же линия цветом подсветки ошибки. */
+  .linear-progress[data-error-flash] .line {
+    forced-color-adjust: none;
+    background-color: Mark;
   }
 }

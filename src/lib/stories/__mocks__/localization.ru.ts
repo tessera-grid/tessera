@@ -172,6 +172,18 @@ export const RU_LABELS: TableLabels = {
       : `Загружено ${loaded.toLocaleString('ru-RU')} из ${total.toLocaleString('ru-RU')}`,
   loadMoreFailed: 'Не удалось загрузить ещё строки',
   loadMoreRetry: 'Повторить',
+  loadErrorTitle: 'Не удалось обновить данные',
+  loadFailedTitle: 'Не удалось загрузить данные',
+  loadRetry: 'Повторить',
+  loadErrorDismiss: 'Скрыть',
+  announceLoadError: reason =>
+    reason
+      ? `Не удалось обновить данные: ${reason}`
+      : 'Не удалось обновить данные',
+  announceLoadFailed: reason =>
+    reason
+      ? `Не удалось загрузить данные: ${reason}`
+      : 'Не удалось загрузить данные',
   backToTop: 'Наверх',
   announceMoreLoaded: count => `Загружено ещё: ${rows(count)}`,
   selectedRows: count => `Выбрано: ${rows(count)}`,

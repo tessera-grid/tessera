@@ -250,6 +250,16 @@ export interface TableLabels {
   /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
   loadMoreFailed: string
   loadMoreRetry: string
+  /**
+   * Ошибка загрузки данных (ADR 0096): заголовок плашки обновления и заглушки первой
+   * загрузки, кнопки повтора и закрытия, объявления (`reason` — причина, если есть)
+   */
+  loadErrorTitle: string
+  loadFailedTitle: string
+  loadRetry: string
+  loadErrorDismiss: string
+  announceLoadError: (reason?: string) => string
+  announceLoadFailed: (reason?: string) => string
   /** Кнопка «наверх» в нижней панели (ADR 0082): тултип и доступное имя */
   backToTop: string
   /** Объявление прихода блока догрузки */
@@ -435,6 +445,16 @@ export const DEFAULT_LABELS: TableLabels = {
       : `Loaded ${loaded.toLocaleString('en-US')} of ${total.toLocaleString('en-US')}`,
   loadMoreFailed: "Couldn't load more rows",
   loadMoreRetry: 'Retry',
+  loadErrorTitle: "Couldn't refresh the data",
+  loadFailedTitle: "Couldn't load the data",
+  loadRetry: 'Retry',
+  loadErrorDismiss: 'Dismiss',
+  announceLoadError: reason =>
+    reason
+      ? `Couldn't refresh the data: ${reason}`
+      : "Couldn't refresh the data",
+  announceLoadFailed: reason =>
+    reason ? `Couldn't load the data: ${reason}` : "Couldn't load the data",
   backToTop: 'Back to top',
   announceMoreLoaded: count =>
     count === 1 ? 'Loaded 1 more row' : `Loaded ${count} more rows`,

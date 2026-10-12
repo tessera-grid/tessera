@@ -1,0 +1,163 @@
+/*
+ * Плашка ошибки обновления (ADR 0096): под шапкой по центру видимой ширины, поверх
+ * верха тела — раскладку не сдвигает. Стоит в потоке после тулбара, как полоса
+ * загрузки, и опускается на высоту шапки.
+ */
+.banner {
+  --_visible: calc(
+    100% -
+      var(--tsr-comp-scrollbar-actual-width, var(--tsr-comp-scrollbar-width))
+  );
+
+  position: absolute;
+  left: calc(var(--_visible) / 2);
+  z-index: var(--tsr-comp-z-index-loader);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  box-sizing: border-box;
+  max-width: min(
+    var(--tsr-comp-load-error-banner-max-width),
+    calc(var(--_visible) - var(--tsr-ref-space-4) * 2)
+  );
+  min-height: 36px;
+  padding: var(--tsr-ref-space-1) var(--tsr-ref-space-1) var(--tsr-ref-space-1)
+    calc(var(--tsr-ref-space-1) * 3);
+  transform: translate(
+    -50%,
+    calc(var(--tsr-comp-head-height) + calc(var(--tsr-ref-space-1) * 2))
+  );
+  color: var(--tsr-comp-fg);
+  font-family: var(--tsr-comp-font-family);
+  font-size: var(--tsr-comp-cell-font-size);
+  background-color: var(--tsr-comp-load-error-banner-bg);
+  border-radius: var(--tsr-comp-load-error-banner-radius);
+  box-shadow: var(--tsr-comp-load-error-banner-shadow);
+  outline: var(--tsr-comp-popup-outline);
+  outline-offset: -1px;
+  /* Появление и уход — токенами движения: проявление со сдвигом вниз на 4px. */
+  animation: load-error-banner-in var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing-out);
+  transition:
+    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+.banner[data-leaving] {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(
+    -50%,
+    calc(var(--tsr-comp-head-height) + var(--tsr-ref-space-1))
+  );
+}
+
+@keyframes load-error-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(
+      -50%,
+      calc(var(--tsr-comp-head-height) + var(--tsr-ref-space-1))
+    );
+  }
+}
+
+.icon {
+  flex: none;
+  color: var(--tsr-comp-load-error-icon-color);
+}
+
+.text {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  min-width: 0;
+}
+
+.title {
+  flex: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Причина — одной строкой, полный текст в тултипе (ADR 0083). */
+.reason {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tsr-comp-load-more-reason-color);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.retry {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  color: var(--tsr-comp-fg);
+  font: inherit;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.retry:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.retry:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.dismiss {
+  flex: none;
+}
+
+/* Высокая контрастность (ADR 0087): плашка — с контуром, тени нет. */
+@media (forced-colors: active) {
+  .banner {
+    outline: 1px solid CanvasText;
+  }
+}
+
+/* Заглушка ошибки первой загрузки — под пустой шапкой, во всю видимую ширину. */
+.stub {
+  position: sticky;
+  left: 0;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  box-sizing: border-box;
+  width: 100%;
+  padding: 32px 16px;
+  color: var(--tsr-comp-control-color);
+  font-family: var(--tsr-comp-font-family);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.stub-title {
+  margin: 0;
+  color: var(--tsr-comp-fg);
+  font-weight: 500;
+}
+
+/* Причина — не больше двух строк, полный текст в тултипе. */
+.stub-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-width: 480px;
+  margin: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--tsr-comp-load-more-reason-color);
+}

@@ -55,6 +55,7 @@ const StoryGrid = memo(
     localization,
     locale,
     icons,
+    errorStub,
 
     showStub,
     headerNesting,
@@ -172,6 +173,8 @@ const StoryGrid = memo(
       skeletonOptions: options.skeletonOptions,
       enableLoading: options.enableLoading,
       loadingOptions: options.loadingOptions,
+      loadError: options.loadError,
+      onRetry: options.onRetry,
       enableFooter: options.enableFooter,
       enableToolbar: panelFlag(options.enableToolbar),
       enableStatusBar: panelFlag(options.enableStatusBar),
@@ -264,6 +267,7 @@ const StoryGrid = memo(
           localization={labels}
           icons={icons}
           stub={<NoDataStub label="No Data!" />}
+          errorStub={errorStub}
         />
       </>
     )

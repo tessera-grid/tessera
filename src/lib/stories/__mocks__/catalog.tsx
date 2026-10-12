@@ -43,6 +43,8 @@ export const CATALOG_STATES = {
     'pinnedEnd',
     'skeleton',
     'empty',
+    'loadError',
+    'loadFailed',
   ],
   head: [
     'sorting',

@@ -17,6 +17,7 @@ import * as core from '../DataGrid.Core.stories'
 import * as coreTextOverflow from '../DataGrid.Core.TextOverflow.stories'
 import * as coreTouch from '../DataGrid.Core.Touch.stories'
 import * as coreHighContrast from '../DataGrid.Core.HighContrast.stories'
+import * as coreLoadError from '../DataGrid.Core.LoadError.stories'
 import * as coreIncreasedContrast from '../DataGrid.Core.IncreasedContrast.stories'
 import * as dataInfiniteScroll from '../DataGrid.Data.InfiniteScroll.stories'
 import * as coreSizing from '../DataGrid.Core.Sizing.stories'
@@ -52,6 +53,7 @@ export const composed = {
   ...composeStories(coreTextOverflow),
   ...composeStories(coreTouch),
   ...composeStories(coreHighContrast),
+  ...composeStories(coreLoadError),
   ...composeStories(coreIncreasedContrast),
   ...composeStories(dataInfiniteScroll),
   ...composeStories(coreSizing),

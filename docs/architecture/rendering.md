@@ -261,6 +261,14 @@ start` — кнопка держит свою ширину, обёртка её 
   `loadingOptions.delayMs` и не короче `minDurationMs` (`useLoadingDisplay`);
   `aria-busy` и объявление — по флагу сразу. Рецепт с TanStack Query:
   `enableSkeleton: isLoading`, `enableLoading: isFetching && !isLoading`.
+- `loadError` / `onRetry` → отказ загрузки (ADR [0096](../decisions/0096-load-error.md)),
+  состояние — `useLoadError` (ключ новой ошибки по `Object.is`, закрытие, повтор,
+  одно объявление). Со строками: `LinearProgress` смонтирован всегда и по ключу
+  вспыхивает красным светом (`::after` полосы, `useErrorFlash`), приглушение снято сразу,
+  `LoadErrorBanner` — после полосы, в порядке Tab перед телом. Без строк:
+  `LoadErrorStub` (или `errorStub`) в контейнере прокрутки, который на это время
+  становится колонкой (`data-load-failed`); ошибка главнее скелета, `stub` и
+  `filterStub`. Рецепт: `loadError: error`, `onRetry: refetch`.
 
 ### Ленивые поповеры и меню
 

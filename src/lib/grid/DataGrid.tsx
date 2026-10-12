@@ -35,6 +35,8 @@ import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
+import { LoadErrorBanner, LoadErrorStub } from './loadError/LoadError'
+import { useLoadError } from './loadError/useLoadError'
 import { useLoadingDisplay } from './useLoadingDisplay'
 import type { Column, Table } from '../types'
 import type { RenderSlots } from '../core/createSlots'
@@ -89,6 +91,7 @@ export const DataGrid = ({
   maxHeight = '100%',
   stub,
   filterStub,
+  errorStub,
   colorMode = 'auto',
   contrast = 'auto',
   icons,
@@ -243,23 +246,51 @@ export const DataGrid = ({
     [rowDragging?.activeId, rowDragging?.acceptable, rowDragging?.offsetLeft],
   )
 
-  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5).
-  const showSkeleton = !!(table.options as any).enableSkeleton
+  const enableLoading = !!(table.options as any).enableLoading
+  const enableSkeleton = !!(table.options as any).enableSkeleton
+  // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
+  const loadError = useLoadError({
+    table,
+    error: (table.options as any).loadError,
+    onRetry: (table.options as any).onRetry,
+    loading: enableLoading || enableSkeleton,
+    hasRows: rows.length > 0,
+  })
+
+  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ главнее.
+  const showSkeleton = enableSkeleton && !loadError.stubShown
 
   const noData = !showSkeleton && rows.length === 0
   // Пусто из-за фильтра — своя заглушка поверх тела, шапка с фильтрами остаётся.
   const filtered = isFilteringActive(state)
-  const showStub = noData && !!stub && !filtered
-  const showFilterStub = noData && filtered
+  const showStub = noData && !!stub && !filtered && !loadError.stubShown
+  const showFilterStub = noData && filtered && !loadError.stubShown
 
-  const showLinearProgress =
-    (table.options as any).enableLoading && !showSkeleton
+  const showLinearProgress = enableLoading && !showSkeleton
   // Свечение и приглушение — с задержкой и минимумом; aria-busy и объявление — сразу.
   const refreshing = useLoadingDisplay(
-    !!showLinearProgress,
+    showLinearProgress,
     (table.options as any).loadingOptions,
   )
-
+  // Отказ снимает приглушение сразу, без минимума показа: старые данные рабочие.
+  const refreshingShown = refreshing && (enableLoading || !loadError.present)
+  // Плашка уходит (закрыта или повтор), а фокус — в тело грида, а не в никуда.
+  const focusBody = () =>
+    scrollableNodeRef.current
+      ?.querySelector<HTMLElement>(
+        '[tabindex="0"], button:not([disabled]), [href], input:not([disabled])',
+      )
+      ?.focus()
+  const dismissLoadError = () => {
+    loadError.dismiss()
+    focusBody()
+  }
+  const retryLoadFromBanner = loadError.retryFromBanner
+    ? () => {
+        loadError.retryFromBanner?.()
+        focusBody()
+      }
+    : undefined
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
 
@@ -342,6 +373,7 @@ export const DataGrid = ({
         table={table}
         labels={labels}
         loading={showLinearProgress || showSkeleton}
+        failed={loadError.present}
         rowCount={rows.length}
         themeNode={scrollableNodeRef}
       />
@@ -365,11 +397,21 @@ export const DataGrid = ({
                   data-tsr-color-mode={colorModeAttr}
                   data-toolbar={enableToolbar || undefined}
                   data-status-bar={hasStatusBar || undefined}
-                  data-refreshing={refreshing || undefined}
+                  data-refreshing={refreshingShown || undefined}
                   style={wrapperStyles}
                 >
                   {toolbar}
-                  {refreshing && <LinearProgress label={loadingLabel} />}
+                  <LinearProgress
+                    label={loadingLabel}
+                    active={refreshingShown}
+                    errorFlash={loadError.flashKey}
+                  />
+                  <LoadErrorBanner
+                    shown={loadError.bannerShown}
+                    reason={loadError.reason}
+                    retry={retryLoadFromBanner}
+                    onDismiss={dismissLoadError}
+                  />
                   <ScrollingAttribute getScrollElement={getScrollElement} />
                   <ShimmerSync getScrollElement={getScrollElement} />
                   {enableOverflowTooltip && (
@@ -405,6 +447,7 @@ export const DataGrid = ({
                       keyboardNavigation ? releaseContainerFocus : undefined
                     }
                     data-resizing={isResizingColumns !== false}
+                    data-load-failed={loadError.stubShown || undefined}
                     onCopy={handleCopy}
                   >
                     <DataGridTable
@@ -431,6 +474,15 @@ export const DataGrid = ({
                     />
                     {showFilterStub && (
                       <FilterStub table={table} render={filterStub} />
+                    )}
+                    {loadError.stubShown && (
+                      <LoadErrorStub
+                        error={(table.options as any).loadError}
+                        reason={loadError.reason}
+                        retry={loadError.retry}
+                        pending={loadError.pending}
+                        render={errorStub}
+                      />
                     )}
                   </div>
                   {keyboardNavigation && (

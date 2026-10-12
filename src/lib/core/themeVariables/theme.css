@@ -263,6 +263,8 @@
   /* Проход цветов вдоль шапки; при уменьшенном движении — период пульсации. */
   --tsr-comp-loader-duration: 2s;
   --tsr-comp-loader-pulse-duration: 2.4s;
+  /* Появление и уход свечения загрузки — вдвое дольше движения: свет крупный. */
+  --tsr-comp-loader-fade-duration: calc(var(--tsr-comp-motion-duration) * 2);
   /* Приглушение тела и футера, пока данные обновляются (ADR 0094). */
   --tsr-comp-loader-dim-opacity: 0.6;
   --tsr-comp-row-height: 50px;
@@ -691,6 +693,20 @@
     var(--tsr-sys-info-violet) var(--tsr-comp-loader-glow-opacity),
     transparent
   );
+  /*
+   * Ошибка загрузки данных (ADR 0096): свет под шапкой — цвет ошибки с силой свечения
+   * загрузки; плашка — поверхность поповера.
+   */
+  --tsr-comp-load-error-glow: color-mix(
+    in oklch,
+    var(--tsr-comp-error-flash-color) var(--tsr-comp-loader-glow-opacity),
+    transparent
+  );
+  --tsr-comp-load-error-icon-color: var(--tsr-sys-danger);
+  --tsr-comp-load-error-banner-bg: var(--tsr-comp-popup-bg);
+  --tsr-comp-load-error-banner-shadow: var(--tsr-comp-shadow-action);
+  --tsr-comp-load-error-banner-radius: var(--tsr-comp-control-radius);
+  --tsr-comp-load-error-banner-max-width: 36rem;
 
   /* Знак «действие включено» (ADR 0062): точка на кнопке и счётчики — цветом полосы
    * загрузки. Цифры — цветом поверхности: белые на синем тёмной темы не держат 4,5:1. */
@@ -956,6 +972,7 @@
     --tsr-comp-pending-spinner-4: Highlight;
     --tsr-comp-error-flash-color: Mark;
     --tsr-comp-error-flash-glow: Mark;
+    --tsr-comp-load-error-glow: Mark;
     --tsr-comp-tree-line-color: GrayText;
     --tsr-comp-skeleton-bg: GrayText;
     --tsr-comp-checkbox-checked-bg: Highlight;

@@ -112,9 +112,16 @@
   шапкой — оттенки `--tsr-comp-loader-glow-1…4` (по умолчанию синий `--tsr-comp-loader-bar`,
   `--tsr-sys-info-sky`, `-indigo`, `-violet` с силой `--tsr-comp-loader-glow-opacity` —
   80 % `--tsr-sys-glow-strength`, у тёмной темы она 100 %), глубина `--tsr-comp-loader-glow-size`,
-  проход цветов `--tsr-comp-loader-duration`, пульсация при уменьшенном движении
+  проход цветов `--tsr-comp-loader-duration`, проявление и угасание
+  `--tsr-comp-loader-fade-duration`, пульсация при уменьшенном движении
   `--tsr-comp-loader-pulse-duration`; линия высокой контрастности —
   `--tsr-comp-loader-height`; приглушение тела и футера — `--tsr-comp-loader-dim-opacity`.
+- **Ошибка загрузки данных** (ADR [0096](../decisions/0096-load-error.md)): красный свет
+  под шапкой — `--tsr-comp-load-error-glow` (цвет ошибки с силой свечения, в высокой
+  контрастности — линия `Mark`), иконка — `--tsr-comp-load-error-icon-color`, плашка —
+  `--tsr-comp-load-error-banner-bg` / `-shadow` / `-radius` / `-max-width` (по умолчанию
+  поверхность поповера, 36rem); подписи — `loadErrorTitle`, `loadFailedTitle`, `loadRetry`,
+  `loadErrorDismiss`, `announceLoadError`, `announceLoadFailed`; иконка — `icons.loadFailed`.
 - **Индикатор включённого действия** (ADR [0062](../decisions/0062-active-action-indicator.md)):
   точка на кнопке заголовка и кебабе, номер приоритета сортировки, счётчики тулбара —
   `--tsr-comp-active-indicator` (по умолчанию `--tsr-comp-loader-bar`), цифры —

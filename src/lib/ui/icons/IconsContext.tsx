@@ -117,6 +117,8 @@ export interface TableIcons {
   /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
   loadMoreFailed: IconComponent
   retry: IconComponent
+  /** Плашка и заглушка ошибки загрузки данных (ADR 0096) */
+  loadFailed: IconComponent
   /** Кнопка «наверх» в нижней панели (ADR 0082) */
   backToTop: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
@@ -168,6 +170,7 @@ export const DEFAULT_ICONS: TableIcons = {
   actionFailed: CircleAlert,
   loadMoreFailed: CircleAlert,
   retry: RotateCw,
+  loadFailed: CircleAlert,
   backToTop: ArrowUpToLine,
   actionBlocked: Lock,
   submenu: ChevronRight,

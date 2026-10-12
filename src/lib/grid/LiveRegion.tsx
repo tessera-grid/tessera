@@ -14,6 +14,8 @@ interface LiveRegionProps {
   table: unknown
   labels: TableLabels
   loading: boolean
+  /** Загрузка закончилась отказом (ADR 0096): об отказе скажет своё объявление. */
+  failed?: boolean
   rowCount: number
   /** Узел внутри `.data-grid-theme` — сама область лежит вне темы. */
   themeNode?: RefObject<HTMLElement | null>
@@ -44,6 +46,7 @@ export const LiveRegion = ({
   table,
   labels,
   loading,
+  failed = false,
   rowCount,
   themeNode,
 }: LiveRegionProps) => {
@@ -113,7 +116,7 @@ export const LiveRegion = ({
     announceLabel(table, l => l.announceSelection(count)),
   )
   useOnChange(loading, (isLoading, wasLoading) => {
-    if (wasLoading && !isLoading) {
+    if (wasLoading && !isLoading && !failed) {
       announceLabel(table, l =>
         rowCount === 0 ? l.noData : l.announceLoaded(rowCount),
       )

@@ -1,4 +1,5 @@
 import type { FilterStubRender } from './filtering/FilterStub'
+import type { ErrorStubRender } from './loadError/LoadError'
 import type { CSSProperties, ReactNode } from 'react'
 
 import type { TableLabels } from '../core/localization'
@@ -46,6 +47,11 @@ export interface DataGridProps {
    * узел или функция от `{ reset }`. По умолчанию — подпись и «Сбросить фильтры».
    */
   filterStub?: FilterStubRender
+  /**
+   * Заглушка ошибки первой загрузки (ADR 0096): узел или функция от
+   * `{ error, retry }`. По умолчанию — иконка, «Couldn't load the data», причина, «Retry».
+   */
+  errorStub?: ErrorStubRender
   /** Доп. CSS-класс на обёртке грида (несущей `.data-grid-theme`). */
   className?: string
   /** Инлайн-стиль обёртки грида (пер-инстансное переопределение токенов темы). */

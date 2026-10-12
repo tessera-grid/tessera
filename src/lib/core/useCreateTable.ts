@@ -69,6 +69,8 @@ export interface CreateDataGridOptions {
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
   loadingOptions?: LoadingOptions
+  loadError?: unknown
+  onRetry?: () => unknown
   rowHeight?: number
   headerHeight?: number
   defaultColumn?: DefaultColumnSizing
@@ -108,6 +110,13 @@ export type UseCreateTableParams<
   skeletonOptions?: SkeletonOptions
   /** Задержка и минимум показа обновления при `enableLoading` (ADR 0094). */
   loadingOptions?: LoadingOptions
+  /**
+   * Отказ загрузки данных (ADR 0096): `Error` или строка; `null` — ошибки нет. С данными —
+   * красный свет под шапкой и плашка, без данных — заглушка ошибки.
+   */
+  loadError?: unknown
+  /** Повтор загрузки из плашки и заглушки; промис держит кнопку в ожидании. */
+  onRetry?: () => unknown
   /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
   rowHeight?: number
   /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
@@ -138,6 +147,8 @@ export const useCreateTable = <
   enableOverflowTooltip,
   skeletonOptions,
   loadingOptions,
+  loadError,
+  onRetry,
   rowHeight,
   headerHeight,
   defaultColumn,
@@ -321,6 +332,8 @@ export const useCreateTable = <
     enableOverflowTooltip,
     skeletonOptions,
     loadingOptions,
+    loadError,
+    onRetry,
     rowHeight,
     headerHeight,
   }

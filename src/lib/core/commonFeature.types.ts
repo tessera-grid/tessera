@@ -70,6 +70,9 @@ export interface CommonOptions {
   skeletonOptions?: SkeletonOptions
   /** Задержка и минимум показа обновления (ADR 0094). */
   loadingOptions?: LoadingOptions
+  /** Отказ загрузки данных и повтор (ADR 0096). */
+  loadError?: unknown
+  onRetry?: () => unknown
   /**
    * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
    * `undefined` — строк столько, сколько в `data` (ADR 0081).

@@ -58,6 +58,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   localization?: DataGridProps['localization']
   /** Свои иконки грида (переопределение части иконок по ключу). */
   icons?: DataGridProps['icons']
+  /** Заглушка ошибки первой загрузки (ADR 0096). */
+  errorStub?: DataGridProps['errorStub']
   /** Язык подписей: `ru` — русский словарь историй под `localization`. */
   locale?: 'en' | 'ru'
 
