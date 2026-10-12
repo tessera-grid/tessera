@@ -33,9 +33,16 @@
     border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
   }
 
-  /* Закреплённые ячейки — sticky, как в теле, на непрозрачном фоне футера. */
+  /*
+   * Закреплённые ячейки — sticky, как в теле, на непрозрачном фоне футера. Колонку
+   * действий, единственную справа, — нет, как её заголовок: содержимого у неё нет, и
+   * подложка закрыла бы данные под собой. В правом блоке с пользовательским пином она
+   * закреплена с подложкой.
+   */
 
-  &:is([data-cell-pinned='left'], [data-cell-pinned='right']) {
+  &:is([data-cell-pinned='left'], [data-cell-pinned='right']):not(
+      [data-actions-column-cell='true'][data-cell-first-right-pinned='true']
+    ) {
     position: sticky;
     z-index: var(--tsr-comp-z-index-pinned);
     background-color: var(--tsr-comp-head-bg);

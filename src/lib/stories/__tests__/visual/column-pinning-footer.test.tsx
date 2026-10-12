@@ -12,7 +12,7 @@ import {
   withWideViewport,
 } from './column-pinning-helpers'
 
-// CP31–CP33: футер следует закреплению колонок (ADR 0011).
+// CP31–CP33, CP35: футер следует закреплению колонок (ADR 0011).
 
 const FOOTER_CELL = '.data-grid__footer-cell'
 
@@ -132,5 +132,63 @@ describe('Column Pinning — footer', () => {
         expect(footer, id!).toEqual(body)
       }
     })
+  })
+
+  test('CP35: the footer cell of the row-actions column behaves like its header cell — alone on the right it does not cover data on horizontal scroll; with a user right pin it sticks with an opaque backing', async () => {
+    const container = await renderColumnPinning({
+      enableFooter: true,
+      enableRowActions: true,
+    })
+    const ACTIONS = "[data-actions-column-cell='true']"
+    const footerActions = () =>
+      container.querySelector<HTMLElement>(`${FOOTER_CELL}${ACTIONS}`)!
+    const headActions = () =>
+      container.querySelector<HTMLElement>(`.data-grid__head-cell${ACTIONS}`)!
+    await expect.poll(footerActions).not.toBeNull()
+    const scroller = scrollerOf(container)
+    expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth + 400)
+
+    // Действия — единственные справа: у правого края видны данные, как в шапке.
+    await scrollTo(container, 400)
+    const edge = scroller.getBoundingClientRect().right - 12
+    const cellAt = (row: HTMLElement, selector: string) => {
+      const box = row.getBoundingClientRect()
+      return document
+        .elementFromPoint(edge, box.top + box.height / 2)
+        ?.closest<HTMLElement>(selector)
+    }
+    const headAtEdge = cellAt(
+      headActions().parentElement!,
+      '.data-grid__head-cell',
+    )
+    const footAtEdge = cellAt(footerActions().parentElement!, FOOTER_CELL)
+    expect(headAtEdge?.getAttribute('data-actions-column-cell')).not.toBe(
+      'true',
+    )
+    expect(footAtEdge).toBeTruthy()
+    expect(footAtEdge!.getAttribute('data-actions-column-cell')).not.toBe(
+      'true',
+    )
+    expect(footAtEdge!.getAttribute('data-column-id')).toBe(
+      headAtEdge?.getAttribute('data-column-id'),
+    )
+
+    // Пользовательский правый пин: действия входят в правый блок — закреплены с подложкой.
+    scroller.scrollLeft = 0
+    await pinViaPopover(headCellById(container, 'lastName'), 'Pin right')
+    await expect
+      .poll(() =>
+        footerCell(container, 'lastName')?.getAttribute('data-cell-pinned'),
+      )
+      .toBe('right')
+    await scrollTo(container, 400)
+    const box = (el: HTMLElement) => {
+      const { left, width } = el.getBoundingClientRect()
+      return [Math.round(left), Math.round(width)]
+    }
+    expect(box(footerActions())).toEqual(box(headActions()))
+    expect(getComputedStyle(footerActions()).backgroundColor).not.toBe(
+      'rgba(0, 0, 0, 0)',
+    )
   })
 })
