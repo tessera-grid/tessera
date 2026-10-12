@@ -231,19 +231,47 @@
   transition: var(--tsr-comp-reveal-chip-transition);
 }
 
-.data-grid__body-row:not(
-    :is(
-      :where(.data-grid-theme:not([data-refreshing]))
-        :hover[data-row-interact='true'],
-      [data-touched],
-      :has(:focus-visible),
-      :root[data-tsr-input='keyboard'] :has(:focus)
-    )
-  )
+/*
+ * Скрытый чип гасит токены своих цвета, тени и фона — в любом состоянии кнопки
+ * (активна, отключена) — и не закрывает контент под собой. Появление возвращает
+ * токены темы через `inherit`. Без `:hover` внутри `:not()`: аддон pseudo-states
+ * Storybook переписывает такие правила неверно.
+ */
+.data-grid__body-row .row__button--hidden > button {
+  --tsr-comp-button-color: transparent;
+  --tsr-comp-control-active-color: transparent;
+  --tsr-comp-control-disabled-color: transparent;
+  --tsr-comp-shadow-action: none;
+  --tsr-comp-action-button-bg: transparent;
+}
+
+:where(.data-grid-theme:not([data-refreshing]))
+  .data-grid__body-row:hover:is([data-row-interact='true'])
+  .row__button--hidden
+  > button,
+.data-grid__body-row[data-touched] .row__button--hidden > button {
+  --tsr-comp-button-color: inherit;
+  --tsr-comp-control-active-color: inherit;
+  --tsr-comp-control-disabled-color: inherit;
+  --tsr-comp-shadow-action: inherit;
+  --tsr-comp-action-button-bg: inherit;
+}
+
+.data-grid__body-row:has(:focus-visible) .row__button--hidden > button {
+  --tsr-comp-button-color: inherit;
+  --tsr-comp-control-active-color: inherit;
+  --tsr-comp-control-disabled-color: inherit;
+  --tsr-comp-shadow-action: inherit;
+  --tsr-comp-action-button-bg: inherit;
+}
+
+:root[data-tsr-input='keyboard']
+  .data-grid__body-row:has(:focus)
   .row__button--hidden
   > button {
-  color: transparent;
-  box-shadow: none;
-  /* Скрытый чип не закрывает контент под собой (перебивает фон disabled-чипа). */
-  background-color: transparent !important;
+  --tsr-comp-button-color: inherit;
+  --tsr-comp-control-active-color: inherit;
+  --tsr-comp-control-disabled-color: inherit;
+  --tsr-comp-shadow-action: inherit;
+  --tsr-comp-action-button-bg: inherit;
 }

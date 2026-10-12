@@ -198,5 +198,16 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
       ].map(button => getComputedStyle(button).opacity)
     await waitFor(() => expect(hidden('item-id-2')).toContain('1'))
     expect(hidden('item-id-3').every(opacity => opacity === '0')).toBe(true)
+    // Чип действий строки — тоже: значок наведённой строки закрашен, у соседней прозрачен.
+    const chipColor = (row: string) =>
+      getComputedStyle(
+        canvasElement.querySelector(
+          `.data-grid__body-row[data-row-id="${row}"] .row__button--hidden > button`,
+        )!,
+      ).color
+    await waitFor(() =>
+      expect(chipColor('item-id-2')).not.toBe('rgba(0, 0, 0, 0)'),
+    )
+    expect(chipColor('item-id-3')).toBe('rgba(0, 0, 0, 0)')
   },
 }
