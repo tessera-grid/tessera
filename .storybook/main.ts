@@ -13,10 +13,14 @@ const config: StorybookConfig = {
     // Истории, как и тесты, — в StrictMode (ADR 0091, ADR 0093 VR1).
     options: { strictMode: true },
   },
-  staticDirs: [{ from: './brand', to: '/brand' }],
+  // Бренд — единый источник brand/ в корне: Storybook раздаёт только логотип и фавикон.
+  staticDirs: [
+    { from: '../brand/storybook', to: '/brand/storybook' },
+    { from: '../brand/favicon', to: '/brand/favicon' },
+  ],
   managerHead: head => `${head}
-    <link rel="icon" type="image/svg+xml" href="brand/favicon.svg" />
-    <link rel="icon" sizes="48x48" href="brand/favicon.ico" />`,
+    <link rel="icon" type="image/svg+xml" href="brand/favicon/favicon.svg" />
+    <link rel="icon" sizes="48x48" href="brand/favicon/favicon.ico" />`,
 }
 
 export default config

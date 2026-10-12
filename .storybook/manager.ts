@@ -9,8 +9,8 @@ addons.setConfig({
     base: dark ? 'dark' : 'light',
     brandTitle: 'Tessera',
     brandImage: dark
-      ? 'brand/storybook-brand-dark.svg'
-      : 'brand/storybook-brand-light.svg',
+      ? 'brand/storybook/storybook-brand-dark.svg'
+      : 'brand/storybook/storybook-brand-light.svg',
     brandTarget: '_self',
   }),
 })
