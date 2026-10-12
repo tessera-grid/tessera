@@ -199,19 +199,21 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
   args: {
     ...GRID,
     serverDelayMs: 600,
+    enableColumnVisibility: true,
     // Грид не фильтрует сам: фильтры и поиск уходят в onFilterChange / onSearchChange
     // (журнал справа), «сервер» отвечает с задержкой, пока идёт загрузка — полоса
     // прогресса. «Показано N из M» — из ответа сервера. Поиск передаёт колонки
-    // (`columnIds` в журнале, ADR 0053): включите enableColumnVisibility и скройте
-    // колонку — запрос уйдёт повторно с новым набором.
+    // (`columnIds` в журнале, ADR 0053): скройте колонку в меню «Колонки» — запрос
+    // уйдёт повторно с новым набором.
   },
   argTypes: {
     serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
   },
   render: args => <FilteringServerDemo {...normalizeArgs(args)} />,
-  // Дымовой сценарий (ADR 0045, FL37): фильтр и поиск уходят колбэками после дебаунса,
-  // данные перезапрашиваются, «показано N из M» — из ответа.
-  parameters: { requirements: ['FL37'] },
+  // Дымовой сценарий (ADR 0045, FL37; ADR 0053, QS9): фильтр и поиск уходят колбэками
+  // после дебаунса, данные перезапрашиваются, «показано N из M» — из ответа; скрытие
+  // колонки повторяет поиск с новым набором колонок.
+  parameters: { requirements: ['FL37', 'QS9'] },
   play: async ({ canvasElement }) => {
     const firstName = () => firstRowText(canvasElement, 'name')
     await openFilter(canvasElement, 'name')
@@ -230,6 +232,21 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     // Bob — каждая 7-я строка, Paris — каждая 5-я: оба — каждая 35-я.
     await until(() => expect(filteredCount()).toBe('Showing 6 of 200'))
     expect(firstName()).toBe('Bob 15')
+    expect(callbackLog()).toContain('columnIds="name,city,age,visits"')
+    expect(searchHint()).toBe('Search in columns: Name, City, Age, Visits')
+
+    // Скрытая колонка уходит из поиска: запрос повторяется с новым набором.
+    await openPopup(() => byTestId('column-visibility-button'))
+    await userEvent.click(
+      document.querySelector<HTMLElement>(
+        '[data-testid="column-visibility-menu"] [data-column-id="age"] [role="checkbox"]',
+      )!,
+    )
+    await userEvent.keyboard('{Escape}')
+    await until(() =>
+      expect(callbackLog()).toContain('columnIds="name,city,visits"'),
+    )
+    expect(searchHint()).toBe('Search in columns: Name, City, Visits')
     await settle()
   },
 }
@@ -446,6 +463,14 @@ async function closeFilter() {
 
 function filteredCount() {
   return byTestId('filtered-rows-count')?.textContent ?? null
+}
+
+/** Описание поля поиска — колонки, по которым он идёт (ADR 0053). */
+function searchHint() {
+  const describedBy = byTestId('quick-search')?.getAttribute('aria-describedby')
+  return (
+    (describedBy && document.getElementById(describedBy)?.textContent) ?? ''
+  )
 }
 
 function optionOf(value: string) {

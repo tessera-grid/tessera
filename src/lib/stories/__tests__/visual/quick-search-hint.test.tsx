@@ -10,8 +10,9 @@ import { filteringColumns, filteringData } from '../../__mocks__/filteringData'
 import { bodyRows } from '../helpers'
 import { composed } from '../stories'
 
-// Подсказка быстрого поиска (ADR 0053): QS1–QS2, QS4–QS5, QS8–QS9. QS3, QS6–QS7 —
-// модульные (`src/lib/__tests__/quickSearchHint.dom.test.tsx`).
+// Подсказка быстрого поиска (ADR 0053): QS1–QS2, QS4–QS5, QS8. QS3, QS6–QS7 —
+// модульные (`src/lib/__tests__/quickSearchHint.dom.test.tsx`), QS9 — `play` истории
+// «Filtering — Server».
 
 const HINT = 'Search in columns: Name, City, Age, Visits'
 
@@ -156,20 +157,4 @@ describe('Quick search hint', () => {
       expect(Math.min(width, height)).toBeGreaterThanOrEqual(24)
     },
   )
-
-  test('QS9: the «Filtering — server» story sends the search columns to the server and resends them when a column is hidden', async () => {
-    await mount(
-      <composed.FilteringServer serverDelayMs={50} enableColumnVisibility />,
-    )
-    expect(description()).toBe(HINT)
-    const log = () =>
-      document.querySelector<HTMLElement>('[data-testid="callback-log"]')!
-        .innerText
-    await userEvent.type(input()!, 'paris')
-    await expect.poll(log).toContain('columnIds="name,city,age,visits"')
-
-    await toggleColumn('age')
-    await expect.poll(log).toContain('columnIds="name,city,visits"')
-    expect(description()).toBe('Search in columns: Name, City, Visits')
-  })
 })
