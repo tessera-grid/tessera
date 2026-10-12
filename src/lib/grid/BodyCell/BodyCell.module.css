@@ -192,44 +192,20 @@
  */
 
 /*
- * Линии дерева (ADR 0058): вертикальная направляющая по центру каждого шага отступа.
- * Слой маски на уровень (`--tsr-tree-masks` от ячейки): плитка вчетверо шире линии,
- * линия — в её середине. Линия внутри изображения сглаживается при дробном масштабе, а
- * прямоугольник, тень и стоп градиента в 1px схлопываются в ноль (ADR 0084).
- * Линия заходит на верхнюю границу ячейки (раскладка grid) и не рвётся между строками:
- * contain: paint обрезал бы её по внутреннему краю границы, поэтому обрезка — clip-path
- * по внешнему краю (overflow-clip-margin нет в Safari).
+ * Линии дерева (ADR 0102) — элементы в ячейке отступа (`TreeLines`). Линия заходит на
+ * верхнюю границу ячейки (раскладка grid) и не рвётся между строками: contain: paint
+ * обрезал бы её по внутреннему краю границы, поэтому обрезка — clip-path по внешнему
+ * краю (overflow-clip-margin нет в Safari).
  */
 .body__cell[data-tree-depth] {
-  --tsr-tree-line-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 1' preserveAspectRatio='none'%3E%3Crect x='1.5' width='1' height='1'/%3E%3C/svg%3E");
-
   contain: layout;
   clip-path: inset(0);
-}
-
-.body__cell[data-tree-depth]::before {
-  --tsr-tree-step: var(--tsr-comp-row-nesting-indent);
-  --tsr-tree-line: var(--tsr-comp-tree-line-width);
-
-  content: '';
-  position: absolute;
-  top: calc(-1 * var(--tsr-tree-line-overlap, 0px));
-  bottom: 0;
-  right: 0;
-  left: calc(var(--tsr-tree-step) / 2 - 1.5 * var(--tsr-tree-line));
-  pointer-events: none;
-  background-color: var(--tsr-comp-tree-line-color);
-  mask-image: var(--tsr-tree-masks);
-  mask-position: var(--tsr-tree-mask-positions);
-  mask-size: calc(4 * var(--tsr-tree-line)) 100%;
-  /* Повтор по вертикали: край плитки при масштабировании не светлеет на стыке строк. */
-  mask-repeat: no-repeat repeat;
 }
 
 /* В раскладке grid у ячейки есть верхняя граница — линия заходит на неё. */
 .body__cell[data-tree-depth][data-layout='grid']:not(
     [data-cell-of-first-row='true']
-  )::before {
+  ) {
   --tsr-tree-line-overlap: 1px;
 }
 

@@ -1,0 +1,62 @@
+/*
+ * Линии дерева (ADR 0102). Вертикаль уровня k — под началом текста строки глубины k−1:
+ * (k−1) × шаг + отступ. Линии — рамки: при дробном масштабе рамка не схлопывается в
+ * ноль, в отличие от прямоугольника и стопа градиента в 1px (ADR 0084).
+ */
+.lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rail,
+.elbow,
+.joinedElbow,
+.stub {
+  --tsr-tree-x: calc(
+    var(--tsr-comp-row-nesting-indent) * (var(--tsr-tree-level) - 1) +
+      var(--tsr-comp-tree-line-inset)
+  );
+
+  position: absolute;
+  left: calc(var(--tsr-tree-x) - var(--tsr-comp-tree-line-width) / 2);
+  box-sizing: border-box;
+  border: 0 solid var(--tsr-comp-tree-line-color);
+  border-left-width: var(--tsr-comp-tree-line-width);
+}
+
+/* Вертикаль насквозь: заходит на верхнюю границу ячейки и не рвётся между строками. */
+.rail {
+  top: calc(-1 * var(--tsr-tree-line-overlap, 0px));
+  bottom: 0;
+}
+
+/* Поворот к строке: сверху до середины, дуга и горизонталь до начала текста с зазором. */
+.elbow,
+.joinedElbow {
+  top: calc(-1 * var(--tsr-tree-line-overlap, 0px));
+  width: calc(
+    var(--tsr-comp-row-nesting-indent) - var(--tsr-ref-space-1) +
+      var(--tsr-comp-tree-line-width) / 2
+  );
+  height: calc(
+    50% + var(--tsr-tree-line-overlap, 0px) + var(--tsr-comp-tree-line-width) /
+      2
+  );
+  border-bottom-width: var(--tsr-comp-tree-line-width);
+  border-bottom-left-radius: var(--tsr-comp-tree-line-radius);
+}
+
+/*
+ * Поворот на сквозной линии: её вертикаль поворот не повторяет — полупрозрачные слои
+ * темнели бы на наложении.
+ */
+.joinedElbow {
+  clip-path: inset(0 0 0 var(--tsr-comp-tree-line-width));
+}
+
+/* Отросток к детям: от низа текста строки до нижнего края. */
+.stub {
+  top: calc(50% + 0.5lh + var(--tsr-ref-space-1));
+  bottom: 0;
+}

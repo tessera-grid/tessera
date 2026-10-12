@@ -382,14 +382,17 @@ function firstExpandableRow(container: HTMLElement) {
   return rowsTopDown(container).find(row => row.querySelector(TOGGLE) !== null)!
 }
 
-// Шаг отступа вложенности (ADR 0059, RE61): 16px на уровень у строк дерева и групп.
+// Шаг отступа вложенности (ADR 0059, RE61): 16px на уровень у строк дерева и групп без
+// линий дерева (с линиями шаг свой — ADR 0102).
 describe('Row Expanding — nesting step', () => {
-  test('RE61: by default a row of depth d shifts the first user column content by 16px × d, for tree rows and grouped rows', async () => {
+  test('RE61: by default without tree lines a row of depth d shifts the first user column content by 16px × d, for tree rows and grouped rows', async () => {
     const paddings = () =>
       [...document.querySelectorAll<HTMLElement>('.data-grid__body-cell')]
         .map(cell => parseFloat(getComputedStyle(cell).paddingLeft))
         .filter(value => value > 0)
-    const tree = await render(<composed.RowExpandingTreeLines />)
+    const tree = await render(
+      <composed.RowExpandingTreeLines rowExpandingTreeLines={false} />,
+    )
     await expect.poll(() => paddings().includes(48)).toBe(true)
     expect(new Set(paddings())).toEqual(new Set([16, 32, 48]))
     await tree.unmount()

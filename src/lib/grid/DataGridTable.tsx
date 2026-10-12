@@ -173,6 +173,9 @@ export const DataGridTable = ({
             ariaRowIndexBase={headerGroups.length + rowWindow.offset}
             selectableRows={!!keyboardNavigation && enableRowSelection}
             treeRows={!!keyboardNavigation && hierarchical}
+            treeLines={
+              (table.options as { enableTreeLines?: boolean }).enableTreeLines
+            }
             isResizingColumns={isResizingColumns}
             isVirtualColumns={isVirtualColumns}
             enableRowDragging={enableRowDragging}

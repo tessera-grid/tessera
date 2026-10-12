@@ -129,6 +129,10 @@ const settle = async () => {
   await frame()
 }
 
+/** Цвет линии дерева в ячейке отступа (ADR 0102: линии — рамки элементов в ячейке). */
+const treeLineColor = (cell: HTMLElement) =>
+  getComputedStyle(cell.querySelector('[aria-hidden] > span')!).borderLeftColor
+
 const treeCell = () =>
   [...document.querySelectorAll<HTMLElement>('[data-tree-depth]')].find(el => {
     const r = el.getBoundingClientRect()
@@ -235,9 +239,9 @@ describe('Повышенный контраст (ADR 0088)', () => {
     const tree = await render(<composed.RowExpandingTreeLines />)
     await expect.poll(treeCell).toBeTruthy()
     await changes(
-      '--tsr-sys-tint-line',
+      '--tsr-sys-tint-guide',
       () => treeCell()!.closest<HTMLElement>('.data-grid-theme')!,
-      () => style(treeCell()!, '::before').backgroundColor,
+      () => treeLineColor(treeCell()!),
     )
     await tree.unmount()
 
@@ -267,7 +271,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
     await inBothThemes(async () => {
       const cell = treeCell()!
       expect(
-        ratio(style(cell, '::before').backgroundColor, effectiveBg(cell)),
+        ratio(treeLineColor(cell), effectiveBg(cell)),
         'линия дерева',
       ).toBeGreaterThanOrEqual(3)
       const container = document.querySelector<HTMLElement>(

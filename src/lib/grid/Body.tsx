@@ -12,6 +12,7 @@ import type { CellSlot } from '../core/createSlots'
 import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
 import { getTreeAria } from './treeAria'
+import { getTreeLines } from './treeBranches'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -30,6 +31,8 @@ interface TableBodyProps {
   selectableRows?: boolean
   /** Строки несут aria-level/setsize/posinset (treegrid). */
   treeRows?: boolean
+  /** Ветки линий дерева (ADR 0102). */
+  treeLines?: boolean
   isResizingColumns: false | string
   isVirtualColumns: boolean
   enableRowDragging?: boolean
@@ -48,6 +51,7 @@ export const Body = ({
   ariaRowIndexBase,
   selectableRows,
   treeRows,
+  treeLines,
   isVirtualColumns,
   enableRowDragging,
 }: TableBodyProps) => {
@@ -55,6 +59,10 @@ export const Body = ({
   const treeAria = useMemo(
     () => (treeRows ? getTreeAria(rows) : undefined),
     [treeRows, rows],
+  )
+  const treeLinesIndex = useMemo(
+    () => (treeLines ? getTreeLines(rows) : undefined),
+    [treeLines, rows],
   )
 
   return (
@@ -82,6 +90,8 @@ export const Body = ({
             selectableRows={selectableRows}
             treeSetSize={treeAria?.setSize(virtualRow.index)}
             treePosInSet={treeAria?.posInSet(virtualRow.index)}
+            treeBranch={treeLinesIndex?.branch(virtualRow.index)}
+            treeOpen={treeLinesIndex?.open(virtualRow.index)}
             isVirtualColumns={isVirtualColumns}
           />
         )

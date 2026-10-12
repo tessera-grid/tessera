@@ -397,6 +397,10 @@ export const DataGrid = ({
                   data-toolbar={enableToolbar || undefined}
                   data-status-bar={hasStatusBar || undefined}
                   data-refreshing={refreshingShown || undefined}
+                  data-tree-lines={
+                    (table.options as { enableTreeLines?: boolean })
+                      .enableTreeLines || undefined
+                  }
                   style={wrapperStyles}
                 >
                   {toolbar}

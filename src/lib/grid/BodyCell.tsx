@@ -30,7 +30,8 @@ import { RenderCellSlot, RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
-import { getCellExpandingStyles, treeLineMasks } from './cellExpandingStyles'
+import { getCellExpandingStyles, isIndentColumn } from './cellExpandingStyles'
+import { TreeLines } from './TreeLinesLayer'
 import { getColumnSizeVariable, getVirtualCellLeft } from './columnSizes'
 
 import styles from '../grid/BodyCell/BodyCell.module.css'
@@ -44,6 +45,9 @@ interface TableBodyCellProps {
   cellSlot?: RegisterSlotParams<any>[]
   actionRowSlot?: RegisterSlotParams<any>[]
   interact?: boolean
+  /** Линии дерева строки (ADR 0102): маска уровней и отросток к детям. */
+  treeBranch?: string
+  treeOpen?: boolean
   // Абсолютная позиция центральной (непиннутой) виртуализированной ячейки: её `left`
   // от левого края строки. Ячейка выносится из потока (position:absolute), чтобы её
   // монтаж/демонтаж на границе окна не пере-раскладывал соседей. Для пиннутых и
@@ -61,6 +65,8 @@ export const BodyCell = memo(
     cellSlot,
     actionRowSlot,
     interact = true,
+    treeBranch,
+    treeOpen,
     absoluteLeft,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
@@ -114,12 +120,11 @@ export const BodyCell = memo(
       table: table as never,
     })
 
-    // Линии дерева (ADR 0058) — в отступе той же ячейки, по уровню на шаг.
-    const treeDepth =
-      paddingLeft &&
-      (table.options as { enableTreeLines?: boolean }).enableTreeLines
-        ? cell.row.depth
-        : undefined
+    // Линии дерева (ADR 0102) — в ячейке отступа: ветки строки и отросток к детям.
+    const treeLines =
+      treeBranch !== undefined &&
+      (cell.row.depth > 0 || !!treeOpen) &&
+      isIndentColumn(cell.column as never, table as never)
 
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
@@ -204,7 +209,6 @@ export const BodyCell = memo(
                 right: endPinnedOffset,
               }),
           paddingLeft,
-          ...(treeDepth && treeLineMasks(treeDepth)),
           ...selectionStyle,
           ...highlighted.style,
         }}
@@ -238,7 +242,7 @@ export const BodyCell = memo(
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}
-        data-tree-depth={treeDepth}
+        data-tree-depth={treeLines ? cell.row.depth : undefined}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}
         data-cell-odd-right-pinned={isEndPinned && rowIndex % 2 !== 0}
@@ -254,6 +258,7 @@ export const BodyCell = memo(
         data-cell-of-first-row={cell.row.getIsFirstRow()}
         data-cell-of-last-row={cell.row.getIsLastRow()}
       >
+        {treeLines && <TreeLines branch={treeBranch} open={!!treeOpen} />}
         <CellWrapperContent
           flex={getAlignContent({
             isActionsColumn,

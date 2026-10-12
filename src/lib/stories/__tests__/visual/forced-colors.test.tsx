@@ -402,13 +402,17 @@ describe('Высокая контрастность (ADR 0087)', () => {
       )
     await expect.poll(cell).toBeTruthy()
     const target = cell()!
-    expect(style(target, '::before').backgroundColor).toBe(sys('GrayText'))
+    expect(
+      getComputedStyle(target.querySelector('[aria-hidden] > span')!)
+        .borderLeftColor,
+    ).toBe(sys('GrayText'))
     const box = target.getBoundingClientRect()
     const shot = await snapshot()
-    // Линия первого уровня — в середине первого шага отступа (16px).
+    // Горизонталь поворота — на середине строки, от линии родителя до текста.
     const y = box.top + box.height / 2
-    // Внутри отступа, мимо рамки ячейки.
-    const xs = Array.from({ length: 28 }, (_, i) => box.left + 3 + i)
+    // Внутри отступа и отступа содержимого, мимо рамки ячейки.
+    const indent = parseFloat(getComputedStyle(target).paddingLeft) + 16
+    const xs = Array.from({ length: indent - 3 }, (_, i) => box.left + 3 + i)
     expect(
       xs.some(x => toward(shot(x, y), sys('Canvas'), sys('GrayText'))),
     ).toBe(true)

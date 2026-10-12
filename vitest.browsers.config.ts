@@ -10,7 +10,8 @@ import { testCommands } from './vitest.commands'
 // клавиатуры: Firefox держит прокручиваемые области в порядке Tab (ADR 0021, KN32).
 // Кольцо фокуса после мыши: Firefox не даёт :focus-visible фокусу от скрипта (CB5).
 // Раскрытие кнопок ячейки без возможностей только Chromium (CB6). Смена кольца кнопки
-// посреди нажатия: Firefox терял клик (BS18).
+// посреди нажатия: Firefox терял клик (BS18). Линии дерева при дробном масштабе: Firefox и
+// WebKit схлопывали линию в 1px (TL7).
 // Запуск: npm run test:browsers
 export default defineConfig({
   ...base,
@@ -22,6 +23,7 @@ export default defineConfig({
       'src/lib/stories/__tests__/visual/focus-modality.test.tsx',
       'src/lib/stories/__tests__/visual/reveal-engines.test.tsx',
       'src/lib/stories/__tests__/visual/ring-press.test.tsx',
+      'src/lib/stories/__tests__/visual/tree-lines-zoom.test.tsx',
     ],
     setupFiles: ['./vitest.setup.ts'],
     fileParallelism: false,

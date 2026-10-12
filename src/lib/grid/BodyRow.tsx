@@ -45,6 +45,9 @@ export interface TableBodyRowProps {
   /** Позиция строки среди соседей в treegrid; есть только в treegrid. */
   treeSetSize?: number
   treePosInSet?: number
+  /** Линии дерева (ADR 0102): маска уровней строки и отросток к детям. */
+  treeBranch?: string
+  treeOpen?: boolean
   isVirtualColumns: boolean
 }
 
@@ -92,6 +95,8 @@ export const BodyRowCells = ({
   rightCellSlot,
   cellSlot,
   actionRowSlot,
+  treeBranch,
+  treeOpen,
   isVirtualColumns,
   isRowInteract,
 }: BodyRowCellsProps) => {
@@ -108,6 +113,8 @@ export const BodyRowCells = ({
       cellSlot,
       actionRowSlot,
       interact: isRowInteract,
+      treeBranch,
+      treeOpen,
       absoluteLeft,
     })
 
@@ -156,6 +163,8 @@ export const BodyRowCells = ({
             cellSlot={cellSlot}
             actionRowSlot={actionRowSlot}
             interact={isRowInteract}
+            treeBranch={treeBranch}
+            treeOpen={treeOpen}
           />
         )
       })}

@@ -109,12 +109,15 @@
 - **Шаг отступа вложенности** (ADR [0059](../decisions/0059-row-nesting-indent.md)):
   `--tsr-comp-row-nesting-indent` (16px) — отступ первой колонки, шаг линий дерева и
   шаг перетаскивания строки по уровням (JS читает его из темы грида).
-- **Линии дерева** (ADR [0058](../decisions/0058-tree-lines.md)): псевдоэлемент
-  `::before` ячейки отступа с `data-tree-depth` — `--tsr-comp-tree-line-color` (3 %
-  цвета текста) и `--tsr-comp-tree-line-width` (1px); линии — слои маски псевдоэлемента,
-  по слою на уровень со сдвигом на шаг `--tsr-comp-row-nesting-indent` (ADR 0059).
-  Маска, а не прямоугольник, тень или стоп градиента: те в 1px при дробном масштабе
-  схлопываются в ноль (ADR 0084).
+- **Линии дерева** (ADR [0058](../decisions/0058-tree-lines.md),
+  [0102](../decisions/0102-curved-tree-lines.md)): ветки со скруглёнными поворотами —
+  декоративные элементы-рамки в ячейке отступа с `data-tree-depth`.
+  `--tsr-comp-tree-line-color` (12 % цвета текста, рычаг `--tsr-sys-tint-guide`; в
+  повышенном контрасте 55 %), `--tsr-comp-tree-line-width` (1.5px),
+  `--tsr-comp-tree-line-radius` (половина шага), `--tsr-comp-tree-line-inset` (вертикаль
+  под началом текста) и `--tsr-comp-tree-line-indent` (20px) — шаг отступа, пока корень
+  несёт `data-tree-lines`. Рамки, а не прямоугольник, тень или стоп градиента: те в 1px
+  при дробном масштабе схлопываются в ноль (ADR 0084).
 - **Обновление данных** (ADR [0094](../decisions/0094-loading-glow.md)): свечение под
   шапкой — оттенки `--tsr-comp-loader-glow-1…4` (по умолчанию синий `--tsr-comp-loader-bar`,
   `--tsr-sys-info-sky`, `-indigo`, `-violet` с силой `--tsr-comp-loader-glow-opacity` —

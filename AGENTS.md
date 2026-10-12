@@ -441,10 +441,13 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       (PT1–PT6 — модель на входе без обхода строк, первый проход после снятия, паритет
       конвейера с TanStack, автосбросы), перф PT7 — в `interaction`
       ([ADR 0068](docs/decisions/0068-idle-filter-and-group-passes.md));
-      линии дерева — `row-expanding-tree-lines` (RE52–RE59 — по пикселям скриншота:
-      уровни, непрерывность через границу строки, группы, закрепление, виртуализация,
-      сортировка, страница, раскладка, axe, токены), перф RE60 — в `scroll`
-      ([ADR 0058](docs/decisions/0058-tree-lines.md)); шаг отступа — `row-expanding`
+      линии дерева — `row-expanding-tree-lines` (TL1–TL6 — по пикселям скриншота: поворот
+      со скруглением, продолжение и конец ветки, линии предков, отросток к детям, модель
+      строк, токены; RE53, RE55–RE58 — без опции, группы, закрепление, виртуализация,
+      сортировка, страница, раскладка, axe), `tree-lines-zoom` (TL7 — дробный масштаб
+      страницы, ещё и в `test:browsers`), перф TL8 — в `scroll`
+      ([ADR 0058](docs/decisions/0058-tree-lines.md),
+      [ADR 0102](docs/decisions/0102-curved-tree-lines.md)); шаг отступа — `row-expanding`
       (RE61), `row-expanding-tree-lines` (RE62), модульный `rowNesting` (RE63–RE64)
       ([ADR 0059](docs/decisions/0059-row-nesting-indent.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
@@ -743,9 +746,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);
     CF12 — медленная прокрутка с 1500 ячейками в ожидании со светом против выборки без
-    них, [ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md); RE60 — прокрутка
+    них, [ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md); TL8 — прокрутка
     раскрытого дерева с линиями против того же дерева без них,
-    [ADR 0058](docs/decisions/0058-tree-lines.md); AI10 — медленная горизонтальная
+    [ADR 0102](docs/decisions/0102-curved-tree-lines.md); AI10 — медленная горизонтальная
     прокрутка 1000×1000 с сортировкой по всем колонкам против той же выборки без неё,
     [ADR 0062](docs/decisions/0062-active-action-indicator.md); RH8 — спокойная прокрутка
     1000×1000 при строках 40px против 50px,

@@ -96,6 +96,8 @@
   --tsr-sys-tint-selected: 6%;
   --tsr-sys-tint-pinned: 3%;
   --tsr-sys-tint-line: 3%;
+  /* Направляющие (линии дерева, ADR 0102): заметнее линий грида. */
+  --tsr-sys-tint-guide: 12%;
   --tsr-sys-tint-fill: 10%;
   /* Тонкая линия грида: линии дерева, в режиме контраста — разделители и контуры. */
   --tsr-sys-line: color-mix(
@@ -443,9 +445,18 @@
   --tsr-comp-highlight-fade-duration: 500ms;
   /* Шаг отступа уровня вложенности строк (ADR 0059). */
   --tsr-comp-row-nesting-indent: 16px;
-  /* Линии дерева (ADR 0058): направляющие по уровням в отступе первой колонки. */
-  --tsr-comp-tree-line-color: var(--tsr-sys-line);
-  --tsr-comp-tree-line-width: 1px;
+  /* Линии дерева (ADR 0102): ветки со скруглёнными поворотами в отступе первой колонки. */
+  --tsr-comp-tree-line-color: color-mix(
+    in srgb,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-guide),
+    transparent
+  );
+  --tsr-comp-tree-line-width: 1.5px;
+  /* Шаг отступа дерева с линиями: повороту ветки нужно место. */
+  --tsr-comp-tree-line-indent: 20px;
+  --tsr-comp-tree-line-radius: calc(var(--tsr-comp-row-nesting-indent) / 2);
+  /* Вертикаль уровня — под началом текста: горизонтальный отступ содержимого ячейки. */
+  --tsr-comp-tree-line-inset: var(--tsr-ref-space-4);
   /* Пятно света ожидания ячейки: полуоси эллипса с центром на кромке. */
   --tsr-comp-cell-pending-glow-width: 64px;
   --tsr-comp-cell-pending-glow-height: 40px;
@@ -810,6 +821,7 @@
     --tsr-sys-tint-selected: 12%;
     --tsr-sys-tint-pinned: 6%;
     --tsr-sys-tint-line: 55%;
+    --tsr-sys-tint-guide: 55%;
     --tsr-sys-tint-fill: 50%;
     --tsr-sys-border: var(
       --border,
@@ -865,6 +877,7 @@
   --tsr-sys-tint-selected: 12%;
   --tsr-sys-tint-pinned: 6%;
   --tsr-sys-tint-line: 55%;
+  --tsr-sys-tint-guide: 55%;
   --tsr-sys-tint-fill: 50%;
   --tsr-sys-border: var(
     --border,
@@ -990,6 +1003,11 @@
     --tsr-comp-popup-item-highlighted-outline: none;
     --tsr-comp-segments-track-outline: none;
   }
+}
+
+/* С линиями дерева шаг отступа — свой (ADR 0102); шаг, заданный приложением на теме, главнее. */
+:where(.data-grid-theme[data-tree-lines]) {
+  --tsr-comp-row-nesting-indent: var(--tsr-comp-tree-line-indent);
 }
 
 /* Слои подсветки (ADR 0080, 0101): цвет с начальным «прозрачным», чтобы постановка

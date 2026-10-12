@@ -148,7 +148,7 @@ describe('Производительность прокрутки — споко
 const AS14_COST = { ratio: 3, plusMs: 4 }
 const CF12_COST = { ratio: 3, plusMs: 4 }
 const MI23_COST = { ratio: 1.3, plusMs: 4 }
-const RE60_COST = { ratio: 1.3, plusMs: 4 }
+const TL8_COST = { ratio: 1.3, plusMs: 4 }
 const AI10_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
@@ -368,12 +368,12 @@ describe('Производительность прокрутки — ожида
   )
 })
 
-// Линии дерева (ADR 0058, RE60): раскрытое дерево 50 корней × 3 уровня по 3 ребёнка
+// Линии дерева (ADR 0102, TL8): раскрытое дерево 50 корней × 3 уровня по 3 ребёнка
 // (650 строк) с линиями против того же дерева без них; скорость ниже порога быстрой
 // прокрутки — ячейки отступа рисуются, а не заменяются скелетами.
 describe('Производительность прокрутки — линии дерева', () => {
   test(
-    'RE60: прокрутка раскрытого дерева с линиями не дороже того же дерева без линий',
+    'TL8: прокрутка раскрытого дерева с линиями не дороже того же дерева без линий',
     async () => {
       const tree = makeData({ shape: 'tree', count: 50, depth: 3, breadth: 3 })
       const measure = async (treeLines: boolean) => {
@@ -399,7 +399,7 @@ describe('Производительность прокрутки — линии
       const runs = await againstBase(measure)
       const base = medianAxes(runs.base)
       const lined = medianAxes(runs.variant)
-      const ceiling = axesCeiling(base, RE60_COST)
+      const ceiling = axesCeiling(base, TL8_COST)
       const record = (
         id: string,
         label: string,
@@ -423,8 +423,8 @@ describe('Производительность прокрутки — линии
             ...r[axis],
           })),
         })
-      await record('RE60-base', 'дерево без линий', base, false)
-      await record('RE60', 'дерево с линиями', lined, true)
+      await record('TL8-base', 'дерево без линий', base, false)
+      await record('TL8', 'дерево с линиями', lined, true)
 
       for (const axis of ['y', 'x'] as const) {
         expect

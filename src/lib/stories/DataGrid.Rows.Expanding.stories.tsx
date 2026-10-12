@@ -102,8 +102,8 @@ export const RowExpanding: StoryObj<StoryProps> = {
 }
 
 /**
- * Линии дерева (ADR 0058): вертикальные направляющие по уровням в отступе первой
- * колонки. Дерево в 4 уровня раскрыто целиком; выключите `rowExpandingTreeLines`,
+ * Линии дерева (ADR 0102): ветки со скруглёнными поворотами, как в ветках комментариев,
+ * в отступе первой колонки. Дерево в 4 уровня раскрыто целиком; выключите `rowExpandingTreeLines`,
  * чтобы сравнить с одним отступом.
  */
 export const RowExpandingTreeLines: StoryObj<StoryProps> = {
