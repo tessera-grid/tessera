@@ -3,6 +3,14 @@
 
 <a name="page-start" href="#"></a>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/lockup-tagline-color-dark-bg.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/brand/lockup-tagline-color-light-bg.svg">
+    <img alt="tessera — Extensible, customizable data grid for React" src="docs/assets/brand/lockup-tagline-universal.svg" width="560">
+  </picture>
+</p>
+
 # Tessera
 
 `@mstrvtt/tessera`
