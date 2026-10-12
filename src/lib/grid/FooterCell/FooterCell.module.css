@@ -65,62 +65,15 @@
   );
 }
 
-.footer__cell[data-column-highlight-out] {
+/* Подсветка проявляется и гаснет одним переходом (ADR 0101). */
+.footer__cell[data-column-highlight] {
   transition:
     var(--tsr-comp-row-transition),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
       var(--tsr-comp-motion-easing-out);
 }
 
-.footer__cell[data-highlight-shimmer] {
-  contain: layout paint;
-}
-
-.footer__cell[data-highlight-shimmer] {
-  container-type: inline-size;
-}
-
-.footer__cell[data-highlight-shimmer]::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1;
-  /* Не шире 60 % цели: узкая ячейка не проскакивает за мгновение. */
-  width: min(var(--tsr-comp-highlight-shimmer-width), 60cqw);
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--tsr-highlight-shimmer),
-    transparent
-  );
-  transform: translateX(-100%);
-  animation: footer-highlight-shimmer
-    var(
-      --tsr-highlight-shimmer-period,
-      var(--tsr-comp-highlight-shimmer-period)
-    )
-    var(--tsr-comp-motion-easing) var(--tsr-highlight-shimmer-repeat, 1);
-}
-
-@keyframes footer-highlight-shimmer {
-  to {
-    transform: translateX(100cqw);
-  }
-}
-
-/*
- * Пока грид прокручивается, полосы блика нет (ADR 0080, §5): кадр прокрутки и так
- * занят. После остановки полоса стартует заново в общей фазе (ShimmerSync).
- */
-:global(.data-grid__container[data-scrolling])
-  .footer__cell[data-highlight-shimmer]::after {
-  content: none;
-}
-
-/* Высокая контрастность (ADR 0087): подсветка колонки — `Mark`, без блика. */
+/* Высокая контрастность (ADR 0087): подсветка колонки — `Mark`. */
 @media (forced-colors: active) {
   .footer__cell[data-column-highlight] {
     background-color: Mark;
@@ -129,9 +82,5 @@
   .footer__cell[data-column-highlight],
   .footer__cell[data-column-highlight] * {
     color: MarkText;
-  }
-
-  .footer__cell[data-highlight-shimmer]::after {
-    content: none;
   }
 }

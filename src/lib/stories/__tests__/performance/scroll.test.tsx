@@ -569,10 +569,10 @@ describe('Производительность прокрутки — высот
 })
 
 // Публичная подсветка (ADR 0080, HL19): 1000×1000 без плагинов, спокойная прокрутка со
-// 100 залитыми строками и колонкой с бесконечным бликом против той же выборки без них.
+// 100 залитыми строками и залитой колонкой против той же выборки без них.
 describe('Производительность прокрутки — подсветка', () => {
   test(
-    'HL19: прокрутка 1000×1000 со 100 подсвеченными строками и колонкой с бликом не дороже той же выборки без подсветки',
+    'HL19: прокрутка 1000×1000 со 100 подсвеченными строками и подсвеченной колонкой не дороже той же выборки без подсветки',
     async () => {
       const measure = async (seeded: boolean) => {
         const screen = renderGrid({
@@ -583,7 +583,7 @@ describe('Производительность прокрутки — подсв
         await waitForGrid()
         await expect
           .poll(
-            () => document.querySelector('[data-highlight-shimmer]') !== null,
+            () => document.querySelector('[data-column-highlight]') !== null,
           )
           .toBe(seeded)
         const y = await measureScrollWork('y', CONTENT_SCROLL.y)
@@ -620,7 +620,7 @@ describe('Производительность прокрутки — подсв
           })),
         })
       await record('HL19-base', 'без подсветки', base, false)
-      await record('HL19', '100 строк и колонка с бликом', seeded, true)
+      await record('HL19', '100 строк и колонка', seeded, true)
 
       for (const axis of ['y', 'x'] as const) {
         expect(

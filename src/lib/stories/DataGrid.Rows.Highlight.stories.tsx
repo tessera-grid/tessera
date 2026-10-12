@@ -19,7 +19,7 @@ import {
 /**
  * Публичная подсветка (ADR 0080): «Delete» в строке подсвечивает её красным, пока
  * удаление не подтверждено; поиск отмечает совпадения; кнопки — вспышка ячейки и
- * блик колонки. Включите выбор строк, закрепление или выделение ячеек в Controls,
+ * подсветка колонки. Включите выбор строк, закрепление или выделение ячеек в Controls,
  * чтобы увидеть подсветку поверх этих состояний.
  */
 const meta = {
@@ -45,7 +45,7 @@ export const RowHighlight: StoryObj<StoryProps> = {
     return <HighlightDemo {...args} />
   },
   // Дымовой тест (ADR 0080, HL21): удаление с подсветкой до подтверждения, поиск,
-  // вспышка и блик.
+  // вспышка ячейки и подсветка колонки.
   parameters: { requirements: ['HL21'] },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
@@ -120,10 +120,13 @@ export const RowHighlight: StoryObj<StoryProps> = {
         ),
       ).toHaveLength(1),
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Включить блик' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Подсветить колонку' }),
+    )
     await until(() =>
       expect(headCell(canvasElement, 'total')).toHaveAttribute(
-        'data-highlight-shimmer',
+        'data-column-highlight',
+        'success',
       ),
     )
     await settle()

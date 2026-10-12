@@ -88,9 +88,9 @@
 - **Подсветка** (ADR [0080](../decisions/0080-highlight-api.md)): заливка тона —
   `--tsr-comp-highlight-<tone>-bg` для `danger`/`warning`/`success` (роли
   `--tsr-sys-danger`, новые `--tsr-sys-warning` и `--tsr-sys-success` с мостом к
-  `--warning`/`--success` потребителя); блик — `--tsr-comp-highlight-<tone>-shimmer`,
-  `-shimmer-width`, `-shimmer-period`; затухание — `--tsr-comp-highlight-fade-duration`.
-  Свой тон — токен `--tsr-comp-highlight-<имя>-bg` (и при желании `-shimmer`) в теме
+  `--warning`/`--success` потребителя); появление и затухание —
+  `--tsr-comp-highlight-fade-duration`. Заливка статична, без бегущих слоёв (ADR [0101](../decisions/0101-static-highlight.md)).
+  Свой тон — токен `--tsr-comp-highlight-<имя>-bg` в теме
   приложения; синий и нейтральный не берите — их занимают выделение ячеек, приход и
   состояния строк. Заливка — слой `background-image` под текстом и индикаторами:
   строка рисует его своим фоном, ячейки с непрозрачной подложкой закрепления повторяют

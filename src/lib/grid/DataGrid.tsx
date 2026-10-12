@@ -59,7 +59,6 @@ import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
 import { useRowHeights } from './useRowHeights'
 import { ScrollingAttribute } from './ScrollingAttribute'
-import { ShimmerSync } from './ShimmerSync'
 import type { DataGridProps } from './dataGridTypes'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
@@ -413,7 +412,6 @@ export const DataGrid = ({
                     onDismiss={dismissLoadError}
                   />
                   <ScrollingAttribute getScrollElement={getScrollElement} />
-                  <ShimmerSync getScrollElement={getScrollElement} />
                   {enableOverflowTooltip && (
                     <OverflowTooltip getScrollElement={getScrollElement} />
                   )}

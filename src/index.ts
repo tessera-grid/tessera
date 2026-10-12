@@ -25,7 +25,6 @@ export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
 export type {
   HighlightHandle,
   HighlightOptions,
-  HighlightShimmer,
   HighlightTarget,
   HighlightTone,
 } from './lib/core/highlights/highlightFeature'

@@ -1,7 +1,7 @@
 /**
  * Демо публичной подсветки (ADR 0080). Внешний плагин удаления строк подсвечивает
  * строку через `table.highlight`, пока человек подтверждает удаление; поиск отмечает
- * совпадения группой `search`; кнопки — вспышка ячейки и блик колонки.
+ * совпадения группой `search`; кнопки — вспышка ячейки и подсветка колонки.
  */
 import { useCallback, useMemo, useState } from 'react'
 
@@ -106,9 +106,8 @@ export const HighlightDemo = (args: StoryProps) => {
   const [pending, setPending] = useState<Pending[]>([])
   const [decisions] = useState(() => new Map<string, Promise<boolean>>())
   const [query, setQuery] = useState('')
-  const [columnShimmer, setColumnShimmer] = useState<HighlightHandle | null>(
-    null,
-  )
+  const [columnHighlight, setColumnHighlight] =
+    useState<HighlightHandle | null>(null)
 
   const confirmDelete = useCallback(
     (row: DemoRow) => {
@@ -159,21 +158,20 @@ export const HighlightDemo = (args: StoryProps) => {
       {
         tone: 'success',
         duration: 1500,
-        shimmer: true,
         label: 'Возраст обновлён',
       },
     )
 
   const toggleColumn = () => {
-    if (columnShimmer) {
-      columnShimmer.clear()
-      setColumnShimmer(null)
+    if (columnHighlight) {
+      columnHighlight.clear()
+      setColumnHighlight(null)
       return
     }
-    setColumnShimmer(
+    setColumnHighlight(
       table?.highlight(
         { column: 'total' },
-        { tone: 'success', shimmer: { repeat: 'infinite' }, key: 'column' },
+        { tone: 'success', key: 'column' },
       ) ?? null,
     )
   }
@@ -249,16 +247,16 @@ export const HighlightDemo = (args: StoryProps) => {
         </DemoItem>
         <DemoItem
           title="Вспышка ячейки"
-          hint="Ячейка «Age» в третьей строке на полторы секунды загорается зелёным с бликом и гаснет."
+          hint="Ячейка «Age» в третьей строке на полторы секунды загорается зелёным и гаснет."
         >
           <DemoButton onClick={flashCell}>Подсветить ячейку</DemoButton>
         </DemoItem>
         <DemoItem
-          title="Блик колонки"
-          hint="Колонка «Total» — заголовок, ячейки и футер — подсвечена, по ней бежит блик, пока не выключите."
+          title="Подсветка колонки"
+          hint="Колонка «Total» — заголовок, ячейки и футер — подсвечена, пока не выключите."
         >
-          <DemoButton pressed={!!columnShimmer} onClick={toggleColumn}>
-            {columnShimmer ? 'Выключить блик' : 'Включить блик'}
+          <DemoButton pressed={!!columnHighlight} onClick={toggleColumn}>
+            {columnHighlight ? 'Снять подсветку' : 'Подсветить колонку'}
           </DemoButton>
         </DemoItem>
       </DemoPanel>

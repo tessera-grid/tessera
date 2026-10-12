@@ -22,13 +22,6 @@ export type HighlightTarget =
 
 export type HighlightTone = 'danger' | 'warning' | 'success' | (string & {})
 
-export interface HighlightShimmer {
-  /** Число проходов полосы; `'infinite'` — до снятия подсветки. По умолчанию 1. */
-  repeat?: number | 'infinite'
-  /** Длительность прохода, мс; по умолчанию `--tsr-comp-highlight-shimmer-period`. */
-  period?: number
-}
-
 export interface HighlightOptions {
   /** Встроенный или свой тон; по умолчанию `warning`. */
   tone?: HighlightTone
@@ -40,8 +33,6 @@ export interface HighlightOptions {
   key?: string
   /** Текст для скринридера: объявляется и висит `aria-description` цели. */
   label?: string
-  /** Блик по заливке. */
-  shimmer?: boolean | HighlightShimmer
 }
 
 export interface HighlightHandle {
@@ -53,9 +44,6 @@ export interface HighlightEntry {
   key: string
   tone: string
   label?: string
-  shimmer?: { repeat: number | 'infinite'; period?: number }
-  /** Момент постановки по часам документа — начало фазы блика. */
-  start: number
 }
 
 export interface HighlightTargetState {
@@ -213,20 +201,6 @@ export const finishFade = (highlights: Highlights, key: string): Highlights => {
   return dropTargets(highlights, [key])
 }
 
-/** Пометить блик подсветки законченным — полоса больше не нужна. */
-export const endShimmer = (highlights: Highlights, id: number): Highlights => {
-  for (const key of Object.keys(highlights)) {
-    const state = highlights[key]!
-    const index = state.list.findIndex(entry => entry.id === id)
-    if (index >= 0) {
-      const list = state.list.slice()
-      list[index] = { ...list[index]!, shimmer: undefined }
-      return { ...highlights, [key]: { ...state, list } }
-    }
-  }
-  return highlights
-}
-
 /* --------------------------------- фича --------------------------------- */
 
 type HighlightsAtom = {
@@ -337,23 +311,11 @@ export const highlight = (
     )
     return NOOP
   }
-  const shimmer = options.shimmer
-    ? {
-        repeat:
-          (typeof options.shimmer === 'object' && options.shimmer.repeat) || 1,
-        period:
-          typeof options.shimmer === 'object'
-            ? options.shimmer.period
-            : undefined,
-      }
-    : undefined
   const entry: HighlightEntry = {
     id: nextId++,
     key: options.key ?? 'default',
     tone,
     label: options.label,
-    shimmer,
-    start: performance.now(),
   }
   const key = targetKey(target)
   clearTimeout(timersOf(table).get(key))
@@ -376,20 +338,6 @@ export const highlight = (
     removeHighlights(table, item => item.id === entry.id)
   }
 
-  if (shimmer && shimmer.repeat !== 'infinite') {
-    const period =
-      shimmer.period ??
-      (parseDuration(
-        readGridToken(table, '--tsr-comp-highlight-shimmer-period'),
-      ) ||
-        1600)
-    timers.push(
-      setTimeout(
-        () => write(table, prev => endShimmer(prev, entry.id)),
-        period * shimmer.repeat,
-      ),
-    )
-  }
   if (options.duration !== undefined) {
     timers.push(setTimeout(clear, options.duration))
   }

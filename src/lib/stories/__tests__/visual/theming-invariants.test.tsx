@@ -129,7 +129,7 @@ describe('Token architecture — static invariants', () => {
   })
 
   test('HL22: highlight tokens reference only semantic roles; no built-in tone sits on --tsr-sys-info', () => {
-    // Подсветка (ADR 0080): заливки и блик тонов — от ролей темы, синий занят
+    // Подсветка (ADR 0080): заливки тонов — от ролей темы, синий занят
     // выделением ячеек и приходом.
     const tokens = [
       ...themeCss.matchAll(

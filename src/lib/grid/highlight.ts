@@ -8,7 +8,6 @@ import type { CSSProperties } from 'react'
 import { useTableState } from '../core/reactivity'
 import {
   columnHighlightKey,
-  type HighlightEntry,
   type Highlights,
   type HighlightTargetState,
   visibleHighlight,
@@ -23,20 +22,6 @@ const ATTR: Record<Layer, string> = {
 }
 
 const fill = (tone: string) => `var(--tsr-comp-highlight-${tone}-bg)`
-
-const shimmerVars = (entry: HighlightEntry) => {
-  const { shimmer, tone } = entry
-  if (!shimmer) {
-    return undefined
-  }
-  return {
-    '--tsr-highlight-shimmer': `var(--tsr-comp-highlight-${tone}-shimmer, ${fill(tone)})`,
-    '--tsr-highlight-shimmer-repeat': String(shimmer.repeat),
-    ...(shimmer.period !== undefined && {
-      '--tsr-highlight-shimmer-period': `${shimmer.period}ms`,
-    }),
-  }
-}
 
 export interface HighlightRender {
   attrs: Record<string, string | boolean | undefined>
@@ -58,7 +43,6 @@ export const highlightRender = (
 ): HighlightRender => {
   let attrs: HighlightRender['attrs'] | undefined
   let style: Record<string, string> | undefined
-  let shimmerSet = false
   for (const { layer, state, describe = true } of layers) {
     const { entry, out } = visibleHighlight(state)
     if (!entry) {
@@ -74,13 +58,6 @@ export const highlightRender = (
     style[`--tsr-highlight-${layer}`] = fill(entry.tone)
     if (describe && entry.label && !attrs['aria-description']) {
       attrs['aria-description'] = entry.label
-    }
-    const shimmer = !shimmerSet && shimmerVars(entry)
-    if (shimmer) {
-      shimmerSet = true
-      attrs['data-highlight-shimmer'] = true
-      attrs['data-highlight-start'] = String(entry.start)
-      Object.assign(style, shimmer)
     }
   }
   return attrs ? { attrs, style: style as CSSProperties } : NONE

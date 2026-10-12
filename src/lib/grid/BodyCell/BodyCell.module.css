@@ -277,57 +277,14 @@
     linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row));
 }
 
-.body__cell:is([data-highlight-out], [data-column-highlight-out]) {
+/* Подсветка проявляется и гаснет одним переходом (ADR 0101). */
+.body__cell:is([data-highlight], [data-column-highlight]) {
   transition:
     var(--tsr-comp-row-transition),
     --tsr-highlight-cell var(--tsr-comp-highlight-fade-duration)
       var(--tsr-comp-motion-easing-out),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
       var(--tsr-comp-motion-easing-out);
-}
-
-.body__cell[data-highlight-shimmer] {
-  container-type: inline-size;
-}
-
-.body__cell[data-highlight-shimmer]::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1;
-  /* Не шире 60 % цели: узкая ячейка не проскакивает за мгновение. */
-  width: min(var(--tsr-comp-highlight-shimmer-width), 60cqw);
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--tsr-highlight-shimmer),
-    transparent
-  );
-  transform: translateX(-100%);
-  animation: cell-highlight-shimmer
-    var(
-      --tsr-highlight-shimmer-period,
-      var(--tsr-comp-highlight-shimmer-period)
-    )
-    var(--tsr-comp-motion-easing) var(--tsr-highlight-shimmer-repeat, 1);
-}
-
-@keyframes cell-highlight-shimmer {
-  to {
-    transform: translateX(100cqw);
-  }
-}
-
-/*
- * Пока грид прокручивается, полосы блика нет (ADR 0080, §5): кадр прокрутки и так
- * занят. После остановки полоса стартует заново в общей фазе (ShimmerSync).
- */
-:global(.data-grid__container[data-scrolling])
-  .body__cell[data-highlight-shimmer]::after {
-  content: none;
 }
 
 /*
@@ -356,9 +313,5 @@
   .body__cell:is([data-highlight], [data-column-highlight]),
   .body__cell:is([data-highlight], [data-column-highlight]) * {
     color: MarkText;
-  }
-
-  .body__cell[data-highlight-shimmer]::after {
-    content: none;
   }
 }

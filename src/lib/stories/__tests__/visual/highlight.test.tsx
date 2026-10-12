@@ -39,7 +39,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 
-// Публичная подсветка (ADR 0080; HL1–HL4, HL7–HL15, HL17, HL21, HL23–HL24): заливка проверяется
+// Публичная подсветка (ADR 0080; HL1–HL4, HL7, HL9–HL15, HL17, HL21; HL25–HL26 — ADR 0101): заливка проверяется
 // по пикселям скриншота — вид, а не устройство стилей. Модульные HL5, HL6, HL16,
 // HL18, HL20 — в `highlights.dom`, перф HL19 — в `performance/scroll`, HL22 — в
 // `theming-invariants`.
@@ -209,10 +209,29 @@ const selectCell = (cell: HTMLElement, shiftKey = false) => {
 
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+/** Переходы слоёв подсветки (появление и затухание, ADR 0101). */
+const highlightTransitions = () =>
+  document
+    .getAnimations()
+    .filter(
+      animation =>
+        animation instanceof CSSTransition &&
+        animation.transitionProperty.startsWith('--tsr-highlight'),
+    )
+/** Действие с подсветкой и ожидание покоя: переходы слоёв доиграли. */
 const act = async (run: () => void) => {
   run()
   await frame()
   await frame()
+  // Прерванный переход отклоняет `finished`, на его месте — новый: ждём, пока их нет.
+  for (
+    let left = highlightTransitions();
+    left.length;
+    left = highlightTransitions()
+  ) {
+    await Promise.all(left.map(animation => animation.finished.catch(() => {})))
+    await frame()
+  }
 }
 
 /** Скриншот как пиксели в CSS-координатах окна. */
@@ -402,11 +421,10 @@ describe('Подсветка: цели', () => {
     const row = rowEl('r1')
     const alpha = () =>
       toRgba(getComputedStyle(row).getPropertyValue('--tsr-highlight-row'))[3]!
-    await act(() => {
-      table.highlight({ row: 'r1' }, { tone: 'danger', duration: 300 })
-    })
-    const full = alpha()
+    const full = toRgba(resolve('var(--tsr-comp-highlight-danger-bg)'))[3]!
     expect(full).toBeGreaterThan(0.05)
+    table.highlight({ row: 'r1' }, { tone: 'danger', duration: 1000 })
+    await expect.poll(alpha).toBe(full)
     await sleep(150)
     expect(alpha()).toBe(full)
     // Затухание: 500 мс по токену — посередине альфа между полной и нулём.
@@ -418,6 +436,37 @@ describe('Подсветка: цели', () => {
     expect(mid).toBeGreaterThan(0)
     expect(mid).toBeLessThan(full)
     await expect.poll(() => row.hasAttribute('data-highlight')).toBe(false)
+  })
+
+  test('HL26: подсветка проявляется переходом токена затухания; строка, вернувшаяся в окно виртуализации, — сразу залитой', async () => {
+    await mount({ count: 200 })
+    const alpha = (id: string) =>
+      toRgba(
+        getComputedStyle(rowEl(id)).getPropertyValue('--tsr-highlight-row'),
+      )[3]!
+    const full = toRgba(resolve('var(--tsr-comp-highlight-danger-bg)'))[3]!
+    table.highlight({ row: 'r1' }, { tone: 'danger' })
+    await frame()
+    await frame()
+    // Токен — 500 мс: на втором кадре альфа ещё между нулём и полной.
+    const rising = alpha('r1')
+    expect(rising).toBeGreaterThan(0)
+    expect(rising).toBeLessThan(full)
+    await expect.poll(() => alpha('r1')).toBe(full)
+
+    const scroller = document.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!
+    scroller.scrollTop = scroller.scrollHeight
+    await expect
+      .poll(() => document.querySelector('[data-row-id="r1"]'))
+      .toBeNull()
+    scroller.scrollTop = 0
+    await expect
+      .poll(() => document.querySelector('[data-row-id="r1"]'))
+      .not.toBeNull()
+    expect(alpha('r1')).toBe(full)
+    expect(highlightTransitions()).toEqual([])
   })
 })
 
@@ -462,60 +511,47 @@ describe('Подсветка: тоны, блик, движение', () => {
     warn.mockRestore()
   })
 
-  test('HL8: shimmer — полоса проходит repeat раз с периодом period, затем остаётся заливка; infinite — до снятия', async () => {
+  test('HL25: подсветка статична — у строки, ячейки, заголовка и футера цели нет анимаций, пока она держится', async () => {
     await mount()
-    const band = (el: HTMLElement, pseudo: string) =>
-      getComputedStyle(el, pseudo)
     await act(() => {
-      table.highlight(
-        { row: 'r1' },
-        { tone: 'success', shimmer: { repeat: 2, period: 300 } },
-      )
-      table.highlight({ cell: ['r3', 'b'] }, { tone: 'warning', shimmer: true })
-      table.highlight(
-        { column: 'c' },
-        { tone: 'danger', shimmer: { repeat: 'infinite', period: 400 } },
-      )
+      table.highlight({ row: 'r1' }, { tone: 'success' })
+      table.highlight({ cell: ['r3', 'b'] }, { tone: 'warning' })
+      table.highlight({ column: 'c' }, { tone: 'danger' })
     })
-    const row = rowEl('r1')
-    expect(band(row, '::before').animationIterationCount).toBe('2')
-    expect(band(row, '::before').animationDuration).toBe('0.3s')
-    // Полоса едет: положение меняется между кадрами.
-    const first = band(row, '::before').transform
-    await sleep(80)
-    expect(band(row, '::before').transform).not.toBe(first)
-    // Период по умолчанию — из токена.
-    expect(band(cellEl('r3', 'b'), '::after').animationDuration).toBe('1.6s')
-    expect(band(cellEl('r0', 'c'), '::after').animationIterationCount).toBe(
-      'infinite',
-    )
-    expect(band(headEl('c'), '::before').animationIterationCount).toBe(
-      'infinite',
-    )
-
-    // После двух проходов полосы нет, заливка осталась.
-    await expect
-      .poll(() => row.hasAttribute('data-highlight-shimmer'))
-      .toBe(false)
-    expect(row.getAttribute('data-highlight')).toBe('success')
-    await sleep(700)
-    expect(cellEl('r0', 'c').hasAttribute('data-highlight-shimmer')).toBe(true)
+    const targets = () => [
+      rowEl('r1'),
+      cellEl('r3', 'b'),
+      headEl('c'),
+      cellEl('r0', 'c'),
+      footEl('c'),
+    ]
+    for (const el of targets()) {
+      expect(
+        el.hasAttribute('data-highlight') ||
+          el.hasAttribute('data-column-highlight'),
+      ).toBe(true)
+    }
+    // Ни в момент постановки, ни позже: только заливка, без бегущих слоёв.
+    for (const wait of [0, 200, 600]) {
+      await sleep(wait)
+      const running = targets().flatMap(el =>
+        el
+          .getAnimations({ subtree: true })
+          .filter(animation => animation instanceof CSSAnimation)
+          .map(animation => (animation as CSSAnimation).animationName),
+      )
+      expect(running).toEqual([])
+    }
   })
 
-  test('HL9: prefers-reduced-motion — блика нет, заливка видна, затухание мгновенное', async () => {
+  test('HL9: prefers-reduced-motion — заливка видна, затухание мгновенное', async () => {
     await commands.reducedMotion(true)
     await mount()
     const before = await snapshot()
     let handle!: { clear: () => void }
     await act(() => {
-      handle = table.highlight(
-        { row: 'r1' },
-        { tone: 'danger', shimmer: { repeat: 'infinite' } },
-      )
+      handle = table.highlight({ row: 'r1' }, { tone: 'danger' })
     })
-    const pseudo = getComputedStyle(rowEl('r1'), '::before')
-    expect(parseFloat(pseudo.animationDuration)).toBeLessThan(0.001)
-    expect(pseudo.animationIterationCount).toBe('1')
     const lit = await snapshot()
     expect(
       distance(
@@ -529,122 +565,6 @@ describe('Подсветка: тоны, блик, движение', () => {
     expect(
       toRgba(getComputedStyle(row).getPropertyValue('--tsr-highlight-row'))[3],
     ).toBe(0)
-  })
-})
-
-describe('Подсветка: блик и прокрутка', () => {
-  /** Анимация полосы блика элемента (псевдоэлемент самого элемента). */
-  const bandOf = (el: HTMLElement) =>
-    el
-      .getAnimations({ subtree: true })
-      .find(
-        animation =>
-          String((animation as CSSAnimation).animationName).includes(
-            'shimmer',
-          ) && (animation.effect as KeyframeEffect).target === el,
-      )
-
-  test('HL23: пока грид прокручивается, полосы блика нет; после остановки бежит снова', async () => {
-    await mount({ count: 200 })
-    await act(() => {
-      table.highlight(
-        { row: 'r1' },
-        { tone: 'success', shimmer: { repeat: 'infinite' } },
-      )
-      table.highlight(
-        { column: 'b' },
-        { tone: 'warning', shimmer: { repeat: 'infinite' } },
-      )
-    })
-    const scroller = document.querySelector<HTMLElement>(
-      '.data-grid__container',
-    )!
-    const bands = () => [
-      getComputedStyle(rowEl('r1'), '::before').content,
-      getComputedStyle(cellEl('r1', 'b'), '::after').content,
-      getComputedStyle(headEl('b'), '::before').content,
-    ]
-    const running = () =>
-      [rowEl('r1'), cellEl('r1', 'b'), headEl('b')].map(
-        el => bandOf(el)?.playState,
-      )
-    await expect.poll(running).toEqual(['running', 'running', 'running'])
-    expect(bands()).not.toContain('none')
-
-    const during: string[] = []
-    for (let step = 0; step < 6; step += 1) {
-      scroller.scrollTop += 4
-      await frame()
-      if (scroller.hasAttribute('data-scrolling')) during.push(...bands())
-    }
-    expect(during.length).toBeGreaterThan(0)
-    expect(new Set(during)).toEqual(new Set(['none']))
-
-    await expect.poll(() => scroller.hasAttribute('data-scrolling')).toBe(false)
-    await expect.poll(running).toEqual(['running', 'running', 'running'])
-  })
-
-  test('HL24: блик колонки на заголовке, ячейках и футере и блик строки идут в одной фазе с момента постановки, в том числе у ячеек, смонтированных позже, и после прокрутки', async () => {
-    await mount({ count: 200 })
-    const scroller = document.querySelector<HTMLElement>(
-      '.data-grid__container',
-    )!
-    await act(() => {
-      table.highlight(
-        { row: 'r2' },
-        { tone: 'success', shimmer: { repeat: 'infinite' } },
-      )
-    })
-    // Колонка подсвечена позже строки и позже монтирования своих ячеек.
-    await sleep(300)
-    await act(() => {
-      table.highlight(
-        { column: 'b' },
-        { tone: 'warning', shimmer: { repeat: 'infinite' } },
-      )
-    })
-    const columnStarts = () =>
-      [
-        headEl('b'),
-        footEl('b'),
-        ...document.querySelectorAll<HTMLElement>(
-          '.data-grid__body-cell[data-column-id="b"]',
-        ),
-      ].map(el => {
-        const start = bandOf(el)?.startTime
-        return typeof start === 'number' ? Math.round(start) : null
-      })
-    const startOf = (el: HTMLElement) => Number(el.dataset.highlightStart)
-
-    // Все элементы колонки стартовали, и начало у них одно.
-    const sameStart = () => {
-      const starts = columnStarts()
-      return starts.every(start => start !== null) && new Set(starts).size === 1
-    }
-    await expect.poll(sameStart).toBe(true)
-    const columnStart = columnStarts()[0]!
-    expect(Math.abs(columnStart - startOf(headEl('b')))).toBeLessThanOrEqual(1)
-    const rowStart = Number(bandOf(rowEl('r2'))!.startTime)
-    expect(Math.abs(rowStart - startOf(rowEl('r2')))).toBeLessThanOrEqual(1)
-    expect(columnStart - rowStart).toBeGreaterThan(200)
-
-    // Новые ячейки после прокрутки — та же фаза.
-    const before = new Set(
-      [...document.querySelectorAll('.data-grid__body-row')].map(
-        row => (row as HTMLElement).dataset.rowId,
-      ),
-    )
-    scroller.scrollTop = 2000
-    await expect
-      .poll(() =>
-        [
-          ...document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
-        ].some(row => !before.has(row.dataset.rowId)),
-      )
-      .toBe(true)
-    await expect.poll(() => scroller.hasAttribute('data-scrolling')).toBe(false)
-    await expect.poll(sameStart).toBe(true)
-    expect(columnStarts()[0]).toBe(columnStart)
   })
 })
 

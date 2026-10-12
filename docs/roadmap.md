@@ -123,7 +123,7 @@
   приложения и плагинов;
   заливка слоем фона под текстом и индикаторами, сплошная через закреплённые ячейки;
   тоны `danger`/`warning`/`success` без синего и свой тон токеном; `duration`,
-  `until`, ключи групп, блик `shimmer` в одной фазе на всех элементах цели (на время прокрутки убирается), `label` для
+  `until`, ключи групп (блик `shimmer` снят [ADR 0101](decisions/0101-static-highlight.md) — читался как загрузка), `label` для
   скринридера.
 - **Бесконечная прокрутка — лента.** [ADR 0081](decisions/0081-infinite-scroll.md),
   IS1–IS18: плагин `infiniteScroll({ onLoadMore, hasMore, rowCount, threshold,

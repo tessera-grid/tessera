@@ -4,7 +4,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 
 /**
- * Демо-состояния: две выбранные строки, подсветка строки и блик колонки — один раз на
+ * Демо-состояния: две выбранные строки, подсветка строки и колонки — один раз на
  * таблицу, как только появились строки (история подаёт данные эффектом).
  */
 const highContrastDemo: TesseraFeatureEntry = {
@@ -23,10 +23,7 @@ const highContrastDemo: TesseraFeatureEntry = {
       }
       t.setRowSelection?.({ 'item-id-1': true, 'item-id-2': true })
       t.highlight({ row: 'item-id-3' }, { tone: 'danger' })
-      t.highlight(
-        { column: 'age' },
-        { tone: 'success', shimmer: { repeat: 'infinite' } },
-      )
+      t.highlight({ column: 'age' }, { tone: 'success' })
     }
     apply()
     return () => cancelAnimationFrame(frame)

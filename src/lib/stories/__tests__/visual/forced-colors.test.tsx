@@ -313,9 +313,9 @@ describe('Высокая контрастность (ADR 0087)', () => {
     expect(style(row).backgroundColor).toBe(sys('Canvas'))
   })
 
-  test('HC5: подсветка строки, ячейки и колонки любого тона — фон Mark, текст MarkText; блик без анимации цвета', async () => {
+  test('HC5: подсветка строки, ячейки и колонки любого тона — фон Mark, текст MarkText', async () => {
     await mount()
-    table.highlight({ row: 'r1' }, { tone: 'danger', shimmer: true })
+    table.highlight({ row: 'r1' }, { tone: 'danger' })
     table.highlight({ cell: ['r3', 'b'] }, { tone: 'success' })
     table.highlight({ column: 'c' }, { tone: 'brand' })
     await frame()

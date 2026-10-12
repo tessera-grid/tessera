@@ -440,23 +440,6 @@
     var(--tsr-sys-success) 16%,
     transparent
   );
-  --tsr-comp-highlight-danger-shimmer: color-mix(
-    in srgb,
-    var(--tsr-sys-danger) 30%,
-    transparent
-  );
-  --tsr-comp-highlight-warning-shimmer: color-mix(
-    in srgb,
-    var(--tsr-sys-warning) 45%,
-    transparent
-  );
-  --tsr-comp-highlight-success-shimmer: color-mix(
-    in srgb,
-    var(--tsr-sys-success) 35%,
-    transparent
-  );
-  --tsr-comp-highlight-shimmer-width: 160px;
-  --tsr-comp-highlight-shimmer-period: 1600ms;
   --tsr-comp-highlight-fade-duration: 500ms;
   /* Шаг отступа уровня вложенности строк (ADR 0059). */
   --tsr-comp-row-nesting-indent: 16px;
@@ -1009,8 +992,8 @@
   }
 }
 
-/* Слои подсветки (ADR 0080): цвет с начальным «прозрачным», чтобы снятие гасло
- * переходом; слой строки наследуется её ячейками. */
+/* Слои подсветки (ADR 0080, 0101): цвет с начальным «прозрачным», чтобы постановка
+ * проявлялась, а снятие гасло переходом; слой строки наследуется её ячейками. */
 @property --tsr-highlight-row {
   syntax: '<color>';
   inherits: true;
