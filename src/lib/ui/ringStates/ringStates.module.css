@@ -1,16 +1,11 @@
 /*
- * Блик ожидания и вспышка ошибки по контуру (ADR 0055, ADR 0057): общий модуль кнопок
- * и ячейки в правке. Ожидание — `aria-busy` или `data-pending`. Контур — `::after`
- * внутри рамки носителя (inset: 0) с его радиусом: ячейка с overflow его не режет.
+ * Ожидание и вспышка ошибки (ADR 0055, ADR 0057): общий модуль кнопок и ячейки в правке.
+ * Ожидание — `aria-busy` или `data-pending`, ошибка — `data-error-flash`. Свет — `::after`
+ * носителя: у кнопки — тени снаружи, у ячейки — полоса по периметру внутри.
  * `::before` не трогаем — им пользуются слои наведения кнопок строки.
  */
-@property --tsr-pending-ring-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
 
-/* Насколько блик залил контур: 0% — блик, 100% — сплошной контур. */
+/* Насколько ожидание перешло в ошибку: 0% — свет ожидания, 100% — красная заливка. */
 @property --tsr-ring-fill {
   syntax: '<percentage>';
   inherits: false;
@@ -22,9 +17,9 @@
 }
 
 /*
- * У кнопки контур есть всегда, состояния меняют только его вид: появление и исчезновение
- * `::after` посреди нажатия перестраивает кадр, и Firefox, не успев его нарисовать,
- * отдаёт отпускание кнопки родителю — клик теряется (ADR 0055, BS18).
+ * У кнопки `::after` есть всегда, состояния меняют только его вид: появление и
+ * исчезновение `::after` посреди нажатия перестраивает кадр, и Firefox, не успев его
+ * нарисовать, отдаёт отпускание кнопки родителю — клик теряется (ADR 0055, BS18).
  */
 .ring:not(.layer)::after {
   content: '';
@@ -35,58 +30,92 @@
   opacity: 0;
 }
 
+/*
+ * Ожидание и ошибка — один свет: с ошибкой пятна ожидания за время заливки краснеют и
+ * растворяются, а на их месте поднимается ровный красный свет по всей площади. Он горит
+ * статично, пока держится вспышка, затем гаснет (`off`).
+ */
 .ring:is([aria-busy='true'], [data-pending], [data-error-flash])::after {
-  --tsr-ring-color: var(--tsr-comp-pending-ring-color);
-  --tsr-ring-tail: color-mix(
-    in srgb,
-    var(--tsr-ring-color) var(--tsr-ring-fill),
-    transparent
+  --_t: var(--tsr-comp-pending-glow-duration);
+  --_e: var(--tsr-comp-error-flash-glow);
+  --_s1: color-mix(
+    in oklch,
+    color-mix(
+      in oklch,
+      color-mix(
+        in oklch,
+        var(--tsr-comp-pending-glow-1) var(--tsr-pending-spot-f1),
+        transparent
+      ),
+      var(--_e) var(--tsr-ring-fill)
+    ),
+    transparent var(--tsr-ring-fill)
   );
+  --_s2: color-mix(
+    in oklch,
+    color-mix(
+      in oklch,
+      color-mix(
+        in oklch,
+        var(--tsr-comp-pending-glow-2) var(--tsr-pending-spot-f2),
+        transparent
+      ),
+      var(--_e) var(--tsr-ring-fill)
+    ),
+    transparent var(--tsr-ring-fill)
+  );
+  --_s3: color-mix(
+    in oklch,
+    color-mix(
+      in oklch,
+      color-mix(
+        in oklch,
+        var(--tsr-comp-pending-glow-3) var(--tsr-pending-spot-f3),
+        transparent
+      ),
+      var(--_e) var(--tsr-ring-fill)
+    ),
+    transparent var(--tsr-ring-fill)
+  );
+  --_s4: color-mix(
+    in oklch,
+    color-mix(
+      in oklch,
+      color-mix(
+        in oklch,
+        var(--tsr-comp-pending-glow-4) var(--tsr-pending-spot-f4),
+        transparent
+      ),
+      var(--_e) var(--tsr-ring-fill)
+    ),
+    transparent var(--tsr-ring-fill)
+  );
+  --_fill: color-mix(in oklch, var(--_e) var(--tsr-ring-fill), transparent);
 
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: var(--tsr-comp-pending-ring-width);
   pointer-events: none;
-  /* Оставляет от фона только полосу толщиной padding по контуру. */
-  mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
-  /* Блик: мягкое пятно, остальной контур — хвост, прозрачный до заливки. */
-  background: conic-gradient(
-    from var(--tsr-pending-ring-angle),
-    var(--tsr-ring-tail) 0 55%,
-    var(--tsr-ring-color) 80%,
-    var(--tsr-ring-tail) 100%
-  );
   opacity: 1;
-  animation: pendingRing var(--tsr-comp-pending-ring-duration) linear infinite;
+  animation:
+    pendingSpot1 calc(var(--_t) * 1.7) ease-in-out infinite,
+    pendingSpot2 calc(var(--_t) * 2.3) ease-in-out infinite,
+    pendingSpot3 calc(var(--_t) * 2.9) ease-in-out infinite,
+    pendingSpot4 calc(var(--_t) * 3.7) ease-in-out infinite;
+  animation-delay: calc(var(--tsr-pending-phase, 0) * var(--_t) * -8);
   transition: --tsr-ring-fill var(--tsr-comp-error-flash-fill-duration)
     var(--tsr-comp-motion-easing);
 }
 
-/*
- * Вспышка: блик краснеет и заливает контур; `off` — гаснет. Заливка — анимацией от
- * блика, а не `@starting-style`: вспышка без ожидания тоже начинается с блика и в
- * Firefox 128 и Safari 16.4 (ADR 0084).
- */
+/* Заливка — переходом от света ожидания или от нуля, если ожидания не было. */
 .ring[data-error-flash]::after {
-  --tsr-ring-color: var(--tsr-comp-error-flash-color);
   --tsr-ring-fill: 100%;
-  animation:
-    pendingRing var(--tsr-comp-pending-ring-duration) linear infinite,
-    ringFillIn var(--tsr-comp-error-flash-fill-duration)
-      var(--tsr-comp-motion-easing);
+  /* Красный свет ровный: пятна, уже растворённые, больше не двигаются. */
+  animation-play-state: paused;
 }
 
-@keyframes ringFillIn {
-  from {
-    --tsr-ring-fill: 0%;
-  }
-}
-
-/* Гаснет переходом движения (BS17); появление блика и вспышки — сразу. */
+/* Гаснет переходом движения (BS17); появление и заливка — сразу. */
 .ring[data-error-flash='off']::after {
   opacity: 0;
   transition:
@@ -95,63 +124,442 @@
       var(--tsr-comp-motion-easing);
 }
 
-@keyframes pendingRing {
-  to {
-    --tsr-pending-ring-angle: 360deg;
+/*
+ * Пятна света ожидания кнопки: угол, под которым пятно выходит за кнопку, и его яркость.
+ * У каждого пятна свои — пятна живут независимо.
+ */
+@property --tsr-pending-spot-a1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --tsr-pending-spot-a2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --tsr-pending-spot-a3 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --tsr-pending-spot-a4 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --tsr-pending-spot-f1 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-pending-spot-f2 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-pending-spot-f3 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-pending-spot-f4 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+/*
+ * Покой пятен — четыре по диагоналям в полную силу. Его видно, когда анимация не идёт:
+ * при уменьшенном движении гаситель темы обрывает её, а свет ожидания остаётся.
+ */
+.ring:is([aria-busy='true'], [data-pending], [data-error-flash])::after,
+.spinner {
+  --tsr-pending-spot-a1: 45deg;
+  --tsr-pending-spot-a2: 135deg;
+  --tsr-pending-spot-a3: 225deg;
+  --tsr-pending-spot-a4: 315deg;
+  --tsr-pending-spot-f1: 100%;
+  --tsr-pending-spot-f2: 100%;
+  --tsr-pending-spot-f3: 100%;
+  --tsr-pending-spot-f4: 100%;
+}
+
+/*
+ * Кнопка — свет вокруг неё, а не контур (оттенки свечения загрузки, ADR 0094).
+ * Четыре пятна, по оттенку на каждое: пятно разгорается в своём месте, дрейфует то по,
+ * то против часовой, гаснет и, погашенное, переносится в другое место. Периоды пятен не
+ * кратны друг другу, фаза кнопки своя (`--tsr-pending-phase` от 0 до 1 ставит кнопка) —
+ * свет вспыхивает то тут, то там, без общего направления. Пятно — силуэт кнопки,
+ * сдвинутый наружу по своему углу; внешняя тень внутри кнопки не рисуется. Заливка
+ * ошибки — та же тень, но вокруг всей кнопки.
+ */
+.ring:not(.layer):is(
+    [aria-busy='true'],
+    [data-pending],
+    [data-error-flash]
+  )::after {
+  --_d: var(--tsr-comp-pending-glow-offset);
+  --_b: var(--tsr-comp-pending-glow-blur);
+
+  box-shadow:
+    calc(cos(var(--tsr-pending-spot-a1)) * var(--_d))
+      calc(sin(var(--tsr-pending-spot-a1)) * var(--_d)) var(--_b) var(--_s1),
+    calc(cos(var(--tsr-pending-spot-a2)) * var(--_d))
+      calc(sin(var(--tsr-pending-spot-a2)) * var(--_d)) var(--_b) var(--_s2),
+    calc(cos(var(--tsr-pending-spot-a3)) * var(--_d))
+      calc(sin(var(--tsr-pending-spot-a3)) * var(--_d)) var(--_b) var(--_s3),
+    calc(cos(var(--tsr-pending-spot-a4)) * var(--_d))
+      calc(sin(var(--tsr-pending-spot-a4)) * var(--_d)) var(--_b) var(--_s4),
+    0 0 var(--_b) var(--_d) var(--_fill),
+    0 0 calc(var(--_b) / 2)
+      color-mix(
+        in oklch,
+        var(--tsr-comp-pending-glow-halo),
+        transparent var(--tsr-ring-fill)
+      );
+}
+
+/* Пятно горит — дрейфует на 20–30°; погасло — за 1% периода переносится в другое место. */
+@keyframes pendingSpot1 {
+  0% {
+    --tsr-pending-spot-a1: 20deg;
+    --tsr-pending-spot-f1: 0%;
+  }
+  14% {
+    --tsr-pending-spot-a1: 35deg;
+    --tsr-pending-spot-f1: 100%;
+  }
+  30% {
+    --tsr-pending-spot-a1: 10deg;
+    --tsr-pending-spot-f1: 0%;
+  }
+  31% {
+    --tsr-pending-spot-a1: 150deg;
+    --tsr-pending-spot-f1: 0%;
+  }
+  47% {
+    --tsr-pending-spot-a1: 175deg;
+    --tsr-pending-spot-f1: 100%;
+  }
+  63% {
+    --tsr-pending-spot-a1: 160deg;
+    --tsr-pending-spot-f1: 0%;
+  }
+  64% {
+    --tsr-pending-spot-a1: 280deg;
+    --tsr-pending-spot-f1: 0%;
+  }
+  82% {
+    --tsr-pending-spot-a1: 250deg;
+    --tsr-pending-spot-f1: 90%;
+  }
+  100% {
+    --tsr-pending-spot-a1: 290deg;
+    --tsr-pending-spot-f1: 0%;
+  }
+}
+
+@keyframes pendingSpot2 {
+  0% {
+    --tsr-pending-spot-a2: 120deg;
+    --tsr-pending-spot-f2: 0%;
+  }
+  18% {
+    --tsr-pending-spot-a2: 100deg;
+    --tsr-pending-spot-f2: 90%;
+  }
+  34% {
+    --tsr-pending-spot-a2: 130deg;
+    --tsr-pending-spot-f2: 0%;
+  }
+  35% {
+    --tsr-pending-spot-a2: 330deg;
+    --tsr-pending-spot-f2: 0%;
+  }
+  52% {
+    --tsr-pending-spot-a2: 350deg;
+    --tsr-pending-spot-f2: 100%;
+  }
+  68% {
+    --tsr-pending-spot-a2: 320deg;
+    --tsr-pending-spot-f2: 0%;
+  }
+  69% {
+    --tsr-pending-spot-a2: 220deg;
+    --tsr-pending-spot-f2: 0%;
+  }
+  85% {
+    --tsr-pending-spot-a2: 240deg;
+    --tsr-pending-spot-f2: 80%;
+  }
+  100% {
+    --tsr-pending-spot-a2: 210deg;
+    --tsr-pending-spot-f2: 0%;
+  }
+}
+
+@keyframes pendingSpot3 {
+  0% {
+    --tsr-pending-spot-a3: 250deg;
+    --tsr-pending-spot-f3: 0%;
+  }
+  20% {
+    --tsr-pending-spot-a3: 270deg;
+    --tsr-pending-spot-f3: 100%;
+  }
+  38% {
+    --tsr-pending-spot-a3: 240deg;
+    --tsr-pending-spot-f3: 0%;
+  }
+  39% {
+    --tsr-pending-spot-a3: 60deg;
+    --tsr-pending-spot-f3: 0%;
+  }
+  55% {
+    --tsr-pending-spot-a3: 40deg;
+    --tsr-pending-spot-f3: 85%;
+  }
+  72% {
+    --tsr-pending-spot-a3: 75deg;
+    --tsr-pending-spot-f3: 0%;
+  }
+  73% {
+    --tsr-pending-spot-a3: 190deg;
+    --tsr-pending-spot-f3: 0%;
+  }
+  88% {
+    --tsr-pending-spot-a3: 170deg;
+    --tsr-pending-spot-f3: 100%;
+  }
+  100% {
+    --tsr-pending-spot-a3: 200deg;
+    --tsr-pending-spot-f3: 0%;
+  }
+}
+
+@keyframes pendingSpot4 {
+  0% {
+    --tsr-pending-spot-a4: 330deg;
+    --tsr-pending-spot-f4: 0%;
+  }
+  16% {
+    --tsr-pending-spot-a4: 300deg;
+    --tsr-pending-spot-f4: 80%;
+  }
+  33% {
+    --tsr-pending-spot-a4: 320deg;
+    --tsr-pending-spot-f4: 0%;
+  }
+  34% {
+    --tsr-pending-spot-a4: 90deg;
+    --tsr-pending-spot-f4: 0%;
+  }
+  50% {
+    --tsr-pending-spot-a4: 120deg;
+    --tsr-pending-spot-f4: 100%;
+  }
+  66% {
+    --tsr-pending-spot-a4: 100deg;
+    --tsr-pending-spot-f4: 0%;
+  }
+  67% {
+    --tsr-pending-spot-a4: 0deg;
+    --tsr-pending-spot-f4: 0%;
+  }
+  84% {
+    --tsr-pending-spot-a4: 30deg;
+    --tsr-pending-spot-f4: 90%;
+  }
+  100% {
+    --tsr-pending-spot-a4: 10deg;
+    --tsr-pending-spot-f4: 0%;
   }
 }
 
 /*
- * Блик на собственном слое (ячейка в правке, ADR 0057): маску по контуру несёт слой, а
- * внутри вращается квадрат с градиентом — transform-анимация идёт на компоновщике и
- * не перерисовывает каждое кольцо на каждом кадре, как вращение угла градиента.
+ * Ячейка — те же пятна света, что у кнопок, но внутри, у кромок: снаружи свет лёг бы на
+ * соседние ячейки. Пятно — эллипс с центром на кромке по своему углу (угол проецируется
+ * на рамку ячейки): свет вспыхивает в разных местах контура. Заливка ошибки — ровная
+ * полоса по всему периметру.
  */
 .ring.layer:is([data-pending], [data-error-flash]) {
+  --_depth: var(--tsr-comp-cell-pending-glow-depth);
+
   overflow: hidden;
-  padding: var(--tsr-comp-pending-ring-width);
+  /*
+   * Свет — только по периметру: полоса у кромок гаснет к середине по кривой, без
+   * внутреннего края; текст в середине ячейки свет не трогает.
+   */
   mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
+    linear-gradient(
+      to right,
+      #000,
+      rgb(0 0 0 / 0.45) calc(var(--_depth) * 0.3),
+      rgb(0 0 0 / 0.12) calc(var(--_depth) * 0.65),
+      transparent var(--_depth),
+      transparent calc(100% - var(--_depth)),
+      rgb(0 0 0 / 0.12) calc(100% - var(--_depth) * 0.65),
+      rgb(0 0 0 / 0.45) calc(100% - var(--_depth) * 0.3),
+      #000
+    ),
+    linear-gradient(
+      to bottom,
+      #000,
+      rgb(0 0 0 / 0.45) calc(var(--_depth) * 0.3),
+      rgb(0 0 0 / 0.12) calc(var(--_depth) * 0.65),
+      transparent var(--_depth),
+      transparent calc(100% - var(--_depth)),
+      rgb(0 0 0 / 0.12) calc(100% - var(--_depth) * 0.65),
+      rgb(0 0 0 / 0.45) calc(100% - var(--_depth) * 0.3),
+      #000
+    );
 }
 
 .ring.layer:is([data-pending], [data-error-flash])::after {
-  inset: auto;
-  top: 50%;
-  left: 50%;
-  /* Квадрат шире диагонали слоя: ячейка всегда шире своей высоты. */
-  width: 200%;
-  aspect-ratio: 1;
-  padding: 0;
+  --_w: var(--tsr-comp-cell-pending-glow-width);
+  --_h: var(--tsr-comp-cell-pending-glow-height);
+  --_c1: cos(var(--tsr-pending-spot-a1));
+  --_n1: sin(var(--tsr-pending-spot-a1));
+  --_c2: cos(var(--tsr-pending-spot-a2));
+  --_n2: sin(var(--tsr-pending-spot-a2));
+  --_c3: cos(var(--tsr-pending-spot-a3));
+  --_n3: sin(var(--tsr-pending-spot-a3));
+  --_c4: cos(var(--tsr-pending-spot-a4));
+  --_n4: sin(var(--tsr-pending-spot-a4));
+  /* Делитель выносит точку круга на рамку: большая из |cos|, |sin| становится 1. */
+  --_m1: max(var(--_c1), var(--_c1) * -1, var(--_n1), var(--_n1) * -1);
+  --_m2: max(var(--_c2), var(--_c2) * -1, var(--_n2), var(--_n2) * -1);
+  --_m3: max(var(--_c3), var(--_c3) * -1, var(--_n3), var(--_n3) * -1);
+  --_m4: max(var(--_c4), var(--_c4) * -1, var(--_n4), var(--_n4) * -1);
+
   border-radius: 0;
-  mask: none;
-  background: conic-gradient(
-    var(--tsr-ring-tail) 0 55%,
-    var(--tsr-ring-color) 80%,
-    var(--tsr-ring-tail) 100%
-  );
-  animation: layerSpin var(--tsr-comp-pending-ring-duration) linear infinite;
+  opacity: var(--tsr-comp-cell-pending-glow-opacity);
+  background:
+    radial-gradient(
+      var(--_w) var(--_h) at calc(50% + var(--_c1) / var(--_m1) * 50%)
+        calc(50% + var(--_n1) / var(--_m1) * 50%),
+      var(--_s1),
+      transparent
+    ),
+    radial-gradient(
+      var(--_w) var(--_h) at calc(50% + var(--_c2) / var(--_m2) * 50%)
+        calc(50% + var(--_n2) / var(--_m2) * 50%),
+      var(--_s2),
+      transparent
+    ),
+    radial-gradient(
+      var(--_w) var(--_h) at calc(50% + var(--_c3) / var(--_m3) * 50%)
+        calc(50% + var(--_n3) / var(--_m3) * 50%),
+      var(--_s3),
+      transparent
+    ),
+    radial-gradient(
+      var(--_w) var(--_h) at calc(50% + var(--_c4) / var(--_m4) * 50%)
+        calc(50% + var(--_n4) / var(--_m4) * 50%),
+      var(--_s4),
+      transparent
+    ),
+    linear-gradient(var(--_fill), var(--_fill));
 }
 
-@keyframes layerSpin {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
+.ring.layer[data-error-flash='off']::after {
+  opacity: 0;
 }
 
 /*
- * Пока грид прокручивается, блик кнопок стоит (ADR 0078): вращение угла градиента
- * перерисовывает каждое кольцо на каждом кадре, а на прокрутке кадр и так занят.
+ * Спиннер ожидания (пункт меню, ADR 0078) — те же пятна, что у кнопок и ячеек, но
+ * резко: спиннер — сама линия, а не свет вокруг предмета. Пятно с ровным ядром — дуга
+ * в полную силу оттенка, гаснет только на концах; кольцо с чётким краем; под дугами —
+ * едва видная дорожка.
  */
-:global(.data-grid__container[data-scrolling]) .ring:not(.layer)::after {
-  animation-play-state: paused;
+.spinner {
+  --_t: var(--tsr-comp-pending-glow-duration);
+  --_w: var(--tsr-comp-pending-ring-width);
+
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a1)) * 50%)
+        calc(50% + sin(var(--tsr-pending-spot-a1)) * 50%),
+      color-mix(
+          in oklch,
+          var(--tsr-comp-pending-spinner-1) var(--tsr-pending-spot-f1),
+          transparent
+        )
+        0 45%,
+      transparent
+    ),
+    radial-gradient(
+      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a2)) * 50%)
+        calc(50% + sin(var(--tsr-pending-spot-a2)) * 50%),
+      color-mix(
+          in oklch,
+          var(--tsr-comp-pending-spinner-2) var(--tsr-pending-spot-f2),
+          transparent
+        )
+        0 45%,
+      transparent
+    ),
+    radial-gradient(
+      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a3)) * 50%)
+        calc(50% + sin(var(--tsr-pending-spot-a3)) * 50%),
+      color-mix(
+          in oklch,
+          var(--tsr-comp-pending-spinner-3) var(--tsr-pending-spot-f3),
+          transparent
+        )
+        0 45%,
+      transparent
+    ),
+    radial-gradient(
+      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a4)) * 50%)
+        calc(50% + sin(var(--tsr-pending-spot-a4)) * 50%),
+      color-mix(
+          in oklch,
+          var(--tsr-comp-pending-spinner-4) var(--tsr-pending-spot-f4),
+          transparent
+        )
+        0 45%,
+      transparent
+    ),
+    linear-gradient(
+      var(--tsr-comp-pending-glow-halo),
+      var(--tsr-comp-pending-glow-halo)
+    );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--_w) - 0.25px),
+    #000 calc(100% - var(--_w) + 0.25px)
+  );
+  animation:
+    pendingSpot1 calc(var(--_t) * 1.7) ease-in-out infinite,
+    pendingSpot2 calc(var(--_t) * 2.3) ease-in-out infinite,
+    pendingSpot3 calc(var(--_t) * 2.9) ease-in-out infinite,
+    pendingSpot4 calc(var(--_t) * 3.7) ease-in-out infinite;
 }
 
 /*
- * Высокая контрастность (ADR 0087): контур — градиент под маской, браузер снял бы его.
- * Слой не перекрашивается, цвета — системные из токенов (`Highlight`, `Mark`).
+ * Пока грид прокручивается, свет кнопок и ячеек стоит (ADR 0078): пятна перерисовывают
+ * носитель на каждом кадре, а на прокрутке кадр и так занят. Без движения пауза не
+ * нужна и вредна: она застала бы оборванную анимацию на погашенном первом кадре.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  :global(.data-grid__container[data-scrolling]) .ring::after {
+    animation-play-state: paused;
+  }
+}
+
+/*
+ * Высокая контрастность (ADR 0087): свет — тени и градиенты, браузер снял бы их. Слой
+ * не перекрашивается, цвета — системные из токенов (`Highlight`, `Mark`).
  */
 @media (forced-colors: active) {
   .ring::after {

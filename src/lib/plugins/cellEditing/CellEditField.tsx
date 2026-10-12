@@ -8,7 +8,13 @@
  * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2). Слой поверх ячейки
  * несёт блик ожидания, вспышку отказа и подсветку сохранения (ADR 0057).
  */
-import { useId, useRef, useState, type ReactNode } from 'react'
+import {
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react'
 
 import clsx from 'clsx'
 
@@ -34,6 +40,19 @@ import {
   setEditError,
 } from './session'
 import type { CellEditingHooks, CellEditingState, CellEditor } from './types'
+
+/**
+ * Фаза света ожидания от 0 до 1 по ключу ячейки: соседние ячейки вспыхивают не в такт,
+ * а одна и та же ячейка — всегда одинаково.
+ */
+const pendingPhase = (key: string) => {
+  let hash = 2166136261
+  for (let i = 0; i < key.length; i++) {
+    hash = Math.imul(hash ^ key.charCodeAt(i), 16777619)
+  }
+  hash = Math.imul(hash ^ (hash >>> 15), 0x2c1b3c6d)
+  return ((hash ^ (hash >>> 12)) >>> 0) / 2 ** 32
+}
 
 /** Дефолтный редактор: встроенный инлайн-ввод (Enter и потеря фокуса — коммит, Escape — отмена). */
 const defaultEditor: CellEditor = ({
@@ -106,13 +125,18 @@ export const CellEditField = (
         styles.feedback,
       )}
       aria-hidden="true"
+      style={
+        {
+          '--tsr-pending-phase': pendingPhase(cellKey(row.id, column.id)),
+        } as CSSProperties
+      }
       data-pending={pending || undefined}
       data-error-flash={flash}
       data-saved={saved || undefined}
     />
   ) : null
 
-  // Сохранение ждёт сервера — отправленное значение и блик по контуру (ADR 0057, §1).
+  // Сохранение ждёт сервера — отправленное значение и свет по периметру (ADR 0057, §1).
   if (submitted && pending) {
     return (
       <>

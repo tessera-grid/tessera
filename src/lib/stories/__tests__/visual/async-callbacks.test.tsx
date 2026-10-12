@@ -1,5 +1,5 @@
 import axe from 'axe-core'
-import { commands, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
@@ -306,8 +306,8 @@ describe('Асинхронный контракт бизнес-колбэков'
   })
 })
 
-// Обратная связь асинхронной правки (ADR 0057, CF1–CF6, CF8–CF11): блик ожидания по
-// контуру ячейки, вспышка отказа, подсветка сохранения. CF7 — модульный
+// Обратная связь асинхронной правки (ADR 0057, CF1–CF6, CF8–CF11; вид — ADR 0095): свет
+// ожидания по периметру ячейки, красный свет отказа, подсветка сохранения. CF7 — модульный
 // (`asyncCallbacks.dom`), CF12 — перф в `scroll`.
 
 const reducedMotion = (
@@ -345,6 +345,61 @@ const savedAt = (index: number) =>
   feedbackOf(index)?.hasAttribute('data-saved') ?? false
 const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+/** Пиксели скриншота в CSS-координатах окна. */
+const snapshot = async () => {
+  const shot = (await page.screenshot({
+    base64: true,
+    save: false,
+  })) as unknown as string | { base64: string }
+  const base64 = typeof shot === 'string' ? shot : shot.base64
+  const image = new Image()
+  image.src = `data:image/png;base64,${base64}`
+  await image.decode()
+  const canvas = document.createElement('canvas')
+  canvas.width = image.width
+  canvas.height = image.height
+  const context = canvas.getContext('2d', { willReadFrequently: true })!
+  context.drawImage(image, 0, 0)
+  const scale = image.width / document.documentElement.clientWidth
+  return (x: number, y: number) =>
+    Array.from(
+      context
+        .getImageData(Math.floor(x * scale), Math.floor(y * scale), 1, 1)
+        .data.slice(0, 3),
+    )
+}
+
+const distance = (a: number[], b: number[]) =>
+  Math.hypot(...a.map((v, i) => v - b[i]!))
+
+const cellIn = (index: number, columnId: string) =>
+  bodyRows()
+    .find(row => row.dataset.index === String(index))!
+    .querySelector<HTMLElement>(
+      `.data-grid__body-cell[data-column-id="${columnId}"]`,
+    )!
+
+/** Точка у левого верхнего угла ячейки — глубже фокус-кольца, в полосе света. */
+const cornerOf = (cell: HTMLElement) => {
+  const box = cell.getBoundingClientRect()
+  return [box.left + 5, box.top + 5] as const
+}
+
+/** Точка за полосой света у правого верхнего угла, но внутри пятна в этом углу. */
+const innerOf = (cell: HTMLElement) => {
+  const box = cell.getBoundingClientRect()
+  return [box.right - 18, box.top + 14] as const
+}
+
+/** Точка в середине ячейки по высоте, правее короткого значения. */
+const middleOf = (cell: HTMLElement) => {
+  const box = cell.getBoundingClientRect()
+  return [box.left + box.width * 0.6, box.top + box.height / 2] as const
+}
+
+/** Пиксель покраснел: красный канал заметно выше зелёного и синего. */
+const reddish = ([r, g, b]: number[]) => r! - g! > 15 && r! - b! > 15
+
 const editableGrid = (props: Record<string, unknown> = {}) =>
   render(
     <Stories.AllFeatures
@@ -369,7 +424,9 @@ describe('Асинхронная правка: блик, вспышка, под�
     await reducedMotion(false)
   })
 
-  test('CF1: ячейка в ожидании — блик по контуру цветом, периодом и толщиной токенов, значение как текст обычной ячейки, раскладка та же', async () => {
+  test('CF1: ячейка в ожидании — свет по периметру внутри ячейки, середина и соседние ячейки не окрашены; значение как текст обычной ячейки, раскладка та же', async () => {
+    // Без движения пятна стоят по углам — кадр детерминирован.
+    await reducedMotion(true)
     // История сервера: контейнер крупнее шрифта ячейки — значение не должно его унаследовать.
     await render(<composed.CellEditingServer serverDelayMs={60_000} />)
     await waitForGrid()
@@ -383,28 +440,30 @@ describe('Асинхронная правка: блик, вспышка, под�
     const plainColor = getComputedStyle(
       ageCell(2).querySelector('.cell__wrapper') ?? ageCell(2),
     ).color
+    await userEvent.hover(ageCell(0))
+    const plain = await snapshot()
     await saveAge(0, '999')
     await expect.poll(() => feedbackOf(0)?.dataset.pending).toBe('true')
+    await new Promise(resolve => requestAnimationFrame(resolve))
 
     expect(ringOf(0).content).not.toBe('none')
-    expect(ringOf(0).backgroundImage).toContain(
-      resolvedIn(ageCell(0), 'var(--tsr-comp-pending-ring-color)'),
-    )
-    expect(ringOf(0).animationDuration).toBe(
-      resolvedIn(
-        ageCell(0),
-        'var(--tsr-comp-pending-ring-duration)',
-        'animation-duration',
+    const shot = await snapshot()
+    // Опора — те же точки до сохранения: угол окрашен, середина и соседи — нет.
+    const changed = (point: readonly [number, number]) =>
+      distance(shot(...point), plain(...point))
+    expect(changed(cornerOf(ageCell(0)))).toBeGreaterThan(12)
+    expect(changed(middleOf(ageCell(0)))).toBeLessThan(4)
+    // За полосой света — чисто: сравнение с той же точкой соседней колонки строки.
+    expect(
+      distance(
+        shot(...innerOf(ageCell(0))),
+        shot(...innerOf(cellIn(0, 'lastName'))),
       ),
-    )
-    // Толщина полосы блика — padding слоя под маской — из токена ячейки.
-    expect(getComputedStyle(feedbackOf(0)!).paddingTop).toBe(
-      resolvedIn(
-        ageCell(0),
-        'var(--tsr-comp-cell-pending-ring-width)',
-        'padding-top',
-      ),
-    )
+    ).toBeLessThan(4)
+    // Соседи справа и снизу не окрашены.
+    expect(changed(cornerOf(cellIn(0, 'gender')))).toBeLessThan(4)
+    expect(changed(cornerOf(ageCell(1)))).toBeLessThan(4)
+
     const busy = ageCell(0).querySelector<HTMLElement>('[aria-busy="true"]')!
     expect(getComputedStyle(busy).color).toBe(plainColor)
     const plainText = ageCell(2).querySelector<HTMLElement>(
@@ -499,10 +558,10 @@ describe('Асинхронная правка: блик, вспышка, под�
     }
   })
 
-  test('CF3: отказ — блик становится цветом вспышки и заливает контур, держится и гаснет; после — метка ошибки', async () => {
+  test('CF3: отказ — свет ячейки переходит в ровный красный по всему периметру, держится и гаснет; после — метка ошибки', async () => {
     restore = themeTokens({
       '--tsr-comp-error-flash-fill-duration': '100ms',
-      '--tsr-comp-error-flash-duration': '400ms',
+      '--tsr-comp-error-flash-duration': '800ms',
     })
     const server = controlledServer()
     await editableGrid({ onCellEdit: server.onCellEdit })
@@ -512,9 +571,21 @@ describe('Асинхронная правка: блик, вспышка, под�
     server.settle[0].reject(new Error('Server down'))
 
     await expect.poll(() => feedbackOf(0)?.dataset.errorFlash).toBe('on')
-    expect(ringOf(0).backgroundImage).toContain(
-      resolvedIn(ageCell(0), 'var(--tsr-comp-error-flash-color)'),
-    )
+    await expect
+      .poll(() => parseFloat(ringOf(0).getPropertyValue('--tsr-ring-fill')))
+      .toBe(100)
+    const cell = ageCell(0).getBoundingClientRect()
+    const shot = await snapshot()
+    const midX = cell.left + cell.width / 2
+    const midY = cell.top + cell.height / 2
+    for (const [x, y] of [
+      [midX, cell.top + 4],
+      [midX, cell.bottom - 4],
+      [cell.left + 4, midY],
+      [cell.right - 4, midY],
+    ] as const) {
+      expect(reddish(shot(x, y)), `${x},${y}`).toBe(true)
+    }
     expect(ageCell(0).querySelector('[aria-invalid="true"]')).not.toBeNull()
     await expect
       .poll(() => feedbackOf(0)!.hasAttribute('data-error-flash'), {
@@ -624,7 +695,7 @@ describe('Асинхронная правка: блик, вспышка, под�
     expect(savedAt(0)).toBe(false)
   })
 
-  test('CF8: при уменьшенном движении блик стоит и виден, вспышка и подсветка держатся ту же длительность и снимаются без перехода', async () => {
+  test('CF8: при уменьшенном движении свет стоит и виден, вспышка и подсветка держатся ту же длительность и снимаются без перехода', async () => {
     await reducedMotion(true)
     restore = themeTokens({
       '--tsr-comp-error-flash-duration': '400ms',
@@ -634,22 +705,32 @@ describe('Асинхронная правка: блик, вспышка, под�
     const server = controlledServer()
     await editableGrid({ onCellEdit: server.onCellEdit })
     await waitForGrid()
+    await userEvent.hover(ageCell(1))
+    const plain = await snapshot()
     await saveAge(0, '999')
     await saveAge(1, '42')
     await expect.poll(() => server.settle.length).toBe(2)
+    await new Promise(resolve => requestAnimationFrame(resolve))
 
-    // Блик вращается transform-анимацией слоя: стоит — значит, поворот не меняется.
-    const angle = () => ringOf(0).transform
-    const first = angle()
-    await pause(150)
-    expect(angle()).toBe(first)
-    expect(ringOf(0).content).not.toBe('none')
-    expect(ringOf(0).opacity).toBe('1')
+    // Свет стоит: два кадра одинаковы; и виден — угол окрашен против кадра до правки.
+    const points = [cornerOf(ageCell(0)), middleOf(ageCell(0))]
+    const first = await snapshot()
+    expect(
+      distance(first(...cornerOf(ageCell(0))), plain(...cornerOf(ageCell(0)))),
+    ).toBeGreaterThan(12)
+    await pause(200)
+    const second = await snapshot()
+    for (const [i, point] of points.entries()) {
+      expect(second(...point), `point ${i} ${point}`).toEqual(first(...point))
+    }
 
     server.settle[0].reject(new Error('Server down'))
     server.settle[1].resolve()
     await expect.poll(() => feedbackOf(0)?.dataset.errorFlash).toBe('on')
     await expect.poll(() => savedAt(1)).toBe(true)
+    // Ошибка без перехода: свет сразу полный.
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(parseFloat(ringOf(0).getPropertyValue('--tsr-ring-fill'))).toBe(100)
     await pause(250)
     expect(feedbackOf(0)!.dataset.errorFlash).toBe('on')
     expect(savedAt(1)).toBe(true)
@@ -658,9 +739,9 @@ describe('Асинхронная правка: блик, вспышка, под�
     await expect
       .poll(() => feedbackOf(0)!.dataset.errorFlash ?? 'gone')
       .not.toBe('on')
-    // Кадр на применение стиля фазы; с переходом контур гас бы ещё ~150 мс.
+    // Кадр на применение стиля фазы; с переходом свет гас бы ещё ~150 мс.
     await new Promise(resolve => requestAnimationFrame(resolve))
-    // После удержания контура нет: слой погашен или снят, без перехода.
+    // После удержания света нет: слой погашен или снят, без перехода.
     expect(ringOf(0).content === 'none' || ringOf(0).opacity === '0').toBe(true)
   })
 

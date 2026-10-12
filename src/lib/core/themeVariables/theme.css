@@ -259,7 +259,7 @@
   --tsr-comp-loader-height: 2px;
   /* Свечение загрузки (ADR 0094): насколько вниз от шапки и насколько ярко. */
   --tsr-comp-loader-glow-size: 24px;
-  --tsr-comp-loader-glow-opacity: var(--tsr-sys-glow-strength);
+  --tsr-comp-loader-glow-opacity: calc(var(--tsr-sys-glow-strength) * 0.8);
   /* Проход цветов вдоль шапки; при уменьшенном движении — период пульсации. */
   --tsr-comp-loader-duration: 2s;
   --tsr-comp-loader-pulse-duration: 2.4s;
@@ -343,12 +343,60 @@
     var(--tsr-sys-fg) 62%,
     transparent
   );
-  /* Ожидание и отказ базовых кнопок (ADR 0055): блик по контуру, вспышка. */
-  --tsr-comp-pending-ring-color: var(--tsr-comp-loader-bar);
+  /* Толщина кольца спиннера ожидания (пункт меню, ADR 0078). */
   --tsr-comp-pending-ring-width: 2px;
-  --tsr-comp-pending-ring-duration: 1s;
+  /*
+   * Свет вокруг кнопки в ожидании: голова, хвост из трёх оттенков и слабый ореол.
+   * Кнопки мелкие — свет тише полосы под шапкой: сила оттенков от силы свечения.
+   */
+  --tsr-comp-pending-glow-strength: 81%;
+  --tsr-comp-pending-glow-1: color-mix(
+    in oklch,
+    var(--tsr-comp-loader-glow-1) var(--tsr-comp-pending-glow-strength),
+    transparent
+  );
+  --tsr-comp-pending-glow-2: color-mix(
+    in oklch,
+    var(--tsr-comp-loader-glow-2) var(--tsr-comp-pending-glow-strength),
+    transparent
+  );
+  --tsr-comp-pending-glow-3: color-mix(
+    in oklch,
+    var(--tsr-comp-loader-glow-3) var(--tsr-comp-pending-glow-strength),
+    transparent
+  );
+  --tsr-comp-pending-glow-4: color-mix(
+    in oklch,
+    var(--tsr-comp-loader-glow-4) var(--tsr-comp-pending-glow-strength),
+    transparent
+  );
+  --tsr-comp-pending-glow-halo: color-mix(
+    in oklch,
+    var(--tsr-comp-loader-glow-1) 15%,
+    transparent
+  );
+  /* Дуги спиннера — оттенки свечения в полную силу: спиннер — тонкая линия. */
+  --tsr-comp-pending-spinner-1: var(--tsr-comp-loader-bar);
+  --tsr-comp-pending-spinner-2: var(--tsr-sys-info-sky);
+  --tsr-comp-pending-spinner-3: var(--tsr-sys-info-indigo);
+  --tsr-comp-pending-spinner-4: var(--tsr-sys-info-violet);
+  /* Насколько свет выходит за кнопку и как размыт; период оборота. */
+  --tsr-comp-pending-glow-offset: 2px;
+  --tsr-comp-pending-glow-blur: 4px;
+  --tsr-comp-pending-glow-duration: var(--tsr-comp-loader-duration);
   --tsr-comp-error-flash-color: var(--tsr-sys-danger);
-  /* Заливка контура красным и удержание вспышки (с начала заливки); гаснет переходом движения. */
+  /* Красный свет ошибки — той же силы, что свет ожидания: тень та же, меняется цвет. */
+  --tsr-comp-error-flash-glow: color-mix(
+    in oklch,
+    color-mix(
+        in oklch,
+        var(--tsr-comp-error-flash-color) var(--tsr-comp-loader-glow-opacity),
+        transparent
+      )
+      var(--tsr-comp-pending-glow-strength),
+    transparent
+  );
+  /* Переход света ожидания в красную заливку и её удержание; гаснет переходом движения. */
   --tsr-comp-error-flash-fill-duration: 600ms;
   --tsr-comp-error-flash-duration: 1200ms;
   /* Иконка упавшего пункта меню и отметка ошибки на кебабе (ADR 0078). */
@@ -405,8 +453,13 @@
   /* Линии дерева (ADR 0058): направляющие по уровням в отступе первой колонки. */
   --tsr-comp-tree-line-color: var(--tsr-sys-line);
   --tsr-comp-tree-line-width: 1px;
-  /* Толщина блика ожидания на ячейке — тоньше, чем у кнопок (ADR 0057). */
-  --tsr-comp-cell-pending-ring-width: 1px;
+  /* Пятно света ожидания ячейки: полуоси эллипса с центром на кромке. */
+  --tsr-comp-cell-pending-glow-width: 64px;
+  --tsr-comp-cell-pending-glow-height: 40px;
+  /* Глубина полосы света у кромок: внутри отступов содержимого, до текста не доходит. */
+  --tsr-comp-cell-pending-glow-depth: 10px;
+  /* Свет ложится поверх текста — в ячейке он тише, чем у кнопки. */
+  --tsr-comp-cell-pending-glow-opacity: 0.8;
   --tsr-comp-cell-saved-color: var(--tsr-comp-row-arrival-color);
   --tsr-comp-cell-saved-duration: var(--tsr-comp-row-arrival-duration);
   --tsr-comp-cell-saved-fade-duration: var(
@@ -892,8 +945,17 @@
     --tsr-comp-cell-pinned-hovered-bg: Canvas;
     --tsr-comp-cell-pinned-selected-hovered-bg: Highlight;
     --tsr-comp-focus-ring: CanvasText;
-    --tsr-comp-pending-ring-color: Highlight;
+    --tsr-comp-pending-glow-1: Highlight;
+    --tsr-comp-pending-glow-2: Highlight;
+    --tsr-comp-pending-glow-3: Highlight;
+    --tsr-comp-pending-glow-4: Highlight;
+    --tsr-comp-pending-glow-halo: Highlight;
+    --tsr-comp-pending-spinner-1: Highlight;
+    --tsr-comp-pending-spinner-2: Highlight;
+    --tsr-comp-pending-spinner-3: Highlight;
+    --tsr-comp-pending-spinner-4: Highlight;
     --tsr-comp-error-flash-color: Mark;
+    --tsr-comp-error-flash-glow: Mark;
     --tsr-comp-tree-line-color: GrayText;
     --tsr-comp-skeleton-bg: GrayText;
     --tsr-comp-checkbox-checked-bg: Highlight;

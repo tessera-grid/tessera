@@ -82,20 +82,17 @@
   color: var(--tsr-comp-action-error-color);
 }
 
-/* Ожидание пункта (ADR 0078): дуга цвета блика кнопок вращается на компоновщике. */
+/* Ожидание пункта (ADR 0078): пятна света по кольцу, как у кнопок и ячеек. */
 .itemSpinner {
-  box-sizing: border-box;
+  composes: spinner from '../../ui/ringStates/ringStates.module.css';
   width: 12px;
   height: 12px;
-  border: 2px solid var(--tsr-comp-pending-ring-color);
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: itemSpin var(--tsr-comp-pending-ring-duration) linear infinite;
 }
 
-@keyframes itemSpin {
-  to {
-    transform: rotate(360deg);
+/* Высокая контрастность (ADR 0087): кольцо — градиенты, браузер снял бы их. */
+@media (forced-colors: active) {
+  .itemSpinner {
+    forced-color-adjust: none;
   }
 }
 

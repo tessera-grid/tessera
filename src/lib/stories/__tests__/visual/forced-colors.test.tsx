@@ -59,6 +59,33 @@ const sys = (name: string) => {
 
 const style = (el: Element, pseudo?: string) => getComputedStyle(el, pseudo)
 
+/** Цвет токена, разрешённый в контексте элемента. */
+const tokenIn = (el: Element, name: string) => {
+  const probe = document.createElement('span')
+  probe.style.color = `var(${name})`
+  el.appendChild(probe)
+  const value = getComputedStyle(probe).color
+  probe.remove()
+  return value
+}
+
+/** Части значения через запятую верхнего уровня; у тени — её цвет. */
+const topLevelParts = (value: string) => {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '(') depth++
+    else if (value[i] === ')') depth--
+    else if (value[i] === ',' && depth === 0) {
+      parts.push(value.slice(start, i))
+      start = i + 1
+    }
+  }
+  parts.push(value.slice(start))
+  return parts.map(part => part.replace(/\s*-?[\d.]+px/g, '').trim())
+}
+
 /**
  * Нижняя граница контраста на заливке `Highlight`: 3:1, но не выше пары самой палитры
  * (`HighlightText` на `Highlight`) — лучше её грид не нарисует; в эмуляции Firefox
@@ -305,7 +332,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('HC6: блик ожидания кнопки бежит цветом Highlight; вспышка ошибки заливает контур цветом Mark', async () => {
+  test('HC6: свет ожидания кнопки — цветом Highlight; ошибка — ровный свет цветом Mark', async () => {
     const Button = ({
       pending,
       flash,
@@ -322,15 +349,27 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const screen = await render(<Button pending flash={0} />)
     const button = () => document.querySelector('button')!
     const ring = () => style(button(), '::after')
-    const highlight = sys('Highlight')
-    expect(ring().backgroundImage).toContain(highlight)
-    expect(ring().animationName).toContain('pendingRing')
+    const highlight = toRgba(sys('Highlight'))
+    for (const i of [1, 2, 3, 4]) {
+      expect(toRgba(tokenIn(button(), `--tsr-comp-pending-glow-${i}`))).toEqual(
+        highlight,
+      )
+    }
+    expect(ring().forcedColorAdjust).toBe('none')
+    expect(ring().boxShadow).not.toBe('none')
+    await frame()
     await screen.rerender(<Button pending={false} flash={1} />)
     expect(button().getAttribute('data-error-flash')).toBe('on')
-    expect(ring().backgroundImage).toContain(sys('Mark'))
+    await expect
+      .poll(() => parseFloat(ring().getPropertyValue('--tsr-ring-fill')))
+      .toBe(100)
+    // Ровный слой ошибки — пятый в списке теней.
+    expect(toRgba(topLevelParts(ring().boxShadow)[4]!)).toEqual(
+      toRgba(sys('Mark')),
+    )
   })
 
-  test('HC7: блик ячейки в правке — цветом Highlight', async () => {
+  test('HC7: свет ячейки в правке — те же цвета: ожидание Highlight, ошибка Mark', async () => {
     await renderGrid({
       columnCount: 6,
       dataCount: 20,
@@ -340,9 +379,16 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const layer = () =>
       document.querySelector<HTMLElement>('.cell-edit-feedback[data-pending]')
     await expect.poll(layer).not.toBeNull()
-    expect(style(layer()!, '::after').backgroundImage).toContain(
-      sys('Highlight'),
+    for (const i of [1, 2, 3, 4]) {
+      expect(toRgba(tokenIn(layer()!, `--tsr-comp-pending-glow-${i}`))).toEqual(
+        toRgba(sys('Highlight')),
+      )
+    }
+    expect(toRgba(tokenIn(layer()!, '--tsr-comp-error-flash-glow'))).toEqual(
+      toRgba(sys('Mark')),
     )
+    expect(style(layer()!, '::after').forcedColorAdjust).toBe('none')
+    expect(style(layer()!, '::after').backgroundImage).not.toBe('none')
   })
 
   test('HC8: линии дерева видны цветом GrayText', async () => {

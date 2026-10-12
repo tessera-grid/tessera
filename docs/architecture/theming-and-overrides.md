@@ -63,15 +63,21 @@
 - **Нижняя панель** (ADR 0038): `--tsr-comp-status-bar-height` / `-padding-x` /
   `-gap` / `-bg` / `-divider-color`. `--tsr-comp-status-bar-offset` выставляет сам
   грид, когда есть `statusBarSlot`, — его не переопределяют.
-- **Ожидание и отказ кнопок** (ADR [0055](../decisions/0055-button-pending-and-error-flash.md)):
-  блик `pending` по контуру — `--tsr-comp-pending-ring-color` / `-width` /
-  `-duration`; вспышка `errorFlash` — `--tsr-comp-error-flash-color` / `-fill-duration` (блик
-  заливает контур) / `-duration` (удержание; гаснет `--tsr-comp-motion-duration`). Кольцо и вспышка — `::after`
-  кнопки: `::before` у `IconButton` и `ToolbarButton` остаётся за слоями наведения.
-  Своих правил для `prefers-reduced-motion` у них нет: гаситель темы останавливает
-  блик (он остаётся виден на месте), а удержание вспышки отсчитывает таймер кнопки.
-  Пока грид прокручивается (`data-scrolling`), блик кнопок на паузе — вращение угла
-  градиента перерисовывает кольцо на каждом кадре (ADR [0078](../decisions/0078-async-menu-actions.md), MI25).
+- **Свет ожидания и ошибки** (ADR [0055](../decisions/0055-button-pending-and-error-flash.md),
+  [0095](../decisions/0095-pending-and-error-light.md)): четыре пятна оттенков
+  `--tsr-comp-pending-glow-1…4` (оттенки свечения загрузки с силой
+  `--tsr-comp-pending-glow-strength`), ореол `--tsr-comp-pending-glow-halo`, период
+  `--tsr-comp-pending-glow-duration`. У кнопки — внешние тени со сдвигом
+  `--tsr-comp-pending-glow-offset` и размытием `-blur`; у ячейки в правке — полоса по
+  периметру внутри (`--tsr-comp-cell-pending-glow-width` / `-height` / `-depth` /
+  `-opacity`); у спиннера пункта меню — дуги `--tsr-comp-pending-spinner-1…4` по кольцу
+  `--tsr-comp-pending-ring-width`. Ошибка `errorFlash` — ровный красный
+  `--tsr-comp-error-flash-glow` (цвет `--tsr-comp-error-flash-color` той же силы),
+  нарастает за `--tsr-comp-error-flash-fill-duration`, держится `-duration` и гаснет
+  переходом движения. Свет — `::after` носителя: `::before` у `IconButton` и
+  `ToolbarButton` остаётся за слоями наведения. Без движения пятна стоят по диагоналям
+  в полную силу; пока грид прокручивается (`data-scrolling`), анимации света на паузе
+  (ADR [0078](../decisions/0078-async-menu-actions.md), MI25).
 - **Подсветка** (ADR [0080](../decisions/0080-highlight-api.md)): заливка тона —
   `--tsr-comp-highlight-<tone>-bg` для `danger`/`warning`/`success` (роли
   `--tsr-sys-danger`, новые `--tsr-sys-warning` и `--tsr-sys-success` с мостом к
@@ -104,8 +110,8 @@
   схлопываются в ноль (ADR 0084).
 - **Обновление данных** (ADR [0094](../decisions/0094-loading-glow.md)): свечение под
   шапкой — оттенки `--tsr-comp-loader-glow-1…4` (по умолчанию синий `--tsr-comp-loader-bar`,
-  `--tsr-sys-info-sky`, `-indigo`, `-violet` с силой `--tsr-comp-loader-glow-opacity`,
-  у тёмной темы — `--tsr-sys-glow-strength` 100 %), глубина `--tsr-comp-loader-glow-size`,
+  `--tsr-sys-info-sky`, `-indigo`, `-violet` с силой `--tsr-comp-loader-glow-opacity` —
+  80 % `--tsr-sys-glow-strength`, у тёмной темы она 100 %), глубина `--tsr-comp-loader-glow-size`,
   проход цветов `--tsr-comp-loader-duration`, пульсация при уменьшенном движении
   `--tsr-comp-loader-pulse-duration`; линия высокой контрастности —
   `--tsr-comp-loader-height`; приглушение тела и футера — `--tsr-comp-loader-dim-opacity`.
@@ -148,9 +154,9 @@ flowchart LR
 В контрастных темах Windows (`@media (forced-colors: active)`) браузер заменяет цвета
 палитрой пользователя и снимает фоны, кроме заданных системным цветом. Блок в
 `theme.css` переопределяет токены состояний системными цветами: выбор и выделение —
-`Highlight`, подсветка — `Mark`, линии дерева и скелет — `GrayText`, блик — `Highlight`,
-вспышка — `Mark`. Цвет текста на заливке, выделение ячеек и подсветка на градиентах —
-правила режима в модулях; контур кольца (`::after`) не перекрашивается
+`Highlight`, подсветка — `Mark`, линии дерева и скелет — `GrayText`, свет ожидания —
+`Highlight`, ошибка — `Mark`. Цвет текста на заливке, выделение ячеек и подсветка на градиентах —
+правила режима в модулях; свет ожидания (`::after` и спиннер) не перекрашивается
 (`forced-color-adjust: none`). Системные цвета вне медиа-запроса запрещены (HC11,
 ADR [0087](../decisions/0087-forced-colors.md)). Переопределённый приложением токен
 состояния с обычным цветом браузер в режиме заменит на `Canvas`.

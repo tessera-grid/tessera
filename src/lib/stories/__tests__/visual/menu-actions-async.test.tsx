@@ -906,20 +906,27 @@ describe('Контекстное меню, виртуализация, инла�
   })
 })
 
-describe('Блик во время прокрутки', () => {
-  test('MI25: пока грид прокручивается, блик кнопок на паузе; после остановки прокрутки бежит снова', async () => {
+describe('Свет во время прокрутки', () => {
+  test('MI25: пока грид прокручивается, анимации света кнопок на паузе; после остановки прокрутки идут снова', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
     await parkPointer()
-    const playState = () =>
-      getComputedStyle(rowKebab('r1')!, '::after').animationPlayState
+    /** Состояние всех анимаций света кнопки — одно на всех или 'mixed'. */
+    const playState = () => {
+      const states = new Set(
+        getComputedStyle(rowKebab('r1')!, '::after')
+          .animationPlayState.split(',')
+          .map(state => state.trim()),
+      )
+      return states.size === 1 ? [...states][0] : 'mixed'
+    }
     await expect.poll(playState).toBe('running')
 
     const states: string[] = []
     for (let step = 0; step < 6; step += 1) {
       scroller().scrollTop += 4
       await new Promise(resolve => requestAnimationFrame(resolve))
-      if (scroller().hasAttribute('data-scrolling')) states.push(playState())
+      if (scroller().hasAttribute('data-scrolling')) states.push(playState()!)
     }
     expect(states.length).toBeGreaterThan(0)
     expect(new Set(states)).toEqual(new Set(['paused']))

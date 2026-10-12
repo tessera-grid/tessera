@@ -462,7 +462,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Асинхронные пункты меню:_ `menu-actions-async` (MI1–MI14, MI16–MI21, MI24–MI28 —
       проверка доступности промисом, причина блокировки, клавиатура, ожидание и отказ
       действия на кебабе и в пункте, контекстное меню, виртуализация, инлайн-кнопка,
-      axe, демо-истории, блик стоит во время прокрутки), модульный `menuActionStatus`
+      axe, демо-истории, свет кнопок стоит во время прокрутки), модульный `menuActionStatus`
       (MI15, MI22 — текст отказа, синхронный контракт), перф MI23 — в `scroll`
       ([ADR 0078](docs/decisions/0078-async-menu-actions.md)).
     - _Вложенные разделы меню:_ `menu-sections` (NM1–NM16, NM19–NM25 — шеврон и `hint`, сдвиг
@@ -476,8 +476,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       триггер одним нажатием, кебаб закреплённой колонки в Firefox)
       ([ADR 0085](docs/decisions/0085-non-modal-menus.md)).
     - _Высокая контрастность:_ `forced-colors` (HC1–HC10, HC13 — выбор и выделение
-      `Highlight`, кольцо фокуса на заливке, наведение контуром, подсветка `Mark`, блик
-      и вспышка, линии дерева и скелет `GrayText`, меню и примитивы, история; эмуляция
+      `Highlight`, кольцо фокуса на заливке, наведение контуром, подсветка `Mark`, свет
+      ожидания и ошибки, линии дерева и скелет `GrayText`, меню и примитивы, история; эмуляция
       в Chromium и Firefox), HC11 — в `theming-invariants`, перф HC12 —
       `performance/forced-colors` ([ADR 0087](docs/decisions/0087-forced-colors.md)).
     - _Повышенный контраст:_ `increased-contrast` (MC1–MC9, MC11 — рычаги тонов,
@@ -658,8 +658,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       ждёт; AS5–AS6 — «ошибка» с меткой, объявлением и повторной правкой; AS11 —
       раскрытие в ожидании; AS13 — axe и контраст новых состояний),
       [ADR 0041](docs/decisions/0041-async-business-callbacks.md); вид асинхронной
-      правки — визуальные `async-callbacks` (CF1–CF6, CF8–CF11 — блик по контуру,
-      закрепление, выделение и фокус, вспышка отказа, подсветка сохранения,
+      правки — визуальные `async-callbacks` (CF1–CF6, CF8–CF11 — свет по периметру,
+      закрепление, выделение и фокус, красный свет отказа, подсветка сохранения,
       виртуализация, уменьшенное движение, объявления, контраст, токены), модульный
       `asyncCallbacks` (CF7 — отметки сохранения), перф CF12 — в `scroll`
       ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
@@ -687,9 +687,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
       `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS17 —
-      блик `pending` и вспышка контура `errorFlash` у `IconButton` и `ToolbarButton`),
-      `ring-press` (BS18 — смена кольца посреди нажатия не теряет клик, ещё и в
-      `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md)); `segments` (SG1–SG4 —
+      свет `pending` и красный свет `errorFlash` у `IconButton` и `ToolbarButton`),
+      `ring-press` (BS18 — смена состояния посреди нажатия не теряет клик, ещё и в
+      `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md));
+      `loading-light` (LL1–LL5 — пятна света без общего направления, фаза кнопок и
+      ячеек, статичный красный свет ошибки, спиннер, сила света,
+      [ADR 0095](docs/decisions/0095-pending-and-error-light.md)); `segments` (SG1–SG4 —
       сегменты `ui/Segments`: radiogroup, токены, axe, движение), SG5 — в модульном
       `uiStories`; панель экспорта в виде меню — EP1–EP5 в `export`
       ([ADR 0074](docs/decisions/0074-segments-and-export-panel-sections.md)).
@@ -718,7 +721,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);
-    CF12 — медленная прокрутка с 1500 ячейками в ожидании с бликом против выборки без
+    CF12 — медленная прокрутка с 1500 ячейками в ожидании со светом против выборки без
     них, [ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md); RE60 — прокрутка
     раскрытого дерева с линиями против того же дерева без них,
     [ADR 0058](docs/decisions/0058-tree-lines.md); AI10 — медленная горизонтальная
