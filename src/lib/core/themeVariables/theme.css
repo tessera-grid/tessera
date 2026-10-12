@@ -263,8 +263,9 @@
   /* Проход цветов вдоль шапки; при уменьшенном движении — период пульсации. */
   --tsr-comp-loader-duration: 2s;
   --tsr-comp-loader-pulse-duration: 2.4s;
-  /* Появление и уход свечения загрузки — вдвое дольше движения: свет крупный. */
-  --tsr-comp-loader-fade-duration: calc(var(--tsr-comp-motion-duration) * 2);
+  /* Рост свечения загрузки «языками» — неспешно: свет крупный; убывание быстрее. */
+  --tsr-comp-loader-grow-duration: 1500ms;
+  --tsr-comp-loader-shrink-duration: 900ms;
   /* Приглушение тела и футера, пока данные обновляются (ADR 0094). */
   --tsr-comp-loader-dim-opacity: 0.6;
   --tsr-comp-row-height: 50px;

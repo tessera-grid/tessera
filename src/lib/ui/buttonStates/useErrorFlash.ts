@@ -10,6 +10,21 @@ export const parseDuration = (value: string): number => {
   return first.endsWith('ms') ? parsed : parsed * 1000
 }
 
+/** Время до конца самого долгого перехода стиля, мс: длительность плюс задержка. */
+export const longestTransition = (style: CSSStyleDeclaration): number => {
+  const durations = style.transitionDuration.split(',')
+  const delays = style.transitionDelay.split(',')
+  return durations.reduce(
+    (max, duration, i) =>
+      Math.max(
+        max,
+        parseDuration(duration) +
+          parseDuration(delays[i % delays.length] ?? '0s'),
+      ),
+    0,
+  )
+}
+
 export type ErrorFlashPhase = 'on' | 'off' | undefined
 
 /**
@@ -47,7 +62,7 @@ export const useErrorFlash = (
               '--tsr-comp-error-flash-duration',
             ),
           )
-        : parseDuration(getComputedStyle(el, '::after').transitionDuration)
+        : longestTransition(getComputedStyle(el, '::after'))
     const timer = setTimeout(
       () => setPhase(phase === 'on' ? 'off' : undefined),
       ms,

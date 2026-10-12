@@ -24,7 +24,9 @@ interface LinearProgressProps {
 export const LinearProgress = memo(
   ({ label, active = true, errorFlash }: LinearProgressProps) => {
     const ref = useRef<HTMLDivElement>(null)
-    const flash = useErrorFlash(ref, errorFlash)
+    const phase = useErrorFlash(ref, errorFlash)
+    // Повтор начался во время вспышки — красный сразу перетекает в синее свечение.
+    const flash = active ? undefined : phase
     const shown = active || flash !== undefined
     // Синее свечение появляется и уходит плавно; под красным — гаснет на вспышку.
     const glows = usePresence<HTMLDivElement>(active || flash === 'on')

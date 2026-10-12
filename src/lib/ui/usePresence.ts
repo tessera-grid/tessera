@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { parseDuration } from './buttonStates/useErrorFlash'
+import { longestTransition } from './buttonStates/useErrorFlash'
 
 /**
  * Плавное появление и уход элемента: появление — CSS-анимацией самого элемента, уход —
- * элемент остаётся смонтированным с `data-leaving` на время своего перехода (длительность
- * — из вычисленного стиля, при уменьшенном движении — ноль). `@starting-style` порог
+ * элемент остаётся смонтированным с `data-leaving` до конца самого долгого своего
+ * перехода (из вычисленного стиля, при уменьшенном движении — ноль). `@starting-style` порог
  * браузеров не пропускает (ADR 0084).
  */
 export const usePresence = <T extends HTMLElement>(shown: boolean) => {
@@ -21,7 +21,7 @@ export const usePresence = <T extends HTMLElement>(shown: boolean) => {
       return
     }
     const el = ref.current
-    const ms = el ? parseDuration(getComputedStyle(el).transitionDuration) : 0
+    const ms = el ? longestTransition(getComputedStyle(el)) : 0
     const timer = setTimeout(() => setMounted(false), ms)
     return () => clearTimeout(timer)
   }, [leaving])

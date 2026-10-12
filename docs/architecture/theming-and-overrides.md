@@ -112,8 +112,8 @@
   шапкой — оттенки `--tsr-comp-loader-glow-1…4` (по умолчанию синий `--tsr-comp-loader-bar`,
   `--tsr-sys-info-sky`, `-indigo`, `-violet` с силой `--tsr-comp-loader-glow-opacity` —
   80 % `--tsr-sys-glow-strength`, у тёмной темы она 100 %), глубина `--tsr-comp-loader-glow-size`,
-  проход цветов `--tsr-comp-loader-duration`, проявление и угасание
-  `--tsr-comp-loader-fade-duration`, пульсация при уменьшенном движении
+  проход цветов `--tsr-comp-loader-duration`, рост и убывание по высоте
+  `--tsr-comp-loader-grow-duration` и `--tsr-comp-loader-shrink-duration`, пульсация при уменьшенном движении
   `--tsr-comp-loader-pulse-duration`; линия высокой контрастности —
   `--tsr-comp-loader-height`; приглушение тела и футера — `--tsr-comp-loader-dim-opacity`.
 - **Ошибка загрузки данных** (ADR [0096](../decisions/0096-load-error.md)): красный свет

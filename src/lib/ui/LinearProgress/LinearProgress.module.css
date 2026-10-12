@@ -19,27 +19,147 @@
 }
 
 /*
- * Синее свечение появляется и уходит плавно (`data-leaving` держит его на время ухода)
- * и гаснет, когда его сменяет красный свет ошибки (ADR 0096).
+ * Свет вырастает вниз от края шапки и убывает к нему не разом, а «языками»: маска из
+ * четырёх пятен в разных местах ширины, каждое растёт своим ходом (длительность,
+ * задержка), затем общая заливка делает свет сплошным. Синий — при показе и уходе
+ * обновления (`data-leaving` держит слой до конца самого долгого перехода), красный —
+ * при вспышке ошибки (ADR 0096). Синий под красным гаснет.
  */
+@property --tsr-loader-grow-1 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-loader-grow-2 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-loader-grow-3 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-loader-grow-4 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --tsr-loader-grow-fill {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
 .glows {
   position: absolute;
   inset: 0;
-  animation: loader-fade-in var(--tsr-comp-loader-fade-duration)
-    var(--tsr-comp-motion-easing-out);
+  --tsr-loader-grow-1: 100%;
+  --tsr-loader-grow-2: 100%;
+  --tsr-loader-grow-3: 100%;
+  --tsr-loader-grow-4: 100%;
+  --tsr-loader-grow-fill: 100%;
+  mask-image:
+    radial-gradient(
+      calc(var(--tsr-loader-grow-1) * 0.55) calc(var(--tsr-loader-grow-1) * 1.6)
+        at 14% 0,
+      #000 35%,
+      transparent
+    ),
+    radial-gradient(
+      calc(var(--tsr-loader-grow-2) * 0.5) calc(var(--tsr-loader-grow-2) * 1.6)
+        at 41% 0,
+      #000 35%,
+      transparent
+    ),
+    radial-gradient(
+      calc(var(--tsr-loader-grow-3) * 0.6) calc(var(--tsr-loader-grow-3) * 1.6)
+        at 67% 0,
+      #000 35%,
+      transparent
+    ),
+    radial-gradient(
+      calc(var(--tsr-loader-grow-4) * 0.5) calc(var(--tsr-loader-grow-4) * 1.6)
+        at 91% 0,
+      #000 35%,
+      transparent
+    ),
+    linear-gradient(rgb(0 0 0 / var(--tsr-loader-grow-fill)) 0 0);
+  animation:
+    loader-grow-1 calc(var(--tsr-comp-loader-grow-duration) * 0.75)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.05) backwards,
+    loader-grow-2 calc(var(--tsr-comp-loader-grow-duration) * 1)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.25) backwards,
+    loader-grow-3 calc(var(--tsr-comp-loader-grow-duration) * 0.6)
+      var(--tsr-comp-motion-easing-out) backwards,
+    loader-grow-4 calc(var(--tsr-comp-loader-grow-duration) * 0.9)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.15) backwards,
+    loader-grow-fill calc(var(--tsr-comp-loader-grow-duration) * 0.45)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.8) backwards;
   transition: opacity var(--tsr-comp-error-flash-fill-duration)
     var(--tsr-comp-motion-easing);
 }
 
 .glows[data-leaving] {
-  opacity: 0;
-  transition: opacity var(--tsr-comp-loader-fade-duration)
-    var(--tsr-comp-motion-easing);
+  /* Недоигранный рост не перебивает убывание: оно идёт от текущих значений. */
+  animation: none;
+  --tsr-loader-grow-1: 0%;
+  --tsr-loader-grow-2: 0%;
+  --tsr-loader-grow-3: 0%;
+  --tsr-loader-grow-4: 0%;
+  --tsr-loader-grow-fill: 0%;
+  transition:
+    --tsr-loader-grow-fill calc(var(--tsr-comp-loader-shrink-duration) * 0.35)
+      var(--tsr-comp-motion-easing),
+    --tsr-loader-grow-1 calc(var(--tsr-comp-loader-shrink-duration) * 0.7)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.2),
+    --tsr-loader-grow-2 calc(var(--tsr-comp-loader-shrink-duration) * 0.55)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.1),
+    --tsr-loader-grow-3 calc(var(--tsr-comp-loader-shrink-duration) * 0.85)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.3),
+    --tsr-loader-grow-4 calc(var(--tsr-comp-loader-shrink-duration) * 0.6)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.05);
 }
 
-@keyframes loader-fade-in {
+@keyframes loader-grow-1 {
   from {
-    opacity: 0;
+    --tsr-loader-grow-1: 0%;
+  }
+}
+
+@keyframes loader-grow-2 {
+  from {
+    --tsr-loader-grow-2: 0%;
+  }
+}
+
+@keyframes loader-grow-3 {
+  from {
+    --tsr-loader-grow-3: 0%;
+  }
+}
+
+@keyframes loader-grow-4 {
+  from {
+    --tsr-loader-grow-4: 0%;
+  }
+}
+
+@keyframes loader-grow-fill {
+  from {
+    --tsr-loader-grow-fill: 0%;
   }
 }
 
@@ -49,7 +169,8 @@
 
 /*
  * Красный свет ошибки загрузки (ADR 0096): та же размытая полоса, но ровная и цвета
- * ошибки. Нарастает за время заливки, держится, гаснет переходом движения.
+ * ошибки, и так же вырастает «языками» — поверх синего, который гаснет; держится и
+ * убывает к шапке.
  */
 .linear-progress::after {
   content: '';
@@ -57,17 +178,87 @@
   top: calc(var(--tsr-comp-loader-glow-size) / -3);
   left: 0;
   right: 0;
+  /*
+   * Маска режет всё за рамкой бокса, поэтому бокс доходит до низа полосы, а цвет
+   * залит только в его верхней части — размытие сверху вниз не обрывается.
+   */
+  box-sizing: content-box;
   height: calc(var(--tsr-comp-loader-glow-size) * 2 / 3);
+  padding-bottom: calc(var(--tsr-comp-loader-glow-size) * 2 / 3);
   background-color: var(--tsr-comp-load-error-glow);
+  background-clip: content-box;
   filter: blur(calc(var(--tsr-comp-loader-glow-size) / 3));
-  opacity: 0;
-  transition: var(--tsr-comp-reveal-transition);
+  --tsr-loader-grow-1: 0%;
+  --tsr-loader-grow-2: 0%;
+  --tsr-loader-grow-3: 0%;
+  --tsr-loader-grow-4: 0%;
+  --tsr-loader-grow-fill: 0%;
+  mask-image:
+    radial-gradient(
+      calc(var(--tsr-loader-grow-1) * 0.55) calc(var(--tsr-loader-grow-1) * 1.2)
+        at 14% 25%,
+      #000 35%,
+      transparent
+    ),
+    radial-gradient(
+      calc(var(--tsr-loader-grow-2) * 0.5) calc(var(--tsr-loader-grow-2) * 1.2)
+        at 41% 25%,
+      #000 35%,
+      transparent
+    ),
+    radial-gradient(
+      calc(var(--tsr-loader-grow-3) * 0.6) calc(var(--tsr-loader-grow-3) * 1.2)
+        at 67% 25%,
+      #000 35%,
+      transparent
+    ),
+    radial-gradient(
+      calc(var(--tsr-loader-grow-4) * 0.5) calc(var(--tsr-loader-grow-4) * 1.2)
+        at 91% 25%,
+      #000 35%,
+      transparent
+    ),
+    linear-gradient(rgb(0 0 0 / var(--tsr-loader-grow-fill)) 0 0);
+  transition:
+    --tsr-loader-grow-fill calc(var(--tsr-comp-loader-shrink-duration) * 0.35)
+      var(--tsr-comp-motion-easing),
+    --tsr-loader-grow-1 calc(var(--tsr-comp-loader-shrink-duration) * 0.7)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.2),
+    --tsr-loader-grow-2 calc(var(--tsr-comp-loader-shrink-duration) * 0.55)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.1),
+    --tsr-loader-grow-3 calc(var(--tsr-comp-loader-shrink-duration) * 0.85)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.3),
+    --tsr-loader-grow-4 calc(var(--tsr-comp-loader-shrink-duration) * 0.6)
+      var(--tsr-comp-motion-easing)
+      calc(var(--tsr-comp-loader-shrink-duration) * 0.05);
 }
 
 .linear-progress[data-error-flash='on']::after {
-  opacity: 1;
-  transition: opacity var(--tsr-comp-error-flash-fill-duration)
-    var(--tsr-comp-motion-easing);
+  /* Ошибка вырастает быстрее обновления: успевает разгореться за время удержания. */
+  --tsr-loader-grow-1: 100%;
+  --tsr-loader-grow-2: 100%;
+  --tsr-loader-grow-3: 100%;
+  --tsr-loader-grow-4: 100%;
+  --tsr-loader-grow-fill: 100%;
+  transition:
+    --tsr-loader-grow-1 calc(var(--tsr-comp-error-flash-fill-duration) * 0.75)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-error-flash-fill-duration) * 0.05),
+    --tsr-loader-grow-2 calc(var(--tsr-comp-error-flash-fill-duration) * 1)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-error-flash-fill-duration) * 0.25),
+    --tsr-loader-grow-3 calc(var(--tsr-comp-error-flash-fill-duration) * 0.6)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-loader-grow-4 calc(var(--tsr-comp-error-flash-fill-duration) * 0.9)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-error-flash-fill-duration) * 0.15),
+    --tsr-loader-grow-fill
+      calc(var(--tsr-comp-error-flash-fill-duration) * 0.45)
+      var(--tsr-comp-motion-easing-out)
+      calc(var(--tsr-comp-error-flash-fill-duration) * 0.8);
 }
 
 /*
@@ -119,9 +310,10 @@
 /* Линия только для высокой контрастности: там теней нет. Цвет — токен загрузки. */
 .line {
   display: none;
-  animation: loader-fade-in var(--tsr-comp-loader-fade-duration)
+  /* Линия в 2px не растёт — проявляется и гаснет за то же время, что свет. */
+  animation: loader-line-in var(--tsr-comp-loader-grow-duration)
     var(--tsr-comp-motion-easing-out);
-  transition: opacity var(--tsr-comp-loader-fade-duration)
+  transition: opacity var(--tsr-comp-loader-shrink-duration)
     var(--tsr-comp-motion-easing);
   background-color: var(--tsr-comp-loader-bar);
   position: absolute;
@@ -133,6 +325,12 @@
 
 .line[data-leaving] {
   opacity: 0;
+}
+
+@keyframes loader-line-in {
+  from {
+    opacity: 0;
+  }
 }
 
 @keyframes data-grid-loader-flow {

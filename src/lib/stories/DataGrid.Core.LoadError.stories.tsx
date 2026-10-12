@@ -158,6 +158,10 @@ export const LoadErrorServer: StoryObj<StoryProps> = {
     await until(() =>
       expect(banner(canvasElement)).toHaveTextContent('Server responded 503'),
     )
+    // Красный свет догорает — затем повтор, как его нажал бы человек.
+    await until(() =>
+      expect(canvasElement.querySelector('[data-error-flash]')).toBeNull(),
+    )
     await userEvent.click(
       canvasElement.querySelector<HTMLElement>(
         '[data-testid="load-error-retry"]',

@@ -165,6 +165,13 @@ const dismissButton = () =>
 const loader = () => q('[class*="linear-progress"]')!
 const flashPhase = () => loader().getAttribute('data-error-flash')
 const red = () => getComputedStyle(loader(), '::after')
+/** Рост красного света «языками»: наименьшее из пятен маски и заливки, %. */
+const redGrowth = () =>
+  Math.min(
+    ...['1', '2', '3', '4', 'fill'].map(key =>
+      parseFloat(red().getPropertyValue(`--tsr-loader-grow-${key}`)),
+    ),
+  )
 const wrapper = () => q('.data-grid-theme')!
 const scroller = () => q('.data-grid__container')!
 const liveRegion = () => q('[role="status"][aria-live="polite"]')!
@@ -203,21 +210,34 @@ describe('Ошибка обновления: свет и плашка', () => {
     expect(flashPhase()).toBe('on')
     // Синее гаснет, красный нарастает — переход, а не скачок.
     await frame()
-    expect(Number(red().opacity)).toBeLessThan(1)
-    await expect.poll(() => red().opacity).toBe('1')
+    expect(redGrowth()).toBeLessThan(100)
+    await expect.poll(redGrowth).toBe(100)
     expect(red().backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
     const glows = q('[class*="linear-progress"] > [class*="glows"]')
     expect(glows === null || getComputedStyle(glows).opacity === '0').toBe(true)
     await expect.poll(flashPhase, { timeout: 2000 }).toBe('off')
     await expect.poll(flashPhase, { timeout: 2000 }).toBeNull()
-    expect(red().opacity).toBe('0')
+    await expect.poll(redGrowth).toBe(0)
 
     // Без идущего обновления — от нуля.
     await update({ loadError: null })
     await update({ loadError: new Error('Again') })
     expect(flashPhase()).toBe('on')
-    expect(Number(red().opacity)).toBeLessThan(0.5)
-    await expect.poll(() => red().opacity).toBe('1')
+    expect(redGrowth()).toBeLessThan(50)
+    await expect.poll(redGrowth, { timeout: 2000 }).toBe(100)
+
+    // Повтор во время вспышки: красный сразу сменяется синим, не дожидаясь удержания.
+    await update({ loadError: new Error('Third') })
+    expect(flashPhase()).toBe('on')
+    const started = performance.now()
+    await update({ enableLoading: true })
+    await expect.poll(flashPhase).toBeNull()
+    expect(performance.now() - started).toBeLessThan(400)
+    expect(
+      q('[class*="linear-progress"] > [class*="glows"]')?.hasAttribute(
+        'data-leaving',
+      ),
+    ).toBe(false)
   })
 
   test('LE2: при ошибке обновления тело не приглушено сразу, без минимума показа, и откликается на наведение', async () => {
@@ -603,10 +623,10 @@ describe('Подписи, режимы, доступность, перерисо
     await calm.update({ loadError: SERVER_DOWN })
     await frame()
     await frame()
-    expect(red().opacity).toBe('1')
+    expect(redGrowth()).toBe(100)
     // Удержание — по таймеру, гаснет без перехода.
     await expect.poll(flashPhase, { timeout: 2000 }).toBeNull()
-    expect(red().opacity).toBe('0')
+    expect(redGrowth()).toBe(0)
     await calm.screen.unmount()
     await fx.reducedMotion(false)
 
@@ -676,25 +696,36 @@ describe('Подписи, режимы, доступность, перерисо
     expect(cellRenders).toBe(before)
   })
 
-  test('LE17: плашка проявляется и уходит за --tsr-comp-motion-duration, свечение — за --tsr-comp-loader-fade-duration; уходя, плашка держит причину и не ловит указатель; без движения — сразу', async () => {
+  test('LE17: плашка проявляется и уходит за --tsr-comp-motion-duration, свечение — за --tsr-comp-loader-grow-duration; уходя, плашка держит причину и не ловит указатель; без движения — сразу', async () => {
     const glows = () => q('[class*="linear-progress"] > [class*="glows"]')
     const view = await mount()
     await waitRows()
     await view.update({ enableLoading: true })
     await expect.poll(glows).not.toBeNull()
-    expect(getComputedStyle(glows()!).animationName).toContain('loader-fade-in')
-    expect(getComputedStyle(glows()!).animationDuration).toBe(
-      durationOf('--tsr-comp-loader-fade-duration'),
-    )
+    const enter = getComputedStyle(glows()!)
+    expect(enter.animationName.split(',')).toHaveLength(5)
+    expect(enter.animationName).toContain('loader-grow-1')
+    // Языки растут вразнобой: длительности и задержки разные.
+    expect(new Set(enter.animationDuration.split(',')).size).toBeGreaterThan(2)
+    expect(new Set(enter.animationDelay.split(',')).size).toBeGreaterThan(2)
+    expect(enter.maskImage).toContain('radial-gradient')
+    // Самый долгий язык растёт ровно длительность токена.
+    expect(
+      enter.animationDuration.split(',').map(part => part.trim()),
+    ).toContain(durationOf('--tsr-comp-loader-grow-duration'))
     await view.update({ enableLoading: false })
     await frame()
     expect(glows()!.getAttribute('data-leaving')).toBe('true')
-    expect(getComputedStyle(glows()!).transitionDuration).toBe(
-      durationOf('--tsr-comp-loader-fade-duration'),
-    )
-    await expect.poll(glows).toBeNull()
+    // Убывает языками маски, а не гаснет прозрачностью.
+    const leave = getComputedStyle(glows()!)
+    expect(leave.transitionProperty).toContain('--tsr-loader-grow-1')
+    expect(leave.transitionProperty).not.toContain('opacity')
+    await expect.poll(glows, { timeout: 3000 }).toBeNull()
 
+    // Красный свет в покое сжат к шапке, на вспышке вырастает во всю высоту.
+    expect(redGrowth()).toBe(0)
     await view.update({ loadError: SERVER_DOWN })
+    await expect.poll(redGrowth, { timeout: 2000 }).toBe(100)
     await expect.poll(banner).not.toBeNull()
     expect(getComputedStyle(banner()!).animationName).toContain(
       'load-error-banner-in',
