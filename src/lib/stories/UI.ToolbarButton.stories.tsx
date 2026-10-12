@@ -9,6 +9,7 @@ import { UiCanvas } from './__mocks__/UiCanvas'
 /**
  * Кнопка тулбара (ADR 0035): иконка с тултипом; живёт внутри `Toolbar.Root`. Активное
  * состояние — точка; ожидание и вспышка ошибки — ADR 0055.
+ * Вид, размер и состояния — база `UI/IconButton` (ADR 0098); здесь — только свои.
  */
 const ToolbarButtonDemo = (
   props: Omit<Parameters<typeof ToolbarButton>[0], 'icon'>,
@@ -17,7 +18,7 @@ const ToolbarButtonDemo = (
   return (
     <UiCanvas>
       <Toolbar.Root>
-        <ToolbarButton {...props} icon={<Columns width={18} height={18} />} />
+        <ToolbarButton {...props} icon={<Columns width={16} height={16} />} />
       </Toolbar.Root>
     </UiCanvas>
   )
@@ -26,12 +27,12 @@ const ToolbarButtonDemo = (
 const meta = {
   title: 'Tessera/UI/ToolbarButton',
   component: ToolbarButtonDemo,
+  argTypes: { errorFlash: { table: { disable: true } } },
   args: {
     label: 'Columns',
     active: false,
     disabled: false,
     pending: false,
-    errorFlash: 0,
     onClick: fn(),
   },
 } satisfies Meta<typeof ToolbarButtonDemo>

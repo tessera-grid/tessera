@@ -107,6 +107,9 @@ describe('Theming matrix — header controls', () => {
           interval: 100,
         })
         .toBe(resolveColor('--tsr-comp-control-active-hover-bg', dark))
+      // Тултип отдельной кнопки открыт под ней и накрыл бы шапку грида: уводим указатель.
+      await userEvent.hover(park!)
+      await expect.poll(() => document.querySelector('[data-side]')).toBeNull()
       const grid = await renderHeaderButtons(mode)
       await grid.activate('sort')
       await userEvent.hover(grid.button('sort'))

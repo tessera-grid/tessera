@@ -5,7 +5,6 @@
  * плоская шапка — любая закрепляемая; reorder-out (`enableLeafPinning`) — любая
  * единица; иначе только группа верхнего уровня (`depth === 0`).
  */
-import clsx from 'clsx'
 
 import type { Column } from '../../types'
 import type { HeaderAction, HeaderMenuItem } from '../../core/headerActions'
@@ -15,7 +14,6 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { warnPluginInert } from '../../core/pluginDiagnostics'
 import type { ColumnPinningHooks, PinSides } from './types'
 
-import styles from '../../plugins/columnPinning/PinButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 type PinSide = 'start' | 'end'
@@ -181,10 +179,7 @@ export const pinHeaderAction: HeaderAction = {
       ? labels.unpin
       : labels.pin,
   active: ctx => !!getSegmentPinnedSide(getSegmentLeafColumns(ctx)),
-  className: ctx =>
-    clsx('column-pin__button', styles.root, {
-      [styles.pinned]: !!getSegmentPinnedSide(getSegmentLeafColumns(ctx)),
-    }),
+  className: () => 'column-pin__button',
   // Инлайн-поповер только когда доступны обе стороны — клик неоднозначен.
   inlineAsMenu: ({ column }) => getPinSides(column) === 'both',
   onSelect: ctx => {

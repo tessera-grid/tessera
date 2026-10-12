@@ -4,7 +4,6 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 
 import styles from './ExpandButton.module.css'
@@ -35,28 +34,26 @@ export const ExpandButton = ({
   const label = expanded ? labels.collapseRow : labels.expandRow
 
   return (
-    <Tooltip title={label} disabled={disabled}>
-      <div>
-        <IconButton
-          className="row-expand-button"
-          disabled={disabled}
-          pending={pending}
-          errorFlash={errorFlash}
-          aria-expanded={expanded}
-          onClick={onClick}
-          aria-label={label}
-        >
-          <ExpandIcon
-            width={20}
-            height={20}
-            className={clsx(styles.icon, {
-              [styles.expanded]: expanded && !swapped,
-              [styles.disabled]: disabled && !expanded,
-            })}
-          />
-        </IconButton>
-      </div>
-    </Tooltip>
+    <div>
+      <IconButton
+        className="row-expand-button"
+        disabled={disabled}
+        pending={pending}
+        errorFlash={errorFlash}
+        aria-expanded={expanded}
+        onClick={onClick}
+        label={label}
+      >
+        <ExpandIcon
+          width={16}
+          height={16}
+          className={clsx(styles.icon, {
+            [styles.expanded]: expanded && !swapped,
+            [styles.disabled]: disabled && !expanded,
+          })}
+        />
+      </IconButton>
+    </div>
   )
 }
 

@@ -8,6 +8,7 @@ import { UiCanvas } from './__mocks__/UiCanvas'
 /**
  * Кнопка действия строки — непрозрачный чип поверх контента (ADR 0017). Без
  * `isVisible` проявляется при наведении на строку — наведите на рамку.
+ * Вид, размер и состояния — база `UI/IconButton`, вариант `overlay` (ADR 0098); здесь — только свои.
  */
 const RowButtonDemo = (
   props: Omit<Parameters<typeof RowButton>[0], 'icon'>,

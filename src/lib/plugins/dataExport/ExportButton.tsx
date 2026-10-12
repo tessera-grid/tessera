@@ -61,7 +61,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
 
   if (!axes) return null
 
-  const icon = <DownloadIcon width={18} height={18} />
+  const icon = <DownloadIcon width={16} height={16} />
   if (single) {
     const isServer = whereOf(table, single) === 'server'
     return (

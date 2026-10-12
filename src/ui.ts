@@ -3,6 +3,8 @@ export {
   type CellEditButtonProps,
 } from './lib/grid/Actions/CellButton'
 export { RowButton, type RowButtonProps } from './lib/grid/Actions/RowButton'
+export { Button, type ButtonProps } from './lib/ui/Button'
+export { IconButton, type IconButtonProps } from './lib/ui/IconButton'
 export {
   Segments,
   type SegmentOption,

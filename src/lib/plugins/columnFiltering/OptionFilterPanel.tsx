@@ -28,6 +28,7 @@ import {
 import { setColumnFilterByUser } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
+import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'
 import { operatorLabel } from './describeFilter'
@@ -327,36 +328,33 @@ export const OptionFilterPanel = ({
             )}
           </div>
           <div className={styles.bulk}>
-            <button
-              type="button"
-              className={panelStyles.reset}
+            <Button
+              variant="ghost"
               disabled={options.length === 0}
               onClick={selectAll}
               data-testid="filter-select-all"
             >
               {labels.filterSelectAll}
-            </button>
-            <button
-              type="button"
-              className={panelStyles.reset}
+            </Button>
+            <Button
+              variant="ghost"
               disabled={!options.some(option => isSelected(option.value))}
               onClick={clearVisible}
               data-testid="filter-clear-selection"
             >
               {labels.filterClearSelection}
-            </button>
+            </Button>
           </div>
           {loaded?.status === 'error' ? (
             <div className={styles.status} role="alert">
               <span>{labels.filterOptionsError}</span>
-              <button
-                type="button"
-                className={panelStyles.reset}
+              <Button
+                variant="ghost"
                 onClick={loaded.retry}
                 data-testid="filter-options-retry"
               >
                 {labels.filterRetry}
-              </button>
+              </Button>
             </div>
           ) : options.length === 0 ? (
             <p className={styles.status} aria-busy={busy || undefined}>
@@ -426,14 +424,9 @@ export const OptionFilterPanel = ({
         </>
       )}
       <div className={panelStyles.footer}>
-        <button
-          type="button"
-          className={panelStyles.reset}
-          onClick={reset}
-          data-testid="filter-reset"
-        >
+        <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
-        </button>
+        </Button>
       </div>
     </div>
   )

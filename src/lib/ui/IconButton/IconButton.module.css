@@ -1,33 +1,99 @@
+/* Кнопка-иконка кита (ADR 0098): размер, формы и палитра — общие токены кнопок. */
 .iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
   flex: 0 0 auto;
-  padding: 8px;
+  /* Литералы-фолбэки: примитив держит размер и форму и вне слоя темы (ADR 0017). */
+  width: var(--tsr-comp-button-size, 32px);
+  height: var(--tsr-comp-button-size, 32px);
+  padding: 0;
   margin: 0;
   border: 0;
-  border-radius: var(--tsr-comp-radius-round, 50%);
+  border-radius: var(--tsr-comp-button-radius-circle, 50%);
   background-color: transparent;
-  color: inherit;
+  color: var(--tsr-comp-button-color);
   cursor: pointer;
   outline: 0;
   -webkit-tap-highlight-color: transparent;
   transition: var(--tsr-comp-action-button-transition);
 }
 
+.iconButton[data-shape='square'] {
+  border-radius: var(--tsr-comp-button-radius-square);
+}
+
+/* Иконка одного размера, что бы ни передал вызов. */
+.iconButton > svg {
+  flex: none;
+  width: var(--tsr-comp-button-icon-size, 16px);
+  height: var(--tsr-comp-button-icon-size, 16px);
+}
+
 /* Низкая специфичность — любой прикладной hover перекрывает базовый */
-:where(.iconButton:not(:disabled)):hover {
+:where(.iconButton:not(:disabled, [data-disabled])):hover {
   background-color: var(--tsr-comp-control-hover-bg);
+}
+
+/*
+ * Активное (включённое действие) — цвет и точка, фон — при наведении; открытый поповер
+ * кнопки — ещё и фон: кнопка «нажата», пока её поповер открыт.
+ */
+.iconButton:is([data-active], [data-popup-open]) {
+  color: var(--tsr-comp-control-active-color);
+}
+
+:where(.iconButton[data-active]):hover,
+.iconButton[data-popup-open] {
+  background-color: var(--tsr-comp-control-active-hover-bg);
 }
 
 .iconButton:focus-visible {
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }
 
-/* Единый disabled кнопок/иконок (F1/F2): гаснут цветом (не только курсором).
- * `:disabled` (спец. выше `.root`/`.sorted`) перебивает цвет состояния контрола. */
-.iconButton:disabled {
+/* Единый disabled кнопок: гаснут цветом (не только курсором). */
+.iconButton:is(:disabled, [data-disabled]) {
   color: var(--tsr-comp-control-disabled-color);
+  background-color: transparent;
   cursor: default;
+}
+
+/*
+ * Вариант «поверх контента» (ADR 0017, TC-9): непрозрачный фон, тень и светлый
+ * непрозрачный hover слоем под иконкой.
+ */
+.iconButton[data-variant='overlay'] {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--tsr-comp-action-button-bg);
+  box-shadow: var(--tsr-comp-shadow-action);
+}
+
+.iconButton[data-variant='overlay']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: var(--tsr-comp-action-button-hover-bg);
+  opacity: 0;
+  transition: var(--tsr-comp-overlay-hover-transition);
+}
+
+.iconButton[data-variant='overlay']:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.iconButton[data-variant='overlay']:is(:disabled, [data-disabled]) {
+  background-color: var(--tsr-comp-action-button-bg);
+}
+
+/* Высокая контрастность (ADR 0087): активная кнопка — `Highlight`. */
+@media (forced-colors: active) {
+  .iconButton:is([data-active], [data-popup-open]) {
+    background-color: Highlight;
+    color: HighlightText;
+  }
 }

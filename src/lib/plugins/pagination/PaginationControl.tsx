@@ -61,7 +61,7 @@ const PlaceholderButton = forwardRef<
   )
 })
 
-const ICON_SIZE = 18
+const ICON_SIZE = 16
 /** Ширина скелета диапазона «1–25 of 1000» на время первой загрузки. */
 const RANGE_SKELETON_WIDTH = 96
 

@@ -84,10 +84,7 @@ export const sortHeaderAction: HeaderAction = {
       : title
   },
   active: ({ column }) => !!column.getIsSorted(),
-  className: ({ column }) =>
-    clsx('column-sort__button', styles.root, {
-      [styles.sorted]: !!column.getIsSorted(),
-    }),
+  className: () => 'column-sort__button',
   adornment: ctx => {
     const multi = getMultiSortPosition(ctx)
 

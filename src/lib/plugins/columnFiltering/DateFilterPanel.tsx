@@ -19,6 +19,7 @@ import { ChevronDown } from 'lucide-react'
 import { setColumnFilterByUser } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
+import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { operatorLabel, PRESET_LABEL } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
@@ -387,14 +388,9 @@ export const DateFilterPanel = ({
         </div>
       )}
       <div className={panelStyles.footer}>
-        <button
-          type="button"
-          className={panelStyles.reset}
-          onClick={reset}
-          data-testid="filter-reset"
-        >
+        <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
-        </button>
+        </Button>
       </div>
     </div>
   )

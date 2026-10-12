@@ -18,6 +18,7 @@ import {
   isKeyboardNavigationEnabled,
 } from '../../core/keyboardNavigation'
 import { useLocalization } from '../../core/localization'
+import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'
 import { useTableState } from '../../core/reactivity'
@@ -222,16 +223,14 @@ export const InfiniteTail = ({
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                className={styles.retry}
+              <Button
                 onClick={retry}
                 onKeyDown={onRetryKeyDown}
+                icon={<RetryIcon width={16} height={16} aria-hidden="true" />}
                 {...{ [NAV_BODY_END_ATTR]: '' }}
               >
-                <RetryIcon width={14} height={14} aria-hidden="true" />
                 {labels.loadMoreRetry}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

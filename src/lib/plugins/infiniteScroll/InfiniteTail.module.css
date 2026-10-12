@@ -60,27 +60,3 @@
   margin-top: 2px;
   color: var(--tsr-comp-load-more-reason-color);
 }
-
-.retry {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 12px;
-  color: var(--tsr-comp-fg);
-  font: inherit;
-  background-color: transparent;
-  border: 1px solid var(--tsr-comp-control-border);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: var(--tsr-comp-action-button-transition);
-}
-
-.retry:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.retry:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
-}

@@ -6,7 +6,6 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { Bubble } from '../../ui/Bubble'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
@@ -64,42 +63,40 @@ export const SortButton = memo(
       : title
 
     return (
-      <Tooltip title={title} disabled={disabled}>
-        <div
-          className={clsx('cell__button', 'cell__button--hidden')}
-          data-button-active={!!operation}
-        >
-          <span className={styles.anchor}>
-            <IconButton
-              className={clsx('column-sort__button', styles.root, {
-                [styles.sorted]: !!operation,
-              })}
-              disabledClassName={styles.disabled}
-              onClick={onClick}
-              disabled={disabled}
-              aria-disabled={disabled}
-              aria-label={ariaLabel}
+      <div
+        className={clsx('cell__button', 'cell__button--hidden')}
+        data-button-active={!!operation}
+      >
+        <span className={styles.anchor}>
+          <IconButton
+            className="column-sort__button"
+            active={!!operation}
+            disabledClassName={styles.disabled}
+            onClick={onClick}
+            disabled={disabled}
+            aria-disabled={disabled}
+            label={title}
+            aria-label={ariaLabel}
+          >
+            {operation === 'asc' && <SortAscIcon width={16} height={16} />}
+            {operation === 'desc' && <SortDescIcon width={16} height={16} />}
+            {!operation && <SortIcon width={16} height={16} />}
+            {/* Номер приоритета занимает место точки (ADR 0062). */}
+            {!showIndex && <ActiveDot shown={!!operation} />}
+          </IconButton>
+          {showIndex && (
+            <Bubble
+              size="sm"
+              tone="active"
+              className={clsx('column-sort__priority', styles.priority)}
+              data-sort-priority={position}
+              aria-hidden
             >
-              {operation === 'asc' && <SortAscIcon width={16} height={16} />}
-              {operation === 'desc' && <SortDescIcon width={16} height={16} />}
-              {!operation && <SortIcon width={16} height={16} />}
-              {/* Номер приоритета занимает место точки (ADR 0062). */}
-              {!showIndex && <ActiveDot shown={!!operation} />}
-            </IconButton>
-            {showIndex && (
-              <Bubble
-                size="sm"
-                tone="active"
-                className={clsx('column-sort__priority', styles.priority)}
-                data-sort-priority={position}
-                aria-hidden
-              >
-                {position}
-              </Bubble>
-            )}
-          </span>
-        </div>
-      </Tooltip>
+              {position}
+            </Bubble>
+          )}
+        </span>
+      </div>
     )
   },
 )

@@ -5,17 +5,14 @@
  */
 import { useEffect, useRef, useState } from 'react'
 
-import { Button } from '@base-ui/react/button'
-
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
-import { Tooltip } from '../../ui/Tooltip'
-import buttonStyles from '../../ui/ToolbarButton/ToolbarButton.module.css'
+import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import styles from './BackToTop.module.css'
 import { findGridScroller, jumpToTop, watchThreshold } from './model'
 
-const ICON_SIZE = 18
+const ICON_SIZE = 16
 
 export const BackToTopButton = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
@@ -38,29 +35,26 @@ export const BackToTopButton = ({ table }: StatusBarComponentProps) => {
 
   return (
     <span className={styles.slot} data-shown={shown || undefined}>
-      <Tooltip title={labels.backToTop}>
-        <Button
-          ref={ref}
-          type="button"
-          aria-label={labels.backToTop}
-          disabled={!past}
-          focusableWhenDisabled
-          className={buttonStyles.toolbarButton}
-          data-testid="back-to-top"
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onClick={() => {
-            // Safari не фокусирует кнопку по клику: без фокуса она скрылась бы сразу.
-            ref.current?.focus({ preventScroll: true })
-            const scroller = findGridScroller(ref.current)
-            if (past && scroller) {
-              jumpToTop(table, scroller)
-            }
-          }}
-        >
-          <icons.backToTop width={ICON_SIZE} height={ICON_SIZE} />
-        </Button>
-      </Tooltip>
+      <IconButton
+        ref={ref}
+        label={labels.backToTop}
+        shape="square"
+        disabled={!past}
+        tooltipWhenDisabled
+        data-testid="back-to-top"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onClick={() => {
+          // Safari не фокусирует кнопку по клику: без фокуса она скрылась бы сразу.
+          ref.current?.focus({ preventScroll: true })
+          const scroller = findGridScroller(ref.current)
+          if (past && scroller) {
+            jumpToTop(table, scroller)
+          }
+        }}
+      >
+        <icons.backToTop width={ICON_SIZE} height={ICON_SIZE} />
+      </IconButton>
     </span>
   )
 }

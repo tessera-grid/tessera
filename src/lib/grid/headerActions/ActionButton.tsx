@@ -8,7 +8,6 @@ import { useLocalization } from '../../core/localization'
 import { logWarn } from '../../core/logger'
 import { useActionStatus } from './useActionStatus'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import {
   actionStatusKey,
   readSyncDisabled,
@@ -62,6 +61,7 @@ export const ActionButton = ({
   const button = (
     <IconButton
       className={action.className?.(context)}
+      active={active}
       onClick={event =>
         runMenuAction(action, context, event, { keepError: false })
       }
@@ -69,6 +69,7 @@ export const ActionButton = ({
       errorFlash={entry?.flash}
       disabled={disabled}
       aria-disabled={disabled}
+      label={label}
       aria-label={ariaLabel}
     >
       {action.icon(context)}
@@ -82,21 +83,19 @@ export const ActionButton = ({
       : clsx('cell__button', 'cell__button--hidden')
 
   return (
-    <Tooltip title={label} disabled={disabled}>
-      <div
-        className={wrapperClassName}
-        data-button-active={active || !!entry?.pending}
-      >
-        {adornment ? (
-          <span className={styles.anchor}>
-            {button}
-            {adornment}
-          </span>
-        ) : (
-          button
-        )}
-      </div>
-    </Tooltip>
+    <div
+      className={wrapperClassName}
+      data-button-active={active || !!entry?.pending}
+    >
+      {adornment ? (
+        <span className={styles.anchor}>
+          {button}
+          {adornment}
+        </span>
+      ) : (
+        button
+      )}
+    </div>
   )
 }
 

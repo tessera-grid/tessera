@@ -86,31 +86,10 @@
 }
 
 .remove:focus-visible,
-.reset:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
-}
-
 .footer {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
   padding-top: 4px;
   border-top: 1px solid var(--tsr-comp-popup-divider-color);
-}
-
-.reset {
-  height: var(--tsr-comp-popup-item-min-height);
-  padding: 0 10px;
-  color: inherit;
-  font: inherit;
-  background-color: transparent;
-  border: 0;
-  border-radius: var(--tsr-comp-popup-item-radius);
-  cursor: pointer;
-  transition: var(--tsr-comp-action-button-transition);
-}
-
-.reset:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
 }

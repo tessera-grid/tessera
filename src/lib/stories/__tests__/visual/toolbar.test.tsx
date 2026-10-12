@@ -207,7 +207,7 @@ describe('Toolbar', () => {
 })
 
 describe('ToolbarButton (F4)', () => {
-  test('TB13: the button is square with rounded corners sized by --tsr-comp-toolbar-button-*', async () => {
+  test('TB13: the button is square with rounded corners — the kit square shape and size (ADR 0098)', async () => {
     await renderToolbar()
     const button = toolbarButtons()[0]
     const size = parseFloat(
@@ -218,10 +218,7 @@ describe('ToolbarButton (F4)', () => {
     expect(size).toBeGreaterThanOrEqual(24)
     const radius = read(button, 'border-top-left-radius')
     expect(radius).toBe(
-      resolveToken(
-        '--tsr-comp-toolbar-button-radius',
-        'border-top-left-radius',
-      ),
+      resolveToken('--tsr-comp-button-radius-square', 'border-top-left-radius'),
     )
     expect(radius).not.toBe('50%')
     expect(radius).not.toBe('0px')
@@ -243,9 +240,12 @@ describe('ToolbarButton (F4)', () => {
     expect(read(settings, 'color')).toBe(
       resolveToken('--tsr-comp-control-active-color', 'color'),
     )
-    expect(read(settings, 'background-color')).toBe(
-      resolveToken('--tsr-comp-control-active-hover-bg'),
-    )
+    // Активное — цвет и точка; фон — при наведении, как у кнопок шапки (ADR 0098).
+    expect(read(settings, 'background-color')).toBe('rgba(0, 0, 0, 0)')
+    await userEvent.hover(settings)
+    await expect
+      .poll(() => read(settings, 'background-color'))
+      .toBe(resolveToken('--tsr-comp-control-active-hover-bg'))
 
     expect(read(exportButton, 'color')).toBe(
       resolveToken('--tsr-comp-control-disabled-color', 'color'),

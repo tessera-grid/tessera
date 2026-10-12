@@ -11,6 +11,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
+import { Button } from '../../ui/Button'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import { Tooltip } from '../../ui/Tooltip'
 import {
@@ -145,21 +146,16 @@ export const ColumnVisibilityMenu = ({
         </p>
       )}
       <div className={styles.footer}>
-        <button
-          type="button"
-          className={styles.action}
+        <Button
+          variant="ghost"
           disabled={hiddenCount === 0}
           onClick={() => setColumnsVisible(control, getShowAll(control), true)}
         >
           {labels.showAllColumns}
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={() => resetColumnsVisibility(control)}
-        >
+        </Button>
+        <Button variant="ghost" onClick={() => resetColumnsVisibility(control)}>
           {labels.resetColumns}
-        </button>
+        </Button>
       </div>
     </div>
   )

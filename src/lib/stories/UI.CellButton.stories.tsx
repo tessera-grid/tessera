@@ -8,6 +8,7 @@ import { UiCanvas } from './__mocks__/UiCanvas'
 /**
  * Кнопка в ячейке для своих слотов: тултип и доступное имя из `title`. С
  * `showOnHover` проявляется при наведении на ячейку — наведите на рамку.
+ * Вид, размер и состояния — база `UI/IconButton` (ADR 0098); здесь — только свои.
  */
 const CellButtonDemo = (
   props: Omit<Parameters<typeof CellButton>[0], 'icon'>,

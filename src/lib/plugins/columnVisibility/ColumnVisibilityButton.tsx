@@ -38,7 +38,7 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
   const label = active ? labels.columnsWithHidden(hidden) : labels.columns
   const icon = (
     <span className={styles.icon}>
-      <ColumnsIcon width={18} height={18} />
+      <ColumnsIcon width={16} height={16} />
       {active && (
         <Bubble size="sm" tone="active" className={styles.count} aria-hidden>
           {hidden}

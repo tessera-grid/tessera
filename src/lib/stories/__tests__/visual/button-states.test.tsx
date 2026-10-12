@@ -128,15 +128,30 @@ const snapshot = async () => {
 /** Точки на `gap` px снаружи круглой кнопки — по восьми направлениям. */
 const around = (el: Element, gap: number) => {
   const box = el.getBoundingClientRect()
+  // Скругление кнопки в px (50% — круг): углы берутся снаружи дуги, стороны — по центру.
+  const raw = getComputedStyle(el).borderTopLeftRadius
+  const r = Math.min(
+    raw.endsWith('%') ? (box.width * parseFloat(raw)) / 100 : parseFloat(raw),
+    box.width / 2,
+    box.height / 2,
+  )
   const cx = box.left + box.width / 2
   const cy = box.top + box.height / 2
-  return Array.from({ length: 8 }, (_, i) => {
-    const a = (i * Math.PI) / 4
-    return [
-      cx + Math.cos(a) * (box.width / 2 + gap),
-      cy + Math.sin(a) * (box.height / 2 + gap),
+  const corner = (sx: number, sy: number) =>
+    [
+      cx + sx * (box.width / 2 - r + (r + gap) * Math.SQRT1_2),
+      cy + sy * (box.height / 2 - r + (r + gap) * Math.SQRT1_2),
     ] as const
-  })
+  return [
+    [box.right + gap, cy] as const,
+    corner(1, 1),
+    [cx, box.bottom + gap] as const,
+    corner(-1, 1),
+    [box.left - gap, cy] as const,
+    corner(-1, -1),
+    [cx, box.top - gap] as const,
+    corner(1, -1),
+  ]
 }
 
 /** Анимации пятен света кнопки (CSS-анимации её `::after`). */
@@ -229,7 +244,9 @@ describe('Button states: pending light', () => {
     expect(ring().borderRadius).toBe('50%')
 
     await screen.rerender(
-      <Theme style={{ '--tsr-comp-radius-round': '3px' } as CSSProperties}>
+      <Theme
+        style={{ '--tsr-comp-button-radius-circle': '3px' } as CSSProperties}
+      >
         <IconButton aria-label="Load" pending>
           {icon}
         </IconButton>
@@ -405,6 +422,52 @@ describe('Button states: error flash', () => {
       .toBe(false)
   })
 
+  test('BS19: pending that ends without an error fades the light out with the reveal transition instead of dropping; an error at the same moment flashes instead', async () => {
+    const screen = await renderIcon({ pending: true })
+    expect(ring().opacity).toBe('1')
+    await screen.rerender(
+      <Theme style={FAST_FLASH}>
+        <IconButton aria-label="Load">{icon}</IconButton>
+      </Theme>,
+    )
+    expect(button().hasAttribute('aria-busy')).toBe(false)
+    expect(button().hasAttribute('data-pending-leaving')).toBe(true)
+    // Гаснет: пятна ещё живут, прозрачность уходит к нулю переходом.
+    expect(ring().animationName).toContain('pendingSpot')
+    expect(ring().transitionProperty).toContain('opacity')
+    await expect
+      .poll(() =>
+        button().hasAttribute('data-pending-leaving')
+          ? parseFloat(ring().opacity)
+          : 0,
+      )
+      .toBeLessThan(1)
+    await expect
+      .poll(() => button().hasAttribute('data-pending-leaving'), {
+        timeout: 2000,
+      })
+      .toBe(false)
+    expect(ring().opacity).toBe('0')
+
+    // Отказ в тот же момент — вспышка ведёт свет, угасания нет.
+    await screen.rerender(
+      <Theme style={FAST_FLASH}>
+        <IconButton aria-label="Load" pending errorFlash={0}>
+          {icon}
+        </IconButton>
+      </Theme>,
+    )
+    await screen.rerender(
+      <Theme style={FAST_FLASH}>
+        <IconButton aria-label="Load" errorFlash={1}>
+          {icon}
+        </IconButton>
+      </Theme>,
+    )
+    expect(button().getAttribute('data-error-flash')).toBe('on')
+    expect(button().hasAttribute('data-pending-leaving')).toBe(false)
+  })
+
   test('BS14: from pending, the light of every switching button smoothly turns into the red fill; the spots do not jump', async () => {
     // Несколько кнопок переключаются одним коммитом — как кнопки одного запроса.
     const Group = ({ pending, flash }: { pending: boolean; flash: number }) => (
@@ -467,7 +530,7 @@ describe('Button states: ToolbarButton', () => {
     await renderToolbar({ pending: true, onClick })
     expect(button().getAttribute('aria-busy')).toBe('true')
     expect(ring().borderRadius).toBe(
-      token('--tsr-comp-toolbar-button-radius', 'border-top-left-radius'),
+      token('--tsr-comp-button-radius-square', 'border-top-left-radius'),
     )
     expect(ring().borderRadius).toBe(getComputedStyle(button()).borderRadius)
     expect(shadowsOf(ring().boxShadow)).toHaveLength(6)

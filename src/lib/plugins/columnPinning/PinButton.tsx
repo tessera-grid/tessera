@@ -4,7 +4,6 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
@@ -27,26 +26,23 @@ export const PinButton = memo(
     const title = isPinned ? labels.unpin : labels.pin
 
     return (
-      <Tooltip title={title} disabled={disabled}>
-        <div
-          className={clsx('cell__button', 'cell__button--hidden')}
-          data-button-active={isPinned}
+      <div
+        className={clsx('cell__button', 'cell__button--hidden')}
+        data-button-active={isPinned}
+      >
+        <IconButton
+          className="column-pin__button"
+          active={isPinned}
+          disabledClassName={styles.disabled}
+          onClick={onClick}
+          disabled={disabled}
+          aria-disabled={disabled}
+          label={title}
         >
-          <IconButton
-            className={clsx('column-pin__button', styles.root, {
-              [styles.pinned]: isPinned,
-            })}
-            disabledClassName={styles.disabled}
-            onClick={onClick}
-            disabled={disabled}
-            aria-disabled={disabled}
-            aria-label={title}
-          >
-            <PinIcon width={16} height={16} />
-            <ActiveDot shown={isPinned} />
-          </IconButton>
-        </div>
-      </Tooltip>
+          <PinIcon width={16} height={16} />
+          <ActiveDot shown={isPinned} />
+        </IconButton>
+      </div>
     )
   },
 )

@@ -18,6 +18,7 @@ import {
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { Table } from '../../types'
+import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { ToolbarButton } from '../../ui/ToolbarButton'
@@ -121,14 +122,13 @@ export const FilterSummaryPopover = ({
               })}
             </ul>
             <div className={styles.footer}>
-              <button
-                type="button"
-                className={styles.reset}
+              <Button
+                variant="ghost"
                 onClick={() => setColumnFiltersByUser(table, [])}
                 data-testid="filter-summary-reset"
               >
                 {labels.resetFilters}
-              </button>
+              </Button>
             </div>
           </Popover.Popup>
         </Popover.Positioner>

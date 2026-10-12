@@ -8,6 +8,7 @@ import { type RefObject, Suspense, useId, useState } from 'react'
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
 
+import { Button } from '../../ui/Button'
 import { setColumnFilterByUser } from '../../core/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
@@ -234,14 +235,9 @@ const ConditionPanel = ({
         </span>
       )}
       <div className={styles.footer}>
-        <button
-          type="button"
-          className={styles.reset}
-          onClick={reset}
-          data-testid="filter-reset"
-        >
+        <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
-        </button>
+        </Button>
       </div>
     </div>
   )

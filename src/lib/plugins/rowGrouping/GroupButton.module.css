@@ -1,16 +1,3 @@
-.root {
-  display: flex;
-  color: var(--tsr-comp-control-color);
-}
-
-.active {
-  color: var(--tsr-comp-control-active-color);
-}
-
-.active:hover {
-  background-color: var(--tsr-comp-control-active-hover-bg);
-}
-
 .disabled {
   cursor: not-allowed;
 }

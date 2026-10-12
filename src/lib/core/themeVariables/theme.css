@@ -531,9 +531,21 @@
     transparent
   );
 
-  /* Формы радиуса (shape) — токенизированы, чтобы контракт семейств проверялся:
-   * кнопки семейств F1/F2 делят --radius-round; switch — pill. */
-  --tsr-comp-radius-round: 50%;
+  /* Кнопки кита (ADR 0098): `Button` и `IconButton` делят размер, иконку, форму и
+   * цвета. Размер один: высота `Button` и сторона `IconButton`. */
+  --tsr-comp-button-size: 32px;
+  --tsr-comp-button-icon-size: 16px;
+  /* Формы кнопок: `square` — скруглённый квадрат (и `Button`), `circle` — круг. */
+  --tsr-comp-button-radius-square: var(--tsr-comp-control-radius);
+  --tsr-comp-button-radius-circle: 50%;
+  --tsr-comp-button-color: var(--tsr-comp-control-color);
+  /* Кнопка с подписью (ADR 0097): отступ и промежуток иконки. */
+  --tsr-comp-button-padding-x: 12px;
+  --tsr-comp-button-gap: 6px;
+  /* Рамка `outline` — цвет границ грида: не спорит со светом ожидания. */
+  --tsr-comp-button-border: var(--tsr-sys-border);
+
+  /* Формы радиуса (shape): кнопки — `--tsr-comp-button-radius-*`; switch — pill. */
   --tsr-comp-radius-pill: 999px;
   --tsr-comp-resize-handler-radius: 2px;
 
@@ -592,8 +604,8 @@
   --tsr-comp-toolbar-divider-color: var(--tsr-sys-border);
   /* Сдвиг области таблицы под тулбаром; ставит грид при `enableToolbar`. */
   --tsr-comp-toolbar-offset: 0px;
-  --tsr-comp-toolbar-button-size: 32px;
-  --tsr-comp-toolbar-button-radius: var(--tsr-comp-control-radius);
+  /* Высота контролов панелей (поле поиска, список размера) — размер кнопок кита. */
+  --tsr-comp-toolbar-button-size: var(--tsr-comp-button-size);
   --tsr-comp-toolbar-separator-height: 20px;
 
   /* Нижняя панель (ADR 0038). Высота включает верхний разделитель. */

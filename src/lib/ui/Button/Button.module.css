@@ -1,0 +1,76 @@
+/* Кнопка с подписью (ADR 0097): размер, форма и цвета — общие токены кнопок (ADR 0098). */
+.button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tsr-comp-button-gap);
+  box-sizing: border-box;
+  height: var(--tsr-comp-button-size);
+  margin: 0;
+  padding: 0 var(--tsr-comp-button-padding-x);
+  color: var(--tsr-comp-button-color);
+  font: inherit;
+  white-space: nowrap;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-button-border);
+  border-radius: var(--tsr-comp-button-radius-square);
+  outline: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+/* Иконка одного размера с иконками `IconButton` (ADR 0098). */
+.button > svg {
+  flex: none;
+  width: var(--tsr-comp-button-icon-size);
+  height: var(--tsr-comp-button-icon-size);
+}
+
+.button[data-variant='ghost'] {
+  border-color: transparent;
+}
+
+/* Ожидание и вспышка ошибки: рамка плавно уходит — форму кнопки рисует свет. */
+.button:is([aria-busy='true'], [data-error-flash]) {
+  border-color: transparent;
+}
+
+/* Низкая специфичность — прикладной hover перекрывает базовый. */
+:where(.button:not(:disabled, [data-disabled])):hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.button:focus-visible {
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.button:is(:disabled, [data-disabled]) {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+/* Высокая контрастность (ADR 0087): тени нет — фокус контуром `Highlight`. */
+@media (forced-colors: active) {
+  .button {
+    color: ButtonText;
+  }
+
+  .button[data-variant='outline'] {
+    border-color: ButtonText;
+  }
+
+  .button:disabled {
+    color: GrayText;
+  }
+
+  .button[data-variant='outline']:disabled {
+    border-color: GrayText;
+  }
+
+  .button:focus-visible {
+    outline: var(--tsr-comp-focus-ring-width) solid Highlight;
+    outline-offset: 1px;
+  }
+}

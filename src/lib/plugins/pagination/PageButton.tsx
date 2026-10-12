@@ -1,13 +1,10 @@
 /**
- * Кнопка пагинации — вид F4 (ADR 0035) вне тулбара: иконка с тултипом. На краю
+ * Кнопка пагинации — кнопка-иконка кита (ADR 0098): иконка с тултипом. На краю
  * набора заблокирована, но остаётся в порядке фокуса (PG13).
  */
 import type { ReactNode } from 'react'
 
-import { Button } from '@base-ui/react/button'
-
-import { Tooltip } from '../../ui/Tooltip'
-import styles from '../../ui/ToolbarButton/ToolbarButton.module.css'
+import { IconButton } from '../../ui/IconButton'
 
 interface PageButtonProps {
   label: string
@@ -24,17 +21,14 @@ export const PageButton = ({
   action,
   onClick,
 }: PageButtonProps) => (
-  <Tooltip title={label}>
-    <Button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      focusableWhenDisabled
-      className={styles.toolbarButton}
-      data-page-action={action}
-      onClick={onClick}
-    >
-      {icon}
-    </Button>
-  </Tooltip>
+  <IconButton
+    label={label}
+    shape="square"
+    disabled={disabled}
+    tooltipWhenDisabled
+    data-page-action={action}
+    onClick={onClick}
+  >
+    {icon}
+  </IconButton>
 )

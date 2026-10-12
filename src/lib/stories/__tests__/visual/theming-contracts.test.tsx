@@ -13,6 +13,7 @@ import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
 import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
+import { Button } from '../../../ui/Button'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 import { ToolbarButton } from '../../../ui/ToolbarButton'
@@ -140,6 +141,21 @@ const toolbarButton = async (disabled: boolean) =>
     )
   ).querySelector<HTMLElement>('button')!
 
+// F5 (кнопка с подписью, ADR 0097): делит с F1/F2/F4 disabled-цвет, transition, hover
+// и отсутствие тени; цвет подписи и радиус — свои.
+const textButtons = async (disabled: boolean) => [
+  ...(
+    await renderThemed(
+      <>
+        <Button disabled={disabled}>a</Button>
+        <Button variant="ghost" disabled={disabled}>
+          b
+        </Button>
+      </>,
+    )
+  ).querySelectorAll<HTMLElement>('button'),
+]
+
 const el = async (m: Member, disabled: boolean) =>
   m.grid
     ? (await renderHeaderButtons()).button(m.grid)
@@ -166,6 +182,9 @@ describe('Style contract by component family', () => {
       read(await toolbarButton(true), 'color'),
       'ToolbarButton disabled color',
     ).toBe(expected)
+    for (const button of await textButtons(true)) {
+      expect(read(button, 'color'), 'Button disabled color').toBe(expected)
+    }
   })
 
   test('TC-2 button family shares ONE transition', async () => {
@@ -176,15 +195,39 @@ describe('Style contract by component family', () => {
       values.push(read(node, 'transition'))
     }
     values.push(read(await toolbarButton(false), 'transition'))
+    for (const button of await textButtons(false)) {
+      values.push(read(button, 'transition'))
+    }
     expect(values.every(v => v && v === values[0])).toBe(true)
   })
 
-  test('TC-3 button family shares ONE radius = --tsr-comp-radius-round (50%)', async () => {
+  test('TC-3 button family shares the kit radii — circle for header, cell and row buttons, square for the toolbar and Button', async () => {
+    const radius = (token: string) => {
+      const probe = document.createElement('div')
+      probe.className = 'data-grid-theme'
+      probe.style.borderTopLeftRadius = `var(${token})`
+      document.body.appendChild(probe)
+      const value = getComputedStyle(probe).borderTopLeftRadius
+      probe.remove()
+      return value
+    }
+    const circle = radius('--tsr-comp-button-radius-circle')
+    const square = radius('--tsr-comp-button-radius-square')
+    expect(circle).toBe('50%')
+    expect(square).not.toBe('0px')
     for (const m of BUTTON_FAMILY) {
       // eslint-disable-next-line no-await-in-loop
       const node = await el(m, false)
       expect(read(node, 'border-top-left-radius'), `${m.name} radius`).toBe(
-        '50%',
+        circle,
+      )
+    }
+    expect(read(await toolbarButton(false), 'border-top-left-radius')).toBe(
+      square,
+    )
+    for (const button of await textButtons(false)) {
+      expect(read(button, 'border-top-left-radius'), 'Button radius').toBe(
+        square,
       )
     }
   })
@@ -247,6 +290,14 @@ describe('Style contract by component family', () => {
     await expect
       .poll(() => read(toolbar, 'background-color'), { timeout: 5000 })
       .toBe(hover)
+    for (const button of await textButtons(false)) {
+      // eslint-disable-next-line no-await-in-loop
+      await hovered(button)
+      // eslint-disable-next-line no-await-in-loop
+      await expect
+        .poll(() => read(button, 'background-color'), { timeout: 5000 })
+        .toBe(hover)
+    }
   })
 
   test('TC-8 flat buttons have NO shadow at rest; only the overlay variant (row actions) and floating popups carry shadow-action', async () => {
@@ -258,6 +309,9 @@ describe('Style contract by component family', () => {
       expect(read(node, 'box-shadow'), `${m.name} shadow`).toBe('none')
     }
     expect(read(await toolbarButton(false), 'box-shadow')).toBe('none')
+    for (const button of await textButtons(false)) {
+      expect(read(button, 'box-shadow'), 'Button shadow').toBe('none')
+    }
   })
 
   test('TC-9 an overlay button (row actions) reads over content: opaque bg, shadow-action, no border', async () => {

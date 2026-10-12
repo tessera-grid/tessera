@@ -6,11 +6,9 @@ import {
 } from 'react'
 
 import { Toolbar } from '@base-ui/react/toolbar'
-import clsx from 'clsx'
 
-import { Tooltip } from '../Tooltip'
-import { type ButtonStatesProps, useButtonStates } from '../buttonStates'
-import styles from './ToolbarButton.module.css'
+import { IconButton } from '../IconButton'
+import { type ButtonStatesProps } from '../buttonStates'
 
 export interface ToolbarButtonProps
   extends
@@ -26,8 +24,8 @@ export interface ToolbarButtonProps
 }
 
 /**
- * Кнопка верхнего тулбара (семейство F4, ADR 0035): иконка с тултипом, квадратная
- * со скруглёнными углами. Живёт только внутри тулбара грида (roving-фокус Base UI).
+ * Кнопка верхнего тулбара (ADR 0035): кнопка-иконка кита (ADR 0098) с тултипом и
+ * roving-фокусом Base UI Toolbar. Живёт только внутри тулбара грида.
  */
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
@@ -39,34 +37,30 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       pending,
       errorFlash,
       onClick,
+      render,
       ...rest
     },
     forwardedRef,
-  ) => {
-    const states = useButtonStates(
-      forwardedRef,
-      { pending, errorFlash },
-      onClick,
-    )
-
-    return (
-      <Tooltip title={label}>
-        <Toolbar.Button
-          type="button"
-          aria-label={label}
-          data-active={active || undefined}
-          {...rest}
-          ref={states.ref}
-          aria-busy={states['aria-busy'] ?? rest['aria-busy']}
-          data-error-flash={states['data-error-flash']}
-          onClick={states.onClick}
-          className={clsx(styles.toolbarButton, states.className, className)}
-        >
-          {icon}
-        </Toolbar.Button>
-      </Tooltip>
-    )
-  },
+  ) => (
+    <Toolbar.Button
+      {...rest}
+      ref={forwardedRef}
+      render={
+        <IconButton
+          label={label}
+          shape="square"
+          active={active}
+          pending={pending}
+          errorFlash={errorFlash}
+          onClick={onClick}
+          className={className}
+          render={render}
+        />
+      }
+    >
+      {icon}
+    </Toolbar.Button>
+  ),
 )
 
 ToolbarButton.displayName = 'ToolbarButton'

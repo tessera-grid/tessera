@@ -17,6 +17,7 @@ import {
   usePortalThemeClass,
 } from '../../core/themeVariables'
 import type { Table } from '../../types'
+import { Button } from '../../ui/Button'
 import { type TableIcons, useIcons } from '../../ui/icons'
 import { Segments } from '../../ui/Segments'
 import { ToolbarButton } from '../../ui/ToolbarButton'
@@ -188,7 +189,7 @@ export const ExportPanel = ({
       <ToolbarButton
         ref={triggerRef}
         label={labels.export}
-        icon={<DownloadIcon width={18} height={18} />}
+        icon={<DownloadIcon width={16} height={16} />}
         pending={pending}
         errorFlash={failures}
         aria-busy={busy || undefined}
@@ -275,9 +276,8 @@ export const ExportPanel = ({
               }
             />
             <div className={styles.footer}>
-              <button
-                type="button"
-                className={styles.run}
+              <Button
+                variant="ghost"
                 disabled={busy && isServer}
                 data-testid="export-run"
                 onClick={() => {
@@ -286,7 +286,7 @@ export const ExportPanel = ({
                 }}
               >
                 {labels.exportRun}
-              </button>
+              </Button>
             </div>
           </Popover.Popup>
         </Popover.Positioner>

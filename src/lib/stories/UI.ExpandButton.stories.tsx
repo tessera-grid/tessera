@@ -6,16 +6,17 @@ import { UiCanvas } from './__mocks__/UiCanvas'
 
 /**
  * Тоггл раскрытия строки (ADR 0015): шеврон поворачивается; ожидание подгрузки —
- * блик по контуру, отказ — вспышка (ADR 0055). Увеличьте errorFlash — контур
- * вспыхнет снова.
+ * свет, отказ — вспышка (ADR 0055); цикл «ожидание → отказ» — история
+ * `UI/IconButton` «Async action».
+ * Вид, размер и состояния — база `UI/IconButton` (ADR 0098); здесь — только свои.
  */
 const meta = {
   title: 'Tessera/UI/ExpandButton',
   component: ExpandButton,
+  argTypes: { errorFlash: { table: { disable: true } } },
   args: {
     expanded: false,
     pending: false,
-    errorFlash: 0,
     disabled: false,
     onClick: () => {},
   },

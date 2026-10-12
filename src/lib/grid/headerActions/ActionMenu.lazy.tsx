@@ -13,7 +13,6 @@ import { useLocalization } from '../../core/localization'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { preloadable, usePreloaded } from '../../core/preloadable'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import {
   countActiveActions,
@@ -80,6 +79,7 @@ const KebabPlaceholder = ({
   const trigger = (
     <IconButton
       className={styles.trigger}
+      label={kebab.title}
       aria-label={kebab.ariaLabel}
       aria-haspopup="menu"
       aria-expanded={open}
@@ -94,21 +94,17 @@ const KebabPlaceholder = ({
   )
 
   const shown = open || loading.pending || activeCount > 0 || kebab.failed
-  return (
-    <Tooltip title={kebab.title}>
-      {variant === 'row' ? (
-        <div className={clsx('row__button', !shown && 'row__button--hidden')}>
-          {trigger}
-        </div>
-      ) : (
-        <div
-          className="cell__button cell__button--hidden"
-          data-button-active={shown}
-        >
-          {trigger}
-        </div>
-      )}
-    </Tooltip>
+  return variant === 'row' ? (
+    <div className={clsx('row__button', !shown && 'row__button--hidden')}>
+      {trigger}
+    </div>
+  ) : (
+    <div
+      className="cell__button cell__button--hidden"
+      data-button-active={shown}
+    >
+      {trigger}
+    </div>
   )
 }
 
@@ -140,6 +136,8 @@ const InlinePlaceholder = ({
   const button = (
     <IconButton
       className={action.className?.(context)}
+      active={active}
+      label={label}
       aria-label={ariaLabel}
       aria-haspopup={popup}
       aria-expanded={open}
@@ -156,21 +154,19 @@ const InlinePlaceholder = ({
   const wrapperBase = variant === 'row' ? 'row__button' : 'cell__button'
 
   return (
-    <Tooltip title={label}>
-      <div
-        className={clsx(wrapperBase, !open && hiddenClass)}
-        data-button-active={active || !!loading?.pending}
-      >
-        {adornment ? (
-          <span className={buttonStyles.anchor}>
-            {button}
-            {adornment}
-          </span>
-        ) : (
-          button
-        )}
-      </div>
-    </Tooltip>
+    <div
+      className={clsx(wrapperBase, !open && hiddenClass)}
+      data-button-active={active || !!loading?.pending}
+    >
+      {adornment ? (
+        <span className={buttonStyles.anchor}>
+          {button}
+          {adornment}
+        </span>
+      ) : (
+        button
+      )}
+    </div>
   )
 }
 

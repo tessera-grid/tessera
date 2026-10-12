@@ -7,7 +7,7 @@ import { forwardRef, useState, type ReactNode } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { useButtonStates } from '../../ui/buttonStates'
+import { Button } from '../../ui/Button'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'
@@ -28,24 +28,16 @@ const RetryButton = forwardRef<HTMLButtonElement, RetryButtonProps>(
   ({ onRetry, pending }, forwardedRef) => {
     const labels = useLocalization()
     const { retry: RetryIcon } = useIcons()
-    const {
-      ref,
-      className,
-      onClick,
-      'aria-busy': busy,
-    } = useButtonStates(forwardedRef, { pending }, onRetry)
     return (
-      <button
-        type="button"
-        ref={ref}
-        className={clsx(styles.retry, className)}
-        aria-busy={busy}
-        onClick={onClick}
+      <Button
+        ref={forwardedRef}
+        pending={pending}
+        onClick={onRetry}
+        icon={<RetryIcon width={16} height={16} aria-hidden="true" />}
         data-testid="load-error-retry"
       >
-        <RetryIcon width={14} height={14} aria-hidden="true" />
         {labels.loadRetry}
-      </button>
+      </Button>
     )
   },
 )
@@ -103,16 +95,14 @@ export const LoadErrorBanner = ({
         )}
       </div>
       {retry && <RetryButton onRetry={retry} pending={false} />}
-      <Tooltip title={labels.loadErrorDismiss}>
-        <IconButton
-          aria-label={labels.loadErrorDismiss}
-          className={styles.dismiss}
-          onClick={onDismiss}
-          data-testid="load-error-dismiss"
-        >
-          <DismissIcon width={14} height={14} />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        label={labels.loadErrorDismiss}
+        className={styles.dismiss}
+        onClick={onDismiss}
+        data-testid="load-error-dismiss"
+      >
+        <DismissIcon width={16} height={16} />
+      </IconButton>
     </div>
   )
 }

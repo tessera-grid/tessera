@@ -4,7 +4,6 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
@@ -27,26 +26,23 @@ export const GroupButton = memo(
     const title = isGrouped ? labels.ungroup : labels.group
 
     return (
-      <Tooltip title={title} disabled={disabled}>
-        <div
-          className={clsx('cell__button', 'cell__button--hidden')}
-          data-button-active={isGrouped}
+      <div
+        className={clsx('cell__button', 'cell__button--hidden')}
+        data-button-active={isGrouped}
+      >
+        <IconButton
+          className="column-group__button"
+          active={isGrouped}
+          disabledClassName={styles.disabled}
+          onClick={onClick}
+          disabled={disabled}
+          aria-disabled={disabled}
+          label={title}
         >
-          <IconButton
-            className={clsx('column-group__button', styles.root, {
-              [styles.active]: isGrouped,
-            })}
-            disabledClassName={styles.disabled}
-            onClick={onClick}
-            disabled={disabled}
-            aria-disabled={disabled}
-            aria-label={title}
-          >
-            <GroupIcon width={16} height={16} />
-            <ActiveDot shown={isGrouped} />
-          </IconButton>
-        </div>
-      </Tooltip>
+          <GroupIcon width={16} height={16} />
+          <ActiveDot shown={isGrouped} />
+        </IconButton>
+      </div>
     )
   },
 )

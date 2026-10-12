@@ -2,13 +2,11 @@
  * Дескриптор действия группировки. Инлайн — кнопка-тумблер группировки;
  * в кебаб — строка.
  */
-import clsx from 'clsx'
 
 import type { HeaderAction } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
 
-import styles from '../../plugins/rowGrouping/GroupButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 /** Тематизируемая иконка группировки; `grouped` — у сгруппированной колонки (ADR 0062, AI13). */
@@ -30,10 +28,7 @@ export const groupHeaderAction: HeaderAction = {
   icon: ctx => <GroupActionIcon grouped={isGrouped(ctx)} />,
   label: (ctx, labels) => (isGrouped(ctx) ? labels.ungroup : labels.group),
   active: isGrouped,
-  className: ctx =>
-    clsx('column-group__button', styles.root, {
-      [styles.active]: isGrouped(ctx),
-    }),
+  className: () => 'column-group__button',
   onSelect: ({ column }) => column.toggleGrouping(),
   // Строка меню — на базовой иконке: включённое там показывает галочка.
   menuItems: (ctx, labels) => [

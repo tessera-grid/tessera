@@ -8,7 +8,6 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import type { SlotAction } from '../../core/headerActions'
 import { actionDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
@@ -81,6 +80,8 @@ export const ActionInlineMenu = ({
       render={
         <IconButton
           className={action.className?.(context)}
+          active={active}
+          label={label}
           aria-label={ariaLabel}
         >
           {action.icon(context)}
@@ -104,21 +105,19 @@ export const ActionInlineMenu = ({
         if (!next) sections.reset()
       }}
     >
-      <Tooltip title={label}>
-        <div
-          className={clsx(wrapperBase, !visible && hiddenClass)}
-          data-button-active={active}
-        >
-          {adornment ? (
-            <span className={buttonStyles.anchor}>
-              {button}
-              {adornment}
-            </span>
-          ) : (
-            button
-          )}
-        </div>
-      </Tooltip>
+      <div
+        className={clsx(wrapperBase, !visible && hiddenClass)}
+        data-button-active={active}
+      >
+        {adornment ? (
+          <span className={buttonStyles.anchor}>
+            {button}
+            {adornment}
+          </span>
+        ) : (
+          button
+        )}
+      </div>
       {section ? (
         <ActionMenuPopup
           actions={[action]}

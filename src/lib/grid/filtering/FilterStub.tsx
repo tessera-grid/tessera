@@ -5,6 +5,7 @@
  */
 import type { ReactNode } from 'react'
 
+import { Button } from '../../ui/Button'
 import { resetFiltersByUser } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 
@@ -33,14 +34,9 @@ export const FilterStub = ({ table, render }: FilterStubProps) => {
   return (
     <div className={styles.stub} data-testid="filter-stub">
       <p className={styles.text}>{labels.noRowsMatchFilters}</p>
-      <button
-        type="button"
-        className={styles.reset}
-        onClick={reset}
-        data-testid="filter-stub-reset"
-      >
+      <Button onClick={reset} data-testid="filter-stub-reset">
         {labels.resetFilters}
-      </button>
+      </Button>
     </div>
   )
 }

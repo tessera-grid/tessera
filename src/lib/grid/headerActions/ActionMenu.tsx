@@ -11,7 +11,6 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 import { countActiveActions, type SlotAction } from '../../core/headerActions'
 import { ActiveDot, ErrorDot } from './ActiveDot'
@@ -105,6 +104,7 @@ export const ActionMenu = ({
         <IconButton
           ref={triggerRef}
           className={styles.trigger}
+          label={kebab.title}
           aria-label={kebab.ariaLabel}
           pending={opening.pending || kebab.running}
           errorFlash={flash}
@@ -134,23 +134,21 @@ export const ActionMenu = ({
         }
       }}
     >
-      <Tooltip title={kebab.title}>
-        {variant === 'row' ? (
-          <div className={clsx('row__button', !shown && 'row__button--hidden')}>
-            {trigger}
-          </div>
-        ) : (
-          // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
-          // открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
-          // AM24, AM25).
-          <div
-            className="cell__button cell__button--hidden"
-            data-button-active={shown}
-          >
-            {trigger}
-          </div>
-        )}
-      </Tooltip>
+      {variant === 'row' ? (
+        <div className={clsx('row__button', !shown && 'row__button--hidden')}>
+          {trigger}
+        </div>
+      ) : (
+        // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
+        // открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
+        // AM24, AM25).
+        <div
+          className="cell__button cell__button--hidden"
+          data-button-active={shown}
+        >
+          {trigger}
+        </div>
+      )}
       <ActionMenuPopup
         actions={actions}
         context={context}

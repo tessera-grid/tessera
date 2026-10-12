@@ -35,7 +35,12 @@
  * растворяются, а на их месте поднимается ровный красный свет по всей площади. Он горит
  * статично, пока держится вспышка, затем гаснет (`off`).
  */
-.ring:is([aria-busy='true'], [data-pending], [data-error-flash])::after {
+.ring:is(
+    [aria-busy='true'],
+    [data-pending],
+    [data-pending-leaving],
+    [data-error-flash]
+  )::after {
   --_t: var(--tsr-comp-pending-glow-duration);
   --_e: var(--tsr-comp-error-flash-glow);
   --_s1: color-mix(
@@ -106,6 +111,12 @@
   animation-delay: calc(var(--tsr-pending-phase, 0) * var(--_t) * -8);
   transition: --tsr-ring-fill var(--tsr-comp-error-flash-fill-duration)
     var(--tsr-comp-motion-easing);
+}
+
+/* Ожидание кончилось успехом — свет гаснет переходом проявления (BS19), пятна живут. */
+.ring[data-pending-leaving]::after {
+  opacity: 0;
+  transition: var(--tsr-comp-reveal-transition);
 }
 
 /* Заливка — переходом от света ожидания или от нуля, если ожидания не было. */
@@ -180,7 +191,12 @@
  * Покой пятен — четыре по диагоналям в полную силу. Его видно, когда анимация не идёт:
  * при уменьшенном движении гаситель темы обрывает её, а свет ожидания остаётся.
  */
-.ring:is([aria-busy='true'], [data-pending], [data-error-flash])::after,
+.ring:is(
+    [aria-busy='true'],
+    [data-pending],
+    [data-pending-leaving],
+    [data-error-flash]
+  )::after,
 .spinner {
   --tsr-pending-spot-a1: 45deg;
   --tsr-pending-spot-a2: 135deg;
@@ -204,6 +220,7 @@
 .ring:not(.layer):is(
     [aria-busy='true'],
     [data-pending],
+    [data-pending-leaving],
     [data-error-flash]
   )::after {
   --_d: var(--tsr-comp-pending-glow-offset);

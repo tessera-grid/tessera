@@ -3,8 +3,6 @@ import { MouseEvent, ReactNode, memo } from 'react'
 import clsx from 'clsx'
 
 import { IconButton } from '../../ui/IconButton'
-import { Tooltip } from '../../ui/Tooltip'
-import { useCellButtonStyles } from './styles'
 
 import '../cellControls/buttonVisibility.css'
 
@@ -29,27 +27,22 @@ export const CellButton = memo(
     onClick,
     testId,
   }: CellEditButtonProps) => {
-    const styles = useCellButtonStyles()
-
     return (
-      <Tooltip title={title} disabled={disabled && !showTooltipWhenDisabled}>
-        <div
-          className={clsx('cell__button', {
-            'cell__button--hidden': showOnHover,
-          })}
+      <div
+        className={clsx('cell__button', {
+          'cell__button--hidden': showOnHover,
+        })}
+      >
+        <IconButton
+          data-testid={testId}
+          disabled={disabled}
+          label={title}
+          tooltipWhenDisabled={showTooltipWhenDisabled}
+          onClick={onClick}
         >
-          <IconButton
-            data-testid={testId}
-            className={styles.root}
-            disabledClassName={styles.disabled}
-            disabled={disabled}
-            aria-label={title}
-            onClick={onClick}
-          >
-            {icon}
-          </IconButton>
-        </div>
-      </Tooltip>
+          {icon}
+        </IconButton>
+      </div>
     )
   },
 )
