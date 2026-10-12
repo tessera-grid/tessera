@@ -346,8 +346,8 @@
     var(--tsr-sys-fg) 62%,
     transparent
   );
-  /* Толщина кольца спиннера ожидания (пункт меню, ADR 0078). */
-  --tsr-comp-pending-ring-width: 2px;
+  /* Толщина дорожки и дуги спиннера ожидания (LL4). */
+  --tsr-comp-pending-ring-width: 1px;
   /*
    * Свет вокруг кнопки в ожидании: голова, хвост из трёх оттенков и слабый ореол.
    * Кнопки мелкие — свет тише полосы под шапкой: сила оттенков от силы свечения.
@@ -383,6 +383,13 @@
   --tsr-comp-pending-spinner-2: var(--tsr-sys-info-sky);
   --tsr-comp-pending-spinner-3: var(--tsr-sys-info-indigo);
   --tsr-comp-pending-spinner-4: var(--tsr-sys-info-violet);
+  /* Дорожка спиннера и длина его дуги (доля круга). */
+  --tsr-comp-pending-spinner-track: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) 12%,
+    transparent
+  );
+  --tsr-comp-pending-spinner-arc: 0.25turn;
   /* Насколько свет выходит за кнопку и как размыт; период оборота. */
   --tsr-comp-pending-glow-offset: 2px;
   --tsr-comp-pending-glow-blur: 4px;

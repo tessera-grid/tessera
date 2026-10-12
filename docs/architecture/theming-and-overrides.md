@@ -76,8 +76,9 @@
   `--tsr-comp-pending-glow-duration`. У кнопки — внешние тени со сдвигом
   `--tsr-comp-pending-glow-offset` и размытием `-blur`; у ячейки в правке — полоса по
   периметру внутри (`--tsr-comp-cell-pending-glow-width` / `-height` / `-depth` /
-  `-opacity`); у спиннера пункта меню — дуги `--tsr-comp-pending-spinner-1…4` по кольцу
-  `--tsr-comp-pending-ring-width`. Ошибка `errorFlash` — ровный красный
+  `-opacity`); у спиннера пункта меню — дуга `--tsr-comp-pending-spinner-arc` по дорожке
+  `--tsr-comp-pending-spinner-track` толщиной `--tsr-comp-pending-ring-width`, цвет дуги
+  перетекает `--tsr-comp-pending-spinner-1…4`. Ошибка `errorFlash` — ровный красный
   `--tsr-comp-error-flash-glow` (цвет `--tsr-comp-error-flash-color` той же силы),
   нарастает за `--tsr-comp-error-flash-fill-duration`, держится `-duration` и гаснет
   переходом движения. Свет — `::after` носителя: `::before` у `IconButton` и

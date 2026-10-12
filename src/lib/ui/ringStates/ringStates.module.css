@@ -196,8 +196,7 @@
     [data-pending],
     [data-pending-leaving],
     [data-error-flash]
-  )::after,
-.spinner {
+  )::after {
   --tsr-pending-spot-a1: 45deg;
   --tsr-pending-spot-a2: 135deg;
   --tsr-pending-spot-a3: 225deg;
@@ -492,75 +491,90 @@
 }
 
 /*
- * Спиннер ожидания (пункт меню, ADR 0078) — те же пятна, что у кнопок и ячеек, но
- * резко: спиннер — сама линия, а не свет вокруг предмета. Пятно с ровным ядром — дуга
- * в полную силу оттенка, гаснет только на концах; кольцо с чётким краем; под дугами —
- * едва видная дорожка.
+ * Спиннер ожидания (пункт меню, ADR 0078, LL4): по бледной дорожке бежит дуга в
+ * четверть круга той же толщины со скруглёнными концами. Свет не выходит за дорожку
+ * (без ореола); цвет дуги перетекает оттенками свечения загрузки — синий → голубой →
+ * индиго → фиолетовый. Оборот — 0,5 длительности света ожидания, цикл цвета — период
+ * быстрого пятна (1,7).
  */
+@property --tsr-spinner-tone {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@keyframes spinnerTurn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes spinnerTones {
+  0%,
+  100% {
+    --tsr-spinner-tone: var(--tsr-comp-pending-spinner-1);
+  }
+  25% {
+    --tsr-spinner-tone: var(--tsr-comp-pending-spinner-2);
+  }
+  50% {
+    --tsr-spinner-tone: var(--tsr-comp-pending-spinner-3);
+  }
+  75% {
+    --tsr-spinner-tone: var(--tsr-comp-pending-spinner-4);
+  }
+}
+
 .spinner {
   --_t: var(--tsr-comp-pending-glow-duration);
   --_w: var(--tsr-comp-pending-ring-width);
+  /* Без движения анимация оборвана — дуга стоит наверху первым оттенком. */
+  --tsr-spinner-tone: var(--tsr-comp-pending-spinner-1);
 
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--_w) - 0.5px),
+    var(--tsr-comp-pending-spinner-track) calc(100% - var(--_w))
+  );
+  animation:
+    spinnerTurn calc(var(--_t) * 0.5) linear infinite,
+    spinnerTones calc(var(--_t) * 1.7) ease-in-out infinite;
+}
+
+/* Дуга: сектор длины дуги и два круга-конца на средней линии, под маской дорожки. */
+.spinner::after {
+  --_a: var(--tsr-comp-pending-spinner-arc);
+  --_m: calc(50% - var(--_w) / 2);
+
+  content: '';
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   background:
     radial-gradient(
-      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a1)) * 50%)
-        calc(50% + sin(var(--tsr-pending-spot-a1)) * 50%),
-      color-mix(
-          in oklch,
-          var(--tsr-comp-pending-spinner-1) var(--tsr-pending-spot-f1),
-          transparent
-        )
-        0 45%,
-      transparent
+      circle at calc(50% - sin(var(--_a) / 2) * var(--_m))
+        calc(50% - cos(var(--_a) / 2) * var(--_m)),
+      var(--tsr-spinner-tone) calc(var(--_w) / 2 - 0.35px),
+      transparent calc(var(--_w) / 2 + 0.35px)
     ),
     radial-gradient(
-      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a2)) * 50%)
-        calc(50% + sin(var(--tsr-pending-spot-a2)) * 50%),
-      color-mix(
-          in oklch,
-          var(--tsr-comp-pending-spinner-2) var(--tsr-pending-spot-f2),
-          transparent
-        )
-        0 45%,
-      transparent
+      circle at calc(50% + sin(var(--_a) / 2) * var(--_m))
+        calc(50% - cos(var(--_a) / 2) * var(--_m)),
+      var(--tsr-spinner-tone) calc(var(--_w) / 2 - 0.35px),
+      transparent calc(var(--_w) / 2 + 0.35px)
     ),
-    radial-gradient(
-      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a3)) * 50%)
-        calc(50% + sin(var(--tsr-pending-spot-a3)) * 50%),
-      color-mix(
-          in oklch,
-          var(--tsr-comp-pending-spinner-3) var(--tsr-pending-spot-f3),
-          transparent
-        )
-        0 45%,
-      transparent
-    ),
-    radial-gradient(
-      50% 50% at calc(50% + cos(var(--tsr-pending-spot-a4)) * 50%)
-        calc(50% + sin(var(--tsr-pending-spot-a4)) * 50%),
-      color-mix(
-          in oklch,
-          var(--tsr-comp-pending-spinner-4) var(--tsr-pending-spot-f4),
-          transparent
-        )
-        0 45%,
-      transparent
-    ),
-    linear-gradient(
-      var(--tsr-comp-pending-glow-halo),
-      var(--tsr-comp-pending-glow-halo)
+    conic-gradient(
+      from calc(var(--_a) / -2),
+      var(--tsr-spinner-tone) 0turn var(--_a),
+      transparent var(--_a)
     );
   mask: radial-gradient(
     farthest-side,
-    transparent calc(100% - var(--_w) - 0.25px),
-    #000 calc(100% - var(--_w) + 0.25px)
+    transparent calc(100% - var(--_w) - 0.5px),
+    #000 calc(100% - var(--_w))
   );
-  animation:
-    pendingSpot1 calc(var(--_t) * 1.7) ease-in-out infinite,
-    pendingSpot2 calc(var(--_t) * 2.3) ease-in-out infinite,
-    pendingSpot3 calc(var(--_t) * 2.9) ease-in-out infinite,
-    pendingSpot4 calc(var(--_t) * 3.7) ease-in-out infinite;
 }
 
 /*

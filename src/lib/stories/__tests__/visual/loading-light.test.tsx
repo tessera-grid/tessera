@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode } from 'react'
 
 import '../../../core/themeVariables/theme.css'
 import { IconButton } from '@/lib/ui/IconButton'
+import { parseDuration } from '@/lib/ui/buttonStates'
 import { SvgIcon } from '@/lib/ui/icons'
 import ringStyles from '@/lib/ui/ringStates/ringStates.module.css'
 import { renderGrid } from '../helpers'
@@ -265,52 +266,96 @@ describe('Свет ожидания и ошибки (ADR 0095)', () => {
     }
   })
 
-  test('LL4: спиннер — кольцо толщиной --tsr-comp-pending-ring-width с прозрачной серединой, дуги оттенками --tsr-comp-pending-spinner-1…4 в полную силу, анимации пятен', async () => {
+  test('LL4: спиннер — бледная дорожка с прозрачной серединой, по ней бежит дуга в четверть круга той же толщины, свет не выходит за дорожку; цвет дуги перетекает оттенками --tsr-comp-pending-spinner-1…4; оборот 0,5, цикл цвета 1,7 длительности света; без движения — дуга первым оттенком', async () => {
+    // Толщина крупнее, чем в пункте меню, — чтобы мерить пиксели; геометрия — от токена.
+    const WIDTH = 6
+    const SIZE = 96
     const Spinner = () => (
-      <Theme>
+      <Theme
+        style={
+          { '--tsr-comp-pending-ring-width': `${WIDTH}px` } as CSSProperties
+        }
+      >
         <span
           className={ringStyles.spinner}
           data-testid="spinner"
-          style={{ display: 'block', width: 48, height: 48 }}
+          style={{ display: 'block', width: SIZE, height: SIZE }}
         />
       </Theme>
     )
     const spinner = () =>
       document.querySelector<HTMLElement>('[data-testid="spinner"]')!
     const screen = await render(<Spinner />)
-    expect(spotAnimations(spinner())).toHaveLength(4)
+    const el = spinner()
+    const tone = (index: number) =>
+      tokenIn(el.parentElement!, `--tsr-comp-pending-spinner-${index}`)
+
+    // Тайминги — доли длительности света ожидания.
+    const base = parseDuration(
+      getComputedStyle(el).getPropertyValue('--tsr-comp-pending-glow-duration'),
+    )
+    const animations = el.getAnimations() as CSSAnimation[]
+    const turn = animations.find(a => a.animationName.includes('spinnerTurn'))!
+    const tones = animations.find(a =>
+      a.animationName.includes('spinnerTones'),
+    )!
+    expect(turn.effect!.getComputedTiming().duration).toBeCloseTo(base * 0.5)
+    expect(tones.effect!.getComputedTiming().duration).toBeCloseTo(base * 1.7)
+
+    // Цвет дуги перетекает по четырём оттенкам.
+    const cycle = tones.effect!.getComputedTiming().duration as number
+    tones.pause()
+    for (const index of [1, 2, 3, 4]) {
+      tones.currentTime = (cycle * (index - 1)) / 4
+      expect(
+        getComputedStyle(el).getPropertyValue('--tsr-spinner-tone'),
+        `tone ${index}`,
+      ).toBe(tone(index))
+    }
+
+    // Кадр: дуга наверху первым оттенком.
+    turn.pause()
+    turn.currentTime = 0
+    tones.currentTime = 0
+    await frame()
+    const outer = SIZE / 2
+    const middle = outer - WIDTH / 2
+    const shot = await snapshot()
+    const box = el.getBoundingClientRect()
+    const background = shot(box.right + 20, box.top + box.height / 2)
+    const first = toRgba(tone(1)).slice(0, 3)
+    const at = (radius: number, degrees: number) =>
+      shot(...onCircle(el, radius, degrees - 90))
+    // Дуга — четверть круга на средней линии: внутри её края — оттенок, за ними — дорожка.
+    for (const degrees of [0, 30, -30, 40, -40]) {
+      expect(
+        distance(at(middle, degrees), first),
+        `arc ${degrees}°`,
+      ).toBeLessThan(40)
+    }
+    const track = at(middle, 180)
+    expect(distance(track, first)).toBeGreaterThan(60)
+    expect(distance(track, background)).toBeGreaterThan(10)
+    for (const degrees of [60, -60]) {
+      expect(
+        distance(at(middle, degrees), track),
+        `track ${degrees}°`,
+      ).toBeLessThan(10)
+    }
+    // Середина прозрачна, свет не выходит за дорожку ни внутрь, ни наружу.
+    expect(distance(at(0, 0), background)).toBeLessThan(4)
+    expect(distance(at(outer - WIDTH - 3, 0), background)).toBeLessThan(4)
+    expect(distance(at(outer + 3, 0), background)).toBeLessThan(4)
     await screen.unmount()
 
-    // Без движения пятна стоят по диагоналям: дуга 1 — 45°, 2 — 135° и так далее.
+    // Без движения дуга стоит наверху первым оттенком.
     await reducedMotion(true)
     await render(<Spinner />)
     await frame()
-    const width = parseFloat(
-      getComputedStyle(spinner()).getPropertyValue(
-        '--tsr-comp-pending-ring-width',
-      ),
-    )
-    const outer = spinner().getBoundingClientRect().width / 2
-    const shot = await snapshot()
-    const box = spinner().getBoundingClientRect()
-    const background = shot(box.right + 20, box.top + box.height / 2)
-    // Середина кольца прозрачна.
+    const still = await snapshot()
     expect(
-      distance(shot(...onCircle(spinner(), 0, 0)), background),
-    ).toBeLessThan(4)
-    expect(
-      distance(shot(...onCircle(spinner(), outer - width - 3, 45)), background),
-    ).toBeLessThan(4)
-    for (const [index, degrees] of [45, 135, 225, 315].entries()) {
-      const tone = toRgba(
-        tokenIn(
-          spinner().parentElement!,
-          `--tsr-comp-pending-spinner-${index + 1}`,
-        ),
-      )
-      const pixel = shot(...onCircle(spinner(), outer - width / 2, degrees))
-      expect(distance(pixel, tone), `arc ${index + 1}`).toBeLessThan(40)
-    }
+      distance(still(...onCircle(spinner(), middle, -90)), first),
+    ).toBeLessThan(40)
   })
 
   test('LL5: сила света — --tsr-comp-loader-glow-opacity равна 80 % --tsr-sys-glow-strength; красный свет ошибки той же силы, что оттенок ожидания, в обеих темах', async () => {
