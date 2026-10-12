@@ -158,6 +158,7 @@ export const OverflowTooltip = ({ getScrollElement }: OverflowTooltipProps) => {
         anchor={anchorRef}
         side="top"
         title={tip.text}
+        interactive
         onPointerEnter={() => controls.current?.keepOpen()}
         onPointerLeave={() => controls.current?.hideSoon()}
       />

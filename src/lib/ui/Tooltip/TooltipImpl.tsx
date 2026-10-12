@@ -16,9 +16,13 @@ export interface TooltipPopupProps {
   anchor: RefObject<HTMLElement | null>
   title: ReactNode
   side: TooltipSide
-  /** Указатель на самой подсказке держит её открытой (WCAG 1.4.13). */
-  onPointerEnter: () => void
-  onPointerLeave: () => void
+  /**
+   * Указатель на самой подсказке держит её открытой (WCAG 1.4.13) — только у
+   * подсказки обрезанного текста. Иначе подсказка пропускает указатель насквозь (ADR 0100).
+   */
+  interactive?: boolean
+  onPointerEnter?: () => void
+  onPointerLeave?: () => void
 }
 
 /**
@@ -34,6 +38,7 @@ const TooltipPopup = ({
   anchor,
   title,
   side,
+  interactive = false,
   onPointerEnter,
   onPointerLeave,
 }: TooltipPopupProps) => {
@@ -46,13 +51,17 @@ const TooltipPopup = ({
           anchor={anchor}
           side={side}
           sideOffset={6}
-          className={clsx(themeClass, styles.positioner)}
+          className={clsx(
+            themeClass,
+            styles.positioner,
+            !interactive && styles.passThrough,
+          )}
           {...themeData}
         >
           <BaseTooltip.Popup
             className={clsx(themeClass, styles.content)}
-            onPointerEnter={onPointerEnter}
-            onPointerLeave={onPointerLeave}
+            onPointerEnter={interactive ? onPointerEnter : undefined}
+            onPointerLeave={interactive ? onPointerLeave : undefined}
           >
             {title}
             <BaseTooltip.Arrow className={styles.arrow}>

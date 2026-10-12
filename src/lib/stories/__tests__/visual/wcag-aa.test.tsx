@@ -23,6 +23,7 @@ import {
   violations,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { Tooltip } from '../../../ui/Tooltip'
 
 // W1–W17: остаток WCAG 2.1 AA (ADR 0032). Каждое требование — отдельный
 // именованный тест `W<n>` (docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -175,16 +176,28 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     })
   })
 
-  test('W8: подсказка не закрывается, пока указатель на ней; закрывается по Escape', async () => {
-    await renderGrid({
-      columnCount: 4,
-      dataCount: 5,
-      enableColumnSorting: true,
-    })
-    await waitForGrid()
-    const trigger = gridRoot().querySelector<HTMLElement>(
-      '.data-grid__head-cell button',
-    )!
+  test('W8: подсказка обрезанного текста не закрывается, пока указатель на ней; закрывается по Escape', async () => {
+    const text = 'A very long label that does not fit its narrow box'
+    const screen = await render(
+      <div style={{ padding: '80px 40px' }}>
+        <Tooltip title={text} overflowOnly>
+          <span
+            data-testid="trigger"
+            tabIndex={0}
+            style={{
+              display: 'block',
+              width: 80,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {text}
+          </span>
+        </Tooltip>
+      </div>,
+    )
+    const trigger = screen.getByTestId('trigger').element() as HTMLElement
     const tooltip = () =>
       document.querySelector<HTMLElement>(
         '[data-side][data-open]:not([data-starting-style])',

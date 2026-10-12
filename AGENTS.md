@@ -697,7 +697,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
-      `Switch`, `Skeleton`, `LinearProgress`, иконки); `button-states` (BS1–BS17 —
+      `Switch`, `Skeleton`, `LinearProgress`, иконки); `tooltip-pass-through` (TP1–TP2 —
+      подсказка без обрезки пропускает указатель насквозь, W8 сужен,
+      [ADR 0100](docs/decisions/0100-pass-through-tooltips.md)); `button-states` (BS1–BS17 —
       свет `pending` и красный свет `errorFlash` у `IconButton` и `ToolbarButton`),
       `ring-press` (BS18 — смена состояния посреди нажатия не теряет клик, ещё и в
       `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md));

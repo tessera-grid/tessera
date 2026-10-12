@@ -2,6 +2,11 @@
   z-index: var(--tsr-comp-z-index-tooltip);
 }
 
+.passThrough,
+.passThrough * {
+  pointer-events: none;
+}
+
 .content {
   background-color: var(--tsr-comp-tooltip-bg);
   color: var(--tsr-comp-tooltip-fg);

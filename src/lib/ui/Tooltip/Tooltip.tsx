@@ -88,7 +88,7 @@ const trackInput = () => {
   )
 }
 
-/** Пауза перед закрытием: указатель успевает перейти с триггера на подсказку. */
+/** Пауза перед закрытием подсказки обрезанного текста: указатель успевает перейти на неё. */
 const CLOSE_DELAY = 150
 
 // React 19 кладёт ref элемента в props, React 18 — в `element.ref` (в 19 обращение к нему предупреждает).
@@ -190,7 +190,9 @@ export const Tooltip = ({
     },
     onPointerLeave: (event: PointerEvent) => {
       onPointerLeave?.(event)
-      hideSoon()
+      // Подсказку без обрезки указатель проходит насквозь (ADR 0100) — ждать его нечего.
+      if (overflowOnly) hideSoon()
+      else hide()
     },
     onPointerDown: (event: PointerEvent) => {
       onPointerDown?.(event)
@@ -227,6 +229,7 @@ export const Tooltip = ({
             anchor={anchorRef}
             side={side}
             title={title}
+            interactive={overflowOnly}
             onPointerEnter={keepOpen}
             onPointerLeave={hideSoon}
           />
