@@ -169,6 +169,8 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Пакет у потребителя       | `npm run check:package`      | После `build`: publint, attw, фикстуры из npm (ADR 0091). Сеть.    |
 | Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
 | Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                    |
+| Перф против ревизии       | `npm run perf:compare`       | `-- <ref> [--cases …]`: вперемешку, вердикт по 10 % (ADR 0099).    |
+| Самопроверка сравнения    | `npm run perf:selftest`      | PF15–PF16: A против A и подмешанная работа, ~20 мин.               |
 
 Тесты выполняются в **реальном браузере**, а не в jsdom — см. [Проверки](#4-checks).
 
@@ -344,9 +346,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
 - `npm test` — прогнать один раз (оба проекта); один проект —
   `npm test -- --project unit` или `--project browser`. `npm run test:watch` — watch-режим.
 - `npm run perf` — прогнать только перф-матрицу и собрать локальный дашборд
-  `performance-results/index.html` (кейсы P1–P8, бары «значение vs бюджет», p95/p99/
-  longest/над-бюджетом); `npm run perf:report` пересобирает борд из последнего
-  `performance-results/latest.json` без прогона. Каталог в `.gitignore`.
+  `performance-results/index.html` (значения против целей RAIL, гейт кейсов фич против
+  базы, тренд по `history.json`); `npm run perf:report` пересобирает борд из последнего
+  `performance-results/latest.json` без прогона; `npm run perf:compare -- <ref>` —
+  перф-кейсы рабочей копии против ревизии вперемешку. Каталог в `.gitignore`.
 - Наборы разложены по виду в три папки под `src/lib/stories/__tests__/` (см.
   [ADR 0009](docs/decisions/0009-test-coverage-visual-and-performance.md)). Общие
   `helpers.tsx`, `perf.commands.ts`, `perf.constants.ts` — в корне `__tests__/`;
@@ -764,16 +767,18 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     Грид монтируется своим корнем, мышь — по координатам: `expect.poll` и `userEvent` с
     элементом Vitest держит до конца теста. Удержания вне кода грида — с причиной в
     `leaks.ts` ([ADR 0092](docs/decisions/0092-memory-leaks.md)).
-- **Перф-пороги — абсолютные, из RAIL/CWV, а не измеренные потолки.** Прокрутка →
-  Animation (p95 ≤ 16.7мс/кадр), отрисовка → Load (≤ 1000мс), взаимодействие →
-  Response/INP (≤ 100мс). Замер под **×4 CPU-троттлингом** (референс-девайс). Кейс, не укладывающийся в порог, помечается
-  `knownShortfall` и гейтится **регресс-потолком** (`regressionCeiling`) заметно выше
-  текущего замера — сборка зелёная, цель RAIL остаётся в дашборде, деградация
-  ловится потолком (P5/P6, I2–I4, I7–I8, FL35–FL36, DF22, SF25, RE38). Перф-конфиг
-  повторяет упавший кейс один раз: случайный выброс уходит, регрессия падает оба раза. Неожиданный выход за порог — красная регрессия. Не подгоняйте пороги под «зелёно» — это цели, а не хардкод.
-- **Дашборд.** `npm run perf` прогоняет матрицу и собирает `performance-results/index.html`
-  (статус в бюджете/xfail/регрессия, p95/p99/longest/long tasks/TBT); `npm run perf:report`
-  пересобирает борд из последнего `latest.json`. Каталог в `.gitignore`.
+- **Время гейтит регрессию, а не цель** ([ADR 0099](docs/decisions/0099-perf-gates-and-ab-compare.md)).
+  Цели — абсолютные, из RAIL/CWV: прокрутка → Animation (p95 ≤ 16.7мс/кадр), отрисовка →
+  Load (≤ 1000мс), взаимодействие → Response/INP (≤ 100мс); замер под **×4
+  CPU-троттлингом**. Перф-матрица по времени не падает — значение идёт в дашборд «в
+  цели / вне цели». Кейс фичи гейтится против базы того же теста: `againstBase`
+  (`performance/baseline.ts`) меряет базу и вариант по три раза вперемешку, потолок —
+  `max(база × k, база + Δ)` с ценой фичи из её требования. Регрессию между ревизиями
+  ловит `npm run perf:compare -- <ref>` (вперемешку, бутстреп, порог 10 %). Машина
+  дрейфует: серии подряд на разных коммитах не сравнивают — только вперемешку.
+- **Дашборд.** `npm run perf` собирает `performance-results/index.html` и при красном
+  прогоне: цели RAIL, гейт против базы, тренд по `history.json` (последние 50 прогонов),
+  раздел `compare.json`. Каталог в `.gitignore`.
 - **Скорость прокрутки в замере.** Скорость задаётся в px/s по реальному времени кадра
   из `performance/perf-cases.ts`: `FAST_SCROLL` — чуть выше порога быстрой прокрутки
   (ячейки — скелеты, P2/P4/P7/P8), `CONTENT_SCROLL` — ниже порога (ячейки — содержимое,
