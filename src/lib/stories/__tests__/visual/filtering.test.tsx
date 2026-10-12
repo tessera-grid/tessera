@@ -2,7 +2,7 @@ import { type ComponentProps, useState } from 'react'
 
 import axe from 'axe-core'
 
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
@@ -766,6 +766,32 @@ describe('Фильтрация — пустой результат, сервер
       .poll(() => document.body.textContent?.includes('No Data!'))
       .toBe(true)
     expect(stub()).toBeNull()
+  })
+
+  test('FL41: при колонках уже грида заглушка стоит под шапкой во всю видимую ширину, а не узкой колонкой сбоку от таблицы', async () => {
+    await page.viewport(1000, 800)
+    const plugins = [columnFiltering({ debounceMs: 0 })] as const
+    await render(<DirectGrid plugins={plugins} />)
+    await waitForGrid()
+    await waitForToolbar()
+    await applyTextFilter('name', 'zzz')
+    await expect.poll(stub).not.toBeNull()
+    const container = document.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!
+    const head = document.querySelector<HTMLElement>('.data-grid__head')!
+    // Две колонки по 150px — заметно уже грида.
+    const columns = [
+      ...head.querySelectorAll<HTMLElement>('.data-grid__head-cell'),
+    ].reduce((sum, cell) => sum + cell.getBoundingClientRect().width, 0)
+    expect(columns).toBeLessThan(container.clientWidth / 2)
+    const box = stub()!.getBoundingClientRect()
+    const view = container.getBoundingClientRect()
+    expect(box.top).toBeGreaterThanOrEqual(
+      head.getBoundingClientRect().bottom - 1,
+    )
+    expect(Math.abs(box.left - view.left)).toBeLessThan(2)
+    expect(Math.abs(box.width - container.clientWidth)).toBeLessThan(2)
   })
 
   test('FL28: filterStub переопределяет заглушку — узлом или функцией от { reset }', async () => {

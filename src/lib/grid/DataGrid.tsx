@@ -448,6 +448,7 @@ export const DataGrid = ({
                     }
                     data-resizing={isResizingColumns !== false}
                     data-load-failed={loadError.stubShown || undefined}
+                    data-filter-empty={showFilterStub || undefined}
                     onCopy={handleCopy}
                   >
                     <DataGridTable

@@ -61,8 +61,11 @@
   background-color: var(--tsr-comp-scrollbar-thumb-hover);
 }
 
-/* Ошибка первой загрузки (ADR 0096): заглушка под шапкой во всю ширину, а не сбоку. */
-.table__container[data-load-failed] {
+/*
+ * Заглушки ошибки первой загрузки (ADR 0096) и пустого результата фильтра (ADR 0045,
+ * FL41) — под шапкой во всю ширину, а не сбоку от узкой таблицы.
+ */
+.table__container:is([data-load-failed], [data-filter-empty]) {
   flex-direction: column;
 }
 
