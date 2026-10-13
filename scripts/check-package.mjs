@@ -1,6 +1,7 @@
 // Пакет глазами потребителя (ADR 0091, EV7–EV9): архив `npm pack` проверяют publint и
-// arethetypeswrong, входы `dist` начинаются с `'use client'`, а приложения-фикстуры во
-// временной папке ставят архив из npm и проходят типы, сборку и запуск в Node.
+// arethetypeswrong, поля для реестра на месте (ADR 0103, CI12), входы `dist` начинаются
+// с `'use client'`, а приложения-фикстуры во временной папке ставят архив из npm и
+// проходят типы, сборку и запуск в Node.
 // Запуск: после `npm run build` — `npm run check:package` (нужна сеть).
 
 import { execFileSync } from 'node:child_process'
@@ -17,7 +18,7 @@ import { join, resolve } from 'node:path'
 import { publint } from 'publint'
 import { formatMessage } from 'publint/utils'
 
-import { FIXTURES, missingUseClient } from './packageChecks.ts'
+import { FIXTURES, missingMetadata, missingUseClient } from './packageChecks.ts'
 
 const root = process.cwd()
 const failures = []
@@ -37,6 +38,11 @@ try {
     work,
     readdirSync(work).find(file => file.endsWith('.tgz')),
   )
+
+  const metadata = missingMetadata(root)
+  if (metadata.length > 0) {
+    failures.push(`нет полей пакета: ${metadata.join(', ')}`)
+  }
 
   const directives = missingUseClient(resolve(root, 'dist'))
   if (directives.length > 0) {

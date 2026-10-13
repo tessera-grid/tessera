@@ -16,6 +16,25 @@ export const missingUseClient = (distDir: string): string[] =>
     )
   })
 
+/** Поля пакета для реестра и GitHub (ADR 0103, CI12): чего не хватает. */
+export const missingMetadata = (root: string): string[] => {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+    license?: string
+    repository?: { url?: string }
+    homepage?: string
+    bugs?: { url?: string }
+    engines?: { node?: string }
+  }
+  const missing: string[] = []
+  if (pkg.license !== 'MIT') missing.push('license: MIT')
+  if (!existsSync(join(root, 'LICENSE'))) missing.push('файл LICENSE')
+  if (!pkg.repository?.url) missing.push('repository.url')
+  if (!pkg.homepage) missing.push('homepage')
+  if (!pkg.bugs?.url) missing.push('bugs.url')
+  if (!pkg.engines?.node) missing.push('engines.node')
+  return missing
+}
+
 /**
  * Ошибки `tsc` (вывод `--pretty false`), которые относятся к коду фикстуры или к
  * декларациям пакета. Ошибки в чужих декларациях (`node_modules`) — не наши.
