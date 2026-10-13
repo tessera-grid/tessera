@@ -9,6 +9,7 @@ import {
   IDLE_DELAY,
   MIN_DURATION,
   attachFastScrollDetector,
+  markProgrammaticScroll,
 } from '../core/fastScroll/fastScrollDetector'
 
 const FRAME = 16
@@ -37,13 +38,14 @@ const scroller = () => {
 const setup = () => {
   const { element, scrollBy } = scroller()
   const changes: boolean[] = []
+  const mark = () => markProgrammaticScroll(element)
   const detach = attachFastScrollDetector(element, fast => changes.push(fast))
   /** Кадр прокрутки: время идёт `ms`, затем событие со сдвигом. */
   const frame = (dx: number, dy: number, ms = FRAME) => {
     vi.advanceTimersByTime(ms)
     scrollBy(dx, dy)
   }
-  return { changes, frame, detach }
+  return { changes, frame, detach, mark }
 }
 
 beforeEach(() => {
@@ -114,5 +116,25 @@ describe('Детектор быстрой прокрутки (ADR 0008)', () => 
     expect(changes).toEqual([true])
     vi.advanceTimersByTime(1)
     expect(changes).toEqual([true, false])
+  })
+
+  it('FS8: помеченная программной прокрутка не включает режим до простоя; следующий жест после простоя считается как обычно', () => {
+    const { changes, frame, mark } = setup()
+    // Прыжок на 100 000 px и плавная доводка — режим не включается.
+    mark()
+    frame(0, 100_000)
+    for (let i = 0; i < 10; i++) frame(0, -40)
+    expect(changes).toEqual([])
+    // Простой снимает пометку: рывок человека включает режим.
+    vi.advanceTimersByTime(IDLE_DELAY + 50)
+    frame(0, 5000)
+    expect(changes).toEqual([true])
+    // Пометка без событий (цель уже на месте) истекает и не съедает жест.
+    vi.advanceTimersByTime(IDLE_DELAY + MIN_DURATION + 50)
+    expect(changes).toEqual([true, false])
+    mark()
+    vi.advanceTimersByTime(IDLE_DELAY + 50)
+    frame(0, 5000)
+    expect(changes).toEqual([true, false, true])
   })
 })

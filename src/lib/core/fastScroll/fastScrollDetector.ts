@@ -70,6 +70,27 @@ const velocityOf = (all: readonly ScrollSample[]) => {
   return { x: (x / span) * 1000, y: (y / span) * 1000 }
 }
 
+/**
+ * Элементы, чью прокрутку делает сам грид (ADR 0105, FS8): время последней программной
+ * активности. Пометка живёт `IDLE_DELAY` после неё — прокрутка без событий (цель уже на
+ * месте) не съедает следующий жест человека.
+ */
+const programmatic = new WeakMap<object, number>()
+
+const isProgrammatic = (element: object, now: number) => {
+  const at = programmatic.get(element)
+  return at !== undefined && now - at <= IDLE_DELAY
+}
+
+/**
+ * Пометить прокрутку элемента как программную: кнопки и `scrollToRow`. Её события до
+ * простоя не идут в скорость и быструю прокрутку не включают — режим нужен жестам
+ * человека.
+ */
+export const markProgrammaticScroll = (element: object) => {
+  programmatic.set(element, performance.now())
+}
+
 /** Подписать детектор на элемент прокрутки; `onChange` — смена режима. Возвращает отписку. */
 export const attachFastScrollDetector = (
   element: ScrollSource,
@@ -127,6 +148,15 @@ export const attachFastScrollDetector = (
 
   const handleScroll = () => {
     const now = performance.now()
+    if (isProgrammatic(element, now)) {
+      programmatic.set(element, now)
+      lastTop = element.scrollTop
+      lastLeft = element.scrollLeft
+      lastEventAt = now
+      samples = []
+      armIdle()
+      return
+    }
     const since = lastEventAt ?? now - FRAME_SPAN
     const deltaX = Math.abs(element.scrollLeft - lastLeft)
     const deltaY = Math.abs(element.scrollTop - lastTop)

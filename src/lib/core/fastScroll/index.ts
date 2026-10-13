@@ -8,3 +8,4 @@ export {
   useFastScrollState,
   useFastScrollSuppressed,
 } from './fastScrollContext'
+export { markProgrammaticScroll } from './fastScrollDetector'

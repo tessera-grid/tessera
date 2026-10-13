@@ -7,7 +7,7 @@ import {
 } from './model'
 
 /** Видимая по вертикали часть тела: между низом sticky-шапки и верхом футера. */
-const getBodyViewport = (scroller: HTMLElement) => {
+export const getBodyViewport = (scroller: HTMLElement) => {
   const clientTop = scroller.getBoundingClientRect().top + scroller.clientTop
   const clientBottom = clientTop + scroller.clientHeight
   const head = scroller.querySelector(HEAD_SELECTOR)
@@ -23,7 +23,7 @@ const getBodyViewport = (scroller: HTMLElement) => {
 }
 
 /** Видимая по горизонтали часть: между закреплёнными ячейками строки `cell`. */
-const getCenterViewport = (cell: HTMLElement, scroller: HTMLElement) => {
+export const getCenterViewport = (cell: HTMLElement, scroller: HTMLElement) => {
   const clientLeft = scroller.getBoundingClientRect().left + scroller.clientLeft
   let left = clientLeft
   let right = clientLeft + scroller.clientWidth
