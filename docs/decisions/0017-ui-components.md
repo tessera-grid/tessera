@@ -15,7 +15,9 @@
   `--tsr-comp-button-size` с иконкой `--tsr-comp-button-icon-size` и общей палитрой;
   формы — `circle` (F1/F2, `--tsr-comp-button-radius-circle`) и `square` (F4, F5,
   `--tsr-comp-button-radius-square`); `--tsr-comp-radius-round` заменён на
-  `--tsr-comp-button-radius-circle`.
+  `--tsr-comp-button-radius-circle`. 2026-10-13 — у движения строк своя длительность
+  `--tsr-comp-row-motion-duration`, выведенная из базовой (MO1,
+  [ADR 0107](0107-row-motion.md)).
 - **Связано:**
   - [ADR 0003](0003-formalize-tech-stack.md) — стек контролов: примитивы Base UI
     (фундамент shadcn), стилизация Tailwind v4 + cva и CSS Modules поверх
