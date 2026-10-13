@@ -6,8 +6,10 @@ import {
   ALL_PLUGINS,
   Grid,
   NOISE,
+  TesseraLeakMarker,
   click,
   expectCollected,
+  flushReactBookkeeping,
   frames,
   hover,
   memory,
@@ -77,6 +79,12 @@ const cycle = async (
   return tracked
 }
 
+/** Счётчики после того же сброса служебных ссылок React, что и в `expectCollected`. */
+const settledCounters = async () => {
+  await flushReactBookkeeping()
+  return memory.domCounters()
+}
+
 const bodyChildren = () =>
   [...document.body.children].filter(el => el.tagName !== 'SCRIPT').length
 
@@ -133,13 +141,17 @@ describe('Утечки при размонтировании', () => {
   })
 
   test(`LK2: после ${CYCLES} циклов число DOM-узлов и JS-обработчиков возвращается к исходному, а на window и document не остаётся обработчиков грида`, async () => {
-    const counters = await memory.domCounters()
+    const counters = await settledCounters()
     const listeners = await memory.globalListeners()
     let mountedListeners = listeners
+    let last: Tracked | undefined
     for (let i = 0; i < CYCLES; i++) {
-      await cycle(`цикл ${i}`, {}, async () => {
+      await cycle(`цикл ${i}`, {}, async ({ container }) => {
         if (i === 0) {
           mountedListeners = await memory.globalListeners()
+        }
+        if (i === CYCLES - 1) {
+          last = track('контейнер последнего цикла', container)
         }
       })
     }
@@ -147,11 +159,33 @@ describe('Утечки при размонтировании', () => {
     expect(
       mountedListeners.window.length + mountedListeners.document.length,
     ).toBeGreaterThan(listeners.window.length + listeners.document.length)
-    const after = await memory.domCounters()
-    expect(after.nodes - counters.nodes).toBeLessThanOrEqual(NOISE.nodes)
-    expect(
-      after.jsEventListeners - counters.jsEventListeners,
-    ).toBeLessThanOrEqual(NOISE.jsEventListeners)
+    const growth = async () => {
+      const after = await settledCounters()
+      return {
+        nodes: after.nodes - counters.nodes,
+        jsEventListeners: after.jsEventListeners - counters.jsEventListeners,
+      }
+    }
+    const withinNoise = (grown: { nodes: number; jsEventListeners: number }) =>
+      grown.nodes <= NOISE.nodes &&
+      grown.jsEventListeners <= NOISE.jsEventListeners
+    let grown = await growth()
+    if (!withinNoise(grown)) {
+      // Отложенная работа отпускает последний корень не сразу — как в `expectCollected`.
+      await new Promise(resolve => setTimeout(resolve, 500))
+      grown = await growth()
+    }
+    // Корень React вешает обработчики всех событий на свой контейнер: удержанный
+    // контейнер — это +1 узел и ~140 обработчиков.
+    const paths =
+      withinNoise(grown) || !last?.ref.deref()
+        ? []
+        : await memory.retainingPaths(TesseraLeakMarker.name, [last.label])
+    const report = `пути удержания контейнера:\n${paths.join('\n') || '(контейнер собран)'}`
+    expect(grown.nodes, report).toBeLessThanOrEqual(NOISE.nodes)
+    expect(grown.jsEventListeners, report).toBeLessThanOrEqual(
+      NOISE.jsEventListeners,
+    )
     expect(await memory.globalListeners()).toEqual(listeners)
   })
 

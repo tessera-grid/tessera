@@ -154,12 +154,34 @@ export const settled = async (container: ParentNode = document) => {
 }
 
 /**
- * Первая таблица документа удерживается навсегда (`leaks.ts`): тесты, требующие
- * сборки таблицы, прогревают документ одним гридом.
+ * Ждёт, пока документ затихнет: `quiet` мс без новых узлов в `<head>` и без загрузок
+ * ресурсов. Ленивые модули, начатые при рендере (ADR 0061), приходят позже монтирования
+ * и вставляют свои стили — один раз на документ.
+ */
+const waitForQuietDocument = async (quiet = 1000, timeout = 15_000) => {
+  let last = performance.now()
+  const touch = () => (last = performance.now())
+  const head = new MutationObserver(touch)
+  head.observe(document.head, { childList: true })
+  const resources = new PerformanceObserver(touch)
+  resources.observe({ type: 'resource' })
+  try {
+    await waitFor(() => performance.now() - last >= quiet, timeout)
+  } finally {
+    head.disconnect()
+    resources.disconnect()
+  }
+}
+
+/**
+ * Первая таблица документа удерживается навсегда (`leaks.ts`), а ленивые модули
+ * грузятся один раз на документ: тесты прогревают документ одним гридом и ждут, пока
+ * модули придут.
  */
 export const warmUpDocument = async () => {
   const mounted = mount(<Grid />)
   await settled(mounted.container)
+  await waitForQuietDocument()
   mounted.unmount()
 }
 
