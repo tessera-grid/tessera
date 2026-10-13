@@ -50,7 +50,7 @@ describe('Tree lines under fractional zoom', () => {
         `${zoom} vertical`,
       ).toBe(true)
       expect(
-        horizontalAt(shot, x + (g.radius + 3) * zoom, mid, 4),
+        horizontalAt(shot, x + (g.step - g.gap - 1) * zoom, mid, 4),
         `${zoom} horizontal`,
       ).toBe(true)
       expect(

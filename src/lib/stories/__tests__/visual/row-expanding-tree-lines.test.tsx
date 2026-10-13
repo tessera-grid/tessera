@@ -58,13 +58,17 @@ describe('Row expanding: tree lines', () => {
     let shot = await snapshot()
     expect(verticalAt(shot, x, top + height * 0.25), 'vertical').toBe(true)
     expect(
-      horizontalAt(shot, x + g.radius + 2, mid),
+      horizontalAt(shot, x + g.radius + 1, mid),
       'horizontal after the arc',
     ).toBe(true)
     expect(
-      horizontalAt(shot, textLeft(cell) - 6, mid),
-      'horizontal up to the text',
+      horizontalAt(shot, textLeft(cell) - g.gap - 1, mid),
+      'horizontal up to the gap before the text',
     ).toBe(true)
+    expect(
+      horizontalAt(shot, textLeft(cell) - g.gap + 3, mid),
+      'gap before the text',
+    ).toBe(false)
     // Угол скруглён: у угла горизонтали нет — линия ушла вверх по дуге.
     expect(horizontalAt(shot, x + 1, mid, 3), 'rounded corner').toBe(false)
 
@@ -210,14 +214,14 @@ describe('Row expanding: tree lines', () => {
     ).toBe(false)
   })
 
-  test('TL6: by default 1.5px lines of a 12% neutral in both themes, overlaps no darker than the line, a 20px step; the theme overrides color, width, radius, step and inset', async () => {
+  test('TL6: by default 1.5px lines of a 12% neutral in both themes, overlaps no darker than the line, a 28px step — a 16px turn and a 12px gap before the text; the theme overrides color, width, radius, step, inset and gap', async () => {
     await render(<composed.RowExpandingTreeLines />)
     await waitTree()
     await showRow(TREE.portugal)
     let g = treeGeometry()
     expect(g.width).toBe(1.5)
-    expect(g.step).toBe(20)
-    expect(getComputedStyle(indentOf(TREE.zimbabwe)).paddingLeft).toBe('40px')
+    expect([g.step, g.gap]).toEqual([28, 12])
+    expect(getComputedStyle(indentOf(TREE.zimbabwe)).paddingLeft).toBe('56px')
 
     await inBothThemes(async () => {
       const cell = indentOf(TREE.portugal)
@@ -247,6 +251,7 @@ describe('Row expanding: tree lines', () => {
       '--tsr-comp-tree-line-radius': '0px',
       '--tsr-comp-tree-line-indent': '30px',
       '--tsr-comp-tree-line-inset': '10px',
+      '--tsr-comp-tree-line-gap': '4px',
     })
     await showRow(TREE.falkland)
     g = treeGeometry()
@@ -266,6 +271,9 @@ describe('Row expanding: tree lines', () => {
     // Нулевой радиус — красный угол.
     const [r] = shot.rgb(x + 1, box(cell).mid)
     expect(r).toBeGreaterThan(200)
+    // Зазор 4px — горизонталь доходит почти до текста.
+    const [nearText] = shot.rgb(textLeft(cell) - 6, box(cell).mid)
+    expect(nearText).toBeGreaterThan(200)
   })
 
   test('RE53: without the option there are no lines and the indent is unchanged', async () => {

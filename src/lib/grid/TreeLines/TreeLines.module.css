@@ -36,7 +36,7 @@
 .joinedElbow {
   top: calc(-1 * var(--tsr-tree-line-overlap, 0px));
   width: calc(
-    var(--tsr-comp-row-nesting-indent) - var(--tsr-ref-space-1) +
+    var(--tsr-comp-row-nesting-indent) - var(--tsr-comp-tree-line-gap) +
       var(--tsr-comp-tree-line-width) / 2
   );
   height: calc(

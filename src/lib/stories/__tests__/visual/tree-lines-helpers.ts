@@ -69,6 +69,7 @@ export const treeGeometry = () => ({
   inset: tokenPx('--tsr-comp-tree-line-inset'),
   width: tokenPx('--tsr-comp-tree-line-width'),
   radius: tokenPx('--tsr-comp-tree-line-radius'),
+  gap: tokenPx('--tsr-comp-tree-line-gap'),
 })
 export type TreeGeometry = ReturnType<typeof treeGeometry>
 

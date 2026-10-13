@@ -114,8 +114,9 @@
   декоративные элементы-рамки в ячейке отступа с `data-tree-depth`.
   `--tsr-comp-tree-line-color` (12 % цвета текста, рычаг `--tsr-sys-tint-guide`; в
   повышенном контрасте 55 %), `--tsr-comp-tree-line-width` (1.5px),
-  `--tsr-comp-tree-line-radius` (половина шага), `--tsr-comp-tree-line-inset` (вертикаль
-  под началом текста) и `--tsr-comp-tree-line-indent` (20px) — шаг отступа, пока корень
+  `--tsr-comp-tree-line-radius` (14px), `--tsr-comp-tree-line-inset` (вертикаль под
+  началом текста), `--tsr-comp-tree-line-gap` (12px — зазор от поворота до текста) и
+  `--tsr-comp-tree-line-indent` (16px + зазор, 28px) — шаг отступа, пока корень
   несёт `data-tree-lines`. Рамки, а не прямоугольник, тень или стоп градиента: те в 1px
   при дробном масштабе схлопываются в ноль (ADR 0084).
 - **Обновление данных** (ADR [0094](../decisions/0094-loading-glow.md)): свечение под

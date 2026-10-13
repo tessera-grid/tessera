@@ -455,11 +455,13 @@
     transparent
   );
   --tsr-comp-tree-line-width: 1.5px;
-  /* Шаг отступа дерева с линиями: повороту ветки нужно место. */
-  --tsr-comp-tree-line-indent: 20px;
-  --tsr-comp-tree-line-radius: calc(var(--tsr-comp-row-nesting-indent) / 2);
+  /* Шаг отступа дерева с линиями: поворот ветки 16px и зазор до текста. */
+  --tsr-comp-tree-line-indent: calc(16px + var(--tsr-comp-tree-line-gap));
+  --tsr-comp-tree-line-radius: 14px;
   /* Вертикаль уровня — под началом текста: горизонтальный отступ содержимого ячейки. */
   --tsr-comp-tree-line-inset: var(--tsr-ref-space-4);
+  /* Зазор между концом поворота и текстом строки. */
+  --tsr-comp-tree-line-gap: calc(var(--tsr-ref-space-1) * 3);
   /* Пятно света ожидания ячейки: полуоси эллипса с центром на кромке. */
   --tsr-comp-cell-pending-glow-width: 64px;
   --tsr-comp-cell-pending-glow-height: 40px;
