@@ -157,7 +157,7 @@ describe('Column Resizing — setup guard', () => {
 describe('Column Resizing — requirements', () => {
   test('CR1: the plugin is inert without `enableColumnResizing`', async () => {
     const container = await renderColumnResizing({
-      enableColumnResizing: false,
+      enableColumnSizing: false,
     })
     // Feature off → getCanResize() is false → no grip and no resizable header.
     expect(container.querySelector(RESIZE_GRIP)).toBeNull()

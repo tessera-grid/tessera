@@ -24,7 +24,7 @@ export const A11yGrid: StoryObj<StoryProps> = {
     enableKeyboardNavigation: true,
     enableColumnSorting: true,
     enableColumnPinning: true,
-    enableColumnResizing: true,
+    enableColumnSizing: true,
     enableRowSelection: true,
     enableCellSelection: true,
     enableCellEditing: true,

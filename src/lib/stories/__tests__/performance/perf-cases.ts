@@ -39,7 +39,7 @@ export const NO_PLUGINS: Record<string, boolean> = {}
 /** Все плагины включены одновременно. */
 export const ALL_PLUGINS: Record<string, boolean> = {
   enableColumnSorting: true,
-  enableColumnResizing: true,
+  enableColumnSizing: true,
   enableColumnPinning: true,
   enableColumnDragging: true,
   enableRowSelection: true,

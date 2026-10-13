@@ -17,8 +17,8 @@ import type { RowDraggingHooks } from './types'
 export interface RowDraggingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Разрешить перетаскивание строк: булево или предикат по строке. */
-  enable?: boolean | ((row: Row<any, any>) => boolean)
+  /** Можно ли тащить строку; по умолчанию — любую. Выключить плагин — `enabled`. */
+  canDragRow?: (row: Row<any, any>) => boolean
   /** Бизнес-колбэк окончания переноса строки (аргумент фабрики). */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
   /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
@@ -28,7 +28,7 @@ export interface RowDraggingOptions {
 export const rowDragging = definePlugin<RowDraggingOptions>()({
   id: 'rowDragging',
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
-  refreshOn: ['enable'],
+  refreshOn: ['canDragRow'],
   features: { rowDraggingFeature },
   hooks: o => ({
     onRowDragEnd: o.onRowDragEnd,
@@ -44,6 +44,6 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
     pin: { side: 'start', when: 'with-user' },
   },
   options: o => ({
-    enableRowDragging: o.enabled === false ? false : (o.enable ?? true),
+    enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),
   }),
 })

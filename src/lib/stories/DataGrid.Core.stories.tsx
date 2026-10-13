@@ -48,14 +48,14 @@ export const Skeletons: StoryObj<StoryProps> = {
   name: 'Skeleton',
   parameters: vrStates('body.skeleton'),
   // Скелет первой загрузки повторяет раскладку грида (ADR 0060): служебные колонки,
-  // закрепление, шапку и пагинатор. Выключите enableSkeleton — данные встанут на
+  // закрепление, шапку и пагинатор. Выключите loading — данные встанут на
   // место без сдвига; skeletonOptions.rowsCount числом задаёт строки вручную.
   args: {
     // Вложенный мок: колонка раскрытия появляется, только если есть строки с детьми.
     dataNesting: 'nested',
-    enableSkeleton: true,
+    loading: 'initial',
     enableRowSelection: true,
-    showSelectedCount: true,
+    rowSelectionSelectedCount: true,
     enableRowDragging: true,
     enableRowExpanding: true,
     enableColumnPinning: true,
@@ -67,7 +67,7 @@ export const Skeletons: StoryObj<StoryProps> = {
 
 /**
  * Обновление данных (ADR 0094): свечение под шапкой и приглушённое тело — во всех
- * режимах осей. Показ — после задержки `loadingOptions.delayMs`.
+ * режимах осей. Показ — после задержки `refreshOptions.delayMs`.
  */
 export const Loading: StoryObj<StoryProps> = {
   name: 'Loading',
@@ -83,7 +83,7 @@ export const Loading: StoryObj<StoryProps> = {
     await settle()
   },
   args: {
-    enableLoading: true,
+    loading: 'refresh',
   },
 }
 
@@ -114,10 +114,10 @@ export const Localization: StoryObj<StoryProps> = {
     enableColumnFiltering: true,
     enableQuickSearch: true,
     enableColumnVisibility: true,
-    enableExport: true,
+    enableDataExport: true,
     enablePagination: true,
     enableRowSelection: true,
-    showSelectedCount: true,
+    rowSelectionSelectedCount: true,
     enableHeaderActionMenu: true,
   },
 }
@@ -142,7 +142,7 @@ export const CustomIcons: StoryObj<StoryProps> = {
     enableRowDragging: true,
     enableRowActions: true,
     enableRowActionMenu: true,
-    enableExport: true,
+    enableDataExport: true,
   },
   argTypes: { icons: { control: false } },
 }

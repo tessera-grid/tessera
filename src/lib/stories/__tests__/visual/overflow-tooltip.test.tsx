@@ -98,7 +98,7 @@ describe('Overflow tooltip — тултип у обрезанного текст
   test('OT3: текст, обрезанный раскрывшейся при наведении кнопкой ячейки, показывает тултип', async () => {
     await renderOverflow({
       enableCellEditing: true,
-      cellEditingCanEdit: () => true,
+      cellEditingCanEditCell: () => true,
     })
     const city = title(FITTING_CITY)
     expect(city.scrollWidth).toBeLessThanOrEqual(city.clientWidth)
@@ -178,7 +178,7 @@ describe('Overflow tooltip — тултип у обрезанного текст
   test('OT7: ячейка в правке и тач-указатель тултипа не получают', async () => {
     await renderOverflow({
       enableCellEditing: true,
-      cellEditingCanEdit: () => true,
+      cellEditingCanEditCell: () => true,
     })
     const cell = title(LONG_NAME).closest<HTMLElement>('.data-grid__body-cell')!
     await userEvent.hover(cell)

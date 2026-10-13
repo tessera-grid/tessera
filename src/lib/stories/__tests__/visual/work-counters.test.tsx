@@ -208,7 +208,7 @@ describe('Счётчики работы', () => {
   test('PF6: смена страницы строит модель строк один раз и монтирует не больше строк окна', async () => {
     const { measure } = await mountGrid({
       enablePagination: true,
-      paginationPageSize: 100,
+      paginationInitialPageSize: 100,
     })
     const size = windowSize()
     const work = await measure(

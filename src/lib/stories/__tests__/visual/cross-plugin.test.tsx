@@ -121,7 +121,7 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
       <composed.AllFeatures
         enableColumnPinning
         enableColumnSorting
-        enableGrouping
+        enableRowGrouping
         enableHeaderActionMenu
         enableRowActions
         enableRowActionMenu
@@ -319,7 +319,7 @@ const dragColumnOnto = async (source: HTMLElement, target: HTMLElement) => {
 describe('Cross-plugin — columnPinning × columnSizing', () => {
   test('X3: resizing a left-pinned column re-flows the next pinned column’s sticky offset', async () => {
     const { container } = await render(
-      <composed.ColumnPinning enableColumnResizing dataCount={40} />,
+      <composed.ColumnPinning enableColumnSizing dataCount={40} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)

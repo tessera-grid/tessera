@@ -68,7 +68,7 @@ const finishTransitions = () =>
 const GRID = { columnCount: 6, dataCount: 30 }
 
 const renderRefreshing = async (args: Record<string, unknown> = {}) => {
-  await renderGrid({ ...GRID, enableLoading: true, ...args })
+  await renderGrid({ ...GRID, loading: 'refresh', ...args })
   await waitForGrid()
   await expect.poll(loader).not.toBeNull()
   finishTransitions()
@@ -251,27 +251,25 @@ describe('Обновление данных (ADR 0094)', () => {
     await expect.poll(() => scroller.scrollTop).toBeGreaterThan(0)
   })
 
-  test('GL5: свечение и приглушение появляются через loadingOptions.delayMs (по умолчанию 300 мс) после включения enableLoading; загрузка, кончившаяся раньше, их не показывает', async () => {
+  test('GL5: свечение и приглушение появляются через refreshOptions.delayMs (по умолчанию 300 мс) после `loading` refresh; загрузка, кончившаяся раньше, их не показывает', async () => {
     const seen: boolean[] = []
     const observer = new MutationObserver(() => seen.push(!!loader()))
     observer.observe(document.body, { subtree: true, childList: true })
     try {
       const screen = await render(
-        <composed.AllFeatures {...GRID} enableLoading />,
+        <composed.AllFeatures {...GRID} loading="refresh" />,
       )
       await waitForGrid()
       await sleep(150)
       expect(loader()).toBeNull()
       expect(refreshing()).toBe(false)
-      await screen.rerender(
-        <composed.AllFeatures {...GRID} enableLoading={false} />,
-      )
+      await screen.rerender(<composed.AllFeatures {...GRID} loading={false} />)
       await sleep(600)
       expect(seen).not.toContain(true)
       await cleanup()
 
       // Без раннего снятия — через задержку.
-      await render(<composed.AllFeatures {...GRID} enableLoading />)
+      await render(<composed.AllFeatures {...GRID} loading="refresh" />)
       await waitForGrid()
       const started = performance.now()
       await expect.poll(loader).not.toBeNull()
@@ -283,8 +281,8 @@ describe('Обновление данных (ADR 0094)', () => {
       await render(
         <composed.AllFeatures
           {...GRID}
-          enableLoading
-          loadingOptions={{ delayMs: 0 }}
+          loading="refresh"
+          refreshOptions={{ delayMs: 0 }}
         />,
       )
       await expect.poll(loader, { timeout: 200 }).not.toBeNull()
@@ -293,15 +291,13 @@ describe('Обновление данных (ADR 0094)', () => {
     }
   })
 
-  test('GL6: показанные свечение и приглушение держатся не меньше loadingOptions.minDurationMs (по умолчанию 500 мс)', async () => {
+  test('GL6: показанные свечение и приглушение держатся не меньше refreshOptions.minDurationMs (по умолчанию 500 мс)', async () => {
     const screen = await render(
-      <composed.AllFeatures {...GRID} enableLoading />,
+      <composed.AllFeatures {...GRID} loading="refresh" />,
     )
     await waitForGrid()
     await expect.poll(loader).not.toBeNull()
-    await screen.rerender(
-      <composed.AllFeatures {...GRID} enableLoading={false} />,
-    )
+    await screen.rerender(<composed.AllFeatures {...GRID} loading={false} />)
     await sleep(300)
     expect(loader()).not.toBeNull()
     expect(refreshing()).toBe(true)
@@ -312,7 +308,7 @@ describe('Обновление данных (ADR 0094)', () => {
   test('GL7: aria-busy таблицы и объявление об окончании загрузки — по флагу, без задержки показа и без минимума', async () => {
     const table = () => el('[role="table"], [role="grid"], [role="treegrid"]')!
     const screen = await render(
-      <composed.AllFeatures {...GRID} enableLoading />,
+      <composed.AllFeatures {...GRID} loading="refresh" />,
     )
     await waitForGrid()
     // До показа свечения таблица уже занята.
@@ -320,9 +316,7 @@ describe('Обновление данных (ADR 0094)', () => {
     expect(table().getAttribute('aria-busy')).toBe('true')
 
     await expect.poll(loader).not.toBeNull()
-    await screen.rerender(
-      <composed.AllFeatures {...GRID} enableLoading={false} />,
-    )
+    await screen.rerender(<composed.AllFeatures {...GRID} loading={false} />)
     // Свечение ещё держит минимум, а таблица уже свободна и окончание объявлено.
     await expect.poll(() => table().getAttribute('aria-busy')).toBeNull()
     expect(loader()).not.toBeNull()
@@ -331,8 +325,8 @@ describe('Обновление данных (ADR 0094)', () => {
       .toContain(DEFAULT_LABELS.announceLoaded(GRID.dataCount))
   })
 
-  test('GL8: enableSkeleton главнее — при скелете нет ни свечения, ни приглушения', async () => {
-    await renderGrid({ ...GRID, enableLoading: true, enableSkeleton: true })
+  test('GL8: скелет главнее — при `loading` initial нет ни свечения, ни приглушения', async () => {
+    await renderGrid({ ...GRID, loading: 'initial' })
     await sleep(700)
     expect(loader()).toBeNull()
     expect(refreshing()).toBe(false)

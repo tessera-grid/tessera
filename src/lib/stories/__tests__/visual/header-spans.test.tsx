@@ -78,7 +78,7 @@ describe('Нативные спаны вложенной шапки', () => {
     // Без меню действий сортировка — кнопкой в ячейке, а не пунктом кебаба.
     await mount({
       enableColumnSorting: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       enableHeaderActionMenu: false,
     })
     expect(headCells('country')).toHaveLength(1)
@@ -255,7 +255,7 @@ describe('Нативные спаны вложенной шапки', () => {
   })
 
   test('HS13: кнопки и пункты кебаба растянутого листа те же, что у листа обычной высоты', async () => {
-    await mount({ enableLeafPinning: true })
+    await mount({ columnPinningLeafPinning: true })
     const stretched = await actionsOf('visits')
     const regular = await actionsOf('age')
     expect(stretched).toEqual(regular)

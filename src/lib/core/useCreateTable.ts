@@ -19,7 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
-import type { LoadingOptions } from './loadingDisplay'
+import type { RefreshOptions } from './loadingDisplay'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
 import { getColumnsSignature, injectServiceColumns } from './createColumns'
@@ -60,15 +60,18 @@ const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
  * Плагинные фичи включаются через `plugins`.
  */
 export interface CreateDataGridOptions {
-  enableSkeleton?: boolean
-  enableLoading?: boolean
+  /**
+   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
+   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
+   */
+  loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
   enableToolbar?: boolean
   enableStatusBar?: boolean
   enableAnnouncements?: boolean
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
-  loadingOptions?: LoadingOptions
+  refreshOptions?: RefreshOptions
   loadError?: unknown
   onRetry?: () => unknown
   rowHeight?: number
@@ -96,8 +99,11 @@ export type UseCreateTableParams<
   /** Контролируемые onXChange потребителя (прокидываются в опции v9 как есть). */
   handlers?: Record<string, unknown>
 
-  enableSkeleton?: boolean
-  enableLoading?: boolean
+  /**
+   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
+   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
+   */
+  loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
   /** Верхний тулбар: без флага — по наличию кнопок плагинов, `true` — всегда, `false` — никогда (ADR 0046). */
   enableToolbar?: boolean
@@ -108,8 +114,8 @@ export type UseCreateTableParams<
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
   skeletonOptions?: SkeletonOptions
-  /** Задержка и минимум показа обновления при `enableLoading` (ADR 0094). */
-  loadingOptions?: LoadingOptions
+  /** Задержка и минимум показа обновления при `loading: 'refresh'` (ADR 0094). */
+  refreshOptions?: RefreshOptions
   /**
    * Отказ загрузки данных (ADR 0096): `Error` или строка; `null` — ошибки нет. С данными —
    * красный свет под шапкой и плашка, без данных — заглушка ошибки.
@@ -138,15 +144,14 @@ export const useCreateTable = <
   getSubRows,
   state,
   handlers,
-  enableSkeleton,
-  enableLoading,
+  loading,
   enableFooter,
   enableToolbar,
   enableStatusBar,
   enableAnnouncements,
   enableOverflowTooltip,
   skeletonOptions,
-  loadingOptions,
+  refreshOptions,
   loadError,
   onRetry,
   rowHeight,
@@ -323,15 +328,14 @@ export const useCreateTable = <
       ),
     ),
     actionMenu: folded.actionMenu,
-    enableSkeleton,
-    enableLoading,
+    loading,
     enableFooter,
     enableToolbar,
     enableStatusBar,
     enableAnnouncements,
     enableOverflowTooltip,
     skeletonOptions,
-    loadingOptions,
+    refreshOptions,
     loadError,
     onRetry,
     rowHeight,

@@ -211,7 +211,7 @@ describe('сессии действий', () => {
     expect(onEditCancel).not.toHaveBeenCalled()
   })
 
-  it('SS16: плагин правки выключили или canEdit запретил ячейку вне экрана — сессия завершается revoke с черновиком', () => {
+  it('SS16: плагин правки выключили или canEditCell запретил ячейку вне экрана — сессия завершается revoke с черновиком', () => {
     render({ plugins: [cellEditing({ onEditCancel })] })
     startEdit()
     render({ plugins: [cellEditing({ enabled: false, onEditCancel })] })
@@ -223,9 +223,9 @@ describe('сессии действий', () => {
 
     const allow = () => true
     const deny = () => false
-    render({ plugins: [cellEditing({ canEdit: allow, onEditCancel })] })
+    render({ plugins: [cellEditing({ canEditCell: allow, onEditCancel })] })
     startEdit()
-    render({ plugins: [cellEditing({ canEdit: deny, onEditCancel })] })
+    render({ plugins: [cellEditing({ canEditCell: deny, onEditCancel })] })
     expect(session()).toBeNull()
     expect(onEditCancel).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -255,7 +255,7 @@ describe('сессии действий', () => {
   })
 
   it('SS20: ввод черновика не перерисовывает слоты правки других ячеек; начало и конец правки — только ячейку в правке', () => {
-    render({ plugins: [cellEditing({ canEdit: () => true })] })
+    render({ plugins: [cellEditing({ canEditCell: () => true })] })
     const commits: Record<string, number> = { own: 0, other: 0 }
     const button = slotComponent('rightCellSlot', 'cellEditing')
     const probe = (id: 'own' | 'other', rowId: string) =>

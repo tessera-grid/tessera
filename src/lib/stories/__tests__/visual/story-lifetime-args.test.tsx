@@ -31,13 +31,13 @@ const columnValues = (container: HTMLElement, colIndex: string) =>
 describe('истории DataGrid: аргументы-договоры на время жизни', () => {
   test('смена serverColumnSorting после монтирования пересоздаёт грид: клик сортировки не меняет порядок строк', async () => {
     const { container, rerender } = await render(
-      <composed.ColumnSorting serverColumnSorting={false} />,
+      <composed.ColumnSorting columnSortingServer={false} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)
 
-    await rerender(<composed.ColumnSorting serverColumnSorting />)
+    await rerender(<composed.ColumnSorting columnSortingServer />)
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)

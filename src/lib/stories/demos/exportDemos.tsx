@@ -82,7 +82,9 @@ export const ExportServerDemo = ({
         dataOverride={page}
         paginationServer
         paginationRowCount={TOTAL_ROWS}
-        exportOptions={{ server: true, onExport, onExported }}
+        dataExportServer={true}
+        onExport={onExport}
+        onExported={onExported}
       />
     </WithLog>
   )

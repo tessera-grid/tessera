@@ -133,7 +133,7 @@ const ServerDemo = (args: StoryProps) => {
       </div>
       <StoryComponent
         {...args}
-        enableLoading={state.loading}
+        loading={state.loading ? 'refresh' : false}
         loadError={state.error}
         onRetry={() => refresh(false)}
       />

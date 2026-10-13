@@ -81,7 +81,7 @@ describe('Service column presence', () => {
   })
 
   test('SC5: the column appearing and disappearing with new data keeps expansion, selection and column widths', async () => {
-    const args = { enableColumnResizing: true }
+    const args = { enableColumnSizing: true }
     const view = await mount(
       <Stories.RowExpandingFlatData {...args} dataOverride={tree} />,
     )
@@ -191,7 +191,7 @@ describe('Service column presence', () => {
     await mount(
       <Stories.RowExpandingFlatData
         dataOverride={flat}
-        enableGrouping
+        enableRowGrouping
         initialGrouping={['gender']}
       />,
     )

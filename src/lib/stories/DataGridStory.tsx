@@ -2,7 +2,7 @@
 import { memo, useCallback, useMemo, useState } from 'react'
 import { GroupingState, Updater, functionalUpdate } from '@tanstack/react-table'
 import { Grid, NoDataStub } from './_shims'
-import { panelFlag } from './__mocks__/utils/dataGridControls'
+import { loadingArg, panelFlag } from './__mocks__/utils/dataGridControls'
 import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
@@ -169,10 +169,9 @@ const StoryGrid = memo(
           : {}),
       },
       // Ядровые (не плагинные) опции остаются флагами.
-      enableSkeleton: options.enableSkeleton,
+      loading: loadingArg(options.loading),
       skeletonOptions: options.skeletonOptions,
-      enableLoading: options.enableLoading,
-      loadingOptions: options.loadingOptions,
+      refreshOptions: options.refreshOptions,
       loadError: options.loadError,
       onRetry: options.onRetry,
       enableFooter: options.enableFooter,
@@ -212,10 +211,10 @@ const StoryGrid = memo(
             ...(onPageChange ? { pagination: { onPageChange } } : {}),
             // Предикат аргументом плагина (тесты) — без демо-хуков: слайс хуков
             // записи заменил бы слайс плагина целиком.
-            ...(options.enableCellEditing && !options.cellEditingCanEdit
+            ...(options.enableCellEditing && !options.cellEditingCanEditCell
               ? {
                   cellEditing: {
-                    canEdit: (ctx: CellComponentProps) =>
+                    canEditCell: (ctx: CellComponentProps) =>
                       CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
                     validate: validateCellEdit,
                     onEditCancel: options.onEditCancel,

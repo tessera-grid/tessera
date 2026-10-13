@@ -41,7 +41,7 @@ export const SelectedCount: StoryObj<StoryProps> = {
     // Счётчик выбранных строк слева в нижней панели, пагинация справа: выбор на
     // других страницах тоже считается.
     enableRowSelection: true,
-    showSelectedCount: true,
+    rowSelectionSelectedCount: true,
     enablePagination: true,
     dataCount: 1000,
   },
@@ -57,7 +57,7 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
     ...GRID,
     containerWidth: 320,
     enableRowSelection: true,
-    showSelectedCount: true,
+    rowSelectionSelectedCount: true,
     enableColumnFiltering: true,
     enablePagination: true,
   },

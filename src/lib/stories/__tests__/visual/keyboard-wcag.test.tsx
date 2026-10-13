@@ -212,7 +212,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   })
 
   test('KB2: ширина колонки меняется с клавиатуры через фокусируемый separator', async () => {
-    await render(<composed.KeyboardNavigation enableColumnResizing />)
+    await render(<composed.KeyboardNavigation enableColumnSizing />)
     await expect
       .poll(() => document.querySelector(`${HEAD_CELL} [role="separator"]`))
       .toBeTruthy()
@@ -408,10 +408,10 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
       <composed.AllFeatures
         enableKeyboardNavigation
         enableColumnSorting
-        enableColumnResizing
+        enableColumnSizing
         enableColumnPinning
         enableColumnDragging
-        enableGrouping
+        enableRowGrouping
         enableRowSelection
         enableRowExpanding
         enableRowDragging

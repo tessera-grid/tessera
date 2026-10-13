@@ -30,7 +30,7 @@ describe('Кебаб заголовка — ошибка загрузки', () =
       dataCount: 5,
       enableColumnSorting: true,
       enableHeaderActionMenu: true,
-      headerActionMenuOptions: { mode: 'always' },
+      headerActionMenuMode: 'always',
     })
     await waitForGrid()
     const announcements = recordAnnouncements()

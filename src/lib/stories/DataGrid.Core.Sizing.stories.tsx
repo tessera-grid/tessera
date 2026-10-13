@@ -58,7 +58,7 @@ export const DefaultColumnWidth: StoryObj<StoryProps> = {
       { id: '1', name: 'Ann', company: 'Acme', city: 'Oslo' },
       { id: '2', name: 'Bob', company: 'Globex', city: 'Rome' },
     ],
-    enableColumnResizing: true,
+    enableColumnSizing: true,
     ...SIZE,
   },
 }

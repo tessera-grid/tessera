@@ -79,7 +79,7 @@ describe('Асинхронный контракт бизнес-колбэков'
         {...GRID}
         enableCellEditing
         enableKeyboardNavigation
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={never}
       />,
     )
@@ -108,7 +108,7 @@ describe('Асинхронный контракт бизнес-колбэков'
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={never}
       />,
     )
@@ -130,7 +130,7 @@ describe('Асинхронный контракт бизнес-колбэков'
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={server.onCellEdit}
       />,
     )
@@ -168,7 +168,7 @@ describe('Асинхронный контракт бизнес-колбэков'
         {...GRID}
         enableCellEditing
         enableKeyboardNavigation
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={server.onCellEdit}
       />,
     )
@@ -266,7 +266,7 @@ describe('Асинхронный контракт бизнес-колбэков'
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={server.onCellEdit}
       />,
     )
@@ -405,7 +405,7 @@ const editableGrid = (props: Record<string, unknown> = {}) =>
     <Stories.AllFeatures
       {...GRID}
       enableCellEditing
-      cellEditingCanEdit={allow}
+      cellEditingCanEditCell={allow}
       {...props}
     />,
   )
@@ -493,7 +493,7 @@ describe('Асинхронная правка: блик, вспышка, под�
       const screen = await render(
         <composed.ColumnPinning
           enableCellEditing
-          cellEditingCanEdit={allow}
+          cellEditingCanEditCell={allow}
           onCellEdit={never}
           enableCellSelection
           enableKeyboardNavigation={keyboard}
@@ -662,7 +662,7 @@ describe('Асинхронная правка: блик, вспышка, под�
         columnCount={40}
         dataCount={200}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={() => Promise.resolve()}
       />,
     )

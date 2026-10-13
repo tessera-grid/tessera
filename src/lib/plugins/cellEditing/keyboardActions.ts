@@ -20,7 +20,7 @@ export const editCellKeyboardAction: CellKeyboardAction = {
     (readPluginHooks<Partial<CellEditingHooks>>(
       ctx.table,
       'cellEditing',
-    ).canEdit?.(ctx) ??
+    ).canEditCell?.(ctx) ??
       true),
   run: ({ row, column, table }) => startEditSession(table, row, column),
 }

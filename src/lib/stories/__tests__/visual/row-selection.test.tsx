@@ -120,7 +120,7 @@ describe('Row Selection — activation & service column', () => {
     // Turn sorting and resizing ON to prove the service column stays inert.
     const container = await renderRowSelection({
       enableColumnSorting: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
     })
     const head = selectionHeadCell(container)!
     // No sort affordance (aria-sort omitted on a non-sortable column) and not
@@ -319,11 +319,11 @@ describe('Row Selection — sub-rows', () => {
   test('RS16: without `enableSubRowSelection` child rows get no checkbox', async () => {
     // Baseline: with sub-row selection ON every node (parents + children) has a
     // checkbox…
-    const on = await renderSubRowSelection({ enableSubRowSelection: true })
+    const on = await renderSubRowSelection({ rowSelectionSubRows: true })
     const onCount = on.querySelectorAll(`${BODY_ROW} ${CHECKBOX}`).length
 
     // …OFF: only parents keep a checkbox, so fewer checkboxes than rows.
-    const off = await renderSubRowSelection({ enableSubRowSelection: false })
+    const off = await renderSubRowSelection({ rowSelectionSubRows: false })
     const offCount = off.querySelectorAll(`${BODY_ROW} ${CHECKBOX}`).length
     const rowCount = rowsTopDown(off).length
 
@@ -384,7 +384,10 @@ const pageNext = () =>
 describe('Row Selection — selected count', () => {
   test('RS19: with selectedCount the left side of the status bar shows selectedRows(count); without the option there is no slot', async () => {
     const plain = await render(
-      <composed.SelectedCount {...COUNT_GRID} showSelectedCount={false} />,
+      <composed.SelectedCount
+        {...COUNT_GRID}
+        rowSelectionSelectedCount={false}
+      />,
     )
     await expect
       .poll(() => rowsTopDown(plain.container).length)

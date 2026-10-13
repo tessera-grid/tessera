@@ -8,7 +8,7 @@ interface LoadErrorInput {
   table: unknown
   error: unknown
   onRetry?: () => unknown
-  /** Приложение уже грузит заново (`enableLoading`, `enableSkeleton`). */
+  /** Приложение уже грузит заново (`loading`). */
   loading: boolean
   /** В теле есть строки: ошибка обновления, иначе — первой загрузки. */
   hasRows: boolean

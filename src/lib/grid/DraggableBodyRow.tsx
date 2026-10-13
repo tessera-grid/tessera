@@ -7,6 +7,7 @@ import {
   NAV_ROW_ATTR,
   useKeyboardNavigationRow,
 } from '../core/keyboardNavigation'
+import { usePluginRenderVersion } from '../core/renderVersion'
 import { animateLayoutChanges } from '../plugins/rowDragging'
 import {
   BodyRowCells,
@@ -27,6 +28,8 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, ariaRowIndexBase } = props
 
   const { arrived, highlight } = useRowStateSubscription(row)
+  // Предикат `canDragRow` с новой ссылкой (ADR 0039, RX23) включает ручку строки мимо мемоизации.
+  usePluginRenderVersion()
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,

@@ -46,7 +46,7 @@ export const BackToTopPagination: StoryObj<StoryProps> = {
     maxHeight: 480,
     enableBackToTop: true,
     enablePagination: true,
-    paginationPageSize: 100,
+    paginationInitialPageSize: 100,
     dataCount: 1000,
   },
   play: ({ canvasElement }) => backToTop(canvasElement),
@@ -83,15 +83,15 @@ export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
 export const BackToTopWide: StoryObj<StoryProps> = {
   name: 'Wide table',
   // Широкая таблица (ADR 0105): прокрутите вправо — кнопка «к первой колонке» слева от
-  // «наверх» вернёт к первой колонке, не трогая вертикаль. Одна ось — `axes` в
-  // backToTopOptions.
+  // «наверх» вернёт к первой колонке, не трогая вертикаль. Одна ось — аргумент
+  // backToTopAxes.
   args: {
     containerHeight: 600,
     height: 480,
     maxHeight: 480,
     enableBackToTop: true,
     enablePagination: true,
-    paginationPageSize: 100,
+    paginationInitialPageSize: 100,
     dataCount: 1000,
     columnCount: 40,
   },

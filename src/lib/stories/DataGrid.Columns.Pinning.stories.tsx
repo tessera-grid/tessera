@@ -82,7 +82,7 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
     // левому краю, а спанящие шапки родителей режутся на сегменты.
     headerNesting: 'nested',
     enableColumnPinning: true,
-    enableLeafPinning: true,
+    columnPinningLeafPinning: true,
     dataCount: 40,
     containerHeight: 400,
     height: 300,

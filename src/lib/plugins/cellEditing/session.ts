@@ -373,7 +373,7 @@ const reconcileSaved = (table: ReconcileTable, enabled: boolean) => {
 
 /**
  * Согласование с таблицей после рендера. Активная сессия: строка или колонка ушла —
- * `unavailable`; плагин выключен или `canEdit` запретил ячейку — `revoke`. Ячейка вне
+ * `unavailable`; плагин выключен или `canEditCell` запретил ячейку — `revoke`. Ячейка вне
  * экрана, на другой странице, в скрытой колонке — сессия жива. Отправленные ячейки —
  * `reconcileSubmitted`.
  */
@@ -404,8 +404,8 @@ export const reconcileEditSession = (
     .find(item => item.column.id === columnId)
   if (
     cell &&
-    cellHooks.canEdit &&
-    !cellHooks.canEdit(cell.getContext() as CellComponentProps)
+    cellHooks.canEditCell &&
+    !cellHooks.canEditCell(cell.getContext() as CellComponentProps)
   ) {
     cancelEditSession(table, 'revoke', cellHooks)
   }

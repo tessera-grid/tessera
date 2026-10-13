@@ -46,7 +46,7 @@ describe('Доступность (a11y)', () => {
       dataCount: 5,
       enableColumnSorting: true,
       enableColumnPinning: true,
-      enableGrouping: true,
+      enableRowGrouping: true,
     })
     await waitForGrid()
 
@@ -73,7 +73,7 @@ describe('Доступность (a11y)', () => {
       dataCount: 30,
       enableColumnSorting: true,
       enableColumnPinning: true,
-      enableGrouping: true,
+      enableRowGrouping: true,
       enableRowSelection: true,
       enableFooter: true,
     })

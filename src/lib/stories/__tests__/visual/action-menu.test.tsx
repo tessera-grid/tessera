@@ -150,7 +150,7 @@ describe('Action menu — header', () => {
 
   test('AM14: resize-грип (countsAsHeaderAction:false) не влияет на порог кебаба', async () => {
     // Story включает ресайз; действия те же три → всё равно схлопнуто.
-    const withResize = await renderHeaderMenu({ enableColumnResizing: true })
+    const withResize = await renderHeaderMenu({ enableColumnSizing: true })
     expect(
       withResize.container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`)
         .length,
@@ -162,7 +162,7 @@ describe('Action menu — header', () => {
     ).toBeGreaterThan(0)
 
     // Без ресайза схлопывание такое же — грип не менял решение.
-    const noResize = await renderHeaderMenu({ enableColumnResizing: false })
+    const noResize = await renderHeaderMenu({ enableColumnSizing: false })
     expect(
       noResize.container.querySelectorAll(`${DATA_HEAD_CELL} ${KEBAB}`).length,
     ).toBe(dataHeadCells(noResize.container).length)

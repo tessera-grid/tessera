@@ -5,8 +5,6 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react'
 
-import { useLatest } from '../../core/useLatest'
-
 import type { ColumnFilterValue } from '../../plugins'
 import {
   filterTypeOf,
@@ -86,7 +84,6 @@ export const FilteringServerDemo = ({
     columnIds: [] as string[],
     seq: 0,
   })
-  const delay = useLatest(serverDelayMs)
 
   const refetch = useCallback(() => {
     const seq = ++request.current.seq
@@ -98,8 +95,8 @@ export const FilteringServerDemo = ({
       log('server', `${result.length} of ${TOTAL_ROWS} rows`)
       setRows(result)
       setLoading(false)
-    }, delay.current)
-  }, [log, delay])
+    }, serverDelayMs)
+  }, [log, serverDelayMs])
 
   const onFilterChange = useCallback(
     (filters: Filters) => {
@@ -128,17 +125,16 @@ export const FilteringServerDemo = ({
         {...args}
         columnsOverride={filteringColumns}
         dataOverride={rows}
-        enableLoading={loading}
+        loading={loading ? 'refresh' : false}
         enableColumnFiltering
         enableQuickSearch
-        columnFilteringOptions={{
-          server: true,
-          filteredCount: true,
-          onFilterChange,
-          filteredRowCount: rows.length,
-          totalRowCount: TOTAL_ROWS,
-        }}
-        quickSearchOptions={{ server: true, onSearchChange }}
+        columnFilteringServer
+        columnFilteringFilteredCount
+        onFilterChange={onFilterChange}
+        columnFilteringFilteredRowCount={rows.length}
+        columnFilteringTotalRowCount={TOTAL_ROWS}
+        quickSearchServer
+        onSearchChange={onSearchChange}
       />
     </WithLog>
   )
@@ -177,7 +173,6 @@ export const FilteringLookupServerDemo = ({
   const [rows, setRows] = useState(OPTION_SERVER_DATA)
   const [loading, setLoading] = useState(false)
   const seq = useRef(0)
-  const delay = useLatest(serverDelayMs)
 
   const columns = useMemo(
     () =>
@@ -192,13 +187,13 @@ export const FilteringLookupServerDemo = ({
                   context: { signal: AbortSignal },
                 ) => {
                   log('loadOptions', describeEvent({ search }))
-                  return loadManagers(search, context, delay.current)
+                  return loadManagers(search, context, serverDelayMs)
                 },
               },
             }
           : column,
       ),
-    [log, delay],
+    [log, serverDelayMs],
   )
 
   const onFilterChange = useCallback(
@@ -212,9 +207,9 @@ export const FilteringLookupServerDemo = ({
         log('server', `${result.length} of ${OPTION_TOTAL} rows`)
         setRows(result)
         setLoading(false)
-      }, delay.current)
+      }, serverDelayMs)
     },
-    [log, delay],
+    [log, serverDelayMs],
   )
 
   return (
@@ -223,16 +218,14 @@ export const FilteringLookupServerDemo = ({
         {...args}
         columnsOverride={columns as never}
         dataOverride={rows}
-        enableLoading={loading}
+        loading={loading ? 'refresh' : false}
         enableColumnFiltering
         enableQuickSearch={false}
-        columnFilteringOptions={{
-          server: true,
-          filteredCount: true,
-          onFilterChange,
-          filteredRowCount: rows.length,
-          totalRowCount: OPTION_TOTAL,
-        }}
+        columnFilteringServer
+        columnFilteringFilteredCount
+        onFilterChange={onFilterChange}
+        columnFilteringFilteredRowCount={rows.length}
+        columnFilteringTotalRowCount={OPTION_TOTAL}
       />
     </WithLog>
   )

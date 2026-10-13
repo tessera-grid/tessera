@@ -7,9 +7,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createLoadingDisplay,
-  DEFAULT_LOADING_OPTIONS,
+  DEFAULT_REFRESH_OPTIONS,
   type LoadingClock,
-  resolveLoadingOptions,
+  resolveRefreshOptions,
 } from '../core/loadingDisplay'
 
 /** Часы с ручным ходом времени. */
@@ -57,12 +57,12 @@ const setup = (options = { delayMs: 300, minDurationMs: 500 }) => {
 
 describe('Показ обновления данных', () => {
   it('GL14: таймер показа — задержка, минимум, повторное включение во время показа и до конца минимума, снятие до задержки', () => {
-    expect(resolveLoadingOptions(undefined)).toEqual(DEFAULT_LOADING_OPTIONS)
-    expect(DEFAULT_LOADING_OPTIONS).toEqual({
+    expect(resolveRefreshOptions(undefined)).toEqual(DEFAULT_REFRESH_OPTIONS)
+    expect(DEFAULT_REFRESH_OPTIONS).toEqual({
       delayMs: 300,
       minDurationMs: 500,
     })
-    expect(resolveLoadingOptions({ delayMs: 0 })).toEqual({
+    expect(resolveRefreshOptions({ delayMs: 0 })).toEqual({
       delayMs: 0,
       minDurationMs: 500,
     })

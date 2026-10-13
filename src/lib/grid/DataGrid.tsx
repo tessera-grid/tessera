@@ -261,19 +261,21 @@ export const DataGrid = ({
     [rowDragging?.activeId, rowDragging?.acceptable, rowDragging?.offsetLeft],
   )
 
-  const enableLoading = !!(table.options as any).enableLoading
-  const enableSkeleton = !!(table.options as any).enableSkeleton
+  const loading = (table.options as any).loading as
+    'initial' | 'refresh' | false | undefined
+  const initialLoading = loading === 'initial'
+  const refreshLoading = loading === 'refresh'
   // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
   const loadError = useLoadError({
     table,
     error: (table.options as any).loadError,
     onRetry: (table.options as any).onRetry,
-    loading: enableLoading || enableSkeleton,
+    loading: initialLoading || refreshLoading,
     hasRows: rows.length > 0,
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ главнее.
-  const showSkeleton = enableSkeleton && !loadError.stubShown
+  const showSkeleton = initialLoading && !loadError.stubShown
 
   const noData = !showSkeleton && rows.length === 0
   // Пусто из-за фильтра — своя заглушка поверх тела, шапка с фильтрами остаётся.
@@ -281,14 +283,14 @@ export const DataGrid = ({
   const showStub = noData && !!stub && !filtered && !loadError.stubShown
   const showFilterStub = noData && filtered && !loadError.stubShown
 
-  const showLinearProgress = enableLoading && !showSkeleton
+  const showLinearProgress = refreshLoading && !showSkeleton
   // Свечение и приглушение — с задержкой и минимумом; aria-busy и объявление — сразу.
   const refreshing = useLoadingDisplay(
     showLinearProgress,
-    (table.options as any).loadingOptions,
+    (table.options as any).refreshOptions,
   )
   // Отказ снимает приглушение сразу, без минимума показа: старые данные рабочие.
-  const refreshingShown = refreshing && (enableLoading || !loadError.present)
+  const refreshingShown = refreshing && (refreshLoading || !loadError.present)
   // Плашка уходит (закрыта или повтор), а фокус — в тело грида, а не в никуда.
   const focusBody = () =>
     scrollableNodeRef.current

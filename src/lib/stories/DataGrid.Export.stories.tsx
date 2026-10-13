@@ -39,7 +39,7 @@ const GRID = {
   containerHeight: 560,
   height: 460,
   maxHeight: 460,
-  enableExport: true,
+  enableDataExport: true,
 }
 
 export const Export: StoryObj<StoryProps> = {
@@ -60,7 +60,7 @@ export const ExportDirect: StoryObj<StoryProps> = {
     dataCount: 50,
     // Разработчик оставил одну допустимую комбинацию (`allow.columns: ['visible']`,
     // строки — только «все данные»): панели нет, клик сразу скачивает CSV.
-    exportOptions: { allow: { columns: ['visible'] } },
+    dataExportAllow: { columns: ['visible'] },
   },
 }
 
@@ -74,19 +74,17 @@ export const ExportPresets: StoryObj<StoryProps> = {
     // сверху панели заполняют оси, но не выгружают; выбор запоминается до перезагрузки.
     enableColumnSorting: true,
     enablePagination: true,
-    paginationPageSize: 25,
+    paginationInitialPageSize: 25,
     enableRowSelection: true,
-    exportOptions: {
-      presets: [
-        { id: 'everything', label: 'Everything', rows: 'all', columns: 'all' },
-        {
-          id: 'selection',
-          label: 'Selection',
-          rows: 'selected',
-          columns: 'visible',
-        },
-      ],
-    },
+    dataExportPresets: [
+      { id: 'everything', label: 'Everything', rows: 'all', columns: 'all' },
+      {
+        id: 'selection',
+        label: 'Selection',
+        rows: 'selected',
+        columns: 'visible',
+      },
+    ],
   },
 }
 
@@ -100,10 +98,9 @@ export const ExportExcel: StoryObj<StoryProps> = {
     // колонку слева — в Excel она тоже закреплена. Генератор грузится при первой
     // выгрузке в Excel.
     enableColumnPinning: true,
-    enableColumnResizing: true,
-    exportOptions: { formats: [exportFormats.csv(), exportFormats.xlsx()] },
+    enableColumnSizing: true,
+    dataExportFormats: [exportFormats.csv(), exportFormats.xlsx()],
   },
-  argTypes: { exportOptions: { control: false } },
   // Сценарий истории (ADR 0073, XL13): выгрузка в Excel скачивает export.xlsx с данными.
   parameters: { requirements: ['XL13'] },
   play: async ({ canvasElement }) => {
@@ -145,7 +142,7 @@ export const ExportServer: StoryObj<ExportArgs> = {
     // rowIds. Режим отказа — ошибка в консоли, кнопка освобождается.
     enableColumnSorting: true,
     enablePagination: true,
-    paginationPageSize: 25,
+    paginationInitialPageSize: 25,
     enableRowSelection: true,
     serverDelayMs: 2000,
     serverFailMode: 'never',

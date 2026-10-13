@@ -59,7 +59,7 @@ const Row = ({ children }: { children: ReactNode }) => (
   </div>
 )
 
-/** Шапка грида со свечением под ней — как при `enableLoading`. */
+/** Шапка грида со свечением под ней — как при `loading: 'refresh'`. */
 const GridHeadWithGlow = ({ width = 560 }: { width?: number }) => (
   <div
     style={

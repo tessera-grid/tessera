@@ -24,6 +24,10 @@ const GRID = {
   dataCount: 30,
 }
 
+/** Предикаты `canDragRow`: разрешить и запретить перетаскивание любой строки. */
+const allowRowDrag = () => true
+const denyRowDrag = () => false
+
 const statusBar = () =>
   document.querySelector('[data-testid="data-grid-status-bar"]')
 const counter = () =>
@@ -65,7 +69,7 @@ describe('Аргументы фабрик на лету', () => {
       <Stories.SelectedCount
         {...args}
         enablePagination={false}
-        showSelectedCount={false}
+        rowSelectionSelectedCount={false}
       />,
     )
     await waitForGrid()
@@ -75,7 +79,7 @@ describe('Аргументы фабрик на лету', () => {
       <Stories.SelectedCount
         {...args}
         enablePagination={false}
-        showSelectedCount
+        rowSelectionSelectedCount
       />,
     )
     await expect.poll(counter).not.toBeNull()
@@ -85,7 +89,7 @@ describe('Аргументы фабрик на лету', () => {
       <Stories.SelectedCount
         {...args}
         enablePagination={false}
-        showSelectedCount={false}
+        rowSelectionSelectedCount={false}
       />,
     )
     await expect.poll(statusBar).toBeNull()
@@ -104,18 +108,12 @@ describe('Аргументы фабрик на лету', () => {
     expect(kebabs()).toHaveLength(0)
 
     await screen.rerender(
-      <Stories.AllFeatures
-        {...args}
-        headerActionMenuOptions={{ mode: 'always' }}
-      />,
+      <Stories.AllFeatures {...args} headerActionMenuMode={'always'} />,
     )
     await expect.poll(() => kebabs().length).toBeGreaterThan(0)
 
     await screen.rerender(
-      <Stories.AllFeatures
-        {...args}
-        headerActionMenuOptions={{ threshold: 5 }}
-      />,
+      <Stories.AllFeatures {...args} headerActionMenuThreshold={5} />,
     )
     await expect.poll(() => kebabs().length).toBe(0)
   })
@@ -125,7 +123,8 @@ describe('Аргументы фабрик на лету', () => {
     const screen = await render(
       <Stories.AllFeatures
         {...args}
-        rowActionsOptions={{ width: 120, collapsedWidth: 56 }}
+        rowActionsWidth={120}
+        rowActionsCollapsedWidth={56}
       />,
     )
     await expect.poll(actionCell).not.toBeNull()
@@ -136,7 +135,8 @@ describe('Аргументы фабрик на лету', () => {
     await screen.rerender(
       <Stories.AllFeatures
         {...args}
-        rowActionsOptions={{ width: 200, collapsedWidth: 56 }}
+        rowActionsWidth={200}
+        rowActionsCollapsedWidth={56}
       />,
     )
     await expect
@@ -175,30 +175,29 @@ describe('Аргументы фабрик на лету', () => {
     await expect.poll(selectedCells).toBe(2)
 
     await screen.rerender(
-      <Stories.AllFeatures
-        {...args}
-        cellSelectionOptions={{ multiRange: false }}
-      />,
+      <Stories.AllFeatures {...args} cellSelectionMultiRange={false} />,
     )
     await userEvent.click(cellAt(0, 1))
     await ctrlClick(cellAt(2, 1))
     await expect.poll(selectedCells).toBe(1)
   })
 
-  test('RX23: enable у rowDragging на лету включает и выключает перетаскивание строк', async () => {
+  test('RX23: canDragRow у rowDragging на лету включает и выключает перетаскивание строк', async () => {
     const args = { ...GRID, enableRowDragging: true }
     const screen = await render(
-      <Stories.AllFeatures {...args} rowDraggingEnable={false} />,
+      <Stories.AllFeatures {...args} rowDraggingCanDragRow={denyRowDrag} />,
     )
     await waitForGrid()
     await vi.waitFor(() => expect(bodyRows().length).toBeGreaterThan(0))
     expect(rowHandles()).toBe(0)
 
-    await screen.rerender(<Stories.AllFeatures {...args} rowDraggingEnable />)
+    await screen.rerender(
+      <Stories.AllFeatures {...args} rowDraggingCanDragRow={allowRowDrag} />,
+    )
     await expect.poll(rowHandles).toBeGreaterThan(0)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} rowDraggingEnable={false} />,
+      <Stories.AllFeatures {...args} rowDraggingCanDragRow={denyRowDrag} />,
     )
     await expect.poll(rowHandles).toBe(0)
   })
@@ -233,28 +232,19 @@ describe('Аргументы фабрик на лету', () => {
     const allowAll = () => true
     const denyAll = () => false
     const screen = await render(
-      <Stories.AllFeatures
-        {...args}
-        cellSelectionOptions={{ canSelectCell: allowAll }}
-      />,
+      <Stories.AllFeatures {...args} cellSelectionCanSelectCell={allowAll} />,
     )
     await waitForGrid()
     await userEvent.click(cellAt(0, 1))
     await expect.poll(selectedCells).toBe(1)
 
     await screen.rerender(
-      <Stories.AllFeatures
-        {...args}
-        cellSelectionOptions={{ canSelectCell: denyAll }}
-      />,
+      <Stories.AllFeatures {...args} cellSelectionCanSelectCell={denyAll} />,
     )
     await expect.poll(selectedCells).toBe(0)
 
     await screen.rerender(
-      <Stories.AllFeatures
-        {...args}
-        cellSelectionOptions={{ canSelectCell: allowAll }}
-      />,
+      <Stories.AllFeatures {...args} cellSelectionCanSelectCell={allowAll} />,
     )
     await expect.poll(selectedCells).toBe(1)
   })
@@ -272,7 +262,7 @@ describe('Аргументы фабрик на лету', () => {
     await expect.poll(() => document.body.style.cursor).not.toBe('default')
 
     await rows.rerender(
-      <Stories.AllFeatures {...rowArgs} rowDraggingEnable={false} />,
+      <Stories.AllFeatures {...rowArgs} rowDraggingCanDragRow={denyRowDrag} />,
     )
     await expect.poll(() => document.body.style.cursor).toBe('default')
     firePointer('pointerup', document, hx, target.top + target.height / 2)
@@ -310,7 +300,7 @@ describe('Аргументы фабрик на лету', () => {
 
   test('RX15: ресайз колонки, запрещённый посреди действия, отменяется как по Escape — ширина возвращается к исходной', async () => {
     const onColumnResizeEnd = vi.fn()
-    const args = { ...GRID, enableColumnResizing: true, onColumnResizeEnd }
+    const args = { ...GRID, enableColumnSizing: true, onColumnResizeEnd }
     const screen = await render(<Stories.AllFeatures {...args} />)
     await waitForGrid()
     const cell = headCells().find(head =>
@@ -340,7 +330,7 @@ describe('Аргументы фабрик на лету', () => {
     await expect.poll(width).toBeGreaterThan(initial + 40)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} enableColumnResizing={false} />,
+      <Stories.AllFeatures {...args} enableColumnSizing={false} />,
     )
     await expect.poll(width).toBe(initial)
     mouse('mousemove', document, x0 + 160)
@@ -350,12 +340,12 @@ describe('Аргументы фабрик на лету', () => {
     expect(onColumnResizeEnd).not.toHaveBeenCalled()
   })
 
-  test('RX16: canEdit стал false при открытом редакторе — редактор закрывается, значение не сохраняется', async () => {
+  test('RX16: canEditCell стал false при открытом редакторе — редактор закрывается, значение не сохраняется', async () => {
     const allow = () => true
     const deny = () => false
     const args = { ...GRID, enableCellEditing: true }
     const screen = await render(
-      <Stories.AllFeatures {...args} cellEditingCanEdit={allow} />,
+      <Stories.AllFeatures {...args} cellEditingCanEditCell={allow} />,
     )
     await waitForGrid()
     const cell = () =>
@@ -373,7 +363,7 @@ describe('Аргументы фабрик на лету', () => {
     await userEvent.type(input, '999')
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellEditingCanEdit={deny} />,
+      <Stories.AllFeatures {...args} cellEditingCanEditCell={deny} />,
     )
     await expect.poll(() => cell().querySelector('input')).toBeNull()
     expect(cell().textContent).toBe(original)

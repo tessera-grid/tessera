@@ -177,7 +177,7 @@ export const renderHandleGrid = async () => {
   const screen = renderGrid({
     columnCount: 5,
     dataCount: 6,
-    enableColumnResizing: true,
+    enableColumnSizing: true,
     enableColumnDragging: true,
   })
   await waitForGrid()

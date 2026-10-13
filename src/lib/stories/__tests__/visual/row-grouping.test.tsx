@@ -96,7 +96,7 @@ const groupByColumn = async (container: HTMLElement, id: string) => {
 
 describe('Row Grouping — activation & affordance', () => {
   test('RG1: the plugin is inert without `enableGrouping`', async () => {
-    const container = await renderRowGrouping({ enableGrouping: false })
+    const container = await renderRowGrouping({ enableRowGrouping: false })
     // No group toggle in any header.
     expect(container.querySelector(GROUP_BUTTON)).toBeNull()
   })

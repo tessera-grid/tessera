@@ -265,7 +265,7 @@ describe('Column Dragging — requirements', () => {
     const container = await renderColumnDragging({
       enableColumnSorting: true,
       enableColumnPinning: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
     })
     const { source, target } = pickSourceTarget(container)
     const handle = source.querySelector<HTMLElement>(HANDLE)!
@@ -501,7 +501,7 @@ describe('Column Dragging — requirements', () => {
   })
 
   test('D32: the resize zone background inside the overlay clone matches the clone background', async () => {
-    const container = await renderColumnDragging({ enableColumnResizing: true })
+    const container = await renderColumnDragging({ enableColumnSizing: true })
     const { source, target } = pickSourceTarget(container)
     const handle = source.querySelector<HTMLElement>(HANDLE)!
 

@@ -39,15 +39,15 @@ export const memory = commands as unknown as {
 /** Все плагины грида, кроме ленты: с пагинацией она инертна (ADR 0081). */
 export const ALL_PLUGINS: FeatureToggles = {
   enableRowSelection: true,
-  showSelectedCount: true,
+  rowSelectionSelectedCount: true,
   enableRowExpanding: true,
   rowExpandingTreeLines: true,
   enableRowDragging: true,
   enableColumnSorting: true,
   enableColumnPinning: true,
-  enableColumnResizing: true,
+  enableColumnSizing: true,
   enableColumnDragging: true,
-  enableGrouping: true,
+  enableRowGrouping: true,
   enableRowActions: true,
   enableHeaderActionMenu: true,
   enableRowActionMenu: true,
@@ -58,7 +58,7 @@ export const ALL_PLUGINS: FeatureToggles = {
   enableColumnVisibility: true,
   enableColumnFiltering: true,
   enableQuickSearch: true,
-  enableExport: true,
+  enableDataExport: true,
   enablePagination: true,
   enableBackToTop: true,
 }

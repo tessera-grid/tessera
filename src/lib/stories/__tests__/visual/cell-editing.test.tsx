@@ -40,7 +40,7 @@ async function renderCellEditing(
 }
 
 describe('Cell editing — инлайн-редактирование ячейки', () => {
-  test('CE1: кнопка правки есть в правом слоте разрешённых canEdit ячеек, нет в остальных', async () => {
+  test('CE1: кнопка правки есть в правом слоте разрешённых canEditCell ячеек, нет в остальных', async () => {
     const container = await renderCellEditing()
 
     // Демо разрешает редактирование по контексту (CELL_EDITABLE_COLUMNS =
@@ -153,7 +153,7 @@ const ControlledEditing = ({
     data: CONTROLLED_DATA,
     plugins: [
       cellEditing({
-        canEdit: () => true,
+        canEditCell: () => true,
         editing,
         onEditingChange: next => {
           onEditingChange(next)

@@ -186,7 +186,9 @@ describe('Toolbar', () => {
       rect(document.querySelector('[role="progressbar"]')!).bottom -
       rect(head()).bottom
 
-    const plain = await render(<Stories.AllFeatures {...GRID} enableLoading />)
+    const plain = await render(
+      <Stories.AllFeatures {...GRID} loading="refresh" />,
+    )
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
       .poll(() => document.querySelector('[role="progressbar"]'))
@@ -194,7 +196,7 @@ describe('Toolbar', () => {
     const withoutToolbar = offsetFromHead()
     await plain.unmount()
 
-    await mount(<Stories.WithToolbar {...GRID} enableLoading />)
+    await mount(<Stories.WithToolbar {...GRID} loading="refresh" />)
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
       .poll(() => document.querySelector('[role="progressbar"]'))
@@ -284,7 +286,7 @@ describe('Toolbar button order', () => {
         enableColumnVisibility
         enableColumnFiltering
         enableQuickSearch={enableQuickSearch}
-        enableExport
+        enableDataExport
       />,
     )
 

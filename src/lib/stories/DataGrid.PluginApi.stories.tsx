@@ -133,8 +133,8 @@ export const ReactiveArgs: StoryObj<SessionsArgs> = {
         {...normalizeArgs(args)}
         updateArgs={argsUpdater(id)}
         dataOverride={data}
-        multiSortOptions={{ max: multiSortMax }}
-        cellEditingCanEdit={allowEditing ? canEditDemoCell : denyEditing}
+        columnSortingMultiSort={{ max: multiSortMax }}
+        cellEditingCanEditCell={allowEditing ? canEditDemoCell : denyEditing}
         paginationPageSizes={PAGE_SIZE_PRESETS[pageSizesPreset]}
       />
     )
@@ -152,7 +152,7 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
     // действия — отмена с revoke.
     enableRowDragging: true,
     enableColumnDragging: true,
-    enableColumnResizing: true,
+    enableColumnSizing: true,
   },
   // Дымовой сценарий (ADR 0042, DS3): бросок строки мышью пишет onRowDragEnd в журнал.
   parameters: { ...hideDataControls, requirements: ['DS3'] },

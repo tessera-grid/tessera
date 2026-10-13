@@ -56,7 +56,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   })
 
   test('W2: индикатор загрузки назван, грид несёт aria-busy', async () => {
-    await renderGrid({ columnCount: 4, dataCount: 5, enableLoading: true })
+    await renderGrid({ columnCount: 4, dataCount: 5, loading: 'refresh' })
     await waitForGrid()
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
@@ -70,7 +70,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   })
 
   test('W3: скелет первой загрузки скрыт от AT и объявляет загрузку', async () => {
-    await renderGrid({ columnCount: 4, dataCount: 5, enableSkeleton: true })
+    await renderGrid({ columnCount: 4, dataCount: 5, loading: 'initial' })
     // Своя status-область скелета (соседняя live-область грида W9 пуста).
     const status = () =>
       Array.from(document.querySelectorAll('[role="status"]')).find(
@@ -223,7 +223,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       enableColumnSorting: true,
       enableRowSelection: true,
       enableCellSelection: true,
-      enableLoading: true,
+      loading: 'refresh' as const,
     }
     const screen = await renderGrid(args)
     await waitForGrid()
@@ -242,9 +242,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       .getAttribute('data-column-id')!
 
     // Окончание загрузки.
-    await screen.rerender(
-      <Stories.AllFeatures {...args} enableLoading={false} />,
-    )
+    await screen.rerender(<Stories.AllFeatures {...args} loading={false} />)
     await expect.poll(live).toBe(DEFAULT_LABELS.announceLoaded(5))
 
     // Сортировка.
@@ -278,7 +276,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
 
     // Пустой результат.
     await screen.rerender(
-      <Stories.AllFeatures {...args} enableLoading={false} dataCount={0} />,
+      <Stories.AllFeatures {...args} loading={false} dataCount={0} />,
     )
     await expect.poll(live).toBe(DEFAULT_LABELS.noData)
     await screen.unmount()
@@ -286,7 +284,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     // Отключение объявлений ядра.
     await renderGrid({
       ...args,
-      enableLoading: false,
+      loading: false,
       enableAnnouncements: false,
     })
     await waitForGrid()

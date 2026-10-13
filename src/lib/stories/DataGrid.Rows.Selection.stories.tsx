@@ -47,7 +47,7 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
     showBatchToolbar: true,
     isAllRowsSelected: false,
     enablePagination: true,
-    paginationPageSize: 5,
+    paginationInitialPageSize: 5,
     dataCount: 50,
   },
 }
@@ -61,7 +61,7 @@ export const SubRowSelection: StoryObj<StoryProps> = {
     initialExpanded: true,
 
     enableRowSelection: true,
-    enableSubRowSelection: true,
+    rowSelectionSubRows: true,
     enableRowExpanding: true,
   },
   parameters: {

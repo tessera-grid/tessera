@@ -410,7 +410,7 @@ const RESOLVED_DEFAULTS: Record<string, string> = Object.fromEntries(
 
 interface ThemingArgs {
   colorMode: 'light' | 'dark'
-  enableLoading: boolean
+  loading: 'refresh' | false
   [arg: string]: string | boolean
 }
 
@@ -459,7 +459,7 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     data,
     state: { rowSelection: selection } as never,
     handlers: { onRowSelectionChange },
-    enableLoading: args.enableLoading,
+    loading: args.loading,
     // Набор фич подобран так, чтобы витрина задействовала как можно больше
     // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing) и
     // колонка действий (rowActions).
@@ -516,7 +516,7 @@ const meta = {
   title: 'Tessera/Theming',
   component: ThemingDemo,
   args: {
-    enableLoading: true,
+    loading: 'refresh',
     ...RESOLVED_DEFAULTS,
     ...Object.fromEntries(
       SHADOW_TOKENS.map(({ arg, default: def }) => [arg, def]),
@@ -526,11 +526,13 @@ const meta = {
     // colorMode (light/dark) переключается ГЛОБАЛЬНЫМ тумблером «Theme» в
     // тулбаре Storybook (preview.tsx синхронит его с гридом), поэтому отдельного
     // arg-контрола здесь нет — иначе он молча перезаписывался бы декоратором.
-    enableLoading: {
-      name: 'enableLoading (loader)',
+    loading: {
+      name: 'loading (loader)',
       description:
-        'Показать линейный прогресс-бар под шапкой — чтобы увидеть токены loader-*.',
-      control: { type: 'boolean' },
+        'Обновление данных (`loading` refresh): свечение под шапкой — чтобы увидеть токены loader-*.',
+      control: 'inline-radio',
+      options: ['off', 'refresh'],
+      mapping: { off: false },
       table: { category: 'Режим' },
     },
     ...colorArgTypes(PALETTE, 'shadcn — мост (broad)'),

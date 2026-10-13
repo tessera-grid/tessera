@@ -95,7 +95,7 @@ export type CellEditor = (props: {
 
 export interface CellEditingHooks {
   /** Условие показа кнопки редактирования по контексту ячейки. */
-  canEdit: (ctx: CellComponentProps) => boolean
+  canEditCell: (ctx: CellComponentProps) => boolean
   /**
    * Коммит нового значения ячейки. Промис — сохранение с ожиданием: ячейка ждёт
    * его итога, не блокируя правку других (ADR 0041).

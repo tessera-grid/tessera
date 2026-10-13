@@ -152,7 +152,7 @@ describe('Сессии действий', () => {
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={onCellEdit}
         onEditCancel={onEditCancel}
       />,
@@ -228,12 +228,12 @@ describe('Сессии действий', () => {
       onEditCancel,
     }
     const screen = await render(
-      <Stories.AllFeatures {...args} cellEditingCanEdit={allow} />,
+      <Stories.AllFeatures {...args} cellEditingCanEditCell={allow} />,
     )
     const original = await startEdit()
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellEditingCanEdit={deny} />,
+      <Stories.AllFeatures {...args} cellEditingCanEditCell={deny} />,
     )
     await expect.poll(() => ageCell().querySelector('input')).toBeNull()
     expect(ageCell().textContent).toBe(original)
@@ -254,7 +254,7 @@ describe('Сессии действий', () => {
     await render(
       <Stories.AllFeatures
         {...GRID}
-        enableColumnResizing
+        enableColumnSizing
         onColumnResizeEnd={onColumnResizeEnd}
         onColumnResizeCancel={onColumnResizeCancel}
       />,
@@ -282,7 +282,7 @@ describe('Сессии действий', () => {
     const [rowId] = rowIdOrder(document.body)
     const drop = await startRowDrag()
     await rows.rerender(
-      <Stories.AllFeatures {...rowArgs} rowDraggingEnable={false} />,
+      <Stories.AllFeatures {...rowArgs} rowDraggingCanDragRow={deny} />,
     )
     await expect.poll(() => document.body.style.cursor).toBe('default')
     firePointer('pointerup', document, drop.x, drop.y)
@@ -314,14 +314,14 @@ describe('Сессии действий', () => {
     const onColumnResizeCancel = vi.fn()
     const resizeArgs = {
       ...GRID,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       onColumnResizeEnd,
       onColumnResizeCancel,
     }
     const resize = await render(<Stories.AllFeatures {...resizeArgs} />)
     const { columnId, width, initial } = await startResize()
     await resize.rerender(
-      <Stories.AllFeatures {...resizeArgs} enableColumnResizing={false} />,
+      <Stories.AllFeatures {...resizeArgs} enableColumnSizing={false} />,
     )
     await expect.poll(width).toBe(initial)
     expect(onColumnResizeEnd).not.toHaveBeenCalled()
@@ -338,7 +338,7 @@ describe('Сессии действий', () => {
         {...GRID}
         dataCount={300}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onEditCancel={onEditCancel}
       />,
     )
@@ -369,7 +369,7 @@ describe('Сессии действий', () => {
         dataCount={100}
         enablePagination
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
       />,
     )
     await expect.poll(range).toBe('1–25 of 100')
@@ -386,9 +386,9 @@ describe('Сессии действий', () => {
       <Stories.AllFeatures
         {...GRID}
         enableColumnSorting
-        enableSortingRemoval
+        columnSortingRemoval
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
       />,
     )
     await startEdit()
@@ -469,7 +469,7 @@ describe('Сессии действий', () => {
     const onColumnResizeCancel = vi.fn()
     const resizeArgs = {
       ...GRID,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       onColumnResizeEnd,
       onColumnResizeCancel,
       columnsOverride: plainColumns,
@@ -497,7 +497,7 @@ describe('Сессии действий', () => {
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={onCellEdit}
         onEditCancel={onEditCancel}
       />,
@@ -576,7 +576,7 @@ describe('Сессии действий', () => {
       <Stories.AllFeatures
         {...GRID}
         enableCellEditing
-        cellEditingCanEdit={allow}
+        cellEditingCanEditCell={allow}
         onCellEdit={onCellEdit}
         onEditCancel={onEditCancel}
       />,

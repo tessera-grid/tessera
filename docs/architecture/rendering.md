@@ -101,7 +101,7 @@ flowchart TB
         BODY["DndBodyWrapper → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
         FOOT["Footer (enableFooter)"]
         SB["StatusBar (statusBarSlot или enableStatusBar) — вне скролл-контейнера<br/>+ statusBarSlot по сторонам"]
-        SK["скелет первой загрузки (enableSkeleton): та же шапка, SkeletonBody<br/>LinearProgress (enableLoading)"]
+        SK["скелет первой загрузки (loading: initial): та же шапка, SkeletonBody<br/>LinearProgress (loading: refresh)"]
     end
 
     read --> virt --> paint
@@ -246,23 +246,25 @@ start` — кнопка держит свою ширину, обёртка её 
 
 ## Состояния загрузки
 
-- `enableSkeleton` → скелет первой загрузки ([ADR 0060](../decisions/0060-initial-loading-skeleton.md)).
+Состояние загрузки — один проп `loading` ([ADR 0106](../decisions/0106-flag-and-predicate-naming.md)).
+
+- `loading: 'initial'` → скелет первой загрузки ([ADR 0060](../decisions/0060-initial-loading-skeleton.md)).
   Рисует та же `DataGridTable`: шапка остаётся настоящей (контекст режима скелета
   убирает кнопки плагинов и содержимое служебных заголовков), тело и футер —
   `SkeletonBody`: лёгкие ячейки без строк TanStack по переменным ширин, закреплению и
   диапазону виртуализатора колонок, строк — по высоте области (`skeletonOptions.rowsCount`).
   Служебная колонка рисует квадрат, если у неё `columnDef.skeletonCell: 'control'`.
   Скелет скрыт от скринридера (`aria-hidden`, `inert`), у таблицы нет роли, загрузку
-  объявляет статус. Компоненты панелей читают флаг через `isSkeletonShown`. Флаг —
+  объявляет статус. Компоненты панелей читают режим через `isSkeletonShown`. Проп —
   единственный источник: скелет снимается в том же рендере, без задержки.
 - Отдельно от него — скелеты ячеек при быстрой прокрутке (`FastScrollProvider`,
   [ADR 0008](../decisions/0008-fast-scroll.md)).
-- `enableLoading` → обновление данных при старых строках (ADR [0094](../decisions/0094-loading-glow.md)):
+- `loading: 'refresh'` → обновление данных при старых строках (ADR [0094](../decisions/0094-loading-glow.md)):
   свечение под шапкой (`LinearProgress`), приглушённые тело и строка футера
   (`data-refreshing` на обёртке), тело без откликов на наведение. Показ — через
-  `loadingOptions.delayMs` и не короче `minDurationMs` (`useLoadingDisplay`);
-  `aria-busy` и объявление — по флагу сразу. Рецепт с TanStack Query:
-  `enableSkeleton: isLoading`, `enableLoading: isFetching && !isLoading`.
+  `refreshOptions.delayMs` и не короче `minDurationMs` (`useLoadingDisplay`);
+  `aria-busy` и объявление — по пропу сразу. Рецепт с TanStack Query:
+  `loading: isLoading ? 'initial' : isFetching ? 'refresh' : false`.
 - `loadError` / `onRetry` → отказ загрузки (ADR [0096](../decisions/0096-load-error.md)),
   состояние — `useLoadError` (ключ новой ошибки по `Object.is`, закрытие, повтор,
   одно объявление). Со строками: `LinearProgress` смонтирован всегда и по ключу

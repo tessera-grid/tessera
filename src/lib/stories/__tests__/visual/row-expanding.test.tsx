@@ -99,7 +99,7 @@ describe('Row Expanding — activation & service column', () => {
     // Turn sorting and resizing ON to prove the service column stays inert.
     const container = await renderRowExpanding({
       enableColumnSorting: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
     })
     const head = expandingHeadCell(container)!
     // No sort affordance (aria-sort omitted on a non-sortable column) and not

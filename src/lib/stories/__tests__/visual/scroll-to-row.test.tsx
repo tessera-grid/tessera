@@ -211,7 +211,7 @@ describe('Прокрутка к строке', () => {
 
   test('SV4: строка на другой странице пагинации — страница переключается, затем прокрутка', async () => {
     const { table } = await mount({
-      toggles: { enablePagination: true, paginationPageSize: 100 },
+      toggles: { enablePagination: true, paginationInitialPageSize: 100 },
     })
     expect(await table().scrollToRow('item-id-250')).toBe(true)
     expect(table().store.state.pagination.pageIndex).toBe(2)
@@ -223,7 +223,7 @@ describe('Прокрутка к строке', () => {
       toggles: {
         enableRowExpanding: true,
         rowExpandingMaxDepth: 3,
-        enableGrouping: true,
+        enableRowGrouping: true,
       },
       data: getData(120, 'nested'),
     })
@@ -271,7 +271,7 @@ describe('Прокрутка к строке', () => {
       toggles: {
         enableQuickSearch: true,
         enablePagination: true,
-        paginationPageSize: 100,
+        paginationInitialPageSize: 100,
         enableRowExpanding: true,
         rowExpandingHasChildren: (row: { id: string }) =>
           row.id === 'item-id-3',

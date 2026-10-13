@@ -36,7 +36,7 @@ export const ToolbarAllButtons: StoryObj<StoryProps> = {
     enableQuickSearch: true,
     enableColumnFiltering: true,
     enableColumnVisibility: true,
-    enableExport: true,
+    enableDataExport: true,
   },
 }
 

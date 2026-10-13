@@ -1,24 +1,24 @@
 // Показ обновления данных (ADR 0094, §3): свечение и приглушение появляются с задержкой
 // и держатся не меньше минимума — быстрый ответ не мигает, медленный не вспыхивает.
 
-export interface LoadingOptions {
-  /** Через сколько мс после включения `enableLoading` показать обновление. */
+export interface RefreshOptions {
+  /** Через сколько мс после `loading: 'refresh'` показать обновление. */
   delayMs?: number
   /** Сколько мс показанное обновление держится хотя бы. */
   minDurationMs?: number
 }
 
-export const DEFAULT_LOADING_OPTIONS: Required<LoadingOptions> = {
+export const DEFAULT_REFRESH_OPTIONS: Required<RefreshOptions> = {
   delayMs: 300,
   minDurationMs: 500,
 }
 
-export const resolveLoadingOptions = (
-  options: LoadingOptions | undefined,
-): Required<LoadingOptions> => ({
-  delayMs: options?.delayMs ?? DEFAULT_LOADING_OPTIONS.delayMs,
+export const resolveRefreshOptions = (
+  options: RefreshOptions | undefined,
+): Required<RefreshOptions> => ({
+  delayMs: options?.delayMs ?? DEFAULT_REFRESH_OPTIONS.delayMs,
   minDurationMs:
-    options?.minDurationMs ?? DEFAULT_LOADING_OPTIONS.minDurationMs,
+    options?.minDurationMs ?? DEFAULT_REFRESH_OPTIONS.minDurationMs,
 })
 
 export interface LoadingClock {
@@ -44,7 +44,7 @@ export interface LoadingDisplay {
  * события: их смена на лету не сбрасывает показанное.
  */
 export const createLoadingDisplay = (
-  options: () => Required<LoadingOptions>,
+  options: () => Required<RefreshOptions>,
   onChange: (shown: boolean) => void,
   clock: LoadingClock = browserClock,
 ): LoadingDisplay => {

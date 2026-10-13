@@ -29,7 +29,7 @@ import type {
   PluginDiagnosticSource,
 } from './pluginDiagnostics'
 import type { SkeletonOptions } from './skeletonOptions'
-import type { LoadingOptions } from './loadingDisplay'
+import type { RefreshOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
 /** Бизнес-контракт хуков. */
@@ -53,8 +53,11 @@ export interface CommonOptions {
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
-  enableSkeleton?: boolean
-  enableLoading?: boolean
+  /**
+   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
+   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
+   */
+  loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
   /** Верхний тулбар: без флага — по наличию `toolbarSlot` (ADR 0046). */
   enableToolbar?: boolean
@@ -69,7 +72,7 @@ export interface CommonOptions {
   headerHeight?: number
   skeletonOptions?: SkeletonOptions
   /** Задержка и минимум показа обновления (ADR 0094). */
-  loadingOptions?: LoadingOptions
+  refreshOptions?: RefreshOptions
   /** Отказ загрузки данных и повтор (ADR 0096). */
   loadError?: unknown
   onRetry?: () => unknown

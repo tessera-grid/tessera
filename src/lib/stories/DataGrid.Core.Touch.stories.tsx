@@ -20,7 +20,7 @@ export const Touch: StoryObj<StoryProps> = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   args: {
     enableColumnSorting: true,
-    enableColumnResizing: true,
+    enableColumnSizing: true,
     enableColumnDragging: true,
     enableRowDragging: true,
     enableRowSelection: true,

@@ -73,7 +73,7 @@ describe('Сортировка по подписи', () => {
 
   test('OS9: группировка по колонке с вариантами и сортировка по ней упорядочивают строки-группы по подписи', async () => {
     const container = await renderStory({
-      enableGrouping: true,
+      enableRowGrouping: true,
       initialGrouping: ['status'],
     })
     const groupLabels = () =>

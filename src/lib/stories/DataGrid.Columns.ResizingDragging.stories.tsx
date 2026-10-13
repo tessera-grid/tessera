@@ -16,7 +16,7 @@ export default meta
 export const ColumnResizing: StoryObj<StoryProps> = {
   name: 'Resizing',
   args: {
-    enableColumnResizing: true,
+    enableColumnSizing: true,
     // Несколько строк, чтобы требование синхронизации ширины шапки и тела
     // (CR8) имело отрисованные body-ячейки для сверки.
     dataCount: 30,
@@ -70,7 +70,7 @@ export const ResizingStateHandle: StoryObj<StoryProps> = {
     pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
   },
   args: {
-    enableColumnResizing: true,
+    enableColumnSizing: true,
     dataCount: 20,
     containerHeight: 400,
     height: 300,

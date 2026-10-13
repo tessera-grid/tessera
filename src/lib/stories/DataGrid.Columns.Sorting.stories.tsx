@@ -42,7 +42,7 @@ export const ColumnSortingNotRemovable: StoryObj<StoryProps> = {
   name: 'Not removable',
   args: {
     enableColumnSorting: true,
-    enableSortingRemoval: false,
+    columnSortingRemoval: false,
   },
 }
 
@@ -50,7 +50,7 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
   name: 'Multi-sort',
   args: {
     enableColumnSorting: true,
-    enableMultiSort: true,
+    columnSortingMultiSort: true,
     // Shift+клик по нескольким заголовкам добавляет столбцы к сортировке; у
     // каждого отсортированного столбца в шапке виден порядковый бейдж приоритета.
     dataCount: 60,
@@ -98,7 +98,7 @@ export const SortingStateSorted: StoryObj<StoryProps> = {
   parameters: vrModes(vrStates('head.sorting')),
   args: {
     enableColumnSorting: true,
-    enableMultiSort: true,
+    columnSortingMultiSort: true,
     dataCount: 20,
     containerHeight: 400,
     height: 300,

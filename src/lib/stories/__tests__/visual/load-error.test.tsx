@@ -71,8 +71,7 @@ interface GridProps {
   data?: Item[]
   loadError?: unknown
   onRetry?: () => unknown
-  enableLoading?: boolean
-  enableSkeleton?: boolean
+  loading?: 'initial' | 'refresh' | false
   minDurationMs?: number
   errorStub?: ErrorStubRender
   stub?: ReactNode
@@ -89,8 +88,7 @@ const Grid = ({
   data = DATA,
   loadError,
   onRetry,
-  enableLoading,
-  enableSkeleton,
+  loading,
   minDurationMs = 0,
   errorStub,
   stub,
@@ -112,7 +110,7 @@ const Grid = ({
             : [],
     [mode],
   )
-  const loadingOptions = useMemo(
+  const refreshOptions = useMemo(
     () => ({ delayMs: 0, minDurationMs }),
     [minDurationMs],
   )
@@ -122,9 +120,8 @@ const Grid = ({
     getRowId: (row: Item) => row.id,
     getSubRows: (row: Item) => row.subRows,
     plugins: plugins as never,
-    enableLoading,
-    enableSkeleton,
-    loadingOptions,
+    loading,
+    refreshOptions,
     loadError,
     onRetry,
   })
@@ -201,12 +198,12 @@ describe('Ошибка обновления: свет и плашка', () => {
   test('LE1: loadError при данных — свечение перерастает в ровный красный, держится и гаснет; без идущего обновления красный нарастает от нуля', async () => {
     const { update } = await mount()
     await waitRows()
-    await update({ enableLoading: true })
+    await update({ loading: 'refresh' })
     await expect
       .poll(() => q('[class*="linear-progress"] > [class*="glows"]'))
       .not.toBeNull()
     await pause(200)
-    await update({ enableLoading: false, loadError: SERVER_DOWN })
+    await update({ loading: false, loadError: SERVER_DOWN })
     expect(flashPhase()).toBe('on')
     // Синее гаснет, красный нарастает — переход, а не скачок.
     await frame()
@@ -230,7 +227,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     await update({ loadError: new Error('Third') })
     expect(flashPhase()).toBe('on')
     const started = performance.now()
-    await update({ enableLoading: true })
+    await update({ loading: 'refresh' })
     await expect.poll(flashPhase).toBeNull()
     expect(performance.now() - started).toBeLessThan(400)
     expect(
@@ -243,11 +240,11 @@ describe('Ошибка обновления: свет и плашка', () => {
   test('LE2: при ошибке обновления тело не приглушено сразу, без минимума показа, и откликается на наведение', async () => {
     const { update } = await mount({ minDurationMs: 5000 })
     await waitRows()
-    await update({ enableLoading: true })
+    await update({ loading: 'refresh' })
     await expect
       .poll(() => wrapper().hasAttribute('data-refreshing'))
       .toBe(true)
-    await update({ enableLoading: false, loadError: SERVER_DOWN })
+    await update({ loading: false, loadError: SERVER_DOWN })
     await frame()
     expect(wrapper().hasAttribute('data-refreshing')).toBe(false)
     const row = q('.data-grid__body-row[data-row-id="r2"]')!
@@ -328,10 +325,10 @@ describe('Ошибка обновления: свет и плашка', () => {
     await expect.poll(banner).toBeNull()
     expect(scroller().contains(document.activeElement)).toBe(true)
     // Повтор идёт — плашки нет; закончился той же ошибкой — плашка снова.
-    await update({ enableLoading: true })
+    await update({ loading: 'refresh' })
     await pause(100)
     expect(banner()).toBeNull()
-    await update({ enableLoading: false })
+    await update({ loading: false })
     await expect.poll(banner).not.toBeNull()
     await screen.unmount()
 
@@ -370,7 +367,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     await expect.poll(banner).not.toBeNull()
     await userEvent.click(dismissButton()!)
     await expect.poll(banner).toBeNull()
-    await update({ loadError: failure, enableLoading: false })
+    await update({ loadError: failure, loading: false })
     await pause(150)
     expect(banner()).toBeNull()
     await update({ loadError: new Error('Down once more') })
@@ -399,7 +396,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
   test('LE7: loadError без строк — заглушка поверх пустого тела вместо скелета и stub: иконка, заголовок, причина, «Retry»; шапка на месте', async () => {
     await mount({
       data: EMPTY,
-      enableSkeleton: true,
+      loading: 'initial',
       loadError: SERVER_DOWN,
       onRetry: () => {},
       stub: <div data-testid="app-stub">No data</div>,
@@ -443,7 +440,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
   })
 
   test('LE9: ошибка без данных главнее скелета, stub и filterStub; без ошибки — как раньше', async () => {
-    const skeleton = await mount({ data: EMPTY, enableSkeleton: true })
+    const skeleton = await mount({ data: EMPTY, loading: 'initial' })
     await expect
       .poll(() => q('.data-grid__container[class*="skeleton"]'))
       .not.toBeNull()
@@ -484,9 +481,9 @@ describe('Объявление, клавиатура, подписи', () => {
       said.push(liveRegion().textContent ?? ''),
     )
     observer.observe(liveRegion(), { childList: true, subtree: true })
-    await update({ enableLoading: true })
+    await update({ loading: 'refresh' })
     await pause(50)
-    await update({ enableLoading: false, loadError: SERVER_DOWN })
+    await update({ loading: false, loadError: SERVER_DOWN })
     await expect
       .poll(() => liveRegion().textContent)
       .toBe("Couldn't refresh the data: Server responded 503")
@@ -500,9 +497,9 @@ describe('Объявление, клавиатура, подписи', () => {
     expect(liveRegion().firstElementChild).toBe(node)
 
     // Повтор закончился той же ошибкой: новой ошибки нет — и строк не объявляем.
-    await update({ enableLoading: true })
+    await update({ loading: 'refresh' })
     await pause(50)
-    await update({ enableLoading: false })
+    await update({ loading: false })
     await pause(150)
     expect(liveRegion().firstElementChild).toBe(node)
     expect(liveRegion().textContent).not.toContain('Loaded')
@@ -700,7 +697,7 @@ describe('Подписи, режимы, доступность, перерисо
     const glows = () => q('[class*="linear-progress"] > [class*="glows"]')
     const view = await mount()
     await waitRows()
-    await view.update({ enableLoading: true })
+    await view.update({ loading: 'refresh' })
     await expect.poll(glows).not.toBeNull()
     const enter = getComputedStyle(glows()!)
     expect(enter.animationName.split(',')).toHaveLength(5)
@@ -713,7 +710,7 @@ describe('Подписи, режимы, доступность, перерисо
     expect(
       enter.animationDuration.split(',').map(part => part.trim()),
     ).toContain(durationOf('--tsr-comp-loader-grow-duration'))
-    await view.update({ enableLoading: false })
+    await view.update({ loading: false })
     await frame()
     expect(glows()!.getAttribute('data-leaving')).toBe('true')
     // Убывает языками маски, а не гаснет прозрачностью.

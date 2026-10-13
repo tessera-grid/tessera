@@ -23,7 +23,7 @@ export const RowGrouping: StoryObj<StoryProps> = {
     // Реальные данные из генератора (см. rowGroupingData) — группировка видна на
     // настоящих строках, а не на захардкоженных.
     dataOverride: rowGroupingData,
-    enableGrouping: true,
+    enableRowGrouping: true,
     // Немного колонок, целиком в горизонтальном вьюпорте: тесты адресуют шапку
     // groupable-колонки (gender) — она не должна прятаться за виртуализацией.
     columnCount: 6,

@@ -58,7 +58,7 @@ const CASES: ToggleCase[] = [
   {
     plugin: 'rowGrouping',
     story: 'RowGrouping',
-    flag: 'enableGrouping',
+    flag: 'enableRowGrouping',
     affordance: '.column-group__button',
   },
   {
@@ -76,7 +76,7 @@ const CASES: ToggleCase[] = [
   {
     plugin: 'columnResizing',
     story: 'ColumnResizing',
-    flag: 'enableColumnResizing',
+    flag: 'enableColumnSizing',
     affordance: '.resize__handler--column',
   },
   {

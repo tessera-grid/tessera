@@ -212,24 +212,23 @@ export const InfiniteScrollDemo = ({
         {...args}
         columnsOverride={filteringColumns}
         dataOverride={rows}
-        enableLoading={loading}
+        loading={loading ? 'refresh' : false}
         enableInfiniteScroll
-        infiniteScrollOptions={{
-          onLoadMore,
-          hasMore,
-          rowCount: knownTotal ? total : undefined,
-          loadedCount: true,
-          ...args.infiniteScrollOptions,
-        }}
+        onLoadMore={onLoadMore}
+        infiniteScrollHasMore={hasMore}
+        infiniteScrollRowCount={knownTotal ? total : undefined}
+        infiniteScrollLoadedCount={args.infiniteScrollLoadedCount ?? true}
         {...(serverQuery && {
           enableColumnSorting: true,
-          serverColumnSorting: true,
-          enableMultiSort: false,
+          columnSortingServer: true,
+          columnSortingMultiSort: false,
           onToggleColumnSort,
           enableColumnFiltering: true,
           enableQuickSearch: true,
-          columnFilteringOptions: { server: true, onFilterChange },
-          quickSearchOptions: { server: true, onSearchChange },
+          columnFilteringServer: true,
+          onFilterChange,
+          quickSearchServer: true,
+          onSearchChange,
         })}
       />
     </div>

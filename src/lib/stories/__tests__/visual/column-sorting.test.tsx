@@ -316,7 +316,7 @@ describe('Column Sorting — requirements', () => {
   })
 
   test('CS10: with removal disabled the cycle never clears (descending → ascending → descending)', async () => {
-    const container = await renderColumnSorting({ enableSortingRemoval: false })
+    const container = await renderColumnSorting({ columnSortingRemoval: false })
     const button = await revealSort(firstDataCell(container))
 
     await userEvent.click(button)
@@ -380,7 +380,7 @@ describe('Column Sorting — requirements', () => {
   test('CS13: server sorting keeps row order but still toggles state and hook', async () => {
     const onToggleColumnSort = vi.fn()
     const container = await renderColumnSorting({
-      serverColumnSorting: true,
+      columnSortingServer: true,
       onToggleColumnSort,
     })
     const cell = firstDataCell(container)
@@ -506,7 +506,7 @@ describe('Column Sorting — multi-sort requirements', () => {
 
   test('CS19: `max` caps the number of columns in the multi-sort', async () => {
     const container = await renderColumnSorting({
-      multiSortOptions: { max: 2 },
+      columnSortingMultiSort: { max: 2 },
     })
 
     // Sort three columns: plain first, then Shift+click two more.
@@ -520,7 +520,9 @@ describe('Column Sorting — multi-sort requirements', () => {
   })
 
   test('CS21: with multi-sort off, Shift+click replaces instead of adding', async () => {
-    const container = await renderColumnSorting({ enableMultiSort: false })
+    const container = await renderColumnSorting({
+      columnSortingMultiSort: false,
+    })
 
     await userEvent.click(await revealSort(dataCell(container, 0)))
     await expect
@@ -554,7 +556,7 @@ describe('Column Sorting — multi-sort requirements', () => {
   })
 
   test('CS23: server multi-sort keeps row order but tracks every sorted column', async () => {
-    const container = await renderColumnSorting({ serverColumnSorting: true })
+    const container = await renderColumnSorting({ columnSortingServer: true })
     const colIndex = colIndexOf(dataCell(container, 0))
     const before = columnValues(container, colIndex)
 

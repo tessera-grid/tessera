@@ -11,7 +11,7 @@ import {
 } from '../../../../lib/plugins/pagination/registry'
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
-import { DEFAULT_LOADING_OPTIONS } from '../../../../lib/core/loadingDisplay'
+import { DEFAULT_REFRESH_OPTIONS } from '../../../../lib/core/loadingDisplay'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
 import {
   DEFAULT_ROW_HEIGHT,
@@ -164,9 +164,18 @@ export const headerNestingType = radioControl(
 
 // --- Ядро: панели и состояния -------------------------------------------------
 
-export const enableSkeletonType = booleanControl(
-  'Скелеты вместо содержимого ячеек (`enableSkeleton`)',
-)
+/**
+ * Загрузка (ADR 0106): `off` — нет, `initial` — скелет первой загрузки, `refresh` —
+ * свечение обновления. В Controls это строка радио, до истории `mapping` доносит `false`.
+ */
+export const loadingType: InputType = {
+  control: 'inline-radio',
+  options: ['off', 'initial', 'refresh'],
+  mapping: { off: false },
+  description:
+    'Загрузка данных (`loading`): `initial` — скелет первой загрузки, `refresh` — свечение под шапкой и приглушение тела (ADR 0094)',
+  table: { defaultValue: { summary: 'false' } },
+}
 export const skeletonOptionsType = objectControl(
   'rowsCount — строк: число или `auto` (по высоте); columnsCount — колонок, только когда своих колонок нет',
   'SkeletonOptions',
@@ -180,13 +189,10 @@ export const contrastType: InputType = {
     'Повышенный контраст (`contrast`): `auto` — по `prefers-contrast: more`, `more` — всегда, `standard` — никогда',
   table: { defaultValue: { summary: 'auto' } },
 }
-export const enableLoadingType = booleanControl(
-  'Обновление данных (`enableLoading`): свечение под шапкой и приглушение тела (ADR 0094)',
-)
-export const loadingOptionsType = objectControl(
+export const refreshOptionsType = objectControl(
   'Показ обновления: `delayMs` — задержка, `minDurationMs` — минимум показа, мс',
-  'LoadingOptions',
-  DEFAULT_LOADING_OPTIONS,
+  'RefreshOptions',
+  DEFAULT_REFRESH_OPTIONS,
 )
 export const enableFooterType = booleanControl(
   'Футер с агрегированными значениями колонок (`enableFooter`)',
@@ -212,18 +218,18 @@ export const enableOverflowTooltipType = booleanControl(
 export const enableColumnSortingType = booleanControl(
   'Сортировка кнопкой в заголовке (плагин `columnSorting`)',
 )
-export const enableSortingRemovalType = booleanControl(
+export const columnSortingRemovalType = booleanControl(
   'Третий клик снимает сортировку (`removal`); иначе направление только переключается',
   true,
 )
-export const enableMultiSortType = booleanControl(
-  'Мультисортировка по нескольким колонкам жестом Shift+клик (`multiSort`)',
+export const columnSortingMultiSortType = booleanControl(
+  'Мультисортировка по нескольким колонкам жестом Shift+клик (`multiSort`); `max` и `event` — объектом из истории',
   true,
 )
-export const serverColumnSortingType = booleanControl(
+export const columnSortingServerType = booleanControl(
   'Серверная сортировка (`server`): меняется только состояние и колбэк, порядок строк мока не меняется',
 )
-export const enableColumnResizingType = booleanControl(
+export const enableColumnSizingType = booleanControl(
   'Изменение ширины колонок перетаскиванием границы (плагин `columnSizing`)',
 )
 export const enableColumnDraggingType = booleanControl(
@@ -232,8 +238,8 @@ export const enableColumnDraggingType = booleanControl(
 export const enableColumnPinningType = booleanControl(
   'Закрепление колонок кнопкой в заголовке (плагин `columnPinning`)',
 )
-export const enableLeafPinningType = booleanControl(
-  'Закрепление отдельных листьев под вложенной шапкой (`leafPinning`, нужен enableColumnPinning)',
+export const columnPinningLeafPinningType = booleanControl(
+  'Закрепление отдельных листьев под вложенной шапкой (`leafPinning`)',
 )
 export const enableColumnVisibilityType = booleanControl(
   'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (плагин `columnVisibility`)',
@@ -241,55 +247,78 @@ export const enableColumnVisibilityType = booleanControl(
 export const enableHeaderActionMenuType = booleanControl(
   'Схлопывать кнопки заголовка в кебаб-меню (плагин `headerActionMenu`)',
 )
+const menuModeType = (description: string) =>
+  radioControl(description, ['auto', 'always'], 'auto')
+export const headerActionMenuModeType = menuModeType(
+  'Кебаб заголовка: auto — от порога действий, always — всегда (`mode`)',
+)
+export const headerActionMenuThresholdType = numberControl(
+  'С какого числа действий кнопки заголовка уходят в кебаб (`threshold`)',
+  { min: 1, max: 10, step: 1 },
+  String(DEFAULT_HEADER_ACTION_MENU.threshold),
+)
 
 // --- Строки --------------------------------------------------------------------
 
 export const enableRowSelectionType = booleanControl(
   'Выбор строк чекбоксами (плагин `rowSelection`)',
 )
-export const enableSubRowSelectionType = booleanControl(
-  'Выбор строки выбирает её потомков (`subRows`, нужен enableRowSelection)',
+export const rowSelectionSubRowsType = booleanControl(
+  'Выбор строки выбирает её потомков (`subRows`)',
 )
-export const showSelectedCountType = booleanControl(
-  'Счётчик выбранных строк в нижней панели (`selectedCount`, нужен enableRowSelection)',
+export const rowSelectionSelectedCountType = booleanControl(
+  'Счётчик выбранных строк в нижней панели (`selectedCount`)',
 )
 export const enableRowExpandingType = booleanControl(
   'Раскрытие строк с детьми (плагин `rowExpanding`)',
 )
 export const rowExpandingMaxDepthType = numberControl(
-  'Сколько уровней раскрываемы от корня (`maxDepth`, нужен enableRowExpanding)',
+  'Сколько уровней раскрываемы от корня (`maxDepth`)',
   { min: 0, max: 10, step: 1 },
   String(DEFAULT_MAX_EXPANDING_DEPTH),
 )
 export const rowExpandingColumnType = radioControl(
-  'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`, нужен enableRowExpanding)',
+  'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`)',
   ['auto', 'always'],
   'auto',
 )
 export const rowExpandingTreeLinesType = booleanControl(
-  'Линии дерева по уровням (`treeLines`, нужен enableRowExpanding)',
+  'Линии дерева по уровням (`treeLines`)',
 )
 export const enableRowDraggingType = booleanControl(
   'Перестановка строк перетаскиванием ручки (плагин `rowDragging`)',
 )
-export const enableGroupingType = booleanControl(
+export const enableRowGroupingType = booleanControl(
   'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',
 )
 export const enableRowActionsType = booleanControl(
   'Колонка действий строки с демо-кнопками (плагин `rowActions`)',
 )
-export const rowActionsOptionsType = objectControl(
-  'Ширина колонки действий: width — с кнопками, collapsedWidth — в кебабе (нужен enableRowActions)',
-  'RowActionsOptions',
-  DEFAULT_ROW_ACTIONS_OPTIONS,
+export const rowActionsWidthType = numberControl(
+  'Ширина колонки действий с кнопками, px (`width`)',
+  { min: 40, max: 400, step: 4 },
+  String(DEFAULT_ROW_ACTIONS_OPTIONS.width),
+)
+export const rowActionsCollapsedWidthType = numberControl(
+  'Ширина колонки действий, когда они в кебабе, px (`collapsedWidth`)',
+  { min: 40, max: 400, step: 4 },
+  String(DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth),
 )
 export const rowActionsColumnType = radioControl(
-  'Колонка действий: auto — если у строк есть действия, always — всегда (`column`, нужен enableRowActions)',
+  'Колонка действий: auto — если у строк есть действия, always — всегда (`column`)',
   ['auto', 'always'],
   'auto',
 )
 export const enableRowActionMenuType = booleanControl(
   'Схлопывать действия строки в кебаб-меню (плагин `rowActionMenu`, нужен enableRowActions)',
+)
+export const rowActionMenuModeType = menuModeType(
+  'Кебаб строки: auto — от порога действий, always — всегда (`mode`)',
+)
+export const rowActionMenuThresholdType = numberControl(
+  'С какого числа действий кнопки строки уходят в кебаб (`threshold`)',
+  { min: 1, max: 10, step: 1 },
+  String(DEFAULT_ROW_ACTION_MENU.threshold),
 )
 
 // --- Ячейки и клавиатура -------------------------------------------------------
@@ -300,6 +329,18 @@ export const enableCellEditingType = booleanControl(
 export const enableCellSelectionType = booleanControl(
   'Выделение диапазона ячеек мышью и копирование Ctrl/Cmd+C (плагин `cellSelection`)',
 )
+export const cellSelectionRangeSelectionType = booleanControl(
+  'Диапазон Shift-кликом (`rangeSelection`)',
+  true,
+)
+export const cellSelectionDragSelectionType = booleanControl(
+  'Диапазон протяжкой мыши (`dragSelection`)',
+  true,
+)
+export const cellSelectionMultiRangeType = booleanControl(
+  'Несколько диапазонов с Ctrl/Cmd (`multiRange`)',
+  true,
+)
 export const enableContextMenuType = booleanControl(
   'Контекстное меню по правому клику (плагин `contextMenu`)',
 )
@@ -309,85 +350,86 @@ export const enableKeyboardNavigationType = booleanControl(
 
 // --- Поиск, фильтры, страницы, экспорт -----------------------------------------
 
+const debounceType = (description: string, defaultMs: number) =>
+  numberControl(description, { min: 0, max: 2000, step: 50 }, String(defaultMs))
+
 export const enableQuickSearchType = booleanControl(
   'Быстрый поиск в тулбаре по видимым колонкам (плагин `quickSearch`)',
+)
+export const quickSearchDebounceMsType = debounceType(
+  'Задержка ввода поиска, мс (`debounceMs`)',
+  DEFAULT_SEARCH_DEBOUNCE_MS,
+)
+export const quickSearchFilteredCountType = booleanControl(
+  '«Показано N из M» в нижней панели (`filteredCount`)',
 )
 export const enableColumnFilteringType = booleanControl(
   'Фильтры колонок с полем filter: Country и имена — текст, Age, Visits, Total — число (плагин `columnFiltering`)',
 )
+export const columnFilteringDebounceMsType = debounceType(
+  'Задержка ввода фильтра, мс (`debounceMs`)',
+  DEFAULT_FILTER_DEBOUNCE_MS,
+)
+export const columnFilteringFilteredCountType = booleanControl(
+  '«Показано N из M» в нижней панели (`filteredCount`)',
+)
+export const columnFilteringTimeZoneType: InputType = {
+  control: 'text',
+  description:
+    'Часовой пояс фильтра дат, IANA (`timeZone`); по умолчанию — пояс браузера',
+}
 export const enableInfiniteScrollType = booleanControl(
   'Бесконечная прокрутка — лента: у края грид просит блок (плагин `infiniteScroll`); данные дописывает история',
 )
-export const infiniteScrollOptionsType = objectControl(
-  'Лента: `threshold` — за сколько строк до края просить блок, `loadedCount` — счётчик в нижней панели; `onLoadMore` и `hasMore` задаёт история (`infiniteScroll({...})`)',
-  'InfiniteScrollOptions',
-  {},
+export const infiniteScrollThresholdType = numberControl(
+  'За сколько строк до края просить блок (`threshold`)',
+  { min: 0, max: 200, step: 5 },
+  '—',
+)
+export const infiniteScrollLoadedCountType = booleanControl(
+  'Счётчик загруженных строк в нижней панели (`loadedCount`)',
 )
 export const enableBackToTopType = booleanControl(
   'Кнопки «наверх» и «к первой колонке» в нижней панели: видны после прокрутки на два экрана, встают только в уже показанную панель (плагин `backToTop`)',
 )
-export const backToTopOptionsType = objectControl(
-  'Кнопки «наверх» и «к первой колонке»: `threshold` и `horizontalThreshold` — с какой прокрутки видны, px; `axes` — `vertical`, `horizontal` или `both` (`backToTop({...})`)',
-  'BackToTopOptions',
-  {},
+export const backToTopThresholdType = numberControl(
+  'С какой вертикальной прокрутки видна «наверх», px (`threshold`); по умолчанию — две высоты тела',
+  { min: 0, max: 20000, step: 100 },
+  '—',
+)
+export const backToTopHorizontalThresholdType = numberControl(
+  'С какой горизонтальной прокрутки видна «к первой колонке», px (`horizontalThreshold`); по умолчанию — две ширины тела',
+  { min: 0, max: 20000, step: 100 },
+  '—',
+)
+export const backToTopAxesType = radioControl(
+  'Какие кнопки показывать (`axes`)',
+  ['vertical', 'horizontal', 'both'],
+  'both',
 )
 export const enablePaginationType = booleanControl(
   'Пагинация в нижней панели (плагин `pagination`)',
 )
-export const paginationPageSizeType = numberControl(
-  'Начальный размер страницы (`initialPageSize`, нужен enablePagination)',
+export const paginationInitialPageSizeType = numberControl(
+  'Начальный размер страницы (`initialPageSize`)',
   { min: 1, max: 1000, step: 5 },
   String(DEFAULT_PAGE_SIZE),
 )
-export const enableExportType = booleanControl(
-  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
-)
-
-// --- Настройки плагинов (данные) ----------------------------------------------
-// Функции и колбэки (canEdit, loadChildren, on*) контролом не задать — у них свои
-// истории.
-
-export const multiSortOptionsType = objectControl(
-  'Мультисортировка: `max` — предел колонок (без него — без предела), `event` — жест, по умолчанию `shift` (`columnSorting({ multiSort })`, нужен enableMultiSort)',
-  'ColumnMultiSortOptions',
-  {},
-)
-export const headerActionMenuOptionsType = objectControl(
-  'Меню заголовка: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
-  "{ mode?: 'auto' | 'always'; threshold?: number }",
-  DEFAULT_HEADER_ACTION_MENU,
-)
-export const cellSelectionOptionsType = objectControl(
-  'Флаги выделения ячеек: `rangeSelection` — диапазон Shift-кликом, `dragSelection` — протяжкой, `multiRange` — несколько диапазонов с Ctrl/Cmd',
-  '{ rangeSelection?: boolean; dragSelection?: boolean; multiRange?: boolean }',
-  { rangeSelection: true, dragSelection: true, multiRange: true },
-)
-export const rowActionMenuOptionsType = objectControl(
-  'Меню строки: `mode` (`auto` | `always`), `threshold` — с какого числа действий кнопки уходят в кебаб',
-  "{ mode?: 'auto' | 'always'; threshold?: number }",
-  DEFAULT_ROW_ACTION_MENU,
-)
-export const rowDraggingEnableType = booleanControl(
-  'Перетаскивание строк разрешено (`rowDragging({ enable })`)',
-  true,
-)
-export const columnFilteringOptionsType = objectControl(
-  'Фильтры колонок: `debounceMs` — задержка ввода, `filteredCount` — «показано N из M» в нижней панели, `timeZone` (`columnFiltering({...})`)',
-  'ColumnFilteringOptions',
-  DEFAULT_COLUMN_FILTERING_OPTIONS,
-)
-export const quickSearchOptionsType = objectControl(
-  'Быстрый поиск: `debounceMs` — задержка ввода, `filteredCount` — «показано N из M» в нижней панели (`quickSearch({...})`)',
-  'QuickSearchOptions',
-  DEFAULT_QUICK_SEARCH_OPTIONS,
-)
 export const paginationPageSizesType = objectControl(
-  'Варианты размера страницы в нижней панели; `false` — без выбора (`pagination({ pageSizes })`)',
+  'Варианты размера страницы в нижней панели; `false` — без выбора (`pageSizes`)',
   'number[] | false',
   DEFAULT_PAGE_SIZES,
 )
-export const exportOptionsType = objectControl(
-  'Экспорт: `allow` — оси, `presets` — быстрые наборы, `filename` (по умолчанию `export`); форматы — функции, задаются в коде, по умолчанию только CSV (`dataExport({...})`)',
-  'ExportOptions',
+export const enableDataExportType = booleanControl(
+  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
+)
+export const dataExportAllowType = objectControl(
+  'Оси экспорта, доступные пользователю (`allow`)',
+  'ExportAllow',
   {},
 )
+export const dataExportFilenameType: InputType = {
+  control: 'text',
+  description: 'Имя файла без расширения (`filename`); по умолчанию `export`',
+  table: { defaultValue: { summary: 'export' } },
+}

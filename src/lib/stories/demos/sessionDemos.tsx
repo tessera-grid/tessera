@@ -108,7 +108,7 @@ export const CellEditingServerDemo = ({
       <StoryComponent
         {...args}
         dataOverride={data}
-        cellEditingCanEdit={canEditDemoCell}
+        cellEditingCanEditCell={canEditDemoCell}
         onCellEdit={onCellEdit}
         onEditCancel={onEditCancel}
       />
@@ -172,7 +172,7 @@ export const CellEditingSessionsDemo = ({
       <StoryComponent
         {...args}
         dataOverride={data}
-        cellEditingCanEdit={canEditDemoCell}
+        cellEditingCanEditCell={canEditDemoCell}
         onCellEdit={onCellEdit}
         onEditCancel={onEditCancel}
         onConflict={conflictMode}

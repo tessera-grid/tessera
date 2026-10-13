@@ -10,7 +10,7 @@ import { AXE_OPTIONS } from './a11y-helpers'
 import { PIN_BUTTON } from './column-pinning-helpers'
 
 // SL1–SL12: скелет первой загрузки по раскладке грида (ADR 0060). Скелет и грид
-// после загрузки — один экземпляр таблицы: тест переключает `enableSkeleton` и
+// после загрузки — один экземпляр таблицы: тест переключает `loading` и
 // сравнивает геометрию.
 
 type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
@@ -45,9 +45,13 @@ const box = (el: Element) => {
 const geometry = (cells: HTMLElement[]) =>
   cells.map(cell => ({ id: cell.dataset.columnId, ...box(cell) }))
 
-/** Грид с переключаемым `enableSkeleton` на одном экземпляре таблицы. */
+/** Грид с переключаемым `loading: 'initial'` на одном экземпляре таблицы. */
 const renderToggle = async (args: Args, skeleton = true) => {
-  const props = (on: boolean) => ({ ...BASE, ...args, enableSkeleton: on })
+  const props = (on: boolean) => ({
+    ...BASE,
+    ...args,
+    loading: (on ? 'initial' : false) as 'initial' | false,
+  })
   const screen = await render(<Stories.AllFeatures {...props(skeleton)} />)
   const set = async (on: boolean) => {
     await screen.rerender(<Stories.AllFeatures {...props(on)} />)
@@ -64,7 +68,7 @@ const waitData = () =>
 
 describe('Скелет первой загрузки (ADR 0060)', () => {
   test('SL1: колонки скелета совпадают с колонками грида — число, порядок и ширина, включая заданную и изменённую пользователем', async () => {
-    const { set } = await renderToggle({ enableColumnResizing: true }, false)
+    const { set } = await renderToggle({ enableColumnSizing: true }, false)
     await waitData()
 
     // Пользователь расширил колонку First Name протяжкой грипа.
@@ -200,7 +204,9 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
   })
 
   test('SL5: строк — сколько помещается по высоте; с пагинацией — не больше страницы; число в rowsCount переопределяет', async () => {
-    const fit = await render(<Stories.AllFeatures {...BASE} enableSkeleton />)
+    const fit = await render(
+      <Stories.AllFeatures {...BASE} loading="initial" />,
+    )
     await waitSkeleton()
     const scroller = getScroller()
     const headHeight =
@@ -218,9 +224,9 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     const paged = await render(
       <Stories.AllFeatures
         {...BASE}
-        enableSkeleton
+        loading="initial"
         enablePagination
-        paginationPageSize={5}
+        paginationInitialPageSize={5}
       />,
     )
     await waitSkeleton()
@@ -230,7 +236,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     await render(
       <Stories.AllFeatures
         {...BASE}
-        enableSkeleton
+        loading="initial"
         skeletonOptions={{ rowsCount: 3 }}
       />,
     )
@@ -317,7 +323,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
 
   test('SL9: без колонок скелет рисует columnsCount одинаковых колонок, по умолчанию 8', async () => {
     const empty = await render(
-      <Stories.AllFeatures {...BASE} enableSkeleton columnsOverride={[]} />,
+      <Stories.AllFeatures {...BASE} loading="initial" columnsOverride={[]} />,
     )
     await waitSkeleton()
     const widths = () =>
@@ -329,7 +335,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     await render(
       <Stories.AllFeatures
         {...BASE}
-        enableSkeleton
+        loading="initial"
         columnsOverride={[]}
         skeletonOptions={{ columnsCount: 3 }}
       />,
@@ -358,7 +364,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     const args: Args = {
       enablePagination: true,
       enableRowSelection: true,
-      showSelectedCount: true,
+      rowSelectionSelectedCount: true,
       enableColumnVisibility: true,
       // Демо-слоты нижней панели флаг скелета не читают.
       extraPlugins: statusBarDemoPlugins,
@@ -403,7 +409,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       const screen = await render(
         <Stories.AllFeatures
           {...BASE}
-          enableSkeleton
+          loading="initial"
           enableRowSelection
           enableColumnSorting
           colorMode={colorMode}

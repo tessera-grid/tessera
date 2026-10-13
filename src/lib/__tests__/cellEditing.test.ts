@@ -2,7 +2,7 @@
  * Headless-проверка плагина cellEditing — носителя ЛОКАЛЬНОГО состояния.
  * Проверяет: сгенерированная из `state` v9-фича seed'ит слайс плагина
  * и он записываем; кнопка регистрируется в rightCellSlot, владелец-редактор — в
- * cellSlot; хуки canEdit/onCellEdit/editor из аргументов фабрики читаются живо с дефолтами.
+ * cellSlot; хуки canEditCell/onCellEdit/editor из аргументов фабрики читаются живо с дефолтами.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -81,24 +81,28 @@ describe('cellEditing', () => {
     expect(withoutEditor.cellEditing.editor).toBeUndefined()
   })
 
-  it('хуки canEdit/onCellEdit из аргументов фабрики читаются живо; дефолты — no-op/true', () => {
+  it('хуки canEditCell/onCellEdit из аргументов фабрики читаются живо; дефолты — no-op/true', () => {
     const onCellEdit = vi.fn()
     const resolved = resolveHooks(
       foldHooks([cellEditing({ onCellEdit })] as never),
     ) as any
     expect(resolved.cellEditing.onCellEdit).toBe(onCellEdit)
-    // canEdit по умолчанию → true (кнопка показывается везде, где нет ограничения).
-    expect(typeof resolved.cellEditing.canEdit).toBe('function')
-    expect(resolved.cellEditing.canEdit({})).toBe(true)
+    // canEditCell по умолчанию → true (кнопка показывается везде, где нет ограничения).
+    expect(typeof resolved.cellEditing.canEditCell).toBe('function')
+    expect(resolved.cellEditing.canEditCell({})).toBe(true)
   })
 
-  it('canEdit из аргументов фабрики применяется (предикат по контексту)', () => {
-    const canEdit = (ctx: { column: { id: string } }) =>
+  it('canEditCell из аргументов фабрики применяется (предикат по контексту)', () => {
+    const canEditCell = (ctx: { column: { id: string } }) =>
       ctx.column.id !== 'name'
     const resolved = resolveHooks(
-      foldHooks([cellEditing({ canEdit })] as never),
+      foldHooks([cellEditing({ canEditCell })] as never),
     ) as any
-    expect(resolved.cellEditing.canEdit({ column: { id: 'name' } })).toBe(false)
-    expect(resolved.cellEditing.canEdit({ column: { id: 'age' } })).toBe(true)
+    expect(resolved.cellEditing.canEditCell({ column: { id: 'name' } })).toBe(
+      false,
+    )
+    expect(resolved.cellEditing.canEditCell({ column: { id: 'age' } })).toBe(
+      true,
+    )
   })
 })

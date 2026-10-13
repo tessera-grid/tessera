@@ -258,7 +258,7 @@ const renderAll = async () => {
       dataOverride={DATA}
       enableToolbar
       enableColumnVisibility
-      enableExport
+      enableDataExport
       enableRowSelection
       enablePagination
       enableColumnSorting

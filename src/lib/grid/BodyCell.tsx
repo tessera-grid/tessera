@@ -70,7 +70,7 @@ export const BodyCell = memo(
     absoluteLeft,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
-    // Новая ссылка на предикат плагина (canSelectCell, canEdit…) — перерисовка.
+    // Новая ссылка на предикат плагина (canSelectCell, canEditCell…) — перерисовка.
     usePluginRenderVersion()
 
     // Самоподписка: BodyCell — memo по стабильному `cell`, поэтому смена срезов не

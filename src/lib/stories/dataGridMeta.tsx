@@ -40,7 +40,7 @@ const rowDraggingPlay: NonNullable<Meta<StoryProps>['play']> = async ({
   step,
 }) => {
   // Во время скелета первой загрузки строк данных нет — тянуть нечего.
-  if (!args.enableRowDragging || args.enableSkeleton) return
+  if (!args.enableRowDragging || args.loading === 'initial') return
 
   const canvas = canvasElement
 

@@ -82,7 +82,7 @@ const makeTree = (
  * глубокое дерево, строки без детей). Детерминирован по параметрам
  * (`faker.seed`), чтобы демо было воспроизводимым. `grouped` отдаёт
  * плоские строки — саму группировку/агрегацию применяет история через
- * `enableGrouping` + `initialGrouping` (механизм TanStack).
+ * `enableRowGrouping` + `initialGrouping` (механизм TanStack).
  */
 export const makeData = ({
   shape,

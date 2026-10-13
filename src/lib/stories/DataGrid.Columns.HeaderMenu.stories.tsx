@@ -42,14 +42,14 @@ export const HeaderActionMenu: StoryObj<StoryProps> = {
   args: {
     // Три действия в правом слоте (пин + сортировка + группировка) — дескрипторы;
     // достигают порога 3 → весь набор схлопывается в один кебаб (⋮), меню делится
-    // на подгруппы. Свич `enableColumnResizing` включает управление шириной: его
+    // на подгруппы. Свич `enableColumnSizing` включает управление шириной: его
     // resize-грип рисуется на кромке, но в порог схлопывания не входит
     // (`countsAsHeaderAction: false`), поэтому кебаб от него не «толстеет».
     enableHeaderActionMenu: true,
     enableColumnPinning: true,
     enableColumnSorting: true,
-    enableGrouping: true,
-    enableColumnResizing: true,
+    enableRowGrouping: true,
+    enableColumnSizing: true,
     dataCount: 60,
     containerHeight: 400,
     height: 300,
@@ -71,7 +71,7 @@ export const ActiveActionIndicatorInMenu: StoryObj<StoryProps> = {
   args: {
     ...activeIndicatorArgs,
     enableHeaderActionMenu: true,
-    headerActionMenuOptions: { mode: 'always' },
+    headerActionMenuMode: 'always',
   },
 }
 
@@ -79,8 +79,8 @@ const HEADER_MENU_ARGS = {
   enableHeaderActionMenu: true,
   enableColumnPinning: true,
   enableColumnSorting: true,
-  enableGrouping: true,
-  enableColumnResizing: true,
+  enableRowGrouping: true,
+  enableColumnSizing: true,
   dataCount: 30,
   containerHeight: 460,
   height: 360,

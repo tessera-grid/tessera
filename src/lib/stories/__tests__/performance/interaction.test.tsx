@@ -184,7 +184,7 @@ const pageSizeOption = (size: string) =>
   )
 
 // Экспорт (ADR 0044): «Выгрузить» в панели (строки «Все строки») сериализует всю таблицу синхронно.
-const EXPORT = { enableToolbar: true, enableExport: true }
+const EXPORT = { enableToolbar: true, enableDataExport: true }
 const EXPORT_SIZE = { columnCount: 10, dataCount: 100_000 } as const
 
 const exportButton = () =>
@@ -226,12 +226,12 @@ const exportWithoutDownload = async () => {
 const SEARCH = {
   enableToolbar: true,
   enableQuickSearch: true,
-  quickSearchOptions: { debounceMs: 0 },
+  quickSearchDebounceMs: 0,
 }
 const SEARCH_SIZE = { columnCount: 10, dataCount: 100_000 } as const
 const FILTERING = {
   enableColumnFiltering: true,
-  columnFilteringOptions: { debounceMs: 0 },
+  columnFilteringDebounceMs: 0,
 }
 
 /** Ввод в контролируемое поле React: нативный сеттер + событие input. */
@@ -291,7 +291,7 @@ const DATE_FILTERING = {
         header: `col_${i}`,
         size: 150,
         enableResizing: true,
-        enableGrouping: true,
+        enableRowGrouping: true,
         enableSorting: true,
         enablePinning: true,
         enableDragging: true,
@@ -593,7 +593,12 @@ const CASES: InteractionCase[] = [
     label:
       'переход на следующую страницу по 100 строк, 100 000 строк, все плагины',
     size: '100 000×30',
-    args: { ...PAGED, ...ALL_PLUGINS, ...PAGINATION, paginationPageSize: 100 },
+    args: {
+      ...PAGED,
+      ...ALL_PLUGINS,
+      ...PAGINATION,
+      paginationInitialPageSize: 100,
+    },
     prepare: async () => {
       await expect.poll(() => pageButton('next')).not.toBeNull()
     },
@@ -840,7 +845,7 @@ describe('Отзывчивость взаимодействий — подсве
 })
 
 // Скелет первой загрузки (ADR 0060, SL15): смена скелета на данные (выключение
-// `enableSkeleton`) — самая длинная задача против монтирования того же грида сразу с
+// `loading: 'initial'`) — самая длинная задача против монтирования того же грида сразу с
 // данными: смена рисует те же строки.
 const SL15_COST = { ratio: 1.3, plusMs: 40 }
 
@@ -857,7 +862,7 @@ describe('Отзывчивость — смена скелета на данны
       for (const { key, size, label } of sizes) {
         const args = { ...size, ...ALL_PLUGINS }
         const measureSwap = async () => {
-          const screen = await renderGrid({ ...args, enableSkeleton: true })
+          const screen = await renderGrid({ ...args, loading: 'initial' })
           await expect
             .poll(() => document.querySelector('.data-grid__body--skeleton'), {
               timeout: 20_000,
@@ -869,7 +874,7 @@ describe('Отзывчивость — смена скелета на данны
                 containerHeight={600}
                 height={500}
                 {...args}
-                enableSkeleton={false}
+                loading={false}
               />,
             )
           }, rowsReady)

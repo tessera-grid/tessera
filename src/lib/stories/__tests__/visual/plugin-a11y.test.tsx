@@ -21,9 +21,9 @@ type GridArgs = FeatureToggles & {
 
 const PLUGIN_ARGS: Record<string, GridArgs> = {
   rowSelection: { enableRowSelection: true },
-  rowExpanding: { enableRowExpanding: true, enableGrouping: true },
+  rowExpanding: { enableRowExpanding: true, enableRowGrouping: true },
   rowDragging: { enableRowDragging: true },
-  rowGrouping: { enableGrouping: true },
+  rowGrouping: { enableRowGrouping: true },
   rowActions: { enableRowActions: true },
   cellEditing: { enableCellEditing: true },
   cellSelection: { enableCellSelection: true },
@@ -31,7 +31,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   keyboardNavigation: { enableKeyboardNavigation: true },
   columnSorting: { enableColumnSorting: true },
   columnPinning: { enableColumnPinning: true },
-  columnSizing: { enableColumnResizing: true },
+  columnSizing: { enableColumnSizing: true },
   columnDragging: { enableColumnDragging: true },
   columnVisibility: { enableColumnVisibility: true, enableToolbar: true },
   headerActionMenu: {
@@ -44,7 +44,9 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   backToTop: { enableBackToTop: true, enablePagination: true },
   infiniteScroll: {
     enableInfiniteScroll: true,
-    infiniteScrollOptions: { hasMore: true, rowCount: 1000, loadedCount: true },
+    infiniteScrollHasMore: true,
+    infiniteScrollRowCount: 1000,
+    infiniteScrollLoadedCount: true,
   },
   quickSearch: { enableQuickSearch: true, enableToolbar: true },
   columnFiltering: {
@@ -53,7 +55,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
     columnsOverride: filteringColumns,
     dataOverride: filteringData,
   },
-  dataExport: { enableExport: true, enableToolbar: true },
+  dataExport: { enableDataExport: true, enableToolbar: true },
 }
 
 // Контекст axe — вся обёртка грида, включая тулбар над таблицей.

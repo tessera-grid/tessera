@@ -227,7 +227,7 @@ export const EditingStateSaving: StoryObj<StoryProps> = {
   args: {
     ...EDITING_ARGS,
     // Свой предикат отключает демо-хуки правки: колбэк истории доходит до плагина.
-    cellEditingCanEdit: () => true,
+    cellEditingCanEditCell: () => true,
     onCellEdit: () => new Promise<void>(() => {}),
   },
   play: async ({ canvasElement }) => {
@@ -245,7 +245,7 @@ export const EditingStateError: StoryObj<StoryProps> = {
   parameters: vrStates('body.error'),
   args: {
     ...EDITING_ARGS,
-    cellEditingCanEdit: () => true,
+    cellEditingCanEditCell: () => true,
     onCellEdit: () => Promise.reject(new Error('The server refused the value')),
   },
   play: async ({ canvasElement }) => {

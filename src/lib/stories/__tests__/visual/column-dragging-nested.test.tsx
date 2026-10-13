@@ -228,7 +228,7 @@ describe('DnD under nested headers', () => {
       expect(leafOrder()).toEqual(before)
       await pinned.unmount()
 
-      await mount({ enableColumnPinning: true, enableLeafPinning: true })
+      await mount({ enableColumnPinning: true, columnPinningLeafPinning: true })
       await pinViaPopover(head('gender'), 'Pin left')
       await expect.poll(() => leafOrder()[0]).toBe('gender')
       // Незакреплённый сегмент `info` — к левому краю центральной зоны, не дальше.

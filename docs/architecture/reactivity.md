@@ -81,7 +81,7 @@ bail-out на стороне React по изменению снимка селе
 (`core/effectiveState.ts`, ADR 0039, RX9–RX10): сохранённое хранит ядро
 (неконтролируемый срез) или потребитель (контролируемый), и сужение не зовёт его
 `on*Change` (RX12). Предикаты отрисовки из `refreshOn` плагина
-(`canSelectCell`, `canEdit`, `enable`) при новой ссылке поднимают версию отрисовки
+(`canSelectCell`, `canEditCell`, `canDragRow`) при новой ссылке поднимают версию отрисовки
 (`core/renderVersion.ts`): `BodyCell` и `HeadCellView` читают её из контекста и
 перерисовываются мимо мемоизации (RX2).
 

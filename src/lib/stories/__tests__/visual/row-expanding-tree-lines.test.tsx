@@ -379,7 +379,7 @@ describe('Row expanding: tree lines', () => {
       <composed.RowExpandingTreeLines
         enablePagination
         // Пагинация по корням: 6 корней — три страницы по два.
-        paginationPageSize={2}
+        paginationInitialPageSize={2}
       />,
     )
     await waitTree()
@@ -398,7 +398,7 @@ describe('Row expanding: tree lines', () => {
       <composed.RowExpandingTreeLines
         rowExpandingTreeLines={false}
         enableRowSelection
-        enableSubRowSelection
+        rowSelectionSubRows
       />,
     )
     await waitTree()
@@ -410,10 +410,7 @@ describe('Row expanding: tree lines', () => {
     await plain.unmount()
 
     await render(
-      <composed.RowExpandingTreeLines
-        enableRowSelection
-        enableSubRowSelection
-      />,
+      <composed.RowExpandingTreeLines enableRowSelection rowSelectionSubRows />,
     )
     await waitTree()
     await showRow(TREE.falkland)

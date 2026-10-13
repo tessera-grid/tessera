@@ -115,7 +115,7 @@ const meta = {
             breadth: args.breadth,
           }),
           enableRowExpanding: true,
-          enableGrouping: false,
+          enableRowGrouping: false,
           initialGrouping: undefined as string[] | undefined,
         }
       }
@@ -125,7 +125,7 @@ const meta = {
           dataOverride: makeData({ shape: 'flat', count: args.count }),
           // Раскрытие групп: тоггл на строке-группе проваливает в записи.
           enableRowExpanding: true,
-          enableGrouping: true,
+          enableRowGrouping: true,
           initialGrouping: [args.groupBy],
         }
       }
@@ -133,7 +133,7 @@ const meta = {
       return {
         dataOverride: makeData({ shape: 'flat', count: args.count }),
         enableRowExpanding: false,
-        enableGrouping: false,
+        enableRowGrouping: false,
         initialGrouping: undefined as string[] | undefined,
       }
     }, [args.dataShape, args.count, args.depth, args.breadth, args.groupBy])
@@ -154,7 +154,7 @@ const meta = {
         colorMode={args.colorMode}
         dataOverride={shaped.dataOverride}
         enableRowExpanding={shaped.enableRowExpanding}
-        enableGrouping={shaped.enableGrouping}
+        enableRowGrouping={shaped.enableRowGrouping}
         initialGrouping={shaped.initialGrouping}
         initialExpanded={initialExpanded}
         showStub={false}

@@ -1,7 +1,7 @@
 /**
  * Каналы плагина в компонент: `hooks` и локальный `state: [value, setter]` —
  * пропсами; подмешивает `definePlugin` по `id` плагина (`withPluginChannels`).
- * Компонент-facing конфиг (напр. предикат `canEdit`) кладут в `hooks` (живой слайс).
+ * Компонент-facing конфиг (напр. предикат `canEditCell`) кладут в `hooks` (живой слайс).
  */
 import { createElement, type ReactNode } from 'react'
 

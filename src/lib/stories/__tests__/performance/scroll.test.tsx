@@ -733,11 +733,9 @@ describe('Производительность прокрутки — лента
           ...NO_PLUGINS,
           ...(feed && {
             enableInfiniteScroll: true,
-            infiniteScrollOptions: {
-              hasMore: true,
-              threshold: 1000,
-              onLoadMore: () => new Promise<void>(() => {}),
-            },
+            infiniteScrollHasMore: true,
+            infiniteScrollThreshold: 1000,
+            onLoadMore: () => new Promise<void>(() => {}),
           }),
         } as Parameters<typeof renderGrid>[0])
         await waitForGrid()
@@ -947,7 +945,7 @@ describe('Производительность прокрутки — свече
         const screen = renderGrid({
           ...LARGE,
           ...NO_PLUGINS,
-          enableLoading: loading,
+          loading: loading ? 'refresh' : false,
         })
         await waitForGrid()
         await expect

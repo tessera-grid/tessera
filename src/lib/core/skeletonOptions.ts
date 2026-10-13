@@ -65,4 +65,4 @@ export const getSkeletonBarWidth = (columnId: string): number => {
 
 /** Идёт первая загрузка: грид и компоненты панелей показывают скелет (ADR 0060). */
 export const isSkeletonShown = (table: unknown): boolean =>
-  !!(table as { options: { enableSkeleton?: boolean } }).options.enableSkeleton
+  (table as { options: { loading?: unknown } }).options.loading === 'initial'

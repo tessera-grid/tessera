@@ -10,7 +10,7 @@
  *  - `cellSlot` — владелец контента: в режиме правки ЗАМЕЩАЕТ собственный рендер
  *    ячейки редактором (ядровый seam RenderCellSlot), иначе отдаёт контент как есть.
  *
- * Показ кнопки гейтит предикат `canEdit`; редактор — BYO через `editor` (дефолт —
+ * Показ кнопки гейтит предикат `canEditCell`; редактор — BYO через `editor` (дефолт —
  * встроенный CellEditInput). И предикат, и редактор живут в hook-слайсе (читаются живо).
  */
 import { definePlugin } from '../../core/definePlugin'
@@ -27,7 +27,7 @@ export interface CellEditingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /** Условие показа кнопки редактирования по контексту ячейки (по умолчанию — всегда). */
-  canEdit?: (ctx: CellComponentProps) => boolean
+  canEditCell?: (ctx: CellComponentProps) => boolean
   /** Коммит нового значения ячейки (аргумент фабрики); читается живо. */
   onCellEdit?: CellEditingHooks['onCellEdit']
   /** Правка завершилась без сохранения; приходят причина и черновик (ADR 0040). */
@@ -50,7 +50,7 @@ export interface CellEditingOptions {
 export const cellEditing = definePlugin<CellEditingOptions>()({
   id: 'cellEditing',
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
-  refreshOn: ['canEdit'],
+  refreshOn: ['canEditCell'],
   diagnose: neverInert,
   // Отметки сохранения ячеек (ADR 0057, §3) — свой срез, вне управляемого `editing`.
   features: { cellSavedFeature },
@@ -59,7 +59,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   controlled: { value: 'editing', onChange: 'onEditingChange' },
   reconcile: reconcileEditSession,
   hooks: o => ({
-    canEdit: o.canEdit ?? (() => true),
+    canEditCell: o.canEditCell ?? (() => true),
     onCellEdit: o.onCellEdit ?? (() => {}),
     onEditCancel: o.onEditCancel,
     onConflict: o.onConflict,

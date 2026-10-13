@@ -208,7 +208,7 @@ describe('Фильтрация — фильтры колонок', () => {
 
     await renderFiltering({
       enableHeaderActionMenu: true,
-      headerActionMenuOptions: { mode: 'always' },
+      headerActionMenuMode: 'always',
     })
     expect(filterButton('name')).toBeNull()
     await revealCellButtons(headCell('name'))
@@ -231,7 +231,7 @@ describe('Фильтрация — фильтры колонок', () => {
 
   test('FL10: ввод применяется через debounceMs после последнего нажатия, без промежуточных пересчётов; выбор условия — сразу', async () => {
     const DEBOUNCE = 400
-    await renderFiltering({ columnFilteringOptions: { debounceMs: DEBOUNCE } })
+    await renderFiltering({ columnFilteringDebounceMs: DEBOUNCE })
     await openFilter('name')
 
     const seen = new Set<string>()
@@ -288,11 +288,14 @@ const applyTextFilter = async (columnId: string, text: string) => {
   await expect.poll(panel).toBeNull()
 }
 
+/** Тулбар с поиском без задержки ввода; счётчик «показано N из M» выключен. */
 const TOOLBAR = {
   enableToolbar: true,
   enableQuickSearch: true,
-  columnFilteringOptions: { debounceMs: 0 },
-  quickSearchOptions: { debounceMs: 0 },
+  columnFilteringDebounceMs: 0,
+  quickSearchDebounceMs: 0,
+  columnFilteringFilteredCount: false,
+  quickSearchFilteredCount: false,
 }
 
 describe('Фильтрация — тулбар и нижняя панель', () => {
@@ -433,8 +436,10 @@ describe('Фильтрация — тулбар и нижняя панель', (
   test('FL16: с filteredCount — «показано N из M» при активном фильтре или поиске; без них или без опции элемента нет; при обоих плагинах — один', async () => {
     const counted = await renderFiltering({
       ...TOOLBAR,
-      columnFilteringOptions: { debounceMs: 0, filteredCount: true },
-      quickSearchOptions: { debounceMs: 0, filteredCount: true },
+      columnFilteringDebounceMs: 0,
+      columnFilteringFilteredCount: true,
+      quickSearchDebounceMs: 0,
+      quickSearchFilteredCount: true,
     })
     expect(filteredCount()).toBeNull()
     await applyTextFilter('name', 'alice')
@@ -456,7 +461,7 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await renderFiltering({
       ...TOOLBAR,
       enableRowSelection: true,
-      showSelectedCount: true,
+      rowSelectionSelectedCount: true,
     })
     const counter = () =>
       document.querySelector('[data-testid="selected-rows-count"]')!.textContent
@@ -527,7 +532,7 @@ describe('Фильтрация — сочетания с плагинами', ()
     await renderFilteringWith({
       ...TOOLBAR,
       enablePagination: true,
-      paginationPageSize: 5,
+      paginationInitialPageSize: 5,
     })
     const next = () =>
       document.querySelector<HTMLButtonElement>('[data-page-action="next"]')!
@@ -627,7 +632,7 @@ describe('Фильтрация — сочетания с плагинами', ()
 
   test('FL23: группы rowGrouping собираются из отфильтрованных строк', async () => {
     await renderFilteringWith({
-      enableGrouping: true,
+      enableRowGrouping: true,
       initialGrouping: ['city'],
     })
     const groups = () =>
@@ -653,7 +658,7 @@ describe('Фильтрация — сочетания с плагинами', ()
         plugins: [
           columnFiltering({ debounceMs: 0 }),
           cellEditing({
-            canEdit: () => true,
+            canEditCell: () => true,
             onCellEdit: ({ rowId, columnId, value }) =>
               setData(prev =>
                 prev.map(row =>

@@ -264,7 +264,7 @@ describe('Row expanding: lazy children', () => {
       <composed.RowExpanding
         {...args}
         enablePagination
-        paginationPageSize={10}
+        paginationInitialPageSize={10}
       />,
     )
     await waitRow('lazy')
@@ -287,7 +287,7 @@ describe('Row expanding: lazy children', () => {
     const answer = deferred<Person[]>()
     await renderLazy(() => answer.promise, {
       enableRowSelection: true,
-      enableSubRowSelection: true,
+      rowSelectionSubRows: true,
     })
     await waitRow('lazy')
     const checkbox = (id: string) =>
@@ -433,7 +433,7 @@ describe('Row expanding: arrival highlight', () => {
     restore = themeTokens({ '--tsr-comp-row-arrival-duration': '60000ms' })
     await renderLazy(asyncKids(2), {
       enableRowSelection: true,
-      enableSubRowSelection: true,
+      rowSelectionSubRows: true,
     })
     await waitRow('lazy')
     const plain = rowOf('leaf')!.getBoundingClientRect()
@@ -517,7 +517,7 @@ describe('Row expanding: arrival highlight', () => {
     restore = themeTokens({ '--tsr-comp-row-arrival-duration': '60000ms' })
     await renderLazy(asyncKids(2), {
       enableRowSelection: true,
-      enableSubRowSelection: true,
+      rowSelectionSubRows: true,
     })
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)

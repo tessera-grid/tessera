@@ -130,7 +130,7 @@ describe('Касания (ADR 0086)', () => {
       enableColumnFiltering: true,
       enableColumnPinning: true,
       enableColumnDragging: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       enableHeaderActionMenu: true,
     })
     await waitForGrid()
@@ -181,7 +181,7 @@ describe('Касания (ADR 0086)', () => {
     skip,
   }) => {
     skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
-    renderGrid({ columnCount: 12, dataCount: 20, enableColumnResizing: true })
+    renderGrid({ columnCount: 12, dataCount: 20, enableColumnSizing: true })
     await waitForGrid()
     const head = headById(dataColumn())
     const grip = head.querySelector<HTMLElement>(GRIP)!
@@ -203,7 +203,7 @@ describe('Касания (ADR 0086)', () => {
   })
 
   test('TU4: касание грипа без сдвига открывает меню ширины', async () => {
-    renderGrid({ columnCount: 6, dataCount: 20, enableColumnResizing: true })
+    renderGrid({ columnCount: 6, dataCount: 20, enableColumnSizing: true })
     await waitForGrid()
     const grip = headById(dataColumn()).querySelector<HTMLElement>(GRIP)!
     await touch.realTap(center(grip))
@@ -213,7 +213,7 @@ describe('Касания (ADR 0086)', () => {
   })
 
   test('TU5: без наведения полоска грипа видна всегда', async () => {
-    renderGrid({ columnCount: 6, dataCount: 20, enableColumnResizing: true })
+    renderGrid({ columnCount: 6, dataCount: 20, enableColumnSizing: true })
     await waitForGrid()
     const grip = headById(dataColumn()).querySelector<HTMLElement>(GRIP)!
     const strip = grip.querySelector<HTMLElement>('[role="separator"]')!
@@ -451,7 +451,7 @@ describe('Касания (ADR 0086)', () => {
       initialExpanded: true,
       enableColumnSorting: true,
       enableColumnPinning: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       enableColumnDragging: true,
       enableRowDragging: true,
       enableRowExpanding: true,
@@ -552,7 +552,7 @@ describe('Касания (ADR 0086)', () => {
       dataCount: 8,
       enableColumnSorting: true,
       enableColumnPinning: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       enableColumnDragging: true,
       enableRowDragging: true,
       enableRowSelection: true,

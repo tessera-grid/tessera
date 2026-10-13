@@ -27,9 +27,9 @@ export const PanelsFromPlugins: StoryObj<StoryProps> = {
     // и счётчик выбора. Переключите enableToolbar / enableStatusBar в off — панель
     // уйдёт (columnVisibility станет инертен), в on — останется и без плагинов.
     enableColumnVisibility: true,
-    enableExport: true,
+    enableDataExport: true,
     enablePagination: true,
     enableRowSelection: true,
-    showSelectedCount: true,
+    rowSelectionSelectedCount: true,
   },
 }

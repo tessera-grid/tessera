@@ -376,7 +376,7 @@ describe('WCAG 2.5.8 и 2.4.7 — размер целей и видимость 
       initialExpanded: true,
       enableColumnSorting: true,
       enableColumnPinning: true,
-      enableColumnResizing: true,
+      enableColumnSizing: true,
       enableColumnDragging: true,
       enableRowDragging: true,
       enableRowExpanding: true,

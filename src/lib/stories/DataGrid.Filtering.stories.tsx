@@ -65,8 +65,8 @@ const GRID = {
   dataOverride: filteringData,
   enableColumnFiltering: true,
   enableQuickSearch: true,
-  columnFilteringOptions: { filteredCount: true },
-  quickSearchOptions: { filteredCount: true },
+  columnFilteringFilteredCount: true,
+  quickSearchFilteredCount: true,
 }
 
 export const Filtering: StoryObj<StoryProps> = {
@@ -160,10 +160,10 @@ export const FilteringCombined: StoryObj<StoryProps> = {
     ...GRID,
     dataOverride: makeFilteringData(200),
     enablePagination: true,
-    paginationPageSize: 25,
+    paginationInitialPageSize: 25,
     enableRowSelection: true,
-    showSelectedCount: true,
-    enableExport: true,
+    rowSelectionSelectedCount: true,
+    enableDataExport: true,
     enableRowDragging: true,
     // Смена фильтра возвращает на первую страницу. Выберите строки и сузьте фильтр —
     // счётчик внизу назовёт скрытые фильтром. Ручки перетаскивания исчезают, пока
@@ -329,11 +329,8 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
       <StoryComponent
         {...normalizeArgs(args)}
         updateArgs={argsUpdater(id)}
-        columnFilteringOptions={{
-          ...args.columnFilteringOptions,
-          timeZone: timeZone === 'browser' ? undefined : timeZone,
-          dateLocale: dateLocale === 'ru' ? ru : undefined,
-        }}
+        columnFilteringTimeZone={timeZone === 'browser' ? undefined : timeZone}
+        columnFilteringDateLocale={dateLocale === 'ru' ? ru : undefined}
       />
     )
   },

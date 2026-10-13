@@ -25,7 +25,7 @@ describe('Кебаб заголовка — загрузка модуля', () =
       dataCount: 5,
       enableColumnSorting: true,
       enableHeaderActionMenu: true,
-      headerActionMenuOptions: { mode: 'always' },
+      headerActionMenuMode: 'always',
     })
     await waitForGrid()
 

@@ -79,10 +79,12 @@ describe('rowDragging', () => {
     expect(table.atoms.rowDragging.get().activeId).toBe('1')
   })
 
-  it('getCanDrag: плоская шапка и enable=true → true; enable=false → false', () => {
+  it('getCanDrag: плоская шапка → true; canDragRow запрещает строку → false', () => {
     expect(build([]).table.getRowModel().rows[0].getCanDrag()).toBe(true)
     expect(
-      build([], { enable: false }).table.getRowModel().rows[0].getCanDrag(),
+      build([], { canDragRow: () => false })
+        .table.getRowModel()
+        .rows[0].getCanDrag(),
     ).toBe(false)
   })
 

@@ -100,7 +100,7 @@ describe('Дерево доступности (AX)', () => {
   })
 
   test('AX4: загрузка — корень busy, progressbar "Loading"', async () => {
-    await renderGrid({ columnCount: 3, dataCount: 3, enableLoading: true })
+    await renderGrid({ columnCount: 3, dataCount: 3, loading: 'refresh' })
     await waitForGrid()
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
@@ -113,7 +113,7 @@ describe('Дерево доступности (AX)', () => {
   })
 
   test('AX5: скелет первой загрузки — нет таблицы, есть status "Loading"', async () => {
-    await renderGrid({ columnCount: 3, dataCount: 3, enableSkeleton: true })
+    await renderGrid({ columnCount: 3, dataCount: 3, loading: 'initial' })
     await expect
       .poll(() => document.querySelector('.data-grid__body--skeleton'))
       .toBeTruthy()

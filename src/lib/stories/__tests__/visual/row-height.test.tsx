@@ -39,7 +39,7 @@ describe('Высота строк и шапки, ширина колонок п�
     await view.unmount()
 
     const skeleton = await render(
-      <composed.RowHeight rowHeight={60} enableSkeleton />,
+      <composed.RowHeight rowHeight={60} loading="initial" />,
     )
     await expect
       .poll(
@@ -183,12 +183,12 @@ describe('Высота строк и шапки, ширина колонок п�
         enableRowActions
         enableColumnSorting
         enableColumnPinning
-        enableColumnResizing
+        enableColumnSizing
         enableColumnDragging
         enableHeaderActionMenu
         enableCellEditing
-        cellEditingCanEdit={() => true}
-        enableGrouping
+        cellEditingCanEditCell={() => true}
+        enableRowGrouping
         enableColumnFiltering
         enableFooter
         enableKeyboardNavigation

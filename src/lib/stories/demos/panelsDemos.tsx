@@ -120,7 +120,7 @@ export const ServerPaginationDemo = ({
   ...args
 }: ServerPaginationDemoProps) => {
   const { entries, log, clear } = useCallbackLog()
-  const initialPageSize = args.paginationPageSize ?? 25
+  const initialPageSize = args.paginationInitialPageSize ?? 25
   const [page, setPage] = useState(() =>
     queryPage(0, initialPageSize, undefined),
   )
@@ -172,13 +172,13 @@ export const ServerPaginationDemo = ({
         {...args}
         columnsOverride={filteringColumns}
         dataOverride={page}
-        enableLoading={loading}
+        loading={loading ? 'refresh' : false}
         enablePagination
         paginationServer
         paginationRowCount={SERVER_TOTAL}
         enableColumnSorting
-        serverColumnSorting
-        enableMultiSort={false}
+        columnSortingServer
+        columnSortingMultiSort={false}
         onPageChange={onPageChange}
         onToggleColumnSort={onToggleColumnSort}
       />

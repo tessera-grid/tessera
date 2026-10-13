@@ -3,18 +3,18 @@ import { useEffect, useRef, useState } from 'react'
 import {
   createLoadingDisplay,
   type LoadingDisplay,
-  type LoadingOptions,
-  resolveLoadingOptions,
+  type RefreshOptions,
+  resolveRefreshOptions,
 } from '../core/loadingDisplay'
 import { useLatest } from '../core/useLatest'
 
 /** Показано ли обновление данных: с задержкой и минимумом (ADR 0094, §3). */
 export const useLoadingDisplay = (
   loading: boolean,
-  options: LoadingOptions | undefined,
+  options: RefreshOptions | undefined,
 ) => {
   const [shown, setShown] = useState(false)
-  const resolved = useLatest(resolveLoadingOptions(options))
+  const resolved = useLatest(resolveRefreshOptions(options))
   const display = useRef<LoadingDisplay | null>(null)
 
   useEffect(() => {

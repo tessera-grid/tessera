@@ -1,7 +1,8 @@
 /**
  * Полная панель Controls историй DataGrid: каждая история на общей мете получает все
  * контролы по группам, сама задаёт только своё. Настройка фичи видна, пока фича
- * включена; форма мока — пока история не подаёт свои данные и колонки.
+ * включена; форма мока — пока история не подаёт свои данные и колонки. Имена — по
+ * правилу ADR 0106: `enable<Фабрика>` и `<фабрика><Опция>`.
  */
 import type { InputType } from 'storybook/internal/csf'
 
@@ -15,76 +16,85 @@ import {
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
-import { DEFAULT_LOADING_OPTIONS } from '../../../../lib/core/loadingDisplay'
+import { DEFAULT_REFRESH_OPTIONS } from '../../../../lib/core/loadingDisplay'
 import {
   DEFAULT_COLUMN_FILTERING_OPTIONS,
   DEFAULT_QUICK_SEARCH_OPTIONS,
-  cellSelectionOptionsType,
+  backToTopAxesType,
+  backToTopHorizontalThresholdType,
+  backToTopThresholdType,
+  cellSelectionDragSelectionType,
+  cellSelectionMultiRangeType,
+  cellSelectionRangeSelectionType,
   columnCountType,
-  columnFilteringOptionsType,
+  columnFilteringDebounceMsType,
+  columnFilteringFilteredCountType,
+  columnFilteringTimeZoneType,
+  columnPinningLeafPinningType,
+  columnSortingMultiSortType,
+  columnSortingRemovalType,
+  columnSortingServerType,
   containerHeightType,
   contrastType,
   dataCountType,
+  dataExportAllowType,
+  dataExportFilenameType,
   dataNestingType,
   defaultColumnType,
-  headerHeightType,
-  rowHeightType,
   enableAnnouncementsType,
-  enableOverflowTooltipType,
+  enableBackToTopType,
   enableCellEditingType,
   enableCellSelectionType,
   enableColumnDraggingType,
   enableColumnFilteringType,
   enableColumnPinningType,
-  enableColumnResizingType,
+  enableColumnSizingType,
   enableColumnSortingType,
   enableColumnVisibilityType,
   enableContextMenuType,
-  enableExportType,
+  enableDataExportType,
   enableFooterType,
-  enableGroupingType,
   enableHeaderActionMenuType,
-  enableKeyboardNavigationType,
-  enableLeafPinningType,
-  enableLoadingType,
-  loadingOptionsType,
-  enableMultiSortType,
-  enablePaginationType,
   enableInfiniteScrollType,
-  enableBackToTopType,
-  backToTopOptionsType,
-  infiniteScrollOptionsType,
+  enableKeyboardNavigationType,
+  enableOverflowTooltipType,
+  enablePaginationType,
   enableQuickSearchType,
   enableRowActionMenuType,
   enableRowActionsType,
   enableRowDraggingType,
   enableRowExpandingType,
+  enableRowGroupingType,
   enableRowSelectionType,
-  enableSkeletonType,
-  enableSortingRemovalType,
   enableStatusBarType,
-  enableSubRowSelectionType,
   enableToolbarType,
-  exportOptionsType,
-  headerActionMenuOptionsType,
+  headerActionMenuModeType,
+  headerActionMenuThresholdType,
+  headerHeightType,
   headerNestingType,
   inCategory,
+  infiniteScrollLoadedCountType,
+  infiniteScrollThresholdType,
+  loadingType,
   localeType,
-  multiSortOptionsType,
   numberHeightType,
   numberMaxHeightType,
-  paginationPageSizeType,
+  paginationInitialPageSizeType,
   paginationPageSizesType,
-  quickSearchOptionsType,
-  rowActionMenuOptionsType,
+  quickSearchDebounceMsType,
+  quickSearchFilteredCountType,
+  refreshOptionsType,
+  rowActionMenuModeType,
+  rowActionMenuThresholdType,
+  rowActionsCollapsedWidthType,
   rowActionsColumnType,
-  rowActionsOptionsType,
-  rowDraggingEnableType,
+  rowActionsWidthType,
   rowExpandingColumnType,
   rowExpandingMaxDepthType,
   rowExpandingTreeLinesType,
-  serverColumnSortingType,
-  showSelectedCountType,
+  rowHeightType,
+  rowSelectionSelectedCountType,
+  rowSelectionSubRowsType,
   showStubType,
   skeletonOptionsType,
 } from './argTypes'
@@ -95,6 +105,14 @@ const when = (arg: string, types: Record<string, InputType>) =>
     Object.entries(types).map(([name, type]) => [
       name,
       { ...type, if: { arg } },
+    ]),
+  )
+/** Контрол виден при значении `eq` аргумента `arg`. */
+const whenEq = (arg: string, eq: string, types: Record<string, InputType>) =>
+  Object.fromEntries(
+    Object.entries(types).map(([name, type]) => [
+      name,
+      { ...type, if: { arg, eq } },
     ]),
   )
 const unless = (arg: string, type: InputType): InputType => ({
@@ -117,10 +135,9 @@ export const dataGridArgTypes = {
     showStub: showStubType,
   }),
   ...inCategory('Ядро: панели и состояния', {
-    enableSkeleton: enableSkeletonType,
-    ...when('enableSkeleton', { skeletonOptions: skeletonOptionsType }),
-    enableLoading: enableLoadingType,
-    ...when('enableLoading', { loadingOptions: loadingOptionsType }),
+    loading: loadingType,
+    ...whenEq('loading', 'initial', { skeletonOptions: skeletonOptionsType }),
+    ...whenEq('loading', 'refresh', { refreshOptions: refreshOptionsType }),
     contrast: contrastType,
     enableFooter: enableFooterType,
     enableToolbar: enableToolbarType,
@@ -134,10 +151,9 @@ export const dataGridArgTypes = {
     {
       enableColumnSorting: enableColumnSortingType,
       ...when('enableColumnSorting', {
-        enableSortingRemoval: enableSortingRemovalType,
-        enableMultiSort: enableMultiSortType,
-        multiSortOptions: multiSortOptionsType,
-        serverColumnSorting: serverColumnSortingType,
+        columnSortingRemoval: columnSortingRemovalType,
+        columnSortingMultiSort: columnSortingMultiSortType,
+        columnSortingServer: columnSortingServerType,
       }),
     },
     'Сортировка',
@@ -147,7 +163,7 @@ export const dataGridArgTypes = {
     {
       enableColumnPinning: enableColumnPinningType,
       ...when('enableColumnPinning', {
-        enableLeafPinning: enableLeafPinningType,
+        columnPinningLeafPinning: columnPinningLeafPinningType,
       }),
     },
     'Закрепление',
@@ -155,12 +171,13 @@ export const dataGridArgTypes = {
   ...inCategory(
     'Колонки',
     {
-      enableColumnResizing: enableColumnResizingType,
+      enableColumnSizing: enableColumnSizingType,
       enableColumnDragging: enableColumnDraggingType,
       enableColumnVisibility: enableColumnVisibilityType,
       enableHeaderActionMenu: enableHeaderActionMenuType,
       ...when('enableHeaderActionMenu', {
-        headerActionMenuOptions: headerActionMenuOptionsType,
+        headerActionMenuMode: headerActionMenuModeType,
+        headerActionMenuThreshold: headerActionMenuThresholdType,
       }),
     },
     'Ширина, порядок, видимость',
@@ -170,8 +187,8 @@ export const dataGridArgTypes = {
     {
       enableRowSelection: enableRowSelectionType,
       ...when('enableRowSelection', {
-        enableSubRowSelection: enableSubRowSelectionType,
-        showSelectedCount: showSelectedCountType,
+        rowSelectionSubRows: rowSelectionSubRowsType,
+        rowSelectionSelectedCount: rowSelectionSelectedCountType,
       }),
     },
     'Выбор',
@@ -192,10 +209,7 @@ export const dataGridArgTypes = {
     'Строки',
     {
       enableRowDragging: enableRowDraggingType,
-      ...when('enableRowDragging', {
-        rowDraggingEnable: rowDraggingEnableType,
-      }),
-      enableGrouping: enableGroupingType,
+      enableRowGrouping: enableRowGroupingType,
     },
     'Порядок и группировка',
   ),
@@ -204,12 +218,14 @@ export const dataGridArgTypes = {
     {
       enableRowActions: enableRowActionsType,
       ...when('enableRowActions', {
-        rowActionsOptions: rowActionsOptionsType,
+        rowActionsWidth: rowActionsWidthType,
+        rowActionsCollapsedWidth: rowActionsCollapsedWidthType,
         rowActionsColumn: rowActionsColumnType,
       }),
       enableRowActionMenu: enableRowActionMenuType,
       ...when('enableRowActionMenu', {
-        rowActionMenuOptions: rowActionMenuOptionsType,
+        rowActionMenuMode: rowActionMenuModeType,
+        rowActionMenuThreshold: rowActionMenuThresholdType,
       }),
     },
     'Действия',
@@ -218,7 +234,9 @@ export const dataGridArgTypes = {
     enableCellEditing: enableCellEditingType,
     enableCellSelection: enableCellSelectionType,
     ...when('enableCellSelection', {
-      cellSelectionOptions: cellSelectionOptionsType,
+      cellSelectionRangeSelection: cellSelectionRangeSelectionType,
+      cellSelectionDragSelection: cellSelectionDragSelectionType,
+      cellSelectionMultiRange: cellSelectionMultiRangeType,
     }),
     enableContextMenu: enableContextMenuType,
     enableKeyboardNavigation: enableKeyboardNavigationType,
@@ -226,25 +244,36 @@ export const dataGridArgTypes = {
   ...inCategory('Поиск, фильтры, страницы, экспорт', {
     enableQuickSearch: enableQuickSearchType,
     ...when('enableQuickSearch', {
-      quickSearchOptions: quickSearchOptionsType,
+      quickSearchDebounceMs: quickSearchDebounceMsType,
+      quickSearchFilteredCount: quickSearchFilteredCountType,
     }),
     enableColumnFiltering: enableColumnFilteringType,
     ...when('enableColumnFiltering', {
-      columnFilteringOptions: columnFilteringOptionsType,
+      columnFilteringDebounceMs: columnFilteringDebounceMsType,
+      columnFilteringFilteredCount: columnFilteringFilteredCountType,
+      columnFilteringTimeZone: columnFilteringTimeZoneType,
     }),
     enablePagination: enablePaginationType,
     ...when('enablePagination', {
-      paginationPageSize: paginationPageSizeType,
+      paginationInitialPageSize: paginationInitialPageSizeType,
       paginationPageSizes: paginationPageSizesType,
     }),
     enableInfiniteScroll: enableInfiniteScrollType,
     ...when('enableInfiniteScroll', {
-      infiniteScrollOptions: infiniteScrollOptionsType,
+      infiniteScrollThreshold: infiniteScrollThresholdType,
+      infiniteScrollLoadedCount: infiniteScrollLoadedCountType,
     }),
     enableBackToTop: enableBackToTopType,
-    ...when('enableBackToTop', { backToTopOptions: backToTopOptionsType }),
-    enableExport: enableExportType,
-    ...when('enableExport', { exportOptions: exportOptionsType }),
+    ...when('enableBackToTop', {
+      backToTopThreshold: backToTopThresholdType,
+      backToTopHorizontalThreshold: backToTopHorizontalThresholdType,
+      backToTopAxes: backToTopAxesType,
+    }),
+    enableDataExport: enableDataExportType,
+    ...when('enableDataExport', {
+      dataExportAllow: dataExportAllowType,
+      dataExportFilename: dataExportFilenameType,
+    }),
   }),
 }
 
@@ -261,6 +290,13 @@ const PANEL_AUTO = 'auto' as unknown as undefined
 export const panelFlag = (value: boolean | undefined) =>
   value === PANEL_AUTO ? undefined : value
 
+/** Вариант «off» загрузки (ADR 0106): `mapping` доносит `false`, тесты — строку. */
+const LOADING_OFF = 'off' as unknown as false
+
+/** Загрузка для грида: истории мимо Storybook (тесты) получают «off» без `mapping`. */
+export const loadingArg = (value: 'initial' | 'refresh' | false | undefined) =>
+  value === LOADING_OFF ? false : value
+
 /**
  * Значения по умолчанию — те же, что у библиотеки без аргумента: история ведёт себя
  * как раньше. Высоты не задаём: без них грид берёт их из токенов темы и раскладки.
@@ -271,10 +307,9 @@ export const dataGridDefaultArgs = {
   showStub: false,
   defaultColumn: { size: 150, ...DEFAULT_COLUMN },
 
-  enableSkeleton: false,
+  loading: LOADING_OFF,
   skeletonOptions: DEFAULT_SKELETON_OPTIONS,
-  enableLoading: false,
-  loadingOptions: DEFAULT_LOADING_OPTIONS,
+  refreshOptions: DEFAULT_REFRESH_OPTIONS,
   contrast: 'auto',
   enableFooter: false,
   enableToolbar: PANEL_AUTO,
@@ -284,55 +319,53 @@ export const dataGridDefaultArgs = {
   locale: 'en',
 
   enableColumnSorting: false,
-  enableSortingRemoval: true,
-  enableMultiSort: true,
-  multiSortOptions: {},
-  serverColumnSorting: false,
-  enableColumnResizing: false,
+  columnSortingRemoval: true,
+  columnSortingMultiSort: true,
+  columnSortingServer: false,
+  enableColumnSizing: false,
   enableColumnDragging: false,
   enableColumnPinning: false,
-  enableLeafPinning: false,
+  columnPinningLeafPinning: false,
   enableColumnVisibility: false,
   enableHeaderActionMenu: false,
-  headerActionMenuOptions: DEFAULT_HEADER_ACTION_MENU,
+  headerActionMenuMode: DEFAULT_HEADER_ACTION_MENU.mode,
+  headerActionMenuThreshold: DEFAULT_HEADER_ACTION_MENU.threshold,
 
   enableRowSelection: false,
-  enableSubRowSelection: false,
-  showSelectedCount: false,
+  rowSelectionSubRows: false,
+  rowSelectionSelectedCount: false,
   enableRowExpanding: false,
   rowExpandingMaxDepth: DEFAULT_MAX_EXPANDING_DEPTH,
   rowExpandingColumn: 'auto',
   rowExpandingTreeLines: false,
   enableRowDragging: false,
-  rowDraggingEnable: true,
-  enableGrouping: false,
+  enableRowGrouping: false,
   enableRowActions: false,
-  rowActionsOptions: DEFAULT_ROW_ACTIONS_OPTIONS,
+  rowActionsWidth: DEFAULT_ROW_ACTIONS_OPTIONS.width,
+  rowActionsCollapsedWidth: DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth,
   rowActionsColumn: 'auto',
   enableRowActionMenu: false,
-  rowActionMenuOptions: DEFAULT_ROW_ACTION_MENU,
+  rowActionMenuMode: DEFAULT_ROW_ACTION_MENU.mode,
+  rowActionMenuThreshold: DEFAULT_ROW_ACTION_MENU.threshold,
 
   enableCellEditing: false,
   enableCellSelection: false,
-  cellSelectionOptions: {
-    rangeSelection: true,
-    dragSelection: true,
-    multiRange: true,
-  },
+  cellSelectionRangeSelection: true,
+  cellSelectionDragSelection: true,
+  cellSelectionMultiRange: true,
   enableContextMenu: false,
   enableKeyboardNavigation: false,
 
   enableQuickSearch: false,
-  quickSearchOptions: DEFAULT_QUICK_SEARCH_OPTIONS,
+  quickSearchDebounceMs: DEFAULT_QUICK_SEARCH_OPTIONS.debounceMs,
+  quickSearchFilteredCount: DEFAULT_QUICK_SEARCH_OPTIONS.filteredCount,
   enableColumnFiltering: false,
-  columnFilteringOptions: DEFAULT_COLUMN_FILTERING_OPTIONS,
+  columnFilteringDebounceMs: DEFAULT_COLUMN_FILTERING_OPTIONS.debounceMs,
+  columnFilteringFilteredCount: DEFAULT_COLUMN_FILTERING_OPTIONS.filteredCount,
   enablePagination: false,
-  paginationPageSize: DEFAULT_PAGE_SIZE,
+  paginationInitialPageSize: DEFAULT_PAGE_SIZE,
   paginationPageSizes: DEFAULT_PAGE_SIZES,
   enableInfiniteScroll: false,
-  infiniteScrollOptions: {},
   enableBackToTop: false,
-  backToTopOptions: {},
-  enableExport: false,
-  exportOptions: {},
+  enableDataExport: false,
 } as const

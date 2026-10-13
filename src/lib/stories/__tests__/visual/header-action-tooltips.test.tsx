@@ -78,7 +78,7 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
       dataCount: 5,
       enableColumnSorting: true,
       enableHeaderActionMenu: true,
-      headerActionMenuOptions: { mode: 'always' },
+      headerActionMenuMode: 'always',
     })
     await waitForGrid()
     const head = document.querySelector<HTMLElement>(

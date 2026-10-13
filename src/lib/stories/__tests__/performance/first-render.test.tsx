@@ -220,7 +220,11 @@ describe('Производительность первой отрисовки �
         const measure = async (skeleton: boolean) => {
           const result = await measureRenderWork(
             () =>
-              renderGrid({ ...size, ...ALL_PLUGINS, enableSkeleton: skeleton }),
+              renderGrid({
+                ...size,
+                ...ALL_PLUGINS,
+                loading: skeleton ? 'initial' : false,
+              }),
             () =>
               !!document.querySelector(
                 skeleton
