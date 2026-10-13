@@ -158,7 +158,7 @@ export const settled = async (container: ParentNode = document) => {
  * ресурсов. Ленивые модули, начатые при рендере (ADR 0061), приходят позже монтирования
  * и вставляют свои стили — один раз на документ.
  */
-const waitForQuietDocument = async (quiet = 1000, timeout = 15_000) => {
+export const waitForQuietDocument = async (quiet = 1000, timeout = 15_000) => {
   let last = performance.now()
   const touch = () => (last = performance.now())
   const head = new MutationObserver(touch)

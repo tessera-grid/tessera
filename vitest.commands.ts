@@ -31,10 +31,14 @@ import {
   realTouchUp,
   realWheel,
 } from './src/lib/stories/__tests__/pointer.commands'
+import {
+  renderTraceStart,
+  renderTraceStop,
+} from './src/lib/stories/__tests__/work.commands'
 
 // Дерево доступности Chromium через CDP (ADR 0033); настоящий drag мышью (TQ3);
 // задержка и отказ загрузки модуля (ADR 0061); касания мобильной эмуляции (ADR 0084);
-// память страницы через CDP (ADR 0092).
+// память страницы через CDP (ADR 0092); раскладка и стили для счётчиков работы (ADR 0099).
 export const testCommands = {
   axTree,
   collectGarbage,
@@ -59,4 +63,6 @@ export const testCommands = {
   routeModule,
   releaseModule,
   heldModuleRequests,
+  renderTraceStart,
+  renderTraceStop,
 }

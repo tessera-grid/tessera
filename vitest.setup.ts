@@ -1,3 +1,6 @@
+// Хук коммитов React — до любого импорта `react-dom` (ADR 0099, PF2).
+import './src/lib/stories/__tests__/reactCommits'
+
 import { setProjectAnnotations } from '@storybook/react-vite'
 import { beforeEach } from 'vitest'
 import { configure } from 'vitest-browser-react/pure'
