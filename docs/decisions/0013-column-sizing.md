@@ -259,13 +259,15 @@ Chromium), перформанс-покрытие даёт кейс ресайз�
 
 **Активация и affordance**
 
-| ID  | Требование                                                                                                      | Тест                                  |
-| --- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| CR1 | Плагин инертен без `enableColumnResizing`: грипы не отрисованы, заголовки несут `data-column-resizable='false'` | ✔ `CR1: the plugin is inert …`        |
-| CR2 | При `enableColumnResizing` каждый ресайзабельный столбец получает грип в шапке (`data-column-resizable='true'`) | ✔ `CR2: each resizable data column …` |
-| CR3 | Грип несёт `role="separator"`                                                                                   | ✔ `CR3: the resize grip exposes …`    |
-| CR4 | Грип скрыт (`opacity: 0`), пока на заголовок не наведён курсор                                                  | ✔ `CR4: … hidden … until … hovered`   |
-| CR5 | Грип проявляется при наведении на заголовок                                                                     | ✔ `CR5: … revealed on header hover`   |
+| ID   | Требование                                                                                                                     | Тест                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| CR1  | Плагин инертен без `enableColumnResizing`: грипы не отрисованы, заголовки несут `data-column-resizable='false'`                | ✔ `CR1: the plugin is inert …`                          |
+| CR2  | При `enableColumnResizing` каждый ресайзабельный столбец получает грип в шапке (`data-column-resizable='true'`)                | ✔ `CR2: each resizable data column …`                   |
+| CR3  | Грип несёт `role="separator"`                                                                                                  | ✔ `CR3: the resize grip exposes …`                      |
+| CR4  | Грип скрыт (`opacity: 0`), пока на заголовок не наведён курсор                                                                 | ✔ `CR4: … hidden … until … hovered`                     |
+| CR5  | Грип проявляется при наведении на заголовок                                                                                    | ✔ `CR5: … revealed on header hover`                     |
+| CR19 | Черта грипа прижата к правой границе заголовка — между ними только отступ фона грипа (4px) — при наведении и во время протяжки | ✔ `CR19: the grip line sits at the header right edge …` |
+| CR20 | Пока идёт протяжка или открыто меню ширины, черта грипа вытянута, как при наведении, и без наведения на неё                    | ✔ `CR20: the grip line stays extended …`                |
 
 **Механика ресайза**
 

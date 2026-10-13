@@ -208,10 +208,11 @@
   --tsr-comp-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
   /* Для появления: быстрый старт, плавное завершение. */
   --tsr-comp-motion-easing-out: cubic-bezier(0, 0, 0.2, 1);
-  --tsr-comp-head-cell-transition:
-    background-color var(--tsr-comp-motion-duration)
-      var(--tsr-comp-motion-easing),
-    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+  --tsr-comp-head-cell-transition: background-color
+    var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+  /* Сдвиг заголовков во время перетаскивания колонки; после броска — без перехода. */
+  --tsr-comp-head-cell-shift-transition: transform
+    var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
   --tsr-comp-row-transition:
     background-color var(--tsr-comp-motion-duration)
       var(--tsr-comp-motion-easing),

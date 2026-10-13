@@ -465,6 +465,9 @@ export const DataGrid = ({
                       keyboardNavigation ? releaseContainerFocus : undefined
                     }
                     data-resizing={isResizingColumns !== false}
+                    data-column-dragging={
+                      state.columnDraggingActiveId != null || undefined
+                    }
                     data-load-failed={loadError.stubShown || undefined}
                     data-filter-empty={showFilterStub || undefined}
                     onCopy={handleCopy}

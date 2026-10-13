@@ -209,6 +209,25 @@
       var(--tsr-comp-motion-easing-out);
 }
 
+/*
+ * Соседи сдвигаются плавно, только пока колонку тащат (ADR 0006, D38): бросок меняет
+ * порядок и снимает сдвиг в одном кадре — ячейка встаёт на место без обратного переезда.
+ */
+:global(.data-grid__container[data-column-dragging]) .head__cell {
+  transition:
+    var(--tsr-comp-head-cell-transition),
+    var(--tsr-comp-head-cell-shift-transition);
+}
+
+:global(.data-grid__container[data-column-dragging])
+  .head__cell[data-column-highlight] {
+  transition:
+    var(--tsr-comp-head-cell-transition),
+    var(--tsr-comp-head-cell-shift-transition),
+    --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out);
+}
+
 /* Высокая контрастность (ADR 0087): подсветка колонки — `Mark`. */
 @media (forced-colors: active) {
   .head__cell[data-column-highlight] {

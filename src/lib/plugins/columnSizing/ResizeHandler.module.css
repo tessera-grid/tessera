@@ -1,7 +1,8 @@
 .wrapper {
   position: absolute;
   display: flex;
-  justify-content: flex-end;
+  /* Ячейка делает обёртку сеткой раскрытия (buttonVisibility.css): дорожка и грип — справа. */
+  justify-content: end;
   height: 100%;
   right: 0;
   color: var(--tsr-comp-control-color);
@@ -15,7 +16,7 @@
   height: 20px;
 }
 
-.wrapper .handler[data-button-active='true'] {
+.wrapper[data-button-active='true'] .handler {
   height: 20px;
 }
 
@@ -35,6 +36,7 @@
 
 .background {
   display: inherit;
+  justify-self: end;
   padding-right: 4px;
 }
 

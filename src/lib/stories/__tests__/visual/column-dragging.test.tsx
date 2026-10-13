@@ -1,4 +1,4 @@
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -526,5 +526,75 @@ describe('Column Dragging — requirements', () => {
     } finally {
       firePointer('pointerup', document, tx, hy)
     }
+  })
+
+  test('D38: after a mouse drop the dropped column and its neighbour stay on their new places — no slide back, frame by frame', async () => {
+    const container = await renderColumnDragging()
+    const [source, target] = renderedCells(container).filter(cell =>
+      cell.querySelector(HANDLE),
+    )
+    const sourceId = source.getAttribute('data-column-id')!
+    const targetId = target.getAttribute('data-column-id')!
+    const cellOf = (id: string) =>
+      container.querySelector<HTMLElement>(
+        `${HEAD_CELL}[data-column-id='${id}']`,
+      )!
+
+    await userEvent.hover(source)
+    const handle = source.querySelector<HTMLElement>(HANDLE)!
+    await expect
+      .poll(() => handle.getBoundingClientRect().width)
+      .toBeGreaterThan(0)
+    const hr = handle.getBoundingClientRect()
+    const tr = target.getBoundingClientRect()
+    const from = { x: hr.left + hr.width / 2, y: hr.top + hr.height / 2 }
+    const to = { x: tr.left + tr.width * 0.6, y: from.y }
+    const pointer = commands as unknown as {
+      realDragHold: (from: object, to: object) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    await pointer.realDragHold(from, to)
+
+    // Удержание: сосед уже сдвинут на место колонки — дальше его вид не меняется.
+    // Точка броска вдали от края: автопрокрутка сместила бы обе колонки.
+    const sourceWidth = source.getBoundingClientRect().width
+    await expect
+      .poll(() => Math.abs(translateX(cellOf(targetId)) + sourceWidth))
+      .toBeLessThan(1)
+    expect(scrollerOf(container).scrollLeft).toBe(0)
+
+    const frames: { source: number; visible: boolean; target: number }[] = []
+    let sampling = true
+    const sample = () => {
+      if (!sampling) return
+      frames.push({
+        source: cellOf(sourceId).getBoundingClientRect().left,
+        visible: getComputedStyle(cellOf(sourceId)).opacity !== '0',
+        target: cellOf(targetId).getBoundingClientRect().left,
+      })
+      requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+    await pointer.realMouseUp()
+    await expect.poll(() => container.querySelector(OVERLAY)).toBeNull()
+    await new Promise(resolve => setTimeout(resolve, 500))
+    sampling = false
+
+    expect(columnIdOrder(container).indexOf(sourceId)).toBeGreaterThan(
+      columnIdOrder(container).indexOf(targetId),
+    )
+    const last = frames.at(-1)!
+    frames.forEach((frame, index) => {
+      expect(
+        Math.abs(frame.target - last.target),
+        `target, frame ${index}`,
+      ).toBeLessThan(1)
+      if (frame.visible) {
+        expect(
+          Math.abs(frame.source - last.source),
+          `source, frame ${index}`,
+        ).toBeLessThan(1)
+      }
+    })
   })
 })

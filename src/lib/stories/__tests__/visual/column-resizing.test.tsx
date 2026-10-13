@@ -24,6 +24,10 @@ const BODY_CELL = '.data-grid__body-cell'
 const RESIZE_GRIP = '.resize__handler--column'
 /** A header cell of a real (non-action) data column. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
+/** Отступ черты грипа от правой границы заголовка (`padding-right` фона грипа), px. */
+const GRIP_EDGE_GAP = 4
+/** Высота черты грипа при наведении и в активном состоянии, px. */
+const GRIP_ACTIVE_HEIGHT = 20
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
@@ -523,5 +527,98 @@ describe('Column Resizing — requirements', () => {
     await nextFrame()
     await nextFrame()
     adjacent()
+  })
+
+  test('CR19: the grip line sits at the header right edge — on hover and mid-drag', async () => {
+    const container = await renderColumnResizing()
+    const cell = firstDataCell(container)
+    const lineOf = () =>
+      gripOf(firstDataCell(container)).querySelector<HTMLElement>(
+        '[role="separator"]',
+      )!
+    /** Зазор между правым краем черты и правой границей заголовка, px. */
+    const gap = () =>
+      firstDataCell(container).getBoundingClientRect().right -
+      lineOf().getBoundingClientRect().right
+
+    await revealGrip(cell)
+    await expect.poll(gap).toBeLessThanOrEqual(GRIP_EDGE_GAP + 1)
+    expect(gap()).toBeGreaterThanOrEqual(0)
+
+    const line = lineOf().getBoundingClientRect()
+    const from = {
+      x: line.left + line.width / 2,
+      y: line.top + line.height / 2,
+    }
+    const pointer = commands as unknown as {
+      realDragHold: (from: object, to: object) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    await pointer.realDragHold(from, { x: from.x + 60, y: from.y })
+    try {
+      await expect
+        .poll(() =>
+          firstDataCell(container).getAttribute('data-column-resizing'),
+        )
+        .toBe('true')
+      await expect.poll(gap).toBeLessThanOrEqual(GRIP_EDGE_GAP + 1)
+      expect(gap()).toBeGreaterThanOrEqual(0)
+    } finally {
+      await pointer.realMouseUp()
+    }
+  })
+
+  test('CR20: the grip line stays extended while resizing or while its width menu is open, without hover', async () => {
+    const container = await renderColumnResizing()
+    const cell = firstDataCell(container)
+    const lineHeight = () =>
+      gripOf(firstDataCell(container))
+        .querySelector<HTMLElement>('[role="separator"]')!
+        .getBoundingClientRect().height
+    const pointer = commands as unknown as {
+      realDragHold: (from: object, to: object) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+
+    // Протяжка: указатель ушёл с грипа вниз, в тело — наведения на грипе нет.
+    await revealGrip(cell)
+    const line = gripOf(cell)
+      .querySelector<HTMLElement>('[role="separator"]')!
+      .getBoundingClientRect()
+    const from = {
+      x: line.left + line.width / 2,
+      y: line.top + line.height / 2,
+    }
+    await pointer.realDragHold(from, { x: from.x + 40, y: from.y + 120 })
+    try {
+      await expect
+        .poll(() =>
+          firstDataCell(container).getAttribute('data-column-resizing'),
+        )
+        .toBe('true')
+      await expect.poll(lineHeight).toBe(GRIP_ACTIVE_HEIGHT)
+    } finally {
+      await pointer.realMouseUp()
+    }
+    await expect
+      .poll(() => container.querySelector('[data-resizing="true"]'))
+      .toBeNull()
+
+    // Меню ширины: клик открывает меню, указатель уходит на дальнюю колонку.
+    await revealGrip(firstDataCell(container))
+    await userEvent.click(gripOf(firstDataCell(container)))
+    await expect
+      .poll(() => document.querySelector('[role="menu"]'))
+      .not.toBeNull()
+    await userEvent.hover(renderedDataCells(container)[3])
+    await expect
+      .poll(() =>
+        wrapperOf(gripOf(firstDataCell(container))).getAttribute(
+          'data-button-active',
+        ),
+      )
+      .toBe('true')
+    await expect.poll(lineHeight).toBe(GRIP_ACTIVE_HEIGHT)
+    await userEvent.keyboard('{Escape}')
   })
 })
