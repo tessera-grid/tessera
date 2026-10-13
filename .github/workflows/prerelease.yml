@@ -1,0 +1,61 @@
+# Шаги перед публикацией (ADR 0103, CI6): все наборы в движках, React 18 и пакет глазами
+# потребителя. Раз в неделю при новых коммитах, гейтом выпуска и по кнопке.
+name: Pre-release checks
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: New commits this week
+    runs-on: ubuntu-latest
+    outputs:
+      recent: ${{ steps.recent.outputs.recent }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: recent
+        run: |
+          if [ -n "$(git log --since='7 days ago' --format=%H -1)" ]; then
+            echo "recent=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "recent=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  checks:
+    name: Engines, React 18, package
+    needs: changes
+    # По расписанию — только если за неделю были коммиты; гейт и кнопка — всегда.
+    if: github.event_name != 'schedule' || needs.changes.outputs.recent == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run build
+      - run: npm run test:engines
+      - run: npm run test:react18
+      - run: npm run check:package
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prerelease-failures
+          path: |
+            src/**/__screenshots__/
+            .vitest-attachments/
+          if-no-files-found: ignore

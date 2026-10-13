@@ -1,0 +1,76 @@
+# Регрессия перфа вперемешку — `perf:compare` (ADR 0099, ADR 0103, CI5). Ручной запуск
+# с ревизией и кейсами; на PR и по ночам — только в публичном репозитории.
+name: Perf compare
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Ревизия для сравнения (ветка, тег, коммит)
+        required: true
+        default: HEAD~1
+      cases:
+        description: Кейсы через запятую; пусто — PR_CASES
+        required: false
+        default: ''
+  pull_request:
+  schedule:
+    - cron: '0 2 * * *'
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: perf:compare
+    # В приватном репозитории — только ручной запуск: минуты Actions ограничены.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.repository.private == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: Resolve base
+        id: base
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_REF: ${{ inputs.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          case "$EVENT" in
+            workflow_dispatch) echo "ref=$INPUT_REF" >> "$GITHUB_OUTPUT" ;;
+            pull_request) echo "ref=$PR_BASE" >> "$GITHUB_OUTPUT" ;;
+            schedule) echo "ref=$(git describe --tags --abbrev=0 --match 'v*')" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Compare
+        env:
+          REF: ${{ steps.base.outputs.ref }}
+          CASES: ${{ inputs.cases }}
+        run: |
+          if [ -n "$CASES" ]; then
+            npm run perf:compare -- "$REF" --cases "$CASES"
+          else
+            npm run perf:compare -- "$REF"
+          fi
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-compare
+          path: performance-results/
+          if-no-files-found: ignore

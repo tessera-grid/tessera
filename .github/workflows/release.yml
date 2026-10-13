@@ -1,0 +1,40 @@
+# Выпуск по тегу `v*` (ADR 0103, CI11): тег ставит `npm run release`. Гейт — барьер и шаги
+# перед публикацией, затем черновик GitHub Release с разделом CHANGELOG. Публикации в npm
+# на этом этапе нет.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  barrier:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  prerelease:
+    uses: ./.github/workflows/prerelease.yml
+
+  github-release:
+    name: Draft GitHub Release
+    needs: [barrier, prerelease]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release.mjs --notes "$TAG" > release-notes.md
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --draft --title "$TAG" --notes-file release-notes.md

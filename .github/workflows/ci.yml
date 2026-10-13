@@ -1,0 +1,121 @@
+# Барьер на каждый пуш в master и на PR (ADR 0103, CI1–CI4) и снимки Chromatic
+# (ADR 0093, VR15). Тот же workflow — гейт выпуска (release.yml, CI11).
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Format, lint, types, requirements, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:requirements
+      - run: npm run build
+      - run: npm run check:tree-shaking
+      - run: npm run check:theme
+      - run: npm run check:browsers
+
+  test:
+    name: Tests (shard ${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm test -- --shard=${{ matrix.shard }}/4
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failures-${{ matrix.shard }}
+          path: |
+            src/**/__screenshots__/
+            .vitest-attachments/
+          if-no-files-found: ignore
+
+  browsers:
+    name: Firefox and WebKit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:browsers
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browsers-failures
+          path: |
+            src/**/__screenshots__/
+            .vitest-attachments/
+          if-no-files-found: ignore
+
+  chromatic:
+    name: Chromatic
+    # Снимки — на пуш в master и на PR, не в гейте выпуска.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # TurboSnap ищет затронутые истории по истории git.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Check Chromatic token
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          if [ -z "$CHROMATIC_PROJECT_TOKEN" ]; then
+            echo "::error::Нет секрета CHROMATIC_PROJECT_TOKEN: создайте проект на chromatic.com и добавьте его токен в Settings → Secrets and variables → Actions (ADR 0093, VR15)."
+            exit 1
+          fi
+      - name: Publish Storybook to Chromatic
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        # Изменения вида принимает человек в Chromatic; сборка CI от них не краснеет.
+        run: npx chromatic --only-changed --exit-zero-on-changes --build-script-name build-storybook
