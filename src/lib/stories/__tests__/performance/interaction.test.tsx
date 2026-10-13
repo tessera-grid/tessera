@@ -2187,3 +2187,111 @@ describe('Отзывчивость — длинные подписи меню', 
     PERF_TIMEOUT * 4,
   )
 })
+
+// Прокрутка к строке (ADR 0104, SV11): `table.scrollToRow` к строке в середине 100 000
+// строк против прямого `scrollTo` на то же место. Прогрев — к строке 30 000, замер — к
+// 60 000; оба по началу окна тела.
+const SCROLL_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${i}`,
+}))
+const SCROLL_COLUMNS = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
+
+describe('Отзывчивость — прокрутка к строке', () => {
+  test(
+    'SV11: прокрутка к строке в середине 100 000 строк не дороже прямой установки scrollTop на ту же позицию больше чем на 30 % или 4 мс',
+    async () => {
+      const measure = async (variant: boolean) => {
+        let table:
+          | {
+              scrollToRow: (
+                id: string,
+                options?: { align?: 'start' },
+              ) => Promise<boolean>
+            }
+          | undefined
+        const ScrollGrid = () => {
+          const created = useCreateTable({
+            columns: SCROLL_COLUMNS as never,
+            data: SCROLL_ROWS,
+            getRowId: (row: { id: string }) => row.id,
+            plugins: [],
+          })
+          table = created as never
+          return (
+            <div style={{ width: 600, height: 520 }}>
+              <DataGrid table={created} height={500} />
+            </div>
+          )
+        }
+        await render(<ScrollGrid />)
+        await waitForGrid()
+        const scroller = document.querySelector<HTMLElement>(
+          '.data-grid__container',
+        )!
+        const rowHeight = document
+          .querySelector('.data-grid__body-row')!
+          .getBoundingClientRect().height
+        const mounted = (index: number) =>
+          document.querySelector(
+            `.data-grid__body-row[data-row-id="r${index}"]`,
+          )
+        let target = 30_000
+        const result = await measureInteractionWork(
+          async () => {
+            const index = target
+            target = 60_000
+            if (variant) {
+              expect(
+                await table!.scrollToRow(`r${index}`, { align: 'start' }),
+              ).toBe(true)
+            } else {
+              scroller.scrollTo({ top: index * rowHeight, behavior: 'instant' })
+              await expect.poll(() => mounted(index)).not.toBeNull()
+            }
+          },
+          { afterWarmup: () => expect(mounted(30_000)).not.toBeNull() },
+        )
+        expect(mounted(60_000)).not.toBeNull()
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const scrolled = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 4 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×1',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('SV11-base', 'прямой scrollTo на ту же позицию', base, false)
+      await record('SV11', 'scrollToRow к строке 60 000', scrolled, true)
+
+      expect(
+        scrolled.longestMs,
+        `scrollToRow longest=${scrolled.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

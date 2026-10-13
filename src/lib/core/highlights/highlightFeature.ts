@@ -13,6 +13,7 @@ import {
 import { announce, readGridToken } from '../announcer'
 import { logWarn } from '../logger'
 import { parseDuration } from '../../ui/buttonStates/useErrorFlash'
+import { revealColumn, scrollToRow } from '../scrollToRow/scrollToRowFeature'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 export type HighlightTarget =
@@ -33,6 +34,8 @@ export interface HighlightOptions {
   key?: string
   /** Текст для скринридера: объявляется и висит `aria-description` цели. */
   label?: string
+  /** Докрутить к цели: к строке, ячейке или колонке (ADR 0104). */
+  reveal?: boolean
 }
 
 export interface HighlightHandle {
@@ -297,6 +300,14 @@ export const pruneHighlights = (
 
 const NOOP: HighlightHandle = { clear: () => {} }
 
+/** Докрутка к цели подсветки: строка, ячейка — строка и колонка, колонка — горизонталь. */
+const revealTarget = (table: unknown, target: HighlightTarget) =>
+  'row' in target
+    ? scrollToRow(table, target.row)
+    : 'cell' in target
+      ? scrollToRow(table, target.cell[0], { columnId: target.cell[1] })
+      : revealColumn(table, target.column)
+
 export const highlight = (
   table: unknown,
   target: HighlightTarget,
@@ -325,6 +336,9 @@ export const highlight = (
   const opts = (table as HighlightTable).options
   if (entry.label && opts.enableAnnouncements !== false) {
     announce(table, entry.label)
+  }
+  if (options.reveal) {
+    void revealTarget(table, target)
   }
 
   const timers: ReturnType<typeof setTimeout>[] = []

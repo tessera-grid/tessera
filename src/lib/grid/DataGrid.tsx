@@ -48,6 +48,7 @@ import {
   useColumnVirtualizerScroll,
   useRowVirtualizer,
 } from '../core/virtualization'
+import { useScrollViewport } from '../core/scrollToRow/viewport'
 import { getRowDraggableStyles } from '../plugins/rowDragging'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { columnShiftVars } from './columnSizes'
@@ -213,16 +214,31 @@ export const DataGrid = ({
     leafColumns,
   })
 
-  const { virtualColumns, bodyWidth, columnShifts } = useColumnVirtualizer({
+  const {
+    virtualColumns,
+    bodyWidth,
+    columnShifts,
+    virtualizer: columnVirtualizer,
+  } = useColumnVirtualizer({
     table,
     getScrollElement,
     enabled: !hasNestedGroups,
   })
 
-  const { virtualRows, bodyHeight } = useRowVirtualizer({
+  const {
+    virtualRows,
+    bodyHeight,
+    virtualizer: rowVirtualizer,
+  } = useRowVirtualizer({
     table,
     getScrollElement,
     rowHeight: heights.row,
+  })
+  // Окно прокрутки для `table.scrollToRow` (ADR 0104).
+  useScrollViewport(table, {
+    getScrollElement,
+    rows: rowVirtualizer,
+    columns: hasNestedGroups ? undefined : columnVirtualizer,
   })
 
   const fastScrollStore = useFastScroll({ getScrollElement })

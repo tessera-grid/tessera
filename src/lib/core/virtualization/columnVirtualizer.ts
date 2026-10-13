@@ -136,5 +136,5 @@ export const useColumnVirtualizer = ({
     }
   }
 
-  return { virtualColumns, bodyWidth, columnShifts }
+  return { virtualColumns, bodyWidth, columnShifts, virtualizer }
 }

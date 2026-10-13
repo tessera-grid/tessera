@@ -28,6 +28,11 @@ export type {
   HighlightTarget,
   HighlightTone,
 } from './lib/core/highlights/highlightFeature'
+// Прокрутка к строке (ADR 0104): `table.scrollToRow`.
+export type {
+  ScrollAlign,
+  ScrollToRowOptions,
+} from './lib/core/scrollToRow/scrollToRowFeature'
 
 // Реактивность: подписки на состояние идут через атомы TanStack Store.
 export { useSlice, useTableState } from './lib/core/reactivity'

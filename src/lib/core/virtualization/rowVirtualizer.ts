@@ -81,5 +81,6 @@ export const useRowVirtualizer = ({
     virtualRows: virtualizer.getVirtualItems(),
     bodyHeight: virtualizer.getTotalSize(),
     measureElement: virtualizer.measureElement,
+    virtualizer,
   }
 }

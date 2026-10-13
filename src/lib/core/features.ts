@@ -24,6 +24,7 @@ import {
 import { commonFeature } from './commonFeature'
 import { actionStatusFeature } from './headerActions/actionStatusFeature'
 import { highlightFeature } from './highlights/highlightFeature'
+import { scrollToRowFeature } from './scrollToRow/scrollToRowFeature'
 import type { ServiceColumn } from './createColumns'
 import {
   createEmptyRenderSlots,
@@ -329,6 +330,7 @@ export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   commonFeature: typeof commonFeature
   actionStatusFeature: typeof actionStatusFeature
   highlightFeature: typeof highlightFeature
+  scrollToRowFeature: typeof scrollToRowFeature
   columnOrderingFeature: typeof columnOrderingFeature
   columnVisibilityFeature: typeof columnVisibilityFeature
   columnPinningFeature: typeof columnPinningFeature
@@ -350,6 +352,7 @@ export const buildTesseraFeatures = <
     commonFeature,
     actionStatusFeature,
     highlightFeature,
+    scrollToRowFeature,
     columnOrderingFeature,
     columnVisibilityFeature,
     columnPinningFeature,
