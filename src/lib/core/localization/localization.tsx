@@ -262,6 +262,8 @@ export interface TableLabels {
   announceLoadFailed: (reason?: string) => string
   /** Кнопка «наверх» в нижней панели (ADR 0082): тултип и доступное имя */
   backToTop: string
+  /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
+  backToStart: string
   /** Объявление прихода блока догрузки */
   announceMoreLoaded: (count: number) => string
   /** Счётчик выбранных строк в нижней панели (`rowSelection({ selectedCount })`) */
@@ -456,6 +458,7 @@ export const DEFAULT_LABELS: TableLabels = {
   announceLoadFailed: reason =>
     reason ? `Couldn't load the data: ${reason}` : "Couldn't load the data",
   backToTop: 'Back to top',
+  backToStart: 'Back to first column',
   announceMoreLoaded: count =>
     count === 1 ? 'Loaded 1 more row' : `Loaded ${count} more rows`,
   selectedRows: count =>

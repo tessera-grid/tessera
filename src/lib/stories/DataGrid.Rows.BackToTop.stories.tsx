@@ -79,3 +79,39 @@ export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
     await backToTop(canvasElement)
   },
 }
+
+export const BackToTopWide: StoryObj<StoryProps> = {
+  name: 'Wide table',
+  // Широкая таблица (ADR 0105): прокрутите вправо — кнопка «к первой колонке» слева от
+  // «наверх» вернёт к первой колонке, не трогая вертикаль. Одна ось — `axes` в
+  // backToTopOptions.
+  args: {
+    containerHeight: 600,
+    height: 480,
+    maxHeight: 480,
+    enableBackToTop: true,
+    enablePagination: true,
+    paginationPageSize: 100,
+    dataCount: 1000,
+    columnCount: 40,
+  },
+  // Дымовой сценарий (ADR 0105, BT24): обе кнопки возвращают к краю.
+  parameters: { requirements: ['BT24'] },
+  play: async ({ canvasElement }) => {
+    await waitForRows(canvasElement)
+    const scroller = canvasElement.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!
+    const start = () => byTestId('back-to-start')
+    scroller.scrollTo({
+      left: scroller.clientWidth * 2 + 200,
+      behavior: 'instant',
+    })
+    await until(() => expect(start()).toBeVisible())
+    const top = scroller.scrollTop
+    await userEvent.click(start()!)
+    await until(() => expect(scroller.scrollLeft).toBe(0))
+    expect(scroller.scrollTop).toBe(top)
+    await backToTop(canvasElement)
+  },
+}

@@ -1,7 +1,7 @@
-import type { ReactElement } from 'react'
+import { type ReactElement, useEffect } from 'react'
 
 import axe from 'axe-core'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
 import { beforeEach, describe, expect, test } from 'vitest'
 
@@ -66,6 +66,17 @@ const WIDE_COLUMNS = [
 
 let loadCalls = 0
 
+interface ScrollTable {
+  scrollToRow: (
+    id: string,
+    options?: { behavior?: 'instant' | 'smooth'; align?: 'start' },
+  ) => Promise<boolean>
+}
+
+const browser = commands as unknown as {
+  reducedMotion: (reduce: boolean) => Promise<void>
+}
+
 interface GridProps {
   data?: Item[]
   /** Пагинация с этим размером страницы. */
@@ -75,6 +86,9 @@ interface GridProps {
   enableStatusBar?: boolean
   keyboard?: boolean
   threshold?: number
+  horizontalThreshold?: number
+  axes?: 'vertical' | 'horizontal' | 'both'
+  onTable?: (table: ScrollTable) => void
   wide?: boolean
   width?: number
   localization?: Record<string, string>
@@ -88,6 +102,9 @@ const Grid = ({
   enableStatusBar,
   keyboard = false,
   threshold,
+  horizontalThreshold,
+  axes,
+  onTable,
   wide = false,
   width = 640,
   localization,
@@ -99,7 +116,7 @@ const Grid = ({
     getRowId: (row: Item) => row.id,
     enableStatusBar,
     plugins: [
-      backToTop({ threshold }),
+      backToTop({ threshold, horizontalThreshold, axes }),
       pagination({
         enabled: pageSize !== undefined,
         initialPageSize: pageSize,
@@ -116,6 +133,9 @@ const Grid = ({
       }),
       keyboardNavigation({ enabled: keyboard }),
     ] as never,
+  })
+  useEffect(() => {
+    onTable?.(table as unknown as ScrollTable)
   })
   return (
     <div style={{ width, height: 400, background: 'var(--card)' }}>
@@ -148,6 +168,41 @@ const statusBar = () =>
   document.querySelector<HTMLElement>('[data-testid="data-grid-status-bar"]')
 const button = () =>
   document.querySelector<HTMLButtonElement>('[data-testid="back-to-top"]')
+const startButton = () =>
+  document.querySelector<HTMLButtonElement>('[data-testid="back-to-start"]')
+const startShown = () =>
+  startButton() !== null &&
+  !startButton()!.parentElement!.hidden &&
+  getComputedStyle(startButton()!).visibility === 'visible'
+/** Экран тела: высота области прокрутки без липкой шапки. */
+const bodyScreen = () =>
+  scroller().clientHeight -
+  rect(document.querySelector('.data-grid__head')!).height
+/** Выход из быстрой прокрутки, открытой прыжком самого теста. */
+const idle = () =>
+  new Promise(resolve => setTimeout(resolve, IDLE_DELAY + MIN_DURATION + 100))
+/**
+ * Положение по кадрам после действия — пока не встанет у края — и сумма скелетов строк
+ * за всё время.
+ */
+const recordUntilEdge = async (
+  read: () => number,
+  action: () => Promise<unknown>,
+) => {
+  const positions: number[] = []
+  let skeletons = 0
+  await action()
+  for (let i = 0; i < 150; i++) {
+    await frame()
+    positions.push(read())
+    skeletons += skeletonCount()
+    if (positions.length > 3 && positions.slice(-3).every(value => value === 0))
+      break
+  }
+  return { positions, skeletons }
+}
+const descending = (values: number[]) =>
+  values.every((value, i) => i === 0 || value <= values[i - 1]!)
 const pager = () =>
   document.querySelector<HTMLElement>('nav[aria-label="Pagination"]')
 const shown = () =>
@@ -249,22 +304,44 @@ describe('Кнопка «наверх»', () => {
     },
   )
 
-  test('BT5: нажатие мышью, Enter и Space прокручивает 100 000 строк к первой строке за один кадр', async () => {
+  test('BT16: дальше экрана — прыжок на экран от верха, затем плавно последний экран; ближе — только плавно; строки без скелетов; мышью, Enter и Space', async () => {
     await mount({ data: MANY(), enableStatusBar: true })
-    const middle = scroller().scrollHeight / 2
+    const screen = bodyScreen()
     for (const press of [
       () => humanClick(button()!),
       () => userEvent.keyboard('{Enter}'),
       () => userEvent.keyboard(' '),
     ]) {
-      await scrollTo(middle)
+      await scrollTo(scroller().scrollHeight / 2)
+      await idle()
       expect(shown()).toBe(true)
       button()!.focus()
-      const tops = await recordScroll(press)
-      expect(tops.length).toBeGreaterThan(0)
-      expect(tops).toEqual(tops.map(() => 0))
-      expect(scroller().scrollTop).toBe(0)
+      const { positions, skeletons } = await recordUntilEdge(
+        () => scroller().scrollTop,
+        press,
+      )
+      // Прыжок — на экран от верха, дальше — плавно до нуля.
+      expect(positions[0]).toBeGreaterThan(0)
+      expect(positions[0]).toBeLessThanOrEqual(screen + 1)
+      expect(new Set(positions).size).toBeGreaterThan(3)
+      expect(descending(positions)).toBe(true)
+      expect(positions.at(-1)).toBe(0)
+      expect(skeletons).toBe(0)
     }
+
+    // Ближе экрана — без прыжка: первый кадр рядом со стартом.
+    await cleanup()
+    await mount({ data: MANY(), enableStatusBar: true, threshold: 20 })
+    const start = Math.round(bodyScreen() / 2)
+    await scrollTo(start)
+    await idle()
+    const near = await recordUntilEdge(
+      () => scroller().scrollTop,
+      () => humanClick(button()!),
+    )
+    expect(near.positions[0]).toBeGreaterThan(start / 2)
+    expect(new Set(near.positions).size).toBeGreaterThan(3)
+    expect(near.positions.at(-1)).toBe(0)
   })
 
   test('BT6: после прыжка верхние строки показывают содержимое, а не скелеты', async () => {
@@ -284,9 +361,9 @@ describe('Кнопка «наверх»', () => {
     }
     await humanClick(button()!)
     requestAnimationFrame(watch)
-    await frames(20)
+    await expect.poll(() => scroller().scrollTop).toBe(0)
+    await frames(5)
     watching = false
-    expect(scroller().scrollTop).toBe(0)
     expect(skeletons).toBe(0)
     expect(
       document.querySelector('.data-grid__body-row[data-row-id="r0"]')
@@ -301,7 +378,7 @@ describe('Кнопка «наверх»', () => {
     expect(left).toBeGreaterThan(290)
     await humanClick(button()!)
     await frames()
-    expect(scroller().scrollTop).toBe(0)
+    await expect.poll(() => scroller().scrollTop).toBe(0)
     expect(scroller().scrollLeft).toBe(left)
     await cleanup()
 
@@ -313,7 +390,7 @@ describe('Кнопка «наверх»', () => {
     expect(loadCalls).toBe(0)
     await humanClick(button()!)
     await frames(5)
-    expect(scroller().scrollTop).toBe(0)
+    await expect.poll(() => scroller().scrollTop).toBe(0)
     expect(loadCalls).toBe(0)
     expect(counter()).toBe(loaded)
     await scrollTo(scroller().clientHeight * 4)
@@ -329,7 +406,7 @@ describe('Кнопка «наверх»', () => {
     await scrollPast()
     await humanClick(button()!)
     await frames()
-    expect(scroller().scrollTop).toBe(0)
+    await expect.poll(() => scroller().scrollTop).toBe(0)
     expect(document.activeElement).toBe(button())
     expect(button()!.getAttribute('aria-disabled')).toBe('true')
     expect(shown()).toBe(true)
@@ -356,7 +433,7 @@ describe('Кнопка «наверх»', () => {
       await humanClick(button()!)
       button()!.removeEventListener('mousedown', noFocus)
       await frames()
-      expect(scroller().scrollTop).toBe(0)
+      await expect.poll(() => scroller().scrollTop).toBe(0)
       expect(document.activeElement).toBe(button())
 
       if (!keyboard) {
@@ -383,7 +460,7 @@ describe('Кнопка «наверх»', () => {
       before.remove()
       await frames()
       expect(document.activeElement).toBe(active)
-      expect(scroller().scrollTop).toBe(0)
+      await expect.poll(() => scroller().scrollTop).toBe(0)
     },
   )
 
@@ -441,5 +518,177 @@ describe('Кнопка «наверх»', () => {
     await frames()
     expect(button()!.getAttribute('aria-disabled')).toBe('true')
     await run('aria-disabled')
+  })
+
+  test('BT17: с prefers-reduced-motion кнопки и scrollToRow прыгают к цели за один кадр', async () => {
+    await browser.reducedMotion(true)
+    try {
+      let table: ScrollTable | undefined
+      await mount({
+        data: MANY(),
+        enableStatusBar: true,
+        wide: true,
+        width: 480,
+        onTable: t => (table = t),
+      })
+      await scrollTo(scroller().scrollHeight / 2, 1200)
+      await idle()
+      const top = await recordUntilEdge(
+        () => scroller().scrollTop,
+        () => humanClick(button()!),
+      )
+      expect(top.positions.every(value => value === 0)).toBe(true)
+
+      await scrollTo(0, 1200)
+      await expect.poll(startShown).toBe(true)
+      const left = await recordUntilEdge(
+        () => scroller().scrollLeft,
+        () => humanClick(startButton()!),
+      )
+      expect(left.positions.every(value => value === 0)).toBe(true)
+
+      const positions: number[] = []
+      const target = table!.scrollToRow('r50000', {
+        behavior: 'smooth',
+        align: 'start',
+      })
+      for (let i = 0; i < 10; i++) {
+        await frame()
+        positions.push(scroller().scrollTop)
+      }
+      expect(await target).toBe(true)
+      expect(new Set(positions).size).toBe(1)
+      expect(positions[0]).toBeGreaterThan(0)
+    } finally {
+      await browser.reducedMotion(false)
+    }
+  })
+
+  test('BT18: «к первой колонке» видна после двух ширин тела, у левого края пропадает; место — только при горизонтальной прокрутке, появление не сдвигает панель', async () => {
+    await mount({ pageSize: 100 })
+    expect(scroller().scrollWidth).toBeLessThanOrEqual(scroller().clientWidth)
+    expect(startButton()!.parentElement!.hidden).toBe(true)
+    expect(rect(startButton()!).width).toBe(0)
+
+    await cleanup()
+    await mount({ pageSize: 100, wide: true, width: 480 })
+    await expect.poll(() => startButton()!.parentElement!.hidden).toBe(false)
+    expect(startShown()).toBe(false)
+    const place = rect(button()!).left
+    const twoScreens = scroller().clientWidth * 2
+    await scrollTo(0, twoScreens - 20)
+    expect(startShown()).toBe(false)
+    await scrollTo(0, twoScreens + 20)
+    expect(startShown()).toBe(true)
+    expect(rect(button()!).left).toBe(place)
+    await scrollTo(0, 0)
+    expect(startShown()).toBe(false)
+  })
+
+  test('BT19: «к первой колонке» — прыжок на экран и плавно последний экран; вертикаль не меняется, ячейки по пути без скелетов', async () => {
+    await mount({ data: MANY(), enableStatusBar: true, wide: true, width: 480 })
+    await scrollTo(5000, 1400)
+    await idle()
+    const top = scroller().scrollTop
+    const width = scroller().clientWidth
+    const { positions, skeletons } = await recordUntilEdge(
+      () => scroller().scrollLeft,
+      () => humanClick(startButton()!),
+    )
+    expect(positions[0]).toBeGreaterThan(0)
+    expect(positions[0]).toBeLessThanOrEqual(width + 1)
+    expect(new Set(positions).size).toBeGreaterThan(3)
+    expect(descending(positions)).toBe(true)
+    expect(positions.at(-1)).toBe(0)
+    expect(skeletons).toBe(0)
+    expect(scroller().scrollTop).toBe(top)
+  })
+
+  test.each([true, false])(
+    'BT20: keyboardNavigation %s — после нажатия «к первой колонке» фокус на кнопке; с плагином активная ячейка в первой колонке той же строки',
+    async keyboard => {
+      await mount({ pageSize: 100, wide: true, width: 480, keyboard })
+      await scrollTo(0, scroller().scrollWidth)
+      const cell = [
+        ...document.querySelectorAll<HTMLElement>(
+          '.data-grid__body-row[data-row-id="r2"] .data-grid__body-cell',
+        ),
+      ].at(-1)!
+      const columnId = cell.getAttribute('data-column-id')
+      await humanClick(cell)
+      const noFocus = (event: MouseEvent) => event.preventDefault()
+      startButton()!.addEventListener('mousedown', noFocus)
+      await humanClick(startButton()!)
+      startButton()!.removeEventListener('mousedown', noFocus)
+      await expect.poll(() => scroller().scrollLeft).toBe(0)
+      expect(document.activeElement).toBe(startButton())
+      if (!keyboard) {
+        expect(
+          document.querySelector('.data-grid__body-cell[tabindex="0"]'),
+        ).toBeNull()
+        return
+      }
+      const active = document.querySelector<HTMLElement>(
+        '.data-grid__body-cell[tabindex="0"]',
+      )!
+      expect(
+        active.closest('.data-grid__body-row')!.getAttribute('data-row-id'),
+      ).toBe('r2')
+      expect(active.getAttribute('data-column-id')).toBe('a')
+      expect(columnId).not.toBe('a')
+    },
+  )
+
+  test('BT21: axes включает одну или обе кнопки; подпись и тултип «к первой колонке» — из localization, иконка — из icons', async () => {
+    await mount({ pageSize: 100, wide: true, width: 480, axes: 'vertical' })
+    expect(button()).not.toBeNull()
+    expect(startButton()).toBeNull()
+    await cleanup()
+    await mount({ pageSize: 100, wide: true, width: 480, axes: 'horizontal' })
+    expect(button()).toBeNull()
+    expect(startButton()).not.toBeNull()
+    await cleanup()
+
+    const Icon = () => <svg data-testid="custom-back-to-start" />
+    await mount({
+      pageSize: 100,
+      wide: true,
+      width: 480,
+      localization: { backToStart: 'К началу строки' },
+      icons: { backToStart: Icon },
+    })
+    expect(startButton()!.getAttribute('aria-label')).toBe('К началу строки')
+    expect(
+      startButton()!.querySelector('[data-testid="custom-back-to-start"]'),
+    ).not.toBeNull()
+    await scrollTo(0, scroller().scrollWidth)
+    await userEvent.hover(startButton()!)
+    await expect
+      .poll(() =>
+        [...document.querySelectorAll('[data-side]')].some(
+          el => el.textContent?.trim() === 'К началу строки',
+        ),
+      )
+      .toBe(true)
+  })
+
+  test('BT22: axe с color-contrast видимой кнопки «к первой колонке» в обеих темах, контраст иконки к фону не меньше 3:1', async () => {
+    await mount({ pageSize: 100, wide: true, width: 480 })
+    await scrollTo(0, scroller().scrollWidth)
+    expect(startShown()).toBe(true)
+    await inBothThemes(async () => {
+      const { violations } = await axe.run(statusBar()!, {
+        ...AXE_OPTIONS,
+        rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+      })
+      expect(violations).toEqual([])
+      const icon = startButton()!.querySelector('svg')!
+      expect(
+        contrast(
+          toRgba(getComputedStyle(icon).color),
+          backgroundOf(startButton()),
+        ),
+      ).toBeGreaterThanOrEqual(3)
+    })
   })
 })

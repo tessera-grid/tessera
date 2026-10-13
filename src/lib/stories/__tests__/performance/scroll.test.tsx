@@ -864,6 +864,79 @@ describe('Производительность прокрутки — кнопк
   )
 })
 
+// Кнопка «к первой колонке» (ADR 0105, BT23): 1000×1000 с нижней панелью, спокойная
+// горизонтальная прокрутка с обеими кнопками против той же выборки без плагина —
+// подписки на прокрутку и размер области.
+describe('Производительность прокрутки — кнопка «к первой колонке»', () => {
+  test(
+    'BT23: горизонтальная прокрутка 1000×1000 с обеими кнопками не дороже той же выборки без них',
+    async () => {
+      const measure = async (withButtons: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableStatusBar: true,
+          enableBackToTop: withButtons,
+        })
+        await waitForGrid()
+        await expect
+          .poll(() =>
+            ['back-to-top', 'back-to-start'].every(
+              id => document.querySelector(`[data-testid="${id}"]`) !== null,
+            ),
+          )
+          .toBe(withButtons)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return x
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const withButtons = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, BT14_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'backToTop',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'x',
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('BT23-base', 'нижняя панель без кнопок', base, false)
+      await record(
+        'BT23',
+        'нижняя панель с кнопками по обеим осям',
+        withButtons,
+        true,
+      )
+
+      expect(
+        withButtons.p95Ms,
+        `x p95=${withButtons.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Обновление данных (ADR 0094, GL13): 1000×1000, спокойная прокрутка со свечением и
 // приглушённым телом против той же выборки без обновления.
 describe('Производительность прокрутки — свечение загрузки', () => {

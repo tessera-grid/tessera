@@ -7,3 +7,13 @@
 .slot:not([data-shown]) {
   visibility: hidden;
 }
+
+/* «К первой колонке» без горизонтальной прокрутки места не держит (BT18). */
+.slot[hidden] {
+  display: none;
+}
+
+/* «К первой колонке» без горизонтальной прокрутки места не держит (BT18). */
+.slot[hidden] {
+  display: none;
+}

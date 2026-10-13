@@ -1,6 +1,6 @@
 /**
- * Модель кнопки «наверх» (ADR 0082): пересечение порога прокрутки, мгновенный
- * прыжок к первой строке и перенос активной ячейки клавиатурной навигации.
+ * Модель кнопок «наверх» и «к первой колонке» (ADR 0082, ADR 0105): пересечение порога
+ * прокрутки по оси, прокрутка к краю и перенос активной ячейки клавиатурной навигации.
  */
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import {
@@ -9,10 +9,11 @@ import {
   isKeyboardNavigationEnabled,
 } from '../../core/keyboardNavigation/model'
 import type { PluginDiagnose } from '../../core/pluginDiagnostics'
+import { scrollGridTo } from '../../core/scrollGridTo'
 
 export const BACK_TO_TOP = 'backToTop'
 
-/** Порог по умолчанию — две высоты области прокрутки. */
+/** Порог по умолчанию — две высоты (две ширины) области прокрутки. */
 const DEFAULT_SCREENS = 2
 
 export const backToTopInertReason: PluginDiagnose = table =>
@@ -21,9 +22,14 @@ export const backToTopInertReason: PluginDiagnose = table =>
     ? 'noStatusBar'
     : undefined
 
+/** Ось кнопки: «наверх» — вертикаль, «к первой колонке» — горизонталь. */
+export type EdgeAxis = 'vertical' | 'horizontal'
+
 export interface ScrollArea {
   scrollTop: number
   clientHeight: number
+  scrollLeft?: number
+  clientWidth?: number
   addEventListener: (
     type: 'scroll',
     listener: () => void,
@@ -32,9 +38,15 @@ export interface ScrollArea {
   removeEventListener: (type: 'scroll', listener: () => void) => void
 }
 
-export const isPastThreshold = (area: ScrollArea, threshold?: number) =>
-  area.scrollTop > 0 &&
-  area.scrollTop >= (threshold ?? area.clientHeight * DEFAULT_SCREENS)
+export const isPastThreshold = (
+  area: ScrollArea,
+  threshold?: number,
+  axis: EdgeAxis = 'vertical',
+) => {
+  const offset = axis === 'vertical' ? area.scrollTop : (area.scrollLeft ?? 0)
+  const size = axis === 'vertical' ? area.clientHeight : (area.clientWidth ?? 0)
+  return offset > 0 && offset >= (threshold ?? size * DEFAULT_SCREENS)
+}
 
 /**
  * Следит, прокручена ли область за порог; `onChange` — сразу и затем только при
@@ -44,11 +56,12 @@ export const watchThreshold = (
   area: ScrollArea,
   threshold: number | undefined,
   onChange: (past: boolean) => void,
+  axis: EdgeAxis = 'vertical',
 ): (() => void) => {
-  let past = isPastThreshold(area, threshold)
+  let past = isPastThreshold(area, threshold, axis)
   onChange(past)
   const check = () => {
-    const next = isPastThreshold(area, threshold)
+    const next = isPastThreshold(area, threshold, axis)
     if (next !== past) {
       past = next
       onChange(next)
@@ -70,12 +83,12 @@ interface JumpTable {
 }
 
 /**
- * Прыжок к первой строке за один кадр (BT5); строки на новом месте монтируются до
- * входа в быструю прокрутку и приходят с содержимым (BT6). Активная
- * ячейка тела — в первую строку той же колонки, фокус не трогается (BT9).
+ * К первой строке: прыжок на экран от верха и плавно последний экран, быстрая
+ * прокрутка не включается — строки приходят с содержимым (BT16, BT6). Активная ячейка
+ * тела — в первую строку той же колонки, фокус не трогается (BT9).
  */
-export const jumpToTop = (table: unknown, scroller: HTMLElement) => {
-  scroller.scrollTo({ top: 0, behavior: 'instant' })
+export const scrollToTop = (table: unknown, scroller: HTMLElement) => {
+  scrollGridTo(scroller, { top: 0 }, 'smooth')
   if (!isKeyboardNavigationEnabled(table)) {
     return
   }
@@ -92,3 +105,25 @@ export const jumpToTop = (table: unknown, scroller: HTMLElement) => {
   }
   setPluginState(table, KEYBOARD_NAVIGATION, { ...active, rowIndex: 0 })
 }
+
+/**
+ * К первой колонке (BT19–BT20): та же схема по горизонтали, вертикаль не меняется.
+ * Активная ячейка — в первую колонку той же строки, фокус не трогается.
+ */
+export const scrollToStart = (table: unknown, scroller: HTMLElement) => {
+  scrollGridTo(scroller, { left: 0 }, 'smooth')
+  if (!isKeyboardNavigationEnabled(table)) {
+    return
+  }
+  const active = (table as JumpTable).store.get()[
+    pluginStateKey(KEYBOARD_NAVIGATION)
+  ] as ActiveCell | undefined
+  if (!active || active.columnIndex <= 0) {
+    return
+  }
+  setPluginState(table, KEYBOARD_NAVIGATION, { ...active, columnIndex: 0 })
+}
+
+/** Прокручивается ли область по горизонтали — есть ли куда возвращаться. */
+export const scrollsHorizontally = (area: HTMLElement) =>
+  area.scrollWidth > area.clientWidth

@@ -1,7 +1,8 @@
 /**
- * Кнопка «наверх» в нижней панели (ADR 0082). Место держится всегда — меняется
- * только видимость (BT4); после нажатия кнопка ждёт ухода фокуса в состоянии
- * `aria-disabled` (BT8).
+ * Кнопки «наверх» и «к первой колонке» в нижней панели (ADR 0082, ADR 0105). Место
+ * держится всегда — меняется только видимость (BT4); у «к первой колонке» — только пока
+ * тело прокручивается по горизонтали (BT18). После нажатия кнопка ждёт ухода фокуса в
+ * состоянии `aria-disabled` (BT8).
  */
 import { useEffect, useRef, useState } from 'react'
 
@@ -10,51 +11,113 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import styles from './BackToTop.module.css'
-import { findGridScroller, jumpToTop, watchThreshold } from './model'
+import {
+  type EdgeAxis,
+  findGridScroller,
+  scrollToStart,
+  scrollToTop,
+  scrollsHorizontally,
+  watchThreshold,
+} from './model'
 
 const ICON_SIZE = 16
 
-export const BackToTopButton = ({ table }: StatusBarComponentProps) => {
+interface EdgeOptions {
+  backToTopThreshold?: number
+  backToTopHorizontalThreshold?: number
+  backToTopAxes?: 'vertical' | 'horizontal' | 'both'
+}
+
+/** Следит, прокручивается ли тело по горизонтали: ширина колонок и области меняется. */
+const useScrollsHorizontally = (
+  slot: { current: HTMLElement | null },
+  active: boolean,
+) => {
+  const [scrolls, setScrolls] = useState(false)
+  useEffect(() => {
+    const scroller = findGridScroller(slot.current)
+    if (!active || !scroller) {
+      return
+    }
+    const check = () => setScrolls(scrollsHorizontally(scroller))
+    check()
+    const observer = new ResizeObserver(check)
+    observer.observe(scroller)
+    if (scroller.firstElementChild) observer.observe(scroller.firstElementChild)
+    return () => observer.disconnect()
+  }, [slot, active])
+  return scrolls
+}
+
+const EdgeButton = ({
+  table,
+  axis,
+}: StatusBarComponentProps & { axis: EdgeAxis }) => {
   const labels = useLocalization()
   const icons = useIcons()
+  const slot = useRef<HTMLSpanElement>(null)
   const ref = useRef<HTMLButtonElement>(null)
   const [past, setPast] = useState(false)
   const [focused, setFocused] = useState(false)
-  const threshold = (table.options as { backToTopThreshold?: number })
-    .backToTopThreshold
+  const options = table.options as EdgeOptions
+  const axes = options.backToTopAxes ?? 'both'
+  const enabled = axes === 'both' || axes === axis
+  const horizontal = axis === 'horizontal'
+  const threshold = horizontal
+    ? options.backToTopHorizontalThreshold
+    : options.backToTopThreshold
+  const scrolls = useScrollsHorizontally(slot, enabled && horizontal)
 
   useEffect(() => {
-    const scroller = findGridScroller(ref.current)
-    if (!scroller) {
+    const scroller = findGridScroller(slot.current)
+    if (!enabled || !scroller) {
       return
     }
-    return watchThreshold(scroller, threshold, setPast)
-  }, [threshold])
+    return watchThreshold(scroller, threshold, setPast, axis)
+  }, [enabled, threshold, axis])
+
+  if (!enabled) {
+    return null
+  }
 
   const shown = past || focused
+  const Icon = horizontal ? icons.backToStart : icons.backToTop
 
   return (
-    <span className={styles.slot} data-shown={shown || undefined}>
+    <span
+      ref={slot}
+      className={styles.slot}
+      data-shown={shown || undefined}
+      hidden={horizontal && !scrolls}
+    >
       <IconButton
         ref={ref}
-        label={labels.backToTop}
+        label={horizontal ? labels.backToStart : labels.backToTop}
         shape="square"
         disabled={!past}
         tooltipWhenDisabled
-        data-testid="back-to-top"
+        data-testid={horizontal ? 'back-to-start' : 'back-to-top'}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onClick={() => {
           // Safari не фокусирует кнопку по клику: без фокуса она скрылась бы сразу.
           ref.current?.focus({ preventScroll: true })
-          const scroller = findGridScroller(ref.current)
+          const scroller = findGridScroller(slot.current)
           if (past && scroller) {
-            jumpToTop(table, scroller)
+            ;(horizontal ? scrollToStart : scrollToTop)(table, scroller)
           }
         }}
       >
-        <icons.backToTop width={ICON_SIZE} height={ICON_SIZE} />
+        <Icon width={ICON_SIZE} height={ICON_SIZE} />
       </IconButton>
     </span>
   )
 }
+
+export const BackToTopButton = (props: StatusBarComponentProps) => (
+  <EdgeButton {...props} axis="vertical" />
+)
+
+export const BackToStartButton = (props: StatusBarComponentProps) => (
+  <EdgeButton {...props} axis="horizontal" />
+)

@@ -185,6 +185,7 @@ export const RU_LABELS: TableLabels = {
       ? `Не удалось загрузить данные: ${reason}`
       : 'Не удалось загрузить данные',
   backToTop: 'Наверх',
+  backToStart: 'К первой колонке',
   announceMoreLoaded: count => `Загружено ещё: ${rows(count)}`,
   selectedRows: count => `Выбрано: ${rows(count)}`,
   selectedRowsHidden: count => `скрыто фильтрами: ${count}`,

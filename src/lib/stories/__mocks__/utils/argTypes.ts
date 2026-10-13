@@ -324,10 +324,10 @@ export const infiniteScrollOptionsType = objectControl(
   {},
 )
 export const enableBackToTopType = booleanControl(
-  'Кнопка «наверх» в нижней панели: видна после прокрутки на два экрана, встаёт только в уже показанную панель (плагин `backToTop`)',
+  'Кнопки «наверх» и «к первой колонке» в нижней панели: видны после прокрутки на два экрана, встают только в уже показанную панель (плагин `backToTop`)',
 )
 export const backToTopOptionsType = objectControl(
-  'Кнопка «наверх»: `threshold` — с какой прокрутки тела видна, px (`backToTop({...})`)',
+  'Кнопки «наверх» и «к первой колонке»: `threshold` и `horizontalThreshold` — с какой прокрутки видны, px; `axes` — `vertical`, `horizontal` или `both` (`backToTop({...})`)',
   'BackToTopOptions',
   {},
 )
