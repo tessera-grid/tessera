@@ -5,6 +5,7 @@ import { type Range, defaultRangeExtractor } from '@tanstack/react-virtual'
 import type { Table } from '../../types'
 import { useActiveCellIndex } from '../keyboardNavigation'
 import { useSlice } from '../reactivity'
+import { useLatest } from '../useLatest'
 
 export interface UseColumnRangeExtractorParams {
   table: Table<any, any>
@@ -17,18 +18,23 @@ export interface UseColumnRangeExtractorParams {
 export const useColumnRangeExtractor = ({
   table,
 }: UseColumnRangeExtractorParams) => {
-  // react-virtual мемоизирует `getIndexes` по паре `[range, rangeExtractor]`.
+  // react-virtual мемоизирует `getIndexes` по паре `[range, rangeExtractor]`: новый
+  // extractor — новый массив колонок окна и перерисовка всех строк (ADR 0099, PF5).
+  // Поэтому зависимость — хранилище таблицы, а не `table`: `useTable` отдаёт новую
+  // копию экземпляра при каждой смене состояния.
   // При скролле меняется `range`, но закрепление столбца `range` не двигает, а
-  // ссылка на extractor стабильна (deps = [table]) — поэтому только что
+  // ссылка на extractor стабильна — поэтому только что
   // закреплённый столбец не попадал бы в окно до следующего скролла. Кладём
   // `columnPinning` в deps: при смене закрепления идентичность extractor меняется,
   // react-virtual сбрасывает кэш и пере-считает окно сразу (прибивая пиннутый).
   const columnPinning = useSlice(table, 'columnPinning')
   // Активная колонка клавиатурной навигации держится в окне (фокус не размонтируется).
   const activeColumnIndex = useActiveCellIndex(table, 'columnIndex')
+  const latest = useLatest(table)
 
   return useCallback(
     (range: Range) => {
+      const table = latest.current
       const newIndexes = defaultRangeExtractor(range)
       const activeIndexes =
         activeColumnIndex !== undefined &&
@@ -71,6 +77,6 @@ export const useColumnRangeExtractor = ({
     // но обязан быть в deps: смена идентичности extractor заставляет react-virtual
     // пере-считать окно сразу при закреплении, а не со следующего скролла.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [table, columnPinning, activeColumnIndex],
+    [latest, table.store, columnPinning, activeColumnIndex],
   )
 }

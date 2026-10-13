@@ -1,5 +1,6 @@
 import type { Header } from '../types'
 import { zoneOf } from '../core/columnNodes'
+import { getDisplayColumnIndex } from '../core/displayColumns'
 import { getPinnedEndOffset, getPinnedStartOffset } from './columnSizes'
 
 export const getAriaSort = (
@@ -60,5 +61,36 @@ export const getHeaderPinning = (header: Header<any, any, unknown>) => {
     endPinnedOffset: isEndPinned
       ? getPinnedEndOffset(table as never, lastLeaf as never)
       : undefined,
+  }
+}
+
+/**
+ * Значения ячейки заголовка, зависящие от состояния таблицы: на них — и только на них —
+ * подписана ячейка (ADR 0099, PF5). Структура шапки приходит новыми объектами `header`.
+ */
+export const getHeadCellState = (header: Header<any, any, unknown>) => {
+  const table = header.getContext().table as {
+    getHeaderGroups: () => unknown[]
+  }
+  const {
+    firstLeaf,
+    headerPinned,
+    isLastStartPinnedColumn,
+    isFirstEndPinnedColumn,
+    startPinnedOffset,
+    endPinnedOffset,
+  } = getHeaderPinning(header)
+  return {
+    firstLeafId: firstLeaf.id,
+    headerPinned,
+    isLastStartPinnedColumn,
+    isFirstEndPinnedColumn,
+    startPinnedOffset,
+    endPinnedOffset,
+    canResize: header.column.getCanResize?.() ?? false,
+    isResizing: header.column.getIsResizing?.() ?? false,
+    ariaSort: getAriaSort(header),
+    displayIndex: getDisplayColumnIndex(table as never, firstLeaf.id),
+    headerRows: table.getHeaderGroups().length,
   }
 }

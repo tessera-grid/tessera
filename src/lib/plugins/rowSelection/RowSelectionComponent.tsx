@@ -1,10 +1,11 @@
 /**
- * Чекбокс выбора строки. Реактивность на срезе `rowSelection` (`useSlice`);
- * бизнес-колбэки — из пропса `hooks` (инъекция definePlugin); группировка — хелпер.
+ * Чекбокс выбора строки. Подписка — на свой вид: выбор другой строки его не
+ * перерисовывает (ADR 0099, PF5). Бизнес-колбэки — из пропса `hooks` (инъекция
+ * definePlugin); группировка — хелпер.
  */
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
-import { useSlice } from '../../core/reactivity'
+import { useTableState } from '../../core/reactivity'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import { toggleRowSelection } from './keyboardActions'
 import { isGroupingActive } from './selectionHelpers'
@@ -17,10 +18,18 @@ export const RowSelectionComponent = ({
 }: PluginCellProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
 
-  useSlice(table, 'rowSelection')
+  const { grouped, canSelect, selected, indeterminate } = useTableState(
+    table,
+    () => ({
+      grouped: isGroupingActive(table),
+      canSelect: row.getCanSelect(),
+      selected: row.getIsSelected(),
+      indeterminate: row.getIsSomeSelected(),
+    }),
+  )
 
   // Активная группировка делает выбор недоступным: прячем чекбокс.
-  if (isGroupingActive(table)) {
+  if (grouped) {
     return null
   }
 
@@ -29,10 +38,6 @@ export const RowSelectionComponent = ({
   }
 
   const { isAllRowsSelected = false } = hooks
-
-  const canSelect = row.getCanSelect()
-  const selected = row.getIsSelected()
-  const indeterminate = row.getIsSomeSelected()
 
   const handleSelectRow = (event: unknown) =>
     toggleRowSelection(row, hooks, event)

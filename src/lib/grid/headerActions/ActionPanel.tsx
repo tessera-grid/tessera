@@ -12,6 +12,7 @@ import { actionDot } from './ActiveDot'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
+import { useStateWhileOpen } from './useStateWhileOpen'
 
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -37,6 +38,7 @@ export const ActionPanel = ({
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
+  useStateWhileOpen(context.table, visible)
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label

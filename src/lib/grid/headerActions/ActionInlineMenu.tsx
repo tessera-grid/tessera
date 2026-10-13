@@ -17,6 +17,7 @@ import { useClosingVisible } from './useClosingVisible'
 import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 import { useAvailabilityChecks } from './useAvailabilityChecks'
 import { useMenuSections } from './useMenuSections'
+import { useStateWhileOpen } from './useStateWhileOpen'
 
 import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -38,6 +39,7 @@ export const ActionInlineMenu = ({
 }: ActionInlineMenuProps) => {
   const labels = useLocalization()
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
+  useStateWhileOpen(context.table, visible)
   // Действие с разделом: мини-меню открывается сразу в нём (ADR 0079).
   const section = action.submenu ? action : undefined
   const checks = useAvailabilityChecks()

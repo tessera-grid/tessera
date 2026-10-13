@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { type VirtualItem, useVirtualizer } from '@tanstack/react-virtual'
 
 import type { Column, Table } from '../../types'
 import { getDisplayColumns } from '../displayColumns'
@@ -14,6 +14,16 @@ export interface ColumnVirtualizerParams {
 }
 
 const COLUMNS_OVERSCAN = 4
+
+const sameWindow = (a: VirtualItem[], b: VirtualItem[]) =>
+  a.length === b.length &&
+  a.every(
+    (item, i) =>
+      item.key === b[i].key &&
+      item.index === b[i].index &&
+      item.start === b[i].start &&
+      item.size === b[i].size,
+  )
 
 export const useColumnVirtualizer = ({
   table,
@@ -95,7 +105,12 @@ export const useColumnVirtualizer = ({
   // смещениях последней отрисовки до протяжки — смонтированные колонки сдвигаются на
   // разницу текущего смещения и того (CR18). Снимок — копия: кэш размеров
   // react-virtual переиспользует один массив и меняет его при пересчёте.
-  const virtualColumns = virtualizer.getVirtualItems()
+  // Тот же состав окна — прежний массив: строки тела мемоизированы по нему, а
+  // react-virtual отдаёт новый при любом пересчёте диапазона (ADR 0099, PF5, PF10).
+  const items = virtualizer.getVirtualItems()
+  const stable = useRef(items)
+  if (!sameWindow(stable.current, items)) stable.current = items
+  const virtualColumns = stable.current
   const rendered = useRef<{ index: number; start: number }[]>([])
   if (!isResizingColumn) {
     rendered.current = virtualColumns.map(({ index, start }) => ({

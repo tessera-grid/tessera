@@ -1,5 +1,6 @@
 // ActionMenu: схлопнутая подача действий слота (кебаб ⋮ + раскрывающееся меню
-// Base UI). Реактивность даёт родительская ActionsZone (подписка на состояние).
+// Base UI). Закрытое меню перерисовывает ActionsZone по виду зоны, открытое — любая
+// смена состояния (useStateWhileOpen).
 // Открытием управляет ленивая обёртка (ActionMenu.lazy): контролируемый `open`
 // позволяет открыть меню сразу после догрузки чанка, если по плейсхолдеру уже
 // кликнули.
@@ -22,6 +23,7 @@ import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 import { usePanelOpening } from './usePanelOpening'
 import { type KebabState, useMergedFlash } from './useKebabState'
 import { useMenuSections } from './useMenuSections'
+import { useStateWhileOpen } from './useStateWhileOpen'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -59,6 +61,7 @@ export const ActionMenu = ({
   const [panelAction, setPanelAction] = useState<SlotAction | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelVisible, onPanelOpenChangeComplete] = useClosingVisible(panelOpen)
+  useStateWhileOpen(context.table, visible || panelVisible)
   // Меню закрывается вместе с открытием панели, когда её содержимое готово, и не
   // возвращает фокус на кебаб: фокус забирает панель, а возврат закрыл бы её. Пока
   // содержимое грузится, ожидание видно на кебабе; закрытие меню его отменяет.

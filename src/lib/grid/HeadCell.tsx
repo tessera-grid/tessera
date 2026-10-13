@@ -46,6 +46,7 @@ import {
 import {
   getAriaSort,
   getDisabledSortable,
+  getHeadCellState,
   getHeaderPinning,
 } from './headCellParams'
 
@@ -91,8 +92,9 @@ export const HeadCellView = ({
   usePluginRenderVersion()
   const table = header.getContext().table
 
-  // Коарс-подписка (TODO Phase D: сузить). Нужна для aria-sort/resizing/пиннинга.
-  useTableState(table as never, (state: unknown) => state)
+  // Подписка — на значения ячейки, а не на всё состояние: выбор строки или правка ячейки
+  // шапку не перерисовывают (ADR 0099, PF5).
+  useTableState(table as never, () => getHeadCellState(header))
 
   // Подсветка колонки (ADR 0080) — только у листа: группа над ним не подсвечивается.
   const columnHighlight = useColumnHighlight(table, header.column.id)

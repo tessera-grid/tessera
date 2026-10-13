@@ -2,8 +2,8 @@
  * ActionsZone: единая зона отрисовки действий слота. Сводит опаковые
  * слот-компоненты и дескрипторы, спрашивает у ядра решение о схлопывании
  * (resolveActionLayout) и рисует инлайн-кнопки + (при схлопывании) триггер кебаба.
- * Реактивность — подписка на состояние через useTableState (пока широкая, весь
- * state; TODO: сузить до срезов, читаемых дескрипторами слота).
+ * Реактивность — подписка на ключ вида зоны (`zoneViewKey`): смена состояния, не
+ * меняющая её кнопки и кебаб, зону не перерисовывает (ADR 0099, PF5).
  */
 import { Fragment, type ReactNode, memo } from 'react'
 
@@ -14,9 +14,11 @@ import {
   type SlotAction,
   type SlotName,
 } from '../../core/headerActions'
+import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { ActionButton } from './ActionButton'
 import { ActionInlineMenu, ActionMenu, ActionPanel } from './ActionMenu.lazy'
+import { zoneViewKey } from './zoneViewKey'
 
 interface ActionsZoneProps {
   slot: SlotName
@@ -39,15 +41,23 @@ const byRank = (a: ZoneItem, b: ZoneItem): number =>
 export const ActionsZone = memo(
   ({ slot, opaqueSlot, context }: ActionsZoneProps) => {
     const { table } = context
-
-    // Реактивность: перечитываем при любой смене состояния (TODO Phase D: сузить).
-    useTableState(table, state => state)
+    const labels = useLocalization()
 
     const descriptors: SlotAction[] = table.getSlotActions()?.[slot] ?? []
     const opaque = opaqueSlot ?? []
     const opaqueCount = opaque.filter(
       entry => entry.countsAsHeaderAction !== false,
     ).length
+
+    useTableState(table, () =>
+      zoneViewKey({
+        actions: descriptors,
+        opaqueCount,
+        config: table.options.actionMenu?.[slot],
+        ctx: context,
+        labels,
+      }),
+    )
 
     const { collapsed, inline, menu } = resolveActionLayout({
       actions: descriptors,
