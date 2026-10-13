@@ -1,5 +1,5 @@
 // Presence-based композиция: реестр распределён по плагинам, этот
-// баррель собирает фабрики-примитивы для входа @mstrvtt/tessera/plugins.
+// баррель собирает фабрики-примитивы для входа @tessera-grid/tessera/plugins.
 // Центрального статического реестра нет — набор собирает потребитель импортами.
 
 export { rowSelection, type RowSelectionOptions } from './rowSelection'

@@ -1,14 +1,14 @@
 {
-  "name": "@mstrvtt/tessera",
+  "name": "@tessera-grid/tessera",
   "version": "0.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mstrvtt/tessera.git"
+    "url": "git+https://github.com/tessera-grid/tessera.git"
   },
-  "homepage": "https://github.com/mstrvtt/tessera#readme",
+  "homepage": "https://github.com/tessera-grid/tessera#readme",
   "bugs": {
-    "url": "https://github.com/mstrvtt/tessera/issues"
+    "url": "https://github.com/tessera-grid/tessera/issues"
   },
   "engines": {
     "node": ">=20"

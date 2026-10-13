@@ -68,12 +68,12 @@
 потребителем **отдельно** и передаются явным списком; **наличие = включено**.
 
 ```ts
-import { useCreateTable } from '@mstrvtt/tessera'
+import { useCreateTable } from '@tessera-grid/tessera'
 import {
   rowSelection,
   rowExpanding,
   columnSorting,
-} from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera/plugins'
 
 useCreateTable({
   columns,
@@ -308,7 +308,7 @@ export const useCreateColumns = ({ initialColumns, pluginColumns }) =>
     generic-аргументов (TS не выводит хвостовой параметр при частично заданных
     дженериках). Для вызовов с явными дженериками именованный агрегат
     `BuiltinPluginsHooks` (= бывший `PluginsHooks`) вынесен во вход
-    `@mstrvtt/tessera/plugins` (стрелка вверх, IV1-чисто): `useCreateTable<Data,
+    `@tessera-grid/tessera/plugins` (стрелка вверх, IV1-чисто): `useCreateTable<Data,
 BuiltinPluginsHooks & MyHooks, …>({ … })`.
   - **Приёмка переформулирована:** символ `PluginsHooks` в `dist` намеренно пуст
     (`{}`) — полный контракт хуков доходит до потребителя через сигнатуру
@@ -326,7 +326,7 @@ BuiltinPluginsHooks & MyHooks, …>({ … })`.
   per-фиче политики; это IV1-чисто (ядро не импортит плагины). Отдельный
   `reduceState`-escape не понадобился (YAGNI) — вернём, если появится реальный
   неоднородный merge. `rowActions` полностью вынесена в плагин
-  (`@mstrvtt/tessera/plugins`): её колонка, опции (`width`) и автосайз живут в
+  (`@tessera-grid/tessera/plugins`): её колонка, опции (`width`) и автосайз живут в
   `plugins/rowActions`; фабрика `rowActions({ width })` объявляет колонку и `pin`
   (`right/always`). В ядре остаётся лишь id колонки (`ROW_ACTIONS_COLUMN_ID`) и
   предикаты `getIsActionsColumn`/`getIsRowActionsColumn` (always-on `commonFeature`
@@ -348,7 +348,7 @@ BuiltinPluginsHooks & MyHooks, …>({ … })`.
 **Фаза 1 — контракт `RegistryEntry` (аддитивно).** Ввести `ServiceColumn` и
 `RegistryEntry` в [`plugins/types.ts`](../../src/lib/plugins/types.ts); каждый
 плагин экспортирует фабрику `plugin(opts?) => RegistryEntry` (тонкие опции — в
-аргумент фабрики); настоящий вход `@mstrvtt/tessera/plugins` реэкспортит фабрики.
+аргумент фабрики); настоящий вход `@tessera-grid/tessera/plugins` реэкспортит фабрики.
 Старый путь остаётся; `tsc` и оракул зелёные.
 
 **Фаза 2 — обобщить ядро (критический путь).** `useCreateColumns` → generic по
@@ -378,7 +378,7 @@ BuiltinPluginsHooks & MyHooks, …>({ … })`.
 (always-on инфраструктура). IV1-правило поднято до `error` для всего
 `src/lib/core/**` (включая `createHooks` — см. Фазу 7); IV2/IV4/IV5 покрыты
 `__tests__/core.test.ts`, IV3 по сути обеспечен IV1=`error`. `rowActions` полностью
-вынесена в плагин (`@mstrvtt/tessera/plugins`): колонка/опции/автосайз в
+вынесена в плагин (`@tessera-grid/tessera/plugins`): колонка/опции/автосайз в
 `plugins/rowActions`, в ядре — только id + предикаты (см. решение по пиннингу).
 Для этого в контракт добавлен generic-escape `RegistryEntry.setup` (императивный
 сетап плагина) и ядровый writer `table.setColumnAutoSizing`.

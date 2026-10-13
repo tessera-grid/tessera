@@ -39,7 +39,7 @@ export const missingMetadata = (root: string): string[] => {
  * Ошибки `tsc` (вывод `--pretty false`), которые относятся к коду фикстуры или к
  * декларациям пакета. Ошибки в чужих декларациях (`node_modules`) — не наши.
  */
-export const ownTypeErrors = (output: string, pkg = '@mstrvtt/tessera') =>
+export const ownTypeErrors = (output: string, pkg = '@tessera-grid/tessera') =>
   output
     .split('\n')
     .filter(line => /\berror TS\d+:/.test(line))
@@ -59,9 +59,9 @@ export interface Fixture {
 }
 
 /** Код потребителя: все входы, хук, грид, плагин и примитив; типы — не `any`. */
-const APP = `import { DataGrid, useCreateTable } from '@mstrvtt/tessera'
-import { rowSelection } from '@mstrvtt/tessera/plugins'
-import { Switch } from '@mstrvtt/tessera/ui'
+const APP = `import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+import { rowSelection } from '@tessera-grid/tessera/plugins'
+import { Switch } from '@tessera-grid/tessera/ui'
 
 interface Row {
   id: string
@@ -88,9 +88,9 @@ export const App = () => {
 `
 
 /** Входы в Node: ESM (\`.mts\`) и CJS (\`.cts\`, импорт компилируется в require). */
-const NODE_ENTRIES = `import { DataGrid, useCreateTable } from '@mstrvtt/tessera'
-import { rowSelection } from '@mstrvtt/tessera/plugins'
-import { Switch } from '@mstrvtt/tessera/ui'
+const NODE_ENTRIES = `import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+import { rowSelection } from '@tessera-grid/tessera/plugins'
+import { Switch } from '@tessera-grid/tessera/ui'
 
 export const entries = [DataGrid, useCreateTable, rowSelection, Switch]
 // @ts-expect-error — типы пакета разрешены: DataGrid не строка.
@@ -161,7 +161,7 @@ export const FIXTURES: Fixture[] = [
     },
     files: {
       'app.tsx': APP,
-      'main.tsx': `import '@mstrvtt/tessera/style.css'
+      'main.tsx': `import '@tessera-grid/tessera/style.css'
 import { createRoot } from 'react-dom/client'
 
 import { App } from './app'
@@ -183,15 +183,15 @@ createRoot(document.getElementById('root')!).render(<App />)
       'esm.mts': NODE_ENTRIES,
       'cjs.cts': NODE_ENTRIES,
       'tsc.mjs': TSC,
-      'runtime-esm.mjs': `import { DataGrid, useCreateTable } from '@mstrvtt/tessera'
-import { rowSelection } from '@mstrvtt/tessera/plugins'
-import { Switch } from '@mstrvtt/tessera/ui'
+      'runtime-esm.mjs': `import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+import { rowSelection } from '@tessera-grid/tessera/plugins'
+import { Switch } from '@tessera-grid/tessera/ui'
 
 const entries = { DataGrid, useCreateTable, rowSelection, Switch }
 ${RUNTIME_CHECK}`,
-      'runtime-cjs.cjs': `const { DataGrid, useCreateTable } = require('@mstrvtt/tessera')
-const { rowSelection } = require('@mstrvtt/tessera/plugins')
-const { Switch } = require('@mstrvtt/tessera/ui')
+      'runtime-cjs.cjs': `const { DataGrid, useCreateTable } = require('@tessera-grid/tessera')
+const { rowSelection } = require('@tessera-grid/tessera/plugins')
+const { Switch } = require('@tessera-grid/tessera/ui')
 
 const entries = { DataGrid, useCreateTable, rowSelection, Switch }
 ${RUNTIME_CHECK}`,

@@ -30,7 +30,7 @@ expandParents })` — один прыжок без скелетов, стран�
   перенесён в `dependencies` — у потребителя импорт больше не упадёт.
   `tailwindcss` / `@tailwindcss/vite` уехали в `devDependencies`, `motion` из
   зависимостей убран (в рантайм-JS не шли) — чище install-вес. `@tanstack/react-table`
-  вынесен в `peerDependencies ^9`; пакет опубликован как `@mstrvtt/tessera`.
+  вынесен в `peerDependencies ^9`; пакет опубликован как `@tessera-grid/tessera`.
 
 - **Выделение диапазона ячеек + копирование в буфер — завершено.** Плагин
   `cellSelection` ([ADR 0029](decisions/0029-cell-range-selection.md)) на стоковой

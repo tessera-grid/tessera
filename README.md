@@ -13,7 +13,7 @@
 
 # Tessera
 
-`@mstrvtt/tessera`
+`@tessera-grid/tessera`
 
 Библиотека для создания производительных и нагруженных интерактивных таблиц на основе TanStack Table.
 
@@ -305,7 +305,7 @@ export const useData = () => {
 ```tsx
 // Table.tsx
 
-import { useCreateTable, DataGrid } from '@mstrvtt/tessera'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -351,10 +351,10 @@ export const Table = () => {
 наличие фабрики плагина в массиве `plugins` = фича включена.
 
 Например, чтобы включить сортировку и изменение ширины для всех колонок, импортируйте
-соответствующие плагины из `@mstrvtt/tessera/plugins` и передайте их фабрики:
+соответствующие плагины из `@tessera-grid/tessera/plugins` и передайте их фабрики:
 
 ```tsx
-import { columnSorting, columnSizing } from '@mstrvtt/tessera/plugins'
+import { columnSorting, columnSizing } from '@tessera-grid/tessera/plugins'
 
 useCreateTable({
   columns,
@@ -389,8 +389,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -428,7 +428,7 @@ export const Table = () => {
 
 ### Использование плагинов
 
-Набор базовых плагинов поставляется отдельным входом `@mstrvtt/tessera/plugins`.
+Набор базовых плагинов поставляется отдельным входом `@tessera-grid/tessera/plugins`.
 Каждый включается добавлением своей фабрики в массив `plugins`:
 
 | Фабрика                | Что делает                                   | UI                                                                          | Ограничения / примечания                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -470,7 +470,7 @@ export const Table = () => {
 > соответствующим флагом в определении (`enableSorting`, `enableResizing`,
 > `enablePinning`, `enableDragging`, `enableGrouping`).
 
-Импортируйте нужные фабрики из `@mstrvtt/tessera/plugins` и передайте их вызовы в
+Импортируйте нужные фабрики из `@tessera-grid/tessera/plugins` и передайте их вызовы в
 `plugins` (наличие в массиве = плагин включён):
 
 ```tsx
@@ -478,7 +478,7 @@ import {
   rowSelection,
   columnSorting,
   columnSizing,
-} from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera/plugins'
 
 useCreateTable({
   columns,
@@ -519,8 +519,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -572,7 +572,7 @@ export const Table = () => {
 
 1. **Полное пересоздание.** При изменении ссылок на `columns` или `data` `TanStack Table` пересоздаёт таблицу целиком. Поэтому держите эти ссылки **стабильными** (мемоизация).
 
-2. **Гранулярные подписки.** Состояние таблицы живёт в TanStack Store: каждый слайс — это атом, на который компонент подписывается точечно и ре-рендерится только при изменении именно этого слайса. Ручного механизма подписки больше нет — точечные подписки идут через хелперы `useSlice` и `useTableState`, экспортируемые из `@mstrvtt/tessera`.
+2. **Гранулярные подписки.** Состояние таблицы живёт в TanStack Store: каждый слайс — это атом, на который компонент подписывается точечно и ре-рендерится только при изменении именно этого слайса. Ручного механизма подписки больше нет — точечные подписки идут через хелперы `useSlice` и `useTableState`, экспортируемые из `@tessera-grid/tessera`.
 
 <a name="reactivity_methods" id="reactivity_methods"></a>
 
@@ -583,7 +583,7 @@ export const Table = () => {
 
 ```tsx
 import { memo } from 'react'
-import { useSlice, type CellComponentProps } from '@mstrvtt/tessera'
+import { useSlice, type CellComponentProps } from '@tessera-grid/tessera'
 
 export const PluginComponent = memo(({ row, table }: CellComponentProps) => {
   // Узкая подписка на встроенный слайс: компонент реагирует только на выбор строк.
@@ -610,7 +610,7 @@ export const PluginComponent = memo(({ row, table }: CellComponentProps) => {
 `o` в `options`/`hooks` выводится из него. Обязателен только `id`.
 
 ```tsx
-import { definePlugin } from '@mstrvtt/tessera'
+import { definePlugin } from '@tessera-grid/tessera'
 
 interface MyPluginOptions {
   enabled?: boolean // наличие в plugins = включён; enabled:false — выключить, не убирая
@@ -677,7 +677,7 @@ export const myPlugin = definePlugin<MyPluginOptions>()({
 ```tsx
 // rowDownloadAction.tsx
 
-import { definePlugin } from '@mstrvtt/tessera'
+import { definePlugin } from '@tessera-grid/tessera'
 import { RowDownloadComponent } from './RowDownloadComponent'
 
 // Плагин через definePlugin. Рисуем кнопку в слоте действий каждой строки.
@@ -718,8 +718,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -777,7 +777,7 @@ export interface RowDownloadHooks {
 ```tsx
 // rowDownloadAction.tsx
 
-import { definePlugin } from '@mstrvtt/tessera'
+import { definePlugin } from '@tessera-grid/tessera'
 import { RowDownloadComponent } from './RowDownloadComponent'
 import type { RowDownloadHooks } from './types'
 
@@ -810,7 +810,7 @@ export const rowDownloadAction = definePlugin<RowDownloadOptions>()({
 // RowDownloadComponent.tsx
 
 import { memo } from 'react'
-import { type PluginCellProps } from '@mstrvtt/tessera'
+import { type PluginCellProps } from '@tessera-grid/tessera'
 import type { RowDownloadHooks } from './types'
 import { RowDownloadButton } from './RowDownloadButton'
 
@@ -833,8 +833,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -873,7 +873,7 @@ export const Table = () => {
 }
 ```
 
-> ⚠️ Обратите внимание, что `Tessera` уже экспортирует готовые фасады кнопок действий для таблицы (`CellButton`, `RowButton`) — импортируйте их из `@mstrvtt/tessera/ui`. Их вид настраивается токенами темы `--tsr-comp-action-button-*`.
+> ⚠️ Обратите внимание, что `Tessera` уже экспортирует готовые фасады кнопок действий для таблицы (`CellButton`, `RowButton`) — импортируйте их из `@tessera-grid/tessera/ui`. Их вид настраивается токенами темы `--tsr-comp-action-button-*`.
 
 Поздравляю! Теперь мы можем реагировать на нажатии кнопки в каждой строке!
 
@@ -911,8 +911,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -965,7 +965,7 @@ export const Table = () => {
 ```tsx
 // cellHiddenAction.tsx
 
-import { definePlugin } from '@mstrvtt/tessera'
+import { definePlugin } from '@tessera-grid/tessera'
 import { CellHiddenComponent } from './CellHiddenComponent'
 
 export const cellHiddenAction = definePlugin<{ enabled?: boolean }>()({
@@ -993,7 +993,7 @@ export const cellHiddenAction = definePlugin<{ enabled?: boolean }>()({
 // CellHiddenComponent.tsx
 
 import { memo } from 'react'
-import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
+import { useTableState, type CellComponentProps } from '@tessera-grid/tessera'
 import { CellHiddenButton } from './CellHiddenButton'
 import { MyTableOptions, MyTableState } from './types'
 
@@ -1034,8 +1034,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -1090,7 +1090,7 @@ const Table = () => {
 // Cell.tsx
 
 import { memo } from 'react'
-import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
+import { useTableState, type CellComponentProps } from '@tessera-grid/tessera'
 import { MyTableState } from './types'
 import { getMeta } from './getMeta'
 
@@ -1145,7 +1145,7 @@ columnHelper.accessor(row => row[field.name], {
 
 ```tsx
 // myLocalPlugin.tsx
-import { definePlugin } from '@mstrvtt/tessera'
+import { definePlugin } from '@tessera-grid/tessera'
 import { MyCell } from './MyCell'
 
 interface MyOptions {
@@ -1172,7 +1172,7 @@ export const myLocalPlugin = definePlugin<MyOptions>()({
 
 ```tsx
 // MyCell.tsx
-import { type PluginCellStateProps } from '@mstrvtt/tessera'
+import { type PluginCellStateProps } from '@tessera-grid/tessera'
 
 // state — типизированная пара [значение, сеттер]; TState = MyLocalState.
 export const MyCell = ({
@@ -1211,7 +1211,7 @@ export const MyCell = ({
 задан — используется встроенный:
 
 ```tsx
-import { cellEditing } from '@mstrvtt/tessera'
+import { cellEditing } from '@tessera-grid/tessera'
 import { MyInput } from './design-system'
 
 cellEditing({
@@ -1243,7 +1243,7 @@ cellEditing({
 Свой владелец ячейки в собственном плагине:
 
 ```tsx
-import { definePlugin, type PluginCellOwnerProps } from '@mstrvtt/tessera'
+import { definePlugin, type PluginCellOwnerProps } from '@tessera-grid/tessera'
 
 // content — собственный рендер ячейки; показываем его или замещаем своим UI.
 const MyOwner = ({
@@ -1280,7 +1280,7 @@ export const myOwner = definePlugin<{ enabled?: boolean }>()({
 ```tsx
 // switchAction.tsx
 
-import { definePlugin } from '@mstrvtt/tessera'
+import { definePlugin } from '@tessera-grid/tessera'
 import { SwitchActionComponent } from './SwitchActionComponent'
 
 export const SWITCH_ACTION_COLUMN_ID = 'switchActionColumn'
@@ -1313,7 +1313,7 @@ export const switchAction = definePlugin<{ enabled?: boolean }>()({
 // SwitchActionComponent.tsx
 
 import { memo } from 'react'
-import { useTableState, type CellComponentProps } from '@mstrvtt/tessera'
+import { useTableState, type CellComponentProps } from '@tessera-grid/tessera'
 import { Switch } from './Switch'
 import { MyTableState } from './types'
 
@@ -1347,8 +1347,8 @@ import {
   useCreateTable,
   DataGrid,
   useRowSelectionState,
-} from '@mstrvtt/tessera'
-import { rowSelection, rowActions } from '@mstrvtt/tessera/plugins'
+} from '@tessera-grid/tessera'
+import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -1398,7 +1398,7 @@ const Table = () => {
 }
 ```
 
-> Обратите внимание, что видимостью, закреплением и порядком колонок вы можете управлять через хуки состояний, экспортируемые из `@mstrvtt/tessera`.
+> Обратите внимание, что видимостью, закреплением и порядком колонок вы можете управлять через хуки состояний, экспортируемые из `@tessera-grid/tessera`.
 
 Поздравляем! Теперь вы знаете как управлять состоянием таблицы, создавать плагины и взаимодействовать с ними!
 
@@ -1425,10 +1425,10 @@ const Table = () => {
 `enableToolbar` добавляет над таблицей тулбар для кнопок, относящихся ко всей
 таблице. Тулбар не прокручивается вместе с таблицей и рисуется, даже если в нём
 пока нет кнопок. Кнопки добавляют плагины через слот `toolbarSlot` и компонент
-`ToolbarButton` из `@mstrvtt/tessera/ui`:
+`ToolbarButton` из `@tessera-grid/tessera/ui`:
 
 ```tsx
-import { ToolbarButton } from '@mstrvtt/tessera/ui'
+import { ToolbarButton } from '@tessera-grid/tessera/ui'
 
 const exportPlugin = definePlugin<{ enabled?: boolean }>()({
   id: 'export',
@@ -1487,8 +1487,8 @@ useCreateTable({
 Типы v9 параметризованы набором фич (`TFeatures`). Набор выводится из Ваших плагинов через `TesseraFeatures`:
 
 ```tsx
-import { useCreateTable, type TesseraFeatures } from '@mstrvtt/tessera'
-import { columnPinning, columnSorting } from '@mstrvtt/tessera/plugins'
+import { useCreateTable, type TesseraFeatures } from '@tessera-grid/tessera'
+import { columnPinning, columnSorting } from '@tessera-grid/tessera/plugins'
 import type { ColumnDef } from '@tanstack/react-table'
 
 // Держите набор плагинов вне компонента: он же задаёт тип фич

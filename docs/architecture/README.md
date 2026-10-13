@@ -1,6 +1,6 @@
 # Tessera — архитектура
 
-`@mstrvtt/tessera` — это headless-first, plugin-driven таблица данных, построенная
+`@tessera-grid/tessera` — это headless-first, plugin-driven таблица данных, построенная
 поверх **TanStack Table v9** (модель таблицы), **TanStack Virtual** (виртуализация
 строк/столбцов) и **dnd-kit** (drag & drop). Tessera не форкает эти библиотеки —
 она их компонует и расширяет, добавляя слой рендеринга на плагинах/слотах и

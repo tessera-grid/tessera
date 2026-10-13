@@ -9,7 +9,7 @@ import { AXE_OPTIONS } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
 // PQ4: каждый встроенный плагин проходит axe (ADR 0036). Ключи карты сверяются с
-// экспортами `@mstrvtt/tessera/plugins`: новый плагин без записи здесь роняет тест.
+// экспортами `@tessera-grid/tessera/plugins`: новый плагин без записи здесь роняет тест.
 // Значение — тумблеры историй с минимальным окружением, без которого у плагина нет UI.
 
 type GridArgs = FeatureToggles & {

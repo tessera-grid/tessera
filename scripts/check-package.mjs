@@ -83,7 +83,7 @@ try {
           type: 'module',
           dependencies: {
             ...fixture.dependencies,
-            '@mstrvtt/tessera': `file:${tarball.split('\\').join('/')}`,
+            '@tessera-grid/tessera': `file:${tarball.split('\\').join('/')}`,
           },
         },
         null,

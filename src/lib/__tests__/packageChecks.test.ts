@@ -47,7 +47,7 @@ describe('Пакет глазами потребителя', () => {
     const commands = react19.commands.map(command => command.join(' '))
 
     expect(react19.files['main.tsx']).toContain(
-      "import '@mstrvtt/tessera/style.css'",
+      "import '@tessera-grid/tessera/style.css'",
     )
     expect(JSON.parse(react19.files['tsconfig.json']!)).toMatchObject({
       compilerOptions: { strict: true, moduleResolution: 'bundler' },
@@ -77,12 +77,12 @@ describe('Пакет глазами потребителя', () => {
     const output = [
       "app.tsx(3,1): error TS2322: Type 'number' is not assignable.",
       "node_modules/@dnd-kit/core/dist/a.d.ts(9,1): error TS2503: Cannot find namespace 'JSX'.",
-      'node_modules/@mstrvtt/tessera/dist/index.d.ts(1,1): error TS2307: Cannot find module.',
+      'node_modules/@tessera-grid/tessera/dist/index.d.ts(1,1): error TS2307: Cannot find module.',
       'Found 3 errors.',
     ].join('\n')
     expect(ownTypeErrors(output)).toEqual([
       "app.tsx(3,1): error TS2322: Type 'number' is not assignable.",
-      'node_modules/@mstrvtt/tessera/dist/index.d.ts(1,1): error TS2307: Cannot find module.',
+      'node_modules/@tessera-grid/tessera/dist/index.d.ts(1,1): error TS2307: Cannot find module.',
     ])
   })
 
