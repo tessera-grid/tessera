@@ -2,7 +2,7 @@
 // считает DataGrid), Body лишь маппит строки в BodyRow/DraggableBodyRow. При
 // enableRowDragging рисуется DraggableBodyRow (useSortable под DndContext тела),
 // иначе обычная BodyRow.
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useRef } from 'react'
 
 import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
@@ -11,6 +11,7 @@ import type { Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
 import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
+import { RowMotion } from './rowMotion/RowMotion'
 import { getTreeAria } from './treeAria'
 import { getTreeLines } from './treeBranches'
 
@@ -36,6 +37,8 @@ interface TableBodyProps {
   isResizingColumns: false | string
   isVirtualColumns: boolean
   enableRowDragging?: boolean
+  /** Движение строк при смене модели (ADR 0107). */
+  rowAnimation?: boolean
 }
 
 export const Body = ({
@@ -54,7 +57,9 @@ export const Body = ({
   treeLines,
   isVirtualColumns,
   enableRowDragging,
+  rowAnimation = false,
 }: TableBodyProps) => {
+  const bodyRef = useRef<HTMLDivElement>(null)
   const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
   const treeAria = useMemo(
     () => (treeRows ? getTreeAria(rows) : undefined),
@@ -67,35 +72,43 @@ export const Body = ({
 
   return (
     <div
+      ref={bodyRef}
       className={clsx('data-grid__body', styles.body)}
       role="rowgroup"
       data-layout={layout}
     >
-      {virtualRows.map(virtualRow => {
-        const row = rows[virtualRow.index]
-        return (
-          <RowComponent
-            key={row.id}
-            layout={layout}
-            row={row}
-            virtualRow={virtualRow}
-            visibleCells={row.getVisibleCells()}
-            virtualColumns={virtualColumns}
-            leafColumns={leafColumns}
-            leftCellSlot={leftCellSlot}
-            rightCellSlot={rightCellSlot}
-            cellSlot={cellSlot}
-            actionRowSlot={actionRowSlot}
-            ariaRowIndexBase={ariaRowIndexBase}
-            selectableRows={selectableRows}
-            treeSetSize={treeAria?.setSize(virtualRow.index)}
-            treePosInSet={treeAria?.posInSet(virtualRow.index)}
-            treeBranch={treeLinesIndex?.branch(virtualRow.index)}
-            treeOpen={treeLinesIndex?.open(virtualRow.index)}
-            isVirtualColumns={isVirtualColumns}
-          />
-        )
-      })}
+      <RowMotion
+        enabled={rowAnimation}
+        rows={rows}
+        virtualRows={virtualRows}
+        bodyRef={bodyRef}
+      >
+        {virtualRows.map(virtualRow => {
+          const row = rows[virtualRow.index]
+          return (
+            <RowComponent
+              key={row.id}
+              layout={layout}
+              row={row}
+              virtualRow={virtualRow}
+              visibleCells={row.getVisibleCells()}
+              virtualColumns={virtualColumns}
+              leafColumns={leafColumns}
+              leftCellSlot={leftCellSlot}
+              rightCellSlot={rightCellSlot}
+              cellSlot={cellSlot}
+              actionRowSlot={actionRowSlot}
+              ariaRowIndexBase={ariaRowIndexBase}
+              selectableRows={selectableRows}
+              treeSetSize={treeAria?.setSize(virtualRow.index)}
+              treePosInSet={treeAria?.posInSet(virtualRow.index)}
+              treeBranch={treeLinesIndex?.branch(virtualRow.index)}
+              treeOpen={treeLinesIndex?.open(virtualRow.index)}
+              isVirtualColumns={isVirtualColumns}
+            />
+          )
+        })}
+      </RowMotion>
     </div>
   )
 }

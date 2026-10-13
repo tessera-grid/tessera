@@ -208,6 +208,11 @@ export const enableAnnouncementsType = booleanControl(
   true,
 )
 
+export const enableRowAnimationType = booleanControl(
+  'Движение строк при смене модели: раскрытие, сортировка, фильтр, перестановка (`enableRowAnimation`, ADR 0107)',
+  true,
+)
+
 export const enableOverflowTooltipType = booleanControl(
   'Тултип с полным текстом у обрезанного многоточием текста ячейки (`enableOverflowTooltip`)',
   true,

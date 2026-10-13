@@ -91,10 +91,19 @@ export const markProgrammaticScroll = (element: object) => {
   programmatic.set(element, performance.now())
 }
 
+export interface FastScrollDetectorOptions {
+  /**
+   * Прокрутка быстрая при любой скорости — спрашивается на каждое событие: автопрокрутка
+   * перетаскивания у самого края (ADR 0107, RM25). Выход — по скорости или простою.
+   */
+  forceFast?: () => boolean
+}
+
 /** Подписать детектор на элемент прокрутки; `onChange` — смена режима. Возвращает отписку. */
 export const attachFastScrollDetector = (
   element: ScrollSource,
   onChange: (fast: boolean) => void,
+  { forceFast }: FastScrollDetectorOptions = {},
 ): (() => void) => {
   let fast = false
   let lastTop = element.scrollTop
@@ -186,6 +195,7 @@ export const attachFastScrollDetector = (
 
     const velocity = velocityOf(samples)
     if (
+      forceFast?.() ||
       velocity.x >= FAST_SCROLL_ENTER_VELOCITY_X ||
       velocity.y >= FAST_SCROLL_ENTER_VELOCITY_Y
     ) {

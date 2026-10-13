@@ -1,12 +1,15 @@
 import {
   type AutoScrollOptions,
   type DropAnimation,
+  type DropAnimationFunction,
   type MeasuringConfiguration,
   MeasuringStrategy,
   type Modifier,
   defaultDropAnimation,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
+
+import { rowMotionTiming } from '../rowMotion/rowMotionTiming'
 
 const ADJUST_OVERLAY_POSITION_Y = 10
 const AUTOSCROLL_THRESHOLD = 0.2
@@ -53,6 +56,47 @@ export const dropAnimationConfig: DropAnimation = {
       easing: defaultDropAnimation.easing,
     })
   },
+}
+
+/**
+ * Бросок строки с движением (ADR 0107, RM10): облако долетает до слота, слот
+ * проявляется строкой; темп — токены движения строк, без них — мгновенно.
+ */
+export const rowDropAnimation: DropAnimationFunction = ({
+  active,
+  dragOverlay,
+  transform,
+}) => {
+  const { duration, easing } = rowMotionTiming(active.node)
+  if (!duration) return
+  const final = {
+    ...transform,
+    x: transform.x - (dragOverlay.rect.left - active.rect.left),
+    y: transform.y - (dragOverlay.rect.top - active.rect.top),
+  }
+  active.node.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing })
+  return dragOverlay.node
+    .animate(
+      [
+        { transform: CSS.Transform.toString(transform) },
+        { transform: CSS.Transform.toString(final) },
+      ],
+      { duration, easing, fill: 'forwards' },
+    )
+    .finished.then(() => undefined)
+}
+
+/**
+ * Указатель в ближней к краю половине зоны автопрокрутки: dnd-kit крутит быстрее, чем
+ * успевает отрисоваться содержимое, — быстрая прокрутка (ADR 0107, RM25). Скорость не
+ * годится в признак: частота шагов автопрокрутки зависит от движка и загрузки машины.
+ */
+export const isNearAutoScrollEdge = (
+  rect: { top: number; bottom: number; height: number },
+  y: number,
+) => {
+  const zone = rect.height * AUTOSCROLL_THRESHOLD
+  return y >= rect.bottom - zone / 2 || y <= rect.top + zone / 2
 }
 
 export const autoScrollOnlyY: AutoScrollOptions = {

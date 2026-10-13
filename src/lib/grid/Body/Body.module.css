@@ -18,3 +18,11 @@
 :global(.data-grid-theme[data-refreshing]) .body {
   opacity: var(--tsr-comp-loader-dim-opacity);
 }
+
+/* Призраки уходящих строк (ADR 0107): под строками, вне ввода и доступности. */
+.ghosts {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}

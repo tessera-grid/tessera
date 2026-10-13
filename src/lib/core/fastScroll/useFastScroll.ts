@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { attachFastScrollDetector } from './fastScrollDetector'
+import { useLatest } from '../useLatest'
+import {
+  type FastScrollDetectorOptions,
+  attachFastScrollDetector,
+} from './fastScrollDetector'
 
 export interface FastScrollState {
   isFastScrolling: boolean
@@ -18,7 +22,7 @@ export const INITIAL_STATE: FastScrollState = {
   sessionId: 0,
 }
 
-export interface FastScrollOptions {
+export interface FastScrollOptions extends FastScrollDetectorOptions {
   getScrollElement: () => HTMLDivElement | null
 }
 
@@ -36,7 +40,9 @@ export interface FastScrollStore {
 
 export const useFastScroll = ({
   getScrollElement,
+  forceFast,
 }: FastScrollOptions): FastScrollStore => {
+  const forceFastRef = useLatest(forceFast)
   const stateRef = useRef<FastScrollState>(INITIAL_STATE)
   const listenersRef = useRef<Set<() => void>>(new Set())
 
@@ -51,15 +57,26 @@ export const useFastScroll = ({
     getSnapshot: () => stateRef.current,
   }))
 
-  const listen = (element: HTMLDivElement) =>
-    attachFastScrollDetector(element, value => {
-      const prev = stateRef.current
-      stateRef.current = {
-        isFastScrolling: value,
-        sessionId: value ? prev.sessionId + 1 : prev.sessionId,
-      }
-      listenersRef.current.forEach(listener => listener())
-    })
+  const listen = (element: HTMLDivElement) => {
+    const detach = attachFastScrollDetector(
+      element,
+      value => {
+        const prev = stateRef.current
+        stateRef.current = {
+          isFastScrolling: value,
+          sessionId: value ? prev.sessionId + 1 : prev.sessionId,
+        }
+        // Атрибут — для CSS без перерисовки грида: слот перетаскивания (ADR 0107, RM25).
+        element.toggleAttribute('data-fast-scrolling', value)
+        listenersRef.current.forEach(listener => listener())
+      },
+      { forceFast: () => forceFastRef.current?.() ?? false },
+    )
+    return () => {
+      detach()
+      element.removeAttribute('data-fast-scrolling')
+    }
+  }
 
   // Узел скролла может смениться без размонтирования DataGrid: после каждого рендера
   // подписка перевешивается, если узел другой.

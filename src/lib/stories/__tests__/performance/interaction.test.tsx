@@ -22,12 +22,14 @@ import {
   headCells,
   measureInteractionWork,
   measureRenderWork,
+  measureScrollWork,
   measureTransitionWork,
   recordPerf,
   renderGrid,
 } from '../helpers'
 import {
   ALL_PLUGINS,
+  CONTENT_SCROLL,
   CPU_THROTTLE_RATE,
   LARGE,
   PAGED,
@@ -35,6 +37,7 @@ import {
   SMALL,
 } from './perf-cases'
 import {
+  ANIMATION_BUDGET_MS,
   INTERACTION_BUDGET_MS,
   LOAD_BUDGET_MS,
   TBT_TARGET_MS,
@@ -53,6 +56,7 @@ import {
 } from '../../../plugins/rowExpanding/lazyChildrenFeature'
 import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
+import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { buildXlsx } from '../../../plugins/dataExport/xlsxBuild'
@@ -2298,5 +2302,168 @@ describe('Отзывчивость — прокрутка к строке', () =
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// Движение строк (ADR 0107, RM20): цена FLIP против той же смены без движения —
+// сортировка 100 000 строк (отзывчивость), раскрытие 100 детей на 1000×1000 (кадры во
+// время движения) и спокойная прокрутка 1000×1000 без смены модели.
+const MOTION_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${i}`,
+  rank: (i * 7919) % 100_000,
+}))
+const MOTION_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'rank', accessorKey: 'rank', header: 'Rank' },
+]
+/** Цена движения по ADR 0107, RM20: сортировка платит за копии уходящих строк. */
+const RM20_COST = { ratio: 1.3, plusMs: 8 }
+const RM20_SORT_COST = { ratio: 1.45, plusMs: 8 }
+const MOTION_SETTLE_MS = 400
+
+const motionTree = () => {
+  const rows = getData(1000)
+  rows[0].subRows = getData(100).map((row: { id: string }) => ({
+    ...row,
+    id: `${rows[0].id}-${row.id}`,
+  }))
+  return rows
+}
+
+describe('Отзывчивость — движение строк', () => {
+  test(
+    'RM20: движение строк против той же смены без него — сортировка 100 000 строк до +45 % или 8 мс, раскрытие 100 детей на 1000×1000 и спокойная прокрутка до +30 % или 8 мс',
+    async () => {
+      // Сортировка 100 000 строк: в окне уцелевает строка r0 (rank 0) — движение есть.
+      const sort = async (motion: boolean) => {
+        let table:
+          | { setSorting: (sorting: { id: string; desc: boolean }[]) => void }
+          | undefined
+        const SortGrid = () => {
+          const created = useCreateTable({
+            columns: MOTION_COLUMNS as never,
+            data: MOTION_ROWS,
+            getRowId: (row: { id: string }) => row.id,
+            plugins: [columnSorting()],
+            enableRowAnimation: motion,
+          })
+          table = created as never
+          return (
+            <div style={{ width: 600, height: 520 }}>
+              <DataGrid table={created} height={500} />
+            </div>
+          )
+        }
+        await render(<SortGrid />)
+        await waitForGrid()
+        const firstId = () =>
+          document
+            .querySelector('.data-grid__body-row[data-index="1"]')
+            ?.getAttribute('data-row-id')
+        const result = await measureInteractionWork(
+          async () => {
+            table!.setSorting([{ id: 'rank', desc: false }])
+            await expect.poll(firstId).not.toBe('r1')
+          },
+          {
+            afterWarmup: async () => {
+              table!.setSorting([])
+              await expect.poll(firstId).toBe('r1')
+              await new Promise(resolve =>
+                setTimeout(resolve, MOTION_SETTLE_MS),
+              )
+            },
+          },
+        )
+        await cleanup()
+        return result
+      }
+
+      // Раскрытие 100 детей на 1000×1000: кадры, пока строки ниже едут.
+      const expand = async (motion: boolean) => {
+        const screen = await renderGrid({
+          ...LARGE,
+          enableRowExpanding: true,
+          enableRowAnimation: motion,
+          dataOverride: motionTree(),
+          initialExpanded: {},
+        })
+        await waitForGrid()
+        const toggle = () =>
+          document.querySelector<HTMLElement>(
+            '.data-grid__body-row[data-row-id="item-id-0"] .row-expand-button',
+          )!
+        let started = 0
+        const result = await measureTransitionWork(
+          async () => {
+            started = performance.now()
+            toggle().click()
+          },
+          () => performance.now() - started > MOTION_SETTLE_MS,
+        )
+        expect(toggle().getAttribute('aria-expanded')).toBe('true')
+        await screen.unmount()
+        return result
+      }
+
+      // Спокойная прокрутка 1000×1000: модель не меняется — движение ничего не стоит.
+      const scroll = async (motion: boolean) => {
+        const screen = await renderGrid({
+          ...LARGE,
+          enableRowAnimation: motion,
+        })
+        await waitForGrid()
+        const result = await measureScrollWork('y', CONTENT_SCROLL.y)
+        await screen.unmount()
+        return result
+      }
+
+      const cases = [
+        ['sort', sort, 'longestMs', '100 000×2', 'interaction', RM20_SORT_COST],
+        ['expand', expand, 'p95Ms', '1000×1000', 'animation', RM20_COST],
+        ['scroll', scroll, 'p95Ms', '1000×1000', 'animation', RM20_COST],
+      ] as const
+      for (const [name, measure, metric, size, kind, cost] of cases) {
+        const runs = await againstBase(measure)
+        const base = medianRun(runs.base, r => r[metric])
+        const variant = medianRun(runs.variant, r => r[metric])
+        const ceiling = ceilingOver(base[metric], cost)
+        const record = (
+          id: string,
+          label: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label,
+            operation: kind === 'interaction' ? 'interaction' : 'scroll',
+            size,
+            plugins: 'none',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: kind === 'interaction' ? 'load' : 'animation',
+                metric: metric === 'longestMs' ? 'longest' : 'p95',
+                valueMs: r[metric],
+                targetMs:
+                  kind === 'interaction'
+                    ? INTERACTION_BUDGET_MS
+                    : ANIMATION_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...r,
+              },
+            ],
+          })
+        await record(`RM20-${name}-base`, `${name} без движения`, base, false)
+        await record(`RM20-${name}`, `${name} с движением строк`, variant, true)
+        expect(
+          variant[metric],
+          `${name}: ${metric}=${variant[metric].toFixed(1)}ms, база ${base[metric].toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+        ).toBeLessThanOrEqual(ceiling)
+      }
+    },
+    PERF_TIMEOUT * 6,
   )
 })

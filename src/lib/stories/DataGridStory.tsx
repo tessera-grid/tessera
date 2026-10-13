@@ -179,6 +179,7 @@ const StoryGrid = memo(
       enableStatusBar: panelFlag(options.enableStatusBar),
       enableAnnouncements: options.enableAnnouncements,
       enableOverflowTooltip: options.enableOverflowTooltip,
+      enableRowAnimation: options.enableRowAnimation,
       rowHeight: options.rowHeight,
       headerHeight: options.headerHeight,
       defaultColumn: options.defaultColumn,

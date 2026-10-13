@@ -27,6 +27,7 @@ import {
   dndAccessibility,
   dropAnimationConfig,
   measuring,
+  rowDropAnimation,
   sensorOptions,
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
@@ -167,7 +168,12 @@ export const DndBodyWrapper = ({
       </SortableContext>
       <DragOverlay
         modifiers={[adjustOverlayPosition]}
-        dropAnimation={dropAnimationConfig}
+        dropAnimation={
+          (table.options as { enableRowAnimation?: boolean })
+            .enableRowAnimation === false
+            ? dropAnimationConfig
+            : rowDropAnimation
+        }
         zIndex={Z_INDEX}
       >
         {draggableRowCell && (

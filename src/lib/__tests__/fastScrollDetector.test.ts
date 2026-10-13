@@ -6,6 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  type FastScrollDetectorOptions,
   IDLE_DELAY,
   MIN_DURATION,
   attachFastScrollDetector,
@@ -35,11 +36,15 @@ const scroller = () => {
   return { element, scrollBy }
 }
 
-const setup = () => {
+const setup = (options?: FastScrollDetectorOptions) => {
   const { element, scrollBy } = scroller()
   const changes: boolean[] = []
   const mark = () => markProgrammaticScroll(element)
-  const detach = attachFastScrollDetector(element, fast => changes.push(fast))
+  const detach = attachFastScrollDetector(
+    element,
+    fast => changes.push(fast),
+    options,
+  )
   /** Кадр прокрутки: время идёт `ms`, затем событие со сдвигом. */
   const frame = (dx: number, dy: number, ms = FRAME) => {
     vi.advanceTimersByTime(ms)
@@ -136,5 +141,20 @@ describe('Детектор быстрой прокрутки (ADR 0008)', () => 
     vi.advanceTimersByTime(IDLE_DELAY + 50)
     frame(0, 5000)
     expect(changes).toEqual([true, false, true])
+  })
+
+  it('RM26: внешний признак включает режим на медленной прокрутке, пока он держится; без него та же прокрутка режим не включает, выход — по простою', () => {
+    // 500 px/s по Y: 8 px за кадр.
+    let near = false
+    const { changes, frame } = setup({ forceFast: () => near })
+    for (let i = 0; i < 30; i++) frame(0, 8)
+    expect(changes).toEqual([])
+    near = true
+    frame(0, 8)
+    expect(changes).toEqual([true])
+    for (let i = 0; i < 30; i++) frame(0, 8)
+    expect(changes).toEqual([true])
+    vi.advanceTimersByTime(IDLE_DELAY + MIN_DURATION)
+    expect(changes).toEqual([true, false])
   })
 })

@@ -50,6 +50,8 @@ import {
 } from '../core/virtualization'
 import { useScrollViewport } from '../core/scrollToRow/viewport'
 import { getRowDraggableStyles } from '../plugins/rowDragging'
+import { isNearAutoScrollEdge } from './dnd/parameters'
+import { useDragPointerY } from './dnd/useDragPointerY'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { columnShiftVars } from './columnSizes'
 import { useCellSelectionCopy } from './useCellSelectionCopy'
@@ -241,7 +243,19 @@ export const DataGrid = ({
     columns: hasNestedGroups ? undefined : columnVirtualizer,
   })
 
-  const fastScrollStore = useFastScroll({ getScrollElement })
+  const dragPointerY = useDragPointerY(rowDragging?.activeId != null)
+  const fastScrollStore = useFastScroll({
+    getScrollElement,
+    forceFast: () => {
+      const y = dragPointerY.current
+      const scroller = scrollableNodeRef.current
+      return (
+        y !== null &&
+        !!scroller &&
+        isNearAutoScrollEdge(scroller.getBoundingClientRect(), y)
+      )
+    },
+  })
 
   const virtualPaddingStyles = useColumnVirtualizerScroll({
     table,
@@ -469,6 +483,13 @@ export const DataGrid = ({
                     data-resizing={isResizingColumns !== false}
                     data-column-dragging={
                       state.columnDraggingActiveId != null || undefined
+                    }
+                    data-row-dragging={
+                      rowDragging?.activeId != null || undefined
+                    }
+                    data-row-animation={
+                      (table.options as any).enableRowAnimation !== false ||
+                      undefined
                     }
                     data-load-failed={loadError.stubShown || undefined}
                     data-filter-empty={showFilterStub || undefined}

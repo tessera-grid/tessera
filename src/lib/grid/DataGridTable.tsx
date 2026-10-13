@@ -179,6 +179,7 @@ export const DataGridTable = ({
             isResizingColumns={isResizingColumns}
             isVirtualColumns={isVirtualColumns}
             enableRowDragging={enableRowDragging}
+            rowAnimation={options.enableRowAnimation !== false}
           />
         </BodyDndBoundary>
       )}

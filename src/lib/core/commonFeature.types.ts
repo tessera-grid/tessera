@@ -67,6 +67,8 @@ export interface CommonOptions {
   enableAnnouncements?: boolean
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
+  /** `false` — без движения строк при смене модели (ADR 0107). */
+  enableRowAnimation?: boolean
   /** Высота строк тела и шапки, px (ADR 0077). */
   rowHeight?: number
   headerHeight?: number

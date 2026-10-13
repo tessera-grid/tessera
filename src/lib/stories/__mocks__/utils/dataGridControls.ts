@@ -58,6 +58,7 @@ import {
   enableInfiniteScrollType,
   enableKeyboardNavigationType,
   enableOverflowTooltipType,
+  enableRowAnimationType,
   enablePaginationType,
   enableQuickSearchType,
   enableRowActionMenuType,
@@ -144,6 +145,7 @@ export const dataGridArgTypes = {
     enableStatusBar: enableStatusBarType,
     enableAnnouncements: enableAnnouncementsType,
     enableOverflowTooltip: enableOverflowTooltipType,
+    enableRowAnimation: enableRowAnimationType,
     locale: localeType,
   }),
   ...inCategory(
@@ -316,6 +318,7 @@ export const dataGridDefaultArgs = {
   enableStatusBar: PANEL_AUTO,
   enableAnnouncements: true,
   enableOverflowTooltip: true,
+  enableRowAnimation: true,
   locale: 'en',
 
   enableColumnSorting: false,

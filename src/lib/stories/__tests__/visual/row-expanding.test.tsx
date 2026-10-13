@@ -5,6 +5,7 @@ import { describe, expect, test, vi } from 'vitest'
 import axe from 'axe-core'
 
 import { composed } from '../stories'
+import { settleRowMotion } from '../helpers'
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { waitForBodyText } from './column-pinning-helpers'
 import { AXE_OPTIONS, gridRoot, inBothThemes } from './a11y-helpers'
@@ -364,6 +365,7 @@ describe('Row Expanding — accessibility', () => {
     await userEvent.click(toggle())
     await expect.poll(() => toggle().getAttribute('aria-expanded')).toBe('true')
     expect(toggle().getAttribute('aria-label')).toBe(DEFAULT_LABELS.collapseRow)
+    await settleRowMotion(container)
     // Указатель уходит и возвращается — тултип открывается заново, уже раскрытой строки.
     await userEvent.hover(rowsTopDown(container).at(-1)!)
     await userEvent.hover(toggle())

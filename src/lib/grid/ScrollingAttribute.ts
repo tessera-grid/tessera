@@ -18,7 +18,15 @@ export const ScrollingAttribute = ({
       return
     }
     let timer: ReturnType<typeof setTimeout> | undefined
+    let top = root.scrollTop
+    let left = root.scrollLeft
     const onScroll = () => {
+      // WebKit шлёт `scroll` без сдвига в начале перетаскивания (ADR 0107, RM9).
+      if (root.scrollTop === top && root.scrollLeft === left) {
+        return
+      }
+      top = root.scrollTop
+      left = root.scrollLeft
       if (timer === undefined) {
         root.setAttribute('data-scrolling', '')
       }

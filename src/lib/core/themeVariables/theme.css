@@ -218,6 +218,8 @@
       var(--tsr-comp-motion-easing),
     outline-color var(--tsr-comp-motion-duration)
       var(--tsr-comp-motion-easing-out);
+  /* Движение строк (ADR 0107): переезд, проявление и уход при смене модели. */
+  --tsr-comp-row-motion-duration: calc(var(--tsr-comp-motion-duration) * 5 / 3);
   --tsr-comp-button-cell-transition:
     color var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
     background-color var(--tsr-comp-motion-duration)

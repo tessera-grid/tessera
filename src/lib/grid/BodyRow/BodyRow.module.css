@@ -203,3 +203,60 @@
     content: none;
   }
 }
+
+/* Соседи и слот-заливка сдвигаются плавно, только пока строку тащат (RM9). */
+:global(.data-grid__container[data-row-animation][data-row-dragging])
+  .body__row {
+  transition:
+    var(--tsr-comp-row-transition),
+    transform var(--tsr-comp-row-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+/*
+ * При прокрутке слот меняется каждый кадр (RM24): соседи и слот сдвигаются коротким
+ * переходом — уже начатые доезжают своим темпом, и смены режима не видно.
+ */
+:global(
+    .data-grid__container[data-row-animation][data-row-dragging][data-scrolling]
+  )
+  .body__row {
+  transition:
+    var(--tsr-comp-row-transition),
+    transform calc(var(--tsr-comp-row-motion-duration) / 3)
+      var(--tsr-comp-motion-easing);
+}
+
+/* Слот проявляется после быстрой прокрутки на своём месте (RM25). */
+:global(
+    .data-grid__container[data-row-animation][data-row-dragging]:not(
+        [data-fast-scrolling]
+      )
+  )
+  .body__row[data-row-draggable='true'] {
+  transition:
+    var(--tsr-comp-row-transition),
+    transform var(--tsr-comp-row-motion-duration) var(--tsr-comp-motion-easing),
+    opacity var(--tsr-comp-row-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+:global(
+    .data-grid__container[data-row-animation][data-row-dragging][data-scrolling]:not(
+        [data-fast-scrolling]
+      )
+  )
+  .body__row[data-row-draggable='true'] {
+  /* Слот доезжает Web Animations (useSlotGlide), без перехода `transform`. */
+  transition:
+    var(--tsr-comp-row-transition),
+    opacity var(--tsr-comp-row-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+/*
+ * В быстрой прокрутке слот скрыт сразу (RM25): у края он перескакивает по строке
+ * за кадр, а переход отставал бы на несколько строк.
+ */
+:global(.data-grid__container[data-row-dragging][data-fast-scrolling])
+  .body__row[data-row-draggable='true'] {
+  opacity: 0;
+  transition: var(--tsr-comp-row-transition);
+}

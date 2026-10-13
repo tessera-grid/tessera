@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
 
 import { useSortable } from '@dnd-kit/sortable'
 import clsx from 'clsx'
@@ -17,6 +17,7 @@ import {
 } from './BodyRow'
 import { ItemDraggableWrapper } from './dnd'
 import { highlightRender } from './highlight'
+import { useSlotGlide } from './rowMotion/useSlotGlide'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 
@@ -64,22 +65,30 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   })
 
   const isRowInteract = overIndex === -1
+  const transformAt = useCallback(
+    (y: number) =>
+      `translate3d(var(--draggable-row-${row.id}-offset-left, 0px), ${y}px, 0px)`,
+    [row.id],
+  )
+  const node = useRef<HTMLDivElement | null>(null)
+  useSlotGlide(node, transform?.y ?? 0, isDragging, transformAt)
 
   const rowStyles = useMemo(
     () => ({
       top: virtualRow.start,
-      transform: `translate3d(var(--draggable-row-${row.id}-offset-left, 0px), ${transform?.y ?? 0}px, 0px)`,
+      transform: transformAt(transform?.y ?? 0),
     }),
-    [row.id, transform?.y, virtualRow.start],
+    [transformAt, transform?.y, virtualRow.start],
   )
 
   return (
     <div
-      ref={node => {
-        setDraggableNodeRef(node)
-        setDroppableNodeRef(node)
+      ref={element => {
+        node.current = element
+        setDraggableNodeRef(element)
+        setDroppableNodeRef(element)
         if (nav) {
-          nav.ref.current = node
+          nav.ref.current = element
         }
       }}
       {...(nav && {

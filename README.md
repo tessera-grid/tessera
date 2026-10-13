@@ -466,6 +466,12 @@ export const Table = () => {
 > (WCAG 2.2 AA, [ADR 0034](docs/decisions/0034-wcag-22-dragging-and-target-size.md)).
 > Как управлять таблицей с клавиатуры и мышью — [гайд](docs/guides/table-controls.md).
 
+> 🎞️ **Движение строк.** Раскрытие, сортировка, фильтр, приход ленивых детей и
+> перестановка двигают строки к новым местам, уходящие строки гаснут, а при броске
+> облако долетает до слота ([ADR 0107](docs/decisions/0107-row-motion.md)). Длительность —
+> токен `--tsr-comp-row-motion-duration` (250 мс); `prefers-reduced-motion` и
+> `useCreateTable({ enableRowAnimation: false })` выключают движение.
+
 > ⚠️ Плагин включает механику на уровне таблицы, а колонка — **разрешает её для себя**
 > соответствующим флагом в определении (`enableSorting`, `enableResizing`,
 > `enablePinning`, `enableDragging`, `enableGrouping`).

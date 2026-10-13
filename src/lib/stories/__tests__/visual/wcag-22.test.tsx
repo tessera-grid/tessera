@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { firePointer, nextFrame } from '../../rowDragging.dnd'
-import { Stories, renderGrid } from '../helpers'
+import { Stories, renderGrid, settleRowMotion } from '../helpers'
 import { waitForGrid } from './core-helpers'
 
 // WCAG 2.2 AA (ADR 0034): альтернатива перетаскиванию одним указателем (2.5.7,
@@ -148,6 +148,7 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
 
     await userEvent.click(menuItem(DEFAULT_LABELS.moveDown))
     await expect.poll(() => indexOf(moved)).toBe(1)
+    await settleRowMotion()
 
     await openHandleMenu(rowById(moved)!, handle())
     await userEvent.click(menuItem(DEFAULT_LABELS.moveUp))

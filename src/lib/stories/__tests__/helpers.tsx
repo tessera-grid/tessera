@@ -40,6 +40,22 @@ export const revealCellButtons = async (cell: Element) => {
   )
 }
 
+/**
+ * Дождаться конца движения строк (ADR 0107): Playwright наводит и кликает по
+ * неподвижной цели, а по едущей строке повторяет действие с прокруткой к краю.
+ */
+export const settleRowMotion = async (root: ParentNode = document) => {
+  await new Promise(resolve => requestAnimationFrame(resolve))
+  const body = root.querySelector('.data-grid__body')
+  await Promise.all(
+    (body?.getAnimations({ subtree: true }) ?? [])
+      .filter(
+        animation => animation.effect?.getTiming().iterations !== Infinity,
+      )
+      .map(animation => animation.finished.catch(() => undefined)),
+  )
+}
+
 /** Stable DOM selectors — class names / roles are part of the component contract. */
 export const SEL = {
   scroller: '.data-grid__container',
