@@ -147,30 +147,32 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 
 ### Команды (все через npm)
 
-| Задача                    | Команда                      | Примечания                                                         |
-| ------------------------- | ---------------------------- | ------------------------------------------------------------------ |
-| Сборка библиотеки         | `npm run build`              | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).       |
-| Инварианты темы в `dist`  | `npm run check:theme`        | После `build`: проверяет `dist/style.css` (ADR 0018/0019).         |
-| Требования ↔ тесты        | `npm run check:requirements` | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).            |
-| Tree-shaking плагинов     | `npm run check:tree-shaking` | После `build`: импорт одного плагина не тянет другие (IV3).        |
-| Пересборка при правках    | `npm run dev`                | `vite build --watch`. Долгоживущая — запускать в фоне.             |
-| Проверка типов            | `npm run typecheck`          | `tsc --noEmit`. **Включает stories.** Первый барьер.               |
-| Линт                      | `npm run lint`               | Плоский конфиг ESLint.                                             |
-| Форматирование (запись)   | `npm run format`             | Prettier.                                                          |
-| Форматирование (проверка) | `npm run format:check`       | Немутирующая; используйте в проходе проверок.                      |
-| Storybook (live)          | `npm run storybook`          | Dev-сервер на :6006. Долгоживущий — в фоне.                        |
-| Storybook (сборка)        | `npm run build-storybook`    | Статическая сборка; хороший headless smoke-тест.                   |
-| Тесты                     | `npm test`                   | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка. |
-| Тесты (watch)             | `npm run test:watch`         | Vitest watch mode.                                                 |
-| Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, фокус, ADR 0040/0084). |
-| Все наборы в движках      | `npm run test:engines`       | Firefox, WebKit, эмуляция iPhone/Pixel (ADR 0084). ~25 мин.        |
-| Порог браузеров в CSS     | `npm run check:browsers`     | После `build`: `dist/style.css` в `browserslist` (ADR 0084).       |
-| Наборы на React 18        | `npm run test:react18`       | Браузерные наборы и SSR на React 18 из `tools/react18` (ADR 0091). |
-| Пакет у потребителя       | `npm run check:package`      | После `build`: publint, attw, фикстуры из npm (ADR 0091). Сеть.    |
-| Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.    |
-| Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                    |
-| Перф против ревизии       | `npm run perf:compare`       | `-- <ref> [--cases …]`: вперемешку, вердикт по 10 % (ADR 0099).    |
-| Самопроверка сравнения    | `npm run perf:selftest`      | PF15–PF16: A против A и подмешанная работа, ~20 мин.               |
+| Задача                    | Команда                      | Примечания                                                          |
+| ------------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| Сборка библиотеки         | `npm run build`              | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).        |
+| Инварианты темы в `dist`  | `npm run check:theme`        | После `build`: проверяет `dist/style.css` (ADR 0018/0019).          |
+| Требования ↔ тесты        | `npm run check:requirements` | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).             |
+| Tree-shaking плагинов     | `npm run check:tree-shaking` | После `build`: импорт одного плагина не тянет другие (IV3).         |
+| Пересборка при правках    | `npm run dev`                | `vite build --watch`. Долгоживущая — запускать в фоне.              |
+| Проверка типов            | `npm run typecheck`          | `tsc --noEmit`. **Включает stories.** Первый барьер.                |
+| Линт                      | `npm run lint`               | Плоский конфиг ESLint.                                              |
+| Форматирование (запись)   | `npm run format`             | Prettier.                                                           |
+| Форматирование (проверка) | `npm run format:check`       | Немутирующая; используйте в проходе проверок.                       |
+| Storybook (live)          | `npm run storybook`          | Dev-сервер на :6006. Долгоживущий — в фоне.                         |
+| Storybook (сборка)        | `npm run build-storybook`    | Статическая сборка; хороший headless smoke-тест.                    |
+| Тесты                     | `npm test`                   | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка.  |
+| Тесты (watch)             | `npm run test:watch`         | Vitest watch mode.                                                  |
+| Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, фокус, ADR 0040/0084).  |
+| Все наборы в движках      | `npm run test:engines`       | Firefox, WebKit, эмуляция iPhone/Pixel (ADR 0084). ~25 мин.         |
+| Порог браузеров в CSS     | `npm run check:browsers`     | После `build`: `dist/style.css` в `browserslist` (ADR 0084).        |
+| Наборы на React 18        | `npm run test:react18`       | Браузерные наборы и SSR на React 18 из `tools/react18` (ADR 0091).  |
+| Пакет у потребителя       | `npm run check:package`      | После `build`: publint, attw, фикстуры из npm (ADR 0091). Сеть.     |
+| Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.     |
+| Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                     |
+| Перф против ревизии       | `npm run perf:compare`       | `-- <ref> [--cases …]`: вперемешку, вердикт по 10 % (ADR 0099).     |
+| Самопроверка сравнения    | `npm run perf:selftest`      | PF15–PF16: A против A и подмешанная работа, ~20 мин.                |
+| Черновик выпуска          | `npm run release:draft`      | Раздел версии в `CHANGELOG.md` из коммитов, без коммита (ADR 0103). |
+| Выпуск версии             | `npm run release`            | Версия, тег и пуш; только по просьбе автора (ADR 0103).             |
 
 Тесты выполняются в **реальном браузере**, а не в jsdom — см. [Проверки](#4-checks).
 
@@ -296,6 +298,15 @@ browsers**. Шаги 12–13 — не барьер, но обязательны 
 CSS-модули. Storybook — инструмент отладки, а не шаг проверки: корректность UI
 гарантируют visual-тесты ([про тесты — ниже](#тесты--раннер-и-как-они-работают)),
 а не ручной осмотр в браузере.
+
+**CI** ([ADR 0103](docs/decisions/0103-ci-and-releases.md)) гоняет весь барьер на каждый
+пуш в `master` и на PR (`.github/workflows/ci.yml`, `npm test` — шардами) и отдаёт
+Storybook в Chromatic; шаги перед публикацией — раз в неделю и гейтом выпуска
+(`prerelease.yml`), `perf:compare` — ручным запуском (`perf.yml`). Локальный барьер
+CI не заменяет и наоборот: CI — на Linux, разработка — на любой ОС. Изменения вида,
+найденные Chromatic, принимает человек; агент в отчёте перечисляет истории, вид которых
+поменял. Выпуск версии — `npm run release:draft` и `npm run release` по просьбе автора,
+инструкция — [docs/releasing.md](docs/releasing.md).
 
 ### Тесты — раннер и как они работают
 
@@ -1023,7 +1034,8 @@ UI-кит `src/lib/ui`, а не собирается по месту в плаг
 **Каждый Markdown-файл (`*.md`) пишется на русском.** Это охватывает всю документацию —
 `README.md`, `AGENTS.md`, `docs/**` (архитектура, ADR, roadmap) и любой новый `.md`,
 который Вы создаёте. Код, идентификаторы, имена API, пути к файлам и subject коммитов
-оставляйте как есть; проза — на русском.
+оставляйте как есть; проза — на русском. Исключение — `CHANGELOG.md`: он на английском,
+его читают потребители пакета ([ADR 0103](docs/decisions/0103-ci-and-releases.md)).
 
 ### Требует явного одобрения (граница полуавтономности)
 
@@ -1038,7 +1050,7 @@ UI-кит `src/lib/ui`, а не собирается по месту в плаг
   репозитория: `feat(…)`, `fix(…)`, `refactor(…)`, `chore(…)`), и завершайте сообщение
   обязательным трейлером `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 - **Пушем** куда-либо — агент никогда не пушит самостоятельно.
-- **Публикацией** в npm.
+- **Публикацией** в npm и **выпуском версии** (`npm run release`).
 - **Установкой или обновлением зависимостей** — включая добавление новой.
 
 ### Жёсткие инварианты — никогда не нарушать
