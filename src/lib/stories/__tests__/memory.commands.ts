@@ -1,6 +1,11 @@
 /// <reference types="@vitest/browser-playwright" />
 import type { BrowserCommand } from 'vitest/node'
 
+import {
+  createHeapSnapshotParser,
+  type HeapSnapshot,
+} from './heapSnapshotParser'
+
 // Память страницы теста через CDP (ADR 0092): сборка мусора, счётчики DOM, обработчики
 // на `window` и `document`, размер кучи и путь удержания объекта. Только Chromium.
 
@@ -132,20 +137,6 @@ export const globalListeners: BrowserCommand<[]> = async context =>
     return found
   })
 
-interface HeapSnapshot {
-  snapshot: {
-    meta: {
-      node_fields: string[]
-      node_types: [string[]]
-      edge_fields: string[]
-      edge_types: [string[]]
-    }
-  }
-  nodes: number[]
-  edges: number[]
-  strings: string[]
-}
-
 /** Сколько путей удержания печатать и до какой длины. */
 const MAX_PATHS = 3
 const MAX_HOPS = 40
@@ -160,17 +151,18 @@ export const retainingPaths: BrowserCommand<
 > = async (context, className, labels) =>
   withSession(context, async session => {
     await gc(session)
-    const chunks: string[] = []
+    // Снимок — по кускам: целиком он не помещается в строку V8 (LK16).
+    const parser = createHeapSnapshotParser()
     session.on(
       'HeapProfiler.addHeapSnapshotChunk',
-      ({ chunk }: { chunk: string }) => chunks.push(chunk),
+      ({ chunk }: { chunk: string }) => parser.push(chunk),
     )
     await session.send('HeapProfiler.enable')
     await session.send('HeapProfiler.takeHeapSnapshot', {
       reportProgress: false,
     })
     await session.send('HeapProfiler.disable')
-    const heap = JSON.parse(chunks.join('')) as HeapSnapshot
+    const heap = parser.finish()
     return shortestPaths(heap, className, labels)
   })
 
