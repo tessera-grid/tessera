@@ -752,7 +752,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       ([ADR 0108](docs/decisions/0108-row-drop-preview.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
-    - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC,
+    - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC/BU,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
       `Switch`, `Skeleton`, `LinearProgress`, иконки); `tooltip-pass-through` (TP1–TP2 —
       подсказка без обрезки пропускает указатель насквозь, W8 сужен,

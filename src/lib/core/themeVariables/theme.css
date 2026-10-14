@@ -677,6 +677,7 @@
   --tsr-comp-calendar-range-bg: var(--tsr-sys-overlay-selected-strong);
 
   --tsr-comp-accent: var(--tsr-sys-accent);
+  --tsr-comp-accent-fg: var(--tsr-sys-accent-fg);
 
   /* Загрузка */
   --tsr-comp-skeleton-bg: color-mix(

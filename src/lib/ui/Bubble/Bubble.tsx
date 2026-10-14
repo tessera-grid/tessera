@@ -5,8 +5,8 @@ import clsx from 'clsx'
 import styles from './Bubble.module.css'
 
 export interface BubbleProps extends HTMLAttributes<HTMLSpanElement> {
-  /** `dot` — точка без содержимого. */
-  size?: 'sm' | 'md' | 'dot'
+  /** `sm` — счётчик, `dot` — точка без содержимого. */
+  size?: 'sm' | 'dot'
   /**
    * `active` — знак включённого состояния (ADR 0062), `error` — отказ действия
    * (ADR 0078), `accent` — прочие счётчики.
@@ -18,7 +18,7 @@ export interface BubbleProps extends HTMLAttributes<HTMLSpanElement> {
 // Позиционирование задаёт потребитель через className — пузырёк только рисует себя.
 export const Bubble = memo(
   ({
-    size = 'md',
+    size = 'sm',
     tone = 'accent',
     className,
     children,

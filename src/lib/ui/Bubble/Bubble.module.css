@@ -11,7 +11,7 @@
 
 .accent {
   background-color: var(--tsr-comp-accent);
-  color: #fff;
+  color: var(--tsr-comp-accent-fg);
 }
 
 .active {
@@ -22,11 +22,6 @@
 .error {
   background-color: var(--tsr-comp-action-error-color);
   color: var(--tsr-sys-surface);
-}
-
-.md {
-  padding: 2px 8px;
-  font-size: 0.875rem;
 }
 
 .sm {

@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { humanClick } from '../helpers'
+import { contrast, inBothThemes, resolveColor, toRgba } from './a11y-helpers'
 import { Bubble } from '@/lib/ui/Bubble'
 import { CellButton } from '@/lib/grid/Actions/CellButton'
 import { RowButton } from '@/lib/grid/Actions/RowButton'
@@ -341,16 +342,18 @@ describe('Bubble', () => {
     )
   })
 
-  test('BU3: `sm` is more compact than the default `md`', async () => {
-    const md = await render(<Bubble>1</Bubble>)
+  test('BU3: счётчик одного размера — Bubble без size совпадает с sm номера мультисортировки по высоте и кеглю', async () => {
+    const plain = await render(<Bubble>1</Bubble>)
     const sm = await render(<Bubble size="sm">1</Bubble>)
-    const mdSize = parseFloat(
-      computed(md.container.querySelector('span')!).fontSize,
-    )
-    const smSize = parseFloat(
-      computed(sm.container.querySelector('span')!).fontSize,
-    )
-    expect(smSize).toBeLessThan(mdSize)
+    const box = (container: HTMLElement) => {
+      const el = container.querySelector('span')!
+      return {
+        height: el.getBoundingClientRect().height,
+        fontSize: computed(el).fontSize,
+      }
+    }
+    expect(box(plain.container)).toEqual(box(sm.container))
+    expect(box(sm.container).height).toBe(15)
   })
 
   test('BU4: forwards className and arbitrary props', async () => {
@@ -363,6 +366,26 @@ describe('Bubble', () => {
     expect(el.classList.contains('extra')).toBe(true)
     expect(el.getAttribute('data-sort-priority')).toBe('2')
     expect(el.getAttribute('aria-hidden')).not.toBeNull()
+  })
+
+  test('BU5: тон accent — цифры цвета --tsr-comp-accent-fg, контраст с фоном пузырька не меньше 4,5:1 в светлой и тёмной теме', async () => {
+    const { container } = await render(
+      <div className="data-grid-theme">
+        <Bubble>12</Bubble>
+      </div>,
+    )
+    const el = container.querySelector('span')!
+    await inBothThemes(async () => {
+      const dark = document.documentElement.classList.contains('dark')
+      const style = computed(el)
+      expect(style.color, dark ? 'dark' : 'light').toBe(
+        resolveColor(el, 'var(--tsr-comp-accent-fg)'),
+      )
+      expect(
+        contrast(toRgba(style.color), toRgba(style.backgroundColor)),
+        dark ? 'dark' : 'light',
+      ).toBeGreaterThanOrEqual(4.5)
+    })
   })
 })
 
