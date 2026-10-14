@@ -28,10 +28,9 @@ describe('Ядро на TanStack — размеры и отступы', () => {
       const wrapper = cell.querySelector<HTMLElement>(
         '.data-grid__cell-wrapper-content',
       )!
-      // Фиксированный пол высоты — 50px, а overflow:hidden не даёт контенту
-      // растянуть ячейку сверх него (высота не зависит от содержимого).
+      // Фиксированный пол высоты — 50px; ячейка не растягивается содержимым сверх него.
       expect(getComputedStyle(wrapper).minHeight).toBe('50px')
-      expect(getComputedStyle(cell).overflow).toBe('hidden')
+      expect(Math.round(cell.getBoundingClientRect().height)).toBe(50)
     })
 
     // Все заголовки одного уровня одной высоты.
