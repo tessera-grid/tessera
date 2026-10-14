@@ -23,3 +23,12 @@
   cursor: not-allowed;
   color: var(--tsr-comp-control-disabled-color);
 }
+
+/*
+ * Ручка строки — квадратная кнопка кита (ADR 0112): вид, свет ожидания и вспышка —
+ * `IconButton`; ручка добавляет только захват и свайп.
+ */
+.rowButton {
+  cursor: grab;
+  touch-action: none;
+}

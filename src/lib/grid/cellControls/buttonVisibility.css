@@ -281,3 +281,16 @@
   --tsr-comp-shadow-action: inherit;
   --tsr-comp-action-button-bg: inherit;
 }
+
+/*
+ * Ручка строки ждёт или вспыхивает ошибкой (ADR 0112): иконка видна, пока идёт свет, —
+ * и без наведения.
+ */
+.data-grid__body-cell
+  .drag__handler--column:is([aria-busy='true'], [data-error-flash])
+  :is(.cell__button--hidden, .row__button--hidden) {
+  opacity: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: unset;
+  min-width: 0;
+}

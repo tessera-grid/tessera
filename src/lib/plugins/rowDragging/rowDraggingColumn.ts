@@ -3,17 +3,15 @@
  * (нативный FlexRender).
  */
 import {
-  ACTION_COLUMN_CONTENT_PADDING,
+  COLUMN_ACTIONS_SIZE,
   getActionColumnId,
 } from '../../core/createColumns/actionColumnParams'
 import type { ColumnDef } from '../../types'
 import { RowDraggingComponent } from './RowDraggingComponent'
 
-const DRAG_ICON_SIZE = 16
-
 export const COLUMN_DRAGGING_ID = getActionColumnId('rowDragging')
-export const COLUMN_DRAGGING_SIZE =
-  DRAG_ICON_SIZE + ACTION_COLUMN_CONTENT_PADDING * 2
+/** Ширина — как у колонок выбора и раскрытия: ручка — кнопка кита (ADR 0112). */
+export const COLUMN_DRAGGING_SIZE = COLUMN_ACTIONS_SIZE
 
 const leafColumn = {
   id: COLUMN_DRAGGING_ID,

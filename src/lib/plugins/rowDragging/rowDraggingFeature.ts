@@ -4,6 +4,8 @@
  * группировка, активная сортировка, непустой фильтр или поиск (ADR 0045) — всё гасит
  * drag. grouping/sorting/фильтры читаются из
  * атомов (optional — фичи могут отсутствовать); каждая причина — dev-warn (ADR 0022).
+ * Срезы `rowMoves` — переносы в ожидании промиса `onRowDragEnd`, `rowMoveFailed` —
+ * номер последнего отказа строки, ключ вспышки ручки (ADR 0112).
  */
 import {
   assignPrototypeAPIs,
@@ -12,10 +14,13 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
+import { readPluginHooks } from '../../core/definePlugin'
+import { type LoggerHost, logWarn } from '../../core/logger'
 import {
   type PluginInertReason,
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
+import type { RowMoves } from '../../core/rowMoves'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
@@ -24,10 +29,14 @@ import {
 
 /** Отметки перестановки (ADR 0110): строка → момент, строка вспыхивает. */
 export type RowDrops = Record<string, number>
+/** Отказы переноса: строка → номер попытки. */
+export type RowMoveFailed = Record<string, number>
 
 interface RowDraggingStateSlice {
   rowDragging: RowDragOverlayState
   rowDrops: RowDrops
+  rowMoves: RowMoves
+  rowMoveFailed: RowMoveFailed
 }
 interface RowDraggingOptions {
   enableRowDragging?: boolean | ((row: unknown) => boolean)
@@ -35,6 +44,8 @@ interface RowDraggingOptions {
   rowDragExpandDelay?: number
   onRowDraggingChange?: (updater: Updater<RowDragOverlayState>) => void
   onRowDropsChange?: (updater: Updater<RowDrops>) => void
+  onRowMovesChange?: (updater: Updater<RowMoves>) => void
+  onRowMoveFailedChange?: (updater: Updater<RowMoveFailed>) => void
 }
 interface RowDraggingRowAPI {
   getCanDrag: () => boolean
@@ -42,6 +53,8 @@ interface RowDraggingRowAPI {
 interface RowDraggingTableAPI {
   setRowDragging: (updater: Updater<RowDragOverlayState>) => void
   setRowDrops: (updater: Updater<RowDrops>) => void
+  setRowMoves: (updater: Updater<RowMoves>) => void
+  setRowMoveFailed: (updater: Updater<RowMoveFailed>) => void
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -85,7 +98,22 @@ type DraggableTable = {
   }
 }
 
-type DraggableRow = { table: DraggableTable }
+type DraggableRow = {
+  table: DraggableTable
+  getParentRow: () => { getIsLazyParent?: () => boolean } | undefined
+}
+
+/** Ленивый перенос без `onRowDragEnd` недопустим (ADR 0112, §2). */
+export const canMoveInLazyTree = (table: unknown) =>
+  !!readPluginHooks<{ onRowDragEnd?: unknown }>(table as never, 'rowDragging')
+    .onRowDragEnd
+
+export const warnLazyTree = (table: unknown) =>
+  logWarn(
+    table as LoggerHost,
+    'rowDragging: перенос в ленивом дереве требует onRowDragEnd — ленивые дети не тянутся, вложение в ленивую группу недопустимо',
+    'rowDragging:lazyTree',
+  )
 
 /** Группировка / сортировка / фильтр гасят drag (вложенная шапка — нет, ADR 0052). */
 export const rowDraggingInertReason = (
@@ -109,7 +137,7 @@ export const rowDraggingInertReason = (
   return undefined
 }
 
-const canDragRow = (row: DraggableRow): boolean => {
+export const canDragRow = (row: DraggableRow): boolean => {
   const enable = row.table.options.enableRowDragging
   const wantsDrag = typeof enable === 'function' ? enable(row) : !!enable
 
@@ -119,21 +147,53 @@ const canDragRow = (row: DraggableRow): boolean => {
   const reason = rowDraggingInertReason(row.table)
   if (reason !== undefined) {
     warnPluginInert(row.table, 'rowDragging', reason)
+    return false
   }
-  return reason === undefined
+  if (
+    row.getParentRow()?.getIsLazyParent?.() &&
+    !canMoveInLazyTree(row.table)
+  ) {
+    warnLazyTree(row.table)
+    return false
+  }
+  return true
 }
 
 const NO_DROPS: RowDrops = {}
+const NO_MOVES: RowMoves = {}
+const NO_FAILS: RowMoveFailed = {}
+
+type SliceAtom<T> = { get: () => T; set: (value: T) => void }
+
+/** Сеттер среза: обработчик опций, иначе атом напрямую. */
+const sliceSetter =
+  <T>(table: unknown, key: string, handler: string) =>
+  (updater: Updater<T>) => {
+    const own = (table as { options: Record<string, unknown> }).options[
+      handler
+    ] as ((u: Updater<T>) => void) | undefined
+    if (own) {
+      own(updater)
+      return
+    }
+    const atom = (table as { atoms: Record<string, SliceAtom<T> | undefined> })
+      .atoms[key]
+    atom?.set(functionalUpdate(updater, atom.get()))
+  }
 
 export const rowDraggingFeature: TableFeature = {
   getInitialState: state => ({
     rowDragging: DEFAULT_ROW_DRAG_OVERLAY_STATE,
     rowDrops: NO_DROPS,
+    rowMoves: NO_MOVES,
+    rowMoveFailed: NO_FAILS,
     ...state,
   }),
   getDefaultTableOptions: table => ({
     onRowDraggingChange: makeStateUpdater('rowDragging', table),
     onRowDropsChange: makeStateUpdater('rowDrops', table),
+    onRowMovesChange: makeStateUpdater('rowMoves', table),
+    onRowMoveFailedChange: makeStateUpdater('rowMoveFailed', table),
   }),
   constructTableAPIs: table => {
     // v9 useTable возвращает фасад с сырыми options (без фичевых defaults), поэтому
@@ -181,6 +241,16 @@ export const rowDraggingFeature: TableFeature = {
           ).atoms.rowDrops
           atom?.set(functionalUpdate(updater, atom.get()))
         },
+      },
+      table_setRowMoves: {
+        fn: sliceSetter<RowMoves>(table, 'rowMoves', 'onRowMovesChange'),
+      },
+      table_setRowMoveFailed: {
+        fn: sliceSetter<RowMoveFailed>(
+          table,
+          'rowMoveFailed',
+          'onRowMoveFailedChange',
+        ),
       },
     })
   },

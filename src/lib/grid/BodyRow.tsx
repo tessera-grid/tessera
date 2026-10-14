@@ -76,8 +76,10 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       rowExpandPending?: Record<string, number>
       rowArrivals?: Record<string, number>
       rowDrops?: Record<string, number>
+      rowMoves?: Record<string, { pending: boolean }>
       highlights?: Highlights
     }
+    const move = s.rowMoves?.[row.id]
     return {
       selected: s.rowSelection?.[row.id] ?? false,
       expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
@@ -86,8 +88,16 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       // Приход ленивой строки (ADR 0056) или перестановка (ADR 0110).
       arrived: row.id in (s.rowArrivals ?? {}) || row.id in (s.rowDrops ?? {}),
       highlight: s.highlights?.[highlightKey],
+      // Перенос не завершён (ADR 0112): ждёт промиса или ответа цели.
+      moving: !!move,
+      movePending: !!move?.pending,
     }
-  }) as { arrived: boolean; highlight?: HighlightTargetState }
+  }) as {
+    arrived: boolean
+    highlight?: HighlightTargetState
+    moving: boolean
+    movePending: boolean
+  }
 }
 
 export const BodyRowCells = ({

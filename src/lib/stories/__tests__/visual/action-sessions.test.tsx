@@ -615,22 +615,18 @@ describe('Сессии действий', () => {
       bodyRows().find(row => row.dataset.index === String(index))!
     await dragRowOnto(rowAt(0), rowAt(3))
     await expect.poll(() => onRowDragEnd.mock.calls.length).toBe(1)
-    expect(onRowDragEnd).toHaveBeenLastCalledWith({
-      rowId: dropped,
-      dragIndex: 0,
-      hoverIndex: 3,
-    })
+    expect(onRowDragEnd).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rowId: dropped, dragIndex: 0, hoverIndex: 3 }),
+    )
     await expect.poll(() => rowIdOrder(document.body)[0]).not.toBe(dropped)
 
     const moved = rowIdOrder(document.body)[0]
     rowAt(0).querySelector<HTMLElement>('[data-kn-cell]')!.focus()
     await userEvent.keyboard('{Alt>}{Shift>}{ArrowDown}{/Shift}{/Alt}')
     await expect.poll(() => onRowDragEnd.mock.calls.length).toBe(2)
-    expect(onRowDragEnd).toHaveBeenLastCalledWith({
-      rowId: moved,
-      dragIndex: 0,
-      hoverIndex: 1,
-    })
+    expect(onRowDragEnd).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rowId: moved, dragIndex: 0, hoverIndex: 1 }),
+    )
     expect(onRowDragCancel).not.toHaveBeenCalled()
   })
 })

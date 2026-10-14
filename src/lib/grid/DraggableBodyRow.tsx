@@ -32,7 +32,8 @@ const transformAt = (y: number) => `translate3d(0px, ${y}px, 0px)`
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived, highlight } = useRowStateSubscription(row)
+  const { arrived, highlight, moving, movePending } =
+    useRowStateSubscription(row)
   // Предикат `canDragRow` с новой ссылкой (ADR 0039, RX23) включает ручку строки мимо мемоизации.
   usePluginRenderVersion()
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
@@ -66,6 +67,8 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       row,
       parentRow: row.getParentRow(),
     },
+    // Строку с незавершённым переносом не тянут, но на неё бросают (ADR 0112).
+    disabled: { draggable: moving, droppable: false },
     animateLayoutChanges,
   })
 
@@ -112,7 +115,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       aria-expanded={
         canExpand && props.treeSetSize !== undefined ? isExpanded : undefined
       }
-      aria-busy={isExpandPending || undefined}
+      aria-busy={isExpandPending || movePending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       aria-level={props.treeSetSize !== undefined ? row.depth + 1 : undefined}
       aria-setsize={props.treeSetSize}

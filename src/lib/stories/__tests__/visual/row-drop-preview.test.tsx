@@ -8,42 +8,32 @@ import { composed } from '../stories'
 import { settleRowMotion } from '../helpers'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 import { tokenColor, tokenPx } from './tree-lines-helpers'
+import {
+  BODY_ROW,
+  type Point,
+  CLOUD_TITLE,
+  HANDLE,
+  INDENT,
+  SKELETON,
+  TITLE,
+  USER_CONTENT,
+  cloudText,
+  container,
+  depthOf,
+  dragOver,
+  levelZeroOf,
+  nextFrame,
+  pointer,
+  release,
+  rowById,
+  rowsInOrder,
+  settleSlotAfter,
+  sleep,
+  slot,
+} from './row-drop-helpers'
 
 // Превью броска строки (ADR 0108): слот — скелет на уровне броска, линии дерева окна —
 // как после броска. Перетаскивание — настоящей мышью Playwright (TQ3).
-
-type Point = { x: number; y: number }
-type Pointer = {
-  realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
-  realMouseMove: (from: Point, to: Point, steps?: number) => Promise<void>
-  realMouseUp: () => Promise<void>
-  forcedColors: (active: boolean) => Promise<void>
-}
-const pointer = commands as unknown as Pointer
-
-const BODY_ROW = '.data-grid__body-row'
-const HANDLE = '.drag__handler--column'
-const INDENT = '[data-column-id="country"]'
-const SKELETON = '[class*="skeleton"]'
-
-const rowById = (id: string) =>
-  document.querySelector<HTMLElement>(`${BODY_ROW}[data-row-id="${id}"]`)
-const slot = () =>
-  document.querySelector<HTMLElement>(`${BODY_ROW}[data-row-draggable="true"]`)
-const container = () =>
-  document.querySelector<HTMLElement>('.data-grid__container')!
-const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-/** Строки в видимом порядке: по месту, куда их ставит dnd-kit, без анимации. */
-const rowsInOrder = () =>
-  [...document.querySelectorAll<HTMLElement>(BODY_ROW)]
-    .map(row => {
-      const shift = /,\s*(-?[\d.]+)px,\s*0px\)$/.exec(row.style.transform)
-      return { row, top: row.offsetTop + Number(shift?.[1] ?? 0) }
-    })
-    .sort((a, b) => a.top - b.top)
-    .map(({ row }) => row)
 
 /** Линии ячейки отступа: вид части и уровень, например `elbow2 rail1`. */
 const linesOf = (row: HTMLElement) =>
@@ -65,81 +55,10 @@ const linesOf = (row: HTMLElement) =>
     .sort()
     .join(' ')
 
-/** Глубина строки по отступу первой колонки. */
-const depthOf = (row: HTMLElement) =>
-  Math.round(
-    parseFloat(getComputedStyle(row.querySelector(INDENT)!).paddingLeft) /
-      tokenPx('--tsr-comp-row-nesting-indent'),
-  ) || 0
-
 const renderTree = async () => {
   const screen = await render(<composed.RowDraggingTreeLines />)
   await expect.poll(() => rowById('node-0-0')).not.toBeNull()
   return screen
-}
-
-const TITLE = '.data-grid__cell-wrapper-title'
-const USER_CONTENT =
-  '.data-grid__body-cell:not([data-actions-column-cell="true"]) > .data-grid__cell-wrapper-content'
-const CLOUD_TITLE = `.data-grid-body__row ${TITLE}`
-
-/** Начало содержимого строки глубины 0 — от него считаются уровни броска. */
-const levelZeroOf = (row: HTMLElement) => {
-  const content = row.querySelector<HTMLElement>(USER_CONTENT)!
-  return (
-    content.getBoundingClientRect().left +
-    parseFloat(getComputedStyle(content).paddingLeft) -
-    depthOf(row) * tokenPx('--tsr-comp-row-nesting-indent')
-  )
-}
-
-/** Начало текста облака под указателем. */
-const cloudText = () =>
-  document.querySelector<HTMLElement>(CLOUD_TITLE)!.getBoundingClientRect().left
-
-/**
- * Взять строку за ручку и держать над строкой `overId`, выровняв текст облака по
- * отступу уровня `depth` (ADR 0108, §2). Возвращает точку указателя и начало уровней.
- */
-const dragOver = async (id: string, overId: string, depth: number) => {
-  const row = rowById(id)!
-  await userEvent.hover(row)
-  const levelZero = levelZeroOf(row)
-  const handle = row.querySelector<HTMLElement>(HANDLE)!.getBoundingClientRect()
-  const from = {
-    x: handle.left + handle.width / 2,
-    y: handle.top + handle.height / 2,
-  }
-  const over = rowById(overId)!.getBoundingClientRect()
-  const to = {
-    x: from.x,
-    y: over.top + over.height / 2 + (over.top > from.y ? 6 : -6),
-  }
-  await pointer.realDragHold(from, to)
-  await expect.poll(() => document.querySelector(CLOUD_TITLE)).not.toBeNull()
-  const step = tokenPx('--tsr-comp-row-nesting-indent')
-  const aligned = { x: to.x + levelZero + depth * step - cloudText(), y: to.y }
-  await pointer.realMouseMove(to, aligned, 4)
-  for (let i = 0; i < 4; i++) await nextFrame()
-  return { at: aligned, levelZero, step }
-}
-
-/** Подвести указатель по вертикали, пока слот не встанет сразу после строки `prevId`. */
-const settleSlotAfter = async (prevId: string, at: Point) => {
-  for (let i = 0; i < 40; i++) {
-    const order = rowsInOrder()
-    const index = order.findIndex(row => row.dataset.rowId === prevId)
-    const slotIndex = order.findIndex(row => row === slot())
-    if (slotIndex === index + 1) return at
-    const next = { x: at.x, y: at.y + (slotIndex <= index ? 3 : -3) }
-    await pointer.realMouseMove(at, next, 1)
-    at = next
-    for (let f = 0; f < 2; f++) await nextFrame()
-  }
-  const order = rowsInOrder().map(row =>
-    row === slot() ? 'slot' : row.dataset.rowId,
-  )
-  throw new Error(`slot did not settle after ${prevId}: ${order.join(' ')}`)
 }
 
 /** Линии строки по ветке и отростку — как их рисует ячейка отступа (ADR 0102). */
@@ -173,12 +92,6 @@ const linesMatchOrder = () => {
       mismatches.push(`${rows[i].dataset.rowId}: ${got} ≠ ${want}`)
   }
   return mismatches
-}
-
-const release = async () => {
-  await pointer.realMouseUp()
-  await expect.poll(() => slot()).toBeNull()
-  await settleRowMotion()
 }
 
 describe('Превью броска строки (ADR 0108)', () => {

@@ -12,6 +12,7 @@ import {
   rowDraggingFeature,
   rowDraggingInertReason,
 } from './rowDraggingFeature'
+import { reconcileRowMoves } from './reconcileRowMoves'
 import type { RowDraggingHooks } from './types'
 import { DEFAULT_ROW_DRAG_EXPAND_DELAY } from './getRowDraggingEvents'
 
@@ -25,7 +26,10 @@ export interface RowDraggingOptions {
    * `0` — не раскрывать (ADR 0109).
    */
   expandDelay?: number
-  /** Бизнес-колбэк окончания переноса строки (аргумент фабрики). */
+  /**
+   * Строка перенесена: место после переноса; промис — ожидание на ручке. В ленивом
+   * дереве без него перенос недопустим (ADR 0112).
+   */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
   /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
   onRowDragCancel?: RowDraggingHooks['onRowDragCancel']
@@ -42,6 +46,7 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
   }),
   keyboardActions: [moveRowKeyboardAction, nestRowKeyboardAction],
   diagnose: rowDraggingInertReason,
+  reconcile: reconcileRowMoves,
   column: {
     id: COLUMN_DRAGGING_ID,
     make: getRowDraggingColumn,

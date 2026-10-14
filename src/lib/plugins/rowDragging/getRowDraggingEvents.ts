@@ -23,10 +23,19 @@ import {
   getTargetParentId,
   getValidDepth,
 } from './draggingHelpers'
+import {
+  childrenOf,
+  hasLazyMoves,
+  readRowMoves,
+  rowIdOf,
+} from '../../core/rowMoves'
+import { commitRowMove } from './commitRowMove'
+import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
+import { dropPlace } from './dropPlace'
 import type { ExpandTimer } from './expandTimer'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 import { reorderRows } from './reorderRows'
-import { markRowDrop } from './rowDrops'
+import { canMoveInLazyTree, warnLazyTree } from './rowDraggingFeature'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
   type RowDraggingHooks,
@@ -58,7 +67,12 @@ export interface RowDraggingGeometry {
 
 type ExpandableRow = Row<any, any> & {
   setExpandedByUser?: (expanded: boolean) => void
+  getIsLazyParent?: () => boolean
 }
+
+/** Дети строки — ответ `loadChildren` (ADR 0112, §2). */
+export const isLazyParent = (row: Row<any, any> | undefined) =>
+  !!(row as ExpandableRow | undefined)?.getIsLazyParent?.()
 
 /** Раскрыть путём клика (rowExpanding), без него — напрямую. */
 const setExpandedByUser = (row: Row<any, any>, expanded: boolean) => {
@@ -71,6 +85,7 @@ export const getRowDraggingEvents = (
   table: Table<any, any>,
   { levelAt, expandTimer }: RowDraggingGeometry = {},
 ): {
+  onRowModelChange: () => void
   onRowDragStart?: (event: DragStartEvent) => void
   onRowDragMove?: (event: DragMoveEvent) => void
   onRowDragEnd?: (event: DragEndEvent) => void
@@ -199,6 +214,32 @@ export const getRowDraggingEvents = (
     ).onRowDragCancel?.({ rowId: String(rowId), reason })
   }
 
+  /**
+   * Группа, раскрытая паузой, свернулась посреди сессии — загрузка её детей упала: в
+   * неё не вкладывают (ADR 0112, §4).
+   */
+  const closedAfterDelay = (row: Row<any, any> | undefined) =>
+    !!row &&
+    rowDraggingState.openedByDelay.includes(row.id) &&
+    !row.getIsExpanded()
+
+  /** Ленивый перенос без `onRowDragEnd` недопустим (ADR 0112, §2). */
+  const lazyBlocked = (
+    activeRow: Row<any, any>,
+    from: number,
+    to: number,
+    depth: number,
+  ) => {
+    // Без rowExpanding ленивых родителей нет.
+    if (!(activeRow as ExpandableRow).getIsLazyParent) return false
+    const lazy =
+      isLazyParent(activeRow.getParentRow()) ||
+      isLazyParent(rows[findDropParent(rows, { from, to, depth }, 0)])
+    if (!lazy || canMoveInLazyTree(table)) return false
+    warnLazyTree(table)
+    return true
+  }
+
   // Шаг уровня читается из темы на старте перетаскивания, а не в рендере (RE64):
   // обработчики, пересозданные посреди перетаскивания, читают его при первом событии.
   let levelStep: number | undefined
@@ -206,6 +247,19 @@ export const getRowDraggingEvents = (
     (levelStep ??= getRowDraggableOffsetLeft({ table }))
 
   return {
+    // Строки сменились без движения указателя: слот над свернувшейся группой уходит на
+    // её уровень в том же кадре.
+    onRowModelChange: () => {
+      const { activeId, fromIndex, overIndex, depth } = rowDraggingState
+      if (activeId === null || fromIndex === null || !overIndex) return
+      const above = rows[indexBeforeMove(overIndex - 1, fromIndex, overIndex)]
+      if (!closedAfterDelay(above) || depth <= above!.depth) return
+      onRowDraggingChange(prev => ({
+        ...prev,
+        depth: above!.depth,
+        offsetLeft: getOffsetLeftFromDepth(above!.depth, getLevelStep()),
+      }))
+    },
     onRowDragStart: ({ active }) => {
       const { row, virtualIndex } = active.data.current as RowSortableData
       levelStep = getRowDraggableOffsetLeft({ table })
@@ -257,11 +311,19 @@ export const getRowDraggingEvents = (
           : Math.floor(level + LEVEL_EPSILON)
 
       const minDepth = getMinDepth(activeRow, targetItem, over.id)
-      const maxDepth = getMaxDepth(targetItem)
+      const maxDepth = closedAfterDelay(targetItem)
+        ? targetItem!.depth
+        : getMaxDepth(targetItem)
       const validDepth = getValidDepth(currentDepth, minDepth, maxDepth)
-      // Вложенность больше 1 сейчас не поддерживается.
+      // Строка с детьми в группу не вкладывается; ленивый перенос — только с колбэком.
       const acceptable =
-        (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true
+        ((activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true) &&
+        !lazyBlocked(
+          activeRow,
+          activeVirtualIndex,
+          overVirtualIndex,
+          validDepth,
+        )
 
       // Слот вкладывают в свёрнутую группу — пауза раскрывает её (ADR 0109, §1).
       const delay =
@@ -327,11 +389,19 @@ export const getRowDraggingEvents = (
         return cancel(active.id, 'cancel')
       }
 
+      const rowId = String(active.id)
       const activeParentId = activeRow.parentId
-      const overParentId = getTargetParentId(targetItem, nextItem, currentDepth)
-
-      const activeOriginalIndex = activeRow.index
-      const overOriginalIndex = targetItem?.index || 0
+      const place = dropPlace(rows, activeRow, {
+        from: activeVirtualIndex,
+        to: overVirtualIndex,
+        depth: currentDepth,
+      })
+      const lazy = isLazyParent(activeParentRow) || isLazyParent(place.parent)
+      // Пока ждут ленивые переносы, индексы модели — со стадией: место — по проекции.
+      const staged = lazy || hasLazyMoves(readRowMoves(table))
+      const overParentId = staged
+        ? place.parent?.id
+        : getTargetParentId(targetItem, nextItem, currentDepth)
 
       // Группа не может быть помещена в другую группу
       if (activeIsGroup && !!overParentId) {
@@ -339,43 +409,96 @@ export const getRowDraggingEvents = (
 
         return cancel(active.id, 'cancel')
       }
+      if (
+        staged &&
+        place.parent?.id === activeParentId &&
+        place.index === activeRow.index
+      ) {
+        expandDraggableGroupAgain(activeRow)
 
-      onRowOrderChange?.(prev =>
-        reorderRows(prev, {
+        return cancel(active.id, 'cancel')
+      }
+
+      const { onRowDragEnd } = releaseSessionHooks<Partial<RowDraggingHooks>>(
+        table as never,
+        'rowDragging',
+      )
+      const common = {
+        rowId,
+        dragIndex: activeVirtualIndex,
+        hoverIndex: overVirtualIndex,
+        parentId: overParentId,
+        previousParentId: activeParentId,
+        original: activeRow.original,
+        anchors: (place.parent?.subRows ?? table.getCoreRowModel().rows)
+          .map(row => row.id)
+          .filter(id => id !== rowId),
+      }
+      if (lazy) {
+        commitRowMove(
+          table,
+          {
+            ...common,
+            index: place.index,
+            lazy: {
+              original: activeRow.original,
+              from: {
+                parentId: activeParentId,
+                index: activeRow.index,
+                lazy: isLazyParent(activeParentRow),
+              },
+              to: {
+                parentId: overParentId,
+                index: place.index,
+                lazy: isLazyParent(place.parent),
+                anchors: common.anchors,
+              },
+            },
+          },
+          onRowDragEnd,
+        )
+      } else {
+        const move = {
           activeParentId,
           overParentId,
           activeParentRow,
-          activeOriginalIndex,
-          overOriginalIndex,
+          activeOriginalIndex: activeRow.index,
+          overOriginalIndex: targetItem?.index || 0,
           targetItem,
           isDownMove,
           currentDepth,
-        }),
-      )
-
-      // Строка вспыхивает на новом месте (ADR 0110).
-      markRowDrop(table, String(active.id))
+        }
+        // Место после переноса — по тому же переносу на снимке данных.
+        const idOf = rowIdOf(table)
+        const index = staged
+          ? place.index
+          : (childrenOf(
+              reorderRows([...(table.options.data as any[])], move),
+              overParentId,
+              idOf,
+            )?.findIndex((item, i) => idOf(item, i, overParentId) === rowId) ??
+            0)
+        commitRowMove(
+          table,
+          {
+            ...common,
+            index,
+            write: () => onRowOrderChange?.(prev => reorderRows(prev, move)),
+          },
+          onRowDragEnd,
+        )
+      }
 
       // Бросок в свёрнутую группу раскрывает её (ADR 0109, §2); раскрытые паузой
       // сворачиваются, кроме группы броска и её предков (§3).
-      if (
-        targetItem &&
-        targetItem.id === overParentId &&
-        !targetItem.getIsExpanded()
-      ) {
-        setExpandedByUser(targetItem, true)
+      const dropGroup =
+        overParentId === undefined ? undefined : rowById(overParentId)
+      if (dropGroup && !dropGroup.getIsExpanded()) {
+        setExpandedByUser(dropGroup, true)
       }
       collapseOpenedByDelay(lineageOf(overParentId))
 
       expandDraggableGroupAgain(activeRow)
-      releaseSessionHooks<Partial<RowDraggingHooks>>(
-        table as never,
-        'rowDragging',
-      ).onRowDragEnd?.({
-        rowId: String(active.id),
-        dragIndex: activeVirtualIndex,
-        hoverIndex: overVirtualIndex,
-      })
 
       return resetDragState()
     },

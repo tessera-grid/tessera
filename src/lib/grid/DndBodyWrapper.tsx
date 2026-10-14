@@ -44,6 +44,7 @@ import {
 import { OverlayBodyRow } from './OverlayBodyRow'
 import { windowedListSortingStrategy } from './dnd/windowedListSortingStrategy'
 import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useLatest } from '../core/useLatest'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow extends { id: string }>(
@@ -115,6 +116,7 @@ export const DndBodyWrapper = ({
   const [expandTimer] = useState(createExpandTimer)
   useEffect(() => expandTimer.clear, [expandTimer])
   const {
+    onRowModelChange,
     onRowDragStart,
     onRowDragMove,
     onRowDragEnd,
@@ -124,6 +126,7 @@ export const DndBodyWrapper = ({
     levelAt: dropLevel.levelAt,
     expandTimer,
   })
+  const rowModelChange = useLatest(onRowModelChange)
   const startDrag = (event: DragStartEvent) => {
     const { row } = event.active.data.current as { row: { depth: number } }
     dropLevel.start(
@@ -150,7 +153,8 @@ export const DndBodyWrapper = ({
     if (activeId === null || fromIndex === null || overIndex === null) return
     const staleFrom = rows[fromIndex]?.id !== activeId
     const staleOver = overId !== null && rows[overIndex]?.id !== overId
-    if (!staleFrom && !staleOver) return
+    // Индексы выровнены — слот над свернувшейся группой уходит на её уровень.
+    if (!staleFrom && !staleOver) return rowModelChange.current()
     const indexOf = (id: string, at: number) =>
       rows[at]?.id === id ? at : rows.findIndex(row => row.id === id)
     const from = indexOf(String(activeId), fromIndex)
@@ -163,7 +167,7 @@ export const DndBodyWrapper = ({
         ) => void
       }
     ).setRowDragging(prev => ({ ...prev, fromIndex: from, overIndex: over }))
-  }, [rows, rowDragging, table])
+  }, [rows, rowDragging, table, rowModelChange])
 
   const activeId =
     rowDragging.activeId === null ? null : String(rowDragging.activeId)

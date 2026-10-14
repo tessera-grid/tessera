@@ -3,10 +3,18 @@
  * данных, иначе — сохранённый ответ `loadChildren`. Смена ответов при тех же `data`
  * собирает модель из прежней — пересобираются только изменённые поддеревья
  * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` —
- * полная сборка TanStack.
+ * полная сборка TanStack. Ожидающие переносы ленивого дерева (ADR 0112) — стадия на
+ * входе: модель собирается из данных и ответов, где строка уже на новом месте.
  */
 import { constructRow, createCoreRowModel } from '@tanstack/react-table'
 
+import {
+  type Answers,
+  applyRowMoves,
+  readRowMoves,
+  type RowMoves,
+  rowIdOf,
+} from '../../core/rowMoves'
 import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
@@ -44,6 +52,49 @@ export const createLazyCoreRowModel =
     let rowModel = createCoreRowModel<TFeatures, TData>()(table)
     let last:
       { data: unknown; loaded: LoadedChildren; model: CoreModel } | undefined
+    let moved:
+      | {
+          data: unknown
+          answers: LoadedChildren
+          moves: RowMoves
+          result: { data: unknown; answers: LoadedChildren }
+        }
+      | undefined
+
+    /** Данные и ответы с ожидающими переносами; без них — те же ссылки. */
+    const withMoves = (data: unknown, answers: LoadedChildren) => {
+      const moves = readRowMoves(table)
+      if (
+        moved &&
+        moved.data === data &&
+        moved.answers === answers &&
+        moved.moves === moves
+      ) {
+        return moved.result
+      }
+      const result = applyRowMoves(
+        data as readonly unknown[],
+        answers as Answers,
+        moves,
+        rowIdOf(table),
+      ) as { data: unknown; answers: LoadedChildren }
+      moved = { data, answers, moves, result }
+      return result
+    }
+
+    /** Сборка на данных стадии: `options.data` подменяется на время вызова. */
+    const withData = <T>(data: unknown, build: () => T): T => {
+      const own = t.options.data
+      if (own === data) {
+        return build()
+      }
+      t.options.data = data
+      try {
+        return build()
+      } finally {
+        t.options.data = own
+      }
+    }
 
     /** Опция `getSubRows` — приложения; на время сборки дополняем её ответами. */
     const withAnswers = <T>(
@@ -204,8 +255,10 @@ export const createLazyCoreRowModel =
     }
 
     return () => {
-      const answers = readLoadedChildren(table)
-      const data = t.options.data
+      const { data, answers } = withMoves(
+        t.options.data,
+        readLoadedChildren(table),
+      )
       const prev = last
       if (prev && prev.data === data) {
         if (prev.loaded === answers) {
@@ -223,8 +276,8 @@ export const createLazyCoreRowModel =
         rowModel = createCoreRowModel<TFeatures, TData>()(table)
       }
       loaded = answers
-      const model = withAnswers(answers, () =>
-        rowModel(),
+      const model = withData(data, () =>
+        withAnswers(answers, () => rowModel()),
       ) as unknown as CoreModel
       last = { data, loaded: answers, model }
       return model as never

@@ -2554,3 +2554,131 @@ describe('Кадры — превью броска строки', () => {
     PERF_TIMEOUT * 4,
   )
 })
+
+// Перенос в ленивом дереве (ADR 0112, LT12): перестановка ребёнка ленивой группы с
+// клавиатуры — строка встаёт стадией исходной модели, промис `onRowDragEnd` ждёт —
+// против той же перестановки ребёнка группы, чьи 100 детей лежат в данных, на 100 000
+// корней. Прогрев переставляет одного ребёнка, замер — следующего: переставленная
+// строка ждёт промиса и не переносится.
+const LT12_GROUP = LAZY_ROOTS[0]!
+const lt12Child = () =>
+  [
+    ...document.querySelectorAll<HTMLElement>(
+      `.data-grid__body-row[data-row-id^='${LT12_GROUP}-k']`,
+    ),
+  ].find(row => !row.hasAttribute('aria-busy'))
+const lt12Move = async () => {
+  lt12Child()!.querySelector<HTMLElement>('[data-kn-cell]')!.focus()
+  document.activeElement!.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      altKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    }),
+  )
+}
+
+describe('Отзывчивость — перенос в ленивом дереве', () => {
+  test(
+    'LT12: перестановка ребёнка ленивой группы со стадией ожидающих переносов на 100 000 корней не дороже той же перестановки в данных',
+    async () => {
+      const measure = async (lazy: boolean) => {
+        const data = [...getData(SEARCH_SIZE.dataCount)] as {
+          id: string
+          subRows?: unknown[]
+        }[]
+        if (!lazy) {
+          const at = data.findIndex(row => row.id === LT12_GROUP)
+          data[at] = { ...data[at]!, subRows: lazyKids(LT12_GROUP) }
+        }
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          enableRowExpanding: true,
+          dataOverride: data,
+          ...(lazy
+            ? {
+                rowExpandingHasChildren: (row: { id: string }) =>
+                  row.id === LT12_GROUP,
+                rowExpandingLoadChildren: (row: { id: string }) =>
+                  lazyKids(row.id),
+              }
+            : {}),
+          // Промис не выполняется: переставленные строки ждут, ленивые — стадией.
+          onRowDragEnd: () => new Promise(() => {}),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const toggle = () =>
+          document.querySelector<HTMLElement>(
+            `.data-grid__body-row[data-row-id='${LT12_GROUP}'] .row-expand-button`,
+          )
+        await expect.poll(toggle).toBeTruthy()
+        toggle()!.click()
+        await expect.poll(lt12Child).toBeTruthy()
+        const result = await measureInteractionWork(lt12Move, {
+          afterWarmup: () =>
+            expect(
+              document.querySelectorAll(
+                `.data-grid__body-row[data-row-id^='${LT12_GROUP}-k'][aria-busy]`,
+              ),
+            ).toHaveLength(1),
+        })
+        expect(
+          document.querySelectorAll(
+            `.data-grid__body-row[data-row-id^='${LT12_GROUP}-k'][aria-busy]`,
+          ),
+        ).toHaveLength(2)
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const staged = medianRun(runs.variant, r => r.longestMs)
+      // Стадия правит только ответ группы — не дороже пересборки данных; запас на шум.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1, plusMs: 30 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record(
+        'LT12-base',
+        'перестановка ребёнка группы в данных, промис ждёт',
+        base,
+        false,
+      )
+      await record(
+        'LT12',
+        'перестановка ребёнка ленивой группы стадией модели',
+        staged,
+        true,
+      )
+      expect(
+        staged.longestMs,
+        `стадия longest=${staged.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

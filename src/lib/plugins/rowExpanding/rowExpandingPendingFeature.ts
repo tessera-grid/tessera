@@ -2,7 +2,8 @@
  * Ожидание раскрытия (ADR 0041, §3): слайс `rowExpandPending` — строки, раскрытие
  * которых ждёт промиса `onExpandRow`, и row-метод `getIsExpandPending`. Значение —
  * номер попытки: поздний итог прежней попытки игнорируется. Row-метод
- * `setExpandedByUser` — путь клика для других плагинов (раскрытие паузой, ADR 0109).
+ * `setExpandedByUser` — путь клика для других плагинов (раскрытие паузой, ADR 0109),
+ * `getIsLazyParent` — признак ленивого родителя для переноса строк (ADR 0112).
  */
 import {
   assignPrototypeAPIs,
@@ -19,7 +20,8 @@ import type {
   Updater,
 } from '../../types'
 import { readPluginHooks } from '../../core/definePlugin'
-import { toggleRowExpanded } from './toggleRowExpanded'
+import { readLoadedChildren } from './lazyChildrenFeature'
+import { isLazyRow, toggleRowExpanded } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
 
 export type RowExpandPending = Record<string, number>
@@ -37,6 +39,8 @@ interface RowExpandPendingRowAPI {
    * ожидание. Для плагинов, которые раскрывают строку без импорта rowExpanding.
    */
   setExpandedByUser: (expanded: boolean) => void
+  /** Дети строки — ответ `loadChildren`, а не `subRows` данных (ADR 0054). */
+  getIsLazyParent: () => boolean
 }
 interface RowExpandPendingTableAPI {
   setRowExpandPending: (updater: Updater<RowExpandPending>) => void
@@ -81,6 +85,13 @@ type PendingTable = { atoms: { rowExpandPending?: PendingAtom } }
 
 const EMPTY: RowExpandPending = {}
 
+const hasOwnSubRows = (row: Row<any, any>) =>
+  !!(
+    row.table.options as {
+      getSubRows?: (row: unknown, index: number) => unknown[] | undefined
+    }
+  ).getSubRows?.(row.original, row.index)?.length
+
 export const rowExpandingPendingFeature: TableFeature = {
   getInitialState: state => ({ rowExpandPending: EMPTY, ...state }),
   getDefaultTableOptions: table => ({
@@ -119,6 +130,18 @@ export const rowExpandingPendingFeature: TableFeature = {
             )
           }
         },
+      },
+      row_getIsLazyParent: {
+        fn: (row: Row<any, any>) =>
+          !hasOwnSubRows(row) &&
+          (row.id in readLoadedChildren(row.table) ||
+            isLazyRow(
+              row,
+              readPluginHooks<Partial<RowExpandingHooks>>(
+                row.table as never,
+                'rowExpanding',
+              ).hasChildren,
+            )),
       },
     })
   },

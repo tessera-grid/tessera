@@ -764,6 +764,15 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       модульные `rowDragging` (NX4 — живая `expandDelay`) и `dropParent` (NX8 —
       поиск родителя по окну), `play` истории «Rows/Dragging — Collapsed groups» (NX9)
       ([ADR 0109](docs/decisions/0109-drop-into-collapsed-groups.md)).
+    - _Перенос в ленивом дереве:_ `row-drag-lazy` (LT1–LT3, LT5–LT8, LT10, LT13, LT15 — место
+      после переноса в `onRowDragEnd`, стадия до промиса, запись итога без скачка,
+      ожидание и запрет переноса, отказ, пауза над ленивой группой, любая глубина,
+      окно, данные и страница, axe и высокая контрастность, ручка — квадратная кнопка кита),
+      модульный `lazyTreeMoves`
+      (LT4 — бросок до прихода детей, LT9 — запрет без колбэка, LT11 — граф импортов),
+      перф LT12 — в `interaction`, `play` истории «Rows/Dragging — Lazy tree (server)»
+      (LT14); помощники перетаскивания мышью — `visual/row-drop-helpers.ts`
+      ([ADR 0112](docs/decisions/0112-lazy-tree-row-moves.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC/BU,
@@ -809,8 +818,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     XL11 — сборка `.xlsx` 100 000×10 против CSV;
     TX12 — открытие меню с 20 пунктами с переносом подписи против коротких;
     IS16 — дописать блок из 100 строк к 100 000 против подмены `data` той же длины;
-    SV11 — `scrollToRow` к строке в середине 100 000 против прямого `scrollTo`
-    → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
+    SV11 — `scrollToRow` к строке в середине 100 000 против прямого `scrollTo`;
+    LT12 — перестановка ребёнка ленивой группы стадией модели против той же в данных на
+    100 000 корней → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»
     против той же выборки без них, [ADR 0041](docs/decisions/0041-async-business-callbacks.md);
     CF12 — медленная прокрутка с 1500 ячейками в ожидании со светом против выборки без

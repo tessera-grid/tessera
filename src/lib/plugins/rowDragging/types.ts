@@ -34,13 +34,25 @@ export interface RowDraggingState {
   rowDragging: RowDragOverlayState
 }
 
+export interface RowDragEnd {
+  rowId: string
+  dragIndex: number
+  hoverIndex: number
+  /** Родитель после переноса; `undefined` — корень. */
+  parentId?: string
+  /** Родитель до переноса. */
+  previousParentId?: string
+  /** Место среди сестёр после переноса. */
+  index: number
+}
+
 export interface RowDraggingHooks {
-  /** Строка переставлена; индексы — позиции в показанных строках до перестановки. */
-  onRowDragEnd: (props: {
-    rowId: string
-    dragIndex: number
-    hoverIndex: number
-  }) => void
+  /**
+   * Строка переставлена (ADR 0112): `dragIndex`/`hoverIndex` — позиции в показанных
+   * строках до перестановки, `parentId`/`index` — родитель и место среди сестёр после
+   * неё. Промис — ожидание на ручке; отказ ленивого переноса возвращает строку.
+   */
+  onRowDragEnd: (props: RowDragEnd) => void | PromiseLike<unknown>
   /** Перетаскивание завершилось без перестановки (ADR 0040, §1). */
   onRowDragCancel?: (end: {
     rowId: string

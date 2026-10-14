@@ -19,10 +19,21 @@ import {
   unnestRow,
 } from './moveRow'
 
+type MoveAtoms = {
+  atoms: { rowDragging: unknown; rowMoves: unknown; rowMoveFailed: unknown }
+}
+
 export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
-  useSelector(
-    (table as unknown as { atoms: { rowDragging: unknown } }).atoms
-      .rowDragging as never,
+  const { atoms } = table as unknown as MoveAtoms
+  useSelector(atoms.rowDragging as never)
+  // Ожидание и отказ переноса (ADR 0112) — только этой строки.
+  const busy = useSelector(
+    atoms.rowMoves as never,
+    (moves: Record<string, { pending: boolean }>) => !!moves[row.id]?.pending,
+  )
+  const failed = useSelector(
+    atoms.rowMoveFailed as never,
+    (fails: Record<string, number>) => fails[row.id],
   )
   const labels = useLocalization()
 
@@ -65,6 +76,8 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
       type="row"
       label={labels.moveRow}
       table={table}
+      busy={busy}
+      errorFlash={failed}
       getMenuItems={isMovableRow(row, table) ? getMenuItems : undefined}
     />
   )

@@ -99,12 +99,12 @@ describe('Row Dragging — requirements', () => {
     expect(style.height).toBe(`${DRAG_ICON_SIZE}px`)
   })
 
-  test('D4: the service column width is 24px (icon 16 + padding 4 + 4)', async () => {
+  test('D4: the service column width is 40px (button 32 + padding 4 + 4)', async () => {
     const container = await renderRowDragging()
     const dragCell = container
       .querySelector<HTMLElement>(HANDLE)!
       .closest<HTMLElement>('.data-grid__body-cell')!
-    // Spec width: 16 + 4 + 4 = 24 (`COLUMN_DRAGGING_SIZE`, border-box cell).
+    // Spec width: 32 + 4 + 4 = 40 (`COLUMN_DRAGGING_SIZE`, border-box cell).
     expect(Math.round(dragCell.getBoundingClientRect().width)).toBe(
       DRAG_COLUMN_WIDTH,
     )
