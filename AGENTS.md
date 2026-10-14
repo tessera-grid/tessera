@@ -370,7 +370,8 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
     - _Ядро:_ `core-structure`, `core-sizing`, `core-roles`, `core-visual-states`,
       `core-scroll` (R1–R19, R21, [ADR 0004](docs/decisions/0004-core-on-tanstack-table.md) —
       структура, размеры, роли, визуальные состояния, раскладка при прокрутке);
-      `service-columns` (IV6/IV8/IV10 — сервисные колонки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md));
+      `service-columns` (IV6/IV8/IV10 — сервисные колонки; IV13 — порядок при закреплении, IV14 —
+      модульный в `pluginComposition.dom`, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md));
       `service-column-presence` (SC3–SC5, SC7, RE14–RE16, RA3) и модульные
       `servicePresence.dom` (SC1–SC2, SC6, SC8–SC9, SC11) — показ служебных колонок по условию,
       перф SC10 — в `first-render` ([ADR 0050](docs/decisions/0050-service-column-presence.md));

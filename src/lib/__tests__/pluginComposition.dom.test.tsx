@@ -153,3 +153,27 @@ describe('композиция плагинов', () => {
     })
   })
 })
+
+describe('композиция плагинов — порядок закреплённых сервисных колонок', () => {
+  it('IV14: вставка и закрепление сервисных колонок — один порядок по order, независимо от порядка регистрации плагинов', () => {
+    const pinned = (id: string, order: number) =>
+      definePlugin()({
+        id,
+        column: {
+          ...service(`${id}-column`, order),
+          pin: { side: 'start', when: 'with-user' },
+        },
+      })()
+    // Регистрация — в обратном порядке `order`.
+    mount({
+      plugins: [pinned('third', 2), pinned('second', 1), pinned('first', 0)],
+      state: { columnPinning: { start: ['name'], end: [] } },
+    })
+    const expected = ['first-column', 'second-column', 'third-column']
+    expect(leafIds().slice(0, 3)).toEqual(expected)
+    expect(captured.atoms.columnPinning.get().start).toEqual([
+      ...expected,
+      'name',
+    ])
+  })
+})

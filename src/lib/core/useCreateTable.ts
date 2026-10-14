@@ -22,7 +22,11 @@ import type { SkeletonOptions } from './skeletonOptions'
 import type { RefreshOptions } from './loadingDisplay'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
-import { getColumnsSignature, injectServiceColumns } from './createColumns'
+import {
+  getColumnsSignature,
+  injectServiceColumns,
+  orderServiceColumns,
+} from './createColumns'
 import {
   buildTesseraFeatures,
   foldEntries,
@@ -205,10 +209,11 @@ export const useCreateTable = <
     [columns, serviceColumns],
   )
 
-  // Сервисные колонки для пиннинга: id (таргет пина) + объявленная плагином политика.
+  // Сервисные колонки для пиннинга: id (таргет пина) + объявленная плагином политика —
+  // в порядке показа, иначе закрепление переставило бы их (ADR 0010, IV13).
   const servicePins = useMemo(
     () =>
-      serviceColumns.map(column => ({
+      orderServiceColumns(serviceColumns).map(column => ({
         id: column.id,
         pin: column.pin,
       })),

@@ -59,7 +59,23 @@ const dedupeById = <TColumn>(columns: TColumn[]): TColumn[] => {
   return Array.from(map.values())
 }
 
-const byOrder = (a: ServiceColumn, b: ServiceColumn) => a.order - b.order
+const byOrder = (
+  a: Pick<ServiceColumn, 'order'>,
+  b: Pick<ServiceColumn, 'order'>,
+) => a.order - b.order
+
+/**
+ * Сервисные колонки в порядке показа: leading по `order`, затем trailing по `order`.
+ * Один порядок для вставки колонок и для их закрепления (ADR 0010, IV14).
+ */
+export const orderServiceColumns = <
+  T extends Pick<ServiceColumn, 'side' | 'order'>,
+>(
+  serviceColumns: readonly T[],
+): T[] => [
+  ...serviceColumns.filter(c => c.side === 'leading').sort(byOrder),
+  ...serviceColumns.filter(c => c.side === 'trailing').sort(byOrder),
+]
 
 /**
  * Вставить сервисные колонки: leading — в начало (по order), trailing — в конец,
@@ -76,10 +92,9 @@ export const injectServiceColumns = <TColumn>(
     return []
   }
 
-  const leading = serviceColumns.filter(c => c.side === 'leading').sort(byOrder)
-  const trailing = serviceColumns
-    .filter(c => c.side === 'trailing')
-    .sort(byOrder)
+  const ordered = orderServiceColumns(serviceColumns)
+  const leading = ordered.filter(c => c.side === 'leading')
+  const trailing = ordered.filter(c => c.side === 'trailing')
 
   const make = (column: ServiceColumn) =>
     (column.pluginId
