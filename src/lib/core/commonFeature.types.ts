@@ -69,6 +69,8 @@ export interface CommonOptions {
   enableOverflowTooltip?: boolean
   /** `false` — без движения строк при смене модели (ADR 0107). */
   enableRowAnimation?: boolean
+  /** `false` — без движения колонок при смене порядка (ADR 0115). */
+  enableColumnAnimation?: boolean
   /** Высота строк тела и шапки, px (ADR 0077). */
   rowHeight?: number
   headerHeight?: number

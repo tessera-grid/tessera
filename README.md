@@ -470,7 +470,10 @@ export const Table = () => {
 > перестановка двигают строки к новым местам, уходящие строки гаснут, а при броске
 > облако долетает до слота ([ADR 0107](docs/decisions/0107-row-motion.md)). Длительность —
 > токен `--tsr-comp-row-motion-duration` (250 мс); `prefers-reduced-motion` и
-> `useCreateTable({ enableRowAnimation: false })` выключают движение.
+> `useCreateTable({ enableRowAnimation: false })` выключают движение. Колонки так же
+> переезжают при смене порядка — откат, клавиатура, меню ручки, `setColumnOrder`
+> ([ADR 0115](docs/decisions/0115-column-motion.md)); выключает
+> `useCreateTable({ enableColumnAnimation: false })`.
 
 > ⚠️ Плагин включает механику на уровне таблицы, а колонка — **разрешает её для себя**
 > соответствующим флагом в определении (`enableSorting`, `enableResizing`,

@@ -75,6 +75,7 @@ export interface CreateDataGridOptions {
   enableAnnouncements?: boolean
   enableOverflowTooltip?: boolean
   enableRowAnimation?: boolean
+  enableColumnAnimation?: boolean
   skeletonOptions?: SkeletonOptions
   refreshOptions?: RefreshOptions
   loadError?: unknown
@@ -120,6 +121,8 @@ export type UseCreateTableParams<
   enableOverflowTooltip?: boolean
   /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
   enableRowAnimation?: boolean
+  /** `false` — смены порядка колонок мгновенны, без движения (ADR 0115). */
+  enableColumnAnimation?: boolean
   skeletonOptions?: SkeletonOptions
   /** Задержка и минимум показа обновления при `loading: 'refresh'` (ADR 0094). */
   refreshOptions?: RefreshOptions
@@ -158,6 +161,7 @@ export const useCreateTable = <
   enableAnnouncements,
   enableOverflowTooltip,
   enableRowAnimation,
+  enableColumnAnimation,
   skeletonOptions,
   refreshOptions,
   loadError,
@@ -344,6 +348,7 @@ export const useCreateTable = <
     enableAnnouncements,
     enableOverflowTooltip,
     enableRowAnimation,
+    enableColumnAnimation,
     skeletonOptions,
     refreshOptions,
     loadError,

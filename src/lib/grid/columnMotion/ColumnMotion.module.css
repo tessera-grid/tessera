@@ -1,0 +1,8 @@
+/* Призраки колонок, уходящих из окна (ADR 0115): поверх ячеек, вне ввода и доступности. */
+.ghosts {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}

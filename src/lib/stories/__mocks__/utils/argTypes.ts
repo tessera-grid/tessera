@@ -214,6 +214,11 @@ export const enableRowAnimationType = booleanControl(
   true,
 )
 
+export const enableColumnAnimationType = booleanControl(
+  'Движение колонок при смене порядка: откат, клавиатура, меню ручки (`enableColumnAnimation`, ADR 0115)',
+  true,
+)
+
 export const enableOverflowTooltipType = booleanControl(
   'Тултип с полным текстом у обрезанного многоточием текста ячейки (`enableOverflowTooltip`)',
   true,

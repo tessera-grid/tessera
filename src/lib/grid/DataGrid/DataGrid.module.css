@@ -81,6 +81,8 @@
 }
 
 .table {
+  /* Слой призраков колонок (ADR 0115) стоит в таблице. */
+  position: relative;
   height: fit-content;
   min-height: inherit;
   width: 100%;

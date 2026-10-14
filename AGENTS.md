@@ -437,7 +437,13 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `columnDragging` (CO4–CO5), `slots` (CO9) и `moveRevert` (CO15 — `revertOnReject:
 false`), `work-counters` (CO10), `play` историй «Columns/Resizing & dragging —
       Dragging — Server» (CO12, CO17) и «Rows/Dragging — Lazy tree (server)» (CO19)
-      ([ADR 0114](docs/decisions/0114-async-column-moves.md)).
+      ([ADR 0114](docs/decisions/0114-async-column-moves.md));
+      `column-motion` (CN1–CN11 — переезд шапки, тела и футера, без повтора после броска,
+      откат, группа блоком, виртуализация и призраки, без движения показа, закрепления и
+      ширины, посреди движения, флаг и уменьшенное движение, токены, фокус, коммиты React),
+      модульный `columnMotion` (CN12 — план), перф CN13 — в `interaction`, `play` истории
+      «Columns/Motion — Keyboard and server rejection» (CN14)
+      ([ADR 0115](docs/decisions/0115-column-motion.md)).
     - _Строки:_ `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md);
       RS19–RS22 — счётчик в нижней панели, [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md)),
       `row-expanding` (RE1–RE13, RE41 — анимация шеврона, [ADR 0015](docs/decisions/0015-row-expanding.md)),
@@ -828,6 +834,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     TX12 — открытие меню с 20 пунктами с переносом подписи против коротких;
     IS16 — дописать блок из 100 строк к 100 000 против подмены `data` той же длины;
     SV11 — `scrollToRow` к строке в середине 100 000 против прямого `scrollTo`;
+    CN13 — перенос колонки `setColumnOrder` на 1000×1000 и кадры движения против того же без него;
     LT12 — перестановка ребёнка ленивой группы стадией модели против той же в данных на
     100 000 корней → Interaction); в `first-render` — RE39 (монтирование 100 000 строк с
     `hasChildren` против базы без него); в `scroll` — AS14 (прокрутка с 1500 ячейками в ожидании и «ошибке»

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { type CSSProperties, useRef } from 'react'
 
 import clsx from 'clsx'
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -7,10 +7,12 @@ import {
   isTreeGrid,
   type KeyboardNavigationGrid,
 } from '../core/keyboardNavigation'
+import { getDisplayColumns } from '../core/displayColumns'
 import { getRowWindow } from '../core/pagination'
 import { RenderSlot } from '../core/renderSlots'
 import { useTableState } from '../core/reactivity'
 import type { Column, HeaderGroup, Row, Table } from '../types'
+import { ColumnMotion } from './columnMotion/ColumnMotion'
 import { BodyDndBoundary } from './DndBodyWrapper'
 import { type DropPreview, MemoizedBody } from './Body'
 import type { RowDragOverlayState } from '../plugins/rowDragging/types'
@@ -91,6 +93,7 @@ export const DataGridTable = ({
   }) as DropPreview | null
 
   const rowWindow = getRowWindow(table, rows)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const {
     leftHeaderSlot,
@@ -135,96 +138,109 @@ export const DataGridTable = ({
   return (
     <div
       {...tableAria}
+      ref={rootRef}
       className={clsx('data-grid__table', dataGridStyles.table)}
       style={style}
     >
-      {skeleton && (
-        <span role="status" className={dataGridStyles['visually-hidden']}>
-          {loadingLabel}
-        </span>
-      )}
-      <SkeletonModeContext.Provider value={skeleton}>
-        <HeadDndBoundary
-          table={table}
-          leftHeaderSlot={leftHeaderSlot}
-          rightHeaderSlot={rightHeaderSlot}
-          enableColumnDragging={enableColumnDragging}
-        >
-          <MemoizedHead
-            layout={layout}
-            style={headStyles}
-            headerGroups={headerGroups}
-            virtualColumns={virtualColumns}
+      <ColumnMotion
+        enabled={options.enableColumnAnimation !== false && !skeleton}
+        columns={
+          getDisplayColumns<Column<any, any, unknown>>(table as never).columns
+        }
+        pinning={
+          (table.store.get() as { columnPinning?: unknown }).columnPinning
+        }
+        isVirtualColumns={isVirtualColumns}
+        rootRef={rootRef}
+      >
+        {skeleton && (
+          <span role="status" className={dataGridStyles['visually-hidden']}>
+            {loadingLabel}
+          </span>
+        )}
+        <SkeletonModeContext.Provider value={skeleton}>
+          <HeadDndBoundary
+            table={table}
             leftHeaderSlot={leftHeaderSlot}
             rightHeaderSlot={rightHeaderSlot}
-            isResizingColumns={isResizingColumns}
-            isVirtualColumns={isVirtualColumns}
             enableColumnDragging={enableColumnDragging}
-            skeleton={skeleton}
-          />
-        </HeadDndBoundary>
-      </SkeletonModeContext.Provider>
-      {skeleton ? (
-        <SkeletonBody
-          table={table}
-          layout={layout}
-          leafColumns={leafColumns}
-          virtualColumns={virtualColumns}
-          isVirtualColumns={isVirtualColumns}
-        />
-      ) : (
-        <BodyDndBoundary
-          table={table}
-          enableRowDragging={enableRowDragging}
-          virtualRows={virtualRows}
-        >
-          <MemoizedBody
-            dropPreview={dropPreview}
+          >
+            <MemoizedHead
+              layout={layout}
+              style={headStyles}
+              headerGroups={headerGroups}
+              virtualColumns={virtualColumns}
+              leftHeaderSlot={leftHeaderSlot}
+              rightHeaderSlot={rightHeaderSlot}
+              isResizingColumns={isResizingColumns}
+              isVirtualColumns={isVirtualColumns}
+              enableColumnDragging={enableColumnDragging}
+              skeleton={skeleton}
+            />
+          </HeadDndBoundary>
+        </SkeletonModeContext.Provider>
+        {skeleton ? (
+          <SkeletonBody
+            table={table}
             layout={layout}
-            rows={rows}
-            virtualRows={virtualRows}
-            virtualColumns={virtualColumns}
             leafColumns={leafColumns}
-            leftCellSlot={leftCellSlot}
-            rightCellSlot={rightCellSlot}
-            cellSlot={cellSlot}
-            actionRowSlot={actionRowSlot}
-            ariaRowIndexBase={headerGroups.length + rowWindow.offset}
-            selectableRows={!!keyboardNavigation && enableRowSelection}
-            treeRows={!!keyboardNavigation && hierarchical}
-            treeLines={
-              (table.options as { enableTreeLines?: boolean }).enableTreeLines
-            }
-            isResizingColumns={isResizingColumns}
+            virtualColumns={virtualColumns}
             isVirtualColumns={isVirtualColumns}
-            enableRowDragging={enableRowDragging}
-            rowAnimation={options.enableRowAnimation !== false}
           />
-        </BodyDndBoundary>
-      )}
-      {!skeleton && (
-        <RenderSlot
-          slot={bodyEndSlot}
-          context={{
-            table,
-            layout,
-            leafColumns,
-            virtualColumns,
-            isVirtualColumns,
-            nextAriaRowIndex:
-              headerGroups.length + rowWindow.offset + rows.length + 1,
-          }}
-        />
-      )}
-      {options.enableFooter && !skeleton && (
-        <MemoizedFooter
-          layout={layout}
-          footerGroup={table.getFooterGroups().at(0)}
-          virtualColumns={virtualColumns}
-          isVirtualColumns={isVirtualColumns}
-          isResizingColumns={isResizingColumns}
-        />
-      )}
+        ) : (
+          <BodyDndBoundary
+            table={table}
+            enableRowDragging={enableRowDragging}
+            virtualRows={virtualRows}
+          >
+            <MemoizedBody
+              dropPreview={dropPreview}
+              layout={layout}
+              rows={rows}
+              virtualRows={virtualRows}
+              virtualColumns={virtualColumns}
+              leafColumns={leafColumns}
+              leftCellSlot={leftCellSlot}
+              rightCellSlot={rightCellSlot}
+              cellSlot={cellSlot}
+              actionRowSlot={actionRowSlot}
+              ariaRowIndexBase={headerGroups.length + rowWindow.offset}
+              selectableRows={!!keyboardNavigation && enableRowSelection}
+              treeRows={!!keyboardNavigation && hierarchical}
+              treeLines={
+                (table.options as { enableTreeLines?: boolean }).enableTreeLines
+              }
+              isResizingColumns={isResizingColumns}
+              isVirtualColumns={isVirtualColumns}
+              enableRowDragging={enableRowDragging}
+              rowAnimation={options.enableRowAnimation !== false}
+            />
+          </BodyDndBoundary>
+        )}
+        {!skeleton && (
+          <RenderSlot
+            slot={bodyEndSlot}
+            context={{
+              table,
+              layout,
+              leafColumns,
+              virtualColumns,
+              isVirtualColumns,
+              nextAriaRowIndex:
+                headerGroups.length + rowWindow.offset + rows.length + 1,
+            }}
+          />
+        )}
+        {options.enableFooter && !skeleton && (
+          <MemoizedFooter
+            layout={layout}
+            footerGroup={table.getFooterGroups().at(0)}
+            virtualColumns={virtualColumns}
+            isVirtualColumns={isVirtualColumns}
+            isResizingColumns={isResizingColumns}
+          />
+        )}
+      </ColumnMotion>
     </div>
   )
 }

@@ -60,6 +60,7 @@ import {
   enableKeyboardNavigationType,
   enableOverflowTooltipType,
   enableRowAnimationType,
+  enableColumnAnimationType,
   enablePaginationType,
   enableQuickSearchType,
   enableRowActionMenuType,
@@ -150,6 +151,7 @@ export const dataGridArgTypes = {
     enableAnnouncements: enableAnnouncementsType,
     enableOverflowTooltip: enableOverflowTooltipType,
     enableRowAnimation: enableRowAnimationType,
+    enableColumnAnimation: enableColumnAnimationType,
     locale: localeType,
   }),
   ...inCategory(
@@ -330,6 +332,7 @@ export const dataGridDefaultArgs = {
   enableAnnouncements: true,
   enableOverflowTooltip: true,
   enableRowAnimation: true,
+  enableColumnAnimation: true,
   locale: 'en',
 
   enableColumnSorting: false,

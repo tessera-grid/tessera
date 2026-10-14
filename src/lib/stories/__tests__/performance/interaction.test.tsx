@@ -2682,3 +2682,158 @@ describe('Отзывчивость — перенос в ленивом дере
     PERF_TIMEOUT * 2,
   )
 })
+
+// Движение колонок (ADR 0115, CN13): перенос колонки на 1000×1000 через `setColumnOrder` —
+// отзывчивость переноса и кадры, пока колонки едут, — против того же переноса без движения.
+// Фокус не трогается: прокрутка к фокусу оборвала бы движение (ADR 0115, «Границы»).
+/**
+ * Цена движения по ADR 0115, CN13: перенос платит за замер шапки и запуск анимаций ячеек
+ * в коммите, кадры движения — за слои композитора едущих ячеек.
+ */
+const CN13_MOVE_COST = { ratio: 1.45, plusMs: 8 }
+const CN13_GLIDE_COST = { ratio: 1.3, plusMs: 12 }
+const COLUMN_MOTION_SETTLE_MS = 400
+const MOTION_COLUMN_IDS = Array.from({ length: 1000 }, (_, i) => `c${i}`)
+const MOTION_GRID_COLUMNS = MOTION_COLUMN_IDS.map((id, i) => ({
+  id,
+  header: id.toUpperCase(),
+  accessorFn: (row: { n: number }) => row.n * 1000 + i,
+  size: 150,
+}))
+const MOTION_GRID_ROWS = Array.from({ length: 1000 }, (_, n) => ({
+  id: `r${n}`,
+  n,
+}))
+/** c1 на место c2 — колонка у левого края, видна до и после переноса. */
+const MOTION_SWAPPED = ['c0', 'c2', 'c1', ...MOTION_COLUMN_IDS.slice(3)]
+
+describe('Отзывчивость — движение колонок', () => {
+  test(
+    'CN13: перенос колонки на 1000×1000 с движением против того же без него — перенос до +45 % или 8 мс, самый долгий кадр движения до +30 % или 12 мс',
+    async () => {
+      const mount = async (motion: boolean) => {
+        let table: { setColumnOrder: (order: string[]) => void } | undefined
+        const MotionGrid = () => {
+          const created = useCreateTable({
+            columns: MOTION_GRID_COLUMNS as never,
+            data: MOTION_GRID_ROWS,
+            getRowId: (row: { id: string }) => row.id,
+            enableColumnAnimation: motion,
+          })
+          table = created as never
+          return (
+            <div style={{ width: 1200, height: 520 }}>
+              <DataGrid table={created} height={500} />
+            </div>
+          )
+        }
+        await render(<MotionGrid />)
+        await waitForGrid()
+        return table!
+      }
+      const secondId = () =>
+        document
+          .querySelectorAll<HTMLElement>(
+            '.data-grid__head-cell[data-column-id]',
+          )[1]
+          ?.getAttribute('data-column-id')
+      /** Ячейки, которые едут, — анимации `translate` в кадре после переноса. */
+      const gliding = () =>
+        document
+          .getAnimations()
+          .filter(animation =>
+            (animation.effect as KeyframeEffect)
+              .getKeyframes()
+              .some(frame => 'translate' in frame),
+          ).length
+
+      const move = async (motion: boolean) => {
+        const table = await mount(motion)
+        const result = await measureInteractionWork(
+          async () => {
+            table.setColumnOrder(MOTION_SWAPPED)
+            await expect.poll(secondId).toBe('c2')
+          },
+          {
+            afterWarmup: async () => {
+              table.setColumnOrder([])
+              await expect.poll(secondId).toBe('c1')
+              await new Promise(resolve =>
+                setTimeout(resolve, COLUMN_MOTION_SETTLE_MS),
+              )
+            },
+          },
+        )
+        await cleanup()
+        return result
+      }
+
+      // Кадры после коммита, пока колонки едут: цена самого движения. Коммит — в `move`.
+      const glide = async (motion: boolean) => {
+        const table = await mount(motion)
+        const started = performance.now()
+        table.setColumnOrder(MOTION_SWAPPED)
+        await new Promise(resolve => requestAnimationFrame(resolve))
+        const glided = gliding()
+        const result = await measureTransitionWork(
+          async () => {},
+          () => performance.now() - started > COLUMN_MOTION_SETTLE_MS,
+        )
+        expect(secondId()).toBe('c2')
+        expect(glided > 0, 'колонки ехали').toBe(motion)
+        await cleanup()
+        return result
+      }
+
+      const cases = [
+        ['move', move, 'longestMs', 'interaction', CN13_MOVE_COST],
+        ['glide', glide, 'longestMs', 'animation', CN13_GLIDE_COST],
+      ] as const
+      for (const [name, measure, metric, kind, cost] of cases) {
+        const runs = await againstBase(measure)
+        const base = medianRun(runs.base, r => r[metric])
+        const variant = medianRun(runs.variant, r => r[metric])
+        const ceiling = ceilingOver(base[metric], cost)
+        const record = (
+          id: string,
+          label: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label,
+            operation: kind === 'interaction' ? 'interaction' : 'scroll',
+            size: '1000×1000',
+            plugins: 'none',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: kind === 'interaction' ? 'load' : 'animation',
+                metric: 'longest',
+                valueMs: r[metric],
+                targetMs:
+                  kind === 'interaction'
+                    ? INTERACTION_BUDGET_MS
+                    : ANIMATION_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...r,
+              },
+            ],
+          })
+        await record(`CN13-${name}-base`, `${name} без движения`, base, false)
+        await record(
+          `CN13-${name}`,
+          `${name} с движением колонок`,
+          variant,
+          true,
+        )
+        expect(
+          variant[metric],
+          `${name}: ${metric}=${variant[metric].toFixed(1)}ms, база ${base[metric].toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+        ).toBeLessThanOrEqual(ceiling)
+      }
+    },
+    PERF_TIMEOUT * 4,
+  )
+})
