@@ -1,10 +1,10 @@
 .wrapper {
   position: absolute;
   display: flex;
-  /* Ячейка делает обёртку сеткой раскрытия (buttonVisibility.css): дорожка и грип — справа. */
-  justify-content: end;
+  /* Зона по центру правой границы колонки, черта — на границе (ADR 0111). */
+  justify-content: center;
   height: 100%;
-  right: 0;
+  right: calc(var(--tsr-comp-resize-handler-width) / -2);
   color: var(--tsr-comp-control-color);
   z-index: 1;
   width: var(--tsr-comp-resize-handler-width);
@@ -36,8 +36,7 @@
 
 .background {
   display: inherit;
-  justify-self: end;
-  padding-right: 4px;
+  justify-self: center;
 }
 
 .handler {

@@ -78,18 +78,21 @@ export const zoneViewKey = ({
   config,
   ctx,
   labels,
+  capacity,
 }: {
   actions: SlotAction[]
   opaqueCount: number
   config: SlotMenuConfig | undefined
   ctx: unknown
   labels: TableLabels
+  capacity?: number
 }) => {
   const { collapsed, inline, menu } = resolveActionLayout({
     actions,
     opaqueCount,
     config,
     ctx: ctx as never,
+    capacity,
   })
   return JSON.stringify([
     collapsed,

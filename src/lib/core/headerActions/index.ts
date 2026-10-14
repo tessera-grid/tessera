@@ -92,6 +92,11 @@ export interface ResolveActionLayoutParams {
   config: SlotMenuConfig | undefined
   /** Контекст слота (заголовок/ячейка) — прозрачно передаётся в признаки. */
   ctx: unknown
+  /**
+   * Сколько кнопок помещается в ряд (ADR 0111): лишние сворачиваемые уходят в кебаб
+   * с конца. `undefined` — ширина не ограничивает.
+   */
+  capacity?: number
 }
 
 export interface ActionLayout {
@@ -129,15 +134,33 @@ export const resolveVisibleActions = <TCtx, A extends MenuAction<TCtx>>(
 ): A[] => sortByOrder(actions.filter(action => action.visible?.(ctx) !== false))
 
 /**
- * Чистое решение раскладки действий слота (all-or-nothing). Применимые действия
- * либо все инлайн, либо схлопнутые в кебаб. Опаковые компоненты кебаб схлопнуть
- * не может (учтены лишь в счётчике порога). Контекст-агностична.
+ * Сколько кнопок шириной `button` с зазором `gap` помещается в `width`, если
+ * `reserve` занято отступами и наименьшей подписью (ADR 0111).
+ */
+export const buttonCapacity = ({
+  width,
+  reserve,
+  button,
+  gap,
+}: {
+  width: number
+  reserve: number
+  button: number
+  gap: number
+}): number => Math.max(0, Math.floor((width - reserve + gap) / (button + gap)))
+
+/**
+ * Чистое решение раскладки действий слота. По порогу (all-or-nothing) применимые
+ * действия либо все инлайн, либо схлопнутые в кебаб; вместимость ряда (`capacity`)
+ * уводит в кебаб ещё и не поместившиеся — с конца, кебаб занимает одно место.
+ * Опаковые компоненты кебаб схлопнуть не может (учтены в пороге и в ряду).
  */
 export const resolveActionLayout = ({
   actions,
   opaqueCount,
   config,
   ctx,
+  capacity,
 }: ResolveActionLayoutParams): ActionLayout => {
   const applicable = sortByOrder(
     actions.filter(action => action.visible?.(ctx) !== false),
@@ -155,7 +178,7 @@ export const resolveActionLayout = ({
   const shouldCollapse = config.mode === 'always' || total >= config.threshold
   const collapsible = shouldCollapse
     ? regular.filter(action => action.collapsible !== false)
-    : []
+    : overflowOf(regular, opaqueCount, menuOnly.length > 0, capacity)
 
   if (collapsible.length === 0 && menuOnly.length === 0) {
     return { collapsed: false, inline: regular, menu: [] }
@@ -167,6 +190,27 @@ export const resolveActionLayout = ({
     inline: regular.filter(action => !inMenu.has(action)),
     menu: applicable.filter(action => inMenu.has(action)),
   }
+}
+
+/**
+ * Сворачиваемые действия, которым нет места в ряду из `capacity` кнопок: с конца по
+ * `order`; появившийся кебаб занимает одно место.
+ */
+const overflowOf = (
+  regular: SlotAction[],
+  opaqueCount: number,
+  hasMenu: boolean,
+  capacity: number | undefined,
+): SlotAction[] => {
+  if (
+    capacity === undefined ||
+    regular.length + opaqueCount + (hasMenu ? 1 : 0) <= capacity
+  ) {
+    return []
+  }
+  const collapsible = regular.filter(action => action.collapsible !== false)
+  const fixed = regular.length - collapsible.length + opaqueCount + 1
+  return collapsible.slice(Math.max(0, capacity - fixed))
 }
 
 /** Сколько применимых действий включено (`active`) — знак на кебабе (ADR 0062). */

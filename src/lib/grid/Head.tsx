@@ -8,6 +8,7 @@ import clsx from 'clsx'
 import type { HeaderGroup } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
 import { HeadRow } from './HeadRow'
+import { HeaderMetricsProvider } from './headerActions/headerCapacity'
 
 import styles from '../grid/Head/Head.module.css'
 import { inertProp } from '../core/inertProp'
@@ -47,19 +48,21 @@ export const Head = ({
     aria-hidden={skeleton || undefined}
     {...inertProp(!!skeleton)}
   >
-    {headerGroups.map(headerGroup => (
-      <HeadRow
-        key={headerGroup.id}
-        layout={layout}
-        headerGroup={headerGroup}
-        lastGroup={headerGroups.at(-1)?.id === headerGroup.id}
-        virtualColumns={virtualColumns}
-        leftHeaderSlot={leftHeaderSlot}
-        rightHeaderSlot={rightHeaderSlot}
-        isVirtualColumns={isVirtualColumns}
-        enableColumnDragging={enableColumnDragging}
-      />
-    ))}
+    <HeaderMetricsProvider>
+      {headerGroups.map(headerGroup => (
+        <HeadRow
+          key={headerGroup.id}
+          layout={layout}
+          headerGroup={headerGroup}
+          lastGroup={headerGroups.at(-1)?.id === headerGroup.id}
+          virtualColumns={virtualColumns}
+          leftHeaderSlot={leftHeaderSlot}
+          rightHeaderSlot={rightHeaderSlot}
+          isVirtualColumns={isVirtualColumns}
+          enableColumnDragging={enableColumnDragging}
+        />
+      ))}
+    </HeaderMetricsProvider>
   </div>
 )
 

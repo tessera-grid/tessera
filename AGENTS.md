@@ -419,7 +419,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       сортировка из прошлой модели — модульный `sortedRowModel` (SM8–SM11 — паритет с
       полной сортировкой при приходе ответов, откат на полную, прежняя модель неизменна),
       перф SM12 — в `interaction` ([ADR 0072](docs/decisions/0072-incremental-sorted-row-model.md)),
-      `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md)),
+      `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md);
+      GB1–GB5, GB10 — грип на границе колонок без маски, сдвиг соседа, закрепление и вложенная
+      шапка, прежнее поведение, кнопки не прячутся при протяжке), `action-menu` (GB6 — кнопки в кебаб по ширине), модульный
+      `slots` (GB7 — расчёт вместимости), `work-counters` (GB8), `play` истории
+      «Columns/Resizing & dragging — Narrow columns» (GB9)
+      ([ADR 0111](docs/decisions/0111-resize-grip-on-column-border.md)),
       `column-dragging` (D14–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
       `columnNodes.dom` (ND8–ND9), `columnDragging` (ND6), `pluginDiagnostics` (ND11),
@@ -644,8 +649,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
       (TI-05… — статические инварианты токенов) —
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
-      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO6 — движение; RW1–RW3 — плавное раскрытие ширины кнопок ячейки, мгновенное во время прокрутки, и
-      отступа под грип, [ADR 0076](docs/decisions/0076-smooth-cell-button-reveal.md)), `theming-popups` (PP1–PP8 — единый вид
+      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO5 — движение; RW1, RW3 — плавное раскрытие ширины кнопок ячейки, мгновенное во время прокрутки, [ADR 0076](docs/decisions/0076-smooth-cell-button-reveal.md)), `theming-popups` (PP1–PP8 — единый вид
       поповеров),
       [ADR 0017](docs/decisions/0017-ui-components.md)).
     - _Доступность:_ `a11y` (A1–A10, прогон axe-core,

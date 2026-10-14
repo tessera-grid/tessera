@@ -1,10 +1,12 @@
 .head__cell {
-  contain: layout paint;
+  /*
+   * Без обрезки и своего слоя наложения: грип ширины выходит на границу и ложится
+   * поверх соседа (ADR 0111). Содержимое обрезает своя обёртка.
+   */
+  position: relative;
   display: flex;
-  will-change: width, transform;
   padding: 0;
   user-select: none;
-  overflow: hidden;
   transition: var(--tsr-comp-head-cell-transition);
   /* Фон — через переменную: ей же и тем же переходом красится хэндл ширины. */
   background-color: var(--tsr-head-cell-bg);
@@ -130,34 +132,21 @@
     border-left: 1px solid var(--tsr-comp-cell-pinned-border-color);
   }
 
-  /* Правый отступ для заголовков с ресайзером: появляется тем же темпом, что кнопки. */
-
-  & :global(.data-grid__cell-wrapper-content) {
-    transition: var(--tsr-comp-reveal-size-transition);
+  /* Левая половина — зона грипа соседа слева: ручка и подпись правее неё (ADR 0111). */
+  &[data-after-resizable] {
+    padding-left: calc(var(--tsr-comp-resize-handler-width) / 2);
   }
 
-  &:hover:is([data-column-resizable='true'])
-    :global(.data-grid__cell-wrapper-content) {
-    padding-right: var(--tsr-comp-resize-handler-width) !important;
+  /* Последний заголовок и заголовок перед правыми закреплёнными: грип целиком внутри. */
+  &:is(
+      [data-last-header-in-row='true'],
+      :has(+ .head__cell[data-cell-first-right-pinned='true'])
+    )
+    :global(.resize__handler--column) {
+    right: 0;
   }
 
-  /* Без наведения грип виден всегда (ADR 0086) — и отступ под него тоже. */
-  @media (hover: none) {
-    &:is([data-column-resizable='true'])
-      :global(.data-grid__cell-wrapper-content) {
-      padding-right: var(--tsr-comp-resize-handler-width) !important;
-    }
-  }
-
-  /* Бэкграунд для заголовков и правого отступа с ресайзером при наведении */
-
-  /* Хэндл виден без наведения (открыто его меню): непрозрачный фон маскирует контент. */
-  &:has(:global(.resize__handler--column)[data-button-active='true']):not(
-      [data-cell-pinned='left'],
-      [data-cell-pinned='right']
-    ) {
-    --tsr-head-cell-bg: var(--tsr-comp-head-bg);
-  }
+  /* Бэкграунд заголовка при наведении и протяжке ширины */
 
   &:hover:not([data-actions-column-cell='true']),
   &:is([data-column-resizing='true']) {
@@ -165,14 +154,11 @@
   }
 
   /*
-   * Хэндл маскирует контент под собой фоном ячейки и меняет его тем же переходом —
-   * hovered-bg сплошной, иначе полупрозрачность удваивалась бы. Класс `.cell__button`
-   * в селекторе перебивает переход проявления из buttonVisibility.css.
+   * Обёртка содержимого не служит опорой абсолютным детям: её обрезка (KN32) не
+   * задевает грип ширины на границе (ADR 0111). Опора грипа и ручки — ячейка.
    */
-  & :global(.resize__handler--column.cell__button) {
-    background-color: var(--tsr-head-cell-bg);
-    transition:
-      var(--tsr-comp-reveal-transition), var(--tsr-comp-head-cell-transition);
+  & :global(.data-grid__cell-wrapper-content) {
+    position: static;
   }
 
   /* Абсолютное позиционирование drag-иконки в заголовке */
@@ -180,6 +166,10 @@
   & :global(.drag__handler--column) {
     position: absolute !important;
     left: 0 !important;
+  }
+
+  &[data-after-resizable] :global(.drag__handler--column) {
+    left: calc(var(--tsr-comp-resize-handler-width) / 2) !important;
   }
 
   /* Зона нажатия 24×24 — вправо от края ячейки, не на грип ширины соседа (ADR 0034). */

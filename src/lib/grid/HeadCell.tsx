@@ -119,6 +119,11 @@ export const HeadCellView = ({
 
   const isActionsColumn = header.column.getIsActionsColumn()
   const enableResizingColumn = header.column.getCanResize?.() ?? false
+  // Грип соседа слева заходит в эту ячейку на ползоны (ADR 0111); перед правыми
+  // закреплёнными грип внутри своей колонки.
+  const previous = header.headerGroup?.headers[header.index - 1]
+  const afterResizable =
+    !isFirstEndPinnedColumn && (previous?.column.getCanResize?.() ?? false)
   const isResizing = header.column.getIsResizing?.() ?? false
   // Скелет первой загрузки: только названия колонок (ADR 0060, §3).
   const skeleton = useSkeletonMode()
@@ -188,11 +193,11 @@ export const HeadCellView = ({
           right: endPinnedOffset,
         }),
     opacity: isDragging ? 0 : 1,
-    // Неперемещаемая ячейка сдвигается только вместе с перетаскиваемой группой.
-    transform:
-      disabledSortable && !drag?.transformX
-        ? 'none'
-        : `translateX(${drag?.transformX || 0}px)`,
+    // Сдвиг — только у перетаскиваемых: `transform` дал бы ячейке свой слой
+    // наложения, и грип ширины соседа слева лёг бы под неё (ADR 0111).
+    transform: drag?.transformX
+      ? `translateX(${drag.transformX}px)`
+      : undefined,
   }
 
   if (isCoveredHeader(header)) {
@@ -262,6 +267,7 @@ export const HeadCellView = ({
       data-cell-last-left-pinned={isLastStartPinnedColumn}
       data-cell-first-right-pinned={isFirstEndPinnedColumn}
       data-column-resizable={enableResizingColumn}
+      data-after-resizable={afterResizable || undefined}
       data-column-resizing={isResizing}
       data-actions-column-cell={isActionsColumn}
       data-layout={layout}

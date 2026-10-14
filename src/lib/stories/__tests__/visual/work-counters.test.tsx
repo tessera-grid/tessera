@@ -395,3 +395,45 @@ describe('Счётчики работы', () => {
     await userEvent.keyboard('{Escape}')
   })
 })
+
+describe('Счётчики работы — кнопки заголовка по ширине (ADR 0111)', () => {
+  test('GB8: протяжка ширины одной колонки перерисовывает зоны действий только её заголовка, зоны других колонок — нет', async () => {
+    type Point = { x: number; y: number }
+    const pointer = commands as unknown as {
+      realMouseMove: (from: Point, to: Point, steps?: number) => Promise<void>
+      realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    const { measure, table } = await mountGrid({
+      enableColumnSorting: true,
+      enableColumnFiltering: true,
+      enableColumnPinning: true,
+      enableColumnSizing: true,
+      enableHeaderActionMenu: true,
+      headerActionMenuThreshold: 10,
+    })
+    ;(
+      table() as { setColumnSizing: (sizing: Record<string, number>) => void }
+    ).setColumnSizing({ firstName: 260 })
+    const head = () =>
+      document.querySelector<HTMLElement>(
+        '.data-grid__head-cell[data-column-id="firstName"]',
+      )!
+    const kebab = () => head().querySelector('[aria-label^="Column options"]')
+    await expect.poll(kebab).toBeNull()
+    const r = head().getBoundingClientRect()
+    const at = { x: r.right, y: r.top + r.height / 2 }
+    await pointer.realMouseMove({ x: r.left + 8, y: at.y }, at, 4)
+    // Сужение уводит кнопки в кебаб — у своего заголовка вид меняется.
+    const work = await measure(async () => {
+      await pointer.realDragHold(at, { x: at.x - 110, y: at.y }, 6)
+      await pointer.realMouseUp()
+    })
+    await expect.poll(kebab).not.toBeNull()
+    // Раскладка кнопок сменилась у одной зоны — она и перерисовалась, не больше двух раз
+    // за протяжку; зоны других колонок — ни разу.
+    expect(renders(work, ActionsZone), describeWork(work)).toBeLessThanOrEqual(
+      2,
+    )
+  })
+})

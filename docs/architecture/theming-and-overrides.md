@@ -109,6 +109,11 @@
 - **Шаг отступа вложенности** (ADR [0059](../decisions/0059-row-nesting-indent.md)):
   `--tsr-comp-row-nesting-indent` (16px) — отступ первой колонки, шаг линий дерева и
   шаг перетаскивания строки по уровням (JS читает его из темы грида).
+- **Грип ширины и кнопки заголовка** (ADR
+  [0111](../decisions/0111-resize-grip-on-column-border.md)):
+  `--tsr-comp-resize-handler-width` (24px) — зона грипа на границе колонок, по половине в
+  каждую; `--tsr-comp-head-title-min-width` (48px) — наименьшая подпись заголовка: кнопки,
+  которым не хватает места, уходят в кебаб.
 - **Будущий родитель при перетаскивании строки** (ADR
   [0109](../decisions/0109-drop-into-collapsed-groups.md)):
   `--tsr-comp-row-drop-parent-bg` (10 % `--tsr-sys-accent`) — заливка строки слоем

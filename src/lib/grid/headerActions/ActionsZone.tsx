@@ -5,7 +5,7 @@
  * Реактивность — подписка на ключ вида зоны (`zoneViewKey`): смена состояния, не
  * меняющая её кнопки и кебаб, зону не перерисовывает (ADR 0099, PF5).
  */
-import { Fragment, type ReactNode, memo } from 'react'
+import { Fragment, type ReactNode, memo, useContext } from 'react'
 
 import { RenderSlot } from '../../core/renderSlots'
 import type { RegisterSlotParams } from '../../core/createSlots'
@@ -18,6 +18,7 @@ import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { ActionButton } from './ActionButton'
 import { ActionInlineMenu, ActionMenu, ActionPanel } from './ActionMenu.lazy'
+import { HeaderMetricsContext, headerCapacityOf } from './headerCapacity'
 import { zoneViewKey } from './zoneViewKey'
 
 interface ActionsZoneProps {
@@ -49,6 +50,13 @@ export const ActionsZone = memo(
       entry => entry.countsAsHeaderAction !== false,
     ).length
 
+    // Кнопки справа в заголовке не шире колонки (ADR 0111).
+    const metrics = useContext(HeaderMetricsContext)
+    const capacityOf = () =>
+      slot === 'rightHeaderSlot'
+        ? headerCapacityOf(context.header, metrics)
+        : undefined
+
     useTableState(table, () =>
       zoneViewKey({
         actions: descriptors,
@@ -56,6 +64,7 @@ export const ActionsZone = memo(
         config: table.options.actionMenu?.[slot],
         ctx: context,
         labels,
+        capacity: capacityOf(),
       }),
     )
 
@@ -64,6 +73,7 @@ export const ActionsZone = memo(
       opaqueCount,
       config: table.options.actionMenu?.[slot],
       ctx: context,
+      capacity: capacityOf(),
     })
 
     const variant = slot === 'actionRowSlot' ? 'row' : 'cell'

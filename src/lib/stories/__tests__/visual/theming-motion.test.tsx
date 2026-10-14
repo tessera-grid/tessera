@@ -212,38 +212,6 @@ describe('Motion contract', () => {
       .toBe(resolve('--tsr-comp-cell-outline-color', 'color'))
   })
 
-  test('MO6 the resize handle background matches its header cell background on every frame, on hover and on leave', async () => {
-    await render(<composed.ColumnResizing />)
-    await expect
-      .poll(
-        () => query('.data-grid__head-cell .resize__handler--column').length,
-      )
-      .toBeGreaterThan(0)
-    const handle = query('.data-grid__head-cell .resize__handler--column')[0]
-    const cell = handle.closest<HTMLElement>('.data-grid__head-cell')!
-    // Длинный переход, чтобы замер попал в его середину независимо от задержек RPC.
-    const theme = cell.closest<HTMLElement>('.data-grid-theme')!
-    theme.style.setProperty('--tsr-comp-motion-duration', '10s')
-    try {
-      const hovered = resolve(
-        '--tsr-comp-head-cell-hovered-bg',
-        'background-color',
-      )
-      const expectInSync = (stage: string) => {
-        const cellBg = read(cell, 'background-color')
-        expect(cellBg, `${stage}: mid-transition`).not.toBe(hovered)
-        expect(read(handle, 'background-color'), stage).toBe(cellBg)
-      }
-
-      await userEvent.hover(cell)
-      expectInSync('hover')
-      await userEvent.hover(document.body)
-      expectInSync('leave')
-    } finally {
-      theme.style.removeProperty('--tsr-comp-motion-duration')
-    }
-  })
-
   test('RW1 a hidden cell button of a body cell and a header passes through intermediate widths on hover instead of jumping', async () => {
     await renderAll()
     const theme = query('.data-grid-theme')[0]
@@ -332,36 +300,6 @@ describe('Motion contract', () => {
       ).toBeLessThan(full)
     } finally {
       clearInterval(scrolling)
-      theme.style.removeProperty('--tsr-comp-motion-duration')
-    }
-  })
-
-  test('RW2 the padding for the resize handle passes through intermediate values on header hover', async () => {
-    await render(<composed.ColumnResizing />)
-    await expect
-      .poll(
-        () =>
-          query('.data-grid__head-cell[data-column-resizable="true"]').length,
-      )
-      .toBeGreaterThan(0)
-    const cell = query('.data-grid__head-cell[data-column-resizable="true"]')[0]
-    const content = cell.querySelector<HTMLElement>(
-      '.data-grid__cell-wrapper-content',
-    )!
-    const theme = cell.closest<HTMLElement>('.data-grid-theme')!
-    const target = parseFloat(
-      resolve('--tsr-comp-resize-handler-width', 'padding-right'),
-    )
-    const before = parseFloat(read(content, 'padding-right'))
-    expect(before).toBeLessThan(target)
-    theme.style.setProperty('--tsr-comp-motion-duration', '10s')
-    try {
-      await userEvent.hover(cell)
-      await expect
-        .poll(() => parseFloat(read(content, 'padding-right')))
-        .toBeGreaterThan(before)
-      expect(parseFloat(read(content, 'padding-right'))).toBeLessThan(target)
-    } finally {
       theme.style.removeProperty('--tsr-comp-motion-duration')
     }
   })

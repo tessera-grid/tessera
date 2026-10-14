@@ -9,6 +9,7 @@ import { createEmptyRenderSlots, registerSlotInto } from '../core/createSlots'
 import {
   createEmptySlotActions,
   registerSlotActionInto,
+  buttonCapacity,
   resolveActionLayout,
   menuDividers,
   resolveMenuItems,
@@ -316,5 +317,59 @@ describe('menuDividers — разделители подгрупп меню', ()
       [false, true, true],
     )
     expect(menuDividers([])).toEqual([])
+  })
+})
+
+describe('headerActions: кнопки по ширине (ADR 0111)', () => {
+  it('GB7: число кнопок в ряд — по ширине, кнопке и отступам; порог действует как прежде, ширина только уменьшает ряд; опаковые не уезжают', () => {
+    // 200px, отступы и подпись 80, кнопки 32 с зазором 4: (200 − 80 + 4) / 36 → 3.
+    expect(
+      buttonCapacity({ width: 200, reserve: 80, button: 32, gap: 4 }),
+    ).toBe(3)
+    expect(buttonCapacity({ width: 60, reserve: 80, button: 32, gap: 4 })).toBe(
+      0,
+    )
+
+    const actions = ['a', 'b', 'c', 'd'].map((id, order) =>
+      action({ id, order }),
+    )
+    const config = { mode: 'auto' as const, threshold: 10 }
+    const layout = (capacity?: number, opaqueCount = 0, list = actions) =>
+      resolveActionLayout({
+        actions: list,
+        opaqueCount,
+        config,
+        ctx: {},
+        capacity,
+      })
+
+    // Помещаются все — как без ширины.
+    expect(layout(4).inline.map(a => a.id)).toEqual(['a', 'b', 'c', 'd'])
+    expect(layout(undefined).collapsed).toBe(false)
+    // Места на 3: две кнопки и кебаб; в кебаб — с конца по order.
+    const narrow = layout(3)
+    expect(narrow.collapsed).toBe(true)
+    expect(narrow.inline.map(a => a.id)).toEqual(['a', 'b'])
+    expect(narrow.menu.map(a => a.id)).toEqual(['c', 'd'])
+    // Места на 1 — только кебаб.
+    expect(layout(1).inline).toEqual([])
+    // Опаковый занимает место в ряду и в кебаб не уезжает.
+    expect(layout(3, 1).inline.map(a => a.id)).toEqual(['a'])
+    // Несворачиваемое остаётся в ряду.
+    const pinnedFirst = [
+      action({ id: 'x', order: -1, collapsible: false }),
+      ...actions,
+    ]
+    expect(layout(2, 0, pinnedFirst).inline.map(a => a.id)).toEqual(['x'])
+    // Порог по-прежнему сворачивает всё, сколько бы ни было места.
+    const byThreshold = resolveActionLayout({
+      actions,
+      opaqueCount: 0,
+      config: { mode: 'auto', threshold: 3 },
+      ctx: {},
+      capacity: 10,
+    })
+    expect(byThreshold.inline).toEqual([])
+    expect(byThreshold.menu).toHaveLength(4)
   })
 })

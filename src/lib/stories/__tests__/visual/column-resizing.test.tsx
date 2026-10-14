@@ -4,6 +4,11 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
+import {
+  pinFirstColumn,
+  renderColumnPinning,
+  scrollerOf,
+} from './column-pinning-helpers'
 
 // Every Column Resizing requirement is its own named test, prefixed with its spec
 // ID (CR1–CR16 from the requirements table in docs/decisions/0013-column-sizing.md).
@@ -24,8 +29,6 @@ const BODY_CELL = '.data-grid__body-cell'
 const RESIZE_GRIP = '.resize__handler--column'
 /** A header cell of a real (non-action) data column. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
-/** Отступ черты грипа от правой границы заголовка (`padding-right` фона грипа), px. */
-const GRIP_EDGE_GAP = 4
 /** Высота черты грипа при наведении и в активном состоянии, px. */
 const GRIP_ACTIVE_HEIGHT = 20
 
@@ -529,21 +532,24 @@ describe('Column Resizing — requirements', () => {
     adjacent()
   })
 
-  test('CR19: the grip line sits at the header right edge — on hover and mid-drag', async () => {
+  test('CR19: the grip line is centred on the header right border — on hover and mid-drag', async () => {
     const container = await renderColumnResizing()
     const cell = firstDataCell(container)
     const lineOf = () =>
       gripOf(firstDataCell(container)).querySelector<HTMLElement>(
         '[role="separator"]',
       )!
-    /** Зазор между правым краем черты и правой границей заголовка, px. */
-    const gap = () =>
-      firstDataCell(container).getBoundingClientRect().right -
-      lineOf().getBoundingClientRect().right
+    /** Расстояние от середины черты до правой границы заголовка, px (ADR 0111). */
+    const gap = () => {
+      const line = lineOf().getBoundingClientRect()
+      return Math.abs(
+        firstDataCell(container).getBoundingClientRect().right -
+          (line.left + line.width / 2),
+      )
+    }
 
     await revealGrip(cell)
-    await expect.poll(gap).toBeLessThanOrEqual(GRIP_EDGE_GAP + 1)
-    expect(gap()).toBeGreaterThanOrEqual(0)
+    await expect.poll(gap).toBeLessThanOrEqual(1)
 
     const line = lineOf().getBoundingClientRect()
     const from = {
@@ -561,8 +567,7 @@ describe('Column Resizing — requirements', () => {
           firstDataCell(container).getAttribute('data-column-resizing'),
         )
         .toBe('true')
-      await expect.poll(gap).toBeLessThanOrEqual(GRIP_EDGE_GAP + 1)
-      expect(gap()).toBeGreaterThanOrEqual(0)
+      await expect.poll(gap).toBeLessThanOrEqual(1)
     } finally {
       await pointer.realMouseUp()
     }
@@ -619,6 +624,251 @@ describe('Column Resizing — requirements', () => {
       )
       .toBe('true')
     await expect.poll(lineHeight).toBe(GRIP_ACTIVE_HEIGHT)
+    await userEvent.keyboard('{Escape}')
+  })
+})
+
+// Грип ширины на границе колонок (ADR 0111). Указатель — настоящий (Playwright).
+
+type Point = { x: number; y: number }
+const realPointer = commands as unknown as {
+  realMouseMove: (from: Point, to: Point, steps?: number) => Promise<void>
+  realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
+  realMouseUp: () => Promise<void>
+}
+/** Половина зоны грипа: `--tsr-comp-resize-handler-width` / 2, px. */
+const HALF = 12
+
+const zoneOf = (cell: HTMLElement) =>
+  wrapperOf(gripOf(cell)).getBoundingClientRect()
+const middleY = (cell: HTMLElement) => {
+  const r = cell.getBoundingClientRect()
+  return r.top + r.height / 2
+}
+/** Элемент под точкой принадлежит грипу заголовка `cell`. */
+const hitsGrip = (cell: HTMLElement, x: number, y: number) =>
+  gripOf(cell).contains(document.elementFromPoint(x, y))
+
+describe('Грип ширины на границе колонок (ADR 0111)', () => {
+  test('GB1: грип — на правой границе колонки: зона 24px, по 12px в каждую колонку, черта на границе; у последней колонки зона целиком внутри', async () => {
+    const container = await renderColumnResizing({ columnCount: 4 })
+    const [first] = renderedDataCells(container)
+    const r = first.getBoundingClientRect()
+    const zone = zoneOf(first)
+    expect(zone.width).toBeCloseTo(HALF * 2, 0)
+    expect(zone.left).toBeCloseTo(r.right - HALF, 0)
+    expect(zone.right).toBeCloseTo(r.right + HALF, 0)
+    // Правая половина над соседом — тоже грип этой колонки.
+    expect(hitsGrip(first, r.right + HALF / 2, middleY(first))).toBe(true)
+    expect(hitsGrip(first, r.right - HALF / 2, middleY(first))).toBe(true)
+
+    // Последняя колонка — в конце прокрутки.
+    const scroller = scrollerOf(container)
+    scroller.scrollLeft = scroller.scrollWidth
+    await expect
+      .poll(() =>
+        container.querySelector(
+          `${DATA_HEAD_CELL}[data-last-header-in-row='true']`,
+        ),
+      )
+      .not.toBeNull()
+    await nextFrame()
+    const last = container.querySelector<HTMLElement>(
+      `${DATA_HEAD_CELL}[data-last-header-in-row='true']`,
+    )!
+    const lr = last.getBoundingClientRect()
+    const lastZone = zoneOf(last)
+    expect(lastZone.right).toBeCloseTo(lr.right, 0)
+    expect(lastZone.left).toBeCloseTo(lr.right - HALF * 2, 0)
+  })
+
+  test('GB2: под грипом нет маски — содержимое заголовка не заходит под зону и не сдвигается при наведении, подпись видна целиком', async () => {
+    const container = await renderColumnResizing({ columnCount: 4 })
+    const [first] = renderedDataCells(container)
+    const content = first.querySelector<HTMLElement>(
+      '.data-grid__cell-wrapper-content',
+    )!
+    const before = getComputedStyle(content).paddingRight
+    await revealGrip(first)
+    expect(getComputedStyle(content).paddingRight).toBe(before)
+    expect(getComputedStyle(wrapperOf(gripOf(first))).backgroundColor).toBe(
+      'rgba(0, 0, 0, 0)',
+    )
+    const title = first
+      .querySelector<HTMLElement>('.data-grid__cell-wrapper-title')!
+      .getBoundingClientRect()
+    expect(title.right).toBeLessThanOrEqual(zoneOf(first).left)
+  })
+
+  test('GB3: у соседа ручка перетаскивания колонки и подпись правее зоны грипа слева; зоны нажатия не пересекаются', async () => {
+    const container = await renderColumnResizing({
+      columnCount: 4,
+      enableColumnDragging: true,
+    })
+    const [first, second] = renderedDataCells(container)
+    const border = first.getBoundingClientRect().right
+    await userEvent.hover(second)
+    const handle = second
+      .querySelector<HTMLElement>('.drag__handler--column')!
+      .getBoundingClientRect()
+    const title = second
+      .querySelector<HTMLElement>('.data-grid__cell-wrapper-title')!
+      .getBoundingClientRect()
+    expect(handle.left).toBeGreaterThanOrEqual(border + HALF - 0.5)
+    expect(title.left).toBeGreaterThanOrEqual(border + HALF - 0.5)
+    expect(zoneOf(first).right).toBeLessThanOrEqual(handle.left + 0.5)
+    // Подпись не наезжает на сдвинутую ручку.
+    expect(title.left).toBeGreaterThanOrEqual(handle.right - 0.5)
+  })
+
+  test('GB4: закрепление, вложенная шапка и виртуализация — грип закреплённой колонки поверх границы и после прокрутки, у групп — на их границах', async () => {
+    // Закрепление: грип последней левой закреплённой колонки над прокручиваемой частью.
+    let container = await renderColumnPinning({ enableColumnSizing: true })
+    const pinned = await pinFirstColumn(container)
+    const scroller = scrollerOf(container)
+    scroller.scrollLeft = 200
+    await expect.poll(() => scroller.scrollLeft).toBeGreaterThan(0)
+    await nextFrame()
+    const pr = pinned.getBoundingClientRect()
+    expect(hitsGrip(pinned, pr.right + HALF / 2, middleY(pinned))).toBe(true)
+    // Виртуализация: у видимых прокрученных колонок грип на их границе.
+    for (const cell of renderedDataCells(container)) {
+      const r = cell.getBoundingClientRect()
+      if (cell === pinned || r.right > scroller.getBoundingClientRect().right)
+        continue
+      if (cell.getAttribute('data-last-header-in-row') === 'true') continue
+      const zone = zoneOf(cell)
+      expect(
+        Math.abs(zone.left + zone.width / 2 - r.right),
+        cell.dataset.columnId,
+      ).toBeLessThanOrEqual(1.5)
+    }
+
+    // Вложенная шапка: грип группы — на её правой границе.
+    container = (await render(<composed.HeaderGroups enableColumnSizing />))
+      .container
+    await expect
+      .poll(() => container.querySelectorAll(HEAD_CELL).length)
+      .toBeGreaterThan(3)
+    const group = [
+      ...container.querySelectorAll<HTMLElement>(
+        `${HEAD_CELL}[data-first-headers-row='true'][data-column-resizable='true']`,
+      ),
+    ].find(cell => cell.getAttribute('data-last-header-in-row') !== 'true')!
+    const gr = group.getBoundingClientRect()
+    const gz = zoneOf(group)
+    expect(Math.abs(gz.left + gz.width / 2 - gr.right)).toBeLessThanOrEqual(1.5)
+  })
+
+  test('GB5: черта видна при наведении и скрыта без него; протяжка за правую половину зоны, клавиатура и меню ширины работают как раньше', async () => {
+    const container = await renderColumnResizing({ columnCount: 4 })
+    const [first] = renderedDataCells(container)
+    const wrapper = wrapperOf(gripOf(first))
+    expect(getComputedStyle(wrapper).opacity).toBe('0')
+    await revealGrip(first)
+
+    // Протяжка за половину зоны над соседом.
+    const r = first.getBoundingClientRect()
+    const from = { x: r.right + HALF / 2, y: middleY(first) }
+    const width = widthOf(first)
+    await realPointer.realMouseMove({ x: r.left + 4, y: from.y }, from, 4)
+    await realPointer.realDragHold(from, { x: from.x + 40, y: from.y })
+    await realPointer.realMouseUp()
+    await expect
+      .poll(() => widthOf(renderedDataCells(container)[0]))
+      .toBeCloseTo(width + 40, -1)
+
+    // Клавиатура: стрелка на разделителе.
+    const separator = gripOf(
+      renderedDataCells(container)[0],
+    ).querySelector<HTMLElement>('[role="separator"]')!
+    const before = widthOf(renderedDataCells(container)[0])
+    separator.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect
+      .poll(() => widthOf(renderedDataCells(container)[0]))
+      .toBeCloseTo(before + 10, 0)
+
+    // Меню ширины: клик по половине зоны над соседом.
+    const now = renderedDataCells(container)[0].getBoundingClientRect()
+    const tap = {
+      x: now.right + HALF / 2,
+      y: middleY(renderedDataCells(container)[0]),
+    }
+    await realPointer.realMouseMove({ x: now.left + 4, y: tap.y }, tap, 4)
+    await realPointer.realDragHold(tap, tap, 1)
+    await realPointer.realMouseUp()
+    await expect
+      .poll(() =>
+        [...document.querySelectorAll('[role="menuitem"]')].some(
+          item => item.textContent?.trim() === DEFAULT_LABELS.resetColumnWidth,
+        ),
+      )
+      .toBe(true)
+    await userEvent.keyboard('{Escape}')
+  })
+})
+
+describe('Кнопки заголовка при протяжке (ADR 0111)', () => {
+  test('GB10: нажатие на грип, протяжка и открытое меню ширины не прячут кнопки заголовка — ни в одном кадре до отпускания и закрытия меню', async () => {
+    const container = await renderColumnResizing({
+      columnCount: 4,
+      enableColumnSorting: true,
+    })
+    const cell = () => renderedDataCells(container)[0]
+    /** Скрываемые кнопки заголовка, кроме самого грипа: видимость и ширина. */
+    const buttons = () =>
+      [...cell().querySelectorAll<HTMLElement>('.cell__button--hidden')]
+        .filter(button => !button.matches(RESIZE_GRIP))
+        .map(button => ({
+          opacity: Number(getComputedStyle(button).opacity),
+          width: Math.round(button.getBoundingClientRect().width),
+        }))
+    await revealGrip(cell())
+    await expect
+      .poll(() => buttons().every(button => button.opacity === 1))
+      .toBe(true)
+    const shown = buttons()
+    expect(shown.length).toBeGreaterThan(0)
+
+    const frames: ReturnType<typeof buttons>[] = []
+    let sampling = true
+    const sample = () => {
+      if (!sampling) return
+      frames.push(buttons())
+      requestAnimationFrame(sample)
+    }
+    const r = cell().getBoundingClientRect()
+    const at = { x: r.right, y: r.top + r.height / 2 }
+    await realPointer.realMouseMove({ x: r.left + 8, y: at.y }, at, 4)
+    requestAnimationFrame(sample)
+    try {
+      // Нажать и увести указатель вниз, с заголовка: протяжка продолжается.
+      await realPointer.realDragHold(at, { x: at.x + 20, y: at.y + 120 }, 6)
+      await new Promise(resolve => setTimeout(resolve, 300))
+      sampling = false
+      expect(frames.length).toBeGreaterThan(5)
+      for (const frame of frames) expect(frame).toEqual(shown)
+    } finally {
+      sampling = false
+      await realPointer.realMouseUp()
+    }
+
+    // Клик без сдвига — меню ширины; пока оно открыто, кнопки стоят.
+    const now = cell().getBoundingClientRect()
+    const tap = { x: now.right, y: now.top + now.height / 2 }
+    await realPointer.realMouseMove({ x: now.left + 8, y: tap.y }, tap, 4)
+    await realPointer.realDragHold(tap, tap, 1)
+    await realPointer.realMouseUp()
+    await expect
+      .poll(() => document.querySelector('[role="menuitem"]'))
+      .not.toBeNull()
+    // Указатель уходит с заголовка в сторону.
+    await realPointer.realMouseMove(tap, { x: tap.x, y: tap.y + 200 }, 4)
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(buttons().map(button => button.opacity)).toEqual(
+      shown.map(button => button.opacity),
+    )
     await userEvent.keyboard('{Escape}')
   })
 })

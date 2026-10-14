@@ -58,7 +58,7 @@
  * селекторов, и вместе с ним пропало бы появление по наведению.
  */
 
-.data-grid__head-cell:not([data-column-resizing='true']):hover
+.data-grid__head-cell:hover
   .cell__button--hidden:not([data-button-active='true']),
 :where(.data-grid-theme:not([data-refreshing]))
   .data-grid__body-cell:hover:is([data-cell-interact='true'])
@@ -75,6 +75,12 @@
 }
 
 :is(.data-grid__head-cell, .data-grid__body-cell):has(:focus-visible)
+  .cell__button--hidden:not([data-button-active='true']),
+/*
+ * Грип нажат, тянется или открыто его меню — кнопки заголовка стоят, как при наведении,
+ * и после ухода указателя (ADR 0111).
+ */
+.data-grid__head-cell:has(.resize__handler--column[data-button-active='true'])
   .cell__button--hidden:not([data-button-active='true']) {
   opacity: 1;
   grid-template-columns: minmax(0, 1fr);

@@ -1,4 +1,4 @@
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
@@ -405,5 +405,89 @@ describe('Action menu — row', () => {
     ;(document.activeElement as HTMLElement | null)?.blur()
     await parkPointer()
     await expect.poll(opacity).toBe(0)
+  })
+})
+
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
+
+describe('Кнопки заголовка по ширине (ADR 0111)', () => {
+  test('GB6: не поместившиеся кнопки уходят в кебаб с конца по order, включённое действие в кебабе — точка; при расширении колонки кнопки возвращаются', async () => {
+    type Point = { x: number; y: number }
+    const pointer = commands as unknown as {
+      realMouseMove: (from: Point, to: Point, steps?: number) => Promise<void>
+      realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    // Порог выше числа действий: в кебаб уводит только ширина.
+    const view = await renderHeaderMenu({
+      enableColumnSizing: true,
+      headerActionMenuThreshold: 10,
+    })
+    // Вторая колонка: у первой наименьшая ширина (200px) вмещает все её кнопки.
+    const cell = () => dataHeadCells(view.container)[1]
+    /** Подписи кнопок действий в ряду, слева направо. */
+    const inline = () =>
+      [...cell().querySelectorAll<HTMLElement>('button[aria-label]')]
+        .filter(button => !button.matches(KEBAB))
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+        )
+        // Подпись сортировки зависит от её состояния — сверяем действие.
+        .map(button =>
+          (button.getAttribute('aria-label') ?? '').replace(/^Sort .*/, 'Sort'),
+        )
+    const kebab = () => cell().querySelector<HTMLElement>(KEBAB)
+    /** Протянуть правую границу колонки на `dx`. */
+    const resize = async (dx: number) => {
+      const scroller = view.container.querySelector<HTMLElement>(
+        '.data-grid__container',
+      )!
+      // Граница и путь протяжки — в кадре.
+      const edge = scroller.getBoundingClientRect().right - 16
+      const overflow =
+        cell().getBoundingClientRect().right + Math.max(dx, 0) - edge
+      if (overflow > 0) scroller.scrollLeft += overflow
+      await nextFrame()
+      const r = cell().getBoundingClientRect()
+      const at = { x: r.right, y: r.top + r.height / 2 }
+      await pointer.realMouseMove({ x: r.left + 8, y: at.y }, at, 4)
+      await pointer.realDragHold(at, { x: at.x + dx, y: at.y }, 6)
+      await pointer.realMouseUp()
+    }
+    try {
+      await resize(100)
+      await expect.poll(() => kebab()).toBeNull()
+      const all = inline()
+      expect(all.length).toBeGreaterThan(2)
+
+      // Включить сортировку — первое действие с признаком «включено» после закрепления.
+      await userEvent.hover(cell())
+      const sort = [...cell().querySelectorAll<HTMLElement>('button')].find(
+        button => /sort/i.test(button.getAttribute('aria-label') ?? ''),
+      )!
+      await humanClick(sort)
+
+      // Сужаем, пока в ряду не останется одна кнопка: остальные — в кебабе, с конца.
+      await resize(-100)
+      await expect.poll(() => kebab()).not.toBeNull()
+      const kept = inline()
+      expect(all.slice(0, kept.length)).toEqual(kept)
+      expect(kept.length).toBeLessThan(all.length)
+      await expect
+        .poll(() =>
+          kebab()!
+            .querySelector('[data-active-indicator]')
+            ?.getAttribute('data-shown'),
+        )
+        .toBe('true')
+
+      // Шире — кнопки возвращаются, кебаба нет.
+      await resize(100)
+      await expect.poll(() => kebab()).toBeNull()
+      expect(inline()).toEqual(all)
+    } finally {
+      await pointer.realMouseUp()
+    }
   })
 })
