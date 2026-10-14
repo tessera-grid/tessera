@@ -348,7 +348,9 @@ describe('Column Sorting — requirements', () => {
 
     // First click → that exact id + next direction desc (sortDescFirst).
     await userEvent.click(button)
-    expect(onToggleColumnSort).toHaveBeenLastCalledWith(columnId, 'desc')
+    expect(onToggleColumnSort).toHaveBeenLastCalledWith(columnId, 'desc', {
+      signal: expect.any(AbortSignal),
+    })
 
     // Second click on the same header → same id, next direction asc.
     await userEvent.click(sortButtonOf(firstDataCell(container)))

@@ -103,3 +103,7 @@ export type {
   SubmittedCell,
 } from './cellEditing/types'
 export type { SessionCancelReason } from '../core/cancelInteraction'
+export type {
+  ServerActionContext,
+  ServerActionResult,
+} from '../core/serverActions'

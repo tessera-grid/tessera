@@ -40,6 +40,11 @@ export interface ColumnSortingOptions {
   removal?: boolean
   /** Серверная сортировка — v9 `manualSorting` (по умолчанию false). */
   server?: boolean
+  /**
+   * Отказ промиса `onToggleColumnSort` в серверном режиме откатывает сортировку (по
+   * умолчанию true); `false` — сортировка остаётся новой (ADR 0116).
+   */
+  revertOnReject?: boolean
   /** Мультисортировка: `true`/`undefined` — Shift+клик; `false` — выкл; объект — тонко. */
   multiSort?: boolean | ColumnMultiSortOptions
   /** Бизнес-колбэк сортировки (аргумент фабрики); читается живо. */
@@ -99,6 +104,7 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
       enableSorting: o.enabled !== false,
       enableSortingRemoval: o.removal ?? true,
       manualSorting: o.server ?? false,
+      columnSortingRevertOnReject: o.revertOnReject !== false,
       sortDescFirst: true,
       enableMultiSort: multi.enabled,
       ...(multi.opts.max !== undefined

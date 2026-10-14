@@ -14,6 +14,7 @@ import { useIcons } from '../../ui/icons'
 import type { HeaderAction, HeaderMenuItem } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { readPluginHooks } from '../../core/definePlugin'
+import { runServerAction } from '../../core/serverActions'
 import type { ColumnSortingHooks } from './types'
 
 import styles from '../../plugins/columnSorting/SortButton.module.css'
@@ -111,8 +112,12 @@ export const sortHeaderAction: HeaderAction = {
     )
     const next = column.getNextSortingOrder()
 
-    column.getToggleSortingHandler()?.(event)
-    onToggleColumnSort(column.id, next)
+    runServerAction(
+      table,
+      'sorting',
+      () => column.getToggleSortingHandler()?.(event),
+      context => onToggleColumnSort(column.id, next, context),
+    )
   },
   menuItems: ({ column, table }, labels): HeaderMenuItem[] => {
     const { onToggleColumnSort } = readPluginHooks<ColumnSortingHooks>(
@@ -121,11 +126,14 @@ export const sortHeaderAction: HeaderAction = {
     )
     const current = column.getIsSorted()
 
-    const setDirection = (desc: boolean, dir: 'asc' | 'desc') => {
-      // Явный выбор в меню задаёт направление, заменяя сортировку (без накопления).
-      column.toggleSorting(desc, false)
-      onToggleColumnSort(column.id, dir)
-    }
+    const setDirection = (desc: boolean, dir: 'asc' | 'desc') =>
+      runServerAction(
+        table,
+        'sorting',
+        // Явный выбор в меню задаёт направление, заменяя сортировку (без накопления).
+        () => column.toggleSorting(desc, false),
+        context => onToggleColumnSort(column.id, dir, context),
+      )
 
     const items: HeaderMenuItem[] = [
       {
@@ -152,10 +160,13 @@ export const sortHeaderAction: HeaderAction = {
         label: labels.clearSort,
         icon: <SortActionIcon direction="none" />,
         disabled: !current,
-        onSelect: () => {
-          column.clearSorting()
-          onToggleColumnSort(column.id, false)
-        },
+        onSelect: () =>
+          runServerAction(
+            table,
+            'sorting',
+            () => column.clearSorting(),
+            context => onToggleColumnSort(column.id, false, context),
+          ),
       })
     }
 

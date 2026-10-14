@@ -2,15 +2,33 @@
  * Действия пользователя с фильтрами (ADR 0045, §10): меняют срез и зовут бизнес-колбэк
  * плагина — `onFilterChange` / `onSearchChange`. Программная смена среза колбэк не
  * зовёт (как `onPageChange`, PG6). Общие для `columnFiltering`, `quickSearch` и
- * заглушки пустого результата.
+ * заглушки пустого результата. В серверном режиме — серверные действия (ADR 0116).
  */
 import { readPluginHooks } from './definePlugin'
 import { searchColumnIdsOf } from './searchColumns'
+import {
+  runServerAction,
+  type ServerActionContext,
+  type ServerActionResult,
+} from './serverActions'
 
 export interface ColumnFilterEntry {
   id: string
   value: unknown
 }
+
+/** Пользователь изменил фильтры колонок (после дебаунса). */
+export type FilterChangeHook = (
+  filters: ColumnFilterEntry[],
+  context: ServerActionContext,
+) => ServerActionResult
+
+/** Пользователь изменил строку поиска (после дебаунса); `scope` — где ищет грид. */
+export type SearchChangeHook = (
+  search: string,
+  scope: SearchScope,
+  context: ServerActionContext,
+) => ServerActionResult
 
 interface FilteringTable {
   atoms: {
@@ -29,11 +47,11 @@ interface FilteringTable {
 }
 
 interface FilteringHooks {
-  onFilterChange?: (filters: ColumnFilterEntry[]) => void
+  onFilterChange?: FilterChangeHook
 }
 
 interface SearchHooks {
-  onSearchChange?: (search: string, scope: SearchScope) => void
+  onSearchChange?: SearchChangeHook
 }
 
 /** Где ищет грид — для сервера, чтобы искать по тем же колонкам (ADR 0053). */
@@ -65,9 +83,15 @@ export const setColumnFiltersByUser = (
   filters: ColumnFilterEntry[],
 ) => {
   const t = table as FilteringTable
-  t.setColumnFilters?.(filters)
-  readPluginHooks<FilteringHooks>(t, 'columnFiltering').onFilterChange?.(
-    filters,
+  const { onFilterChange } = readPluginHooks<FilteringHooks>(
+    t,
+    'columnFiltering',
+  )
+  runServerAction(
+    table,
+    'filtering',
+    () => t.setColumnFilters?.(filters),
+    context => onFilterChange?.(filters, context),
   )
 }
 
@@ -96,10 +120,14 @@ export const setColumnFilterByUser = (
 /** Строка быстрого поиска; пустая снимает поиск. */
 export const setSearchByUser = (table: unknown, search: string) => {
   const t = table as FilteringTable
-  t.setGlobalFilter?.(search === '' ? undefined : search)
-  readPluginHooks<SearchHooks>(t, 'quickSearch').onSearchChange?.(search, {
-    columnIds: searchColumnIdsOf(t),
-  })
+  const { onSearchChange } = readPluginHooks<SearchHooks>(t, 'quickSearch')
+  runServerAction(
+    table,
+    'search',
+    () => t.setGlobalFilter?.(search === '' ? undefined : search),
+    context =>
+      onSearchChange?.(search, { columnIds: searchColumnIdsOf(t) }, context),
+  )
 }
 
 /** Снять фильтры колонок и поиск (заглушка пустого результата). */

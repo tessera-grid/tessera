@@ -13,6 +13,9 @@
   ([ADR 0063](0063-option-label-sorting.md)).
 - **Изменён:** 2026-10-08 — своя фабрика отсортированной модели вместо обёртки
   `createSortedRowModel` ([ADR 0064](0064-tessera-sorted-row-model.md)).
+- **Изменён:** 2026-10-15 — в серверном режиме `onToggleColumnSort` получает
+  `{ signal }` и может вернуть промис: отказ откатывает сортировку, опция
+  `revertOnReject` ([ADR 0116](0116-async-server-actions.md)).
 - **Связано:**
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен как слот поверх
     штатной модели сортировки TanStack (`getSortedRowModel`, `column.getIsSorted`,

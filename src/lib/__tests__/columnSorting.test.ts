@@ -96,7 +96,9 @@ describe('columnSorting', () => {
     sortHeaderAction.onSelect(ctx, { shiftKey: false } as never)
 
     expect(table.atoms.sorting.get()).toHaveLength(1)
-    expect(onToggleColumnSort).toHaveBeenCalledWith('name', expect.anything())
+    expect(onToggleColumnSort).toHaveBeenCalledWith('name', expect.anything(), {
+      signal: expect.any(AbortSignal),
+    })
     expect(sortHeaderAction.active!(headerCtx(table))).toBe(true)
   })
 

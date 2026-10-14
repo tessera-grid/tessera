@@ -240,6 +240,10 @@ export const columnSortingMultiSortType = booleanControl(
 export const columnSortingServerType = booleanControl(
   'Серверная сортировка (`server`): меняется только состояние и колбэк, порядок строк мока не меняется',
 )
+export const columnSortingRevertOnRejectType = booleanControl(
+  'Откатывать сортировку при отказе промиса `onToggleColumnSort` в серверном режиме (`revertOnReject`, ADR 0116)',
+  true,
+)
 export const enableColumnSizingType = booleanControl(
   'Изменение ширины колонок перетаскиванием границы (плагин `columnSizing`)',
 )
@@ -443,6 +447,10 @@ export const paginationPageSizesType = objectControl(
   'Варианты размера страницы в нижней панели; `false` — без выбора (`pageSizes`)',
   'number[] | false',
   DEFAULT_PAGE_SIZES,
+)
+export const paginationRevertOnRejectType = booleanControl(
+  'Возвращать прежнюю страницу при отказе промиса `onPageChange` в серверном режиме (`revertOnReject`, ADR 0116)',
+  true,
 )
 export const enableDataExportType = booleanControl(
   'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',

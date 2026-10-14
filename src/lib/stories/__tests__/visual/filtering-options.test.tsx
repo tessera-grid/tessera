@@ -601,9 +601,10 @@ describe('Фильтр вариантов — подписи и вид', () => {
     expect(countOf('won')).toBe('30')
     await humanClick(checkbox('won'))
     await expect.poll(() => onFilterChange.mock.calls.length).toBe(1)
-    expect(onFilterChange).toHaveBeenLastCalledWith([
-      { id: 'status', value: { operator: 'anyOf', value: ['won'] } },
-    ])
+    expect(onFilterChange).toHaveBeenLastCalledWith(
+      [{ id: 'status', value: { operator: 'anyOf', value: ['won'] } }],
+      { signal: expect.any(AbortSignal) },
+    )
     expect(rowIds()).toEqual(ALL)
     await closePanel()
 

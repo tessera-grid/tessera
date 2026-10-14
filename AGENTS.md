@@ -733,6 +733,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       закреплёнными, фокус не трогается, новый вызов побеждает, `reveal` подсветки),
       перф SV11 — в `interaction`, `play` истории «Rows/Scroll to row» (SV12)
       ([ADR 0104](docs/decisions/0104-scroll-to-row.md)).
+    - _Серверные действия:_ `server-actions` (SA7–SA8 — отказ откатывает сортировку со
+      сбросом страницы и страницу с её размером), модульный `serverActions.dom` (SA1–SA3,
+      SA10 — промис, `signal`, замена ожидающего действия, `revertOnReject`); SA4–SA6,
+      SA9, SA11–SA17 — этапы 2–3 ([ADR 0116](docs/decisions/0116-async-server-actions.md)).
     - _Счётчики работы:_ `work-counters` (PF2–PF11, PF23–PF25 — коммиты React, отрисованные
       компоненты, узлы, раскладки и стили, пересборки моделей строк ключевых действий:
       прокрутка на строку, выбор, страница, приход детей, сортировка, поиск, меню колонки,

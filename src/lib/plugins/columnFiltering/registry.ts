@@ -13,7 +13,7 @@ import {
 import { definePlugin } from '../../core/definePlugin'
 import { createSearchAwareFilteredRowModel } from '../../core/filteredRowModel'
 import { readPluginHooks } from '../../core/definePlugin'
-import type { ColumnFilterEntry } from '../../core/filtering'
+import type { FilterChangeHook } from '../../core/filtering'
 import type { PluginInertReason } from '../../core/pluginDiagnostics'
 import { columnFilterTypesFeature } from './columnFilterTypesFeature'
 import { DEFAULT_FILTER_DEBOUNCE_MS } from './conditions'
@@ -33,8 +33,11 @@ export interface ColumnFilteringOptions {
    * результат. Режим данных общий с `quickSearch` (ADR 0045, §10).
    */
   server?: boolean
-  /** Бизнес-колбэк: пользователь изменил фильтры колонок (после дебаунса). */
-  onFilterChange?: (filters: ColumnFilterEntry[]) => void
+  /**
+   * Бизнес-колбэк: пользователь изменил фильтры колонок (после дебаунса). В серверном
+   * режиме промис — запрос данных: грид ждёт, отказ отмечает фильтр (ADR 0116).
+   */
+  onFilterChange?: FilterChangeHook
   /** Серверный режим: строк после фильтрации — для «показано N из M». */
   filteredRowCount?: number
   /** Серверный режим: всех строк — для «показано N из M». */

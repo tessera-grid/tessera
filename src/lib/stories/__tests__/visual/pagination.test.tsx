@@ -177,7 +177,9 @@ describe('Pagination', () => {
     await userEvent.click(pageButton('next'))
     await expect.poll(range).toBe('26–50 of 1000')
     expect(onPageChange).toHaveBeenCalledTimes(1)
-    expect(onPageChange).toHaveBeenLastCalledWith(1, 25)
+    expect(onPageChange).toHaveBeenLastCalledWith(1, 25, {
+      signal: expect.any(AbortSignal),
+    })
 
     // Сортировка возвращает на первую страницу сама — это не действие с пагинацией.
     const sort = document.querySelector<HTMLElement>('.column-sort__button')!

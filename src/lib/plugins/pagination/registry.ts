@@ -30,6 +30,11 @@ export interface PaginationOptions {
   server?: boolean
   /** Всего строк на сервере; обязателен при `server` (0, пока ответа нет). */
   rowCount?: number
+  /**
+   * Отказ промиса `onPageChange` в серверном режиме возвращает прежнюю страницу и её
+   * размер (по умолчанию true); `false` — страница остаётся новой (ADR 0116).
+   */
+  revertOnReject?: boolean
   /** Бизнес-колбэк смены страницы (аргумент фабрики); читается живо. */
   onPageChange?: PaginationHooks['onPageChange']
 }
@@ -52,6 +57,7 @@ export const pagination = definePlugin<PaginationOptions>()({
     return {
       manualPagination: !enabled || !!o.server,
       rowCount: enabled && o.server ? o.rowCount : undefined,
+      paginationRevertOnReject: o.revertOnReject !== false,
       paginateExpandedRows: !enabled,
       // Стоковый сброс срабатывает на любую смену data (правка ячейки, перестановка
       // строки); страницу сбрасывает плагин — только при смене порядка строк.

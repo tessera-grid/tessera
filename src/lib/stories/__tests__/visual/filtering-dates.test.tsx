@@ -619,9 +619,10 @@ describe('Фильтр дат — сервер', () => {
     await openFilter('created')
     await humanClick(day('2026-03-15'))
     await expect.poll(() => onFilterChange.mock.calls.length).toBe(1)
-    expect(onFilterChange).toHaveBeenLastCalledWith([
-      { id: 'created', value: { operator: 'on', value: '2026-03-15' } },
-    ])
+    expect(onFilterChange).toHaveBeenLastCalledWith(
+      [{ id: 'created', value: { operator: 'on', value: '2026-03-15' } }],
+      { signal: expect.any(AbortSignal) },
+    )
     expect(rowIds()).toEqual(ALL)
 
     await chooseOperator('preset')

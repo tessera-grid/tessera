@@ -5,6 +5,7 @@
 import type { PaginationState } from '@tanstack/react-table'
 
 import type { PluginDiagnose } from '../../core/pluginDiagnostics'
+import { runServerAction } from '../../core/serverActions'
 import type { PaginationHooks } from './types'
 
 interface Atom<T> {
@@ -96,12 +97,19 @@ export const resolvePageSizes = (
   pageSize: number,
 ): number[] => [...new Set([...pageSizes, pageSize])].sort((a, b) => a - b)
 
-export const notifyPageChange = (
+/**
+ * Смена страницы пользователем: `apply` меняет срез, `onPageChange` узнаёт о ней. В
+ * серверном режиме — серверное действие с ожиданием и откатом (ADR 0116).
+ */
+export const changePageByUser = (
   table: PaginationTable,
+  apply: () => void,
   pageIndex: number,
   pageSize: number,
 ) => {
   const hooks = table.getHooks?.()?.pagination as
     Partial<PaginationHooks> | undefined
-  hooks?.onPageChange?.(pageIndex, pageSize)
+  runServerAction(table, 'pagination', apply, context =>
+    hooks?.onPageChange?.(pageIndex, pageSize, context),
+  )
 }

@@ -26,8 +26,8 @@ import { isSkeletonShown } from '../../core/skeletonOptions'
 import { Skeleton } from '../../ui/Skeleton'
 import { useIcons } from '../../ui/icons'
 import {
+  changePageByUser,
   clampedPageIndex,
-  notifyPageChange,
   pageRange,
   paginationInertReason,
   type PaginationTable,
@@ -113,14 +113,17 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     announceLabel(table, all => all.pageAnnouncement(index + 1, pages))
 
   const goTo = (index: number) => {
-    t.setPageIndex(index)
-    notifyPageChange(t, index, pageSize)
+    changePageByUser(t, () => t.setPageIndex(index), index, pageSize)
     announcePage(index, pageCount)
   }
 
   const changeSize = (size: number) => {
-    t.setPagination({ pageIndex: 0, pageSize: size })
-    notifyPageChange(t, 0, size)
+    changePageByUser(
+      t,
+      () => t.setPagination({ pageIndex: 0, pageSize: size }),
+      0,
+      size,
+    )
     announcePage(0, Math.max(1, Math.ceil(rowCount / size)))
   }
 

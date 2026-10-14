@@ -12,6 +12,7 @@ import {
 import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
 import { logWarn } from './logger'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
+import { abortServerActions } from './serverActions'
 import {
   type PluginDiagnostic,
   reportPluginError,
@@ -42,6 +43,10 @@ export const useTableEffects = (
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
     [argsSignature],
   )
+
+  // Размонтирование прерывает ожидающее серверное действие (ADR 0116, SA2).
+  const { store } = table as { store: object }
+  useEffect(() => () => abortServerActions(store), [store])
 
   // Внешнее значение локального состояния плагина — в срез до отрисовки кадра, только
   // при новой ссылке: та же ссылка не затирает изменения изнутри (ADR 0028, DP8).

@@ -854,18 +854,21 @@ describe('Фильтрация — пустой результат, сервер
     await userEvent.type(field('value')!, 'alice')
     expect(onFilterChange).not.toHaveBeenCalled()
     await expect.poll(() => onFilterChange.mock.calls.length).toBe(1)
-    expect(onFilterChange).toHaveBeenLastCalledWith([
-      { id: 'name', value: { operator: 'contains', value: 'alice' } },
-    ])
+    expect(onFilterChange).toHaveBeenLastCalledWith(
+      [{ id: 'name', value: { operator: 'contains', value: 'alice' } }],
+      { signal: expect.any(AbortSignal) },
+    )
     await userEvent.keyboard('{Escape}')
     expect(rowIds()).toEqual(ALL)
 
     await userEvent.type(searchInput()!, 'rome')
     expect(onSearchChange).not.toHaveBeenCalled()
     await expect.poll(() => onSearchChange.mock.calls.length).toBe(1)
-    expect(onSearchChange).toHaveBeenLastCalledWith('rome', {
-      columnIds: expect.any(Array),
-    })
+    expect(onSearchChange).toHaveBeenLastCalledWith(
+      'rome',
+      { columnIds: expect.any(Array) },
+      { signal: expect.any(AbortSignal) },
+    )
     expect(rowIds()).toEqual(ALL)
 
     table.setColumnFilters([])

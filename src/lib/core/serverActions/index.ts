@@ -1,0 +1,223 @@
+/**
+ * Серверные действия (ADR 0116): сортировка, фильтры, поиск и страница серверного
+ * режима задают один запрос данных. Колбэк действия получает `signal`; промис —
+ * ожидание; отказ откатывает сортировку и страницу к состоянию до первого действия
+ * цепочки ожидания. Общий модуль четырёх плагинов — вне их папок (IV3).
+ */
+import { isThenable } from '../thenable'
+import {
+  readServerAction,
+  type ServerActionKind,
+  writeServerAction,
+} from './serverActionFeature'
+
+export {
+  readServerAction,
+  serverActionFeature,
+  type ServerActionKind,
+  type ServerActionStatus,
+} from './serverActionFeature'
+
+/** Контекст колбэка серверного действия. */
+export interface ServerActionContext {
+  /** Прерывается следующим серверным действием и размонтированием грида. */
+  signal: AbortSignal
+}
+
+/** Результат колбэка: промис — запрос данных под новое состояние. */
+export type ServerActionResult = void | PromiseLike<unknown>
+
+interface Snapshot {
+  sorting?: unknown
+  pagination?: { pageIndex: number; pageSize: number }
+}
+
+interface Chain {
+  controller: AbortController
+  attempt: number
+  /** Сортировка и страница до первого действия цепочки — цель отката. */
+  confirmed: Snapshot
+}
+
+interface ServerTable {
+  store: object
+  options: {
+    manualSorting?: boolean
+    manualPagination?: boolean
+    columnFilteringServer?: boolean
+    quickSearchServer?: boolean
+    columnSortingRevertOnReject?: boolean
+    paginationRevertOnReject?: boolean
+  }
+  atoms: {
+    sorting?: {
+      get: () => unknown
+      subscribe: (listener: (value: unknown) => void) => {
+        unsubscribe: () => void
+      }
+    }
+    pagination?: { get: () => Snapshot['pagination'] }
+  }
+  setSorting?: (sorting: never) => void
+  setPagination?: (pagination: never) => void
+}
+
+// Ключ — общий store: React-адаптер отдаёт гриду другой объект таблицы, чем ячейкам.
+const chains = new WeakMap<object, Chain>()
+let lastAttempt = 0
+
+let neverAborted: AbortSignal | undefined
+
+const isServer = ({ options }: ServerTable, kind: ServerActionKind) => {
+  switch (kind) {
+    case 'sorting':
+      return !!options.manualSorting
+    case 'pagination':
+      return !!options.manualPagination
+    case 'filtering':
+      return !!options.columnFilteringServer
+    case 'search':
+      return !!options.quickSearchServer
+  }
+}
+
+const snapshotOf = ({ atoms }: ServerTable): Snapshot => ({
+  sorting: atoms.sorting?.get(),
+  pagination: atoms.pagination?.get(),
+})
+
+const samePage = (a: Snapshot['pagination'], b: Snapshot['pagination']) =>
+  a?.pageIndex === b?.pageIndex && a?.pageSize === b?.pageSize
+
+type Sorting = readonly { id: string; desc: boolean }[]
+
+const sameSorting = (a: unknown, b: unknown) => {
+  const x = (a ?? []) as Sorting
+  const y = (b ?? []) as Sorting
+  return (
+    x.length === y.length &&
+    x.every((entry, index) => {
+      const other = y[index]
+      return entry.id === other.id && entry.desc === other.desc
+    })
+  )
+}
+
+// Возврат страницы, ждущий отката суженной сортировки; снимается следующим действием.
+const pageRestores = new WeakMap<object, () => void>()
+
+const cancelPageRestore = (store: object) => {
+  pageRestores.get(store)?.()
+  pageRestores.delete(store)
+}
+
+/** Откат к состоянию до цепочки; колбэки действий он не зовёт (как PG6). */
+const revert = (t: ServerTable, { sorting, pagination }: Snapshot) => {
+  const { atoms, store } = t
+  const restorePage = () => {
+    if (
+      t.options.paginationRevertOnReject !== false &&
+      pagination !== undefined &&
+      !samePage(atoms.pagination?.get(), pagination)
+    ) {
+      t.setPagination?.(pagination as never)
+    }
+  }
+  // Сортировка первой: при клиентской пагинации её смена сбрасывает страницу.
+  if (
+    t.options.columnSortingRevertOnReject !== false &&
+    sorting !== undefined &&
+    atoms.sorting &&
+    !sameSorting(atoms.sorting.get(), sorting)
+  ) {
+    t.setSorting?.(sorting as never)
+    // Суженный срез (ADR 0039) доходит до TanStack рендером, и сброс страницы случится
+    // тогда же — страница возвращается после него.
+    if (!sameSorting(atoms.sorting.get(), sorting)) {
+      const subscription = atoms.sorting.subscribe(next => {
+        if (!sameSorting(next, sorting)) return
+        cancelPageRestore(store)
+        queueMicrotask(restorePage)
+      })
+      pageRestores.set(store, () => subscription.unsubscribe())
+      return
+    }
+  }
+  restorePage()
+}
+
+const settleIdle = (table: unknown) => {
+  const status = readServerAction(table)
+  if (status.pending || status.failed) {
+    writeServerAction(table, () => ({}))
+  }
+}
+
+/**
+ * Действие пользователя: `apply` меняет срез, `notify` зовёт бизнес-колбэк. В
+ * серверном режиме действие прерывает ожидающее; промис колбэка — ожидание, отказ —
+ * откат и отметка в срезе `serverAction`. В клиентском режиме результат игнорируется.
+ */
+export const runServerAction = (
+  table: unknown,
+  kind: ServerActionKind,
+  apply: () => void,
+  notify: (context: ServerActionContext) => unknown,
+): void => {
+  const t = table as ServerTable
+  if (!isServer(t, kind)) {
+    apply()
+    notify({ signal: (neverAborted ??= new AbortController().signal) })
+    return
+  }
+  cancelPageRestore(t.store)
+  const before = snapshotOf(t)
+  apply()
+  const previous = chains.get(t.store)
+  previous?.controller.abort()
+  chains.delete(t.store)
+  const controller = new AbortController()
+  const attempt = ++lastAttempt
+  const confirmed = previous?.confirmed ?? before
+
+  let result: unknown
+  try {
+    result = notify({ signal: controller.signal })
+  } catch (error) {
+    writeServerAction(table, ({ failed }) => (failed ? { failed } : {}))
+    throw error
+  }
+  if (!isThenable(result)) {
+    settleIdle(table)
+    return
+  }
+
+  chains.set(t.store, { controller, attempt, confirmed })
+  writeServerAction(table, status => ({
+    ...status,
+    pending: { kind, attempt },
+  }))
+  const settle = (ok: boolean, error?: unknown) => {
+    if (controller.signal.aborted || chains.get(t.store)?.attempt !== attempt) {
+      return
+    }
+    chains.delete(t.store)
+    if (ok) {
+      settleIdle(table)
+      return
+    }
+    revert(t, confirmed)
+    writeServerAction(table, () => ({ failed: { kind, attempt, error } }))
+  }
+  result.then(
+    () => settle(true),
+    error => settle(false, error),
+  )
+}
+
+/** Размонтирование грида (по store таблицы): ожидающее действие прерывается. */
+export const abortServerActions = (store: object) => {
+  chains.get(store)?.controller.abort()
+  chains.delete(store)
+  cancelPageRestore(store)
+}
