@@ -11,6 +11,7 @@ import type { Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
 import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
+import { findDropParent } from './dnd/dropParent'
 import { RowMotion } from './rowMotion/RowMotion'
 import { getTreeAria } from './treeAria'
 import { getTreeLines, projectTreeLines } from './treeBranches'
@@ -106,6 +107,9 @@ export const Body = ({
         : undefined,
     [treeLinesIndex, rows, drop, first, last],
   )
+  // Будущий родитель слота подсвечен (ADR 0109, §4).
+  const dropParent =
+    drop?.acceptable && drop.depth > 0 ? findDropParent(rows, drop, first) : -1
   const linesOf = (index: number, isActive: boolean) => {
     if (!drop || !projected) {
       return isActive && drop
@@ -159,6 +163,7 @@ export const Body = ({
               treeBranch={lines.branch}
               treeOpen={lines.open}
               slotDepth={isActive ? drop.depth : undefined}
+              dropParent={virtualRow.index === dropParent || undefined}
               isVirtualColumns={isVirtualColumns}
             />
           )

@@ -11,7 +11,11 @@ export interface RowDragOverlayState {
   /** Превью броска (ADR 0108): индексы в показанных строках и глубина на новом месте. */
   fromIndex: number | null
   overIndex: number | null
+  /** Строка под слотом: по ней место выравнивается, когда строки окна сдвинулись. */
+  overId: string | null
   depth: number
+  /** Группы, раскрытые паузой над ними за сессию (ADR 0109, §3). */
+  openedByDelay: readonly string[]
 }
 
 export const DEFAULT_ROW_DRAG_OVERLAY_STATE: RowDragOverlayState = {
@@ -21,7 +25,9 @@ export const DEFAULT_ROW_DRAG_OVERLAY_STATE: RowDragOverlayState = {
   acceptable: true,
   fromIndex: null,
   overIndex: null,
+  overId: null,
   depth: 0,
+  openedByDelay: [],
 }
 
 export interface RowDraggingState {

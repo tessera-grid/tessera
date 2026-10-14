@@ -136,7 +136,10 @@ const settleSlotAfter = async (prevId: string, at: Point) => {
     at = next
     for (let f = 0; f < 2; f++) await nextFrame()
   }
-  throw new Error(`slot did not settle after ${prevId}`)
+  const order = rowsInOrder().map(row =>
+    row === slot() ? 'slot' : row.dataset.rowId,
+  )
+  throw new Error(`slot did not settle after ${prevId}: ${order.join(' ')}`)
 }
 
 /** Линии строки по ветке и отростку — как их рисует ячейка отступа (ADR 0102). */
@@ -549,5 +552,289 @@ describe('Превью броска строки (ADR 0108)', () => {
       }
     }
     slow.remove()
+  })
+})
+
+// Бросок в свёрнутые группы и подсветка родителя (ADR 0109).
+
+const EXPAND_BUTTON = '[data-column-id$="__rowExpanding"] button'
+const PARENT = `${BODY_ROW}[data-row-drop-parent]`
+
+const renderCollapsed = async (props: Record<string, unknown> = {}) => {
+  // Грид во весь вьюпорт тестов: цели выше зоны автопрокрутки.
+  const screen = await render(
+    <composed.RowDraggingCollapsedGroups
+      containerHeight={760}
+      height={700}
+      maxHeight={700}
+      {...props}
+    />,
+  )
+  await expect.poll(() => rowById('node-3')).not.toBeNull()
+  return screen
+}
+
+/**
+ * Указатель с `at` к строке `overId`, не меняя сдвига по горизонтали. Строки сначала
+ * доезжают: раскрытая группа сдвигает их движением (ADR 0107).
+ */
+const moveOver = async (at: Point, overId: string) => {
+  await settleRowMotion()
+  const over = rowById(overId)!.getBoundingClientRect()
+  const to = {
+    x: at.x,
+    y: over.top + over.height / 2 + (over.top > at.y ? 6 : -6),
+  }
+  await pointer.realMouseMove(at, to, 6)
+  for (let i = 0; i < 3; i++) await nextFrame()
+  return to
+}
+
+/** Порядок строк окна, слот — `slot`. */
+const orderWithSlot = () =>
+  rowsInOrder().map(row => (row === slot() ? 'slot' : row.dataset.rowId))
+
+/** id подсвеченных родителей. */
+const parents = () =>
+  [...document.querySelectorAll<HTMLElement>(PARENT)].map(
+    row => row.dataset.rowId,
+  )
+
+/** Свёрнутое дерево без паузы, группа `node-1` раскрыта кликом. */
+const renderWithOpenGroup = async (treeLines: boolean) => {
+  const screen = await renderCollapsed({
+    rowDraggingExpandDelay: 0,
+    rowExpandingTreeLines: treeLines,
+  })
+  await userEvent.click(rowById('node-1')!.querySelector(EXPAND_BUTTON)!)
+  await expect.poll(() => rowById('node-1-2')).not.toBeNull()
+  await settleRowMotion()
+  return screen
+}
+
+describe('Бросок в свёрнутые группы (ADR 0109)', () => {
+  test('NX1: слот под свёрнутой группой на уровне её детей через паузу 500 мс раскрывает её, слот — первый ребёнок; смена уровня до конца паузы сбрасывает таймер; на уровне группы она не раскрывается', async () => {
+    const screen = await renderCollapsed()
+    try {
+      // Сестрой после группы — группа не раскрывается.
+      const dragged = await dragOver('row-0', 'node-1', 0)
+      let at = await settleSlotAfter('node-1', dragged.at)
+      expect(depthOf(slot()!)).toBe(0)
+      await sleep(800)
+      expect(rowById('node-1-0'), 'уровень группы').toBeNull()
+      const shift = async (levels: number) => {
+        const next = { x: at.x + levels * dragged.step, y: at.y }
+        await pointer.realMouseMove(at, next, 1)
+        at = next
+      }
+      // На уровень ребёнка: пауза ещё идёт — группа свёрнута.
+      await shift(1)
+      await expect.poll(() => depthOf(slot()!)).toBe(1)
+      await sleep(300)
+      expect(rowById('node-1-0'), 'до конца паузы').toBeNull()
+      // Назад и снова вперёд — таймер с нуля: 300 + 300 мс больше паузы, а группа свёрнута.
+      await shift(-1)
+      await expect.poll(() => depthOf(slot()!)).toBe(0)
+      await shift(1)
+      await expect.poll(() => depthOf(slot()!)).toBe(1)
+      await sleep(300)
+      expect(rowById('node-1-0'), 'таймер сброшен').toBeNull()
+      await expect
+        .poll(() => rowById('node-1-0'), { timeout: 2000 })
+        .not.toBeNull()
+      await expect
+        .poll(() => {
+          const order = orderWithSlot()
+          const group = order.indexOf('node-1')
+          return order.slice(group, group + 3)
+        })
+        .toEqual(['node-1', 'slot', 'node-1-0'])
+      expect(depthOf(slot()!)).toBe(1)
+    } finally {
+      await release()
+      await screen.unmount()
+    }
+  })
+
+  test('NX10: раскрытие паузой не сдвигает слот и строки над ним ни в одном кадре; строки ниже группы едут вниз без возврата', async () => {
+    const screen = await renderCollapsed()
+    try {
+      const dragged = await dragOver('row-0', 'node-1', 1)
+      await settleSlotAfter('node-1', dragged.at)
+      await settleRowMotion()
+      const topOf = (element: HTMLElement | null) =>
+        Math.round(element?.getBoundingClientRect().top ?? NaN)
+      const still = { slot: topOf(slot()), group: topOf(rowById('node-1')) }
+      const jumps: string[] = []
+      const below: number[] = []
+      let sampling = true
+      const sample = () => {
+        if (!sampling) return
+        const now = { slot: topOf(slot()), group: topOf(rowById('node-1')) }
+        if (now.slot !== still.slot || now.group !== still.group)
+          jumps.push(`слот ${now.slot}, группа ${now.group}`)
+        below.push(topOf(rowById('node-2')))
+        requestAnimationFrame(sample)
+      }
+      requestAnimationFrame(sample)
+      await expect
+        .poll(() => rowById('node-1-0'), { timeout: 2000 })
+        .not.toBeNull()
+      await settleRowMotion()
+      sampling = false
+      expect(jumps).toEqual([])
+      // Ниже группы — только вниз: ни шага назад.
+      const steps = below.slice(1).map((top, i) => top - below[i])
+      expect(Math.min(...steps)).toBeGreaterThanOrEqual(0)
+      expect(below.at(-1)! - below[0]).toBeGreaterThan(0)
+    } finally {
+      await release()
+      await screen.unmount()
+    }
+  })
+
+  test('NX2: бросок в свёрнутую группу раскрывает её — строка видна первым ребёнком, на месте и уровне превью', async () => {
+    // Без паузы: группа свёрнута до самого броска.
+    const screen = await renderCollapsed({ rowDraggingExpandDelay: 0 })
+    try {
+      const dragged = await dragOver('row-0', 'node-1', 1)
+      await settleSlotAfter('node-1', dragged.at)
+      expect(depthOf(slot()!)).toBe(1)
+      await sleep(700)
+      expect(rowById('node-1-0'), 'во время сессии').toBeNull()
+      await release()
+      await expect.poll(() => rowById('node-1-0')).not.toBeNull()
+      const order = rowsInOrder().map(row => row.dataset.rowId)
+      const group = order.indexOf('node-1')
+      expect(order.slice(group, group + 3)).toEqual([
+        'node-1',
+        'row-0',
+        'node-1-0',
+      ])
+      expect(depthOf(rowById('row-0')!)).toBe(1)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('NX3: после броска раскрытые паузой группы сворачиваются, кроме группы броска; во время сессии не сворачиваются; раскрытые до сессии не трогаются; при отмене сворачиваются все', async () => {
+    let screen = await renderCollapsed({ rowDraggingExpandDelay: 200 })
+    try {
+      // Раскрыта до сессии.
+      await userEvent.click(rowById('node-3')!.querySelector(EXPAND_BUTTON)!)
+      await expect.poll(() => rowById('node-3-0')).not.toBeNull()
+      await settleRowMotion()
+      const dragged = await dragOver('row-0', 'node-1', 1)
+      let at = await settleSlotAfter('node-1', dragged.at)
+      await expect.poll(() => rowById('node-1-0')).not.toBeNull()
+      at = await moveOver(at, 'node-2')
+      at = await settleSlotAfter('node-2', at)
+      expect(depthOf(slot()!)).toBe(1)
+      await expect.poll(() => rowById('node-2-0')).not.toBeNull()
+      expect(rowById('node-1-0'), 'во время сессии').not.toBeNull()
+      await release()
+      await expect.poll(() => rowById('node-1-0')).toBeNull()
+      expect(rowById('node-2-0'), 'группа броска').not.toBeNull()
+      expect(rowById('node-3-0'), 'раскрыта до сессии').not.toBeNull()
+      expect(depthOf(rowById('row-0')!)).toBe(1)
+      await screen.unmount()
+
+      // Отмена — Escape: свёрнуты все раскрытые паузой.
+      screen = await renderCollapsed({ rowDraggingExpandDelay: 200 })
+      const again = await dragOver('row-0', 'node-1', 1)
+      at = await settleSlotAfter('node-1', again.at)
+      await expect.poll(() => rowById('node-1-0')).not.toBeNull()
+      at = await moveOver(at, 'node-2')
+      await settleSlotAfter('node-2', at)
+      await expect.poll(() => rowById('node-2-0')).not.toBeNull()
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(() => slot()).toBeNull()
+      await expect.poll(() => rowById('node-1-0')).toBeNull()
+      expect(rowById('node-2-0')).toBeNull()
+    } finally {
+      await pointer.realMouseUp()
+      await screen.unmount()
+    }
+  })
+
+  test('NX5: при уровне слота больше 0 строка будущего родителя залита токеном — с линиями дерева и без; на уровне 0 и на недопустимом месте подсветки нет; подсвечена только строка родителя', async () => {
+    for (const treeLines of [true, false]) {
+      const screen = await renderWithOpenGroup(treeLines)
+      try {
+        // В другую группу, последним ребёнком: оттуда можно и в корень.
+        const dragged = await dragOver('row-0', 'node-1-2', 1)
+        const at = await settleSlotAfter('node-1-2', dragged.at)
+        await expect.poll(parents).toEqual(['node-1'])
+        const parent = rowById('node-1')!
+        expect(
+          getComputedStyle(parent).backgroundImage,
+          `treeLines ${treeLines}`,
+        ).toContain(tokenColor('--tsr-comp-row-drop-parent-bg', parent))
+        // Ветка родителя не подсвечена.
+        for (const id of ['node-1-0', 'node-1-1'])
+          expect(getComputedStyle(rowById(id)!).backgroundImage, id).toBe(
+            'none',
+          )
+        // Уровень 0 — родителя нет.
+        const back = { x: at.x - dragged.step, y: at.y }
+        await pointer.realMouseMove(at, back, 1)
+        await expect.poll(() => depthOf(slot()!)).toBe(0)
+        await expect.poll(parents).toEqual([])
+        await release()
+        // Перестановка в своей группе — родитель тот же и подсвечен.
+        const own = await dragOver('node-1-0', 'node-1-1', 1)
+        await settleSlotAfter('node-1-1', own.at)
+        await expect.poll(parents).toEqual(['node-1'])
+        await release()
+        // Недопустимое место: группа в группу — без подсветки.
+        await dragOver('node-0', 'node-1-0', 1)
+        await expect
+          .poll(() => container().hasAttribute('data-row-drop-invalid'))
+          .toBe(true)
+        expect(parents()).toEqual([])
+      } finally {
+        await release()
+        await screen.unmount()
+      }
+    }
+  })
+
+  test('NX6: высокая контрастность — родитель обведён контуром Highlight; axe с контрастом в обеих темах во время перетаскивания с подсветкой', async () => {
+    const screen = await renderWithOpenGroup(true)
+    try {
+      const dragged = await dragOver('row-0', 'node-1-1', 1)
+      await settleSlotAfter('node-1-1', dragged.at)
+      await expect.poll(parents).toEqual(['node-1'])
+      await inBothThemes(async () => {
+        const result = await axe.run(
+          document.querySelector<HTMLElement>(
+            '[role="treegrid"], [role="table"]',
+          )!,
+          {
+            ...AXE_OPTIONS,
+            rules: {
+              ...AXE_OPTIONS.rules,
+              'color-contrast': { enabled: true },
+            },
+          },
+        )
+        expect(result.violations).toEqual([])
+      })
+      if (server.browser !== 'webkit') {
+        await pointer.forcedColors(true)
+        const probe = document.createElement('span')
+        probe.style.color = 'Highlight'
+        document.body.append(probe)
+        const highlight = getComputedStyle(probe).color
+        probe.remove()
+        const style = getComputedStyle(rowById('node-1')!)
+        expect(style.outlineStyle).toBe('solid')
+        expect(style.outlineColor).toBe(highlight)
+      }
+    } finally {
+      await pointer.forcedColors(false)
+      await release()
+      await screen.unmount()
+    }
   })
 })

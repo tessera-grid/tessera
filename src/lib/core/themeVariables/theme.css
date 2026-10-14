@@ -502,6 +502,12 @@
     var(--tsr-sys-danger) 40%,
     transparent
   );
+  /* Будущий родитель слота (ADR 0109). */
+  --tsr-comp-row-drop-parent-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-accent) 10%,
+    transparent
+  );
 
   /* Контролы шапки (сортировка/пиннинг/группировка). Иконки — заметный тон
    * (ink ~78%), активное состояние — полный ink. */
@@ -1001,6 +1007,7 @@
     --tsr-comp-tree-line-color: GrayText;
     --tsr-comp-skeleton-bg: GrayText;
     --tsr-comp-row-drop-invalid-skeleton-bg: Mark;
+    --tsr-comp-row-drop-parent-bg: transparent;
     --tsr-comp-checkbox-checked-bg: Highlight;
     --tsr-comp-checkbox-check-color: HighlightText;
     --tsr-comp-switch-track-on: Highlight;

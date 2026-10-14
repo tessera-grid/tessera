@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { Stories, renderGrid } from '../helpers'
+import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
@@ -597,5 +598,54 @@ describe('Касания (ADR 0086)', () => {
     expect(scroller().getBoundingClientRect().width).toBeLessThanOrEqual(
       window.innerWidth,
     )
+  })
+})
+
+describe('Касания — бросок в свёрнутые группы (ADR 0109)', () => {
+  test('NX7: пауза пальцем над свёрнутой группой раскрывает её, как мышью', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
+    const screen = await render(
+      <composed.RowDraggingCollapsedGroups
+        containerHeight={760}
+        height={700}
+        maxHeight={700}
+      />,
+    )
+    const rowById = (id: string) =>
+      document.querySelector<HTMLElement>(`${BODY_ROW}[data-row-id='${id}']`)
+    await expect.poll(() => rowById('node-3')).not.toBeNull()
+    try {
+      const source = rowById('row-0')!
+      const from = center(source.querySelector<HTMLElement>(HANDLE)!)
+      // Сдвиг вправо с запасом: текст облака дальше отступа ребёнка.
+      const shift =
+        2 *
+        (cellOf(source, 'country').getBoundingClientRect().left -
+          source.getBoundingClientRect().left)
+      const group = rowById('node-1')!.getBoundingClientRect()
+      const to = { x: from.x + shift, y: group.top + group.height / 2 + 6 }
+      await touch.realTouchDown([from])
+      await touch.realTouchMove(from, to, 16)
+      // Палец стоит: пауза раскрывает группу.
+      await expect
+        .poll(() => rowById('node-1-0'), { timeout: 3000 })
+        .not.toBeNull()
+      await touch.realTouchUp()
+      await expect
+        .poll(() =>
+          Array.from(document.querySelectorAll<HTMLElement>(BODY_ROW))
+            .sort(
+              (a, b) =>
+                a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+            )
+            .map(row => row.dataset.rowId)
+            .slice(2, 5),
+        )
+        .toEqual(['node-1', 'row-0', 'node-1-0'])
+    } finally {
+      await screen.unmount()
+    }
   })
 })

@@ -161,6 +161,19 @@
   );
 }
 
+/*
+ * Будущий родитель слота (ADR 0109, §4) — тем же слоем строки, без перехода;
+ * подсветка приложения (ADR 0080) на той же строке главнее.
+ */
+.body__row[data-row-drop-parent] {
+  --tsr-highlight-row: var(--tsr-comp-row-drop-parent-bg);
+
+  background-image: linear-gradient(
+    var(--tsr-highlight-row),
+    var(--tsr-highlight-row)
+  );
+}
+
 .body__row[data-highlight] {
   transition:
     var(--tsr-comp-row-transition),
@@ -211,6 +224,12 @@
 
   .body__row::after {
     content: none;
+  }
+
+  /* Будущий родитель слота — контуром, как наведение (ADR 0109, §4). */
+  .body__row[data-row-drop-parent] {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
   }
 }
 

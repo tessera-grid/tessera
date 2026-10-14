@@ -1,7 +1,8 @@
 /**
  * Ожидание раскрытия (ADR 0041, §3): слайс `rowExpandPending` — строки, раскрытие
  * которых ждёт промиса `onExpandRow`, и row-метод `getIsExpandPending`. Значение —
- * номер попытки: поздний итог прежней попытки игнорируется.
+ * номер попытки: поздний итог прежней попытки игнорируется. Row-метод
+ * `setExpandedByUser` — путь клика для других плагинов (раскрытие паузой, ADR 0109).
  */
 import {
   assignPrototypeAPIs,
@@ -10,7 +11,16 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
-import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import type {
+  Row,
+  RowData,
+  TableFeature,
+  TableFeatures,
+  Updater,
+} from '../../types'
+import { readPluginHooks } from '../../core/definePlugin'
+import { toggleRowExpanded } from './toggleRowExpanded'
+import type { RowExpandingHooks } from './types'
 
 export type RowExpandPending = Record<string, number>
 
@@ -22,6 +32,11 @@ interface RowExpandPendingOptions {
 }
 interface RowExpandPendingRowAPI {
   getIsExpandPending: () => boolean
+  /**
+   * Раскрыть или свернуть строку путём клика по шеврону: `onExpandRow`, `loadChildren`,
+   * ожидание. Для плагинов, которые раскрывают строку без импорта rowExpanding.
+   */
+  setExpandedByUser: (expanded: boolean) => void
 }
 interface RowExpandPendingTableAPI {
   setRowExpandPending: (updater: Updater<RowExpandPending>) => void
@@ -91,6 +106,19 @@ export const rowExpandingPendingFeature: TableFeature = {
       row_getIsExpandPending: {
         fn: (row: { id: string; table: PendingTable }) =>
           !!row.table.atoms.rowExpandPending?.get()[row.id],
+      },
+      row_setExpandedByUser: {
+        fn: (row: Row<any, any>, expanded: boolean) => {
+          if (row.getIsExpanded() !== expanded) {
+            toggleRowExpanded(
+              row,
+              readPluginHooks<Partial<RowExpandingHooks>>(
+                row.table as never,
+                'rowExpanding',
+              ),
+            )
+          }
+        },
       },
     })
   },

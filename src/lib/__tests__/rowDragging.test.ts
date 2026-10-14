@@ -5,13 +5,20 @@
  */
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { injectServiceColumns } from '../core/createColumns'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnSorting } from '../plugins/columnSorting'
 import { rowGrouping } from '../plugins/rowGrouping'
-import { COLUMN_DRAGGING_ID, rowDragging } from '../plugins/rowDragging'
+import {
+  COLUMN_DRAGGING_ID,
+  DEFAULT_ROW_DRAG_OVERLAY_STATE,
+  getRowDraggingEvents,
+  rowDragging,
+} from '../plugins/rowDragging'
+import { createExpandTimer } from '../plugins/rowDragging/expandTimer'
+import { markRowDrop } from '../plugins/rowDragging/rowDrops'
 import { __resetLogger } from '../core/logger'
 import { captureInertWarnings } from './inertWarnings'
 import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
@@ -211,5 +218,118 @@ describe('reorderRows — чистый обновитель (ADR 0091)', () => {
       'a1',
       'a3',
     ])
+  })
+})
+
+describe('rowDragging — пауза над свёрнутой группой (ADR 0109)', () => {
+  it('NX4: expandDelay — живой аргумент: смена на лету меняет паузу, 0 выключает раскрытие паузой', () => {
+    expect(
+      foldEntries([rowDragging({ expandDelay: 300 })] as never).options,
+    ).toMatchObject({ rowDragExpandDelay: 300 })
+
+    vi.useFakeTimers()
+    try {
+      const expanded = new Set<string>()
+      const row = (id: string, index: number, extra = {}) => ({
+        id,
+        index,
+        depth: 0,
+        subRows: [] as unknown[],
+        getCanExpand: () => false,
+        getIsExpanded: () => expanded.has(id),
+        getIsLastSubRow: () => false,
+        getParentRow: () => undefined,
+        ...extra,
+      })
+      const active = row('r', 0)
+      const group = row('g', 1, {
+        subRows: [{}],
+        getCanExpand: () => true,
+        setExpandedByUser: (open: boolean) =>
+          open ? expanded.add('g') : expanded.delete('g'),
+      })
+      let state = { ...DEFAULT_ROW_DRAG_OVERLAY_STATE, activeId: 'r' }
+      const options: { rowDragExpandDelay?: number } = {}
+      const table = {
+        options,
+        getRowModel: () => ({
+          rows: [active, group],
+          rowsById: { r: active, g: group },
+        }),
+        // Шаг уровня для смещения облака: без служебных колонок — 16 px.
+        getVisibleLeafColumns: () => [],
+        atoms: { rowDragging: { get: () => state } },
+        setRowDragging: (updater: (prev: typeof state) => typeof state) => {
+          state = updater(state)
+        },
+      }
+      const timer = createExpandTimer()
+      // Слот под группой `g` на уровне её детей; обработчики — как после перерисовки.
+      const hold = () =>
+        getRowDraggingEvents(table as never, {
+          levelAt: () => 1,
+          expandTimer: timer,
+        }).onRowDragMove!({
+          active: {
+            id: 'r',
+            data: { current: { virtualIndex: 0, row: active } },
+          },
+          over: { id: 'g', data: { current: { virtualIndex: 1, row: group } } },
+          delta: { x: 0, y: 0 },
+        } as never)
+      const reset = () => {
+        timer.clear()
+        expanded.clear()
+        state = { ...state, openedByDelay: [] }
+      }
+
+      // По умолчанию — 500 мс.
+      hold()
+      vi.advanceTimersByTime(499)
+      expect(expanded.has('g')).toBe(false)
+      vi.advanceTimersByTime(1)
+      expect(expanded.has('g')).toBe(true)
+      expect(state.openedByDelay).toEqual(['g'])
+
+      reset()
+      options.rowDragExpandDelay = 0
+      hold()
+      vi.advanceTimersByTime(5000)
+      expect(expanded.has('g'), 'expandDelay: 0').toBe(false)
+
+      reset()
+      options.rowDragExpandDelay = 800
+      hold()
+      vi.advanceTimersByTime(799)
+      expect(expanded.has('g')).toBe(false)
+      vi.advanceTimersByTime(1)
+      expect(expanded.has('g'), 'expandDelay: 800').toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('rowDragging — отметки перестановки (ADR 0110)', () => {
+  it('LD5: отметка снимается по истечении времени прихода; повторная перестановка обновляет момент; срез highlights не меняется', () => {
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'performance'],
+    })
+    try {
+      const { table } = build([])
+      const highlights = table.atoms.highlights?.get()
+      // Без смонтированного грида время прихода — запасные 300 мс.
+      markRowDrop(table, '1')
+      expect(Object.keys(table.atoms.rowDrops.get())).toEqual(['1'])
+      vi.advanceTimersByTime(200)
+      markRowDrop(table, '1')
+      vi.advanceTimersByTime(200)
+      expect('1' in table.atoms.rowDrops.get(), 'момент обновлён').toBe(true)
+      vi.advanceTimersByTime(100)
+      expect(table.atoms.rowDrops.get()).toEqual({})
+      expect(table.atoms.highlights?.get()).toBe(highlights)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

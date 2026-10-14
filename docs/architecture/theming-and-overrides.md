@@ -109,6 +109,10 @@
 - **Шаг отступа вложенности** (ADR [0059](../decisions/0059-row-nesting-indent.md)):
   `--tsr-comp-row-nesting-indent` (16px) — отступ первой колонки, шаг линий дерева и
   шаг перетаскивания строки по уровням (JS читает его из темы грида).
+- **Будущий родитель при перетаскивании строки** (ADR
+  [0109](../decisions/0109-drop-into-collapsed-groups.md)):
+  `--tsr-comp-row-drop-parent-bg` (10 % `--tsr-sys-accent`) — заливка строки слоем
+  подсветки строки; в высокой контрастности — контур `Highlight`.
 - **Линии дерева** (ADR [0058](../decisions/0058-tree-lines.md),
   [0102](../decisions/0102-curved-tree-lines.md)): ветки со скруглёнными поворотами —
   декоративные элементы-рамки в ячейке отступа с `data-tree-depth`.

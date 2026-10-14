@@ -23,8 +23,10 @@ import {
   getTargetParentId,
   getValidDepth,
 } from './draggingHelpers'
+import type { ExpandTimer } from './expandTimer'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 import { reorderRows } from './reorderRows'
+import { markRowDrop } from './rowDrops'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
   type RowDraggingHooks,
@@ -41,17 +43,33 @@ import {
 /** Дробная погрешность замера: текст облака ровно на отступе — уже этот уровень. */
 const LEVEL_EPSILON = 0.01
 
+/** Пауза над свёрнутой группой по умолчанию, мс (ADR 0109, §1). */
+export const DEFAULT_ROW_DRAG_EXPAND_DELAY = 500
+
 export interface RowDraggingGeometry {
   /**
    * Дробный уровень броска под текстом облака при сдвиге `deltaX` (ADR 0108, §2);
    * `undefined` — геометрия не измерена, уровень — по шагу перетаскивания.
    */
   levelAt?: (deltaX: number) => number | undefined
+  /** Пауза над свёрнутой группой; живёт дольше обработчиков одного рендера. */
+  expandTimer?: ExpandTimer
+}
+
+type ExpandableRow = Row<any, any> & {
+  setExpandedByUser?: (expanded: boolean) => void
+}
+
+/** Раскрыть путём клика (rowExpanding), без него — напрямую. */
+const setExpandedByUser = (row: Row<any, any>, expanded: boolean) => {
+  const r = row as ExpandableRow
+  if (r.setExpandedByUser) r.setExpandedByUser(expanded)
+  else if (row.getIsExpanded() !== expanded) row.toggleExpanded(expanded)
 }
 
 export const getRowDraggingEvents = (
   table: Table<any, any>,
-  { levelAt }: RowDraggingGeometry = {},
+  { levelAt, expandTimer }: RowDraggingGeometry = {},
 ): {
   onRowDragStart?: (event: DragStartEvent) => void
   onRowDragMove?: (event: DragMoveEvent) => void
@@ -132,12 +150,48 @@ export const getRowDraggingEvents = (
   }
 
   const resetDragState = () => {
+    expandTimer?.clear()
     document.body.style.cursor = 'default'
     onRowDraggingChange?.(() => DEFAULT_ROW_DRAG_OVERLAY_STATE)
   }
 
+  const rowById = (id: string): Row<any, any> | undefined =>
+    table.getRowModel().rowsById[id]
+
+  /** Группа раскрыта паузой: запомнить, чтобы свернуть после сессии (ADR 0109, §3). */
+  const openByDelay = (group: Row<any, any>) => {
+    onRowDraggingChange(prev =>
+      prev.activeId === null
+        ? prev
+        : { ...prev, openedByDelay: [...prev.openedByDelay, group.id] },
+    )
+    setExpandedByUser(group, true)
+  }
+
+  /** Свернуть группы, раскрытые паузой, кроме `keep`. */
+  const collapseOpenedByDelay = (keep: ReadonlySet<string> = new Set()) => {
+    for (const id of rowDraggingState.openedByDelay) {
+      const row = rowById(id)
+      if (row && !keep.has(id)) setExpandedByUser(row, false)
+    }
+  }
+
+  /** Строка `id` и её предки. */
+  const lineageOf = (id: string | undefined) => {
+    const ids = new Set<string>()
+    for (
+      let row = id === undefined ? undefined : rowById(id);
+      row;
+      row = row.getParentRow()
+    ) {
+      ids.add(row.id)
+    }
+    return ids
+  }
+
   /** Сессия кончилась без перестановки (ADR 0040, §1). */
   const cancel = (rowId: UniqueIdentifier, reason: SessionCancelReason) => {
+    collapseOpenedByDelay()
     resetDragState()
     releaseSessionHooks<Partial<RowDraggingHooks>>(
       table as never,
@@ -173,7 +227,9 @@ export const getRowDraggingEvents = (
         acceptable: true,
         fromIndex: virtualIndex,
         overIndex: virtualIndex,
+        overId: row.id,
         depth: row.depth,
+        openedByDelay: [],
       }))
 
       collapseDraggableGroup(row)
@@ -203,15 +259,36 @@ export const getRowDraggingEvents = (
       const minDepth = getMinDepth(activeRow, targetItem, over.id)
       const maxDepth = getMaxDepth(targetItem)
       const validDepth = getValidDepth(currentDepth, minDepth, maxDepth)
+      // Вложенность больше 1 сейчас не поддерживается.
+      const acceptable =
+        (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true
+
+      // Слот вкладывают в свёрнутую группу — пауза раскрывает её (ADR 0109, §1).
+      const delay =
+        (table.options as { rowDragExpandDelay?: number }).rowDragExpandDelay ??
+        DEFAULT_ROW_DRAG_EXPAND_DELAY
+      const group =
+        acceptable &&
+        delay > 0 &&
+        targetItem &&
+        targetItem.id !== activeRow.id &&
+        validDepth === targetItem.depth + 1 &&
+        (targetItem.getCanExpand?.() ?? false) &&
+        !targetItem.getIsExpanded() &&
+        // Не раскрылась (отказ загрузки) — не повторять в этой сессии.
+        !rowDraggingState.openedByDelay.includes(targetItem.id)
+          ? targetItem
+          : undefined
+      if (group) expandTimer?.arm(group.id, delay, () => openByDelay(group))
+      else expandTimer?.clear()
 
       onRowDraggingChange?.(prev => ({
         ...prev,
         offsetLeft: getOffsetLeftFromDepth(validDepth, getLevelStep()),
-        // Вложенность больше 1 сейчас не поддерживается.
-        acceptable:
-          (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true,
+        acceptable,
         fromIndex: activeVirtualIndex,
         overIndex: overVirtualIndex,
+        overId: String(over.id),
         depth: validDepth,
       }))
     },
@@ -275,6 +352,20 @@ export const getRowDraggingEvents = (
           currentDepth,
         }),
       )
+
+      // Строка вспыхивает на новом месте (ADR 0110).
+      markRowDrop(table, String(active.id))
+
+      // Бросок в свёрнутую группу раскрывает её (ADR 0109, §2); раскрытые паузой
+      // сворачиваются, кроме группы броска и её предков (§3).
+      if (
+        targetItem &&
+        targetItem.id === overParentId &&
+        !targetItem.getIsExpanded()
+      ) {
+        setExpandedByUser(targetItem, true)
+      }
+      collapseOpenedByDelay(lineageOf(overParentId))
 
       expandDraggableGroupAgain(activeRow)
       releaseSessionHooks<Partial<RowDraggingHooks>>(

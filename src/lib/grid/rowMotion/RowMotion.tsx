@@ -13,6 +13,8 @@ import { rowMotionTiming } from './rowMotionTiming'
 import styles from '../Body/Body.module.css'
 
 const ROW = ':scope > [data-row-id]'
+/** Вертикальный сдвиг строки от dnd-kit в её `style.transform`. */
+const DND_SHIFT = /translate3d\([^,]+,\s*(-?[\d.]+)px/
 
 interface RowMotionProps {
   enabled: boolean
@@ -184,11 +186,21 @@ export class RowMotion extends Component<RowMotionProps> {
     if (!body || virtualRows.length === 0) return
     const rowSize = virtualRows[0].size
     const offset = virtualRows[0].start - virtualRows[0].index * rowSize
-    const after = virtualRows.map(item => ({
-      id: rows[item.index].id,
-      index: item.index,
-      start: item.start,
-    }))
+    // Сдвиг dnd-kit, оставшийся строке после смены модели посреди перетаскивания: строка,
+    // что на экране стоит на месте, не едет (ADR 0109).
+    const shifts = new Map<string, number>()
+    for (const row of body.querySelectorAll<HTMLElement>(ROW)) {
+      const y = Number(DND_SHIFT.exec(row.style.transform)?.[1] ?? 0)
+      if (y) shifts.set(row.dataset.rowId!, y)
+    }
+    const after = virtualRows.map(item => {
+      const id = rows[item.index].id
+      return {
+        id,
+        index: item.index,
+        start: item.start + (shifts.get(id) ?? 0),
+      }
+    })
     const mounted = new Set(after.map(row => row.id))
     const plan = planRowMotion({
       before,

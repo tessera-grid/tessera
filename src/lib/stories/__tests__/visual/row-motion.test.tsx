@@ -18,7 +18,7 @@ import {
 import { composed } from '../stories'
 import { Stories, humanClick, settleRowMotion } from '../helpers'
 import { measureWork } from '../work.helpers'
-import { AXE_OPTIONS } from './a11y-helpers'
+import { AXE_OPTIONS, resolveColor } from './a11y-helpers'
 
 // Движение строк (ADR 0107, RM1–RM17, RM19, RM22). Позиции, прозрачность и призраки
 // снимаются каждый кадр, пока идёт смена модели: видно и переезд, и его конец.
@@ -705,38 +705,19 @@ describe('Движение строк (ADR 0107)', () => {
     await settleRowMotion()
   })
 
-  test('RM10: бросок мышью — облако долетает до слота, слот проявляется строкой, повторного переезда нет', async () => {
+  test('RM10: бросок мышью — после броска ни одна строка не переезжает повторно', async () => {
     await render(<composed.RowDragging />)
     await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
     const [first, , , fourth] = rowsTopDown()
-    const movedId = first.dataset.rowId!
     await userEvent.hover(first)
     const hr = first.querySelector<HTMLElement>(HANDLE)!.getBoundingClientRect()
     const tr = fourth.getBoundingClientRect()
     const from = { x: hr.left + hr.width / 2, y: hr.top + hr.height / 2 }
     await pointer.realDragHold(from, { x: from.x, y: tr.top + tr.height / 2 })
     await sleep(SETTLE_MS)
-    /** Плавающий слой облака dnd-kit: его двигает и гасит анимация броска. */
-    const overlay = () => {
-      let node = document.querySelector<HTMLElement>('.data-grid-body__row')
-      while (node && getComputedStyle(node).position !== 'fixed') {
-        node = node.parentElement
-      }
-      return node
-    }
 
     const frames = await sampleFrames(
-      () => ({
-        tops: new Map(
-          rowsTopDown().map(row => [row.dataset.rowId!, topOf(row)]),
-        ),
-        moved: rowById(movedId) && opacityOf(rowById(movedId)!),
-        overlay: overlay() && {
-          top: overlay()!.getBoundingClientRect().top,
-          opacity: opacityOf(overlay()!),
-        },
-        slot: rowById(movedId) && rowById(movedId)!.getBoundingClientRect().top,
-      }),
+      () => new Map(rowsTopDown().map(row => [row.dataset.rowId!, topOf(row)])),
       () => pointer.realMouseUp(),
     )
 
@@ -745,25 +726,12 @@ describe('Движение строк (ADR 0107)', () => {
     )
     // Ни одна строка после броска не переезжает: в каждом кадре — конечные места.
     for (const frame of frames.slice(1)) {
-      for (const [rowId, top] of frame.tops) {
+      for (const [rowId, top] of frame) {
         if (finalTops.has(rowId)) {
           expect(Math.abs(top - finalTops.get(rowId)!), rowId).toBeLessThan(1)
         }
       }
     }
-    // Облако летит к слоту и приземляется в нём непогасшим; строка проявляется.
-    const flight = frames.filter(frame => frame.overlay !== null)
-    expect(
-      new Set(flight.map(frame => Math.round(frame.overlay!.top))).size,
-    ).toBeGreaterThan(2)
-    const landing = flight.at(-1)!
-    expect(Math.abs(landing.overlay!.top - landing.slot!)).toBeLessThan(2)
-    expect(landing.overlay!.opacity).toBeGreaterThan(0.9)
-    const opacities = frames
-      .map(frame => frame.moved)
-      .filter((value): value is number => value !== null)
-    expect(opacities.some(value => value < 0.9)).toBe(true)
-    expect(opacities.at(-1)).toBe(1)
   })
 
   test('RM11: перестановка с клавиатуры и из меню ручки переезжает, как бросок', async () => {
@@ -1065,6 +1033,143 @@ describe('Движение строк (ADR 0107)', () => {
       }
     } finally {
       if (original) document.startViewTransition = original
+    }
+  })
+})
+
+// Приземление перестановки вспышкой (ADR 0110).
+
+const SLOT = `${BODY_ROW}[data-row-draggable="true"]`
+/** Плавающий слой облака dnd-kit. */
+const cloud = () => {
+  let node = document.querySelector<HTMLElement>('.data-grid-body__row')
+  while (node && getComputedStyle(node).position !== 'fixed') {
+    node = node.parentElement
+  }
+  return node
+}
+
+/** Взять первую строку за ручку и держать над четвёртой. */
+const holdFirstOverFourth = async () => {
+  await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
+  const [first, , , fourth] = rowsTopDown()
+  await userEvent.hover(first)
+  const hr = first.querySelector<HTMLElement>(HANDLE)!.getBoundingClientRect()
+  const tr = fourth.getBoundingClientRect()
+  const from = { x: hr.left + hr.width / 2, y: hr.top + hr.height / 2 }
+  await pointer.realDragHold(from, { x: from.x, y: tr.top + tr.height / 2 })
+  await sleep(SETTLE_MS)
+  return first.dataset.rowId!
+}
+
+/** Слой вспышки строки виден цветом прихода. */
+const flashing = (row: HTMLElement) => {
+  const layer = getComputedStyle(row, '::after')
+  return (
+    row.hasAttribute('data-arrived') &&
+    Number(layer.opacity) === 1 &&
+    layer.backgroundColor ===
+      resolveColor(row, 'var(--tsr-comp-row-arrival-color)')
+  )
+}
+
+describe('Приземление перестановки вспышкой (ADR 0110)', () => {
+  test('LD1: бросок мышью — облако пропадает в кадре отпускания, без полёта и угасания, с движением строк и без него; строка в том же кадре на новом месте', async () => {
+    for (const motion of [true, false]) {
+      const screen = await render(
+        <composed.RowDragging enableRowAnimation={motion} />,
+      )
+      const movedId = await holdFirstOverFourth()
+      const frames = await sampleFrames(
+        () => ({
+          session: !!document.querySelector(SLOT),
+          cloud: !!cloud(),
+          top: rowById(movedId) ? topOf(rowById(movedId)!) : null,
+        }),
+        () => pointer.realMouseUp(),
+      )
+      const after = frames.filter(frame => !frame.session)
+      expect(after.length, `motion ${motion}`).toBeGreaterThan(0)
+      // Ни кадра с облаком после конца сессии.
+      expect(
+        after.filter(frame => frame.cloud),
+        `motion ${motion}`,
+      ).toEqual([])
+      const final = topOf(rowById(movedId)!)
+      expect(Math.abs(after[0].top! - final), `motion ${motion}`).toBeLessThan(
+        1,
+      )
+      await screen.unmount()
+    }
+  })
+
+  test('LD2: брошенная строка вспыхивает слоем прихода, держится время прихода и гаснет; соседи не вспыхивают', async () => {
+    await render(<composed.RowDragging />)
+    const movedId = await holdFirstOverFourth()
+    await pointer.realMouseUp()
+    await expect.poll(() => document.querySelector(SLOT)).toBeNull()
+    expect(flashing(rowById(movedId)!)).toBe(true)
+    const others = rowsTopDown().filter(row => row.dataset.rowId !== movedId)
+    for (const row of others)
+      expect(row.hasAttribute('data-arrived'), row.dataset.rowId).toBe(false)
+    await expect
+      .poll(() => rowById(movedId)!.hasAttribute('data-arrived'), {
+        timeout: 2000,
+      })
+      .toBe(false)
+  })
+
+  test('LD3: перестановка с клавиатуры и из меню ручки вспыхивает так же', async () => {
+    await render(<composed.RowDragging enableKeyboardNavigation />)
+    await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
+    const [first] = rowsTopDown()
+    const firstId = first.dataset.rowId!
+
+    await humanClick(first.querySelector<HTMLElement>('[aria-colindex="3"]')!)
+    await userEvent.keyboard('{Alt>}{Shift>}{ArrowDown}{/Shift}{/Alt}')
+    await expect.poll(() => flashing(rowById(firstId)!)).toBe(true)
+    await expect
+      .poll(() => rowById(firstId)!.hasAttribute('data-arrived'), {
+        timeout: 2000,
+      })
+      .toBe(false)
+
+    const handle = rowById(firstId)!.querySelector<HTMLElement>(HANDLE)!
+    handle.focus()
+    await userEvent.keyboard('{Enter}')
+    const item = () =>
+      [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+        node => node.textContent?.trim() === DEFAULT_LABELS.moveUp,
+      )
+    await expect.poll(item).toBeTruthy()
+    await userEvent.click(item()!)
+    await expect.poll(() => flashing(rowById(firstId)!)).toBe(true)
+  })
+
+  test('LD4: без движения строк и при уменьшенном движении вспышка есть', async () => {
+    const dropAndCheck = async () => {
+      const movedId = await holdFirstOverFourth()
+      await pointer.realMouseUp()
+      await expect.poll(() => document.querySelector(SLOT)).toBeNull()
+      expect(rowById(movedId)!.hasAttribute('data-arrived')).toBe(true)
+      expect(
+        getComputedStyle(rowById(movedId)!, '::after').backgroundColor,
+      ).toBe(
+        resolveColor(rowById(movedId)!, 'var(--tsr-comp-row-arrival-color)'),
+      )
+    }
+    let screen = await render(
+      <composed.RowDragging enableRowAnimation={false} />,
+    )
+    await dropAndCheck()
+    await screen.unmount()
+    await pointer.reducedMotion(true)
+    try {
+      screen = await render(<composed.RowDragging />)
+      await dropAndCheck()
+    } finally {
+      await pointer.reducedMotion(false)
+      await screen.unmount()
     }
   })
 })

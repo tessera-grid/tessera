@@ -50,6 +50,8 @@ export interface TableBodyRowProps {
   treeOpen?: boolean
   /** Строка — слот перетаскивания: скелет на этой глубине (ADR 0108). */
   slotDepth?: number
+  /** Будущий родитель слота перетаскивания (ADR 0109, §4). */
+  dropParent?: boolean
   isVirtualColumns: boolean
 }
 
@@ -73,6 +75,7 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       grouping?: unknown
       rowExpandPending?: Record<string, number>
       rowArrivals?: Record<string, number>
+      rowDrops?: Record<string, number>
       highlights?: Highlights
     }
     return {
@@ -80,7 +83,8 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
       grouping: s.grouping,
       expandPending: s.rowExpandPending?.[row.id] ?? 0,
-      arrived: row.id in (s.rowArrivals ?? {}),
+      // Приход ленивой строки (ADR 0056) или перестановка (ADR 0110).
+      arrived: row.id in (s.rowArrivals ?? {}) || row.id in (s.rowDrops ?? {}),
       highlight: s.highlights?.[highlightKey],
     }
   }) as { arrived: boolean; highlight?: HighlightTargetState }

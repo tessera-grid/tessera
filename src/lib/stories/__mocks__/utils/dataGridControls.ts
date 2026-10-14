@@ -14,6 +14,7 @@ import {
   DEFAULT_PAGE_SIZES,
 } from '../../../../lib/plugins/pagination/registry'
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
+import { DEFAULT_ROW_DRAG_EXPAND_DELAY } from '../../../../lib/plugins/rowDragging/getRowDraggingEvents'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
 import { DEFAULT_REFRESH_OPTIONS } from '../../../../lib/core/loadingDisplay'
@@ -92,6 +93,7 @@ import {
   rowActionsWidthType,
   rowExpandingColumnType,
   rowExpandingMaxDepthType,
+  rowDraggingExpandDelayType,
   rowExpandingTreeLinesType,
   rowHeightType,
   rowSelectionSelectedCountType,
@@ -211,6 +213,9 @@ export const dataGridArgTypes = {
     'Строки',
     {
       enableRowDragging: enableRowDraggingType,
+      ...when('enableRowDragging', {
+        rowDraggingExpandDelay: rowDraggingExpandDelayType,
+      }),
       enableRowGrouping: enableRowGroupingType,
     },
     'Порядок и группировка',
@@ -342,6 +347,7 @@ export const dataGridDefaultArgs = {
   rowExpandingColumn: 'auto',
   rowExpandingTreeLines: false,
   enableRowDragging: false,
+  rowDraggingExpandDelay: DEFAULT_ROW_DRAG_EXPAND_DELAY,
   enableRowGrouping: false,
   enableRowActions: false,
   rowActionsWidth: DEFAULT_ROW_ACTIONS_OPTIONS.width,

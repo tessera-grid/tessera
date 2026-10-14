@@ -6,6 +6,7 @@
 import { arrayMove } from '@dnd-kit/sortable'
 
 import { readPluginHooks } from '../../core/definePlugin'
+import { markRowDrop } from './rowDrops'
 import type { RowDraggingHooks } from './types'
 
 interface OrderItem {
@@ -83,6 +84,7 @@ export const moveRow = (
         )
       : arrayMove(prev, from, to),
   )
+  markRowDrop(table, r.id)
   readPluginHooks<Partial<RowDraggingHooks>>(t, 'rowDragging').onRowDragEnd?.({
     rowId: r.id,
     dragIndex,
@@ -129,6 +131,7 @@ export const nestRow = (row: unknown, table: unknown) => {
           : entry,
       )
   })
+  markRowDrop(table, r.id)
   // Раскрыть группу, чтобы строка осталась видимой и фокус последовал за ней.
   target.toggleExpanded?.(true)
 }
@@ -163,4 +166,5 @@ export const unnestRow = (row: unknown, table: unknown) => {
     next.splice(parentIndex + 1, 0, { ...item, parentId: undefined })
     return next
   })
+  markRowDrop(table, r.id)
 }

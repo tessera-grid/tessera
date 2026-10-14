@@ -1,15 +1,9 @@
 import {
   type AutoScrollOptions,
-  type DropAnimation,
-  type DropAnimationFunction,
   type MeasuringConfiguration,
   MeasuringStrategy,
   type Modifier,
-  defaultDropAnimation,
 } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
-
-import { rowMotionTiming } from '../rowMotion/rowMotionTiming'
 
 const ADJUST_OVERLAY_POSITION_Y = 10
 const AUTOSCROLL_THRESHOLD = 0.2
@@ -29,61 +23,45 @@ export const dndAccessibility = {
   container: typeof document === 'undefined' ? undefined : document.body,
 }
 
-export const measuring: MeasuringConfiguration = {
-  droppable: {
-    strategy: MeasuringStrategy.WhileDragging,
-  },
-}
-
-export const dropAnimationConfig: DropAnimation = {
-  keyframes({ transform }) {
-    return [
-      { opacity: 1, transform: CSS.Transform.toString(transform.initial) },
-      {
-        opacity: 0,
-        transform: CSS.Transform.toString({
-          ...transform.final,
-          x: transform.final.x + 5,
-          y: transform.final.y + 5,
-        }),
-      },
-    ]
-  },
-  easing: 'ease-out',
-  sideEffects({ active }) {
-    active.node.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration: defaultDropAnimation.duration,
-      easing: defaultDropAnimation.easing,
-    })
-  },
+const translationOf = (style: CSSStyleDeclaration) => {
+  const matrix =
+    style.transform === 'none'
+      ? undefined
+      : new DOMMatrixReadOnly(style.transform)
+  const [x = '0', y = '0'] =
+    style.translate === 'none' ? [] : style.translate.split(' ')
+  return {
+    x: (matrix?.m41 ?? 0) + parseFloat(x),
+    y: (matrix?.m42 ?? 0) + parseFloat(y),
+  }
 }
 
 /**
- * Бросок строки с движением (ADR 0107, RM10): облако долетает до слота, слот
- * проявляется строкой; темп — токены движения строк, без них — мгновенно.
+ * Место строки в раскладке: без `transform` dnd-kit и без `translate` движения строк
+ * (ADR 0107). Группа, раскрытая посреди сессии, сдвигает строки переходом `translate`
+ * (ADR 0109): замер с ним поставил бы слот под облако, и местом броска стал бы он сам.
  */
-export const rowDropAnimation: DropAnimationFunction = ({
-  active,
-  dragOverlay,
-  transform,
-}) => {
-  const { duration, easing } = rowMotionTiming(active.node)
-  if (!duration) return
-  const final = {
-    ...transform,
-    x: transform.x - (dragOverlay.rect.left - active.rect.left),
-    y: transform.y - (dragOverlay.rect.top - active.rect.top),
+export const getLayoutRect = (element: Element) => {
+  const rect = element.getBoundingClientRect()
+  const shift = translationOf(getComputedStyle(element))
+  const top = rect.top - shift.y
+  const left = rect.left - shift.x
+  return {
+    top,
+    left,
+    width: rect.width,
+    height: rect.height,
+    bottom: top + rect.height,
+    right: left + rect.width,
   }
-  active.node.animate([{ opacity: 0 }, { opacity: 1 }], { duration, easing })
-  return dragOverlay.node
-    .animate(
-      [
-        { transform: CSS.Transform.toString(transform) },
-        { transform: CSS.Transform.toString(final) },
-      ],
-      { duration, easing, fill: 'forwards' },
-    )
-    .finished.then(() => undefined)
+}
+
+export const measuring: MeasuringConfiguration = {
+  draggable: { measure: getLayoutRect },
+  droppable: {
+    measure: getLayoutRect,
+    strategy: MeasuringStrategy.WhileDragging,
+  },
 }
 
 /**

@@ -743,13 +743,22 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `fastScrollDetector` (RM26 — внешний признак быстрой прокрутки), перф RM20 — в
       `interaction`, `play` истории «Rows/Motion» (RM21); дождаться конца движения —
       `settleRowMotion` из `__tests__/helpers.tsx`
-      ([ADR 0107](docs/decisions/0107-row-motion.md)).
+      ([ADR 0107](docs/decisions/0107-row-motion.md)); приземление перестановки — `row-motion`
+      (LD1–LD4 — облако пропадает, строка вспыхивает слоем прихода, клавиатура и меню
+      ручки, без движения строк), модульный `rowDragging` (LD5 — отметки перестановки)
+      ([ADR 0110](docs/decisions/0110-row-drop-flash.md)).
     - _Превью броска строки:_ `row-drop-preview` (PV1–PV5, PV8, PV10–PV11 — слот-скелет, уровень
       отступом и по тексту облака, тон ошибки, линии окна как после броска, тот же кадр,
       проявление новых линий, высокая контрастность и axe), модульный `treeLinesProjection` (PV6 — проекция по окну,
       паритет с полным проходом), перф PV7 — в `interaction`, `play` истории
       «Rows/Dragging — Tree lines» (PV9)
       ([ADR 0108](docs/decisions/0108-row-drop-preview.md)).
+    - _Бросок в свёрнутые группы:_ `row-drop-preview` (NX1–NX3, NX5–NX6, NX10 — раскрытие
+      паузой и её сброс, раскрытие после броска, сворачивание раскрытых паузой,
+      подсветка родителя, высокая контрастность и axe; NX10 — раскрытие без скачка), `touch` (NX7 — пауза пальцем),
+      модульные `rowDragging` (NX4 — живая `expandDelay`) и `dropParent` (NX8 —
+      поиск родителя по окну), `play` истории «Rows/Dragging — Collapsed groups» (NX9)
+      ([ADR 0109](docs/decisions/0109-drop-into-collapsed-groups.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC/BU,

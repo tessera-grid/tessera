@@ -112,3 +112,86 @@ export const RowDraggingTreeLines: StoryObj<StoryProps> = {
     )
   },
 }
+
+/**
+ * Свёрнутые группы (ADR 0109): задержите строку над группой на уровне её детей —
+ * через паузу `rowDraggingExpandDelay` группа раскроется, будущий родитель подсвечен.
+ * Группы, раскрытые паузой, после броска сворачиваются, кроме группы броска.
+ */
+export const RowDraggingCollapsedGroups: StoryObj<StoryProps> = {
+  name: 'Collapsed groups',
+  args: {
+    dataOverride: treeData,
+    enableRowDragging: true,
+    enableRowExpanding: true,
+    rowExpandingMaxDepth: 1,
+    rowExpandingTreeLines: true,
+    containerHeight: 640,
+    height: 540,
+    maxHeight: 540,
+  },
+  parameters: {
+    controls: { exclude: ['columnCount', 'dataCount', 'dataOverride'] },
+    requirements: ['NX9'],
+  },
+  play: async ({ canvasElement, step }) => {
+    const canvas = canvasElement
+    const row = (id: string) =>
+      canvas.querySelector<HTMLElement>(`${ROW}[data-row-id="${id}"]`)
+    const indentOf = (id: string) =>
+      parseFloat(
+        getComputedStyle(row(id)!.querySelector('[data-column-id="country"]')!)
+          .paddingLeft,
+      )
+    await waitFor(() => expect(row('node-2')).not.toBeNull())
+
+    await step(
+      'pause over two collapsed groups, drop into the second: the first collapses back',
+      async () => {
+        const source = row('row-0')!
+        // Сдвиг вправо с запасом: текст облака дальше отступа ребёнка, глубже уровень
+        // не уходит — его ограничивает группа.
+        const levelStep =
+          2 *
+          (source
+            .querySelector('[data-column-id="country"]')!
+            .getBoundingClientRect().left -
+            source.getBoundingClientRect().left)
+        const { hx } = await beginDrag(
+          source.querySelector<HTMLElement>(HANDLE)!,
+        )
+        const holdOver = async (id: string) => {
+          const target = row(id)!.getBoundingClientRect()
+          const ty = target.top + target.height / 2
+          firePointer('pointermove', document, hx + levelStep, ty)
+          await nextFrame()
+          await nextFrame()
+          firePointer('pointermove', document, hx + levelStep, ty + 1)
+          return ty + 1
+        }
+        await holdOver('node-1')
+        await waitFor(() => expect(row('node-1-0')).not.toBeNull(), {
+          timeout: 3000,
+        })
+        await waitFor(() =>
+          expect(row('node-1')!.hasAttribute('data-row-drop-parent')).toBe(
+            true,
+          ),
+        )
+        // Строки ниже доезжают после раскрытия (ADR 0107) — цель меряется на месте.
+        await new Promise(resolve => setTimeout(resolve, 400))
+        const ty = await holdOver('node-2')
+        await waitFor(() => expect(row('node-2-0')).not.toBeNull(), {
+          timeout: 3000,
+        })
+        firePointer('pointerup', document, hx + levelStep, ty)
+        await waitFor(() => expect(canvas.querySelector(OVERLAY)).toBeNull())
+        await waitFor(() => expect(row('node-1-0')).toBeNull())
+        expect(row('node-2-0')).not.toBeNull()
+        await waitFor(() =>
+          expect(indentOf('row-0')).toBe(indentOf('node-2-0')),
+        )
+      },
+    )
+  },
+}

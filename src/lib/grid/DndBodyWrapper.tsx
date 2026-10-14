@@ -2,7 +2,13 @@
 // при enableRowDragging (иначе цена useSortable платится на каждый смонтированный
 // ряд). Состояние overlay читается из атома rowDragging; геометрия
 // переупорядочивания — getRowDraggingEvents.
-import { type PropsWithChildren, useCallback, useMemo, useState } from 'react'
+import {
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import {
   DndContext,
@@ -20,7 +26,11 @@ import { SortableContext } from '@dnd-kit/sortable'
 import type { Table } from '../types'
 import { cancelDragLikeEscape } from '../core/cancelInteraction'
 import { useSlice, useTableState } from '../core/reactivity'
-import { getRowDraggingEvents } from '../plugins/rowDragging'
+import {
+  type RowDragOverlayState,
+  getRowDraggingEvents,
+} from '../plugins/rowDragging'
+import { createExpandTimer } from '../plugins/rowDragging/expandTimer'
 import { readRowNestingIndent } from '../core/rowNesting'
 import { createDropLevel } from './dnd/dropLevel'
 import {
@@ -28,9 +38,7 @@ import {
   adjustOverlayPosition,
   autoScrollOnlyY,
   dndAccessibility,
-  dropAnimationConfig,
   measuring,
-  rowDropAnimation,
   sensorOptions,
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
@@ -103,13 +111,19 @@ export const DndBodyWrapper = ({
     (node: HTMLDivElement | null) => dropLevel.setOverlay(node),
     [dropLevel],
   )
+  // Пауза над свёрнутой группой переживает перерисовки сессии (ADR 0109, §1).
+  const [expandTimer] = useState(createExpandTimer)
+  useEffect(() => expandTimer.clear, [expandTimer])
   const {
     onRowDragStart,
     onRowDragMove,
     onRowDragEnd,
     onRowDragCancel,
     onRowDragAbort,
-  } = getRowDraggingEvents(table, { levelAt: dropLevel.levelAt })
+  } = getRowDraggingEvents(table, {
+    levelAt: dropLevel.levelAt,
+    expandTimer,
+  })
   const startDrag = (event: DragStartEvent) => {
     const { row } = event.active.data.current as { row: { depth: number } }
     dropLevel.start(
@@ -122,20 +136,45 @@ export const DndBodyWrapper = ({
     onRowDragStart?.(event)
   }
 
-  const rowDragging = useSlice(table, 'rowDragging' as never) as {
-    activeId: string | null
-  }
+  const rowDragging = useSlice(
+    table,
+    'rowDragging' as never,
+  ) as RowDragOverlayState
 
   const { rows } = table.getRowModel()
 
+  // Группа раскрылась посреди сессии — индексы места сдвинулись без движения
+  // указателя: выровнять их по id до кадра (ADR 0109, §1).
+  useIsomorphicLayoutEffect(() => {
+    const { activeId, fromIndex, overIndex, overId } = rowDragging
+    if (activeId === null || fromIndex === null || overIndex === null) return
+    const staleFrom = rows[fromIndex]?.id !== activeId
+    const staleOver = overId !== null && rows[overIndex]?.id !== overId
+    if (!staleFrom && !staleOver) return
+    const indexOf = (id: string, at: number) =>
+      rows[at]?.id === id ? at : rows.findIndex(row => row.id === id)
+    const from = indexOf(String(activeId), fromIndex)
+    const over = overId === null ? overIndex : indexOf(overId, overIndex)
+    if (from < 0 || over < 0) return
+    ;(
+      table as unknown as {
+        setRowDragging: (
+          updater: (prev: RowDragOverlayState) => RowDragOverlayState,
+        ) => void
+      }
+    ).setRowDragging(prev => ({ ...prev, fromIndex: from, overIndex: over }))
+  }, [rows, rowDragging, table])
+
+  const activeId =
+    rowDragging.activeId === null ? null : String(rowDragging.activeId)
   const draggableRow = useMemo(
-    () => findDraggableRow(rows, rowDragging.activeId),
-    [rowDragging.activeId, rows],
+    () => findDraggableRow(rows, activeId),
+    [activeId, rows],
   )
 
   // Перетаскивание запретили на лету или строка ушла — отмена как по Escape.
   const forbidden =
-    !!rowDragging.activeId &&
+    !!activeId &&
     (!(table.options as { enableRowDragging?: unknown }).enableRowDragging ||
       !(
         draggableRow as { getCanDrag?: () => boolean } | undefined
@@ -192,12 +231,8 @@ export const DndBodyWrapper = ({
       </SortableContext>
       <DragOverlay
         modifiers={[adjustOverlayPosition]}
-        dropAnimation={
-          (table.options as { enableRowAnimation?: boolean })
-            .enableRowAnimation === false
-            ? dropAnimationConfig
-            : rowDropAnimation
-        }
+        // Облако пропадает при отпускании, строка вспыхивает на месте (ADR 0110).
+        dropAnimation={null}
         zIndex={Z_INDEX}
       >
         {draggableRowCell && (

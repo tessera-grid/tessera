@@ -18,6 +18,7 @@ import {
 import { ItemDraggableWrapper } from './dnd'
 import { highlightRender } from './highlight'
 import { useSlotGlide } from './rowMotion/useSlotGlide'
+import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 
@@ -56,6 +57,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
     transform,
     overIndex,
     isDragging,
+    isSorting,
   } = useSortable({
     id: row.id,
     data: {
@@ -69,14 +71,20 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
 
   const isRowInteract = overIndex === -1
   const node = useRef<HTMLDivElement | null>(null)
-  useSlotGlide(node, transform?.y ?? 0, isDragging, transformAt)
+  // dnd-kit гасит сдвиги на рендер, в котором сменились строки окна (группа раскрылась
+  // посреди сессии): строка держит прежний сдвиг, иначе соседи на кадр встают на места
+  // раскладки и едут обратно (ADR 0109). `undefined` — держать.
+  const shift = transform?.y ?? (isSorting && !isRowInteract ? undefined : 0)
+  useSlotGlide(node, shift, isDragging, transformAt)
+  useIsomorphicLayoutEffect(() => {
+    if (shift !== undefined && node.current) {
+      node.current.style.transform = transformAt(shift)
+    }
+  }, [shift])
 
   const rowStyles = useMemo(
-    () => ({
-      top: virtualRow.start,
-      transform: transformAt(transform?.y ?? 0),
-    }),
-    [transform?.y, virtualRow.start],
+    () => ({ top: virtualRow.start }),
+    [virtualRow.start],
   )
 
   return (
@@ -118,6 +126,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       {...highlighted.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
+      data-row-drop-parent={props.dropParent || undefined}
       data-row-interact={isRowInteract}
       data-last-row={row.getIsLastRow()}
       data-layout={props.layout}

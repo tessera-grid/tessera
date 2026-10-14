@@ -13,12 +13,18 @@ import {
   rowDraggingInertReason,
 } from './rowDraggingFeature'
 import type { RowDraggingHooks } from './types'
+import { DEFAULT_ROW_DRAG_EXPAND_DELAY } from './getRowDraggingEvents'
 
 export interface RowDraggingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /** Можно ли тащить строку; по умолчанию — любую. Выключить плагин — `enabled`. */
   canDragRow?: (row: Row<any, any>) => boolean
+  /**
+   * Пауза над свёрнутой группой, после которой она раскрывается, мс; по умолчанию 500,
+   * `0` — не раскрывать (ADR 0109).
+   */
+  expandDelay?: number
   /** Бизнес-колбэк окончания переноса строки (аргумент фабрики). */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
   /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
@@ -45,5 +51,6 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
   },
   options: o => ({
     enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),
+    rowDragExpandDelay: o.expandDelay ?? DEFAULT_ROW_DRAG_EXPAND_DELAY,
   }),
 })

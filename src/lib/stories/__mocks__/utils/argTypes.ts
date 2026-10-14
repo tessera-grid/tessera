@@ -10,6 +10,7 @@ import {
   DEFAULT_PAGE_SIZES,
 } from '../../../../lib/plugins/pagination/registry'
 import { DEFAULT_MAX_EXPANDING_DEPTH } from '../../../../lib/plugins/rowExpanding/registry'
+import { DEFAULT_ROW_DRAG_EXPAND_DELAY } from '../../../../lib/plugins/rowDragging/getRowDraggingEvents'
 import { DEFAULT_SKELETON_OPTIONS } from '../../../../lib/core/skeletonOptions'
 import { DEFAULT_REFRESH_OPTIONS } from '../../../../lib/core/loadingDisplay'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
@@ -292,6 +293,11 @@ export const rowExpandingTreeLinesType = booleanControl(
 )
 export const enableRowDraggingType = booleanControl(
   'Перестановка строк перетаскиванием ручки (плагин `rowDragging`)',
+)
+export const rowDraggingExpandDelayType = numberControl(
+  'Пауза над свёрнутой группой до её раскрытия, мс; 0 — не раскрывать (`expandDelay`)',
+  { min: 0, max: 2000, step: 100 },
+  String(DEFAULT_ROW_DRAG_EXPAND_DELAY),
 )
 export const enableRowGroupingType = booleanControl(
   'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',

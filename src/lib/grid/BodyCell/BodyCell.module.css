@@ -241,7 +241,8 @@
     [data-highlight],
     [data-column-highlight],
     [data-cell-selected='true'],
-    :global(.data-grid__body-row[data-highlight]) *
+    :global(.data-grid__body-row[data-highlight]) *,
+    :global(.data-grid__body-row[data-row-drop-parent]) *
   ) {
   background-image:
     linear-gradient(

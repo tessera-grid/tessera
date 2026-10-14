@@ -11,15 +11,17 @@ import { rowMotionTiming } from './rowMotionTiming'
  */
 export const useSlotGlide = (
   node: RefObject<HTMLElement | null>,
-  y: number,
+  /** `undefined` — сдвиг держится прежним. */
+  y: number | undefined,
   active: boolean,
   transformAt: (y: number) => string,
 ) => {
-  const prevY = useRef(y)
+  const prevY = useRef(y ?? 0)
   const glide = useRef<Animation | null>(null)
   const timing = useRef<{ duration: number; easing: string } | null>(null)
 
   useLayoutEffect(() => {
+    if (y === undefined) return
     const from = prevY.current
     prevY.current = y
     const element = node.current
