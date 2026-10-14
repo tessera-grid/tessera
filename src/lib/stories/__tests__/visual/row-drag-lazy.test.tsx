@@ -96,6 +96,7 @@ interface Options {
   pageSize?: number
   /** Листовые корни в конце данных — для прокрутки. */
   extraRoots?: number
+  revertOnReject?: boolean
 }
 
 interface Harness {
@@ -138,7 +139,10 @@ const LazyTree = ({ roots }: { roots: Node[] }) => {
           return answer.promise
         },
       }),
-      rowDragging({ onRowDragEnd: harness.onRowDragEnd }),
+      rowDragging({
+        onRowDragEnd: harness.onRowDragEnd,
+        revertOnReject: options.revertOnReject,
+      }),
       ...(options.keyboard ? [keyboardNavigation()] : []),
       ...(options.pageSize
         ? [pagination({ initialPageSize: options.pageSize })]
@@ -453,7 +457,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     }
   })
 
-  test('LT6: отказ ленивого переноса — строка возвращается, ручка вспыхивает, отказ объявлен; отказ обычного переноса — вспышка и объявление без отката данных', async () => {
+  test('LT6: отказ ленивого переноса — строка возвращается, ручка вспыхивает, отказ объявлен', async () => {
     const screen = await renderTree({ asyncMove: true })
     try {
       await expand('node-0', 'node-0-2')
@@ -469,25 +473,64 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       await expect
         .poll(announced)
         .toContain(DEFAULT_LABELS.announceMoveFailed('Server said no'))
-
-      await dropAfter('row-2', 'group-0', 0, 'row-0')
-      await settleMoves(false, '')
-      await expect
-        .poll(() => handleOf('row-2').getAttribute('data-error-flash'))
-        .toBe('on')
-      await expect
-        .poll(announced)
-        .toContain(
-          DEFAULT_LABELS.announceMoveFailed(DEFAULT_LABELS.moveRowFailed),
-        )
-      expect(order().slice(-4), 'данные не откатываются').toEqual([
-        'group-0',
-        'row-2',
-        'row-0',
-        'row-1',
-      ])
     } finally {
       await screen.unmount()
+    }
+  })
+
+  test('CO14: отказ по умолчанию откатывает и обычную строку — обратной перестановкой через onRowOrderChange к прежним сёстрам у прежнего родителя', async () => {
+    const screen = await renderTree({ asyncMove: true })
+    try {
+      // Корень — к прежней сестре.
+      await dropAfter('row-2', 'group-0', 0, 'row-0')
+      expect(order().slice(-4)).toEqual(['group-0', 'row-2', 'row-0', 'row-1'])
+      await settleMoves(false, '')
+      await expect
+        .poll(() => order().slice(-3))
+        .toEqual(['row-0', 'row-1', 'row-2'])
+      expect(harness.onRowOrderChange).toHaveBeenCalledTimes(2)
+
+      // Ребёнок обычной группы, вынесенный в корень, — обратно в группу.
+      await expand('group-0', 'group-0-1')
+      await dropAfter('group-0-0', 'row-0', 0)
+      expect(depthOf(rowById('group-0-0')!)).toBe(0)
+      await settleMoves(false, '')
+      await expect.poll(() => depthOf(rowById('group-0-0')!)).toBe(1)
+      const groupAt = order().indexOf('group-0')
+      expect(order().slice(groupAt, groupAt + 3)).toEqual([
+        'group-0',
+        'group-0-0',
+        'group-0-1',
+      ])
+      expect(harness.onRowOrderChange).toHaveBeenCalledTimes(4)
+      await expect
+        .poll(() => handleOf('group-0-0').getAttribute('data-error-flash'))
+        .toBe('on')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('CO16: при отказе строка подсвечивается тоном danger там, где оказалась — после отката на прежнем месте, без отката на новом', async () => {
+    const tone = (id: string) => rowById(id)?.getAttribute('data-highlight')
+    const reverted = await renderTree({ asyncMove: true })
+    try {
+      await dropAfter('row-2', 'group-0', 0, 'row-0')
+      await settleMoves(false, '')
+      await expect.poll(() => tone('row-2')).toBe('danger')
+      expect(order().slice(-1)).toEqual(['row-2'])
+    } finally {
+      await reverted.unmount()
+    }
+    const kept = await renderTree({ asyncMove: true, revertOnReject: false })
+    try {
+      await dropAfter('row-2', 'group-0', 0, 'row-0')
+      await settleMoves(false, '')
+      await expect.poll(() => tone('row-2')).toBe('danger')
+      expect(order().slice(-3)).toEqual(['row-2', 'row-0', 'row-1'])
+      expect(harness.onRowOrderChange).toHaveBeenCalledTimes(1)
+    } finally {
+      await kept.unmount()
     }
   })
 
@@ -680,8 +723,8 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       expect(handle.tagName).toBe('BUTTON')
       expect(handle.dataset.shape).toBe('square')
       const style = getComputedStyle(handle)
-      expect(style.width).toBe(tokenPx('--tsr-comp-button-size'))
-      expect(style.height).toBe(tokenPx('--tsr-comp-button-size'))
+      expect(style.width).toBe(tokenPx('--tsr-comp-button-size-compact'))
+      expect(style.height).toBe(tokenPx('--tsr-comp-button-size-compact'))
       const radius = document.createElement('div')
       radius.style.borderRadius = 'var(--tsr-comp-button-radius-square)'
       handle.closest('.data-grid-theme')!.append(radius)
@@ -694,7 +737,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           handle.closest('.data-grid__body-cell')!.getBoundingClientRect()
             .width,
         ),
-      ).toBe(40)
+      ).toBe(32)
 
       await away()
       await expect

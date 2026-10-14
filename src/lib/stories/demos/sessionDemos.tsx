@@ -509,3 +509,65 @@ export const RowDraggingLazyTreeDemo = ({
     </WithLog>
   )
 }
+
+// --- Перенос колонок с сервером (ADR 0114) ------------------------------------
+// Порядок колонок сохраняется с задержкой; «Reject next move» и `moveFailMode` — отказ:
+// колонка возвращается к прежним соседям.
+
+export interface ColumnDraggingServerDemoProps extends StoryProps {
+  /** Задержка сохранения порядка, мс. */
+  moveDelayMs?: number
+  /** `always` — сервер отклоняет каждый перенос. */
+  moveFailMode?: ServerFailMode
+}
+
+export const ColumnDraggingServerDemo = ({
+  moveDelayMs = 900,
+  moveFailMode = 'never',
+  ...args
+}: ColumnDraggingServerDemoProps) => {
+  const { entries, log, clear } = useCallbackLog()
+  const failNext = useRef(false)
+  const settings = useLatest({ moveDelayMs, moveFailMode })
+
+  const onColumnDragEnd = useCallback(
+    (end: { columnId: string; columnOrder: string[] }) => {
+      log('onColumnDragEnd', `columnId="${end.columnId}" → saving…`)
+      return new Promise<void>((resolve, reject) => {
+        window.setTimeout(() => {
+          if (settings.current.moveFailMode === 'always' || failNext.current) {
+            failNext.current = false
+            log('server', `rejected the move of ${end.columnId}`)
+            reject(new Error('Server rejected the column order'))
+            return
+          }
+          log('server', `saved the order: ${end.columnOrder.join(', ')}`)
+          resolve()
+        }, settings.current.moveDelayMs)
+      })
+    },
+    [log, settings],
+  )
+
+  return (
+    <WithLog
+      log={
+        <CallbackLog entries={entries} onClear={clear}>
+          <div style={panelRow}>
+            <button
+              type="button"
+              onClick={() => {
+                failNext.current = true
+                log('server', 'the next move will fail')
+              }}
+            >
+              Reject next move
+            </button>
+          </div>
+        </CallbackLog>
+      }
+    >
+      <StoryComponent {...args} onColumnDragEnd={onColumnDragEnd} />
+    </WithLog>
+  )
+}

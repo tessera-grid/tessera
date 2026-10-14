@@ -78,6 +78,10 @@ const commit = (
     rowId: row.id,
     original: row.original,
     anchors,
+    fromAnchors: (from?.subRows ?? (table as MoveTable).getCoreRowModel().rows)
+      .map(sibling => sibling.id)
+      .filter(id => id !== row.id),
+    fromIndex: row.index,
     dragIndex,
     hoverIndex,
     parentId: to.parent?.id,

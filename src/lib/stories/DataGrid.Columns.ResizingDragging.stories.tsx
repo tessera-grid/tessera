@@ -2,8 +2,17 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
-import { applyPseudoStates, waitForRows } from './__mocks__/catalogPlay'
+import {
+  applyPseudoStates,
+  updateArgs,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 import { expect, waitFor } from 'storybook/test'
+import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import {
+  ColumnDraggingServerDemo,
+  type ColumnDraggingServerDemoProps,
+} from './demos/sessionDemos'
 
 /** Ширина и порядок колонок (ADR 0013, ADR 0006, ADR 0052): протяжка, перетаскивание, под вложенной шапкой. */
 const meta = {
@@ -146,4 +155,145 @@ export const NarrowColumns: StoryObj<StoryProps> = {
       await waitFor(() => expect(kebab()).not.toBeNull())
     })
   },
+}
+
+/**
+ * Перенос колонок с сервером (ADR 0114): порядок сохраняется промисом `onColumnDragEnd`
+ * — ручка ждёт, отказ возвращает колонку к прежним соседям. Ручка — кнопка, раскрывается
+ * при наведении на заголовок. «Reject next move» и `moveFailMode` — отказ.
+ */
+export const ColumnDraggingServer: StoryObj<ColumnDraggingServerDemoProps> = {
+  name: 'Dragging — Server',
+  args: {
+    enableColumnDragging: true,
+    enableColumnSorting: true,
+    dataCount: 30,
+    enableKeyboardNavigation: true,
+    moveDelayMs: 900,
+    moveFailMode: 'never',
+    containerHeight: 400,
+    height: 300,
+    maxHeight: 300,
+  },
+  argTypes: {
+    moveDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
+    moveFailMode: { control: 'inline-radio', options: ['never', 'always'] },
+  },
+  parameters: { requirements: ['CO12', 'CO17'] },
+  play: async ({ canvasElement, id, step }) => {
+    const doc = canvasElement.ownerDocument
+    const log = () => doc.body.textContent ?? ''
+    const head = (id: string) =>
+      canvasElement.querySelector<HTMLElement>(
+        `.data-grid__head-cell[data-column-id="${id}"]`,
+      )!
+    const order = () =>
+      [
+        ...canvasElement.querySelectorAll<HTMLElement>(
+          '.data-grid__head-cell[data-column-id]',
+        ),
+      ]
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+        )
+        .map(cell => cell.dataset.columnId)
+    const handle = (id: string) =>
+      head(id).querySelector<HTMLElement>('.drag__handler--column')!
+    const slow = { timeout: 5000 }
+    await waitForRows(canvasElement)
+    await waitFor(() => expect(head('firstName')).not.toBeNull())
+
+    /** Переставить колонку вправо с клавиатуры — тем же путём, что бросок. */
+    const moveRight = async (id: string) => {
+      head(id).focus()
+      head(id).dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowRight',
+          altKey: true,
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    }
+
+    await step(
+      'move a column: the handle waits, the server saves the order',
+      async () => {
+        const before = order().indexOf('country')
+        await moveRight('country')
+        await waitFor(() => expect(order().indexOf('country')).toBe(before + 1))
+        await waitFor(() =>
+          expect(handle('country')).toHaveAttribute('aria-busy', 'true'),
+        )
+        await waitFor(() => expect(log()).toContain('saved the order'), slow)
+        await waitFor(() =>
+          expect(handle('country')).not.toHaveAttribute('aria-busy'),
+        )
+      },
+    )
+
+    await step(
+      'the server rejects the next move: the column goes back',
+      async () => {
+        ;[...doc.querySelectorAll('button')]
+          .find(button => button.textContent === 'Reject next move')!
+          .click()
+        const before = order()
+        await moveRight('lastName')
+        await waitFor(() => expect(order()).not.toEqual(before))
+        await waitFor(
+          () => expect(log()).toContain('rejected the move of lastName'),
+          slow,
+        )
+        await waitFor(() => expect(order()).toEqual(before))
+        await waitFor(() =>
+          expect(handle('lastName')).toHaveAttribute('data-error-flash', 'on'),
+        )
+        expect(head('lastName')).toHaveAttribute(
+          'data-column-highlight',
+          'danger',
+        )
+        // Вспышка отгорела — история в покое.
+        await waitFor(
+          () =>
+            expect(handle('lastName')).not.toHaveAttribute('data-error-flash'),
+          slow,
+        )
+      },
+    )
+
+    await step(
+      'revertOnReject off: the rejected column stays where it was dropped',
+      async () => {
+        await updateArgs(id, { columnDraggingRevertOnReject: false })
+        ;[...doc.querySelectorAll('button')]
+          .find(button => button.textContent === 'Reject next move')!
+          .click()
+        const before = order().indexOf('firstName')
+        await moveRight('firstName')
+        await waitFor(() =>
+          expect(order().indexOf('firstName')).toBe(before + 1),
+        )
+        await waitFor(
+          () => expect(log()).toContain('rejected the move of firstName'),
+          slow,
+        )
+        await waitFor(() =>
+          expect(head('firstName')).toHaveAttribute(
+            'data-column-highlight',
+            'danger',
+          ),
+        )
+        expect(order().indexOf('firstName')).toBe(before + 1)
+        await waitFor(
+          () =>
+            expect(handle('firstName')).not.toHaveAttribute('data-error-flash'),
+          slow,
+        )
+      },
+    )
+  },
+  render: args => <ColumnDraggingServerDemo {...normalizeArgs(args)} />,
 }

@@ -1,6 +1,7 @@
 import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
+import { revealedHandleWidth } from '../helpers'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
@@ -708,9 +709,14 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
     const [first, second] = renderedDataCells(container)
     const border = first.getBoundingClientRect().right
     await userEvent.hover(second)
-    const handle = second
-      .querySelector<HTMLElement>('.drag__handler--column')!
-      .getBoundingClientRect()
+    const handleEl = second.querySelector<HTMLElement>(
+      '.drag__handler--column',
+    )!
+    // Ручка раскрывается по ширине (ADR 0114) — мерить раскрытую.
+    await expect
+      .poll(() => handleEl.parentElement!.getBoundingClientRect().width)
+      .toBe(revealedHandleWidth(handleEl))
+    const handle = handleEl.getBoundingClientRect()
     const title = second
       .querySelector<HTMLElement>('.data-grid__cell-wrapper-title')!
       .getBoundingClientRect()

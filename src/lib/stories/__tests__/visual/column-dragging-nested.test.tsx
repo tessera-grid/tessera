@@ -220,12 +220,8 @@ describe('DnD under nested headers', () => {
       await expect
         .poll(() => head('name', 'left').getAttribute('data-cell-pinned'))
         .toBe('left')
-      const handle = handleOf('name')
-      expect(handle.getAttribute('aria-haspopup')).toBeNull()
-      const before = leafOrder()
-      await dragTo('name', box(head('total')).right - 5)
-      await nextFrame()
-      expect(leafOrder()).toEqual(before)
+      // У закреплённого узла ручки нет — перетащить его нечем (ADR 0114).
+      expect(head('name', 'left').querySelector(HANDLE)).toBeNull()
       await pinned.unmount()
 
       await mount({ enableColumnPinning: true, columnPinningLeafPinning: true })

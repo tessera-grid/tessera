@@ -425,11 +425,19 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `slots` (GB7 — расчёт вместимости), `work-counters` (GB8), `play` истории
       «Columns/Resizing & dragging — Narrow columns» (GB9)
       ([ADR 0111](docs/decisions/0111-resize-grip-on-column-border.md)),
-      `column-dragging` (D14–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
+      `column-dragging` (D14–D18, D20–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
       `columnNodes.dom` (ND8–ND9), `columnDragging` (ND6), `pluginDiagnostics` (ND11),
       перф ND14 — в `interaction` — перетаскивание под вложенной шапкой
-      ([ADR 0052](docs/decisions/0052-dnd-under-nested-headers.md)).
+      ([ADR 0052](docs/decisions/0052-dnd-under-nested-headers.md));
+      `column-drag-async` (CO1–CO3, CO6–CO7, CO11, CO13, CO18 — промис `onColumnDragEnd`,
+      ожидание и запрет переноса, откат к прежним соседям, ручка-кнопка с раскрытием по
+      ширине, axe, вспышка после переноса, `danger` при отказе), `touch` (CO8),
+      `row-drag-lazy` (CO14, CO16 — откат обычной строки, `danger` строки), модульные
+      `columnDragging` (CO4–CO5), `slots` (CO9) и `moveRevert` (CO15 — `revertOnReject:
+false`), `work-counters` (CO10), `play` историй «Columns/Resizing & dragging —
+      Dragging — Server» (CO12, CO17) и «Rows/Dragging — Lazy tree (server)» (CO19)
+      ([ADR 0114](docs/decisions/0114-async-column-moves.md)).
     - _Строки:_ `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md);
       RS19–RS22 — счётчик в нижней панели, [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md)),
       `row-expanding` (RE1–RE13, RE41 — анимация шеврона, [ADR 0015](docs/decisions/0015-row-expanding.md)),

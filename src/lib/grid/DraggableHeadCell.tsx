@@ -11,6 +11,7 @@ import {
 import { HeadCellView, type TableHeadCellProps } from './HeadCell'
 import { NodeShiftContext, noopSubscribe } from './dnd/nodeShift'
 import { getDisabledSortable } from './headCellParams'
+import { useTableState } from '../core/reactivity'
 import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 /**
@@ -26,6 +27,15 @@ export const DraggableHeadCell = memo((props: TableHeadCellProps) => {
   const isGroup = header.subHeaders.length > 0
   const nodeId = nodeIdOf(header.column, zoneOf(node))
   const ancestors = useMemo(() => ancestorNodeIdsOf(node), [node])
+  // Узел с переносом в ожидании не тянут, но на него бросают (ADR 0114).
+  const movePending = useTableState(
+    (header as unknown as { getContext: () => { table: never } }).getContext()
+      .table,
+    (state: unknown) =>
+      !!(state as { columnMoves?: Record<string, unknown> }).columnMoves?.[
+        header.column.id
+      ],
+  ) as boolean
 
   const {
     setActivatorNodeRef,
@@ -41,7 +51,10 @@ export const DraggableHeadCell = memo((props: TableHeadCellProps) => {
       siblingKey: siblingKeyOf(node),
       disabledSortable,
     },
-    disabled: disabledSortable,
+    disabled: {
+      draggable: disabledSortable || movePending,
+      droppable: disabledSortable,
+    },
   })
 
   const ownX = disabledSortable ? 0 : (transform?.x ?? 0)
@@ -61,6 +74,7 @@ export const DraggableHeadCell = memo((props: TableHeadCellProps) => {
     <HeadCellView
       {...props}
       disabledSortable={disabledSortable}
+      movePending={movePending}
       drag={{
         setNodeRef,
         setActivatorNodeRef,

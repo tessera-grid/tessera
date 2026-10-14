@@ -433,6 +433,10 @@ export const getRowDraggingEvents = (
         anchors: (place.parent?.subRows ?? table.getCoreRowModel().rows)
           .map(row => row.id)
           .filter(id => id !== rowId),
+        fromAnchors: (activeParentRow?.subRows ?? table.getCoreRowModel().rows)
+          .map(row => row.id)
+          .filter(id => id !== rowId),
+        fromIndex: activeRow.index,
       }
       if (lazy) {
         commitRowMove(

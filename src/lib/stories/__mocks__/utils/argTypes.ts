@@ -299,6 +299,14 @@ export const rowDraggingExpandDelayType = numberControl(
   { min: 0, max: 2000, step: 100 },
   String(DEFAULT_ROW_DRAG_EXPAND_DELAY),
 )
+export const rowDraggingRevertOnRejectType = booleanControl(
+  'Откатывать перенос строки при отказе промиса `onRowDragEnd` (`revertOnReject`, ADR 0114)',
+  true,
+)
+export const columnDraggingRevertOnRejectType = booleanControl(
+  'Откатывать перенос колонки при отказе промиса `onColumnDragEnd` (`revertOnReject`, ADR 0114)',
+  true,
+)
 export const enableRowGroupingType = booleanControl(
   'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',
 )

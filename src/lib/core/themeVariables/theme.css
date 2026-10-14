@@ -339,7 +339,10 @@
       )
   );
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
-  --tsr-comp-cell-content-padding: 0px var(--tsr-ref-space-4);
+  --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-4);
+  --tsr-comp-cell-content-padding: 0px var(--tsr-comp-cell-content-padding-x);
+  /* Отступ слева от раскрытой ручки колонки — она заходит в отступ содержимого (ADR 0114). */
+  --tsr-comp-drag-handle-inset: var(--tsr-ref-space-1);
   --tsr-comp-cell-content-gap: var(--tsr-ref-space-1);
   --tsr-comp-cell-font-size: 0.8125rem;
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
@@ -447,6 +450,8 @@
     var(--tsr-sys-success) 16%,
     transparent
   );
+  /* Вспышка колонки после переноса — как приход строки (ADR 0114, §4). */
+  --tsr-comp-highlight-arrival-bg: var(--tsr-comp-row-arrival-color);
   --tsr-comp-highlight-fade-duration: 500ms;
   /* Шаг отступа уровня вложенности строк (ADR 0059). */
   --tsr-comp-row-nesting-indent: 16px;
@@ -551,6 +556,8 @@
   /* Кнопки кита (ADR 0098): `Button` и `IconButton` делят размер, иконку, форму и
    * цвета. Размер один: высота `Button` и сторона `IconButton`. */
   --tsr-comp-button-size: 32px;
+  /* Компактная кнопка (ADR 0114): ручки перетаскивания; не меньше зоны нажатия 24×24. */
+  --tsr-comp-button-size-compact: 24px;
   --tsr-comp-button-icon-size: 16px;
   /* Формы кнопок: `square` — скруглённый квадрат (и `Button`), `circle` — круг. */
   --tsr-comp-button-radius-square: var(--tsr-comp-control-radius);

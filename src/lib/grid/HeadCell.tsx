@@ -75,6 +75,8 @@ interface DragBindings {
 
 interface HeadCellViewProps extends TableHeadCellProps {
   disabledSortable: boolean
+  /** Перенос узла ждёт промиса `onColumnDragEnd` (ADR 0114). */
+  movePending?: boolean
   /** Drag&Drop-привязки; `null`, когда перетаскивание колонок выключено. */
   drag: DragBindings | null
 }
@@ -85,6 +87,7 @@ export const HeadCellView = ({
   leftHeaderSlot,
   rightHeaderSlot,
   disabledSortable,
+  movePending = false,
   drag,
   absoluteLeft,
 }: HeadCellViewProps) => {
@@ -259,6 +262,7 @@ export const HeadCellView = ({
       // Спанящий групповой заголовок — позиция его первого листа.
       aria-colindex={getDisplayColumnIndex(table, firstLeaf.id) + 1}
       aria-sort={getAriaSort(header)}
+      aria-busy={movePending || undefined}
       aria-rowspan={header.rowSpan > 1 ? header.rowSpan : undefined}
       aria-colspan={header.colSpan > 1 ? header.colSpan : undefined}
       data-column-id={header.column.id}

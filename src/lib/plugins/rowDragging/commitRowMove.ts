@@ -19,13 +19,18 @@ import {
 } from '../../core/rowMoves'
 import { isThenable, rejectionText } from '../../core/thenable'
 import type { RowMoveFailed } from './rowDraggingFeature'
+import { flashMoved } from '../../core/moveFlash'
 import { markRowDrop } from './rowDrops'
 import type { RowDraggingHooks } from './types'
 
 type Updater<T> = (prev: T) => T
 
 interface MoveTable {
-  options: { onRowOrderChange?: (updater: Updater<any[]>) => void }
+  options: {
+    onRowOrderChange?: (updater: Updater<any[]>) => void
+    /** Откатывать перенос при отказе промиса (ADR 0114, §4). */
+    rowDragRevertOnReject?: boolean
+  }
   atoms: { loadedChildren?: { get: () => Answers } }
   setRowMoves?: (updater: Updater<RowMoves>) => void
   setRowMoveFailed?: (updater: Updater<RowMoveFailed>) => void
@@ -45,6 +50,9 @@ export interface RowMoveCommit {
   /** Объект данных строки и id сестёр модели на новом месте (без неё). */
   original?: unknown
   anchors?: readonly string[]
+  /** Id сестёр и место строки до переноса — для отката по id (ADR 0114, §4). */
+  fromAnchors?: readonly string[]
+  fromIndex?: number
 }
 
 const withoutEntry = (moves: RowMoves, rowId: string): RowMoves => {
@@ -59,26 +67,36 @@ const withoutEntry = (moves: RowMoves, rowId: string): RowMoves => {
 export const dropRowMove = (table: unknown, rowId: string) =>
   (table as MoveTable).setRowMoves?.(prev => withoutEntry(prev, rowId))
 
+interface DataMove {
+  rowId: string
+  from?: string
+  to?: string
+  anchors: readonly string[]
+  index: number
+  original: unknown
+}
+
 /**
- * Обычный перенос, пока ждут ленивые: индексы модели включают строки стадии, поэтому
- * `data` правится по id — строка встаёт рядом с той же сестрой, что в модели.
+ * Перенос в `data` по id: строка уходит от родителя `from` и встаёт у родителя `to` рядом с
+ * той же сестрой, что в модели. Так пишется обычный перенос, пока ждут ленивые (индексы
+ * модели включают строки стадии), и откат при отказе.
  */
-const writeDataNear = (table: MoveTable, commit: RowMoveCommit) => {
+const writeDataMove = (table: MoveTable, move: DataMove) => {
   const idOf = rowIdOf(table)
-  const { rowId, previousParentId, parentId } = commit
+  const { rowId, from, to } = move
   table.options.onRowOrderChange?.(prev => {
-    const removed = updateChildren(prev, previousParentId, idOf, rows =>
-      withoutRow(rows, rowId, idOf, previousParentId),
+    const removed = updateChildren(prev, from, idOf, rows =>
+      withoutRow(rows, rowId, idOf, from),
     )
-    return updateChildren(removed, parentId, idOf, rows =>
+    return updateChildren(removed, to, idOf, rows =>
       withRowNear(
         rows,
-        commit.anchors ?? [],
-        commit.index,
-        commit.original,
+        move.anchors,
+        move.index,
+        move.original,
         rowId,
         idOf,
-        parentId,
+        to,
       ),
     ) as any[]
   })
@@ -166,14 +184,36 @@ const confirm = (table: MoveTable, rowId: string, entry: RowMoveEntry) => {
   }))
 }
 
+/**
+ * Отказ (ADR 0114, §4): при `revertOnReject` ленивый перенос снимается, обычный —
+ * откатывается в `data` по id; без отката ленивый записывается, как при успехе. Ручка
+ * вспыхивает, строка подсвечивается `danger` там, где оказалась, отказ объявляется.
+ */
 const reject = (
   table: MoveTable,
-  rowId: string,
-  attempt: number,
+  commit: RowMoveCommit,
+  entry: RowMoveEntry,
   reason: unknown,
 ) => {
-  dropRowMove(table, rowId)
-  table.setRowMoveFailed?.(prev => ({ ...prev, [rowId]: attempt }))
+  const { rowId } = commit
+  const revert = table.options.rowDragRevertOnReject !== false
+  if (entry.lazy && !revert) {
+    confirm(table, rowId, entry)
+  } else {
+    dropRowMove(table, rowId)
+  }
+  if (!entry.lazy && revert) {
+    writeDataMove(table, {
+      rowId,
+      from: commit.parentId,
+      to: commit.previousParentId,
+      anchors: commit.fromAnchors ?? [],
+      index: commit.fromIndex ?? 0,
+      original: commit.original,
+    })
+  }
+  flashMoved(table, { row: rowId }, 'danger')
+  table.setRowMoveFailed?.(prev => ({ ...prev, [rowId]: entry.attempt }))
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(reason) ?? labels.moveRowFailed
   announceLabel(table, all => all.announceMoveFailed(error))
@@ -195,8 +235,16 @@ export const commitRowMove = (
   const t = table as MoveTable
   const { rowId, lazy } = commit
   if (!lazy) {
-    if (hasLazyMoves(readRowMoves(table))) writeDataNear(t, commit)
-    else commit.write?.()
+    if (hasLazyMoves(readRowMoves(table))) {
+      writeDataMove(t, {
+        rowId,
+        from: commit.previousParentId,
+        to: commit.parentId,
+        anchors: commit.anchors ?? [],
+        index: commit.index,
+        original: commit.original,
+      })
+    } else commit.write?.()
   }
   markRowDrop(table, rowId)
   const result = onRowDragEnd?.({
@@ -223,7 +271,7 @@ export const commitRowMove = (
     if (ok) {
       confirm(t, rowId, entry)
     } else {
-      reject(t, rowId, attempt, reason)
+      reject(t, commit, entry, reason)
     }
   }
   result.then(

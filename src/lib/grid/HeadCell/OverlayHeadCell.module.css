@@ -27,9 +27,4 @@
   & :global(.resize__handler--column) {
     background-color: var(--tsr-comp-draggable-cell-bg);
   }
-
-  & :global(.drag__handler--column) {
-    position: absolute !important;
-    left: 0 !important;
-  }
 }

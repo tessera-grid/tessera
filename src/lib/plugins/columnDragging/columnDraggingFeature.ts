@@ -5,7 +5,9 @@
  *    достаточно для dnd-индекса);
  *  - под вложенной шапкой перетаскиваются и группы (ADR 0052, узлы — ./nodes);
  *  - dnd-события живут в getColumnDraggingEvents (грид вызывает их), а не пекутся в
- *    options (v9 запрещает setOptions в constructTableAPIs).
+ *    options (v9 запрещает setOptions в constructTableAPIs);
+ *  - срезы `columnMoves` (переносы в ожидании промиса) и `columnMoveFailed` (ключ
+ *    вспышки отказа) — ADR 0114.
  */
 import {
   assignPrototypeAPIs,
@@ -15,17 +17,24 @@ import {
 } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import type { ColumnMoveFailed, ColumnMoves } from './commitColumnMove'
 import type { DragOverlayState } from './types'
 
 interface ColumnDraggingStateSlice {
   columnDraggingActiveId: DragOverlayState
+  columnMoves: ColumnMoves
+  columnMoveFailed: ColumnMoveFailed
 }
 interface ColumnDraggingOptions {
   enableColumnDragging?: boolean
   onColumnDraggingActiveIdChange?: (updater: Updater<DragOverlayState>) => void
+  onColumnMovesChange?: (updater: Updater<ColumnMoves>) => void
+  onColumnMoveFailedChange?: (updater: Updater<ColumnMoveFailed>) => void
 }
 interface ColumnDraggingTableAPI {
   setColumnDraggingActiveId: (updater: Updater<DragOverlayState>) => void
+  setColumnMoves: (updater: Updater<ColumnMoves>) => void
+  setColumnMoveFailed: (updater: Updater<ColumnMoveFailed>) => void
 }
 interface ColumnDraggingColumnDef {
   enableDragging?: boolean
@@ -114,9 +123,32 @@ const draggableIndexOf = (column: DraggableColumn): number => {
   return cached.byId.get(column.id) ?? -1
 }
 
+const NO_MOVES: ColumnMoves = {}
+const NO_FAILS: ColumnMoveFailed = {}
+
+type SliceAtom<T> = { get: () => T; set: (value: T) => void }
+
+/** Сеттер среза: обработчик опций, иначе атом напрямую. */
+const sliceSetter =
+  <T>(table: unknown, key: string, handler: string) =>
+  (updater: Updater<T>) => {
+    const own = (table as { options: Record<string, unknown> }).options[
+      handler
+    ] as ((u: Updater<T>) => void) | undefined
+    if (own) {
+      own(updater)
+      return
+    }
+    const atom = (table as { atoms: Record<string, SliceAtom<T> | undefined> })
+      .atoms[key]
+    atom?.set(functionalUpdate(updater, atom.get()))
+  }
+
 export const columnDraggingFeature: TableFeature = {
   getInitialState: state => ({
     columnDraggingActiveId: null,
+    columnMoves: NO_MOVES,
+    columnMoveFailed: NO_FAILS,
     ...state,
   }),
   getDefaultTableOptions: table => ({
@@ -124,6 +156,8 @@ export const columnDraggingFeature: TableFeature = {
       'columnDraggingActiveId',
       table,
     ),
+    onColumnMovesChange: makeStateUpdater('columnMoves', table),
+    onColumnMoveFailedChange: makeStateUpdater('columnMoveFailed', table),
   }),
   constructTableAPIs: table => {
     // v9 useTable возвращает фасад с сырыми options (без фичевых defaults) — даём
@@ -152,6 +186,20 @@ export const columnDraggingFeature: TableFeature = {
           ).atoms.columnDraggingActiveId
           atom.set(functionalUpdate(updater, atom.get()))
         },
+      },
+      table_setColumnMoves: {
+        fn: sliceSetter<ColumnMoves>(
+          table,
+          'columnMoves',
+          'onColumnMovesChange',
+        ),
+      },
+      table_setColumnMoveFailed: {
+        fn: sliceSetter<ColumnMoveFailed>(
+          table,
+          'columnMoveFailed',
+          'onColumnMoveFailedChange',
+        ),
       },
     })
   },

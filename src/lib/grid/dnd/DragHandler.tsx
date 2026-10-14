@@ -9,7 +9,6 @@ import {
 import clsx from 'clsx'
 
 import type { HeaderMenuItem } from '../../core/headerActions'
-import { useErrorFlash } from '../../ui/buttonStates/useErrorFlash'
 import { HandleMenu, useHandleMenu } from '../handleMenu/HandleMenu'
 import { useItemSortableContext } from './ItemSortableContext'
 import { DRAG_ACTIVATION_DISTANCE } from './parameters'
@@ -17,18 +16,17 @@ import { useIcons } from '../../ui/icons'
 import { IconButton } from '../../ui/IconButton'
 
 import styles from '../../grid/dnd/DragHandler.module.css'
-import ringStyles from '../../ui/ringStates/ringStates.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 export interface DragHandlerProps {
   id: string
   type: string
-  disabled?: boolean
   onClick?: (e: MouseEvent | PointerEvent | TouchEvent) => void
   /** Доступное имя ручки — кнопки меню перестановки. */
   label?: string
   /** Пункты меню перестановки (WCAG 2.5.7); без них ручка — только для DnD. */
   getMenuItems?: () => HeaderMenuItem[]
+  disabled?: boolean
   /** Таблица — для объявления ошибки загрузки меню (ADR 0061). */
   table?: unknown
   /** Перенос ждёт промиса `onRowDragEnd`: свет ожидания, меню не открывается (ADR 0112). */
@@ -51,7 +49,6 @@ export const DragHandler = ({
   const ref = useRef<HTMLElement | null>(null)
   const pressedAt = useRef<{ x: number; y: number } | null>(null)
   const menu = useHandleMenu(table, () => label ?? '')
-  const flash = useErrorFlash(ref, menu.trigger.errorFlash)
 
   const { setActivatorNodeRef, attributes, listeners } =
     useItemSortableContext()
@@ -104,49 +101,9 @@ export const DragHandler = ({
     }
   }
 
-  const icon = (
-    <DragIcon
-      className={clsx(
-        'cell__button',
-        'cell__button--hidden',
-        'row__button',
-        'row__button--hidden',
-      )}
-    />
-  )
   const setNode = (node: HTMLElement | null) => {
     ref.current = node
     setActivatorNodeRef(node)
-  }
-  const menuProps = hasMenu && {
-    'aria-label': label,
-    'aria-haspopup': 'menu' as const,
-    'aria-expanded': menu.open,
-    onClick: onMenuClick,
-    onTouchEnd: onMenuTouchEnd,
-    onKeyDown: onMenuKeyDown,
-    onPointerEnter: menu.trigger.onIntent,
-    onFocus: menu.trigger.onIntent,
-    onBlur: menu.trigger.onCancel,
-  }
-  const pressProps = {
-    ...listeners,
-    onMouseDown: (e: MouseEvent<HTMLElement>) => {
-      if (!disabled) onClick?.(e)
-
-      listeners?.onMouseDown?.(e)
-    },
-    onPointerDown: (e: PointerEvent<HTMLElement>) => {
-      if (!disabled) onClick?.(e)
-      pressedAt.current = { x: e.clientX, y: e.clientY }
-
-      listeners?.onPointerDown?.(e)
-    },
-    onTouchStart: (e: TouchEvent<HTMLElement>) => {
-      if (!disabled) onClick?.(e)
-
-      listeners?.onTouchStart?.(e)
-    },
   }
   // Отказ загрузки меню и отказ переноса — общий ключ вспышки: оба только растут.
   const flashKey =
@@ -154,40 +111,72 @@ export const DragHandler = ({
       ? undefined
       : (menu.trigger.errorFlash ?? 0) + (errorFlash ?? 0)
 
+  // Квадратная кнопка кита: ожидание и вспышка — как у кнопок (ADR 0112, 0114).
+  const button = (
+    <IconButton
+      ref={setNode}
+      shape="square"
+      size="compact"
+      disabled={disabled}
+      className={clsx(styles.handle, 'drag__handler--column')}
+      pending={busy || menu.trigger.pending}
+      errorFlash={flashKey}
+      {...ownAttributes}
+      aria-label={label}
+      {...(hasMenu && {
+        'aria-haspopup': 'menu' as const,
+        'aria-expanded': menu.open,
+        onClick: onMenuClick,
+        onTouchEnd: onMenuTouchEnd,
+        onKeyDown: onMenuKeyDown,
+        onPointerEnter: menu.trigger.onIntent,
+        onFocus: menu.trigger.onIntent,
+        onBlur: menu.trigger.onCancel,
+      })}
+      {...listeners}
+      onMouseDown={e => {
+        onClick?.(e)
+        listeners?.onMouseDown?.(e)
+      }}
+      onPointerDown={e => {
+        onClick?.(e)
+        pressedAt.current = { x: e.clientX, y: e.clientY }
+        listeners?.onPointerDown?.(e)
+      }}
+      onTouchStart={e => {
+        onClick?.(e)
+        listeners?.onTouchStart?.(e)
+      }}
+    >
+      {/* Строка раскрывает иконку прозрачностью, колонка — обёрткой по ширине. */}
+      <DragIcon
+        className={clsx(
+          type === 'row' && [
+            'cell__button',
+            'cell__button--hidden',
+            'row__button',
+            'row__button--hidden',
+          ],
+        )}
+      />
+    </IconButton>
+  )
+
   return (
     <>
       {type === 'row' ? (
-        // Ручка строки — квадратная кнопка кита: ожидание и вспышка — как у кнопок (ADR 0112).
-        <IconButton
-          ref={setNode}
-          shape="square"
-          className={clsx(styles.rowButton, 'drag__handler--column')}
-          pending={busy || menu.trigger.pending}
-          errorFlash={flashKey}
-          {...ownAttributes}
-          aria-label={label}
-          {...menuProps}
-          {...pressProps}
-        >
-          {icon}
-        </IconButton>
+        button
       ) : (
-        <span
-          ref={setNode}
-          className={clsx(styles.button, 'drag__handler--column', {
-            [styles.disabled]: disabled,
-            [ringStyles.ring]: hasMenu,
-          })}
-          {...ownAttributes}
-          {...menuProps}
-          {...(hasMenu && {
-            'aria-busy': menu.trigger.pending || undefined,
-            'data-error-flash': flash,
-          })}
-          {...pressProps}
+        // Ручка колонки шириной 0 до наведения: раскрывается и сдвигает подпись (ADR 0114).
+        <div
+          className={clsx(
+            'cell__button',
+            'cell__button--hidden',
+            styles.columnHandle,
+          )}
         >
-          {icon}
-        </span>
+          {button}
+        </div>
       )}
       {menu.open && hasMenu && (
         <HandleMenu

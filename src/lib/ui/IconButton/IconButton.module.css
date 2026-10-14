@@ -20,6 +20,11 @@
   transition: var(--tsr-comp-action-button-transition);
 }
 
+.iconButton[data-size='compact'] {
+  width: var(--tsr-comp-button-size-compact, 24px);
+  height: var(--tsr-comp-button-size-compact, 24px);
+}
+
 .iconButton[data-shape='square'] {
   border-radius: var(--tsr-comp-button-radius-square);
 }

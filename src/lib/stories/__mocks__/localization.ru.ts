@@ -134,6 +134,8 @@ export const RU_LABELS: TableLabels = {
   announceExpandFailed: error => `Не удалось загрузить: ${error}`,
   moveRowFailed: 'Неизвестная ошибка',
   announceMoveFailed: error => `Не удалось перенести строку: ${error}`,
+  moveColumnFailed: 'Неизвестная ошибка',
+  announceColumnMoveFailed: error => `Не удалось перенести колонку: ${error}`,
   announceChildrenLoaded: count =>
     count === 0 ? 'Строк нет' : `Загружено: ${rows(count)}`,
   loading: 'Загрузка',

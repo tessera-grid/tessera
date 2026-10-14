@@ -194,6 +194,10 @@ export interface TableLabels {
   moveRowFailed: string
   /** Объявление отказа переноса строки */
   announceMoveFailed: (error: string) => string
+  /** Текст отказа переноса колонки, если сервер не прислал свой (ADR 0114) */
+  moveColumnFailed: string
+  /** Объявление отказа переноса колонки */
+  announceColumnMoveFailed: (error: string) => string
   /** Объявление асинхронного прихода детей строки (`0` — пустой ответ, ADR 0056) */
   announceChildrenLoaded: (count: number) => string
   /** Доступное имя индикатора загрузки и объявление скелета первой загрузки */
@@ -413,6 +417,8 @@ export const DEFAULT_LABELS: TableLabels = {
   announceExpandFailed: error => `Couldn't load: ${error}`,
   moveRowFailed: 'Unknown error',
   announceMoveFailed: error => `Couldn't move row: ${error}`,
+  moveColumnFailed: 'Unknown error',
+  announceColumnMoveFailed: error => `Couldn't move column: ${error}`,
   announceChildrenLoaded: count =>
     count === 0 ? 'No rows' : `Loaded ${count} ${count === 1 ? 'row' : 'rows'}`,
   loading: 'Loading',

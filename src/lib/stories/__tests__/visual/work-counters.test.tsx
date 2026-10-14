@@ -1,6 +1,7 @@
 import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { revealedHandleWidth } from '../helpers'
 
 import { definePlugin } from '../../../core/definePlugin'
 import type { HeaderAction } from '../../../core/headerActions'
@@ -12,6 +13,7 @@ import { HeadCellView } from '../../../grid/HeadCell'
 import { HeadSelectionComponent } from '../../../plugins/rowSelection/HeadSelectionComponent'
 import { RowSelectionComponent } from '../../../plugins/rowSelection/RowSelectionComponent'
 import { headerActionMenu } from '../../../plugins'
+import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
 import { getData } from '../../__mocks__/data'
 import type { FeatureToggles } from '../../__mocks__/utils/argsToPlugins'
 import { ALL_PLUGINS, Grid, waitForQuietDocument } from '../memory.helpers'
@@ -435,5 +437,30 @@ describe('Счётчики работы — кнопки заголовка по
     expect(renders(work, ActionsZone), describeWork(work)).toBeLessThanOrEqual(
       2,
     )
+  })
+})
+
+describe('Счётчики работы — ручка колонки (ADR 0114)', () => {
+  test('CO10: наведение на заголовок раскрывает ручку без перерисовок — ни зон действий, ни ручек, ни заголовков', async () => {
+    const { measure } = await mountGrid({
+      enableColumnDragging: true,
+      enableColumnSorting: true,
+    })
+    const head = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__head-cell[data-column-id="${id}"]`,
+      )!
+    const handle = () =>
+      head('lastName').querySelector<HTMLElement>('.drag__handler--column')!
+    await userEvent.hover(head('firstName'))
+    const work = await measure(async () => {
+      await userEvent.hover(head('lastName'))
+      await expect
+        .poll(() => handle().parentElement!.getBoundingClientRect().width)
+        .toBe(revealedHandleWidth(handle()))
+    })
+    expect(renders(work, ActionsZone), describeWork(work)).toBe(0)
+    expect(renders(work, ColumnDraggingComponent), describeWork(work)).toBe(0)
+    expect(renders(work, HeadCellView), describeWork(work)).toBe(0)
   })
 })

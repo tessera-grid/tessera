@@ -10,6 +10,10 @@ export interface ColumnDraggingState {
 }
 
 export interface ColumnDraggingHooks {
+  /**
+   * Колонка перенесена; промис — ожидание на ручке, отказ возвращает колонку к прежним
+   * соседям (ADR 0114).
+   */
   onColumnDragEnd: (props: {
     /** Индекс среди перетаскиваемых листьев; у группы — её первого листа. */
     dragIndex: number
@@ -18,7 +22,7 @@ export interface ColumnDraggingHooks {
     columnId: string
     /** Новый порядок листьев. */
     columnOrder: string[]
-  }) => void
+  }) => void | PromiseLike<unknown>
   /** Перетаскивание завершилось без перестановки (ADR 0040, §1). */
   onColumnDragCancel?: (end: {
     columnId: string

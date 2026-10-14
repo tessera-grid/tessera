@@ -15,6 +15,7 @@ import {
   resolveMenuItems,
 } from '../core/headerActions'
 import type { SlotAction } from '../core/headerActions'
+import { headerCapacityOf } from '../grid/headerActions/headerCapacity'
 
 const action = (
   over: Partial<SlotAction> & Pick<SlotAction, 'id'>,
@@ -371,5 +372,38 @@ describe('headerActions: кнопки по ширине (ADR 0111)', () => {
     })
     expect(byThreshold.inline).toEqual([])
     expect(byThreshold.menu).toHaveLength(4)
+  })
+})
+
+describe('Вместимость кнопок заголовка с ручкой (ADR 0114)', () => {
+  it('CO9: число кнопок в ряд вычитает ширину раскрытой ручки — у перетаскиваемой незакреплённой колонки', () => {
+    // Ручка сдвигает подпись на 16: компакт 24 + отступ 4 − отступ содержимого 16 + зазор 4.
+    const metrics = { reserve: 80, button: 32, gap: 4, half: 12, handle: 16 }
+    const header = (column?: object) => ({
+      index: 0,
+      getSize: () => 190,
+      ...(column && { column }),
+    })
+    // 190px: (190 − 80 + 4) / 36 → 3; с ручкой (190 − 96 + 4) / 36 → 2.
+    expect(headerCapacityOf(header(), metrics)).toBe(3)
+    expect(
+      headerCapacityOf(
+        header({ getCanDrag: () => true, getIsPinned: () => false }),
+        metrics,
+      ),
+    ).toBe(2)
+    expect(
+      headerCapacityOf(
+        header({ getCanDrag: () => true, getIsPinned: () => 'left' }),
+        metrics,
+      ),
+      'закреплённая — ручки нет',
+    ).toBe(3)
+    expect(
+      headerCapacityOf(
+        header({ getCanDrag: () => false, getIsPinned: () => false }),
+        metrics,
+      ),
+    ).toBe(3)
   })
 })

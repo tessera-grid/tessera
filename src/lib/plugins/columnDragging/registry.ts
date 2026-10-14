@@ -11,13 +11,22 @@ import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { columnDraggingFeature } from './columnDraggingFeature'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { moveColumnKeyboardAction } from './keyboardActions'
+import { reconcileColumnMoves } from './commitColumnMove'
 import type { ColumnDraggingHooks } from './types'
 
 export interface ColumnDraggingOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Бизнес-колбэк окончания переноса колонки (аргумент фабрики). */
+  /**
+   * Колонка перенесена; промис — ожидание на ручке, отказ возвращает колонку к прежним
+   * соседям (ADR 0114).
+   */
   onColumnDragEnd?: ColumnDraggingHooks['onColumnDragEnd']
+  /**
+   * Откатывать перенос при отказе промиса `onColumnDragEnd`; по умолчанию `true`. `false` —
+   * клиент остаётся с новым порядком, расхождение с сервером допускается (ADR 0114).
+   */
+  revertOnReject?: boolean
   /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, колонка ушла (ADR 0040). */
   onColumnDragCancel?: ColumnDraggingHooks['onColumnDragCancel']
 }
@@ -31,6 +40,7 @@ export const columnDragging = definePlugin<ColumnDraggingOptions>()({
   }),
   keyboardActions: [moveColumnKeyboardAction],
   diagnose: neverInert,
+  reconcile: reconcileColumnMoves,
   slots: [
     {
       id: 'columnDraggingPlugin',
@@ -39,5 +49,8 @@ export const columnDragging = definePlugin<ColumnDraggingOptions>()({
       component: ColumnDraggingComponent,
     },
   ],
-  options: o => ({ enableColumnDragging: o.enabled !== false }),
+  options: o => ({
+    enableColumnDragging: o.enabled !== false,
+    columnDragRevertOnReject: o.revertOnReject !== false,
+  }),
 })

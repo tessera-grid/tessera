@@ -477,7 +477,7 @@ describe('WCAG 2.5.8 и 2.4.7 — размер целей и видимость 
       return [r.width, r.height]
     }
     expect(size(checkbox)).toEqual([16, 16])
-    expect(size(handle)).toEqual([16, 16])
+    // Ручка — кнопка кита (ADR 0112, 0114); иконка в ней прежняя.
     expect(size(handle.querySelector('svg')!)).toEqual([16, 16])
   })
 })

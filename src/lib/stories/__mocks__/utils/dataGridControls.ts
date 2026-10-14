@@ -94,6 +94,8 @@ import {
   rowExpandingColumnType,
   rowExpandingMaxDepthType,
   rowDraggingExpandDelayType,
+  rowDraggingRevertOnRejectType,
+  columnDraggingRevertOnRejectType,
   rowExpandingTreeLinesType,
   rowHeightType,
   rowSelectionSelectedCountType,
@@ -177,6 +179,9 @@ export const dataGridArgTypes = {
     {
       enableColumnSizing: enableColumnSizingType,
       enableColumnDragging: enableColumnDraggingType,
+      ...when('enableColumnDragging', {
+        columnDraggingRevertOnReject: columnDraggingRevertOnRejectType,
+      }),
       enableColumnVisibility: enableColumnVisibilityType,
       enableHeaderActionMenu: enableHeaderActionMenuType,
       ...when('enableHeaderActionMenu', {
@@ -215,6 +220,7 @@ export const dataGridArgTypes = {
       enableRowDragging: enableRowDraggingType,
       ...when('enableRowDragging', {
         rowDraggingExpandDelay: rowDraggingExpandDelayType,
+        rowDraggingRevertOnReject: rowDraggingRevertOnRejectType,
       }),
       enableRowGrouping: enableRowGroupingType,
     },
@@ -332,6 +338,7 @@ export const dataGridDefaultArgs = {
   columnSortingServer: false,
   enableColumnSizing: false,
   enableColumnDragging: false,
+  columnDraggingRevertOnReject: true,
   enableColumnPinning: false,
   columnPinningLeafPinning: false,
   enableColumnVisibility: false,
@@ -348,6 +355,7 @@ export const dataGridDefaultArgs = {
   rowExpandingTreeLines: false,
   enableRowDragging: false,
   rowDraggingExpandDelay: DEFAULT_ROW_DRAG_EXPAND_DELAY,
+  rowDraggingRevertOnReject: true,
   enableRowGrouping: false,
   enableRowActions: false,
   rowActionsWidth: DEFAULT_ROW_ACTIONS_OPTIONS.width,

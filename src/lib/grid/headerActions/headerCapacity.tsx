@@ -16,6 +16,8 @@ export interface HeaderMetrics {
   gap: number
   /** Половина зоны грипа ширины — заходит в заголовок справа от него. */
   half: number
+  /** Сдвиг подписи раскрытой ручкой перетаскивания колонки (ADR 0114). */
+  handle: number
 }
 
 export const HeaderMetricsContext = createContext<HeaderMetrics | undefined>(
@@ -36,6 +38,13 @@ const readHeaderMetrics = (probe: HTMLElement): HeaderMetrics => {
     button: length('--tsr-comp-button-size'),
     gap: length('--tsr-comp-cell-content-gap'),
     half: length('--tsr-comp-resize-handler-width') / 2,
+    handle: Math.max(
+      0,
+      length('--tsr-comp-button-size-compact') +
+        length('--tsr-comp-drag-handle-inset') -
+        length('--tsr-comp-cell-content-padding-x') +
+        length('--tsr-comp-cell-content-gap'),
+    ),
   }
 }
 
@@ -59,6 +68,7 @@ export const HeaderMetricsProvider = ({ children }: PropsWithChildren) => {
 interface HeaderLike {
   index: number
   getSize: () => number
+  column?: { getCanDrag?: () => boolean; getIsPinned?: () => unknown }
   headerGroup?: { headers: { column: { getCanResize?: () => boolean } }[] }
 }
 
@@ -71,9 +81,15 @@ export const headerCapacityOf = (
   // Грип соседа слева заходит в заголовок на половину зоны (ADR 0111).
   const previous = header.headerGroup?.headers[header.index - 1]
   const afterResizable = previous?.column.getCanResize?.() ?? false
+  // Раскрытая ручка перетаскивания — кнопка перед подписью (ADR 0114).
+  const handle =
+    !!header.column?.getCanDrag?.() && !header.column.getIsPinned?.()
   return buttonCapacity({
     width: header.getSize(),
-    reserve: metrics.reserve + (afterResizable ? metrics.half : 0),
+    reserve:
+      metrics.reserve +
+      (afterResizable ? metrics.half : 0) +
+      (handle ? metrics.handle : 0),
     button: metrics.button,
     gap: metrics.gap,
   })

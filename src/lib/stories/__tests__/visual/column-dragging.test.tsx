@@ -1,6 +1,7 @@
 import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
+import { revealedHandleWidth } from '../helpers'
 
 import { composed } from '../stories'
 // The PointerEvent plumbing is plugin-agnostic; reuse the vetted primitives from
@@ -222,32 +223,13 @@ describe('Column Dragging — requirements', () => {
     expect(style.height).toBe(`${DRAG_ICON_SIZE}px`)
   })
 
-  test('D19: the handle is absolutely positioned and fits the left content padding', async () => {
-    const container = await renderColumnDragging()
-    const handle = container.querySelector<HTMLElement>(HEAD_HANDLE)!
-    const cell = handle.closest<HTMLElement>(HEAD_CELL)!
-    const wrapper = cell.querySelector<HTMLElement>(CONTENT_WRAPPER)!
-
-    const handleStyle = getComputedStyle(handle)
-    expect(handleStyle.position).toBe('absolute')
-    expect(handleStyle.left).toBe('0px')
-
-    // The content wrapper's left padding is the gutter the handle must fit into.
-    const padLeft = parseFloat(getComputedStyle(wrapper).paddingLeft)
-    expect(padLeft).toBe(CONTENT_PADDING_LEFT)
-
-    // Handle pinned to the cell's left edge and no wider than that gutter, so it
-    // overlays the padding and never the title (which starts after the gutter).
-    const handleRect = handle.getBoundingClientRect()
-    const cellRect = cell.getBoundingClientRect()
-    expect(Math.abs(handleRect.left - cellRect.left)).toBeLessThan(2)
-    expect(handleRect.right - cellRect.left).toBeLessThanOrEqual(padLeft + 1)
-  })
-
   test('D20: the drag handle is hidden (opacity 0) until the header is hovered', async () => {
     const container = await renderColumnDragging()
-    const icon = container.querySelector<HTMLElement>(`${HEAD_HANDLE} svg`)!
-    expect(getComputedStyle(icon).opacity).toBe('0')
+    // Ручку прячет её обёртка: прозрачная и шириной 0 (ADR 0114).
+    const wrapper =
+      container.querySelector<HTMLElement>(HEAD_HANDLE)!.parentElement!
+    expect(getComputedStyle(wrapper).opacity).toBe('0')
+    expect(wrapper.getBoundingClientRect().width).toBe(0)
   })
 
   test('D21: the drag handle is revealed on header hover', async () => {
@@ -431,7 +413,7 @@ describe('Column Dragging — requirements', () => {
     await nextFrame()
   })
 
-  test('D29: a pinned column cannot be dragged (handle disabled)', async () => {
+  test('D29: a pinned column cannot be dragged — it has no handle', async () => {
     const container = await renderColumnDragging({ enableColumnPinning: true })
     const firstCell = renderedCells(container)[0]
 
@@ -451,9 +433,8 @@ describe('Column Dragging — requirements', () => {
     const pinnedCell = container.querySelector<HTMLElement>(
       `${HEAD_CELL}[data-cell-pinned='left']`,
     )!
-    const handle = pinnedCell.querySelector<HTMLElement>(HANDLE)!
-    // Disabled handle → `not-allowed` cursor (DragHandler `.disabled`).
-    expect(getComputedStyle(handle).cursor).toBe('not-allowed')
+    // У закреплённой колонки ручки нет — перетащить её нечем (ADR 0114).
+    expect(pinnedCell.querySelector(HANDLE)).toBeNull()
   })
 
   test('D30: a column dropped onto the pinned column never lands in the pinned zone', async () => {
@@ -542,9 +523,10 @@ describe('Column Dragging — requirements', () => {
 
     await userEvent.hover(source)
     const handle = source.querySelector<HTMLElement>(HANDLE)!
+    // Ручка раскрывается по ширине: нажатие — когда обёртка её больше не обрезает.
     await expect
-      .poll(() => handle.getBoundingClientRect().width)
-      .toBeGreaterThan(0)
+      .poll(() => handle.parentElement!.getBoundingClientRect().width)
+      .toBe(revealedHandleWidth(handle))
     const hr = handle.getBoundingClientRect()
     const tr = target.getBoundingClientRect()
     const from = { x: hr.left + hr.width / 2, y: hr.top + hr.height / 2 }

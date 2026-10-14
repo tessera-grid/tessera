@@ -34,10 +34,12 @@ const meta = {
     errorFlash: { table: { disable: true } },
     variant: { control: 'inline-radio', options: ['ghost', 'overlay'] },
     shape: { control: 'inline-radio', options: ['circle', 'square'] },
+    size: { control: 'inline-radio', options: ['default', 'compact'] },
   },
   args: {
     label: 'Pin column',
     shape: 'circle',
+    size: 'default',
     variant: 'ghost',
     active: false,
     disabled: false,
@@ -84,22 +86,24 @@ export const IconButtonVariants: Story = {
         >
           {(
             [
-              ['ghost', 'circle'],
-              ['ghost', 'square'],
-              ['overlay', 'circle'],
+              ['ghost', 'circle', 'default'],
+              ['ghost', 'square', 'default'],
+              ['overlay', 'circle', 'default'],
+              ['ghost', 'square', 'compact'],
             ] as const
-          ).map(([variant, shape]) => (
-            <Fragment key={`${variant}-${shape}`}>
+          ).map(([variant, shape, size]) => (
+            <Fragment key={`${variant}-${shape}-${size}`}>
               {(['rest', 'active', 'pending', 'disabled'] as const).map(
                 state => (
                   <IconButton
                     key={state}
                     variant={variant}
                     shape={shape}
+                    size={size}
                     active={state === 'active'}
                     pending={state === 'pending'}
                     disabled={state === 'disabled'}
-                    label={`${variant} ${shape} ${state}`}
+                    label={`${variant} ${shape} ${size} ${state}`}
                   >
                     {icon}
                   </IconButton>

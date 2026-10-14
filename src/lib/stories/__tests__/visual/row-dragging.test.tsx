@@ -1,7 +1,9 @@
+import { addons, mockChannel } from 'storybook/preview-api'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { PlayArgs } from '../../__mocks__/catalog'
 import { composed } from '../stories'
 import {
   DRAG_COLUMN_WIDTH,
@@ -99,12 +101,12 @@ describe('Row Dragging — requirements', () => {
     expect(style.height).toBe(`${DRAG_ICON_SIZE}px`)
   })
 
-  test('D4: the service column width is 40px (button 32 + padding 4 + 4)', async () => {
+  test('D4: the service column width is 32px (compact button 24 + padding 4 + 4)', async () => {
     const container = await renderRowDragging()
     const dragCell = container
       .querySelector<HTMLElement>(HANDLE)!
       .closest<HTMLElement>('.data-grid__body-cell')!
-    // Spec width: 32 + 4 + 4 = 40 (`COLUMN_DRAGGING_SIZE`, border-box cell).
+    // Spec width: 24 + 4 + 4 = 32 (`COLUMN_DRAGGING_SIZE`, border-box cell).
     expect(Math.round(dragCell.getBoundingClientRect().width)).toBe(
       DRAG_COLUMN_WIDTH,
     )
@@ -415,9 +417,16 @@ describe('Row Dragging — Storybook play parity', () => {
   test.each(draggableStories)(
     '%s: the demo play scenario runs without throwing',
     async (_name, Story) => {
-      const { container } = await render(<Story />)
+      // Аргументы, которые меняет `play` (`updateArgs`), доходят до истории, как в каталоге:
+      // без установленного канала каждый `getChannel` даёт новый.
+      if (!addons.hasChannel()) addons.setChannel(mockChannel())
+      const { container } = await render(
+        <PlayArgs storyId={Story.id}>
+          {updates => <Story {...updates} />}
+        </PlayArgs>,
+      )
       expect(Story.play).toBeDefined()
-      await Story.play!({ canvasElement: container })
+      await Story.play!({ canvasElement: container, id: Story.id })
     },
   )
 })

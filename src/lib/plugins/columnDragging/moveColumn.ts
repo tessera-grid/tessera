@@ -1,16 +1,24 @@
 /**
  * Перестановка узла (лист или группа) к соседнему перемещаемому узлу того же родителя
  * — общая для `Alt+Shift+←/→` (ADR 0031, KB3) и меню ручки (ADR 0034, DA2; ADR 0052,
- * ND5): тот же `setColumnOrder` и `onColumnDragEnd`, что у DnD.
+ * ND5): тот же `setColumnOrder` и `onColumnDragEnd`, что у DnD; промис колбэка — ожидание
+ * и откат (ADR 0114).
  */
 import { readPluginHooks } from '../../core/definePlugin'
 import {
   type NodeHeader,
   draggableIndexOfNode,
   isMovableNode,
+  leafColumnsOf,
   moveBlock,
   siblingsOf,
 } from '../../core/columnNodes'
+import {
+  flashLeaves,
+  neighboursOf,
+  readColumnMoves,
+  settleColumnMove,
+} from './commitColumnMove'
 import type { ColumnDraggingHooks } from './types'
 
 interface MoveTable {
@@ -23,8 +31,16 @@ interface MoveTable {
 /** `-1` — влево, `1` — вправо. */
 export type ColumnMoveDirection = -1 | 1
 
-export const isMovableColumn = (header: unknown) =>
-  isMovableNode(header as NodeHeader)
+/** Узел переносим и его прошлый перенос не ждёт промиса (ADR 0114). */
+export const isMovableColumn = (header: unknown) => {
+  const node = header as NodeHeader & {
+    getContext: () => { table: unknown }
+  }
+  return (
+    isMovableNode(node) &&
+    !(node.column.id in readColumnMoves(node.getContext().table))
+  )
+}
 
 const findMove = (
   table: unknown,
@@ -51,12 +67,16 @@ export const applyNodeMove = (
   target: NodeHeader,
   toRight: boolean,
 ) => {
-  const next = moveBlock(currentLeafOrder(table), active, target, toRight)
+  const base = currentLeafOrder(table)
+  const leaves = leafColumnsOf(active).map(leaf => leaf.id)
+  const next = moveBlock(base, active, target, toRight)
   // Индексы — по порядку до перестановки.
   const dragIndex = draggableIndexOfNode(active)
   const hoverIndex = draggableIndexOfNode(target)
   ;(table as MoveTable).setColumnOrder(() => next)
-  readPluginHooks<Partial<ColumnDraggingHooks>>(
+  // Колонка вспыхивает на новом месте, как строка (ADR 0114, §4).
+  flashLeaves(table, leaves, 'arrival')
+  const result = readPluginHooks<Partial<ColumnDraggingHooks>>(
     table as Parameters<typeof readPluginHooks>[0],
     'columnDragging',
   ).onColumnDragEnd?.({
@@ -65,6 +85,12 @@ export const applyNodeMove = (
     columnId: active.column.id,
     columnOrder: next,
   })
+  settleColumnMove(
+    table,
+    active.column.id,
+    { leaves, ...neighboursOf(base, leaves) },
+    result,
+  )
   return next
 }
 

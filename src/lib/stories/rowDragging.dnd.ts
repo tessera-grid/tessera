@@ -7,10 +7,10 @@
 
 /** Icon side per spec (`DragHandler.module.css`: `.button svg { 16px }`). */
 export const DRAG_ICON_SIZE = 16
-/** Handle — a square kit button (ADR 0112): `--tsr-comp-button-size`. */
-export const DRAG_BUTTON_SIZE = 32
-/** Column width per spec: button (32) + left padding (4) + right padding (4). */
-export const DRAG_COLUMN_WIDTH = DRAG_BUTTON_SIZE + 4 + 4 // = 40
+/** Handle — a compact square kit button (ADR 0114): `--tsr-comp-button-size-compact`. */
+export const DRAG_BUTTON_SIZE = 24
+/** Column width per spec: button (24) + left padding (4) + right padding (4). */
+export const DRAG_COLUMN_WIDTH = DRAG_BUTTON_SIZE + 4 + 4 // = 32
 
 export const ROW = '.data-grid__body-row'
 export const USER_CELL =

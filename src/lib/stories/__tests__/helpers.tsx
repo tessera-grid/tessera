@@ -381,3 +381,16 @@ export async function measureInteractionWork(
   }
   return perfCommands.perfTraceStop(id)
 }
+
+/**
+ * Ширина раскрытой обёртки ручки колонки (ADR 0114): кнопка заходит в отступ содержимого,
+ * обёртка растёт на её ширину с полями — на сдвиг подписи.
+ */
+export const revealedHandleWidth = (handle: Element) => {
+  const style = getComputedStyle(handle)
+  return (
+    handle.getBoundingClientRect().width +
+    parseFloat(style.marginLeft) +
+    parseFloat(style.marginRight)
+  )
+}

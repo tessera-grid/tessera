@@ -34,6 +34,8 @@ export interface IconButtonProps
   variant?: 'ghost' | 'overlay'
   /** Форма: `circle` — круг (кнопки шапки, ячейки, строки), `square` — скруглённый квадрат (панели). */
   shape?: 'circle' | 'square'
+  /** Размер: `compact` — `--tsr-comp-button-size-compact` (ручки перетаскивания). */
+  size?: 'default' | 'compact'
   /** Активное состояние: сортировка, закрепление, открытый поповер. */
   active?: boolean
   /** Выключенная остаётся в порядке фокуса (`aria-disabled`) — Base UI Button. */
@@ -59,6 +61,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       tooltipWhenDisabled = false,
       variant = 'ghost',
       shape = 'circle',
+      size = 'default',
       active = false,
       className,
       disabledClassName,
@@ -91,6 +94,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-pending-leaving={states['data-pending-leaving']}
         data-variant={variant}
         data-shape={shape}
+        data-size={size === 'compact' ? size : undefined}
         data-active={active || undefined}
         onClick={states.onClick}
         className={clsx(

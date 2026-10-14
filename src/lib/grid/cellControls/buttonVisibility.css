@@ -294,3 +294,14 @@
   overflow: unset;
   min-width: 0;
 }
+
+/* Ручка колонки ждёт или вспыхивает ошибкой (ADR 0114): раскрыта и без наведения. */
+.data-grid__head-cell
+  .cell__button--hidden:has(
+    > .drag__handler--column:is([aria-busy='true'], [data-error-flash])
+  ) {
+  opacity: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: unset;
+  min-width: 0;
+}

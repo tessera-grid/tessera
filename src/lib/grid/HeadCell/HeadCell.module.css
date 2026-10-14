@@ -155,26 +155,10 @@
 
   /*
    * Обёртка содержимого не служит опорой абсолютным детям: её обрезка (KN32) не
-   * задевает грип ширины на границе (ADR 0111). Опора грипа и ручки — ячейка.
+   * задевает грип ширины на границе (ADR 0111). Опора грипа — ячейка.
    */
   & :global(.data-grid__cell-wrapper-content) {
     position: static;
-  }
-
-  /* Абсолютное позиционирование drag-иконки в заголовке */
-
-  & :global(.drag__handler--column) {
-    position: absolute !important;
-    left: 0 !important;
-  }
-
-  &[data-after-resizable] :global(.drag__handler--column) {
-    left: calc(var(--tsr-comp-resize-handler-width) / 2) !important;
-  }
-
-  /* Зона нажатия 24×24 — вправо от края ячейки, не на грип ширины соседа (ADR 0034). */
-  & :global(.drag__handler--column)::before {
-    inset: -4px -8px -4px 0;
   }
 }
 

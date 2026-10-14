@@ -1,34 +1,25 @@
-.button {
-  position: relative;
-  display: flex;
-  color: var(--tsr-comp-control-color);
+/*
+ * Ручка строки и колонки — компактная квадратная кнопка кита (ADR 0112, 0114): вид, свет
+ * ожидания и вспышка — `IconButton`; ручка добавляет только захват и свайп. Свайп по
+ * ручке тянет строку или колонку, а не прокручивает грид (ADR 0086).
+ */
+.handle {
   cursor: grab;
-  /* Свайп по ручке тянет колонку или строку, а не прокручивает грид (ADR 0086). */
   touch-action: none;
-}
-
-/* Прозрачная зона нажатия не меньше 24×24 (WCAG 2.5.8, ADR 0034); вид не меняется. */
-.button::before {
-  content: '';
-  position: absolute;
-  inset: min(0px, calc((100% - 24px) / 2));
-}
-
-.button svg {
-  width: 16px;
-  height: 16px;
-}
-
-.disabled {
-  cursor: not-allowed;
-  color: var(--tsr-comp-control-disabled-color);
 }
 
 /*
- * Ручка строки — квадратная кнопка кита (ADR 0112): вид, свет ожидания и вспышка —
- * `IconButton`; ручка добавляет только захват и свайп.
+ * Ручка колонки (ADR 0114). Раскрытая заходит в отступ содержимого и оставляет слева
+ * `--tsr-comp-drag-handle-inset`, справа — зазор до подписи; колонка обёртки растёт ровно
+ * на сдвиг подписи. В покое обёртка съедает и зазор: подпись — вровень с текстом тела.
  */
-.rowButton {
-  cursor: grab;
-  touch-action: none;
+.columnHandle {
+  margin-inline-end: calc(-1 * var(--tsr-comp-cell-content-gap));
+}
+
+.columnHandle > .handle {
+  margin-inline: calc(
+      var(--tsr-comp-drag-handle-inset) - var(--tsr-comp-cell-content-padding-x)
+    )
+    var(--tsr-comp-cell-content-gap);
 }

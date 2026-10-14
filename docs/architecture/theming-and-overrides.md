@@ -61,7 +61,8 @@
   `--tsr-comp-toolbar-offset` выставляет сам грид при `enableToolbar` — его не
   переопределяют.
 - **Кнопки кита** (ADR [0098](../decisions/0098-button-system.md)): `Button` и
-  `IconButton` делят `--tsr-comp-button-size` (32px), `-icon-size` (16px), формы
+  `IconButton` делят `--tsr-comp-button-size` (32px; `-size-compact` — 24px для ручек
+  перетаскивания, ADR [0114](../decisions/0114-async-column-moves.md)), `-icon-size` (16px), формы
   `-radius-circle` (50%) и `-radius-square` (`--tsr-comp-control-radius`) и цвет
   покоя `-color`; у `Button` ещё `-padding-x` / `-gap` / `-border` (ADR
   [0097](../decisions/0097-text-button.md)). Все кнопки грида и плагинов собраны из

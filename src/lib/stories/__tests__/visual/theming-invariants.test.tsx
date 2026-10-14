@@ -128,14 +128,18 @@ describe('Token architecture — static invariants', () => {
     )
   })
 
-  test('HL22: highlight tokens reference only semantic roles; no built-in tone sits on --tsr-sys-info', () => {
+  test('HL22: highlight tokens reference only semantic roles; no built-in tone sits on --tsr-sys-info; the arrival tone is exactly the row arrival colour', () => {
     // Подсветка (ADR 0080): заливки тонов — от ролей темы, синий занят
-    // выделением ячеек и приходом.
-    const tokens = [
+    // выделением ячеек и приходом. Тон `arrival` — вспышка перенесённой колонки, тот же
+    // приход, что у строки (ADR 0114, §4).
+    const all = [
       ...themeCss.matchAll(
         /(--tsr-comp-highlight-[a-z0-9-]+)\s*:\s*([\s\S]*?);/g,
       ),
     ]
+    const arrival = all.find(m => m[1] === '--tsr-comp-highlight-arrival-bg')
+    expect(arrival?.[2]?.trim()).toBe('var(--tsr-comp-row-arrival-color)')
+    const tokens = all.filter(m => m !== arrival)
     expect(tokens.map(m => m[1])).toEqual(
       expect.arrayContaining([
         '--tsr-comp-highlight-danger-bg',

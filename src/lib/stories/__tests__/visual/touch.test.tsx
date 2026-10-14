@@ -2,11 +2,13 @@ import axe from 'axe-core'
 import { commands, server } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
+import { revealedHandleWidth } from '../helpers'
 
 import { Stories, renderGrid } from '../helpers'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { pinViaPopover } from './column-pinning-helpers'
 
 // Касания (ADR 0086, TU1–TU12, TU14): проект `touch` в `npm test` — Chromium без
 // наведения и с грубым указателем — и проект `mobile` в `test:engines` (iPhone, Pixel).
@@ -647,5 +649,48 @@ describe('Касания — бросок в свёрнутые группы (AD
     } finally {
       await screen.unmount()
     }
+  })
+})
+
+describe('Ручка колонки на касаниях (ADR 0114)', () => {
+  test('CO8: на касаниях ручка колонки раскрыта всегда; у узла закреплённой зоны ручки нет; облако перетаскивания показывает ручку раскрытой', async () => {
+    renderGrid({
+      columnCount: 6,
+      dataCount: 20,
+      enableColumnDragging: true,
+      enableColumnPinning: true,
+    })
+    await waitForGrid()
+    const head = headById(dataColumn())
+    const handle = head.querySelector<HTMLElement>(HANDLE)!
+    expect(handle.tagName).toBe('BUTTON')
+    await settle(head)
+    expect(shown(handle.parentElement!)).toBe(true)
+    expect(handle.parentElement!.getBoundingClientRect().width).toBe(
+      revealedHandleWidth(handle),
+    )
+
+    // Облако перетаскивания — ручка в нём раскрыта.
+    const from = center(handle)
+    await touch.realTouchDown([from])
+    try {
+      await touch.realTouchMove(from, { x: from.x + 60, y: from.y }, 6)
+      const overlay = () =>
+        document.querySelector<HTMLElement>('.data-grid-head__cell--overlay')
+      await expect.poll(overlay).not.toBeNull()
+      const cloud = overlay()!.querySelector<HTMLElement>(HANDLE)!
+      expect(shown(cloud.parentElement!)).toBe(true)
+    } finally {
+      await touch.realTouchUp()
+    }
+
+    // Закреплённый узел ручки не получает.
+    await pinViaPopover(headById('lastName'), 'Pin left')
+    const pinned = () =>
+      document.querySelector(
+        `${HEAD_CELL}[data-column-id='lastName'][data-cell-pinned='left']`,
+      )
+    await expect.poll(pinned).not.toBeNull()
+    expect(pinned()!.querySelector(HANDLE)).toBeNull()
   })
 })

@@ -31,6 +31,11 @@ export interface RowDraggingOptions {
    * дереве без него перенос недопустим (ADR 0112).
    */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
+  /**
+   * Откатывать перенос при отказе промиса `onRowDragEnd`; по умолчанию `true`. `false` —
+   * клиент остаётся с новым порядком, расхождение с сервером допускается (ADR 0114).
+   */
+  revertOnReject?: boolean
   /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
   onRowDragCancel?: RowDraggingHooks['onRowDragCancel']
 }
@@ -57,5 +62,6 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
   options: o => ({
     enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),
     rowDragExpandDelay: o.expandDelay ?? DEFAULT_ROW_DRAG_EXPAND_DELAY,
+    rowDragRevertOnReject: o.revertOnReject !== false,
   }),
 })

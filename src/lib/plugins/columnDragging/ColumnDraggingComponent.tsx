@@ -1,13 +1,13 @@
 /**
  * Слот-ручка перетаскивания столбца. Реактивность на срезе `columnDraggingActiveId`
- * (`useSlice`); ручка гаснет у закреплённого узла (зона листьев). Переиспользуем
+ * (`useSlice`); у закреплённого узла (зона листьев) ручки нет (ADR 0114). Переиспользуем
  * grid-компонент DragHandler. Хуки не читает — колбэк живёт в dnd-редьюсере и
  * `moveColumn`. Клик по ручке — меню «Move left / right» (ADR 0034, DA1) — и у
  * группы (ADR 0052, ND5).
  */
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
-import { useSlice } from '../../core/reactivity'
+import { useSlice, useTableState } from '../../core/reactivity'
 import { DragHandler } from '../../grid/dnd'
 import {
   type ColumnMoveDirection,
@@ -25,7 +25,19 @@ export const ColumnDraggingComponent = ({
   useSlice(table, 'columnDraggingActiveId')
   const labels = useLocalization()
 
-  if (!column.getCanDrag()) {
+  // Ожидание и отказ переноса (ADR 0114) — только этого узла.
+  const { busy, failed } = useTableState(table, (state: unknown) => {
+    const s = state as {
+      columnMoves?: Record<string, unknown>
+      columnMoveFailed?: Record<string, number>
+    }
+    return {
+      busy: !!s.columnMoves?.[column.id],
+      failed: s.columnMoveFailed?.[column.id],
+    }
+  }) as { busy: boolean; failed?: number }
+
+  if (!column.getCanDrag() || zoneOf(header as never) !== false) {
     return null
   }
 
@@ -40,7 +52,8 @@ export const ColumnDraggingComponent = ({
     <DragHandler
       id={column.id}
       type="column"
-      disabled={zoneOf(header as never) !== false}
+      busy={busy}
+      errorFlash={failed}
       label={labels.moveColumn}
       table={table}
       getMenuItems={() => [

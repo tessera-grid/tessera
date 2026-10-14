@@ -8,7 +8,7 @@ import {
   type RowDraggingLazyTreeDemoProps,
 } from './demos/sessionDemos'
 import { expect, userEvent, waitFor } from 'storybook/test'
-import { settle } from './__mocks__/catalogPlay'
+import { settle, updateArgs } from './__mocks__/catalogPlay'
 import {
   DRAG_FILL,
   HANDLE,
@@ -228,9 +228,9 @@ export const RowDraggingLazyTree: StoryObj<RowDraggingLazyTreeDemoProps> = {
   },
   parameters: {
     controls: { exclude: ['columnCount', 'dataCount', 'dataOverride'] },
-    requirements: ['LT14'],
+    requirements: ['LT14', 'CO19'],
   },
-  play: async ({ canvasElement, step }) => {
+  play: async ({ canvasElement, id, step }) => {
     const canvas = canvasElement
     const log = () => canvas.ownerDocument.body.textContent ?? ''
     const row = (id: string) =>
@@ -317,7 +317,37 @@ export const RowDraggingLazyTree: StoryObj<RowDraggingLazyTreeDemoProps> = {
         await waitFor(() =>
           expect(handle).toHaveAttribute('data-error-flash', 'on'),
         )
+        expect(row('node-0-0-1')).toHaveAttribute('data-highlight', 'danger')
         // Вспышка отгорела — история в покое.
+        await waitFor(
+          () => expect(handle).not.toHaveAttribute('data-error-flash', 'on'),
+          slow,
+        )
+      },
+    )
+
+    await step(
+      'revertOnReject off: the rejected row stays where it was dropped',
+      async () => {
+        await updateArgs(id, { rowDraggingRevertOnReject: false })
+        await userEvent.click(
+          [...canvas.ownerDocument.querySelectorAll('button')].find(
+            button => button.textContent === 'Reject next move',
+          )!,
+        )
+        const drop = await dropInto('node-0-0-2', 'node-1')
+        drop()
+        await waitFor(() => expect(canvas.querySelector(OVERLAY)).toBeNull())
+        await waitFor(
+          () => expect(log()).toContain('rejected the move of node-0-0-2'),
+          slow,
+        )
+        await waitFor(() =>
+          expect(row('node-0-0-2')).toHaveAttribute('data-highlight', 'danger'),
+        )
+        const kept = order()
+        expect(kept.indexOf('node-0-0-2')).toBe(kept.indexOf('node-1') + 1)
+        const handle = row('node-0-0-2')!.querySelector(HANDLE)!
         await waitFor(
           () => expect(handle).not.toHaveAttribute('data-error-flash', 'on'),
           slow,
