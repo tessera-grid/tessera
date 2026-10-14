@@ -19,6 +19,7 @@ import { composed } from '../stories'
 import { Stories, humanClick, settleRowMotion } from '../helpers'
 import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS, resolveColor } from './a11y-helpers'
+import { dragOver, release, settleSlotAfter } from './row-drop-helpers'
 
 // Движение строк (ADR 0107, RM1–RM17, RM19, RM22). Позиции, прозрачность и призраки
 // снимаются каждый кадр, пока идёт смена модели: видно и переезд, и его конец.
@@ -1169,6 +1170,52 @@ describe('Приземление перестановки вспышкой (ADR 
       await dropAndCheck()
     } finally {
       await pointer.reducedMotion(false)
+      await screen.unmount()
+    }
+  })
+})
+
+describe('Движение строк — прокрутка после перетаскивания (ADR 0107)', () => {
+  test('RM29: прокрутка после перетаскивания и смены строк выше не сдвигает строки окна ни в одном кадре — строки не наезжают друг на друга', async () => {
+    const screen = await render(
+      <composed.RowDraggingLazyTree loadDelayMs={0} moveDelayMs={0} />,
+    )
+    try {
+      await expect.poll(() => rowById('node-5')).not.toBeNull()
+      // Перетаскивание: dnd-kit меряет строки окна.
+      const { at } = await dragOver('node-3', 'node-5', 0)
+      await settleSlotAfter('node-5', at)
+      await release()
+      // Строки ниже групп уезжают — замеры dnd-kit устарели; строк больше окна.
+      for (const id of ['node-0', 'node-1', 'node-2', 'node-4']) {
+        await userEvent.click(rowById(id)!.querySelector<HTMLElement>(TOGGLE)!)
+        await expect.poll(() => rowById(`${id}-2`)).not.toBeNull()
+      }
+      await settleRowMotion()
+
+      const scroller = document.querySelector<HTMLElement>(SCROLLER)!
+      const box = scroller.getBoundingClientRect()
+      const middle = {
+        x: box.left + box.width / 2,
+        y: box.top + box.height / 2,
+      }
+      const shifted = () =>
+        [...document.querySelectorAll<HTMLElement>(BODY_ROW)]
+          .filter(row =>
+            /translate3d\([^,]+,\s*-?[1-9]/.test(row.style.transform),
+          )
+          .map(row => `${row.dataset.rowId} ${row.style.transform}`)
+      const frames = await sampleFrames(shifted, async () => {
+        for (let pass = 0; pass < 2; pass++) {
+          await pointer.realWheel(middle, 100, 8, 16)
+          await sleep(150)
+          await pointer.realWheel(middle, -100, 8, 16)
+          await sleep(150)
+        }
+      })
+      expect(frames.length).toBeGreaterThan(20)
+      expect(frames.flat()).toEqual([])
+    } finally {
       await screen.unmount()
     }
   })
