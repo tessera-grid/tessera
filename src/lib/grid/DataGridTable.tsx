@@ -9,9 +9,11 @@ import {
 } from '../core/keyboardNavigation'
 import { getRowWindow } from '../core/pagination'
 import { RenderSlot } from '../core/renderSlots'
+import { useTableState } from '../core/reactivity'
 import type { Column, HeaderGroup, Row, Table } from '../types'
 import { BodyDndBoundary } from './DndBodyWrapper'
-import { MemoizedBody } from './Body'
+import { type DropPreview, MemoizedBody } from './Body'
+import type { RowDragOverlayState } from '../plugins/rowDragging/types'
 import { MemoizedFooter } from './Footer'
 import { HeadDndBoundary } from './DndHeadWrapper'
 import { MemoizedHead } from './Head'
@@ -72,6 +74,22 @@ export const DataGridTable = ({
   // становится treegrid (ADR 0032, W10).
   const hierarchical = isTreeGrid(table)
   // Страница — окно полного набора: число строк и индексы сквозные (ADR 0038, PG15).
+  // Превью броска строки (ADR 0108): меняется на каждую смену места, только пока тащат.
+  const dropPreview = useTableState(table as never, (state: unknown) => {
+    const drag = (state as { rowDragging?: RowDragOverlayState }).rowDragging
+    return drag?.activeId != null &&
+      drag.fromIndex != null &&
+      drag.overIndex != null
+      ? {
+          activeId: String(drag.activeId),
+          from: drag.fromIndex,
+          to: drag.overIndex,
+          depth: drag.depth,
+          acceptable: drag.acceptable,
+        }
+      : null
+  }) as DropPreview | null
+
   const rowWindow = getRowWindow(table, rows)
 
   const {
@@ -161,6 +179,7 @@ export const DataGridTable = ({
           virtualRows={virtualRows}
         >
           <MemoizedBody
+            dropPreview={dropPreview}
             layout={layout}
             rows={rows}
             virtualRows={virtualRows}

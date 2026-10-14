@@ -11,6 +11,8 @@ interface Announcer {
   labels: TableLabels
   /** Значение CSS-токена темы в контексте смонтированного грида. */
   token?: (name: string) => string
+  /** Токен длины, вычисленный браузером (с `calc()`), px. */
+  length?: (name: string) => number
 }
 
 const announcers = new WeakMap<object, Announcer>()
@@ -35,6 +37,13 @@ export const announcerLabels = (table: unknown): TableLabels | undefined =>
 /** Токен темы грида — для таймингов, отсчитываемых вне React; без грида — `''`. */
 export const readGridToken = (table: unknown, name: string): string =>
   announcers.get(storeOf(table))?.token?.(name).trim() ?? ''
+
+/**
+ * Токен длины темы грида в px: браузер вычисляет `calc()`, которого не разберёт
+ * `parseFloat` строки токена; без грида — `NaN`.
+ */
+export const readGridLength = (table: unknown, name: string): number =>
+  announcers.get(storeOf(table))?.length?.(name) ?? NaN
 
 /** Объявить текст; без смонтированного грида — ничего. */
 export const announce = (table: unknown, message: string): void =>

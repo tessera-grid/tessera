@@ -49,7 +49,6 @@ import {
   useRowVirtualizer,
 } from '../core/virtualization'
 import { useScrollViewport } from '../core/scrollToRow/viewport'
-import { getRowDraggableStyles } from '../plugins/rowDragging'
 import { isNearAutoScrollEdge } from './dnd/parameters'
 import { useDragPointerY } from './dnd/useDragPointerY'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
@@ -263,18 +262,6 @@ export const DataGrid = ({
     columnsTotalSize: bodyWidth,
   })
 
-  // rowDragging — uncontrolled слайс плагина rowDragging: при отсутствии
-  // плагина его нет в store, читаем через ?. с дефолтами.
-  const draggableCssVariables = useMemo(
-    () =>
-      getRowDraggableStyles({
-        activeId: rowDragging?.activeId ?? null,
-        acceptable: rowDragging?.acceptable ?? true,
-        offsetLeft: rowDragging?.offsetLeft ?? 0,
-      }),
-    [rowDragging?.activeId, rowDragging?.acceptable, rowDragging?.offsetLeft],
-  )
-
   const loading = (table.options as any).loading as
     'initial' | 'refresh' | false | undefined
   const initialLoading = loading === 'initial'
@@ -334,7 +321,6 @@ export const DataGrid = ({
       '--tsr-comp-body-height': `${bodyHeight}px`,
     } as CSSProperties),
     ...heights.vars,
-    ...draggableCssVariables,
     ...containerStyles,
     ...style,
   }
@@ -486,6 +472,11 @@ export const DataGrid = ({
                     }
                     data-row-dragging={
                       rowDragging?.activeId != null || undefined
+                    }
+                    data-row-drop-invalid={
+                      (rowDragging?.activeId != null &&
+                        rowDragging.acceptable === false) ||
+                      undefined
                     }
                     data-row-animation={
                       (table.options as any).enableRowAnimation !== false ||

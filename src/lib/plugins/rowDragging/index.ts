@@ -5,7 +5,6 @@ export { RowDraggingComponent } from './RowDraggingComponent'
 export { COLUMN_DRAGGING_ID } from './rowDraggingColumn'
 
 export { getRowDraggingEvents } from './getRowDraggingEvents'
-export { getRowDraggableStyles } from './getRowDraggableStyles'
 export { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 export { animateLayoutChanges } from './animationHelpers'
 

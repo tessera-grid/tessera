@@ -62,6 +62,16 @@ export const LiveRegion = ({
           themeNode?.current
             ? getComputedStyle(themeNode.current).getPropertyValue(name)
             : '',
+        length: name => {
+          const node = themeNode?.current
+          if (!node) return NaN
+          const probe = document.createElement('span')
+          probe.style.cssText = `position:absolute;visibility:hidden;width:var(${name})`
+          node.append(probe)
+          const width = probe.getBoundingClientRect().width
+          probe.remove()
+          return width
+        },
       }),
     [table, labels, themeNode],
   )

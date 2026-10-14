@@ -2,10 +2,11 @@
 // при enableRowDragging (иначе цена useSortable платится на каждый смонтированный
 // ряд). Состояние overlay читается из атома rowDragging; геометрия
 // переупорядочивания — getRowDraggingEvents.
-import { type PropsWithChildren, useMemo } from 'react'
+import { type PropsWithChildren, useCallback, useMemo, useState } from 'react'
 
 import {
   DndContext,
+  type DragStartEvent,
   DragOverlay,
   MouseSensor,
   PointerSensor,
@@ -20,6 +21,8 @@ import type { Table } from '../types'
 import { cancelDragLikeEscape } from '../core/cancelInteraction'
 import { useSlice, useTableState } from '../core/reactivity'
 import { getRowDraggingEvents } from '../plugins/rowDragging'
+import { readRowNestingIndent } from '../core/rowNesting'
+import { createDropLevel } from './dnd/dropLevel'
 import {
   Z_INDEX,
   adjustOverlayPosition,
@@ -93,13 +96,31 @@ export const DndBodyWrapper = ({
   virtualRows,
   children,
 }: PropsWithChildren<DndBodyWrapperProps>) => {
+  // Уровень броска — по тексту облака (ADR 0108, §2): начало уровней строки меряется на
+  // старте, отступ текста облака — по нему самому.
+  const [dropLevel] = useState(createDropLevel)
+  const attachOverlay = useCallback(
+    (node: HTMLDivElement | null) => dropLevel.setOverlay(node),
+    [dropLevel],
+  )
   const {
     onRowDragStart,
     onRowDragMove,
     onRowDragEnd,
     onRowDragCancel,
     onRowDragAbort,
-  } = getRowDraggingEvents(table)
+  } = getRowDraggingEvents(table, { levelAt: dropLevel.levelAt })
+  const startDrag = (event: DragStartEvent) => {
+    const { row } = event.active.data.current as { row: { depth: number } }
+    dropLevel.start(
+      (event.activatorEvent?.target as Element | null)?.closest?.(
+        '.data-grid__body-row',
+      ),
+      row.depth,
+      readRowNestingIndent(table),
+    )
+    onRowDragStart?.(event)
+  }
 
   const rowDragging = useSlice(table, 'rowDragging' as never) as {
     activeId: string | null
@@ -153,8 +174,11 @@ export const DndBodyWrapper = ({
       collisionDetection={closestCenter}
       measuring={measuring}
       autoScroll={autoScrollOnlyY}
-      onDragStart={onRowDragStart}
+      onDragStart={startDrag}
       onDragMove={onRowDragMove}
+      // Смена места без движения указателя (автопрокрутка, сдвиг соседей) — то же
+      // превью броска (ADR 0108, PV5).
+      onDragOver={onRowDragMove}
       onDragEnd={onRowDragEnd}
       onDragCancel={onRowDragCancel}
       onDragAbort={onRowDragAbort}
@@ -178,6 +202,7 @@ export const DndBodyWrapper = ({
       >
         {draggableRowCell && (
           <OverlayBodyRow
+            ref={attachOverlay}
             firstCell={draggableRowCell}
             withCount={draggableRow?.getCanExpand?.() ?? false}
             subRowsCount={draggableRow?.subRows.length}

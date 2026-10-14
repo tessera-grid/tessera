@@ -19,6 +19,7 @@ import { describe, expect, test } from 'vitest'
 
 import {
   Stories,
+  getScroller,
   headCells,
   measureInteractionWork,
   measureRenderWork,
@@ -62,6 +63,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import { buildXlsx } from '../../../plugins/dataExport/xlsxBuild'
 import { columns as mockColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
+import { HANDLE, beginDrag, firePointer } from '../../rowDragging.dnd'
 import {
   makeOptionFilteringData,
   optionFilteringColumns,
@@ -2465,5 +2467,90 @@ describe('Отзывчивость — движение строк', () => {
       }
     },
     PERF_TIMEOUT * 6,
+  )
+})
+
+// Превью броска строки (ADR 0108, PV7): проекция линий по окну на каждую смену места
+// при автопрокрутке над деревом в 100 000 строк — против той же сессии без линий.
+const DROP_TREE = makeData({
+  shape: 'tree',
+  count: 25_000,
+  depth: 2,
+  breadth: 3,
+})
+const PV7_COST = { ratio: 1.3, plusMs: 8 }
+const PV7_DRAG_MS = 1000
+
+describe('Кадры — превью броска строки', () => {
+  test(
+    'PV7: перетаскивание с автопрокруткой над раскрытым деревом в 100 000 строк с линиями против той же сессии без линий — p95 кадра до +30 % или 8 мс',
+    async () => {
+      const session = async (lines: boolean) => {
+        const screen = await renderGrid({
+          columnCount: 6,
+          dataOverride: DROP_TREE,
+          enableRowDragging: true,
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 1,
+          rowExpandingTreeLines: lines,
+          initialExpanded: true,
+        })
+        await waitForGrid()
+        const scroller = getScroller()
+        const handle = document.querySelector<HTMLElement>(
+          `.data-grid__body-row[data-index="1"] ${HANDLE}`,
+        )!
+        const { hx } = await beginDrag(handle)
+        const edge = scroller.getBoundingClientRect().bottom - 4
+        let started = 0
+        const result = await measureTransitionWork(
+          async () => {
+            started = performance.now()
+            firePointer('pointermove', document, hx, edge)
+          },
+          () => performance.now() - started > PV7_DRAG_MS,
+        )
+        // Сессия мерила автопрокрутку, а не стоящий грид.
+        expect(scroller.scrollTop).toBeGreaterThan(0)
+        firePointer('pointerup', document, hx, edge)
+        await screen.unmount()
+        return result
+      }
+      const runs = await againstBase(session)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const variant = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, PV7_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '100 000 дерево',
+          plugins: 'rowDragging, rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('PV7-base', 'перетаскивание без линий', base, false)
+      await record('PV7', 'перетаскивание с превью линий', variant, true)
+      expect(
+        variant.p95Ms,
+        `p95=${variant.p95Ms.toFixed(1)}ms, база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 4,
   )
 })

@@ -14,9 +14,13 @@
     background-color: var(--tsr-comp-row-odd-bg);
   }
 
-  /* Бэкграунд строки при наведении (hover); во время обновления данных — нет (ADR 0094). */
+  /*
+   * Бэкграунд строки при наведении (hover); во время обновления данных — нет (ADR 0094),
+   * у слота перетаскивания — нет: это место броска, а не строка под указателем (ADR 0108).
+   */
 
-  :where(:global(.data-grid-theme):not([data-refreshing])) &:hover {
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    &:hover:where(:not([data-row-draggable='true'])) {
     background-color: var(--tsr-comp-row-hovered-bg);
     outline: var(--tsr-comp-row-hovered-outline);
     outline-offset: -1px;
@@ -33,7 +37,9 @@
   /* Бэкграунд выбранной строки при наведении (selected + hover) */
 
   :where(:global(.data-grid-theme):not([data-refreshing]))
-    &:hover:is([data-selected='true']) {
+    &:hover:is([data-selected='true']):where(
+      :not([data-row-draggable='true'])
+    ) {
     background-color: var(--tsr-comp-row-selected-hovered-bg);
   }
 
@@ -91,18 +97,22 @@
     background-color: var(--tsr-comp-cell-pinned-hovered-bg) !important;
   }
 
-  /* Специфичные стили для строки, которая перетаскивается в данный момент */
-
-  &:is([data-row-draggable='true']),
-  &:hover:is([data-row-draggable='true']) {
-    background-color: var(--draggable-row-background-color) !important;
+  /* Слот перетаскивания — скелет строки поверх соседей (ADR 0108). */
+  &:is([data-row-draggable='true']) {
     z-index: 5 !important;
 
-    & > * {
-      opacity: 0;
-      height: 0;
+    /* Служебные ячейки слота пусты на вид, но ручка остаётся в DOM: на ней dnd-kit
+     * держит касание (TouchSensor). */
+    & [data-actions-column-cell='true'] > * {
+      visibility: hidden;
     }
   }
+}
+
+/* Место, куда бросить нельзя: полоски слота в тоне ошибки (ADR 0108, §3). */
+:global(.data-grid__container[data-row-drop-invalid])
+  .body__row[data-row-draggable='true'] {
+  --tsr-comp-skeleton-bg: var(--tsr-comp-row-drop-invalid-skeleton-bg);
 }
 
 /*

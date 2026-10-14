@@ -13,7 +13,7 @@ import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
 import { RowMotion } from './rowMotion/RowMotion'
 import { getTreeAria } from './treeAria'
-import { getTreeLines } from './treeBranches'
+import { getTreeLines, projectTreeLines } from './treeBranches'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -39,6 +39,25 @@ interface TableBodyProps {
   enableRowDragging?: boolean
   /** Движение строк при смене модели (ADR 0107). */
   rowAnimation?: boolean
+  /** Перетаскиваемая строка и место броска (ADR 0108). */
+  dropPreview?: DropPreview | null
+}
+
+export interface DropPreview {
+  activeId: string
+  /** Индексы в `rows`: откуда строку взяли и куда она встанет. */
+  from: number
+  to: number
+  depth: number
+  acceptable: boolean
+}
+
+/** Позиция строки `index` после переноса `from` → `to` (как `arrayMove`). */
+const positionAfterMove = (index: number, from: number, to: number) => {
+  if (index === from) return to
+  if (from < to && index > from && index <= to) return index - 1
+  if (from > to && index >= to && index < from) return index + 1
+  return index
 }
 
 export const Body = ({
@@ -58,6 +77,7 @@ export const Body = ({
   isVirtualColumns,
   enableRowDragging,
   rowAnimation = false,
+  dropPreview,
 }: TableBodyProps) => {
   const bodyRef = useRef<HTMLDivElement>(null)
   const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
@@ -69,6 +89,38 @@ export const Body = ({
     () => (treeLines ? getTreeLines(rows) : undefined),
     [treeLines, rows],
   )
+  const drop = enableRowDragging ? dropPreview : null
+  const first = virtualRows[0]?.index ?? 0
+  const last = virtualRows[virtualRows.length - 1]?.index ?? -1
+  // Линии окна «как после броска» (ADR 0108, §4); на недопустимом месте — прежние.
+  const projected = useMemo(
+    () =>
+      treeLinesIndex && drop?.acceptable
+        ? projectTreeLines(
+            rows,
+            treeLinesIndex,
+            drop,
+            Math.max(0, first - 1),
+            Math.min(rows.length - 1, last + 1),
+          )
+        : undefined,
+    [treeLinesIndex, rows, drop, first, last],
+  )
+  const linesOf = (index: number, isActive: boolean) => {
+    if (!drop || !projected) {
+      return isActive && drop
+        ? { branch: undefined, open: undefined }
+        : {
+            branch: treeLinesIndex?.branch(index),
+            open: treeLinesIndex?.open(index),
+          }
+    }
+    const position = positionAfterMove(index, drop.from, drop.to)
+    return {
+      branch: projected.branch(position),
+      open: projected.open(position),
+    }
+  }
 
   return (
     <div
@@ -85,6 +137,8 @@ export const Body = ({
       >
         {virtualRows.map(virtualRow => {
           const row = rows[virtualRow.index]
+          const isActive = drop?.activeId === row.id
+          const lines = linesOf(virtualRow.index, isActive)
           return (
             <RowComponent
               key={row.id}
@@ -102,8 +156,9 @@ export const Body = ({
               selectableRows={selectableRows}
               treeSetSize={treeAria?.setSize(virtualRow.index)}
               treePosInSet={treeAria?.posInSet(virtualRow.index)}
-              treeBranch={treeLinesIndex?.branch(virtualRow.index)}
-              treeOpen={treeLinesIndex?.open(virtualRow.index)}
+              treeBranch={lines.branch}
+              treeOpen={lines.open}
+              slotDepth={isActive ? drop.depth : undefined}
               isVirtualColumns={isVirtualColumns}
             />
           )

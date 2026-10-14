@@ -8,6 +8,10 @@ export interface RowDragOverlayState {
   offsetLeft: number
   isExpanded: boolean
   acceptable: boolean
+  /** Превью броска (ADR 0108): индексы в показанных строках и глубина на новом месте. */
+  fromIndex: number | null
+  overIndex: number | null
+  depth: number
 }
 
 export const DEFAULT_ROW_DRAG_OVERLAY_STATE: RowDragOverlayState = {
@@ -15,6 +19,9 @@ export const DEFAULT_ROW_DRAG_OVERLAY_STATE: RowDragOverlayState = {
   offsetLeft: 0,
   isExpanded: false,
   acceptable: true,
+  fromIndex: null,
+  overIndex: null,
+  depth: 0,
 }
 
 export interface RowDraggingState {

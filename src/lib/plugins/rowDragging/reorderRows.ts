@@ -74,11 +74,14 @@ const moveGroupToGroup = (newArray: any[], move: RowMove) => {
   activeParent.subRows.splice(activeOriginalIndex, 1)
 
   // Новый индекс в целевой группе: в начало, если группа была свёрнута
-  // (или подстрока перемещается под начало раскрытой группы), иначе целевой
+  // (или подстрока перемещается под начало раскрытой группы), иначе под целевой.
+  // Поправка на удалённую строку — только в своей группе: в чужой индексы не сдвинулись.
   const newIndexInGroup =
     targetItem?.id === overParentId
       ? 0
-      : getNewOriginalIndex(move.overOriginalIndex, move.isDownMove)
+      : overParentId === activeParentId
+        ? getNewOriginalIndex(move.overOriginalIndex, move.isDownMove)
+        : move.overOriginalIndex + 1
 
   const overParent =
     overParentId === activeParentId

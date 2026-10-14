@@ -496,9 +496,12 @@
   --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-cell-pinned-left-bg);
   --tsr-comp-cell-pinned-border-color: var(--tsr-sys-border);
 
-  /* DnD строк */
-  --tsr-comp-row-accept-draggable-bg: var(--tsr-sys-accent);
-  --tsr-comp-row-not-accept-draggable-bg: var(--tsr-sys-danger);
+  /* DnD строк: полоски слота на месте, куда бросить нельзя (ADR 0108). */
+  --tsr-comp-row-drop-invalid-skeleton-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-danger) 40%,
+    transparent
+  );
 
   /* Контролы шапки (сортировка/пиннинг/группировка). Иконки — заметный тон
    * (ink ~78%), активное состояние — полный ink. */
@@ -996,6 +999,7 @@
     --tsr-comp-load-error-glow: Mark;
     --tsr-comp-tree-line-color: GrayText;
     --tsr-comp-skeleton-bg: GrayText;
+    --tsr-comp-row-drop-invalid-skeleton-bg: Mark;
     --tsr-comp-checkbox-checked-bg: Highlight;
     --tsr-comp-checkbox-check-color: HighlightText;
     --tsr-comp-switch-track-on: Highlight;

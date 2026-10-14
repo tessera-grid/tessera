@@ -217,8 +217,10 @@ const dragFrame = (scroller: HTMLElement) => {
     slotLag: slot ? lagOf(slot) : 0,
     slotTarget: slot ? targetOf(slot) : null,
     neighbourLag: Math.max(0, ...rows.filter(row => row !== slot).map(lagOf)),
-    skeletons: document.querySelectorAll(`${BODY_ROW} [class*="skeleton"]`)
-      .length,
+    // Скелеты пришедших строк; слот — скелет всегда (ADR 0108).
+    skeletons: document.querySelectorAll(
+      `${BODY_ROW}:not([data-row-draggable="true"]) [class*="skeleton"]`,
+    ).length,
   }
 }
 

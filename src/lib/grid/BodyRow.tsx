@@ -48,6 +48,8 @@ export interface TableBodyRowProps {
   /** Линии дерева (ADR 0102): маска уровней строки и отросток к детям. */
   treeBranch?: string
   treeOpen?: boolean
+  /** Строка — слот перетаскивания: скелет на этой глубине (ADR 0108). */
+  slotDepth?: number
   isVirtualColumns: boolean
 }
 
@@ -97,6 +99,7 @@ export const BodyRowCells = ({
   actionRowSlot,
   treeBranch,
   treeOpen,
+  slotDepth,
   isVirtualColumns,
   isRowInteract,
 }: BodyRowCellsProps) => {
@@ -115,6 +118,7 @@ export const BodyRowCells = ({
       interact: isRowInteract,
       treeBranch,
       treeOpen,
+      slotDepth,
       absoluteLeft,
     })
 
@@ -165,6 +169,7 @@ export const BodyRowCells = ({
             interact={isRowInteract}
             treeBranch={treeBranch}
             treeOpen={treeOpen}
+            slotDepth={slotDepth}
           />
         )
       })}

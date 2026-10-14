@@ -48,6 +48,8 @@ interface TableBodyCellProps {
   /** Линии дерева строки (ADR 0102): маска уровней и отросток к детям. */
   treeBranch?: string
   treeOpen?: boolean
+  /** Ячейка слота перетаскивания: скелет с отступом этой глубины (ADR 0108). */
+  slotDepth?: number
   // Абсолютная позиция центральной (непиннутой) виртуализированной ячейки: её `left`
   // от левого края строки. Ячейка выносится из потока (position:absolute), чтобы её
   // монтаж/демонтаж на границе окна не пере-раскладывал соседей. Для пиннутых и
@@ -67,6 +69,7 @@ export const BodyCell = memo(
     interact = true,
     treeBranch,
     treeOpen,
+    slotDepth,
     absoluteLeft,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
@@ -114,25 +117,31 @@ export const BodyCell = memo(
       endPinnedOffset,
     } = getCellPinningParams(table as never, cell.column as never)
 
+    // Слот перетаскивания стоит на глубине места броска (ADR 0108, §2).
+    const isSlot = slotDepth !== undefined
+    const depth = slotDepth ?? cell.row.depth
     const { paddingLeft } = getCellExpandingStyles({
       column: cell.column as never,
-      rowDepth: cell.row.depth,
+      rowDepth: depth,
       table: table as never,
     })
 
-    // Линии дерева (ADR 0102) — в ячейке отступа: ветки строки и отросток к детям.
-    const treeLines =
+    // Линии дерева (ADR 0102) — в ячейке отступа: ветки строки и отросток к детям. Слой
+    // стоит и без линий: ушедшие части в нём гаснут (ADR 0108, PV11).
+    const treeLayer =
       treeBranch !== undefined &&
-      (cell.row.depth > 0 || !!treeOpen) &&
       isIndentColumn(cell.column as never, table as never)
+    const treeLines = treeLayer && (depth > 0 || !!treeOpen)
 
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
     const isRowActionsColumn = cell.column.getIsRowActionsColumn()
 
     const isSuppressed = useFastScrollSuppressed()
-    const showSkeleton = isSuppressed && !isActionsColumn && !isPinnedColumn
-    const canRenderSlots = !isActionsColumn && !showSkeleton
+    // Слот — скелет и в закреплённых колонках; служебные у него пустые.
+    const showSkeleton =
+      (isSlot || (isSuppressed && !isPinnedColumn)) && !isActionsColumn
+    const canRenderSlots = !isActionsColumn && !showSkeleton && !isSlot
 
     // Выделение ячеек (плагин cellSelection): гранулярная подписка, `null` без
     // плагина/для невыбираемых ячеек — тогда ниже не вешаем ни атрибутов, ни
@@ -242,7 +251,7 @@ export const BodyCell = memo(
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}
-        data-tree-depth={treeLines ? cell.row.depth : undefined}
+        data-tree-depth={treeLines ? depth : undefined}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}
         data-cell-odd-right-pinned={isEndPinned && rowIndex % 2 !== 0}
@@ -258,7 +267,7 @@ export const BodyCell = memo(
         data-cell-of-first-row={cell.row.getIsFirstRow()}
         data-cell-of-last-row={cell.row.getIsLastRow()}
       >
-        {treeLines && <TreeLines branch={treeBranch} open={!!treeOpen} />}
+        {treeLayer && <TreeLines branch={treeBranch} open={!!treeOpen} />}
         <CellWrapperContent
           flex={getAlignContent({
             isActionsColumn,

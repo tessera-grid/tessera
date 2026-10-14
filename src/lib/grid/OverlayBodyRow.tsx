@@ -1,6 +1,6 @@
 // OverlayBodyRow: строка в DragOverlay при перетаскивании строки (первая ячейка +
 // drag-ручка + счётчик подстрок). Контент через flexRender.
-import { memo } from 'react'
+import { forwardRef, memo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
@@ -21,31 +21,36 @@ interface OverlayBodyRowProps {
 }
 
 export const OverlayBodyRow = memo(
-  ({ firstCell, withCount = false, subRowsCount = 0 }: OverlayBodyRowProps) => {
-    return (
-      <div
-        className={clsx(
-          'data-grid-body__row',
-          styles['body__row--overlay__container'],
-        )}
-        // Облако — визуальный клон: ни в дереве доступности, ни в фокусе (ADR 0006, D37).
-        {...inertProp(true)}
-      >
-        <div className={styles['body__row--overlay']}>
-          <CellWrapperContent noPadding>
-            <DragHandler id="" type="row" />
-            <CellWrapperTitle>
-              {flexRender(
-                firstCell.column.columnDef.cell,
-                firstCell.getContext(),
-              )}
-            </CellWrapperTitle>
-          </CellWrapperContent>
+  forwardRef<HTMLDivElement, OverlayBodyRowProps>(
+    ({ firstCell, withCount = false, subRowsCount = 0 }, ref) => {
+      return (
+        <div
+          ref={ref}
+          className={clsx(
+            'data-grid-body__row',
+            styles['body__row--overlay__container'],
+          )}
+          // Облако — визуальный клон: ни в дереве доступности, ни в фокусе (ADR 0006, D37).
+          {...inertProp(true)}
+        >
+          <div className={styles['body__row--overlay']}>
+            <CellWrapperContent noPadding>
+              <DragHandler id="" type="row" />
+              <CellWrapperTitle>
+                {flexRender(
+                  firstCell.column.columnDef.cell,
+                  firstCell.getContext(),
+                )}
+              </CellWrapperTitle>
+            </CellWrapperContent>
+          </div>
+          {withCount && (
+            <Bubble className={styles.bubble}>{subRowsCount}</Bubble>
+          )}
         </div>
-        {withCount && <Bubble className={styles.bubble}>{subRowsCount}</Bubble>}
-      </div>
-    )
-  },
+      )
+    },
+  ),
 )
 
 OverlayBodyRow.displayName = 'OverlayBodyRow'

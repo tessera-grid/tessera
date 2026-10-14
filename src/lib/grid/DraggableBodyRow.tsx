@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef } from 'react'
+import { memo, useMemo, useRef } from 'react'
 
 import { useSortable } from '@dnd-kit/sortable'
 import clsx from 'clsx'
@@ -20,6 +20,9 @@ import { highlightRender } from './highlight'
 import { useSlotGlide } from './rowMotion/useSlotGlide'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
+
+/** Сдвиг строки от dnd-kit; уровень слота — отступом ячейки (ADR 0108, §2). */
+const transformAt = (y: number) => `translate3d(0px, ${y}px, 0px)`
 
 /**
  * Ряд тела с включённым Drag&Drop: регистрирует ряд в SortableContext и управляет
@@ -65,11 +68,6 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   })
 
   const isRowInteract = overIndex === -1
-  const transformAt = useCallback(
-    (y: number) =>
-      `translate3d(var(--draggable-row-${row.id}-offset-left, 0px), ${y}px, 0px)`,
-    [row.id],
-  )
   const node = useRef<HTMLDivElement | null>(null)
   useSlotGlide(node, transform?.y ?? 0, isDragging, transformAt)
 
@@ -78,7 +76,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       top: virtualRow.start,
       transform: transformAt(transform?.y ?? 0),
     }),
-    [transformAt, transform?.y, virtualRow.start],
+    [transform?.y, virtualRow.start],
   )
 
   return (

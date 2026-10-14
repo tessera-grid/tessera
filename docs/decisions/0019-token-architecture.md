@@ -173,7 +173,7 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 | TT-35  | Оверлей перетаскивания строки: `--tsr-comp-draggable-cell-bg`, прозрачность и `--tsr-comp-shadow-drag` | ✔ `theming-overlays.test.tsx`        |
 | TT-36  | Фон бабла перетаскивания = `--tsr-comp-accent`                                                         | ✔ `theming-overlays.test.tsx`        |
 | TT-37  | Оверлей перетаскивания колонки: `--tsr-comp-draggable-cell-bg` и `--tsr-comp-shadow-drag`              | ✔ `theming-overlays.test.tsx`        |
-| TT-38  | Стиль цели броска строки: допустимая — токен приёма, недопустимая — токен отказа                       | ✔ `theming-overlays.test.tsx`        |
+| TT-38  | Цель броска строки (ADR 0108): токен тона ошибки слота определён и отличим от скелета в обеих темах    | ✔ `theming-overlays.test.tsx`        |
 | TT-40  | Токен бегунка скроллбара определён и флипается light↔dark                                              | ✔ `theming-overlays.test.tsx`        |
 | TT-41  | Угол, где сходятся полосы прокрутки контейнера грида, прозрачен, как и дорожки: без белого квадрата    | ✔ `theming-overlays.test.tsx`        |
 
@@ -223,8 +223,8 @@ rowDragging бизнес-хук не диспатчат (grouping — `toggleGro
 
 **DnD-оверлеи и «края» (этап 6).** `theming-overlays.test.tsx`: оверлей строки
 (TT-35 draggable-cell-bg/opacity/shadow-drag), bubble-счётчик (TT-36 accent),
-оверлей колонки (TT-37), accept/reject (TT-38 — `getRowDraggableStyles` как чистая
-функция), scrollbar (TT-40 — инвариант значения токена, TT-41 — правило угла полос в загруженных
+оверлей колонки (TT-37), тон недопустимого места (TT-38 — `--tsr-comp-row-drop-invalid-skeleton-bg` против
+`--tsr-comp-skeleton-bg`), scrollbar (TT-40 — инвариант значения токена, TT-41 — правило угла полос в загруженных
 стилях: headless Chromium тестов полосы прячет; псевдоэлемент недоступен
 `getComputedStyle`). Оверлеи рендерятся напрямую с реальными cell/header из
 таблицы (минуя dnd-kit-симуляцию — её поведение уже в D-тестах, ADR 0009 R-B3).

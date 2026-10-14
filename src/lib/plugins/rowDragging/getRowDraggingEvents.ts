@@ -25,10 +25,11 @@ import {
 } from './draggingHelpers'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 import { reorderRows } from './reorderRows'
-import type {
-  RowDraggingHooks,
-  RowDragOverlayState,
-  RowSortableData,
+import {
+  DEFAULT_ROW_DRAG_OVERLAY_STATE,
+  type RowDraggingHooks,
+  type RowDragOverlayState,
+  type RowSortableData,
 } from './types'
 
 /**
@@ -37,8 +38,20 @@ import type {
  * ограничения глубины. Читает снимок overlay-состояния из атома `rowDragging` и
  * пишет через опции rowDragging/rowExpanding.
  */
+/** Дробная погрешность замера: текст облака ровно на отступе — уже этот уровень. */
+const LEVEL_EPSILON = 0.01
+
+export interface RowDraggingGeometry {
+  /**
+   * Дробный уровень броска под текстом облака при сдвиге `deltaX` (ADR 0108, §2);
+   * `undefined` — геометрия не измерена, уровень — по шагу перетаскивания.
+   */
+  levelAt?: (deltaX: number) => number | undefined
+}
+
 export const getRowDraggingEvents = (
   table: Table<any, any>,
+  { levelAt }: RowDraggingGeometry = {},
 ): {
   onRowDragStart?: (event: DragStartEvent) => void
   onRowDragMove?: (event: DragMoveEvent) => void
@@ -120,12 +133,7 @@ export const getRowDraggingEvents = (
 
   const resetDragState = () => {
     document.body.style.cursor = 'default'
-    onRowDraggingChange?.(() => ({
-      activeId: null,
-      offsetLeft: 0,
-      isExpanded: false,
-      acceptable: true,
-    }))
+    onRowDraggingChange?.(() => DEFAULT_ROW_DRAG_OVERLAY_STATE)
   }
 
   /** Сессия кончилась без перестановки (ADR 0040, §1). */
@@ -145,7 +153,7 @@ export const getRowDraggingEvents = (
 
   return {
     onRowDragStart: ({ active }) => {
-      const { row } = active.data.current as RowSortableData
+      const { row, virtualIndex } = active.data.current as RowSortableData
       levelStep = getRowDraggableOffsetLeft({ table })
 
       document.body.style.cursor = 'grabbing'
@@ -163,6 +171,9 @@ export const getRowDraggingEvents = (
         // Возможность переместить строку на данную вложенность (зависит от
         // ограничения по глубине вложенности)
         acceptable: true,
+        fromIndex: virtualIndex,
+        overIndex: virtualIndex,
+        depth: row.depth,
       }))
 
       collapseDraggableGroup(row)
@@ -181,7 +192,13 @@ export const getRowDraggingEvents = (
         overVirtualIndex,
       )
 
-      const currentDepth = getDepthFromOffsetLeft(delta.x, getLevelStep())
+      const level = levelAt?.(delta.x)
+      // Уровень k — когда текст облака дошёл до отступа уровня k (ADR 0108, §2): под
+      // текстом группы строка ещё не вложена.
+      const currentDepth =
+        level === undefined
+          ? getDepthFromOffsetLeft(delta.x, getLevelStep())
+          : Math.floor(level + LEVEL_EPSILON)
 
       const minDepth = getMinDepth(activeRow, targetItem, over.id)
       const maxDepth = getMaxDepth(targetItem)
@@ -193,6 +210,9 @@ export const getRowDraggingEvents = (
         // Вложенность больше 1 сейчас не поддерживается.
         acceptable:
           (activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true,
+        fromIndex: activeVirtualIndex,
+        overIndex: overVirtualIndex,
+        depth: validDepth,
       }))
     },
     onRowDragEnd: ({ active, over }) => {

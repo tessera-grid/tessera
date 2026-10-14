@@ -8,7 +8,6 @@ import { useCreateTable } from '../../../../lib/core/useCreateTable'
 import { DataGrid } from '../../../../lib/grid/DataGrid'
 import { OverlayBodyRow } from '../../../../lib/grid/OverlayBodyRow'
 import { OverlayHeadCell } from '../../../../lib/grid/OverlayHeadCell'
-import { getRowDraggableStyles } from '../../../../lib/plugins/rowDragging/getRowDraggableStyles'
 import '../../../core/themeVariables/theme.css'
 
 // Простые колонки с ПЛОСКИМ `cell` (без подписок на store) — оверлеи рендерятся
@@ -127,24 +126,16 @@ describe('Theming matrix — DnD overlays & edges', () => {
     })
   })
 
-  // TT-38: accept/reject — чистая функция стилей строки при drag-over.
-  test('TT-38 getRowDraggableStyles maps acceptable → accept/reject token', () => {
-    const accept = getRowDraggableStyles({
-      activeId: 'r1',
-      acceptable: true,
-      offsetLeft: 0,
-    })
-    const reject = getRowDraggableStyles({
-      activeId: 'r1',
-      acceptable: false,
-      offsetLeft: 0,
-    })
-    expect(accept['--draggable-row-background-color']).toBe(
-      'var(--tsr-comp-row-accept-draggable-bg)',
-    )
-    expect(reject['--draggable-row-background-color']).toBe(
-      'var(--tsr-comp-row-not-accept-draggable-bg)',
-    )
+  // TT-38: слот на недопустимом месте — полоски скелета в тоне ошибки (ADR 0108).
+  test('TT-38 invalid drop skeleton token is defined and differs from the skeleton in both themes', () => {
+    for (const dark of [false, true]) {
+      const invalid = resolveColor(
+        '--tsr-comp-row-drop-invalid-skeleton-bg',
+        dark,
+      )
+      expect(invalid).not.toBe('rgba(0, 0, 0, 0)')
+      expect(invalid).not.toBe(resolveColor('--tsr-comp-skeleton-bg', dark))
+    }
   })
 
   // TT-40: scrollbar thumb — псевдоэлемент ::-webkit-scrollbar-thumb недоступен

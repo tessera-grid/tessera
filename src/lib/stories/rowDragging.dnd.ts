@@ -16,7 +16,7 @@ export const USER_CELL =
 export const HANDLE = '.drag__handler--column'
 /** OverlayBodyRow container (the drag "cloud") — distinct class from body rows. */
 export const OVERLAY = '.data-grid-body__row'
-/** The row whose slot shows the colour drop-indicator while dragging. */
+/** The dragged row itself: its slot is a skeleton on the drop level (ADR 0108). */
 export const DRAG_FILL = '.data-grid__body-row[data-row-draggable="true"]'
 /** The element that actually overflows and scrolls. */
 export const SCROLLER = '.data-grid__container'
