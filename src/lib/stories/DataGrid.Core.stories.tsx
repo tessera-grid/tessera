@@ -101,6 +101,8 @@ export const WithFooter: StoryObj<StoryProps> = {
   name: 'Footer',
   parameters: vrStates('head.footer'),
   args: {
+    // Только колонки моков: Total — последняя, её сумма — в футере.
+    columnCount: 7,
     enableFooter: true,
   },
 }

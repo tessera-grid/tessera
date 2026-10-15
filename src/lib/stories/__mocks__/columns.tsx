@@ -133,7 +133,7 @@ export const columns: any[] = [
     // В сгруппированной строке getValue() возвращает агрегат (сумму),
     // в обычной — исходное значение.
     cell: cell => cell.getValue(),
-    footer: '15',
+    footer: '111',
     aggregationFn: 'sum' as never,
     size: 150,
     minSize: 150,
@@ -155,7 +155,7 @@ export const columns: any[] = [
     // Сумма в сгруппированной строке (getValue() = агрегат), иначе исходное.
     cell: cell =>
       cell.row.getIsGrouped() ? `${cell.getValue()}$` : cell.getValue(),
-    footer: '3000$',
+    footer: '5213$',
     size: 150,
     minSize: 150,
     maxSize: 700,
@@ -256,7 +256,7 @@ export const groupedColumns: any[] = [
       columnHelper.accessor<any, any>('visits', {
         id: 'visits',
         header: 'Visits',
-        footer: '15',
+        footer: '111',
         size: 150,
         minSize: 150,
         maxSize: 700,
@@ -273,7 +273,7 @@ export const groupedColumns: any[] = [
     header: 'Total',
     aggregatedCell: cell => `${cell.getValue()}$`,
     cell: cell => `${cell.getValue()}$`,
-    footer: '3000$',
+    footer: '5213$',
     size: 150,
     minSize: 150,
     maxSize: 700,
