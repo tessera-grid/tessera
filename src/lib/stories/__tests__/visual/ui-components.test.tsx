@@ -290,13 +290,16 @@ describe('Skeleton', () => {
   })
 
   test('SK3: forwards className and style', async () => {
+    // Скругление — токен темы `--tsr-comp-skeleton-radius` (ADR 0060, SL20).
     const { container } = await render(
-      <Skeleton
-        width={40}
-        height={40}
-        className="my-skel"
-        style={{ opacity: '0.3' }}
-      />,
+      <div className="data-grid-theme">
+        <Skeleton
+          width={40}
+          height={40}
+          className="my-skel"
+          style={{ opacity: '0.3' }}
+        />
+      </div>,
     )
     const el = container.querySelector('span')! as HTMLElement
     expect(el.classList.contains('my-skel')).toBe(true)
