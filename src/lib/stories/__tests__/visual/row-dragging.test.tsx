@@ -402,12 +402,12 @@ describe('Row Dragging — nested rows (subrows)', () => {
 })
 
 // --- Storybook parity ---------------------------------------------------------
-// The thin demo `play` still runs for every draggable story; keep a smoke test so
-// a broken demo scenario surfaces in `npm test` too.
+// Свой `play` историй с перетаскиванием строк (демо «Basic» и сценарии) — дымовой
+// прогон, чтобы сломанный сценарий падал и в `npm test`. Мета `play` не несёт (ADR 0117, SN12).
 
 describe('Row Dragging — Storybook play parity', () => {
   const draggableStories = Object.entries(composed).filter(
-    ([, story]) => story.args?.enableRowDragging,
+    ([, story]) => story.args?.enableRowDragging && story.play,
   )
 
   test('at least one story enables row dragging', () => {

@@ -11,6 +11,7 @@ import {
   waitForPopup,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Контекстное меню (ADR 0030). */
 const meta = {
@@ -23,15 +24,22 @@ export default meta
 
 export const ContextMenu: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableCellSelection',
+    'cellSelectionRangeSelection',
+    'cellSelectionDragSelection',
+    'cellSelectionMultiRange',
+    'enableContextMenu',
+  ]),
   args: {
     // Контекстное меню по правому клику; cellSelection контрибьютит «Копировать».
     enableContextMenu: true,
     enableCellSelection: true,
     columnCount: 8,
     dataCount: 40,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }
 
@@ -43,30 +51,46 @@ export const ContextMenu: StoryObj<StoryProps> = {
  */
 export const ContextMenuAsync: StoryObj<StoryProps> = {
   name: 'Async items',
+  parameters: showControls([
+    'enableCellSelection',
+    'cellSelectionRangeSelection',
+    'cellSelectionDragSelection',
+    'cellSelectionMultiRange',
+    'enableContextMenu',
+  ]),
   args: {
     enableContextMenu: true,
     enableCellSelection: true,
     actionsDemo: 'async',
     columnCount: 8,
     dataCount: 40,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }
 
 /** Открытое контекстное меню ячейки (ADR 0093, VR6). */
 export const ContextMenuStateOpen: StoryObj<StoryProps> = {
   name: 'State: open',
-  parameters: vrStates('overlay.contextMenu'),
+  parameters: {
+    ...vrStates('overlay.contextMenu'),
+    ...showControls([
+      'enableCellSelection',
+      'cellSelectionRangeSelection',
+      'cellSelectionDragSelection',
+      'cellSelectionMultiRange',
+      'enableContextMenu',
+    ]),
+  },
   args: {
     enableContextMenu: true,
     enableCellSelection: true,
     columnCount: 8,
     dataCount: 20,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

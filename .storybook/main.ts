@@ -1,7 +1,18 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 
+/**
+ * `*.dev.stories.tsx` — песочницы обвязки историй: в `storybook dev` и тестах, но не в
+ * `storybook build` (и значит не в Chromatic).
+ */
+const build = process.argv.includes('build')
+
 const config: StorybookConfig = {
-  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(ts|tsx)'],
+  stories: [
+    '../src/**/*.mdx',
+    build
+      ? '../src/**/!(*.dev).stories.@(ts|tsx)'
+      : '../src/**/*.stories.@(ts|tsx)',
+  ],
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-vitest',

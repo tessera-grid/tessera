@@ -17,7 +17,10 @@ import {
   beginDrag,
   firePointer,
   nextFrame,
+  rowSignatures,
+  sortedRows,
 } from './rowDragging.dnd'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Перетаскивание строк (ADR 0006). */
 const meta = {
@@ -28,17 +31,70 @@ const meta = {
 
 export default meta
 
+/**
+ * Демо одной перестановки для панели Interactions. Требования (ручка, облако, ширина,
+ * автопрокрутка) — именованные тесты `__tests__/row-dragging.test.tsx`; хореография
+ * указателя у демо и тестов общая — `rowDragging.dnd.ts`.
+ */
+const rowDraggingPlay: NonNullable<StoryObj<StoryProps>['play']> = async ({
+  args,
+  canvasElement,
+  step,
+}) => {
+  // Во время скелета первой загрузки строк данных нет — тянуть нечего.
+  if (!args.enableRowDragging || args.loading === 'initial') return
+
+  const canvas = canvasElement
+
+  await waitFor(() =>
+    expect(canvas.querySelectorAll(ROW).length).toBeGreaterThan(3),
+  )
+
+  await step('drag the first row onto a lower row and drop', async () => {
+    const before = rowSignatures(canvas)
+    const rows = sortedRows(canvas)
+    const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
+    const target = rows[3]
+
+    // Keep x fixed (no horizontal drift) so nesting depth stays 0 on flat data.
+    const { hx } = await beginDrag(handle)
+    const tr = target.getBoundingClientRect()
+    const ty = tr.top + tr.height / 2
+    firePointer('pointermove', document, hx, ty) // over the target row
+    await nextFrame()
+    await nextFrame()
+    firePointer('pointermove', document, hx, ty + 1) // settle collision/over
+    await nextFrame()
+    await nextFrame()
+    firePointer('pointerup', document, hx, ty + 1)
+
+    // Sanity for the demo: the drop reordered the rows.
+    await waitFor(() =>
+      expect(rowSignatures(canvas).join('¦')).not.toBe(before.join('¦')),
+    )
+    // История заканчивается в покое: облако долетело, слот строки снова обычный —
+    // по нему каталог проверяет axe и снимает снимок (ADR 0093).
+    await waitFor(() => expect(canvas.querySelector(OVERLAY)).toBeNull())
+  })
+}
+
 export const RowDragging: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableRowDragging',
+    'rowDraggingExpandDelay',
+    'rowDraggingRevertOnReject',
+  ]),
   args: {
     enableRowDragging: true,
     // Sized to overflow on both axes so the play's auto-scroll steps (D12–D14)
     // have real vertical + horizontal scroll to exercise.
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
+  play: rowDraggingPlay,
 }
 
 // Группы с детьми и плоские корни: строку есть куда вложить и откуда вынести
@@ -62,13 +118,21 @@ export const RowDraggingTreeLines: StoryObj<StoryProps> = {
     rowExpandingMaxDepth: 1,
     rowExpandingTreeLines: true,
     initialExpanded: true,
-    containerHeight: 640,
-    height: 540,
-    maxHeight: 540,
+    containerHeight: '640',
+    height: '540',
+    maxHeight: '540',
   },
   parameters: {
-    controls: { exclude: ['columnCount', 'dataCount', 'dataOverride'] },
     requirements: ['PV9'],
+    ...showControls([
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+      'enableRowDragging',
+      'rowDraggingExpandDelay',
+      'rowDraggingRevertOnReject',
+    ]),
   },
   play: async ({ canvasElement, step }) => {
     const canvas = canvasElement
@@ -132,13 +196,21 @@ export const RowDraggingCollapsedGroups: StoryObj<StoryProps> = {
     enableRowExpanding: true,
     rowExpandingMaxDepth: 1,
     rowExpandingTreeLines: true,
-    containerHeight: 640,
-    height: 540,
-    maxHeight: 540,
+    containerHeight: '640',
+    height: '540',
+    maxHeight: '540',
   },
   parameters: {
-    controls: { exclude: ['columnCount', 'dataCount', 'dataOverride'] },
     requirements: ['NX9'],
+    ...showControls([
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+      'enableRowDragging',
+      'rowDraggingExpandDelay',
+      'rowDraggingRevertOnReject',
+    ]),
   },
   play: async ({ canvasElement, step }) => {
     const canvas = canvasElement
@@ -217,9 +289,9 @@ export const RowDraggingLazyTree: StoryObj<RowDraggingLazyTreeDemoProps> = {
     loadDelayMs: 900,
     moveDelayMs: 900,
     moveFailMode: 'never',
-    containerHeight: 640,
-    height: 540,
-    maxHeight: 540,
+    containerHeight: '640',
+    height: '540',
+    maxHeight: '540',
   },
   argTypes: {
     loadDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
@@ -227,8 +299,22 @@ export const RowDraggingLazyTree: StoryObj<RowDraggingLazyTreeDemoProps> = {
     moveFailMode: { control: 'inline-radio', options: ['never', 'always'] },
   },
   parameters: {
-    controls: { exclude: ['columnCount', 'dataCount', 'dataOverride'] },
     requirements: ['LT14', 'CO19'],
+    ...showControls(
+      [
+        'enableRowExpanding',
+        'rowExpandingMaxDepth',
+        'rowExpandingColumn',
+        'rowExpandingTreeLines',
+        'enableRowDragging',
+        'rowDraggingExpandDelay',
+        'rowDraggingRevertOnReject',
+        'loadDelayMs',
+        'moveDelayMs',
+        'moveFailMode',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
   },
   play: async ({ canvasElement, id, step }) => {
     const canvas = canvasElement

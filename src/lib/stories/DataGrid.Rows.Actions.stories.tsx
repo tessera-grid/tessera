@@ -10,6 +10,7 @@ import {
   settle,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Действия строки (ADR 0025): кнопки, без действий, меню строки. */
 const meta = {
@@ -22,6 +23,12 @@ export default meta
 
 export const RowActions: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+  ]),
   args: {
     enableRowActions: true,
   },
@@ -33,6 +40,12 @@ export const RowActions: StoryObj<StoryProps> = {
  */
 export const RowActionsWithoutActions: StoryObj<StoryProps> = {
   name: 'No actions',
+  parameters: showControls([
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+  ]),
   args: {
     enableRowActions: true,
     actionsDemo: 'none',
@@ -41,6 +54,15 @@ export const RowActionsWithoutActions: StoryObj<StoryProps> = {
 
 export const RowActionMenu: StoryObj<StoryProps> = {
   name: 'Action menu',
+  parameters: showControls([
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+    'enableRowActionMenu',
+    'rowActionMenuMode',
+    'rowActionMenuThreshold',
+  ]),
   args: {
     // Демо-производитель даёт три действия строки (Edit / Duplicate / Delete) как
     // дескрипторы. Свич `enableRowActionMenu` (порог 2) схлопывает их в overflow-
@@ -49,9 +71,9 @@ export const RowActionMenu: StoryObj<StoryProps> = {
     enableRowActions: true,
     enableRowActionMenu: true,
     dataCount: 30,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
@@ -64,14 +86,23 @@ export const RowActionMenu: StoryObj<StoryProps> = {
  */
 export const RowActionsAsync: StoryObj<StoryProps> = {
   name: 'Async actions',
+  parameters: showControls([
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+    'enableRowActionMenu',
+    'rowActionMenuMode',
+    'rowActionMenuThreshold',
+  ]),
   args: {
     enableRowActions: true,
     enableRowActionMenu: true,
     actionsDemo: 'async',
     dataCount: 30,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
@@ -84,30 +115,51 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
  */
 export const RowActionsNested: StoryObj<StoryProps> = {
   name: 'Nested sections',
+  parameters: showControls([
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+    'enableRowActionMenu',
+    'rowActionMenuMode',
+    'rowActionMenuThreshold',
+    'enableContextMenu',
+  ]),
   args: {
     enableRowActions: true,
     enableRowActionMenu: true,
     enableContextMenu: true,
     actionsDemo: 'nested',
     dataCount: 30,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
 /** Открытый вложенный раздел меню строки (ADR 0093, VR6). */
 export const ActionsStateSection: StoryObj<StoryProps> = {
   name: 'State: nested section',
-  parameters: vrStates('overlay.submenu'),
+  parameters: {
+    ...vrStates('overlay.submenu'),
+    ...showControls([
+      'enableRowActions',
+      'rowActionsWidth',
+      'rowActionsCollapsedWidth',
+      'rowActionsColumn',
+      'enableRowActionMenu',
+      'rowActionMenuMode',
+      'rowActionMenuThreshold',
+    ]),
+  },
   args: {
     enableRowActions: true,
     enableRowActionMenu: true,
     actionsDemo: 'nested',
     dataCount: 20,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

@@ -9,6 +9,7 @@ import {
   settle,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Закрепление колонок (ADR 0011): с одной и двух сторон, под вложенной шапкой, листья. */
 const meta = {
@@ -21,19 +22,31 @@ export default meta
 
 export const ColumnPinning: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls(['enableColumnPinning', 'columnPinningLeafPinning']),
   args: {
     enableColumnPinning: true,
     // Sized to overflow on both axes so the sticky requirements (CP10–CP12)
     // have real horizontal scroll distance to prove the pinned offset against.
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
 export const ColumnPinningTwoSides: StoryObj<StoryProps> = {
   name: 'Two sides',
+  parameters: showControls([
+    'enableColumnPinning',
+    'columnPinningLeafPinning',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+  ]),
   args: {
     // Двустороннее закрепление в UI. Стороны задаёт
     // `columnDef.meta.pinSides` (см. mock `columns.tsx`): `country` — только
@@ -48,9 +61,9 @@ export const ColumnPinningTwoSides: StoryObj<StoryProps> = {
     enableRowActions: true,
     enableRowSelection: true,
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
@@ -63,15 +76,14 @@ export const HeaderGroupsPinning: StoryObj<StoryProps> = {
     headerNesting: 'nested',
     enableColumnPinning: true,
     dataCount: 40,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount'],
-    },
-  },
+  parameters: showControls(
+    ['headerNesting', 'enableColumnPinning', 'columnPinningLeafPinning'],
+    { columnCount: 'колонки задаёт вложенная шапка' },
+  ),
 }
 
 export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
@@ -84,29 +96,41 @@ export const HeaderGroupsLeafPinning: StoryObj<StoryProps> = {
     enableColumnPinning: true,
     columnPinningLeafPinning: true,
     dataCount: 40,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount'],
-    },
-  },
+  parameters: showControls(
+    ['headerNesting', 'enableColumnPinning', 'columnPinningLeafPinning'],
+    { columnCount: 'колонки задаёт вложенная шапка' },
+  ),
 }
 
 /** Колонки закреплены слева и справа (ADR 0093, VR4): справа — колонка действий. */
 export const PinningStateBothSides: StoryObj<StoryProps> = {
   name: 'State: pinned both sides',
-  parameters: vrStates('body.pinnedStart', 'body.pinnedEnd'),
+  parameters: {
+    ...vrStates('body.pinnedStart', 'body.pinnedEnd'),
+    ...showControls([
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowActions',
+      'rowActionsWidth',
+      'rowActionsCollapsedWidth',
+      'rowActionsColumn',
+    ]),
+  },
   args: {
     enableColumnPinning: true,
     enableRowActions: true,
     enableRowSelection: true,
     dataCount: 30,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

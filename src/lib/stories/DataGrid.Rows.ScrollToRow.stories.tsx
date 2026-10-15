@@ -5,6 +5,8 @@ import { dataGridMeta } from './dataGridMeta'
 import { ScrollToRowDemo } from './demos/scrollToRowDemos'
 import { expect, screen, userEvent } from 'storybook/test'
 import { bodyRow, settle, until, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
+import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 
 /**
  * Прокрутка к строке (ADR 0104): `table.scrollToRow` из панели демо — id строки,
@@ -25,16 +27,28 @@ export const ScrollToRowBasic: StoryObj<StoryProps> = {
     enableRowExpanding: true,
     rowExpandingMaxDepth: 3,
     enableFooter: true,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   render: function Render(args) {
-    return <ScrollToRowDemo {...args} />
+    return <ScrollToRowDemo {...normalizeArgs(args)} />
   },
   // Дымовой сценарий (ADR 0104, SV12): строка с другого края, внук свёрнутой строки с
   // раскрытием предков и отказ для несуществующей.
-  parameters: { requirements: ['SV12'] },
+  parameters: {
+    requirements: ['SV12'],
+    ...showControls(
+      [
+        'enableFooter',
+        'enableRowExpanding',
+        'rowExpandingMaxDepth',
+        'rowExpandingColumn',
+        'rowExpandingTreeLines',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     await userEvent.click(screen.getByRole('button', { name: /Демо/ }))

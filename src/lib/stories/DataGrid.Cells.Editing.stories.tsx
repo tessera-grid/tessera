@@ -17,6 +17,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Правка ячеек (ADR 0028, ADR 0040, ADR 0041): базовая, с сервером, сессии с журналом колбэков. */
 const meta = {
@@ -44,19 +45,15 @@ interface SessionsArgs extends StoryProps {
 
 const GRID = {
   columnCount: 6,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
 }
 
 const failModeControl = {
   control: 'inline-radio',
   options: ['never', 'always'],
 } as const
-
-const hideDataControls = {
-  controls: { exclude: ['columnCount', 'dataCount', 'colorMode'] },
-}
 
 export const CellEditing: StoryObj<StoryProps> = {
   name: 'Basic',
@@ -68,15 +65,11 @@ export const CellEditing: StoryObj<StoryProps> = {
     // в мок-данные и сразу виден в ячейке.
     columnCount: 6,
     dataCount: 10,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount', 'dataCount'],
-    },
-  },
+  parameters: showControls(['enableCellEditing']),
 }
 
 export const CellEditingServer: StoryObj<SessionsArgs> = {
@@ -97,7 +90,18 @@ export const CellEditingServer: StoryObj<SessionsArgs> = {
     serverFailMode: failModeControl,
   },
   // Дымовой сценарий (ADR 0042, DS1): ячейка ждёт сервера, затем показывает новое значение.
-  parameters: { ...hideDataControls, requirements: ['DS1'] },
+  parameters: {
+    requirements: ['DS1'],
+    ...showControls(
+      [
+        'enableCellEditing',
+        'enableKeyboardNavigation',
+        'serverDelayMs',
+        'serverFailMode',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement }) => {
     const cell = await editCell(canvasElement, { row: 0, value: '77' })
     await until(() =>
@@ -135,7 +139,13 @@ export const CellEditingSessions: StoryObj<SessionsArgs> = {
     conflictMode: { control: 'inline-radio', options: ['commit', 'block'] },
   },
   // Дымовой сценарий (ADR 0042, DS2): изменение извне не закрывает редактор.
-  parameters: { ...hideDataControls, requirements: ['DS2'] },
+  parameters: {
+    requirements: ['DS2'],
+    ...showControls(
+      ['enableCellEditing', 'enableKeyboardNavigation', 'conflictMode'],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement }) => {
     const cell = await editCell(canvasElement, {
       row: 0,
@@ -172,9 +182,9 @@ const EDITING_ARGS = {
   enableKeyboardNavigation: true,
   columnCount: 6,
   dataCount: 10,
-  containerHeight: 460,
-  height: 360,
-  maxHeight: 360,
+  containerHeight: '460',
+  height: '360',
+  maxHeight: '360',
 }
 
 /** Ячейка `age` строки: вход в правку и сохранение перемонтируют её содержимое. */
@@ -212,7 +222,10 @@ const editCell = async (
 /** Ячейка в правке (ADR 0093, VR4). */
 export const EditingStateEditing: StoryObj<StoryProps> = {
   name: 'State: editing',
-  parameters: vrStates('body.editing'),
+  parameters: {
+    ...vrStates('body.editing'),
+    ...showControls(['enableCellEditing', 'enableKeyboardNavigation']),
+  },
   args: EDITING_ARGS,
   play: async ({ canvasElement }) => {
     await editCell(canvasElement)
@@ -223,7 +236,10 @@ export const EditingStateEditing: StoryObj<StoryProps> = {
 /** Ячейка ждёт сервера (ADR 0093, VR4): `onCellEdit` не отвечает. */
 export const EditingStateSaving: StoryObj<StoryProps> = {
   name: 'State: saving',
-  parameters: vrStates('body.pending'),
+  parameters: {
+    ...vrStates('body.pending'),
+    ...showControls(['enableCellEditing', 'enableKeyboardNavigation']),
+  },
   args: {
     ...EDITING_ARGS,
     // Свой предикат отключает демо-хуки правки: колбэк истории доходит до плагина.
@@ -242,7 +258,10 @@ export const EditingStateSaving: StoryObj<StoryProps> = {
 /** Сервер отказал в сохранении (ADR 0093, VR4): ячейка с отметкой ошибки. */
 export const EditingStateError: StoryObj<StoryProps> = {
   name: 'State: save error',
-  parameters: vrStates('body.error'),
+  parameters: {
+    ...vrStates('body.error'),
+    ...showControls(['enableCellEditing', 'enableKeyboardNavigation']),
+  },
   args: {
     ...EDITING_ARGS,
     cellEditingCanEditCell: () => true,

@@ -7,6 +7,7 @@ import {
   openPopup,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Видимость колонок (ADR 0035): меню «Колонки», вместе с меню заголовка. */
 const meta = {
@@ -19,6 +20,12 @@ export default meta
 
 export const ColumnVisibility: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableColumnVisibility',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+  ]),
   args: {
     // Кнопка «Колонки» в тулбаре: поиск, дерево, «Показать все» / «Сбросить».
     // headerNesting: nested — меню покажет группы вложенной шапки.
@@ -29,6 +36,17 @@ export const ColumnVisibility: StoryObj<StoryProps> = {
 
 export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
   name: 'With header menu',
+  parameters: showControls([
+    'enableColumnPinning',
+    'columnPinningLeafPinning',
+    'enableColumnVisibility',
+    'enableHeaderActionMenu',
+    'headerActionMenuMode',
+    'headerActionMenuThreshold',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+  ]),
   args: {
     // Всё вместе: кнопка «Колонки» в тулбаре и «Скрыть колонку» в кебабе заголовка.
     // Пин — обычное действие, остаётся кнопкой; «Скрыть колонку» (`placement:
@@ -45,13 +63,16 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
 /** Открытое меню «Колонки» (ADR 0093, VR6). */
 export const VisibilityStatePanel: StoryObj<StoryProps> = {
   name: 'State: columns panel',
-  parameters: vrStates('overlay.columns'),
+  parameters: {
+    ...vrStates('overlay.columns'),
+    ...showControls(['enableColumnVisibility']),
+  },
   args: {
     enableColumnVisibility: true,
     dataCount: 20,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

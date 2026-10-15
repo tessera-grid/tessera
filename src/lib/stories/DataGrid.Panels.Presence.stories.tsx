@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Включение панелей (ADR 0046): тулбар и нижняя панель по слотам плагинов; флаги `enableToolbar` / `enableStatusBar`. */
 const meta = {
@@ -14,13 +15,26 @@ export default meta
 const GRID = {
   columnCount: 8,
   dataCount: 120,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
 }
 
 export const PanelsFromPlugins: StoryObj<StoryProps> = {
   name: 'From plugins',
+  parameters: showControls([
+    'enableColumnVisibility',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   args: {
     ...GRID,
     // Флагов нет: тулбар вызывают «Колонки» и «Экспорт», нижнюю панель — пагинация

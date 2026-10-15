@@ -18,6 +18,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Пагинация (ADR 0038): на клиенте и серверная с сортировкой. */
 const meta = {
@@ -30,7 +31,15 @@ export default meta
 
 export const Pagination: StoryObj<StoryProps> = {
   name: 'Basic',
-  parameters: vrStates('panel.pagination'),
+  parameters: {
+    ...vrStates('panel.pagination'),
+    ...showControls([
+      'enablePagination',
+      'paginationInitialPageSize',
+      'paginationPageSizes',
+      'paginationRevertOnReject',
+    ]),
+  },
   args: {
     // Пагинация в нижней панели: размер страницы, диапазон и кнопки. Включите
     // enableColumnSorting — смена сортировки вернёт на первую страницу.
@@ -42,9 +51,9 @@ export const Pagination: StoryObj<StoryProps> = {
 export const PaginationServer: StoryObj<ServerPaginationDemoProps> = {
   name: 'Server',
   args: {
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
     serverDelayMs: 400,
     // Грид не режет и не сортирует строки: страница и сортировка уходят в
     // onPageChange / onToggleColumnSort (журнал справа), «сервер» отвечает страницей
@@ -56,7 +65,13 @@ export const PaginationServer: StoryObj<ServerPaginationDemoProps> = {
   render: args => <ServerPaginationDemo {...normalizeArgs(args)} />,
   // Дымовой сценарий (ADR 0042, DS6): страница и сортировка приходят с сервера, итог —
   // из paginationRowCount.
-  parameters: { requirements: ['DS6'] },
+  parameters: {
+    requirements: ['DS6'],
+    ...showControls(['serverDelayMs'], {
+      dataCount: 'данные подаёт демо',
+      columnCount: 'колонки задаёт демо',
+    }),
+  },
   play: async ({ canvasElement }) => {
     const firstName = () => firstRowText(canvasElement, 'name')
     const range = () => byTestId('pagination-range')?.textContent

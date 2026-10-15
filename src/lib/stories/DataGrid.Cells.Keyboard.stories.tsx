@@ -4,6 +4,7 @@ import { dataGridMeta } from './dataGridMeta'
 import { expect, waitFor, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import { bodyCell, settle, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Клавиатурная навигация (ADR 0021). */
 const meta = {
@@ -16,6 +17,25 @@ export default meta
 
 export const KeyboardNavigation: StoryObj<StoryProps> = {
   name: 'Navigation',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableColumnPinning',
+    'columnPinningLeafPinning',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableCellEditing',
+    'enableCellSelection',
+    'cellSelectionRangeSelection',
+    'cellSelectionDragSelection',
+    'cellSelectionMultiRange',
+    'enableContextMenu',
+    'enableKeyboardNavigation',
+  ]),
   args: {
     // Стрелки/Home/End/PageUp-Down двигают активную ячейку (roving tabindex), в т.ч.
     // по заголовку и сервисным колонкам; с cellSelection стрелка схлопывает
@@ -33,24 +53,32 @@ export const KeyboardNavigation: StoryObj<StoryProps> = {
     enableContextMenu: true,
     columnCount: 40,
     dataCount: 500,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }
 
 /** Активная ячейка с кольцом фокуса (ADR 0093, VR4): клавиатурная модальность. */
 export const KeyboardStateFocusedCell: StoryObj<StoryProps> = {
   name: 'State: focused cell',
-  parameters: vrStates('body.focus'),
+  parameters: {
+    ...vrStates('body.focus'),
+    ...showControls([
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableKeyboardNavigation',
+    ]),
+  },
   args: {
     enableKeyboardNavigation: true,
     enableRowSelection: true,
     dataCount: 20,
     columnCount: 8,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

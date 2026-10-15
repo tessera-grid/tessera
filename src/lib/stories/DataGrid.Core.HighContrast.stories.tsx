@@ -2,6 +2,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Демо-состояния: две выбранные строки, подсветка строки и колонки — один раз на
@@ -47,7 +48,34 @@ export default meta
 export const HighContrast: StoryObj<StoryProps> = {
   name: 'Basic',
   // Снимок Chromatic — с эмуляцией высокой контрастности (ADR 0093, VR9).
-  parameters: { chromatic: { forcedColors: 'active' } },
+  parameters: {
+    chromatic: { forcedColors: 'active' },
+    ...showControls([
+      'dataNesting',
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+      'enableCellSelection',
+      'cellSelectionRangeSelection',
+      'cellSelectionDragSelection',
+      'cellSelectionMultiRange',
+      'enableKeyboardNavigation',
+    ]),
+  },
   args: {
     dataNesting: 'nested',
     enableRowExpanding: true,
@@ -62,8 +90,8 @@ export const HighContrast: StoryObj<StoryProps> = {
     extraPlugins: [highContrastDemo],
     columnCount: 8,
     dataCount: 40,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }

@@ -4,6 +4,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { filteringColumns, filteringData } from './__mocks__/filteringData'
 import { vrStates } from './__mocks__/catalog'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Тулбар (ADR 0035, ADR 0051): кнопки плагинов, все кнопки, пустой тулбар. */
 const meta = {
@@ -16,6 +17,7 @@ export default meta
 
 export const WithToolbar: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([]),
   args: {
     // Демо-кнопки в двух подгруппах (`view` и `data`): видны порядок, разделитель
     // и состояния F4 — активное (Settings) и disabled (Export). Тулбар вызывают
@@ -26,7 +28,22 @@ export const WithToolbar: StoryObj<StoryProps> = {
 
 export const ToolbarAllButtons: StoryObj<StoryProps> = {
   name: 'All buttons',
-  parameters: vrStates('panel.toolbar'),
+  parameters: {
+    ...vrStates('panel.toolbar'),
+    ...showControls([
+      'enableColumnVisibility',
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'enableDataExport',
+      'dataExportAllow',
+      'dataExportFilename',
+    ]),
+  },
   args: {
     // Все встроенные кнопки разом (ADR 0051): слева поиск и «Фильтры», справа
     // «Колонки», затем «Экспорт». Порядок задают группы search → view → data, а не
@@ -42,6 +59,7 @@ export const ToolbarAllButtons: StoryObj<StoryProps> = {
 
 export const WithEmptyToolbar: StoryObj<StoryProps> = {
   name: 'Empty',
+  parameters: showControls(['enableToolbar']),
   args: {
     // Пустой тулбар держит только явный enableToolbar: true (ADR 0046).
     enableToolbar: true,

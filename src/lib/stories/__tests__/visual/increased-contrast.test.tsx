@@ -245,7 +245,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
     )
     await tree.unmount()
 
-    const skeletons = await render(<composed.Skeletons />)
+    const skeletons = await render(<composed.SkeletonDefault />)
     await expect.poll(skeletonStripe).toBeTruthy()
     await changes(
       '--tsr-sys-tint-fill',
@@ -287,7 +287,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
     })
     await tree.unmount()
 
-    const skeletons = await render(<composed.Skeletons contrast="more" />)
+    const skeletons = await render(<composed.SkeletonDefault contrast="more" />)
     await expect.poll(skeletonStripe).toBeTruthy()
     await inBothThemes(async () => {
       const stripe = skeletonStripe()!

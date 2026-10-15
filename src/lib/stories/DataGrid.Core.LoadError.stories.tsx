@@ -7,6 +7,7 @@ import { dataGridMeta } from './dataGridMeta'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { vrStates } from './__mocks__/catalog'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Ошибка загрузки данных (ADR 0096): `loadError` при данных — плашка под шапкой и
@@ -36,7 +37,7 @@ const SERVER_ERROR = new Error('Server responded 503 Service Unavailable')
 /** Обновление упало: старые строки на месте и рабочие, плашка с причиной и «Retry». */
 export const LoadErrorRefresh: StoryObj<StoryProps> = {
   name: 'Refresh error',
-  parameters: vrStates('body.loadError'),
+  parameters: { ...vrStates('body.loadError'), ...showControls([]) },
   args: {
     loadError: SERVER_ERROR,
     onRetry: fn(),
@@ -53,6 +54,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
 /** Длинная причина: плашка не шире `--tsr-comp-load-error-banner-max-width`, причина — с `…` и тултипом. */
 export const LoadErrorLongReason: StoryObj<StoryProps> = {
   name: 'Refresh error — long reason',
+  parameters: showControls([]),
   args: {
     loadError: new Error(
       'Gateway timeout: the reporting service did not answer within 30 seconds while aggregating orders for the selected period; try a shorter period or retry later',
@@ -64,7 +66,7 @@ export const LoadErrorLongReason: StoryObj<StoryProps> = {
 /** Первая загрузка упала: данных нет — заглушка ошибки вместо скелета. */
 export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
   name: 'First load error',
-  parameters: vrStates('body.loadFailed'),
+  parameters: { ...vrStates('body.loadFailed'), ...showControls([]) },
   args: {
     dataOverride: [],
     loadError: SERVER_ERROR,
@@ -81,6 +83,7 @@ export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
 /** Своя заглушка: `errorStub` получает ошибку и повтор. */
 export const LoadErrorCustomStub: StoryObj<StoryProps> = {
   name: 'Custom error stub',
+  parameters: showControls([]),
   args: {
     dataOverride: [],
     loadError: SERVER_ERROR,
@@ -147,7 +150,7 @@ export const LoadErrorServer: StoryObj<StoryProps> = {
   render: args => <ServerDemo {...normalizeArgs(args)} />,
   // Дымовой сценарий (ADR 0096, LE16): отказ обновления — плашка с причиной; «Retry»
   // убирает её, повтор успешен — плашки нет.
-  parameters: { requirements: ['LE16'] },
+  parameters: { requirements: ['LE16'], ...showControls([]) },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const button = (text: string) =>

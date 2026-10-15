@@ -4,6 +4,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { expect } from 'storybook/test'
 import { settle, until, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 const gridTheme = (canvas: HTMLElement) =>
   canvas.querySelector<HTMLElement>('.data-grid-theme[class*="theme-wrapper"]')!
@@ -57,16 +58,41 @@ const args: Partial<StoryProps> = {
   extraPlugins: [selectionDemo],
   columnCount: 8,
   dataCount: 40,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
 }
 
 export const IncreasedContrast: StoryObj<StoryProps> = {
   name: 'Basic',
   args,
   // Дымовой тест (ADR 0088, MC11): режим включён, выбор — контуром, дерево на месте.
-  parameters: { requirements: ['MC11'] },
+  parameters: {
+    requirements: ['MC11'],
+    ...showControls([
+      'dataNesting',
+      'contrast',
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnVisibility',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+      'enableKeyboardNavigation',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     const selected = () =>
       canvasElement.querySelector<HTMLElement>(
@@ -97,6 +123,29 @@ const RECIPE = `
 
 export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
   name: 'Own levers and palette',
+  parameters: showControls([
+    'dataNesting',
+    'contrast',
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableColumnPinning',
+    'columnPinningLeafPinning',
+    'enableColumnVisibility',
+    'enableHeaderActionMenu',
+    'headerActionMenuMode',
+    'headerActionMenuThreshold',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+    'enableKeyboardNavigation',
+  ]),
   args,
   decorators: [
     Story => (

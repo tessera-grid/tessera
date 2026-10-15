@@ -14,6 +14,7 @@ import {
   ColumnDraggingServerDemo,
   type ColumnDraggingServerDemoProps,
 } from './demos/sessionDemos'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Движение колонок (ADR 0115): перенос с клавиатуры (`Alt+Shift+←/→`), из меню ручки и
@@ -29,9 +30,9 @@ const meta = {
 export default meta
 
 const GRID = {
-  containerHeight: 400,
-  height: 300,
-  maxHeight: 300,
+  containerHeight: '400',
+  height: '300',
+  maxHeight: '300',
   dataCount: 30,
   enableColumnDragging: true,
   enableKeyboardNavigation: true,
@@ -49,7 +50,16 @@ export const ColumnMotionServer: StoryObj<ColumnDraggingServerDemoProps> = {
     moveFailMode: { control: 'inline-radio', options: ['never', 'always'] },
   },
   // Дымовой сценарий (ADR 0115, CN14): перенос с клавиатуры, откат и смена флага.
-  parameters: { requirements: ['CN14'] },
+  parameters: {
+    requirements: ['CN14'],
+    ...showControls([
+      'enableColumnDragging',
+      'columnDraggingRevertOnReject',
+      'enableKeyboardNavigation',
+      'moveDelayMs',
+      'moveFailMode',
+    ]),
+  },
   play: async ({ canvasElement, id, step }) => {
     const doc = canvasElement.ownerDocument
     const log = () => doc.body.textContent ?? ''
@@ -134,6 +144,12 @@ export const ColumnMotionServer: StoryObj<ColumnDraggingServerDemoProps> = {
 /** Без движения: `enableColumnAnimation: false` — смены порядка мгновенны. */
 export const ColumnMotionOff: StoryObj<StoryProps> = {
   name: 'Off',
+  parameters: showControls([
+    'enableColumnAnimation',
+    'enableColumnDragging',
+    'columnDraggingRevertOnReject',
+    'enableKeyboardNavigation',
+  ]),
   args: {
     ...GRID,
     enableColumnAnimation: false,

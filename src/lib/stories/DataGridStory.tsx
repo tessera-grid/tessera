@@ -1,6 +1,11 @@
 // Демо-компонент историй DataGrid: собирает таблицу из аргументов Storybook.
 import { memo, useCallback, useMemo, useState } from 'react'
-import { GroupingState, Updater, functionalUpdate } from '@tanstack/react-table'
+import {
+  type ColumnPinningState,
+  GroupingState,
+  Updater,
+  functionalUpdate,
+} from '@tanstack/react-table'
 import { Grid, NoDataStub } from './_shims'
 import { loadingArg, panelFlag } from './__mocks__/utils/dataGridControls'
 import { useExpandedState } from '../../lib/core/createState'
@@ -18,6 +23,7 @@ import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { RU_LABELS } from './__mocks__/localization.ru'
 import { argsToPlugins } from './__mocks__/utils/argsToPlugins'
 import type { StoryProps } from './DataGridStory.types'
+import { sizeArg } from './__mocks__/utils/normalizeArgs'
 
 const expandingInitialState = {}
 
@@ -67,7 +73,10 @@ const StoryGrid = memo(
     dataOverride,
     columnsOverride,
     initialGrouping,
+    initialColumnPinning,
+    pinFirstColumn,
     initialExpanded,
+    expandAll,
     extraPlugins,
 
     onTogglePin,
@@ -139,9 +148,50 @@ const StoryGrid = memo(
       initialGrouping,
     )
 
-    const { expanded, onExpandedChange } = useExpandedState(
-      initialExpanded ?? expandingInitialState,
+    // Первая колонка данных; под вложенной шапкой — её первый лист.
+    const firstColumnId = useMemo(() => {
+      let column = columnsGetter[0] as
+        { id?: string; accessorKey?: string; columns?: unknown[] } | undefined
+      while (column?.columns?.length) {
+        column = column.columns[0] as typeof column
+      }
+      return column?.id ?? column?.accessorKey
+    }, [columnsGetter])
+    const pinnedFirst = (
+      prev: ColumnPinningState | undefined,
+      pin: boolean,
+    ): ColumnPinningState => {
+      const start = (prev?.start ?? []).filter(id => id !== firstColumnId)
+      return {
+        start: pin && firstColumnId ? [firstColumnId, ...start] : start,
+        end: prev?.end ?? [],
+      }
+    }
+    const controlsPinning =
+      initialColumnPinning !== undefined || pinFirstColumn !== undefined
+    const [columnPinning, setColumnPinning] = useState<
+      ColumnPinningState | undefined
+    >(() =>
+      pinFirstColumn
+        ? pinnedFirst(initialColumnPinning, true)
+        : initialColumnPinning,
     )
+    // `pinFirstColumn` из панели закрепляет и открепляет колонку на лету.
+    const [appliedPinFirst, setAppliedPinFirst] = useState(pinFirstColumn)
+    if (appliedPinFirst !== pinFirstColumn) {
+      setAppliedPinFirst(pinFirstColumn)
+      setColumnPinning(prev => pinnedFirst(prev, !!pinFirstColumn))
+    }
+
+    const { expanded, onExpandedChange } = useExpandedState(
+      expandAll ? true : (initialExpanded ?? expandingInitialState),
+    )
+    // `expandAll` из панели раскрывает или сворачивает всё на лету (SN10).
+    const [appliedExpandAll, setAppliedExpandAll] = useState(expandAll)
+    if (appliedExpandAll !== expandAll) {
+      setAppliedExpandAll(expandAll)
+      if (expandAll !== undefined) onExpandedChange(expandAll ? true : {})
+    }
 
     const { rowSelection, onRowSelectionChange } = useRowSelectionState()
     const { getSelectedData, selectedDataCount } = useAllRowsSelect({
@@ -156,6 +206,7 @@ const StoryGrid = memo(
         expanded,
         rowSelection,
         ...(grouping !== undefined ? { grouping } : {}),
+        ...(columnPinning !== undefined ? { columnPinning } : {}),
       },
       handlers: {
         onExpandedChange,
@@ -165,6 +216,14 @@ const StoryGrid = memo(
           ? {
               onGroupingChange: (updater: Updater<GroupingState>) =>
                 setGrouping(prev => functionalUpdate(updater, prev ?? [])),
+            }
+          : {}),
+        ...(controlsPinning
+          ? {
+              onColumnPinningChange: (updater: Updater<ColumnPinningState>) =>
+                setColumnPinning(prev =>
+                  functionalUpdate(updater, prev ?? { start: [], end: [] }),
+                ),
             }
           : {}),
       },
@@ -261,8 +320,8 @@ const StoryGrid = memo(
         )}
         <DataGrid
           table={table as never}
-          height={height}
-          maxHeight={maxHeight}
+          height={sizeArg(height)}
+          maxHeight={sizeArg(maxHeight)}
           colorMode={colorMode}
           contrast={contrast}
           localization={labels}
@@ -277,7 +336,7 @@ const StoryGrid = memo(
       <Grid
         style={{
           padding: 16,
-          height: containerHeight,
+          height: sizeArg(containerHeight),
           ...(containerWidth !== undefined && {
             width: containerWidth,
             boxSizing: 'border-box',

@@ -1,5 +1,9 @@
 // Пропсы и дефолты демо-компонента историй DataGrid.
-import { ColumnDef, ExpandedState } from '@tanstack/react-table'
+import {
+  ColumnDef,
+  type ColumnPinningState,
+  ExpandedState,
+} from '@tanstack/react-table'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
@@ -39,14 +43,23 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    */
   initialGrouping?: string[]
   /**
+   * Начальное закрепление колонок. Если задано — StoryComponent контролирует срез
+   * `columnPinning` (закрепление до прихода данных, когда кнопок шапки ещё нет).
+   */
+  initialColumnPinning?: ColumnPinningState
+  /** Первая колонка данных закреплена слева сразу при открытии; переключается на лету. */
+  pinFirstColumn?: boolean
+  /**
    * Начальное раскрытие строк (дерево/группы). `true` — раскрыть всё, чтобы
    * фича была видна сразу. По умолчанию всё свёрнуто.
    */
   initialExpanded?: ExpandedState
+  /** Раскрыть все строки или свернуть их — на лету (ADR 0117, SN10). */
+  expandAll?: boolean
   /** Дополнительные записи плагинов поверх тумблеров (демо и тесты тулбара). */
   extraPlugins?: TesseraFeatureEntry[]
 
-  containerHeight: number
+  containerHeight: number | string
   /** Ширина контейнера истории, px; по умолчанию — вся ширина. */
   containerWidth?: number
   height: DataGridProps['height']

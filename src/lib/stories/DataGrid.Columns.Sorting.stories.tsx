@@ -15,6 +15,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Сортировка колонок (ADR 0012, ADR 0063): одна и несколько колонок, без снятия, по подписи вариантов. */
 const meta = {
@@ -27,19 +28,33 @@ export default meta
 
 export const ColumnSorting: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+  ]),
   args: {
     enableColumnSorting: true,
     // Sized to overflow vertically so the row-ordering requirements (CS12–CS13)
     // have enough rendered rows to prove the sort order against.
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
 export const ColumnSortingNotRemovable: StoryObj<StoryProps> = {
   name: 'Not removable',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+  ]),
   args: {
     enableColumnSorting: true,
     columnSortingRemoval: false,
@@ -48,15 +63,22 @@ export const ColumnSortingNotRemovable: StoryObj<StoryProps> = {
 
 export const ColumnMultiSorting: StoryObj<StoryProps> = {
   name: 'Multi-sort',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+  ]),
   args: {
     enableColumnSorting: true,
     columnSortingMultiSort: true,
     // Shift+клик по нескольким заголовкам добавляет столбцы к сортировке; у
     // каждого отсортированного столбца в шапке виден порядковый бейдж приоритета.
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
@@ -70,7 +92,16 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
     // имени из справочника, а не по id. С группировкой в том же порядке идут группы.
   },
   // Сценарий истории (ADR 0063, OS12): Manager — имена, Status — в порядке вариантов.
-  parameters: { requirements: ['OS12'] },
+  parameters: {
+    requirements: ['OS12'],
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     expect(firstRowText(canvasElement, 'managerId')).not.toMatch(/^m[0-9]+$/)
@@ -95,14 +126,23 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
 export const SortingStateSorted: StoryObj<StoryProps> = {
   name: 'State: sorted',
   tags: ['vr-modes'],
-  parameters: vrModes(vrStates('head.sorting')),
+  parameters: {
+    ...vrModes(vrStates('head.sorting')),
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+    ]),
+  },
   args: {
     enableColumnSorting: true,
     columnSortingMultiSort: true,
     dataCount: 20,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
@@ -130,13 +170,22 @@ export const SortingStateSorted: StoryObj<StoryProps> = {
 /** Тултип кнопки шапки (ADR 0093, VR6). */
 export const SortingStateTooltip: StoryObj<StoryProps> = {
   name: 'State: tooltip',
-  parameters: vrStates('overlay.tooltip'),
+  parameters: {
+    ...vrStates('overlay.tooltip'),
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+    ]),
+  },
   args: {
     enableColumnSorting: true,
     dataCount: 20,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

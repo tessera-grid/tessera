@@ -8,6 +8,7 @@ import {
 } from './demos/infiniteScrollDemos'
 import { expect, userEvent } from 'storybook/test'
 import { byTestId, settle, until, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Прокрутка на два экрана показывает кнопку, нажатие возвращает в начало. */
 const backToTop = async (canvas: HTMLElement) => {
@@ -38,12 +39,22 @@ export default meta
 
 export const BackToTopPagination: StoryObj<StoryProps> = {
   name: 'Pagination',
+  parameters: showControls([
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+    'enableBackToTop',
+    'backToTopThreshold',
+    'backToTopHorizontalThreshold',
+    'backToTopAxes',
+  ]),
   // Страница по 100 строк: прокрутите вниз — кнопка вернёт в начало страницы.
   // Включите enableKeyboardNavigation — активная ячейка перейдёт в первую строку.
   args: {
-    containerHeight: 600,
-    height: 480,
-    maxHeight: 480,
+    containerHeight: '600',
+    height: '480',
+    maxHeight: '480',
     enableBackToTop: true,
     enablePagination: true,
     paginationInitialPageSize: 100,
@@ -56,9 +67,9 @@ export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
   name: 'Infinite scroll',
   // Лента со счётчиком загруженных строк: кнопка встаёт в его панель.
   args: {
-    containerHeight: 600,
-    height: 480,
-    maxHeight: 480,
+    containerHeight: '600',
+    height: '480',
+    maxHeight: '480',
     serverDelayMs: 300,
     blockSize: 100,
     enableBackToTop: true,
@@ -69,7 +80,23 @@ export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
   },
   render: args => <InfiniteScrollDemo {...normalizeArgs(args)} />,
   // Дымовой тест ленты (ADR 0082, BT15): кнопка после прокрутки возвращает в начало.
-  parameters: { requirements: ['BT15'] },
+  parameters: {
+    requirements: ['BT15'],
+    ...showControls(
+      [
+        'enableBackToTop',
+        'backToTopThreshold',
+        'backToTopHorizontalThreshold',
+        'backToTopAxes',
+        'serverDelayMs',
+        'blockSize',
+      ],
+      {
+        dataCount: 'данные подаёт демо',
+        columnCount: 'колонки задаёт демо',
+      },
+    ),
+  },
   play: async ({ canvasElement }) => {
     await until(() =>
       expect(byTestId('loaded-rows-count')).toHaveTextContent(
@@ -86,9 +113,9 @@ export const BackToTopWide: StoryObj<StoryProps> = {
   // «наверх» вернёт к первой колонке, не трогая вертикаль. Одна ось — аргумент
   // backToTopAxes.
   args: {
-    containerHeight: 600,
-    height: 480,
-    maxHeight: 480,
+    containerHeight: '600',
+    height: '480',
+    maxHeight: '480',
     enableBackToTop: true,
     enablePagination: true,
     paginationInitialPageSize: 100,
@@ -96,7 +123,19 @@ export const BackToTopWide: StoryObj<StoryProps> = {
     columnCount: 40,
   },
   // Дымовой сценарий (ADR 0105, BT24): обе кнопки возвращают к краю.
-  parameters: { requirements: ['BT24'] },
+  parameters: {
+    requirements: ['BT24'],
+    ...showControls([
+      'enablePagination',
+      'paginationInitialPageSize',
+      'paginationPageSizes',
+      'paginationRevertOnReject',
+      'enableBackToTop',
+      'backToTopThreshold',
+      'backToTopHorizontalThreshold',
+      'backToTopAxes',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const scroller = canvasElement.querySelector<HTMLElement>(

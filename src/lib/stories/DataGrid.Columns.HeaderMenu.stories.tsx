@@ -13,6 +13,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Меню заголовка (ADR 0024) и индикатор включённого действия (ADR 0062). */
 const meta = {
@@ -32,13 +33,27 @@ const activeIndicatorArgs: Partial<StoryProps> = {
   enableColumnFiltering: true,
   enableColumnPinning: true,
   enableColumnVisibility: true,
-  containerHeight: 460,
-  height: 400,
-  maxHeight: 400,
+  containerHeight: '460',
+  height: '400',
+  maxHeight: '400',
 }
 
 export const HeaderActionMenu: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableColumnPinning',
+    'columnPinningLeafPinning',
+    'enableColumnSizing',
+    'enableHeaderActionMenu',
+    'headerActionMenuMode',
+    'headerActionMenuThreshold',
+    'enableRowGrouping',
+  ]),
   args: {
     // Три действия в правом слоте (пин + сортировка + группировка) — дескрипторы;
     // достигают порога 3 → весь набор схлопывается в один кебаб (⋮), меню делится
@@ -51,15 +66,31 @@ export const HeaderActionMenu: StoryObj<StoryProps> = {
     enableRowGrouping: true,
     enableColumnSizing: true,
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
 export const ActiveActionIndicator: StoryObj<StoryProps> = {
   name: 'Active indicator',
-  parameters: vrStates('head.activeIndicator'),
+  parameters: {
+    ...vrStates('head.activeIndicator'),
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnVisibility',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+    ]),
+  },
   args: activeIndicatorArgs,
 }
 
@@ -68,6 +99,23 @@ export const ActiveActionIndicator: StoryObj<StoryProps> = {
 // приоритета вместо точки.
 export const ActiveActionIndicatorInMenu: StoryObj<StoryProps> = {
   name: 'Active indicator — in menu',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableColumnPinning',
+    'columnPinningLeafPinning',
+    'enableColumnVisibility',
+    'enableHeaderActionMenu',
+    'headerActionMenuMode',
+    'headerActionMenuThreshold',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+  ]),
   args: {
     ...activeIndicatorArgs,
     enableHeaderActionMenu: true,
@@ -82,9 +130,9 @@ const HEADER_MENU_ARGS = {
   enableRowGrouping: true,
   enableColumnSizing: true,
   dataCount: 30,
-  containerHeight: 460,
-  height: 360,
-  maxHeight: 360,
+  containerHeight: '460',
+  height: '360',
+  maxHeight: '360',
 }
 
 /** Кебаб заголовка под наведением (ADR 0093, VR5): наведение — псевдо-состояние. */
@@ -93,6 +141,20 @@ export const HeaderMenuStateKebab: StoryObj<StoryProps> = {
   parameters: {
     ...vrStates('head.kebab'),
     pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnSizing',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableRowGrouping',
+    ]),
   },
   args: HEADER_MENU_ARGS,
   play: async ({ canvasElement, id, parameters }) => {
@@ -105,7 +167,23 @@ export const HeaderMenuStateKebab: StoryObj<StoryProps> = {
 export const HeaderMenuStateOpen: StoryObj<StoryProps> = {
   name: 'State: menu open',
   tags: ['vr-modes'],
-  parameters: vrModes(vrStates('overlay.menu')),
+  parameters: {
+    ...vrModes(vrStates('overlay.menu')),
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnSizing',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableRowGrouping',
+    ]),
+  },
   args: HEADER_MENU_ARGS,
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

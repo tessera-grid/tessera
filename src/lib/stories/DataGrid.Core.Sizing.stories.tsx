@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Высота строк и шапки, ширина колонок по умолчанию (ADR 0077). */
 const meta = {
@@ -11,10 +12,18 @@ const meta = {
 
 export default meta
 
-const SIZE = { containerHeight: 560, height: 460, maxHeight: 460 }
+const SIZE = { containerHeight: '560', height: '460', maxHeight: '460' }
 
 export const RowHeight: StoryObj<StoryProps> = {
   name: 'Row height',
+  parameters: showControls([
+    'dataNesting',
+    'enableFooter',
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+  ]),
   args: {
     // Строки тела и футера по 40px (минимум); меняйте rowHeight в Controls на лету.
     rowHeight: 40,
@@ -29,6 +38,17 @@ export const RowHeight: StoryObj<StoryProps> = {
 
 export const HeaderHeight: StoryObj<StoryProps> = {
   name: 'Header height',
+  parameters: showControls(
+    [
+      'headerNesting',
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+    ],
+    { columnCount: 'колонки задаёт вложенная шапка' },
+  ),
   args: {
     // Шапка выше строк: 72px на каждую строку вложенной шапки при строках по 44px.
     rowHeight: 44,
@@ -42,6 +62,7 @@ export const HeaderHeight: StoryObj<StoryProps> = {
 /** Колонки без своего `size`: ширина из `defaultColumn`, у колонки со своим — своя. */
 export const DefaultColumnWidth: StoryObj<StoryProps> = {
   name: 'Default column width',
+  parameters: showControls(['enableColumnSizing']),
   args: {
     defaultColumn: { size: 220 },
     columnsOverride: [

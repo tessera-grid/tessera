@@ -21,8 +21,9 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
-/** Ядро грида: все тумблеры, скелет, загрузка, заглушка, футер, подписи и иконки. */
+/** Ядро грида: все тумблеры, загрузка, заглушка, футер, подписи и иконки. */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -38,30 +39,9 @@ export const AllFeatures: StoryObj<StoryProps> = {
   // по умолчанию выключены.
   args: {
     dataNesting: 'nested',
-    containerHeight: 600,
-    height: 500,
-    maxHeight: 500,
-  },
-}
-
-export const Skeletons: StoryObj<StoryProps> = {
-  name: 'Skeleton',
-  parameters: vrStates('body.skeleton'),
-  // Скелет первой загрузки повторяет раскладку грида (ADR 0060): служебные колонки,
-  // закрепление, шапку и пагинатор. Выключите loading — данные встанут на
-  // место без сдвига; skeletonOptions.rowsCount числом задаёт строки вручную.
-  args: {
-    // Вложенный мок: колонка раскрытия появляется, только если есть строки с детьми.
-    dataNesting: 'nested',
-    loading: 'initial',
-    enableRowSelection: true,
-    rowSelectionSelectedCount: true,
-    enableRowDragging: true,
-    enableRowExpanding: true,
-    enableColumnPinning: true,
-    enableColumnSorting: true,
-    enablePagination: true,
-    enableFooter: true,
+    containerHeight: '600',
+    height: '500',
+    maxHeight: '500',
   },
 }
 
@@ -72,7 +52,10 @@ export const Skeletons: StoryObj<StoryProps> = {
 export const Loading: StoryObj<StoryProps> = {
   name: 'Loading',
   tags: ['vr-modes'],
-  parameters: vrModes(vrStates('body.refreshing')),
+  parameters: {
+    ...vrModes(vrStates('body.refreshing')),
+    ...showControls(['loading', 'skeletonOptions', 'refreshOptions']),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     await until(() =>
@@ -89,17 +72,17 @@ export const Loading: StoryObj<StoryProps> = {
 
 export const Stub: StoryObj<StoryProps> = {
   name: 'Empty (stub)',
-  parameters: vrStates('body.empty'),
+  parameters: { ...vrStates('body.empty'), ...showControls(['showStub']) },
   args: {
-    containerHeight: 460,
-    height: 360,
+    containerHeight: '460',
+    height: '360',
     showStub: true,
   },
 }
 
 export const WithFooter: StoryObj<StoryProps> = {
   name: 'Footer',
-  parameters: vrStates('head.footer'),
+  parameters: { ...vrStates('head.footer'), ...showControls(['enableFooter']) },
   args: {
     // Только колонки моков: Total — последняя, её сумма — в футере.
     columnCount: 7,
@@ -109,6 +92,35 @@ export const WithFooter: StoryObj<StoryProps> = {
 
 export const Localization: StoryObj<StoryProps> = {
   name: 'Localization',
+  parameters: showControls([
+    'locale',
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableColumnVisibility',
+    'enableHeaderActionMenu',
+    'headerActionMenuMode',
+    'headerActionMenuThreshold',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   // Русский словарь подписей (`localization`): тулбар, фильтры, пагинация, экспорт,
   // меню. Контрол `locale` переключает язык в любой истории.
   args: {
@@ -128,6 +140,30 @@ export const Localization: StoryObj<StoryProps> = {
 
 export const CustomIcons: StoryObj<StoryProps> = {
   name: 'Custom icons',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableRowDragging',
+    'rowDraggingExpandDelay',
+    'rowDraggingRevertOnReject',
+    'enableRowActions',
+    'rowActionsWidth',
+    'rowActionsCollapsedWidth',
+    'rowActionsColumn',
+    'enableRowActionMenu',
+    'rowActionMenuMode',
+    'rowActionMenuThreshold',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   // Проп `icons` заменяет иконки по ключу, остальные — по умолчанию: сортировка,
   // фильтр, перетаскивание, меню, экспорт.
   args: {
@@ -162,13 +198,28 @@ const HOVERED_ROWS = ['item-id-2', 'item-id-4'].map(
 export const CoreStateHoveredRow: StoryObj<StoryProps> = {
   name: 'State: hovered row',
   tags: ['vr-modes'],
-  parameters: vrModes({
-    ...vrStates('body.hover'),
-    requirements: ['VR8'],
-    pseudo: {
-      hover: HOVERED_ROWS.flatMap(row => [row, `${row} .data-grid__body-cell`]),
-    },
-  }),
+  parameters: {
+    ...vrModes({
+      ...vrStates('body.hover'),
+      requirements: ['VR8'],
+      pseudo: {
+        hover: HOVERED_ROWS.flatMap(row => [
+          row,
+          `${row} .data-grid__body-cell`,
+        ]),
+      },
+    }),
+    ...showControls([
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowActions',
+      'rowActionsWidth',
+      'rowActionsCollapsedWidth',
+      'rowActionsColumn',
+      'enableCellEditing',
+    ]),
+  },
   args: {
     enableRowSelection: true,
     enableCellEditing: true,
@@ -176,9 +227,9 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
     // Строки — с первого рендера: псевдо-состояние ставится на смонтированные узлы.
     dataOverride: getData(12),
     dataCount: 12,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)

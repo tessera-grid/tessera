@@ -2,6 +2,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Вложенная шапка (ADR 0049): группы заголовков, листья разной глубины. */
 const meta = {
@@ -19,9 +20,9 @@ export const HeaderGroups: StoryObj<StoryProps> = {
   },
   parameters: {
     ...vrStates('head.nested'),
-    controls: {
-      exclude: ['columnCount'],
-    },
+    ...showControls(['headerNesting'], {
+      columnCount: 'колонки задаёт вложенная шапка',
+    }),
   },
 }
 
@@ -41,13 +42,33 @@ export const HeaderGroupsShallowLeaves: StoryObj<StoryProps> = {
     enableHeaderActionMenu: true,
     enableKeyboardNavigation: true,
     dataCount: 40,
-    containerHeight: 500,
-    height: 400,
-    maxHeight: 400,
+    containerHeight: '500',
+    height: '400',
+    maxHeight: '400',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount'],
-    },
-  },
+  parameters: showControls(
+    [
+      'headerNesting',
+      'dataNesting',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnVisibility',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+      'enableRowActions',
+      'rowActionsWidth',
+      'rowActionsCollapsedWidth',
+      'rowActionsColumn',
+      'enableKeyboardNavigation',
+    ],
+    { columnCount: 'колонки задаёт вложенная шапка' },
+  ),
 }

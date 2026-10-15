@@ -5,6 +5,7 @@ import { vrModes, vrStates } from './__mocks__/catalog'
 import { makeData } from './__mocks__/data'
 import { expect, waitFor, userEvent } from 'storybook/test'
 import { bodyRow, settle, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Выбор строк (ADR 0014): флажки, пакетный тулбар, дочерние строки. */
 const meta = {
@@ -26,20 +27,36 @@ const subRowSelectionTree = makeData({
 
 export const RowSelection: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+  ]),
   args: {
     enableRowSelection: true,
     // Небольшой набор, целиком помещающийся в вьюпорт: требования «выбрать все
     // на странице» (RS8–RS10, RS12) сверяются со всеми отрисованными строками,
     // поэтому вертикальная виртуализация не должна прятать часть строк.
     dataCount: 10,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }
 
 export const BatchRowSelection: StoryObj<StoryProps> = {
   name: 'Batch toolbar',
+  parameters: showControls([
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+    'showBatchToolbar',
+    'isAllRowsSelected',
+  ]),
   args: {
     // Пакетный выбор «все строки» (BatchToolbar) поверх пагинации плагином: выбор
     // живёт по id и переживает смену страницы.
@@ -64,24 +81,35 @@ export const SubRowSelection: StoryObj<StoryProps> = {
     rowSelectionSubRows: true,
     enableRowExpanding: true,
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount', 'dataCount', 'dataOverride', 'initialExpanded'],
-    },
-  },
+  parameters: showControls([
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+  ]),
 }
 
 /** Выбранные строки (ADR 0093, VR4): две строки отмечены флажками. */
 export const RowSelectionStateSelected: StoryObj<StoryProps> = {
   name: 'State: selected rows',
   tags: ['vr-modes'],
-  parameters: vrModes(vrStates('body.selection')),
+  parameters: {
+    ...vrModes(vrStates('body.selection')),
+    ...showControls([
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+    ]),
+  },
   args: {
     enableRowSelection: true,
     dataCount: 10,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

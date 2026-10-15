@@ -44,6 +44,19 @@ const numberControl = (
   table: { defaultValue: { summary: defaultSummary } },
 })
 
+/**
+ * Размер текстом (ADR 0117, SN9): числовой контрол Storybook пустого значения не
+ * принимает. Пусто — умолчание, число — пиксели, иное — CSS-значение.
+ */
+const sizeControl = (
+  description: string,
+  defaultSummary: string,
+): InputType => ({
+  control: 'text',
+  description: `${description}: число — px, иначе CSS-значение; пусто — умолчание`,
+  table: { defaultValue: { summary: defaultSummary } },
+})
+
 const booleanControl = (
   description: string,
   defaultValue = false,
@@ -129,15 +142,17 @@ export const containerHeightType = numberControl(
   { min: 100, max: 1000, step: 100 },
   STORY_PARAM,
 )
-export const numberHeightType = numberControl(
-  'Высота грида (`height`), px',
-  { min: 100, max: 1000, step: 100 },
+export const heightType = sizeControl('Высота грида (`height`)', '100%')
+export const maxHeightType = sizeControl(
+  'Максимальная высота грида (`maxHeight`)',
   '100%',
 )
-export const numberMaxHeightType = numberControl(
-  'Максимальная высота грида (`maxHeight`), px',
-  { min: 100, max: 1000, step: 100 },
-  '100%',
+export const containerSizeType = sizeControl(
+  'Высота контейнера вокруг грида',
+  'по содержимому',
+)
+export const expandAllType = booleanControl(
+  'Раскрыть все строки (`expanded: true`), выключить — свернуть все; на лету',
 )
 export const showStubType = booleanControl(
   'Пустые данные: грид показывает заглушку «нет данных»',
@@ -252,6 +267,9 @@ export const enableColumnDraggingType = booleanControl(
 )
 export const enableColumnPinningType = booleanControl(
   'Закрепление колонок кнопкой в заголовке (плагин `columnPinning`)',
+)
+export const pinFirstColumnType = booleanControl(
+  'Первая колонка закреплена слева сразу при открытии (начальное закрепление, переключается на лету)',
 )
 export const columnPinningLeafPinningType = booleanControl(
   'Закрепление отдельных листьев под вложенной шапкой (`leafPinning`)',

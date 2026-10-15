@@ -1,17 +1,7 @@
-// Общий meta историй DataGrid: дефолтные аргументы, render и демо-play.
+// Общий meta историй DataGrid: дефолтные аргументы и render. Без `play`: история не
+// проигрывает чужой сценарий (ADR 0117, SN12).
 import { Meta } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
-import { expect, waitFor } from 'storybook/test'
-import {
-  HANDLE,
-  OVERLAY,
-  ROW,
-  beginDrag,
-  firePointer,
-  nextFrame,
-  rowSignatures,
-  sortedRows,
-} from './rowDragging.dnd'
 import {
   COLUMN_COUNT,
   DATA_COUNT,
@@ -24,58 +14,6 @@ import {
 } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 
-// --- Row Dragging demo scenario -----------------------------------------------
-// Meta-level play: runs for EVERY story, but only does anything when the story
-// actually enables row dragging (`args.enableRowDragging`). It is intentionally
-// THIN — a single representative drag-and-drop so the Storybook Interactions
-// panel demonstrates the feature. The per-requirement assertions (handle, hover
-// reveal, cloud + fill, column width, auto-scroll D12–D14) each live as their
-// own named test in `__tests__/row-dragging.test.tsx`, so `npm test` reports and
-// fails them individually. Both share the pointer choreography in
-// `rowDragging.dnd.ts` so the demo and the tests can't drift apart.
-
-const rowDraggingPlay: NonNullable<Meta<StoryProps>['play']> = async ({
-  args,
-  canvasElement,
-  step,
-}) => {
-  // Во время скелета первой загрузки строк данных нет — тянуть нечего.
-  if (!args.enableRowDragging || args.loading === 'initial') return
-
-  const canvas = canvasElement
-
-  await waitFor(() =>
-    expect(canvas.querySelectorAll(ROW).length).toBeGreaterThan(3),
-  )
-
-  await step('drag the first row onto a lower row and drop', async () => {
-    const before = rowSignatures(canvas)
-    const rows = sortedRows(canvas)
-    const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
-    const target = rows[3]
-
-    // Keep x fixed (no horizontal drift) so nesting depth stays 0 on flat data.
-    const { hx } = await beginDrag(handle)
-    const tr = target.getBoundingClientRect()
-    const ty = tr.top + tr.height / 2
-    firePointer('pointermove', document, hx, ty) // over the target row
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointermove', document, hx, ty + 1) // settle collision/over
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointerup', document, hx, ty + 1)
-
-    // Sanity for the demo: the drop reordered the rows.
-    await waitFor(() =>
-      expect(rowSignatures(canvas).join('¦')).not.toBe(before.join('¦')),
-    )
-    // История заканчивается в покое: облако долетело, слот строки снова обычный —
-    // по нему каталог проверяет axe и снимает снимок (ADR 0093).
-    await waitFor(() => expect(canvas.querySelector(OVERLAY)).toBeNull())
-  })
-}
-
 // Файл историй повторяет `parameters: { ...dataGridMeta.parameters }` явно: addon-docs
 // пишет описание из JSDoc в `meta.parameters` и параметры, пришедшие спредом, теряет.
 export const dataGridMeta = {
@@ -84,9 +22,8 @@ export const dataGridMeta = {
     dataCount: DATA_COUNT,
     ...dataGridDefaultArgs,
   },
-  // Полная панель Controls в каждой истории: история задаёт только своё.
+  // Все контролы; история показывает свои через `showControls` (ADR 0117).
   argTypes: dataGridArgTypes,
-  play: rowDraggingPlay,
   parameters: {
     backgrounds: { disable: true },
     layout: 'fullscreen',

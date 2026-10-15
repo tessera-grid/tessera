@@ -4,6 +4,7 @@ import { dataGridMeta } from './dataGridMeta'
 import { expect } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import { rowAt, settle, until, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Выделение ячеек (ADR 0029). */
 const meta = {
@@ -16,6 +17,12 @@ export default meta
 
 export const CellSelection: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableCellSelection',
+    'cellSelectionRangeSelection',
+    'cellSelectionDragSelection',
+    'cellSelectionMultiRange',
+  ]),
   args: {
     enableCellSelection: true,
     // Умеренный грид (обе оси в окне): клик выделяет ячейку, shift-клик/drag —
@@ -23,14 +30,20 @@ export const CellSelection: StoryObj<StoryProps> = {
     // выделение в буфер (TSV + HTML). См. ADR 0029.
     columnCount: 8,
     dataCount: 40,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }
 
 export const CellSelectionPredicate: StoryObj<StoryProps> = {
   name: 'Predicate',
+  parameters: showControls([
+    'enableCellSelection',
+    'cellSelectionRangeSelection',
+    'cellSelectionDragSelection',
+    'cellSelectionMultiRange',
+  ]),
   args: {
     ...CellSelection.args,
     // `canSelectCell` запрещает выделять колонку Age: клик по ней не выделяет, а
@@ -43,14 +56,22 @@ export const CellSelectionPredicate: StoryObj<StoryProps> = {
 /** Выделенный диапазон ячеек (ADR 0093, VR4): нажатие и нажатие с Shift. */
 export const CellSelectionStateRange: StoryObj<StoryProps> = {
   name: 'State: cell range',
-  parameters: vrStates('body.cellRange'),
+  parameters: {
+    ...vrStates('body.cellRange'),
+    ...showControls([
+      'enableCellSelection',
+      'cellSelectionRangeSelection',
+      'cellSelectionDragSelection',
+      'cellSelectionMultiRange',
+    ]),
+  },
   args: {
     enableCellSelection: true,
     columnCount: 6,
     dataCount: 20,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

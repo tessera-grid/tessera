@@ -168,3 +168,23 @@ export const expectPopupInCanvas = (
   expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
   expect(box.right).toBeLessThanOrEqual(frame.right)
 }
+
+/**
+ * Шаг сценария (ADR 0117, §6): раскрыть панель сценария, нажать «Далее» (или
+ * «Закончить») и дождаться смены шага — как человек.
+ */
+export const guideNext = async (canvas: HTMLElement) => {
+  const panel = canvas.querySelector<HTMLElement>('[data-testid="guide"]')!
+  const toggle = panel.querySelector<HTMLElement>(
+    '[data-testid="guide-toggle"]',
+  )!
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(toggle)
+  }
+  const next = panel.querySelector<HTMLButtonElement>(
+    '[data-testid="guide-next"]',
+  )!
+  await until(() => expect(next).toBeEnabled())
+  await userEvent.click(next)
+  await until(() => expect(panel).not.toHaveAttribute('data-busy'))
+}

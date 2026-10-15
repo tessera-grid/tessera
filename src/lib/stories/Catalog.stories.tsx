@@ -3,6 +3,7 @@ import { expect, waitFor } from 'storybook/test'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Холст каталога визуальных состояний (ADR 0093, VR16): в проектах каталога и снимках
@@ -18,14 +19,17 @@ export default meta
 
 export const CatalogCanvas: StoryObj<StoryProps> = {
   name: 'Canvas',
-  parameters: { requirements: ['VR16'] },
+  parameters: {
+    requirements: ['VR16'],
+    ...showControls(['enableColumnVisibility']),
+  },
   args: {
     // Данных и колонок больше окна: у контейнера прокрутки есть что скрывать.
     dataCount: 60,
     columnCount: 20,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
     enableColumnVisibility: true,
   },
   play: async ({ canvasElement, globals }) => {

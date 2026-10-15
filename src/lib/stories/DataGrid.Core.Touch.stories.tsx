@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Касания (ADR 0086): грид в окне телефона со всеми целями под палец. Откройте в
@@ -17,6 +18,29 @@ export default meta
 
 export const Touch: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableColumnSizing',
+    'enableColumnDragging',
+    'columnDraggingRevertOnReject',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableRowDragging',
+    'rowDraggingExpandDelay',
+    'rowDraggingRevertOnReject',
+    'enableCellEditing',
+    'enableCellSelection',
+    'cellSelectionRangeSelection',
+    'cellSelectionDragSelection',
+    'cellSelectionMultiRange',
+    'enableContextMenu',
+    'containerWidth',
+  ]),
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   args: {
     enableColumnSorting: true,
@@ -30,8 +54,8 @@ export const Touch: StoryObj<StoryProps> = {
     columnCount: 8,
     dataCount: 60,
     containerWidth: 360,
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
 }

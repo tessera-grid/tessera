@@ -4,6 +4,7 @@ import { expect, userEvent } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { bodyRow, settle, until, waitForRows } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Движение строк (ADR 0107): раскрытие, сортировка, поиск и перестановка двигают строки
@@ -19,9 +20,9 @@ const meta = {
 export default meta
 
 const GRID = {
-  containerHeight: 520,
-  height: 440,
-  maxHeight: 440,
+  containerHeight: '520',
+  height: '440',
+  maxHeight: '440',
   dataCount: 60,
 }
 
@@ -38,7 +39,21 @@ export const RowMotionTree: StoryObj<StoryProps> = {
   },
   // Дымовой сценарий (ADR 0107, RM21): раскрытие добавляет детей, сворачивание убирает
   // их вместе с призраками.
-  parameters: { requirements: ['RM21'] },
+  parameters: {
+    requirements: ['RM21'],
+    ...showControls([
+      'dataNesting',
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const toggle = () => canvasElement.querySelector<HTMLElement>(TOGGLE)!
@@ -56,6 +71,20 @@ export const RowMotionTree: StoryObj<StoryProps> = {
 /** Поиск и фильтры: прошедшие строки переезжают, ушедшие гаснут, вернувшиеся проявляются. */
 export const RowMotionSearch: StoryObj<StoryProps> = {
   name: 'Search and filter',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+  ]),
   args: {
     ...GRID,
     enableQuickSearch: true,
@@ -67,6 +96,11 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
 /** Перестановка: соседи раздвигаются плавно, облако приземляется в слот. */
 export const RowMotionDragging: StoryObj<StoryProps> = {
   name: 'Dragging',
+  parameters: showControls([
+    'enableRowDragging',
+    'rowDraggingExpandDelay',
+    'rowDraggingRevertOnReject',
+  ]),
   args: {
     ...GRID,
     enableRowDragging: true,
@@ -76,6 +110,19 @@ export const RowMotionDragging: StoryObj<StoryProps> = {
 /** Без движения: `enableRowAnimation: false` — смены модели мгновенны. */
 export const RowMotionOff: StoryObj<StoryProps> = {
   name: 'Off',
+  parameters: showControls([
+    'dataNesting',
+    'enableRowAnimation',
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+  ]),
   args: {
     ...GRID,
     dataNesting: 'nested',

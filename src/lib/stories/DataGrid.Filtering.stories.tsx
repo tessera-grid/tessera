@@ -32,6 +32,7 @@ import {
   updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 interface FilteringServerArgs extends StoryProps {
   serverDelayMs?: number
@@ -58,9 +59,9 @@ const meta = {
 export default meta
 
 const GRID = {
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
   columnsOverride: filteringColumns,
   dataOverride: filteringData,
   enableColumnFiltering: true,
@@ -71,6 +72,15 @@ const GRID = {
 
 export const Filtering: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+  ]),
   args: {
     ...GRID,
     // Воронка в заголовке открывает панель: «Name» и «City» — текст, «Age» — число
@@ -143,6 +153,19 @@ const TREE = [
 
 export const FilteringTree: StoryObj<StoryProps> = {
   name: 'Tree',
+  parameters: showControls([
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+  ]),
   args: {
     ...GRID,
     dataOverride: TREE,
@@ -156,6 +179,28 @@ export const FilteringTree: StoryObj<StoryProps> = {
 
 export const FilteringCombined: StoryObj<StoryProps> = {
   name: 'With pagination, selection and export',
+  parameters: showControls([
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableRowDragging',
+    'rowDraggingExpandDelay',
+    'rowDraggingRevertOnReject',
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   args: {
     ...GRID,
     dataOverride: makeFilteringData(200),
@@ -173,6 +218,15 @@ export const FilteringCombined: StoryObj<StoryProps> = {
 
 export const QuickSearchNoColumns: StoryObj<StoryProps> = {
   name: 'Quick search — no searchable columns',
+  parameters: showControls([
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+  ]),
   args: {
     ...GRID,
     // Искать негде (ADR 0053): «VIP» — булево, у «Name» поиск снят
@@ -187,6 +241,15 @@ export const QuickSearchNoColumns: StoryObj<StoryProps> = {
 
 export const FilteringEmpty: StoryObj<StoryProps> = {
   name: 'Empty result',
+  parameters: showControls([
+    'enableQuickSearch',
+    'quickSearchDebounceMs',
+    'quickSearchFilteredCount',
+    'enableColumnFiltering',
+    'columnFilteringDebounceMs',
+    'columnFilteringFilteredCount',
+    'columnFilteringTimeZone',
+  ]),
   args: {
     ...GRID,
     // Наберите в поиске «zzz»: над пустым телом — «No rows match the filters» и сброс
@@ -213,7 +276,20 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
   // Дымовой сценарий (ADR 0045, FL37; ADR 0053, QS9): фильтр и поиск уходят колбэками
   // после дебаунса, данные перезапрашиваются, «показано N из M» — из ответа; скрытие
   // колонки повторяет поиск с новым набором колонок.
-  parameters: { requirements: ['FL37', 'QS9'] },
+  parameters: {
+    requirements: ['FL37', 'QS9'],
+    ...showControls([
+      'enableColumnVisibility',
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'serverDelayMs',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     const firstName = () => firstRowText(canvasElement, 'name')
     await openFilter(canvasElement, 'name')
@@ -280,7 +356,20 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
   },
   // Дымовой сценарий (ADR 0047, DF21): дни date и datetime, условие и смена timeZone
   // меняют выборку и «показано N из M».
-  parameters: { requirements: ['DF21'] },
+  parameters: {
+    requirements: ['DF21'],
+    ...showControls([
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'timeZone',
+      'dateLocale',
+    ]),
+  },
   play: async ({ canvasElement, id }) => {
     const calendar = async (column: string) => {
       await openFilter(canvasElement, column)
@@ -349,7 +438,18 @@ export const FilteringOptions: StoryObj<StoryProps> = {
   },
   // Дымовой сценарий (ADR 0048, SF23): галочки, «содержит все» и фасетные счётчики
   // меняют выборку и «показано N из M».
-  parameters: { requirements: ['SF23'] },
+  parameters: {
+    requirements: ['SF23'],
+    ...showControls([
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     expect(firstRowText(canvasElement, 'status')).toBe('Lead')
@@ -399,7 +499,19 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
   render: args => <FilteringLookupServerDemo {...normalizeArgs(args)} />,
   // Дымовой сценарий (ADR 0048, SF24): поиск в панели зовёт loadOptions, выбор уходит в
   // onFilterChange, сводка показывает подписи.
-  parameters: { requirements: ['SF24'] },
+  parameters: {
+    requirements: ['SF24'],
+    ...showControls([
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'serverDelayMs',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await openOptions(canvasElement, 'managerId')
     await until(() => expect(callbackLog()).toContain('loadOptions'))
@@ -483,7 +595,18 @@ function checkboxOf(value: string) {
 /** Открытая панель текстового фильтра (ADR 0093, VR6). */
 export const FilteringStateText: StoryObj<StoryProps> = {
   name: 'State: text filter',
-  parameters: vrStates('overlay.filterText'),
+  parameters: {
+    ...vrStates('overlay.filterText'),
+    ...showControls([
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+    ]),
+  },
   args: GRID,
   play: ({ canvasElement }) => openFilter(canvasElement, 'name'),
 }
@@ -492,7 +615,20 @@ export const FilteringStateText: StoryObj<StoryProps> = {
 export const FilteringStateDate: StoryObj<FilteringDatesArgs> = {
   ...FilteringDates,
   name: 'State: date filter',
-  parameters: vrStates('overlay.filterDate'),
+  parameters: {
+    ...vrStates('overlay.filterDate'),
+    ...showControls([
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'timeZone',
+      'dateLocale',
+    ]),
+  },
   play: ({ canvasElement }) => openFilter(canvasElement, 'createdAt'),
 }
 
@@ -500,6 +636,17 @@ export const FilteringStateDate: StoryObj<FilteringDatesArgs> = {
 export const FilteringStateOptions: StoryObj<StoryProps> = {
   ...FilteringOptions,
   name: 'State: options filter',
-  parameters: vrStates('overlay.filterOptions'),
+  parameters: {
+    ...vrStates('overlay.filterOptions'),
+    ...showControls([
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+    ]),
+  },
   play: ({ canvasElement }) => openFilter(canvasElement, 'status'),
 }

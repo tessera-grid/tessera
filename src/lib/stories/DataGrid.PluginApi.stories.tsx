@@ -22,6 +22,7 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { OVERLAY, dragRowOnto, rowIdOrder } from './rowDragging.dnd'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** API плагинов: аргументы на лету (ADR 0039), колбэки сессий перетаскивания и ширины (ADR 0040). */
 const meta = {
@@ -49,13 +50,9 @@ interface SessionsArgs extends StoryProps {
 
 const GRID = {
   columnCount: 6,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
-}
-
-const hideDataControls = {
-  controls: { exclude: ['columnCount', 'dataCount', 'colorMode'] },
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
 }
 
 // --- Аргументы плагинов на лету (ADR 0039) -------------------------------------
@@ -103,7 +100,31 @@ export const ReactiveArgs: StoryObj<SessionsArgs> = {
     },
   },
   // Дымовой сценарий (ADR 0042, DS5): глубже maxDepth раскрытие скрыто, а не стёрто.
-  parameters: { ...hideDataControls, requirements: ['DS5'] },
+  parameters: {
+    requirements: ['DS5'],
+    ...showControls(
+      [
+        'enableColumnSorting',
+        'columnSortingRemoval',
+        'columnSortingMultiSort',
+        'columnSortingServer',
+        'columnSortingRevertOnReject',
+        'enableRowExpanding',
+        'rowExpandingMaxDepth',
+        'rowExpandingColumn',
+        'rowExpandingTreeLines',
+        'enableCellEditing',
+        'enablePagination',
+        'paginationInitialPageSize',
+        'paginationPageSizes',
+        'paginationRevertOnReject',
+        'multiSortMax',
+        'allowEditing',
+        'pageSizesPreset',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement, id }) => {
     await waitForRows(canvasElement)
     const expanded = (index: number) =>
@@ -155,7 +176,17 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
     enableColumnSizing: true,
   },
   // Дымовой сценарий (ADR 0042, DS3): бросок строки мышью пишет onRowDragEnd в журнал.
-  parameters: { ...hideDataControls, requirements: ['DS3'] },
+  parameters: {
+    requirements: ['DS3'],
+    ...showControls([
+      'enableColumnSizing',
+      'enableColumnDragging',
+      'columnDraggingRevertOnReject',
+      'enableRowDragging',
+      'rowDraggingExpandDelay',
+      'rowDraggingRevertOnReject',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const [dropped] = rowIdOrder(canvasElement)

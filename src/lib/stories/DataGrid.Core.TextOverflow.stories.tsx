@@ -20,6 +20,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 const lineHeight = (el: Element) => parseFloat(getComputedStyle(el).lineHeight)
 
@@ -39,9 +40,9 @@ export default meta
 export const TextOverflow: StoryObj<StoryProps> = {
   name: 'Basic',
   args: {
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
     containerWidth: 560,
     columnsOverride: textOverflowColumns,
     dataOverride: textOverflowData,
@@ -60,7 +61,35 @@ export const TextOverflow: StoryObj<StoryProps> = {
     enablePagination: true,
   },
   // Дымовой тест (ADR 0083, TX13): меню строки не шире 320px, длинный пункт переносится.
-  parameters: { requirements: ['TX13'] },
+  parameters: {
+    requirements: ['TX13'],
+    ...showControls([
+      'enableToolbar',
+      'enableColumnVisibility',
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowActions',
+      'rowActionsWidth',
+      'rowActionsCollapsedWidth',
+      'rowActionsColumn',
+      'enableRowActionMenu',
+      'rowActionMenuMode',
+      'rowActionMenuThreshold',
+      'enableQuickSearch',
+      'quickSearchDebounceMs',
+      'quickSearchFilteredCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'enablePagination',
+      'paginationInitialPageSize',
+      'paginationPageSizes',
+      'paginationRevertOnReject',
+      'containerWidth',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const row = () => orderedRows(canvasElement)[0]!
@@ -87,11 +116,24 @@ export const TextOverflow: StoryObj<StoryProps> = {
 
 export const TextOverflowFeedError: StoryObj<InfiniteScrollDemoProps> = {
   name: 'Feed error',
+  parameters: showControls(
+    [
+      'containerWidth',
+      'serverDelayMs',
+      'blockSize',
+      'failFirstAttempt',
+      'failureReason',
+    ],
+    {
+      dataCount: 'данные подаёт демо',
+      columnCount: 'колонки задаёт демо',
+    },
+  ),
   // Длинная причина отказа ленты: две строки и многоточие, полный текст — в тултипе.
   args: {
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
     containerWidth: 480,
     serverDelayMs: 300,
     blockSize: 50,

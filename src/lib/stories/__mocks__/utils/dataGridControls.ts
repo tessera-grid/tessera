@@ -1,8 +1,8 @@
 /**
- * Полная панель Controls историй DataGrid: каждая история на общей мете получает все
- * контролы по группам, сама задаёт только своё. Настройка фичи видна, пока фича
- * включена; форма мока — пока история не подаёт свои данные и колонки. Имена — по
- * правилу ADR 0106: `enable<Фабрика>` и `<фабрика><Опция>`.
+ * Контролы историй DataGrid по группам. Все — в песочнице `All features`; остальные
+ * истории показывают базовый набор и свой список через `showControls` (ADR 0117).
+ * Настройка фичи видна, пока фича включена; форма мока — пока история не подаёт свои
+ * данные и колонки. Имена — по правилу ADR 0106: `enable<Фабрика>` и `<фабрика><Опция>`.
  */
 import type { InputType } from 'storybook/internal/csf'
 
@@ -32,11 +32,12 @@ import {
   columnFilteringFilteredCountType,
   columnFilteringTimeZoneType,
   columnPinningLeafPinningType,
+  pinFirstColumnType,
   columnSortingMultiSortType,
   columnSortingRemovalType,
   columnSortingRevertOnRejectType,
   columnSortingServerType,
-  containerHeightType,
+  containerSizeType,
   contrastType,
   dataCountType,
   dataExportAllowType,
@@ -68,6 +69,7 @@ import {
   enableRowActionsType,
   enableRowDraggingType,
   enableRowExpandingType,
+  expandAllType,
   enableRowGroupingType,
   enableRowSelectionType,
   enableStatusBarType,
@@ -81,8 +83,8 @@ import {
   infiniteScrollThresholdType,
   loadingType,
   localeType,
-  numberHeightType,
-  numberMaxHeightType,
+  heightType,
+  maxHeightType,
   paginationInitialPageSizeType,
   paginationPageSizesType,
   paginationRevertOnRejectType,
@@ -130,16 +132,16 @@ const unless = (arg: string, type: InputType): InputType => ({
 
 export const dataGridArgTypes = {
   ...inCategory('Данные и размеры', {
-    columnCount: columnCountType,
-    dataCount: dataCountType,
+    columnCount: unless('columnsOverride', columnCountType),
+    dataCount: unless('dataOverride', dataCountType),
     dataNesting: unless('dataOverride', dataNestingType),
     headerNesting: unless('columnsOverride', headerNestingType),
-    containerHeight: containerHeightType,
+    containerHeight: containerSizeType,
     rowHeight: rowHeightType,
     headerHeight: headerHeightType,
     defaultColumn: defaultColumnType,
-    height: numberHeightType,
-    maxHeight: numberMaxHeightType,
+    height: heightType,
+    maxHeight: maxHeightType,
     showStub: showStubType,
   }),
   ...inCategory('Ядро: панели и состояния', {
@@ -173,6 +175,7 @@ export const dataGridArgTypes = {
     'Колонки',
     {
       enableColumnPinning: enableColumnPinningType,
+      pinFirstColumn: pinFirstColumnType,
       ...when('enableColumnPinning', {
         columnPinningLeafPinning: columnPinningLeafPinningType,
       }),
@@ -215,6 +218,7 @@ export const dataGridArgTypes = {
         rowExpandingMaxDepth: rowExpandingMaxDepthType,
         rowExpandingColumn: rowExpandingColumnType,
         rowExpandingTreeLines: rowExpandingTreeLinesType,
+        expandAll: expandAllType,
       }),
     },
     'Раскрытие',
@@ -295,6 +299,34 @@ export const dataGridArgTypes = {
     }),
   }),
 }
+
+/** Базовый набор: в каждой истории, пока контрол на неё влияет (ADR 0117). */
+export const BASE_CONTROLS = [
+  'columnCount',
+  'dataCount',
+  'containerHeight',
+  'rowHeight',
+  'headerHeight',
+  'defaultColumn',
+  'height',
+  'maxHeight',
+] as const
+
+export type BaseControl = (typeof BASE_CONTROLS)[number]
+
+/**
+ * Панель истории: базовый набор и `names`. `hidden` убирает базовый контрол, который
+ * в истории ни на что не влияет, — с причиной.
+ */
+export const showControls = (
+  names: readonly string[],
+  hidden: Partial<Record<BaseControl, string>> = {},
+) => ({
+  controls: {
+    include: [...BASE_CONTROLS.filter(name => !(name in hidden)), ...names],
+  },
+  controlsHidden: hidden,
+})
 
 /**
  * Вариант «auto» флага панели (ADR 0046): в Controls это строка радио, а до истории

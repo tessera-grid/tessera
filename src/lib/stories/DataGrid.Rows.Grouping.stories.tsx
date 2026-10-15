@@ -2,6 +2,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { makeData } from './__mocks__/data'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Группировка строк (ADR 0016). */
 const meta = {
@@ -28,13 +29,9 @@ export const RowGrouping: StoryObj<StoryProps> = {
     // groupable-колонки (gender) — она не должна прятаться за виртуализацией.
     columnCount: 6,
 
-    containerHeight: 560,
-    height: 460,
-    maxHeight: 460,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount', 'dataCount', 'dataOverride'],
-    },
-  },
+  parameters: showControls(['enableRowGrouping']),
 }

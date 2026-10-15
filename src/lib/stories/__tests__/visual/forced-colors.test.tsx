@@ -419,7 +419,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
   })
 
   test('HC9: полоски скелета видны цветом GrayText', async () => {
-    await render(<composed.Skeletons />)
+    await render(<composed.SkeletonDefault />)
     const stripe = () =>
       [
         ...document.querySelectorAll<HTMLElement>(

@@ -7,6 +7,7 @@ import { OwnPagerDemo } from './demos/panelsDemos'
 import { expect, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import { byTestId, firstRowText, settle, until } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Нижняя панель (ADR 0038): счётчик выбора, узкая ширина, своя пагинация вместо панели. */
 const meta = {
@@ -20,14 +21,14 @@ export default meta
 const GRID = {
   columnCount: 8,
   dataCount: 120,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
 }
 
 export const WithStatusBar: StoryObj<StoryProps> = {
   name: 'Basic',
-  parameters: vrStates('panel.statusBar'),
+  parameters: { ...vrStates('panel.statusBar'), ...showControls([]) },
   args: {
     // Демо-слоты нижней панели: один слева, два справа (порядок по `order`).
     // Включите enableFooter — панель встанет под футером одной линией.
@@ -37,6 +38,15 @@ export const WithStatusBar: StoryObj<StoryProps> = {
 
 export const SelectedCount: StoryObj<StoryProps> = {
   name: 'Selected count',
+  parameters: showControls([
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+  ]),
   args: {
     // Счётчик выбранных строк слева в нижней панели, пагинация справа: выбор на
     // других страницах тоже считается.
@@ -49,7 +59,23 @@ export const SelectedCount: StoryObj<StoryProps> = {
 
 export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
   name: 'Narrow',
-  parameters: vrStates('panel.narrow'),
+  parameters: {
+    ...vrStates('panel.narrow'),
+    ...showControls([
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+      'enablePagination',
+      'paginationInitialPageSize',
+      'paginationPageSizes',
+      'paginationRevertOnReject',
+      'containerWidth',
+    ]),
+  },
   // Узкая колонка (ADR 0038, SB7–SB13): нижняя панель в две строки — счётчик выбора
   // сверху, пагинация снизу, кнопки переносятся. Выберите строки, чтобы появился
   // счётчик; меняйте containerWidth, чтобы увидеть компактный и полный вид.
@@ -70,7 +96,7 @@ export const PanelsOwnPager: StoryObj<StoryProps> = {
   // страницы через table.previousPage() / nextPage().
   render: args => <OwnPagerDemo {...normalizeArgs(args)} />,
   // Сценарий истории (ADR 0046, PB12): нижней панели нет, свой пейджер листает страницы.
-  parameters: { requirements: ['PB12'] },
+  parameters: { requirements: ['PB12'], ...showControls([]) },
   play: async ({ canvasElement }) => {
     const firstName = () => firstRowText(canvasElement, 'name')
     await until(() =>

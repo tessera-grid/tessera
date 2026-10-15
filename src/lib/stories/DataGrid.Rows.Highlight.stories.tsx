@@ -15,6 +15,8 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
+import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 
 /**
  * Публичная подсветка (ADR 0080): «Delete» в строке подсвечивает её красным, пока
@@ -37,16 +39,28 @@ export const RowHighlight: StoryObj<StoryProps> = {
     // Действия строки — только «Delete» демо-плагина.
     actionsDemo: 'none',
     enableFooter: true,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   render: function Render(args) {
-    return <HighlightDemo {...args} />
+    return <HighlightDemo {...normalizeArgs(args)} />
   },
   // Дымовой тест (ADR 0080, HL21): удаление с подсветкой до подтверждения, поиск,
   // вспышка ячейки и подсветка колонки.
-  parameters: { requirements: ['HL21'] },
+  parameters: {
+    requirements: ['HL21'],
+    ...showControls(
+      [
+        'enableFooter',
+        'enableRowActions',
+        'rowActionsWidth',
+        'rowActionsCollapsedWidth',
+        'rowActionsColumn',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const row = (id: string) => bodyRow(canvasElement, id)
@@ -163,13 +177,13 @@ const highlightsDemo: TesseraFeatureEntry = {
 /** Подсвеченные строка, ячейка и колонка (ADR 0093, VR4). */
 export const HighlightStateLit: StoryObj<StoryProps> = {
   name: 'State: highlights',
-  parameters: vrStates('body.highlight'),
+  parameters: { ...vrStates('body.highlight'), ...showControls([]) },
   args: {
     extraPlugins: [highlightsDemo],
     dataCount: 12,
-    containerHeight: 460,
-    height: 360,
-    maxHeight: 360,
+    containerHeight: '460',
+    height: '360',
+    maxHeight: '360',
   },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

@@ -18,6 +18,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим. */
 
@@ -36,14 +37,19 @@ export default meta
 
 const GRID = {
   columnCount: 6,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
   enableDataExport: true,
 }
 
 export const Export: StoryObj<StoryProps> = {
   name: 'Basic',
+  parameters: showControls([
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   args: {
     ...GRID,
     dataCount: 50,
@@ -55,6 +61,11 @@ export const Export: StoryObj<StoryProps> = {
 
 export const ExportDirect: StoryObj<StoryProps> = {
   name: 'Direct click',
+  parameters: showControls([
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   args: {
     ...GRID,
     dataCount: 50,
@@ -66,6 +77,23 @@ export const ExportDirect: StoryObj<StoryProps> = {
 
 export const ExportPresets: StoryObj<StoryProps> = {
   name: 'Settings and quick sets',
+  parameters: showControls([
+    'enableColumnSorting',
+    'columnSortingRemoval',
+    'columnSortingMultiSort',
+    'columnSortingServer',
+    'columnSortingRevertOnReject',
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'paginationPageSizes',
+    'paginationRevertOnReject',
+    'enableDataExport',
+    'dataExportAllow',
+    'dataExportFilename',
+  ]),
   args: {
     ...GRID,
     dataCount: 200,
@@ -102,7 +130,17 @@ export const ExportExcel: StoryObj<StoryProps> = {
     dataExportFormats: [exportFormats.csv(), exportFormats.xlsx()],
   },
   // Сценарий истории (ADR 0073, XL13): выгрузка в Excel скачивает export.xlsx с данными.
-  parameters: { requirements: ['XL13'] },
+  parameters: {
+    requirements: ['XL13'],
+    ...showControls([
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnSizing',
+      'enableDataExport',
+      'dataExportAllow',
+      'dataExportFilename',
+    ]),
+  },
   play: async ({ canvasElement }) => {
     const download = interceptDownload()
     try {
@@ -155,10 +193,29 @@ export const ExportServer: StoryObj<ExportArgs> = {
   // Дымовой сценарий (ADR 0044, EX34): «Все строки» уходят в onExport, кнопка занята до
   // ответа; «Текущая страница» скачивается и пишет onExported.
   parameters: {
-    controls: {
-      exclude: ['columnCount', 'dataCount', 'colorMode'],
-    },
     requirements: ['EX34'],
+    ...showControls(
+      [
+        'enableColumnSorting',
+        'columnSortingRemoval',
+        'columnSortingMultiSort',
+        'columnSortingServer',
+        'columnSortingRevertOnReject',
+        'enableRowSelection',
+        'rowSelectionSubRows',
+        'rowSelectionSelectedCount',
+        'enablePagination',
+        'paginationInitialPageSize',
+        'paginationPageSizes',
+        'paginationRevertOnReject',
+        'enableDataExport',
+        'dataExportAllow',
+        'dataExportFilename',
+        'serverDelayMs',
+        'serverFailMode',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
   },
   play: async ({ canvasElement }) => {
     const download = interceptDownload()
@@ -198,7 +255,14 @@ export const ExportServer: StoryObj<ExportArgs> = {
 /** Открытая панель экспорта (ADR 0093, VR6). */
 export const ExportStatePanel: StoryObj<StoryProps> = {
   name: 'State: export panel',
-  parameters: vrStates('overlay.export'),
+  parameters: {
+    ...vrStates('overlay.export'),
+    ...showControls([
+      'enableDataExport',
+      'dataExportAllow',
+      'dataExportFilename',
+    ]),
+  },
   args: { ...GRID, dataCount: 20 },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)

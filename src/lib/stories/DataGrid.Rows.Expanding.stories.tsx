@@ -19,6 +19,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Раскрытие строк (ADR 0015, ADR 0054, ADR 0058): дерево, линии, плоские данные, ленивые дети. */
 const meta = {
@@ -65,19 +66,15 @@ interface SessionsArgs extends StoryProps {
 
 const GRID = {
   columnCount: 6,
-  containerHeight: 560,
-  height: 460,
-  maxHeight: 460,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
 }
 
 const failModeControl = {
   control: 'inline-radio',
   options: ['never', 'always'],
 } as const
-
-const hideDataControls = {
-  controls: { exclude: ['columnCount', 'dataCount', 'colorMode'] },
-}
 
 export const RowExpanding: StoryObj<StoryProps> = {
   name: 'Basic',
@@ -90,15 +87,16 @@ export const RowExpanding: StoryObj<StoryProps> = {
     // детей и контракт data-expanded / aria-expanded.
     initialExpanded: {},
 
-    containerHeight: 640,
-    height: 540,
-    maxHeight: 540,
+    containerHeight: '640',
+    height: '540',
+    maxHeight: '540',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount', 'dataCount', 'dataOverride', 'initialExpanded'],
-    },
-  },
+  parameters: showControls([
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+  ]),
 }
 
 /**
@@ -114,15 +112,18 @@ export const RowExpandingTreeLines: StoryObj<StoryProps> = {
     rowExpandingMaxDepth: 4,
     rowExpandingTreeLines: true,
     initialExpanded: true,
-    containerHeight: 640,
-    height: 540,
-    maxHeight: 540,
+    containerHeight: '640',
+    height: '540',
+    maxHeight: '540',
   },
   parameters: {
     ...vrStates('body.treeLines'),
-    controls: {
-      exclude: ['columnCount', 'dataCount', 'dataOverride'],
-    },
+    ...showControls([
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'rowExpandingTreeLines',
+    ]),
   },
 }
 
@@ -137,9 +138,15 @@ export const RowExpandingFlatData: StoryObj<StoryProps> = {
     enableRowExpanding: true,
     enableRowSelection: true,
   },
-  parameters: {
-    controls: { exclude: ['dataCount', 'dataOverride'] },
-  },
+  parameters: showControls([
+    'enableRowSelection',
+    'rowSelectionSubRows',
+    'rowSelectionSelectedCount',
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+  ]),
 }
 
 /** Колонка раскрытия в режиме `'always'`: есть и без раскрываемых строк (ADR 0050). */
@@ -150,9 +157,12 @@ export const RowExpandingColumnAlways: StoryObj<StoryProps> = {
     enableRowExpanding: true,
     rowExpandingColumn: 'always',
   },
-  parameters: {
-    controls: { exclude: ['dataCount', 'dataOverride'] },
-  },
+  parameters: showControls([
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'rowExpandingColumn',
+    'rowExpandingTreeLines',
+  ]),
 }
 
 export const RowExpandingLazy: StoryObj<SessionsArgs> = {
@@ -172,7 +182,20 @@ export const RowExpandingLazy: StoryObj<SessionsArgs> = {
     loadFailMode: failModeControl,
   },
   // Дымовой сценарий (ADR 0042, DS4): раскрытие ждёт подгрузки, затем строка раскрыта.
-  parameters: { ...hideDataControls, requirements: ['DS4'] },
+  parameters: {
+    requirements: ['DS4'],
+    ...showControls(
+      [
+        'enableRowExpanding',
+        'rowExpandingMaxDepth',
+        'rowExpandingColumn',
+        'rowExpandingTreeLines',
+        'loadDelayMs',
+        'loadFailMode',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement }) => {
     await waitForRows(canvasElement)
     const row = () => rowAt(canvasElement, 0)
@@ -214,7 +237,20 @@ export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
   },
   // Сценарий истории (ADR 0054, RE40): приход детей, обновление при повторном
   // раскрытии, пустой ответ делает строку листом, отказ — вспышка тоггла; всё в журнале.
-  parameters: { ...hideDataControls, requirements: ['RE40'] },
+  parameters: {
+    requirements: ['RE40'],
+    ...showControls(
+      [
+        'enableRowExpanding',
+        'rowExpandingMaxDepth',
+        'rowExpandingColumn',
+        'rowExpandingTreeLines',
+        'loadDelayMs',
+        'loadFailMode',
+      ],
+      { dataCount: 'данные подаёт демо' },
+    ),
+  },
   play: async ({ canvasElement }) => {
     const log = () => canvasElement.ownerDocument.body.textContent ?? ''
     const row = (id: string) => bodyRow(canvasElement, id)

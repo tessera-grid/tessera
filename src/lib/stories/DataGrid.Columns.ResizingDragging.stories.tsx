@@ -13,6 +13,7 @@ import {
   ColumnDraggingServerDemo,
   type ColumnDraggingServerDemoProps,
 } from './demos/sessionDemos'
+import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Ширина и порядок колонок (ADR 0013, ADR 0006, ADR 0052): протяжка, перетаскивание, под вложенной шапкой. */
 const meta = {
@@ -25,27 +26,32 @@ export default meta
 
 export const ColumnResizing: StoryObj<StoryProps> = {
   name: 'Resizing',
+  parameters: showControls(['enableColumnSizing']),
   args: {
     enableColumnSizing: true,
     // Несколько строк, чтобы требование синхронизации ширины шапки и тела
     // (CR8) имело отрисованные body-ячейки для сверки.
     dataCount: 30,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
 export const ColumnDragging: StoryObj<StoryProps> = {
   name: 'Dragging',
+  parameters: showControls([
+    'enableColumnDragging',
+    'columnDraggingRevertOnReject',
+  ]),
   args: {
     enableColumnDragging: true,
     // Sized to overflow on both axes so the auto-scroll requirements (D26–D28)
     // have real horizontal scroll distance and a vertical axis to stay off.
     dataCount: 60,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
 }
 
@@ -61,15 +67,21 @@ export const HeaderGroupsDragging: StoryObj<StoryProps> = {
     enableColumnDragging: true,
     enableRowDragging: true,
     dataCount: 40,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
-  parameters: {
-    controls: {
-      exclude: ['columnCount'],
-    },
-  },
+  parameters: showControls(
+    [
+      'headerNesting',
+      'enableColumnDragging',
+      'columnDraggingRevertOnReject',
+      'enableRowDragging',
+      'rowDraggingExpandDelay',
+      'rowDraggingRevertOnReject',
+    ],
+    { columnCount: 'колонки задаёт вложенная шапка' },
+  ),
 }
 
 /** Ручка ширины под наведением (ADR 0093, VR5): наведение — псевдо-состояние. */
@@ -78,13 +90,14 @@ export const ResizingStateHandle: StoryObj<StoryProps> = {
   parameters: {
     ...vrStates('head.resizeHandle'),
     pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
+    ...showControls(['enableColumnSizing']),
   },
   args: {
     enableColumnSizing: true,
     dataCount: 20,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
   play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)
@@ -107,11 +120,30 @@ export const NarrowColumns: StoryObj<StoryProps> = {
     headerActionMenuThreshold: 10,
     columnCount: 4,
     dataCount: 20,
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
-  parameters: { requirements: ['GB9'] },
+  parameters: {
+    requirements: ['GB9'],
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnSizing',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableColumnFiltering',
+      'columnFilteringDebounceMs',
+      'columnFilteringFilteredCount',
+      'columnFilteringTimeZone',
+    ]),
+  },
   play: async ({ canvasElement, step }) => {
     await waitForRows(canvasElement)
     const head = () =>
@@ -171,15 +203,29 @@ export const ColumnDraggingServer: StoryObj<ColumnDraggingServerDemoProps> = {
     enableKeyboardNavigation: true,
     moveDelayMs: 900,
     moveFailMode: 'never',
-    containerHeight: 400,
-    height: 300,
-    maxHeight: 300,
+    containerHeight: '400',
+    height: '300',
+    maxHeight: '300',
   },
   argTypes: {
     moveDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
     moveFailMode: { control: 'inline-radio', options: ['never', 'always'] },
   },
-  parameters: { requirements: ['CO12', 'CO17'] },
+  parameters: {
+    requirements: ['CO12', 'CO17'],
+    ...showControls([
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnDragging',
+      'columnDraggingRevertOnReject',
+      'enableKeyboardNavigation',
+      'moveDelayMs',
+      'moveFailMode',
+    ]),
+  },
   play: async ({ canvasElement, id, step }) => {
     const doc = canvasElement.ownerDocument
     const log = () => doc.body.textContent ?? ''
