@@ -185,6 +185,7 @@ export type PluginSlotDecl<THooks = Record<never, never>, TState = never> =
   | SlotDeclOf<'toolbarSlot', ToolbarComponentProps, THooks, TState>
   | SlotDeclOf<'statusBarSlot', StatusBarComponentProps, THooks, TState>
   | SlotDeclOf<'bodyEndSlot', BodyEndComponentProps, THooks, TState>
+  | SlotDeclOf<'tableEndSlot', BodyEndComponentProps, THooks, TState>
 
 type SlotContext = { table: unknown }
 type SlotComponent = (props: never) => ReactNode

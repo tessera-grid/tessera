@@ -213,6 +213,14 @@ export const refreshOptionsType = objectControl(
 export const enableFooterType = booleanControl(
   'Футер с агрегированными значениями колонок (`enableFooter`)',
 )
+/** Положение футера (ADR 0118): у низа области или за последней строкой. */
+export const footerPositionType: InputType = {
+  control: 'inline-radio',
+  options: ['pinned', 'inline'],
+  description:
+    'Положение футера (`footerPosition`): `pinned` — всегда у низа области, `inline` — за последней строкой, прокручивается с телом',
+  table: { defaultValue: { summary: 'pinned' } },
+}
 export const enableToolbarType = panelFlag(
   'Верхний тулбар: auto — по наличию кнопок плагинов, on — всегда (и пустой), off — никогда',
 )

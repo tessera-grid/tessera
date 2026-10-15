@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef } from 'react'
+import { type CSSProperties, type ReactNode, useRef } from 'react'
 
 import clsx from 'clsx'
 import type { VirtualItem } from '@tanstack/react-virtual'
@@ -8,6 +8,7 @@ import {
   type KeyboardNavigationGrid,
 } from '../core/keyboardNavigation'
 import { getDisplayColumns } from '../core/displayColumns'
+import { getFooterPosition } from '../core/footer'
 import { getRowWindow } from '../core/pagination'
 import { RenderSlot } from '../core/renderSlots'
 import { useTableState } from '../core/reactivity'
@@ -21,6 +22,7 @@ import { HeadDndBoundary } from './DndHeadWrapper'
 import { MemoizedHead } from './Head'
 import { SkeletonBody } from './SkeletonBody'
 import { SkeletonModeContext } from './skeletonMode'
+import { TableEndRow } from './TableEndRow'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 
@@ -42,6 +44,8 @@ interface DataGridTableProps {
   skeleton: boolean
   /** Статус «Loading» скелета. */
   loadingLabel: string
+  /** Заглушка пустой таблицы над закреплённым футером (ADR 0118, §3). */
+  endContent?: ReactNode
   style: CSSProperties
 }
 
@@ -65,6 +69,7 @@ export const DataGridTable = ({
   busy,
   skeleton,
   loadingLabel,
+  endContent,
   style,
 }: DataGridTableProps) => {
   const options = table.options as any
@@ -103,6 +108,7 @@ export const DataGridTable = ({
     cellSlot,
     actionRowSlot,
     bodyEndSlot,
+    tableEndSlot,
   } = table.getRenderSlots() ?? {}
   // Плагин, у которого строк больше, чем в data, задаёт итог сам (ADR 0081).
   const totalRowCount = options.getTotalRowCount?.(table) as number | undefined
@@ -135,11 +141,41 @@ export const DataGridTable = ({
         onPointerDownCapture: keyboardNavigation?.onPointerDownCapture,
       }
 
+  // Футер у низа области или за последней строкой (ADR 0118); скелет — всегда у низа.
+  const footer = !!options.enableFooter
+  const footerPosition = getFooterPosition(table)
+  const footerInline = footer && footerPosition === 'inline' && !skeleton
+  const endContext = {
+    table,
+    layout,
+    leafColumns,
+    virtualColumns,
+    isVirtualColumns,
+    nextAriaRowIndex: headerGroups.length + rowWindow.offset + rows.length + 1,
+  }
+  // Конец таблицы — до закреплённого футера и после незакреплённого (ADR 0118, §3).
+  const tableEnd = skeleton ? null : (
+    <>
+      <RenderSlot slot={tableEndSlot} context={endContext} />
+      {endContent != null && (
+        <TableEndRow
+          navigable={!!keyboardNavigation}
+          columnCount={leafColumns.length}
+        >
+          {endContent}
+        </TableEndRow>
+      )}
+    </>
+  )
+
   return (
     <div
       {...tableAria}
       ref={rootRef}
       className={clsx('data-grid__table', dataGridStyles.table)}
+      data-footer-position={
+        footer ? (skeleton ? 'pinned' : footerPosition) : undefined
+      }
       style={style}
     >
       <ColumnMotion
@@ -217,29 +253,19 @@ export const DataGridTable = ({
             />
           </BodyDndBoundary>
         )}
-        {!skeleton && (
-          <RenderSlot
-            slot={bodyEndSlot}
-            context={{
-              table,
-              layout,
-              leafColumns,
-              virtualColumns,
-              isVirtualColumns,
-              nextAriaRowIndex:
-                headerGroups.length + rowWindow.offset + rows.length + 1,
-            }}
-          />
-        )}
-        {options.enableFooter && !skeleton && (
+        {!skeleton && <RenderSlot slot={bodyEndSlot} context={endContext} />}
+        {!footerInline && tableEnd}
+        {footer && !skeleton && (
           <MemoizedFooter
             layout={layout}
+            position={footerPosition}
             footerGroup={table.getFooterGroups().at(0)}
             virtualColumns={virtualColumns}
             isVirtualColumns={isVirtualColumns}
             isResizingColumns={isResizingColumns}
           />
         )}
+        {footerInline && tableEnd}
       </ColumnMotion>
     </div>
   )

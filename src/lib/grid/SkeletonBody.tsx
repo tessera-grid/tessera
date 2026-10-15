@@ -38,6 +38,7 @@ import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import bodyStyles from '../grid/Body/Body.module.css'
 import bodyRowStyles from '../grid/BodyRow/BodyRow.module.css'
 import bodyCellStyles from '../grid/BodyCell/BodyCell.module.css'
+import { getFooterPosition } from '../core/footer'
 import footerStyles from '../grid/Footer/Footer.module.css'
 import footerCellStyles from '../grid/FooterCell/FooterCell.module.css'
 import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
@@ -503,6 +504,8 @@ export const SkeletonBody = memo(
           <div
             className={clsx('data-grid__footer--skeleton', footerStyles.footer)}
             data-layout={layout}
+            data-position={getFooterPosition(table)}
+            data-skeleton=""
           >
             <div style={{ display: 'contents' }}>
               <SkeletonCells

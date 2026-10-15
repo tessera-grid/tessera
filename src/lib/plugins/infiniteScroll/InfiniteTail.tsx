@@ -1,29 +1,14 @@
 /**
  * Конец тела ленты (ADR 0081): у края просит следующий блок, пока он в пути рисует
- * скелет-строки, при отказе — строку ошибки с повтором. Смена сортировки, фильтров
- * или поиска отменяет загрузку и возвращает тело в начало.
+ * скелет-строки; строку ошибки с повтором рисует `InfiniteErrorRow` в конце таблицы.
+ * Смена сортировки, фильтров или поиска отменяет загрузку и возвращает тело в начало.
  */
-import {
-  type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { BodyEndComponentProps } from '../../core/createSlots'
-import {
-  NAV_BODY_END_ATTR,
-  isKeyboardNavigationEnabled,
-} from '../../core/keyboardNavigation'
-import { useLocalization } from '../../core/localization'
-import { Button } from '../../ui/Button'
-import { useIcons } from '../../ui/icons'
-import { Tooltip } from '../../ui/Tooltip'
 import { useTableState } from '../../core/reactivity'
 import { SkeletonRows } from '../../grid/SkeletonBody'
-import { InfiniteLoader } from './loader'
+import { InfiniteLoader, registerLoader } from './loader'
 import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
@@ -50,12 +35,9 @@ export const InfiniteTail = ({
   leafColumns,
   virtualColumns,
   isVirtualColumns,
-  nextAriaRowIndex,
   hooks,
   state: [value, setValue],
 }: InfiniteTailProps) => {
-  const labels = useLocalization()
-  const { loadMoreFailed: FailedIcon, retry: RetryIcon } = useIcons()
   const options = table.options as InfiniteOptions
   const inert = !!infiniteScrollInertReason(table)
   const hasMore = !!options.infiniteScrollHasMore
@@ -121,51 +103,13 @@ export const InfiniteTail = ({
     }
   }, [pending])
 
-  // Блок ошибки — по центру видимой ширины области прокрутки, а не всей таблицы.
-  const [viewportWidth, setViewportWidth] = useState<number>()
-  const failed = value.status === 'error'
-  useEffect(() => {
-    const scroller = sentinelRef.current?.closest<HTMLElement>(
-      '.data-grid__container',
-    )
-    if (!failed || !scroller) return
-    const observer = new ResizeObserver(() =>
-      setViewportWidth(scroller.clientWidth),
-    )
-    observer.observe(scroller)
-    return () => observer.disconnect()
-  }, [failed])
-
   // Без грида загрузка не видна: поздний итог не оставляет таблицу «занятой».
   useEffect(() => () => loader.cancel({ abort: false }), [loader])
 
-  /** Активная ячейка клавиатурной навигации — туда фокус уходит из строки ошибки. */
-  const activeCellOf = (button: HTMLElement) =>
-    button
-      .closest('[role="grid"], [role="treegrid"]')
-      ?.querySelector<HTMLElement>('[data-kn-active="true"]')
-
-  // Строка ошибки уходит вместе с кнопкой: фокус — на активную ячейку, а не на body.
-  const retry = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    const button = event.currentTarget
-    if (document.activeElement === button) {
-      activeCellOf(button)?.focus({ preventScroll: true })
-    }
-    loader.retry()
-  }
-
-  const onRetryKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key !== 'ArrowUp') return
-    const active = activeCellOf(event.currentTarget)
-    if (active) {
-      event.preventDefault()
-      active.focus()
-    }
-  }
+  // Повтор после отказа просит строка ошибки в конце таблицы (ADR 0118, §3).
+  useEffect(() => registerLoader(table, loader), [table, loader])
 
   if (inert) return null
-
-  const navigable = isKeyboardNavigationEnabled(table)
 
   return (
     <div style={{ display: 'contents' }} data-testid="infinite-scroll-tail">
@@ -182,58 +126,6 @@ export const InfiniteTail = ({
           className="data-grid__body--infinite-tail"
           cells={tailInView}
         />
-      )}
-      {value.status === 'error' && (
-        <div role="rowgroup">
-          <div
-            role="row"
-            aria-rowindex={nextAriaRowIndex}
-            className={styles['error-row']}
-            data-testid="infinite-scroll-error"
-          >
-            <div
-              role={navigable ? 'gridcell' : 'cell'}
-              aria-colspan={leafColumns.length || undefined}
-              className={styles['error-cell']}
-              style={
-                viewportWidth
-                  ? ({
-                      '--tsr-load-more-viewport': `${viewportWidth}px`,
-                    } as CSSProperties)
-                  : undefined
-              }
-            >
-              <div className={styles['error-message']}>
-                <FailedIcon
-                  className={styles['error-icon']}
-                  width={18}
-                  height={18}
-                  aria-hidden="true"
-                />
-                <div className={styles['error-text']}>
-                  <div className={styles['error-title']}>
-                    {labels.loadMoreFailed}
-                  </div>
-                  {value.reason && (
-                    <Tooltip title={value.reason} overflowOnly>
-                      <div className={styles['error-reason']}>
-                        {value.reason}
-                      </div>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-              <Button
-                onClick={retry}
-                onKeyDown={onRetryKeyDown}
-                icon={<RetryIcon width={16} height={16} aria-hidden="true" />}
-                {...{ [NAV_BODY_END_ATTR]: '' }}
-              >
-                {labels.loadMoreRetry}
-              </Button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

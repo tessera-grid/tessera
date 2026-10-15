@@ -629,6 +629,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
+    - _Футер колонок:_ `footer-position` (FT1–FT2, FT4–FT13, FT15–FT16 — строка итогов,
+      `pinned` у низа области и в короткой таблице, `inline` за последней строкой, вид,
+      закреплённые колонки, клавиатура, `scrollToRow`, пагинация, лента и заглушки до или
+      после футера, скелет, движение строк, axe, грид без высоты), `play` истории
+      «Panels/Footer — Position switch» (FT3), перф FT14 — в `scroll`
+      ([ADR 0118](docs/decisions/0118-column-footer.md)).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
       панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),
       модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,
@@ -887,7 +893,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     1000×1000 с кнопкой «наверх» против той же выборки без неё,
     [ADR 0082](docs/decisions/0082-back-to-top.md); GL13 — спокойная прокрутка 1000×1000
     во время обновления данных против той же выборки без него,
-    [ADR 0094](docs/decisions/0094-loading-glow.md)).
+    [ADR 0094](docs/decisions/0094-loading-glow.md); FT14 — спокойная прокрутка 1000×1000
+    с футером `inline` против `pinned`, [ADR 0118](docs/decisions/0118-column-footer.md)).
   - **`memory/`** — утечки памяти, только Chromium (CDP): `unmount` (LK1–LK4 —
     размонтирование в разных состояниях и посреди отложенной работы), `recreate`
     (LK5–LK6 — смена данных, колонок и плагинов), `session` (LK7–LK9, LK13 — долгая

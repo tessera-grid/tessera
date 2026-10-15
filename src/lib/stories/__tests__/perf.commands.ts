@@ -231,6 +231,7 @@ export interface PerfRecord {
     | 'infiniteScroll'
     | 'backToTop'
     | 'loading'
+    | 'footer'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
   cpuThrottle: number
   metrics: PerfMetric[]

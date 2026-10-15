@@ -19,6 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
+import type { FooterPosition } from './footer'
 import type { RefreshOptions } from './loadingDisplay'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
@@ -70,6 +71,11 @@ export interface CreateDataGridOptions {
    */
   loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
+  /**
+   * Положение строки футера (ADR 0118): `'pinned'` — всегда у низа области прокрутки,
+   * `'inline'` — сразу за последней строкой, прокручивается вместе с телом.
+   */
+  footerPosition?: FooterPosition
   enableToolbar?: boolean
   enableStatusBar?: boolean
   enableAnnouncements?: boolean
@@ -111,6 +117,11 @@ export type UseCreateTableParams<
    */
   loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
+  /**
+   * Положение строки футера (ADR 0118): `'pinned'` — всегда у низа области прокрутки,
+   * `'inline'` — сразу за последней строкой, прокручивается вместе с телом.
+   */
+  footerPosition?: FooterPosition
   /** Верхний тулбар: без флага — по наличию кнопок плагинов, `true` — всегда, `false` — никогда (ADR 0046). */
   enableToolbar?: boolean
   /** Нижняя панель: без флага — по наличию её слотов, `true` — всегда, `false` — никогда (ADR 0046). */
@@ -156,6 +167,7 @@ export const useCreateTable = <
   handlers,
   loading,
   enableFooter,
+  footerPosition,
   enableToolbar,
   enableStatusBar,
   enableAnnouncements,
@@ -347,6 +359,7 @@ export const useCreateTable = <
     actionMenu: folded.actionMenu,
     loading,
     enableFooter,
+    footerPosition,
     enableToolbar,
     enableStatusBar,
     enableAnnouncements,

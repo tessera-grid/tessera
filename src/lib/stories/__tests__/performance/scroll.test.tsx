@@ -156,6 +156,7 @@ const OT11_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
 const GL13_COST = { ratio: 1.3, plusMs: 4 }
+const FT14_COST = { ratio: 1.1, plusMs: 2 }
 
 // Прокрутка с отправленными ячейками правки (ADR 0041, AS14): 500 строк × 3 колонки
 // в ожидании и «ошибке» против той же выборки без них — видна цена новых состояний.
@@ -991,6 +992,74 @@ describe('Производительность прокрутки — свече
         expect(
           loading[axis].p95Ms,
           `${axis} p95=${loading[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Положение футера (ADR 0118, FT14): 1000×1000, спокойная прокрутка с футером за последней
+// строкой против той же выборки с футером у низа области — футер остаётся смонтированным.
+describe('Производительность прокрутки — положение футера', () => {
+  test(
+    "FT14: прокрутка 1000×1000 с футером 'inline' не дороже той же выборки с футером 'pinned'",
+    async () => {
+      const measure = async (inline: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableFooter: true,
+          footerPosition: inline ? 'inline' : 'pinned',
+        })
+        await waitForGrid()
+        await expect
+          .poll(() =>
+            document
+              .querySelector('.data-grid__footer')
+              ?.getAttribute('data-position'),
+          )
+          .toBe(inline ? 'inline' : 'pinned')
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const inline = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, FT14_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'footer',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('FT14-base', "футер 'pinned'", base, false)
+      await record('FT14', "футер 'inline'", inline, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          inline[axis].p95Ms,
+          `${axis} p95=${inline[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

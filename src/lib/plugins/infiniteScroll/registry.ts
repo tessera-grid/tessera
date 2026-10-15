@@ -1,9 +1,11 @@
 /**
  * Запись плагина infiniteScroll на `definePlugin` (ADR 0081): лента — у края тела
  * грид просит следующий блок, приложение дописывает его в конец `data`. Хвост
- * ожидания и строка ошибки — в `bodyEndSlot`, счётчик — в `statusBarSlot`.
+ * ожидания — в `bodyEndSlot`, строка ошибки — в `tableEndSlot` (ADR 0118), счётчик —
+ * в `statusBarSlot`.
  */
 import { definePlugin } from '../../core/definePlugin'
+import { InfiniteErrorRow } from './InfiniteErrorRow'
 import { InfiniteTail } from './InfiniteTail'
 import { LoadedRowsCount } from './LoadedRowsCount'
 import {
@@ -58,6 +60,12 @@ export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
       slot: 'bodyEndSlot',
       state: true,
       component: InfiniteTail,
+    },
+    {
+      id: 'infiniteScrollError',
+      slot: 'tableEndSlot',
+      state: true,
+      component: InfiniteErrorRow,
     },
     ...(o.loadedCount
       ? [

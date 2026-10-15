@@ -234,6 +234,7 @@ const StoryGrid = memo(
       loadError: options.loadError,
       onRetry: options.onRetry,
       enableFooter: options.enableFooter,
+      footerPosition: options.footerPosition,
       enableToolbar: panelFlag(options.enableToolbar),
       enableStatusBar: panelFlag(options.enableStatusBar),
       enableAnnouncements: options.enableAnnouncements,

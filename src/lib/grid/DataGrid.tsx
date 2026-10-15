@@ -31,6 +31,7 @@ import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
 import { FilterStub } from './filtering/FilterStub'
 import { isFilteringActive } from '../core/filtering'
+import { getFooterPosition } from '../core/footer'
 import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
@@ -308,6 +309,27 @@ export const DataGrid = ({
   const showStub = noData && !!stub && !filtered && !loadError.stubShown
   const showFilterStub = noData && filtered && !loadError.stubShown
 
+  // Заглушки пустой таблицы — над закреплённым футером, в таблице; под незакреплённым и
+  // без футера — после таблицы (ADR 0118, §3).
+  const emptyStubs =
+    showFilterStub || loadError.stubShown ? (
+      <>
+        {showFilterStub && <FilterStub table={table} render={filterStub} />}
+        {loadError.stubShown && (
+          <LoadErrorStub
+            error={(table.options as any).loadError}
+            reason={loadError.reason}
+            retry={loadError.retry}
+            pending={loadError.pending}
+            render={errorStub}
+          />
+        )}
+      </>
+    ) : null
+  const stubsAboveFooter =
+    !!(table.options as any).enableFooter &&
+    getFooterPosition(table) === 'pinned'
+
   const showLinearProgress = refreshLoading && !showSkeleton
   // Свечение и приглушение — с задержкой и минимумом; aria-busy и объявление — сразу.
   const refreshing = useLoadingDisplay(
@@ -527,24 +549,14 @@ export const DataGrid = ({
                       busy={showLinearProgress}
                       skeleton={showSkeleton}
                       loadingLabel={loadingLabel}
+                      endContent={stubsAboveFooter ? emptyStubs : undefined}
                       style={{
                         ...columnSizes,
                         ...columnShiftVars(columnShifts),
                         ...virtualPaddingStyles,
                       }}
                     />
-                    {showFilterStub && (
-                      <FilterStub table={table} render={filterStub} />
-                    )}
-                    {loadError.stubShown && (
-                      <LoadErrorStub
-                        error={(table.options as any).loadError}
-                        reason={loadError.reason}
-                        retry={loadError.retry}
-                        pending={loadError.pending}
-                        render={errorStub}
-                      />
-                    )}
+                    {!stubsAboveFooter && emptyStubs}
                   </div>
                   {keyboardNavigation && (
                     <div

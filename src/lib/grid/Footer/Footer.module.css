@@ -1,6 +1,12 @@
+/*
+ * Закреплённый футер (ADR 0118) — у низа области прокрутки: `bottom` поднимает его над
+ * строками, уходящими вниз, `top` (проценты sticky — от области прокрутки) опускает до
+ * низа в короткой таблице. Таблица при этом не ниже области.
+ */
 .footer {
   position: sticky;
   bottom: 0;
+  top: calc(100% - var(--tsr-comp-row-height));
 
   display: flex;
   contain: strict;
@@ -9,6 +15,29 @@
   background-color: var(--tsr-comp-head-bg);
 
   box-shadow: var(--tsr-comp-shadow-footer);
+}
+
+/*
+ * Незакреплённый футер — сразу за последней строкой: под ним ничего не проезжает, тени
+ * нет. Линию над ним в раскладке `grid` даёт нижняя граница тела, в `flex` — своя.
+ */
+.footer[data-position='inline'] {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  box-shadow: none;
+}
+
+.footer[data-position='inline'][data-layout='flex'] {
+  box-sizing: border-box;
+  border-top: 1px solid var(--tsr-comp-cell-divider-color);
+}
+
+/* Футер скелета у низа области в обоих режимах: строки скелета — на весь экран. */
+.footer[data-position='inline'][data-skeleton] {
+  position: sticky;
+  top: calc(100% - var(--tsr-comp-row-height));
+  bottom: 0;
 }
 
 /* Строка футера на всю ширину содержимого: закреплённые ячейки липнут в её пределах,
@@ -28,4 +57,19 @@
 
 :global(.data-grid-theme[data-refreshing]) .footer__row {
   opacity: var(--tsr-comp-loader-dim-opacity);
+}
+
+/*
+ * Заглушка над закреплённым футером (ADR 0118, §3): ячейка шириной видимой области и
+ * прилипает к её левому краю — по центру экрана и при горизонтальной прокрутке.
+ */
+.table-end__row {
+  display: flex;
+}
+
+.table-end__cell {
+  position: sticky;
+  left: 0;
+  width: var(--tsr-table-end-viewport, 100%);
+  max-width: 100%;
 }

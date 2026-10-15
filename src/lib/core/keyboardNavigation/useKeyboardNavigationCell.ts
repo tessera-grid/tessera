@@ -7,6 +7,7 @@ import {
 
 import { setPluginState } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
+import { isFooterInline } from '../footer'
 import { useTableState } from '../reactivity'
 import { isFocusLost } from './actions'
 import { trackingOf } from './focus'
@@ -100,11 +101,12 @@ export const useKeyboardNavigationCell = (
     tracking.pending = false
     const scroller = el.closest<HTMLElement>(SCROLLER_SELECTOR)
     if (scroller) {
-      // Шапка и футер — sticky: по вертикали доводить не нужно.
+      // Шапка и закреплённый футер — sticky: по вертикали доводить не нужно;
+      // незакреплённый футер — строка в потоке (ADR 0118, §6).
       ensureCellVisible(
         el,
         scroller,
-        rowIndex < 0 || isFooterRowIndex(t, rowIndex),
+        rowIndex < 0 || (isFooterRowIndex(t, rowIndex) && !isFooterInline(t)),
       )
     }
     el.focus({ preventScroll: true })

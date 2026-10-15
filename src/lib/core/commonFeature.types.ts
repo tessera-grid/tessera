@@ -30,6 +30,7 @@ import type {
   PluginDiagnosticSource,
 } from './pluginDiagnostics'
 import type { SkeletonOptions } from './skeletonOptions'
+import type { FooterPosition } from './footer'
 import type { RefreshOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -60,6 +61,8 @@ export interface CommonOptions {
    */
   loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
+  /** Положение футера: у низа области или за последней строкой (ADR 0118). */
+  footerPosition?: FooterPosition
   /** Верхний тулбар: без флага — по наличию `toolbarSlot` (ADR 0046). */
   enableToolbar?: boolean
   /** Нижняя панель: без флага — по наличию `statusBarSlot` (ADR 0046). */

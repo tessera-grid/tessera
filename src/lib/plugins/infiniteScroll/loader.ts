@@ -230,3 +230,15 @@ export class InfiniteLoader {
     }
   }
 }
+
+/** Загрузчик ленты таблицы: его заводит хвост, повтор просит строка ошибки (ADR 0118). */
+const loaders = new WeakMap<object, InfiniteLoader>()
+
+export const registerLoader = (table: object, loader: InfiniteLoader) => {
+  loaders.set(table, loader)
+  return () => {
+    if (loaders.get(table) === loader) loaders.delete(table)
+  }
+}
+
+export const loaderOf = (table: object) => loaders.get(table)

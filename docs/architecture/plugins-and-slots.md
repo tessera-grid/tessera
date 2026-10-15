@@ -110,7 +110,7 @@ flowchart TB
 ячейки/заголовка. «Корзины» (`useCreateSlots`):
 
 `leftHeaderSlot`, `rightHeaderSlot`, `leftCellSlot`, `rightCellSlot`,
-`actionRowSlot`, `cellSlot`, `toolbarSlot`, `statusBarSlot`, `bodyEndSlot`.
+`actionRowSlot`, `cellSlot`, `toolbarSlot`, `statusBarSlot`, `bodyEndSlot`, `tableEndSlot`.
 
 `toolbarSlot` — табличный слот верхнего тулбара (ADR 0035): компонент получает
 `{ table }` (контекста колонки нет), кнопки группируются полем `group`; группы идут
@@ -132,9 +132,14 @@ flowchart TB
 виртуализатора строк ([ADR 0081](../decisions/0081-infinite-scroll.md)): компонент
 получает `{ table, layout, leafColumns, virtualColumns, isVirtualColumns,
 nextAriaRowIndex }`, чтобы его строки повторяли ширины, закрепление и окно колонок
-тела. Так лента (`infiniteScroll`) рисует хвост скелет-строк и строку ошибки
-(`SkeletonRows` из `grid/SkeletonBody`). Контрол такой строки с атрибутом
-`data-kn-body-end` получает фокус по `↓` с последней строки тела. Ядро читает и общие
+тела. Так лента (`infiniteScroll`) рисует хвост скелет-строк (`SkeletonRows` из
+`grid/SkeletonBody`).
+
+`tableEndSlot` — строки в конце таблицы с тем же контекстом: до закреплённого футера и
+после незакреплённого ([ADR 0118](../decisions/0118-column-footer.md), §3). Там лента
+рисует строку ошибки с повтором. Контрол такой строки с атрибутом `data-kn-body-end`
+получает фокус по `↓` с последней строки тела, а под незакреплённым футером — с футера;
+над закреплённым футером в неё же ведёт `↑` с футера. Ядро читает и общие
 опции плагина с лишними строками: `getTotalRowCount` (`aria-rowcount` больше `data`
 или `-1`), `getBodyBusy` (`aria-busy` таблицы по срезу плагина), `partialData`
 (выгрузка подписывает «все строки» как загруженные), — не импортируя плагин.

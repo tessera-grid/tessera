@@ -99,7 +99,9 @@ export type PluginSlot =
     })
   | (RegisterSlotParams<ToolbarComponentProps> & { slot: 'toolbarSlot' })
   | (RegisterSlotParams<StatusBarComponentProps> & { slot: 'statusBarSlot' })
-  | (RegisterSlotParams<BodyEndComponentProps> & { slot: 'bodyEndSlot' })
+  | (RegisterSlotParams<BodyEndComponentProps> & {
+      slot: 'bodyEndSlot' | 'tableEndSlot'
+    })
 
 export interface RenderSlots {
   /** Место под плагин в заголовке колонки слева от текста. */
@@ -124,4 +126,9 @@ export interface RenderSlots {
   statusBarSlot: StatusBarSlot
   /** Строки после последней строки тела, вне модели (ADR 0081). */
   bodyEndSlot: BodyEndSlot
+  /**
+   * Строки в конце таблицы: до закреплённого футера, после незакреплённого
+   * (ADR 0118, §3).
+   */
+  tableEndSlot: BodyEndSlot
 }

@@ -6,12 +6,17 @@ import {
   HEAD_SELECTOR,
 } from './model'
 
-/** Видимая по вертикали часть тела: между низом sticky-шапки и верхом футера. */
+/**
+ * Видимая по вертикали часть тела: между низом sticky-шапки и верхом закреплённого
+ * футера; незакреплённый футер — строка в потоке и тело не закрывает (ADR 0118).
+ */
 export const getBodyViewport = (scroller: HTMLElement) => {
   const clientTop = scroller.getBoundingClientRect().top + scroller.clientTop
   const clientBottom = clientTop + scroller.clientHeight
   const head = scroller.querySelector(HEAD_SELECTOR)
-  const footer = scroller.querySelector(FOOTER_SELECTOR)
+  const footer = scroller.querySelector(
+    `${FOOTER_SELECTOR}:not([data-position='inline'])`,
+  )
   return {
     top: head
       ? Math.max(clientTop, head.getBoundingClientRect().bottom)

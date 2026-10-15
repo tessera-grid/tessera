@@ -31,6 +31,7 @@ export const createEmptyRenderSlots = (): RenderSlots => ({
   toolbarSlot: [],
   statusBarSlot: [],
   bodyEndSlot: [],
+  tableEndSlot: [],
 })
 
 /**

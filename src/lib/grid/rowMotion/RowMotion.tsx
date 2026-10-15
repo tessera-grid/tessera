@@ -13,6 +13,7 @@ import { rowMotionTiming } from './rowMotionTiming'
 import styles from '../Body/Body.module.css'
 
 const ROW = ':scope > [data-row-id]'
+const INLINE_FOOTER = ":scope > .data-grid__footer[data-position='inline']"
 /** Вертикальный сдвиг строки от dnd-kit в её `style.transform`. */
 const DND_SHIFT = /translate3d\([^,]+,\s*(-?[\d.]+)px/
 
@@ -38,6 +39,13 @@ interface Snapshot {
   timing: { duration: number; easing: string }
   /** Видимая часть тела в его координатах: за её краем строки встают сразу. */
   viewport: { top: number; bottom: number }
+  /** Незакреплённый футер за телом: едет вместе со строками (ADR 0118, §8). */
+  footer: {
+    element: HTMLElement
+    top: number
+    /** Высота тела до коммита: футер стоит под ней. */
+    bodyHeight: number
+  } | null
 }
 
 const prefersReducedMotion = () =>
@@ -122,6 +130,10 @@ export class RowMotion extends Component<RowMotionProps> {
     // Раскладка чиста после замеров строк — позиция прокрутки бесплатна.
     const scroller = body.closest('.data-grid__container')
     const view = scroller?.getBoundingClientRect()
+    const footer = body
+      .closest('.data-grid__table')
+      ?.querySelector<HTMLElement>(INLINE_FOOTER)
+    const footerBox = footer?.getBoundingClientRect()
     return {
       before,
       leaving,
@@ -134,6 +146,14 @@ export class RowMotion extends Component<RowMotionProps> {
       viewport: view
         ? { top: view.top - bodyTop, bottom: view.bottom - bodyTop }
         : { top: -Infinity, bottom: Infinity },
+      footer:
+        footer && footerBox
+          ? {
+              element: footer,
+              top: footerBox.top - bodyTop,
+              bodyHeight: body.clientHeight,
+            }
+          : null,
     }
   }
 
@@ -179,6 +199,7 @@ export class RowMotion extends Component<RowMotionProps> {
     scrolledAt,
     timing,
     viewport,
+    footer,
   }: Snapshot) {
     this.finish()
     const body = this.props.bodyRef.current
@@ -227,6 +248,10 @@ export class RowMotion extends Component<RowMotionProps> {
       scrolledAt,
       timing,
       viewport,
+      footer && {
+        ...footer,
+        shift: (rows.length - prevRows.length) * rowSize,
+      },
     )
   }
 
@@ -239,6 +264,7 @@ export class RowMotion extends Component<RowMotionProps> {
     scrolledAt: Snapshot['scrolledAt'],
     timing: Snapshot['timing'],
     viewport: Snapshot['viewport'],
+    footer: (NonNullable<Snapshot['footer']> & { shift: number }) | null,
   ) {
     if (
       plan.moves.size === 0 &&
@@ -307,12 +333,31 @@ export class RowMotion extends Component<RowMotionProps> {
 
     // Строки, едущие снизу, и призраки не обрезаются укоротившимся телом. Без чтения
     // раскладки: `min-height` ниже высоты тела ничего не меняет.
-    body.style.minHeight = `${Math.max(
+    const held = Math.max(
+      0,
       ...plan.exits.map(exit => exit.from + rowSize),
       ...[...plan.moves].map(
         ([id, dy]) => (starts.get(id) ?? 0) + dy + rowSize,
       ),
-    )}px`
+    )
+    body.style.minHeight = `${held}px`
+
+    // Незакреплённый футер едет за последней строкой: от прежнего места к новому, а
+    // раскладка держит его под удержанной высотой тела до конца движения.
+    if (footer?.shift && seen(footer.top, footer.top + footer.shift)) {
+      // Сдвиг раскладки: тело не ниже удержанной высоты.
+      const laid =
+        Math.max(held, footer.bodyHeight + footer.shift) - footer.bodyHeight
+      this.animations.push(
+        footer.element.animate(
+          [
+            { translate: `0 ${-laid}px` },
+            { translate: `0 ${footer.shift - laid}px` },
+          ],
+          { ...timing, fill: 'forwards' },
+        ),
+      )
+    }
 
     this.timer = setTimeout(this.finish, duration)
     this.scrolledAt = scrolledAt

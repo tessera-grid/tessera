@@ -247,6 +247,28 @@ const plannedRow = (
   return { start: top + item.start, end: top + item.end }
 }
 
+/**
+ * Последняя строка — вместе с незакреплённым футером под ней: по низу встаёт и он
+ * (ADR 0118, §6). Футер в потоке строк не закрывает и окно не сужает.
+ */
+const withInlineFooter = (
+  span: Span | null | undefined,
+  viewport: ScrollViewport,
+  scroller: HTMLElement,
+  index: number | undefined,
+) => {
+  if (!span || index !== viewport.rows.options.count - 1) return span
+  const footer = scroller.querySelector<HTMLElement>(
+    ".data-grid__footer[data-position='inline']",
+  )
+  return footer
+    ? {
+        start: span.start,
+        end: span.end + footer.getBoundingClientRect().height,
+      }
+    : span
+}
+
 /** Колонка на экране: по замерам виртуализатора колонок или по ячейке шапки. */
 const plannedColumn = (
   table: ScrollTable,
@@ -294,7 +316,12 @@ const place = async (
 ) => {
   const plan: ScrollTarget = {}
   if (target.index !== undefined) {
-    const row = plannedRow(viewport, scroller, target.index)
+    const row = withInlineFooter(
+      plannedRow(viewport, scroller, target.index),
+      viewport,
+      scroller,
+      target.index,
+    )
     if (row) {
       plan.top = offsetFor(
         scroller.scrollTop,
@@ -327,7 +354,12 @@ const place = async (
         : rowElement(scroller, target.rowId)
     if (target.rowId !== undefined && !row) {
       // Строки разной высоты: прыжок по оценке промахнулся мимо окна.
-      const planned = plannedRow(viewport, scroller, target.index!)
+      const planned = withInlineFooter(
+        plannedRow(viewport, scroller, target.index!),
+        viewport,
+        scroller,
+        target.index,
+      )
       if (!planned) return false
       scrollGridTo(
         scroller,
@@ -356,7 +388,12 @@ const place = async (
       await frame()
       continue
     }
-    const rowSpan = row && vertical(row.getBoundingClientRect())
+    const rowSpan = withInlineFooter(
+      row && vertical(row.getBoundingClientRect()),
+      viewport,
+      scroller,
+      target.index,
+    )
     const cellSpan = cell && horizontal(cell.getBoundingClientRect())
     const rowPlaced =
       !rowSpan || isPlaced(rowSpan, bodyArea(scroller), target.align)

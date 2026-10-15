@@ -6,6 +6,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react'
 
 import { setPluginState } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
+import { isFooterInline } from '../footer'
 import { keyComboOf } from '../keyboardActions'
 import {
   ACTION_KEYS,
@@ -198,11 +199,18 @@ export const handleGridKeyDown = (
     return
   }
 
-  // `↓` с последней строки тела — в строку за ним (ошибка догрузки, ADR 0081).
+  // Строка за последней строкой тела (ошибка догрузки, ADR 0081) — в порядке экрана:
+  // `↓` с последней строки, а под незакреплённым футером — с футера; над закреплённым
+  // футером в неё же ведёт `↑` с футера (ADR 0118, §3).
+  const lastBodyRow = t.getRowModel().rows.length - 1
+  const inlineFooter = isFooterInline(t)
   if (
-    event.key === 'ArrowDown' &&
     !modified &&
-    active.rowIndex === t.getRowModel().rows.length - 1
+    ((event.key === 'ArrowDown' &&
+      active.rowIndex === lastBodyRow + (inlineFooter ? 1 : 0)) ||
+      (event.key === 'ArrowUp' &&
+        !inlineFooter &&
+        isFooterRowIndex(t, active.rowIndex)))
   ) {
     const bodyEnd = event.currentTarget.querySelector<HTMLElement>(
       `[${NAV_BODY_END_ATTR}]`,

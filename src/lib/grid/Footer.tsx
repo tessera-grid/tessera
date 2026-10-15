@@ -5,6 +5,7 @@ import { memo } from 'react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
+import type { FooterPosition } from '../core/footer'
 import type { Header, HeaderGroup } from '../types'
 import { FooterCell } from './FooterCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
@@ -15,6 +16,7 @@ import footerStyles from '../grid/Footer/Footer.module.css'
 
 export interface FooterProps {
   layout: 'grid' | 'flex'
+  position: FooterPosition
   footerGroup?: HeaderGroup<any, any>
   virtualColumns: VirtualItem[]
   isVirtualColumns: boolean
@@ -23,6 +25,7 @@ export interface FooterProps {
 
 export const Footer = ({
   layout,
+  position,
   footerGroup,
   virtualColumns,
   isVirtualColumns,
@@ -38,6 +41,7 @@ export const Footer = ({
       role="rowgroup"
       className={clsx('data-grid__footer', footerStyles.footer)}
       data-layout={layout}
+      data-position={position}
     >
       {/* Строка — свой бокс, а не display: contents: такую строку Safari до 17 убирает
           из дерева доступности (ADR 0084). */}
