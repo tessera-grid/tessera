@@ -1,0 +1,82 @@
+/*
+ * Плашка (ADR 0096, §9): карточка поповера с иконкой, текстом, действием и закрытием.
+ * Положение — у потребителя; появление и уход — сдвигом `translate`, он складывается с
+ * его `transform`.
+ */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  box-sizing: border-box;
+  max-width: min(var(--tsr-comp-alert-max-width), var(--tsr-alert-cap, 100%));
+  /* Кнопка кита и отступ плашки сверху и снизу. */
+  min-height: calc(var(--tsr-comp-button-size) + var(--tsr-ref-space-1) * 2);
+  padding: var(--tsr-ref-space-1) var(--tsr-ref-space-1) var(--tsr-ref-space-1)
+    calc(var(--tsr-ref-space-1) * 3);
+  color: var(--tsr-comp-fg);
+  font-family: var(--tsr-comp-font-family);
+  font-size: var(--tsr-comp-cell-font-size);
+  background-color: var(--tsr-comp-alert-bg);
+  border-radius: var(--tsr-comp-alert-radius);
+  box-shadow: var(--tsr-comp-alert-shadow);
+  outline: var(--tsr-comp-popup-outline);
+  outline-offset: -1px;
+  /* Появление и уход — токенами движения: проявление со сдвигом вниз на 4px. */
+  animation: alert-in var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing-out);
+  transition:
+    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    translate var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+.alert[data-leaving] {
+  opacity: 0;
+  pointer-events: none;
+  translate: 0 calc(var(--tsr-ref-space-1) * -1);
+}
+
+@keyframes alert-in {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--tsr-ref-space-1) * -1);
+  }
+}
+
+.icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--tsr-comp-alert-icon-color);
+}
+
+.text {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  min-width: 0;
+}
+
+.title {
+  flex: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Описание — одной строкой, полный текст в тултипе (ADR 0083). */
+.description {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tsr-comp-alert-description-color);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dismiss {
+  flex: none;
+}
+
+/* Высокая контрастность (ADR 0087): плашка — с контуром, тени нет. */
+@media (forced-colors: active) {
+  .alert {
+    outline: 1px solid CanvasText;
+  }
+}

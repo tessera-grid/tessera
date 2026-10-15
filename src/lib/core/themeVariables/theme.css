@@ -741,10 +741,14 @@
     transparent
   );
   --tsr-comp-load-error-icon-color: var(--tsr-sys-danger);
-  --tsr-comp-load-error-banner-bg: var(--tsr-comp-popup-bg);
-  --tsr-comp-load-error-banner-shadow: var(--tsr-comp-shadow-action);
-  --tsr-comp-load-error-banner-radius: var(--tsr-comp-control-radius);
-  --tsr-comp-load-error-banner-max-width: 36rem;
+  /* Плашка — примитив кита Alert (ADR 0096, §9). */
+  --tsr-comp-alert-bg: var(--tsr-comp-popup-bg);
+  --tsr-comp-alert-shadow: var(--tsr-comp-shadow-action);
+  --tsr-comp-alert-radius: var(--tsr-comp-control-radius);
+  --tsr-comp-alert-max-width: 36rem;
+  --tsr-comp-alert-icon-color: var(--tsr-sys-danger);
+  /* Приглушённое описание — как причина отказа ленты, с её надстройкой контраста. */
+  --tsr-comp-alert-description-color: var(--tsr-comp-load-more-reason-color);
 
   /* Знак «действие включено» (ADR 0062): точка на кнопке и счётчики — цветом полосы
    * загрузки. Цифры — цветом поверхности: белые на синем тёмной темы не держат 4,5:1. */

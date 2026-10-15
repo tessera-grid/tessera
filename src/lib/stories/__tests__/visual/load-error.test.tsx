@@ -158,7 +158,7 @@ const stubEl = () => q('[data-testid="load-error-stub"]')
 const retryButton = () =>
   q<HTMLButtonElement>('[data-testid="load-error-retry"]')
 const dismissButton = () =>
-  q<HTMLButtonElement>('[data-testid="load-error-dismiss"]')
+  q<HTMLButtonElement>('[data-testid="load-error-banner"] [data-alert-dismiss]')
 const loader = () => q('[class*="linear-progress"]')!
 const flashPhase = () => loader().getAttribute('data-error-flash')
 const red = () => getComputedStyle(loader(), '::after')
@@ -287,7 +287,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     // Без причины — только заголовок.
     await update({ loadError: new Error('') })
     await expect
-      .poll(() => banner()?.querySelector('[class*="reason"]') ?? null)
+      .poll(() => banner()?.querySelector('[data-alert-description]') ?? null)
       .toBeNull()
     expect(banner()!.textContent).toContain("Couldn't refresh the data")
 
@@ -295,7 +295,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     const long = `Gateway timeout ${'while aggregating orders '.repeat(8)}`
     await update({ loadError: new Error(long) })
     const reason = () =>
-      banner()!.querySelector<HTMLElement>('[class*="reason"]')!
+      banner()!.querySelector<HTMLElement>('[data-alert-description]')!
     await expect.poll(() => reason()?.textContent).toBe(long.trim())
     expect(reason().scrollWidth).toBeGreaterThan(reason().clientWidth)
     expect(getComputedStyle(reason()).textOverflow).toBe('ellipsis')
@@ -565,7 +565,7 @@ const sys = (name: string) => {
 }
 
 describe('Подписи, режимы, доступность, перерисовка, плавность', () => {
-  test('LE12: подписи — localization, иконка — icons.loadFailed, вид — токены --tsr-comp-load-error-*', async () => {
+  test('LE12: подписи — localization, иконка — icons.loadFailed, вид — токены --tsr-comp-load-error-* и --tsr-comp-alert-*', async () => {
     const OwnIcon = (props: Record<string, unknown>) => (
       <svg data-testid="own-icon" {...props} />
     )
@@ -576,9 +576,9 @@ describe('Подписи, режимы, доступность, перерисо
       loadErrorDismiss: 'Скрыть',
     }
     const tokens = {
-      '--tsr-comp-load-error-banner-bg': 'rgb(1, 2, 3)',
-      '--tsr-comp-load-error-icon-color': 'rgb(200, 0, 0)',
-      '--tsr-comp-load-error-banner-max-width': '300px',
+      '--tsr-comp-alert-bg': 'rgb(1, 2, 3)',
+      '--tsr-comp-alert-icon-color': 'rgb(200, 0, 0)',
+      '--tsr-comp-alert-max-width': '300px',
       '--tsr-comp-load-error-glow': 'rgb(9, 8, 7)',
     } as CSSProperties
     const first = await mount({
@@ -693,22 +693,62 @@ describe('Подписи, режимы, доступность, перерисо
     expect(cellRenders).toBe(before)
   })
 
+  test('LE20: обновление, закончившееся посреди роста свечения, гасит его от текущих значений — в первом кадре ухода свет не ниже, чем перед ним, дальше убывает без скачка', async () => {
+    const glows = () => q('[class*="linear-progress"] > [class*="glows"]')
+    /** Рост синего свечения «языками»: сумма пятен маски и заливки, %. */
+    const blueGrowth = () => {
+      const style = getComputedStyle(glows()!)
+      return ['1', '2', '3', '4', 'fill'].reduce(
+        (sum, key) =>
+          sum + parseFloat(style.getPropertyValue(`--tsr-loader-grow-${key}`)),
+        0,
+      )
+    }
+    const view = await mount()
+    await waitRows()
+    await view.update({ loading: 'refresh' })
+    await expect.poll(glows).not.toBeNull()
+    // Свет вырос заметно, но не до конца: ответ пришёл посреди роста.
+    await expect.poll(blueGrowth, { timeout: 2000 }).toBeGreaterThan(60)
+    const before = blueGrowth()
+    expect(before).toBeLessThan(500)
+
+    await view.update({ loading: false })
+    await frame()
+    expect(glows()!.getAttribute('data-leaving')).toBe('true')
+    const trail = [blueGrowth()]
+    while (glows() && trail.length < 120) {
+      await frame()
+      if (glows()) trail.push(blueGrowth())
+    }
+    expect(trail[0]).toBeGreaterThanOrEqual(before * 0.9)
+    // Убывает без скачка: за кадр — не больше трети начального света.
+    for (let i = 1; i < trail.length; i++) {
+      expect(trail[i - 1] - trail[i]).toBeLessThan(before / 3)
+    }
+  })
+
   test('LE17: плашка проявляется и уходит за --tsr-comp-motion-duration, свечение — за --tsr-comp-loader-grow-duration; уходя, плашка держит причину и не ловит указатель; без движения — сразу', async () => {
     const glows = () => q('[class*="linear-progress"] > [class*="glows"]')
     const view = await mount()
     await waitRows()
     await view.update({ loading: 'refresh' })
     await expect.poll(glows).not.toBeNull()
+    await expect.poll(() => glows()!.hasAttribute('data-entering')).toBe(false)
     const enter = getComputedStyle(glows()!)
-    expect(enter.animationName.split(',')).toHaveLength(5)
-    expect(enter.animationName).toContain('loader-grow-1')
+    // Растёт переходами пятен маски — четырёх языков и заливки.
+    const grows = enter.transitionProperty
+      .split(',')
+      .map(part => part.trim())
+      .filter(name => name.startsWith('--tsr-loader-grow-'))
+    expect(grows).toHaveLength(5)
     // Языки растут вразнобой: длительности и задержки разные.
-    expect(new Set(enter.animationDuration.split(',')).size).toBeGreaterThan(2)
-    expect(new Set(enter.animationDelay.split(',')).size).toBeGreaterThan(2)
+    expect(new Set(enter.transitionDuration.split(',')).size).toBeGreaterThan(2)
+    expect(new Set(enter.transitionDelay.split(',')).size).toBeGreaterThan(2)
     expect(enter.maskImage).toContain('radial-gradient')
     // Самый долгий язык растёт ровно длительность токена.
     expect(
-      enter.animationDuration.split(',').map(part => part.trim()),
+      enter.transitionDuration.split(',').map(part => part.trim()),
     ).toContain(durationOf('--tsr-comp-loader-grow-duration'))
     await view.update({ loading: false })
     await frame()
@@ -724,9 +764,7 @@ describe('Подписи, режимы, доступность, перерисо
     await view.update({ loadError: SERVER_DOWN })
     await expect.poll(redGrowth, { timeout: 2000 }).toBe(100)
     await expect.poll(banner).not.toBeNull()
-    expect(getComputedStyle(banner()!).animationName).toContain(
-      'load-error-banner-in',
-    )
+    expect(getComputedStyle(banner()!).animationName).toContain('alert-in')
     expect(getComputedStyle(banner()!).animationDuration).toBe(
       durationOf('--tsr-comp-motion-duration'),
     )

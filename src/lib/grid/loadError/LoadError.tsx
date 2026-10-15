@@ -1,17 +1,17 @@
 /**
  * Ошибка загрузки данных (ADR 0096): плашка под шапкой, когда данные есть (ошибка
  * обновления), и заглушка поверх пустого тела, когда данных нет (первая загрузка).
+ * Плашка — примитив кита `Alert` (§9); грид ставит её под шапку.
  */
-import { forwardRef, useState, type ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
 
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { Alert } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
-import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'
-import { usePresence } from '../../ui/usePresence'
 
 import styles from './LoadError.module.css'
 
@@ -56,54 +56,23 @@ interface LoadErrorBannerProps {
 /** Плашка ошибки обновления: поверх верха тела, раскладку не сдвигает. */
 export const LoadErrorBanner = ({
   shown,
-  reason: liveReason,
+  reason,
   retry,
   onDismiss,
 }: LoadErrorBannerProps) => {
   const labels = useLocalization()
-  const { loadFailed: FailedIcon, clear: DismissIcon } = useIcons()
-  const { mounted, leaving, ref } = usePresence<HTMLDivElement>(shown)
-  // Уходя, плашка держит последнюю причину: успешный повтор снимает ошибку раньше.
-  const [reason, setReason] = useState(liveReason)
-  if (shown && reason !== liveReason) {
-    setReason(liveReason)
-  }
-  if (!mounted) {
-    return null
-  }
+  const { loadFailed: FailedIcon } = useIcons()
   return (
-    <div
-      ref={ref}
+    <Alert
+      shown={shown}
       className={clsx('data-grid__load-error', styles.banner)}
-      role="group"
-      aria-label={labels.loadErrorTitle}
-      data-leaving={leaving || undefined}
+      icon={<FailedIcon width={16} height={16} />}
+      title={labels.loadErrorTitle}
+      description={reason}
+      action={retry && <RetryButton onRetry={retry} pending={false} />}
+      dismiss={{ label: labels.loadErrorDismiss, onClick: onDismiss }}
       data-testid="load-error-banner"
-    >
-      <FailedIcon
-        className={styles.icon}
-        width={16}
-        height={16}
-        aria-hidden="true"
-      />
-      <div className={styles.text}>
-        <span className={styles.title}>{labels.loadErrorTitle}</span>
-        {reason && (
-          <Tooltip title={reason} overflowOnly>
-            <span className={styles.reason}>{reason}</span>
-          </Tooltip>
-        )}
-      </div>
-      {retry && <RetryButton onRetry={retry} pending={false} />}
-      <IconButton
-        label={labels.loadErrorDismiss}
-        className={styles.dismiss}
-        onClick={onDismiss}
-        data-testid="load-error-dismiss"
-      >
-        <DismissIcon width={16} height={16} />
-      </IconButton>
-    </div>
+    />
   )
 }
 

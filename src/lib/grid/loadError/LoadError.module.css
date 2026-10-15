@@ -1,104 +1,27 @@
 /*
- * Плашка ошибки обновления (ADR 0096): под шапкой по центру видимой ширины, поверх
- * верха тела — раскладку не сдвигает. Стоит в потоке после тулбара, как полоса
- * загрузки, и опускается на высоту шапки.
+ * Плашка ошибки обновления (ADR 0096, §9) — `Alert` кита под шапкой по центру видимой
+ * ширины, поверх верха тела: раскладку не сдвигает. Стоит в потоке после тулбара, как
+ * полоса загрузки, и опускается на высоту шапки.
  */
 .banner {
   --_visible: calc(
     100% -
       var(--tsr-comp-scrollbar-actual-width, var(--tsr-comp-scrollbar-width))
   );
+  --tsr-alert-cap: calc(var(--_visible) - var(--tsr-ref-space-4) * 2);
 
   position: absolute;
   left: calc(var(--_visible) / 2);
   z-index: var(--tsr-comp-z-index-loader);
-  display: flex;
-  align-items: center;
-  gap: calc(var(--tsr-ref-space-1) * 2);
-  box-sizing: border-box;
-  max-width: min(
-    var(--tsr-comp-load-error-banner-max-width),
-    calc(var(--_visible) - var(--tsr-ref-space-4) * 2)
-  );
-  /* Кнопка кита и отступ плашки сверху и снизу. */
-  min-height: calc(var(--tsr-comp-button-size) + var(--tsr-ref-space-1) * 2);
-  padding: var(--tsr-ref-space-1) var(--tsr-ref-space-1) var(--tsr-ref-space-1)
-    calc(var(--tsr-ref-space-1) * 3);
   transform: translate(
     -50%,
     calc(var(--tsr-comp-head-height) + calc(var(--tsr-ref-space-1) * 2))
   );
-  color: var(--tsr-comp-fg);
-  font-family: var(--tsr-comp-font-family);
-  font-size: var(--tsr-comp-cell-font-size);
-  background-color: var(--tsr-comp-load-error-banner-bg);
-  border-radius: var(--tsr-comp-load-error-banner-radius);
-  box-shadow: var(--tsr-comp-load-error-banner-shadow);
-  outline: var(--tsr-comp-popup-outline);
-  outline-offset: -1px;
-  /* Появление и уход — токенами движения: проявление со сдвигом вниз на 4px. */
-  animation: load-error-banner-in var(--tsr-comp-motion-duration)
-    var(--tsr-comp-motion-easing-out);
-  transition:
-    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
-    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
-}
-
-.banner[data-leaving] {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(
-    -50%,
-    calc(var(--tsr-comp-head-height) + var(--tsr-ref-space-1))
-  );
-}
-
-@keyframes load-error-banner-in {
-  from {
-    opacity: 0;
-    transform: translate(
-      -50%,
-      calc(var(--tsr-comp-head-height) + var(--tsr-ref-space-1))
-    );
-  }
 }
 
 .icon {
   flex: none;
   color: var(--tsr-comp-load-error-icon-color);
-}
-
-.text {
-  display: flex;
-  align-items: baseline;
-  gap: calc(var(--tsr-ref-space-1) * 2);
-  min-width: 0;
-}
-
-.title {
-  flex: none;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* Причина — одной строкой, полный текст в тултипе (ADR 0083). */
-.reason {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--tsr-comp-load-more-reason-color);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.dismiss {
-  flex: none;
-}
-
-/* Высокая контрастность (ADR 0087): плашка — с контуром, тени нет. */
-@media (forced-colors: active) {
-  .banner {
-    outline: 1px solid CanvasText;
-  }
 }
 
 /* Заглушка ошибки первой загрузки — под пустой шапкой, во всю видимую ширину. */

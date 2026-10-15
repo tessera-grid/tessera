@@ -1,6 +1,7 @@
-import { memo, useRef } from 'react'
+import { memo, useRef, useState } from 'react'
 import clsx from 'clsx'
 
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { useErrorFlash } from '../buttonStates/useErrorFlash'
 import { usePresence } from '../usePresence'
 
@@ -30,6 +31,21 @@ export const LinearProgress = memo(
     const shown = active || flash !== undefined
     // Синее свечение появляется и уходит плавно; под красным — гаснет на вспышку.
     const glows = usePresence<HTMLDivElement>(active || flash === 'on')
+    // Первый кадр слоя — без света: рост идёт переходом от него, и уход посреди роста
+    // убывает от текущих значений (LE20).
+    const [entering, setEntering] = useState(true)
+    if (!glows.mounted && !entering) {
+      setEntering(true)
+    }
+    useIsomorphicLayoutEffect(() => {
+      const el = glows.ref.current
+      if (!entering || !el) {
+        return
+      }
+      // Стиль первого кадра должен быть посчитан, иначе переходу не от чего начаться.
+      getComputedStyle(el).getPropertyValue('--tsr-loader-grow-fill')
+      setEntering(false)
+    }, [entering, glows.mounted, glows.ref])
 
     return (
       <div
@@ -46,6 +62,7 @@ export const LinearProgress = memo(
           <div
             ref={glows.ref}
             className={styles.glows}
+            data-entering={entering || undefined}
             data-leaving={glows.leaving || undefined}
           >
             <div

@@ -22,8 +22,10 @@
  * Свет вырастает вниз от края шапки и убывает к нему не разом, а «языками»: маска из
  * четырёх пятен в разных местах ширины, каждое растёт своим ходом (длительность,
  * задержка), затем общая заливка делает свет сплошным. Синий — при показе и уходе
- * обновления (`data-leaving` держит слой до конца самого долгого перехода), красный —
- * при вспышке ошибки (ADR 0096). Синий под красным гаснет.
+ * обновления (`data-entering` — первый кадр, `data-leaving` держит слой до конца самого
+ * долгого перехода), красный — при вспышке ошибки (ADR 0096). Синий под красным гаснет.
+ * Рост и убывание — переходами: уход посреди роста идёт от текущих значений (LE20);
+ * отменённая CSS-анимация перехода от своего значения не начинает.
  */
 @property --tsr-loader-grow-1 {
   syntax: '<percentage>';
@@ -89,33 +91,35 @@
       transparent
     ),
     linear-gradient(rgb(0 0 0 / var(--tsr-loader-grow-fill)) 0 0);
-  animation:
-    loader-grow-1 calc(var(--tsr-comp-loader-grow-duration) * 0.75)
+  transition:
+    --tsr-loader-grow-1 calc(var(--tsr-comp-loader-grow-duration) * 0.75)
       var(--tsr-comp-motion-easing-out)
-      calc(var(--tsr-comp-loader-grow-duration) * 0.05) backwards,
-    loader-grow-2 calc(var(--tsr-comp-loader-grow-duration) * 1)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.05),
+    --tsr-loader-grow-2 calc(var(--tsr-comp-loader-grow-duration) * 1)
       var(--tsr-comp-motion-easing-out)
-      calc(var(--tsr-comp-loader-grow-duration) * 0.25) backwards,
-    loader-grow-3 calc(var(--tsr-comp-loader-grow-duration) * 0.6)
-      var(--tsr-comp-motion-easing-out) backwards,
-    loader-grow-4 calc(var(--tsr-comp-loader-grow-duration) * 0.9)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.25),
+    --tsr-loader-grow-3 calc(var(--tsr-comp-loader-grow-duration) * 0.6)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-loader-grow-4 calc(var(--tsr-comp-loader-grow-duration) * 0.9)
       var(--tsr-comp-motion-easing-out)
-      calc(var(--tsr-comp-loader-grow-duration) * 0.15) backwards,
-    loader-grow-fill calc(var(--tsr-comp-loader-grow-duration) * 0.45)
+      calc(var(--tsr-comp-loader-grow-duration) * 0.15),
+    --tsr-loader-grow-fill calc(var(--tsr-comp-loader-grow-duration) * 0.45)
       var(--tsr-comp-motion-easing-out)
-      calc(var(--tsr-comp-loader-grow-duration) * 0.8) backwards;
-  transition: opacity var(--tsr-comp-error-flash-fill-duration)
-    var(--tsr-comp-motion-easing);
+      calc(var(--tsr-comp-loader-grow-duration) * 0.8),
+    opacity var(--tsr-comp-error-flash-fill-duration)
+      var(--tsr-comp-motion-easing);
 }
 
+.glows[data-entering],
 .glows[data-leaving] {
-  /* Недоигранный рост не перебивает убывание: оно идёт от текущих значений. */
-  animation: none;
   --tsr-loader-grow-1: 0%;
   --tsr-loader-grow-2: 0%;
   --tsr-loader-grow-3: 0%;
   --tsr-loader-grow-4: 0%;
   --tsr-loader-grow-fill: 0%;
+}
+
+.glows[data-leaving] {
   transition:
     --tsr-loader-grow-fill calc(var(--tsr-comp-loader-shrink-duration) * 0.35)
       var(--tsr-comp-motion-easing),
@@ -131,36 +135,6 @@
     --tsr-loader-grow-4 calc(var(--tsr-comp-loader-shrink-duration) * 0.6)
       var(--tsr-comp-motion-easing)
       calc(var(--tsr-comp-loader-shrink-duration) * 0.05);
-}
-
-@keyframes loader-grow-1 {
-  from {
-    --tsr-loader-grow-1: 0%;
-  }
-}
-
-@keyframes loader-grow-2 {
-  from {
-    --tsr-loader-grow-2: 0%;
-  }
-}
-
-@keyframes loader-grow-3 {
-  from {
-    --tsr-loader-grow-3: 0%;
-  }
-}
-
-@keyframes loader-grow-4 {
-  from {
-    --tsr-loader-grow-4: 0%;
-  }
-}
-
-@keyframes loader-grow-fill {
-  from {
-    --tsr-loader-grow-fill: 0%;
-  }
 }
 
 .linear-progress[data-error-flash] .glows {
