@@ -38,6 +38,7 @@ import { LinearProgress } from '../ui/LinearProgress'
 import { LoadErrorBanner, LoadErrorStub } from './loadError/LoadError'
 import { useLoadError } from './loadError/useLoadError'
 import { hasLoadError } from '../core/loadError'
+import { isSkeletonShown } from '../core/skeletonOptions'
 import {
   dismissServerActionError,
   serverActionReason,
@@ -297,8 +298,9 @@ export const DataGrid = ({
     hasRows: rows.length > 0 || (!appFailed && !!failed),
   })
 
-  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ главнее.
-  const showSkeleton = initialLoading && !loadError.stubShown
+  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк
+  // главнее. Тот же расчёт видят компоненты слотов (SL21).
+  const showSkeleton = isSkeletonShown(table)
 
   const noData = !showSkeleton && rows.length === 0
   // Пусто из-за фильтра — своя заглушка поверх тела, шапка с фильтрами остаётся.

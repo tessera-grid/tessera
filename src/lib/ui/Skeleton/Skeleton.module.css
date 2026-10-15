@@ -1,7 +1,7 @@
 .skeleton {
   display: block;
   background-color: var(--tsr-comp-skeleton-bg);
-  border-radius: 4px;
+  border-radius: var(--tsr-comp-skeleton-radius);
 }
 
 .wave {
@@ -20,7 +20,8 @@
     var(--tsr-comp-skeleton-wave),
     transparent
   );
-  animation: data-grid-skeleton-wave 1.6s linear 0.5s infinite;
+  animation: data-grid-skeleton-wave var(--tsr-comp-skeleton-wave-duration)
+    linear var(--tsr-comp-skeleton-wave-delay) infinite;
 }
 
 @keyframes data-grid-skeleton-wave {

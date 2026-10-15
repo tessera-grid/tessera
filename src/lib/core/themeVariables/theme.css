@@ -220,6 +220,13 @@
       var(--tsr-comp-motion-easing),
     outline-color var(--tsr-comp-motion-duration)
       var(--tsr-comp-motion-easing-out);
+  /* Волна скелета (ADR 0060, SL20): проход блика и пауза перед первым проходом. */
+  --tsr-comp-skeleton-wave-duration: calc(
+    var(--tsr-comp-motion-duration) * 32 / 3
+  );
+  --tsr-comp-skeleton-wave-delay: calc(
+    var(--tsr-comp-motion-duration) * 10 / 3
+  );
   /* Движение строк (ADR 0107): переезд, проявление и уход при смене модели. */
   --tsr-comp-row-motion-duration: calc(var(--tsr-comp-motion-duration) * 5 / 3);
   --tsr-comp-button-cell-transition:
@@ -705,6 +712,13 @@
     var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) / 2),
     transparent
   );
+  /* Размеры скелетов по роли (ADR 0060, SL20): полоска ячейки, текст панели,
+   * строка меню, квадрат контрола служебной колонки. */
+  --tsr-comp-skeleton-cell-height: 16px;
+  --tsr-comp-skeleton-text-height: 14px;
+  --tsr-comp-skeleton-menu-height: 12px;
+  --tsr-comp-skeleton-control-size: var(--tsr-comp-checkbox-size);
+  --tsr-comp-skeleton-radius: 4px;
   /* Загрузка — статус, а не бренд-акцент (как ошибка остаётся красной): полоса
    * держит синий (info), чтобы активность читалась сразу. */
   --tsr-comp-loader-bar: var(--tsr-sys-info);

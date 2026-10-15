@@ -395,8 +395,10 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `textOverflow.dom` (TX8 — короткие формы через `localization`), перф TX12 — в
       `interaction` ([ADR 0083](docs/decisions/0083-text-overflow.md)).
     - _Быстрая прокрутка:_ `fast-scroll` (FS6–FS7 — скелеты только у смонтированных в
-      сессии, пауза главного потока при прокрутке колесом), модульный `fastScrollDetector`
-      (FS1–FS5 — скорость по жесту, догоняющие события, вход, выход, простой; FS8 —
+      сессии, пауза главного потока при прокрутке колесом; FS10–FS11 — вид ячеек сессии по
+      `skeletonCell`, включая закреплённые и служебные, полоска по колонке без волны),
+      модульный `fastScrollDetector` (FS1–FS5 — скорость по жесту, догоняющие события,
+      вход, выход, простой; FS9 — пороги и гистерезис по всем осям; FS8 —
       программная прокрутка грида режим не включает,
       [ADR 0105](docs/decisions/0105-smooth-back-to-edge.md)),
       [ADR 0008](docs/decisions/0008-fast-scroll.md).
@@ -562,7 +564,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       вне модели, «выбрать всё», подпись выгрузки, axe и контраст, демо-истории),
       модульный `infiniteScroll` (IS5–IS6, IS8 — одна загрузка за раз, цепочка, пауза
       после пустого ответа, живые аргументы, инертность с пагинацией и предупреждения о
-      клиентской обработке), перф IS16 — в `interaction`, IS17 — в `scroll`
+      клиентской обработке), перф IS16 — в `interaction`, IS17 — в `scroll`; IS19–IS20 —
+      вид хвоста по `skeletonCell` и первая загрузка ленты — в `infinite-scroll`
       ([ADR 0081](docs/decisions/0081-infinite-scroll.md)).
     - _Кнопка «наверх»:_ `back-to-top` (BT1–BT2, BT4, BT6–BT11, BT15 — порог появления,
       место в существующей панели, раскладка без сдвига, без скелетов, горизонталь и
@@ -800,7 +803,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC/BU,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
-      `Switch`, `Skeleton`, `LinearProgress`, иконки); `tooltip-pass-through` (TP1–TP2 —
+      `Switch`, `Skeleton`, `LinearProgress`, иконки; SK4 — `Skeleton` в `/ui` — в
+      модульном `uiStories`); `tooltip-pass-through` (TP1–TP2 —
       подсказка без обрезки пропускает указатель насквозь, W8 сужен,
       [ADR 0100](docs/decisions/0100-pass-through-tooltips.md)); `button-states` (BS1–BS17 —
       свет `pending` и красный свет `errorFlash` у `IconButton` и `ToolbarButton`),

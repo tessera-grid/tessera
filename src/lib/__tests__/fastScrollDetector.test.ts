@@ -6,9 +6,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  EXIT_VELOCITY_RATIO,
+  FAST_SCROLL_ENTER_VELOCITY_X,
+  FAST_SCROLL_ENTER_VELOCITY_Y,
   type FastScrollDetectorOptions,
   IDLE_DELAY,
   MIN_DURATION,
+  VELOCITY_WINDOW,
   attachFastScrollDetector,
   markProgrammaticScroll,
 } from '../core/fastScroll/fastScrollDetector'
@@ -141,6 +145,51 @@ describe('Детектор быстрой прокрутки (ADR 0008)', () => 
     vi.advanceTimersByTime(IDLE_DELAY + 50)
     frame(0, 5000)
     expect(changes).toEqual([true, false, true])
+  })
+
+  it('FS9: пороги — вход от 2000 px/s по Y или 4500 px/s по X, выход — 25 % входа, не меньше 250 мс в режиме, выход после 300 мс без событий, скорость по окну 250 мс', () => {
+    expect(FAST_SCROLL_ENTER_VELOCITY_Y).toBe(2000)
+    expect(FAST_SCROLL_ENTER_VELOCITY_X).toBe(4500)
+    expect(EXIT_VELOCITY_RATIO).toBe(0.25)
+    expect(MIN_DURATION).toBe(250)
+    expect(IDLE_DELAY).toBe(300)
+    expect(VELOCITY_WINDOW).toBe(250)
+
+    // Ровно у порога входа: 31 px за кадр — 1937 px/s, 33 px — 2062 px/s.
+    const below = setup()
+    for (let i = 0; i < 30; i++) below.frame(0, 31)
+    expect(below.changes).toEqual([])
+    below.detach()
+    const above = setup()
+    for (let i = 0; i < 30; i++) above.frame(0, 33)
+    expect(above.changes).toEqual([true])
+    above.detach()
+    // По X порог выше: 70 px за кадр — 4375 px/s, 74 px — 4625 px/s.
+    const belowX = setup()
+    for (let i = 0; i < 30; i++) belowX.frame(70, 0)
+    expect(belowX.changes).toEqual([])
+    belowX.detach()
+    const aboveX = setup()
+    for (let i = 0; i < 30; i++) aboveX.frame(74, 0)
+    expect(aboveX.changes).toEqual([true])
+    aboveX.detach()
+
+    // Выход — при 25 % порога входа: 562 px/s режим держит, 437 px/s снимает.
+    const exit = setup()
+    for (let i = 0; i < 20; i++) exit.frame(0, 80)
+    for (let i = 0; i < 30; i++) exit.frame(0, 9)
+    expect(exit.changes).toEqual([true])
+    for (let i = 0; i < 30; i++) exit.frame(0, 7)
+    expect(exit.changes).toEqual([true, false])
+    exit.detach()
+
+    // Простой: выход ровно через 300 мс после последнего события.
+    const idle = setup()
+    for (let i = 0; i < 20; i++) idle.frame(0, 80)
+    vi.advanceTimersByTime(IDLE_DELAY - 1)
+    expect(idle.changes).toEqual([true])
+    vi.advanceTimersByTime(1)
+    expect(idle.changes).toEqual([true, false])
   })
 
   it('RM26: внешний признак включает режим на медленной прокрутке, пока он держится; без него та же прокрутка режим не включает, выход — по простою', () => {

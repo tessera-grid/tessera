@@ -44,7 +44,7 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   if (isSkeletonShown(table)) {
     return (
       <span data-testid="selected-rows-count">
-        <Skeleton width={80} height={14} />
+        <Skeleton width={80} height="var(--tsr-comp-skeleton-text-height)" />
       </span>
     )
   }

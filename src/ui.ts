@@ -10,6 +10,7 @@ export {
   type SegmentOption,
   type SegmentsProps,
 } from './lib/ui/Segments'
+export { Skeleton, type SkeletonProps } from './lib/ui/Skeleton'
 export { Switch, type SwitchProps } from './lib/ui/Switch'
 export { ToolbarButton, type ToolbarButtonProps } from './lib/ui/ToolbarButton'
 

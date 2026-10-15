@@ -79,6 +79,16 @@ describe('истории UI-примитивов', () => {
     ).toMatch(/\bactive\b/)
   })
 
+  it('SK4: Skeleton экспортируется из /ui и имеет историю Tessera/UI/Skeleton с контролами размера и анимации', () => {
+    expect(uiExports()).toContain('Skeleton')
+    expect(uiStoryTitles()).toContain('Tessera/UI/Skeleton')
+    const story = read('../stories/UI.Skeleton.stories.tsx')
+    const argTypes = story.slice(story.indexOf('argTypes:'))
+    for (const arg of ['width', 'height', 'animation']) {
+      expect(argTypes, arg).toMatch(new RegExp(`\\b${arg}: \\{ control`))
+    }
+  })
+
   it('SG5: Segments экспортируется из /ui и имеет историю Tessera/UI/Segments', () => {
     expect(uiExports()).toContain('Segments')
     expect(uiStoryTitles()).toContain('Tessera/UI/Segments')

@@ -279,7 +279,11 @@ export const useCreateTable = <
     table: freshTable,
     getAtoms: () => tableRef.current?.atoms,
     inputs: [data, columnsSignature],
-    context: { options: folded.options, slotActions: folded.slotActions },
+    // Первая загрузка видна условиям показа служебных колонок (ADR 0060, SL25).
+    context: {
+      options: { ...folded.options, loading },
+      slotActions: folded.slotActions,
+    },
     initial: INITIAL_EFFECTIVE_STATE,
   })
 

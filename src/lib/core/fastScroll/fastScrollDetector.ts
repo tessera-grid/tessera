@@ -5,7 +5,7 @@
 export const FAST_SCROLL_ENTER_VELOCITY_Y = 2000
 export const FAST_SCROLL_ENTER_VELOCITY_X = 4500
 
-const EXIT_VELOCITY_RATIO = 0.25
+export const EXIT_VELOCITY_RATIO = 0.25
 export const FAST_SCROLL_EXIT_VELOCITY_Y =
   FAST_SCROLL_ENTER_VELOCITY_Y * EXIT_VELOCITY_RATIO
 export const FAST_SCROLL_EXIT_VELOCITY_X =
@@ -14,7 +14,7 @@ export const FAST_SCROLL_EXIT_VELOCITY_X =
 export const IDLE_DELAY = 300
 export const MIN_DURATION = 250
 
-const VELOCITY_WINDOW = 250
+export const VELOCITY_WINDOW = 250
 
 // Длительность первого события нового жеста — один кадр: рывок с места распознаётся
 // с первого события. Она же — нижняя граница интервала скорости.
@@ -201,7 +201,7 @@ export const attachFastScrollDetector = (
     ) {
       setFast(true)
     } else if (
-      velocity.x <= FAST_SCROLL_EXIT_VELOCITY_X ||
+      velocity.x <= FAST_SCROLL_EXIT_VELOCITY_X &&
       velocity.y <= FAST_SCROLL_EXIT_VELOCITY_Y
     ) {
       requestExit()

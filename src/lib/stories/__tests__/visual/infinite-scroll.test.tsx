@@ -15,9 +15,11 @@ import {
   type InfiniteScrollLoadContext,
   keyboardNavigation,
   quickSearch,
+  rowDragging,
   rowExpanding,
   rowSelection,
 } from '../../../plugins'
+import { getSkeletonBarWidth } from '../../../core/skeletonOptions'
 import { humanClick } from '../helpers'
 import { composed } from '../stories'
 import {
@@ -95,6 +97,8 @@ interface FeedProps {
   state?: Record<string, unknown>
   /** Колонки шире грида — есть горизонтальная прокрутка. */
   wide?: boolean
+  columns?: unknown[]
+  loading?: 'initial' | false
 }
 
 const WIDE_COLUMNS = [
@@ -116,6 +120,8 @@ const Feed = ({
   plugins = [],
   state,
   wide = false,
+  columns,
+  loading,
 }: FeedProps) => {
   const [rows, setRows] = useState(() => itemsFrom(0, initial))
   feed = {
@@ -123,7 +129,8 @@ const Feed = ({
       setRows(prev => [...prev, ...itemsFrom(prev.length, count)]),
   }
   table = useCreateTable({
-    columns: (wide ? WIDE_COLUMNS : COLUMNS) as never,
+    columns: (columns ?? (wide ? WIDE_COLUMNS : COLUMNS)) as never,
+    loading,
     data: rows,
     getRowId: (row: Item) => row.id,
     state: state as never,
@@ -718,5 +725,86 @@ describe('Лента: демо-истории', () => {
     await expect.poll(errorRow).not.toBeNull()
     await humanClick(retryButton()!)
     await expect.poll(count).toBe('Loaded 100 of 1,000')
+  })
+
+  test('IS19: хвост — строки скелета по раскладке колонок: вид ячейки по skeletonCell, длина полоски по колонке, высота строки грида, без волны', async () => {
+    await mount({
+      columns: [
+        ...COLUMNS,
+        {
+          id: 'photo',
+          accessorKey: 'a',
+          header: 'Photo',
+          skeletonCell: 'none',
+        },
+      ],
+      plugins: [rowSelection(), rowDragging()],
+    })
+    await scrollToEnd()
+    await pendingCall()
+    await frames()
+    const row = tailRows()[0]!
+    const rowHeight = Number.parseFloat(
+      getComputedStyle(scroller()).getPropertyValue('--tsr-comp-row-height'),
+    )
+    expect(Math.round(row.getBoundingClientRect().height)).toBe(rowHeight)
+    const control = Number.parseFloat(
+      getComputedStyle(scroller()).getPropertyValue(
+        '--tsr-comp-skeleton-control-size',
+      ),
+    )
+    const shapeIn = (id: string) =>
+      [...row.querySelectorAll<HTMLElement>('[data-column-id]')]
+        .find(cell =>
+          ['a', 'b', 'c', 'photo'].includes(id)
+            ? cell.dataset.columnId === id
+            : cell.dataset.columnId!.includes(id),
+        )!
+        .querySelector<HTMLElement>('[class*="skeleton"]')
+    for (const id of ['a', 'b', 'c']) {
+      const cell = row.querySelector<HTMLElement>(`[data-column-id="${id}"]`)!
+      const wrapper = cell.firstElementChild as HTMLElement
+      const style = getComputedStyle(wrapper)
+      const content =
+        wrapper.clientWidth -
+        Number.parseFloat(style.paddingLeft) -
+        Number.parseFloat(style.paddingRight)
+      const ratio = Math.round(
+        (shapeIn(id)!.getBoundingClientRect().width / content) * 100,
+      )
+      expect(Math.abs(ratio - getSkeletonBarWidth(id)), id).toBeLessThanOrEqual(
+        1,
+      )
+    }
+    expect(shapeIn('photo')).toBeNull()
+    expect(shapeIn('rowDragging')).toBeNull()
+    const square = shapeIn('rowSelection')!.getBoundingClientRect()
+    expect([Math.round(square.width), Math.round(square.height)]).toEqual([
+      control,
+      control,
+    ])
+    for (const shape of row.querySelectorAll<HTMLElement>(
+      '[class*="skeleton"]',
+    )) {
+      expect(getComputedStyle(shape, '::after').animationName).toBe('none')
+    }
+  })
+
+  test("IS20: первая загрузка ленты (loading 'initial') — скелет грида без хвоста; счётчик «Loaded N» — скелетом", async () => {
+    await render(<Feed loading="initial" loadedCount />)
+    await expect
+      .poll(
+        () =>
+          document.querySelectorAll(
+            '.data-grid__body--skeleton .data-grid__body-row--skeleton',
+          ).length,
+      )
+      .toBeGreaterThan(0)
+    await frames()
+    expect(document.querySelector('.data-grid__body--infinite-tail')).toBeNull()
+    expect(tailRows()).toHaveLength(0)
+    const counter = document.querySelector('[data-testid="loaded-rows-count"]')!
+    expect(counter.textContent).toBe('')
+    expect(counter.querySelector('[class*="skeleton"]')).not.toBeNull()
   })
 })

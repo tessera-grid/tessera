@@ -156,7 +156,10 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       )}
       <span className={styles.range} data-testid="pagination-range">
         {isSkeletonShown(table) ? (
-          <Skeleton width={RANGE_SKELETON_WIDTH} height={14} />
+          <Skeleton
+            width={RANGE_SKELETON_WIDTH}
+            height="var(--tsr-comp-skeleton-text-height)"
+          />
         ) : (
           labels.pageRange(from, to, rowCount)
         )}

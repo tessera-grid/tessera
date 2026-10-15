@@ -62,7 +62,8 @@ export interface RowExpandingOptions {
 /**
  * Колонка нужна, если хоть один корень исходных данных имеет детей или помечен
  * `hasChildren` (раскрываемый потомок глубже означает раскрываемого предка), или
- * подключена группировка: группы раскрываются тогглом этой колонки.
+ * подключена группировка: группы раскрываются тогглом этой колонки, или идёт первая
+ * загрузка.
  */
 const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
   table,
@@ -71,6 +72,8 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
 ) => {
   if (context.options.enableGrouping === true) return true
   if ((o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH) < 1) return false
+  // Скелет первой загрузки: данных ещё нет, включённое раскрытие держит колонку (SL25).
+  if (context.options.loading === 'initial') return true
   if (!table) return undefined
   return table
     .getCoreRowModel()

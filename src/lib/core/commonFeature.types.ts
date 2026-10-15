@@ -8,6 +8,7 @@
  * используем прямой merge интерфейса (эскейп).
  */
 import type { ColumnOptionsDef } from './columnOptions'
+import type { SkeletonCellKind } from './skeletonOptions'
 import type {
   ColumnSizingState,
   OnChangeFn,
@@ -120,10 +121,10 @@ export interface CommonColumnDef extends ColumnOptionsDef {
   /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
   serviceLabel?: 'expandColumn' | 'reorderColumn' | 'rowActionsColumn'
   /**
-   * Служебная колонка в скелете первой загрузки (ADR 0060): `'control'` — квадрат
-   * на месте контрола; без поля — пустая ячейка.
+   * Ячейка колонки в скелетах (ADR 0060, SL18): `'bar'` — полоска, `'control'` —
+   * квадрат контрола, `'none'` — пусто. Без поля — полоска, у служебной — пусто.
    */
-  skeletonCell?: 'control'
+  skeletonCell?: SkeletonCellKind
 }
 
 export interface CommonHeaderAPI {

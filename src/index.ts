@@ -78,6 +78,8 @@ export {
   type PluginCellStateProps,
   type PluginCellOwnerProps,
 } from './lib/core/definePlugin'
+// Первая загрузка для компонентов слотов: значения из данных — скелетом (ADR 0060, SL21).
+export { isSkeletonShown } from './lib/core/skeletonOptions'
 
 // Единый дескриптор действия слота (кебаб-меню): плагины объявляют действия
 // данными, ядро решает подачу (инлайн-кнопка или строка меню). `SlotAction<TCtx>`

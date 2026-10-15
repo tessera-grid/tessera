@@ -24,7 +24,7 @@ import { highlightRender } from './highlight'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
-import { Skeleton } from '../ui/Skeleton'
+import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
 import type { Cell } from '../types'
 import { RenderCellSlot, RenderSlot } from '../core/renderSlots'
 import type { RegisterSlotParams } from '../core/createSlots'
@@ -138,9 +138,9 @@ export const BodyCell = memo(
     const isRowActionsColumn = cell.column.getIsRowActionsColumn()
 
     const isSuppressed = useFastScrollSuppressed()
-    // Слот — скелет и в закреплённых колонках; служебные у него пустые.
-    const showSkeleton =
-      (isSlot || (isSuppressed && !isPinnedColumn)) && !isActionsColumn
+    // Слот — скелет у колонок данных, служебные пустые (PV1); быстрая прокрутка — у всех
+    // ячеек сессии, по виду колонки (FS10).
+    const showSkeleton = isSlot ? !isActionsColumn : isSuppressed
     const canRenderSlots = !isActionsColumn && !showSkeleton && !isSlot
 
     // Выделение ячеек (плагин cellSelection): гранулярная подписка, `null` без
@@ -165,7 +165,11 @@ export const BodyCell = memo(
 
     const render = useMemo(() => {
       if (showSkeleton) {
-        return <Skeleton width="50%" height={16} animation={false} />
+        return renderSkeletonCell(
+          cell.column.id,
+          skeletonCellKindOf(cell.column),
+          false,
+        )
       }
       if (isSuppressed) {
         return null

@@ -3,15 +3,21 @@ import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-react'
 
+import { definePlugin } from '../../../../index'
+import type { MenuAction, RowAction } from '../../../core/headerActions'
 import { DEFAULT_LABELS } from '../../../core/localization'
-import { Stories, getScroller } from '../helpers'
+import { isSkeletonParentRow } from '../../../core/skeletonOptions'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { rowActionMenu, rowActions } from '../../../plugins'
+import { Stories, getScroller, humanClick } from '../helpers'
 import { statusBarDemoPlugins } from '../../statusBarDemo'
 import { AXE_OPTIONS } from './a11y-helpers'
-import { PIN_BUTTON } from './column-pinning-helpers'
+import { HANDLE, pointer, slot } from './row-drop-helpers'
 
-// SL1–SL12: скелет первой загрузки по раскладке грида (ADR 0060). Скелет и грид
-// после загрузки — один экземпляр таблицы: тест переключает `loading` и
-// сравнивает геометрию.
+// Скелет первой загрузки по раскладке грида (ADR 0060). Скелет и грид после загрузки —
+// один экземпляр таблицы: тест переключает `loading` и сравнивает геометрию.
+// SL2, SL5, SL6, SL8, SL9, SL21 — в `play` историй сценариев скелета.
 
 type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
 
@@ -59,12 +65,58 @@ const renderToggle = async (args: Args, skeleton = true) => {
   return { screen, set }
 }
 
+/** Первая строка скелета с квадратом раскрытия. */
+const firstParentRow = () =>
+  skeletonRows().findIndex((_, index) => isSkeletonParentRow(index))
+
 const waitSkeleton = () =>
   expect.poll(() => skeletonRows().length).toBeGreaterThan(0)
 const waitData = () =>
   expect
     .poll(() => document.querySelectorAll('.data-grid__body-row').length)
     .toBeGreaterThan(0)
+
+/** Действие строки с разделом, чьи пункты ещё не пришли: строки меню — скелеты. */
+const pendingSection = definePlugin()({
+  id: 'pendingSection',
+  slotActions: [
+    {
+      id: 'move',
+      slot: 'actionRowSlot',
+      order: 0,
+      icon: () => <span aria-hidden>M</span>,
+      label: () => 'Move to',
+      onSelect: () => {},
+      submenu: () => ({
+        title: 'Move to',
+        items: () => new Promise<MenuAction[]>(() => {}),
+      }),
+    } satisfies RowAction,
+  ],
+})
+
+const MENU_DATA = Array.from({ length: 5 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${i}`,
+}))
+
+const PendingMenuGrid = () => {
+  const table = useCreateTable({
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+    data: MENU_DATA,
+    getRowId: (row: (typeof MENU_DATA)[number]) => row.id,
+    plugins: [
+      pendingSection(),
+      rowActions(),
+      rowActionMenu({ mode: 'always' }),
+    ] as never,
+  })
+  return (
+    <div style={{ width: 640, height: 400 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
 
 describe('Скелет первой загрузки (ADR 0060)', () => {
   test('SL1: колонки скелета совпадают с колонками грида — число, порядок и ширина, включая заданную и изменённую пользователем', async () => {
@@ -111,66 +163,28 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(geometry(cellsOf(skeletonRows()[0], SKELETON_CELL))).toEqual(loaded)
   })
 
-  test('SL2: служебные колонки на своих местах и ширинах — выбор и раскрытие квадратом, ручка и действия пустые', async () => {
-    const args: Args = {
-      enableRowSelection: true,
-      enableRowExpanding: true,
-      rowExpandingColumn: 'always',
-      enableRowDragging: true,
-      enableRowActions: true,
-    }
-    const { set } = await renderToggle(args, false)
-    await waitData()
-    const dataRow = document.querySelector('.data-grid__body-row')!
-    const loaded = geometry(cellsOf(dataRow, '.data-grid__body-cell'))
-
-    await set(true)
-    await waitSkeleton()
-    const cells = cellsOf(skeletonRows()[0], SKELETON_CELL)
-    expect(geometry(cells)).toEqual(loaded)
-
-    const byId = (part: string) =>
-      cells.find(cell => cell.dataset.columnId?.includes(part))!
-    for (const control of ['rowSelection', 'rowExpanding']) {
-      const shape = shapeOf(byId(control))!
-      expect(box(shape).width).toBe(16)
-      expect(Math.round(shape.getBoundingClientRect().height)).toBe(16)
-    }
-    for (const empty of ['rowDragging', 'rowActions']) {
-      expect(shapeOf(byId(empty))).toBeNull()
-    }
-  })
-
   test('SL3: закреплённые колонки скелета остаются на месте при горизонтальной прокрутке', async () => {
-    const { set } = await renderToggle(
-      { columnCount: 20, enableColumnPinning: true },
-      false,
-    )
-    await waitData()
-    const countryHead = () =>
-      headCellsNow().find(cell => cell.dataset.columnId === 'country')!
-    countryHead().querySelector<HTMLElement>(PIN_BUTTON)!.click()
-    await expect.poll(() => countryHead().dataset.cellPinned).toBe('left')
-
-    await set(true)
+    await renderToggle({
+      columnCount: 20,
+      enableColumnPinning: true,
+      initialColumnPinning: { start: ['country'], end: [] },
+    })
     await waitSkeleton()
     const cell = (id: string) =>
-      cellsOf(skeletonRows()[0], SKELETON_CELL).find(
-        c => c.dataset.columnId === id,
-      )!
-    const pinnedBefore = box(cell('country')).left
-    const centerBefore = box(cell('firstName')).left
+      cellsOf(skeletonRows()[0]!, SKELETON_CELL).find(
+        each => each.dataset.columnId === id,
+      )
+    expect(cell('country')!.dataset.cellPinned).toBe('left')
+    const pinnedBefore = box(cell('country')!).left
+    const centerBefore = box(cell('firstName')!).left
 
     getScroller().scrollLeft = 300
     await nextFrame()
     await nextFrame()
-    expect(box(cell('country')).left).toBe(pinnedBefore)
-    expect(cell('country').dataset.cellPinned).toBe('left')
+    expect(box(cell('country')!).left).toBe(pinnedBefore)
+    expect(cell('country')!.dataset.cellPinned).toBe('left')
     // Незакреплённая колонка уехала вместе с прокруткой.
-    expect(cellsOf(skeletonRows()[0], SKELETON_CELL).length).toBeGreaterThan(1)
-    const firstName = cellsOf(skeletonRows()[0], SKELETON_CELL).find(
-      c => c.dataset.columnId === 'firstName',
-    )
+    const firstName = cell('firstName')
     expect(firstName ? box(firstName).left : -Infinity).toBeLessThan(
       centerBefore,
     )
@@ -203,64 +217,6 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(head().offsetHeight).toBe(loadedHeight)
   })
 
-  test('SL5: строк — сколько помещается по высоте; с пагинацией — не больше страницы; число в rowsCount переопределяет', async () => {
-    const fit = await render(
-      <Stories.AllFeatures {...BASE} loading="initial" />,
-    )
-    await waitSkeleton()
-    const scroller = getScroller()
-    const headHeight =
-      document.querySelector<HTMLElement>('.data-grid__head')!.offsetHeight
-    const rowHeight = skeletonRows()[0].offsetHeight
-    const expected = Math.ceil((scroller.clientHeight - headHeight) / rowHeight)
-    expect(skeletonRows().length).toBe(expected)
-    // Строки заполняют область до низа.
-    const lastRow = skeletonRows().at(-1)!.getBoundingClientRect()
-    expect(lastRow.bottom).toBeGreaterThanOrEqual(
-      scroller.getBoundingClientRect().top + scroller.clientHeight - 1,
-    )
-    await fit.unmount()
-
-    const paged = await render(
-      <Stories.AllFeatures
-        {...BASE}
-        loading="initial"
-        enablePagination
-        paginationInitialPageSize={5}
-      />,
-    )
-    await waitSkeleton()
-    expect(skeletonRows().length).toBe(5)
-    await paged.unmount()
-
-    await render(
-      <Stories.AllFeatures
-        {...BASE}
-        loading="initial"
-        skeletonOptions={{ rowsCount: 3 }}
-      />,
-    )
-    await waitSkeleton()
-    expect(skeletonRows().length).toBe(3)
-  })
-
-  test('SL6: смена скелета на данные без задержки и без сдвига шапки и колонок', async () => {
-    const { set } = await renderToggle({ enableRowSelection: true })
-    await waitSkeleton()
-    const headBefore = geometry(headCellsNow())
-    const columnsBefore = geometry(cellsOf(skeletonRows()[0], SKELETON_CELL))
-
-    await set(false)
-    // Без ожидания: скелет снят в том же рендере.
-    expect(skeletonRows().length).toBe(0)
-    const dataRow = document.querySelector('.data-grid__body-row')!
-    expect(dataRow).toBeTruthy()
-    expect(geometry(headCellsNow())).toEqual(headBefore)
-    expect(geometry(cellsOf(dataRow, '.data-grid__body-cell'))).toEqual(
-      columnsBefore,
-    )
-  })
-
   test('SL7: длина полоски своя у каждой колонки (40–90 %) и одинаковая во всех строках колонки', async () => {
     await renderToggle({ columnCount: 8 })
     await waitSkeleton()
@@ -288,67 +244,11 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(new Set(first).size).toBeGreaterThan(1)
   })
 
-  test('SL8: при enableFooter футер — ячейки-скелеты в колонках, где задан footer', async () => {
-    const { set } = await renderToggle(
-      { enableFooter: true, enableRowSelection: true, columnCount: 8 },
-      false,
-    )
-    await waitData()
-    const footer = Array.from(
-      document.querySelectorAll<HTMLElement>('.data-grid__footer-cell'),
-    )
-    // Колонки, где задан footer, — те, у которых в футере после загрузки есть текст.
-    const withFooter = new Set(
-      footer
-        .filter(cell => cell.textContent?.trim())
-        .map(cell => cell.dataset.columnId!),
-    )
-    expect(withFooter.size).toBeGreaterThan(0)
-    const loaded = geometry(footer)
-
-    await set(true)
-    await waitSkeleton()
-    const cells = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        '.data-grid__footer-cell--skeleton',
-      ),
-    )
-    expect(geometry(cells)).toEqual(loaded)
-    for (const cell of cells) {
-      expect(!!shapeOf(cell), cell.dataset.columnId).toBe(
-        withFooter.has(cell.dataset.columnId!),
-      )
-    }
-  })
-
-  test('SL9: без колонок скелет рисует columnsCount одинаковых колонок, по умолчанию 8', async () => {
-    const empty = await render(
-      <Stories.AllFeatures {...BASE} loading="initial" columnsOverride={[]} />,
-    )
-    await waitSkeleton()
-    const widths = () =>
-      cellsOf(skeletonRows()[0], SKELETON_CELL).map(cell => box(cell).width)
-    expect(widths()).toHaveLength(8)
-    expect(new Set(widths()).size).toBe(1)
-    await empty.unmount()
-
-    await render(
-      <Stories.AllFeatures
-        {...BASE}
-        loading="initial"
-        columnsOverride={[]}
-        skeletonOptions={{ columnsCount: 3 }}
-      />,
-    )
-    await waitSkeleton()
-    expect(widths()).toHaveLength(3)
-  })
-
   test('SL10: рисуются только видимые колонки; прокрутка вправо показывает следующие', async () => {
     await renderToggle({ columnCount: 200 })
     await waitSkeleton()
     const ids = () =>
-      cellsOf(skeletonRows()[0], SKELETON_CELL).map(
+      cellsOf(skeletonRows()[0]!, SKELETON_CELL).map(
         cell => cell.dataset.columnId!,
       )
     const before = ids()
@@ -443,5 +343,471 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       // eslint-disable-next-line no-await-in-loop
       await screen.unmount()
     }
+  })
+
+  test('SL16: строк скелета больше видимой части — лишние обрезаны, вертикальной прокрутки нет, место полосы прокрутки держится и при приходе данных колонки не сдвигаются', async () => {
+    const { set } = await renderToggle({
+      skeletonOptions: { rowsCount: 40 },
+      enableRowActions: true,
+      enableColumnPinning: true,
+    })
+    await waitSkeleton()
+    expect(skeletonRows()).toHaveLength(40)
+    const scroller = getScroller()
+    // Строки ниже края есть, но прокручивать нечего.
+    const bottom = scroller.getBoundingClientRect().bottom
+    expect(skeletonRows().at(-1)!.getBoundingClientRect().top).toBeGreaterThan(
+      bottom,
+    )
+    expect(scroller.scrollHeight).toBe(scroller.clientHeight)
+    scroller.scrollTop = 400
+    await nextFrame()
+    expect(scroller.scrollTop).toBe(0)
+    // Место полосы прокрутки — как у грида с данными: правая закреплённая колонка
+    // действий и шапка не сдвигаются при приходе строк.
+    const gutter = scroller.offsetWidth - scroller.clientWidth
+    const head = geometry(headCellsNow())
+
+    await set(false)
+    await waitData()
+    expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
+    expect(scroller.offsetWidth - scroller.clientWidth).toBe(gutter)
+    expect(geometry(headCellsNow())).toEqual(head)
+  })
+
+  test("SL18: skeletonCell — 'bar' полоска, 'control' квадрат, 'none' пусто; по умолчанию полоска у данных, пусто у служебных, квадрат у выбора и раскрытия; так в первой загрузке и в слоте броска", async () => {
+    const columns = [
+      { id: 'name', accessorKey: 'firstName', header: 'Name', size: 180 },
+      {
+        id: 'flag',
+        accessorFn: () => 'yes',
+        header: 'Flag',
+        size: 120,
+        skeletonCell: 'control',
+      },
+      {
+        id: 'photo',
+        accessorFn: () => 'img',
+        header: 'Photo',
+        size: 120,
+        skeletonCell: 'none',
+      },
+      {
+        id: 'note',
+        accessorFn: () => 'n',
+        header: 'Note',
+        skeletonCell: 'bar',
+      },
+    ]
+    const { set } = await renderToggle({
+      columnsOverride: columns as never,
+      enableRowSelection: true,
+      enableRowExpanding: true,
+      rowExpandingColumn: 'always',
+      enableRowDragging: true,
+      enableRowActions: true,
+    })
+    await waitSkeleton()
+    const control = Number.parseFloat(
+      getComputedStyle(getScroller()).getPropertyValue(
+        '--tsr-comp-skeleton-control-size',
+      ),
+    )
+    /** Вид ячейки по содержимому: полоска, квадрат или пусто. */
+    const kindOf = (cell: HTMLElement) => {
+      const shape = cell.querySelector<HTMLElement>('[class*="skeleton"]')
+      if (!shape) return 'none'
+      const r = shape.getBoundingClientRect()
+      return Math.round(r.width) === control && Math.round(r.height) === control
+        ? 'control'
+        : 'bar'
+    }
+    const kinds = (row: Element) =>
+      Object.fromEntries(
+        Array.from(row.querySelectorAll<HTMLElement>('[data-column-id]')).map(
+          cell => [cell.dataset.columnId!, kindOf(cell)],
+        ),
+      )
+    const service = (all: Record<string, string>, part: string) =>
+      Object.entries(all).find(([id]) => id.includes(part))![1]
+
+    // Квадрат раскрытия — у строк, которым хэш номера дал подстроки (SL25).
+    const firstLoad = kinds(skeletonRows()[firstParentRow()])
+    expect(firstLoad).toMatchObject({
+      name: 'bar',
+      flag: 'control',
+      photo: 'none',
+      note: 'bar',
+    })
+    expect(service(firstLoad, 'rowSelection')).toBe('control')
+    expect(service(firstLoad, 'rowExpanding')).toBe('control')
+    expect(service(firstLoad, 'rowDragging')).toBe('none')
+    expect(service(firstLoad, 'rowActions')).toBe('none')
+
+    // Слот броска строки: колонки данных — по тому же признаку, служебные пусты (PV1).
+    await set(false)
+    await waitData()
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
+    )
+    await userEvent.hover(rows[0])
+    const handle = rows[0]
+      .querySelector<HTMLElement>(HANDLE)!
+      .getBoundingClientRect()
+    const from = {
+      x: handle.left + handle.width / 2,
+      y: handle.top + handle.height / 2,
+    }
+    const over = rows[3].getBoundingClientRect()
+    await pointer.realDragHold(from, {
+      x: from.x,
+      y: over.top + over.height / 2,
+    })
+    try {
+      await expect.poll(() => slot()).not.toBeNull()
+      const inSlot = kinds(slot()!)
+      expect(inSlot).toMatchObject({
+        name: 'bar',
+        flag: 'control',
+        photo: 'none',
+        note: 'bar',
+      })
+      for (const part of [
+        'rowSelection',
+        'rowExpanding',
+        'rowDragging',
+        'rowActions',
+      ]) {
+        expect(service(inSlot, part), part).toBe('none')
+      }
+    } finally {
+      await pointer.realMouseUp()
+    }
+  })
+
+  test('SL20: размеры скелетов — из токенов по роли (ячейка, текст панели, строка меню, квадрат, скругление), волна — из токенов движения', async () => {
+    const style = document.createElement('style')
+    style.textContent = `.data-grid-theme {
+      --tsr-comp-skeleton-cell-height: 22px;
+      --tsr-comp-skeleton-text-height: 11px;
+      --tsr-comp-skeleton-menu-height: 9px;
+      --tsr-comp-skeleton-control-size: 20px;
+      --tsr-comp-skeleton-radius: 7px;
+      --tsr-comp-motion-duration: 300ms;
+    }`
+    document.head.append(style)
+    try {
+      const screen = await render(
+        <Stories.AllFeatures
+          {...BASE}
+          loading="initial"
+          enableRowSelection
+          rowSelectionSelectedCount
+          enablePagination
+        />,
+      )
+      await waitSkeleton()
+      const row = skeletonRows()[0]
+      const bar = row.querySelector<HTMLElement>(
+        '[data-column-id="firstName"] [class*="skeleton"]',
+      )!
+      expect(Math.round(bar.getBoundingClientRect().height)).toBe(22)
+      expect(getComputedStyle(bar).borderTopLeftRadius).toBe('7px')
+      const square = Array.from(
+        row.querySelectorAll<HTMLElement>('[data-column-id]'),
+      )
+        .find(cell => cell.dataset.columnId!.includes('rowSelection'))!
+        .querySelector<HTMLElement>('[class*="skeleton"]')!
+      const sq = square.getBoundingClientRect()
+      expect([Math.round(sq.width), Math.round(sq.height)]).toEqual([20, 20])
+      for (const id of ['pagination-range', 'selected-rows-count']) {
+        const text = document
+          .querySelector(`[data-testid="${id}"]`)!
+          .querySelector<HTMLElement>('[class*="skeleton"]')!
+        expect(Math.round(text.getBoundingClientRect().height), id).toBe(11)
+      }
+      // Волна: проход и пауза — от базовой длительности движения (×32/3 и ×10/3).
+      const wave = getComputedStyle(bar, '::after')
+      expect(wave.animationDuration).toBe('3.2s')
+      expect(wave.animationDelay).toBe('1s')
+      await screen.unmount()
+
+      // Строка меню, пока раздел ждёт пунктов.
+      await render(<PendingMenuGrid />)
+      const nameCell = () =>
+        document.querySelector<HTMLElement>(
+          '.data-grid__body-row [data-column-id="name"]',
+        )
+      await expect.poll(nameCell).not.toBeNull()
+      await userEvent.hover(nameCell()!)
+      const kebab = () =>
+        document.querySelector<HTMLElement>(
+          '.data-grid__body-row [aria-label^="Row options"]',
+        )
+      await expect.poll(kebab).not.toBeNull()
+      await humanClick(kebab()!)
+      const moveTo = () =>
+        Array.from(
+          document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+        ).find(el => el.textContent?.includes('Move to'))
+      await expect.poll(moveTo).toBeTruthy()
+      await humanClick(moveTo()!)
+      const menuRow = () =>
+        document.querySelector<HTMLElement>(
+          '[data-menu-skeleton] [class*="skeleton"]',
+        )
+      await expect.poll(menuRow).not.toBeNull()
+      expect(Math.round(menuRow()!.getBoundingClientRect().height)).toBe(9)
+      await userEvent.keyboard('{Escape}')
+      await userEvent.keyboard('{Escape}')
+    } finally {
+      style.remove()
+    }
+  })
+
+  test('SL23: с tree подстроки скелета сдвинуты в колонке отступа на шаг вложенности, строки верхнего уровня — без сдвига; без tree скелет плоский', async () => {
+    const barLefts = () =>
+      skeletonRows().map(row =>
+        Math.round(
+          cellsOf(row, SKELETON_CELL)
+            .find(cell => cell.dataset.columnId === 'country')!
+            .querySelector<HTMLElement>('[class*="skeleton"]')!
+            .getBoundingClientRect().left,
+        ),
+      )
+    const screen = await render(
+      <Stories.AllFeatures
+        {...BASE}
+        loading="initial"
+        skeletonOptions={{ tree: true }}
+      />,
+    )
+    await waitSkeleton()
+    const lefts = barLefts()
+    const root = Math.min(...lefts)
+    const indent = Number.parseFloat(
+      getComputedStyle(getScroller()).getPropertyValue(
+        '--tsr-comp-row-nesting-indent',
+      ),
+    )
+    expect(indent).toBeGreaterThan(0)
+    const depths = lefts.map(left => Math.round((left - root) / indent))
+    expect(new Set(depths)).toEqual(new Set([0, 1]))
+    for (const [index, left] of lefts.entries()) {
+      expect(left - root, `строка ${index}`).toBeCloseTo(
+        depths[index]! * indent,
+        0,
+      )
+    }
+    // Подстроки идут сразу за своей строкой верхнего уровня.
+    expect(depths[0]).toBe(0)
+    await screen.unmount()
+
+    await render(<Stories.AllFeatures {...BASE} loading="initial" />)
+    await waitSkeleton()
+    expect(new Set(barLefts()).size).toBe(1)
+  })
+
+  test('SL26: смена rowHeight и headerHeight на лету пересчитывает число строк скелета', async () => {
+    const props = (extra: Args) => ({
+      ...BASE,
+      loading: 'initial' as const,
+      dataOverride: [],
+      ...extra,
+    })
+    const head = () =>
+      document.querySelector<HTMLElement>('.data-grid__head')!.offsetHeight
+    const fit = () =>
+      Math.ceil(
+        (getScroller().clientHeight - head()) / skeletonRows()[0]!.offsetHeight,
+      )
+    // Шапка задана явно: смена высоты строки её не двигает.
+    const screen = await render(
+      <Stories.AllFeatures {...props({ headerHeight: 60 })} />,
+    )
+    await waitSkeleton()
+    expect(skeletonRows()).toHaveLength(fit())
+    const before = skeletonRows().length
+    const headBefore = head()
+
+    await screen.rerender(
+      <Stories.AllFeatures {...props({ headerHeight: 60, rowHeight: 80 })} />,
+    )
+    await expect.poll(() => skeletonRows()[0]?.offsetHeight).toBe(80)
+    expect(head()).toBe(headBefore)
+    await expect.poll(() => skeletonRows().length).toBe(fit())
+    const tall = skeletonRows().length
+    expect(tall).toBeLessThan(before)
+
+    await screen.rerender(
+      <Stories.AllFeatures {...props({ headerHeight: 200, rowHeight: 80 })} />,
+    )
+    await expect.poll(head).toBeGreaterThanOrEqual(200)
+    await expect.poll(() => skeletonRows().length).toBe(fit())
+    expect(skeletonRows().length).toBeLessThan(tall)
+  })
+
+  test('SL24: линии дерева у скелета — при treeLines (поворот к подстроке, продолжение ветки к сестре, отросток у родителя), без treeLines линий нет', async () => {
+    const props = (treeLines: boolean) => ({
+      ...BASE,
+      loading: 'initial' as const,
+      skeletonOptions: { tree: true },
+      enableRowExpanding: true,
+      rowExpandingTreeLines: treeLines,
+    })
+    const screen = await render(<Stories.AllFeatures {...props(true)} />)
+    await waitSkeleton()
+    const indentCell = (row: Element) =>
+      cellsOf(row, SKELETON_CELL).find(
+        cell => cell.dataset.columnId === 'country',
+      )!
+    const parts = (row: Element) =>
+      Array.from(indentCell(row).querySelectorAll('span[class]'))
+        .map(part => part.className)
+        .filter(name => /elbow|rail|stub/i.test(name))
+        .map(name =>
+          /joinedElbow/i.test(name)
+            ? 'joined'
+            : /elbow/i.test(name)
+              ? 'elbow'
+              : /stub/i.test(name)
+                ? 'stub'
+                : 'rail',
+        )
+    const rows = skeletonRows()
+    const depth = (row: Element) => indentCell(row).dataset.treeDepth
+    const children = rows.filter(row => depth(row) === '1')
+    expect(children.length).toBeGreaterThan(1)
+    // У подстроки — поворот; у не последней сестры — ещё и продолжение ветки.
+    for (const row of children) {
+      expect(
+        parts(row).some(part => part === 'elbow' || part === 'joined'),
+      ).toBe(true)
+    }
+    expect(children.some(row => parts(row).includes('joined'))).toBe(true)
+    // У строки с подстроками — отросток к ним.
+    expect(
+      rows.some(row => depth(row) === '0' && parts(row).includes('stub')),
+    ).toBe(true)
+
+    await screen.rerender(<Stories.AllFeatures {...props(false)} />)
+    await expect
+      .poll(() => skeletonRows().filter(row => depth(row) !== undefined).length)
+      .toBe(0)
+    expect(skeletonRows().flatMap(parts)).toEqual([])
+  })
+
+  test("SL25: колонка раскрытия в скелете зависит от включённости раскрытия строк — при rowExpanding есть и без данных при 'auto', без плагина нет; квадрат у части строк по номеру, с tree — у строк с подстроками; пришло дерево — колонки не сдвигаются; после загрузки — по данным", async () => {
+    const props = (extra: Args) => ({
+      ...BASE,
+      enableRowExpanding: true,
+      enableRowSelection: true,
+      dataNesting: 'nested' as const,
+      skeletonOptions: { tree: true },
+      ...extra,
+    })
+    // Первая загрузка как у приложения: данных ещё нет — один и тот же пустой массив.
+    const noRows: never[] = []
+    const screen = await render(
+      <Stories.AllFeatures
+        {...props({ loading: 'initial', dataOverride: noRows })}
+      />,
+    )
+    await waitSkeleton()
+    const expandHead = () =>
+      headCellsNow().find(cell =>
+        cell.dataset.columnId?.includes('rowExpanding'),
+      )
+    expect(expandHead()).toBeTruthy()
+    // Квадрат раскрытия — у строк с подстроками: у них в колонке отступа отросток
+    // нужен не всегда, поэтому родитель — строка, за которой идёт сдвинутая.
+    const lefts = skeletonRows().map(row =>
+      Math.round(
+        cellsOf(row, SKELETON_CELL)
+          .find(cell => cell.dataset.columnId === 'country')!
+          .querySelector<HTMLElement>('[class*="skeleton"]')!
+          .getBoundingClientRect().left,
+      ),
+    )
+    const root = Math.min(...lefts)
+    const squares = skeletonRows().map(
+      row =>
+        !!cellsOf(row, SKELETON_CELL)
+          .find(cell => cell.dataset.columnId?.includes('rowExpanding'))!
+          .querySelector('[class*="skeleton"]'),
+    )
+    const parents = lefts.map(
+      (left, index) =>
+        left === root && index + 1 < lefts.length && lefts[index + 1]! > root,
+    )
+    expect(parents.some(Boolean)).toBe(true)
+    expect(squares.slice(0, -1)).toEqual(parents.slice(0, -1))
+
+    // Пустой ответ при тех же данных: загрузка кончилась — колонки нет.
+    await screen.rerender(
+      <Stories.AllFeatures
+        {...props({ loading: false, dataOverride: noRows })}
+      />,
+    )
+    await expect.poll(() => expandHead()).toBeUndefined()
+    // Без tree скелет плоский, но раскрытие включено — колонка есть, квадрат вразброс:
+    // у строк, которым хэш номера дал бы подстроки, и так при каждой отрисовке.
+    const flat = () =>
+      props({
+        loading: 'initial',
+        dataOverride: noRows,
+        skeletonOptions: { tree: false },
+      })
+    await screen.rerender(<Stories.AllFeatures {...flat()} />)
+    await waitSkeleton()
+    await expect.poll(() => expandHead()).toBeTruthy()
+    const flatSquares = () =>
+      skeletonRows().map(
+        row =>
+          !!cellsOf(row, SKELETON_CELL)
+            .find(cell => cell.dataset.columnId?.includes('rowExpanding'))!
+            .querySelector('[class*="skeleton"]'),
+      )
+    const scattered = flatSquares()
+    expect(scattered).toEqual(scattered.map((_, i) => isSkeletonParentRow(i)))
+    expect(new Set(scattered)).toEqual(new Set([true, false]))
+    await screen.rerender(<Stories.AllFeatures {...flat()} rowHeight={52} />)
+    await waitSkeleton()
+    expect(flatSquares().slice(0, scattered.length)).toEqual(
+      scattered.slice(0, flatSquares().length),
+    )
+    // Раскрытие строк выключено — колонки нет и в скелете.
+    await screen.rerender(
+      <Stories.AllFeatures
+        {...props({
+          loading: 'initial',
+          dataOverride: noRows,
+          enableRowExpanding: false,
+        })}
+      />,
+    )
+    await expect.poll(() => expandHead()).toBeUndefined()
+    await screen.rerender(
+      <Stories.AllFeatures
+        {...props({ loading: 'initial', dataOverride: noRows })}
+      />,
+    )
+    await expect.poll(() => expandHead()).toBeTruthy()
+    const head = geometry(headCellsNow())
+
+    // Пришло дерево: колонка раскрытия на месте, остальные не сдвинулись.
+    await screen.rerender(
+      <Stories.AllFeatures {...props({ loading: false })} />,
+    )
+    await waitData()
+    expect(geometry(headCellsNow())).toEqual(head)
+
+    // Пришли плоские данные: колонки раскрытия нет (RE14).
+    await screen.rerender(
+      <Stories.AllFeatures
+        {...props({ loading: false, dataNesting: 'flat' })}
+      />,
+    )
+    await expect.poll(() => expandHead()).toBeUndefined()
   })
 })
