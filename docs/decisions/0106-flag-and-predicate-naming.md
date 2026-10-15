@@ -57,6 +57,7 @@
 | -------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Возможность ядра           | `enable<Возможность>`, булево             | `enableFooter`, `enableToolbar`, `enableStatusBar`, `enableAnnouncements`, `enableOverflowTooltip` |
 | Состояние ядра             | существительное без `enable`              | `loading`, `loadError`                                                                             |
+| Положение элемента ядра    | `<элемент>Position`, перечисление         | `footerPosition` (ADR 0118)                                                                        |
 | Вкл/выкл плагина           | только `enabled` в аргументах фабрики     | `rowSelection({ enabled })`                                                                        |
 | Подвозможность плагина     | существительное без приставки             | `treeLines`, `multiSort`, `subRows`, `server`, `selectedCount`                                     |
 | Предикат разрешения        | `can<Глагол><Объект>`, функция            | `canEditCell`, `canSelectCell`, `canDragRow`                                                       |
