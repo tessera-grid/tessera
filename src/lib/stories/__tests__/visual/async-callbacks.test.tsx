@@ -21,7 +21,7 @@ import {
 } from './a11y-helpers'
 import { pinFirstColumn } from './column-pinning-helpers'
 
-// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11, AS13):
+// Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11, AS13, AS15):
 // сохранение с промисом отделяет ячейку в ожидание, правка других ячеек не ждёт
 // сервера, отказ —
 // «ошибка» с черновиком; раскрытие ждёт подгрузки. AS1, AS4, AS7–AS10, AS12 —
@@ -249,7 +249,47 @@ describe('Асинхронный контракт бизнес-колбэков'
     expect(firstExpandable().getAttribute('aria-busy')).toBe('true')
   })
 
-  test('AS13: ожидание, «ошибка» и раскрытие в ожидании проходят axe, включая контраст текста', async () => {
+  test('AS15: без своего onExpandRow или с колбэком без промиса раскрытие не входит в ожидание ни на кадр — ни aria-busy, ни света ожидания и его ухода', async () => {
+    const BUSY = ['aria-busy', 'data-pending-leaving']
+    for (const onExpandRow of [undefined, vi.fn(() => undefined)]) {
+      const screen = await render(
+        <composed.RowExpanding onExpandRow={onExpandRow} />,
+      )
+      const firstExpandable = () =>
+        Array.from(
+          document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
+        ).find(row => row.querySelector('.row-expand-button'))!
+      await expect.poll(() => firstExpandable()).toBeTruthy()
+      const row = firstExpandable()
+
+      const seen: string[] = []
+      const observer = new MutationObserver(records =>
+        records.forEach(record => {
+          const target = record.target as Element
+          if (target.getAttribute(record.attributeName!) !== null) {
+            seen.push(record.attributeName!)
+          }
+        }),
+      )
+      observer.observe(row, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: BUSY,
+      })
+      await userEvent.click(
+        row.querySelector<HTMLElement>('.row-expand-button')!,
+      )
+      await expect.poll(() => row.getAttribute('data-expanded')).toBe('true')
+      await new Promise(resolve => setTimeout(resolve, 300))
+      observer.disconnect()
+
+      expect(seen).toEqual([])
+      if (onExpandRow) expect(onExpandRow).toHaveBeenCalledTimes(1)
+      await screen.unmount()
+    }
+  })
+
+  test('AS13:ожидание, «ошибка» и раскрытие в ожидании проходят axe, включая контраст текста', async () => {
     const grid = () =>
       document.querySelector<HTMLElement>(
         '[role="table"], [role="grid"], [role="treegrid"]',

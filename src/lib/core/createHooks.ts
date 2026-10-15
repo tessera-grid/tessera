@@ -14,7 +14,7 @@ const defaultHooks = {
     isAllRowsSelected: false,
   },
   rowExpanding: {
-    onExpandRow: () => Promise.resolve(),
+    onExpandRow: () => null,
   },
   rowDragging: { onRowDragEnd: () => null },
 }
