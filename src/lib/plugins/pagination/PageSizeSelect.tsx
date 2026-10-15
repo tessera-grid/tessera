@@ -16,6 +16,8 @@ import {
 import styles from './Pagination.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
+import { pendingAttributes } from '../../core/serverActions'
+import { SizeTrigger } from './SizeTrigger'
 
 export interface PageSizeSelectProps {
   label: string
@@ -24,6 +26,10 @@ export interface PageSizeSelectProps {
   onChange: (pageSize: number) => void
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Ждёт серверное действие смены размера (ADR 0116). */
+  pending?: boolean
+  /** Ключ вспышки отказа серверного действия. */
+  errorFlash?: number
 }
 
 export const PageSizeSelect = ({
@@ -33,6 +39,8 @@ export const PageSizeSelect = ({
   onChange,
   open,
   onOpenChange,
+  pending = false,
+  errorFlash,
 }: PageSizeSelectProps) => {
   const labelId = useId()
   const triggerId = useId()
@@ -66,7 +74,8 @@ export const PageSizeSelect = ({
         id={triggerId}
         aria-labelledby={`${labelId} ${triggerId}`}
         ref={setTrigger}
-        className={styles.trigger}
+        render={<SizeTrigger errorFlash={errorFlash} />}
+        {...pendingAttributes(pending)}
         data-testid="page-size-select"
       >
         <Select.Value />

@@ -113,7 +113,10 @@ export const ActionMenuSections = ({
               className={styles.skeletonRow}
               data-menu-skeleton=""
             >
-              <Skeleton width="100%" height={12} />
+              <Skeleton
+                width="100%"
+                height="var(--tsr-comp-skeleton-menu-height)"
+              />
             </div>
           ))}
         {level.items.status === 'failed' && (

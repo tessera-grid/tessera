@@ -77,6 +77,17 @@ export const isFilteringActive = (state: {
   ((state.columnFilters as unknown[] | undefined)?.length ?? 0) > 0 ||
   (typeof state.globalFilter === 'string' && state.globalFilter.trim() !== '')
 
+/** Колонки, чей фильтр отличается в двух наборах. */
+const changedColumns = (
+  before: ColumnFilterEntry[],
+  after: ColumnFilterEntry[],
+): string[] => {
+  const valueOf = (filters: ColumnFilterEntry[], id: string) =>
+    filters.find(filter => filter.id === id)?.value
+  const ids = new Set([...before, ...after].map(filter => filter.id))
+  return [...ids].filter(id => valueOf(before, id) !== valueOf(after, id))
+}
+
 /** Заменить фильтры колонок целиком. */
 export const setColumnFiltersByUser = (
   table: unknown,
@@ -92,6 +103,10 @@ export const setColumnFiltersByUser = (
     'filtering',
     () => t.setColumnFilters?.(filters),
     context => onFilterChange?.(filters, context),
+    {
+      control: 'columnFiltering',
+      columns: changedColumns(columnFiltersOf(table), filters),
+    },
   )
 }
 
@@ -127,6 +142,7 @@ export const setSearchByUser = (table: unknown, search: string) => {
     () => t.setGlobalFilter?.(search === '' ? undefined : search),
     context =>
       onSearchChange?.(search, { columnIds: searchColumnIdsOf(t) }, context),
+    { control: 'quickSearch' },
   )
 }
 

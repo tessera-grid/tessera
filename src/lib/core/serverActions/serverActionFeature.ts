@@ -14,11 +14,32 @@ import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 /** Срез, который меняет серверное действие. */
 export type ServerActionKind = 'sorting' | 'filtering' | 'search' | 'pagination'
 
+/** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
+export interface ServerActionCause {
+  /** Id действия заголовка (`columnSorting`, `columnFiltering`) или контрола панели. */
+  control: string
+  /** Колонки действия заголовка. */
+  columns?: readonly string[]
+  /** Выбрано в кебабе: свет на кебабе колонки, а не на кнопке. */
+  menu?: boolean
+}
+
 export interface ServerActionStatus {
   /** Действие, чей промис грид ждёт. */
-  pending?: { kind: ServerActionKind; attempt: number }
-  /** Последний отказ; снимается успехом следующего действия. */
-  failed?: { kind: ServerActionKind; attempt: number; error: unknown }
+  pending?: {
+    kind: ServerActionKind
+    attempt: number
+    cause?: ServerActionCause
+  }
+  /** Последний отказ; снимается успехом следующего действия и закрытием плашки. */
+  failed?: {
+    kind: ServerActionKind
+    attempt: number
+    error: unknown
+    cause?: ServerActionCause
+    /** Повторить отказавшее действие с теми же аргументами. */
+    retry: () => void
+  }
 }
 
 interface ServerActionStateSlice {

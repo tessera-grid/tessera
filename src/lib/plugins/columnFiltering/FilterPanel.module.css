@@ -131,5 +131,18 @@
 
 .footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+}
+
+/* Отказ серверного фильтра колонки (ADR 0116): иконка с тултипом причины. */
+.failure {
+  display: inline-flex;
+  color: var(--tsr-comp-action-error-color);
+  border-radius: var(--tsr-comp-control-radius);
+}
+
+.failure:focus-visible {
+  outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
 }

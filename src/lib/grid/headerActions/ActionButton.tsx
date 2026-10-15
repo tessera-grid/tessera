@@ -7,6 +7,11 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { logWarn } from '../../core/logger'
 import { useActionStatus } from './useActionStatus'
+import { useMergedFlash } from './useKebabState'
+import {
+  pendingAttributes,
+  useServerActionMarks,
+} from '../../core/serverActions'
 import { IconButton } from '../../ui/IconButton'
 import {
   actionStatusKey,
@@ -39,6 +44,15 @@ export const ActionButton = ({
     context.table,
     (status: ActionStatus) => status[actionStatusKey(action, context)],
   )
+  // Серверное действие, начатое этой кнопкой (ADR 0116, §3): свет и вспышка отказа.
+  const server = useServerActionMarks(
+    context.table,
+    cause =>
+      cause.control === action.id &&
+      !cause.menu &&
+      !!cause.columns?.includes(context.column?.id),
+  )
+  const errorFlash = useMergedFlash(entry?.flash, server.flash)
 
   if (action.visible?.(context) === false) {
     return null
@@ -66,7 +80,8 @@ export const ActionButton = ({
         runMenuAction(action, context, event, { keepError: false })
       }
       pending={entry?.pending}
-      errorFlash={entry?.flash}
+      errorFlash={errorFlash}
+      {...pendingAttributes(server.pending)}
       disabled={disabled}
       aria-disabled={disabled}
       label={label}
@@ -85,7 +100,7 @@ export const ActionButton = ({
   return (
     <div
       className={wrapperClassName}
-      data-button-active={active || !!entry?.pending}
+      data-button-active={active || !!entry?.pending || server.pending}
     >
       {adornment ? (
         <span className={styles.anchor}>

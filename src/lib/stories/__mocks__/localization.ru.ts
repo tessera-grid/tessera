@@ -180,6 +180,13 @@ export const RU_LABELS: TableLabels = {
   loadFailedTitle: 'Не удалось загрузить данные',
   loadRetry: 'Повторить',
   loadErrorDismiss: 'Скрыть',
+  serverActionFailed: kind =>
+    ({
+      sorting: 'Сортировка не применена',
+      filtering: 'Фильтры не применены',
+      search: 'Поиск не применён',
+      pagination: 'Страница не сменилась',
+    })[kind],
   announceLoadError: reason =>
     reason
       ? `Не удалось обновить данные: ${reason}`

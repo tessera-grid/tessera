@@ -26,9 +26,9 @@ const BUTTON_EXCEPTIONS: Record<string, { count: number; why: string }> = {
     count: 1,
     why: 'быстрые наборы — пункты меню панели (вид пункта поповера, ADR 0074), не кнопки',
   },
-  'plugins/pagination/PaginationControl.tsx': {
+  'plugins/pagination/SizeTrigger.tsx': {
     count: 1,
-    why: 'триггер списка размера страницы — рендер-проп Base UI Select, вид контрола выбора',
+    why: 'триггер списка размера страницы — заглушка и рендер-проп Base UI Select, вид контрола выбора',
   },
 }
 

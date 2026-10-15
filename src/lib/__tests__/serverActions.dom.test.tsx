@@ -132,7 +132,13 @@ const sort = () =>
   )
 const goToPage = (index: number) =>
   act(() =>
-    changePageByUser(table(), () => table().setPageIndex(index), index, 25),
+    changePageByUser(
+      table(),
+      () => table().setPageIndex(index),
+      index,
+      25,
+      'next',
+    ),
   )
 const filter = () =>
   act(() => setColumnFiltersByUser(table(), [{ id: 'name', value: 'Name 1' }]))
@@ -223,10 +229,7 @@ describe('серверные действия (ADR 0116)', () => {
     sort()
     goToPage(3)
     expect(sorting()).toEqual([{ id: 'name', desc: true }])
-    expect(status().pending).toEqual({
-      kind: 'pagination',
-      attempt: expect.any(Number),
-    })
+    expect(status().pending?.kind).toBe('pagination')
 
     // Отказ страницы возвращает и сортировку, начавшую цепочку.
     await settle(() => calls[1].deferred!.reject(SERVER_ERROR))
@@ -255,11 +258,9 @@ describe('серверные действия (ADR 0116)', () => {
     await settle(() => calls[1].deferred!.reject(SERVER_ERROR))
     expect(sorting()).toEqual([{ id: 'name', desc: true }])
     expect(page().pageIndex).toBe(2)
-    expect(status().failed).toEqual({
-      kind: 'pagination',
-      attempt: expect.any(Number),
-      error: SERVER_ERROR,
-    })
+    expect(status().failed).toEqual(
+      expect.objectContaining({ kind: 'pagination', error: SERVER_ERROR }),
+    )
 
     rerender({ sortingRevert: true, paginationRevert: true })
     sort()

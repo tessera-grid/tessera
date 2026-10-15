@@ -37,6 +37,12 @@ import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
 import { LoadErrorBanner, LoadErrorStub } from './loadError/LoadError'
 import { useLoadError } from './loadError/useLoadError'
+import { hasLoadError } from '../core/loadError'
+import {
+  dismissServerActionError,
+  serverActionReason,
+  type ServerActionStatus,
+} from '../core/serverActions'
 import { useLoadingDisplay } from './useLoadingDisplay'
 import type { Column, Table } from '../types'
 import type { RenderSlots } from '../core/createSlots'
@@ -111,10 +117,16 @@ export const DataGrid = ({
       rowSelection: _rowSelection,
       cellSelection: _cellSelection,
       keyboardNavigation: _keyboardNavigation,
+      serverAction: _serverAction,
       ...rest
     } = s as unknown as Record<string, unknown>
     return rest
   }) as Record<string, any>
+  // Серверное действие (ADR 0116): корню — только ожидание и отказ, не смена причины.
+  const serverAction = useTableState(table, s => {
+    const status = (s as { serverAction?: ServerActionStatus }).serverAction
+    return { pending: !!status?.pending, failed: status?.failed }
+  })
 
   const headerGroups = table.getHeaderGroups()
   const leafColumns: Column<any, any, unknown>[] = table.getVisibleLeafColumns()
@@ -265,14 +277,24 @@ export const DataGrid = ({
   const loading = (table.options as any).loading as
     'initial' | 'refresh' | false | undefined
   const initialLoading = loading === 'initial'
-  const refreshLoading = loading === 'refresh'
+  // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3).
+  const refreshLoading = loading === 'refresh' || serverAction.pending
+  // Отказ серверного действия — та же плашка; ошибка приложения главнее (ADR 0116, §5).
+  const appError = (table.options as any).loadError
+  const appFailed = hasLoadError(appError)
+  const { failed } = serverAction
+  const actionError = useMemo(
+    () => failed && { message: serverActionReason(failed, labels) },
+    [failed, labels],
+  )
   // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
   const loadError = useLoadError({
     table,
-    error: (table.options as any).loadError,
-    onRetry: (table.options as any).onRetry,
+    error: appFailed ? appError : actionError,
+    onRetry: appFailed ? (table.options as any).onRetry : failed?.retry,
     loading: initialLoading || refreshLoading,
-    hasRows: rows.length > 0,
+    // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
+    hasRows: rows.length > 0 || (!appFailed && !!failed),
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ главнее.
@@ -301,6 +323,7 @@ export const DataGrid = ({
       ?.focus()
   const dismissLoadError = () => {
     loadError.dismiss()
+    if (!appFailed) dismissServerActionError(table)
     focusBody()
   }
   const retryLoadFromBanner = loadError.retryFromBanner

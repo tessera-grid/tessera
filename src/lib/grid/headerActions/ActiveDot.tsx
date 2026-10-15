@@ -28,14 +28,24 @@ export const actionDot = (
   hasAdornment: boolean,
 ) => (hasActive && !hasAdornment ? <ActiveDot shown={active} /> : null)
 
-/** Отметка отказа действия на кебабе (ADR 0078) — на месте точки включённых. */
-export const ErrorDot = ({ shown }: { shown: boolean }) => (
+/**
+ * Отметка отказа действия на кебабе (ADR 0078) — на месте точки включённых. `delayed` —
+ * появляется, когда погаснет красный свет отказа (ADR 0116, §5).
+ */
+export const ErrorDot = ({
+  shown,
+  delayed,
+}: {
+  shown: boolean
+  delayed?: boolean
+}) => (
   <Bubble
     size="dot"
     tone="error"
     className={styles.dot}
     data-error-indicator=""
     data-shown={shown}
+    data-delayed={delayed || undefined}
     aria-hidden
   />
 )

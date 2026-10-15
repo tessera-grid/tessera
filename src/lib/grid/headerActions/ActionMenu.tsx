@@ -24,6 +24,10 @@ import { usePanelOpening } from './usePanelOpening'
 import { type KebabState, useMergedFlash } from './useKebabState'
 import { useMenuSections } from './useMenuSections'
 import { useStateWhileOpen } from './useStateWhileOpen'
+import {
+  pendingAttributes,
+  useServerActionMarks,
+} from '../../core/serverActions'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -98,9 +102,19 @@ export const ActionMenu = ({
   // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения;
   // ждущие и упавшие — блик, отметка ошибки и имя (ADR 0078).
   const activeCount = countActiveActions(actions, context)
+  // Серверное действие, выбранное в кебабе колонки (ADR 0116, §3): свет и вспышка здесь.
+  const server = useServerActionMarks(
+    context.table,
+    cause => !!cause.menu && !!cause.columns?.includes(context.column?.id),
+  )
   const shown =
-    visible || panelVisible || activeCount > 0 || kebab.running || kebab.failed
-  const flash = useMergedFlash(errorFlash, opening.errorFlash)
+    visible ||
+    panelVisible ||
+    activeCount > 0 ||
+    kebab.running ||
+    kebab.failed ||
+    server.pending
+  const flash = useMergedFlash(errorFlash, opening.errorFlash, server.flash)
   const trigger = (
     <Menu.Trigger
       render={
@@ -111,6 +125,7 @@ export const ActionMenu = ({
           aria-label={kebab.ariaLabel}
           pending={opening.pending || kebab.running}
           errorFlash={flash}
+          {...pendingAttributes(server.pending)}
           onPointerEnter={kebab.intent}
           onFocus={kebab.intent}
           onPointerLeave={kebab.leave}

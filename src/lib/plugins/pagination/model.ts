@@ -97,6 +97,11 @@ export const resolvePageSizes = (
   pageSize: number,
 ): number[] => [...new Set([...pageSizes, pageSize])].sort((a, b) => a - b)
 
+/** Контрол пагинатора — причина серверного действия (ADR 0116, §3). */
+export type PageControl = 'first' | 'previous' | 'next' | 'last' | 'size'
+
+export const pageControl = (control: PageControl) => `pagination:${control}`
+
 /**
  * Смена страницы пользователем: `apply` меняет срез, `onPageChange` узнаёт о ней. В
  * серверном режиме — серверное действие с ожиданием и откатом (ADR 0116).
@@ -106,10 +111,15 @@ export const changePageByUser = (
   apply: () => void,
   pageIndex: number,
   pageSize: number,
+  control: PageControl,
 ) => {
   const hooks = table.getHooks?.()?.pagination as
     Partial<PaginationHooks> | undefined
-  runServerAction(table, 'pagination', apply, context =>
-    hooks?.onPageChange?.(pageIndex, pageSize, context),
+  runServerAction(
+    table,
+    'pagination',
+    apply,
+    context => hooks?.onPageChange?.(pageIndex, pageSize, context),
+    { control: pageControl(control) },
   )
 }

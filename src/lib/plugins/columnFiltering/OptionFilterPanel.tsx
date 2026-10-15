@@ -45,6 +45,7 @@ import type {
 import panelStyles from './FilterPanel.module.css'
 import checkboxStyles from '../../ui/SelectCheckbox/SelectCheckbox.module.css'
 import styles from './OptionFilterPanel.module.css'
+import { FilterFailure } from './FilterFailure'
 
 const ROW_HEIGHT = 32
 const OVERSCAN = 8
@@ -424,6 +425,7 @@ export const OptionFilterPanel = ({
         </>
       )}
       <div className={panelStyles.footer}>
+        <FilterFailure table={table} columnId={column.id} />
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
         </Button>

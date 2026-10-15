@@ -25,6 +25,7 @@ import type {
 } from './types'
 
 import styles from './FilterPanel.module.css'
+import { FilterFailure } from './FilterFailure'
 
 export interface FilterColumn {
   id: string
@@ -235,6 +236,7 @@ const ConditionPanel = ({
         </span>
       )}
       <div className={styles.footer}>
+        <FilterFailure table={table} columnId={column.id} />
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
         </Button>
@@ -318,6 +320,7 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
           </label>
         ))}
       </RadioGroup>
+      <FilterFailure table={table} columnId={column.id} footer />
     </div>
   )
 }

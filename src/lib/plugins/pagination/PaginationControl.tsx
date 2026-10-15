@@ -3,63 +3,37 @@
  * «from–to of total», кнопки «первая/назад/вперёд/последняя». Размечен как
  * `navigation`; бизнес-колбэк — на действие пользователя.
  */
-import {
-  type ButtonHTMLAttributes,
-  forwardRef,
-  Suspense,
-  useEffect,
-  useId,
-} from 'react'
+import { Suspense, useEffect, useId } from 'react'
 
 import type { PaginationState } from '@tanstack/react-table'
-import clsx from 'clsx'
 import { ChevronDown } from 'lucide-react'
 
 import { announceLabel } from '../../core/announcer'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { preloadable } from '../../core/preloadable'
-import { type ButtonStatesProps, useButtonStates } from '../../ui/buttonStates'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
+import { useServerActionMarks } from '../../core/serverActions'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { Skeleton } from '../../ui/Skeleton'
 import { useIcons } from '../../ui/icons'
 import {
   changePageByUser,
   clampedPageIndex,
+  pageControl,
   pageRange,
   paginationInertReason,
   type PaginationTable,
   resolvePageSizes,
 } from './model'
-import { PageButton } from './PageButton'
+import { type PageAction, PageButton } from './PageButton'
+import { SizeTrigger } from './SizeTrigger'
 import styles from './Pagination.module.css'
 
 const PageSizeSelect = preloadable(() =>
   import('./PageSizeSelect').then(module => module.PageSizeSelect),
 )
-
-/** Кнопка-заглушка выбора размера до загрузки его модуля: ожидание и вспышка по контуру. */
-const PlaceholderButton = forwardRef<
-  HTMLButtonElement,
-  ButtonHTMLAttributes<HTMLButtonElement> & ButtonStatesProps
->(({ pending, errorFlash, onClick, className, ...rest }, forwardedRef) => {
-  const {
-    ref: setButton,
-    className: ringClassName,
-    ...states
-  } = useButtonStates(forwardedRef, { pending, errorFlash }, onClick)
-  return (
-    <button
-      type="button"
-      {...rest}
-      {...states}
-      ref={setButton}
-      className={clsx(styles.trigger, ringClassName, className)}
-    />
-  )
-})
 
 const ICON_SIZE = 16
 /** Ширина скелета диапазона «1–25 of 1000» на время первой загрузки. */
@@ -86,6 +60,10 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   )
   const sizeLabelId = useId()
   const sizeTriggerId = useId()
+  const sizeServer = useServerActionMarks(
+    table,
+    cause => cause.control === pageControl('size'),
+  )
 
   // Строк стало меньше, а страница осталась прежней — к последней существующей.
   useEffect(() => {
@@ -112,8 +90,8 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const announcePage = (index: number, pages: number) =>
     announceLabel(table, all => all.pageAnnouncement(index + 1, pages))
 
-  const goTo = (index: number) => {
-    changePageByUser(t, () => t.setPageIndex(index), index, pageSize)
+  const goTo = (index: number, control: PageAction) => {
+    changePageByUser(t, () => t.setPageIndex(index), index, pageSize, control)
     announcePage(index, pageCount)
   }
 
@@ -123,6 +101,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       () => t.setPagination({ pageIndex: 0, pageSize: size }),
       0,
       size,
+      'size',
     )
     announcePage(0, Math.max(1, Math.ceil(rowCount / size)))
   }
@@ -133,7 +112,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
         {labels.rowsPerPage}
       </span>
       {/* Имя — подпись и видимое значение, как у настоящего списка (WCAG 2.5.3). */}
-      <PlaceholderButton
+      <SizeTrigger
         id={sizeTriggerId}
         aria-labelledby={`${sizeLabelId} ${sizeTriggerId}`}
         aria-haspopup="listbox"
@@ -141,7 +120,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       >
         {pageSize}
         <ChevronDown width={14} height={14} className={styles.triggerIcon} />
-      </PlaceholderButton>
+      </SizeTrigger>
     </>
   )
 
@@ -166,6 +145,8 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
                 onChange={changeSize}
                 open={sizeSelect.open}
                 onOpenChange={sizeSelect.onOpenChange}
+                pending={sizeServer.pending}
+                errorFlash={sizeServer.flash}
               />
             </Suspense>
           ) : (
@@ -182,32 +163,36 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       </span>
       <div className={styles.buttons}>
         <PageButton
+          table={table}
           action="first"
           label={labels.firstPage}
           icon={<icons.firstPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atStart}
-          onClick={() => goTo(0)}
+          onClick={() => goTo(0, 'first')}
         />
         <PageButton
+          table={table}
           action="previous"
           label={labels.previousPage}
           icon={<icons.previousPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atStart}
-          onClick={() => goTo(pageIndex - 1)}
+          onClick={() => goTo(pageIndex - 1, 'previous')}
         />
         <PageButton
+          table={table}
           action="next"
           label={labels.nextPage}
           icon={<icons.nextPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atEnd}
-          onClick={() => goTo(pageIndex + 1)}
+          onClick={() => goTo(pageIndex + 1, 'next')}
         />
         <PageButton
+          table={table}
           action="last"
           label={labels.lastPage}
           icon={<icons.lastPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atEnd}
-          onClick={() => goTo(lastIndex)}
+          onClick={() => goTo(lastIndex, 'last')}
         />
       </div>
     </nav>

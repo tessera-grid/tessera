@@ -33,6 +33,7 @@ import type {
 
 import panelStyles from './FilterPanel.module.css'
 import styles from './DateFilterPanel.module.css'
+import { FilterFailure } from './FilterFailure'
 
 const OPERATORS: DateFilterOperator[] = [
   'on',
@@ -388,6 +389,7 @@ export const DateFilterPanel = ({
         </div>
       )}
       <div className={panelStyles.footer}>
+        <FilterFailure table={table} columnId={column.id} />
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
         </Button>

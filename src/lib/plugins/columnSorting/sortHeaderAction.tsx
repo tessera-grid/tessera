@@ -117,6 +117,7 @@ export const sortHeaderAction: HeaderAction = {
       'sorting',
       () => column.getToggleSortingHandler()?.(event),
       context => onToggleColumnSort(column.id, next, context),
+      { control: 'columnSorting', columns: [column.id] },
     )
   },
   menuItems: ({ column, table }, labels): HeaderMenuItem[] => {
@@ -125,6 +126,11 @@ export const sortHeaderAction: HeaderAction = {
       'columnSorting',
     )
     const current = column.getIsSorted()
+    const menuCause = {
+      control: 'columnSorting',
+      columns: [column.id],
+      menu: true,
+    }
 
     const setDirection = (desc: boolean, dir: 'asc' | 'desc') =>
       runServerAction(
@@ -133,6 +139,7 @@ export const sortHeaderAction: HeaderAction = {
         // Явный выбор в меню задаёт направление, заменяя сортировку (без накопления).
         () => column.toggleSorting(desc, false),
         context => onToggleColumnSort(column.id, dir, context),
+        menuCause,
       )
 
     const items: HeaderMenuItem[] = [
@@ -166,6 +173,7 @@ export const sortHeaderAction: HeaderAction = {
             'sorting',
             () => column.clearSorting(),
             context => onToggleColumnSort(column.id, false, context),
+            menuCause,
           ),
       })
     }

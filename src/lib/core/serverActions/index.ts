@@ -7,6 +7,7 @@
 import { isThenable } from '../thenable'
 import {
   readServerAction,
+  type ServerActionCause,
   type ServerActionKind,
   writeServerAction,
 } from './serverActionFeature'
@@ -14,9 +15,16 @@ import {
 export {
   readServerAction,
   serverActionFeature,
+  type ServerActionCause,
   type ServerActionKind,
   type ServerActionStatus,
 } from './serverActionFeature'
+export { serverActionReason } from './reason'
+export {
+  pendingAttributes,
+  type ServerActionMarks,
+  useServerActionMarks,
+} from './useServerActionMarks'
 
 /** Контекст колбэка серверного действия. */
 export interface ServerActionContext {
@@ -146,6 +154,19 @@ const revert = (t: ServerTable, { sorting, pagination }: Snapshot) => {
   restorePage()
 }
 
+/** Вернуть сортировку и страницу к снимку — повтор отказавшего действия. */
+const restore = (t: ServerTable, { sorting, pagination }: Snapshot) => {
+  if (sorting !== undefined && !sameSorting(t.atoms.sorting?.get(), sorting)) {
+    t.setSorting?.(sorting as never)
+  }
+  if (
+    pagination !== undefined &&
+    !samePage(t.atoms.pagination?.get(), pagination)
+  ) {
+    t.setPagination?.(pagination as never)
+  }
+}
+
 const settleIdle = (table: unknown) => {
   const status = readServerAction(table)
   if (status.pending || status.failed) {
@@ -163,6 +184,7 @@ export const runServerAction = (
   kind: ServerActionKind,
   apply: () => void,
   notify: (context: ServerActionContext) => unknown,
+  cause?: ServerActionCause,
 ): void => {
   const t = table as ServerTable
   if (!isServer(t, kind)) {
@@ -195,7 +217,7 @@ export const runServerAction = (
   chains.set(t.store, { controller, attempt, confirmed })
   writeServerAction(table, status => ({
     ...status,
-    pending: { kind, attempt },
+    pending: { kind, attempt, cause },
   }))
   const settle = (ok: boolean, error?: unknown) => {
     if (controller.signal.aborted || chains.get(t.store)?.attempt !== attempt) {
@@ -206,13 +228,25 @@ export const runServerAction = (
       settleIdle(table)
       return
     }
+    const attempted = snapshotOf(t)
+    const retry = () =>
+      runServerAction(table, kind, () => restore(t, attempted), notify, cause)
     revert(t, confirmed)
-    writeServerAction(table, () => ({ failed: { kind, attempt, error } }))
+    writeServerAction(table, () => ({
+      failed: { kind, attempt, error, cause, retry },
+    }))
   }
   result.then(
     () => settle(true),
     error => settle(false, error),
   )
+}
+
+/** Плашка отказа закрыта: отметки отказа снимаются (ADR 0116, §5). */
+export const dismissServerActionError = (table: unknown) => {
+  if (readServerAction(table).failed) {
+    writeServerAction(table, ({ pending }) => (pending ? { pending } : {}))
+  }
 }
 
 /** Размонтирование грида (по store таблицы): ожидающее действие прерывается. */

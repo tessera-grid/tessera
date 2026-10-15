@@ -268,6 +268,10 @@ export interface TableLabels {
   loadErrorDismiss: string
   announceLoadError: (reason?: string) => string
   announceLoadFailed: (reason?: string) => string
+  /** Причина отказа серверного действия, если сервер не прислал свою (ADR 0116) */
+  serverActionFailed: (
+    kind: 'sorting' | 'filtering' | 'search' | 'pagination',
+  ) => string
   /** Кнопка «наверх» в нижней панели (ADR 0082): тултип и доступное имя */
   backToTop: string
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
@@ -463,6 +467,13 @@ export const DEFAULT_LABELS: TableLabels = {
   loadFailedTitle: "Couldn't load the data",
   loadRetry: 'Retry',
   loadErrorDismiss: 'Dismiss',
+  serverActionFailed: kind =>
+    ({
+      sorting: "Sorting wasn't applied",
+      filtering: "Filters weren't applied",
+      search: "Search wasn't applied",
+      pagination: "The page didn't change",
+    })[kind],
   announceLoadError: reason =>
     reason
       ? `Couldn't refresh the data: ${reason}`
