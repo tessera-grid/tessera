@@ -4,7 +4,9 @@
  * Обычный (не-module) CSS с глобальными классами (как `.drag__handler--column`):
  * их вешают строкой сами кнопки (CellButton, RowButton, DragHandler), а
  * показ/скрытие цепляется за глобальные классы родительской ячейки/строки
- * (`.data-grid__head-cell` / `.data-grid__body-cell` / `.data-grid__body-row`).
+ * (`.data-grid__head-cell` / `.data-grid__body-cell` / `.data-grid__body-row`). Призрак
+ * уходящей строки (`[data-row-ghost]`) этих классов не несёт — вид и скрытие кнопок
+ * действуют и в нём, появление — нет.
  *
  * Подключается side-effect-импортом из компонентов-кнопок.
  */
@@ -21,7 +23,7 @@
  * переход основы flex к `auto` без `interpolate-size` прыгает.
  */
 .data-grid__head-cell .cell__button,
-.data-grid__body-cell .cell__button {
+:is(.data-grid__body-cell, [data-row-ghost]) .cell__button {
   flex: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -45,7 +47,8 @@
 /* Скрытие hidden-кнопок ячейки */
 
 .data-grid__head-cell .cell__button--hidden:not([data-button-active='true']),
-.data-grid__body-cell .cell__button--hidden:not([data-button-active='true']) {
+:is(.data-grid__body-cell, [data-row-ghost])
+  .cell__button--hidden:not([data-button-active='true']) {
   min-width: 0;
   grid-template-columns: minmax(0, 0fr);
   opacity: 0;
@@ -168,7 +171,7 @@
  * проявляется плавно и не трогает сам фон. Стилизуем сам `<button>` (IconButton), а
  * не обёртку видимости, чтобы фон совпал с круглой формой кнопки.
  */
-.data-grid__body-row .row__button button {
+:is(.data-grid__body-row, [data-row-ghost]) .row__button button {
   position: relative;
   isolation: isolate;
   background-color: var(--tsr-comp-action-button-bg);
@@ -196,7 +199,7 @@
 
 /* Скрытие hidden-кнопок строки */
 
-.data-grid__body-row .row__button--hidden {
+:is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden {
   opacity: 0;
 }
 
@@ -229,7 +232,7 @@
  * только значок и тень — тем же темпом, что кнопки ячейки (ADR 0017, MO2, MO5).
  * Кнопка всё время в потоке и фокусируема: клавиатура по-прежнему её находит.
  */
-.data-grid__body-row .row__button--hidden:has(> button) {
+:is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden:has(> button) {
   opacity: 1;
 }
 
@@ -243,7 +246,7 @@
  * токены темы через `inherit`. Без `:hover` внутри `:not()`: аддон pseudo-states
  * Storybook переписывает такие правила неверно.
  */
-.data-grid__body-row .row__button--hidden > button {
+:is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden > button {
   --tsr-comp-button-color: transparent;
   --tsr-comp-control-active-color: transparent;
   --tsr-comp-control-disabled-color: transparent;

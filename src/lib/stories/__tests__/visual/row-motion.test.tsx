@@ -21,7 +21,7 @@ import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS, resolveColor } from './a11y-helpers'
 import { dragOver, release, settleSlotAfter } from './row-drop-helpers'
 
-// Движение строк (ADR 0107, RM1–RM17, RM19, RM22). Позиции, прозрачность и призраки
+// Движение строк (ADR 0107, RM1–RM17, RM19, RM22, RM30). Позиции, прозрачность и призраки
 // снимаются каждый кадр, пока идёт смена модели: видно и переезд, и его конец.
 
 const BODY = '.data-grid__body'
@@ -1218,5 +1218,45 @@ describe('Движение строк — прокрутка после пере
     } finally {
       await screen.unmount()
     }
+  })
+
+  test('RM30: призрак уходящей строки не показывает скрытых до наведения кнопок — ручки перетаскивания, кнопок ячеек и действий строки — ни в одном кадре', async () => {
+    await renderExpanding({ enableRowDragging: true, enableRowActions: true })
+    const { toggle } = parentAndBelow()
+    await userEvent.click(toggle())
+    await settleRowMotion()
+
+    const TRANSPARENT = 'rgba(0, 0, 0, 0)'
+    /** Скрытые кнопки, которые видны: значок или кнопка ячейки — по прозрачности, чип — по цвету. */
+    const shownIn = (row: Element) => [
+      ...[
+        ...row.querySelectorAll(
+          ".cell__button--hidden:not([data-button-active='true'])",
+        ),
+      ].filter(element => getComputedStyle(element).opacity !== '0'),
+      ...[
+        ...row.querySelectorAll<HTMLElement>('.row__button--hidden > button'),
+      ].filter(button => getComputedStyle(button).color !== TRANSPARENT),
+    ]
+    const hiddenIn = (row: Element) =>
+      row.querySelectorAll(
+        '.cell__button--hidden, .row__button--hidden > button',
+      ).length
+
+    const frames = await sampleFrames(
+      () =>
+        ghosts().map(ghost => ({
+          hidden: hiddenIn(ghost),
+          shown: shownIn(ghost).length,
+        })),
+      () => userEvent.click(toggle()),
+    )
+
+    const ghostFrames = frames.flat()
+    expect(ghostFrames.length).toBeGreaterThan(2)
+    expect(Math.min(...ghostFrames.map(frame => frame.hidden))).toBeGreaterThan(
+      1,
+    )
+    expect(ghostFrames.filter(frame => frame.shown > 0)).toEqual([])
   })
 })
