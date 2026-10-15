@@ -91,6 +91,8 @@ export const Stub: StoryObj<StoryProps> = {
   name: 'Empty (stub)',
   parameters: vrStates('body.empty'),
   args: {
+    containerHeight: 460,
+    height: 360,
     showStub: true,
   },
 }
