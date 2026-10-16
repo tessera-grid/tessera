@@ -10,7 +10,7 @@ import { injectServiceColumns } from '../core/createColumns'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { resolveHooks } from '../core/createHooks'
 import { COLUMN_SELECTION_ID, rowSelection } from '../plugins/rowSelection'
-import { getCanSomeRowsSelect } from '../plugins/rowSelection/selectionHelpers'
+import { getCanSomeRowsSelect } from '../plugins/rowSelectionModel/selectionHelpers'
 import { countSelectedRows } from '../plugins/rowSelection/SelectedRowsCount'
 import { captureInertWarnings } from './inertWarnings'
 

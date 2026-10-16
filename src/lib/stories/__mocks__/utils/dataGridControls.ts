@@ -80,6 +80,7 @@ import {
   expandAllType,
   enableRowGroupingModelType,
   enableRowGroupingType,
+  enableRowSelectionModelType,
   enableRowSelectionType,
   enableStatusBarType,
   enableToolbarType,
@@ -115,6 +116,7 @@ import {
   enableTreeLinesType,
   rowHeightType,
   rowSelectionSelectedCountType,
+  rowSelectionModelSubRowsType,
   rowSelectionSubRowsType,
   showStubType,
   skeletonOptionsType,
@@ -223,6 +225,10 @@ export const dataGridArgTypes = {
       ...when('enableRowSelection', {
         rowSelectionSubRows: rowSelectionSubRowsType,
         rowSelectionSelectedCount: rowSelectionSelectedCountType,
+      }),
+      enableRowSelectionModel: enableRowSelectionModelType,
+      ...when('enableRowSelectionModel', {
+        rowSelectionModelSubRows: rowSelectionModelSubRowsType,
       }),
     },
     'Выбор',
@@ -419,6 +425,8 @@ export const dataGridDefaultArgs = {
   headerActionMenuThreshold: DEFAULT_HEADER_ACTION_MENU.threshold,
 
   enableRowSelection: false,
+  enableRowSelectionModel: false,
+  rowSelectionModelSubRows: false,
   rowSelectionSubRows: false,
   rowSelectionSelectedCount: false,
   enableRowExpanding: false,

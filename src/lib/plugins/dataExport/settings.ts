@@ -29,7 +29,7 @@ const VIEW_PLUGINS: Record<string, ExportViewFeature> = {
 /** Плагины, с которыми значение строк есть: интерфейс или его модель (ADR 0120). */
 const ROWS_PLUGINS: Partial<Record<ExportRows, readonly string[]>> = {
   page: ['pagination', 'paginationModel'],
-  selected: ['rowSelection'],
+  selected: ['rowSelection', 'rowSelectionModel'],
 }
 
 const ROWS_ORDER: ExportRows[] = ['all', 'view', 'page', 'selected']

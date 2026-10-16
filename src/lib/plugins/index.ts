@@ -3,6 +3,10 @@
 // Центрального статического реестра нет — набор собирает потребитель импортами.
 
 export { rowSelection, type RowSelectionOptions } from './rowSelection'
+export {
+  rowSelectionModel,
+  type RowSelectionModelOptions,
+} from './rowSelectionModel'
 export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
 export {
   rowExpandingModel,

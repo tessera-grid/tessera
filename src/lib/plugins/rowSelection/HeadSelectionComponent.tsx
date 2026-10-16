@@ -8,7 +8,10 @@ import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSlice } from '../../core/reactivity'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
-import { getCanSomeRowsSelect, isGroupingActive } from './selectionHelpers'
+import {
+  getCanSomeRowsSelect,
+  isGroupingActive,
+} from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
 export const HeadSelectionComponent = ({

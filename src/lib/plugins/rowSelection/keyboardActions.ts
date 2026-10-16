@@ -5,7 +5,7 @@
 import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
 import type { Row } from '../../types'
-import { isGroupingActive } from './selectionHelpers'
+import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
 /** Может ли строка переключаться сейчас (те же гейты, что у чекбокса строки). */

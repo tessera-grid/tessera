@@ -26,6 +26,7 @@ import {
   rowGrouping,
   rowGroupingModel,
   rowSelection,
+  rowSelectionModel,
   rowExpandingModel,
   treeLines,
 } from '../../../../lib/plugins'
@@ -48,6 +49,7 @@ import {
 /** Фабрики в порядке записей грида. */
 const FACTORIES = {
   rowSelection,
+  rowSelectionModel,
   rowExpanding,
   rowExpandingModel,
   treeLines,
@@ -98,6 +100,7 @@ const CALLBACKS = {
   quickSearch: ['onSearchChange'],
   dataExport: ['onExport', 'onExported'],
   infiniteScroll: ['onLoadMore'],
+  keyboardNavigation: ['onActiveCellChange'],
 } as const satisfies {
   [F in FactoryName]?: readonly (keyof OptionsOf<F> & Callback)[]
 }
@@ -178,6 +181,7 @@ const argsOf = <F extends FactoryName>(
 export const argsToPlugins = (o: FeatureToggles) => {
   return [
     rowSelection(argsOf(o, 'rowSelection')),
+    rowSelectionModel(argsOf(o, 'rowSelectionModel')),
     rowExpanding(argsOf(o, 'rowExpanding')),
     rowExpandingModel(argsOf(o, 'rowExpandingModel')),
     treeLines(argsOf(o, 'treeLines')),

@@ -25,6 +25,8 @@ import {
   rowExpandingModel,
   rowGrouping,
   rowGroupingModel,
+  rowSelection,
+  rowSelectionModel,
 } from '../plugins'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -89,6 +91,16 @@ const PAIRS = [
     ui: rowGrouping,
     flags: ['enableGrouping', 'groupedColumnMode'],
     state: { grouping: ['name'] },
+  },
+  {
+    model: rowSelectionModel,
+    ui: rowSelection,
+    flags: [
+      'enableRowSelection',
+      'enableSubRowSelection',
+      'enableRowRangeSelection',
+    ],
+    state: { rowSelection: { b: true } },
   },
 ] as const
 

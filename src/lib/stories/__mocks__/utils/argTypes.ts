@@ -314,6 +314,12 @@ export const headerActionMenuThresholdType = numberControl(
 export const enableRowSelectionType = booleanControl(
   'Выбор строк чекбоксами (плагин `rowSelection`)',
 )
+export const enableRowSelectionModelType = booleanControl(
+  'Выбор строк без флажков: выбранные строки по состоянию `rowSelection` (плагин `rowSelectionModel`)',
+)
+export const rowSelectionModelSubRowsType = booleanControl(
+  'Выбор строки модели выбирает её потомков (`subRows`)',
+)
 export const rowSelectionSubRowsType = booleanControl(
   'Выбор строки выбирает её потомков (`subRows`)',
 )

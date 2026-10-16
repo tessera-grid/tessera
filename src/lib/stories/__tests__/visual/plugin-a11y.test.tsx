@@ -40,6 +40,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   columnFilteringModel: { enableColumnFilteringModel: true },
   quickSearchModel: { enableQuickSearchModel: true },
   rowGroupingModel: { enableRowGroupingModel: true },
+  rowSelectionModel: { enableRowSelectionModel: true },
   rowDragging: { enableRowDragging: true },
   rowGrouping: { enableRowGrouping: true },
   rowActions: { enableRowActions: true },

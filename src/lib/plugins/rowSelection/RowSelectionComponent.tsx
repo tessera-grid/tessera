@@ -8,7 +8,7 @@ import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import { toggleRowSelection } from './keyboardActions'
-import { isGroupingActive } from './selectionHelpers'
+import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
 export const RowSelectionComponent = ({

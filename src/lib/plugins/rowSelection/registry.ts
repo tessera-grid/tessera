@@ -1,16 +1,14 @@
 /**
- * Запись плагина rowSelection на `definePlugin`.
- * Поведение даёт встроенный `rowSelectionFeature` (row-модель не нужна).
- *  - гейт группировки — через функциональный `enableRowSelection` (влияет
- *    и на агрегаты getIsAll/SomePageRowsSelected);
- *  - `enableRowRangeSelection: false` — гасим shift-range (клик по чекбоксу не должен
- *    диапазонно выделять).
+ * Запись плагина rowSelection на `definePlugin` (ADR 0014, ADR 0120): интерфейс выбора
+ * строк — колонка флажков, Space, счётчик в нижней панели и колбэки пользователя. Модель —
+ * `rowSelectionModel`, плагин её включает и передаёт ей `subRows` и срез.
  */
-import { rowSelectionFeature } from '@tanstack/react-table'
-
-import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
-import { warnPluginInert } from '../../core/pluginDiagnostics'
+import {
+  rowSelectionModel,
+  rowSelectionModelFeatures,
+  type RowSelectionModelOptions,
+} from '../rowSelectionModel/registry'
 import { toggleRowKeyboardAction } from './keyboardActions'
 import { SelectedRowsCount } from './SelectedRowsCount'
 import {
@@ -19,14 +17,15 @@ import {
 } from './rowSelectionColumn'
 import { HeadSelectionComponent } from './HeadSelectionComponent'
 import { RowSelectionComponent } from './RowSelectionComponent'
-import { isGroupingActive } from './selectionHelpers'
+import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
-export interface RowSelectionOptions {
+export interface RowSelectionOptions extends Omit<
+  RowSelectionModelOptions,
+  'enabled'
+> {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Разрешить выбор дочерних строк (каскад на поддерево). */
-  subRows?: boolean
   /** Счётчик выбранных строк в нижней панели (ADR 0038); по умолчанию выключен. */
   selectedCount?: boolean
   /**
@@ -38,30 +37,19 @@ export interface RowSelectionOptions {
   isAllRowsSelected?: RowSelectionHooks['isAllRowsSelected']
 }
 
-/**
- * Выбор недоступен при АКТИВНОЙ группировке: сгруппированная модель
- * производна, выбором владеет rowGrouping. Функциональный `enableRowSelection`
- * согласует и агрегаты (getIsAllPageRowsSelected и т.п.).
- */
-const enableRowSelection = (row: Row<any, any>): boolean => {
-  if (!isGroupingActive(row.table)) {
-    return true
-  }
-  warnPluginInert(row.table, 'rowSelection', 'grouping')
-  return false
-}
-
 // TOptions (RowSelectionOptions) задаётся ОДИН раз дженериком; `o` в полях выводится.
 export const rowSelection = definePlugin<RowSelectionOptions>()({
   id: 'rowSelection',
-  features: { rowSelectionFeature },
-  options: o => ({
-    // При disabled — жёстко false (иначе present-but-disabled фича активна:
-    // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).
-    enableRowSelection: o.enabled === false ? false : enableRowSelection,
-    enableSubRowSelection: o.subRows ?? false,
-    enableRowRangeSelection: false,
-  }),
+  model: {
+    plugin: rowSelectionModel,
+    keys: [
+      'subRows',
+      'rowSelection',
+      'onRowSelectionChange',
+      'initialRowSelection',
+    ],
+  },
+  features: rowSelectionModelFeatures,
   hooks: o => ({
     onSelectRow: o.onSelectRow,
     onSelectAllRowsOnPage: o.onSelectAllRowsOnPage,
