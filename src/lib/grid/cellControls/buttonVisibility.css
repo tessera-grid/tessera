@@ -244,9 +244,11 @@
  * Скрытый чип гасит токены своих цвета, тени и фона — в любом состоянии кнопки
  * (активна, отключена) — и не закрывает контент под собой. Появление возвращает
  * токены темы через `inherit`. Без `:hover` внутри `:not()`: аддон pseudo-states
- * Storybook переписывает такие правила неверно.
+ * Storybook переписывает такие правила неверно. Токены — на обёртке, кнопка их
+ * наследует: правило с `:has()` строки и `button` справа пересчитывало бы на каждую
+ * вставку ячейки все кнопки строки, со светом ожидания на паузе (MI23).
  */
-:is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden > button {
+:is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden {
   --tsr-comp-button-color: transparent;
   --tsr-comp-control-active-color: transparent;
   --tsr-comp-control-disabled-color: transparent;
@@ -256,9 +258,8 @@
 
 :where(.data-grid-theme:not([data-refreshing]))
   .data-grid__body-row:hover:is([data-row-interact='true'])
-  .row__button--hidden
-  > button,
-.data-grid__body-row[data-touched] .row__button--hidden > button {
+  .row__button--hidden,
+.data-grid__body-row[data-touched] .row__button--hidden {
   --tsr-comp-button-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
@@ -266,7 +267,7 @@
   --tsr-comp-action-button-bg: inherit;
 }
 
-.data-grid__body-row:has(:focus-visible) .row__button--hidden > button {
+.data-grid__body-row:has(:focus-visible) .row__button--hidden {
   --tsr-comp-button-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
@@ -276,8 +277,7 @@
 
 :root[data-tsr-input='keyboard']
   .data-grid__body-row:has(:focus)
-  .row__button--hidden
-  > button {
+  .row__button--hidden {
   --tsr-comp-button-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;

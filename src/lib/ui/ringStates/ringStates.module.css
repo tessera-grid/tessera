@@ -113,6 +113,37 @@
     var(--tsr-comp-motion-easing);
 }
 
+/*
+ * Без вспышки ошибки заливка — 0 %: смешивание с красным и растворение — тождество, и
+ * цвет пятна — один `color-mix()`. Вложенные смеси разбираются заново при каждом
+ * пересчёте стиля, а он идёт и на паузе света при прокрутке (MI23).
+ */
+.ring:is([aria-busy='true'], [data-pending], [data-pending-leaving]):not(
+    [data-error-flash]
+  )::after {
+  --_s1: color-mix(
+    in oklch,
+    var(--tsr-comp-pending-glow-1) var(--tsr-pending-spot-f1),
+    transparent
+  );
+  --_s2: color-mix(
+    in oklch,
+    var(--tsr-comp-pending-glow-2) var(--tsr-pending-spot-f2),
+    transparent
+  );
+  --_s3: color-mix(
+    in oklch,
+    var(--tsr-comp-pending-glow-3) var(--tsr-pending-spot-f3),
+    transparent
+  );
+  --_s4: color-mix(
+    in oklch,
+    var(--tsr-comp-pending-glow-4) var(--tsr-pending-spot-f4),
+    transparent
+  );
+  --_fill: transparent;
+}
+
 /* Ожидание кончилось успехом — свет гаснет переходом проявления (BS19), пятна живут. */
 .ring[data-pending-leaving]::after {
   opacity: 0;

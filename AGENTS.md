@@ -854,8 +854,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       общие токены `Button` и `IconButton`, формы `circle` и `square`, состояния, тултип
       в базе, кнопки историй по токенам), модульные `uiStories` (UB5 — истории
       «Variants») и `uiKitButtons` (UB6 — производные из базы, тултип только у базы) ([ADR 0098](docs/decisions/0098-button-system.md));
-      `loading-light` (LL1–LL5 — пятна света без общего направления, фаза кнопок и
-      ячеек, статичный красный свет ошибки, спиннер, сила света,
+      `loading-light` (LL1–LL6 — пятна света без общего направления, фаза кнопок и
+      ячеек и её постоянство на узле, статичный красный свет ошибки, спиннер, сила света,
       [ADR 0095](docs/decisions/0095-pending-and-error-light.md)); `segments` (SG1–SG4 —
       сегменты `ui/Segments`: radiogroup, токены, axe, движение), SG5 — в модульном
       `uiStories`; панель экспорта в виде меню — EP1–EP5 в `export`

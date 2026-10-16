@@ -35,8 +35,11 @@ const useOwnRef = <T extends HTMLElement>(forwardedRef: ForwardedRef<T>) => {
   const ref = useCallback(
     (node: T | null) => {
       own.current = node
-      // Своя фаза света ожидания: соседние кнопки не идут в ногу.
-      node?.style.setProperty('--tsr-pending-phase', String(Math.random()))
+      // Своя фаза света ожидания: соседние кнопки не идут в ногу. Одна на узел: новый
+      // ref снаружи на каждом рендере сдвигал бы свет и пересчитывал его стиль (MI23).
+      if (node && !node.style.getPropertyValue('--tsr-pending-phase')) {
+        node.style.setProperty('--tsr-pending-phase', String(Math.random()))
+      }
       assignRef(forwardedRef, node)
     },
     [forwardedRef],

@@ -382,4 +382,25 @@ describe('Свет ожидания и ошибки (ADR 0095)', () => {
       expect(error[0]!).toBeGreaterThan(error[2]! + 50)
     })
   })
+
+  test('LL6: фаза кнопки одна на её узел — перерисовка с новым ref снаружи не сдвигает свет', async () => {
+    const Button = ({ tick }: { tick: number }) => (
+      <Theme>
+        <IconButton aria-label={`Load ${tick}`} pending ref={() => {}}>
+          {icon}
+        </IconButton>
+      </Theme>
+    )
+    const screen = await render(<Button tick={0} />)
+    const button = buttons()[0]!
+    const phase = button.style.getPropertyValue('--tsr-pending-phase')
+    expect(phase).not.toBe('')
+    for (let tick = 1; tick <= 3; tick++) {
+      // eslint-disable-next-line no-await-in-loop
+      await screen.rerender(<Button tick={tick} />)
+      expect(buttons()[0]).toBe(button)
+      expect(button.getAttribute('aria-label')).toBe(`Load ${tick}`)
+      expect(button.style.getPropertyValue('--tsr-pending-phase')).toBe(phase)
+    }
+  })
 })
