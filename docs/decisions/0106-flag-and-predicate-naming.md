@@ -35,7 +35,7 @@
   `serverColumnSorting`, `rangeSelection`), то объектом `xOptions`.
 
 Остальное уже единообразно: возможности ядра — `enableX`, вкл/выкл плагина — `enabled`
-(ADR 0039), подвозможности плагина — существительные (`treeLines`, `multiSort`,
+(ADR 0039), подвозможности плагина — существительные (`multiSort`,
 `subRows`, `server`), флаги `columnDef` — по образцу TanStack (`enableDragging` рядом с
 `enableSorting`, `enableResizing`).
 
@@ -59,7 +59,7 @@
 | Состояние ядра             | существительное без `enable`              | `loading`, `loadError`                                                                             |
 | Положение элемента ядра    | `<элемент>Position`, перечисление         | `footerPosition` (ADR 0118)                                                                        |
 | Вкл/выкл плагина           | только `enabled` в аргументах фабрики     | `rowSelection({ enabled })`                                                                        |
-| Подвозможность плагина     | существительное без приставки             | `treeLines`, `multiSort`, `subRows`, `server`, `selectedCount`                                     |
+| Подвозможность плагина     | существительное без приставки             | `multiSort`, `subRows`, `server`, `selectedCount`                                                  |
 | Предикат разрешения        | `can<Глагол><Объект>`, функция            | `canEditCell`, `canSelectCell`, `canDragRow`                                                       |
 | Предикат о данных          | вне правила — описывает данные, не доступ | `hasChildren`, `hasMore`, `isAllRowsSelected`                                                      |
 | Флаг `columnDef`           | как в TanStack                            | `enableSorting`, `enableResizing`, `enableDragging`                                                |

@@ -112,7 +112,7 @@ export const ReactiveArgs: StoryObj<SessionsArgs> = {
         'enableRowExpanding',
         'rowExpandingMaxDepth',
         'rowExpandingColumn',
-        'rowExpandingTreeLines',
+        'enableTreeLines',
         'enableCellEditing',
         'enablePagination',
         'paginationInitialPageSize',

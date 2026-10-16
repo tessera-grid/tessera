@@ -4,6 +4,11 @@
 
 export { rowSelection, type RowSelectionOptions } from './rowSelection'
 export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
+export {
+  rowExpandingModel,
+  type RowExpandingModelOptions,
+} from './rowExpandingModel'
+export { treeLines, type TreeLinesOptions } from './treeLines'
 export { rowDragging, type RowDraggingOptions } from './rowDragging'
 export { rowGrouping, type RowGroupingOptions } from './rowGrouping'
 export { rowActions, type RowActionsPluginOptions } from './rowActions'

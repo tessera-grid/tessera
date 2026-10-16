@@ -6,7 +6,8 @@
  */
 import { createExpandedRowModel } from '@tanstack/react-table'
 
-import type { RowData, Table, TableFeatures } from '../../types'
+import type { RowData, Table, TableFeatures } from '../types'
+import type { NarrowState } from './effectiveState'
 
 interface ExpandRow {
   id: string
@@ -48,6 +49,13 @@ interface Built {
 }
 
 const NO_EXPANDED: Record<string, boolean> = {}
+
+/**
+ * Выключенная модель дерева показывает одни корни, сохранённый срез `expanded` не
+ * меняется (ADR 0119). Модель включена, если её включила хоть одна запись.
+ */
+export const narrowExpandingOff: NarrowState = (value, _table, context) =>
+  context.options.enableExpanding === false ? NO_EXPANDED : value
 /** Сколько строк вставлять одним `splice`: аргументы вызова ограничены стеком. */
 const SPLICE_LIMIT = 10_000
 

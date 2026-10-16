@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import type { Cell, Column, Row } from '../types'
 import type { CellSlot } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
+import { hasExpandToggle } from '../core/keyboardActions'
 import {
   type Highlights,
   type HighlightTargetState,
@@ -221,6 +222,9 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
   )
 
   const canExpand = row.getCanExpand?.() ?? false
+  // Состояние раскрытия строки озвучивается, только если его можно менять (ADR 0119).
+  const canToggle =
+    canExpand && hasExpandToggle((row as { table: unknown }).table)
   const isExpanded = row.getIsExpanded?.() ?? false
   // Раскрытие ждёт промиса onExpandRow (ADR 0041, §3).
   const isExpandPending =
@@ -248,7 +252,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       // aria-expanded строки допустим только в treegrid; в table состояние несёт
       // кнопка раскрытия (ADR 0015, RE10, RE12).
       aria-expanded={
-        canExpand && props.treeSetSize !== undefined ? isExpanded : undefined
+        canToggle && props.treeSetSize !== undefined ? isExpanded : undefined
       }
       aria-busy={isExpandPending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}

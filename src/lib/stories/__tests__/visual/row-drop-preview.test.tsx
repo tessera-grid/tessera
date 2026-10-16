@@ -517,7 +517,7 @@ const parents = () =>
 const renderWithOpenGroup = async (treeLines: boolean) => {
   const screen = await renderCollapsed({
     rowDraggingExpandDelay: 0,
-    rowExpandingTreeLines: treeLines,
+    enableTreeLines: treeLines,
   })
   await userEvent.click(rowById('node-1')!.querySelector(EXPAND_BUTTON)!)
   await expect.poll(() => rowById('node-1-2')).not.toBeNull()

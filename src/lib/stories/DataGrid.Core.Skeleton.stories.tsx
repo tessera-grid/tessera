@@ -1,7 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
-import { isSkeletonParentRow } from '../core/skeletonOptions'
 import { StoryComponent } from './DataGridStory'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
@@ -11,10 +10,9 @@ import { skeletonOptionsType } from './__mocks__/utils/argTypes'
 import { showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
-import { rowsInfoDemo } from './skeletonSlotDemo'
 
 /**
- * Скелет первой загрузки (ADR 0060): по истории на клиентский сценарий S1–S5. Сценарий
+ * Скелет первой загрузки (ADR 0060): по истории на клиентский сценарий S1–S3. Сценарий
  * проигрывается панелью над гридом — «Воспроизвести» или по шагам; в тестах шаги
  * проходит `play` (ADR 0117, §6).
  */
@@ -95,12 +93,30 @@ const waitData = (canvas: HTMLElement) =>
 
 // --- S1 ------------------------------------------------------------------------------
 
-/** Шаги по SL6: смена скелета на данные без задержки и без сдвига. */
+/**
+ * Шаги по SL6: скелет плоский, затем деревом, с линиями и с переключателем (ADR 0119);
+ * смена на данные без сдвига.
+ */
 const DATA_ARRIVES = [
   {
     ...OPENED,
     title: 'Данные загружаются',
     hint: 'Вместо данных отображаются скелеты. Названия колонок уже известны заранее. Таблицу можно скроллить по горизонтали.',
+  },
+  {
+    title: 'Иерархия данных',
+    hint: 'Плагин rowExpandingModel и expanded: true — дерево придёт развёрнутым: у части строк скелета одна-две подстроки с отступом. Переключателя нет — кнопок раскрытия тоже.',
+    props: () => ({ enableRowExpandingModel: true, expandAll: true }),
+  },
+  {
+    title: 'Линии дерева',
+    hint: 'Плагин treeLines — у скелета те же линии, что у дерева: поворот к подстроке, продолжение ветки к сестре, отросток у строки с подстроками. Кнопок по-прежнему нет.',
+    props: () => ({ enableTreeLines: true }),
+  },
+  {
+    title: 'Раскрытие строк',
+    hint: 'Плагин rowExpanding — появляется колонка раскрытия со скелетами кнопок у строк с подстроками.',
+    props: () => ({ enableRowExpanding: true }),
   },
   {
     ...ANSWERED,
@@ -109,8 +125,8 @@ const DATA_ARRIVES = [
 ] as const satisfies readonly GuideStoryStep[]
 
 /**
- * Всё, что видно на скелете: служебные колонки (выбор, раскрытие, перетаскивание,
- * действия), закрепление, итоги, панели над таблицей и под ней.
+ * Всё, что видно на скелете: служебные колонки (выбор, перетаскивание, действия;
+ * раскрытие — шагом «Раскрытие строк»), закрепление, итоги, панели над таблицей и под ней.
  */
 const DATA_ARRIVES_ARGS = {
   ...FIXED_HEIGHT,
@@ -118,7 +134,6 @@ const DATA_ARRIVES_ARGS = {
   dataNesting: 'nested',
   enableRowSelection: true,
   rowSelectionSelectedCount: true,
-  enableRowExpanding: true,
   enableRowDragging: true,
   enableRowActions: true,
   enableColumnPinning: true,
@@ -135,6 +150,8 @@ const DATA_ARRIVES_CONTROLS = [
   'dataNesting',
   'enableRowSelection',
   'rowSelectionSelectedCount',
+  'enableRowExpandingModel',
+  'enableTreeLines',
   'enableRowExpanding',
   'expandAll',
   'enableRowDragging',
@@ -174,8 +191,9 @@ export const SkeletonDefault: StoryObj<StoryProps> = {
 
 /**
  * S1: получение данных — скелет повторяет раскладку таблицы со служебными колонками,
- * итогами и панелями; пришли данные — всё на тех же местах, без задержки (SL6, SL2,
- * SL8). Функции включаются и выключаются в Controls.
+ * итогами и панелями; с `tree` — развёрнутыми подстроками, с раскрытием строк —
+ * квадратами раскрытия и, с `treeLines`, линиями дерева; пришли данные — всё на тех же
+ * местах, без задержки (SL6, SL2, SL8). Функции включаются и выключаются в Controls.
  */
 export const SkeletonDataArrives: StoryObj<StoryProps> = {
   name: 'Data arrives',
@@ -198,32 +216,72 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const footerSkeleton = () =>
       all(canvas, '.data-grid__footer-cell--skeleton')
+    // Подстроки скелета: в какой-то колонке полоски начинаются с разным отступом.
+    const indented = () => {
+      const lefts = new Map<string, Set<number>>()
+      for (const row of skeletonRows(canvas)) {
+        for (const cell of all(row, SKELETON_CELL)) {
+          const shape = shapeOf(cell)
+          if (!shape) continue
+          const id = cell.dataset.columnId!
+          lefts.set(id, (lefts.get(id) ?? new Set()).add(box(shape).left))
+        }
+      }
+      return [...lefts.values()].some(set => set.size > 1)
+    }
+    const treeLines = () =>
+      all(canvas, `${SKELETON_CELL} span[class]`).some(part =>
+        /elbow/i.test(part.className),
+      )
     let head: ReturnType<typeof geometry> = []
     let columns: ReturnType<typeof geometry> = []
     let footer: ReturnType<typeof geometry> = []
     let footerShapes = new Set<string>()
     let header: HTMLElement | undefined
+    const byId = (part: string, row: HTMLElement) =>
+      all(row, SKELETON_CELL).find(cell =>
+        cell.dataset.columnId?.includes(part),
+      )
+    const square = async (shape: HTMLElement) => {
+      await expect(box(shape).width).toBe(16)
+      await expect(Math.round(shape.getBoundingClientRect().height)).toBe(16)
+    }
+    const expandCells = () =>
+      skeletonRows(canvas).flatMap(row => byId('rowExpanding', row) ?? [])
     await step(DATA_ARRIVES[0].title, async () => {
       await waitSkeleton(canvas)
       const rows = skeletonRows(canvas)
-      head = geometry(headCells(canvas))
-      columns = geometry(all(rows[0]!, SKELETON_CELL))
-      header = headCells(canvas)[0]
-      // SL2: выбор и раскрытие — квадрат (раскрытие — у строк, которым номер дал
-      // подстроки, SL25), перетаскивание и действия — пустая ячейка.
-      const parent = rows.find((_, index) => isSkeletonParentRow(index))!
-      const byId = (part: string, row: HTMLElement) =>
-        all(row, SKELETON_CELL).find(cell =>
-          cell.dataset.columnId?.includes(part),
-        )!
-      for (const control of ['rowSelection', 'rowExpanding']) {
-        const shape = shapeOf(byId(control, parent))!
-        await expect(box(shape).width).toBe(16)
-        await expect(Math.round(shape.getBoundingClientRect().height)).toBe(16)
-      }
+      // SL2: выбор — квадрат, перетаскивание и действия — пустая ячейка.
+      await square(shapeOf(byId('rowSelection', rows[0]!)!)!)
       for (const empty of ['rowDragging', 'rowActions']) {
-        await expect(shapeOf(byId(empty, rows[0]!))).toBeNull()
+        await expect(shapeOf(byId(empty, rows[0]!)!)).toBeNull()
       }
+      await expect(expandCells()).toHaveLength(0)
+      await expect(indented()).toBe(false)
+    })
+    await step(DATA_ARRIVES[1].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(indented()).toBe(true))
+      await expect(expandCells()).toHaveLength(0)
+      await expect(treeLines()).toBe(false)
+    })
+    await step(DATA_ARRIVES[2].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(treeLines()).toBe(true))
+      await expect(expandCells()).toHaveLength(0)
+    })
+    await step(DATA_ARRIVES[3].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(expandCells().length).toBeGreaterThan(0))
+      // SL2: раскрытие — квадрат у строк с подстроками (SL25).
+      const shapes = expandCells().flatMap(cell => shapeOf(cell) ?? [])
+      await expect(shapes.length).toBeGreaterThan(0)
+      for (const shape of shapes) await square(shape)
+      await expect(indented()).toBe(true)
+      await expect(treeLines()).toBe(true)
+      head = geometry(headCells(canvas))
+      columns = geometry(all(skeletonRows(canvas)[0]!, SKELETON_CELL))
+      header = headCells(canvas)[0]
       // SL8: скелеты итогов — в колонках, где задан footer.
       footer = geometry(footerSkeleton())
       footerShapes = new Set(
@@ -233,7 +291,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       )
       await expect(footerShapes.size).toBeGreaterThan(0)
     })
-    await step(DATA_ARRIVES[1].title, async () => {
+    await step(DATA_ARRIVES[4].title, async () => {
       // SL6, без задержки: ни одного состояния DOM без скелета и без строк.
       let empty = 0
       const observer = new MutationObserver(() => {
@@ -484,153 +542,6 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
     await step(COLUMNS_COUNT[3]!.title, async () => {
       await guideNext(canvas)
       await waitData(canvas)
-    })
-    await settle()
-  },
-}
-
-// --- S4 ------------------------------------------------------------------------------
-
-const PLUGIN_SLOT_PLUGINS = [rowsInfoDemo()]
-const SERVER_DOWN = new Error('Server is down')
-
-const PLUGIN_SLOT: readonly GuideStoryStep[] = [
-  {
-    ...OPENED,
-    hint: 'Свой элемент нижней панели показывает скелет своих чисел, его кнопка — как обычно.',
-  },
-  { ...ANSWERED, hint: 'Элемент нижней панели показывает число строк.' },
-  {
-    title: 'Обновление данных',
-    hint: 'Повторная загрузка — без скелета: числа остаются.',
-    props: () => ({ loading: 'refresh' }),
-  },
-  {
-    title: 'Повторное открытие — сервер недоступен',
-    hint: 'Первая загрузка не удалась: вместо скелета — сообщение об ошибке, элемент нижней панели без скелета.',
-    props: () => ({
-      loading: 'initial',
-      dataOverride: [],
-      loadError: SERVER_DOWN,
-    }),
-  },
-]
-
-/**
- * S4: свой плагин в нижней панели (`definePlugin`) показывает скелет своих чисел через
- * `isSkeletonShown` и `Skeleton` из `/ui`; его кнопка не меняется (SL21).
- */
-export const SkeletonPluginSlot: StoryObj<StoryProps> = {
-  name: 'Plugin slot',
-  parameters: {
-    scenario: '0060/S4',
-    requirements: ['SL21'],
-    ...showControls([]),
-  },
-  args: { ...FIXED_HEIGHT, extraPlugins: PLUGIN_SLOT_PLUGINS },
-  render: args => (
-    <GuideStory
-      title="Plugin slot"
-      steps={PLUGIN_SLOT}
-      args={normalizeArgs(args)}
-    />
-  ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
-    if (globals.catalog !== true) return
-    const info = () =>
-      canvas.querySelector<HTMLElement>('[data-testid="rows-info"]')!
-    const shown = () => !!info().querySelector('[class*="skeleton"]')
-    const ROWS = /^Rows: [1-9]\d*Reload$/
-    await step(PLUGIN_SLOT[0]!.title, async () => {
-      await waitSkeleton(canvas)
-      await expect(shown()).toBe(true)
-      await expect(info().textContent).toBe('Reload')
-      await expect(info().querySelector('button')!).toBeEnabled()
-    })
-    await step(PLUGIN_SLOT[1]!.title, async () => {
-      await guideNext(canvas)
-      await waitData(canvas)
-      await expect(shown()).toBe(false)
-      await expect(info().textContent).toMatch(ROWS)
-    })
-    await step(PLUGIN_SLOT[2]!.title, async () => {
-      await guideNext(canvas)
-      await expect(shown()).toBe(false)
-      await expect(info().textContent).toMatch(ROWS)
-    })
-    await step(PLUGIN_SLOT[3]!.title, async () => {
-      await guideNext(canvas)
-      await until(() =>
-        expect(canvas.querySelector('[data-load-failed]')).not.toBeNull(),
-      )
-      await expect(skeletonRows(canvas)).toHaveLength(0)
-      await expect(shown()).toBe(false)
-      await expect(info().textContent).toBe('Rows: 0Reload')
-    })
-    await settle()
-  },
-}
-
-// --- S5 ------------------------------------------------------------------------------
-
-const TREE_DATA: readonly GuideStoryStep[] = [
-  {
-    ...OPENED,
-    hint: 'У части строк скелета — одна-две подстроки с отступом и линиями, квадрат раскрытия у родителей.',
-    props: () => ({
-      loading: 'initial',
-      dataOverride: [],
-      skeletonOptions: { rowsCount: 'auto', columnsCount: 8, tree: true },
-    }),
-  },
-  {
-    ...ANSWERED,
-    hint: 'Пришло дерево: колонка раскрытия и остальные колонки не сдвигаются.',
-  },
-]
-
-/**
- * S5: иерархические данные (`skeletonOptions.tree`) — у части строк скелета одна-две
- * подстроки с отступом, с `treeLines` — линии; квадрат раскрытия у родителей. Пришло
- * дерево — колонки не сдвинулись.
- */
-export const SkeletonTreeData: StoryObj<StoryProps> = {
-  name: 'Tree data',
-  parameters: {
-    scenario: '0060/S5',
-    ...showControls([
-      'dataNesting',
-      'enableRowExpanding',
-      'rowExpandingColumn',
-      'rowExpandingTreeLines',
-      'expandAll',
-    ]),
-  },
-  args: {
-    ...FIXED_HEIGHT,
-    dataNesting: 'nested',
-    enableRowExpanding: true,
-    rowExpandingTreeLines: true,
-    expandAll: true,
-  },
-  render: args => (
-    <GuideStory
-      title="Tree data"
-      steps={TREE_DATA}
-      args={normalizeArgs(args)}
-    />
-  ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
-    if (globals.catalog !== true) return
-    let head: ReturnType<typeof geometry> = []
-    await step(TREE_DATA[0]!.title, async () => {
-      await waitSkeleton(canvas)
-      head = geometry(headCells(canvas))
-    })
-    await step(TREE_DATA[1]!.title, async () => {
-      await guideNext(canvas)
-      await waitData(canvas)
-      await expect(geometry(headCells(canvas))).toEqual(head)
     })
     await settle()
   },

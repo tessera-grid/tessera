@@ -323,8 +323,11 @@ export const rowExpandingColumnType = radioControl(
   ['auto', 'always'],
   'auto',
 )
-export const rowExpandingTreeLinesType = booleanControl(
-  'Линии дерева по уровням (`treeLines`)',
+export const enableRowExpandingModelType = booleanControl(
+  'Дерево без переключателя: подстроки по состоянию `expanded` (плагин `rowExpandingModel`)',
+)
+export const enableTreeLinesType = booleanControl(
+  'Линии дерева у раскрытых строк и групп (плагин `treeLines`)',
 )
 export const enableRowDraggingType = booleanControl(
   'Перестановка строк перетаскиванием ручки (плагин `rowDragging`)',

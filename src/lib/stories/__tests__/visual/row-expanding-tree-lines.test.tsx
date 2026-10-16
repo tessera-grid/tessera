@@ -277,9 +277,7 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('RE53: without the option there are no lines and the indent is unchanged', async () => {
-    await render(
-      <composed.RowExpandingTreeLines rowExpandingTreeLines={false} />,
-    )
+    await render(<composed.RowExpandingTreeLines enableTreeLines={false} />)
     await waitTree()
     await showRow(TREE.zimbabwe)
     const cell = indentOf(TREE.zimbabwe)
@@ -299,7 +297,7 @@ describe('Row expanding: tree lines', () => {
     await render(
       <composed.RowGrouping
         enableRowExpanding
-        rowExpandingTreeLines
+        enableTreeLines
         initialGrouping={['gender']}
         initialExpanded={true}
       />,
@@ -404,7 +402,7 @@ describe('Row expanding: tree lines', () => {
     restore = themeTokens({ '--tsr-comp-row-nesting-indent': '20px' })
     const plain = await render(
       <composed.RowExpandingTreeLines
-        rowExpandingTreeLines={false}
+        enableTreeLines={false}
         enableRowSelection
         rowSelectionSubRows
       />,

@@ -8,6 +8,7 @@ import {
   useKeyboardNavigationRow,
 } from '../core/keyboardNavigation'
 import { usePluginRenderVersion } from '../core/renderVersion'
+import { hasExpandToggle } from '../core/keyboardActions'
 import { animateLayoutChanges } from '../plugins/rowDragging'
 import {
   BodyRowCells,
@@ -43,6 +44,9 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   )
 
   const canExpand = row.getCanExpand?.() ?? false
+  // Состояние раскрытия строки озвучивается, только если его можно менять (ADR 0119).
+  const canToggle =
+    canExpand && hasExpandToggle((row as { table: unknown }).table)
   const isExpanded = row.getIsExpanded?.() ?? false
   // Раскрытие ждёт промиса onExpandRow (ADR 0041, §3).
   const isExpandPending =
@@ -113,7 +117,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       // aria-expanded строки допустим только в treegrid; в table состояние несёт
       // кнопка раскрытия (ADR 0015, RE10, RE12).
       aria-expanded={
-        canExpand && props.treeSetSize !== undefined ? isExpanded : undefined
+        canToggle && props.treeSetSize !== undefined ? isExpanded : undefined
       }
       aria-busy={isExpandPending || movePending || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}

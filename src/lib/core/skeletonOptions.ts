@@ -8,8 +8,6 @@ export interface SkeletonOptions {
   rowsCount?: number | 'auto'
   /** Колонок скелета, когда своих колонок у грида нет (`columns: []`). */
   columnsCount?: number
-  /** Данные — дерево: у части строк скелета подстроки (ADR 0060, SL22). */
-  tree?: boolean
 }
 
 export const SKELETON_COLUMNS_COUNT = 8
@@ -19,7 +17,6 @@ export const SKELETON_ROWS_COUNT = 12
 export const DEFAULT_SKELETON_OPTIONS: Required<SkeletonOptions> = {
   rowsCount: 'auto',
   columnsCount: SKELETON_COLUMNS_COUNT,
-  tree: false,
 }
 
 export const resolveSkeletonOptions = (
@@ -27,7 +24,6 @@ export const resolveSkeletonOptions = (
 ): Required<SkeletonOptions> => ({
   rowsCount: options?.rowsCount ?? DEFAULT_SKELETON_OPTIONS.rowsCount,
   columnsCount: options?.columnsCount ?? DEFAULT_SKELETON_OPTIONS.columnsCount,
-  tree: options?.tree ?? DEFAULT_SKELETON_OPTIONS.tree,
 })
 
 export interface SkeletonRowCountParams {

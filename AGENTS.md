@@ -478,13 +478,18 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       ([ADR 0068](docs/decisions/0068-idle-filter-and-group-passes.md));
       линии дерева — `row-expanding-tree-lines` (TL1–TL6 — по пикселям скриншота: поворот
       со скруглением, продолжение и конец ветки, линии предков, отросток к детям, модель
-      строк, токены; RE53, RE55–RE58 — без опции, группы, закрепление, виртуализация,
+      строк, токены; RE53, RE55–RE58 — без плагина `treeLines`, группы, закрепление, виртуализация,
       сортировка, страница, раскладка, axe), `tree-lines-zoom` (TL7 — дробный масштаб
       страницы, ещё и в `test:browsers`), перф TL8 — в `scroll`
       ([ADR 0058](docs/decisions/0058-tree-lines.md),
       [ADR 0102](docs/decisions/0102-curved-tree-lines.md)); шаг отступа — `row-expanding`
       (RE61), `row-expanding-tree-lines` (RE62), модульный `rowNesting` (RE63–RE64)
-      ([ADR 0059](docs/decisions/0059-row-nesting-indent.md)),
+      ([ADR 0059](docs/decisions/0059-row-nesting-indent.md)); модель дерева `rowExpandingModel`,
+      интерфейс `rowExpanding` и плагин `treeLines` — `tree-data` (TD1–TD3, TD6–TD8,
+      TD10 — подстроки по `expanded` без переключателя, роли и клавиши, axe, предел
+      `maxDepth`, группы, линии, скелет), модульный `rowExpandingModel.dom` (TD4–TD5, TD9 —
+      модель в наборе одна, выключенный интерфейс не гасит модель, старых опций нет)
+      ([ADR 0119](docs/decisions/0119-tree-data-model.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md); D33–D34 — модульный `rowDragging`;
       `row-dragging-window` — D35–D36, перетаскивание через границу окна настоящей мышью),
@@ -596,11 +601,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     - _Скелет первой загрузки:_ `skeleton` (SL1 — колонки и ширины, SL3 — закреплённые
       при прокрутке, SL4 — шапка, SL7 — полоски, SL10 — только видимые колонки, SL11 —
       панели, SL12 — доступность; SL16 — без вертикальной прокрутки, место полосы — в
-      `test:engines`; SL18 — `skeletonCell`; SL20 — токены размеров; SL26 — пересчёт строк
+      `test:engines`; SL18 — `skeletonCell`; SL20 — токены размеров; SL21 — слот автора
+      плагина; SL26 — пересчёт строк
       при смене высоты строки и шапки; SL23–SL25 — дерево:
       отступ, линии, колонка раскрытия), `play` историй сценариев «Skeleton» (SL6, SL2
-      и SL8 — Data arrives, SL5 — Rows count, SL9 — Columns count, SL21 — Plugin
-      slot), модульные
+      и SL8 — Data arrives, SL5 — Rows count, SL9 — Columns count), модульные
       `skeletonOptions` (SL13, SL22 — план строк дерева) и `skeletonCell` (SL19 — длина
       полоски по колонке), перф SL14 — в `first-render`, SL15 — в `interaction`
       ([ADR 0060](docs/decisions/0060-initial-loading-skeleton.md)).

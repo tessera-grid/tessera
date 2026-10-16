@@ -88,7 +88,7 @@ export const SubRowSelection: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
   ]),
 }
 

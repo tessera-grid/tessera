@@ -157,7 +157,7 @@ export const FilteringTree: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
     'enableQuickSearch',
     'quickSearchDebounceMs',
     'quickSearchFilteredCount',

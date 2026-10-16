@@ -95,13 +95,13 @@ export const RowExpanding: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
   ]),
 }
 
 /**
  * Линии дерева (ADR 0102): ветки со скруглёнными поворотами, как в ветках комментариев,
- * в отступе первой колонки. Дерево в 4 уровня раскрыто целиком; выключите `rowExpandingTreeLines`,
+ * в отступе первой колонки. Дерево в 4 уровня раскрыто целиком; выключите `enableTreeLines`,
  * чтобы сравнить с одним отступом.
  */
 export const RowExpandingTreeLines: StoryObj<StoryProps> = {
@@ -110,7 +110,7 @@ export const RowExpandingTreeLines: StoryObj<StoryProps> = {
     dataOverride: treeLinesData,
     enableRowExpanding: true,
     rowExpandingMaxDepth: 4,
-    rowExpandingTreeLines: true,
+    enableTreeLines: true,
     initialExpanded: true,
     containerHeight: '640',
     height: '540',
@@ -122,7 +122,7 @@ export const RowExpandingTreeLines: StoryObj<StoryProps> = {
       'enableRowExpanding',
       'rowExpandingMaxDepth',
       'rowExpandingColumn',
-      'rowExpandingTreeLines',
+      'enableTreeLines',
     ]),
   },
 }
@@ -145,7 +145,7 @@ export const RowExpandingFlatData: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
   ]),
 }
 
@@ -161,7 +161,7 @@ export const RowExpandingColumnAlways: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
   ]),
 }
 
@@ -189,7 +189,7 @@ export const RowExpandingLazy: StoryObj<SessionsArgs> = {
         'enableRowExpanding',
         'rowExpandingMaxDepth',
         'rowExpandingColumn',
-        'rowExpandingTreeLines',
+        'enableTreeLines',
         'loadDelayMs',
         'loadFailMode',
       ],
@@ -244,7 +244,7 @@ export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
         'enableRowExpanding',
         'rowExpandingMaxDepth',
         'rowExpandingColumn',
-        'rowExpandingTreeLines',
+        'enableTreeLines',
         'loadDelayMs',
         'loadFailMode',
       ],

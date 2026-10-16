@@ -15,6 +15,8 @@ import { waitForGrid } from './core-helpers'
 type GridArgs = FeatureToggles & {
   enableToolbar?: boolean
   headerNesting?: 'flat' | 'nested'
+  dataNesting?: 'flat' | 'nested'
+  expandAll?: boolean
   columnsOverride?: typeof filteringColumns
   dataOverride?: typeof filteringData
 }
@@ -22,6 +24,17 @@ type GridArgs = FeatureToggles & {
 const PLUGIN_ARGS: Record<string, GridArgs> = {
   rowSelection: { enableRowSelection: true },
   rowExpanding: { enableRowExpanding: true, enableRowGrouping: true },
+  rowExpandingModel: {
+    enableRowExpandingModel: true,
+    dataNesting: 'nested',
+    expandAll: true,
+  },
+  treeLines: {
+    enableTreeLines: true,
+    enableRowExpandingModel: true,
+    dataNesting: 'nested',
+    expandAll: true,
+  },
   rowDragging: { enableRowDragging: true },
   rowGrouping: { enableRowGrouping: true },
   rowActions: { enableRowActions: true },

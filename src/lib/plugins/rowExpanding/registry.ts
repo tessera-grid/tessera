@@ -14,7 +14,10 @@ import type {
 } from '../../core/servicePresence'
 import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
-import { createIncrementalExpandedRowModel } from './expandedRowModel'
+import {
+  createIncrementalExpandedRowModel,
+  narrowExpandingOff,
+} from '../../core/expandedRowModel'
 import { createLazyCoreRowModel } from './lazyCoreRowModel'
 import {
   readLoadedChildren,
@@ -55,8 +58,6 @@ export interface RowExpandingOptions {
    * после ожидания. Грид держит последний ответ; кэш — на приложении (ADR 0054).
    */
   loadChildren?: RowExpandingHooks['loadChildren']
-  /** Вертикальные направляющие по уровням в отступе первой колонки (ADR 0058). */
-  treeLines?: boolean
 }
 
 /**
@@ -104,7 +105,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
   keyboardActions: [toggleExpandedKeyboardAction],
   narrow: o =>
     o.enabled === false
-      ? undefined
+      ? { expanded: narrowExpandingOff }
       : {
           expanded: narrowExpanded(
             o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH,
@@ -166,11 +167,11 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
       )
     }
 
+    // Выключенный плагин предела модели не задаёт: дерево `rowExpandingModel` рядом — без него.
     return {
       enableExpanding: o.enabled !== false,
       autoResetExpanded: false,
-      getRowCanExpand,
-      enableTreeLines: o.enabled !== false && !!o.treeLines,
+      getRowCanExpand: o.enabled === false ? undefined : getRowCanExpand,
     }
   },
 })

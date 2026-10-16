@@ -56,7 +56,7 @@ describe('Производительность прокрутки — высок
           ...LARGE,
           enableRowSelection: true,
           enableRowExpanding: true,
-          rowExpandingTreeLines: true,
+          enableTreeLines: true,
           dataNesting: 'nested',
           initialExpanded: true,
           extraPlugins: [

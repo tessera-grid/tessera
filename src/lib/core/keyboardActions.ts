@@ -78,3 +78,14 @@ export const sortKeyboardActionsByPriority = (
   actions: KeyboardAction[],
 ): KeyboardAction[] =>
   actions.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+
+/**
+ * Пользователь раскрывает строки сам: есть действие раскрытия — переключатель
+ * `rowExpanding` (ADR 0119). Без него дерево `rowExpandingModel` раскрыто только по `expanded`.
+ */
+export const hasExpandToggle = (table: unknown): boolean =>
+  (
+    (
+      table as { getKeyboardActions?: () => KeyboardAction[] | undefined }
+    ).getKeyboardActions?.() ?? []
+  ).some(action => action.expands === true)

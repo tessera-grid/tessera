@@ -21,6 +21,8 @@ import {
   rowExpanding,
   rowGrouping,
   rowSelection,
+  rowExpandingModel,
+  treeLines,
 } from '../../../../lib/plugins'
 
 import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
@@ -42,6 +44,8 @@ import {
 const FACTORIES = {
   rowSelection,
   rowExpanding,
+  rowExpandingModel,
+  treeLines,
   rowDragging,
   columnPinning,
   columnSizing,
@@ -63,6 +67,8 @@ const FACTORIES = {
   infiniteScroll,
   backToTop,
 }
+
+const FACTORY_NAMES = Object.keys(FACTORIES)
 
 type Factories = typeof FACTORIES
 type FactoryName = keyof Factories
@@ -140,8 +146,13 @@ const argsOf = <F extends FactoryName>(
   const args: Record<string, unknown> = {
     enabled: !!source[`enable${capitalize(name)}`],
   }
+  // Подопции `rowExpandingModel<Опция>` не принадлежат `rowExpanding`: имя фабрики — префикс другого.
+  const longer = FACTORY_NAMES.filter(
+    other => other.length > name.length && other.startsWith(name),
+  )
   for (const [key, value] of Object.entries(source)) {
     const next = key[name.length]
+    if (longer.some(other => key.startsWith(other))) continue
     if (key.startsWith(name) && next !== undefined && /[A-Z]/.test(next)) {
       args[next.toLowerCase() + key.slice(name.length + 1)] = value
     }
@@ -158,6 +169,8 @@ export const argsToPlugins = (o: FeatureToggles) => {
   return [
     rowSelection(argsOf(o, 'rowSelection')),
     rowExpanding(argsOf(o, 'rowExpanding')),
+    rowExpandingModel(argsOf(o, 'rowExpandingModel')),
+    treeLines(argsOf(o, 'treeLines')),
     rowDragging(argsOf(o, 'rowDragging')),
     columnPinning(argsOf(o, 'columnPinning')),
     columnSizing(argsOf(o, 'columnSizing')),

@@ -110,14 +110,22 @@ export const resolveRowFocusKey = (
     columnIndex: ROW_FOCUS_COLUMN,
   })
   switch (event.key) {
+    // Без переключателя (дерево `rowExpandingModel`, ADR 0119) стрелки только двигают фокус.
     case 'ArrowRight':
-      if (row?.getCanExpand?.() && !row.getIsExpanded?.()) {
-        return toggleRowExpansion(t, active.rowIndex, event) ? 'handled' : null
+      if (
+        row?.getCanExpand?.() &&
+        !row.getIsExpanded?.() &&
+        toggleRowExpansion(t, active.rowIndex, event)
+      ) {
+        return 'handled'
       }
       return { rowIndex: active.rowIndex, columnIndex: 0 }
     case 'ArrowLeft': {
-      if (row?.getIsExpanded?.()) {
-        return toggleRowExpansion(t, active.rowIndex, event) ? 'handled' : null
+      if (
+        row?.getIsExpanded?.() &&
+        toggleRowExpansion(t, active.rowIndex, event)
+      ) {
+        return 'handled'
       }
       const parent = rows.findIndex(r => r.id === row?.parentId)
       return parent === -1 ? 'handled' : atRow(parent)

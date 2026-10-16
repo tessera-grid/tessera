@@ -44,7 +44,7 @@ export const ScrollToRowBasic: StoryObj<StoryProps> = {
         'enableRowExpanding',
         'rowExpandingMaxDepth',
         'rowExpandingColumn',
-        'rowExpandingTreeLines',
+        'enableTreeLines',
       ],
       { dataCount: 'данные подаёт демо' },
     ),

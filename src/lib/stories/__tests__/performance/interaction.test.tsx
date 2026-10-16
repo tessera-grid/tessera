@@ -48,7 +48,7 @@ import type { MenuAction, RowAction } from '../../../core/headerActions'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSorting/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
-import { createIncrementalExpandedRowModel } from '../../../plugins/rowExpanding/expandedRowModel'
+import { createIncrementalExpandedRowModel } from '../../../core/expandedRowModel'
 import { createSearchAwareFilteredRowModel } from '../../../core/filteredRowModel'
 import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGrouping/groupedRowModel'
 import {
@@ -2492,7 +2492,7 @@ describe('Кадры — превью броска строки', () => {
           enableRowDragging: true,
           enableRowExpanding: true,
           rowExpandingMaxDepth: 1,
-          rowExpandingTreeLines: lines,
+          enableTreeLines: lines,
           initialExpanded: true,
         })
         await waitForGrid()

@@ -51,7 +51,7 @@ export const RowMotionTree: StoryObj<StoryProps> = {
       'enableRowExpanding',
       'rowExpandingMaxDepth',
       'rowExpandingColumn',
-      'rowExpandingTreeLines',
+      'enableTreeLines',
     ]),
   },
   play: async ({ canvasElement }) => {
@@ -121,7 +121,7 @@ export const RowMotionOff: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
   ]),
   args: {
     ...GRID,

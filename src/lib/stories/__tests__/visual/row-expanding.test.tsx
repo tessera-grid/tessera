@@ -393,7 +393,7 @@ describe('Row Expanding — nesting step', () => {
         .map(cell => parseFloat(getComputedStyle(cell).paddingLeft))
         .filter(value => value > 0)
     const tree = await render(
-      <composed.RowExpandingTreeLines rowExpandingTreeLines={false} />,
+      <composed.RowExpandingTreeLines enableTreeLines={false} />,
     )
     await expect.poll(() => paddings().includes(48)).toBe(true)
     expect(new Set(paddings())).toEqual(new Set([16, 32, 48]))

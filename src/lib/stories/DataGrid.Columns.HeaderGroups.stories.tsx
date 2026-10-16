@@ -62,7 +62,7 @@ export const HeaderGroupsShallowLeaves: StoryObj<StoryProps> = {
       'enableRowExpanding',
       'rowExpandingMaxDepth',
       'rowExpandingColumn',
-      'rowExpandingTreeLines',
+      'enableTreeLines',
       'enableRowActions',
       'rowActionsWidth',
       'rowActionsCollapsedWidth',

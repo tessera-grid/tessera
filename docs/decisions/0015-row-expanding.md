@@ -2,6 +2,12 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** [ADR 0119](0119-tree-data-model.md) (2026-10-16) — модель дерева
+  (`rowExpandingFeature` и модель раскрытия) есть и у плагина `rowExpandingModel` без
+  интерфейса; `rowExpanding` приносит её с переключателем и пределом `maxDepth`.
+  Выключенный `rowExpanding` дерево не показывает и модель `rowExpandingModel` не гасит;
+  `aria-expanded` и раскрытие по ←/→ — только при переключателе. Опция `treeLines`
+  заменена плагином `treeLines()`.
 - **Изменён:** 2026-10-01 — RE10 сужен до `treegrid`, добавлен RE12: без `keyboardNavigation`
   корень — `role="table"`, а там `aria-expanded` у строки недопустим (axe
   `aria-allowed-attr`); состояние раскрытия несёт кнопка-тоггл. Добавлен RE13: подпись
@@ -18,7 +24,7 @@
   - [ADR 0054](0054-lazy-row-children.md) — ленивые дети: `hasChildren` /
     `loadChildren`, строка раскрываема без `subRows`.
   - [ADR 0058](0058-tree-lines.md) — линии дерева в отступе вложенности
-    (`treeLines`).
+    (плагин `treeLines`, ADR 0119).
   - [ADR 0004](0004-core-on-tanstack-table.md) — плагин построен на штатной
     модели раскрытия TanStack (`enableExpanding`/`enableRowExpanding`,
     `getExpandedRowModel`, срез `expanded`, `row.getIsExpanded` /

@@ -68,7 +68,7 @@ export const HighContrast: StoryObj<StoryProps> = {
       'enableRowExpanding',
       'rowExpandingMaxDepth',
       'rowExpandingColumn',
-      'rowExpandingTreeLines',
+      'enableTreeLines',
       'enableCellSelection',
       'cellSelectionRangeSelection',
       'cellSelectionDragSelection',
@@ -79,7 +79,7 @@ export const HighContrast: StoryObj<StoryProps> = {
   args: {
     dataNesting: 'nested',
     enableRowExpanding: true,
-    rowExpandingTreeLines: true,
+    enableTreeLines: true,
     initialExpanded: true,
     enableRowSelection: true,
     enableColumnPinning: true,

@@ -22,7 +22,7 @@ export const RowHeight: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
-    'rowExpandingTreeLines',
+    'enableTreeLines',
   ]),
   args: {
     // Строки тела и футера по 40px (минимум); меняйте rowHeight в Controls на лету.

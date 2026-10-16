@@ -49,7 +49,7 @@ describe('Производительность прокрутки — повыш
           contrast: more ? 'more' : 'auto',
           enableRowSelection: true,
           enableRowExpanding: true,
-          rowExpandingTreeLines: true,
+          enableTreeLines: true,
           dataNesting: 'nested',
           initialExpanded: true,
           extraPlugins: [

@@ -3,7 +3,10 @@ import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-react'
 
-import { definePlugin } from '../../../../index'
+import { useState } from 'react'
+
+import { definePlugin, isSkeletonShown } from '../../../../index'
+import { Skeleton } from '../../../../ui'
 import type { MenuAction, RowAction } from '../../../core/headerActions'
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { isSkeletonParentRow } from '../../../core/skeletonOptions'
@@ -17,7 +20,7 @@ import { HANDLE, pointer, slot } from './row-drop-helpers'
 
 // Скелет первой загрузки по раскладке грида (ADR 0060). Скелет и грид после загрузки —
 // один экземпляр таблицы: тест переключает `loading` и сравнивает геометрию.
-// SL2, SL5, SL6, SL8, SL9, SL21 — в `play` историй сценариев скелета.
+// SL2, SL5, SL6, SL8, SL9 — в `play` историй сценариев скелета.
 
 type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
 
@@ -94,6 +97,55 @@ const pendingSection = definePlugin()({
     } satisfies RowAction,
   ],
 })
+
+/** Слот автора плагина: число строк — скелетом в первой загрузке, кнопка — как есть. */
+const rowsInfo = definePlugin()({
+  id: 'rowsInfo',
+  slots: [
+    {
+      id: 'rowsInfo',
+      slot: 'statusBarSlot',
+      component: ({ table }) => (
+        <span data-testid="rows-info">
+          {isSkeletonShown(table) ? (
+            <Skeleton
+              width={64}
+              height="var(--tsr-comp-skeleton-text-height)"
+            />
+          ) : (
+            `Rows: ${table.getRowModel().rows.length}`
+          )}
+          <button type="button">Reload</button>
+        </span>
+      ),
+    },
+  ],
+})
+
+type SlotGridProps = {
+  data: { id: string; name: string }[]
+  loading?: 'initial' | 'refresh' | false
+  loadError?: unknown
+}
+
+const SlotGrid = ({ data, loading, loadError }: SlotGridProps) => {
+  // Набор плагинов — договор на время жизни таблицы: стенд его не меняет.
+  const [plugins] = useState(() => [rowsInfo()])
+  const table = useCreateTable({
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+    data,
+    getRowId: (row: { id: string }) => row.id,
+    plugins: plugins as never,
+    loading,
+    loadError,
+    onRetry: () => {},
+  })
+  return (
+    <div style={{ width: 640, height: 400 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
 
 const MENU_DATA = Array.from({ length: 5 }, (_, i) => ({
   id: `r${i}`,
@@ -565,7 +617,40 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     }
   })
 
-  test('SL23: с tree подстроки скелета сдвинуты в колонке отступа на шаг вложенности, строки верхнего уровня — без сдвига; без tree скелет плоский', async () => {
+  test("SL21: слот плагина definePlugin при loading 'initial' показывает значения из данных скелетом через isSkeletonShown и Skeleton, контролы не меняет; при 'refresh' и ошибке — без скелета", async () => {
+    const info = () =>
+      document.querySelector<HTMLElement>('[data-testid="rows-info"]')!
+    const shown = () => shapeOf(info()) !== null
+    const screen = await render(<SlotGrid data={[]} loading="initial" />)
+    await waitSkeleton()
+    await expect
+      .poll(() => document.querySelector('[data-testid="rows-info"]'))
+      .not.toBeNull()
+    expect(shown()).toBe(true)
+    expect(info().textContent).toBe('Reload')
+    expect(info().querySelector('button')!.disabled).toBe(false)
+
+    await screen.rerender(<SlotGrid data={MENU_DATA} />)
+    await waitData()
+    expect(shown()).toBe(false)
+    expect(info().textContent).toBe('Rows: 5Reload')
+
+    await screen.rerender(<SlotGrid data={MENU_DATA} loading="refresh" />)
+    expect(shown()).toBe(false)
+    expect(info().textContent).toBe('Rows: 5Reload')
+
+    await screen.rerender(
+      <SlotGrid data={[]} loading="initial" loadError={new Error('Down')} />,
+    )
+    await expect
+      .poll(() => document.querySelector('[data-load-failed]'))
+      .not.toBeNull()
+    expect(skeletonRows()).toHaveLength(0)
+    expect(shown()).toBe(false)
+    expect(info().textContent).toBe('Rows: 0Reload')
+  })
+
+  test('SL23: при модели дерева и expanded: true подстроки скелета сдвинуты в колонке отступа на шаг вложенности, строки верхнего уровня — без сдвига; иначе скелет плоский', async () => {
     const barLefts = () =>
       skeletonRows().map(row =>
         Math.round(
@@ -579,7 +664,8 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       <Stories.AllFeatures
         {...BASE}
         loading="initial"
-        skeletonOptions={{ tree: true }}
+        enableRowExpandingModel
+        expandAll
       />,
     )
     await waitSkeleton()
@@ -603,7 +689,14 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(depths[0]).toBe(0)
     await screen.unmount()
 
-    await render(<Stories.AllFeatures {...BASE} loading="initial" />)
+    // Модель есть, но дерево придёт свёрнутым — скелет плоский.
+    await render(
+      <Stories.AllFeatures
+        {...BASE}
+        loading="initial"
+        enableRowExpandingModel
+      />,
+    )
     await waitSkeleton()
     expect(new Set(barLefts()).size).toBe(1)
   })
@@ -651,9 +744,10 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     const props = (treeLines: boolean) => ({
       ...BASE,
       loading: 'initial' as const,
-      skeletonOptions: { tree: true },
+      dataOverride: [],
+      expandAll: true,
       enableRowExpanding: true,
-      rowExpandingTreeLines: treeLines,
+      enableTreeLines: treeLines,
     })
     const screen = await render(<Stories.AllFeatures {...props(true)} />)
     await waitSkeleton()
@@ -697,13 +791,13 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(skeletonRows().flatMap(parts)).toEqual([])
   })
 
-  test("SL25: колонка раскрытия в скелете зависит от включённости раскрытия строк — при rowExpanding есть и без данных при 'auto', без плагина нет; квадрат у части строк по номеру, с tree — у строк с подстроками; пришло дерево — колонки не сдвигаются; после загрузки — по данным", async () => {
+  test("SL25: колонка раскрытия в скелете зависит от включённости раскрытия строк — при rowExpanding есть и без данных при 'auto', без плагина нет; квадрат у части строк по номеру, при expanded: true — у строк с подстроками; пришло дерево — колонки не сдвигаются; после загрузки — по данным", async () => {
     const props = (extra: Args) => ({
       ...BASE,
       enableRowExpanding: true,
       enableRowSelection: true,
       dataNesting: 'nested' as const,
-      skeletonOptions: { tree: true },
+      expandAll: true,
       ...extra,
     })
     // Первая загрузка как у приложения: данных ещё нет — один и тот же пустой массив.
@@ -750,13 +844,13 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       />,
     )
     await expect.poll(() => expandHead()).toBeUndefined()
-    // Без tree скелет плоский, но раскрытие включено — колонка есть, квадрат вразброс:
+    // Дерево придёт свёрнутым — скелет плоский, но раскрытие включено — колонка есть, квадрат вразброс:
     // у строк, которым хэш номера дал бы подстроки, и так при каждой отрисовке.
     const flat = () =>
       props({
         loading: 'initial',
         dataOverride: noRows,
-        skeletonOptions: { tree: false },
+        expandAll: false,
       })
     await screen.rerender(<Stories.AllFeatures {...flat()} />)
     await waitSkeleton()

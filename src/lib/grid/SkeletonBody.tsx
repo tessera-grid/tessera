@@ -13,6 +13,7 @@ import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
 import type { CommonColumnDef } from '../core/commonFeature.types'
+import { useTableState } from '../core/reactivity'
 import { ROW_NESTING_INDENT_TOKEN } from '../core/rowNesting'
 import {
   type SkeletonTreeRow,
@@ -153,7 +154,7 @@ interface SkeletonCellsProps {
   rowIndex?: number
   rowCount?: number
   filler?: ReactNode
-  /** Строка дерева скелета (`skeletonOptions.tree`). */
+  /** Строка дерева скелета (ADR 0119, SL22). */
   tree?: SkeletonTreeRow
   treeLines?: boolean
   /** Квадрат в колонке раскрытия; без значения — у каждой строки. */
@@ -241,7 +242,7 @@ interface SkeletonRowsBlockProps {
   className?: string
   /** `false` — только высота блока, без строк (блок вне области прокрутки). */
   cells?: boolean
-  /** План строк дерева (`skeletonOptions.tree`). */
+  /** План строк дерева (ADR 0119, SL22). */
   tree?: SkeletonTreeRow[]
   treeLines?: boolean
   /** Квадраты раскрытия вразброс по номеру строки (плоский скелет, SL25). */
@@ -397,8 +398,14 @@ export const SkeletonBody = memo(
       rowHeight?: number
       headerHeight?: number
     }
-    const { rowsCount, columnsCount, tree } = resolveSkeletonOptions(
+    const { rowsCount, columnsCount } = resolveSkeletonOptions(
       options.skeletonOptions,
+    )
+    // Дерево придёт развёрнутым: `expanded: true` (ADR 0119, SL22). Без модели дерева
+    // или с выключенной срез пуст — сужение `narrowExpandingOff`.
+    const tree = useTableState(
+      table as never,
+      state => (state as { expanded?: unknown }).expanded === true,
     )
     const pageSize = (
       table.atoms as { pagination?: { get: () => { pageSize: number } } }
@@ -439,7 +446,6 @@ export const SkeletonBody = memo(
       : 0
 
     const hasColumns = leafColumns.length > 0
-    // Дерево — только по опции: до данных структура неизвестна (SL22).
     const treeRows =
       tree && hasColumns ? getSkeletonTreeRows(rowCount) : undefined
     const columns = hasColumns

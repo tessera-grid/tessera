@@ -383,7 +383,7 @@ describe('Производительность прокрутки — линии
           dataOverride: tree,
           enableRowExpanding: true,
           rowExpandingMaxDepth: 3,
-          rowExpandingTreeLines: treeLines,
+          enableTreeLines: treeLines,
           initialExpanded: true,
         } as Parameters<typeof renderGrid>[0])
         await waitForGrid()

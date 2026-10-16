@@ -41,7 +41,7 @@ export const ALL_PLUGINS: FeatureToggles = {
   enableRowSelection: true,
   rowSelectionSelectedCount: true,
   enableRowExpanding: true,
-  rowExpandingTreeLines: true,
+  enableTreeLines: true,
   enableRowDragging: true,
   enableColumnSorting: true,
   enableColumnPinning: true,
