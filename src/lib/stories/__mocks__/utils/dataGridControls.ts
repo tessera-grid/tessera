@@ -61,6 +61,7 @@ import {
   enableColumnSortingType,
   enableColumnVisibilityType,
   enableContextMenuType,
+  enableDataExportModelType,
   enableDataExportType,
   enableFooterType,
   footerPositionType,
@@ -333,6 +334,7 @@ export const dataGridArgTypes = {
       dataExportAllow: dataExportAllowType,
       dataExportFilename: dataExportFilenameType,
     }),
+    enableDataExportModel: enableDataExportModelType,
   }),
 }
 
@@ -475,4 +477,5 @@ export const dataGridDefaultArgs = {
   enableInfiniteScroll: false,
   enableBackToTop: false,
   enableDataExport: false,
+  enableDataExportModel: false,
 } as const

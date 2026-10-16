@@ -42,6 +42,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   rowGroupingModel: { enableRowGroupingModel: true },
   rowSelectionModel: { enableRowSelectionModel: true },
   cellSelectionModel: { enableCellSelectionModel: true },
+  dataExportModel: { enableDataExportModel: true },
   rowDragging: { enableRowDragging: true },
   rowGrouping: { enableRowGrouping: true },
   rowActions: { enableRowActions: true },

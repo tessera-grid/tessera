@@ -18,7 +18,7 @@ import {
   optionCountsOf,
 } from '../plugins/columnFilteringModel/options'
 import { dataExport } from '../plugins/dataExport'
-import { collectExportData } from '../plugins/dataExport/exportData'
+import { collectExportData } from '../plugins/dataExportModel/exportData'
 import { quickSearch } from '../plugins/quickSearch'
 
 interface Item {

@@ -14,14 +14,14 @@ import { DEFAULT_LABELS } from '../core/localization'
 import { columnPinning } from '../plugins/columnPinning'
 import { columnSorting } from '../plugins/columnSorting'
 import { dataExport } from '../plugins/dataExport'
-import { csvFormat } from '../plugins/dataExport/csv'
-import { collectExportData } from '../plugins/dataExport/exportData'
+import { csvFormat } from '../plugins/dataExportModel/csv'
+import { collectExportData } from '../plugins/dataExportModel/exportData'
 import { rowLabel } from '../plugins/dataExport/rowLabel'
 import {
   resolveAxes,
   resolveSettings,
   type ExportAxes,
-} from '../plugins/dataExport/settings'
+} from '../plugins/dataExportModel/settings'
 import { pagination } from '../plugins/pagination'
 import { rowGrouping } from '../plugins/rowGrouping'
 import { rowSelection } from '../plugins/rowSelection'

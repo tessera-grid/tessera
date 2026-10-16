@@ -522,6 +522,9 @@ export const paginationModelInitialPageSizeType = numberControl(
   { min: 1, max: 1000, step: 5 },
   String(DEFAULT_PAGE_SIZE),
 )
+export const enableDataExportModelType = booleanControl(
+  'Выгрузка без кнопки: только `table.exportData` (плагин `dataExportModel`)',
+)
 export const enableDataExportType = booleanControl(
   'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
 )

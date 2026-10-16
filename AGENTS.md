@@ -490,9 +490,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `maxDepth`, группы, линии, скелет), модульный `rowExpandingModel.dom` (TD4–TD5, TD9 —
       модель в наборе одна, выключенный интерфейс не гасит модель, старых опций нет)
       ([ADR 0119](docs/decisions/0119-tree-data-model.md)),
-      плагины модели и интерфейса — модульный `pluginModels.dom` (MP4–MP5, MP8–MP10, MP16 —
+      плагины модели и интерфейса — модульный `pluginModels.dom` (MP4–MP5, MP8–MP10, MP12, MP16 —
       опции модели только от модели, явная модель главнее, срез аргументами плагина и
-      `initial<Срез>`, группы раскрывает модель дерева, диагностика), визуальный `plugin-models` (MP13–MP14 —
+      `initial<Срез>`, группы раскрывает модель дерева, оси выгрузки по моделям, диагностика), визуальный `plugin-models` (MP13–MP14 —
       выбранная строка без колонки флажков, подсветка ячеек без жестов; остальные MP — этапы 2–3)
       ([ADR 0120](docs/decisions/0120-model-and-interface-plugins.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),

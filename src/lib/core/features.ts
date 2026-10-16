@@ -320,7 +320,8 @@ export const foldHooks = (
   entries: readonly TesseraFeatureEntry[],
 ): Record<string, unknown> => {
   const hooks: Record<string, unknown> = {}
-  for (const entry of entries) {
+  // Хуки модели, которую несёт интерфейс, — в её scope (ADR 0120).
+  for (const entry of expandIncludedModels(entries).entries) {
     if (isActive(entry) && entry.hooks) {
       Object.assign(hooks, entry.hooks)
     }

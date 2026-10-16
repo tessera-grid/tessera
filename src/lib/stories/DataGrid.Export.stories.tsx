@@ -2,6 +2,8 @@ import { Meta, StoryObj } from '@storybook/react'
 import { expect, spyOn, userEvent } from 'storybook/test'
 
 import { exportFormats } from '../plugins/dataExport'
+import type { ToolbarComponentProps } from '../core/createSlots/types'
+import { Button } from '../ui/Button/Button'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
@@ -12,6 +14,7 @@ import {
   byTestId,
   callbackLog,
   expectPopupInCanvas,
+  guideNext,
   openPopup,
   orderedRows,
   settle,
@@ -19,8 +22,9 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 
-/** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим. */
+/** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим; своя кнопка приложения (ADR 0120). */
 
 interface ExportArgs extends StoryProps {
   serverDelayMs?: number
@@ -287,6 +291,88 @@ async function openExport(canvas: HTMLElement) {
  * Перехват скачивания: файл не уходит в загрузки ни в живом Storybook, ни в тестах — его
  * имя и содержимое остаются `play`.
  */
+// --- ADR 0120, S6 --------------------------------------------------------------------
+
+/** Своя кнопка приложения: выгрузка методом модели `table.exportData`. */
+const OwnExportButton = ({ table }: ToolbarComponentProps) => (
+  <Button
+    variant="outline"
+    data-testid="own-export"
+    onClick={() => void table.exportData({ rows: 'all' })}
+  >
+    Выгрузить всё
+  </Button>
+)
+
+/** Кнопка приложения в тулбаре — свой слот, без плагина интерфейса выгрузки. */
+const OWN_EXPORT_BUTTON = [
+  {
+    id: 'ownExportButton',
+    slots: [
+      { id: 'ownExport', slot: 'toolbarSlot', component: OwnExportButton },
+    ],
+  },
+] as StoryProps['extraPlugins']
+
+const OWN_BUTTON: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопки «Экспорт» нет',
+    hint: 'Плагин dataExportModel без dataExport: в тулбаре только своя кнопка приложения «Выгрузить всё».',
+  },
+  {
+    title: 'Приложение выгружает',
+    hint: "Своя кнопка зовёт table.exportData({ rows: 'all' }) — грид собирает CSV и скачивает файл export.csv.",
+  },
+]
+
+/** ADR 0120, S6: приложение выгружает данные своей кнопкой через `table.exportData`. */
+export const ExportOwnButton: StoryObj<StoryProps> = {
+  name: 'Own button',
+  parameters: {
+    scenario: '0120/S6',
+    ...showControls(['enableDataExportModel']),
+  },
+  args: {
+    columnCount: 6,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
+    enableDataExportModel: true,
+    extraPlugins: OWN_EXPORT_BUTTON,
+  },
+  render: args => (
+    <GuideStory
+      title="Выгрузка своей кнопкой"
+      steps={OWN_BUTTON}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
+    if (globals.catalog !== true) return
+    const download = interceptDownload()
+    try {
+      await step(OWN_BUTTON[0].title, async () => {
+        await waitForRows(canvas)
+        expect(canvas.querySelector('[data-testid="export-button"]')).toBeNull()
+        expect(
+          canvas.querySelector('[data-testid="own-export"]'),
+        ).not.toBeNull()
+      })
+      await step(OWN_BUTTON[1].title, async () => {
+        await guideNext(canvas)
+        await userEvent.click(
+          canvas.querySelector<HTMLElement>('[data-testid="own-export"]')!,
+        )
+        await until(() => expect(download.names).toEqual(['export.csv']))
+      })
+    } finally {
+      download.restore()
+    }
+    await settle()
+  },
+}
+
 function interceptDownload() {
   const names: string[] = []
   const blobs: Blob[] = []

@@ -23,7 +23,7 @@ import type {
 type HooksTable = { getHooks?: () => Record<string, unknown> | undefined }
 
 const hooksOf = (table: unknown): Partial<ExportHooks> =>
-  ((table as HooksTable).getHooks?.()?.dataExport as
+  ((table as HooksTable).getHooks?.()?.dataExportModel as
     Partial<ExportHooks> | undefined) ?? {}
 
 export const formatOf = (table: unknown, settings: ExportSettings) => {

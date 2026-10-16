@@ -13,7 +13,7 @@ import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { columnFiltering } from '../plugins/columnFiltering'
 import type { ColumnFilterValue } from '../plugins/columnFiltering'
 import { dataExport } from '../plugins/dataExport'
-import { exportRowsOf } from '../plugins/dataExport/exportData'
+import { exportRowsOf } from '../plugins/dataExportModel/exportData'
 import { quickSearch } from '../plugins/quickSearch'
 
 interface Item {

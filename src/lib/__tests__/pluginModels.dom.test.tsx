@@ -12,6 +12,7 @@ import { foldEntries, type TesseraFeatureEntry } from '../core/features'
 import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
 import { useCreateTable } from '../core/useCreateTable'
+import { resolveAxes } from '../plugins/dataExportModel/settings'
 import {
   cellSelection,
   cellSelectionModel,
@@ -19,6 +20,8 @@ import {
   columnFilteringModel,
   columnSorting,
   columnSortingModel,
+  dataExport,
+  dataExportModel,
   pagination,
   paginationModel,
   quickSearch,
@@ -108,6 +111,12 @@ const PAIRS = [
     model: cellSelectionModel,
     ui: cellSelection,
     flags: ['enableCellSelection'],
+    state: {},
+  },
+  {
+    model: dataExportModel,
+    ui: dataExport,
+    flags: ['exportOptions'],
     state: {},
   },
 ] as const
@@ -367,6 +376,30 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
       rowGroupingModel({ initialGrouping: ['kind'] }),
     ])
     expect(rows()).toEqual(['kind:a', '1', '2', 'kind:b', '3'])
+  })
+
+  it('MP12: оси выгрузки по сортировке, фильтрам, странице и выбору открываются по активной модели, без плагина интерфейса', () => {
+    const axes = () => {
+      const { rows, viewBy } = resolveAxes(table)!
+      return { rows: rows.map(choice => choice.value), viewBy }
+    }
+    render(() => [dataExportModel()])
+    expect(axes()).toEqual({ rows: ['all'], viewBy: [] })
+    act(() => root!.unmount())
+    root = undefined
+
+    render(() => [
+      dataExportModel(),
+      columnSortingModel(),
+      columnFilteringModel(),
+      quickSearchModel(),
+      paginationModel(),
+      rowSelectionModel(),
+    ])
+    expect(axes()).toEqual({
+      rows: ['all', 'view', 'page', 'selected'],
+      viewBy: ['sorting', 'filtering'],
+    })
   })
 
   it('MP16: getPluginDiagnostics показывает явную модель отдельной записью, а включённую интерфейсом — нет', () => {

@@ -1,5 +1,5 @@
 import type { TableLabels } from '../../core/localization'
-import type { ExportViewFeature } from './settings'
+import type { ExportViewFeature } from '../dataExportModel/settings'
 
 /**
  * Подпись значения оси «Строки»; `view` называет то, что учитывается (EX10).

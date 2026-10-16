@@ -109,6 +109,7 @@ export {
   type ExportSettings,
   type ExportValueContext,
 } from './dataExport'
+export { dataExportModel, type DataExportModelOptions } from './dataExportModel'
 
 // Контракт хуков для потребителя (types-mode b): слайсы как примитивы.
 export type { ColumnDraggingHooks } from './columnDragging/types'
@@ -116,7 +117,7 @@ export type { ColumnPinningHooks } from './columnPinning/types'
 export type { ColumnSizingHooks } from './columnSizing/types'
 export type { ColumnSortingHooks } from './columnSorting/types'
 export type { ColumnVisibilityHooks } from './columnVisibility/types'
-export type { ExportHooks } from './dataExport/types'
+export type { ExportHooks } from './dataExportModel/types'
 export type { RowDragEnd, RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
 export type { RowSelectionHooks } from './rowSelection/types'

@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { exportFormats } from '../plugins/dataExport'
 import type { ExportData } from '../plugins/dataExport'
-import { buildXlsx } from '../plugins/dataExport/xlsxBuild'
+import { buildXlsx } from '../plugins/dataExportModel/xlsxBuild'
 
 const read = async (blob: Blob) => {
   const workbook = new ExcelJS.Workbook()

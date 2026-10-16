@@ -19,7 +19,7 @@ export const exportInertReason = (
 ): PluginInertReason | undefined => {
   const { options, getHooks } = table as ExportTable
   const config = options.exportOptions
-  const hooks = getHooks?.call(table)?.dataExport as
+  const hooks = getHooks?.call(table)?.dataExportModel as
     { onExport?: unknown } | undefined
   const runsOnServer =
     !!config?.server &&

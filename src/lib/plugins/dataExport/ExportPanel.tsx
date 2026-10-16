@@ -30,8 +30,8 @@ import {
   resolveSettings,
   warnUnusablePresets,
   whereOf,
-} from './settings'
-import type { ExportSettings } from './types'
+} from '../dataExportModel/settings'
+import type { ExportSettings } from '../dataExportModel/types'
 
 import styles from './ExportPanel.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'

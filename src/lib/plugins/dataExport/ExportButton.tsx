@@ -13,9 +13,13 @@ import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
-import { runExport } from './runExport'
-import { resolveAxes, singleSettings, whereOf } from './settings'
-import type { ExportSettings } from './types'
+import { runExport } from '../dataExportModel/runExport'
+import {
+  resolveAxes,
+  singleSettings,
+  whereOf,
+} from '../dataExportModel/settings'
+import type { ExportSettings } from '../dataExportModel/types'
 
 const ExportPanel = preloadable(() =>
   import('./ExportPanel').then(module => module.ExportPanel),
