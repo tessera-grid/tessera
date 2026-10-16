@@ -17,6 +17,8 @@ interface Scenario {
   story: string
 }
 
+const PLANNED = 'этап'
+
 /** Строки таблиц `| № | Сценарий | … | История |` принятых ADR, вне блоков кода. */
 const scenarios = (): Scenario[] =>
   readdirSync(DECISIONS)
@@ -43,6 +45,8 @@ const scenarios = (): Scenario[] =>
           continue
         }
         if (storyColumn < 0 || /^-+$/.test(cells[0]!)) continue
+        // Сценарий этапа внедрения (`этап N · История`): истории до этапа нет.
+        if (cells[storyColumn]!.startsWith(PLANNED)) continue
         rows.push({
           adr,
           id: cells[0]!,

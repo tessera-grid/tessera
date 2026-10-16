@@ -1,9 +1,9 @@
 /**
- * Запись плагина rowExpandingModel на `definePlugin`: модель дерева без интерфейса (ADR 0119).
- * Строки раскрыты по срезу `expanded` приложения; переключатель, предел глубины и
- * ленивые дети — у `rowExpanding`, который приносит ту же модель.
+ * Запись плагина rowExpandingModel на `definePlugin`: модель дерева без интерфейса
+ * (ADR 0119, ADR 0120). Строки раскрыты по срезу `expanded`; переключатель, предел
+ * глубины и ленивые дети — у `rowExpanding`, который включает эту модель.
  */
-import { rowExpandingFeature } from '@tanstack/react-table'
+import { type ExpandedState, rowExpandingFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import {
@@ -15,6 +15,12 @@ import { neverInert } from '../../core/pluginDiagnostics'
 export interface RowExpandingModelOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
+  /** Раскрытые строки (`true` — все): задаёт приложение; без него срез хранит грид. */
+  expanded?: ExpandedState
+  /** Новое значение среза после каждого изменения изнутри грида. */
+  onExpandedChange?: (next: ExpandedState) => void
+  /** Начальное значение среза, которым владеет грид. */
+  initialExpanded?: ExpandedState
 }
 
 export const rowExpandingModel = definePlugin<RowExpandingModelOptions>()({
@@ -24,6 +30,7 @@ export const rowExpandingModel = definePlugin<RowExpandingModelOptions>()({
     rowExpandingFeature,
     expandedRowModel: createIncrementalExpandedRowModel(),
   },
+  slices: ['expanded'],
   narrow: () => ({ expanded: narrowExpandingOff }),
   options: o => ({
     enableExpanding: o.enabled !== false,

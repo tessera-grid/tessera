@@ -22,6 +22,7 @@ import {
 } from '@tanstack/react-table'
 
 import { commonFeature } from './commonFeature'
+import { expandIncludedModels } from './pluginModels'
 import { actionStatusFeature } from './headerActions/actionStatusFeature'
 import { highlightFeature } from './highlights/highlightFeature'
 import { scrollToRowFeature } from './scrollToRow/scrollToRowFeature'
@@ -90,6 +91,12 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
     value: unknown
     onChange?: (next: unknown) => void
   }
+  /** Срезы TanStack из аргументов плагина: `<срез>`, `on<Срез>Change`, `initial<Срез>` (ADR 0120, §4). */
+  stateSlices?: PluginStateSlice[]
+  /** Модель, которую несёт плагин интерфейса; ядро раскрывает её в свою запись (ADR 0120, §3). */
+  model?: TesseraFeatureEntry
+  /** Интерфейс, включивший эту модель: в диагностике её нет (MP16). */
+  includedBy?: string
   /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
   inertReason?: PluginInertReason
   /**
@@ -137,6 +144,14 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * дешёвым, когда согласовывать нечего.
    */
   reconcile?: (table: unknown, context: PluginReconcileContext) => void
+}
+
+/** Срез TanStack, заданный аргументами плагина; `undefined` — аргумент не передан. */
+export interface PluginStateSlice {
+  key: string
+  value: unknown
+  onChange?: (next: unknown) => void
+  initial: unknown
 }
 
 export interface PluginReconcileContext {
@@ -191,19 +206,15 @@ export const findDuplicatePluginIds = (
 }
 
 /**
- * Флаги модели, которую несут несколько плагинов (модель и интерфейс, ADR 0119): модель
- * включена, если её включила хоть одна запись, — выключенный интерфейс её не гасит.
- */
-const SHARED_MODEL_FLAGS = ['enableExpanding']
-
-/**
  * Чистая свёртка активных записей в опции таблицы. Порядок фолда = порядок
  * записей, как в императивной регистрации. Используется и `useCreateTable`, и
  * headless-тестами.
  */
 export const foldEntries = (
-  entries: readonly TesseraFeatureEntry[],
+  plugins: readonly TesseraFeatureEntry[],
 ): FoldedEntryConfig => {
+  // Модели, которые несут интерфейсы, — свои записи (ADR 0120); раскрытый набор не меняется.
+  const { entries } = expandIncludedModels(plugins)
   const options: Record<string, unknown> = {}
   const slots = createEmptyRenderSlots()
   const slotActions = createEmptySlotActions()
@@ -216,19 +227,20 @@ export const foldEntries = (
   const narrow: NarrowMap = {}
 
   for (const entry of entries) {
-    pluginDiagnostics.push({
-      id: entry.id,
-      enabled: entry.enabled,
-      diagnose: entry.diagnose,
-      reason: entry.inertReason,
-    })
+    if (!entry.includedBy) {
+      pluginDiagnostics.push({
+        id: entry.id,
+        enabled: entry.enabled,
+        diagnose: entry.diagnose,
+        reason: entry.inertReason,
+      })
+    }
 
     // Опции берём от ВСЕХ присутствующих записей (в т.ч. enabled:false) — фабрика
     // отключённого плагина эмитит enable*:false, гася свою (всегда-присутствующую в
     // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
-    const wasOn = SHARED_MODEL_FLAGS.filter(flag => options[flag] === true)
+    // Опции модели выставляет только её запись (ADR 0120): от порядка они не зависят.
     Object.assign(options, entry.options)
-    for (const flag of wasOn) options[flag] = true
 
     // Сужение — тоже от всех записей: выключенный плагин гасит свой срез (фильтры —
     // ADR 0045), не теряя сохранённого значения.
@@ -375,7 +387,7 @@ export const buildTesseraFeatures = <
   // на маунте useTable, поэтому рантайм-включение плагина не добавит фичу. Держим
   // фичу всегда, а поведение гейтим опцией
   // (enable*:false у отключённого плагина — foldEntries эмитит её от всех записей).
-  for (const entry of entries) {
+  for (const entry of expandIncludedModels(entries).entries) {
     Object.assign(merged, entry.features)
   }
 

@@ -40,6 +40,14 @@ const WITHOUT_CONTROL: Record<string, string> = {
   headerActionMenuSlots: 'список кнопок — из кода плагинов',
   cellEditingEditing: 'состояние правки у приложения — своя история',
   keyboardNavigationActiveCell: 'активная ячейка у приложения — своя история',
+  rowExpandingExpanded:
+    'раскрытие у приложения — истории задают его `expandAll`',
+  rowExpandingInitialExpanded:
+    'раскрытие у приложения — истории задают его `expandAll`',
+  rowExpandingModelExpanded:
+    'раскрытие у приложения — истории задают его `expandAll`',
+  rowExpandingModelInitialExpanded:
+    'раскрытие у приложения — истории задают его `expandAll`',
   rowSelectionIsAllRowsSelected: 'выбор всех строк ведёт демо-панель истории',
   onConflict: 'режим конфликта правки задаёт история',
   actionsDemo:

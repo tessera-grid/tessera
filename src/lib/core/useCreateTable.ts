@@ -54,6 +54,11 @@ import {
   type PluginSetStore,
 } from './pluginSet'
 import { useEffectiveState } from './effectiveState'
+import {
+  expandIncludedModels,
+  pluginSlicesOf,
+  withSliceNarrows,
+} from './pluginModels'
 import { useTableEffects } from './useTableEffects'
 
 // Видимость служебных колонок сужается с первого рендера (ADR 0050). Константа: новое
@@ -186,7 +191,10 @@ export const useCreateTable = <
   // плагин инертен, удалённый — выключен как enabled: false.
   const setStore = useRef<PluginSetStore | null>(null)
   setStore.current ??= createPluginSetStore()
-  const entries = resolvePluginSet(setStore.current, plugins)
+  // Модель, которую несёт интерфейс, — своя запись перед ним (ADR 0120, §3).
+  const { entries: withModels, mismatches: modelMismatches } =
+    expandIncludedModels(plugins)
+  const entries = resolvePluginSet(setStore.current, withModels)
 
   // Держим набор фич и свёртку по СИГНАТУРЕ структуры активных записей (id +
   // enabled), а не по идентичности массива — иначе новый plugins пересобирал бы всё.
@@ -283,11 +291,20 @@ export const useCreateTable = <
     getColumnsSignature(previous.options.columns) === columnsSignature
       ? previous
       : null
+  // Срезы из аргументов плагинов (ADR 0120, §4) хранит ядро, как суженные.
+  const slices = pluginSlicesOf(entries)
+  const sliceKeys = slices.keys.join('|')
+  const narrow = useMemo(
+    () => withSliceNarrows(folded.narrow, slices.keys),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу срезов
+    [folded.narrow, sliceKeys],
+  )
   const effective = useEffectiveState({
-    narrow: folded.narrow,
+    narrow,
     owned: { columnPinning: displayedPinning },
-    state: restState,
+    state: { ...restState, ...slices.state },
     handlers: restHandlers,
+    listeners: slices.listeners,
     table: freshTable,
     getAtoms: () => tableRef.current?.atoms,
     inputs: [data, columnsSignature],
@@ -296,7 +313,7 @@ export const useCreateTable = <
       options: { ...folded.options, loading },
       slotActions: folded.slotActions,
     },
-    initial: INITIAL_EFFECTIVE_STATE,
+    initial: { ...INITIAL_EFFECTIVE_STATE, ...slices.initial },
   })
 
   // По значениям: объект, собранный на каждый рендер, сбрасывал бы кэши колонок TanStack.
@@ -390,6 +407,7 @@ export const useCreateTable = <
     signature,
     argsSignature,
     lifetimeViolations,
+    modelMismatches,
   )
 
   return table

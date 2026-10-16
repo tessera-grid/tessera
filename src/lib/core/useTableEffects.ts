@@ -11,6 +11,7 @@ import {
 } from './features'
 import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
 import { logWarn } from './logger'
+import type { ModelArgsMismatch } from './pluginModels'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
 import { abortServerActions } from './serverActions'
 import {
@@ -27,6 +28,7 @@ export const useTableEffects = (
   signature: string,
   argsSignature: string,
   lifetimeViolations: readonly string[],
+  modelMismatches: readonly ModelArgsMismatch[] = [],
 ) => {
   const host = table as Parameters<typeof logWarn>[0]
 
@@ -163,6 +165,21 @@ export const useTableEffects = (
       `dup-plugin-id:${duplicateIds.join(',')}`,
     )
   }, [duplicateIds, host])
+
+  // Дев-варн: аргументы модели у интерфейса расходятся с явной моделью (ADR 0120, MP5).
+  const mismatchesKey = modelMismatches
+    .map(({ modelId, includedBy }) => `${includedBy}>${modelId}`)
+    .join(',')
+  useEffect(() => {
+    for (const { modelId, includedBy } of modelMismatches) {
+      logWarn(
+        host,
+        `аргументы модели у ${includedBy} не действуют: в наборе есть явная ${modelId} — её аргументы главнее; задайте их у ${modelId}`,
+        `model-args:${includedBy}>${modelId}`,
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу расхождений
+  }, [mismatchesKey, host])
 
   // Дев-варн на нескольких владельцев cellSlot: владение ячейкой эксклюзивно
   // (владелец ЗАМЕЩАЕТ рендер ячейки). При одновременной активности внешний (первый)

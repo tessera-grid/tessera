@@ -32,11 +32,18 @@ import {
 } from './rowExpandingColumn'
 import { RowExpandingComponent } from './RowExpandingComponent'
 import { isLazyRow } from './toggleRowExpanded'
+import {
+  rowExpandingModel,
+  type RowExpandingModelOptions,
+} from '../rowExpandingModel/registry'
 import type { RowExpandingHooks } from './types'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
 
-export interface RowExpandingOptions {
+export interface RowExpandingOptions extends Omit<
+  RowExpandingModelOptions,
+  'enabled'
+> {
   /** `false` — плагин отключён. */
   enabled?: boolean
   /**
@@ -88,6 +95,11 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
 export const rowExpanding = definePlugin<RowExpandingOptions>()({
   id: 'rowExpanding',
   diagnose: neverInert,
+  // Модель дерева — своя запись; срез `expanded` — её аргумент (ADR 0120).
+  model: {
+    plugin: rowExpandingModel,
+    keys: ['expanded', 'onExpandedChange', 'initialExpanded'],
+  },
   features: {
     rowExpandingFeature,
     rowExpandingPendingFeature,
@@ -167,10 +179,8 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
       )
     }
 
-    // Выключенный плагин предела модели не задаёт: дерево `rowExpandingModel` рядом — без него.
+    // Опции модели выставляет rowExpandingModel; выключенный интерфейс предела не задаёт.
     return {
-      enableExpanding: o.enabled !== false,
-      autoResetExpanded: false,
       getRowCanExpand: o.enabled === false ? undefined : getRowCanExpand,
     }
   },

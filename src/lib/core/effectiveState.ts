@@ -82,6 +82,8 @@ interface EffectiveStateParams {
   context: NarrowContext
   /** Начальное значение среза, которым TanStack не владеет до первого рендера. */
   initial?: Record<string, unknown>
+  /** Колбэки срезов из аргументов плагинов: получают новое значение (ADR 0120, MP8). */
+  listeners?: Record<string, ((next: unknown) => void) | undefined>
 }
 
 export const useEffectiveState = ({
@@ -94,8 +96,11 @@ export const useEffectiveState = ({
   inputs,
   context,
   initial = {},
+  listeners = {},
 }: EffectiveStateParams) => {
   const [inner, setInner] = useState<Record<string, unknown>>({})
+  // Синхронная копия `inner`: новое значение нужно колбэку сразу, вне функции обновления.
+  const innerRef = useRef(inner)
   const cache = useRef(new Map<string, CacheEntry>())
   const [tick, forceRender] = useState(0)
   const forced = useRef(0)
@@ -119,24 +124,27 @@ export const useEffectiveState = ({
             ? initial[key]
             : getAtoms()?.[key]?.get()
 
+    const listener = listeners[key]
     if (!isOwned)
       handlersOut[handlerName] = (updater: unknown) => {
         external?.(updater)
         // Без контролируемого значения срез хранит ядро — и при колбэке потребителя.
-        if (external && state[key] !== undefined) {
+        if (state[key] !== undefined && (external || listener)) {
+          listener?.(functionalUpdate(updater as never, state[key] as never))
           return
         }
-        setInner(prev => ({
-          ...prev,
-          [key]: functionalUpdate(
-            updater as never,
-            (key in prev
-              ? prev[key]
-              : key in initial
-                ? initial[key]
-                : getAtoms()?.[key]?.get()) as never,
-          ),
-        }))
+        const prev = innerRef.current
+        const next = functionalUpdate(
+          updater as never,
+          (key in prev
+            ? prev[key]
+            : key in initial
+              ? initial[key]
+              : getAtoms()?.[key]?.get()) as never,
+        )
+        innerRef.current = { ...prev, [key]: next }
+        setInner(innerRef.current)
+        listener?.(next)
       }
 
     if (raw === undefined) {

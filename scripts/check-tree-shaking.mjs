@@ -2,7 +2,8 @@
 // `@tessera-grid/tessera/plugins`, не получает в сборке кода остальных. Для каждого
 // плагина собираем vite-приложение из одного импорта поверх `dist` и смотрим, модули
 // каких плагинов (`dist/lib/plugins/<плагин>/`) попали в сборку. Запуск: после
-// `npm run build` — `npm run check:tree-shaking`.
+// `npm run build` — `npm run check:tree-shaking`. Интерфейс несёт свою модель
+// (ADR 0120, MP11): ему разрешены модели по цепочке `entry.model`, модели интерфейс — нет.
 
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -28,6 +29,15 @@ const plugins = Object.entries(exported)
     }
   })
   .map(([name]) => name)
+
+/** Модели, которые несёт плагин: цепочка `entry.model` его записи. */
+const modelsOf = name => {
+  const ids = new Set()
+  for (let model = exported[name]().model; model; model = model.model) {
+    ids.add(model.id)
+  }
+  return ids
+}
 
 const PLUGIN_MODULE = /\/dist\/lib\/plugins\/([^/]+)\//
 
@@ -75,7 +85,10 @@ for (const name of plugins) {
     )
     continue
   }
-  const leaked = [...included].filter(other => other !== name)
+  const models = modelsOf(name)
+  const leaked = [...included].filter(
+    other => other !== name && !models.has(other),
+  )
   if (leaked.length > 0) {
     failures.push(`${name}: в сборку попали ${leaked.join(', ')}`)
   }

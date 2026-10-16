@@ -19,6 +19,7 @@ import type {
 import type {
   PluginConfiguration,
   PluginReconcileContext,
+  PluginStateSlice,
   TesseraFeatureEntry,
 } from '../features'
 import type {
@@ -90,8 +91,24 @@ const makeLocalStateFeature = (
   }
 }
 
-const withoutKey = (value: object, key: string): object =>
-  Object.fromEntries(Object.entries(value).filter(([name]) => name !== key))
+const withoutKeys = (value: object, keys: readonly string[]): object =>
+  Object.fromEntries(
+    Object.entries(value).filter(([name]) => !keys.includes(name)),
+  )
+
+const capitalize = (key: string) => key.charAt(0).toUpperCase() + key.slice(1)
+
+const stateSlicesOf = (
+  keys: readonly string[],
+  opts: Record<string, unknown>,
+): PluginStateSlice[] =>
+  keys.map(key => ({
+    key,
+    value: opts[key],
+    onChange: opts[`on${capitalize(key)}Change`] as
+      ((next: unknown) => void) | undefined,
+    initial: opts[`initial${capitalize(key)}`],
+  }))
 
 const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   const out: Record<string, unknown> = {}
@@ -196,6 +213,19 @@ interface DefinePluginConfig<
   controlled?: {
     value: Extract<keyof TOptions, string>
     onChange?: Extract<keyof TOptions, string>
+  }
+  /**
+   * Срезы TanStack, которые плагин принимает аргументами `<срез>`, `on<Срез>Change` и
+   * `initial<Срез>` (ADR 0120, §4).
+   */
+  slices?: readonly Extract<keyof TOptions, string>[]
+  /**
+   * Модель, которую включает плагин интерфейса (ADR 0120, §3): её фабрика и аргументы,
+   * которые интерфейс ей передаёт; `enabled` передаётся всегда.
+   */
+  model?: {
+    plugin: (opts?: any) => TesseraFeatureEntry
+    keys: readonly Extract<keyof TOptions, string>[]
   }
   /** Сервисная колонка плагина; `cell`/`header` получают его `hooks` (DP19). */
   column?: PluginServiceColumn<THooks, TOptions>
@@ -361,8 +391,28 @@ export const definePlugin = <
       entry.args = opts
       // Значение внешнего состояния — не настройка: его смена не пересобирает плагин (DP18).
       entry.argsKey = argsKeyOf(
-        config.controlled ? withoutKey(opts, config.controlled.value) : opts,
+        withoutKeys(opts, [
+          ...(config.controlled ? [config.controlled.value] : []),
+          ...(config.slices ?? []),
+        ]),
       )
+      if (config.slices) {
+        entry.stateSlices = stateSlicesOf(
+          config.slices,
+          opts as Record<string, unknown>,
+        )
+      }
+      if (config.model) {
+        const options = opts as Record<string, unknown>
+        entry.model = config.model.plugin({
+          ...Object.fromEntries(
+            config.model.keys
+              .filter(key => options[key] !== undefined)
+              .map(key => [key, options[key]]),
+          ),
+          enabled: opts.enabled,
+        })
+      }
       if (config.controlled) {
         const options = opts as Record<string, unknown>
         const onChange = config.controlled.onChange
