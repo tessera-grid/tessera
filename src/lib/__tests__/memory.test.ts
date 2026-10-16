@@ -25,7 +25,8 @@ const BOUNDED: Record<string, string> = {
     'константный набор операторов',
   'plugins/columnFiltering/describeFilter.ts:OPTION_OPERATORS':
     'константный набор операторов',
-  'plugins/quickSearch/search.ts:UNSEARCHABLE_TYPES': 'константный набор типов',
+  'plugins/quickSearchModel/search.ts:UNSEARCHABLE_TYPES':
+    'константный набор типов',
   'core/logger.ts:emitted':
     'тексты выданных предупреждений: их набор конечен — по одному на место в коде',
   'core/wallTime.ts:formatters':

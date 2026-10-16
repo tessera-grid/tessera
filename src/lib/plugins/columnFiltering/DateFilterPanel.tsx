@@ -29,7 +29,7 @@ import type {
   DateFilter,
   DateFilterOperator,
   DateFilterPreset,
-} from './types'
+} from '../columnFilteringModel/types'
 
 import panelStyles from './FilterPanel.module.css'
 import styles from './DateFilterPanel.module.css'

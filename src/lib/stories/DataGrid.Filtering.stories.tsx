@@ -25,6 +25,7 @@ import {
   callbackLog,
   expectPopupInCanvas,
   firstRowText,
+  guideNext,
   headCell,
   openPopup,
   settle,
@@ -33,6 +34,7 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 
 interface FilteringServerArgs extends StoryProps {
   serverDelayMs?: number
@@ -47,7 +49,7 @@ interface FilteringDatesArgs extends StoryProps {
 /**
  * Фильтрация (ADR 0045, ADR 0047, ADR 0048): фильтры колонок по типам — текст, число,
  * булево, дата, варианты (select, multiselect, справочник); быстрый поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой
- * результат; сервер; поиск без колонок для поиска.
+ * результат; сервер; поиск без колонок для поиска; фильтры и поиск из формы приложения (ADR 0120).
  */
 
 const meta = {
@@ -649,4 +651,96 @@ export const FilteringStateOptions: StoryObj<StoryProps> = {
     ]),
   },
   play: ({ canvasElement }) => openFilter(canvasElement, 'status'),
+}
+
+// --- ADR 0120, S3 --------------------------------------------------------------------
+
+const searchedCity = filteringData[0]!.city as string
+
+const cellsOf = (root: ParentNode, column: string) =>
+  [
+    ...root.querySelectorAll<HTMLElement>(
+      `.data-grid__body-row [data-column-id="${column}"]`,
+    ),
+  ].map(cell => cell.textContent?.trim() ?? '')
+
+const EXTERNAL_FORM: readonly GuideStoryStep[] = [
+  {
+    title: 'Все строки',
+    hint: 'Плагины columnFilteringModel и quickSearchModel без интерфейса: в заголовках нет кнопок фильтра, в тулбаре нет поля поиска.',
+    props: () => ({
+      enableColumnFilteringModel: true,
+      enableQuickSearchModel: true,
+    }),
+  },
+  {
+    title: `Приложение ищет «${searchedCity}»`,
+    hint: 'Поле поиска приложения задаёт срез globalFilter аргументом модели — остались строки с этим городом.',
+    props: () => ({ quickSearchModelGlobalFilter: searchedCity }),
+  },
+  {
+    title: 'И фильтрует возраст старше 30',
+    hint: 'Форма приложения задаёт фильтр колонки срезом columnFilters — условия поиска и фильтра объединяются через И.',
+    props: () => ({
+      columnFilteringModelColumnFilters: [
+        { id: 'age', value: { operator: 'greaterThan', value: 30 } },
+      ],
+    }),
+  },
+]
+
+/** ADR 0120, S3: приложение фильтрует и ищет из своей формы — модели без кнопок и поля. */
+export const FilteringExternalForm: StoryObj<StoryProps> = {
+  name: 'External form',
+  parameters: {
+    scenario: '0120/S3',
+    ...showControls([
+      'enableColumnFilteringModel',
+      'columnFilteringModelTimeZone',
+      'enableQuickSearchModel',
+    ]),
+  },
+  args: {
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
+    columnsOverride: filteringColumns,
+    dataOverride: filteringData,
+  },
+  render: args => (
+    <GuideStory
+      title="Фильтры и поиск из формы приложения"
+      steps={EXTERNAL_FORM}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
+    if (globals.catalog !== true) return
+    await step(EXTERNAL_FORM[0].title, async () => {
+      await waitForRows(canvas)
+      expect(canvas.querySelector('.column-filter__button')).toBeNull()
+      expect(canvas.querySelector('[data-testid="quick-search"]')).toBeNull()
+    })
+    await step(EXTERNAL_FORM[1].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(
+          cellsOf(canvas, 'city').every(city => city === searchedCity),
+        ).toBe(true),
+      )
+    })
+    await step(EXTERNAL_FORM[2].title, async () => {
+      await guideNext(canvas)
+      await until(() => {
+        const ages = cellsOf(canvas, 'age').map(Number)
+        expect(ages.length).toBeGreaterThan(0)
+        expect(ages.every(age => age > 30)).toBe(true)
+      })
+      expect(cellsOf(canvas, 'city').every(city => city === searchedCity)).toBe(
+        true,
+      )
+    })
+    await settle()
+  },
 }

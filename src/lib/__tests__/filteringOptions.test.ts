@@ -16,7 +16,7 @@ import type { ColumnFilterValue } from '../plugins/columnFiltering'
 import {
   filterOptionsOf,
   optionCountsOf,
-} from '../plugins/columnFiltering/options'
+} from '../plugins/columnFilteringModel/options'
 import { dataExport } from '../plugins/dataExport'
 import { collectExportData } from '../plugins/dataExport/exportData'
 import { quickSearch } from '../plugins/quickSearch'

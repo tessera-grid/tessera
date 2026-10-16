@@ -9,11 +9,11 @@ import type { ColumnFilterValue } from '../../plugins'
 import {
   filterTypeOf,
   matchesColumnFilter,
-} from '../../plugins/columnFiltering/conditions'
+} from '../../plugins/columnFilteringModel/conditions'
 import {
   matchesSearch,
   normalizeSearch,
-} from '../../plugins/quickSearch/search'
+} from '../../plugins/quickSearchModel/search'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import {

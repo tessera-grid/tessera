@@ -34,13 +34,16 @@ import { Tooltip } from '../../ui/Tooltip'
 import { operatorLabel } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
 import { OperatorSelect } from './OperatorSelect'
-import { filterOptionsOf, optionCountsOf } from './options'
+import {
+  filterOptionsOf,
+  optionCountsOf,
+} from '../columnFilteringModel/options'
 import type {
   ColumnFilterDef,
   LoadOptions,
   OptionFilter,
   OptionFilterOperator,
-} from './types'
+} from '../columnFilteringModel/types'
 
 import panelStyles from './FilterPanel.module.css'
 import checkboxStyles from '../../ui/SelectCheckbox/SelectCheckbox.module.css'

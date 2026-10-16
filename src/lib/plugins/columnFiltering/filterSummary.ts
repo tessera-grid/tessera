@@ -3,7 +3,7 @@
  * признак скрытой колонки. Фильтр колонки, которой нет в описании, не показывается.
  */
 import type { ColumnOptionsDef } from '../../core/columnOptions'
-import type { ColumnFilterValue } from './types'
+import type { ColumnFilterValue } from '../columnFilteringModel/types'
 
 interface SummaryColumn {
   id: string

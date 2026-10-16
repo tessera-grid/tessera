@@ -3,8 +3,8 @@ import type { InputType } from 'storybook/internal/csf'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
 import { DEFAULT_HEADER_ACTION_MENU } from '../../../../lib/plugins/headerActionMenu'
 import { DEFAULT_ROW_ACTION_MENU } from '../../../../lib/plugins/rowActionMenu'
-import { DEFAULT_FILTER_DEBOUNCE_MS } from '../../../../lib/plugins/columnFiltering/conditions'
-import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../../../../lib/plugins/quickSearch/search'
+import { DEFAULT_FILTER_DEBOUNCE_MS } from '../../../../lib/plugins/columnFilteringModel/conditions'
+import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../../../../lib/plugins/quickSearchModel/search'
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_PAGE_SIZES,
@@ -445,6 +445,17 @@ export const columnFilteringTimeZoneType: InputType = {
   description:
     'Часовой пояс фильтра дат, IANA (`timeZone`); по умолчанию — пояс браузера',
 }
+export const enableColumnFilteringModelType = booleanControl(
+  'Фильтры без кнопок: строки по состоянию `columnFilters` (плагин `columnFilteringModel`)',
+)
+export const columnFilteringModelTimeZoneType: InputType = {
+  control: 'text',
+  description:
+    'Часовой пояс фильтра дат модели, IANA (`timeZone`); по умолчанию — пояс браузера',
+}
+export const enableQuickSearchModelType = booleanControl(
+  'Поиск без поля: строки по состоянию `globalFilter` (плагин `quickSearchModel`)',
+)
 export const enableInfiniteScrollType = booleanControl(
   'Бесконечная прокрутка — лента: у края грид просит блок (плагин `infiniteScroll`); данные дописывает история',
 )

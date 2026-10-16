@@ -17,7 +17,7 @@ import { searchColumnLabel, searchColumnsOf } from '../../core/searchColumns'
 import { Tooltip } from '../../ui/Tooltip'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
 import { useIcons } from '../../ui/icons'
-import { DEFAULT_SEARCH_DEBOUNCE_MS } from './search'
+import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../quickSearchModel/search'
 
 import styles from './SearchField.module.css'
 import gridStyles from '../../grid/DataGrid/DataGrid.module.css'

@@ -148,6 +148,11 @@ export const useEffectiveState = ({
       }
 
     if (raw === undefined) {
+      // Сброс в `undefined` (`resetGlobalFilter`) — тоже значение: TanStack читает своё
+      // свойство `undefined` как начальное, а без свойства — прежнее из базового атома.
+      if (!isOwned && state[key] === undefined && key in inner) {
+        stateOut[key] = undefined
+      }
       continue
     }
     const cached = cache.current.get(key)

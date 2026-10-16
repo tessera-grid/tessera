@@ -69,7 +69,15 @@ export {
   type TextFilter,
   type TextFilterOperator,
 } from './columnFiltering'
+export {
+  columnFilteringModel,
+  type ColumnFilteringModelOptions,
+} from './columnFilteringModel'
 export { quickSearch, type QuickSearchOptions } from './quickSearch'
+export {
+  quickSearchModel,
+  type QuickSearchModelOptions,
+} from './quickSearchModel'
 export {
   dataExport,
   exportFormats,

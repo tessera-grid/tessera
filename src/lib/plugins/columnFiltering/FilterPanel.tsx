@@ -14,7 +14,7 @@ import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
-import { filterTypeOf } from './conditions'
+import { filterTypeOf } from '../columnFilteringModel/conditions'
 import { type FilterOperator, operatorLabel } from './describeFilter'
 import { OperatorSelect } from './OperatorSelect'
 import type {
@@ -22,7 +22,7 @@ import type {
   ColumnFilterValue,
   NumberFilterOperator,
   TextFilterOperator,
-} from './types'
+} from '../columnFilteringModel/types'
 
 import styles from './FilterPanel.module.css'
 import { FilterFailure } from './FilterFailure'

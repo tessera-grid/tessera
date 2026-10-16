@@ -8,4 +8,4 @@ export type {
   NumberFilterOperator,
   TextFilter,
   TextFilterOperator,
-} from './types'
+} from '../columnFilteringModel/types'

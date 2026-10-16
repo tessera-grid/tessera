@@ -13,10 +13,14 @@ import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
 import { useCreateTable } from '../core/useCreateTable'
 import {
+  columnFiltering,
+  columnFilteringModel,
   columnSorting,
   columnSortingModel,
   pagination,
   paginationModel,
+  quickSearch,
+  quickSearchModel,
   rowExpanding,
   rowExpandingModel,
 } from '../plugins'
@@ -65,6 +69,18 @@ const PAIRS = [
     ui: pagination,
     flags: ['manualPagination', 'paginateExpandedRows', 'autoResetPageIndex'],
     state: { pagination: { pageIndex: 1, pageSize: 1 } },
+  },
+  {
+    model: columnFilteringModel,
+    ui: columnFiltering,
+    flags: ['enableColumnFilters', 'columnFilteringServer'],
+    state: { columnFilters: [{ id: 'name', value: 'b' }] },
+  },
+  {
+    model: quickSearchModel,
+    ui: quickSearch,
+    flags: ['enableGlobalFilter', 'quickSearchServer'],
+    state: { globalFilter: 'c' },
   },
 ] as const
 
@@ -216,7 +232,7 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(rows()).toEqual(['a', 'b', 'c', 'c1'])
   })
 
-  it('MP9: без внешнего значения срез живёт внутри грида с начальным значением initial<Срез>, без него — пустым', () => {
+  it('MP9: без внешнего значения срез живёт внутри грида с начальным значением initial<Срез>, без него — пустым; сброс в undefined — тоже значение', () => {
     const onExpandedChange = vi.fn()
     render(() => [
       rowExpandingModel({ initialExpanded: { a: true }, onExpandedChange }),
@@ -232,6 +248,14 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(rows()).toEqual(ROOTS)
     act(() => table.getRow('a').toggleExpanded())
     expect(rows()).toEqual(['a', 'a1', 'a2', 'b', 'c'])
+    act(() => root!.unmount())
+    root = undefined
+
+    // Сброс среза в `undefined` (значение «нет поиска») — тоже значение среза.
+    render(() => [quickSearchModel({ initialGlobalFilter: 'b' })])
+    expect(rows()).toEqual(['b'])
+    act(() => table.resetGlobalFilter())
+    expect(rows()).toEqual(ROOTS)
   })
 
   it('MP16: getPluginDiagnostics показывает явную модель отдельной записью, а включённую интерфейсом — нет', () => {

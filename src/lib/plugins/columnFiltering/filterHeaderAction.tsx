@@ -8,8 +8,11 @@ import { Suspense } from 'react'
 import type { HeaderAction } from '../../core/headerActions'
 import { preloadable } from '../../core/preloadable'
 import { useIcons } from '../../ui/icons'
-import { DEFAULT_FILTER_DEBOUNCE_MS, filterTypeOf } from './conditions'
-import type { ColumnFilterDef } from './types'
+import {
+  DEFAULT_FILTER_DEBOUNCE_MS,
+  filterTypeOf,
+} from '../columnFilteringModel/conditions'
+import type { ColumnFilterDef } from '../columnFilteringModel/types'
 
 import '../../grid/cellControls/buttonVisibility.css'
 

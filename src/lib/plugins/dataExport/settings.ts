@@ -21,7 +21,9 @@ const VIEW_PLUGINS: Record<string, ExportViewFeature> = {
   columnSorting: 'sorting',
   columnSortingModel: 'sorting',
   columnFiltering: 'filtering',
+  columnFilteringModel: 'filtering',
   quickSearch: 'filtering',
+  quickSearchModel: 'filtering',
 }
 
 /** Плагины, с которыми значение строк есть: интерфейс или его модель (ADR 0120). */

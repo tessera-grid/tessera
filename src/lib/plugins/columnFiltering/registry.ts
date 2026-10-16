@@ -1,38 +1,35 @@
 /**
- * Запись плагина columnFiltering на `definePlugin` (ADR 0045): стоковые
- * `columnFilteringFeature`, общая отфильтрованная модель строк и типы фильтров колонок
- * (`filter` в описании колонки). Фильтры разных колонок объединяются через И.
+ * Запись плагина columnFiltering на `definePlugin` (ADR 0045, ADR 0120): интерфейс фильтров
+ * колонок — кнопка фильтра в заголовке с панелью, сводка в тулбаре, счётчик «показано N из
+ * M» и колбэк пользователя. Модель — `columnFilteringModel`, плагин её включает и передаёт
+ * ей режим данных, пояс дат и срез.
  */
 import type { DayPickerLocale } from '@daypicker/react'
-import {
-  columnFacetingFeature,
-  columnFilteringFeature,
-  createFacetedRowModel,
-} from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
-import { createSearchAwareFilteredRowModel } from '../../core/filteredRowModel'
 import { readPluginHooks } from '../../core/definePlugin'
 import type { FilterChangeHook } from '../../core/filtering'
 import type { PluginInertReason } from '../../core/pluginDiagnostics'
-import { columnFilterTypesFeature } from './columnFilterTypesFeature'
-import { DEFAULT_FILTER_DEBOUNCE_MS } from './conditions'
+import {
+  columnFilteringModel,
+  columnFilteringModelFeatures,
+  type ColumnFilteringModelOptions,
+} from '../columnFilteringModel/registry'
+import { DEFAULT_FILTER_DEBOUNCE_MS } from '../columnFilteringModel/conditions'
 import { filterHeaderAction } from './filterHeaderAction'
 import { FilterSummaryButton } from './FilterSummaryButton'
 import { filteredRowsCountSlot } from '../../grid/filtering/FilteredRowsCount'
 
-export interface ColumnFilteringOptions {
+export interface ColumnFilteringOptions extends Omit<
+  ColumnFilteringModelOptions,
+  'enabled'
+> {
   /** `false` — плагин отключён: фильтры колонок не применяются. */
   enabled?: boolean
   /** Задержка применения ввода в панели фильтра, мс (по умолчанию 200). */
   debounceMs?: number
   /** «Показано N из M» в нижней панели при активном фильтре (по умолчанию нет). */
   filteredCount?: boolean
-  /**
-   * Серверная фильтрация — v9 `manualFiltering`: грид не фильтрует, `data` — уже
-   * результат. Режим данных общий с `quickSearch` (ADR 0045, §10).
-   */
-  server?: boolean
   /**
    * Бизнес-колбэк: пользователь изменил фильтры колонок (после дебаунса). В серверном
    * режиме промис — запрос данных: грид ждёт, отказ отмечает фильтр (ADR 0116).
@@ -42,11 +39,6 @@ export interface ColumnFilteringOptions {
   filteredRowCount?: number
   /** Серверный режим: всех строк — для «показано N из M». */
   totalRowCount?: number
-  /**
-   * Пояс дат (IANA или `'UTC'`): сутки, «сегодня», пресеты и стенное время
-   * `datetime`; по умолчанию — пояс браузера (ADR 0047, §4).
-   */
-  timeZone?: string
   /** Локаль календаря: месяцы, дни недели, первый день недели (по умолчанию `en-US`). */
   dateLocale?: DayPickerLocale
 }
@@ -66,26 +58,21 @@ const columnFilteringInertReason = (
     : undefined
 }
 
-const NO_FILTERS: never[] = []
-
 export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   id: 'columnFiltering',
-  // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
-  lifetime: ['server'],
   diagnose: columnFilteringInertReason,
-  hooks: o => ({ onFilterChange: o.onFilterChange }),
-  features: {
-    columnFilteringFeature,
-    columnFilterTypesFeature,
-    filteredRowModel: createSearchAwareFilteredRowModel(),
-    // Счётчики вариантов — по строкам без фильтра своей колонки (ADR 0048, §3).
-    columnFacetingFeature,
-    facetedRowModel: createFacetedRowModel(),
+  model: {
+    plugin: columnFilteringModel,
+    keys: [
+      'server',
+      'timeZone',
+      'columnFilters',
+      'onColumnFiltersChange',
+      'initialColumnFilters',
+    ],
   },
-  // Выключенный плагин не фильтрует: эффективный срез пуст, сохранённый не меняется
-  // (ADR 0039) — включили снова, фильтры вернулись.
-  narrow: o =>
-    o.enabled === false ? { columnFilters: () => NO_FILTERS } : undefined,
+  features: columnFilteringModelFeatures,
+  hooks: o => ({ onFilterChange: o.onFilterChange }),
   slotActions: [filterHeaderAction],
   // Счётчик — opt-in: у гридов с фильтрами нижняя панель не появляется сама.
   slots: o => [
@@ -101,16 +88,10 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
     ...(o.filteredCount ? [filteredRowsCountSlot] : []),
   ],
   options: o => ({
-    enableColumnFilters: o.enabled !== false,
-    // В дереве родитель виден, если фильтр проходит потомок (FL22).
-    filterFromLeafRows: true,
     columnFilteringDebounceMs: o.debounceMs ?? DEFAULT_FILTER_DEBOUNCE_MS,
-    columnFilteringTimeZone: o.timeZone,
     columnFilteringDateLocale: o.dateLocale,
-    columnFilteringServer: !!o.server,
     ...(o.server
       ? {
-          manualFiltering: true,
           filteringRowCounts: {
             filtered: o.filteredRowCount,
             total: o.totalRowCount,

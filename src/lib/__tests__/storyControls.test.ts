@@ -37,6 +37,19 @@ const WITHOUT_CONTROL: Record<string, string> = {
   columnFilteringFilteredRowCount: 'только вместе с columnFilteringServer',
   columnFilteringTotalRowCount: 'только вместе с columnFilteringServer',
   columnFilteringDateLocale: 'локаль календаря — объект с функциями',
+  columnFilteringColumnFilters: 'фильтры у приложения — своя история',
+  columnFilteringInitialColumnFilters: 'фильтры у приложения — своя история',
+  columnFilteringModelServer:
+    'без имитации сервера ломает показ — своя история',
+  columnFilteringModelColumnFilters: 'фильтры у приложения — своя история',
+  columnFilteringModelInitialColumnFilters:
+    'фильтры у приложения — своя история',
+  quickSearchGlobalFilter: 'строка поиска у приложения — своя история',
+  quickSearchInitialGlobalFilter: 'строка поиска у приложения — своя история',
+  quickSearchModelServer: 'без имитации сервера ломает показ — своя история',
+  quickSearchModelGlobalFilter: 'строка поиска у приложения — своя история',
+  quickSearchModelInitialGlobalFilter:
+    'строка поиска у приложения — своя история',
   quickSearchServer: 'без имитации сервера ломает показ — своя история',
   dataExportServer: 'без имитации сервера ломает показ — своя история',
   dataExportFormats: 'форматы — объекты с функциями',

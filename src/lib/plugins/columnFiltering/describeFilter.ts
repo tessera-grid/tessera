@@ -3,7 +3,7 @@
  * через `Intl.DateTimeFormat` в локали календаря (ADR 0047, §6).
  */
 import type { TableLabels } from '../../core/localization'
-import { parseFilterDate } from './dates'
+import { parseFilterDate } from '../columnFilteringModel/dates'
 import type {
   ColumnFilterValue,
   DateFilterOperator,
@@ -11,7 +11,7 @@ import type {
   NumberFilterOperator,
   OptionFilterOperator,
   TextFilterOperator,
-} from './types'
+} from '../columnFilteringModel/types'
 
 export type FilterOperator =
   | TextFilterOperator
