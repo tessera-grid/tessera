@@ -64,6 +64,10 @@ const WITHOUT_CONTROL: Record<string, string> = {
   columnSortingModelSorting: 'порядок сортировки у приложения — своя история',
   columnSortingModelInitialSorting:
     'порядок сортировки у приложения — своя история',
+  rowGroupingGrouping: 'группировка у приложения — своя история',
+  rowGroupingInitialGrouping: 'группировка у приложения — своя история',
+  rowGroupingModelGrouping: 'группировка у приложения — своя история',
+  rowGroupingModelInitialGrouping: 'группировка у приложения — своя история',
   rowExpandingExpanded:
     'раскрытие у приложения — истории задают его `expandAll`',
   rowExpandingInitialExpanded:

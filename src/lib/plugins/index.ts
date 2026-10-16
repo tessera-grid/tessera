@@ -11,6 +11,10 @@ export {
 export { treeLines, type TreeLinesOptions } from './treeLines'
 export { rowDragging, type RowDraggingOptions } from './rowDragging'
 export { rowGrouping, type RowGroupingOptions } from './rowGrouping'
+export {
+  rowGroupingModel,
+  type RowGroupingModelOptions,
+} from './rowGroupingModel'
 export { rowActions, type RowActionsPluginOptions } from './rowActions'
 export { cellEditing, type CellEditingOptions } from './cellEditing'
 export {

@@ -50,7 +50,7 @@ import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
 import { createIncrementalExpandedRowModel } from '../../../core/expandedRowModel'
 import { createSearchAwareFilteredRowModel } from '../../../core/filteredRowModel'
-import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGrouping/groupedRowModel'
+import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGroupingModel/groupedRowModel'
 import {
   rowExpandingLazyFeature,
   setLoadedAnswer,

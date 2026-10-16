@@ -2,6 +2,10 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** 2026-10-16 — [ADR 0120](0120-model-and-interface-plugins.md): модель группировки —
+  плагин `rowGroupingModel` (агрегации, срез `grouping` аргументами); она включает модель дерева
+  `rowExpandingModel`, и группы раскрываются её срезом `expanded`. `rowGrouping` включает модель
+  и добавляет кнопку в заголовке.
 - **Изменён:** 2026-09-10 — кнопка группировки переведена с опакового слот-компонента
   (`RowGroupingComponent`→`GroupButton`) на единый дескриптор `slotActions`
   ([ADR 0024](0024-slot-action-descriptor-and-menu.md)): при `headerActionMenu`

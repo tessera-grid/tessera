@@ -23,6 +23,8 @@ import {
   quickSearchModel,
   rowExpanding,
   rowExpandingModel,
+  rowGrouping,
+  rowGroupingModel,
 } from '../plugins'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -81,6 +83,12 @@ const PAIRS = [
     ui: quickSearch,
     flags: ['enableGlobalFilter', 'quickSearchServer'],
     state: { globalFilter: 'c' },
+  },
+  {
+    model: rowGroupingModel,
+    ui: rowGrouping,
+    flags: ['enableGrouping', 'groupedColumnMode'],
+    state: { grouping: ['name'] },
   },
 ] as const
 
@@ -256,6 +264,66 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(rows()).toEqual(['b'])
     act(() => table.resetGlobalFilter())
     expect(rows()).toEqual(ROOTS)
+  })
+
+  it('MP10: expanded — аргумент только модели дерева; rowGroupingModel включает модель дерева, и группы раскрываются по её срезу', () => {
+    const data = [
+      { id: '1', name: 'x', kind: 'a' },
+      { id: '2', name: 'y', kind: 'a' },
+      { id: '3', name: 'z', kind: 'b' },
+    ]
+    const columns = [
+      { id: 'name', accessorKey: 'name' },
+      { id: 'kind', accessorKey: 'kind' },
+    ]
+    const Host = ({ plugins }: { plugins: () => TesseraFeatureEntry[] }) => {
+      table = useCreateTable({
+        columns: columns as never,
+        data,
+        getRowId: row => row.id,
+        plugins: plugins() as never,
+      })
+      return null
+    }
+    const show = (plugins: () => TesseraFeatureEntry[]) => {
+      root ??= createRoot(document.createElement('div'))
+      act(() => root!.render(createElement(Host, { plugins })))
+    }
+    const unmount = () => {
+      act(() => root!.unmount())
+      root = undefined
+    }
+
+    // @ts-expect-error — у группировки нет среза `expanded`
+    rowGroupingModel({ expanded: true })
+    // @ts-expect-error — у интерфейса группировки тоже
+    rowGrouping({ expanded: true })
+    for (const entry of [
+      rowGroupingModel({ expanded: true } as never),
+      rowGrouping({ expanded: true } as never),
+    ]) {
+      const slices = [entry, entry.model, entry.model?.model].flatMap(
+        model => model?.stateSlices ?? [],
+      )
+      expect(slices.find(slice => slice.key === 'expanded')?.value).toBe(
+        undefined,
+      )
+    }
+
+    show(() => [rowGroupingModel({ initialGrouping: ['kind'] })])
+    expect(rows()).toEqual(['kind:a', 'kind:b'])
+    act(() => table.getRow('kind:a').toggleExpanded())
+    expect(rows()).toEqual(['kind:a', '1', '2', 'kind:b'])
+    expect(
+      (table.getPluginDiagnostics() as { id: string }[]).map(d => d.id),
+    ).toEqual(['rowGroupingModel'])
+    unmount()
+
+    show(() => [
+      rowExpandingModel({ expanded: true }),
+      rowGroupingModel({ initialGrouping: ['kind'] }),
+    ])
+    expect(rows()).toEqual(['kind:a', '1', '2', 'kind:b', '3'])
   })
 
   it('MP16: getPluginDiagnostics показывает явную модель отдельной записью, а включённую интерфейсом — нет', () => {

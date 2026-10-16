@@ -358,6 +358,9 @@ export const columnDraggingRevertOnRejectType = booleanControl(
 export const enableRowGroupingType = booleanControl(
   'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',
 )
+export const enableRowGroupingModelType = booleanControl(
+  'Группировка без кнопок: группы по состоянию `grouping` (плагин `rowGroupingModel`)',
+)
 export const enableRowActionsType = booleanControl(
   'Колонка действий строки с демо-кнопками (плагин `rowActions`)',
 )

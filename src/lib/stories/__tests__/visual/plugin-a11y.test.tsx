@@ -39,6 +39,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   paginationModel: { enablePaginationModel: true },
   columnFilteringModel: { enableColumnFilteringModel: true },
   quickSearchModel: { enableQuickSearchModel: true },
+  rowGroupingModel: { enableRowGroupingModel: true },
   rowDragging: { enableRowDragging: true },
   rowGrouping: { enableRowGrouping: true },
   rowActions: { enableRowActions: true },

@@ -1,39 +1,21 @@
 /**
- * Запись плагина rowGrouping на `definePlugin`. Поведение даёт
- * `columnGroupingFeature` + `groupedRowModel`; агрегация отделена от группировки —
- * добавляем `rowAggregationFeature` + стандартный набор `aggregationFns`.
+ * Запись плагина rowGrouping на `definePlugin` (ADR 0016, ADR 0120): интерфейс
+ * группировки — кнопка в заголовке (инлайн или строка кебаба). Модель —
+ * `rowGroupingModel`, плагин её включает и передаёт ей срез.
  */
-import {
-  aggregationFn_count,
-  aggregationFn_extent,
-  aggregationFn_max,
-  aggregationFn_mean,
-  aggregationFn_median,
-  aggregationFn_min,
-  aggregationFn_sum,
-  aggregationFn_unique,
-  columnGroupingFeature,
-  rowAggregationFeature,
-} from '@tanstack/react-table'
-
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
-import { createIdleAwareGroupedRowModel } from './groupedRowModel'
+import {
+  rowGroupingModel,
+  rowGroupingModelFeatures,
+  type RowGroupingModelOptions,
+} from '../rowGroupingModel/registry'
 import { groupHeaderAction } from './groupHeaderAction'
 
-/** Стандартный набор агрегаций. */
-const aggregationFns = {
-  sum: aggregationFn_sum,
-  count: aggregationFn_count,
-  min: aggregationFn_min,
-  max: aggregationFn_max,
-  extent: aggregationFn_extent,
-  mean: aggregationFn_mean,
-  median: aggregationFn_median,
-  unique: aggregationFn_unique,
-}
-
-export interface RowGroupingOptions {
+export interface RowGroupingOptions extends Omit<
+  RowGroupingModelOptions,
+  'enabled'
+> {
   /** `false` — плагин отключён. */
   enabled?: boolean
 }
@@ -41,16 +23,11 @@ export interface RowGroupingOptions {
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
   id: 'rowGrouping',
   diagnose: neverInert,
-  features: {
-    columnGroupingFeature,
-    rowAggregationFeature,
-    groupedRowModel: createIdleAwareGroupedRowModel(),
-    aggregationFns,
+  model: {
+    plugin: rowGroupingModel,
+    keys: ['grouping', 'onGroupingChange', 'initialGrouping'],
   },
+  features: rowGroupingModelFeatures,
   // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).
   slotActions: [groupHeaderAction],
-  options: o => ({
-    enableGrouping: o.enabled !== false,
-    groupedColumnMode: false,
-  }),
 })
