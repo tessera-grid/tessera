@@ -15,6 +15,7 @@ import {
   headerActionMenu,
   infiniteScroll,
   pagination,
+  paginationModel,
   quickSearch,
   rowActionMenu,
   rowActions,
@@ -66,6 +67,7 @@ const FACTORIES = {
   quickSearch,
   dataExport,
   pagination,
+  paginationModel,
   infiniteScroll,
   backToTop,
 }
@@ -192,6 +194,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     quickSearch(argsOf(o, 'quickSearch')),
     dataExport(argsOf(o, 'dataExport')),
     pagination(argsOf(o, 'pagination')),
+    paginationModel(argsOf(o, 'paginationModel')),
     infiniteScroll(argsOf(o, 'infiniteScroll')),
     backToTop(argsOf(o, 'backToTop')),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):

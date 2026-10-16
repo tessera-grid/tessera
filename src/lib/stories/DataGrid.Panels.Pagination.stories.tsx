@@ -12,6 +12,7 @@ import {
   byTestId,
   callbackLog,
   firstRowText,
+  guideNext,
   headCell,
   orderedRows,
   settle,
@@ -19,8 +20,10 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
+import { getData } from './__mocks__/data'
+import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 
-/** Пагинация (ADR 0038): на клиенте и серверная с сортировкой. */
+/** Пагинация (ADR 0038): на клиенте и серверная с сортировкой; свой пейджер приложения (ADR 0120). */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -111,6 +114,84 @@ export const PaginationServer: StoryObj<ServerPaginationDemoProps> = {
     }
     await until(() => expect(sorted()).toBe(true))
     expect(range()).toBe('26–50 of 230')
+    await settle()
+  },
+}
+
+// --- ADR 0120, S2 --------------------------------------------------------------------
+
+const OWN_PAGER_ROWS = 50
+const ownPagerData = getData(OWN_PAGER_ROWS)
+const statusBarOf = (root: ParentNode) =>
+  root.querySelector('[data-testid="data-grid-status-bar"]')
+
+const OWN_PAGER: readonly GuideStoryStep[] = [
+  {
+    title: 'Первая страница',
+    hint: 'Плагин paginationModel без pagination: строки — первой страницы по 10, нижней панели с пейджером нет.',
+    props: () => ({
+      enablePaginationModel: true,
+      paginationModelPagination: { pageIndex: 0, pageSize: 10 },
+    }),
+  },
+  {
+    title: 'Приложение листает дальше',
+    hint: 'Свой пейджер приложения задаёт срез pagination аргументом модели — грид показывает вторую страницу.',
+    props: () => ({
+      paginationModelPagination: { pageIndex: 1, pageSize: 10 },
+    }),
+  },
+  {
+    title: 'Страница по 5',
+    hint: 'Приложение меняет размер страницы — строк становится пять.',
+    props: () => ({
+      paginationModelPagination: { pageIndex: 0, pageSize: 5 },
+    }),
+  },
+]
+
+/** ADR 0120, S2: приложение листает страницы своим пейджером — модель без нижней панели. */
+export const PaginationOwnPager: StoryObj<StoryProps> = {
+  name: 'Own pager',
+  parameters: {
+    scenario: '0120/S2',
+    ...showControls(['enablePaginationModel']),
+  },
+  args: {
+    dataCount: OWN_PAGER_ROWS,
+    containerHeight: '600',
+    height: '560',
+    maxHeight: '560',
+  },
+  render: args => (
+    <GuideStory
+      title="Свой пейджер приложения"
+      steps={OWN_PAGER}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
+    if (globals.catalog !== true) return
+    await step(OWN_PAGER[0].title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(orderedRows(canvas)).toHaveLength(10))
+      expect(firstRowText(canvas, 'firstName')).toBe(ownPagerData[0]!.firstName)
+      expect(statusBarOf(canvas)).toBeNull()
+    })
+    await step(OWN_PAGER[1].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(firstRowText(canvas, 'firstName')).toBe(
+          ownPagerData[10]!.firstName,
+        ),
+      )
+      expect(statusBarOf(canvas)).toBeNull()
+    })
+    await step(OWN_PAGER[2].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(orderedRows(canvas)).toHaveLength(5))
+    })
     await settle()
   },
 }

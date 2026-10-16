@@ -27,6 +27,12 @@ const TYPES_TIMEOUT = 120_000
 const WITHOUT_CONTROL: Record<string, string> = {
   paginationServer: 'без имитации сервера ломает показ — своя история',
   paginationRowCount: 'только вместе с paginationServer',
+  paginationPagination: 'страница у приложения — своя история',
+  paginationInitialPagination: 'страница у приложения — своя история',
+  paginationModelServer: 'без имитации сервера ломает показ — своя история',
+  paginationModelRowCount: 'только вместе с paginationModelServer',
+  paginationModelPagination: 'страница у приложения — своя история',
+  paginationModelInitialPagination: 'страница у приложения — своя история',
   columnFilteringServer: 'без имитации сервера ломает показ — своя история',
   columnFilteringFilteredRowCount: 'только вместе с columnFilteringServer',
   columnFilteringTotalRowCount: 'только вместе с columnFilteringServer',

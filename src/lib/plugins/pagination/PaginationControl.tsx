@@ -23,10 +23,12 @@ import {
   clampedPageIndex,
   pageControl,
   pageRange,
-  paginationInertReason,
-  type PaginationTable,
   resolvePageSizes,
 } from './model'
+import {
+  paginationInertReason,
+  type PaginationTable,
+} from '../paginationModel/model'
 import { type PageAction, PageButton } from './PageButton'
 import { SizeTrigger } from './SizeTrigger'
 import styles from './Pagination.module.css'

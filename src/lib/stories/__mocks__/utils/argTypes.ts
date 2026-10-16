@@ -491,6 +491,14 @@ export const paginationRevertOnRejectType = booleanControl(
   'Возвращать прежнюю страницу при отказе промиса `onPageChange` в серверном режиме (`revertOnReject`, ADR 0116)',
   true,
 )
+export const enablePaginationModelType = booleanControl(
+  'Страницы без пейджера: строки текущей страницы по состоянию `pagination` (плагин `paginationModel`)',
+)
+export const paginationModelInitialPageSizeType = numberControl(
+  'Начальный размер страницы модели (`initialPageSize`)',
+  { min: 1, max: 1000, step: 5 },
+  String(DEFAULT_PAGE_SIZE),
+)
 export const enableDataExportType = booleanControl(
   'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
 )

@@ -50,6 +50,7 @@ export {
 } from './headerActionMenu'
 export { rowActionMenu, type RowActionMenuOptions } from './rowActionMenu'
 export { pagination, type PaginationOptions } from './pagination'
+export { paginationModel, type PaginationModelOptions } from './paginationModel'
 export {
   infiniteScroll,
   type InfiniteScrollOptions,

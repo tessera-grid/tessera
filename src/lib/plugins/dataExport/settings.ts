@@ -24,9 +24,10 @@ const VIEW_PLUGINS: Record<string, ExportViewFeature> = {
   quickSearch: 'filtering',
 }
 
-const ROWS_PLUGIN: Partial<Record<ExportRows, string>> = {
-  page: 'pagination',
-  selected: 'rowSelection',
+/** Плагины, с которыми значение строк есть: интерфейс или его модель (ADR 0120). */
+const ROWS_PLUGINS: Partial<Record<ExportRows, readonly string[]>> = {
+  page: ['pagination', 'paginationModel'],
+  selected: ['rowSelection'],
 }
 
 const ROWS_ORDER: ExportRows[] = ['all', 'view', 'page', 'selected']
@@ -100,7 +101,7 @@ export const resolveAxes = (table: unknown): ExportAxes | undefined => {
   const present = (rows: ExportRows) =>
     rows === 'view'
       ? viewBy.length > 0
-      : !ROWS_PLUGIN[rows] || active.has(ROWS_PLUGIN[rows]!)
+      : !ROWS_PLUGINS[rows] || ROWS_PLUGINS[rows].some(id => active.has(id))
 
   return {
     rows: ROWS_ORDER.filter(present).map(rows =>

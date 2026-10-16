@@ -6,6 +6,11 @@
 - **Изменён:** 2026-10-15 — в серверном режиме `onPageChange` получает `{ signal }` и
   может вернуть промис: отказ возвращает прежнюю страницу и её размер, опция
   `revertOnReject` ([ADR 0116](0116-async-server-actions.md)).
+- **Изменён:** 2026-10-16 — [ADR 0120](0120-model-and-interface-plugins.md): модель пагинации —
+  плагин `paginationModel` (фичи, `initialPageSize`, `server`, `rowCount`, сброс страницы при
+  смене порядка, срез `pagination` аргументами); `pagination` её включает и добавляет пейджер,
+  `pageSizes`, `onPageChange`, `revertOnReject`. Свой пейджер — `paginationModel()` без
+  `enableStatusBar: false`.
 - **Связано:**
   - [ADR 0061](0061-lazy-popover-loading.md) — выбор размера страницы: ожидание,
     отмена и ошибка загрузки модуля (LZ15–LZ16).

@@ -15,6 +15,8 @@ import { useCreateTable } from '../core/useCreateTable'
 import {
   columnSorting,
   columnSortingModel,
+  pagination,
+  paginationModel,
   rowExpanding,
   rowExpandingModel,
 } from '../plugins'
@@ -57,6 +59,12 @@ const PAIRS = [
     ui: columnSorting,
     flags: ['enableSorting', 'manualSorting'],
     state: { sorting: [{ id: 'name', desc: true }] },
+  },
+  {
+    model: paginationModel,
+    ui: pagination,
+    flags: ['manualPagination', 'paginateExpandedRows', 'autoResetPageIndex'],
+    state: { pagination: { pageIndex: 1, pageSize: 1 } },
   },
 ] as const
 
