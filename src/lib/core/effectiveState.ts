@@ -104,6 +104,10 @@ export const useEffectiveState = ({
   const cache = useRef(new Map<string, CacheEntry>())
   const [tick, forceRender] = useState(0)
   const forced = useRef(0)
+  // Новое значение контролируемого среза до перерисовки: смены подряд в одном такте
+  // строятся друг на друге, а не на одном прежнем значении (MP17). Рендер — от пропа.
+  const sent = useRef<Record<string, { from: unknown; value: unknown }>>({})
+  sent.current = {}
   let pending = false
 
   const stateOut: Record<string, unknown> = {}
@@ -130,7 +134,13 @@ export const useEffectiveState = ({
         external?.(updater)
         // Без контролируемого значения срез хранит ядро — и при колбэке потребителя.
         if (state[key] !== undefined && (external || listener)) {
-          listener?.(functionalUpdate(updater as never, state[key] as never))
+          const last = sent.current[key]
+          const next = functionalUpdate(
+            updater as never,
+            (last?.from === state[key] ? last.value : state[key]) as never,
+          )
+          sent.current[key] = { from: state[key], value: next }
+          listener?.(next)
           return
         }
         const prev = innerRef.current

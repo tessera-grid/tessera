@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Плагины модели и интерфейса (ADR 0120, этап 1; MP4, MP5, MP8, MP9, MP16): модель —
+ * Плагины модели и интерфейса (ADR 0120, этап 1; MP4, MP5, MP8, MP9, MP16, MP17): модель —
  * своя запись, явная модель главнее включённой, срез — аргументами плагина.
  * Запуск: npx vitest run --project unit pluginModels
  */
@@ -327,6 +327,25 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(about('handlers.onRowOrderChange')[0]).toContain(
       'rowDragging({ onRowOrderChange })',
     )
+  })
+
+  it('MP17: смены контролируемого среза подряд до перерисовки складываются — колбэк получает значение от предыдущей смены; после перерисовки — снова от значения приложения', () => {
+    const onExpandedChange = vi.fn()
+    const expanded: Record<string, boolean> = { a: true }
+    const plugins = () => [rowExpandingModel({ expanded, onExpandedChange })]
+    render(plugins)
+
+    act(() => {
+      table.getRow('a').toggleExpanded(false)
+      table.getRow('c').toggleExpanded(true)
+    })
+    // Свёрнутая строка уходит из среза: `a` свернули, `c` раскрыли — в одном такте.
+    expect(onExpandedChange).toHaveBeenLastCalledWith({ c: true })
+
+    // Приложение смену не приняло: значение то же — следующая смена от него.
+    render(plugins)
+    act(() => table.getRow('c').toggleExpanded(true))
+    expect(onExpandedChange).toHaveBeenLastCalledWith({ a: true, c: true })
   })
 
   it('MP8: срез — аргументами модели и интерфейса: внешнее значение применяется до кадра, изменения изнутри уходят в колбэк новым значением; useExpandedState разворачивается в аргументы', () => {
