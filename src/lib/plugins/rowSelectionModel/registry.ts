@@ -43,10 +43,16 @@ const enableRowSelection = (row: Row<any, any>): boolean => {
   return false
 }
 
+const NO_SELECTION: RowSelectionState = {}
+
 export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
   id: 'rowSelectionModel',
   features: rowSelectionModelFeatures,
   slices: ['rowSelection'],
+  // Выключенная модель не показывает выбор: эффективный срез пуст, сохранённый не
+  // меняется (ADR 0039) — включили снова, выбор вернулся.
+  narrow: o =>
+    o.enabled === false ? { rowSelection: () => NO_SELECTION } : undefined,
   options: o => ({
     // При disabled — жёстко false (иначе present-but-disabled фича активна:
     // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).

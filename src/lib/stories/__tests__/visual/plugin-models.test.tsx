@@ -3,6 +3,30 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { useCreateTable } from '../../../core/useCreateTable'
+import type { TesseraFeatureEntry } from '../../../core/features'
+import { DataGrid } from '../../../grid/DataGrid'
+import {
+  cellSelection,
+  cellSelectionModel,
+  columnFiltering,
+  columnFilteringModel,
+  columnSorting,
+  columnSortingModel,
+  dataExport,
+  dataExportModel,
+  pagination,
+  paginationModel,
+  quickSearch,
+  quickSearchModel,
+  rowExpanding,
+  rowExpandingModel,
+  rowGrouping,
+  rowGroupingModel,
+  rowSelection,
+  rowSelectionModel,
+} from '../../../plugins'
+import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding/rowExpandingColumn'
 import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection/rowSelectionColumn'
 import { Stories } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
@@ -121,5 +145,218 @@ describe('Плагины модели без интерфейса (ADR 0120)', (
     expect(copy.defaultPrevented).toBe(false)
     expect(data.getData('text/plain')).toBe('')
     await screen.unmount()
+  })
+})
+
+// --- MP1, MP3: каждая пара «модель — интерфейс» на своём гриде ------------------------
+
+interface Item {
+  id: string
+  name: string
+  age: number
+  gender: string
+  subRows?: Item[]
+}
+
+const NAMES = ['Ann', 'Bob', 'Cid', 'Dan', 'Eve', 'Fay', 'Gus', 'Hal']
+const ITEMS: Item[] = NAMES.map((name, i) => ({
+  id: `r${i}`,
+  name,
+  age: 20 + ((i * 7) % 30),
+  gender: i % 2 ? 'f' : 'm',
+}))
+const TREE: Item[] = [
+  { ...ITEMS[0]!, subRows: [{ ...ITEMS[1]!, id: 'r0-0' }] },
+  ...ITEMS.slice(2),
+]
+const COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+  { id: 'age', accessorKey: 'age', header: 'Age', filter: 'number' },
+  { id: 'gender', accessorKey: 'gender', header: 'Gender' },
+]
+
+let host: any
+const Host = ({
+  plugins,
+  data,
+}: {
+  plugins: TesseraFeatureEntry[]
+  data: Item[]
+}) => {
+  host = useCreateTable({
+    columns: COLUMNS as never,
+    data,
+    getRowId: (row: Item) => row.id,
+    plugins: plugins as never,
+  })
+  return (
+    <div style={{ width: 640, height: 480 }}>
+      <DataGrid table={host} />
+    </div>
+  )
+}
+
+const shownIds = () =>
+  [
+    ...document.querySelectorAll<HTMLElement>(
+      '.data-grid__body-row:not(.data-grid__body-row--skeleton)',
+    ),
+  ]
+    .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+    .map(row => row.dataset.rowId!)
+const ageOf = (id: string) =>
+  [...ITEMS, ...TREE.flatMap(item => item.subRows ?? [])].find(
+    item => item.id === id,
+  )!.age
+const exists = (selector: string) => document.querySelector(selector) !== null
+
+interface Pair {
+  name: string
+  data?: Item[]
+  /** Модель со срезом в аргументах. */
+  model: (enabled?: boolean) => TesseraFeatureEntry
+  /** Интерфейс с тем же срезом: он передаёт его своей модели. */
+  ui: (enabled: boolean) => TesseraFeatureEntry
+  /** Срез применён: строки, их порядок или вид выбора. */
+  applied: () => boolean
+  /** Контролы интерфейса на экране. */
+  controls: string
+  /** API модели на таблице. */
+  api?: string
+}
+
+const SORTING = [{ id: 'age', desc: true }]
+const PAGE = { pageIndex: 1, pageSize: 3 }
+const FILTERS = [{ id: 'age', value: { operator: 'greaterThan', value: 35 } }]
+const RANGE = [
+  {
+    anchorRowId: 'r1',
+    anchorColumnId: 'name',
+    focusRowId: 'r2',
+    focusColumnId: 'age',
+  },
+]
+
+const PAIRS: Pair[] = [
+  {
+    name: 'rowExpanding',
+    data: TREE,
+    model: enabled => rowExpandingModel({ enabled, expanded: true }),
+    ui: enabled => rowExpanding({ enabled, expanded: true }),
+    applied: () => shownIds().includes('r0-0'),
+    controls: `[data-column-id="${COLUMN_EXPANDING_ID}"]`,
+  },
+  {
+    name: 'columnSorting',
+    model: enabled => columnSortingModel({ enabled, sorting: SORTING }),
+    ui: enabled => columnSorting({ enabled, sorting: SORTING }),
+    applied: () => {
+      const ages = shownIds().map(ageOf)
+      return (
+        ages.length > 1 &&
+        ages.every((age, i) => i === 0 || ages[i - 1]! >= age) &&
+        ages[0]! > ages.at(-1)!
+      )
+    },
+    controls: '.column-sort__button',
+  },
+  {
+    name: 'pagination',
+    model: enabled => paginationModel({ enabled, pagination: PAGE }),
+    ui: enabled => pagination({ enabled, pagination: PAGE }),
+    applied: () => shownIds().join() === 'r3,r4,r5',
+    controls: '[data-testid="pagination"]',
+  },
+  {
+    name: 'columnFiltering',
+    model: enabled =>
+      columnFilteringModel({ enabled, columnFilters: FILTERS as never }),
+    ui: enabled =>
+      columnFiltering({ enabled, columnFilters: FILTERS as never }),
+    applied: () =>
+      shownIds().length > 0 &&
+      shownIds().length < ITEMS.length &&
+      shownIds().every(id => ageOf(id) > 35),
+    controls: '.column-filter__button, [data-testid="filter-summary-button"]',
+  },
+  {
+    name: 'quickSearch',
+    model: enabled => quickSearchModel({ enabled, globalFilter: 'Bob' }),
+    ui: enabled => quickSearch({ enabled, globalFilter: 'Bob' }),
+    applied: () => shownIds().join() === 'r1',
+    controls: '[data-testid="quick-search"]',
+  },
+  {
+    name: 'rowGrouping',
+    model: enabled => rowGroupingModel({ enabled, grouping: ['gender'] }),
+    ui: enabled => rowGrouping({ enabled, grouping: ['gender'] }),
+    applied: () =>
+      shownIds().length > 0 && shownIds().every(id => id.startsWith('gender:')),
+    controls: '.column-group__button',
+  },
+  {
+    name: 'rowSelection',
+    model: enabled =>
+      rowSelectionModel({ enabled, rowSelection: { r1: true } }),
+    ui: enabled => rowSelection({ enabled, rowSelection: { r1: true } }),
+    applied: () =>
+      exists('.data-grid__body-row[data-row-id="r1"][data-selected="true"]'),
+    controls: `[data-column-id="${COLUMN_SELECTION_ID}"]`,
+  },
+  {
+    name: 'cellSelection',
+    model: enabled => cellSelectionModel({ enabled, cellSelection: RANGE }),
+    ui: enabled => cellSelection({ enabled, cellSelection: RANGE }),
+    applied: () =>
+      document.querySelectorAll(
+        ".data-grid__body-cell[data-cell-selected='true']",
+      ).length === 4,
+    // Жесты не видны в DOM: их отсутствие без интерфейса доказывает MP14.
+    controls: '[data-tessera-never]',
+  },
+  {
+    name: 'dataExport',
+    model: enabled => dataExportModel({ enabled }),
+    ui: enabled => dataExport({ enabled }),
+    applied: () => typeof host.exportData === 'function',
+    controls: '[data-testid="export-button"]',
+    api: 'exportData',
+  },
+]
+
+const mountPair = async (pair: Pair, plugins: TesseraFeatureEntry[]) =>
+  render(<Host plugins={plugins} data={pair.data ?? ITEMS} />)
+
+describe('Пары «модель — интерфейс» (ADR 0120)', () => {
+  test('MP1: каждая модель без своего интерфейса применяет свой срез и даёт API TanStack, а грид не рисует контролов интерфейса', async () => {
+    for (const pair of PAIRS) {
+      const screen = await mountPair(pair, [pair.model()])
+      await expect.poll(pair.applied, { message: pair.name }).toBe(true)
+      expect(exists(pair.controls), pair.name).toBe(false)
+      expect(exists('[data-testid="data-grid-toolbar"]'), pair.name).toBe(false)
+      if (pair.api) expect(typeof host[pair.api], pair.name).toBe('function')
+      await screen.unmount()
+    }
+  })
+
+  test('MP3: enabled: false у интерфейса при явной модели убирает контролы, модель применяет срез; без явной модели выключенный интерфейс гасит и модель', async () => {
+    for (const pair of PAIRS) {
+      const withModel = await mountPair(pair, [pair.model(), pair.ui(false)])
+      await expect.poll(pair.applied, { message: pair.name }).toBe(true)
+      expect(exists(pair.controls), pair.name).toBe(false)
+      await withModel.unmount()
+
+      // API выгрузки фича даёт и выключенной: гасить в ней нечего.
+      if (pair.api) continue
+      const alone = await mountPair(pair, [pair.ui(false)])
+      await expect.poll(() => shownIds().length > 0).toBe(true)
+      expect(pair.applied(), pair.name).toBe(false)
+      expect(exists(pair.controls), pair.name).toBe(false)
+      await alone.unmount()
+
+      const on = await mountPair(pair, [pair.ui(true)])
+      await expect.poll(pair.applied, { message: pair.name }).toBe(true)
+      await on.unmount()
+    }
   })
 })

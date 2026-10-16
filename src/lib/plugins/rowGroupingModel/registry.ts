@@ -54,6 +54,8 @@ export const rowGroupingModelFeatures = {
   aggregationFns,
 }
 
+const NO_GROUPING: string[] = []
+
 export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
   id: 'rowGroupingModel',
   diagnose: neverInert,
@@ -61,6 +63,10 @@ export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
   model: { plugin: rowExpandingModel, keys: [] },
   features: rowGroupingModelFeatures,
   slices: ['grouping'],
+  // Выключенная модель не группирует: TanStack группирует по срезу и при
+  // `enableGrouping: false`, поэтому эффективный срез пуст, сохранённый не меняется.
+  narrow: o =>
+    o.enabled === false ? { grouping: () => NO_GROUPING } : undefined,
   options: o => ({
     enableGrouping: o.enabled !== false,
     groupedColumnMode: false,

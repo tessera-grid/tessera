@@ -186,6 +186,42 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     }
   })
 
+  it('MP2: плагин интерфейса без явной модели ведёт себя, как с ней: те же опции таблицы и строки, а контролы — у интерфейса', () => {
+    /** Значения опций без функций: функции у разных записей — разные ссылки. */
+    const plainOptions = (entries: TesseraFeatureEntry[]) =>
+      Object.fromEntries(
+        Object.entries(foldEntries(entries).options).map(([key, value]) => [
+          key,
+          typeof value === 'function' ? 'fn' : value,
+        ]),
+      )
+    for (const { model, ui, state } of PAIRS) {
+      const alone = ui()
+      expect(plainOptions([alone])).toEqual(plainOptions([model(), ui()]))
+
+      render(() => [ui()], state)
+      const aloneRows = rows()
+      act(() => root!.unmount())
+      root = undefined
+      render(() => [model(), ui()], state)
+      expect(rows()).toEqual(aloneRows)
+      act(() => root!.unmount())
+      root = undefined
+
+      const controls = [
+        alone.slots,
+        alone.slotActions,
+        alone.keyboardActions,
+        alone.contextMenuActions,
+        alone.column && [alone.column],
+      ].flatMap((list): unknown[] => list ?? [])
+      expect(controls.length, alone.id).toBeGreaterThan(0)
+      expect(model().slots ?? [], alone.id).toEqual([])
+      expect(model().slotActions ?? [], alone.id).toEqual([])
+      expect(model().column, alone.id).toBeUndefined()
+    }
+  })
+
   it('MP5: включённая явная модель главнее включённой интерфейсом — действуют её аргументы, расхождение — предупреждение; выключенная явная уступает модели интерфейса; сужения складываются от всех записей', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     render(() => [rowExpanding({ initialExpanded: true })])
