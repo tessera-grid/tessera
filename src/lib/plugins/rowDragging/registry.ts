@@ -4,6 +4,8 @@
  * колонка-ручка. dnd-редьюсер (getRowDraggingEvents) с геометрией offset/nesting —
  * grid-слой.
  */
+import type { Updater } from '@tanstack/react-table'
+
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
 import { COLUMN_DRAGGING_ID, getRowDraggingColumn } from './rowDraggingColumn'
@@ -38,6 +40,11 @@ export interface RowDraggingOptions {
   revertOnReject?: boolean
   /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
   onRowDragCancel?: RowDraggingHooks['onRowDragCancel']
+  /**
+   * Новый порядок данных после переноса — функцией от прежних (ADR 0120, §4): приложение
+   * применяет её к своим `data`.
+   */
+  onRowOrderChange?: (updater: Updater<any[]>) => void
 }
 
 export const rowDragging = definePlugin<RowDraggingOptions>()({
@@ -63,5 +70,6 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
     enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),
     rowDragExpandDelay: o.expandDelay ?? DEFAULT_ROW_DRAG_EXPAND_DELAY,
     rowDragRevertOnReject: o.revertOnReject !== false,
+    onRowOrderChange: o.onRowOrderChange,
   }),
 })

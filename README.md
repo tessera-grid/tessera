@@ -377,10 +377,13 @@ useCreateTable({
 
 По умолчанию `Tessera` не требует инициализации внешних состояний для корректной работы.
 
-Однако, если Вам нужно вручную работать с некоторым состоянием таблицы, Вам потребуется:
+Если Вам нужно вручную работать с состоянием таблицы, у каждого среза — свой владелец:
 
-- импортировать соответствующую функцию инициализации состояния
-- обязательно добавить методы состояния в `state` и `handlers`
+- **срезы колонок** (`columnVisibility`, `columnOrder`, `columnPinning`, `columnSizing`)
+  принадлежат ядру — их передают в `state` и `handlers` `useCreateTable`;
+- **срезы плагинов** (`sorting`, `pagination`, `columnFilters`, `globalFilter`, `grouping`,
+  `expanded`, `rowSelection`, `cellSelection`) принадлежат плагинам — их передают
+  аргументами фабрики: `<срез>`, `on<Срез>Change` и `initial<Срез>`.
 
 ```tsx
 // Table.tsx
@@ -400,29 +403,42 @@ export const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
+  // { rowSelection, onRowSelectionChange } — разворачивается в аргументы плагина.
+  const selection = useRowSelectionState()
 
   const table = useCreateTable({
     columns,
     data,
-    state: {
-      rowSelection: rowSelectionState,
-    },
-    handlers: {
-      onRowSelectionChange,
-    },
-    // Включите плагин выбора строк, чтобы состояние rowSelection начало меняться!
-    plugins: [rowSelection()],
+    plugins: [rowSelection({ ...selection })],
   })
 
   return <DataGrid table={table} />
 }
 ```
 
-В этом случае `Tessera` начнет использовать `onRowSelectionChange` для изменения состояния выбранных строк.
+В этом случае выбор строк хранит приложение: `rowSelection` применяет внешнее значение, а
+каждое изменение изнутри грида приходит в `onRowSelectionChange` новым значением. Без
+внешнего значения срез живёт внутри грида; начальное значение задаёт `initialRowSelection`.
 
-При необходимости, Вы можете задать мемоизируемое `initialState` для контролируемого состояния, чтобы изменить поведение таблицы.
+Срез плагина, переданный в `state`/`handlers` ядра в обход типов, не применяется — в
+режиме разработки грид подскажет, в аргумент какого плагина его перенести.
+
+Нужно только состояние, без контролов? У каждого плагина интерфейса есть плагин модели:
+`columnSortingModel`, `paginationModel`, `columnFilteringModel`, `quickSearchModel`,
+`rowGroupingModel`, `rowExpandingModel`, `rowSelectionModel`, `cellSelectionModel`,
+`dataExportModel`. Он применяет срез, но не рисует кнопок, колонок и полей — их рисует
+приложение:
+
+```tsx
+const [sorting, setSorting] = useState<SortingState>([])
+
+const table = useCreateTable({
+  columns,
+  data,
+  // Строки упорядочены по sorting, кнопок сортировки в заголовках нет.
+  plugins: [columnSortingModel({ sorting, onSortingChange: setSorting })],
+})
+```
 
 <a name="usage_plugins" id="usage_plugins"></a>
 
@@ -545,15 +561,11 @@ export const Table = () => {
   const table = useCreateTable({
     columns,
     data,
-    state: {
-      rowSelection: rowSelectionState,
-    },
-    handlers: {
-      onRowSelectionChange,
-    },
     plugins: [
       // Колбэки — в аргументах фабрики; параметры типизированы, задавать все не нужно.
       rowSelection({
+        rowSelection: rowSelectionState,
+        onRowSelectionChange,
         onSelectRow: (row, selected) => console.info(row.id, selected),
         onSelectAllRowsOnPage: selected => console.info('all', selected),
       }),
@@ -745,16 +757,12 @@ export const Table = () => {
   const table = useCreateTable({
     columns,
     data,
-    state: {
-      rowSelection: rowSelectionState,
-    },
-    handlers: {
-      onRowSelectionChange,
-    },
     // Встроенные плагины — фабриками (колбэки в их аргументах); колонка действий —
     // rowActions({ width }); пользовательский плагин — записью реестра.
     plugins: [
       rowSelection({
+        rowSelection: rowSelectionState,
+        onRowSelectionChange,
         onSelectRow: (row, selected) => console.info(row.id, selected),
       }),
       rowActions({ width: 40 }),
@@ -860,14 +868,10 @@ export const Table = () => {
   const table = useCreateTable({
     columns,
     data,
-    state: {
-      rowSelection: rowSelectionState,
-    },
-    handlers: {
-      onRowSelectionChange,
-    },
     plugins: [
       rowSelection({
+        rowSelection: rowSelectionState,
+        onRowSelectionChange,
         onSelectRow: (row, selected) => console.info(row.id, selected),
       }),
       rowActions({ width: 40 }),
@@ -890,150 +894,100 @@ export const Table = () => {
 
 #### Гайд 2. Кнопка "скрыть значение" в ячейках
 
-`Tessera` позволяет использовать как базовые состояния таблицы, так и расширять их список специфичными состояниями для разных бизнес-кейсов.
-
-Давайте создадим состояние, которое будет хранить `id` скрытых ячеек. Опишем его типы в `types.ts`:
+Плагин может держать собственное состояние. Давайте заведём состояние с `id` скрытых
+ячеек: кнопка в ячейке переключает признак, а содержимое скрытой ячейки заменяется
+надписью. Опишем типы в `types.ts`:
 
 ```ts
 // types.ts (добавляем к предыдущим типам)
 
-import type { OnChangeFn } from '@tanstack/react-table'
+// Состояние плагина: признак скрытия по id ячейки.
+export type HiddenCells = Record<string, boolean>
 
-// Кастомное состояние таблицы
-export interface MyTableState {
-  hiddenCells: Record<string, boolean>
-}
-
-// Кастомные хендлеры состояния
-export interface MyTableOptions {
-  onChangeHiddenCells: OnChangeFn<MyTableState['hiddenCells']>
-}
-```
-
-Заведём состояние и передадим его в таблицу:
-
-```tsx
-// MyTable.tsx
-
-import { useState } from 'react'
-import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
-import { useColumns } from './useColumns'
-import { useData } from './useData'
-import { useFields } from './useFields'
-import { MyTableState } from './types'
-import { rowDownloadAction } from './rowDownloadAction'
-
-const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
-
-export const Table = () => {
-  const fields = useFields()
-  const columns = useColumns({ fields })
-  const data = useData()
-
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
-  const [hiddenCells, setHiddenCells] = useState<MyTableState['hiddenCells']>(
-    hiddenCellsInitialState,
-  )
-
-  const table = useCreateTable({
-    columns,
-    data,
-    state: {
-      rowSelection: rowSelectionState,
-      // Добавим состояние
-      hiddenCells,
-    },
-    handlers: {
-      onRowSelectionChange,
-      // И хендлер
-      onChangeHiddenCells: setHiddenCells,
-    },
-    plugins: [
-      rowSelection({
-        onSelectRow: (row, selected) => console.info(row.id, selected),
-      }),
-      rowActions({ width: 40 }),
-      rowDownloadAction({
-        onDownload: fileId => console.info('download', fileId),
-      }),
-    ],
-  })
-
-  return <DataGrid table={table} />
+export interface CellHiddenOptions {
+  enabled?: boolean
+  /** Скрытые ячейки: задаёт приложение; без них состояние хранит плагин. */
+  hiddenCells?: HiddenCells
+  /** Новое значение после каждого переключения. */
+  onHiddenCellsChange?: (next: HiddenCells) => void
 }
 ```
 
-Теперь нам нужно создать плагин для отрисовки кнопки в ячейках.
+Состояние объявим полем `state` в `definePlugin`, а пару «значение — колбэк» —
+полем `controlled`: так состояние может держать и сам плагин, и приложение через
+аргументы фабрики. Плагин рисует кнопку справа в ячейке (`rightCellSlot`) и замещает
+содержимое скрытой ячейки (`cellSlot`); оба слота получают состояние пропсом
+`state: [value, setter]`:
 
 ```tsx
 // cellHiddenAction.tsx
 
 import { definePlugin } from '@tessera-grid/tessera'
-import { CellHiddenComponent } from './CellHiddenComponent'
+import { CellHiddenToggle } from './CellHiddenToggle'
+import { CellHiddenContent } from './CellHiddenContent'
+import type { CellHiddenOptions, HiddenCells } from './types'
 
-export const cellHiddenAction = definePlugin<{ enabled?: boolean }>()({
+export const cellHiddenAction = definePlugin<CellHiddenOptions>()({
   id: 'cellHiddenAction',
+  state: (): HiddenCells => ({}),
+  controlled: { value: 'hiddenCells', onChange: 'onHiddenCellsChange' },
   slots: [
     {
-      id: 'cellHiddenAction',
+      id: 'cellHiddenToggle',
       slot: 'rightCellSlot',
       order: 0,
-      component: CellHiddenComponent,
+      state: true,
+      component: CellHiddenToggle,
+    },
+    {
+      id: 'cellHiddenContent',
+      slot: 'cellSlot',
+      state: true,
+      component: CellHiddenContent,
     },
   ],
 })
 ```
 
-> Здесь `hiddenCells` — **общее (shared)** состояние: его читают и кнопка плагина, и
-> контент ячейки, и потребитель контролирует его через `useCreateTable({ state, handlers })`.
-> Если же состояние **приватно одному плагину** (никто снаружи его не читает), объявите
-> его полем `state` в `definePlugin` — ядро само заведёт слайс, а компонент получит его
-> пропсом `state: [value, setter]` (см. врезку после гайда).
-
-Давайте сделаем так, чтобы новая кнопка взаимодействовала с нашим состоянием и реагировала на изменение состояния:
+Кнопка переключает признак своей ячейки:
 
 ```tsx
-// CellHiddenComponent.tsx
+// CellHiddenToggle.tsx
 
-import { memo } from 'react'
-import { useTableState, type CellComponentProps } from '@tessera-grid/tessera'
+import type { PluginCellStateProps } from '@tessera-grid/tessera'
 import { CellHiddenButton } from './CellHiddenButton'
-import { MyTableOptions, MyTableState } from './types'
+import type { HiddenCells } from './types'
 
-export const CellHiddenComponent = memo(
-  ({ cell, table }: CellComponentProps) => {
-    // Точечная подписка на СВОЙ ключ состояния: ре-рендер только при смене признака
-    // именно этой ячейки (кастомные ключи читаем через приведение типа).
-    const isHidden = useTableState(
-      table,
-      s => (s as unknown as MyTableState).hiddenCells[cell.id],
-    )
-    const { onChangeHiddenCells } = table.options as unknown as MyTableOptions
-
-    return (
-      <CellHiddenButton
-        active={isHidden}
-        onClick={() => {
-          onChangeHiddenCells(prev => ({
-            ...prev,
-            [cell.id]: !prev[cell.id],
-          }))
-        }}
-      />
-    )
-  },
+export const CellHiddenToggle = ({
+  cell,
+  state: [hidden, setHidden],
+}: PluginCellStateProps<Record<never, never>, HiddenCells>) => (
+  <CellHiddenButton
+    active={!!hidden[cell.id]}
+    onClick={() => setHidden({ ...hidden, [cell.id]: !hidden[cell.id] })}
+  />
 )
-
-CellHiddenComponent.displayName = 'CellHiddenComponent'
 ```
 
-Подключаем плагин:
+Владелец ячейки (`cellSlot`) получает её собственный рендер пропсом `content` и решает,
+показать его или заместить:
+
+```tsx
+// CellHiddenContent.tsx
+
+import type { PluginCellOwnerProps } from '@tessera-grid/tessera'
+import type { HiddenCells } from './types'
+
+export const CellHiddenContent = ({
+  cell,
+  content,
+  state: [hidden],
+}: PluginCellOwnerProps<Record<never, never>, HiddenCells>) =>
+  hidden[cell.id] ? 'Содержимое скрыто' : content
+```
+
+Подключаем плагин. Если скрытые ячейки нужны и приложению (например, чтобы сохранить их),
+передадим состояние аргументами фабрики:
 
 ```tsx
 // MyTable.tsx
@@ -1048,43 +1002,31 @@ import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { MyTableState } from './types'
+import type { HiddenCells } from './types'
 import { rowDownloadAction } from './rowDownloadAction'
 import { cellHiddenAction } from './cellHiddenAction'
-
-const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
 
 const Table = () => {
   const fields = useFields()
   const columns = useColumns({ fields })
   const data = useData()
 
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
-  const [hiddenCells, setHiddenCells] = useState<MyTableState['hiddenCells']>(
-    hiddenCellsInitialState,
-  )
+  const selection = useRowSelectionState()
+  const [hiddenCells, setHiddenCells] = useState<HiddenCells>({})
 
   const table = useCreateTable({
     columns,
     data,
-    state: {
-      rowSelection: rowSelectionState,
-      hiddenCells,
-    },
-    handlers: {
-      onRowSelectionChange,
-      onChangeHiddenCells: setHiddenCells,
-    },
     plugins: [
       rowSelection({
+        ...selection,
         onSelectRow: (row, selected) => console.info(row.id, selected),
       }),
       rowActions({ width: 40 }),
       rowDownloadAction({
         onDownload: fileId => console.info('download', fileId),
       }),
-      cellHiddenAction(),
+      cellHiddenAction({ hiddenCells, onHiddenCellsChange: setHiddenCells }),
     ],
   })
 
@@ -1092,61 +1034,13 @@ const Table = () => {
 }
 ```
 
-Чтобы ячейки реагировали на новое состояние, вынесем их содержимое в отдельный компонент
-и добавим подписку на изменение признака конкретной ячейки из hiddenCells:
-
-```tsx
-// Cell.tsx
-
-import { memo } from 'react'
-import { useTableState, type CellComponentProps } from '@tessera-grid/tessera'
-import { MyTableState } from './types'
-import { getMeta } from './getMeta'
-
-export const Cell = memo(({ cell, row, column, table }: CellComponentProps) => {
-  const isHidden = useTableState(
-    table,
-    s => (s as unknown as MyTableState).hiddenCells[cell.id],
-  )
-
-  if (isHidden) {
-    return 'Содержимое скрыто'
-  }
-
-  const { name } = getMeta(column.columnDef.meta)
-
-  return String(row.original[name] ?? '')
-})
-
-Cell.displayName = 'Cell'
-```
-
-```tsx
-// useColumns.tsx
-
-...
-
-columnHelper.accessor(row => row[field.name], {
-  id: field.id,
-  header: field.label,
-  cell: Cell,
-  meta: setMeta(field),
-  size: field.width,
-  enableSorting: true,
-  enableResizing: true,
-})
-```
-
-> ⚠️ Дополнительная типизация `createColumnHelper` не нужна — он остаётся
-> `createColumnHelper<any, ItemType>()` из главы «Создание колонок». **Общее (shared)**
-> состояние читают в компонентах через `useSlice`/`useTableState` (кастомные ключи — с
-> приведением к своим типам, как выше).
+> Без `hiddenCells` в аргументах состояние живёт внутри плагина. Состояние плагина
+> задаётся только его аргументами: `state`/`handlers` `useCreateTable` принимают лишь
+> срезы колонок (ADR 0120).
 
 ##### Локальное состояние плагина (`state`)
 
-Если состояние **приватно одному плагину** (снаружи его никто не читает), не нужно
-прокидывать `state`/`handlers` через `useCreateTable` — объявите поле `state` в
-`definePlugin`. Ядро сгенерирует v9-фичу и заведёт слайс под ключом `plugin:<id>` (он не пересечётся со
+Состояние плагина объявляют полем `state` в `definePlugin` (как в гайде 2). Ядро сгенерирует v9-фичу и заведёт слайс под ключом `plugin:<id>` (он не пересечётся со
 стоковыми срезами TanStack), а
 компонент получит его **пропсом** `state: [value, setter]` (без глобальной типизации и
 кастов). Так, например, устроен встроенный плагин `cellEditing` (хранит, какая ячейка
@@ -1194,9 +1088,9 @@ export const MyCell = ({
 )
 ```
 
-> **Общее vs локальное.** Читают несколько компонентов/потребитель снаружи → **общее**
-> состояние через `useCreateTable({ state, handlers })` (как `hiddenCells` выше).
-> Приватно одному плагину → поле `state` (пропс `state: [value, setter]`).
+> **Кто владеет состоянием.** Состояние нужно только плагину → поле `state` (пропс
+> `state: [value, setter]`). Нужно и приложению → вдобавок пара `controlled`: приложение
+> передаёт значение и колбэк аргументами фабрики (как `hiddenCells` в гайде 2).
 
 ##### Замещение рендера ячейки (`cellSlot`) и свой редактор
 
@@ -1316,30 +1210,16 @@ export const switchAction = definePlugin<{ enabled?: boolean }>()({
 })
 ```
 
-Компонент ячейки со Switch (подписку на скрытие значения из прошлого гайда сохраняем):
+Компонент ячейки со Switch (в служебной колонке слоты не рендерятся — кнопка скрытия
+из прошлого гайда сюда не попадает):
 
 ```tsx
 // SwitchActionComponent.tsx
 
 import { memo } from 'react'
-import { useTableState, type CellComponentProps } from '@tessera-grid/tessera'
 import { Switch } from './Switch'
-import { MyTableState } from './types'
 
-export const SwitchActionComponent = memo(
-  ({ cell, table }: CellComponentProps) => {
-    const isHidden = useTableState(
-      table,
-      s => (s as unknown as MyTableState).hiddenCells[cell.id],
-    )
-
-    if (isHidden) {
-      return 'Содержимое скрыто'
-    }
-
-    return <Switch />
-  },
-)
+export const SwitchActionComponent = memo(() => <Switch />)
 
 SwitchActionComponent.displayName = 'SwitchActionComponent'
 ```
@@ -1361,44 +1241,32 @@ import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
-import { MyTableState } from './types'
+import type { HiddenCells } from './types'
 import { rowDownloadAction } from './rowDownloadAction'
 import { cellHiddenAction } from './cellHiddenAction'
 import { switchAction } from './switchAction'
-
-const hiddenCellsInitialState: MyTableState['hiddenCells'] = {}
 
 const Table = () => {
   const fields = useFields()
   const columns = useColumns({ fields })
   const data = useData()
 
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
-  const [hiddenCells, setHiddenCells] = useState<MyTableState['hiddenCells']>(
-    hiddenCellsInitialState,
-  )
+  const selection = useRowSelectionState()
+  const [hiddenCells, setHiddenCells] = useState<HiddenCells>({})
 
   const table = useCreateTable({
     columns,
     data,
-    state: {
-      rowSelection: rowSelectionState,
-      hiddenCells,
-    },
-    handlers: {
-      onRowSelectionChange,
-      onChangeHiddenCells: setHiddenCells,
-    },
     plugins: [
       rowSelection({
+        ...selection,
         onSelectRow: (row, selected) => console.info(row.id, selected),
       }),
       rowActions({ width: 40 }),
       rowDownloadAction({
         onDownload: fileId => console.info('download', fileId),
       }),
-      cellHiddenAction(),
+      cellHiddenAction({ hiddenCells, onHiddenCellsChange: setHiddenCells }),
       switchAction(),
     ],
   })

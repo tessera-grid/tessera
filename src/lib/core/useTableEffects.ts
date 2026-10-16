@@ -12,6 +12,7 @@ import {
 import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
 import { logWarn } from './logger'
 import type { ModelArgsMismatch } from './pluginModels'
+import { foreignSliceMessage } from './coreState'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
 import { abortServerActions } from './serverActions'
 import {
@@ -29,6 +30,7 @@ export const useTableEffects = (
   argsSignature: string,
   lifetimeViolations: readonly string[],
   modelMismatches: readonly ModelArgsMismatch[] = [],
+  foreignSlices: readonly string[] = [],
 ) => {
   const host = table as Parameters<typeof logWarn>[0]
 
@@ -165,6 +167,15 @@ export const useTableEffects = (
       `dup-plugin-id:${duplicateIds.join(',')}`,
     )
   }, [duplicateIds, host])
+
+  // Дев-варн: срез плагина передан в state/handlers ядра (ADR 0120, MP7).
+  const foreignKey = foreignSlices.join(',')
+  useEffect(() => {
+    for (const path of foreignSlices) {
+      logWarn(host, foreignSliceMessage(path), `foreign-slice:${path}`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу срезов
+  }, [foreignKey, host])
 
   // Дев-варн: аргументы модели у интерфейса расходятся с явной моделью (ADR 0120, MP5).
   const mismatchesKey = modelMismatches

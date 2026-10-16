@@ -27,9 +27,10 @@ const Grid = memo(({ colorMode }: { colorMode: ColorMode }) => {
   const table = useCreateTable({
     columns,
     data,
-    state: { rowSelection: selection },
-    handlers: { onRowSelectionChange },
-    plugins: [rowSelection(), rowActions({ width: 40 })],
+    plugins: [
+      rowSelection({ rowSelection: selection, onRowSelectionChange }),
+      rowActions({ width: 40 }),
+    ],
   })
 
   return (

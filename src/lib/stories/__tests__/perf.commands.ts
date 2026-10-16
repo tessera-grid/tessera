@@ -228,6 +228,7 @@ export interface PerfRecord {
     | 'columnFiltering, rowGrouping'
     | 'rowSelection, rowExpanding, highlight'
     | 'rowDragging, rowExpanding'
+    | 'models'
     | 'infiniteScroll'
     | 'backToTop'
     | 'loading'

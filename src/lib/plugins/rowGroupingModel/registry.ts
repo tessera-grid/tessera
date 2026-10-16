@@ -66,7 +66,12 @@ export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
   // Выключенная модель не группирует: TanStack группирует по срезу и при
   // `enableGrouping: false`, поэтому эффективный срез пуст, сохранённый не меняется.
   narrow: o =>
-    o.enabled === false ? { grouping: () => NO_GROUPING } : undefined,
+    o.enabled === false
+      ? {
+          // Пустой срез — как есть: новая ссылка сбросила бы страницу (PG10).
+          grouping: (value?: string[]) => (value?.length ? NO_GROUPING : value),
+        }
+      : undefined,
   options: o => ({
     enableGrouping: o.enabled !== false,
     groupedColumnMode: false,

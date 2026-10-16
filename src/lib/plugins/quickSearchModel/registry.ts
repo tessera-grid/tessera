@@ -42,7 +42,11 @@ export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({
   slices: ['globalFilter'],
   // Выключенная модель не ищет: эффективный срез пуст, сохранённый не меняется
   // (ADR 0039) — включили снова, поиск вернулся.
-  narrow: o => (o.enabled === false ? { globalFilter: () => '' } : undefined),
+  // Пустой поиск — как есть: смена `undefined` на `''` сбросила бы страницу (PG10).
+  narrow: o =>
+    o.enabled === false
+      ? { globalFilter: (value?: string) => (value ? '' : value) }
+      : undefined,
   options: o => ({
     enableGlobalFilter: o.enabled !== false,
     // В дереве родитель виден, если поиск находит потомка (FL22).

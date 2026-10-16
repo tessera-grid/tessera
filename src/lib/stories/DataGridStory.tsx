@@ -21,7 +21,10 @@ import type { CellEditCommit } from '../../lib/plugins/cellEditing/types'
 import type { CellComponentProps } from '../../lib/core/createSlots'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { RU_LABELS } from './__mocks__/localization.ru'
-import { argsToPlugins } from './__mocks__/utils/argsToPlugins'
+import {
+  argsToPlugins,
+  type FeatureToggles,
+} from './__mocks__/utils/argsToPlugins'
 import type { StoryProps } from './DataGridStory.types'
 import { sizeArg } from './__mocks__/utils/normalizeArgs'
 
@@ -199,25 +202,40 @@ const StoryGrid = memo(
       rowSelection,
     })
 
+    // Срезы плагинов — аргументами их фабрик (ADR 0120, §4): по умолчанию — состояние
+    // истории, заданные историей аргументы главнее.
+    const sliceArgs: FeatureToggles = {
+      rowExpandingExpanded: expanded,
+      rowExpandingModelExpanded: expanded,
+      onExpandedChange,
+      rowSelectionRowSelection: rowSelection,
+      rowSelectionModelRowSelection: rowSelection,
+      onRowSelectionChange,
+      onRowOrderChange: setData,
+      ...(grouping !== undefined
+        ? { rowGroupingGrouping: grouping, rowGroupingModelGrouping: grouping }
+        : {}),
+      ...(initialGrouping !== undefined
+        ? {
+            onGroupingChange: (next: Updater<GroupingState>) =>
+              setGrouping(prev => functionalUpdate(next, prev ?? [])),
+          }
+        : {}),
+    }
+    const pluginArgs = {
+      ...sliceArgs,
+      ...Object.fromEntries(
+        Object.entries(options).filter(([, value]) => value !== undefined),
+      ),
+    } as FeatureToggles
+
     const table = useCreateTable({
       columns: columnsGetter,
       data,
       state: {
-        expanded,
-        rowSelection,
-        ...(grouping !== undefined ? { grouping } : {}),
         ...(columnPinning !== undefined ? { columnPinning } : {}),
       },
       handlers: {
-        onExpandedChange,
-        onRowSelectionChange,
-        onRowOrderChange: setData,
-        ...(initialGrouping !== undefined
-          ? {
-              onGroupingChange: (updater: Updater<GroupingState>) =>
-                setGrouping(prev => functionalUpdate(updater, prev ?? [])),
-            }
-          : {}),
         ...(controlsPinning
           ? {
               onColumnPinningChange: (updater: Updater<ColumnPinningState>) =>
@@ -248,7 +266,7 @@ const StoryGrid = memo(
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.
       plugins: [
-        ...argsToPlugins(options),
+        ...argsToPlugins(pluginArgs),
         ...(extraPlugins ?? []),
         {
           id: 'demoHooks',

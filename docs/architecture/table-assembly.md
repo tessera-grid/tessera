@@ -67,9 +67,14 @@ id, распознаются `column.getIsActionsColumn()` (метод от `com
   авто-слайс, который плагины пишут в `setup` через `table.setColumnAutoSizing`
   (`onColumnAutoSizingChange` бейлит при равенстве, иначе цикл).
 
-Всё остальное `state`/`handlers` потребителя (включая кастомные слайсы и `onXChange`
-вроде `onExpandedChange`/`onRowSelectionChange`/`onGroupingChange`/`onRowOrderChange`)
-пробрасывается в `useTable` **как есть**. Новый объект `state` с теми же срезами
+`state`/`handlers` потребителя несут только срезы колонок (`columnVisibility`,
+`columnOrder`, `columnPinning`, `columnSizing`) и их `on…Change`
+([ADR 0120](../decisions/0120-model-and-interface-plugins.md), §4); остальные срезы колонок
+пробрасываются в `useTable` **как есть**. Срез плагина (`sorting`, `expanded`,
+`rowSelection`…) и колбэк вроде `onRowOrderChange` задаются аргументами фабрики плагина;
+переданные ядру в обход типов, они вырезаются (`core/coreState.ts`, `splitCoreState`) с
+dev-предупреждением, куда их перенести (MP7). Срезы из аргументов плагинов ядро собирает из
+записей (`pluginSlicesOf`) и отдаёт TanStack вместе со своими. Новый объект `state` с теми же срезами
 перерисовок не даёт: `useTable` публикует его по срезам со сравнением `shallow`
 (см. [reactivity.md](reactivity.md)).
 
@@ -77,12 +82,19 @@ id, распознаются `column.getIsActionsColumn()` (метод от `com
 flowchart LR
     subgraph input["params.state / params.handlers"]
         P["columnPinning / columnSizing"]
-        R["все прочие срезы + onXChange"]
+        R["columnVisibility / columnOrder + onXChange"]
+        F["срезы плагинов"]
+    end
+    subgraph args["аргументы фабрик"]
+        S["sorting, expanded, rowSelection…"]
     end
     P --> CTRL["перехват:<br/>сервисный пиннинг + авто-слайс"]
     R --> PASS["pass-through в useTable"]
+    F --> DROP["вырезка + dev-warn (MP7)"]
+    S --> SLICES["pluginSlicesOf → useEffectiveState / TanStack"]
     CTRL --> MERGE["options.state"]
     PASS --> MERGE
+    SLICES --> MERGE
 ```
 
 ## Hooks — бизнес-контракт

@@ -457,14 +457,12 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     // покрыт визуал-тестами).
     columns: columns as never,
     data,
-    state: { rowSelection: selection } as never,
-    handlers: { onRowSelectionChange },
     loading: args.loading,
     // Набор фич подобран так, чтобы витрина задействовала как можно больше
     // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing) и
     // колонка действий (rowActions).
     plugins: [
-      rowSelection(),
+      rowSelection({ rowSelection: selection, onRowSelectionChange }),
       columnSorting(),
       columnPinning(),
       columnSizing(),

@@ -17,6 +17,9 @@ import { columnSorting } from '../plugins/columnSorting'
 import { pagination, type PaginationOptions } from '../plugins/pagination'
 import { rowExpanding } from '../plugins/rowExpanding'
 import { rowGrouping } from '../plugins/rowGrouping'
+import { columnFilteringModel } from '../plugins/columnFilteringModel'
+import { quickSearchModel } from '../plugins/quickSearchModel'
+import { rowGroupingModel } from '../plugins/rowGroupingModel'
 
 interface Item {
   id: string
@@ -151,6 +154,19 @@ describe('pagination — модель', () => {
     table.setOptions((prev: object) => ({ ...prev, data: items(100) }))
     table.getRowModel()
     expect(table.atoms.pagination.get().pageIndex).toBe(1)
+
+    // Выключенная модель не подменяет пустой срез новой ссылкой: иначе подписка сброса
+    // увидела бы смену порядка, которой не было (ADR 0120).
+    const empty: unknown[] = []
+    const context = { options: {}, slotActions: {} }
+    const narrows = [
+      [columnFilteringModel({ enabled: false }), 'columnFilters', empty],
+      [quickSearchModel({ enabled: false }), 'globalFilter', undefined],
+      [rowGroupingModel({ enabled: false }), 'grouping', empty],
+    ] as const
+    for (const [entry, key, value] of narrows) {
+      expect(entry.narrow![key]!(value, null, context), key).toBe(value)
+    }
 
     cleanups.forEach(cleanup => cleanup?.())
   })

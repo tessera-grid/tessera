@@ -1,3 +1,4 @@
+import type { RowSelectionState } from '@tanstack/react-table'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
@@ -344,13 +345,10 @@ const Cp34Grid = () => {
     ] as never,
     data: CP34_DATA,
     getRowId: (row: Cp34Item) => row.id,
-    state: {
-      columnPinning: { start: ['a'], end: ['c'] },
-      rowSelection: CP34_SELECTED,
-    },
+    state: { columnPinning: { start: ['a'], end: ['c'] } },
     plugins: [
       columnPinning(),
-      rowSelection(),
+      rowSelection({ rowSelection: CP34_SELECTED as RowSelectionState }),
       rowActions(),
       cp34Actions,
     ] as never,

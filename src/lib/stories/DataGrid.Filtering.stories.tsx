@@ -744,3 +744,94 @@ export const FilteringExternalForm: StoryObj<StoryProps> = {
     await settle()
   },
 }
+
+// --- ADR 0120, S8 --------------------------------------------------------------------
+
+/** Сохранённый вид, как его прочитало приложение из адреса `?sort=-age&age>30&page=2`. */
+const SAVED_VIEW = {
+  columnSortingInitialSorting: [{ id: 'age', desc: true }],
+  columnFilteringInitialColumnFilters: [
+    { id: 'age', value: { operator: 'greaterThan', value: 30 } },
+  ],
+  paginationInitialPagination: { pageIndex: 1, pageSize: 5 },
+} as Partial<StoryProps>
+
+const rangeText = (root: ParentNode) =>
+  root.querySelector('[data-testid="pagination-range"]')?.textContent ?? ''
+
+const SAVED_VIEW_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Вид по умолчанию',
+    hint: 'Сортировка, фильтры колонок и страницы с интерфейсом: строки в порядке данных, первая страница.',
+    props: () => ({
+      enableColumnSorting: true,
+      enableColumnFiltering: true,
+      enablePagination: true,
+    }),
+  },
+  {
+    title: 'Открыта сохранённая ссылка',
+    hint: 'Приложение читает вид из адреса и передаёт его начальными срезами плагинов — initialSorting, initialColumnFilters, initialPagination: по убыванию возраста, старше 30, вторая страница.',
+    props: () => SAVED_VIEW,
+    remount: true,
+  },
+  {
+    title: 'Пользователь листает дальше',
+    hint: 'Дальше видом владеет грид: кнопка «следующая страница» пейджера работает, как обычно.',
+  },
+]
+
+/** ADR 0120, S8: приложение восстанавливает сохранённый вид из адреса аргументами плагинов. */
+export const SavedViewRestore: StoryObj<StoryProps> = {
+  name: 'Saved view',
+  parameters: {
+    scenario: '0120/S8',
+    ...showControls([
+      'enableColumnSorting',
+      'enableColumnFiltering',
+      'enablePagination',
+    ]),
+  },
+  args: {
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
+    columnsOverride: filteringColumns,
+    dataOverride: filteringData,
+  },
+  render: args => (
+    <GuideStory
+      title="Вид из адреса страницы"
+      steps={SAVED_VIEW_STEPS}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
+    if (globals.catalog !== true) return
+    const ages = () => cellsOf(canvas, 'age').map(Number)
+    await step(SAVED_VIEW_STEPS[0].title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(rangeText(canvas)).toMatch(/^1–/))
+    })
+    await step(SAVED_VIEW_STEPS[1].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rangeText(canvas)).toMatch(/^6–10 /))
+      const shown = ages()
+      expect(shown.every(age => age > 30)).toBe(true)
+      expect(shown.every((age, i) => i === 0 || shown[i - 1]! >= age)).toBe(
+        true,
+      )
+    })
+    await step(SAVED_VIEW_STEPS[2].title, async () => {
+      await guideNext(canvas)
+      await userEvent.click(
+        canvas.querySelector<HTMLElement>(
+          '[data-testid="pagination"] button[aria-label="Next page"]',
+        )!,
+      )
+      await until(() => expect(rangeText(canvas)).toMatch(/^11–15 /))
+    })
+    await settle()
+  },
+}

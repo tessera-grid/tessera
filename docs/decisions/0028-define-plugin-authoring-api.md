@@ -2,6 +2,9 @@
 
 - **Статус:** Принято.
 - **Дата:** 2026-09-20
+- **Изменено:** [ADR 0120](0120-model-and-interface-plugins.md) (2026-10-16) — поля `slices`
+  (срезы TanStack аргументами `<срез>`/`on<Срез>Change`/`initial<Срез>`) и `model`
+  (интерфейс включает запись своей модели).
 - **Изменён:** 2026-10-02 — инжекторы каналов `injectCellHooks` / `injectHeaderHooks` /
   `injectCellState` / `injectCellOwner` удалены из публичного API: каналы слотов (DP9) и
   сервисной колонки (DP20) подмешивает `definePlugin`, ручной путь со строкой scope

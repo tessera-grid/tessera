@@ -52,7 +52,6 @@ const Grid = ({ plugins }: { plugins: Entry[] }) => {
     data: DATA,
     getRowId: (row: Node) => row.id,
     plugins: plugins as never,
-    state: { expanded: true } as never,
   })
   return null
 }
@@ -74,12 +73,14 @@ describe('Модель дерева и интерфейс раскрытия (AD
     expect(keys.filter(key => key === 'expandedRowModel')).toHaveLength(1)
     expect(keys.filter(key => key === 'rowExpandingFeature')).toHaveLength(1)
 
-    const alone = visibleRows([rowExpanding({ maxDepth: 4 }) as Entry])
+    const alone = visibleRows([
+      rowExpanding({ maxDepth: 4, expanded: true }) as Entry,
+    ])
     act(() => root?.unmount())
     root = undefined
     const both = visibleRows([
-      rowExpandingModel(),
-      rowExpanding({ maxDepth: 4 }) as Entry,
+      rowExpandingModel({ expanded: true }),
+      rowExpanding({ maxDepth: 4, expanded: true }) as Entry,
     ])
     expect(both).toEqual(alone)
     expect(alone).toEqual(['a', 'a1', 'a1x', 'a2', 'b', 'c', 'c1'])
@@ -97,7 +98,7 @@ describe('Модель дерева и интерфейс раскрытия (AD
       expect(folded.serviceColumns).toHaveLength(0)
       expect(folded.keyboardActions.some(action => action.expands)).toBe(false)
     }
-    expect(visibleRows([rowExpandingModel(), off])).toEqual([
+    expect(visibleRows([rowExpandingModel({ expanded: true }), off])).toEqual([
       'a',
       'a1',
       'a1x',

@@ -67,7 +67,6 @@ const Host = ({ plugins, data = rows, probe = 'none' }: HostProps) => {
     columns: columns as never,
     data,
     plugins,
-    handlers: { onRowOrderChange: () => {} },
   })
   if (probe === 'edit') {
     const cell = captured.getRow('1').getAllCells()[0]

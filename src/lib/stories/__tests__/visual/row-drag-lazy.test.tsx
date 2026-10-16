@@ -121,12 +121,6 @@ const LazyTree = ({ roots }: { roots: Node[] }) => {
     columns: COLUMNS as never,
     data,
     getRowId: (row: Node) => row.id,
-    handlers: {
-      onRowOrderChange: (updater: (prev: Node[]) => Node[]) => {
-        harness.onRowOrderChange(updater)
-        setData(updater)
-      },
-    },
     plugins: [
       rowExpanding({
         maxDepth: 2,
@@ -142,6 +136,10 @@ const LazyTree = ({ roots }: { roots: Node[] }) => {
       rowDragging({
         onRowDragEnd: harness.onRowDragEnd,
         revertOnReject: options.revertOnReject,
+        onRowOrderChange: updater => {
+          harness.onRowOrderChange(updater as (prev: Node[]) => Node[])
+          setData(updater as (prev: Node[]) => Node[])
+        },
       }),
       ...(options.keyboard ? [keyboardNavigation()] : []),
       ...(options.pageSize

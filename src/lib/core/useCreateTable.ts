@@ -17,7 +17,7 @@ import type {
   OnChangeFn,
 } from '@tanstack/react-table'
 
-import type { ColumnDef, RowData, TableOptions, TableState } from '../types'
+import type { ColumnDef, RowData, TableOptions } from '../types'
 import type { SkeletonOptions } from './skeletonOptions'
 import type { FooterPosition } from './footer'
 import type { RefreshOptions } from './loadingDisplay'
@@ -54,6 +54,11 @@ import {
   type PluginSetStore,
 } from './pluginSet'
 import { useEffectiveState } from './effectiveState'
+import {
+  type CoreTableHandlers,
+  type CoreTableState,
+  splitCoreState,
+} from './coreState'
 import {
   expandIncludedModels,
   pluginSlicesOf,
@@ -94,7 +99,7 @@ export interface CreateDataGridOptions {
   rowHeight?: number
   headerHeight?: number
   defaultColumn?: DefaultColumnSizing
-  handlers?: Record<string, unknown>
+  handlers?: CoreTableHandlers
 }
 
 /** Без строкового `id` в строке `getRowId` обязателен — иначе id строк молча `undefined`. */
@@ -112,9 +117,13 @@ export type UseCreateTableParams<
 
   getSubRows?: (row: TData) => TData[] | undefined
 
-  state?: Partial<TableState<TesseraFeatures<TEntries>>>
-  /** Контролируемые onXChange потребителя (прокидываются в опции v9 как есть). */
-  handlers?: Record<string, unknown>
+  /**
+   * Срезы колонок (ADR 0120, §4). Срез плагина — аргументами его фабрики:
+   * `columnSorting({ sorting, onSortingChange })`.
+   */
+  state?: CoreTableState
+  /** Колбэки срезов колонок (прокидываются в опции v9 как есть). */
+  handlers?: CoreTableHandlers
 
   /**
    * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
@@ -246,16 +255,25 @@ export const useCreateTable = <
 
   // Потребительский state/handlers: columnPinning/columnSizing перехватываем
   // (сервисный пиннинг + авто-слайс), остальное прокидываем как есть.
+  // Срез плагина, переданный ядру в обход типов, вырезается (ADR 0120, MP7).
+  const {
+    coreState,
+    coreHandlers,
+    foreign: foreignSlices,
+  } = splitCoreState(
+    state as Record<string, unknown> | undefined,
+    handlers as Record<string, unknown> | undefined,
+  )
   const {
     columnPinning: externalPinning,
     columnSizing: externalSizing,
     ...restState
-  } = (state ?? {}) as Record<string, unknown>
+  } = coreState
   const {
     onColumnPinningChange: externalOnPinning,
     onColumnSizingChange: externalOnSizing,
     ...restHandlers
-  } = (handlers ?? {}) as Record<string, unknown>
+  } = coreHandlers
 
   // COLUMN PINNING / SIZING — контролирует ядро (сервисный пиннинг, авто-слайс).
   const { displayedPinning, onColumnPinningChange } = useControlledPinning(
@@ -430,6 +448,7 @@ export const useCreateTable = <
     argsSignature,
     lifetimeViolations,
     modelMismatches,
+    foreignSlices,
   )
 
   return table

@@ -96,7 +96,13 @@ type Callback = `on${string}`
  * кладёт в hook-слайс записи `demoHooks` (StoryComponent).
  */
 const CALLBACKS = {
-  rowDragging: ['onRowDragEnd', 'onRowDragCancel'],
+  rowDragging: ['onRowDragEnd', 'onRowDragCancel', 'onRowOrderChange'],
+  rowExpanding: ['onExpandedChange'],
+  rowExpandingModel: ['onExpandedChange'],
+  rowSelection: ['onRowSelectionChange'],
+  rowSelectionModel: ['onRowSelectionChange'],
+  rowGrouping: ['onGroupingChange'],
+  rowGroupingModel: ['onGroupingChange'],
   columnSizing: ['onColumnResizeEnd', 'onColumnResizeCancel'],
   columnDragging: ['onColumnDragEnd', 'onColumnDragCancel'],
   cellEditing: ['onCellEdit', 'onEditCancel', 'onConflict'],

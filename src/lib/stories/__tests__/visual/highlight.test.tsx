@@ -154,15 +154,18 @@ const Grid = ({
     enableFooter: columns === COLUMNS,
     state: {
       ...(pinned && { columnPinning: { start: ['a'], end: ['c'] } }),
-      ...(selected && {
-        rowSelection: Object.fromEntries(selected.map(id => [id, true])),
-      }),
-    } as never,
+    },
     plugins: [
       columnPinning(),
       columnSorting(),
       quickSearch(),
-      ...(selected ? [rowSelection()] : []),
+      ...(selected
+        ? [
+            rowSelection({
+              rowSelection: Object.fromEntries(selected.map(id => [id, true])),
+            }),
+          ]
+        : []),
       ...(cells ? [cellSelection()] : []),
       ...(keyboard ? [keyboardNavigation()] : []),
       ...(tree ? [rowExpanding()] : []),

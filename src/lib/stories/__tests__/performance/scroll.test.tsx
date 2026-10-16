@@ -1,4 +1,5 @@
-import { cleanup } from 'vitest-browser-react'
+import { useMemo } from 'react'
+import { cleanup, render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import {
@@ -31,7 +32,21 @@ import {
   actionStatusSeed,
   highlightSeed,
 } from './perf-cases'
-import { makeData } from '../../__mocks__/data'
+import { getData, makeData } from '../../__mocks__/data'
+import { useColumns } from '../../__mocks__/columns'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import {
+  cellSelectionModel,
+  columnFilteringModel,
+  columnSortingModel,
+  dataExportModel,
+  paginationModel,
+  quickSearchModel,
+  rowExpandingModel,
+  rowGroupingModel,
+  rowSelectionModel,
+} from '../../../plugins'
 
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
 // PROD-сборке под ×4 CPU-троттлингом, метрика p95 работы на кадр по обеим осям.
@@ -1064,5 +1079,132 @@ describe('Производительность прокрутки — полож
       }
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+/** Цена моделей с пустыми срезами: монтирование — шум до ~30%, прокрутка — как у FT14. */
+const MP15_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
+const MP15_SCROLL_COST = { ratio: 1.1, plusMs: 2 }
+
+/**
+ * Все модели ADR 0120, §2 с пустыми срезами; у страниц — одна страница на все строки,
+ * иначе вариант рисовал бы меньше строк, чем база.
+ */
+const ALL_MODELS = [
+  rowExpandingModel(),
+  columnSortingModel(),
+  paginationModel({ initialPageSize: LARGE.dataCount }),
+  columnFilteringModel(),
+  quickSearchModel(),
+  rowGroupingModel(),
+  rowSelectionModel(),
+  cellSelectionModel(),
+  dataExportModel(),
+]
+
+/**
+ * Грид без обвязки историй: та обвязка держит в наборе все фабрики выключенными, и
+ * «без плагинов» там всё равно несёт их фичи.
+ */
+const ModelsGrid = ({ models }: { models: boolean }) => {
+  const columns = useColumns(LARGE.columnCount)
+  const data = useMemo(() => getData(LARGE.dataCount), [])
+  const table = useCreateTable({
+    columns: columns as never,
+    data,
+    plugins: (models ? ALL_MODELS : []) as never,
+  })
+  return (
+    <div style={{ height: 500, width: 1200 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+// Плагины модели (ADR 0120, MP15): 1000×1000 со всеми моделями и пустыми срезами против
+// того же грида без плагинов — модель без своего состояния почти ничего не стоит.
+describe('Производительность — плагины модели с пустыми срезами', () => {
+  test(
+    'MP15: монтирование и спокойная прокрутка 1000×1000 со всеми моделями не дороже того же грида без плагинов',
+    async () => {
+      const measure = async (models: boolean) => {
+        let screen: ReturnType<typeof render> | undefined
+        const mount = await measureRenderWork(
+          () => {
+            screen = render(<ModelsGrid models={models} />)
+            return screen
+          },
+          () => headCells().length > 0,
+          { warmup: false },
+        )
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen!).unmount()
+        await cleanup()
+        return { mount, y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const pick = (side: typeof runs.base) => ({
+        mount: medianRun(
+          side.map(run => run.mount),
+          r => r.longestMs,
+        ),
+        ...medianAxes(side),
+      })
+      const base = pick(runs.base)
+      const models = pick(runs.variant)
+      const ceiling = {
+        mount: ceilingOver(base.mount.longestMs, MP15_MOUNT_COST),
+        ...axesCeiling(base, MP15_SCROLL_COST),
+      }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'models',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load' as const,
+              metric: 'longest' as const,
+              valueMs: r.mount.longestMs,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling.mount : undefined,
+              ...r.mount,
+            },
+            ...(['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r[axis].p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
+              ...r[axis],
+            })),
+          ],
+        })
+      await record('MP15-base', 'без плагинов', base, false)
+      await record('MP15', 'все модели с пустыми срезами', models, true)
+
+      expect(
+        models.mount.longestMs,
+        `монтирование longest=${models.mount.longestMs.toFixed(1)}ms (база ${base.mount.longestMs.toFixed(1)}ms, потолок ${ceiling.mount.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling.mount)
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          models[axis].p95Ms,
+          `${axis} p95=${models[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 3,
   )
 })

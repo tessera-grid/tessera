@@ -60,7 +60,13 @@ export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
     // Выключенная модель не фильтрует: эффективный срез пуст, сохранённый не меняется
     // (ADR 0039) — включили снова, фильтры вернулись.
     narrow: o =>
-      o.enabled === false ? { columnFilters: () => NO_FILTERS } : undefined,
+      o.enabled === false
+        ? {
+            // Пустой срез — как есть: новая ссылка сбросила бы страницу (PG10).
+            columnFilters: (value?: unknown[]) =>
+              value?.length ? NO_FILTERS : value,
+          }
+        : undefined,
     options: o => ({
       enableColumnFilters: o.enabled !== false,
       // В дереве родитель виден, если фильтр проходит потомок (FL22).

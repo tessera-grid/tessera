@@ -54,17 +54,13 @@ afterEach(() => {
 interface HostProps {
   plugins: TesseraFeatureEntry[]
   data?: Node[]
-  state?: Record<string, unknown>
-  handlers?: Record<string, unknown>
 }
 
-const Host = ({ plugins, data = ROWS, state, handlers }: HostProps) => {
+const Host = ({ plugins, data = ROWS }: HostProps) => {
   captured = useCreateTable({
     columns: columns as never,
     data,
     plugins,
-    state: state as never,
-    handlers,
   })
   return null
 }
@@ -215,10 +211,9 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     const grouped = vi.fn(hasChildren)
     render({
       plugins: [
-        rowGrouping(),
+        rowGrouping({ grouping: ['name'] }),
         rowExpanding({ hasChildren: grouped, loadChildren }),
       ],
-      state: { grouping: ['name'] },
     })
     captured
       .getRowModel()
@@ -232,11 +227,15 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     const loadChildren = vi.fn(() => [node('a1')])
     const onExpandedChange = vi.fn()
     const plugins = [rowExpanding({ hasChildren, loadChildren })]
-    render({
-      plugins,
-      state: { expanded: true },
-      handlers: { onExpandedChange },
-    })
+    const allExpanded = [
+      rowExpanding({
+        hasChildren,
+        loadChildren,
+        expanded: true,
+        onExpandedChange,
+      }),
+    ]
+    render({ plugins: allExpanded })
     expect(loadChildren).not.toHaveBeenCalled()
     expect(coreRow('a').getIsExpanded()).toBe(false)
     expect(coreRow('t').getIsExpanded()).toBe(true)
@@ -246,11 +245,7 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     render({ plugins })
     toggle('a')
     toggle('a')
-    render({
-      plugins,
-      state: { expanded: true },
-      handlers: { onExpandedChange },
-    })
+    render({ plugins: allExpanded })
     expect(coreRow('a').getIsExpanded()).toBe(true)
     expect(childIds('a')).toEqual(['a1'])
     expect(loadChildren).toHaveBeenCalledTimes(1)

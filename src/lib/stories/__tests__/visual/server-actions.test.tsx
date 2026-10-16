@@ -102,26 +102,20 @@ const Grid = () => {
     loadError: options.loadError,
     onRetry: options.onRetry,
     refreshOptions: options.refreshOptions ?? { delayMs: 0, minDurationMs: 0 },
-    ...(options.controlled
-      ? {
-          state: { sorting },
-          handlers: {
-            onSortingChange: (
-              updater: SortingState | ((prev: SortingState) => SortingState),
-            ) => {
-              const next =
-                typeof updater === 'function' ? updater(sorting) : updater
-              harness.onSortingChange(next)
-              setSorting(next)
-            },
-          },
-        }
-      : {}),
     plugins: [
       columnSorting({
         server: options.sortingServer,
         multiSort: false,
         onToggleColumnSort: answer('sort'),
+        ...(options.controlled
+          ? {
+              sorting,
+              onSortingChange: (next: SortingState) => {
+                harness.onSortingChange(next)
+                setSorting(next)
+              },
+            }
+          : {}),
       }),
       pagination({
         server: options.paginationServer,

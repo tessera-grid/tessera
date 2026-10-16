@@ -134,13 +134,12 @@ const Grid = ({ selected = [] as string[] }) => {
     columns: COLUMNS as never,
     data,
     getRowId: (row: Item) => row.id,
-    state: {
-      columnPinning: { start: ['a'] },
-      rowSelection: Object.fromEntries(selected.map(id => [id, true])),
-    } as never,
+    state: { columnPinning: { start: ['a'], end: [] } },
     plugins: [
       columnPinning(),
-      rowSelection(),
+      rowSelection({
+        rowSelection: Object.fromEntries(selected.map(id => [id, true])),
+      }),
       cellSelection(),
       keyboardNavigation(),
     ] as never,

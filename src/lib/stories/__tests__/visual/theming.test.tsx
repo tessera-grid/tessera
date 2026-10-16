@@ -189,8 +189,7 @@ describe('Theming — external customization + token tiers', () => {
           { id: '2', name: 'Bob' },
         ],
         getRowId: (row: { id: string }) => row.id,
-        state: { rowSelection: { '1': true } } as never,
-        plugins: [rowSelection()] as never,
+        plugins: [rowSelection({ rowSelection: { '1': true } })] as never,
       })
       const page = colorMode === 'dark' ? '#ffffff' : '#000000'
       return (

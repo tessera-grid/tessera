@@ -6,12 +6,23 @@
  */
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi,
+} from 'vitest'
 
 import { foldEntries, type TesseraFeatureEntry } from '../core/features'
 import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
-import { useCreateTable } from '../core/useCreateTable'
+import {
+  type UseCreateTableParams,
+  useCreateTable,
+} from '../core/useCreateTable'
 import { resolveAxes } from '../plugins/dataExportModel/settings'
 import {
   cellSelection,
@@ -132,27 +143,21 @@ afterEach(() => {
 
 const Grid = ({
   plugins,
-  state,
 }: {
   plugins: () => readonly TesseraFeatureEntry[]
-  state?: Record<string, unknown>
 }) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: Node) => row.id,
     plugins: plugins() as never,
-    ...(state ? { state: state as never } : {}),
   })
   return null
 }
 
-const render = (
-  plugins: () => readonly TesseraFeatureEntry[],
-  state?: Record<string, unknown>,
-) => {
+const render = (plugins: () => readonly TesseraFeatureEntry[]) => {
   root ??= createRoot(document.createElement('div'))
-  act(() => root!.render(createElement(Grid, { plugins, state })))
+  act(() => root!.render(createElement(Grid, { plugins })))
 }
 
 const rows = () =>
@@ -166,18 +171,18 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
           Object.keys(ui({ enabled: interfaceOn }).options ?? {}),
         ).not.toEqual(expect.arrayContaining([...flags]))
         for (const modelOn of [true, false]) {
-          const a = model({ enabled: modelOn })
-          const b = ui({ enabled: interfaceOn })
+          const a = model({ enabled: modelOn, ...state } as never)
+          const b = ui({ enabled: interfaceOn, ...state } as never)
           const forward = foldEntries([a, b]).options
           const backward = foldEntries([b, a]).options
           for (const flag of flags) {
             expect(backward[flag]).toEqual(forward[flag])
           }
-          render(() => [a, b], state)
+          render(() => [a, b])
           const forwardRows = rows()
           act(() => root!.unmount())
           root = undefined
-          render(() => [b, a], state)
+          render(() => [b, a])
           expect(rows()).toEqual(forwardRows)
           act(() => root!.unmount())
           root = undefined
@@ -196,14 +201,16 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
         ]),
       )
     for (const { model, ui, state } of PAIRS) {
-      const alone = ui()
-      expect(plainOptions([alone])).toEqual(plainOptions([model(), ui()]))
+      const alone = ui(state as never)
+      expect(plainOptions([alone])).toEqual(
+        plainOptions([model(state as never), ui(state as never)]),
+      )
 
-      render(() => [ui()], state)
+      render(() => [ui(state as never)])
       const aloneRows = rows()
       act(() => root!.unmount())
       root = undefined
-      render(() => [model(), ui()], state)
+      render(() => [model(state as never), ui(state as never)])
       expect(rows()).toEqual(aloneRows)
       act(() => root!.unmount())
       root = undefined
@@ -262,11 +269,64 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
       rowExpanding({ maxDepth: 1 }),
     ])
     expect(folded.narrow.expanded).toHaveLength(2)
-    render(() => [rowExpandingModel(), rowExpanding({ maxDepth: 1 })], {
-      expanded: true,
-    })
+    render(() => [
+      rowExpandingModel({ expanded: true }),
+      rowExpanding({ maxDepth: 1 }),
+    ])
     expect(rows()).toEqual(DEPTH_1)
     expect(rows()).not.toEqual(ALL)
+  })
+
+  it('MP6: тип state и handlers useCreateTable — только срезы колонок и их колбэки', () => {
+    type Params = UseCreateTableParams<{ id: string }, []>
+    expectTypeOf<keyof NonNullable<Params['state']>>().toEqualTypeOf<
+      'columnVisibility' | 'columnOrder' | 'columnPinning' | 'columnSizing'
+    >()
+    expectTypeOf<keyof NonNullable<Params['handlers']>>().toEqualTypeOf<
+      | 'onColumnVisibilityChange'
+      | 'onColumnOrderChange'
+      | 'onColumnPinningChange'
+      | 'onColumnSizingChange'
+    >()
+    // @ts-expect-error — срез плагина в state ядра не компилируется
+    const state: Params['state'] = { sorting: [] }
+    // @ts-expect-error — его колбэк в handlers ядра тоже
+    const handlers: Params['handlers'] = { onSortingChange: () => {} }
+    expect([state, handlers]).toHaveLength(2)
+  })
+
+  it('MP7: срез плагина или его колбэк в state/handlers ядра в обход типов не применяется; в dev — одно предупреждение на срез с плагином и аргументом', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const onSortingChange = vi.fn()
+    const Host = () => {
+      table = useCreateTable({
+        columns: COLUMNS as never,
+        data: DATA,
+        getRowId: (row: Node) => row.id,
+        plugins: [columnSortingModel()],
+        state: { sorting: [{ id: 'name', desc: true }] } as never,
+        handlers: { onSortingChange, onRowOrderChange: () => {} } as never,
+      })
+      return null
+    }
+    root = createRoot(document.createElement('div'))
+    act(() => root!.render(createElement(Host)))
+    act(() => root!.render(createElement(Host)))
+    expect(rows()).toEqual(ROOTS)
+    act(() => table.setSorting([{ id: 'name', desc: true }]))
+    expect(onSortingChange).not.toHaveBeenCalled()
+
+    const messages = warn.mock.calls.map(([message]) => String(message))
+    const about = (text: string) =>
+      messages.filter(message => message.includes(text))
+    expect(about('state.sorting не применяется')).toHaveLength(1)
+    expect(about('state.sorting')[0]).toContain(
+      'columnSortingModel или columnSorting',
+    )
+    expect(about('handlers.onSortingChange не применяется')).toHaveLength(1)
+    expect(about('handlers.onRowOrderChange')[0]).toContain(
+      'rowDragging({ onRowOrderChange })',
+    )
   })
 
   it('MP8: срез — аргументами модели и интерфейса: внешнее значение применяется до кадра, изменения изнутри уходят в колбэк новым значением; useExpandedState разворачивается в аргументы', () => {

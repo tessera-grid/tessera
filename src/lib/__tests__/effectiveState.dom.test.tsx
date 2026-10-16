@@ -120,13 +120,19 @@ describe('эффективное состояние при сужении', () =
 
   it('RX12: сужение не вызывает on*Change у контролируемого потребителя', () => {
     const onExpandedChange = vi.fn()
+    // Сохранённое раскрытие — одна ссылка, как у приложения со своим состоянием.
+    const EXPANDED_PC = { p: true, c: true }
     const Host = ({ maxDepth }: { maxDepth: number }) => {
       captured = useCreateTable({
         columns: [{ id: 'name', accessorKey: 'name' }] as never,
         data: tree,
-        plugins: [rowExpanding({ maxDepth })],
-        state: { expanded: { p: true, c: true } },
-        handlers: { onExpandedChange },
+        plugins: [
+          rowExpanding({
+            maxDepth,
+            expanded: EXPANDED_PC,
+            onExpandedChange,
+          }),
+        ],
       })
       return null
     }
@@ -144,9 +150,13 @@ describe('эффективное состояние при сужении', () =
       captured = useCreateTable({
         columns: [{ id: 'name', accessorKey: 'name' }] as never,
         data: flatData,
-        plugins: [rowSelection({ subRows })],
-        state: { rowSelection: selection },
-        handlers: { onRowSelectionChange: setSelection },
+        plugins: [
+          rowSelection({
+            subRows,
+            rowSelection: selection,
+            onRowSelectionChange: setSelection,
+          }),
+        ],
       })
       return null
     }
@@ -167,8 +177,7 @@ describe('эффективное состояние при сужении', () =
       captured = useCreateTable({
         columns: columns as never,
         data,
-        plugins: [rowExpanding({ maxDepth: 1 })],
-        state: { expanded },
+        plugins: [rowExpanding({ maxDepth: 1, expanded })],
       })
       return null
     }

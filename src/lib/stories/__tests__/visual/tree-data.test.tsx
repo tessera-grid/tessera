@@ -79,8 +79,7 @@ const TreeOnly = ({
     columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
     data: TREE,
     getRowId: (row: Node) => row.id,
-    plugins: [rowExpandingModel({ enabled })] as never,
-    state: { expanded } as never,
+    plugins: [rowExpandingModel({ enabled, expanded })] as never,
   })
   return (
     <div style={{ width: 480, height: 300 }}>
