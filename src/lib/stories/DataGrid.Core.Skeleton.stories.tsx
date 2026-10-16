@@ -330,7 +330,8 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
 const PAGE_SIZE = 10
 const TALL_ROW = 80
 const LOW_AREA = '400'
-const OWN_ROWS = 3
+/** Меньше, чем помещается в низкую область: строки не доходят до низа. */
+const OWN_ROWS = 2
 
 const ROWS_COUNT: readonly GuideStoryStep[] = [
   {
@@ -359,10 +360,17 @@ const ROWS_COUNT: readonly GuideStoryStep[] = [
   },
   {
     title: `Своё число строк — ${OWN_ROWS}`,
-    hint: `skeletonOptions: { rowsCount: ${OWN_ROWS} } — ровно столько строк, расчёт по высоте не нужен.`,
+    hint: `skeletonOptions: { rowsCount: ${OWN_ROWS} } — ровно столько строк, даже если помещается больше: расчёт по высоте не нужен.`,
     props: () => ({ skeletonOptions: { rowsCount: OWN_ROWS } }),
   },
-  ANSWERED,
+  {
+    ...ANSWERED,
+    hint: `Пришли ${OWN_ROWS} строки — столько, сколько приложение знало заранее и показало скелетом.`,
+    props: ({ rows }) => ({
+      loading: false,
+      dataOverride: rows.slice(0, OWN_ROWS),
+    }),
+  },
 ]
 
 /**
@@ -430,21 +438,32 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
       await expect(tall).toBeLessThan(PAGE_SIZE)
       await fillsArea()
     })
+    let low = 0
     await step(ROWS_COUNT[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => {
         expect(count()).toBe(fit())
         expect(count()).toBeLessThan(tall)
       })
+      low = count()
       await fillsArea()
     })
     await step(ROWS_COUNT[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(count()).toBe(OWN_ROWS))
+      // Шаг виден: строк меньше, чем по высоте, и под ними пусто.
+      await expect(OWN_ROWS).toBeLessThan(low)
+      const scroller = scrollerOf(canvas)
+      await expect(
+        skeletonRows(canvas).at(-1)!.getBoundingClientRect().bottom,
+      ).toBeLessThan(
+        scroller.getBoundingClientRect().top + scroller.clientHeight - 1,
+      )
     })
     await step(ROWS_COUNT[5]!.title, async () => {
       await guideNext(canvas)
       await waitData(canvas)
+      await expect(dataRows(canvas)).toHaveLength(OWN_ROWS)
     })
     await settle()
   },
