@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { cleanup, render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -31,11 +30,11 @@ import {
   sortAllColumnsSeed,
   actionStatusSeed,
   highlightSeed,
+  INLINE_HEADER_ACTIONS,
 } from './perf-cases'
-import { getData, makeData } from '../../__mocks__/data'
-import { useColumns } from '../../__mocks__/columns'
-import { useCreateTable } from '../../../core/useCreateTable'
-import { DataGrid } from '../../../grid/DataGrid'
+import { makeData } from '../../__mocks__/data'
+import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
+import { renderPluginsGrid } from './hosts'
 import {
   cellSelectionModel,
   columnFilteringModel,
@@ -61,20 +60,24 @@ interface ScrollCase {
   args: Record<string, number | boolean>
   /** Спокойная прокрутка той же выборки (CONTENT_SCROLL): ячейки рисуются содержимым. */
   content: { id: string }
+  /** «Без плагинов» — `plugins: []` своим хостом, без обвязки историй (ADR 0004). */
+  bare?: boolean
 }
 
 const CASES: ScrollCase[] = [
   {
     id: 'P2',
     label: 'небольшая выборка, без плагинов',
-    args: { ...SMALL, ...NO_PLUGINS },
+    args: { ...SMALL },
     content: { id: 'P10' },
+    bare: true,
   },
   {
     id: 'P4',
     label: 'большая выборка, без плагинов',
-    args: { ...LARGE, ...NO_PLUGINS },
+    args: { ...LARGE },
     content: { id: 'P11' },
+    bare: true,
   },
   {
     id: 'P7',
@@ -101,7 +104,14 @@ const runScrollCase = async (
   label: string,
   speed: typeof CONTENT_SCROLL | typeof FAST_SCROLL,
 ) => {
-  renderGrid(c.args)
+  if (c.bare) {
+    renderPluginsGrid({
+      columnCount: Number(c.args.columnCount),
+      dataCount: Number(c.args.dataCount),
+    })
+  } else {
+    renderGrid(c.args)
+  }
   await waitForGrid()
 
   const y = await measureScrollWork('y', speed.y)
@@ -113,7 +123,7 @@ const runScrollCase = async (
     label,
     operation: 'scroll',
     size,
-    plugins: c.args.enableColumnSorting ? 'all' : 'none',
+    plugins: c.bare ? 'none' : 'all',
     cpuThrottle: CPU_THROTTLE_RATE,
     metrics: [
       {
@@ -466,6 +476,7 @@ describe('Производительность прокрутки — индик
         const screen = renderGrid({
           ...LARGE,
           ...ALL_PLUGINS,
+          ...INLINE_HEADER_ACTIONS,
           extraPlugins: sorted ? [sortAllColumnsSeed()] : [],
         })
         await waitForGrid()
@@ -1102,25 +1113,6 @@ const ALL_MODELS = [
   dataExportModel(),
 ]
 
-/**
- * Грид без обвязки историй: та обвязка держит в наборе все фабрики выключенными, и
- * «без плагинов» там всё равно несёт их фичи.
- */
-const ModelsGrid = ({ models }: { models: boolean }) => {
-  const columns = useColumns(LARGE.columnCount)
-  const data = useMemo(() => getData(LARGE.dataCount), [])
-  const table = useCreateTable({
-    columns: columns as never,
-    data,
-    plugins: (models ? ALL_MODELS : []) as never,
-  })
-  return (
-    <div style={{ height: 500, width: 1200 }}>
-      <DataGrid table={table as never} />
-    </div>
-  )
-}
-
 // Плагины модели (ADR 0120, MP15): 1000×1000 со всеми моделями и пустыми срезами против
 // того же грида без плагинов — модель без своего состояния почти ничего не стоит.
 describe('Производительность — плагины модели с пустыми срезами', () => {
@@ -1131,7 +1123,10 @@ describe('Производительность — плагины модели �
         let screen: ReturnType<typeof render> | undefined
         const mount = await measureRenderWork(
           () => {
-            screen = render(<ModelsGrid models={models} />)
+            screen = renderPluginsGrid({
+              ...LARGE,
+              plugins: models ? ALL_MODELS : [],
+            })
             return screen
           },
           () => headCells().length > 0,
@@ -1206,5 +1201,122 @@ describe('Производительность — плагины модели �
       }
     },
     PERF_TIMEOUT * 3,
+  )
+})
+
+/** Цена выключенных плагинов на 2026-10-16 с запасом (ADR 0004, P14). */
+const P14_MOUNT_COST = { ratio: 1.6, plusMs: 40 }
+const P14_SCROLL_COST = { ratio: 1.3, plusMs: 5 }
+
+/** Все встроенные фабрики выключенными — как у приложения, что включает их на лету. */
+const ALL_DISABLED = argsToPlugins({ actionsDemo: 'none' }).filter(
+  entry => !entry.id.endsWith('Demo'),
+)
+
+// Выключенные плагины (ADR 0004, P14): выключенная запись оставляет таблице свои фичи и
+// модели строк (ADR 0010) — монтирование и прокрутка с ними против `plugins: []`.
+describe('Производительность — выключенные плагины', () => {
+  test(
+    'P14: монтирование и спокойная прокрутка со всеми плагинами выключенными не дороже потолка над гридом без плагинов',
+    async () => {
+      for (const size of [SMALL, LARGE]) {
+        const label = `${size.columnCount}×${size.dataCount}`
+        const measure = async (disabled: boolean) => {
+          let screen: ReturnType<typeof render> | undefined
+          const mount = await measureRenderWork(
+            () => {
+              screen = renderPluginsGrid({
+                ...size,
+                plugins: disabled ? ALL_DISABLED : [],
+              })
+              return screen
+            },
+            () => headCells().length > 0,
+            { warmup: false },
+          )
+          const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+          const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+          ;(await screen!).unmount()
+          await cleanup()
+          return { mount, y, x }
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        const runs = await againstBase(measure)
+        const pick = (side: typeof runs.base) => ({
+          mount: medianRun(
+            side.map(run => run.mount),
+            r => r.longestMs,
+          ),
+          ...medianAxes(side),
+        })
+        const base = pick(runs.base)
+        const disabled = pick(runs.variant)
+        const ceiling = {
+          mount: ceilingOver(base.mount.longestMs, P14_MOUNT_COST),
+          ...axesCeiling(base, P14_SCROLL_COST),
+        }
+        const record = (
+          id: string,
+          title: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label: title,
+            operation: 'scroll',
+            size: size === LARGE ? '1000×1000' : '30×500',
+            plugins: 'disabled',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load' as const,
+                metric: 'longest' as const,
+                valueMs: r.mount.longestMs,
+                targetMs: LOAD_BUDGET_MS,
+                ceilingMs: gated ? ceiling.mount : undefined,
+                ...r.mount,
+              },
+              ...(['y', 'x'] as const).map(axis => ({
+                axis,
+                kind: 'animation' as const,
+                metric: 'p95' as const,
+                valueMs: r[axis].p95Ms,
+                targetMs: ANIMATION_BUDGET_MS,
+                ceilingMs: gated ? ceiling[axis] : undefined,
+                ...r[axis],
+              })),
+            ],
+          })
+        const suffix = size === LARGE ? 'large' : 'small'
+        // eslint-disable-next-line no-await-in-loop
+        await record(
+          `P14-${suffix}-base`,
+          `${label}, без плагинов`,
+          base,
+          false,
+        )
+        // eslint-disable-next-line no-await-in-loop
+        await record(
+          `P14-${suffix}`,
+          `${label}, все плагины выключены`,
+          disabled,
+          true,
+        )
+
+        expect(
+          disabled.mount.longestMs,
+          `${label}: монтирование longest=${disabled.mount.longestMs.toFixed(1)}ms (база ${base.mount.longestMs.toFixed(1)}ms, потолок ${ceiling.mount.toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling.mount)
+        for (const axis of ['y', 'x'] as const) {
+          expect(
+            disabled[axis].p95Ms,
+            `${label}: ${axis} p95=${disabled[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+          ).toBeLessThanOrEqual(ceiling[axis])
+        }
+      }
+    },
+    PERF_TIMEOUT * 6,
   )
 })

@@ -36,6 +36,7 @@ import {
   PAGED,
   PERF_TIMEOUT,
   SMALL,
+  inlineHeaderActions,
 } from './perf-cases'
 import {
   ANIMATION_BUDGET_MS,
@@ -61,7 +62,7 @@ import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { buildXlsx } from '../../../plugins/dataExportModel/xlsxBuild'
-import { columns as mockColumns } from '../../__mocks__/columns'
+import { columns as mockColumns, makeColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import { HANDLE, beginDrag, firePointer } from '../../rowDragging.dnd'
 import {
@@ -647,7 +648,12 @@ const CASES: InteractionCase[] = [
   {
     id: 'FL36',
     label: 'применение фильтра колонки, большая выборка, все плагины',
-    args: { ...LARGE, ...ALL_PLUGINS, ...FILTERING },
+    args: {
+      ...LARGE,
+      ...ALL_PLUGINS,
+      ...FILTERING,
+      ...inlineHeaderActions(makeColumns(LARGE.columnCount)),
+    },
     prepare: openCountryFilter,
     act: async () => alternate(filterValueInput()!, 'a', 'e'),
     afterWarmup: () => expect(filterValueInput()!.value).toBe('a'),
@@ -656,7 +662,12 @@ const CASES: InteractionCase[] = [
   {
     id: 'DF22',
     label: 'применение фильтра даты, большая выборка, все плагины',
-    args: { ...LARGE, ...ALL_PLUGINS, ...DATE_FILTERING },
+    args: {
+      ...LARGE,
+      ...ALL_PLUGINS,
+      ...DATE_FILTERING,
+      ...inlineHeaderActions(DATE_FILTERING.columnsOverride),
+    },
     prepare: openDateFilter,
     act: toggleCalendarDay,
     afterWarmup: () => expect(isDaySelected(10)).toBe(true),
@@ -666,7 +677,12 @@ const CASES: InteractionCase[] = [
     id: 'SF25',
     label: 'применение фильтра варианта с фасетами, 100 000×10, все плагины',
     size: '100 000×10',
-    args: { ...SEARCH_SIZE, ...ALL_PLUGINS, ...OPTION_FILTERING },
+    args: {
+      ...SEARCH_SIZE,
+      ...ALL_PLUGINS,
+      ...OPTION_FILTERING,
+      ...inlineHeaderActions(OPTION_FILTERING.columnsOverride),
+    },
     prepare: openOptionFilter('gender'),
     // Прогрев отмечает «male», замер — «female»: оба щелчка применяют фильтр, а не снимают.
     act: async () =>
@@ -685,7 +701,12 @@ const CASES: InteractionCase[] = [
   {
     id: 'SF26',
     label: 'открытие панели с 1000 вариантов, все плагины',
-    args: { ...SMALL, ...ALL_PLUGINS, ...MANY_OPTIONS_FILTERING },
+    args: {
+      ...SMALL,
+      ...ALL_PLUGINS,
+      ...MANY_OPTIONS_FILTERING,
+      ...inlineHeaderActions(MANY_OPTIONS_FILTERING.columnsOverride),
+    },
     prepare: async () => {
       await expect.poll(variantButton).not.toBeNull()
     },
@@ -969,7 +990,7 @@ describe('Отзывчивость — сортировка по подписи'
       const measure = async (labelled: boolean) => {
         await renderGrid({
           ...ALL_PLUGINS,
-          columnsOverride: managerColumn(labelled),
+          ...inlineHeaderActions(managerColumn(labelled)),
           dataOverride: OPTION_SORT_DATA,
         } as Parameters<typeof renderGrid>[0])
         await waitForGrid()

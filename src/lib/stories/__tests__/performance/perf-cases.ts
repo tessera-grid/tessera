@@ -34,21 +34,59 @@ export const LARGE = { columnCount: 1000, dataCount: 1000 } as const
 /** Пагинированный набор (ADR 0038, I7–I8): много строк, страница режется моделью. */
 export const PAGED = { columnCount: 30, dataCount: 100_000 } as const
 
-/** Режим без плагинов — чистая виртуализация. */
+/**
+ * Обвязка историй без включённых плагинов: выключенные фабрики в наборе — база гейтов
+ * «фича против базы». Край матрицы «без плагинов» — `renderPluginsGrid` (ADR 0004).
+ */
 export const NO_PLUGINS: Record<string, boolean> = {}
-/** Все плагины включены одновременно. */
+/**
+ * Все встроенные плагины включены (ADR 0004), кроме пагинации и ленты: они меняют
+ * число строк в окне, их цена — в I7–I8 и IS16–IS17.
+ */
 export const ALL_PLUGINS: Record<string, boolean> = {
   enableColumnSorting: true,
   enableColumnSizing: true,
   enableColumnPinning: true,
   enableColumnDragging: true,
+  enableColumnVisibility: true,
+  enableColumnFiltering: true,
+  enableQuickSearch: true,
+  enableHeaderActionMenu: true,
   enableRowSelection: true,
   enableRowDragging: true,
+  enableRowExpanding: true,
+  enableTreeLines: true,
+  enableRowGrouping: true,
   enableRowActions: true,
+  enableRowActionMenu: true,
+  enableCellEditing: true,
   enableCellSelection: true,
+  enableContextMenu: true,
+  enableDataExport: true,
+  enableBackToTop: true,
   enableFooter: true,
   enableKeyboardNavigation: true,
 }
+
+/**
+ * Кнопки заголовка в ряд при всех плагинах: `headerActionMenu` в наборе, но порог
+ * выше числа действий — иначе от трёх они уходят в кебаб (ADR 0024).
+ */
+export const INLINE_HEADER_ACTIONS = { headerActionMenuThreshold: 100 }
+
+/** Ширина колонки, в которую встают все кнопки заголовка: иначе лишние — в кебаб (ADR 0111). */
+const WIDE_COLUMN_SIZE = 360
+
+/** Кнопки заголовка в ряд и колонки под них — для кейсов, что нажимают кнопку заголовка. */
+export const inlineHeaderActions = <C extends object>(
+  columns: readonly C[],
+) => ({
+  ...INLINE_HEADER_ACTIONS,
+  columnsOverride: columns.map(column => ({
+    ...column,
+    size: WIDE_COLUMN_SIZE,
+  })),
+})
 
 /**
  * Засев отправленных ячеек правки (ADR 0041, AS14): служебная запись с `reconcile`

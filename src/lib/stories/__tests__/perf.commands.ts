@@ -229,6 +229,7 @@ export interface PerfRecord {
     | 'rowSelection, rowExpanding, highlight'
     | 'rowDragging, rowExpanding'
     | 'models'
+    | 'disabled'
     | 'infiniteScroll'
     | 'backToTop'
     | 'loading'

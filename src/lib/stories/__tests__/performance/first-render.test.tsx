@@ -20,6 +20,7 @@ import {
   PERF_TIMEOUT,
   SMALL,
 } from './perf-cases'
+import { renderPluginsGrid } from './hosts'
 
 // Производительность ПЕРВОЙ ОТРИСОВКИ (mount → первый кадр). Половина перф-матрицы:
 // операция «отрисовка» × объём (небольшой/большой) × плагины (без/все).
@@ -35,18 +36,22 @@ interface RenderCase {
   args: Record<string, number | boolean>
   /** Данные генерируются до замера: меряется монтирование, а не faker. */
   pregenerated?: boolean
+  /** «Без плагинов» — `plugins: []` своим хостом, без обвязки историй (ADR 0004). */
+  bare?: boolean
 }
 
 const CASES: RenderCase[] = [
   {
     id: 'P1',
     label: 'небольшая выборка, без плагинов',
-    args: { ...SMALL, ...NO_PLUGINS },
+    args: { ...SMALL },
+    bare: true,
   },
   {
     id: 'P3',
     label: 'большая выборка, без плагинов',
-    args: { ...LARGE, ...NO_PLUGINS },
+    args: { ...LARGE },
+    bare: true,
   },
   {
     id: 'P5',
@@ -68,8 +73,9 @@ const CASES: RenderCase[] = [
   {
     id: 'P9',
     label: 'много строк, без плагинов',
-    args: { ...PAGED, ...NO_PLUGINS },
+    args: { ...PAGED },
     pregenerated: true,
+    bare: true,
   },
 ]
 
@@ -94,7 +100,14 @@ describe('Производительность первой отрисовки',
           ? makeData({ shape: 'flat', count: Number(c.args.dataCount) })
           : undefined
         const result = await measureRenderWork(
-          () => renderGrid({ ...c.args, dataOverride }),
+          () =>
+            c.bare
+              ? renderPluginsGrid({
+                  columnCount: Number(c.args.columnCount),
+                  dataCount: Number(c.args.dataCount),
+                  dataOverride,
+                })
+              : renderGrid({ ...c.args, dataOverride }),
           () => headCells().length > 0,
           { warmup: false },
         )
@@ -108,7 +121,7 @@ describe('Производительность первой отрисовки',
               : c.args.dataCount === PAGED.dataCount
                 ? '30×100 000'
                 : '30×500',
-          plugins: c.args.enableColumnSorting ? 'all' : 'none',
+          plugins: c.bare ? 'none' : 'all',
           cpuThrottle: CPU_THROTTLE_RATE,
           metrics: [
             {

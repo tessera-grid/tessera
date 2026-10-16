@@ -308,12 +308,12 @@ const extraColumns = (count: number) => {
   })
 }
 
+/** Колонки мока по числу: базовые и добавочные. */
+export const makeColumns = (count: number) =>
+  count >= columns.length
+    ? [...columns, ...extraColumns(count)]
+    : columns.slice(0, count < 0 ? 0 : count)
+
 export const useColumns = (count: number) => {
-  return useMemo(
-    () =>
-      count >= columns.length
-        ? [...columns, ...extraColumns(count)]
-        : columns.slice(0, count < 0 ? 0 : count),
-    [count],
-  )
+  return useMemo(() => makeColumns(count), [count])
 }
