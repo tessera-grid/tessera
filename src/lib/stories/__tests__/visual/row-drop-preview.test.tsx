@@ -109,7 +109,8 @@ describe('Превью броска строки (ADR 0108)', () => {
       )
       await dragOver(id, overId, depth)
       expect(slot(), `${id}: drag started`).not.toBeNull()
-      // Превью снимается, когда порядок и линии перестали меняться.
+      // Превью снимается, когда строки доехали, а порядок и линии перестали меняться.
+      await settleRowMotion()
       let last = ''
       await expect
         .poll(() => {
@@ -132,6 +133,8 @@ describe('Превью броска строки (ADR 0108)', () => {
         id,
       ).toBe(true)
       await release()
+      // Итог броска — когда строки доехали: уходящая строка ещё в окне меняет линии соседей.
+      await settleRowMotion()
       const after = new Map(
         rowsInOrder().map(row => [row.dataset.rowId!, linesOf(row)]),
       )

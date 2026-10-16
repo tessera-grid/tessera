@@ -306,26 +306,51 @@ export class RowMotion extends Component<RowMotionProps> {
         )
       }
     }
-    // Призраки — одной вставкой: каждая вставка заново проверяет селекторы `:has()`.
-    const ghosts = document.createDocumentFragment()
-    const exits: [HTMLElement, number, number | null][] = []
+    // Призраки уходят группами — вниз, вверх и гаснущие на месте, одной анимацией на
+    // группу: у каждой анимации свой слой и своя отрисовка (RM20, RM31). Группа едет так,
+    // чтобы за край ушёл и ближний к нему призрак; соседи едут вместе, не сходясь у края.
+    const groups = {
+      down: [] as HTMLElement[],
+      up: [] as HTMLElement[],
+      fade: [] as HTMLElement[],
+    }
+    let down = 0
+    let up = 0
     for (const { id, from, to } of plan.exits) {
       const copy = leaving.get(id)
       if (!copy || !seen(from, to ?? from)) continue
       const ghost = asGhost(copy)
       ghost.style.top = `${from}px`
-      ghosts.append(ghost)
-      exits.push([ghost, from, to])
+      if (to === null) {
+        groups.fade.push(ghost)
+      } else if (to < from) {
+        groups.up.push(ghost)
+        up = Math.min(up, to - from)
+      } else {
+        groups.down.push(ghost)
+        down = Math.max(down, to - from)
+      }
     }
-    this.ghosts.current?.append(ghosts)
-    for (const [ghost, from, to] of exits) {
+    // Одной вставкой: каждая вставка заново проверяет селекторы `:has()`.
+    const layer = document.createDocumentFragment()
+    const moving: [HTMLElement[], Keyframe[]][] = [
+      [groups.down, [{ translate: '0 0' }, { translate: `0 ${down}px` }]],
+      [groups.up, [{ translate: '0 0' }, { translate: `0 ${up}px` }]],
+      [groups.fade, [{ opacity: 1 }, { opacity: 0 }]],
+    ]
+    const started: [HTMLElement, Keyframe[]][] = []
+    for (const [members, keyframes] of moving) {
+      if (members.length === 0) continue
+      const group = document.createElement('div')
+      group.className = styles.ghostGroup
+      group.append(...members)
+      layer.append(group)
+      started.push([group, keyframes])
+    }
+    this.ghosts.current?.append(layer)
+    for (const [group, keyframes] of started) {
       this.animations.push(
-        ghost.animate(
-          to === null
-            ? [{ opacity: 1 }, { opacity: 0 }]
-            : [{ translate: '0 0' }, { translate: `0 ${to - from}px` }],
-          { ...timing, fill: 'forwards' },
-        ),
+        group.animate(keyframes, { ...timing, fill: 'forwards' }),
       )
     }
 

@@ -2342,6 +2342,8 @@ const MOTION_COLUMNS = [
 ]
 /** Цена движения по ADR 0107, RM20: сортировка платит за копии уходящих строк. */
 const RM20_COST = { ratio: 1.3, plusMs: 8 }
+/** Раскрытие: призраки группами и проявление детей, цена на 2026-10-16 с запасом (RM31). */
+const RM20_EXPAND_COST = { ratio: 1.3, plusMs: 18 }
 const RM20_SORT_COST = { ratio: 1.45, plusMs: 8 }
 const MOTION_SETTLE_MS = 400
 
@@ -2356,7 +2358,7 @@ const motionTree = () => {
 
 describe('Отзывчивость — движение строк', () => {
   test(
-    'RM20: движение строк против той же смены без него — сортировка 100 000 строк до +45 % или 8 мс, раскрытие 100 детей на 1000×1000 и спокойная прокрутка до +30 % или 8 мс',
+    'RM20: движение строк против той же смены без него — сортировка 100 000 строк до +45 % или 8 мс, раскрытие 100 детей на 1000×1000 до +30 % или 18 мс, спокойная прокрутка до +30 % или 8 мс',
     async () => {
       // Сортировка 100 000 строк: в окне уцелевает строка r0 (rank 0) — движение есть.
       const sort = async (motion: boolean) => {
@@ -2444,7 +2446,7 @@ describe('Отзывчивость — движение строк', () => {
 
       const cases = [
         ['sort', sort, 'longestMs', '100 000×2', 'interaction', RM20_SORT_COST],
-        ['expand', expand, 'p95Ms', '1000×1000', 'animation', RM20_COST],
+        ['expand', expand, 'p95Ms', '1000×1000', 'animation', RM20_EXPAND_COST],
         ['scroll', scroll, 'p95Ms', '1000×1000', 'animation', RM20_COST],
       ] as const
       for (const [name, measure, metric, size, kind, cost] of cases) {

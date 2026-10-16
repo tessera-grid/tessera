@@ -63,8 +63,14 @@ const ghosts = () => [...document.querySelectorAll<HTMLElement>(GHOST)]
 /** Верх элемента относительно тела, px. */
 const topOf = (element: Element) =>
   element.getBoundingClientRect().top - bodyOf().getBoundingClientRect().top
-const opacityOf = (element: Element) =>
-  Number(getComputedStyle(element).opacity)
+/** Видимая прозрачность: своя и предков — призраки гаснут группой (RM31). */
+const opacityOf = (element: Element) => {
+  let opacity = 1
+  for (let el: Element | null = element; el; el = el.parentElement) {
+    opacity *= Number(getComputedStyle(el).opacity)
+  }
+  return opacity
+}
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
@@ -1217,6 +1223,54 @@ describe('Движение строк — прокрутка после пере
       expect(frames.flat()).toEqual([])
     } finally {
       await screen.unmount()
+    }
+  })
+
+  test('RM31: уходящие из окна строки уезжают группой — одна анимация на направление, призраки держат расстояние между собой', async () => {
+    slowMotion(1500)
+    const data = AGE_DATA.map((row, i) =>
+      i === 0
+        ? {
+            ...row,
+            subRows: getData(30).map((child: { id: string }) => ({
+              ...child,
+              id: `child-${child.id}`,
+            })),
+          }
+        : row,
+    )
+    await mountHost({ data, toggles: { enableRowExpanding: true } })
+    const rowSize = rowsTopDown()[0]!.getBoundingClientRect().height
+    const toggle = () => rowById(id(0))!.querySelector<HTMLElement>(TOGGLE)!
+    /** Анимации призраков: у самого призрака или у слоя, где он лежит. */
+    const ghostAnimations = () =>
+      document.getAnimations().filter(animation => {
+        const target = (animation.effect as KeyframeEffect | null)?.target
+        return (
+          !!target && (target.matches(GHOST) || !!target.querySelector(GHOST))
+        )
+      }).length
+
+    const frames = await sampleFrames(
+      () => ({
+        animations: ghostAnimations(),
+        tops: ghosts()
+          .map(topOf)
+          .sort((a, b) => a - b),
+      }),
+      () => userEvent.click(toggle()),
+      900,
+    )
+
+    const moving = frames.filter(frame => frame.tops.length > 1)
+    expect(moving.length).toBeGreaterThan(2)
+    expect(
+      Math.max(...frames.map(frame => frame.animations)),
+    ).toBeLessThanOrEqual(3)
+    for (const { tops } of moving) {
+      for (let i = 1; i < tops.length; i++) {
+        expect(tops[i]! - tops[i - 1]!).toBeCloseTo(rowSize, 0)
+      }
     }
   })
 
