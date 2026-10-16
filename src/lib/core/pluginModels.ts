@@ -23,25 +23,11 @@ const modelArgsKey = (entry: TesseraFeatureEntry): string | undefined => {
     : undefined
 }
 
-/** Запись, пересобранная включённой: аргументы те же, кроме `enabled`. */
-const enabledCopy = (entry: TesseraFeatureEntry): TesseraFeatureEntry => {
-  if (!entry.configure) {
-    return { ...entry, enabled: true }
-  }
-  const args = { ...(entry.args as object), enabled: true }
-  return {
-    ...entry,
-    ...entry.configure(args),
-    enabled: true,
-    args,
-    argsKey: argsKeyOf(args),
-  }
-}
-
 /**
  * Набор с раскрытыми моделями: включённая модель встаёт перед первым интерфейсом,
  * который её несёт, с пометкой `includedBy`. Её несут несколько интерфейсов —
- * действует включённая из включённого. Явная модель вытесняет включённые, но модель
+ * действует включённая из включённого. Включённая явная модель вытесняет включённые;
+ * выключенная явная рядом с включённым интерфейсом уступает модели интерфейса: модель
  * включена, если включена хоть одна несущая её запись.
  */
 export const expandIncludedModels = (
@@ -54,17 +40,22 @@ export const expandIncludedModels = (
   const entries: TesseraFeatureEntry[] = []
   const included = new Map<string, number>()
   const mismatches: ModelArgsMismatch[] = []
-  const forcedOn = new Set<string>()
+  // Выключенная явная модель → модель включённого интерфейса на её месте.
+  const takeover = new Map<string, TesseraFeatureEntry>()
 
   const include = (model: TesseraFeatureEntry, includedBy: string) => {
     const own = explicit.get(model.id)
     if (own) {
-      const args = modelArgsKey(model)
-      if (args !== undefined && args !== modelArgsKey(own)) {
-        mismatches.push({ modelId: model.id, includedBy })
-      }
-      if (own.enabled === false && model.enabled !== false) {
-        forcedOn.add(model.id)
+      if (own.enabled !== false) {
+        const args = modelArgsKey(model)
+        if (args !== undefined && args !== modelArgsKey(own)) {
+          mismatches.push({ modelId: model.id, includedBy })
+        }
+      } else if (model.enabled !== false && !takeover.has(model.id)) {
+        takeover.set(model.id, model)
+        if (model.model) {
+          include(model.model, model.id)
+        }
       }
       return
     }
@@ -89,10 +80,10 @@ export const expandIncludedModels = (
     entries.push(entry)
   }
   return {
-    entries: forcedOn.size
+    entries: takeover.size
       ? entries.map(entry =>
-          forcedOn.has(entry.id) && !entry.includedBy
-            ? enabledCopy(entry)
+          !entry.includedBy && takeover.has(entry.id)
+            ? takeover.get(entry.id)!
             : entry,
         )
       : entries,

@@ -22,7 +22,7 @@ import {
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { describe, expect, it } from 'vitest'
 
-import { createTesseraSortedRowModel } from '../plugins/columnSorting/sortedRowModel'
+import { createTesseraSortedRowModel } from '../plugins/columnSortingModel/sortedRowModel'
 import {
   type LoadedChildren,
   readLoadedChildren,

@@ -144,9 +144,12 @@ export const lifetimeArgViolations = (
       return []
     }
     const latest = entry.args as Record<string, unknown>
-    return entry.lifetimeArgs
-      .filter(key => argsKeyOf(latest?.[key]) !== argsKeyOf(mounted[key]))
-      .map(key => `${entry.id}.${key}`)
+    return (
+      entry.lifetimeArgs
+        .filter(key => argsKeyOf(latest?.[key]) !== argsKeyOf(mounted[key]))
+        // Аргумент включённой модели приложение передало интерфейсу (ADR 0120).
+        .map(key => `${entry.includedBy ?? entry.id}.${key}`)
+    )
   })
 
 /** Сигнатура значений аргументов набора: меняется только при смене значения. */

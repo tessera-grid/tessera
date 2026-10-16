@@ -32,6 +32,10 @@ export {
   type ColumnSortingOptions,
   type ColumnMultiSortOptions,
 } from './columnSorting'
+export {
+  columnSortingModel,
+  type ColumnSortingModelOptions,
+} from './columnSortingModel'
 export { columnPinning, type ColumnPinningOptions } from './columnPinning'
 export { columnSizing, type ColumnSizingOptions } from './columnSizing'
 export { columnDragging, type ColumnDraggingOptions } from './columnDragging'

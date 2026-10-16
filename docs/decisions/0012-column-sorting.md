@@ -2,6 +2,10 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** 2026-10-16 — [ADR 0120](0120-model-and-interface-plugins.md): модель сортировки —
+  отдельный плагин `columnSortingModel` (фичи, `server`, предел `multiSort`, срез `sorting`
+  аргументами `sorting`/`onSortingChange`/`initialSorting`); `columnSorting` её включает и
+  добавляет кнопку, клавишу, жест мультисортировки и `onToggleColumnSort`.
 - **Изменён:** 2026-09-10 — affordance переведён с опакового слот-компонента
   (`ColumnSortingComponent`→`SortButton`) на единый дескриптор `slotActions`
   ([ADR 0024](0024-slot-action-descriptor-and-menu.md)): инлайн — прежняя циклящая

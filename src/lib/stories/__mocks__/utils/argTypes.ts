@@ -267,6 +267,16 @@ export const columnSortingRevertOnRejectType = booleanControl(
   'Откатывать сортировку при отказе промиса `onToggleColumnSort` в серверном режиме (`revertOnReject`, ADR 0116)',
   true,
 )
+export const enableColumnSortingModelType = booleanControl(
+  'Сортировка без кнопок: порядок строк по состоянию `sorting` (плагин `columnSortingModel`)',
+)
+export const columnSortingModelServerType = booleanControl(
+  'Серверная сортировка модели (`server`): строки мока не переупорядочиваются',
+)
+export const columnSortingModelMultiSortType = booleanControl(
+  'Несколько колонок в срезе `sorting` (`multiSort`); иначе действует только первая',
+  true,
+)
 export const enableColumnSizingType = booleanControl(
   'Изменение ширины колонок перетаскиванием границы (плагин `columnSizing`)',
 )

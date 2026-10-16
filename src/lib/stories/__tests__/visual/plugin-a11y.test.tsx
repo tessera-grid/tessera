@@ -35,6 +35,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
     dataNesting: 'nested',
     expandAll: true,
   },
+  columnSortingModel: { enableColumnSortingModel: true },
   rowDragging: { enableRowDragging: true },
   rowGrouping: { enableRowGrouping: true },
   rowActions: { enableRowActions: true },

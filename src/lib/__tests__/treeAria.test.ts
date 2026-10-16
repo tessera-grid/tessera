@@ -23,7 +23,7 @@ import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-c
 import { describe, expect, it } from 'vitest'
 
 import { getTreeAria } from '../grid/treeAria'
-import { createTesseraSortedRowModel } from '../plugins/columnSorting/sortedRowModel'
+import { createTesseraSortedRowModel } from '../plugins/columnSortingModel/sortedRowModel'
 
 interface Item {
   id: string

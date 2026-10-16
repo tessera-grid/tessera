@@ -12,7 +12,12 @@ import { foldEntries, type TesseraFeatureEntry } from '../core/features'
 import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
 import { useCreateTable } from '../core/useCreateTable'
-import { rowExpanding, rowExpandingModel } from '../plugins'
+import {
+  columnSorting,
+  columnSortingModel,
+  rowExpanding,
+  rowExpandingModel,
+} from '../plugins'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -39,12 +44,19 @@ const ROOTS = ['a', 'b', 'c']
 /** Раскрыто всё до `maxDepth: 1` `rowExpanding` по умолчанию. */
 const DEPTH_1 = ['a', 'a1', 'a2', 'b', 'c', 'c1']
 
-/** Пары «модель — интерфейс» и опции, которые выставляет модель. */
+/** Пары «модель — интерфейс», опции, которые выставляет модель, и её срез. */
 const PAIRS = [
   {
     model: rowExpandingModel,
     ui: rowExpanding,
     flags: ['enableExpanding', 'autoResetExpanded'],
+    state: { expanded: true },
+  },
+  {
+    model: columnSortingModel,
+    ui: columnSorting,
+    flags: ['enableSorting', 'manualSorting'],
+    state: { sorting: [{ id: 'name', desc: true }] },
   },
 ] as const
 
@@ -87,7 +99,7 @@ const rows = () =>
 
 describe('плагины модели и интерфейса (ADR 0120)', () => {
   it('MP4: опции модели выставляет только модель — перестановка записей не меняет опции таблицы и строки', () => {
-    for (const { model, ui, flags } of PAIRS) {
+    for (const { model, ui, flags, state } of PAIRS) {
       for (const interfaceOn of [true, false]) {
         expect(
           Object.keys(ui({ enabled: interfaceOn }).options ?? {}),
@@ -100,11 +112,11 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
           for (const flag of flags) {
             expect(backward[flag]).toEqual(forward[flag])
           }
-          render(() => [a, b], { expanded: true })
+          render(() => [a, b], state)
           const forwardRows = rows()
           act(() => root!.unmount())
           root = undefined
-          render(() => [b, a], { expanded: true })
+          render(() => [b, a], state)
           expect(rows()).toEqual(forwardRows)
           act(() => root!.unmount())
           root = undefined
@@ -113,7 +125,7 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     }
   })
 
-  it('MP5: явная модель главнее включённой интерфейсом — действуют её аргументы, расхождение — предупреждение; сужения складываются от всех записей', () => {
+  it('MP5: включённая явная модель главнее включённой интерфейсом — действуют её аргументы, расхождение — предупреждение; выключенная явная уступает модели интерфейса; сужения складываются от всех записей', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     render(() => [rowExpanding({ initialExpanded: true })])
     expect(rows()).toEqual(DEPTH_1)
@@ -132,6 +144,18 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
       expect.stringContaining(
         'аргументы модели у rowExpanding не действуют: в наборе есть явная rowExpandingModel',
       ),
+    )
+    act(() => root!.unmount())
+    root = undefined
+
+    warn.mockClear()
+    render(() => [
+      rowExpandingModel({ enabled: false, initialExpanded: {} }),
+      rowExpanding({ initialExpanded: true }),
+    ])
+    expect(rows()).toEqual(DEPTH_1)
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('аргументы модели'),
     )
     act(() => root!.unmount())
     root = undefined

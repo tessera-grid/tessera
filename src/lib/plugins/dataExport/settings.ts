@@ -19,6 +19,7 @@ export type ExportViewFeature = 'sorting' | 'filtering'
 
 const VIEW_PLUGINS: Record<string, ExportViewFeature> = {
   columnSorting: 'sorting',
+  columnSortingModel: 'sorting',
   columnFiltering: 'filtering',
   quickSearch: 'filtering',
 }
