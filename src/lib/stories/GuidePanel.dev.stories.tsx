@@ -400,7 +400,7 @@ export const GuidePanelMinWidth: StoryObj<SandboxArgs> = {
   },
 }
 
-/** Сценарий пройден целиком: на последнем шаге «Закончить», затем «Пройдено», все шаги зелёные. */
+/** Сценарий пройден целиком: переход на последний шаг выполняет его, затем «Пройдено», все шаги зелёные. */
 export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
   name: 'Completed',
   parameters: { requirements: ['SN16'] },
@@ -409,32 +409,30 @@ export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
     const next = canvasElement.querySelector<HTMLButtonElement>(
       '[data-testid="guide-next"]',
     )!
-    await nextStep(canvasElement)
-    await nextStep(canvasElement)
-    await waitFor(() => expect(next).toHaveTextContent('Закончить'))
-    await nextStep(canvasElement)
     const toggle = canvasElement.querySelector<HTMLElement>(
       '[data-testid="guide-toggle"]',
     )!
+    await nextStep(canvasElement)
+    await expect(next).toHaveTextContent('Далее')
+    // «Далее» на предпоследнем шаге: последний шаг выполняется сразу при переходе.
+    await nextStep(canvasElement)
     await waitFor(() => expect(toggle).toHaveTextContent('пройден'))
     await expect(next).toHaveTextContent('Пройдено')
     await expect(next).toBeDisabled()
-    const states = [
-      ...canvasElement.querySelectorAll<HTMLElement>('[data-step-state]'),
-    ].map(badge => badge.dataset.stepState)
-    await expect(states).toEqual(['done', 'done', 'done'])
-    // «Назад» из пройденного — снова последний шаг, «Закончить» доступна.
+    await expect(canvasElement).not.toHaveTextContent('Закончить')
+    const states = () =>
+      [...canvasElement.querySelectorAll<HTMLElement>('[data-step-state]')].map(
+        badge => badge.dataset.stepState,
+      )
+    await expect(states()).toEqual(['done', 'done', 'done'])
+    // «Назад» из пройденного — к предпоследнему шагу: последний выполнился бы снова.
     await userEvent.click(
       canvasElement.querySelector<HTMLElement>('[data-testid="guide-back"]')!,
     )
-    await waitFor(() => expect(toggle).toHaveTextContent('шаг 3 из 3'))
-    await expect(next).toHaveTextContent('Закончить')
-    await expect(next).toBeEnabled()
-    await expect(
-      canvasElement
-        .querySelector('[data-step-index="2"]')!
-        .getAttribute('data-step-state'),
-    ).toBe('current')
+    await waitFor(() => expect(toggle).toHaveTextContent('шаг 2 из 3'))
+    await waitFor(() => expect(next).toBeEnabled())
+    await expect(next).toHaveTextContent('Далее')
+    await expect(states()).toEqual(['done', 'current', 'next'])
     await nextStep(canvasElement)
     await waitFor(() => expect(toggle).toHaveTextContent('пройден'))
     await settle()

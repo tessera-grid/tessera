@@ -271,7 +271,7 @@ export const GuidePanel = ({
   const [expanded, setExpanded] = useState(defaultExpanded)
   const id = useId()
   const last = steps.length - 1
-  // Последний шаг завершён «Закончить»: сценарий пройден целиком.
+  // Последний шаг выполняется при переходе на него: сценарий пройден целиком.
   const [finished, setFinished] = useState(false)
   // Воспроизведение идёт, пока сценарий не пройден; ручной шаг его снимает.
   const [autoplay, setAutoplay] = useState(false)
@@ -296,6 +296,7 @@ export const GuidePanel = ({
   const emptying = move?.back ? move.index : null
   const nextRef = useLatest(onNext)
   const backRef = useLatest(onBack)
+  const lastRef = useLatest(last)
   // Анимации — только в раскрытой панели: в свёрнутой их не видно, и шаг сменяется сразу.
   const animated = () => expanded && !stillMotion()
   const badgeOf = (index: number) =>
@@ -316,6 +317,7 @@ export const GuidePanel = ({
     } else {
       setMove(null)
       onNext()
+      if (step + 1 === last) setFinished(true)
     }
   }
   useEffect(() => {
@@ -355,11 +357,17 @@ export const GuidePanel = ({
           return
         }
         target.current = null
-        // Значок нового текущего шага «подпрыгивает»: вперёд — следующего, назад —
-        // прошлого, снова числом.
         const badge = list.current?.querySelector<HTMLElement>(
           `[data-step-index="${reached}"]`,
         )
+        // Последний шаг выполняется сразу: значок зеленеет с конфетти (SN16).
+        if (!move.back && reached === lastRef.current) {
+          setFinished(true)
+          if (badge) void burst(badge)
+          return
+        }
+        // Значок нового текущего шага «подпрыгивает»: вперёд — следующего, назад —
+        // прошлого, снова числом.
         if (badge) pop(badge)
       },
       () => {},
@@ -368,7 +376,7 @@ export const GuidePanel = ({
       alive = false
       animation?.cancel()
     }
-  }, [move, nextRef, backRef])
+  }, [move, nextRef, backRef, lastRef])
   const advanceRef = useLatest(advance)
   // Воспроизведение: полоска к следующему шагу заливается всё время шага; последний
   // шаг выполняется сразу при переходе на него.
@@ -392,13 +400,9 @@ export const GuidePanel = ({
     setAutoplay(false)
     if (blocking) return
     target.current = null
-    // Из пройденного — снова к последнему шагу, без смены шага.
-    if (finished) {
-      setFinished(false)
-      const badge = animated() ? badgeOf(last) : null
-      if (badge) pop(badge)
-      return
-    }
+    // Из пройденного — к предпоследнему шагу: последний выполнился бы снова.
+    if (finished) setFinished(false)
+    if (step === 0) return
     if (animated()) {
       setMove({ index: step - 1, back: true })
     } else {
@@ -410,11 +414,18 @@ export const GuidePanel = ({
   // выбранным; нажатие посреди перехода меняет цель.
   const jumpTo = (index: number) => {
     setAutoplay(false)
+    // Пройденный сценарий на последнем шаге и остаётся.
+    if (finished && index === last) {
+      const badge = animated() ? badgeOf(index) : null
+      if (badge) pop(badge)
+      return
+    }
     if (finished) setFinished(false)
     if (!animated()) {
       target.current = null
       setMove(null)
       onJump(index)
+      if (index === last) setFinished(true)
       return
     }
     target.current = index

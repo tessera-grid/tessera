@@ -287,21 +287,25 @@ describe('панель сценария (ADR 0117)', () => {
     }
     for (const animation of document.getAnimations()) animation.finish()
   })
-  test('SN23: «Назад» откатывает шаг — полоска плавно пустеет, после неё шаг возвращается, значок снова число и «подпрыгивает», без конфетти; из пройденного значок последнего шага снова число', async () => {
+  test('SN23: «Назад» откатывает шаг — полоска плавно пустеет, после неё шаг возвращается, значок снова число и «подпрыгивает», без конфетти; из пройденного — так же к предпоследнему шагу, значок последнего снова число', async () => {
     await render(<GuidePanelPlayground />)
     await expect.poll(() => byId('guide-next')).toBeTruthy()
     const idle = () =>
       expect
         .poll(() => document.getAnimations().length, { timeout: 3000 })
         .toBe(0)
+    const toggle = byId('guide-toggle')
+    // Переход на последний шаг выполняет его: сценарий пройден (SN16).
     for (let i = 0; i < 2; i++) {
       await settled()
       button('guide-next').click()
     }
-    await settled()
+    await expect.poll(() => toggle.textContent).toContain('пройден')
     await idle()
-    const toggle = byId('guide-toggle')
-    expect(toggle.textContent).toMatch(/шаг 3 из 3/)
+    const lastBadge = document.querySelector<HTMLElement>(
+      '[data-step-index="2"]',
+    )!
+    expect(lastBadge.dataset.stepState).toBe('done')
     const badge = document.querySelector<HTMLElement>('[data-step-index="1"]')!
     const bar = document.querySelector<HTMLElement>('[data-step-fill="1"]')!
     const fillOf = () =>
@@ -330,6 +334,8 @@ describe('панель сценария (ADR 0117)', () => {
         expect(badge.dataset.stepState).toBe('current')
         expect(badge.textContent).toBe('2')
         expect(badge.getAnimations().length).toBeGreaterThan(0)
+        expect(lastBadge.dataset.stepState).toBe('next')
+        expect(lastBadge.textContent).toBe('3')
         break
       }
       disabledDuring &&=
@@ -345,25 +351,15 @@ describe('панель сценария (ADR 0117)', () => {
     expect(pieces).toBe(0)
     await idle()
 
-    // Из пройденного: «Закончить», затем «Назад» — последний значок снова число.
-    await settled()
-    button('guide-next').click()
-    await settled()
+    // Снова вперёд — последний шаг выполняется опять.
     button('guide-next').click()
     await expect.poll(() => toggle.textContent).toContain('пройден')
-    await idle()
-    const lastBadge = document.querySelector<HTMLElement>(
-      '[data-step-index="2"]',
-    )!
     expect(lastBadge.dataset.stepState).toBe('done')
-    button('guide-back').click()
-    await frame()
-    expect(lastBadge.dataset.stepState).toBe('current')
-    expect(lastBadge.textContent).toBe('3')
-    expect(lastBadge.getAnimations().length).toBeGreaterThan(0)
+    // Конфетти последнего шага догорают: следующий тест считает свои.
+    await idle()
     expect(confetti()).toHaveLength(0)
   })
-  test('SN24: нажатие на шаг переходит к нему ускоренно — полоски между шагами заливаются (назад — пустеют) по 120 мс на шаг, без конфетти; значок выбранного «подпрыгивает»; шаг — кнопка; нажатие посреди перехода меняет цель', async () => {
+  test('SN24: нажатие на шаг переходит к нему ускоренно — полоски между шагами заливаются (назад — пустеют) по 120 мс на шаг, без конфетти; значок выбранного «подпрыгивает», последний — пройден; шаг — кнопка; нажатие посреди перехода меняет цель', async () => {
     await render(<GuidePanelManySteps />)
     await expect.poll(() => byId('guide-next')).toBeTruthy()
     const toggle = byId('guide-toggle')
@@ -438,6 +434,15 @@ describe('панель сценария (ADR 0117)', () => {
       .toMatch(/шаг 7 из/)
     await sleep(500)
     expect(toggle.textContent).toMatch(/шаг 7 из/)
+    await settled()
+
+    // Нажатие на последний шаг выполняет его: сценарий пройден (SN16).
+    const last = document.querySelectorAll('[data-step-index]').length - 1
+    stepButton(last).click()
+    await expect
+      .poll(() => toggle.textContent, { timeout: 5000 })
+      .toContain('пройден')
+    expect(badge(last).dataset.stepState).toBe('done')
   })
   test('SN25: шаги одной высоты — по самому высокому; при наведении шаг подсвечен тусклой подложкой на всю высоту, без наведения подложки нет', async () => {
     await render(<GuidePanelManySteps />)

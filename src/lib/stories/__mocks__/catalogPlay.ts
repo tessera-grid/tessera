@@ -170,8 +170,8 @@ export const expectPopupInCanvas = (
 }
 
 /**
- * Шаг сценария (ADR 0117, §6): раскрыть панель сценария, нажать «Далее» (или
- * «Закончить») и дождаться смены шага — как человек.
+ * Шаг сценария (ADR 0117, §6): раскрыть панель сценария, нажать «Далее» и дождаться
+ * смены шага — как человек. Переход на последний шаг выполняет и его (SN16).
  */
 export const guideNext = async (canvas: HTMLElement) => {
   const panel = canvas.querySelector<HTMLElement>('[data-testid="guide"]')!
