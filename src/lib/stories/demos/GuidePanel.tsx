@@ -141,6 +141,11 @@ const pop = (badge: HTMLElement) =>
     { duration: POP_MS, easing: 'ease-out' },
   )
 
+const centerOf = (element: HTMLElement) => {
+  const { left, top, width, height } = element.getBoundingClientRect()
+  return { x: left + width / 2, y: top + height / 2 }
+}
+
 /**
  * Значок «подпрыгивает», конфетти взлетают из него, падают и гаснут. Промис — конец
  * анимации.
@@ -148,9 +153,8 @@ const pop = (badge: HTMLElement) =>
 const burst = (badge: HTMLElement): Promise<unknown> => {
   if (stillMotion()) return Promise.resolve()
   const done: Promise<unknown>[] = [pop(badge).finished]
-  const { left, top, width, height } = badge.getBoundingClientRect()
-  const x = left + width / 2
-  const y = top + height / 2
+  const { x, y } = centerOf(badge)
+  const pieces: HTMLElement[] = []
   for (let i = 0; i < CONFETTI_PIECES; i++) {
     // Веер вверх: от −160° до −20°, скорость — своя у каждой частицы.
     const angle = (-160 + Math.random() * 140) * (Math.PI / 180)
@@ -175,6 +179,7 @@ const burst = (badge: HTMLElement): Promise<unknown> => {
       zIndex: '1000',
     })
     document.body.append(piece)
+    pieces.push(piece)
     const duration = CONFETTI_MS / 1000
     const count = Math.ceil(duration * FRAMES_PER_S)
     const frames = Array.from({ length: count + 1 }, (_, k) => {
@@ -194,7 +199,20 @@ const burst = (badge: HTMLElement): Promise<unknown> => {
         .finished.finally(() => piece.remove()),
     )
   }
-  return Promise.allSettled(done)
+  // Полёт — от значка: лента шагов едет или страница прокручивается — частицы следом.
+  let frame = 0
+  const follow = () => {
+    if (badge.isConnected) {
+      const at = centerOf(badge)
+      for (const piece of pieces) {
+        piece.style.left = `${at.x - 3}px`
+        piece.style.top = `${at.y - 2}px`
+      }
+    }
+    frame = requestAnimationFrame(follow)
+  }
+  frame = requestAnimationFrame(follow)
+  return Promise.allSettled(done).finally(() => cancelAnimationFrame(frame))
 }
 
 const Check = () => (

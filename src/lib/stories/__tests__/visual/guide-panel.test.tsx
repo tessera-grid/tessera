@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../GuidePanel.dev.stories'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN25) — с движением: каталог
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN26) — с движением: каталог
 // гоняет истории с уменьшенным движением, и порядок конфетти и сдвига виден только здесь.
 // SN16, SN18–SN20 — в `play` песочницы `Tessera/Dev/Guide panel`.
 
@@ -475,5 +475,44 @@ describe('панель сценария (ADR 0117)', () => {
     expect(backgroundOf(buttons[3]!)).toBe(transparent)
     await userEvent.unhover(buttons[2]!)
     await expect.poll(() => backgroundOf(buttons[2]!)).toBe(transparent)
+  })
+  test('SN26: конфетти летят от значка пройденного шага — лента едет к новому шагу посреди полёта, частицы смещаются вместе со значком', async () => {
+    await render(<GuidePanelManySteps />)
+    await expect.poll(() => byId('guide-next')).toBeTruthy()
+    // К середине ряда: дальше шаг сдвигает ленту.
+    for (let i = 0; i < 3; i++) {
+      await settled()
+      button('guide-next').click()
+    }
+    await settled()
+    await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
+    await slideSettled()
+    const badge = document.querySelector<HTMLElement>('[data-step-index="3"]')!
+    const centerX = () => {
+      const { left, width } = badge.getBoundingClientRect()
+      return left + width / 2
+    }
+    const startX = centerX()
+    button('guide-next').click()
+    let moved = 0
+    let drift = 0
+    let samples = 0
+    while (confetti().length > 0) {
+      // После всех колбэков кадра: частицы и лента — в одном кадре.
+      await frame()
+      await sleep(0)
+      const pieces = confetti() as HTMLElement[]
+      if (!pieces.length) break
+      const x = centerX()
+      moved = Math.max(moved, Math.abs(x - startX))
+      for (const piece of pieces) {
+        drift = Math.max(drift, Math.abs(parseFloat(piece.style.left) + 3 - x))
+      }
+      samples++
+    }
+    // Лента уехала, пока частицы летели, а их точка вылета осталась у значка.
+    expect(samples).toBeGreaterThan(5)
+    expect(moved).toBeGreaterThan(20)
+    expect(drift).toBeLessThan(1.5)
   })
 })
