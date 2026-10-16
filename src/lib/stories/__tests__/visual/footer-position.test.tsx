@@ -580,11 +580,21 @@ describe('Положение футера', () => {
     const slow = {
       '--tsr-comp-row-motion-duration': '600ms',
     } as CSSProperties
-    /** Верх футера по кадрам с раскрытия группы до конца движения. */
+    /**
+     * Верх футера по кадрам с коммита раскрытия до конца движения. Коммит React бывает
+     * и после первого кадра: отсчёт — с кадра, где строк тела стало больше.
+     */
     const sampleExpand = async () => {
       const from = rect(footer()).top
+      const rowsBefore = document.querySelectorAll(
+        '.data-grid__body-row',
+      ).length
       api!.getRow('r0').toggleExpanded()
-      const tops: number[] = []
+      do await frame()
+      while (
+        document.querySelectorAll('.data-grid__body-row').length <= rowsBefore
+      )
+      const tops: number[] = [rect(footer()).top]
       for (let i = 0; i < 50; i++) {
         await frame()
         tops.push(rect(footer()).top)
