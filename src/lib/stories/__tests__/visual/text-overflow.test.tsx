@@ -444,7 +444,8 @@ describe('Длинный текст', () => {
   })
 
   test('TX6: в компактном виде панели счётчики — короткая форма, полная — доступный текст', async () => {
-    await mount()
+    // Полный вид, где он помещается: при 720px счётчики фильтра и выбора его не вмещают.
+    await mount(900)
     await selectAll()
     table.setColumnFilters([
       { id: 'status', value: { operator: 'anyOf', value: ['review'] } },
@@ -452,6 +453,10 @@ describe('Длинный текст', () => {
     const count = (id: string) =>
       statusBar().querySelector<HTMLElement>(`[data-testid="${id}"]`)!
     await expect.poll(() => count('filtered-rows-count')).not.toBeNull()
+    // Вид панель выбирает замером в следующем кадре после смены содержимого.
+    for (let i = 0; i < 3; i++) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
     expect(layout()).toBe('full')
     expect(shownForm(count('selected-rows-count'))).toBe(
       '25 rows selected, 12 hidden by filters',
