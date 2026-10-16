@@ -42,8 +42,12 @@ interface CellSelectionCell {
   }
   getSelectionStartHandler: () => (event: unknown) => void
   getSelectionExtendHandler: () => (event: unknown) => void
-  getContext: () => { table: unknown }
+  getContext: () => {
+    table: { options: { cellSelectionInteraction?: boolean } }
+  }
 }
+
+const IGNORE = () => {}
 
 interface Membership {
   isSelected: boolean
@@ -93,10 +97,12 @@ export const useCellSelection = (
   }
 
   // Обработчики стоковой фичи создаются заново на вызов — не реактивны, дёшевы,
-  // BodyCell ре-рендерится редко (memo + гранулярная подписка выше).
+  // BodyCell ре-рендерится редко (memo + гранулярная подписка выше). Без плагина
+  // интерфейса мышь выделение не меняет: модель только показывает срез (ADR 0120).
+  const interactive = table.options.cellSelectionInteraction === true
   return {
     ...membership,
-    onMouseDown: c.getSelectionStartHandler(),
-    onMouseEnter: c.getSelectionExtendHandler(),
+    onMouseDown: interactive ? c.getSelectionStartHandler() : IGNORE,
+    onMouseEnter: interactive ? c.getSelectionExtendHandler() : IGNORE,
   }
 }

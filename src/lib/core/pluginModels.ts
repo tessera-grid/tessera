@@ -94,6 +94,8 @@ export const expandIncludedModels = (
 /** Срезы из аргументов плагинов: значения, колбэки и начальные значения по ключу среза. */
 export interface PluginSlices {
   keys: string[]
+  /** Срезы с внешним значением: их хранит ядро (контроль). */
+  controlled: string[]
   state: Record<string, unknown>
   listeners: Record<string, (next: unknown) => void>
   initial: Record<string, unknown>
@@ -104,6 +106,7 @@ export const pluginSlicesOf = (
 ): PluginSlices => {
   const slices: PluginSlices = {
     keys: [],
+    controlled: [],
     state: {},
     listeners: {},
     initial: {},
@@ -111,7 +114,10 @@ export const pluginSlicesOf = (
   for (const entry of entries) {
     for (const { key, value, onChange, initial } of entry.stateSlices ?? []) {
       slices.keys.push(key)
-      if (value !== undefined) slices.state[key] = value
+      if (value !== undefined) {
+        slices.state[key] = value
+        slices.controlled.push(key)
+      }
       if (onChange) slices.listeners[key] = onChange
       if (initial !== undefined) slices.initial[key] = initial
     }
@@ -121,7 +127,10 @@ export const pluginSlicesOf = (
 
 const KEEP: NarrowState[] = [value => value]
 
-/** Срез плагина без своего сужения хранит ядро, как суженный: сужение «как есть». */
+/**
+ * Срез плагина с внешним значением, но без своего сужения ядро ведёт, как суженный:
+ * сужение «как есть». Без внешнего значения срезом владеет TanStack.
+ */
 export const withSliceNarrows = (
   narrow: NarrowMap,
   keys: readonly string[],

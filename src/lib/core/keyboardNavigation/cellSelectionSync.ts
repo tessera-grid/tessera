@@ -9,9 +9,12 @@ import {
 } from './model'
 import type { NavigationKeyEvent } from './resolveKey'
 
+/** Клавиши меняют выделение только с плагином интерфейса (ADR 0120). */
 const isCellSelectionActive = (t: NavTable) =>
   typeof t.setFocusedCell === 'function' &&
-  t.options.enableCellSelection !== false
+  t.options.enableCellSelection !== false &&
+  (t.options as { cellSelectionInteraction?: boolean })
+    .cellSelectionInteraction === true
 
 /**
  * Схлопнуть выделение в активную ячейку тела; на невыбираемой ячейке (служебная

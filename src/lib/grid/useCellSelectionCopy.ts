@@ -21,7 +21,12 @@ export const useCellSelectionCopy = (table: Table<any, any>) => {
 
   return useCallback(
     (event: ReactClipboardEvent<HTMLDivElement>) => {
-      if (typeof getRanges !== 'function') {
+      // Копирует только плагин интерфейса: модель выделение лишь показывает (ADR 0120).
+      if (
+        typeof getRanges !== 'function' ||
+        (table.options as { cellSelectionInteraction?: boolean })
+          .cellSelectionInteraction !== true
+      ) {
         return
       }
       const textSelection = window.getSelection?.()

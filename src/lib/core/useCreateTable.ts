@@ -10,7 +10,7 @@
  */
 import { useMemo, useRef } from 'react'
 
-import { useTable } from '@tanstack/react-table'
+import { makeStateUpdater, useTable } from '@tanstack/react-table'
 import type {
   ColumnPinningState,
   ColumnSizingState,
@@ -291,13 +291,28 @@ export const useCreateTable = <
     getColumnsSignature(previous.options.columns) === columnsSignature
       ? previous
       : null
-  // Срезы из аргументов плагинов (ADR 0120, §4) хранит ядро, как суженные.
+  // Срезы из аргументов плагинов (ADR 0120, §4): с внешним значением их ведёт ядро,
+  // как суженные; без него — TanStack, а ядро лишь сообщает новое значение колбэку.
   const slices = pluginSlicesOf(entries)
-  const sliceKeys = slices.keys.join('|')
+  const sliceKeys = slices.controlled.join('|')
   const narrow = useMemo(
-    () => withSliceNarrows(folded.narrow, slices.keys),
+    () => withSliceNarrows(folded.narrow, slices.controlled),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу срезов
     [folded.narrow, sliceKeys],
+  )
+  const ownedSliceHandlers = Object.fromEntries(
+    Object.entries(slices.listeners)
+      .filter(([key]) => !(key in narrow))
+      .map(([key, listener]) => [
+        `on${key.charAt(0).toUpperCase()}${key.slice(1)}Change`,
+        (updater: unknown) => {
+          const t = tableRef.current as unknown as Parameters<
+            typeof makeStateUpdater
+          >[1] & { atoms: Record<string, { get: () => unknown }> }
+          makeStateUpdater(key as never, t)(updater as never)
+          listener(t.atoms[key]?.get())
+        },
+      ]),
   )
   const effective = useEffectiveState({
     narrow,
@@ -347,6 +362,12 @@ export const useCreateTable = <
     // Фичевые опции плагинов (enableSorting и т.п.) — вливаются первыми, чтобы
     // явные поля ниже их не затирались.
     ...folded.options,
+    // Автосброс TanStack (`autoResetCellSelection`) возвращает срез к `initialState`:
+    // начальное значение среза из аргументов плагина — и туда (ADR 0120, MP9).
+    initialState: {
+      ...(folded.options.initialState as object | undefined),
+      ...slices.initial,
+    },
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
     state: controlledState,
@@ -356,6 +377,7 @@ export const useCreateTable = <
     // Прочие onXChange потребителя (onExpandedChange/onRowSelectionChange/
     // onGroupingChange/onRowOrderChange…); для суженных срезов — обёртки слоя.
     ...restHandlers,
+    ...ownedSliceHandlers,
     ...effective.handlers,
 
     hooks: resolvedHooks,

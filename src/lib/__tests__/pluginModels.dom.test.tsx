@@ -13,6 +13,8 @@ import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
 import { useCreateTable } from '../core/useCreateTable'
 import {
+  cellSelection,
+  cellSelectionModel,
   columnFiltering,
   columnFilteringModel,
   columnSorting,
@@ -101,6 +103,12 @@ const PAIRS = [
       'enableRowRangeSelection',
     ],
     state: { rowSelection: { b: true } },
+  },
+  {
+    model: cellSelectionModel,
+    ui: cellSelection,
+    flags: ['enableCellSelection'],
+    state: {},
   },
 ] as const
 
@@ -272,10 +280,33 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     root = undefined
 
     // Сброс среза в `undefined` (значение «нет поиска») — тоже значение среза.
-    render(() => [quickSearchModel({ initialGlobalFilter: 'b' })])
+    const onGlobalFilterChange = vi.fn()
+    render(() => [
+      quickSearchModel({ initialGlobalFilter: 'b', onGlobalFilterChange }),
+    ])
     expect(rows()).toEqual(['b'])
-    act(() => table.resetGlobalFilter())
+    // Очистка поля поиска пишет `undefined`; сброс возвращает к начальному значению.
+    act(() => table.setGlobalFilter(undefined))
     expect(rows()).toEqual(ROOTS)
+    expect(onGlobalFilterChange).toHaveBeenLastCalledWith(undefined)
+    act(() => table.resetGlobalFilter())
+    expect(rows()).toEqual(['b'])
+    act(() => root!.unmount())
+    root = undefined
+
+    // Автосброс TanStack (`autoResetCellSelection`) возвращает к начальному значению.
+    const range = [
+      {
+        anchorRowId: 'a',
+        anchorColumnId: 'name',
+        focusRowId: 'b',
+        focusColumnId: 'name',
+      },
+    ]
+    render(() => [cellSelectionModel({ initialCellSelection: range })])
+    expect(table.atoms.cellSelection.get()).toEqual(range)
+    act(() => table.resetCellSelection())
+    expect(table.atoms.cellSelection.get()).toEqual(range)
   })
 
   it('MP10: expanded — аргумент только модели дерева; rowGroupingModel включает модель дерева, и группы раскрываются по её срезу', () => {

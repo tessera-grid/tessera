@@ -1,18 +1,16 @@
 /** Опции и типы плагина cellSelection. */
 
-/** Ячейка для предиката выбираемости — подмножество ячейки TanStack v9. */
-export interface CellSelectionPredicateCell {
-  id: string
-  column: {
-    id: string
-    getIsActionsColumn: () => boolean
-    getIsRowActionsColumn: () => boolean
-  }
-  row: { id: string; original: unknown; depth: number }
-  getValue: () => unknown
-}
+import type {
+  CellSelectionModelOptions,
+  CellSelectionPredicateCell,
+} from '../cellSelectionModel/registry'
 
-export interface CellSelectionOptions {
+export type { CellSelectionPredicateCell }
+
+export interface CellSelectionOptions extends Omit<
+  CellSelectionModelOptions,
+  'enabled' | 'canSelectCell'
+> {
   /** `false` — плагин присутствует, но инертен (present-but-disabled). */
   enabled?: boolean
   /** Shift-расширение прямоугольного диапазона. По умолчанию `true`. */

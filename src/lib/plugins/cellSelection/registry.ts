@@ -1,43 +1,41 @@
 /**
- * Запись плагина cellSelection на `definePlugin`.
- *
- * Всю механику несёт стоковый `cellSelectionFeature` (слайс `cellSelection`,
- * по-ячеечные getIsSelected/getSelectionEdges/getTabIndex, мышиные хендлеры,
- * getSelectedCellRangesData). Плагин лишь регистрирует фичу и гейтит её опциями;
- * DOM-швы (атрибуты/обработчики/tabindex, copy-хендлер) живут в ядре
- * (core/cellSelection.ts, core/clipboard.ts) и читают presence duck-typed —
- * ядро плагин не импортит (ADR 0029 / ADR 0010).
+ * Запись плагина cellSelection на `definePlugin` (ADR 0029, ADR 0120): интерфейс
+ * выделения ячеек — мышь (диапазон Shift, протяжка, Ctrl/Cmd), синхронизация с
+ * клавиатурной навигацией, копирование и пункт «Копировать» контекстного меню. Модель —
+ * `cellSelectionModel`, плагин её включает и передаёт ей предикат и срез. DOM-швы
+ * (обработчики, copy-хендлер) живут в ядре и читают `cellSelectionInteraction`.
  *
  * Сервисной колонки нет: выделение — свойство самих ячеек тела.
  */
-import { cellSelectionFeature } from '@tanstack/react-table'
-
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
+import {
+  cellSelectionModel,
+  cellSelectionModelFeatures,
+} from '../cellSelectionModel/registry'
 import { copyContextAction } from './contextActions'
-import type { CellSelectionOptions, CellSelectionPredicateCell } from './types'
-
-/** Сервисные колонки (действия) невыбираемы — граница плагина, не настройка. */
-const isServiceCell = (cell: CellSelectionPredicateCell): boolean =>
-  cell.column.getIsActionsColumn() || cell.column.getIsRowActionsColumn()
+import type { CellSelectionOptions } from './types'
 
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 export const cellSelection = definePlugin<CellSelectionOptions>()({
   id: 'cellSelection',
-  // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
-  refreshOn: ['canSelectCell'],
   diagnose: neverInert,
-  features: { cellSelectionFeature },
+  model: {
+    plugin: cellSelectionModel,
+    keys: [
+      'canSelectCell',
+      'cellSelection',
+      'onCellSelectionChange',
+      'initialCellSelection',
+    ],
+  },
+  features: cellSelectionModelFeatures,
   options: o => {
-    // При disabled — все enable* жёстко false: v9 фиксирует набор фич на маунте,
+    // При disabled — жесты жёстко false: v9 фиксирует набор фич на маунте,
     // рантайм-гейт present-but-disabled — только опцией (ADR 0010).
     const off = o.enabled === false
-    const canSelect = o.canSelectCell
     return {
-      enableCellSelection: off
-        ? false
-        : (cell: CellSelectionPredicateCell) =>
-            !isServiceCell(cell) && (canSelect?.(cell) ?? true),
+      cellSelectionInteraction: !off,
       enableCellRangeSelection: off ? false : (o.rangeSelection ?? true),
       enableCellSelectionDrag: off ? false : (o.dragSelection ?? true),
       enableMultiCellRangeSelection: off ? false : (o.multiRange ?? true),

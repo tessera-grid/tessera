@@ -405,6 +405,9 @@ export const enableCellEditingType = booleanControl(
 export const enableCellSelectionType = booleanControl(
   'Выделение диапазона ячеек мышью и копирование Ctrl/Cmd+C (плагин `cellSelection`)',
 )
+export const enableCellSelectionModelType = booleanControl(
+  'Выделение ячеек без мыши: подсветка по состоянию `cellSelection` (плагин `cellSelectionModel`)',
+)
 export const cellSelectionRangeSelectionType = booleanControl(
   'Диапазон Shift-кликом (`rangeSelection`)',
   true,

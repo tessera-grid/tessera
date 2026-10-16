@@ -1,4 +1,5 @@
 import axe from 'axe-core'
+import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -19,6 +20,18 @@ const BASE: Args = {
 
 const SELECTED = 'item-id-1'
 const OTHER = 'item-id-2'
+
+const cellEl = (row: string, column: string) =>
+  rowEl(row)!.querySelector<HTMLElement>(`[data-column-id="${column}"]`)!
+const selectedCells = () =>
+  [
+    ...document.querySelectorAll<HTMLElement>(
+      ".data-grid__body-cell[data-cell-selected='true']",
+    ),
+  ].map(
+    cell =>
+      `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}/${cell.dataset.columnId}`,
+  )
 
 const rowEl = (id: string) =>
   document.querySelector<HTMLElement>(
@@ -61,6 +74,52 @@ describe('Плагины модели без интерфейса (ADR 0120)', (
       })
       expect(result.violations).toEqual([])
     })
+    await screen.unmount()
+  })
+
+  test('MP14: cellSelectionModel подсвечивает диапазоны из среза; мышь, клавиши и копирование выделение не меняют и не копируют', async () => {
+    const range = [
+      {
+        anchorRowId: 'item-id-1',
+        anchorColumnId: 'firstName',
+        focusRowId: 'item-id-2',
+        focusColumnId: 'lastName',
+      },
+    ]
+    const screen = await render(
+      <Stories.AllFeatures
+        {...BASE}
+        enableCellSelectionModel
+        enableKeyboardNavigation
+        cellSelectionModelInitialCellSelection={range}
+      />,
+    )
+    const highlighted = [
+      'item-id-1/firstName',
+      'item-id-1/lastName',
+      'item-id-2/firstName',
+      'item-id-2/lastName',
+    ]
+    await expect.poll(() => selectedCells().sort()).toEqual(highlighted)
+
+    await userEvent.click(cellEl('item-id-5', 'country'))
+    await expect
+      .poll(() => cellEl('item-id-5', 'country').hasAttribute('data-kn-active'))
+      .toBe(true)
+    await userEvent.keyboard(
+      '{ArrowDown}{Shift>}{ArrowDown}{ArrowRight}{/Shift}',
+    )
+    expect(selectedCells().sort()).toEqual(highlighted)
+
+    const data = new DataTransfer()
+    const copy = new ClipboardEvent('copy', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: data,
+    })
+    cellEl('item-id-1', 'firstName').dispatchEvent(copy)
+    expect(copy.defaultPrevented).toBe(false)
+    expect(data.getData('text/plain')).toBe('')
     await screen.unmount()
   })
 })

@@ -28,6 +28,10 @@ export {
   cellRangesToHtml,
   hasSelectedCells,
 } from './cellSelection'
+export {
+  cellSelectionModel,
+  type CellSelectionModelOptions,
+} from './cellSelectionModel'
 export { contextMenu, type ContextMenuOptions } from './contextMenu'
 export {
   keyboardNavigation,
