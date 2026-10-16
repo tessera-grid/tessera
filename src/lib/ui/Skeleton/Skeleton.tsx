@@ -12,6 +12,9 @@ export interface SkeletonProps {
   style?: CSSProperties
 }
 
+/** Скелет с волной: в рамке грида его блик — часть общей полосы (ADR 0121). */
+export const SKELETON_WAVE_ATTRIBUTE = 'data-tsr-skeleton-wave'
+
 /**
  * Плейсхолдер-скелетон для загрузки данных.
  */
@@ -23,6 +26,7 @@ export const Skeleton = memo(
         animation === 'wave' && styles.wave,
         className,
       )}
+      {...(animation === 'wave' && { [SKELETON_WAVE_ATTRIBUTE]: '' })}
       style={{ width, height, ...style }}
     />
   ),

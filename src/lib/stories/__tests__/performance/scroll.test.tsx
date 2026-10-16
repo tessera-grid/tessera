@@ -3,10 +3,12 @@ import { describe, expect, test } from 'vitest'
 
 import {
   headCells,
+  measureIdleWork,
   measureRenderWork,
   measureScrollWork,
   recordPerf,
   renderGrid,
+  type ScrollWorkResult,
 } from '../helpers'
 import {
   againstBase,
@@ -182,6 +184,8 @@ const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
 const GL13_COST = { ratio: 1.3, plusMs: 4 }
 const FT14_COST = { ratio: 1.1, plusMs: 2 }
+const WV8_COST = { ratio: 1.3, plusMs: 40 }
+const WV9_COST = { ratio: 1.3, plusMs: 4 }
 
 // Прокрутка с отправленными ячейками правки (ADR 0041, AS14): 500 строк × 3 колонки
 // в ожидании и «ошибке» против той же выборки без них — видна цена новых состояний.
@@ -1318,5 +1322,111 @@ describe('Производительность — выключенные пла
       }
     },
     PERF_TIMEOUT * 6,
+  )
+})
+
+// Общая волна скелетов (ADR 0121, WV8–WV9): 1000×1000 со всеми плагинами во время
+// первой загрузки против той же таблицы с данными — скелет не дороже содержимого.
+describe('Производительность — общая волна скелетов', () => {
+  const mount = async (loading: boolean) => {
+    const screen = renderGrid({
+      ...LARGE,
+      ...ALL_PLUGINS,
+      loading: loading ? 'initial' : false,
+    })
+    await waitForGrid()
+    await expect
+      .poll(() => document.querySelector('[data-skeleton-wave]') !== null)
+      .toBe(loading)
+    return screen
+  }
+  const record = (
+    id: string,
+    label: string,
+    r: ScrollWorkResult,
+    metric: 'p95' | 'tbt',
+    valueMs: number,
+    ceilingMs?: number,
+  ) =>
+    recordPerf({
+      id,
+      label,
+      operation: 'scroll',
+      size: '1000×1000',
+      plugins: 'all',
+      cpuThrottle: CPU_THROTTLE_RATE,
+      metrics: [
+        {
+          axis: 'x',
+          kind: 'animation',
+          metric,
+          valueMs,
+          targetMs: ANIMATION_BUDGET_MS,
+          ceilingMs,
+          ...r,
+        },
+      ],
+    })
+
+  test(
+    'WV8: 3 с покоя во время первой загрузки 1000×1000 со всеми плагинами — вся работа главного потока не больше той же таблицы с данными',
+    async () => {
+      const measure = async (loading: boolean) => {
+        const screen = await mount(loading)
+        // Волна идёт: задержка до первого прохода позади.
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        const idle = await measureIdleWork(3000)
+        ;(await screen).unmount()
+        return idle
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.totalMs)
+      const wave = medianRun(runs.variant, r => r.totalMs)
+      const ceiling = ceilingOver(base.totalMs, WV8_COST)
+      await record('WV8-base', 'покой с данными', base, 'tbt', base.totalMs)
+      await record(
+        'WV8',
+        'покой во время загрузки: общая волна',
+        wave,
+        'tbt',
+        wave.totalMs,
+        ceiling,
+      )
+      expect(
+        wave.totalMs,
+        `работа ${wave.totalMs.toFixed(1)}ms (база ${base.totalMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+
+  test(
+    'WV9: медленная горизонтальная прокрутка во время первой загрузки 1000×1000 со всеми плагинами не дороже прокрутки той же таблицы с данными',
+    async () => {
+      const measure = async (loading: boolean) => {
+        const screen = await mount(loading)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return x
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const wave = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, WV9_COST)
+      await record('WV9-base', 'прокрутка с данными', base, 'p95', base.p95Ms)
+      await record(
+        'WV9',
+        'прокрутка во время загрузки: общая волна',
+        wave,
+        'p95',
+        wave.p95Ms,
+        ceiling,
+      )
+      expect(
+        wave.p95Ms,
+        `x p95=${wave.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })

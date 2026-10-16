@@ -615,7 +615,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       и SL8 — Data arrives, SL5 — Rows count, SL9 — Columns count), модульные
       `skeletonOptions` (SL13, SL22 — план строк дерева) и `skeletonCell` (SL19 — длина
       полоски по колонке), перф SL14 — в `first-render`, SL15 — в `interaction`
-      ([ADR 0060](docs/decisions/0060-initial-loading-skeleton.md)).
+      ([ADR 0060](docs/decisions/0060-initial-loading-skeleton.md)); общая волна —
+      `skeleton-wave` (WV1–WV7 — одна наклонная полоса по телу, футеру и панелям, путь
+      за проход, свет только на полосках, фаза смонтированных позже, токены и уменьшенное
+      движение, слот плагина, волна вне рамки), перф WV8–WV9 — в `scroll`
+      ([ADR 0121](docs/decisions/0121-shared-skeleton-wave.md)).
     - _Ленивые поповеры:_ по файлу на сценарий — модуль грузится один раз на документ:
       `lazy-toolbar-load`, `lazy-toolbar-click`, `lazy-toolbar-pending`,
       `lazy-toolbar-cancel`, `lazy-toolbar-error` (LZ1–LZ5 — кнопки тулбара),

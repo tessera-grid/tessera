@@ -227,6 +227,13 @@
   --tsr-comp-skeleton-wave-delay: calc(
     var(--tsr-comp-motion-duration) * 10 / 3
   );
+  /* Общая волна скелетов рамки (ADR 0121): проход рамки, ширина полосы и её наклон —
+   * сдвиг влево на пиксель высоты. */
+  --tsr-comp-skeleton-frame-wave-duration: calc(
+    var(--tsr-comp-motion-duration) * 16
+  );
+  --tsr-comp-skeleton-wave-width: 560px;
+  --tsr-comp-skeleton-wave-tilt: 0.3;
   /* Движение строк (ADR 0107): переезд, проявление и уход при смене модели. */
   --tsr-comp-row-motion-duration: calc(var(--tsr-comp-motion-duration) * 5 / 3);
   --tsr-comp-button-cell-transition:
@@ -710,6 +717,13 @@
   --tsr-comp-skeleton-wave: color-mix(
     in oklch,
     var(--tsr-sys-fg) calc(var(--tsr-sys-tint-fill) / 2),
+    transparent
+  );
+  /* Пик общей волны рамки (ADR 0121): ярче, чем у волны одной полоски, — широкий
+   * колокол гасит его к краям. */
+  --tsr-comp-skeleton-frame-wave: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-fill),
     transparent
   );
   /* Размеры скелетов по роли (ADR 0060, SL20): полоска ячейки, текст панели,

@@ -63,6 +63,8 @@ export interface ScrollWorkResult {
   p95Ms: number
   /** 99-й перцентиль, мс. */
   p99Ms: number
+  /** Вся работа главного потока за окно замера, мс: сумма задач (ADR 0121, WV8). */
+  totalMs: number
 }
 
 interface Trace {
@@ -113,6 +115,7 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
       tbtMs: 0,
       p95Ms: 0,
       p99Ms: 0,
+      totalMs: 0,
     }
   }
 
@@ -180,6 +183,7 @@ export const perfTraceStop: BrowserCommand<[id: string]> = async (
     tbtMs: longTaskDurations.reduce((sum, d) => sum + (d - LONG_TASK_MS), 0),
     p95Ms: percentile(0.95),
     p99Ms: percentile(0.99),
+    totalMs: all.reduce((sum, d) => sum + d, 0),
   }
 }
 

@@ -578,9 +578,10 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
           .querySelector<HTMLElement>('[class*="skeleton"]')!
         expect(Math.round(text.getBoundingClientRect().height), id).toBe(11)
       }
-      // Волна: проход и пауза — от базовой длительности движения (×32/3 и ×10/3).
+      // Волна: проход рамки и пауза — от базовой длительности движения (×16 и ×10/3,
+      // общая волна рамки, ADR 0121).
       const wave = getComputedStyle(bar, '::after')
-      expect(wave.animationDuration).toBe('3.2s')
+      expect(wave.animationDuration).toBe('4.8s')
       expect(wave.animationDelay).toBe('1s')
       await screen.unmount()
 

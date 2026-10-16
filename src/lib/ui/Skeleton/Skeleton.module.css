@@ -29,3 +29,60 @@
     transform: translateX(100%);
   }
 }
+
+/* Общая волна рамки грида (ADR 0121): блик каждого скелета — полоса в координатах
+ * содержимого, сдвинутая на его смещение (useSkeletonWave); анимация `transform` — на
+ * композиторе, общая фаза — общий `startTime`. Нижние строки отстают на
+ * `y × наклон`: свет читается одной наклонной линией, а не вспышками колонок. Покой
+ * без анимации — за левым краем, как у волны одной полоски. */
+:global([data-skeleton-wave]) .wave::after {
+  inset: 0 auto 0 0;
+  width: var(--tsr-comp-skeleton-wave-width);
+  background: linear-gradient(
+    calc(90deg + atan(var(--tsr-comp-skeleton-wave-tilt))),
+    transparent,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 10%, transparent)
+      10%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 32%, transparent)
+      20%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 62%, transparent)
+      30%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 88%, transparent)
+      40%,
+    var(--tsr-comp-skeleton-frame-wave) 50%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 88%, transparent)
+      60%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 62%, transparent)
+      70%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 32%, transparent)
+      80%,
+    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 10%, transparent)
+      90%,
+    transparent
+  );
+  animation: data-grid-skeleton-frame-wave
+    var(--tsr-comp-skeleton-frame-wave-duration) linear
+    var(--tsr-comp-skeleton-wave-delay) infinite;
+}
+
+@keyframes data-grid-skeleton-frame-wave {
+  from {
+    transform: translateX(
+      calc(
+        -1 * var(--tsr-comp-skeleton-wave-width) - var(--tsr-skeleton-x, 0px) -
+          var(--tsr-skeleton-y, 0px) * var(--tsr-comp-skeleton-wave-tilt)
+      )
+    );
+  }
+
+  to {
+    transform: translateX(
+      calc(
+        var(--tsr-skeleton-frame-width, 0px) +
+          var(--tsr-skeleton-frame-height, 0px) *
+          var(--tsr-comp-skeleton-wave-tilt) - var(--tsr-skeleton-x, 0px) -
+          var(--tsr-skeleton-y, 0px) * var(--tsr-comp-skeleton-wave-tilt)
+      )
+    );
+  }
+}

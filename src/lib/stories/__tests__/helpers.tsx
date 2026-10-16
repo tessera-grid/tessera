@@ -268,6 +268,17 @@ export async function measureScrollWork(
 
 const SAMPLE_EVERY = 10
 
+/**
+ * Работа главного потока в покое за `ms` миллисекунд — тем же трейсом, что прокрутка:
+ * анимации и наблюдатели, идущие без действий пользователя (ADR 0121, WV8).
+ */
+export async function measureIdleWork(ms: number): Promise<ScrollWorkResult> {
+  const id = `idle-${traceSeq++}-${Date.now()}`
+  await perfCommands.perfTraceStart(id)
+  await new Promise(resolve => setTimeout(resolve, ms))
+  return perfCommands.perfTraceStop(id)
+}
+
 /** Скелет ячейки тела при быстрой прокрутке. */
 const SKELETON_CELL = '.data-grid__body-cell [class*="skeleton"]'
 

@@ -24,7 +24,9 @@
   облака и номер мультисортировки одинаковы (BU3). 2026-10-14 — MO6 снят: у грипа
   ширины нет маски-фона ([ADR 0111](0111-resize-grip-on-column-border.md)).
   2026-10-15 — `Skeleton` — публичный примитив `/ui` с историей `UI.Skeleton` (SK4); скругление и размеры по роли — токены скелета
-  ([ADR 0060](0060-initial-loading-skeleton.md), SL20).
+  ([ADR 0060](0060-initial-loading-skeleton.md), SL20). 2026-10-16 — `Skeleton` с волной
+  внутри рамки грида со скелетом встаёт в общую наклонную волну рамки; вне рамки волна
+  прежняя, SK2 не меняется ([ADR 0121](0121-shared-skeleton-wave.md)).
 - **Связано:**
   - [ADR 0003](0003-formalize-tech-stack.md) — стек контролов: примитивы Base UI
     (фундамент shadcn), стилизация Tailwind v4 + cva и CSS Modules поверх

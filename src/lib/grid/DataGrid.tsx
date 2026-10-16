@@ -67,6 +67,7 @@ import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
+import { useSkeletonWave } from './useSkeletonWave'
 import { useRowHeights } from './useRowHeights'
 import { ScrollingAttribute } from './ScrollingAttribute'
 import type { DataGridProps } from './dataGridTypes'
@@ -358,6 +359,7 @@ export const DataGrid = ({
     : undefined
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
+  useSkeletonWave(wrapperRef, showSkeleton && !showStub)
 
   const containerStyles = getTableHeight({ height, maxHeight })
   // Инлайн — только РАНТАЙМ-переменные (высоты шапки/тела, drag-офсеты) и
@@ -462,6 +464,7 @@ export const DataGrid = ({
                   data-toolbar={enableToolbar || undefined}
                   data-status-bar={hasStatusBar || undefined}
                   data-refreshing={refreshingShown || undefined}
+                  data-skeleton-wave={showSkeleton || undefined}
                   data-tree-lines={
                     (table.options as { enableTreeLines?: boolean })
                       .enableTreeLines || undefined
