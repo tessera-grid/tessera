@@ -22,7 +22,7 @@ import {
 import { argsUpdater, vrStates } from './__mocks__/catalog'
 import {
   byTestId,
-  callbackLog,
+  consoleText,
   expectPopupInCanvas,
   firstRowText,
   guideNext,
@@ -298,19 +298,19 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     await userEvent.type(byTestId('filter-value')!, 'bob')
     await closeFilter()
 
-    await until(() => expect(callbackLog()).toContain('onFilterChange'))
-    expect(callbackLog()).toContain('"value":"bob"')
-    await until(() => expect(callbackLog()).toContain('server'))
+    await until(() => expect(consoleText()).toContain('onFilterChange'))
+    expect(consoleText()).toContain('"value":"bob"')
+    await until(() => expect(consoleText()).toContain('server'))
     await until(() => expect(firstName()).toBe('Bob 1'))
     expect(filteredCount()).toBe('Showing 29 of 200')
 
     await userEvent.type(byTestId('quick-search')!, 'paris')
-    await until(() => expect(callbackLog()).toContain('onSearchChange'))
-    expect(callbackLog()).toContain('search="paris"')
+    await until(() => expect(consoleText()).toContain('onSearchChange'))
+    expect(consoleText()).toContain('search="paris"')
     // Bob — каждая 7-я строка, Paris — каждая 5-я: оба — каждая 35-я.
     await until(() => expect(filteredCount()).toBe('Showing 6 of 200'))
     expect(firstName()).toBe('Bob 15')
-    expect(callbackLog()).toContain('columnIds="name,city,age,visits"')
+    expect(consoleText()).toContain('columnIds="name,city,age,visits"')
     expect(searchHint()).toBe('Search in columns: Name, City, Age, Visits')
 
     // Скрытая колонка уходит из поиска: запрос повторяется с новым набором.
@@ -322,7 +322,7 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     )
     await userEvent.keyboard('{Escape}')
     await until(() =>
-      expect(callbackLog()).toContain('columnIds="name,city,visits"'),
+      expect(consoleText()).toContain('columnIds="name,city,visits"'),
     )
     expect(searchHint()).toBe('Search in columns: Name, City, Visits')
     await settle()
@@ -516,9 +516,9 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
   },
   play: async ({ canvasElement }) => {
     await openOptions(canvasElement, 'managerId')
-    await until(() => expect(callbackLog()).toContain('loadOptions'))
+    await until(() => expect(consoleText()).toContain('loadOptions'))
     await userEvent.type(byTestId('filter-options-search')!, 'alice')
-    await until(() => expect(callbackLog()).toContain('search="alice"'))
+    await until(() => expect(consoleText()).toContain('search="alice"'))
     // Справочник сузился до найденных: в списке только Alice.
     const names = () =>
       [
@@ -532,9 +532,9 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
       ).toBe(true),
     )
     await userEvent.click(checkboxOf('m0'))
-    await until(() => expect(callbackLog()).toContain('onFilterChange'))
-    expect(callbackLog()).toContain('"value":["m0"]')
-    await until(() => expect(callbackLog()).toMatch(/server\s+\d+ of 200 rows/))
+    await until(() => expect(consoleText()).toContain('onFilterChange'))
+    expect(consoleText()).toContain('"value":["m0"]')
+    await until(() => expect(consoleText()).toMatch(/server\s+\d+ of 200 rows/))
     await closeFilter()
 
     await until(() => expect(byTestId('filter-summary-button')).not.toBeNull())

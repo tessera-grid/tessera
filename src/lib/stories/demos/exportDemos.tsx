@@ -11,12 +11,8 @@ import type { ExportRequest } from '../../plugins'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import { makeData } from '../__mocks__/data'
-import {
-  CallbackLog,
-  WithLog,
-  describeEvent,
-  useCallbackLog,
-} from './CallbackLog'
+import { WithConsole } from './StoryConsole'
+import { createConsoleLog, describeEvent } from './consoleLog'
 
 export interface ExportServerDemoProps extends StoryProps {
   /** Время «серверной» выгрузки, мс. */
@@ -33,7 +29,8 @@ export const ExportServerDemo = ({
   serverFailMode = 'never',
   ...args
 }: ExportServerDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const [page] = useState(() => makeData({ shape: 'flat', count: PAGE_SIZE }))
   const settings = useLatest({ serverDelayMs, serverFailMode })
 
@@ -76,7 +73,7 @@ export const ExportServerDemo = ({
   )
 
   return (
-    <WithLog log={<CallbackLog entries={entries} onClear={clear} />}>
+    <WithConsole log={consoleLog} args={args}>
       <StoryComponent
         {...args}
         dataOverride={page}
@@ -86,6 +83,6 @@ export const ExportServerDemo = ({
         onExport={onExport}
         onExported={onExported}
       />
-    </WithLog>
+    </WithConsole>
   )
 }

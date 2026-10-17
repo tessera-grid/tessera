@@ -6,6 +6,7 @@ import {
   type ReactElement,
 } from 'react'
 import { flushSync } from 'react-dom'
+import type { OnDebugAction } from '../../core/debugActions'
 import { createRoot } from 'react-dom/client'
 import { commands } from 'vitest/browser'
 import { expect } from 'vitest'
@@ -72,6 +73,8 @@ export interface GridProps {
   /** Отдаёт тесту экземпляр таблицы после каждого коммита. */
   onTable?: (table: object) => void
   colorMode?: 'auto' | 'light' | 'dark'
+  /** Слушатель канала действий (ADR 0125). */
+  onDebugAction?: OnDebugAction
 }
 
 const DEFAULT_DATA = getData(60, 'nested')
@@ -83,6 +86,7 @@ export const Grid = ({
   columns = mockColumns,
   onTable,
   colorMode,
+  onDebugAction,
 }: GridProps) => {
   const built = useMemo(() => argsToPlugins(toggles), [toggles])
   const plugins = pluginsProp ?? built
@@ -91,6 +95,7 @@ export const Grid = ({
     data: data as never,
     getRowId: (row: { id: string }) => row.id,
     plugins: plugins as never,
+    onDebugAction,
   })
   useEffect(() => {
     onTable?.(table)

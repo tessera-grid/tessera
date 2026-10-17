@@ -40,8 +40,8 @@ export const waitForRows = (canvas: HTMLElement) =>
 export const byTestId = (id: string) =>
   document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
 
-/** Текст журнала колбэков демо-истории. */
-export const callbackLog = () => byTestId('callback-log')?.innerText ?? ''
+/** Текст записей консоли истории (ADR 0124), и свёрнутой. */
+export const consoleText = () => byTestId('story-console-log')?.innerText ?? ''
 
 /** Строки тела в порядке модели, а не монтирования. */
 export const orderedRows = (canvas: HTMLElement) =>

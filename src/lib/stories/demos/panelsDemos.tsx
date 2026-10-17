@@ -15,12 +15,8 @@ import {
   filteringColumns,
   makeFilteringData,
 } from '../__mocks__/filteringData'
-import {
-  CallbackLog,
-  WithLog,
-  describeEvent,
-  useCallbackLog,
-} from './CallbackLog'
+import { WithConsole } from './StoryConsole'
+import { createConsoleLog, describeEvent } from './consoleLog'
 
 const DATA = makeFilteringData(95)
 const PLUGINS = [pagination({ initialPageSize: 10, pageSizes: false })] as const
@@ -119,7 +115,8 @@ export const ServerPaginationDemo = ({
   serverDelayMs = 400,
   ...args
 }: ServerPaginationDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const initialPageSize = args.paginationInitialPageSize ?? 25
   const [page, setPage] = useState(() =>
     queryPage(0, initialPageSize, undefined),
@@ -167,7 +164,7 @@ export const ServerPaginationDemo = ({
   )
 
   return (
-    <WithLog log={<CallbackLog entries={entries} onClear={clear} />}>
+    <WithConsole log={consoleLog} args={args}>
       <StoryComponent
         {...args}
         columnsOverride={filteringColumns}
@@ -182,6 +179,6 @@ export const ServerPaginationDemo = ({
         onPageChange={onPageChange}
         onToggleColumnSort={onToggleColumnSort}
       />
-    </WithLog>
+    </WithConsole>
   )
 }

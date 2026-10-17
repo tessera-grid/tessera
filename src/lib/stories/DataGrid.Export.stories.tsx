@@ -12,7 +12,7 @@ import { ExportServerDemo } from './demos/exportDemos'
 import { vrStates } from './__mocks__/catalog'
 import {
   byTestId,
-  callbackLog,
+  consoleText,
   expectPopupInCanvas,
   guideNext,
   openPopup,
@@ -230,12 +230,12 @@ export const ExportServer: StoryObj<ExportArgs> = {
       await until(() =>
         expect(exportButton()).toHaveAttribute('aria-busy', 'true'),
       )
-      expect(callbackLog()).toContain('onExport')
-      expect(callbackLog()).toContain('rows="all"')
+      expect(consoleText()).toContain('onExport')
+      expect(consoleText()).toContain('rows="all"')
       expect(download.names).toEqual([])
 
       await until(() => expect(exportButton()).not.toHaveAttribute('aria-busy'))
-      expect(callbackLog()).toContain('export "all" ready')
+      expect(consoleText()).toContain('export "all" ready')
 
       await openExport(canvasElement)
       const page = () =>
@@ -246,9 +246,9 @@ export const ExportServer: StoryObj<ExportArgs> = {
       await until(() => expect(page()).toHaveAttribute('aria-checked', 'true'))
       await userEvent.click(byTestId('export-run')!)
       await until(() => expect(download.names).toHaveLength(1))
-      expect(callbackLog()).toContain('onExported')
-      expect(callbackLog()).toContain('rows="page"')
-      expect(callbackLog()).toContain('rowCount=25')
+      expect(consoleText()).toContain('onExported')
+      expect(consoleText()).toContain('rows="page"')
+      expect(consoleText()).toContain('rowCount=25')
       await settle()
     } finally {
       download.restore()

@@ -3,12 +3,15 @@
  * грида — накопительно, от первого шага до текущего — и может выполнить действие при
  * входе в него (прокрутку). «Сначала» перемонтирует грид, как новое открытие.
  */
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import { getData } from '../__mocks__/data'
 import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
+import { StoryConsole } from './StoryConsole'
+import { createConsoleLog } from './consoleLog'
+import { useArgsActions } from './useArgsActions'
 
 /** Что знает шаг: аргументы истории и ответ «сервера» — строки мока по ним. */
 export interface GuideContext {
@@ -35,6 +38,8 @@ export const GuideStory = ({
   args: StoryProps
 }) => {
   const guide = useGuide(steps.length)
+  // Журнал консоли живёт, пока открыта история: «Сначала» его не стирает.
+  const [consoleLog] = useState(createConsoleLog)
   const rows = useMemo(
     () => getData(args.dataCount, args.dataNesting),
     [args.dataCount, args.dataNesting],
@@ -51,6 +56,16 @@ export const GuideStory = ({
     .slice(0, guide.step + 1)
     .filter(step => step.remount).length
   const root = useRef<HTMLDivElement>(null)
+  // Шаг гайда — действие истории (ADR 0124, CL16): до эффектов грида, которые он вызовет.
+  const stepTitle = steps[guide.step]?.title
+  useLayoutEffect(() => {
+    consoleLog.action({
+      plugin: 'story',
+      action: `Шаг ${guide.step + 1} · ${stepTitle}`,
+      source: 'story',
+    })
+  }, [consoleLog, guide.step, guide.run, stepTitle])
+  useArgsActions(consoleLog, args)
   const enter = steps[guide.step]?.enter
   useEffect(() => {
     if (root.current) enter?.(root.current)
@@ -66,7 +81,13 @@ export const GuideStory = ({
         onRestart={guide.restart}
         onJump={guide.jump}
       />
-      <StoryComponent key={`${guide.run}-${mounts}`} {...args} {...props} />
+      <StoryComponent
+        key={`${guide.run}-${mounts}`}
+        {...args}
+        {...props}
+        consoleLog={consoleLog}
+      />
+      <StoryConsole log={consoleLog} />
     </div>
   )
 }

@@ -4,3 +4,8 @@ html.tsr-catalog,
 html.tsr-catalog * {
   scrollbar-width: none;
 }
+
+/* Счётчик консоли истории (ADR 0124, CL12): снимок не зависит от числа событий. */
+html.tsr-catalog [data-console-count] {
+  visibility: hidden;
+}

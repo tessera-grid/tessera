@@ -1,5 +1,5 @@
 // Демо-компонент историй DataGrid: собирает таблицу из аргументов Storybook.
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useCallback, useContext, useMemo, useState } from 'react'
 import {
   type ColumnPinningState,
   GroupingState,
@@ -12,7 +12,9 @@ import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { argsKeyOf } from '../../lib/core/pluginArgs'
+import type { DebugAction } from '../../lib/core/debugActions'
 import { useCreateTable } from '../../lib/core/useCreateTable'
+import { useLatest } from '../../lib/core/useLatest'
 import { DataGrid } from '../../lib/grid/DataGrid'
 import { BatchToolbar } from './BatchToolbar'
 import { groupedColumns, useColumns } from './__mocks__/columns'
@@ -27,6 +29,9 @@ import {
 } from './__mocks__/utils/argsToPlugins'
 import type { StoryProps } from './DataGridStory.types'
 import { sizeArg } from './__mocks__/utils/normalizeArgs'
+import { ConsoleContext } from './demos/consoleContext'
+import { loggedCallback, loggedCallbacks } from './demos/consoleLog'
+import { useTableConsole } from './demos/useTableConsole'
 
 const expandingInitialState = {}
 
@@ -84,6 +89,7 @@ const StoryGrid = memo(
     initialExpanded,
     expandAll,
     extraPlugins,
+    consoleLog,
 
     onTogglePin,
     onToggleColumnSort,
@@ -236,12 +242,69 @@ const StoryGrid = memo(
           }
         : {}),
     }
-    const pluginArgs = {
+    // Колбэки, переданные гриду, — с записью в консоль истории (ADR 0124, CL2).
+    const pluginArgs = loggedCallbacks(consoleLog, {
       ...sliceArgs,
       ...Object.fromEntries(
         Object.entries(options).filter(([, value]) => value !== undefined),
       ),
-    } as FeatureToggles
+    }) as FeatureToggles
+    const storyPlugins = [...argsToPlugins(pluginArgs), ...(extraPlugins ?? [])]
+    const demoHooks = {
+      rowSelection: {
+        onSelectRow: onSelectRow ?? ((): null => null),
+        onSelectAllRowsOnPage: onSelectAllRowsOnPage ?? ((): null => null),
+        isAllRowsSelected,
+      },
+      ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
+      ...(onToggleColumnSort ? { columnSorting: { onToggleColumnSort } } : {}),
+      ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
+      ...(onToggleColumnVisibility
+        ? { columnVisibility: { onToggleColumnVisibility } }
+        : {}),
+      ...(onPageChange ? { pagination: { onPageChange } } : {}),
+      // Предикат аргументом плагина (тесты) — без демо-хуков: слайс хуков записи
+      // заменил бы слайс плагина целиком.
+      ...(options.enableCellEditing && !options.cellEditingCanEditCell
+        ? {
+            cellEditing: {
+              canEditCell: (ctx: CellComponentProps) =>
+                CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
+              validate: validateCellEdit,
+              onEditCancel: options.onEditCancel,
+              onCellEdit: ({ rowId, columnId, value }: CellEditCommit) =>
+                setData(prev =>
+                  prev.map(row =>
+                    row.id === rowId ? { ...row, [columnId]: value } : row,
+                  ),
+                ),
+            },
+          }
+        : {}),
+    }
+
+    // Канал действий грида — в консоль истории (ADR 0125, ADR 0124 CL15).
+    // Слушатель истории или теста (`onDebugAction` аргументом) — рядом с консолью.
+    const listener = useLatest(options.onDebugAction)
+    const hasListener = !!options.onDebugAction
+    const onDebugAction = useMemo(
+      () =>
+        consoleLog || hasListener
+          ? (event: DebugAction) => {
+              consoleLog?.action({
+                plugin: event.plugin,
+                action: event.action,
+                detail: event.detail,
+                source: event.source,
+                phase: event.phase,
+                id: event.id,
+                cause: event.cause,
+              })
+              listener.current?.(event)
+            }
+          : undefined,
+      [consoleLog, hasListener, listener],
+    )
 
     const table = useCreateTable({
       columns: columnsGetter,
@@ -272,7 +335,11 @@ const StoryGrid = memo(
       skeletonOptions: options.skeletonOptions,
       refreshOptions: options.refreshOptions,
       loadError: options.loadError,
-      onRetry: options.onRetry,
+      onDebugAction,
+      onRetry:
+        consoleLog && options.onRetry
+          ? loggedCallback(consoleLog, 'onRetry', options.onRetry)
+          : options.onRetry,
       enableFooter: options.enableFooter,
       footerPosition: options.footerPosition,
       enableToolbar: panelFlag(options.enableToolbar),
@@ -288,52 +355,29 @@ const StoryGrid = memo(
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.
       plugins: [
-        ...argsToPlugins(pluginArgs),
-        ...(extraPlugins ?? []),
+        ...storyPlugins,
         {
           id: 'demoHooks',
           // Пустой slot — запись не несёт фич, только hook-слайс (сохраняет вывод
           // типа набора фич при слиянии слотов).
           features: {},
-          hooks: {
-            rowSelection: {
-              onSelectRow: onSelectRow ?? ((): null => null),
-              onSelectAllRowsOnPage:
-                onSelectAllRowsOnPage ?? ((): null => null),
-              isAllRowsSelected,
-            },
-            ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
-            ...(onToggleColumnSort
-              ? { columnSorting: { onToggleColumnSort } }
-              : {}),
-            ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
-            ...(onToggleColumnVisibility
-              ? { columnVisibility: { onToggleColumnVisibility } }
-              : {}),
-            ...(onPageChange ? { pagination: { onPageChange } } : {}),
-            // Предикат аргументом плагина (тесты) — без демо-хуков: слайс хуков
-            // записи заменил бы слайс плагина целиком.
-            ...(options.enableCellEditing && !options.cellEditingCanEditCell
-              ? {
-                  cellEditing: {
-                    canEditCell: (ctx: CellComponentProps) =>
-                      CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
-                    validate: validateCellEdit,
-                    onEditCancel: options.onEditCancel,
-                    onCellEdit: ({ rowId, columnId, value }: CellEditCommit) =>
-                      setData(prev =>
-                        prev.map(row =>
-                          row.id === rowId
-                            ? { ...row, [columnId]: value }
-                            : row,
-                        ),
-                      ),
-                  },
-                }
-              : {}),
-          },
+          hooks: Object.fromEntries(
+            Object.entries(demoHooks).map(([scope, hooks]) => [
+              scope,
+              loggedCallbacks(consoleLog, hooks),
+            ]),
+          ),
         },
       ],
+    })
+
+    useTableConsole(consoleLog, table, {
+      data,
+      columnDefs: columnsGetter,
+      loading: loadingArg(options.loading),
+      plugins: storyPlugins
+        .filter(entry => entry.enabled !== false)
+        .map(entry => entry.id),
     })
 
     const column = {
@@ -401,12 +445,19 @@ const hiddenAll = (columns: readonly any[]): Record<string, boolean> =>
     }),
   )
 
-export const StoryComponent = memo((props: StoryProps) => (
-  <StoryGrid
-    key={lifetimeKeyOf([
-      ...argsToPlugins(props),
-      ...(props.extraPlugins ?? []),
-    ])}
-    {...props}
-  />
-))
+export const StoryComponent = memo((props: StoryProps) => {
+  const contextLog = useContext(ConsoleContext)
+  const consoleLog = props.consoleLog ?? contextLog
+  return (
+    <StoryGrid
+      key={lifetimeKeyOf([
+        ...argsToPlugins(props),
+        ...(props.extraPlugins ?? []),
+      ])}
+      {...props}
+      consoleLog={consoleLog}
+      // Под консолью область — по высоте таблицы: консоль сразу за рамкой (ADR 0124).
+      containerHeight={consoleLog ? 'auto' : props.containerHeight}
+    />
+  )
+})

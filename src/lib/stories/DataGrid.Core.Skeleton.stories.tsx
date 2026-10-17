@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
@@ -10,6 +12,8 @@ import { expandAllType, skeletonOptionsType } from './__mocks__/utils/argTypes'
 import { BASE_CONTROLS, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { WithConsole } from './demos/StoryConsole'
+import { createConsoleLog } from './demos/consoleLog'
 
 /**
  * Скелет первой загрузки (ADR 0060): по истории на клиентский сценарий S1–S3. Сценарий
@@ -200,7 +204,15 @@ export const SkeletonDefault: StoryObj<StoryProps> = {
   },
   args: { ...DATA_ARRIVES_ARGS, loading: 'initial' },
   argTypes: EXPAND_ALL_CONTROL,
-  render: args => <StoryComponent {...normalizeArgs(args)} />,
+  render: function Render(args) {
+    // Консоль событий песочницы (ADR 0124): журнал живёт, пока открыта история.
+    const [consoleLog] = useState(createConsoleLog)
+    return (
+      <WithConsole log={consoleLog} args={args}>
+        <StoryComponent {...normalizeArgs(args)} />
+      </WithConsole>
+    )
+  },
 }
 
 /**

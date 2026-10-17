@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { revealedHandleWidth } from '../helpers'
 
+import type { DebugAction, OnDebugAction } from '../../../core/debugActions'
 import { definePlugin } from '../../../core/definePlugin'
 import type { HeaderAction } from '../../../core/headerActions'
 import { ActionsZone } from '../../../grid/headerActions/ActionsZone'
@@ -55,6 +56,7 @@ const mountGrid = async (
   toggles: FeatureToggles,
   data = getData(300),
   plugins?: readonly unknown[],
+  onDebugAction?: OnDebugAction,
 ) => {
   const box: { table?: object } = {}
   const screen = await render(
@@ -62,6 +64,7 @@ const mountGrid = async (
       data={data}
       toggles={toggles}
       plugins={plugins}
+      onDebugAction={onDebugAction}
       onTable={table => (box.table = table)}
     />,
   )
@@ -462,5 +465,34 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     expect(renders(work, ActionsZone), describeWork(work)).toBe(0)
     expect(renders(work, ColumnDraggingComponent), describeWork(work)).toBe(0)
     expect(renders(work, HeadCellView), describeWork(work)).toBe(0)
+  })
+
+  test('AL26: слушатель канала действий не добавляет гриду работы — коммиты, отрисовки и пересборки моделей при сортировке те же, что без него', async () => {
+    const sortOnce = async (onDebugAction?: OnDebugAction) => {
+      const { measure, screen } = await mountGrid(
+        { enableColumnSorting: true },
+        getData(300),
+        undefined,
+        onDebugAction,
+      )
+      const button = document.querySelector<HTMLElement>(
+        '.data-grid__head-cell [aria-label^="Sort"]',
+      )!
+      const work = await measure(() => userEvent.click(button), {
+        models: ['sortedRowModel'],
+      })
+      await screen.unmount()
+      return work
+    }
+    // Первое монтирование в тесте дороже следующих — прогрев.
+    await sortOnce()
+    const base = await sortOnce()
+    const actions: DebugAction[] = []
+    const listened = await sortOnce(action => actions.push(action))
+    // Вариант мерил заявленное: слушатель получил сортировку.
+    expect(actions.map(action => action.action)).toContain('columnSorting')
+    expect(listened.commits, describeWork(listened)).toBe(base.commits)
+    expect(listened.rendered, describeWork(listened)).toBe(base.rendered)
+    expect(listened.builds).toEqual(base.builds)
   })
 })

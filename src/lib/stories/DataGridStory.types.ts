@@ -14,6 +14,8 @@ import type { PaginationHooks } from '../../lib/plugins/pagination'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
 import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
 import { FeatureToggles } from './__mocks__/utils/argsToPlugins'
+import type { ConsoleLog } from './demos/consoleLog'
+import type { OnDebugAction } from '../../lib/core/debugActions'
 
 export const COLUMN_COUNT = 20
 export const DATA_COUNT = 10
@@ -60,6 +62,10 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   expandAll?: boolean
   /** Дополнительные записи плагинов поверх тумблеров (демо и тесты тулбара). */
   extraPlugins?: TesseraFeatureEntry[]
+  /** Консоль истории (ADR 0124): колбэки, состояние и жизненный цикл грида. */
+  consoleLog?: ConsoleLog
+  /** Слушатель канала действий грида (ADR 0125): тесты и истории сценариев. */
+  onDebugAction?: OnDebugAction
 
   containerHeight: number | string
   /** Ширина контейнера истории, px; по умолчанию — вся ширина. */

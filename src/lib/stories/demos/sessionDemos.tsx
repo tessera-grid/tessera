@@ -12,12 +12,8 @@ import type { Row } from '../../types'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import { makeData } from '../__mocks__/data'
-import {
-  CallbackLog,
-  WithLog,
-  describeEvent,
-  useCallbackLog,
-} from './CallbackLog'
+import { WithConsole } from './StoryConsole'
+import { createConsoleLog, describeEvent } from './consoleLog'
 
 type DemoRow = Record<string, unknown> & { id: string }
 
@@ -53,7 +49,8 @@ export const CellEditingServerDemo = ({
   serverFailMode = 'never',
   ...args
 }: CellEditingServerDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const [data, setData] = useState<DemoRow[]>(
     () => makeData({ shape: 'flat', count: 30 }) as DemoRow[],
   )
@@ -88,9 +85,11 @@ export const CellEditingServerDemo = ({
   )
 
   return (
-    <WithLog
-      log={
-        <CallbackLog entries={entries} onClear={clear}>
+    <WithConsole
+      log={consoleLog}
+      args={args}
+      actions={
+        <>
           <div style={panelRow}>
             <button
               type="button"
@@ -102,7 +101,7 @@ export const CellEditingServerDemo = ({
               Reject next save
             </button>
           </div>
-        </CallbackLog>
+        </>
       }
     >
       <StoryComponent
@@ -112,7 +111,7 @@ export const CellEditingServerDemo = ({
         onCellEdit={onCellEdit}
         onEditCancel={onEditCancel}
       />
-    </WithLog>
+    </WithConsole>
   )
 }
 
@@ -127,7 +126,8 @@ export const CellEditingSessionsDemo = ({
   conflictMode = 'commit',
   ...args
 }: CellEditingSessionsDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const [data, setData] = useState<DemoRow[]>(
     () => makeData({ shape: 'flat', count: 300 }) as DemoRow[],
   )
@@ -152,9 +152,11 @@ export const CellEditingSessionsDemo = ({
   }
 
   return (
-    <WithLog
-      log={
-        <CallbackLog entries={entries} onClear={clear}>
+    <WithConsole
+      log={consoleLog}
+      args={args}
+      actions={
+        <>
           <div style={panelRow}>
             {/* Не забирает фокус: иначе потеря фокуса сохранила бы правку до
                 изменения извне (ADR 0040, §3), и конфликта не случилось бы. */}
@@ -166,7 +168,7 @@ export const CellEditingSessionsDemo = ({
               Change first row age externally
             </button>
           </div>
-        </CallbackLog>
+        </>
       }
     >
       <StoryComponent
@@ -177,14 +179,15 @@ export const CellEditingSessionsDemo = ({
         onEditCancel={onEditCancel}
         onConflict={conflictMode}
       />
-    </WithLog>
+    </WithConsole>
   )
 }
 
 // --- 3. Колбэки перетаскивания и ресайза (ADR 0040) ---------------------------
 
 export const SessionCallbacksDemo = (args: StoryProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const logged =
     (name: string) =>
     (payload: object): void =>
@@ -199,9 +202,9 @@ export const SessionCallbacksDemo = (args: StoryProps) => {
   }))
 
   return (
-    <WithLog log={<CallbackLog entries={entries} onClear={clear} />}>
+    <WithConsole log={consoleLog} args={args}>
       <StoryComponent {...args} {...callbacks} />
-    </WithLog>
+    </WithConsole>
   )
 }
 
@@ -219,7 +222,8 @@ export const RowExpandingLazyDemo = ({
   loadFailMode = 'never',
   ...args
 }: RowExpandingLazyDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const [data] = useState(() =>
     makeData({ shape: 'tree', count: 12, depth: 2, breadth: 3 }),
   )
@@ -249,9 +253,11 @@ export const RowExpandingLazyDemo = ({
   )
 
   return (
-    <WithLog
-      log={
-        <CallbackLog entries={entries} onClear={clear}>
+    <WithConsole
+      log={consoleLog}
+      args={args}
+      actions={
+        <>
           <div style={panelRow}>
             <button
               type="button"
@@ -263,11 +269,11 @@ export const RowExpandingLazyDemo = ({
               Fail next load
             </button>
           </div>
-        </CallbackLog>
+        </>
       }
     >
       <StoryComponent {...args} dataOverride={data} onExpandRow={onExpandRow} />
-    </WithLog>
+    </WithConsole>
   )
 }
 
@@ -290,7 +296,8 @@ export const RowExpandingLazyChildrenDemo = ({
   loadFailMode = 'never',
   ...args
 }: RowExpandingLazyChildrenDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   // «Сервер»: полное дерево; клиенту уходят узлы без детей, но с `childCount`.
   const [server] = useState(() => {
     const children = new Map<string, DemoNode[]>()
@@ -340,9 +347,11 @@ export const RowExpandingLazyChildrenDemo = ({
   )
 
   return (
-    <WithLog
-      log={
-        <CallbackLog entries={entries} onClear={clear}>
+    <WithConsole
+      log={consoleLog}
+      args={args}
+      actions={
+        <>
           <div style={panelRow}>
             <button
               type="button"
@@ -354,7 +363,7 @@ export const RowExpandingLazyChildrenDemo = ({
               Fail next load
             </button>
           </div>
-        </CallbackLog>
+        </>
       }
     >
       <StoryComponent
@@ -363,7 +372,7 @@ export const RowExpandingLazyChildrenDemo = ({
         rowExpandingHasChildren={hasChildren}
         rowExpandingLoadChildren={loadChildren}
       />
-    </WithLog>
+    </WithConsole>
   )
 }
 
@@ -388,7 +397,8 @@ export const RowDraggingLazyTreeDemo = ({
   moveFailMode = 'never',
   ...args
 }: RowDraggingLazyTreeDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   // «Сервер»: узлы по id и порядок детей по id родителя (корни — `ROOT`).
   const [server] = useState(() => {
     const nodes = new Map<string, DemoNode>()
@@ -489,14 +499,16 @@ export const RowDraggingLazyTreeDemo = ({
   )
 
   return (
-    <WithLog
-      log={
-        <CallbackLog entries={entries} onClear={clear}>
+    <WithConsole
+      log={consoleLog}
+      args={args}
+      actions={
+        <>
           <div style={panelRow}>
             {failButton('move', 'Reject next move')}
             {failButton('load', 'Fail next load')}
           </div>
-        </CallbackLog>
+        </>
       }
     >
       <StoryComponent
@@ -506,7 +518,7 @@ export const RowDraggingLazyTreeDemo = ({
         rowExpandingLoadChildren={loadChildren}
         onRowDragEnd={onRowDragEnd}
       />
-    </WithLog>
+    </WithConsole>
   )
 }
 
@@ -526,7 +538,8 @@ export const ColumnDraggingServerDemo = ({
   moveFailMode = 'never',
   ...args
 }: ColumnDraggingServerDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const failNext = useRef(false)
   const settings = useLatest({ moveDelayMs, moveFailMode })
 
@@ -550,9 +563,11 @@ export const ColumnDraggingServerDemo = ({
   )
 
   return (
-    <WithLog
-      log={
-        <CallbackLog entries={entries} onClear={clear}>
+    <WithConsole
+      log={consoleLog}
+      args={args}
+      actions={
+        <>
           <div style={panelRow}>
             <button
               type="button"
@@ -564,10 +579,10 @@ export const ColumnDraggingServerDemo = ({
               Reject next move
             </button>
           </div>
-        </CallbackLog>
+        </>
       }
     >
       <StoryComponent {...args} onColumnDragEnd={onColumnDragEnd} />
-    </WithLog>
+    </WithConsole>
   )
 }

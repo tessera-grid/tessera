@@ -10,7 +10,7 @@ import { expect, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import {
   byTestId,
-  callbackLog,
+  consoleText,
   firstRowText,
   guideNext,
   headCell,
@@ -87,8 +87,8 @@ export const PaginationServer: StoryObj<ServerPaginationDemoProps> = {
     )
     await until(() => expect(firstName()).toMatch(/ 25$/))
     expect(range()).toBe('26–50 of 230')
-    expect(callbackLog()).toContain('onPageChange')
-    expect(callbackLog()).toContain('page 2 of 10')
+    expect(consoleText()).toContain('onPageChange')
+    expect(consoleText()).toContain('page 2 of 10')
 
     await userEvent.click(
       headCell(canvasElement, 'name').querySelector<HTMLElement>(
@@ -96,10 +96,10 @@ export const PaginationServer: StoryObj<ServerPaginationDemoProps> = {
       )!,
     )
     await until(() =>
-      expect(callbackLog()).toMatch(/page 2 of 10 by name (asc|desc)/),
+      expect(consoleText()).toMatch(/page 2 of 10 by name (asc|desc)/),
     )
-    expect(callbackLog()).toContain('onToggleColumnSort')
-    const sign = /by name desc/.test(callbackLog()) ? -1 : 1
+    expect(consoleText()).toContain('onToggleColumnSort')
+    const sign = /by name desc/.test(consoleText()) ? -1 : 1
     const sorted = () => {
       const names = orderedRows(canvasElement).map(row =>
         row.querySelector('[data-column-id="name"]')!.textContent!.trim(),

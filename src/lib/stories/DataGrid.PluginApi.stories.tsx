@@ -2,7 +2,14 @@ import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { useArgs } from 'storybook/preview-api'
 import { expect, userEvent } from 'storybook/test'
-import type { CellComponentProps } from '../../lib/core/createSlots'
+import type {
+  CellComponentProps,
+  ToolbarComponentProps,
+} from '../../lib/core/createSlots'
+import { sourceOf } from '../../lib/core/debugActions'
+import { definePlugin } from '../../lib/core/definePlugin'
+import { Button } from '../../lib/ui/Button'
+import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -15,14 +22,16 @@ import {
 } from './demos/sessionDemos'
 import { argsUpdater } from './__mocks__/catalog'
 import {
-  callbackLog,
+  consoleText,
+  guideNext,
   rowAt,
+  settle,
   until,
   updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { OVERLAY, dragRowOnto, rowIdOrder } from './rowDragging.dnd'
-import { showControls } from './__mocks__/utils/dataGridControls'
+import { BASE_CONTROLS, showControls } from './__mocks__/utils/dataGridControls'
 
 /** API плагинов: аргументы на лету (ADR 0039), колбэки сессий перетаскивания и ширины (ADR 0040). */
 const meta = {
@@ -191,8 +200,8 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
     await waitForRows(canvasElement)
     const [dropped] = rowIdOrder(canvasElement)
     await dragRowOnto(rowAt(canvasElement, 0), rowAt(canvasElement, 3))
-    await until(() => expect(callbackLog()).toContain('onRowDragEnd'))
-    expect(callbackLog()).toContain(`rowId="${dropped}"`)
+    await until(() => expect(consoleText()).toContain('onRowDragEnd'))
+    expect(consoleText()).toContain(`rowId="${dropped}"`)
     // Облако долетело — история в покое.
     await until(() => expect(canvasElement.querySelector(OVERLAY)).toBeNull())
   },
@@ -201,5 +210,160 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
     return (
       <SessionCallbacksDemo {...normalizeArgs(args)} updateArgs={updateArgs} />
     )
+  },
+}
+
+// --- Канал действий (ADR 0125) ---------------------------------------------------
+
+/** Набор функций задаёт гайд: базовые контролы скрыты. */
+const GUIDED = showControls(
+  [],
+  Object.fromEntries(
+    BASE_CONTROLS.map(name => [name, 'Таблицу по шагам задаёт гайд сценария']),
+  ),
+)
+
+const guided = (title: string, steps: readonly GuideStoryStep[]) =>
+  function Render(args: StoryProps) {
+    return (
+      <GuideStory
+        title={title}
+        steps={steps}
+        // Аргументы Storybook, оставшиеся в URL, функции не включают.
+        args={normalizeArgs({
+          ...GRID,
+          ...meta.args,
+          colorMode: args.colorMode,
+        })}
+      />
+    )
+  }
+
+const DEBUG_ACTIONS: readonly GuideStoryStep[] = [
+  {
+    title: 'Журнал пуст',
+    hint: 'Приложение подписано на onDebugAction: каждое действие попадает в консоль под таблицей. Раскройте её.',
+    props: () => ({ enableColumnSorting: true }),
+  },
+  {
+    title: 'Сортировка мышью',
+    hint: 'Нажмите кнопку сортировки в шапке First name: действие №1 columnSorting, источник «мышь».',
+  },
+  {
+    title: 'Сортировка клавишей',
+    hint: 'Включена клавиатура: Tab в шапку, Enter на заголовке — то же действие с источником «клавиатура».',
+    props: () => ({ enableKeyboardNavigation: true }),
+  },
+]
+
+const sortButton = (canvas: HTMLElement) =>
+  canvas.querySelector<HTMLElement>(
+    '.data-grid__head-cell[data-column-id="firstName"] .column-sort__button',
+  )!
+
+/** S1: приложение пишет действия пользователя в свой журнал через `onDebugAction`. */
+export const PluginApiDebugActions: StoryObj<StoryProps> = {
+  name: 'Debug actions',
+  parameters: {
+    scenario: '0125/S1',
+    requirements: ['AL1'],
+    ...GUIDED,
+  },
+  render: guided('Журнал действий', DEBUG_ACTIONS),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DEBUG_ACTIONS[0].title, async () => {
+      await waitForRows(canvas)
+      // Действий ещё нет: номера «#N» стоят только у действий.
+      expect(consoleText()).not.toMatch(/#d/)
+    })
+    await step(DEBUG_ACTIONS[1].title, async () => {
+      await guideNext(canvas)
+      await userEvent.click(sortButton(canvas))
+      await until(() =>
+        expect(consoleText()).toMatch(/#1\b[^\n]*columnSorting[^\n]*мышь/),
+      )
+    })
+    await step(DEBUG_ACTIONS[2].title, async () => {
+      await guideNext(canvas)
+      const head = sortButton(canvas).closest<HTMLElement>(
+        '.data-grid__head-cell',
+      )!
+      head.focus()
+      await userEvent.keyboard('{Enter}')
+      await until(() =>
+        expect(consoleText()).toMatch(/columnSorting\.toggle[^\n]*клавиатура/),
+      )
+    })
+    await settle()
+  },
+}
+
+/** Кнопка плагина в тулбаре: сообщает своё действие и показывает его номер. */
+const StarButton = ({ table }: ToolbarComponentProps) => {
+  const [last, setLast] = useState<number>()
+  return (
+    <Button
+      data-testid="star-rows"
+      onClick={event =>
+        setLast(
+          table.reportAction({
+            plugin: 'starRows',
+            action: 'starAll',
+            source: sourceOf(event),
+          }),
+        )
+      }
+    >
+      {last === undefined ? 'Star rows' : `Star rows · #${last}`}
+    </Button>
+  )
+}
+
+const starRows = definePlugin()({
+  id: 'starRows',
+  slots: [{ id: 'starRows', slot: 'toolbarSlot', component: StarButton }],
+})
+/** Одна запись на историю: смена набора плагинов — только когда её добавляет шаг. */
+const STAR_ROWS = [starRows()]
+
+const REPORT_ACTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопка плагина',
+    hint: 'Плагин definePlugin ставит в тулбар кнопку «Star rows». Других плагинов нет — table.reportAction ставит ядро.',
+    props: () => ({ extraPlugins: STAR_ROWS }),
+  },
+  {
+    title: 'Нажатие кнопки',
+    hint: 'Кнопка зовёт table.reportAction: в консоли — действие starRows · starAll, а кнопка показывает его номер.',
+  },
+]
+
+/** S2: автор плагина сообщает действие своей кнопки через `table.reportAction`. */
+export const PluginApiReportAction: StoryObj<StoryProps> = {
+  name: 'Report action',
+  parameters: {
+    scenario: '0125/S2',
+    requirements: ['AL2'],
+    ...GUIDED,
+  },
+  render: guided('Действие плагина', REPORT_ACTION),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const button = () =>
+      canvas.querySelector<HTMLElement>('[data-testid="star-rows"]')
+    await step(REPORT_ACTION[0].title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(button()).not.toBeNull())
+    })
+    await step(REPORT_ACTION[1].title, async () => {
+      await guideNext(canvas)
+      await userEvent.click(button()!)
+      await until(() =>
+        expect(consoleText()).toMatch(/#1\b[^\n]*starRows · starAll[^\n]*мышь/),
+      )
+      expect(button()!.textContent).toBe('Star rows · #1')
+    })
+    await settle()
   },
 }

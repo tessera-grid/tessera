@@ -25,12 +25,8 @@ import {
   type OptionFilteringItem,
   optionFilteringColumns,
 } from '../__mocks__/filteringData'
-import {
-  CallbackLog,
-  WithLog,
-  describeEvent,
-  useCallbackLog,
-} from './CallbackLog'
+import { WithConsole } from './StoryConsole'
+import { createConsoleLog, describeEvent } from './consoleLog'
 
 export interface FilteringServerDemoProps extends StoryProps {
   /** Время ответа «сервера», мс. */
@@ -75,7 +71,8 @@ export const FilteringServerDemo = ({
   serverDelayMs = 600,
   ...args
 }: FilteringServerDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const [rows, setRows] = useState(SERVER_DATA)
   const [loading, setLoading] = useState(false)
   const request = useRef({
@@ -120,7 +117,7 @@ export const FilteringServerDemo = ({
   )
 
   return (
-    <WithLog log={<CallbackLog entries={entries} onClear={clear} />}>
+    <WithConsole log={consoleLog} args={args}>
       <StoryComponent
         {...args}
         columnsOverride={filteringColumns}
@@ -136,7 +133,7 @@ export const FilteringServerDemo = ({
         quickSearchServer
         onSearchChange={onSearchChange}
       />
-    </WithLog>
+    </WithConsole>
   )
 }
 
@@ -169,7 +166,8 @@ export const FilteringLookupServerDemo = ({
   serverDelayMs = 400,
   ...args
 }: FilteringServerDemoProps) => {
-  const { entries, log, clear } = useCallbackLog()
+  const [consoleLog] = useState(createConsoleLog)
+  const log = consoleLog.log
   const [rows, setRows] = useState(OPTION_SERVER_DATA)
   const [loading, setLoading] = useState(false)
   const seq = useRef(0)
@@ -213,7 +211,7 @@ export const FilteringLookupServerDemo = ({
   )
 
   return (
-    <WithLog log={<CallbackLog entries={entries} onClear={clear} />}>
+    <WithConsole log={consoleLog} args={args}>
       <StoryComponent
         {...args}
         columnsOverride={columns as never}
@@ -227,6 +225,6 @@ export const FilteringLookupServerDemo = ({
         columnFilteringFilteredRowCount={rows.length}
         columnFilteringTotalRowCount={OPTION_TOTAL}
       />
-    </WithLog>
+    </WithConsole>
   )
 }

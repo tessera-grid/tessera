@@ -11,7 +11,7 @@ import {
 import { expect, waitFor, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import {
-  callbackLog,
+  consoleText,
   rowAt,
   settle,
   until,
@@ -111,8 +111,8 @@ export const CellEditingServer: StoryObj<SessionsArgs> = {
       expect(cell().querySelector('[aria-busy="true"]')).toBeNull(),
     )
     expect(cell()).toHaveTextContent('77')
-    expect(callbackLog()).toContain('onCellEdit')
-    expect(callbackLog()).toContain('saved age of row-0')
+    expect(consoleText()).toContain('onCellEdit')
+    expect(consoleText()).toContain('saved age of row-0')
     await settle()
   },
   render: function Render(args) {
@@ -158,12 +158,12 @@ export const CellEditingSessions: StoryObj<SessionsArgs> = {
         button => button.textContent === 'Change first row age externally',
       )!,
     )
-    await until(() => expect(callbackLog()).toContain('external'))
+    await until(() => expect(consoleText()).toContain('external'))
     expect(document.activeElement).toBe(input)
 
     await userEvent.keyboard('{Enter}')
-    await until(() => expect(callbackLog()).toContain('onCellEdit'))
-    expect(callbackLog()).toMatch(/value="55" original=\d+ current=\d+/)
+    await until(() => expect(consoleText()).toContain('onCellEdit'))
+    expect(consoleText()).toMatch(/value="55" original=\d+ current=\d+/)
     await settle()
   },
   render: function Render(args) {

@@ -13,7 +13,7 @@ import { expect, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import {
   bodyRow,
-  callbackLog,
+  consoleText,
   rowAt,
   settle,
   until,
@@ -203,8 +203,8 @@ export const RowExpandingLazy: StoryObj<SessionsArgs> = {
     await until(() => expect(row()).toHaveAttribute('aria-busy', 'true'))
     await until(() => expect(row()).not.toHaveAttribute('aria-busy'))
     expect(row()).toHaveAttribute('data-expanded', 'true')
-    expect(callbackLog()).toContain('onExpandRow')
-    expect(callbackLog()).toContain('loaded')
+    expect(consoleText()).toContain('onExpandRow')
+    expect(consoleText()).toContain('loaded')
     await settle()
   },
   render: function Render(args) {
