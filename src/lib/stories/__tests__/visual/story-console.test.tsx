@@ -175,9 +175,35 @@ describe('консоль историй (ADR 0124)', () => {
     expect(log.entries()).toHaveLength(before)
   })
 
-  test('CL7: записи — таблица «Тип», «Событие», «Время» до секунд, «Длительность» колбэка; новые снизу; список держится у последней записи, пока его не прокрутили вверх', async () => {
+  test('CL7: записи — таблица «Тип», «Событие», «Время» до секунд, «Длительность» колбэка; новые снизу; список держится у последней записи, пока его не прокрутили вверх; без записей — вместо таблицы текст по центру окна', async () => {
     const log = createConsoleLog()
     await mountHost(log)
+    toggle().click()
+    // Без записей таблицы с шапкой нет, текст — по центру окна списка.
+    log.clear()
+    const table = () => list().querySelector('table')!
+    const empty = () =>
+      list().querySelector<HTMLElement>('[data-console-empty]')!
+    const shown = (element: HTMLElement) =>
+      getComputedStyle(element).display !== 'none'
+    await expect.poll(() => shown(table())).toBe(false)
+    expect(shown(empty())).toBe(true)
+    expect(empty().textContent).toBe('Событий пока нет')
+    await expect
+      .poll(() => list().getBoundingClientRect().height, { timeout: 3000 })
+      .toBeGreaterThan(200)
+    const center = (rect: DOMRect) => ({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    })
+    const range = document.createRange()
+    range.selectNodeContents(empty())
+    const text = center(range.getBoundingClientRect())
+    const area = center(list().getBoundingClientRect())
+    expect(Math.abs(text.x - area.x)).toBeLessThan(2)
+    expect(Math.abs(text.y - area.y)).toBeLessThan(2)
+    toggle().click()
+
     for (let index = 0; index < 40; index++) log.log('server', `page ${index}`)
     log.write('state', 'sorting', '[]')
     log.write('state', 'sorting', '[{id:"country"}]')
@@ -187,6 +213,8 @@ describe('консоль историй (ADR 0124)', () => {
     ]
     await expect.poll(() => items().at(-1)?.textContent).toContain('sorting')
     const last = items().at(-1)!
+    expect(shown(table())).toBe(true)
+    expect(shown(empty())).toBe(false)
     const headers = [...list().querySelectorAll('thead th')].map(
       header => header.textContent,
     )

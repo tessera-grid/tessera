@@ -203,20 +203,18 @@ export const StoryConsole = ({
   // прокрутили вверх.
   const list = useRef<HTMLDivElement>(null)
   const count = useRef<HTMLSpanElement>(null)
+  const table = useRef<HTMLTableElement>(null)
   const rows = useRef<HTMLTableSectionElement>(null)
+  const empty = useRef<HTMLDivElement>(null)
   const stuck = useRef(true)
   useLayoutEffect(() => {
     const element = list.current
-    if (!element) return
     const body = rows.current
-    if (!body) return
+    if (!element || !body || !table.current || !empty.current) return
+    const tableStyle = table.current.style
+    const emptyStyle = empty.current.style
     const items = new Map<number, HTMLTableRowElement>()
     const painted = new WeakMap<HTMLTableRowElement, ConsoleEntry>()
-    const empty = newRow()
-    const emptyCell = cell({ color: MUTED })
-    emptyCell.colSpan = 4
-    emptyCell.textContent = 'Событий пока нет'
-    empty.append(emptyCell)
     const paint = () => {
       const entries = log.entries()
       const total = entries.reduce((sum, entry) => sum + entry.count, 0)
@@ -241,9 +239,14 @@ export const StoryConsole = ({
         }
         return item
       })
-      const wanted = nodes.length > 0 ? nodes : [empty]
-      if (wanted.some((node, index) => body.children[index] !== node)) {
-        body.replaceChildren(...wanted)
+      // Записей нет — вместо таблицы с одной шапкой текст по центру окна.
+      tableStyle.display = nodes.length > 0 ? '' : 'none'
+      emptyStyle.display = nodes.length > 0 ? 'none' : 'flex'
+      if (
+        body.children.length !== nodes.length ||
+        nodes.some((node, index) => body.children[index] !== node)
+      ) {
+        body.replaceChildren(...nodes)
       }
       if (stuck.current) element.scrollTop = element.scrollHeight
     }
@@ -409,7 +412,20 @@ export const StoryConsole = ({
                 fontSize: 12,
               }}
             >
+              <div
+                ref={empty}
+                data-console-empty
+                style={{
+                  height: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: MUTED,
+                }}
+              >
+                Событий пока нет
+              </div>
               <table
+                ref={table}
                 style={{
                   width: '100%',
                   borderCollapse: 'collapse',
