@@ -9,6 +9,9 @@
 > `cva`); тема — трёхуровневые токены `--tsr-ref/sys/comp`
 > ([ADR 0019](0019-token-architecture.md)), статически в `core/themeVariables/theme.css`.
 > `tailwind-merge`/`cn` удалены; `cva`/`motion` объявлены, но не используются.
+>
+> **Актуализировано (2026-10-17).** Витрина — **Storybook 11** на предрелизе
+> `11.0.0-alpha.6`, зафиксированном точной версией (встроенное решение 8).
 
 ## Контекст
 
@@ -48,7 +51,7 @@ ADR закрывает пробел (сам слой позже детализи
 | **Язык / типы**                 | **TypeScript `~6`** (зафиксирован; TS 7 ломает typescript-eslint и dts — нет JS Compiler API)                                                                                                                                                | —                                              |
 | **Тесты**                       | **Vitest 4** browser mode (Playwright/Chromium), `vitest-browser-react`; доступность — `axe-core` и эмулятор скринридера `@guidepup/virtual-screen-reader` ([ADR 0033](0033-a11y-tree-and-virtual-screen-reader.md))                         | —                                              |
 | **Качество**                    | ESLint 10 (flat config) + `typescript-eslint` + `eslint-plugin-react-hooks` (классические правила); Prettier                                                                                                                                 | —                                              |
-| **Витрина**                     | **Storybook 10** (`@storybook/react-vite`); `@faker-js/faker`, `@fontsource/inter`                                                                                                                                                           | dev-only                                       |
+| **Витрина**                     | **Storybook 11** (`11.0.0-alpha.6`, точная версия; `@storybook/react-vite`); `@faker-js/faker`, `@fontsource/inter`                                                                                                                          | dev-only                                       |
 | **Пакетный менеджер**           | **npm** (Node 25, npm 11), `package-lock.json`                                                                                                                                                                                               | —                                              |
 
 ### Встроенные решения
@@ -83,6 +86,16 @@ inline`, палитра «Vercel Inspired») — **только Storybook**, в 
    ссылаться на него — у потребителя ломаются типы при зелёной сборке. Хук
    `afterDiagnostic` в `vite.config.ts` превращает любую диагностику в ошибку
    сборки. Тесты (`__tests__`) и истории в декларации не входят.
+8. **Storybook — предрелиз 11, точной версией.** Перед `play` и `afterEach` Storybook
+   ждёт конца анимаций страницы; Storybook 10 бесконечными считает только CSS-анимации,
+   а волна скелета ([ADR 0121](0121-shared-skeleton-wave.md)) — бесконечная анимация
+   WAAPI. Пока виден скелет, каждая смена аргумента ждала таймаута 5 с, и ответ превью
+   со старыми аргументами возвращал переключатель Controls назад. В 11 бесконечной
+   считается любая `KeyframeEffect` с `iterations: Infinity`. Все пакеты
+   `storybook`, `@storybook/*` и `storybook-addon-pseudo-states` — одной точной
+   версией, без `^`: предрелизы ломают совместимость между альфами. Переход на релиз
+   11 — заменой версии. У `storybook dev` в 11 нет флага `--no-open`. Storybook — только
+   dev, в `dist` и к потребителю не попадает.
 
 ## Следствия
 
@@ -97,6 +110,8 @@ inline`, палитра «Vercel Inspired») — **только Storybook**, в 
 - **−** Больше размер бандла — примитивы Base UI внутри `dist`.
 - **−** Тема грида зависит от токенов: `--tsr-comp-*` тянут `--tsr-sys-*`, а те —
   мост к shadcn-именам с fallback на `--tsr-ref-*` ([ADR 0019](0019-token-architecture.md)).
+- **−** Витрина и тесты каталога стоят на предрелизе Storybook: альфа может
+  ломать API между версиями, переход на следующую — с полным барьером.
 - ADR **0004–0007 не отменяются** — ядро по-прежнему headless и компонуется, а не
   форкается; этот ADR лишь формализует рантайм-слой контролов и стилизации поверх него.
 
