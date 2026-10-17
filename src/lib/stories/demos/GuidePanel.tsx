@@ -640,7 +640,7 @@ export const GuidePanel = ({
               </span>
             </Button>
             <span style={{ ...ellipsis, flex: '1 1 0', minWidth: 0 }}>
-              {!expanded && (finished ? 'Гайд пройден' : steps[step]?.title)}
+              {!expanded && !finished && steps[step]?.title}
             </span>
           </div>
           <Button

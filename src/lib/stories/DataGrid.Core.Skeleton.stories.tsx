@@ -6,8 +6,8 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import { guideNext, settle, until } from './__mocks__/catalogPlay'
-import { skeletonOptionsType } from './__mocks__/utils/argTypes'
-import { showControls } from './__mocks__/utils/dataGridControls'
+import { expandAllType, skeletonOptionsType } from './__mocks__/utils/argTypes'
+import { BASE_CONTROLS, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 
@@ -42,6 +42,11 @@ const FIXED_HEIGHT = {
  */
 const SKELETON_OPTIONS_CONTROL = {
   skeletonOptions: { ...skeletonOptionsType, if: null as unknown as undefined },
+}
+
+/** `expandAll` без переключателя — дерево шага «Иерархия данных» (как в `Tree data`). */
+const EXPAND_ALL_CONTROL = {
+  expandAll: { ...expandAllType, if: null as unknown as undefined },
 }
 
 /** Грид открыт, данных ещё нет — как у настоящего приложения. */
@@ -94,33 +99,43 @@ const waitData = (canvas: HTMLElement) =>
 // --- S1 ------------------------------------------------------------------------------
 
 /**
- * Шаги по SL6: скелет плоский, затем деревом, с линиями и с переключателем (ADR 0119);
- * смена на данные без сдвига.
+ * Шаги по SL6: колонок ещё нет (тулбар — ADR 0122), скелет плоский, затем деревом, с
+ * линиями и с переключателем (ADR 0119); смена на данные без сдвига.
  */
 const DATA_ARRIVES = [
   {
     ...OPENED,
+    title: 'Ожидание списка колонок от сервера',
+    hint: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
+    props: () => ({
+      loading: 'initial',
+      dataOverride: [],
+      columnsOverride: [],
+    }),
+  },
+  {
     title: 'Данные загружаются',
-    hint: 'Вместо данных отображаются скелеты. Названия колонок уже известны заранее. Таблицу можно скроллить по горизонтали. В тулбаре поиск, «Фильтры» и «Колонки» работают и до данных, а клиентскому «Экспорту» выгружать нечего — на его месте скелет.',
+    hint: 'Список колонок был загружен или известен заранее, но данных пока нет. Некоторые фичи уже доступны, но таблица еще не готова к взаимодействию.',
+    props: () => ({ columnsOverride: undefined }),
   },
   {
     title: 'Иерархия данных',
-    hint: 'Плагин rowExpandingModel и expanded: true — дерево придёт развёрнутым: у части строк скелета одна-две подстроки с отступом. Переключателя нет — кнопок раскрытия тоже.',
+    hint: 'Скелеты поддерживают отображение вложенных строк. В этом режиме случайным строкам в первой колонке добавляются отступы.',
     props: () => ({ enableRowExpandingModel: true, expandAll: true }),
   },
   {
     title: 'Линии дерева',
-    hint: 'Плагин treeLines — у скелета те же линии, что у дерева: поворот к подстроке, продолжение ветки к сестре, отросток у строки с подстроками. Кнопок по-прежнему нет.',
+    hint: 'Чтобы визуально выразить иерархическую структуру данных, вложенным строкам добавляются линии дерева.',
     props: () => ({ enableTreeLines: true }),
   },
   {
     title: 'Раскрытие строк',
-    hint: 'Плагин rowExpanding — появляется колонка раскрытия со скелетами кнопок у строк с подстроками.',
+    hint: 'Для сворачивания/разворачивания строк слева появляется колонка со скелетами. После загрузки данных на ее месте появятся реальные кнопки.',
     props: () => ({ enableRowExpanding: true }),
   },
   {
     ...ANSWERED,
-    hint: 'Скелеты заменяются данными и кнопками; «Экспорт» встаёт на место своего скелета.',
+    hint: 'Скелеты заменяются данными и кнопками. Таблица готова к работе.',
   },
 ] as const satisfies readonly GuideStoryStep[]
 
@@ -184,29 +199,37 @@ export const SkeletonDefault: StoryObj<StoryProps> = {
     ...showControls(['loading', 'refreshOptions', ...DATA_ARRIVES_CONTROLS]),
   },
   args: { ...DATA_ARRIVES_ARGS, loading: 'initial' },
+  argTypes: EXPAND_ALL_CONTROL,
   render: args => <StoryComponent {...normalizeArgs(args)} />,
 }
 
 /**
- * S1: получение данных — скелет повторяет раскладку таблицы со служебными колонками,
- * итогами и панелями; с `tree` — развёрнутыми подстроками, с раскрытием строк —
- * квадратами раскрытия и, с `treeLines`, линиями дерева; пришли данные — всё на тех же
- * местах, без задержки (SL6, SL2, SL8). Функции включаются и выключаются в Controls.
+ * S1: получение данных — без колонок скелет из одинаковых колонок, затем повторяет
+ * раскладку таблицы со служебными колонками, итогами и панелями; с `tree` —
+ * развёрнутыми подстроками, с раскрытием строк — квадратами раскрытия и, с `treeLines`,
+ * линиями дерева; пришли данные — всё на тех же местах, без задержки (SL6, SL2, SL8).
+ * Функции включает гайд, поэтому контролов нет — вариации в `Default`.
  */
 export const SkeletonDataArrives: StoryObj<StoryProps> = {
   name: 'Data arrives',
   parameters: {
     scenario: '0060/S1',
     requirements: ['SL6', 'SL2', 'SL8'],
-    ...showControls(DATA_ARRIVES_CONTROLS),
+    ...showControls(
+      [],
+      Object.fromEntries(
+        BASE_CONTROLS.map(name => [
+          name,
+          'Таблицу и её функции по шагам задаёт гайд; вариации — в Default',
+        ]),
+      ),
+    ),
   },
-  args: DATA_ARRIVES_ARGS,
-  argTypes: SKELETON_OPTIONS_CONTROL,
   render: args => (
     <GuideStory
       title="Получение данных"
       steps={DATA_ARRIVES}
-      args={normalizeArgs(args)}
+      args={normalizeArgs({ ...args, ...DATA_ARRIVES_ARGS })}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -262,6 +285,21 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       skeletonRows(canvas).flatMap(row => byId('rowExpanding', row) ?? [])
     await step(DATA_ARRIVES[0].title, async () => {
       await waitSkeleton(canvas)
+      // ADR 0122: без колонок поиск, «Колонки» и «Экспорт» — скелеты.
+      for (const id of [
+        'quick-search-skeleton',
+        'column-visibility-skeleton',
+        'export-skeleton',
+      ]) {
+        await until(() => expect(toolbarPart(id), id).not.toBeNull())
+      }
+      for (const id of ['quick-search', 'column-visibility-button']) {
+        await expect(toolbarPart(id), id).toBeNull()
+      }
+    })
+    await step(DATA_ARRIVES[1].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(toolbarPart('quick-search')).not.toBeNull())
       const rows = skeletonRows(canvas)
       // SL2: выбор — квадрат, перетаскивание и действия — пустая ячейка.
       await square(shapeOf(byId('rowSelection', rows[0]!)!)!)
@@ -282,18 +320,18 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       await expect(toolbarPart('export-button')).toBeNull()
       exportSlot = inToolbar(toolbarPart('export-skeleton')!)
     })
-    await step(DATA_ARRIVES[1].title, async () => {
+    await step(DATA_ARRIVES[2].title, async () => {
       await guideNext(canvas)
       await until(() => expect(indented()).toBe(true))
       await expect(expandCells()).toHaveLength(0)
       await expect(treeLines()).toBe(false)
     })
-    await step(DATA_ARRIVES[2].title, async () => {
+    await step(DATA_ARRIVES[3].title, async () => {
       await guideNext(canvas)
       await until(() => expect(treeLines()).toBe(true))
       await expect(expandCells()).toHaveLength(0)
     })
-    await step(DATA_ARRIVES[3].title, async () => {
+    await step(DATA_ARRIVES[4].title, async () => {
       await guideNext(canvas)
       await until(() => expect(expandCells().length).toBeGreaterThan(0))
       // SL2: раскрытие — квадрат у строк с подстроками (SL25).
@@ -314,7 +352,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       )
       await expect(footerShapes.size).toBeGreaterThan(0)
     })
-    await step(DATA_ARRIVES[4].title, async () => {
+    await step(DATA_ARRIVES[5].title, async () => {
       // SL6, без задержки: ни одного состояния DOM без скелета и без строк.
       let empty = 0
       const observer = new MutationObserver(() => {
