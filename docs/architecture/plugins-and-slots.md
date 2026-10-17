@@ -74,7 +74,8 @@ flowchart TB
 - `table.reportPluginError(id, error)` → реестр ошибок плагинов: `logError` один раз
   на плагин + `status: 'error'` в снимке (ADR 0037, PE5). Компоненты слотов и сервисных
   колонок ядро само рендерит в `PluginErrorBoundary` с `id` плагина (метку ставит
-  `foldEntries`; PE1–PE2), `setup` (PE3), `diagnose` (PE4) и `reconcile` (PE6) обёрнуты
+  `foldEntries`; PE1–PE2). Обёртка кэшируется по (шаблон, `id` плагина): новая ссылка
+  `columns` не перемонтирует служебные ячейки (PE7–PE8). `setup` (PE3), `diagnose` (PE4) и `reconcile` (PE6) обёрнуты
   в `try/catch`.
 - `table.getPluginDiagnostics()` → снимок `active`/`inert` (+`reason`) по каждой
   записи из `table.options.pluginDiagnostics`, считается на момент вызова через

@@ -86,6 +86,24 @@ describe('rowDragging', () => {
     expect(table.atoms.rowDragging.get().activeId).toBe('1')
   })
 
+  it('D39: нажатие на ручку без сдвига при состоянии по умолчанию не пишет в store таблицы', () => {
+    vi.stubGlobal('document', { body: { style: {} } })
+    try {
+      const { table } = build([])
+      const before = table.atoms.rowDragging.get()
+      const notified = vi.fn()
+      const subscription = table.store.subscribe(notified)
+
+      getRowDraggingEvents(table).onRowDragAbort!({} as never)
+
+      expect(notified).not.toHaveBeenCalled()
+      expect(table.atoms.rowDragging.get()).toBe(before)
+      subscription.unsubscribe()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('getCanDrag: плоская шапка → true; canDragRow запрещает строку → false', () => {
     expect(build([]).table.getRowModel().rows[0].getCanDrag()).toBe(true)
     expect(

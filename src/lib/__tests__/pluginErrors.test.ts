@@ -1,5 +1,6 @@
 /**
- * Статус `error` в снимке плагинов и лог пойманных ошибок (ADR 0037, PE4–PE5).
+ * Статус `error` в снимке плагинов и лог пойманных ошибок (ADR 0037, PE4–PE5);
+ * стабильная обёртка шаблонов сервисной колонки (PE8).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -16,6 +17,7 @@ import {
 
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { __resetLogger, __setLoggerProduction } from '../core/logger'
+import { withPluginBoundary } from '../core/pluginBoundary'
 import { rowSelection } from '../plugins/rowSelection'
 
 const build = (plugins: any[]) => {
@@ -94,5 +96,21 @@ describe('ошибки плагинов в снимке', () => {
     expect(messages).toHaveLength(1)
     expect(messages[0]).toContain('menu')
     expect(messages[0]).toContain('first')
+  })
+})
+
+describe('граница сервисной колонки', () => {
+  it('PE8: withPluginBoundary для того же шаблона cell и header и того же id плагина отдаёт ту же обёртку, для другого id — другую', () => {
+    const cell = () => null
+    const header = () => null
+    const first = withPluginBoundary({ id: 'mark', cell, header }, 'marks')
+    const again = withPluginBoundary({ id: 'mark', cell, header }, 'marks')
+    const other = withPluginBoundary({ id: 'mark', cell, header }, 'others')
+
+    expect(first.cell).not.toBe(cell)
+    expect(again.cell).toBe(first.cell)
+    expect(again.header).toBe(first.header)
+    expect(other.cell).not.toBe(first.cell)
+    expect(other.header).not.toBe(first.header)
   })
 })

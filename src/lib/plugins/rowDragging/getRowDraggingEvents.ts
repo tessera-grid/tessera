@@ -82,6 +82,15 @@ const setExpandedByUser = (row: Row<any, any>, expanded: boolean) => {
   else if (row.getIsExpanded() !== expanded) row.toggleExpanded(expanded)
 }
 
+const isDefaultDragState = (state: RowDragOverlayState) =>
+  (
+    Object.keys(DEFAULT_ROW_DRAG_OVERLAY_STATE) as (keyof RowDragOverlayState)[]
+  ).every(key =>
+    key === 'openedByDelay'
+      ? state.openedByDelay.length === 0
+      : state[key] === DEFAULT_ROW_DRAG_OVERLAY_STATE[key],
+  )
+
 export const getRowDraggingEvents = (
   table: Table<any, any>,
   { levelAt, expandTimer }: RowDraggingGeometry = {},
@@ -168,7 +177,10 @@ export const getRowDraggingEvents = (
   const resetDragState = () => {
     expandTimer?.clear()
     document.body.style.cursor = 'default'
-    onRowDraggingChange?.(() => DEFAULT_ROW_DRAG_OVERLAY_STATE)
+    // Нажатие без сдвига застаёт состояние по умолчанию — store не трогаем (D39).
+    onRowDraggingChange?.(prev =>
+      isDefaultDragState(prev) ? prev : DEFAULT_ROW_DRAG_OVERLAY_STATE,
+    )
   }
 
   const rowById = (id: string): Row<any, any> | undefined =>
