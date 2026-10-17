@@ -167,7 +167,7 @@ describe('панель сценария (ADR 0117)', () => {
     await expect.poll(() => Math.abs(slideOf() - x)).toBeGreaterThan(100)
   })
 
-  test('SN17: «Воспроизвести» проходит шаги само — полоска к следующему заливается всё время шага, значок до её конца текущий, затем шаг сменяется; последний шаг выполняется сразу, и воспроизведение останавливается; «Пауза» останавливает раньше — заливка замирает на месте, «Воспроизвести» продолжает её с того же места', async () => {
+  test('SN17: «Воспроизвести» проходит шаги само — полоска к следующему заливается всё время шага, значок до её конца текущий, затем шаг сменяется; последний шаг выполняется сразу, и воспроизведение останавливается; «Пауза» останавливает раньше — заливка замирает на месте, «Воспроизвести» продолжает её с того же места; «Далее» и переход к шагу впереди доливают её с того же места', async () => {
     const screen = await render(<GuidePanelPlayground />)
     await expect.poll(() => byId('guide-play')).toBeTruthy()
     const toggle = byId('guide-toggle')
@@ -222,7 +222,7 @@ describe('панель сценария (ADR 0117)', () => {
     await screen.unmount()
 
     // «Пауза» посреди заливки — заливка замирает на месте, шаг не идёт.
-    await render(<GuidePanelPlayground />)
+    const pausedScreen = await render(<GuidePanelPlayground />)
     await expect.poll(() => byId('guide-play')).toBeTruthy()
     const firstBar = () =>
       document.querySelector<HTMLElement>('[data-step-fill="0"]')!
@@ -255,8 +255,39 @@ describe('панель сценария (ADR 0117)', () => {
     expect(restartedFromZero).toBe(false)
     expect(byId('guide-toggle').textContent).toContain('шаг 2 из 3')
     expect(resumeTook).toBeLessThan(1500 * (1 - paused) + 400)
-    // Конфетти пройденного шага догорают: следующий тест начинает без них.
     await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
+    await pausedScreen.unmount()
+
+    // «Далее» и переход к шагу впереди после паузы доливают полоску с того же места.
+    const pourFromPause = async (act: () => void) => {
+      const view = await render(<GuidePanelPlayground />)
+      await expect.poll(() => byId('guide-play')).toBeTruthy()
+      button('guide-play').click()
+      await expect.poll(firstFill, { interval: 5 }).toBeGreaterThan(0.4)
+      button('guide-play').click()
+      await frame()
+      const from = firstFill()
+      act()
+      let dropped = false
+      const started = performance.now()
+      while (!/шаг [23] из 3/.test(byId('guide-toggle').textContent ?? '')) {
+        if (performance.now() - started > 3000) break
+        if (firstFill() < from - 0.02) dropped = true
+        await frame()
+      }
+      expect(dropped).toBe(false)
+      expect(byId('guide-toggle').textContent).toMatch(/шаг [23] из 3/)
+      // Конфетти пройденного шага догорают: следующий тест начинает без них.
+      await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
+      await view.unmount()
+    }
+    await pourFromPause(() => button('guide-next').click())
+    await pourFromPause(() =>
+      document
+        .querySelector<HTMLElement>('[data-step-index="1"]')!
+        .closest('button')!
+        .click(),
+    )
   })
 
   test('SN21: при уменьшенном движении — без конфетти, сдвига ряда и анимации раскрытия: шаг сменяется сразу', async () => {

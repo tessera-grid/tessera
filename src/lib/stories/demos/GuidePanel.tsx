@@ -297,13 +297,15 @@ export const GuidePanel = ({
   const list = useRef<HTMLOListElement>(null)
   // Полоска шага `index` к следующему заливается цветом (вперёд) или пустеет (назад);
   // после неё шаг сменяется. `timed` — заливка воспроизведения на всё время шага:
-  // значок до её конца текущий, «Пауза» её замораживает, а «Далее» и «Назад» прерывают.
-  // `fast` — переход к выбранному шагу: шаги подряд, ускоренно, без конфетти.
+  // значок до её конца текущий, «Пауза» её замораживает, «Далее» и переход вперёд
+  // доливают с того же места, «Назад» прерывает. `fast` — переход к выбранному шагу:
+  // шаги подряд, ускоренно, без конфетти. `from` — доля, с которой полоска доливается.
   const [move, setMove] = useState<{
     index: number
     back: boolean
     timed?: boolean
     fast?: boolean
+    from?: number
   } | null>(null)
   // Выбранный нажатием шаг: переход идёт к нему, пока не дойдёт.
   const target = useRef<number | null>(null)
@@ -321,6 +323,9 @@ export const GuidePanel = ({
   const animated = () => expanded && !stillMotion()
   const badgeOf = (index: number) =>
     list.current?.querySelector<HTMLElement>(`[data-step-index="${index}"]`)
+  // Доля полоски текущего шага, уже залитая воспроизведением.
+  const poured = () =>
+    move?.timed ? (fill.current?.effect?.getComputedTiming().progress ?? 0) : 0
   // Значок пройденного шага зеленеет с конфетти, затем заливается полоска.
   const advance = () => {
     if (blocking) return
@@ -333,7 +338,7 @@ export const GuidePanel = ({
       return
     }
     if (animated()) {
-      setMove({ index: step, back: false })
+      setMove({ index: step, back: false, from: poured() })
     } else {
       setMove(null)
       onNext()
@@ -345,9 +350,14 @@ export const GuidePanel = ({
     const bar = list.current?.querySelector<HTMLElement>(
       `[data-step-fill="${move.index}"]`,
     )
-    const frames = [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }]
+    const from = move.from ?? 0
+    const frames = [
+      { transform: `scaleX(${from})` },
+      { transform: 'scaleX(1)' },
+    ]
     const animation = bar?.animate(move.back ? frames.reverse() : frames, {
-      duration: move.timed ? STEP_MS : move.fast ? JUMP_MS : FILL_MS,
+      duration:
+        (move.timed ? STEP_MS : move.fast ? JUMP_MS : FILL_MS) * (1 - from),
       easing: move.timed || move.fast ? 'linear' : 'ease-in-out',
       // Заливка воспроизведения держится полной, пока шаг не сменился.
       fill: move.timed ? 'forwards' : 'none',
@@ -461,7 +471,7 @@ export const GuidePanel = ({
     }
     setMove(
       index > step
-        ? { index: step, back: false, fast: true }
+        ? { index: step, back: false, fast: true, from: poured() }
         : { index: step - 1, back: true, fast: true },
     )
   }
