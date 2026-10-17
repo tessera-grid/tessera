@@ -190,6 +190,8 @@ const PROBE_DATA = Array.from({ length: 50 }, (_, i) => ({
   id: `r${i}`,
   name: `Name ${String(i).padStart(2, '0')}`,
 }))
+// Колонки — стабильной ссылкой, как требует контракт `useCreateTable`.
+const PROBE_COLUMNS = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
 
 const ProbeGrid = ({
   probe,
@@ -202,7 +204,7 @@ const ProbeGrid = ({
 }) => {
   const [data, setData] = useState(PROBE_DATA)
   const table = useCreateTable({
-    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+    columns: PROBE_COLUMNS as never,
     data,
     getRowId: (row: (typeof PROBE_DATA)[number]) => row.id,
     onDebugAction,
@@ -237,11 +239,10 @@ describe('канал действий (ADR 0125)', () => {
     await expect.poll(() => rowEl('r1')).not.toBeNull()
 
     // Пункт меню ручки строки — до сортировки: под ней ручки нет.
-    const handle = rowEl('r3')!.querySelector<HTMLElement>(
-      '.drag__handler--column',
-    )!
-    handle.focus()
-    await userEvent.keyboard('{Enter}')
+    await userEvent.hover(nameCell('r3'))
+    await humanClick(
+      rowEl('r3')!.querySelector<HTMLElement>('.drag__handler--column')!,
+    )
     await expect.poll(() => menuItem('Move down')).toBeTruthy()
     await humanClick(menuItem('Move down')!)
     await expect
