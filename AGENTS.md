@@ -636,6 +636,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md); порядок кнопок —
       `toolbar` (TB17, TB18, TB20) и модульные `toolbar` (TB16, TB19),
       [ADR 0051](docs/decisions/0051-toolbar-button-order.md).
+    - _Тулбар до прихода данных:_ `toolbar-before-data` (TF1–TF6, TF8–TF11 — поиск, «Фильтры»
+      и серверный экспорт доступны, скелеты клиентского экспорта и, без колонок, поиска и
+      «Колонок» на месте контрола, волна, фокус, пустой результат, axe), модульные `export`
+      (TF7, TF12 — оси до данных, `exportData` с предупреждением), `play` историй
+      «Panels/Toolbar — Initial loading», «— Search before data (server)», «— Columns
+      arrive», «Export — Server, initial loading» (S1–S4)
+      ([ADR 0122](docs/decisions/0122-toolbar-before-data.md)).
     - _Включение панелей:_ `panels` (PB1–PB5, PB10–PB11 — тулбар и нижняя панель по
       слотам, флаги-переопределения), `toolbar-chunk` (PB6 — ленивый модуль тулбара),
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), `play` историй

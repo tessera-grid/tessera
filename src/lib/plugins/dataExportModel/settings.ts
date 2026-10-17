@@ -210,13 +210,30 @@ export const settingsFromArg = (
 }
 
 /** Серверные значения строк выгружает потребитель; `page` — клиент (ADR 0044, §6). */
+const isServerRows = (table: unknown, rows: ExportRows) =>
+  !!exportConfigOf(table)?.server && rows !== 'page'
+
 export const whereOf = (
   table: unknown,
   settings: ExportSettings,
 ): 'client' | 'server' =>
-  exportConfigOf(table)?.server && settings.rows !== 'page'
-    ? 'server'
-    : 'client'
+  isServerRows(table, settings.rows) ? 'server' : 'client'
+
+/**
+ * Оси до прихода данных: клиентские значения строк недоступны — выгрузка дала бы файл
+ * с одной шапкой (ADR 0122, TF7). Серверные остаются: данные у сервера.
+ */
+export const axesBeforeData = (
+  table: unknown,
+  axes: ExportAxes,
+): ExportAxes => ({
+  ...axes,
+  rows: axes.rows.map(item =>
+    item.disabled || isServerRows(table, item.value)
+      ? item
+      : { ...item, disabled: true },
+  ),
+})
 
 /** Предупреждение о быстром наборе без единого доступного значения. */
 export const warnUnusablePresets = (

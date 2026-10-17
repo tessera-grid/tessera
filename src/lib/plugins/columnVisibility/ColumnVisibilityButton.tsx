@@ -2,6 +2,7 @@
  * Кнопка «Колонки» в тулбаре (ADR 0035, CV1, CV18). Поповер грузится лениво; пока
  * чанк не пришёл, стоит та же кнопка без Base UI Popover (ADR 0061). Активна, когда
  * скрыта хотя бы одна колонка; число скрытых — пузырьком на значке (ADR 0062, AI7).
+ * Пока колонки не пришли с сервера — скелет (ADR 0122, TF3).
  */
 import { Suspense } from 'react'
 
@@ -10,9 +11,10 @@ import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
+import { isWaitingForColumns } from '../../core/skeletonOptions'
 import { Bubble } from '../../ui/Bubble'
 import { useIcons } from '../../ui/icons'
-import { ToolbarButton } from '../../ui/ToolbarButton'
+import { ToolbarButton, ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { getShowAll, type VisibilityTable } from './columnTree'
 
 import styles from './ColumnVisibilityMenu.module.css'
@@ -46,6 +48,10 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
       )}
     </span>
   )
+
+  if (isWaitingForColumns(table)) {
+    return <ToolbarSkeleton data-testid="column-visibility-skeleton" />
+  }
 
   const placeholder = (
     <ToolbarButton

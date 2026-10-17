@@ -2,7 +2,8 @@
  * Запуск выгрузки (ADR 0044, §5–§7): клиентская выгрузка собирает данные, сериализует
  * и скачивает; серверная отдаёт запрос потребителю.
  */
-import { logError } from '../../core/logger'
+import { logError, logWarn } from '../../core/logger'
+import { isSkeletonShown } from '../../core/skeletonOptions'
 import { isThenable } from '../../core/thenable'
 import { downloadFile } from './download'
 import {
@@ -129,7 +130,14 @@ export const exportByArg = (
   arg?: string | Partial<ExportSettings>,
 ): Promise<void> => {
   const settings = settingsFromArg(table, arg)
-  return settings
-    ? (runExport(table, settings) ?? Promise.resolve())
-    : Promise.resolve()
+  if (!settings) return Promise.resolve()
+  // Явный вызов приложения не блокируется, но до данных файл выйдет пустым (ADR 0122, TF12).
+  if (isSkeletonShown(table) && whereOf(table, settings) === 'client') {
+    logWarn(
+      table as never,
+      'dataExport: выгрузка до прихода данных — в файле будет только шапка',
+      'dataExport:beforeData',
+    )
+  }
+  return runExport(table, settings) ?? Promise.resolve()
 }

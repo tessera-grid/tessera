@@ -101,7 +101,7 @@ const DATA_ARRIVES = [
   {
     ...OPENED,
     title: 'Данные загружаются',
-    hint: 'Вместо данных отображаются скелеты. Названия колонок уже известны заранее. Таблицу можно скроллить по горизонтали.',
+    hint: 'Вместо данных отображаются скелеты. Названия колонок уже известны заранее. Таблицу можно скроллить по горизонтали. В тулбаре поиск, «Фильтры» и «Колонки» работают и до данных, а клиентскому «Экспорту» выгружать нечего — на его месте скелет.',
   },
   {
     title: 'Иерархия данных',
@@ -120,13 +120,14 @@ const DATA_ARRIVES = [
   },
   {
     ...ANSWERED,
-    hint: 'Скелеты заменяются данными и кнопками.',
+    hint: 'Скелеты заменяются данными и кнопками; «Экспорт» встаёт на место своего скелета.',
   },
 ] as const satisfies readonly GuideStoryStep[]
 
 /**
  * Всё, что видно на скелете: служебные колонки (выбор, перетаскивание, действия;
- * раскрытие — шагом «Раскрытие строк»), закрепление, итоги, панели над таблицей и под ней.
+ * раскрытие — шагом «Раскрытие строк»), закрепление, итоги, панели над таблицей и под ней
+ * с функциями тулбара до прихода данных (ADR 0122).
  */
 const DATA_ARRIVES_ARGS = {
   ...FIXED_HEIGHT,
@@ -141,7 +142,17 @@ const DATA_ARRIVES_ARGS = {
   enableFooter: true,
   enablePagination: true,
   enableQuickSearch: true,
+  enableColumnFiltering: true,
+  enableColumnVisibility: true,
+  enableDataExport: true,
 } satisfies Partial<StoryProps>
+
+const TOOLBAR_CONTROLS = [
+  'enableQuickSearch',
+  'enableColumnFiltering',
+  'enableColumnVisibility',
+  'enableDataExport',
+]
 
 const DATA_ARRIVES_CONTROLS = [
   'skeletonOptions',
@@ -158,12 +169,13 @@ const DATA_ARRIVES_CONTROLS = [
   'pinFirstColumn',
   'enableFooter',
   'enablePagination',
-  'enableQuickSearch',
+  ...TOOLBAR_CONTROLS,
 ]
 
 /**
  * Скелет первой загрузки в покое — снимок каталога `body.skeleton`. Песочница фичи:
- * контролы всех её сценариев и `loading` — скелет, свечение обновления или данные.
+ * контролы и функции всех её сценариев, включая тулбар (ADR 0122), и `loading` —
+ * скелет, свечение обновления или данные.
  */
 export const SkeletonDefault: StoryObj<StoryProps> = {
   name: 'Default',
@@ -223,6 +235,20 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
     let columns: ReturnType<typeof geometry> = []
     let footer: ReturnType<typeof geometry> = []
     let footerShapes = new Set<string>()
+    const toolbarPart = (id: string) =>
+      canvas.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    /** Бокс в координатах тулбара: панель шагов меняет высоту от шага к шагу. */
+    const inToolbar = (element: HTMLElement) => {
+      const own = element.getBoundingClientRect()
+      const origin = toolbarPart('data-grid-toolbar')!.getBoundingClientRect()
+      return {
+        left: Math.round(own.left - origin.left),
+        top: Math.round(own.top - origin.top),
+        width: Math.round(own.width),
+        height: Math.round(own.height),
+      }
+    }
+    let exportSlot = { left: 0, top: 0, width: 0, height: 0 }
     let header: HTMLElement | undefined
     const byId = (part: string, row: HTMLElement) =>
       all(row, SKELETON_CELL).find(cell =>
@@ -244,6 +270,17 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       }
       await expect(expandCells()).toHaveLength(0)
       await expect(indented()).toBe(false)
+      // ADR 0122: поиск, «Фильтры» и «Колонки» — контролы, «Экспорт» — скелет.
+      await until(() => expect(toolbarPart('export-skeleton')).not.toBeNull())
+      for (const id of [
+        'quick-search',
+        'filter-summary-button',
+        'column-visibility-button',
+      ]) {
+        await expect(toolbarPart(id), id).not.toBeNull()
+      }
+      await expect(toolbarPart('export-button')).toBeNull()
+      exportSlot = inToolbar(toolbarPart('export-skeleton')!)
     })
     await step(DATA_ARRIVES[1].title, async () => {
       await guideNext(canvas)
@@ -306,6 +343,9 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       ).toEqual(footerShapes)
       // Скелетов не осталось нигде, панели тоже.
       await expect(canvas.querySelector('[class*="skeleton" i]')).toBeNull()
+      // «Экспорт» — на месте своего скелета.
+      await until(() => expect(toolbarPart('export-button')).not.toBeNull())
+      await expect(inToolbar(toolbarPart('export-button')!)).toEqual(exportSlot)
     })
     await settle()
   },

@@ -143,3 +143,12 @@ export const isSkeletonShown = (table: unknown): boolean => {
   if (options.loading !== 'initial') return false
   return !(hasLoadError(options.loadError) && getRowModel().rows.length === 0)
 }
+
+/**
+ * Первая загрузка, а колонок ещё нет — приложение получает их с сервера (`columns: []`):
+ * контролам тулбара над колонками опереться не на что (ADR 0122, TF2–TF3).
+ */
+export const isWaitingForColumns = (table: unknown): boolean =>
+  isSkeletonShown(table) &&
+  (table as { getAllLeafColumns: () => unknown[] }).getAllLeafColumns()
+    .length === 0

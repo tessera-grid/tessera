@@ -3,7 +3,7 @@
  * `debounceMs`, кнопка очистки сбрасывает поиск сразу. Внешняя смена среза
  * `globalFilter` (сброс фильтров, контролируемое состояние) переносится в поле.
  * Иконка «и» с тултипом и описание поля называют колонки поиска; без них поле
- * недоступно (ADR 0053).
+ * недоступно (ADR 0053), а пока колонки не пришли с сервера — скелет (ADR 0122, TF2).
  */
 import { useEffect, useId, useRef, useState } from 'react'
 
@@ -14,6 +14,8 @@ import { setSearchByUser } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { searchColumnLabel, searchColumnsOf } from '../../core/searchColumns'
+import { isWaitingForColumns } from '../../core/skeletonOptions'
+import { ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useDebouncedCallback } from '../../core/useDebouncedCallback'
 import { useIcons } from '../../ui/icons'
@@ -71,6 +73,10 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
     apply.schedule('')
     apply.flush()
     inputRef.current?.focus()
+  }
+
+  if (isWaitingForColumns(table)) {
+    return <ToolbarSkeleton kind="field" data-testid="quick-search-skeleton" />
   }
 
   return (

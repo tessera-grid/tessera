@@ -373,6 +373,61 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
   },
 }
 
+/** Выгрузки, ушедшие «серверу» через `onExport`. */
+const serverExports: string[] = []
+
+const SERVER_BEFORE_DATA: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица открыта, данные загружаются',
+    hint: 'Выгрузка серверная: данные у сервера, поэтому «Экспорт» доступен и до их прихода.',
+    props: () => ({ loading: 'initial', dataOverride: [] }),
+  },
+  {
+    title: 'Пользователь выгружает до прихода данных',
+    hint: 'Клик по «Экспорту» уходит в onExport — файл собирает сервер.',
+    enter: root =>
+      root.querySelector<HTMLElement>('[data-testid="export-button"]')?.click(),
+  },
+]
+
+/** S4 ADR 0122: серверная выгрузка до прихода данных. */
+export const ExportServerInitialLoading: StoryObj<StoryProps> = {
+  name: 'Server, initial loading',
+  parameters: {
+    scenario: '0122/S4',
+    ...showControls(['enableDataExport', 'dataExportAllow']),
+  },
+  args: {
+    ...GRID,
+    dataExportServer: true,
+    // Одна комбинация: клик выгружает сразу, без панели.
+    dataExportAllow: { rows: ['all'], columns: ['visible'] },
+    onExport: request => {
+      serverExports.push(request.settings.rows)
+    },
+  },
+  render: args => (
+    <GuideStory
+      title="Серверная выгрузка до прихода данных"
+      steps={SERVER_BEFORE_DATA}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    serverExports.length = 0
+    await step(SERVER_BEFORE_DATA[0]!.title, async () => {
+      await until(() => expect(exportButton()).not.toBeNull())
+      expect(byTestId('export-skeleton')).toBeNull()
+    })
+    await step(SERVER_BEFORE_DATA[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(serverExports).toEqual(['all']))
+    })
+    await settle()
+  },
+}
+
 function interceptDownload() {
   const names: string[] = []
   const blobs: Blob[] = []

@@ -2,7 +2,8 @@
  * Кнопка «Экспорт» в тулбаре (ADR 0044, EX1, EX6, EX28). Одна доступная комбинация —
  * клик выгружает сразу; иначе открывает панель настроек (лениво). Пока серверный
  * `onExport` или асинхронный формат (XL7) в ожидании, кнопка `aria-busy` с бликом,
- * серверная выгрузка заблокирована; отказ формата — вспышка.
+ * серверная выгрузка заблокирована; отказ формата — вспышка. До прихода данных
+ * клиентская выгрузка — скелет кнопки, серверная доступна (ADR 0122).
  */
 import { Suspense, useRef, useState } from 'react'
 
@@ -11,11 +12,14 @@ import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
+import { isSkeletonShown } from '../../core/skeletonOptions'
 import { useIcons } from '../../ui/icons'
-import { ToolbarButton } from '../../ui/ToolbarButton'
+import { ToolbarButton, ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { runExport } from '../dataExportModel/runExport'
 import {
+  axesBeforeData,
   resolveAxes,
+  resolveSettings,
   singleSettings,
   whereOf,
 } from '../dataExportModel/settings'
@@ -37,7 +41,10 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
 
   // Выбор строк меняет доступность значений оси «Строки».
   useTableState(table, state => state.rowSelection)
-  const axes = resolveAxes(table)
+  const resolved = resolveAxes(table)
+  const beforeData = isSkeletonShown(table)
+  const axes =
+    resolved && beforeData ? axesBeforeData(table, resolved) : resolved
   const single = axes && singleSettings(axes)
   // Панель нужна, только когда комбинаций больше одной: иначе модуль не грузится.
   const popover = useLazyPopover(
@@ -64,6 +71,10 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   }
 
   if (!axes) return null
+  // До данных выгружать нечего, кроме серверной выгрузки (ADR 0122, TF5).
+  if (beforeData && !resolveSettings(axes)) {
+    return <ToolbarSkeleton data-testid="export-skeleton" />
+  }
 
   const icon = <DownloadIcon width={16} height={16} />
   if (single) {

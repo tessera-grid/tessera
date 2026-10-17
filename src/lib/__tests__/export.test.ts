@@ -18,6 +18,7 @@ import { csvFormat } from '../plugins/dataExportModel/csv'
 import { collectExportData } from '../plugins/dataExportModel/exportData'
 import { rowLabel } from '../plugins/dataExport/rowLabel'
 import {
+  axesBeforeData,
   resolveAxes,
   resolveSettings,
   type ExportAxes,
@@ -25,6 +26,11 @@ import {
 import { pagination } from '../plugins/pagination'
 import { rowGrouping } from '../plugins/rowGrouping'
 import { rowSelection } from '../plugins/rowSelection'
+
+// Скачивание — браузерное (`<a download>`): в node его нет, выгрузку видно по `onExported`.
+vi.mock('../plugins/dataExportModel/download', () => ({
+  downloadFile: vi.fn(),
+}))
 
 interface Item {
   id: string
@@ -60,12 +66,15 @@ const build = ({
   plugins = [] as any[],
   state,
   enableToolbar = true,
+  options,
 }: {
   data?: unknown[]
   columns?: any[]
   plugins?: any[]
   state?: Record<string, unknown>
   enableToolbar?: boolean
+  /** Опции таблицы поверх сборки (`loading`, `logLevel`). */
+  options?: Record<string, unknown>
 } = {}) => {
   const entries = [
     {
@@ -87,6 +96,7 @@ const build = ({
     logLevel: 'error',
     ...(state ? { state } : {}),
     enableToolbar,
+    ...options,
   } as never) as any
 }
 
@@ -416,6 +426,67 @@ describe('dataExport — серверный режим и exportData', () => {
       expect(error).toHaveBeenCalledTimes(3)
     } finally {
       error.mockRestore()
+    }
+  })
+})
+
+describe('dataExport — до прихода данных (ADR 0122)', () => {
+  const plugins = (options: Record<string, unknown> = {}) => [
+    dataExport(options),
+    columnSorting(),
+    pagination(),
+    rowSelection(),
+  ]
+
+  it('TF7: до данных клиентские значения оси «Строки» недоступны, выбрано первое доступное', () => {
+    const selection = { rowSelection: { '1': true } }
+    const server = build({
+      plugins: plugins({ server: true, onExport: () => {} }),
+      state: selection,
+    })
+    const serverAxes = axesBeforeData(server, resolveAxes(server)!)
+    // С сервером клиентская — только страница.
+    expect(disabled(serverAxes.rows)).toEqual(['page'])
+    expect(resolveSettings(serverAxes, { rows: 'page' })!.rows).toBe('all')
+
+    const client = build({ plugins: plugins(), state: selection })
+    const clientAxes = axesBeforeData(client, resolveAxes(client)!)
+    expect(disabled(clientAxes.rows)).toEqual([
+      'all',
+      'view',
+      'page',
+      'selected',
+    ])
+    expect(resolveSettings(clientAxes)).toBeUndefined()
+    // Остальные оси не трогаются.
+    expect(clientAxes.columns).toEqual(resolveAxes(client)!.columns)
+  })
+
+  it('TF12: table.exportData() до данных клиентской выгрузкой не блокируется; в dev — предупреждение', async () => {
+    const onExported = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const table = build({
+        data: [],
+        plugins: [dataExport({ onExported })],
+        options: { loading: 'initial', logLevel: 'warn' },
+      })
+      await table.exportData()
+      expect(onExported).toHaveBeenCalledTimes(1)
+      expect(onExported.mock.calls[0][0].rowCount).toBe(0)
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0][0]).toContain('до прихода данных')
+
+      // Данные пришли — предупреждения нет.
+      warn.mockClear()
+      await build({
+        plugins: [dataExport({ onExported })],
+        options: { loading: false, logLevel: 'warn' },
+      }).exportData()
+      expect(onExported).toHaveBeenCalledTimes(2)
+      expect(warn).not.toHaveBeenCalled()
+    } finally {
+      warn.mockRestore()
     }
   })
 })
