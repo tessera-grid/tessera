@@ -23,7 +23,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
 
-/** Ядро грида: все тумблеры, загрузка, заглушка, футер, подписи и иконки. */
+/** Ядро грида: все тумблеры, загрузка, заглушка, подписи и иконки. */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -77,16 +77,6 @@ export const Stub: StoryObj<StoryProps> = {
     containerHeight: '460',
     height: '360',
     showStub: true,
-  },
-}
-
-export const WithFooter: StoryObj<StoryProps> = {
-  name: 'Footer',
-  parameters: { ...vrStates('head.footer'), ...showControls(['enableFooter']) },
-  args: {
-    // Только колонки моков: Total — последняя, её сумма — в футере.
-    columnCount: 7,
-    enableFooter: true,
   },
 }
 

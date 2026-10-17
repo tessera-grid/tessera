@@ -118,8 +118,8 @@ export const inCategory = <T extends Record<string, InputType>>(
 // --- Данные и размеры ---------------------------------------------------------
 
 export const columnCountType = numberControl(
-  'Количество колонок мока',
-  { min: 1, max: 1000, step: 5 },
+  'Количество колонок мока; 0 — колонки ещё не пришли с сервера (`columns: []`)',
+  { min: 0, max: 1000, step: 5 },
   STORY_PARAM,
 )
 export const dataCountType = numberControl(

@@ -25,7 +25,7 @@ import {
 
 // Футер колонок и его положение (ADR 0118, FT1–FT2, FT4–FT13, FT15–FT16): закреплённый
 // у низа области, незакреплённый за последней строкой. FT3 — `play` истории
-// «Panels/Footer — Position switch», FT14 — перф в `scroll`.
+// «Core/Footer — Position switch», FT14 — перф в `scroll`.
 
 const fx = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>

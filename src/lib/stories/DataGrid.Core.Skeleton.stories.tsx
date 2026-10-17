@@ -140,9 +140,7 @@ const DATA_ARRIVES_ARGS = {
   pinFirstColumn: true,
   enableFooter: true,
   enablePagination: true,
-  enableColumnVisibility: true,
   enableQuickSearch: true,
-  enableDataExport: true,
 } satisfies Partial<StoryProps>
 
 const DATA_ARRIVES_CONTROLS = [
@@ -160,33 +158,21 @@ const DATA_ARRIVES_CONTROLS = [
   'pinFirstColumn',
   'enableFooter',
   'enablePagination',
-  'enableColumnVisibility',
   'enableQuickSearch',
-  'enableDataExport',
 ]
 
 /**
- * Скелет первой загрузки в покое: размеры области и таблицы, число колонок. Снимок
- * каталога состояния `body.skeleton`.
+ * Скелет первой загрузки в покое — снимок каталога `body.skeleton`. Песочница фичи:
+ * контролы всех её сценариев и `loading` — скелет, свечение обновления или данные.
  */
 export const SkeletonDefault: StoryObj<StoryProps> = {
   name: 'Default',
   parameters: {
     ...vrStates('body.skeleton'),
-    ...showControls([], {
-      dataCount: 'Данных нет: скелет до ответа сервера',
-      defaultColumn:
-        'Ширина колонок — не размер таблицы; её скелет повторяет в Data arrives',
-    }),
+    ...showControls(['loading', 'refreshOptions', ...DATA_ARRIVES_CONTROLS]),
   },
-  args: { ...FIXED_HEIGHT },
-  render: args => (
-    <StoryComponent
-      {...normalizeArgs(args)}
-      loading="initial"
-      dataOverride={[]}
-    />
-  ),
+  args: { ...DATA_ARRIVES_ARGS, loading: 'initial' },
+  render: args => <StoryComponent {...normalizeArgs(args)} />,
 }
 
 /**

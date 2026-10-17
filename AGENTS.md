@@ -649,7 +649,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `pinned` у низа области и в короткой таблице, `inline` за последней строкой, вид,
       закреплённые колонки, клавиатура, `scrollToRow`, пагинация, лента и заглушки до или
       после футера, скелет, движение строк, axe, грид без высоты), `play` истории
-      «Panels/Footer — Position switch» (FT3), перф FT14 — в `scroll`
+      «Core/Footer — Position switch» (FT3), перф FT14 — в `scroll`
       ([ADR 0118](docs/decisions/0118-column-footer.md)).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
       панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),

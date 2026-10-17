@@ -1,22 +1,26 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
+import { definePlugin } from '../core/definePlugin'
+import type { ScrollToRowOptions } from '../core/scrollToRow/scrollToRowFeature'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
+import { vrStates } from './__mocks__/catalog'
 import { guideNext, settle, until } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 
 /**
- * Футер колонок и его положение (ADR 0118): по истории на клиентский сценарий S1–S5.
+ * Футер колонок и его положение (ADR 0118): вид для каталога и по истории на клиентский
+ * сценарий S1–S9.
  * `footerPosition` — `pinned` (у низа области) или `inline` (за последней строкой);
  * сценарий проигрывается панелью над гридом, в тестах шаги проходит `play` (ADR 0117).
  */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/DataGrid/Panels/Footer',
+  title: 'Tessera/DataGrid/Core/Footer',
 } satisfies Meta<StoryProps>
 
 export default meta
@@ -34,6 +38,30 @@ const FOOTER_ARGS = {
   columnCount: 7,
   enableFooter: true,
 } satisfies Partial<StoryProps>
+
+/**
+ * Вид строки итогов для каталога: грид по содержимому, сумма Total — в футере. Песочница
+ * фичи: контролы всех её сценариев.
+ */
+export const FooterDefault: StoryObj<StoryProps> = {
+  name: 'Default',
+  parameters: {
+    ...vrStates('head.footer'),
+    ...showControls([
+      'enableFooter',
+      'footerPosition',
+      'enableKeyboardNavigation',
+      'enablePagination',
+      'paginationInitialPageSize',
+      'enableQuickSearch',
+      'enableInfiniteScroll',
+    ]),
+  },
+  args: {
+    columnCount: 7,
+    enableFooter: true,
+  },
+}
 
 // --- Чтение грида в `play` и шагах -------------------------------------------------
 
@@ -398,6 +426,299 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
       await expect(rect(errorRow()!).top).toBeGreaterThanOrEqual(
         rect(footer).bottom - 1,
       )
+    })
+    await settle()
+  },
+}
+
+// --- S6 ------------------------------------------------------------------------------
+
+const PAGES: readonly GuideStoryStep[] = [
+  {
+    title: 'Первая страница',
+    hint: "footerPosition: 'inline' — итоги сразу за последней строкой страницы.",
+  },
+  {
+    title: 'Последняя страница',
+    hint: "На странице две строки — итоги поднимаются за вторую. В 'pinned' итоги остались бы у низа области.",
+    enter: root =>
+      root.querySelector<HTMLElement>('[data-page-action="last"]')?.click(),
+  },
+]
+
+/** S6: итоги за последней строкой каждой страницы. */
+export const InlineFooterPagination: StoryObj<StoryProps> = {
+  name: 'Inline — pagination',
+  parameters: {
+    scenario: '0118/S6',
+    ...showControls([
+      'enableFooter',
+      'footerPosition',
+      'enablePagination',
+      'paginationInitialPageSize',
+    ]),
+  },
+  args: {
+    ...FOOTER_ARGS,
+    dataCount: 12,
+    footerPosition: 'inline',
+    enablePagination: true,
+    paginationInitialPageSize: 5,
+  },
+  render: args => (
+    <GuideStory
+      title="Итоги на каждой странице"
+      steps={PAGES}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const rows = () => canvas.querySelectorAll('.data-grid__body-row')
+    await step(PAGES[0].title, async () => {
+      await waitRows(canvas)
+      await until(() => expect(rows()).toHaveLength(5))
+      near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom)
+    })
+    await step(PAGES[1].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rows()).toHaveLength(2))
+      await until(() =>
+        near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom),
+      )
+    })
+    await settle()
+  },
+}
+
+// --- S7 ------------------------------------------------------------------------------
+
+interface ScrollApi {
+  scrollToRow: (rowId: string, options?: ScrollToRowOptions) => Promise<boolean>
+}
+
+let scrollApi: ScrollApi | null = null
+
+/** Отдаёт таблицу шагам истории — как приложение держит ссылку на неё. */
+const scrollToRowHost = definePlugin<{ enabled?: boolean }>()({
+  id: 'footerScrollToRowHost',
+  setup: () => table => {
+    scrollApi = table as unknown as ScrollApi
+    return () => {
+      scrollApi = null
+    }
+  },
+})
+
+const SCROLL_ROWS = 100
+const LAST_ROW_ID = `item-id-${SCROLL_ROWS - 1}`
+const scrollToRowEnd = (rowId: string) =>
+  afterRows(() => void scrollApi?.scrollToRow(rowId, { align: 'end' }))
+
+const SCROLL: readonly GuideStoryStep[] = [
+  {
+    title: 'Начало таблицы',
+    hint: "footerPosition: 'inline' — итоги за последней строкой, сейчас их не видно.",
+  },
+  {
+    title: 'Строка в середине — по низу',
+    hint: "scrollToRow('item-id-50', { align: 'end' }) — строка у низа области, итоги по-прежнему за краем.",
+    enter: scrollToRowEnd('item-id-50'),
+  },
+  {
+    title: 'Последняя строка — по низу',
+    hint: 'Последняя строка встаёт над итогами, и итоги видны целиком, а не прячутся за край.',
+    enter: scrollToRowEnd(LAST_ROW_ID),
+  },
+]
+
+/** S7: приложение ведёт к строке по низу области — итоги не прячутся за край. */
+export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
+  name: 'Inline — scroll to row',
+  parameters: {
+    scenario: '0118/S7',
+    ...showControls(['enableFooter', 'footerPosition']),
+  },
+  args: {
+    ...FOOTER_ARGS,
+    dataCount: SCROLL_ROWS,
+    footerPosition: 'inline',
+    extraPlugins: [scrollToRowHost()],
+  },
+  render: args => (
+    <GuideStory
+      title="Прокрутка к строке при итогах за строками"
+      steps={SCROLL}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const rowById = (id: string) =>
+      canvas.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${id}"]`,
+      )
+    await step(SCROLL[0].title, async () => {
+      await waitRows(canvas)
+      await until(() => expect(scrollApi).not.toBeNull())
+      await expect(rect(footerOf(canvas)).top).toBeGreaterThanOrEqual(
+        clientBottom(canvas),
+      )
+    })
+    await step(SCROLL[1].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        near(rect(rowById('item-id-50')!).bottom, clientBottom(canvas)),
+      )
+      await expect(rect(footerOf(canvas)).top).toBeGreaterThanOrEqual(
+        clientBottom(canvas) - 1,
+      )
+    })
+    await step(SCROLL[2].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        near(rect(rowById(LAST_ROW_ID)!).bottom, rect(footerOf(canvas)).top),
+      )
+      near(rect(footerOf(canvas)).bottom, clientBottom(canvas))
+    })
+    await settle()
+  },
+}
+
+// --- S8 ------------------------------------------------------------------------------
+
+/** Ввод в поле поиска — как набор пользователя: React слышит событие `input`. */
+const typeSearch = (text: string) => (root: HTMLElement) => {
+  const input = root.querySelector<HTMLInputElement>(
+    '[data-testid="quick-search"]',
+  )
+  if (!input) return
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!.call(input, text)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const SEARCH: readonly GuideStoryStep[] = [
+  {
+    title: 'Итоги за строками',
+    hint: "footerPosition: 'inline' — итоги сразу за последней строкой.",
+  },
+  {
+    title: 'Поиск без совпадений',
+    hint: "Строк нет: итоги встают под шапку, заглушка — под итогами. В 'pinned' заглушка над итогами, а итоги у низа области.",
+    enter: typeSearch('zzz'),
+  },
+]
+
+/** S8: поиск ничего не нашёл — заглушка и итоги не накладываются. */
+export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
+  name: 'Inline — empty search',
+  parameters: {
+    scenario: '0118/S8',
+    ...showControls(['enableFooter', 'footerPosition', 'enableQuickSearch']),
+  },
+  args: {
+    ...FOOTER_ARGS,
+    dataCount: 30,
+    footerPosition: 'inline',
+    enableQuickSearch: true,
+  },
+  render: args => (
+    <GuideStory
+      title="Итоги и заглушка поиска"
+      steps={SEARCH}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const stub = () =>
+      canvas.querySelector<HTMLElement>('[data-testid="filter-stub"]')
+    const head = () => canvas.querySelector<HTMLElement>('.data-grid__head')!
+    await step(SEARCH[0].title, async () => {
+      await waitRows(canvas)
+      await until(() =>
+        expect(
+          canvas.querySelector('[data-testid="quick-search"]'),
+        ).not.toBeNull(),
+      )
+    })
+    await step(SEARCH[1].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(stub()).not.toBeNull())
+      const footer = footerOf(canvas)
+      near(rect(footer).top, rect(head()).bottom)
+      await expect(
+        footer.compareDocumentPosition(stub()!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      await expect(rect(stub()!).top).toBeGreaterThanOrEqual(
+        rect(footer).bottom - 1,
+      )
+    })
+    await settle()
+  },
+}
+
+// --- S9 ------------------------------------------------------------------------------
+
+const AUTO_HEIGHT: readonly GuideStoryStep[] = [
+  {
+    title: 'Закреплённые итоги',
+    hint: "Высота грида не задана — он по содержимому, прокрутки нет: в 'pinned' итоги сразу под строками.",
+  },
+  {
+    title: 'Незакреплённые итоги',
+    hint: "Приложение меняет footerPosition на 'inline' — раскладка та же, пустого места над итогами нет.",
+    props: () => ({ footerPosition: 'inline' }),
+  },
+]
+
+/** S9: короткая таблица без высоты — итоги одинаковы в обоих режимах. */
+export const FooterAutoHeight: StoryObj<StoryProps> = {
+  name: 'Auto height',
+  parameters: {
+    scenario: '0118/S9',
+    ...showControls(['enableFooter', 'footerPosition']),
+  },
+  args: {
+    columnCount: 7,
+    dataCount: 4,
+    enableFooter: true,
+    footerPosition: 'pinned',
+  },
+  render: args => (
+    <GuideStory
+      title="Итоги в гриде без высоты"
+      steps={AUTO_HEIGHT}
+      args={normalizeArgs(args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const head = () => canvas.querySelector<HTMLElement>('.data-grid__head')!
+    const footerOffset = () => rect(footerOf(canvas)).top - rect(head()).top
+    let offset = 0
+    await step(AUTO_HEIGHT[0].title, async () => {
+      await waitRows(canvas)
+      await until(() =>
+        near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom),
+      )
+      const scroller = scrollerOf(canvas)
+      await expect(scroller.scrollHeight).toBeLessThanOrEqual(
+        scroller.clientHeight,
+      )
+      offset = footerOffset()
+    })
+    await step(AUTO_HEIGHT[1].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(footerOf(canvas).dataset.position).toBe('inline'),
+      )
+      near(footerOffset(), offset)
+      near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom)
     })
     await settle()
   },
