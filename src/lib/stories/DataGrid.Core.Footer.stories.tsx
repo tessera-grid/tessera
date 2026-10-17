@@ -7,9 +7,8 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import { guideNext, settle, until } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /**
  * Футер колонок и его положение (ADR 0118): вид для каталога и по истории на клиентский
@@ -120,19 +119,23 @@ const PINNED: readonly GuideStoryStep[] = [
   },
 ]
 
+const PINNED_FOOTER_ARGS = {
+  ...FOOTER_ARGS,
+  footerPosition: 'pinned',
+} satisfies Partial<StoryProps>
+
 /** S1: длинная таблица с закреплёнными итогами — они видны при любой прокрутке. */
 export const PinnedFooter: StoryObj<StoryProps> = {
   name: 'Pinned',
   parameters: {
     scenario: '0118/S1',
-    ...showControls(['enableFooter', 'footerPosition']),
+    ...guideControls(),
   },
-  args: { ...FOOTER_ARGS, footerPosition: 'pinned' },
   render: args => (
     <GuideStory
       title="Итоги всегда видны"
       steps={PINNED}
-      args={normalizeArgs(args)}
+      args={guideArgs(PINNED_FOOTER_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -167,19 +170,23 @@ const INLINE: readonly GuideStoryStep[] = [
   },
 ]
 
+const INLINE_FOOTER_ARGS = {
+  ...FOOTER_ARGS,
+  footerPosition: 'inline',
+} satisfies Partial<StoryProps>
+
 /** S2: итоги как последняя строка отчёта — до них докручивают. */
 export const InlineFooter: StoryObj<StoryProps> = {
   name: 'Inline',
   parameters: {
     scenario: '0118/S2',
-    ...showControls(['enableFooter', 'footerPosition']),
+    ...guideControls(),
   },
-  args: { ...FOOTER_ARGS, footerPosition: 'inline' },
   render: args => (
     <GuideStory
       title="Итоги за последней строкой"
       steps={INLINE}
-      args={normalizeArgs(args)}
+      args={guideArgs(INLINE_FOOTER_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -216,28 +223,25 @@ const SWITCH: readonly GuideStoryStep[] = [
   },
 ]
 
+const FOOTER_POSITION_SWITCH_ARGS = {
+  ...FOOTER_ARGS,
+  footerPosition: 'pinned',
+  enableKeyboardNavigation: true,
+} satisfies Partial<StoryProps>
+
 /** S3: приложение переключает положение итогов на лету. */
 export const FooterPositionSwitch: StoryObj<StoryProps> = {
   name: 'Position switch',
   parameters: {
     scenario: '0118/S3',
     requirements: ['FT3'],
-    ...showControls([
-      'enableFooter',
-      'footerPosition',
-      'enableKeyboardNavigation',
-    ]),
-  },
-  args: {
-    ...FOOTER_ARGS,
-    footerPosition: 'pinned',
-    enableKeyboardNavigation: true,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Смена положения итогов"
       steps={SWITCH}
-      args={normalizeArgs(args)}
+      args={guideArgs(FOOTER_POSITION_SWITCH_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -311,27 +315,24 @@ const KEYBOARD: readonly GuideStoryStep[] = [
   },
 ]
 
+const FOOTER_KEYBOARD_ARGS = {
+  ...FOOTER_ARGS,
+  footerPosition: 'inline',
+  enableKeyboardNavigation: true,
+} satisfies Partial<StoryProps>
+
 /** S4: стрелкой — до итогов, которые не закреплены. */
 export const FooterKeyboard: StoryObj<StoryProps> = {
   name: 'Keyboard',
   parameters: {
     scenario: '0118/S4',
-    ...showControls([
-      'enableFooter',
-      'footerPosition',
-      'enableKeyboardNavigation',
-    ]),
-  },
-  args: {
-    ...FOOTER_ARGS,
-    footerPosition: 'inline',
-    enableKeyboardNavigation: true,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Итоги с клавиатуры"
       steps={KEYBOARD}
-      args={normalizeArgs(args)}
+      args={guideArgs(FOOTER_KEYBOARD_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -385,24 +386,25 @@ const FEED: readonly GuideStoryStep[] = [
   },
 ]
 
+const INLINE_FOOTER_INFINITE_SCROLL_ARGS = {
+  ...FOOTER_ARGS,
+  dataCount: 30,
+  footerPosition: 'inline',
+  enableInfiniteScroll: true,
+} satisfies Partial<StoryProps>
+
 /** S5: лента с незакреплёнными итогами — ошибка догрузки встаёт под ними. */
 export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
   name: 'Inline — infinite scroll',
   parameters: {
     scenario: '0118/S5',
-    ...showControls(['enableFooter', 'footerPosition', 'enableInfiniteScroll']),
-  },
-  args: {
-    ...FOOTER_ARGS,
-    dataCount: 30,
-    footerPosition: 'inline',
-    enableInfiniteScroll: true,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Ошибка ленты под итогами"
       steps={FEED}
-      args={normalizeArgs(args)}
+      args={guideArgs(INLINE_FOOTER_INFINITE_SCROLL_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -446,30 +448,26 @@ const PAGES: readonly GuideStoryStep[] = [
   },
 ]
 
+const INLINE_FOOTER_PAGINATION_ARGS = {
+  ...FOOTER_ARGS,
+  dataCount: 12,
+  footerPosition: 'inline',
+  enablePagination: true,
+  paginationInitialPageSize: 5,
+} satisfies Partial<StoryProps>
+
 /** S6: итоги за последней строкой каждой страницы. */
 export const InlineFooterPagination: StoryObj<StoryProps> = {
   name: 'Inline — pagination',
   parameters: {
     scenario: '0118/S6',
-    ...showControls([
-      'enableFooter',
-      'footerPosition',
-      'enablePagination',
-      'paginationInitialPageSize',
-    ]),
-  },
-  args: {
-    ...FOOTER_ARGS,
-    dataCount: 12,
-    footerPosition: 'inline',
-    enablePagination: true,
-    paginationInitialPageSize: 5,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Итоги на каждой странице"
       steps={PAGES}
-      args={normalizeArgs(args)}
+      args={guideArgs(INLINE_FOOTER_PAGINATION_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -532,24 +530,25 @@ const SCROLL: readonly GuideStoryStep[] = [
   },
 ]
 
+const INLINE_FOOTER_SCROLL_TO_ROW_ARGS = {
+  ...FOOTER_ARGS,
+  dataCount: SCROLL_ROWS,
+  footerPosition: 'inline',
+  extraPlugins: [scrollToRowHost()],
+} satisfies Partial<StoryProps>
+
 /** S7: приложение ведёт к строке по низу области — итоги не прячутся за край. */
 export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
   name: 'Inline — scroll to row',
   parameters: {
     scenario: '0118/S7',
-    ...showControls(['enableFooter', 'footerPosition']),
-  },
-  args: {
-    ...FOOTER_ARGS,
-    dataCount: SCROLL_ROWS,
-    footerPosition: 'inline',
-    extraPlugins: [scrollToRowHost()],
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Прокрутка к строке при итогах за строками"
       steps={SCROLL}
-      args={normalizeArgs(args)}
+      args={guideArgs(INLINE_FOOTER_SCROLL_TO_ROW_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -612,24 +611,25 @@ const SEARCH: readonly GuideStoryStep[] = [
   },
 ]
 
+const INLINE_FOOTER_EMPTY_SEARCH_ARGS = {
+  ...FOOTER_ARGS,
+  dataCount: 30,
+  footerPosition: 'inline',
+  enableQuickSearch: true,
+} satisfies Partial<StoryProps>
+
 /** S8: поиск ничего не нашёл — заглушка и итоги не накладываются. */
 export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
   name: 'Inline — empty search',
   parameters: {
     scenario: '0118/S8',
-    ...showControls(['enableFooter', 'footerPosition', 'enableQuickSearch']),
-  },
-  args: {
-    ...FOOTER_ARGS,
-    dataCount: 30,
-    footerPosition: 'inline',
-    enableQuickSearch: true,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Итоги и заглушка поиска"
       steps={SEARCH}
-      args={normalizeArgs(args)}
+      args={guideArgs(INLINE_FOOTER_EMPTY_SEARCH_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -676,24 +676,25 @@ const AUTO_HEIGHT: readonly GuideStoryStep[] = [
   },
 ]
 
+const FOOTER_AUTO_HEIGHT_ARGS = {
+  columnCount: 7,
+  dataCount: 4,
+  enableFooter: true,
+  footerPosition: 'pinned',
+} satisfies Partial<StoryProps>
+
 /** S9: короткая таблица без высоты — итоги одинаковы в обоих режимах. */
 export const FooterAutoHeight: StoryObj<StoryProps> = {
   name: 'Auto height',
   parameters: {
     scenario: '0118/S9',
-    ...showControls(['enableFooter', 'footerPosition']),
-  },
-  args: {
-    columnCount: 7,
-    dataCount: 4,
-    enableFooter: true,
-    footerPosition: 'pinned',
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Итоги в гриде без высоты"
       steps={AUTO_HEIGHT}
-      args={normalizeArgs(args)}
+      args={guideArgs(FOOTER_AUTO_HEIGHT_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

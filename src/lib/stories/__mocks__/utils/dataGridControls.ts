@@ -369,6 +369,21 @@ export const showControls = (
 })
 
 /**
+ * Панель истории сценария с гайдом (ADR 0117, SN28): контролов нет — таблицу и её
+ * функции по шагам задаёт гайд, вариации — в песочнице `Default` фичи.
+ */
+export const guideControls = () =>
+  showControls(
+    [],
+    Object.fromEntries(
+      BASE_CONTROLS.map(name => [
+        name,
+        'Таблицу и её функции по шагам задаёт гайд; вариации — в Default',
+      ]),
+    ),
+  )
+
+/**
  * Вариант «auto» флага панели (ADR 0046): в Controls это строка радио, а до истории
  * `mapping` доносит `undefined` — тип аргумента после него.
  */

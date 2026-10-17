@@ -731,7 +731,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       ([ADR 0106](docs/decisions/0106-flag-and-predicate-naming.md)).
     - _Истории по сценариям:_ модульные `storyControls` (SN1–SN6 — базовый набор и свой
       список `showControls`, скрытие с причиной, заданные аргументы видны, подопция только с тумблером,
-      полная панель только в песочнице, условия базовых `dataCount`/`columnCount`)
+      полная панель только в песочнице, условия базовых `dataCount`/`columnCount`;
+      SN28 — у истории сценария с гайдом контролов нет, у файла есть `Default`)
       и `storyScenarios` (SN7–SN8 — у каждого сценария таблицы «Сценарии»
       ADR своя история с `parameters.scenario`, один к одному; SN11–SN13 — `play`
       истории сценария только в тестах каталога, мета без `play`, `*.dev.stories.tsx`

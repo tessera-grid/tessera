@@ -225,12 +225,41 @@ interface ArgType {
 }
 
 interface RawStory {
+  name?: string
   args?: Record<string, unknown>
   argTypes?: Record<string, ArgType>
   parameters?: {
+    scenario?: string
     controls?: { include?: string[] }
     controlsHidden?: Record<string, string>
   }
+}
+
+/**
+ * Файлы, чьи истории сценариев ещё показывают контролы (SN28): переводятся позже.
+ * Список только сокращается — переведённый файл из него убирается.
+ */
+const GUIDE_CONTROLS_LATER: Record<string, string> = {
+  'Console.dev.stories.tsx':
+    'песочницы обвязки консоли, без Default — переводятся позже',
+  'DataGrid.Cells.Selection.stories.tsx':
+    'истории сценариев с контролами — позже',
+  'DataGrid.Columns.Sorting.stories.tsx':
+    'истории сценариев с контролами — позже',
+  'DataGrid.Core.Stubs.stories.tsx': 'истории сценариев с контролами — позже',
+  'DataGrid.Export.stories.tsx': 'истории сценариев с контролами — позже',
+  'DataGrid.Filtering.stories.tsx': 'истории сценариев с контролами — позже',
+  'DataGrid.Panels.Pagination.stories.tsx':
+    'истории сценариев с контролами — позже',
+  'DataGrid.Panels.Toolbar.stories.tsx':
+    'истории сценариев с контролами — позже',
+  'DataGrid.PluginApi.stories.tsx': 'раздел без Default — переводится позже',
+  'DataGrid.Rows.Grouping.stories.tsx':
+    'истории сценариев с контролами — позже',
+  'DataGrid.Rows.Selection.stories.tsx':
+    'истории сценариев с контролами — позже',
+  'DataGrid.Rows.TreeData.stories.tsx':
+    'истории сценариев с контролами — позже',
 }
 
 interface StoryEntry {
@@ -376,6 +405,51 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
         return reason.trim() === '' ? [`${name}: без причины`] : []
       })
       expect(wrong).toEqual([])
+    },
+    STORIES_TIMEOUT,
+  )
+
+  it(
+    'SN28: история сценария с гайдом не показывает контролов — базовые скрыты с причиной, своего списка и args нет; у файла есть Default с контролами; список переводимых позже только сокращается',
+    async () => {
+      const stories = await sharedMetaStories()
+      const fileOf = (entry: StoryEntry) => entry.id.split(' ')[0]!
+      const scenarios = stories.filter(
+        entry => entry.story.parameters?.scenario,
+      )
+      const problems = (entry: StoryEntry) => {
+        const hidden = hiddenBase(entry)
+        return [
+          ...shown(entry).map(name => `${entry.id}: показан ${name}`),
+          ...BASE_CONTROLS.filter(name => !hidden[name]?.trim()).map(
+            name => `${entry.id}: базовый ${name} не скрыт с причиной`,
+          ),
+          ...(entry.story.args ? [`${entry.id}: есть args`] : []),
+        ]
+      }
+      const files = new Set(scenarios.map(fileOf))
+      const wrong = [...files].flatMap(file => {
+        const sandbox = stories.find(
+          entry =>
+            fileOf(entry) === file &&
+            entry.story.name === 'Default' &&
+            shown(entry).length > 0,
+        )
+        const found = [
+          ...scenarios
+            .filter(entry => fileOf(entry) === file)
+            .flatMap(problems),
+          ...(sandbox ? [] : [`${file}: нет Default с контролами`]),
+        ]
+        if (!(file in GUIDE_CONTROLS_LATER)) return found
+        return found.length === 0
+          ? [`${file}: переведён — уберите из списка позже`]
+          : []
+      })
+      const unknown = Object.keys(GUIDE_CONTROLS_LATER)
+        .filter(file => !files.has(file))
+        .map(file => `${file}: в списке позже, но историй сценариев нет`)
+      expect([...wrong, ...unknown]).toEqual([])
     },
     STORIES_TIMEOUT,
   )

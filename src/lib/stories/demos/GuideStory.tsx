@@ -7,7 +7,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
+import { dataGridMeta } from '../dataGridMeta'
 import { getData } from '../__mocks__/data'
+import { normalizeArgs } from '../__mocks__/utils/normalizeArgs'
 import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
 import { StoryConsole } from './StoryConsole'
 import { createConsoleLog } from './consoleLog'
@@ -27,6 +29,21 @@ export interface GuideStoryStep extends GuideStep {
   /** Шаг открывает грид заново: опции на время жизни таблицы (`initialPageSize`). */
   remount?: boolean
 }
+
+/**
+ * Аргументы грида истории сценария с гайдом (ADR 0117, SN27–SN28): умолчания меты и
+ * свои — аргументы Storybook, оставшиеся в URL или сессии, функции не включают; из
+ * них — только тема декоратора.
+ */
+export const guideArgs = (
+  own: Partial<StoryProps>,
+  storybook: Pick<StoryProps, 'colorMode'>,
+): StoryProps =>
+  normalizeArgs({
+    ...dataGridMeta.args,
+    ...own,
+    colorMode: storybook.colorMode,
+  } as StoryProps)
 
 export const GuideStory = ({
   title,

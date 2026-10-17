@@ -8,10 +8,10 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import { guideNext, settle, until } from './__mocks__/catalogPlay'
-import { expandAllType, skeletonOptionsType } from './__mocks__/utils/argTypes'
-import { BASE_CONTROLS, showControls } from './__mocks__/utils/dataGridControls'
+import { expandAllType } from './__mocks__/utils/argTypes'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -37,16 +37,6 @@ const FIXED_HEIGHT = {
   height: '500',
   maxHeight: '500',
 } as const
-
-/**
- * `skeletonOptions` в Controls истории сценария: загрузку задают шаги, поэтому контрол
- * не ждёт `loading: 'initial'` в аргументах. Условие меты снимает только `null`:
- * `undefined` Storybook при слиянии пропускает, а аргумент под ложным условием до
- * истории не доходит.
- */
-const SKELETON_OPTIONS_CONTROL = {
-  skeletonOptions: { ...skeletonOptionsType, if: null as unknown as undefined },
-}
 
 /** `expandAll` без переключателя — дерево шага «Иерархия данных» (как в `Tree data`). */
 const EXPAND_ALL_CONTROL = {
@@ -200,7 +190,12 @@ export const SkeletonDefault: StoryObj<StoryProps> = {
   name: 'Default',
   parameters: {
     ...vrStates('body.skeleton'),
-    ...showControls(['loading', 'refreshOptions', ...DATA_ARRIVES_CONTROLS]),
+    ...showControls([
+      'loading',
+      'refreshOptions',
+      ...DATA_ARRIVES_CONTROLS,
+      'paginationInitialPageSize',
+    ]),
   },
   args: { ...DATA_ARRIVES_ARGS, loading: 'initial' },
   argTypes: EXPAND_ALL_CONTROL,
@@ -227,27 +222,13 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
   parameters: {
     scenario: '0060/S1',
     requirements: ['SL6', 'SL2', 'SL8'],
-    ...showControls(
-      [],
-      Object.fromEntries(
-        BASE_CONTROLS.map(name => [
-          name,
-          'Таблицу и её функции по шагам задаёт гайд; вариации — в Default',
-        ]),
-      ),
-    ),
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Получение данных"
       steps={DATA_ARRIVES}
-      // Аргументы Storybook, оставшиеся в URL или сессии, функции не включают: только
-      // тема из декоратора.
-      args={normalizeArgs({
-        ...meta.args,
-        ...DATA_ARRIVES_ARGS,
-        colorMode: args.colorMode,
-      })}
+      args={guideArgs(DATA_ARRIVES_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -415,6 +396,13 @@ const LOW_AREA = '400'
 /** Меньше, чем помещается в низкую область: строки не доходят до низа. */
 const OWN_ROWS = 2
 
+/** Высокая область: по высоте помещается больше строк, чем страница шага 2. */
+const ROWS_COUNT_ARGS = {
+  containerHeight: '800',
+  height: '700',
+  maxHeight: '700',
+} satisfies Partial<StoryProps>
+
 const ROWS_COUNT: readonly GuideStoryStep[] = [
   {
     ...OPENED,
@@ -464,19 +452,13 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
   parameters: {
     scenario: '0060/S2',
     requirements: ['SL5'],
-    ...showControls([], {
-      columnCount: 'Число колонок на строки скелета не влияет',
-      dataCount:
-        'Строки данных приходят только в конце; сценарий — про строки скелета',
-      defaultColumn: 'Ширина колонок на строки скелета не влияет',
-    }),
+    ...guideControls(),
   },
-  args: { containerHeight: '800', height: '700', maxHeight: '700' },
   render: args => (
     <GuideStory
       title="Число строк скелета"
       steps={ROWS_COUNT}
-      args={normalizeArgs(args)}
+      args={guideArgs(ROWS_COUNT_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -555,6 +537,13 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
 
 const DEFAULT_COLUMNS = 8
 
+/** Шесть колонок с сервера — помещаются в область; без columnsCount (SL9). */
+const COLUMNS_COUNT_ARGS = {
+  ...FIXED_HEIGHT,
+  columnCount: 6,
+  skeletonOptions: { rowsCount: 'auto' },
+} satisfies Partial<StoryProps>
+
 const COLUMNS_COUNT: readonly GuideStoryStep[] = [
   {
     ...OPENED,
@@ -587,29 +576,13 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
   parameters: {
     scenario: '0060/S3',
     requirements: ['SL9'],
-    ...showControls(['skeletonOptions'], {
-      dataCount:
-        'Строки данных приходят только в конце; сценарий — про колонки скелета',
-      containerHeight: 'Высота области задана историей: сценарий — про колонки',
-      height: 'Высота таблицы задана историей: сценарий — про колонки',
-      maxHeight: 'Высота таблицы задана историей: сценарий — про колонки',
-      rowHeight: 'Высота строк на колонки скелета не влияет',
-      headerHeight: 'Высота шапки на колонки скелета не влияет',
-      defaultColumn:
-        'Ширина колонок таблицы видна на втором шаге и без контрола',
-    }),
+    ...guideControls(),
   },
-  args: {
-    columnCount: 6,
-    // Без columnsCount: число колонок неизвестно (SL9).
-    skeletonOptions: { rowsCount: 'auto' },
-  },
-  argTypes: SKELETON_OPTIONS_CONTROL,
   render: args => (
     <GuideStory
       title="Число колонок скелета"
       steps={COLUMNS_COUNT}
-      args={{ ...normalizeArgs(args), ...FIXED_HEIGHT }}
+      args={guideArgs(COLUMNS_COUNT_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
