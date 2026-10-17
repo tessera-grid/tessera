@@ -9,6 +9,7 @@ import { Skeleton } from '../../../../ui'
 import { DATA_GRID_THEME_CLASS } from '../../../core/themeVariables'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
+import { SKELETON_WAVE_ANIMATION } from '../../../grid/useSkeletonWave'
 import { Stories, getScroller } from '../helpers'
 import { snapshot } from './tree-lines-helpers'
 
@@ -86,11 +87,7 @@ const spreadOf = (places: number[]) => {
 const waveAnimations = () =>
   document
     .getAnimations()
-    .filter(animation =>
-      (animation as CSSAnimation).animationName?.includes(
-        'skeleton-frame-wave',
-      ),
-    )
+    .filter(animation => animation.id === SKELETON_WAVE_ANIMATION)
 /** Все блики — на долю прохода `progress`, на паузе. */
 const pauseAt = async (progress: number) => {
   for (const animation of waveAnimations()) {
@@ -232,11 +229,12 @@ describe('Общая волна скелетов (ADR 0121)', () => {
           20,
     )!
     const cell = bar.closest<HTMLElement>('[data-column-id]')!
-    const style = getComputedStyle(bar)
-    const x = Number.parseFloat(style.getPropertyValue('--tsr-skeleton-x'))
-    const y = Number.parseFloat(style.getPropertyValue('--tsr-skeleton-y'))
     const band = token('--tsr-comp-skeleton-wave-width')
     const box = bar.getBoundingClientRect()
+    // Место полоски в координатах содержимого рамки.
+    const origin = frame().getBoundingClientRect()
+    const x = box.left - origin.left + getScroller().scrollLeft
+    const y = box.top - origin.top
     // Доля прохода, на которой середина полосы — над серединой полоски.
     const centred =
       (box.width / 2 +

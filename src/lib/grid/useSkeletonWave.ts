@@ -11,6 +11,9 @@ const SETTLE_MS = 200
 
 const SKELETONS = `[${SKELETON_WAVE_ATTRIBUTE}]`
 
+/** `id` анимаций блика общей волны. */
+export const SKELETON_WAVE_ANIMATION = 'tsr-skeleton-wave'
+
 const numberOf = (
   style: CSSStyleDeclaration,
   name: string,
@@ -20,12 +23,43 @@ const numberOf = (
   return Number.isFinite(value) ? value : fallback
 }
 
+/** Время из CSS (`2.4s`, `500ms`) в мс. */
+const msOf = (value: string) => {
+  const number = Number.parseFloat(value)
+  if (!Number.isFinite(number)) return 0
+  return value.trim().endsWith('ms') ? number : number * 1000
+}
+
 /**
- * Общая волна скелетов рамки (ADR 0121). Блик каждого скелета едет на композиторе, у
- * всех — с одного момента (`startTime`); его путь — в координатах содержимого тела
- * (смещение в рамке плюс горизонтальная прокрутка), повторяясь с периодом прохода
- * рамки: на экране одна полоса при любой ширине таблицы, а прокрутка не меняет
- * переменных у прокручиваемых скелетов — их анимации не пересобираются. Работа — по
+ * Проход и задержка волны из токенов темы — через `transition` пробы в рамке: под
+ * `prefers-reduced-motion` тема обнуляет переходы, и волны нет.
+ */
+const PROBE_ATTRIBUTE = 'data-tsr-skeleton-wave-probe'
+
+const timingOf = (frame: HTMLElement) => {
+  const probe = document.createElement('span')
+  probe.setAttribute(PROBE_ATTRIBUTE, '')
+  probe.style.cssText =
+    'position:absolute;visibility:hidden;transition-property:transform;' +
+    'transition-duration:var(--tsr-comp-skeleton-frame-wave-duration);' +
+    'transition-delay:var(--tsr-comp-skeleton-wave-delay)'
+  frame.append(probe)
+  const style = getComputedStyle(probe)
+  const timing = {
+    duration: msOf(style.transitionDuration),
+    delay: msOf(style.transitionDelay),
+  }
+  probe.remove()
+  return timing
+}
+
+/**
+ * Общая волна скелетов рамки (ADR 0121). Блик каждого скелета — своя анимация WAAPI с
+ * числовыми кадрами: путь полосы в координатах содержимого тела (смещение в рамке плюс
+ * горизонтальная прокрутка, по модулю периода прохода) минус смещение скелета; у всех
+ * анимаций — один `startTime`, поэтому на экране одна наклонная полоса. Переменные в
+ * общих `@keyframes` композитор Chrome не подставляет — кадры числовые. Прокрутка не
+ * меняет смещений прокручиваемых скелетов — их анимации не пересобираются. Работа — по
  * событиям: новые скелеты, смена размера, прокрутка; в покое главный поток свободен.
  */
 export const useSkeletonWave = (
@@ -35,81 +69,87 @@ export const useSkeletonWave = (
   useIsomorphicLayoutEffect(() => {
     const frame = frameRef.current
     if (!active || !frame) return
-    // Начало волны — первый кадр синхронизации: в задержке до первого прохода полоса за
-    // краем, и подстройка первых скелетов не видна.
     let start: number | undefined
+    const animations = new Map<HTMLElement, Animation>()
     const written = new WeakMap<HTMLElement, string>()
-    const synced = new WeakSet<Element>()
-    let fresh: Element[] = []
-    let size = ''
+    let timingKey = ''
     let request = 0
     let settleUntil = 0
     let measuredAt = 0
 
+    const stopAll = () => {
+      animations.forEach(animation => animation.cancel())
+      animations.clear()
+    }
+
     const measure = () => {
       measuredAt = performance.now()
+      const timing = timingOf(frame)
+      if (timing.duration <= 0) {
+        stopAll()
+        return
+      }
+      const key = `${timing.duration} ${timing.delay}`
+      if (key !== timingKey) {
+        timingKey = key
+        animations.forEach(animation => animation.effect?.updateTiming(timing))
+      }
+
       const origin = frame.getBoundingClientRect()
       const scroll =
         frame.querySelector<HTMLElement>('.data-grid__container')?.scrollLeft ??
         0
       const style = getComputedStyle(frame)
-      const period =
-        origin.width +
-        numberOf(style, '--tsr-comp-skeleton-wave-width', 0) +
-        origin.height * numberOf(style, '--tsr-comp-skeleton-wave-tilt', 0)
+      const band = numberOf(style, '--tsr-comp-skeleton-wave-width', 0)
+      const tilt = numberOf(style, '--tsr-comp-skeleton-wave-tilt', 0)
+      const period = origin.width + band + origin.height * tilt
+      // Ушедшие из рамки скелеты — без анимаций: рамка не держит их узлы.
+      animations.forEach((animation, skeleton) => {
+        if (skeleton.isConnected) return
+        animation.cancel()
+        animations.delete(skeleton)
+      })
       const skeletons = [...frame.querySelectorAll<HTMLElement>(SKELETONS)]
       // Сначала все чтения, затем записи: одна раскладка на замер.
-      const offsets = skeletons.map(skeleton => {
+      const shifts = skeletons.map(skeleton => {
         const box = skeleton.getBoundingClientRect()
         const x = box.left - origin.left + scroll
         const wrapped = period > 0 ? ((x % period) + period) % period : x
-        return `${Math.round(wrapped)}px ${Math.round(box.top - origin.top)}px`
+        return Math.round(wrapped) + Math.round(box.top - origin.top) * tilt
       })
-      const frameSize = `${origin.width}px ${origin.height}px`
-      if (frameSize !== size) {
-        size = frameSize
-        frame.style.setProperty(
-          '--tsr-skeleton-frame-width',
-          `${origin.width}px`,
-        )
-        frame.style.setProperty(
-          '--tsr-skeleton-frame-height',
-          `${origin.height}px`,
-        )
-      }
+      const from = -band
+      const to = period - band
       skeletons.forEach((skeleton, index) => {
-        if (!synced.has(skeleton)) {
-          synced.add(skeleton)
-          fresh.push(skeleton)
+        const shift = shifts[index]!
+        const path = `${from - shift} ${to - shift}`
+        const current = animations.get(skeleton)
+        if (current && written.get(skeleton) === path) return
+        written.set(skeleton, path)
+        const keyframes = [
+          { transform: `translateX(${from - shift}px)` },
+          { transform: `translateX(${to - shift}px)` },
+        ]
+        if (current) {
+          ;(current.effect as KeyframeEffect).setKeyframes(keyframes)
+          return
         }
-        const offset = offsets[index]!
-        if (written.get(skeleton) === offset) return
-        written.set(skeleton, offset)
-        const [x, y] = offset.split(' ')
-        skeleton.style.setProperty('--tsr-skeleton-x', x!)
-        skeleton.style.setProperty('--tsr-skeleton-y', y!)
+        const animation = skeleton.animate(keyframes, {
+          ...timing,
+          iterations: Infinity,
+          easing: 'linear',
+          pseudoElement: '::after',
+        })
+        animation.id = SKELETON_WAVE_ANIMATION
+        start ??= (document.timeline.currentTime as number | null) ?? 0
+        animation.startTime = start
+        animations.set(skeleton, animation)
       })
-    }
-
-    // Новый скелет — в фазе: его анимации задаётся общий `startTime`. CSS-задержкой
-    // точно не выйдет — Chrome назначает старт анимации в одном из следующих кадров.
-    // Анимации документа — одним списком: вызов на скелет пересчитывал бы стили.
-    const sync = (frameStart: number) => {
-      if (!fresh.length) return
-      start ??= frameStart
-      const targets = new Set(fresh)
-      fresh = []
-      for (const animation of document.getAnimations()) {
-        const target = (animation.effect as KeyframeEffect | null)?.target
-        if (target && targets.has(target)) animation.startTime = start
-      }
     }
 
     // Кадр, в котором коммит уже замерен (MutationObserver после прокрутки), — без
     // повтора.
     const loop = (frameStart: number) => {
       if (measuredAt < frameStart) measure()
-      sync(frameStart)
       request =
         performance.now() < settleUntil ? requestAnimationFrame(loop) : 0
     }
@@ -117,11 +157,20 @@ export const useSkeletonWave = (
       settleUntil = performance.now() + SETTLE_MS
       if (!request) request = requestAnimationFrame(loop)
     }
-    const onMutation = () => {
+    // Проба замера сама меняет рамку — её записи не повод замерять снова.
+    const isProbe = (node: Node) =>
+      node instanceof Element && node.hasAttribute(PROBE_ATTRIBUTE)
+    const onMutation = (records: MutationRecord[]) => {
+      const real = records.some(
+        record =>
+          ![...record.addedNodes, ...record.removedNodes].every(isProbe),
+      )
+      if (!real) return
       measure()
       settle()
     }
 
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     measure()
     settle()
     const resize = new ResizeObserver(settle)
@@ -130,13 +179,14 @@ export const useSkeletonWave = (
     mutations.observe(frame, { childList: true, subtree: true })
     // Прокрутка не всплывает: слушаем все области рамки на погружении.
     frame.addEventListener('scroll', settle, { capture: true, passive: true })
+    motion.addEventListener('change', settle)
     return () => {
       cancelAnimationFrame(request)
       resize.disconnect()
       mutations.disconnect()
       frame.removeEventListener('scroll', settle, { capture: true })
-      frame.style.removeProperty('--tsr-skeleton-frame-width')
-      frame.style.removeProperty('--tsr-skeleton-frame-height')
+      motion.removeEventListener('change', settle)
+      stopAll()
     }
   }, [active, frameRef])
 }

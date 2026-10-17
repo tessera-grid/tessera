@@ -12,6 +12,7 @@ import { DEFAULT_LABELS } from '../../../core/localization'
 import { isSkeletonParentRow } from '../../../core/skeletonOptions'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
+import { SKELETON_WAVE_ANIMATION } from '../../../grid/useSkeletonWave'
 import { rowActionMenu, rowActions } from '../../../plugins'
 import { Stories, getScroller, humanClick } from '../helpers'
 import { statusBarDemoPlugins } from '../../statusBarDemo'
@@ -580,9 +581,27 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       }
       // Волна: проход рамки и пауза — от базовой длительности движения (×16 и ×10/3,
       // общая волна рамки, ADR 0121).
-      const wave = getComputedStyle(bar, '::after')
-      expect(wave.animationDuration).toBe('4.8s')
-      expect(wave.animationDelay).toBe('1s')
+      await expect
+        .poll(() =>
+          document
+            .getAnimations()
+            .find(
+              animation =>
+                animation.id === SKELETON_WAVE_ANIMATION &&
+                (animation.effect as KeyframeEffect).target === bar,
+            ),
+        )
+        .toBeDefined()
+      const wave = document
+        .getAnimations()
+        .find(
+          animation =>
+            animation.id === SKELETON_WAVE_ANIMATION &&
+            (animation.effect as KeyframeEffect).target === bar,
+        )!
+        .effect!.getComputedTiming()
+      expect(wave.duration).toBe(4800)
+      expect(wave.delay).toBe(1000)
       await screen.unmount()
 
       // Строка меню, пока раздел ждёт пунктов.
