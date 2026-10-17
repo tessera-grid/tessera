@@ -229,7 +229,13 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
     <GuideStory
       title="Получение данных"
       steps={DATA_ARRIVES}
-      args={normalizeArgs({ ...args, ...DATA_ARRIVES_ARGS })}
+      // Аргументы Storybook, оставшиеся в URL или сессии, функции не включают: только
+      // тема из декоратора.
+      args={normalizeArgs({
+        ...meta.args,
+        ...DATA_ARRIVES_ARGS,
+        colorMode: args.colorMode,
+      })}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

@@ -3,14 +3,16 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import * as skeletonStories from '../../DataGrid.Core.Skeleton.stories'
 import * as stories from '../../GuidePanel.dev.stories'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN26) — с движением: каталог
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27) — с движением: каталог
 // гоняет истории с уменьшенным движением, и порядок конфетти и сдвига виден только здесь.
 // SN16, SN18–SN20 — в `play` песочницы `Tessera/Dev/Guide panel`.
 
 const { GuidePanelCollapsed, GuidePanelManySteps, GuidePanelPlayground } =
   composeStories(stories)
+const { SkeletonDataArrives } = composeStories(skeletonStories)
 
 const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
@@ -238,8 +240,6 @@ describe('панель сценария (ADR 0117)', () => {
     expect(byId('guide-play').textContent).toContain('Воспроизвести')
     expect(Math.abs(firstFill() - paused)).toBeLessThan(0.02)
     expect(confetti()).toHaveLength(0)
-  })
-
 
     // «Воспроизвести» продолжает с того же места: заливка не начинается заново, и
     // шаг сменяется за оставшуюся долю шага, а не за целый.
@@ -257,6 +257,8 @@ describe('панель сценария (ADR 0117)', () => {
     expect(resumeTook).toBeLessThan(1500 * (1 - paused) + 400)
     // Конфетти пройденного шага догорают: следующий тест начинает без них.
     await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
+  })
+
   test('SN21: при уменьшенном движении — без конфетти, сдвига ряда и анимации раскрытия: шаг сменяется сразу', async () => {
     await motion.reducedMotion(true)
     try {
@@ -534,5 +536,48 @@ describe('панель сценария (ADR 0117)', () => {
     expect(samples).toBeGreaterThan(5)
     expect(moved).toBeGreaterThan(20)
     expect(drift).toBeLessThan(1.5)
+  })
+
+  test('SN27: история сценария со скрытыми контролами не берёт функции из оставшихся аргументов Storybook — линии дерева и колонка раскрытия появляются только на своих шагах', async () => {
+    await motion.reducedMotion(true)
+    try {
+      // Аргументы, оставшиеся в URL с тех пор, как у истории были контролы.
+      await render(<SkeletonDataArrives enableTreeLines enableRowExpanding />)
+      await expect.poll(() => byId('guide-next')).toBeTruthy()
+      byId('guide-toggle').click()
+      const elbows = () =>
+        [
+          ...document.querySelectorAll<HTMLElement>(
+            '.data-grid__body-cell--skeleton span[class]',
+          ),
+        ].filter(part => /elbow/i.test(part.className)).length
+      const expandColumn = () =>
+        document.querySelector('[data-column-id*="rowExpanding"]')
+      const goTo = async (step: number) => {
+        button('guide-next').click()
+        await expect
+          .poll(() => byId('guide-toggle').textContent)
+          .toContain(`шаг ${step} из`)
+      }
+      await goTo(2)
+      // «Иерархия данных»: подстроки есть, линий и колонки раскрытия ещё нет.
+      await goTo(3)
+      await expect
+        .poll(
+          () =>
+            document.querySelectorAll('.data-grid__body-row--skeleton').length,
+        )
+        .toBeGreaterThan(0)
+      expect(elbows()).toBe(0)
+      expect(expandColumn()).toBeNull()
+      // «Линии дерева» — линии появились, колонки раскрытия ещё нет.
+      await goTo(4)
+      await expect.poll(elbows).toBeGreaterThan(0)
+      expect(expandColumn()).toBeNull()
+      await goTo(5)
+      await expect.poll(expandColumn).not.toBeNull()
+    } finally {
+      await motion.reducedMotion(false)
+    }
   })
 })
