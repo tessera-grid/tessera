@@ -15,7 +15,7 @@ import { useIcons } from '../../ui/icons'
 import styles from './LoadError.module.css'
 
 interface RetryButtonProps {
-  onRetry: () => void
+  onRetry: (event?: unknown) => void
   pending: boolean
 }
 
@@ -45,7 +45,7 @@ interface LoadErrorBannerProps {
   shown: boolean
   reason?: string
   /** Повтор: плашка уходит, дальше видно свечение повтора. */
-  retry?: () => void
+  retry?: (event?: unknown) => void
   onDismiss: () => void
 }
 

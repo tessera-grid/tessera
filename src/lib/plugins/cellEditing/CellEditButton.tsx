@@ -5,6 +5,7 @@
  * нет (её место занял редактор во владельце cellSlot), как и пока сохранение ждёт
  * сервера. Ячейка подписана только на своё состояние, а не на весь срез.
  */
+import { sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
@@ -41,7 +42,7 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
     <CellButton
       title={labels.editCell}
       icon={<EditIcon width={16} height={16} />}
-      onClick={() => startEditSession(table, row, column)}
+      onClick={event => startEditSession(table, row, column, sourceOf(event))}
     />
   )
 }

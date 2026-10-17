@@ -2,6 +2,7 @@
  * Модель клавиатурной навигации: активная ячейка в модельных индексах, константы
  * DOM-атрибутов и duck-typed поверхность таблицы, которую читает шов.
  */
+import { type DebugActionSource, reportAction } from '../debugActions'
 import { pluginStateKey } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
 import type { KeyboardAction } from '../keyboardActions'
@@ -164,4 +165,14 @@ export const resolveActive = (t: NavTable, state: Record<string, unknown>) => {
     !isFooterRowIndex(t, active.rowIndex)
     ? { ...active, columnIndex: ROW_FOCUS_COLUMN }
     : active
+}
+
+/** Навигация — в канал действий от имени плагина клавиатуры (ADR 0125, AL5). */
+export const reportNavigation = (
+  table: unknown,
+  action: 'moveActiveCell' | 'enterActionMode' | 'exitActionMode',
+  source: DebugActionSource,
+  detail?: () => unknown,
+): void => {
+  reportAction(table, { plugin: KEYBOARD_NAVIGATION, action, source, detail })
 }

@@ -6,6 +6,7 @@
 // плейсхолдера ведёт состояние (`usePreloaded`), а не повтор Suspense-границы: React
 // может отложить этот повтор до следующего рендера кнопки, и тогда она сменится
 // посреди клика.
+import { actionDetailOf, actionOwnerOf } from '../../core/actionOwners'
 import { Suspense, useState } from 'react'
 import clsx from 'clsx'
 
@@ -177,8 +178,15 @@ export const ActionMenu = ({
   variant = 'cell',
 }: Pick<ActionMenuProps, 'actions' | 'context' | 'variant'>) => {
   const labels = useLocalization()
-  const menu = useLazyPopover(context.table, ActionMenuImpl, labels =>
-    variant === 'row' ? labels.rowMenu : labels.headerMenu,
+  const menu = useLazyPopover(
+    context.table,
+    ActionMenuImpl,
+    labels => (variant === 'row' ? labels.rowMenu : labels.headerMenu),
+    true,
+    {
+      plugin: variant === 'row' ? 'rowActionMenu' : 'headerActionMenu',
+      detail: () => actionDetailOf(context),
+    },
   )
   const activeCount = countActiveActions(actions, context)
   const label = variant === 'row' ? labels.rowMenu : labels.headerMenu
@@ -237,8 +245,15 @@ export const ActionInlineMenu = ({
   context,
   variant = 'cell',
 }: Omit<ActionInlineMenuProps, 'open' | 'onOpenChange'>) => {
-  const menu = useLazyPopover(context.table, ActionInlineMenuImpl, labels =>
-    action.label(context, labels),
+  const menu = useLazyPopover(
+    context.table,
+    ActionInlineMenuImpl,
+    labels => action.label(context, labels),
+    true,
+    {
+      plugin: actionOwnerOf(action),
+      detail: () => ({ ...actionDetailOf(context), action: action.id }),
+    },
   )
   const placeholder = (
     <InlinePlaceholder

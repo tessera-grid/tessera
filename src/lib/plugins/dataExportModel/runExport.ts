@@ -2,6 +2,7 @@
  * Запуск выгрузки (ADR 0044, §5–§7): клиентская выгрузка собирает данные, сериализует
  * и скачивает; серверная отдаёт запрос потребителю.
  */
+import { type ActionReport, reportOutcome } from '../../core/debugActions'
 import { logError, logWarn } from '../../core/logger'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { isThenable } from '../../core/thenable'
@@ -47,6 +48,7 @@ const invoke = (
   table: unknown,
   callback: ((request: ExportRequest) => void | Promise<void>) | undefined,
   request: ExportRequest,
+  outcome?: ActionReport,
 ): Promise<void> | undefined => {
   const fail = (error: unknown) =>
     logError(
@@ -55,6 +57,8 @@ const invoke = (
     )
   try {
     const result = callback?.(request)
+    // Итог — по промису колбэка: отказ ниже логируется и не пробрасывается (ADR 0125).
+    if (outcome) reportOutcome(table, outcome, result)
     if (isThenable(result)) {
       return Promise.resolve(result).then(undefined, fail)
     }
@@ -73,6 +77,8 @@ const invoke = (
 export const runExport = (
   table: unknown,
   settings: ExportSettings,
+  /** Действие, чей итог сообщить в канал действий (ADR 0125). */
+  outcome?: ActionReport,
 ): Promise<void> | undefined => {
   const hooks = hooksOf(table)
   const config = exportConfigOf(table)!
@@ -83,14 +89,19 @@ export const runExport = (
       id: column.id,
       header: headerOf(column),
     }))
-    return invoke(table, hooks.onExport, {
-      settings,
-      format,
-      columns,
-      ...(settings.rows === 'selected'
-        ? { rowIds: selectedRowIdsOf(table) }
-        : {}),
-    })
+    return invoke(
+      table,
+      hooks.onExport,
+      {
+        settings,
+        format,
+        columns,
+        ...(settings.rows === 'selected'
+          ? { rowIds: selectedRowIdsOf(table) }
+          : {}),
+      },
+      outcome,
+    )
   }
 
   const data = collectExportData(table, {
@@ -112,7 +123,7 @@ export const runExport = (
   const content = format.serialize(data)
   if (!isThenable(content)) return finish(content)
   // Асинхронный формат (xlsx): кнопка ждёт; отказ логируется и отклоняет промис.
-  return Promise.resolve(content).then(
+  const built = Promise.resolve(content).then(
     resolved => finish(resolved),
     (error: unknown) => {
       logError(
@@ -122,12 +133,15 @@ export const runExport = (
       throw error
     },
   )
+  if (outcome) reportOutcome(table, outcome, built)
+  return built
 }
 
 /** `table.exportData(arg?)` (EX30): тот же путь, что у «Выгрузить» в панели. */
 export const exportByArg = (
   table: unknown,
   arg?: string | Partial<ExportSettings>,
+  outcome?: ActionReport,
 ): Promise<void> => {
   const settings = settingsFromArg(table, arg)
   if (!settings) return Promise.resolve()
@@ -139,5 +153,5 @@ export const exportByArg = (
       'dataExport:beforeData',
     )
   }
-  return runExport(table, settings) ?? Promise.resolve()
+  return runExport(table, settings, outcome) ?? Promise.resolve()
 }

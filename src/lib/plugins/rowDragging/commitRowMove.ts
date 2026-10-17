@@ -3,6 +3,7 @@
  * ожидание его промиса, запись ленивого переноса в ответы и `data`, отказ — вспышка ручки
  * и объявление. Общий путь броска, клавиатуры и меню ручки.
  */
+import { reportOutcome } from '../../core/debugActions'
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
 import {
@@ -255,6 +256,8 @@ export const commitRowMove = (
     previousParentId: commit.previousParentId,
     index: commit.index,
   })
+  // Итог — с причиной: броском, клавишей или пунктом меню ручки этой задачи (ADR 0125).
+  reportOutcome(table, { plugin: 'rowDragging', action: 'commitMove' }, result)
   const attempt = ++lastAttempt
   if (!isThenable(result)) {
     if (lazy) {

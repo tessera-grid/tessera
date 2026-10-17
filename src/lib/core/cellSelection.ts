@@ -9,6 +9,7 @@
  * изменение store, но `shallowEqual` пропускает ре-рендер, пока членство ячейки
  * не изменилось. Без фичи selector возвращает `null` (стабилен → ноль ре-рендеров).
  */
+import { reportAction } from './debugActions'
 import { useTableState } from './reactivity'
 
 /** Результат `useCellSelection` — данные для DOM ячейки; `null` без плагина. */
@@ -48,6 +49,45 @@ interface CellSelectionCell {
 }
 
 const IGNORE = () => {}
+
+/**
+ * Начало выделения мышью — жест в канале действий (ADR 0125, AL18): начало сейчас,
+ * конец — при отпускании кнопки; с Shift — расширение выделения.
+ */
+const reportedStart = (table: unknown, cell: CellSelectionCell) => {
+  const start = cell.getSelectionStartHandler()
+  return (event: unknown) => {
+    const id = (cell as { id?: string }).id
+    if ((event as { shiftKey?: boolean }).shiftKey) {
+      reportAction(table, {
+        plugin: 'cellSelection',
+        action: 'extendSelection',
+        detail: { cellId: id },
+        source: 'pointer',
+      })
+    } else {
+      reportAction(table, {
+        plugin: 'cellSelection',
+        action: 'select',
+        detail: { cellId: id },
+        source: 'pointer',
+        phase: 'start',
+      })
+      document.addEventListener(
+        'mouseup',
+        () =>
+          reportAction(table, {
+            plugin: 'cellSelection',
+            action: 'select',
+            source: 'pointer',
+            phase: 'end',
+          }),
+        { once: true },
+      )
+    }
+    start(event)
+  }
+}
 
 interface Membership {
   isSelected: boolean
@@ -102,7 +142,7 @@ export const useCellSelection = (
   const interactive = table.options.cellSelectionInteraction === true
   return {
     ...membership,
-    onMouseDown: interactive ? c.getSelectionStartHandler() : IGNORE,
+    onMouseDown: interactive ? reportedStart(table, c) : IGNORE,
     onMouseEnter: interactive ? c.getSelectionExtendHandler() : IGNORE,
   }
 }

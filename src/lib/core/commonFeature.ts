@@ -22,6 +22,7 @@ import {
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
+import { createActionReporter } from './debugActions'
 import { optionTextOf } from './columnOptions'
 import {
   createPluginErrorRegistry,
@@ -85,6 +86,9 @@ export const commonFeature: TableFeature = {
               ? resizable.getIsResizing()
               : false
           }),
+      },
+      table_reportAction: {
+        fn: createActionReporter(() => options().onDebugAction),
       },
       table_announce: {
         fn: (message: string) => announce(table, message),

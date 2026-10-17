@@ -16,6 +16,7 @@ import { getHeaderOwner } from './header'
 import {
   type ActiveCell,
   KEYBOARD_NAVIGATION,
+  reportNavigation,
   type NavTable,
   ROW_FOCUS_COLUMN,
   SCROLLER_SELECTOR,
@@ -131,6 +132,10 @@ export const useKeyboardNavigationCell = (
         !owned &&
         (active.rowIndex !== rowIndex || active.columnIndex !== columnIndex)
       ) {
+        reportNavigation(t, 'moveActiveCell', 'pointer', () => ({
+          from: active,
+          to: { rowIndex, columnIndex },
+        }))
         setPluginState(t, KEYBOARD_NAVIGATION, { rowIndex, columnIndex })
       }
     },

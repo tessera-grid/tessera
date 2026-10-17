@@ -6,7 +6,9 @@
  */
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
+import { actionDetailOf, actionOwnerOf } from './actionOwners'
 import type { CellComponentProps, HeaderComponentProps } from './createSlots'
+import { reportAction } from './debugActions'
 
 interface KeyboardActionBase<TCtx> {
   /** Идентификатор; при свёртке дубли по id заменяются последним. */
@@ -89,3 +91,19 @@ export const hasExpandToggle = (table: unknown): boolean =>
       table as { getKeyboardActions?: () => KeyboardAction[] | undefined }
     ).getKeyboardActions?.() ?? []
   ).some(action => action.expands === true)
+
+/** Выполнить клавиатурное действие и сообщить его в канал действий (ADR 0125, AL4). */
+export const runKeyboardAction = (
+  table: unknown,
+  action: KeyboardAction,
+  ctx: unknown,
+  event: ReactKeyboardEvent<HTMLElement>,
+): void => {
+  reportAction(table, {
+    plugin: actionOwnerOf(action),
+    action: action.id,
+    detail: () => ({ ...actionDetailOf(ctx), key: keyComboOf(event) }),
+    source: 'keyboard',
+  })
+  action.run(ctx as never, event)
+}

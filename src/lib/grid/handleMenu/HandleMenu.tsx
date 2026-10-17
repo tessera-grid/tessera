@@ -51,6 +51,9 @@ export interface HandleMenuProps {
   /** Пункты вычисляются при открытии — по текущему порядку и ширинам. */
   getItems: () => HeaderMenuItem[]
   onClose: () => void
+  /** Таблица и плагин-владелец ручки — для канала действий (ADR 0125). */
+  table?: unknown
+  plugin: string
 }
 
 export const HandleMenu = ({
@@ -59,6 +62,8 @@ export const HandleMenu = ({
   label,
   getItems,
   onClose,
+  table,
+  plugin,
 }: HandleMenuProps) => {
   const [items] = useState(getItems)
   return (
@@ -69,6 +74,8 @@ export const HandleMenu = ({
         label={label}
         items={items}
         onClose={onClose}
+        table={table}
+        plugin={plugin}
       />
     </Suspense>
   )

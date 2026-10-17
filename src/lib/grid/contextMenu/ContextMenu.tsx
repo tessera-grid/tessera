@@ -3,6 +3,7 @@
 // первом наведении на тело грида или фокусе внутри него, а правый клик до загрузки
 // открывает меню после неё (ADR 0061, LZ6–LZ10). Рендерится DataGrid'ом при активном
 // плагине contextMenu (`enableContextMenu`). ADR 0030.
+import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
@@ -188,7 +189,12 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   useEffect(() => {
     const t = table as ContextMenuTable
     /** Открыть меню ячейки под `target` в точке; `false` — меню здесь нет (CM5). */
-    const openAt = (target: EventTarget | null, x: number, y: number) => {
+    const openAt = (
+      target: EventTarget | null,
+      x: number,
+      y: number,
+      source: DebugActionSource = 'pointer',
+    ) => {
       const scroller = getScrollElement()
       const cellEl = (target as Element | null)?.closest?.(CELL)
       const rowEl = cellEl?.closest?.('[data-row-id]')
@@ -214,6 +220,12 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         return false
       }
       const next = { x, y, actions, context }
+      reportAction(t, {
+        plugin: 'contextMenu',
+        action: 'openMenu',
+        detail: { rowId, columnId },
+        source,
+      })
       request(MENU_LOAD, () => {
         startChecks(actions, context)
         markActionErrorsSeen(context)
@@ -236,7 +248,9 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         }
         return
       }
-      if (openAt(event.target, event.clientX, event.clientY)) {
+      // Клавиша меню (Shift+F10) открывает его синтетическим `contextmenu` (ADR 0030).
+      const source = event.isTrusted ? 'pointer' : 'keyboard'
+      if (openAt(event.target, event.clientX, event.clientY, source)) {
         event.preventDefault()
       }
     }
@@ -349,6 +363,7 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         session={session}
         extendChecks={extendContextChecks}
         onClose={() => {
+          reportAction(table, { plugin: 'contextMenu', action: 'closeMenu' })
           session.stop()
           clearSeenActionErrors(state.context)
           setState(null)

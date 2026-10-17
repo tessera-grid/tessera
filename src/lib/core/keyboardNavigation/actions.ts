@@ -1,7 +1,8 @@
 /** Режим действия: виджеты ячейки, действия плагинов, фокус на строке treegrid. */
+import { reportNavigation } from './model'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-import type { KeyboardAction } from '../keyboardActions'
+import { type KeyboardAction, runKeyboardAction } from '../keyboardActions'
 import { getHeaderOwner } from './header'
 import { type ActiveCell, type NavTable, ROW_FOCUS_COLUMN } from './model'
 
@@ -87,7 +88,7 @@ const toggleRowExpansion = (
     const ctx = cell.getContext?.()
     const action = actions.find(a => a.visible?.(ctx as never) ?? true)
     if (ctx && action) {
-      action.run(ctx as never, event)
+      runKeyboardAction(t, action, ctx, event)
       return true
     }
   }
@@ -162,6 +163,7 @@ const POPUP_SELECTOR = '[role="menu"], [role="dialog"], [role="listbox"]'
 export const handleActionModeKey = (
   event: ReactKeyboardEvent<HTMLElement>,
   cell: HTMLElement,
+  table?: unknown,
 ) => {
   if (event.key === 'Escape' && !event.defaultPrevented) {
     // Escape во всплывающем окне виджета (меню, диалог) закрывает его само и
@@ -170,6 +172,7 @@ export const handleActionModeKey = (
       return
     }
     event.preventDefault()
+    reportNavigation(table, 'exitActionMode', 'keyboard')
     cell.focus({ preventScroll: true })
     return
   }

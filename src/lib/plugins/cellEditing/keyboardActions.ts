@@ -22,5 +22,6 @@ export const editCellKeyboardAction: CellKeyboardAction = {
       'cellEditing',
     ).canEditCell?.(ctx) ??
       true),
-  run: ({ row, column, table }) => startEditSession(table, row, column),
+  run: ({ row, column, table }) =>
+    startEditSession(table, row, column, 'keyboard'),
 }

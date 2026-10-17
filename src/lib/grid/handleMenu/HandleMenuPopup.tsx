@@ -17,6 +17,7 @@ import { GRID_SCROLL_REASON, useMenuLeave } from '../headerActions/useMenuLeave'
 
 import menuStyles from '../headerActions/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { reportAction, sourceOf } from '../../core/debugActions'
 
 export interface HandleMenuPopupProps {
   anchor: RefObject<HTMLElement | null>
@@ -25,6 +26,9 @@ export interface HandleMenuPopupProps {
   label: string
   items: HeaderMenuItem[]
   onClose: () => void
+  /** Таблица и плагин-владелец ручки — для канала действий (ADR 0125, AL4). */
+  table?: unknown
+  plugin: string
 }
 
 export const HandleMenuPopup = ({
@@ -33,6 +37,8 @@ export const HandleMenuPopup = ({
   label,
   items,
   onClose,
+  table,
+  plugin,
 }: HandleMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
@@ -75,7 +81,14 @@ export const HandleMenuPopup = ({
                   className={menuStyles.item}
                   disabled={item.disabled}
                   label={item.label}
-                  onClick={item.onSelect}
+                  onClick={event => {
+                    reportAction(table, {
+                      plugin,
+                      action: `handleMenu:${item.id}`,
+                      source: sourceOf(event),
+                    })
+                    item.onSelect()
+                  }}
                 >
                   <span className={menuStyles.itemLabel}>{item.label}</span>
                 </Menu.Item>

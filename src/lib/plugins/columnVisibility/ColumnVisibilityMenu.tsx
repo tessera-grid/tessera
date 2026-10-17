@@ -4,6 +4,7 @@
  * разворачивается в плоский список и виртуализируется: при тысячах колонок
  * рисуются только видимые строки (I4–I5).
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { type RefObject, useRef, useState } from 'react'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -72,9 +73,16 @@ const ColumnRow = ({
           indeterminate={state === 'indeterminate'}
           disabled={toggle === null}
           label={node.label}
-          onClick={() =>
-            toggle && setColumnsVisible(table, toggle.columnIds, toggle.visible)
-          }
+          onClick={event => {
+            if (!toggle) return
+            reportAction(table, {
+              plugin: 'columnVisibility',
+              action: 'toggleColumn',
+              detail: { columnIds: toggle.columnIds, visible: toggle.visible },
+              source: sourceOf(event),
+            })
+            setColumnsVisible(table, toggle.columnIds, toggle.visible)
+          }}
         />
         <Tooltip title={node.label} overflowOnly>
           <span className={styles.label}>{node.label}</span>
@@ -121,7 +129,15 @@ export const ColumnVisibilityMenu = ({
         value={query}
         placeholder={labels.searchColumns}
         aria-label={labels.searchColumns}
-        onChange={event => setQuery(event.target.value)}
+        onChange={event => {
+          reportAction(table, {
+            plugin: 'columnVisibility',
+            action: 'searchColumns',
+            detail: { query: event.target.value },
+            source: 'keyboard',
+          })
+          setQuery(event.target.value)
+        }}
       />
       {rows.length > 0 ? (
         <div ref={scrollRef} className={styles.scroller}>
@@ -149,11 +165,28 @@ export const ColumnVisibilityMenu = ({
         <Button
           variant="ghost"
           disabled={hiddenCount === 0}
-          onClick={() => setColumnsVisible(control, getShowAll(control), true)}
+          onClick={event => {
+            reportAction(table, {
+              plugin: 'columnVisibility',
+              action: 'showAll',
+              source: sourceOf(event),
+            })
+            setColumnsVisible(control, getShowAll(control), true)
+          }}
         >
           {labels.showAllColumns}
         </Button>
-        <Button variant="ghost" onClick={() => resetColumnsVisibility(control)}>
+        <Button
+          variant="ghost"
+          onClick={event => {
+            reportAction(table, {
+              plugin: 'columnVisibility',
+              action: 'reset',
+              source: sourceOf(event),
+            })
+            resetColumnsVisibility(control)
+          }}
+        >
           {labels.resetColumns}
         </Button>
       </div>

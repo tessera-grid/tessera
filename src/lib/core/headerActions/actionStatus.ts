@@ -3,7 +3,9 @@
  * ожидание и отказ промиса из `onSelect`. Ожидание и отказ — в срезе `actionStatus` по
  * ключу «цель + действие»; проверка доступности — в сессии открытого меню.
  */
+import { actionDetailOf, actionOwnerOf } from '../actionOwners'
 import { announceLabel } from '../announcer'
+import { reportAction, reportOutcome, sourceOf } from '../debugActions'
 import type { TableLabels } from '../localization'
 import { isThenable, rejectionText } from '../thenable'
 import {
@@ -68,7 +70,16 @@ export const runMenuAction = (
   const key = actionStatusKey(action, ctx)
   if (readActionStatus(table)[key]?.pending) return
 
+  // Канал действий (ADR 0125, AL4): владелец — плагин, из которого ядро собрало действие.
+  const report = {
+    plugin: actionOwnerOf(action),
+    action: action.id,
+    detail: () => actionDetailOf(ctx),
+    source: sourceOf(event),
+  }
+  const id = reportAction(table, report)
   const result = action.onSelect(ctx, event)
+  reportOutcome(table, { ...report, detail: undefined, cause: id }, result)
   // Вне грида (кнопка без таблицы) ожидать некому и объявлять негде.
   if (!isThenable(result) || !table) return
 

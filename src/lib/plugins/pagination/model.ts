@@ -2,6 +2,7 @@
  * Интерфейс пагинации (ADR 0038): зажим индекса, диапазон страниц, варианты размера и
  * смена страницы пользователем. Модель — `paginationModel`.
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PaginationState } from '@tanstack/react-table'
 
 import { runServerAction } from '../../core/serverActions'
@@ -48,6 +49,12 @@ export const changePageByUser = (
   pageSize: number,
   control: PageControl,
 ) => {
+  reportAction(table, {
+    plugin: 'pagination',
+    action: control === 'size' ? 'changePageSize' : 'changePage',
+    detail: { pageIndex, pageSize, control },
+    source: sourceOf(globalThis.event),
+  })
   const hooks = table.getHooks?.()?.pagination as
     Partial<PaginationHooks> | undefined
   runServerAction(

@@ -79,6 +79,16 @@ export {
   type PluginCellStateProps,
   type PluginCellOwnerProps,
 } from './lib/core/definePlugin'
+// Канал действий грида: опция `onDebugAction`, `table.reportAction` и итог промиса (ADR 0125).
+export {
+  reportAction,
+  reportOutcome,
+  sourceOf,
+  type ActionReport,
+  type DebugAction,
+  type DebugActionSource,
+  type OnDebugAction,
+} from './lib/core/debugActions'
 // Первая загрузка для компонентов слотов: значения из данных — скелетом (ADR 0060, SL21).
 export { isSkeletonShown } from './lib/core/skeletonOptions'
 // Заглушки пустой таблицы: записи реестра для `definePlugin({ stubs })` и проп `stubs` (ADR 0123).

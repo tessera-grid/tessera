@@ -2,6 +2,7 @@
  * Метод таблицы `table.exportData(arg?)` (ADR 0044, §7): программная выгрузка для
  * собственных кнопок потребителя.
  */
+import { reportAction } from '../../core/debugActions'
 import { assignTableAPIs } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures } from '../../types'
@@ -35,7 +36,19 @@ export const dataExportFeature: TableFeature = {
   constructTableAPIs: table => {
     assignTableAPIs('dataExportFeature', table, {
       table_exportData: {
-        fn: (arg?: string | Partial<ExportSettings>) => exportByArg(table, arg),
+        fn: (arg?: string | Partial<ExportSettings>) => {
+          const report = {
+            plugin: 'dataExportModel',
+            action: 'exportData',
+            detail: arg,
+          }
+          const id = reportAction(table, report)
+          return exportByArg(table, arg, {
+            ...report,
+            detail: undefined,
+            cause: id,
+          })
+        },
       },
     })
   },

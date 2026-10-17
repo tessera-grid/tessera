@@ -7,7 +7,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react'
 import { setPluginState } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
 import { isFooterInline } from '../footer'
-import { keyComboOf } from '../keyboardActions'
+import { keyComboOf, runKeyboardAction } from '../keyboardActions'
 import {
   ACTION_KEYS,
   findKeyboardAction,
@@ -31,6 +31,7 @@ import { skipHeaderSpans } from './header'
 import {
   ARROW_DIRECTIONS,
   KEYBOARD_NAVIGATION,
+  reportNavigation,
   NAV_BODY_END_ATTR,
   NAV_TARGET_SELECTOR,
   type NavTable,
@@ -64,7 +65,7 @@ export const handleGridKeyDown = (
     return
   }
   if (cell !== target) {
-    handleActionModeKey(event, cell)
+    handleActionModeKey(event, cell, table)
     return
   }
 
@@ -102,6 +103,10 @@ export const handleGridKeyDown = (
     }
     if (next && next !== 'handled') {
       trackingOf(t).pending = true
+      reportNavigation(t, 'moveActiveCell', 'keyboard', () => ({
+        from: active,
+        to: next,
+      }))
       setPluginState(t, KEYBOARD_NAVIGATION, next)
     }
     return
@@ -118,6 +123,10 @@ export const handleGridKeyDown = (
   ) {
     event.preventDefault()
     trackingOf(t).pending = true
+    reportNavigation(t, 'moveActiveCell', 'keyboard', () => ({
+      from: active,
+      to: { rowIndex: active.rowIndex, columnIndex: ROW_FOCUS_COLUMN },
+    }))
     setPluginState(t, KEYBOARD_NAVIGATION, {
       rowIndex: active.rowIndex,
       columnIndex: ROW_FOCUS_COLUMN,
@@ -133,7 +142,7 @@ export const handleGridKeyDown = (
     !event.shiftKey
   ) {
     event.preventDefault()
-    getCellWidgets(cell)[0]?.focus()
+    enterActionMode(t, cell)
     return
   }
 
@@ -144,12 +153,12 @@ export const handleGridKeyDown = (
     const action =
       actionTarget && findKeyboardAction(t, actionTarget, event.key)
     if (action && actionTarget) {
-      action.run(actionTarget.ctx as never, event)
+      runKeyboardAction(t, action, actionTarget.ctx, event)
       restoreFocusIfLost(cell)
       return
     }
     if (event.key !== ' ' && !event.shiftKey) {
-      getCellWidgets(cell)[0]?.focus()
+      enterActionMode(t, cell)
     }
     return
   }
@@ -168,7 +177,7 @@ export const handleGridKeyDown = (
             : undefined,
         columnId: getDisplayColumns(t).ids[active.columnIndex],
       }
-      action.run(actionTarget.ctx as never, event)
+      runKeyboardAction(t, action, actionTarget.ctx, event)
       applyFollow(t)
       return
     }
@@ -243,5 +252,17 @@ export const handleGridKeyDown = (
     return
   }
   trackingOf(t).pending = true
+  reportNavigation(t, 'moveActiveCell', 'keyboard', () => ({
+    from: active,
+    to: next,
+  }))
   setPluginState(t, KEYBOARD_NAVIGATION, next)
+}
+
+/** Вход в режим действия — фокус на первый виджет ячейки. */
+const enterActionMode = (t: NavTable, cell: HTMLElement) => {
+  const widget = getCellWidgets(cell)[0]
+  if (!widget) return
+  reportNavigation(t, 'enterActionMode', 'keyboard')
+  widget.focus()
 }

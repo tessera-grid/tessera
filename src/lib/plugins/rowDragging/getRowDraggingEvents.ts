@@ -30,6 +30,7 @@ import {
   rowIdOf,
 } from '../../core/rowMoves'
 import { commitRowMove } from './commitRowMove'
+import { reportAction } from '../../core/debugActions'
 import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
 import { dropPlace } from './dropPlace'
 import type { ExpandTimer } from './expandTimer'
@@ -175,6 +176,12 @@ export const getRowDraggingEvents = (
 
   /** Группа раскрыта паузой: запомнить, чтобы свернуть после сессии (ADR 0109, §3). */
   const openByDelay = (group: Row<any, any>) => {
+    reportAction(table, {
+      plugin: 'rowDragging',
+      action: 'expandOnHover',
+      detail: { rowId: group.id },
+      source: 'pointer',
+    })
     onRowDraggingChange(prev =>
       prev.activeId === null
         ? prev
@@ -206,6 +213,13 @@ export const getRowDraggingEvents = (
 
   /** Сессия кончилась без перестановки (ADR 0040, §1). */
   const cancel = (rowId: UniqueIdentifier, reason: SessionCancelReason) => {
+    reportAction(table, {
+      plugin: 'rowDragging',
+      action: 'dragCancel',
+      detail: { rowId: String(rowId), reason },
+      source: 'pointer',
+      phase: 'end',
+    })
     collapseOpenedByDelay()
     resetDragState()
     releaseSessionHooks<Partial<RowDraggingHooks>>(
@@ -265,6 +279,13 @@ export const getRowDraggingEvents = (
       levelStep = getRowDraggableOffsetLeft({ table })
 
       document.body.style.cursor = 'grabbing'
+      reportAction(table, {
+        plugin: 'rowDragging',
+        action: 'drag',
+        detail: { rowId: row.id },
+        source: 'pointer',
+        phase: 'start',
+      })
       holdSessionHooks(table as never, 'rowDragging')
       onRowDraggingChange(prev => ({
         ...prev,
@@ -291,6 +312,14 @@ export const getRowDraggingEvents = (
     onRowDragMove: ({ active, over, delta }) => {
       if (!over) {
         return
+      }
+      if (over.id !== rowDraggingState.overId) {
+        reportAction(table, {
+          plugin: 'rowDragging',
+          action: 'dragOver',
+          detail: { overId: String(over.id) },
+          source: 'pointer',
+        })
       }
 
       const { virtualIndex: activeVirtualIndex, row: activeRow } =
@@ -438,6 +467,13 @@ export const getRowDraggingEvents = (
           .filter(id => id !== rowId),
         fromIndex: activeRow.index,
       }
+      reportAction(table, {
+        plugin: 'rowDragging',
+        action: 'drop',
+        detail: { rowId, parentId: overParentId, index: place.index },
+        source: 'pointer',
+        phase: 'end',
+      })
       if (lazy) {
         commitRowMove(
           table,

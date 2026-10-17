@@ -4,6 +4,7 @@
  * тело прокручивается по горизонтали (BT18). После нажатия кнопка ждёт ухода фокуса в
  * состоянии `aria-disabled` (BT8).
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { useEffect, useRef, useState } from 'react'
 
 import type { StatusBarComponentProps } from '../../core/createSlots'
@@ -99,7 +100,12 @@ const EdgeButton = ({
         data-testid={horizontal ? 'back-to-start' : 'back-to-top'}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        onClick={() => {
+        onClick={event => {
+          reportAction(table, {
+            plugin: 'backToTop',
+            action: horizontal ? 'scrollToStart' : 'scrollToTop',
+            source: sourceOf(event),
+          })
           // Safari не фокусирует кнопку по клику: без фокуса она скрылась бы сразу.
           ref.current?.focus({ preventScroll: true })
           const scroller = findGridScroller(slot.current)

@@ -2,6 +2,7 @@
  * Строка ошибки ленты с повтором (ADR 0081) — в конце таблицы: над закреплённым футером
  * и под незакреплённым (ADR 0118, §3). Загрузку повторяет загрузчик хвоста.
  */
+import { sourceOf } from '../../core/debugActions'
 import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -112,7 +113,7 @@ export const InfiniteErrorRow = ({
     if (document.activeElement === button) {
       activeCellOf(button)?.focus({ preventScroll: true })
     }
-    loaderOf(table)?.retry()
+    loaderOf(table)?.retry(sourceOf(event))
   }
 
   // Стрелки — по видимому порядку: вверх — к активной ячейке над строкой, вниз — к

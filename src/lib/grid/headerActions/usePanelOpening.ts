@@ -1,5 +1,7 @@
 // usePanelOpening: открытие поповера действия с панелью после `SlotAction.preload`
 // (ADR 0024, AM28–AM30) — общий договор ленивого открытия (ADR 0061) для действия.
+import { actionDetailOf, actionOwnerOf } from '../../core/actionOwners'
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { lazyTriggerHandlers, useLazyOpening } from '../../core/lazyOpening'
 import type { Preloadable } from '../../core/preloadable'
 import type { SlotAction } from '../../core/headerActions'
@@ -21,6 +23,13 @@ export const usePanelOpening = (context: Context) => {
     onFail?: () => void,
     module?: Preloadable,
   ) => {
+    // Панель слот-действия — действие его владельца (ADR 0125, AL4).
+    reportAction(context.table, {
+      plugin: actionOwnerOf(action),
+      action: 'openPanel',
+      detail: () => ({ ...actionDetailOf(context), action: action.id }),
+      source: sourceOf(globalThis.event),
+    })
     const loadModule = module && !module.isLoaded()
     opening.request(
       action.preload || loadModule

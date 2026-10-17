@@ -184,6 +184,8 @@ export const DragHandler = ({
           label={label ?? ''}
           getItems={getMenuItems}
           onClose={menu.close}
+          table={table}
+          plugin={type === 'row' ? 'rowDragging' : 'columnDragging'}
         />
       )}
     </>

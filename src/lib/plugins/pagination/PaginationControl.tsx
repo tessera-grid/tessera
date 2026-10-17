@@ -59,6 +59,8 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     table,
     PageSizeSelect,
     all => all.rowsPerPage,
+    true,
+    { plugin: 'pagination', detail: () => ({ menu: 'pageSize' }) },
   )
   const sizeLabelId = useId()
   const sizeTriggerId = useId()

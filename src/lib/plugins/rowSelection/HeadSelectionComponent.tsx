@@ -4,6 +4,7 @@
  * хелперы. Индетерминантность = some && !all: getIsSomePageRowsSelected возвращает
  * true и когда выбраны ВСЕ, поэтому исключаем all явно.
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSlice } from '../../core/reactivity'
@@ -35,6 +36,12 @@ export const HeadSelectionComponent = ({
   const disabled = isAllRowsSelected || !getCanSomeRowsSelect(table)
 
   const handleSelectAllPageRows = (event: unknown) => {
+    reportAction(table, {
+      plugin: 'rowSelection',
+      action: 'toggleAllPageRows',
+      detail: { selected: !table.getIsAllPageRowsSelected() },
+      source: sourceOf(event),
+    })
     table.getToggleAllPageRowsSelectedHandler()(event)
     onSelectAllRowsOnPage?.(!table.getIsAllPageRowsSelected())
   }

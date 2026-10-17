@@ -1,7 +1,12 @@
 /** Фокус: запрос от клавиатуры, восстановление и следование за переставленной строкой. */
 import { setPluginState } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
-import { KEYBOARD_NAVIGATION, type NavTable, resolveActive } from './model'
+import {
+  KEYBOARD_NAVIGATION,
+  type NavTable,
+  reportNavigation,
+  resolveActive,
+} from './model'
 
 interface FocusTracking {
   /** Переход с клавиатуры: новая активная ячейка должна взять фокус. */
@@ -64,5 +69,9 @@ export const applyFollow = (t: NavTable) => {
     }
   })
   tracking.pending = true
+  reportNavigation(t, 'moveActiveCell', 'auto', () => ({
+    from: active,
+    to: next,
+  }))
   setPluginState(t, KEYBOARD_NAVIGATION, next)
 }

@@ -107,6 +107,11 @@ flowchart LR
 рендерингом, принадлежат `state` и потребляются через гранулярные подписки
 (`useSlice`/`useTableState`, [reactivity.md](reactivity.md)).
 
+Отдельно от `hooks` — опция ядра `onDebugAction` (ADR 0125): отладочный журнал
+действий, а не бизнес-контракт. Её читает `table.reportAction` из `commonFeature` на
+каждом действии, поэтому смена слушателя ничего не пересобирает, а без слушателя канал
+не строит деталей и не добавляет работы (AL3, AL26).
+
 ## Плагины
 
 Набор фич собирается presence-based (ADR 0010): `buildTesseraFeatures` вклеивает

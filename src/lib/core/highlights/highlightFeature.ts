@@ -4,6 +4,7 @@
  * доступно приложению и любому плагину. Цели — по id, поэтому подсветка переживает
  * размонтирование строки виртуализацией.
  */
+import { reportAction } from '../debugActions'
 import {
   assignTableAPIs,
   functionalUpdate,
@@ -381,11 +382,24 @@ export const highlightFeature: TableFeature = {
         },
       },
       table_highlight: {
-        fn: (target: HighlightTarget, options?: HighlightOptions) =>
-          highlight(table, target, options),
+        fn: (target: HighlightTarget, options?: HighlightOptions) => {
+          reportAction(table, {
+            plugin: 'core',
+            action: 'highlight',
+            detail: () => ({ target, key: options?.key }),
+          })
+          return highlight(table, target, options)
+        },
       },
       table_clearHighlights: {
-        fn: (key?: string) => clearHighlights(table, key),
+        fn: (key?: string) => {
+          reportAction(table, {
+            plugin: 'core',
+            action: 'clearHighlights',
+            detail: key === undefined ? undefined : { key },
+          })
+          return clearHighlights(table, key)
+        },
       },
     })
   },

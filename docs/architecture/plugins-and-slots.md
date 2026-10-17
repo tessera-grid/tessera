@@ -80,9 +80,41 @@ flowchart TB
   записи из `table.options.pluginDiagnostics`, считается на момент вызова через
   `diagnose` записи (ADR 0022, PC12–PC14)
 - `table.setRenderSlot(params)` → регистрация слота на месте
+- `table.reportAction(report)` → канал действий (ADR 0125): действие уходит в опцию
+  `onDebugAction` с номером экземпляра; без слушателя метод возвращает `undefined` и
+  `detail`-функцию не вызывает. Подробно — [ниже](#канал-действий).
 - плюс хелперы: `getHeaderGroups` (флаги первой/последней группы через
   `initHeaderGroupInstanceData`), `getIsAnyColumnResizing` и флаги на
   колонку/заголовок/строку/ячейку через `assign*Prototype`.
+
+### Канал действий
+
+Что сделал пользователь, приложение или сам грид, видно опцией `onDebugAction`
+(ADR 0125). Декларативные действия ядро сообщает само — плагину вызывать ничего не нужно:
+слот-действие и пункт меню (`id` действия, плагин-владелец — запись, объявившая
+дескриптор), клавиатурное действие, пункт контекстного меню и меню ручки, открытие и
+закрытие поповеров `useLazyPopover`, навигация клавиатуры, серверное действие
+`runServerAction` с итогом. Явный вызов нужен только жесту и своему контролу:
+
+```ts
+import { reportAction, reportOutcome, sourceOf } from '@tessera-grid/tessera'
+
+const id = reportAction(table, {
+  plugin: 'starRows', // id своей записи
+  action: 'starAll',
+  detail: () => ({ rows: count }), // функция — только при слушателе
+  source: sourceOf(event), // 'pointer' | 'keyboard' | 'api' | 'auto'
+})
+reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
+```
+
+Жест — пара `phase: 'start'` и `'end'` (протяжка, перетаскивание, сессия правки).
+`reportOutcome` сообщает итог промиса отдельным действием `<action>Resolved` или
+`<action>Rejected` с `cause`; без `cause` причина — последнее действие той же задачи.
+Ключ причины — сам метод `reportAction`, поэтому копия таблицы, пришедшая плагину, её не
+теряет. Колбэк, который глотает отказ (логирует и не пробрасывает), сообщает итог по
+исходному промису, а не по своему. Строка перечня ADR 0125 обязательна для каждого
+экспорта `/plugins` (AL8).
 
 ### Согласование состояния: `reconcile`
 

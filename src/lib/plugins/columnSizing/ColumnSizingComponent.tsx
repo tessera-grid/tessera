@@ -3,6 +3,7 @@
  * на ширине своей колонки; бизнес-колбэк — из пропса `hooks` (инъекция
  * definePlugin).
  */
+import { reportAction } from '../../core/debugActions'
 import { useEffect } from 'react'
 
 import {
@@ -83,17 +84,41 @@ export const ColumnSizingComponent = ({
   }
 
   const onResizeEnd = () => {
+    reportAction(table, {
+      plugin: 'columnSizing',
+      action: 'resize',
+      detail: { columnId: column.id, width: column.getSize() },
+      source: 'pointer',
+      phase: 'end',
+    })
     hooks.onColumnResizeEnd({ id: column.id, width: column.getSize() })
   }
 
   const onResizeCancel = (reason: SessionCancelReason) => {
+    reportAction(table, {
+      plugin: 'columnSizing',
+      action: 'resizeCancel',
+      detail: { columnId: column.id, reason },
+      source: 'pointer',
+      phase: 'end',
+    })
     hooks.onColumnResizeCancel?.({ columnId: column.id, reason })
   }
 
   return (
     <ResizeHandler
       isResizing={column.getIsResizing()}
-      onResize={header.getResizeHandler()}
+      onResize={event => {
+        reportAction(table, {
+          plugin: 'columnSizing',
+          action: 'resize',
+          detail: { columnId: column.id, width: column.getSize() },
+          source: 'pointer',
+          phase: 'start',
+        })
+        header.getResizeHandler()(event)
+      }}
+      columnId={column.id}
       onResizeEnd={onResizeEnd}
       onResizeCancel={onResizeCancel}
       onEscape={() => cancelColumnResize(table, 'cancel')}

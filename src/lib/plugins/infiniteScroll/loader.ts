@@ -3,6 +3,7 @@
  * после ответа без строк, отмена устаревшей загрузки. Геометрию края даёт
  * `measure` — по умолчанию из DOM грида.
  */
+import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { announceLabel } from '../../core/announcer'
 import { IDLE, shouldLoadMore, tailRowCount } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
@@ -125,14 +126,37 @@ export class InfiniteLoader {
     }
   }
 
-  retry() {
+  retry(source: DebugActionSource = 'api') {
     const geometry = this.measure(this.sentinel)
-    if (geometry) this.load(geometry)
+    if (geometry) this.load(geometry, 'retryLoadMore', source)
   }
 
-  private load(geometry: EdgeGeometry) {
+  /** Номер запроса порции в канале действий — `cause` её итога (ADR 0125, AL23). */
+  private request: number | undefined
+
+  private report(action: string, detail?: unknown) {
+    reportAction(this.input?.table, {
+      plugin: 'infiniteScroll',
+      action,
+      detail,
+      source: 'auto',
+      cause: this.request,
+    })
+  }
+
+  private load(
+    geometry: EdgeGeometry,
+    action = 'loadMore',
+    source: DebugActionSource = 'auto',
+  ) {
     const input = this.input
     if (!input) return
+    this.request = reportAction(input.table, {
+      plugin: 'infiniteScroll',
+      action,
+      detail: { loaded: input.loaded },
+      source,
+    })
     this.abort?.abort()
     const abort = new AbortController()
     const generation = ++this.generation
@@ -151,6 +175,7 @@ export class InfiniteLoader {
     const fail = (error?: unknown) => {
       if (generation !== this.generation) return
       const reason = reasonOf(error)
+      this.report('loadMoreRejected', reason)
       this.phase = 'error'
       this.input?.setValue({ status: 'error', tailRows: 0, reason })
       announceLabel(this.input?.table, labels =>
@@ -184,6 +209,7 @@ export class InfiniteLoader {
     this.awaiting = null
     this.phase = 'idle'
     this.input.setValue(IDLE)
+    this.report(added > 0 ? 'loadMoreResolved' : 'loadMoreEmpty', { added })
     if (added > 0) {
       this.stalledAt = null
       announceLabel(this.input.table, labels =>
@@ -202,6 +228,7 @@ export class InfiniteLoader {
     this.awaiting = null
     this.stalledAt = null
     if (this.phase !== 'idle') {
+      if (this.phase === 'pending') this.report('loadMoreCancelled')
       this.phase = 'idle'
       this.input?.setValue(IDLE)
     }

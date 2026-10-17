@@ -1,6 +1,7 @@
 import { type ClipboardEvent as ReactClipboardEvent, useCallback } from 'react'
 
 import { announceLabel } from '../core/announcer'
+import { reportAction } from '../core/debugActions'
 import {
   cellRangesToHtml,
   cellRangesToTsv,
@@ -41,6 +42,12 @@ export const useCellSelectionCopy = (table: Table<any, any>) => {
       if (!hasSelectedCells(regions)) {
         return
       }
+      reportAction(table, {
+        plugin: 'cellSelection',
+        action: 'copy',
+        detail: () => ({ cells: countCells(regions) }),
+        source: 'keyboard',
+      })
       event.preventDefault()
       event.clipboardData.setData('text/plain', cellRangesToTsv(regions))
       event.clipboardData.setData('text/html', cellRangesToHtml(regions))

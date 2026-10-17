@@ -8,6 +8,7 @@
  * используем прямой merge интерфейса (эскейп).
  */
 import type { ColumnOptionsDef } from './columnOptions'
+import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
 import type {
   ColumnSizingState,
@@ -87,6 +88,8 @@ export interface CommonOptions {
   /** Отказ загрузки данных и повтор (ADR 0096). */
   loadError?: unknown
   onRetry?: () => unknown
+  /** Канал действий грида (ADR 0125). */
+  onDebugAction?: OnDebugAction
   /**
    * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
    * `undefined` — строк столько, сколько в `data` (ADR 0081).
@@ -115,6 +118,8 @@ export interface CommonTableAPI {
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
   /** Объявить текст скринридеру через live-область грида. */
   announce: (message: string) => void
+  /** Сообщить действие в канал `onDebugAction` (ADR 0125); номер действия или `undefined`. */
+  reportAction: (report: ActionReport) => number | undefined
 }
 
 export interface CommonColumnAPI {

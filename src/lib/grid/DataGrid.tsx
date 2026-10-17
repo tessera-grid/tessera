@@ -1,6 +1,7 @@
 // Корневой DataGrid: реактивность через table.atoms/store (useTableState/useSlice
 // в компонентах). Стейт-снимки (isResizingColumns/rowDragging) читаются реактивно
 // из общего store.
+import { reportAction } from '../core/debugActions'
 import {
   type CSSProperties,
   type FocusEvent,
@@ -355,13 +356,18 @@ export const DataGrid = ({
       )
       ?.focus()
   const dismissLoadError = () => {
+    reportAction(table, {
+      plugin: 'core',
+      action: 'dismissLoadError',
+      source: 'pointer',
+    })
     loadError.dismiss()
     if (!appFailed) dismissServerActionError(table)
     focusBody()
   }
   const retryLoadFromBanner = loadError.retryFromBanner
-    ? () => {
-        loadError.retryFromBanner?.()
+    ? (event?: unknown) => {
+        loadError.retryFromBanner?.(event)
         focusBody()
       }
     : undefined

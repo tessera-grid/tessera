@@ -3,12 +3,14 @@
 // проверку доступности, ожидание, причину блокировки (галочка «уже сделано», замок
 // «запрещено») и отказ действия или проверки — значком у правого края, текст в тултипе
 // (ADR 0078).
-import { type KeyboardEvent, useId, useReducer } from 'react'
+import { type KeyboardEvent, type MouseEvent, useId, useReducer } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
 import { Check } from 'lucide-react'
 import clsx from 'clsx'
 
+import { actionOwnerOf, actionDetailOf } from '../../core/actionOwners'
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useActionStatus } from './useActionStatus'
 import type { MenuSections } from './useMenuSections'
@@ -63,7 +65,7 @@ interface ItemProps {
   context: unknown
   availability: Availability
   entry: ActionStatusEntry | undefined
-  onClick: () => void
+  onClick: (event: MouseEvent<HTMLElement>) => void
   closeOnClick: boolean
   preload?: () => void
   /** Пункт-раздел: шеврон и `hint`, `aria-haspopup`. */
@@ -238,21 +240,23 @@ export const ActionMenuItems = ({
         !withPanel &&
         (action.closeOnSelect ?? sectionCloses ?? true) === false
       const select = section
-        ? () => sections!.enter(action)
+        ? (event?: MouseEvent<HTMLElement>) =>
+            sections!.enter(action, sourceOf(event))
         : withPanel
           ? () => onOpenPanel!(slotAction)
           : keepOpen
-            ? () => {
-                runMenuAction(action, context)
+            ? (event?: MouseEvent<HTMLElement>) => {
+                runMenuAction(action, context, event as never)
                 refresh()
               }
-            : () => runMenuAction(action, context)
+            : (event?: MouseEvent<HTMLElement>) =>
+                runMenuAction(action, context, event as never)
       const onKeyDown = sections
         ? (event: KeyboardEvent<HTMLElement>) => {
             if (event.key === 'ArrowRight' && section) {
               event.preventDefault()
-              sections.enter(action)
-            } else if (event.key === 'ArrowLeft' && sections.back()) {
+              sections.enter(action, 'keyboard')
+            } else if (event.key === 'ArrowLeft' && sections.back('keyboard')) {
               event.preventDefault()
             }
           }
@@ -292,7 +296,16 @@ export const ActionMenuItems = ({
               onKeyDown={onKeyDown}
               onClick={
                 action.menuItems
-                  ? item.onSelect
+                  ? (event: MouseEvent<HTMLElement>) => {
+                      // Подпункт разворота (`menuItems`) — действие владельца с id пункта.
+                      reportAction((context as { table?: unknown }).table, {
+                        plugin: actionOwnerOf(action),
+                        action: `${action.id}:${item.id}`,
+                        detail: () => actionDetailOf(context),
+                        source: sourceOf(event),
+                      })
+                      item.onSelect()
+                    }
                   : availability.checkFailed
                     ? recheck
                     : select

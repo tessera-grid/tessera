@@ -4,7 +4,8 @@
  * ожидание; отказ откатывает сортировку и страницу к состоянию до первого действия
  * цепочки ожидания. Общий модуль четырёх плагинов — вне их папок (IV3).
  */
-import { isThenable } from '../thenable'
+import { reportAction } from '../debugActions'
+import { isThenable, rejectionText } from '../thenable'
 import {
   readServerAction,
   type ServerActionCause,
@@ -45,6 +46,9 @@ interface Chain {
   attempt: number
   /** Сортировка и страница до первого действия цепочки — цель отката. */
   confirmed: Snapshot
+  kind: ServerActionKind
+  /** Номер запроса в канале действий — `cause` его итогов. */
+  request: number | undefined
 }
 
 interface ServerTable {
@@ -179,6 +183,14 @@ const settleIdle = (table: unknown) => {
  * серверном режиме действие прерывает ожидающее; промис колбэка — ожидание, отказ —
  * откат и отметка в срезе `serverAction`. В клиентском режиме результат игнорируется.
  */
+/** Плагин, чей срез ушёл на сервер: от его имени — запрос и итоги (ADR 0125, AL6). */
+const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
+  sorting: 'columnSorting',
+  filtering: 'columnFiltering',
+  search: 'quickSearch',
+  pagination: 'pagination',
+}
+
 export const runServerAction = (
   table: unknown,
   kind: ServerActionKind,
@@ -198,6 +210,15 @@ export const runServerAction = (
   const previous = chains.get(t.store)
   previous?.controller.abort()
   chains.delete(t.store)
+  const plugin = SERVER_ACTION_PLUGIN[kind]
+  if (previous) {
+    reportAction(table, {
+      plugin: SERVER_ACTION_PLUGIN[previous.kind],
+      action: 'serverReplaced',
+      source: 'auto',
+      cause: previous.request,
+    })
+  }
   const controller = new AbortController()
   const attempt = ++lastAttempt
   const confirmed = previous?.confirmed ?? before
@@ -214,7 +235,13 @@ export const runServerAction = (
     return
   }
 
-  chains.set(t.store, { controller, attempt, confirmed })
+  const request = reportAction(table, {
+    plugin,
+    action: 'serverRequest',
+    detail: { kind },
+    source: 'auto',
+  })
+  chains.set(t.store, { controller, attempt, confirmed, kind, request })
   writeServerAction(table, status => ({
     ...status,
     pending: { kind, attempt, cause },
@@ -225,9 +252,22 @@ export const runServerAction = (
     }
     chains.delete(t.store)
     if (ok) {
+      reportAction(table, {
+        plugin,
+        action: 'serverResolved',
+        source: 'auto',
+        cause: request,
+      })
       settleIdle(table)
       return
     }
+    reportAction(table, {
+      plugin,
+      action: 'serverRejected',
+      detail: () => ({ error: rejectionText(error), reverted: true }),
+      source: 'auto',
+      cause: request,
+    })
     const attempted = snapshotOf(t)
     const retry = () =>
       runServerAction(table, kind, () => restore(t, attempted), notify, cause)

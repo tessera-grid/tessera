@@ -4,6 +4,7 @@
  * зовёт (как `onPageChange`, PG6). Общие для `columnFiltering`, `quickSearch` и
  * заглушки пустого результата. В серверном режиме — серверные действия (ADR 0116).
  */
+import { reportAction, sourceOf } from './debugActions'
 import { readPluginHooks } from './definePlugin'
 import { searchColumnIdsOf } from './searchColumns'
 import type { StubEntry } from './stubs'
@@ -89,11 +90,28 @@ const changedColumns = (
   return [...ids].filter(id => valueOf(before, id) !== valueOf(after, id))
 }
 
+/**
+ * Источник действия фильтра: событие, которое его вызвало; дебаунс ввода срабатывает
+ * уже после события — это клавиатура (ADR 0125).
+ */
+const filterSource = () =>
+  globalThis.event ? sourceOf(globalThis.event) : 'keyboard'
+
 /** Заменить фильтры колонок целиком. */
 export const setColumnFiltersByUser = (
   table: unknown,
   filters: ColumnFilterEntry[],
 ) => {
+  reportAction(table, {
+    plugin: 'columnFiltering',
+    action: filters.length === 0 ? 'clearFilters' : 'setFilters',
+    detail: () => ({ filters }),
+    source: filterSource(),
+  })
+  applyColumnFilters(table, filters)
+}
+
+const applyColumnFilters = (table: unknown, filters: ColumnFilterEntry[]) => {
   const t = table as FilteringTable
   const { onFilterChange } = readPluginHooks<FilteringHooks>(
     t,
@@ -130,11 +148,27 @@ export const setColumnFilterByUser = (
           filter.id === columnId ? { id: columnId, value } : filter,
         )
   if (remove && index === -1) return
-  setColumnFiltersByUser(table, next)
+  reportAction(table, {
+    plugin: 'columnFiltering',
+    action: remove ? 'removeFilter' : 'setFilter',
+    detail: () => ({ columnId, ...(remove ? {} : { value }) }),
+    source: filterSource(),
+  })
+  applyColumnFilters(table, next)
 }
 
 /** Строка быстрого поиска; пустая снимает поиск. */
 export const setSearchByUser = (table: unknown, search: string) => {
+  reportAction(table, {
+    plugin: 'quickSearch',
+    action: search === '' ? 'clearSearch' : 'search',
+    detail: search === '' ? undefined : { query: search },
+    source: filterSource(),
+  })
+  applySearch(table, search)
+}
+
+const applySearch = (table: unknown, search: string) => {
   const t = table as FilteringTable
   const { onSearchChange } = readPluginHooks<SearchHooks>(t, 'quickSearch')
   runServerAction(
@@ -149,8 +183,13 @@ export const setSearchByUser = (table: unknown, search: string) => {
 
 /** Снять фильтры колонок и поиск (заглушка пустого результата). */
 export const resetFiltersByUser = (table: unknown) => {
-  if (columnFiltersOf(table).length > 0) setColumnFiltersByUser(table, [])
-  if (searchOf(table) !== '') setSearchByUser(table, '')
+  reportAction(table, {
+    plugin: 'core',
+    action: 'resetFilters',
+    source: filterSource(),
+  })
+  if (columnFiltersOf(table).length > 0) applyColumnFilters(table, [])
+  if (searchOf(table) !== '') applySearch(table, '')
 }
 
 /**

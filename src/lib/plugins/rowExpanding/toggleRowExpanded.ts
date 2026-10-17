@@ -1,6 +1,7 @@
 import type { Row } from '../../types'
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
+import { reportOutcome } from '../../core/debugActions'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
   markExpandFailed,
@@ -66,6 +67,12 @@ export const toggleRowExpanded = (
   const { table } = pendingRow
   const lazy = !!hooks.loadChildren && isLazyRow(row, hooks.hasChildren)
   const result = lazy ? hooks.loadChildren!(row) : notified
+  // Итог загрузки детей или промиса `onExpandRow` — с причиной: нажатием этой задачи.
+  reportOutcome(
+    table,
+    { plugin: 'rowExpanding', action: lazy ? 'loadChildren' : 'expandRow' },
+    result,
+  )
   if (lazy && !isThenable(result)) {
     storeAnswer(table, row.id, result)
     return

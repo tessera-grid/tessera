@@ -5,6 +5,7 @@
  * серверная выгрузка заблокирована; отказ формата — вспышка. До прихода данных
  * клиентская выгрузка — скелет кнопки, серверная доступна (ADR 0122).
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { Suspense, useRef, useState } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
@@ -54,12 +55,19 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
     ExportPanel,
     all => all.export,
     !!axes && !single,
+    { plugin: 'dataExport' },
   )
 
   const start = (settings: ExportSettings, isServer: boolean) => {
     // Идущая клиентская выгрузка блокирует любую; серверная — только серверную.
     if (running.current === 'client' || (isServer && running.current)) return
-    const pending = runExport(table, settings)
+    const report = { plugin: 'dataExport', action: 'export' }
+    const id = reportAction(table, {
+      ...report,
+      detail: { ...settings, server: isServer },
+      source: sourceOf(globalThis.event),
+    })
+    const pending = runExport(table, settings, { ...report, cause: id })
     if (pending) {
       running.current = isServer ? 'server' : 'client'
       setBusy(isServer ? 'server' : 'client')

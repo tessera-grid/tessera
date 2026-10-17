@@ -3,6 +3,7 @@
  * перерисовывает (ADR 0099, PF5). Бизнес-колбэки — из пропса `hooks` (инъекция
  * definePlugin); группировка — хелпер.
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
@@ -39,8 +40,15 @@ export const RowSelectionComponent = ({
 
   const { isAllRowsSelected = false } = hooks
 
-  const handleSelectRow = (event: unknown) =>
+  const handleSelectRow = (event: unknown) => {
+    reportAction(table, {
+      plugin: 'rowSelection',
+      action: 'toggleRow',
+      detail: { rowId: row.id, selected: !row.getIsSelected() },
+      source: sourceOf(event),
+    })
     toggleRowSelection(row, hooks, event)
+  }
 
   return (
     <SelectCheckbox

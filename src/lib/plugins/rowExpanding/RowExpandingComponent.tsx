@@ -3,6 +3,7 @@
  * ожидании и на неудаче своей строки; бизнес-колбэк — из пропса `hooks` (инъекция
  * definePlugin).
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useSlice, useSliceProjection } from '../../core/reactivity'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
@@ -30,7 +31,15 @@ export const RowExpandingComponent = ({
     return null
   }
 
-  const onExpand = () => toggleRowExpanded(row, hooks)
+  const onExpand = (event: unknown) => {
+    reportAction(table, {
+      plugin: 'rowExpanding',
+      action: 'toggleRow',
+      detail: { rowId: row.id, expanded: !row.getIsExpanded() },
+      source: sourceOf(event),
+    })
+    toggleRowExpanded(row, hooks)
+  }
 
   return (
     <ExpandButton

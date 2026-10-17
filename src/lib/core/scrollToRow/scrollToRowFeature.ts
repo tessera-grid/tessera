@@ -5,6 +5,7 @@
  * виртуализатора и геометрии липких шапки, футера и закреплённых колонок, проверка и
  * довод по DOM.
  */
+import { reportAction } from '../debugActions'
 import { assignTableAPIs } from '@tanstack/react-table'
 
 import { getDisplayColumns } from '../displayColumns'
@@ -536,8 +537,25 @@ export const scrollToRowFeature: TableFeature = {
   constructTableAPIs: table => {
     assignTableAPIs('scrollToRowFeature', table, {
       table_scrollToRow: {
-        fn: (rowId: string, options?: ScrollToRowOptions) =>
-          scrollToRow(table, rowId, options),
+        fn: (rowId: string, options?: ScrollToRowOptions) => {
+          const id = reportAction(table, {
+            plugin: 'core',
+            action: 'scrollToRow',
+            detail: { rowId },
+          })
+          const done = scrollToRow(table, rowId, options)
+          if (id !== undefined) {
+            void done.then(found =>
+              reportAction(table, {
+                plugin: 'core',
+                action: found ? 'scrollToRowResolved' : 'scrollToRowRejected',
+                source: 'auto',
+                cause: id,
+              }),
+            )
+          }
+          return done
+        },
       },
     })
   },

@@ -2,6 +2,7 @@
 // AM28–AM30): нажатие до загрузки не теряется, долгое ожидание видно, его можно
 // отменить, ошибка загрузки не открывает поповер — элемент вспыхивает, текст
 // объявляется.
+import { reportAction, userSourceOf } from './debugActions'
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 
 import { announceLabel } from './announcer'
@@ -125,12 +126,26 @@ export const useLazyPopover = (
   label: (labels: TableLabels) => string,
   /** `false` — поповер не нужен (модуль не грузится). */
   enabled = true,
+  /** Владелец поповера в канале действий: открытие и закрытие (ADR 0125). */
+  owner?: { plugin: string; detail?: () => unknown },
 ) => {
   const [open, setOpen] = useState(false)
   const ready = usePreloaded(module, enabled)
   const opening = useLazyOpening(table)
 
-  const onOpenChange = (next: boolean) => {
+  // `details` — событие нажатия или подробности Base UI (`{ event }`).
+  const onOpenChange = (next: boolean, details?: unknown) => {
+    if (owner && next !== open) {
+      reportAction(table, {
+        plugin: owner.plugin,
+        action: next ? 'openMenu' : 'closeMenu',
+        detail: owner.detail,
+        // Без подробностей (кебаб, заглушка) — последний ввод пользователя.
+        source: userSourceOf(
+          (details as { event?: Event } | undefined)?.event ?? details,
+        ),
+      })
+    }
     if (next) {
       opening.request(
         { load: module.reload, isReady: module.isLoaded, label },
@@ -146,7 +161,7 @@ export const useLazyPopover = (
     pending: opening.pending,
     errorFlash: opening.errorFlash,
     'aria-expanded': open,
-    onClick: () => onOpenChange(true),
+    onClick: (event?: unknown) => onOpenChange(true, event),
     ...lazyTriggerHandlers({
       pending: opening.pending,
       onCancel: opening.cancel,

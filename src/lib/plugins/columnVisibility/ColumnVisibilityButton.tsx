@@ -33,6 +33,8 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
     table,
     ColumnVisibilityPopover,
     all => all.columns,
+    true,
+    { plugin: 'columnVisibility' },
   )
 
   useTableState(table, state => state.columnVisibility)

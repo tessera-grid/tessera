@@ -1,6 +1,7 @@
 // ActionMenuSections: текущий уровень меню с разделами (ADR 0079). Новый уровень
 // приезжает сдвигом, уходящий — снимок разметки в отдельном слое; окно подстраивает
 // размер под уровень переходом. Строка «назад», скелет загрузки и повтор после отказа.
+import { sourceOf } from '../../core/debugActions'
 import { useId, useRef } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
@@ -95,7 +96,7 @@ export const ActionMenuSections = ({
               className={clsx(styles.item, styles.backItem)}
               aria-label={labels.menuBack(level.title ?? '')}
               closeOnClick={false}
-              onClick={() => sections.back()}
+              onClick={event => sections.back(sourceOf(event))}
               data-menu-back=""
             >
               <span className={styles.itemIcon} aria-hidden>

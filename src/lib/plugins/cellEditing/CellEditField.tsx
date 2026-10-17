@@ -8,6 +8,7 @@
  * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2). Слой поверх ячейки
  * несёт блик ожидания, вспышку отказа и подсветку сохранения (ADR 0057).
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import {
   useId,
   useRef,
@@ -205,6 +206,13 @@ export const CellEditField = (
           }
           // Значение не изменилось — просто закрыть правку, без onCellEdit (SS18).
           if (isUnchangedCommit(session, value)) {
+            reportAction(table, {
+              plugin: 'cellEditing',
+              action: 'edit',
+              detail: { ...session!.cell, result: 'unchanged' },
+              source: sourceOf(globalThis.event),
+              phase: 'end',
+            })
             endEditSession(table)
             return
           }

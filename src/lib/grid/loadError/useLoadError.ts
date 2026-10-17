@@ -1,3 +1,4 @@
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { announceLabel } from '../../core/announcer'
@@ -37,17 +38,25 @@ export const useLoadError = ({
   const [dismissed, setDismissed] = useState<unknown>(undefined)
   const [retrying, setRetrying] = useState(false)
   const latestRetry = useLatest(onRetry)
-  const retry = useCallback(() => {
-    const result = latestRetry.current?.()
-    if (
-      typeof (result as PromiseLike<unknown> | undefined)?.then === 'function'
-    ) {
-      setRetrying(true)
-      Promise.resolve(result)
-        .catch(() => undefined)
-        .finally(() => setRetrying(false))
-    }
-  }, [latestRetry])
+  const retry = useCallback(
+    (event?: unknown) => {
+      reportAction(table, {
+        plugin: 'core',
+        action: 'retryLoad',
+        source: sourceOf(event),
+      })
+      const result = latestRetry.current?.()
+      if (
+        typeof (result as PromiseLike<unknown> | undefined)?.then === 'function'
+      ) {
+        setRetrying(true)
+        Promise.resolve(result)
+          .catch(() => undefined)
+          .finally(() => setRetrying(false))
+      }
+    },
+    [latestRetry, table],
+  )
 
   const pending = retrying || loading
   /*
@@ -93,9 +102,9 @@ export const useLoadError = ({
     retry: onRetry ? retry : undefined,
     /** Повтор из плашки: плашка уходит, повтор идёт. */
     retryFromBanner: onRetry
-      ? () => {
+      ? (event?: unknown) => {
           setRetried({ error, started: false })
-          retry()
+          retry(event)
         }
       : undefined,
     pending,

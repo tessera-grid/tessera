@@ -9,6 +9,7 @@
  *    прокидывается из state/handlers потребителя.
  */
 import { useMemo, useRef } from 'react'
+import type { OnDebugAction } from './debugActions'
 
 import { makeStateUpdater, useTable } from '@tanstack/react-table'
 import type {
@@ -158,6 +159,8 @@ export type UseCreateTableParams<
   loadError?: unknown
   /** Повтор загрузки из плашки и заглушки; промис держит кнопку в ожидании. */
   onRetry?: () => unknown
+  /** Канал действий грида: что сделал пользователь, приложение или грид (ADR 0125). */
+  onDebugAction?: OnDebugAction
   /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
   rowHeight?: number
   /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
@@ -192,6 +195,7 @@ export const useCreateTable = <
   refreshOptions,
   loadError,
   onRetry,
+  onDebugAction,
   rowHeight,
   headerHeight,
   defaultColumn,
@@ -428,6 +432,7 @@ export const useCreateTable = <
     refreshOptions,
     loadError,
     onRetry,
+    onDebugAction,
     rowHeight,
     headerHeight,
   }

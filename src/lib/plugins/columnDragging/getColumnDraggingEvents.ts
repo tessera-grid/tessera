@@ -3,6 +3,7 @@
  * `table.atoms.columnDraggingActiveId`. Грид вызывает этот хелпер при wiring
  * DndContext.
  */
+import { reportAction } from '../../core/debugActions'
 import {
   holdSessionHooks,
   releaseSessionHooks,
@@ -45,6 +46,16 @@ export const getColumnDraggingEvents = (table: DndTable) => {
   const cancel = (reason: SessionCancelReason) => {
     const activeId = table.atoms.columnDraggingActiveId.get()
     const columnId = headerById(activeId)?.column.id ?? activeId
+    reportAction(table, {
+      plugin: 'columnDragging',
+      action: 'dragCancel',
+      detail: {
+        columnId: columnId == null ? undefined : String(columnId),
+        reason,
+      },
+      source: 'pointer',
+      phase: 'end',
+    })
     const { onColumnDragCancel } = reset()
     if (columnId !== null && columnId !== undefined) {
       onColumnDragCancel?.({ columnId: String(columnId), reason })
@@ -76,6 +87,13 @@ export const getColumnDraggingEvents = (table: DndTable) => {
     if (target.id === active.id) {
       return false
     }
+    reportAction(table, {
+      plugin: 'columnDragging',
+      action: 'drop',
+      detail: { columnId: active.column.id, targetId: target.column.id },
+      source: 'pointer',
+      phase: 'end',
+    })
     applyNodeMove(table, active, target, position(target) > position(active))
     return true
   }
@@ -83,6 +101,13 @@ export const getColumnDraggingEvents = (table: DndTable) => {
   return {
     onColumnDragStart: (event: { active: { id: DragOverlayState } }) => {
       document.body.style.cursor = 'grabbing'
+      reportAction(table, {
+        plugin: 'columnDragging',
+        action: 'drag',
+        detail: () => ({ columnId: headerById(event.active.id)?.column.id }),
+        source: 'pointer',
+        phase: 'start',
+      })
       holdSessionHooks(table, 'columnDragging')
       table.setColumnDraggingActiveId(event.active.id)
     },

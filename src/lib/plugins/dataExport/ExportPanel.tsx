@@ -3,6 +3,7 @@
  * наборы, формат сегментами, оси пунктами меню и «Выгрузить». Грузится отдельным чанком; открытием управляет
  * эагерная кнопка. `Escape` и клик снаружи закрывают панель, фокус — на кнопку.
  */
+import { reportAction, sourceOf } from '../../core/debugActions'
 import { type ReactNode, useId, useRef, useState } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
@@ -168,7 +169,15 @@ export const ExportPanel = ({
   const settings = resolveSettings(axes, chosen)
   if (!settings) return null
 
-  const choose = (next: ExportSettings) => setChosen(next)
+  const choose = (next: ExportSettings) => {
+    reportAction(table, {
+      plugin: 'dataExport',
+      action: 'chooseSettings',
+      detail: next,
+      source: sourceOf(globalThis.event),
+    })
+    setChosen(next)
+  }
   const isServer = whereOf(table, settings) === 'server'
 
   // Лента без серверной выгрузки: «все строки» — только загруженные (ADR 0081).

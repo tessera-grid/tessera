@@ -6,6 +6,7 @@
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
 import { flashMoved } from '../../core/moveFlash'
+import { reportOutcome } from '../../core/debugActions'
 import { isThenable, rejectionText } from '../../core/thenable'
 
 /** Перенос узла в ожидании: его листья и соседи до переноса. */
@@ -108,6 +109,12 @@ export const settleColumnMove = (
   move: Omit<ColumnMoveEntry, 'attempt'>,
   result: unknown,
 ) => {
+  // Итог — с причиной: броском, клавишей или пунктом меню ручки этой задачи (ADR 0125).
+  reportOutcome(
+    table,
+    { plugin: 'columnDragging', action: 'commitMove' },
+    result,
+  )
   if (!isThenable(result)) return
   const t = table as MoveTable
   const entry: ColumnMoveEntry = { ...move, attempt: ++lastAttempt }

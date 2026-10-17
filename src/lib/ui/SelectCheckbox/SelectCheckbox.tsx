@@ -28,11 +28,16 @@ export const SelectCheckbox = memo(
       checkboxIndeterminate: IndeterminateIcon,
     } = useIcons()
 
-    const handleCheckedChange = (checked: boolean) => {
-      // Синтезируем минимальное событие: обработчики TanStack читают target.checked
+    const handleCheckedChange = (
+      checked: boolean,
+      details?: { event?: Event },
+    ) => {
+      // Синтезируем минимальное событие: обработчики TanStack читают target.checked,
+      // канал действий — тип исходного события (ADR 0125).
       onClick(
         {
           target: { checked },
+          nativeEvent: details?.event,
         } as unknown as ChangeEvent<HTMLInputElement>,
         checked,
       )

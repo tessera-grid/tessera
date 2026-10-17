@@ -7,6 +7,7 @@
  * рантайм-валидацию делает `tableFeatures()`. Типобезопасный путь для
  * фиксированного набора — литерал (см. использование в тестах).
  */
+import { setActionOwner } from './actionOwners'
 import {
   type KeyboardAction,
   registerKeyboardActionsInto,
@@ -261,12 +262,14 @@ export const foldEntries = (
     entry.slots?.forEach(slot =>
       registerSlotInto(slots, { ...slot, pluginId: entry.id }),
     )
-    entry.slotActions?.forEach(action =>
-      registerSlotActionInto(slotActions, action),
-    )
+    entry.slotActions?.forEach(action => {
+      setActionOwner(action, entry.id)
+      registerSlotActionInto(slotActions, action)
+    })
     // Пункты контекстного меню собираем в общий список (дедуп по id — последний
     // побеждает); порядок/видимость резолвятся при открытии (resolveVisibleActions).
     entry.contextMenuActions?.forEach(action => {
+      setActionOwner(action, entry.id)
       const index = contextMenuActions.findIndex(a => a.id === action.id)
       if (index === -1) {
         contextMenuActions.push(action)
@@ -277,6 +280,7 @@ export const foldEntries = (
 
     if (entry.stubs) stubEntries.push(...entry.stubs)
 
+    entry.keyboardActions?.forEach(action => setActionOwner(action, entry.id))
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
 
     if (entry.column) {

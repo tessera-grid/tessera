@@ -38,7 +38,13 @@ export const FilterSummaryButton = ({ table }: ToolbarComponentProps) => {
       )}
     </span>
   )
-  const popover = useLazyPopover(table, FilterSummaryPopover, () => label)
+  const popover = useLazyPopover(
+    table,
+    FilterSummaryPopover,
+    () => label,
+    true,
+    { plugin: 'columnFiltering', detail: () => ({ menu: 'summary' }) },
+  )
   // Последний фильтр сброшен из сводки — она закрывается вместе с кнопкой.
   const isOpen = popover.open && items.length > 0
 

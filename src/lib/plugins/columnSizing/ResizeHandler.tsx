@@ -15,6 +15,7 @@ import {
   type SessionCancelReason,
 } from '../../core/cancelInteraction'
 import { HandleMenu, useHandleMenu } from '../../grid/handleMenu/HandleMenu'
+import { reportAction } from '../../core/debugActions'
 import styles from './ResizeHandler.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
@@ -42,6 +43,8 @@ export interface ResizeSplitterProps {
   disabled?: boolean
   /** Таблица — для объявления ошибки загрузки меню (ADR 0061). */
   table?: unknown
+  /** Колонка грипа — цель действий клавиш в канале действий (ADR 0125). */
+  columnId?: string
 }
 
 export const ResizeHandler = memo(
@@ -58,6 +61,7 @@ export const ResizeHandler = memo(
     maxSize,
     disabled = false,
     table,
+    columnId,
   }: ResizeSplitterProps) => {
     const labels = useLocalization()
     const wrapperRef = useRef<HTMLDivElement>(null)
@@ -135,11 +139,21 @@ export const ResizeHandler = memo(
 
     const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
       const step = event.shiftKey ? LARGE_KEY_STEP : KEY_STEP
+      const report = (action: string, delta?: number) =>
+        reportAction(table, {
+          plugin: 'columnSizing',
+          action,
+          detail: { columnId, ...(delta !== undefined && { delta }) },
+          source: 'keyboard',
+        })
       if (event.key === 'ArrowLeft') {
+        report('resizeBy', -step)
         onResizeBy(-step)
       } else if (event.key === 'ArrowRight') {
+        report('resizeBy', step)
         onResizeBy(step)
       } else if (event.key === 'Home') {
+        report('resetSize')
         onResetSize(event)
       } else if (event.key === 'Escape') {
         menu.trigger.onCancel()
@@ -219,6 +233,8 @@ export const ResizeHandler = memo(
             label={labels.columnWidth}
             getItems={getMenuItems}
             onClose={menu.close}
+            table={table}
+            plugin="columnSizing"
           />
         )}
       </>

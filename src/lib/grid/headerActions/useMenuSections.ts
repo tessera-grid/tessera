@@ -4,7 +4,9 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 import clsx from 'clsx'
 
+import { actionOwnerOf } from '../../core/actionOwners'
 import { announceLabel } from '../../core/announcer'
+import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { useLatest } from '../../core/useLatest'
 import type { TableLabels } from '../../core/localization'
 import {
@@ -85,8 +87,14 @@ export const useMenuSections = (
   }
 
   /** Вход в раздел — сразу; асинхронный раздел до ответа показывает скелет. */
-  const enter = (owner: MenuAction) => {
+  const enter = (owner: MenuAction, source: DebugActionSource = 'pointer') => {
     if (!owner.submenu) return
+    reportAction((context as { table?: unknown }).table, {
+      plugin: actionOwnerOf(owner),
+      action: 'enterSection',
+      detail: { action: owner.id },
+      source,
+    })
     const next = enterSection(level.path, owner.id)
     const { items } = owner.submenu(context, labels)
     if (Array.isArray(items)) onSectionItems?.(items)
@@ -103,8 +111,15 @@ export const useMenuSections = (
   }
 
   /** Уровень выше; `false` — уже корень. */
-  const back = () => {
+  const back = (source: DebugActionSource = 'keyboard') => {
     if (level.path.length <= minDepth) return false
+    const top = root.find(action => action.id === level.path[0])
+    reportAction((context as { table?: unknown }).table, {
+      plugin: top ? actionOwnerOf(top) : 'core',
+      action: 'leaveSection',
+      detail: { action: level.path.at(-1) },
+      source,
+    })
     snapshot('back')
     setDirection('back')
     setPath(leaveSection(level.path))

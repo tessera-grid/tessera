@@ -8,6 +8,12 @@
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import type { PluginReconcileContext } from '../../core/features'
 import { DEFAULT_LABELS } from '../../core/localization'
+import {
+  type DebugActionSource,
+  reportAction,
+  reportOutcome,
+  sourceOf,
+} from '../../core/debugActions'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
   pluginStateKey,
@@ -45,6 +51,26 @@ type SessionTable = {
 type Cell = { rowId: string; columnId: string }
 
 const KEY_SEPARATOR = '\u0000'
+
+/** Конец сессии правки — жест в канале действий (ADR 0125, AL19). */
+const reportEditEnd = (
+  table: unknown,
+  cell: { rowId: string; columnId: string },
+  detail: Record<string, unknown>,
+  reason?: string,
+) =>
+  reportAction(table, {
+    plugin: ID,
+    action: 'edit',
+    detail: { ...cell, ...detail },
+    // Без пользователя — запрет, уход ячейки, конфликт; иначе — событие, которое
+    // закрыло правку: Enter или Escape (`keydown`), уход фокуса (`blur`).
+    source:
+      reason === 'revoke' || reason === 'unavailable' || reason === 'conflict'
+        ? 'auto'
+        : sourceOf(globalThis.event),
+    phase: 'end',
+  })
 
 export const cellKey = (rowId: string, columnId: string) =>
   `${rowId}${KEY_SEPARATOR}${columnId}`
@@ -101,6 +127,7 @@ export const startEditSession = (
   table: unknown,
   row: SessionRow,
   column: { id: string },
+  source: DebugActionSource = 'api',
 ) => {
   if (isCellPending(table, row.id, column.id)) {
     return
@@ -126,11 +153,24 @@ export const startEditSession = (
     ...(failed ? { rejected: { error: failed.error ?? '' } } : {}),
   }
   writeEditingState(table, { ...readEditingState(table), active: session })
+  reportAction(table, {
+    plugin: ID,
+    action: 'edit',
+    detail: session.cell,
+    source,
+    phase: 'start',
+  })
 }
 
 export const setEditDraft = (table: unknown, draft: string) => {
   const state = readEditingState(table)
   if (state.active && state.active.draft !== draft) {
+    reportAction(table, {
+      plugin: ID,
+      action: 'changeDraft',
+      detail: { draft },
+      source: 'keyboard',
+    })
     writeEditingState(table, {
       ...state,
       active: { ...state.active, draft },
@@ -142,6 +182,12 @@ export const setEditDraft = (table: unknown, draft: string) => {
 export const setEditError = (table: unknown, invalid: string) => {
   const state = readEditingState(table)
   if (state.active && state.active.invalid !== invalid) {
+    reportAction(table, {
+      plugin: ID,
+      action: 'validationFailed',
+      detail: { message: invalid },
+      source: 'auto',
+    })
     writeEditingState(table, {
       ...state,
       active: { ...state.active, invalid },
@@ -179,6 +225,7 @@ export const cancelEditSession = (
     return
   }
   endEditSession(table)
+  reportEditEnd(table, session.cell, { result: 'cancel', reason }, reason)
   hooks.onEditCancel?.({
     rowId: session.cell.rowId,
     columnId: session.cell.columnId,
@@ -255,6 +302,7 @@ export const commitEditSession = (
     cancelEditSession(table, 'conflict', hooks, { value: now })
     return
   }
+  reportEditEnd(table, cell, { result: 'commit', value })
   const result = hooks.onCellEdit?.({
     rowId,
     columnId,
@@ -262,6 +310,7 @@ export const commitEditSession = (
     original,
     ...(changed ? { current: now } : {}),
   })
+  reportOutcome(table, { plugin: ID, action: 'save' }, result)
   if (!isThenable(result)) {
     endEditSession(table)
     return
