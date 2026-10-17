@@ -299,7 +299,8 @@ export const GuidePanel = ({
   // после неё шаг сменяется. `timed` — заливка воспроизведения на всё время шага:
   // значок до её конца текущий, «Пауза» её замораживает, «Далее» и переход вперёд
   // доливают с того же места, «Назад» прерывает. `fast` — переход к выбранному шагу:
-  // шаги подряд, ускоренно, без конфетти. `from` — доля, с которой полоска доливается.
+  // шаги подряд, ускоренно; пройденные вперёд — с конфетти. `from` — доля, с которой
+  // полоска доливается.
   const [move, setMove] = useState<{
     index: number
     back: boolean
@@ -350,6 +351,13 @@ export const GuidePanel = ({
     const bar = list.current?.querySelector<HTMLElement>(
       `[data-step-fill="${move.index}"]`,
     )
+    // Шаг, пройденный переходом вперёд, отмечается, как пройденный «Далее».
+    if (move.fast && !move.back) {
+      const passed = list.current?.querySelector<HTMLElement>(
+        `[data-step-index="${move.index}"]`,
+      )
+      if (passed) void burst(passed)
+    }
     const from = move.from ?? 0
     const frames = [
       { transform: `scaleX(${from})` },

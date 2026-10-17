@@ -412,7 +412,7 @@ describe('панель сценария (ADR 0117)', () => {
     await idle()
     expect(confetti()).toHaveLength(0)
   })
-  test('SN24: нажатие на шаг переходит к нему ускоренно — полоски между шагами заливаются (назад — пустеют) по 120 мс на шаг, без конфетти; значок выбранного «подпрыгивает», последний — пройден; шаг — кнопка; нажатие посреди перехода меняет цель', async () => {
+  test('SN24: нажатие на шаг переходит к нему ускоренно — полоски между шагами заливаются (назад — пустеют) по 120 мс на шаг, значок каждого пройденного вперёд — с конфетти, назад — без; значок выбранного «подпрыгивает», последний — пройден; шаг — кнопка; нажатие посреди перехода меняет цель', async () => {
     await render(<GuidePanelManySteps />)
     await expect.poll(() => byId('guide-next')).toBeTruthy()
     const toggle = byId('guide-toggle')
@@ -436,14 +436,41 @@ describe('панель сценария (ADR 0117)', () => {
     expect(stepButton(4).hasAttribute('aria-label')).toBe(false)
     expect(stepButton(4).hasAttribute('aria-labelledby')).toBe(false)
 
-    // Вперёд на 4 шага: подряд, ускоренно, без конфетти.
+    // Частица конфетти — от значка, ближайшего к её началу полёта.
+    const seen = new WeakSet<Element>()
+    const burstFrom = new Set<number>()
+    const trackBursts = () => {
+      for (const piece of confetti()) {
+        if (seen.has(piece)) continue
+        seen.add(piece)
+        const at = piece.getBoundingClientRect()
+        const badges = [
+          ...document.querySelectorAll<HTMLElement>('[data-step-index]'),
+        ]
+        const nearest = badges
+          .map(each => {
+            const box = each.getBoundingClientRect()
+            return {
+              index: Number(each.dataset.stepIndex),
+              distance: Math.hypot(
+                box.left + box.width / 2 - (at.left + at.width / 2),
+                box.top + box.height / 2 - (at.top + at.height / 2),
+              ),
+            }
+          })
+          .sort((a, b) => a.distance - b.distance)[0]!
+        burstFrom.add(nearest.index)
+      }
+    }
+
+    // Вперёд на 4 шага: подряд, ускоренно, значок каждого пройденного — с конфетти.
     const start = performance.now()
     stepButton(4).click()
-    let pieces = 0
     const order: number[] = []
     while (performance.now() - start < 3000) {
+      trackBursts()
       await frame()
-      pieces = Math.max(pieces, confetti().length)
+      trackBursts()
       for (let index = 0; index < 4; index++) {
         if (!order.includes(index) && fillOf(index) > 0.99) order.push(index)
       }
@@ -454,7 +481,7 @@ describe('панель сценария (ADR 0117)', () => {
     expect(order).toEqual([0, 1, 2, 3])
     expect(took).toBeGreaterThan(4 * 120 - 60)
     expect(took).toBeLessThan(4 * 120 + 600)
-    expect(pieces).toBe(0)
+    expect([...burstFrom].sort()).toEqual([0, 1, 2, 3])
     expect(badge(4).dataset.stepState).toBe('current')
     expect(badge(4).getAnimations().length).toBeGreaterThan(0)
     for (let index = 0; index < 4; index++) {
@@ -464,8 +491,16 @@ describe('панель сценария (ADR 0117)', () => {
       .poll(() => document.getAnimations().length, { timeout: 3000 })
       .toBe(0)
 
-    // Назад через название шага: полоски пустеют, шаги снова будущие.
+    // Назад через название шага: полоски пустеют, шаги снова будущие, без конфетти.
+    await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
     stepButton(1).querySelector('strong')!.click()
+    let backPieces = 0
+    while (!/шаг 2 из/.test(toggle.textContent ?? '')) {
+      if (performance.now() - start > 8000) break
+      backPieces = Math.max(backPieces, confetti().length)
+      await frame()
+    }
+    expect(backPieces).toBe(0)
     await expect
       .poll(() => toggle.textContent, { timeout: 3000 })
       .toMatch(/шаг 2 из/)
