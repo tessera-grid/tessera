@@ -41,6 +41,8 @@ const CELL_EDITABLE_COLUMNS = ['age', 'visits', 'gender']
  */
 const lifetimeKeyOf = (entries: readonly TesseraFeatureEntry[]) =>
   entries
+    // Модель, которую несёт интерфейс, держит свои договоры (ADR 0120): `server` сортировки.
+    .flatMap(entry => (entry.model ? [entry, entry.model] : [entry]))
     .flatMap(entry =>
       (entry.lifetimeArgs ?? []).map(
         key =>
