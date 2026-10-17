@@ -62,11 +62,18 @@
 }
 
 /*
- * Заглушки ошибки первой загрузки (ADR 0096) и пустого результата фильтра (ADR 0045,
- * FL41) — под шапкой во всю ширину, а не сбоку от узкой таблицы.
+ * Заглушка под шапкой (ADR 0123: ошибка загрузки, пустой результат фильтра — FL41) —
+ * во всю видимую ширину, а не сбоку от узкой таблицы.
  */
-.table__container:is([data-load-failed], [data-filter-empty]) {
+.table__container[data-empty-stub] {
   flex-direction: column;
+}
+
+.table__body-stub {
+  position: sticky;
+  left: 0;
+  flex: 1 0 auto;
+  width: 100%;
 }
 
 .table__stub-container {
@@ -78,6 +85,11 @@
 .table__stub {
   height: 100%;
   position: relative;
+}
+
+/* Заглушка вместо таблицы — на всю область. */
+.table__grid-stub {
+  height: 100%;
 }
 
 .table {

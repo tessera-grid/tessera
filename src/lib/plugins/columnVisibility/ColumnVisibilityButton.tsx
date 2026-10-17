@@ -12,6 +12,7 @@ import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
 import { isWaitingForColumns } from '../../core/skeletonOptions'
+import { dataColumnsOf } from '../../core/stubs'
 import { Bubble } from '../../ui/Bubble'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton, ToolbarSkeleton } from '../../ui/ToolbarButton'
@@ -51,6 +52,18 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
 
   if (isWaitingForColumns(table)) {
     return <ToolbarSkeleton data-testid="column-visibility-skeleton" />
+  }
+
+  // Колонок нет совсем — показывать нечего; скрытые колонки меню вернёт (ADR 0123, ES10).
+  if (dataColumnsOf(table).length === 0) {
+    return (
+      <ToolbarButton
+        label={label}
+        icon={icon}
+        disabled
+        data-testid="column-visibility-button"
+      />
+    )
   }
 
   const placeholder = (

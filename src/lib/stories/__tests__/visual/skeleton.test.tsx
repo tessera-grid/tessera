@@ -663,7 +663,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       <SlotGrid data={[]} loading="initial" loadError={new Error('Down')} />,
     )
     await expect
-      .poll(() => document.querySelector('[data-load-failed]'))
+      .poll(() => document.querySelector('[data-empty-stub="loadError"]'))
       .not.toBeNull()
     expect(skeletonRows()).toHaveLength(0)
     expect(shown()).toBe(false)

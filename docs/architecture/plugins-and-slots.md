@@ -66,6 +66,9 @@ flowchart TB
 - `table.getSlotActions()` → `table.options.slotActions` (дескрипторы действий, ADR 0024)
 - `table.getContextMenuActions()` → `table.options.contextMenuActions` (пункты
   контекстного меню, ADR 0030)
+- `table.options.stubEntries` — записи реестра заглушек пустой таблицы из поля `stubs`
+  записей плагинов (ADR 0123); грид сводит их с записями ядра (`stubEntriesOf`) и
+  показывает первую по приоритету с выполненным `when`
 - `table.getKeyboardActions()` → `table.options.keyboardActions` (клавиатурные
   действия ячеек: `Space`/`Enter`/`F2`, ADR 0021; упорядочены по `priority`)
 - `table.reportPluginError(id, error)` → реестр ошибок плагинов: `logError` один раз

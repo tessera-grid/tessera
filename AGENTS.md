@@ -643,6 +643,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       «Panels/Toolbar — Initial loading», «— Search before data (server)», «— Columns
       arrive», «Export — Server, initial loading» (S1–S4)
       ([ADR 0122](docs/decisions/0122-toolbar-before-data.md)).
+    - _Заглушки пустой таблицы:_ `stubs` (ES4–ES14 — тексты из `localization`, нет колонок,
+      все колонки скрыты и «Show all», нет данных, проп `stubs`, иллюстрация
+      `icons.emptyState`, тулбар без колонок, примитив `Stub`, объявление, axe, причина
+      плагина), модульные `stubs` (ES1–ES3 — выбор записи, записи ядра и плагинов, порядок),
+      `play` историй «Core/Stubs» (S1–S5), история `UI.Stub`
+      ([ADR 0123](docs/decisions/0123-empty-state-stubs.md)).
     - _Включение панелей:_ `panels` (PB1–PB5, PB10–PB11 — тулбар и нижняя панель по
       слотам, флаги-переопределения), `toolbar-chunk` (PB6 — ленивый модуль тулбара),
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), `play` историй

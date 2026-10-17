@@ -30,6 +30,7 @@ import type {
 import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
+import type { StubEntry } from '../stubs'
 import {
   type ServiceColumnMode,
   type ServicePresence,
@@ -239,6 +240,8 @@ interface DefinePluginConfig<
     | ((opts: TOptions) => PluginSlotDecl<THooks, NoInfer<TState>>[])
   /** Декларативные действия слота (инлайн-кнопка / пункт кебаб-меню). */
   slotActions?: SlotAction[]
+  /** Заглушки пустой таблицы плагина — записи реестра (ADR 0123, ES14). */
+  stubs?: StubEntry[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
@@ -440,6 +443,9 @@ export const definePlugin = <
       }
       if (config.slotActions) {
         entry.slotActions = config.slotActions
+      }
+      if (config.stubs) {
+        entry.stubs = config.stubs
       }
       if (config.contextMenuActions) {
         entry.contextMenuActions = config.contextMenuActions

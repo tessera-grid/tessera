@@ -147,6 +147,8 @@ export const RU_LABELS: TableLabels = {
   announceCopy: count => `Скопировано: ${cells(count)}`,
   announceLoaded: count => `Загружено: ${rows(count)}`,
   noData: 'Нет данных',
+  noColumnsTitle: 'Нет колонок',
+  columnsHiddenTitle: 'Все колонки скрыты',
   expandColumn: 'Раскрытие',
   reorderColumn: 'Порядок',
   rowActionsColumn: 'Действия',

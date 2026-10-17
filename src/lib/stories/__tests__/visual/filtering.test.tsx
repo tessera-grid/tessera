@@ -705,7 +705,7 @@ const DIRECT_COLUMNS = [
 
 interface DirectGridProps {
   plugins: readonly unknown[]
-  filterStub?: ComponentProps<typeof DataGrid>['filterStub']
+  stubs?: ComponentProps<typeof DataGrid>['stubs']
   localization?: ComponentProps<typeof DataGrid>['localization']
   icons?: ComponentProps<typeof DataGrid>['icons']
   colorMode?: 'light' | 'dark'
@@ -715,7 +715,7 @@ interface DirectGridProps {
 /** Грид напрямую: пропы DataGrid, которых истории не пробрасывают. */
 const DirectGrid = ({
   plugins,
-  filterStub,
+  stubs,
   localization,
   icons,
   colorMode,
@@ -733,7 +733,7 @@ const DirectGrid = ({
     <div style={{ height: 600 }}>
       <DataGrid
         table={table as never}
-        filterStub={filterStub}
+        stubs={stubs}
         localization={localization}
         icons={icons}
         colorMode={colorMode}
@@ -746,7 +746,7 @@ const stub = () =>
   document.querySelector<HTMLElement>('[data-testid="filter-stub"]')
 
 describe('Фильтрация — пустой результат, сервер, доступность', () => {
-  test('FL27: нет строк при активном фильтре или поиске — заглушка с кнопкой сброса фильтров и поиска; шапка остаётся; без фильтров — прежний stub', async () => {
+  test('FL27: нет строк при активном фильтре или поиске — заглушка с кнопкой сброса фильтров и поиска; шапка остаётся; без фильтров — заглушка «нет данных»', async () => {
     const screen = await renderFiltering(TOOLBAR)
     await applyTextFilter('name', 'alice')
     await userEvent.type(searchInput()!, 'zzz')
@@ -768,8 +768,8 @@ describe('Фильтрация — пустой результат, сервер
     await render(<Stories.Filtering {...GRID} {...TOOLBAR} dataOverride={[]} />)
     await waitForToolbar()
     await expect
-      .poll(() => document.body.textContent?.includes('No Data!'))
-      .toBe(true)
+      .poll(() => document.querySelector('[data-testid="no-data-stub"]'))
+      .not.toBeNull()
     expect(stub()).toBeNull()
   })
 
@@ -799,12 +799,14 @@ describe('Фильтрация — пустой результат, сервер
     expect(Math.abs(box.width - container.clientWidth)).toBeLessThan(2)
   })
 
-  test('FL28: filterStub переопределяет заглушку — узлом или функцией от { reset }', async () => {
+  test('FL28: stubs.filtered переопределяет заглушку — узлом или функцией от { action }', async () => {
     const plugins = [columnFiltering({ debounceMs: 0 })] as const
     const node = await render(
       <DirectGrid
         plugins={plugins}
-        filterStub={<span data-testid="custom-stub">Nothing here</span>}
+        stubs={{
+          filtered: <span data-testid="custom-stub">Nothing here</span>,
+        }}
       />,
     )
     await waitForGrid()
@@ -821,11 +823,13 @@ describe('Фильтрация — пустой результат, сервер
     await render(
       <DirectGrid
         plugins={plugins}
-        filterStub={({ reset }) => (
-          <button type="button" data-testid="custom-reset" onClick={reset}>
-            Start over
-          </button>
-        )}
+        stubs={{
+          filtered: ({ action }) => (
+            <button type="button" data-testid="custom-reset" onClick={action}>
+              Start over
+            </button>
+          ),
+        }}
       />,
     )
     await waitForGrid()

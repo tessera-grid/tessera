@@ -29,14 +29,14 @@ import {
 } from '../core/themeVariables'
 import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
-import { FilterStub } from './filtering/FilterStub'
-import { isFilteringActive } from '../core/filtering'
+import { EmptyStub } from './stubs/EmptyStub'
+import { type StubContext, resolveStub, stubEntriesOf } from '../core/stubs'
 import { getFooterPosition } from '../core/footer'
 import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
-import { LoadErrorBanner, LoadErrorStub } from './loadError/LoadError'
+import { LoadErrorBanner } from './loadError/LoadError'
 import { useLoadError } from './loadError/useLoadError'
 import { hasLoadError } from '../core/loadError'
 import { isSkeletonShown } from '../core/skeletonOptions'
@@ -92,16 +92,14 @@ const releaseContainerFocus = (event: FocusEvent<HTMLDivElement>) => {
 }
 
 /**
- * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable), высоту и
- * ReactNode-заглушку при отсутствии данных.
+ * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable) и высоту;
+ * заглушки пустой таблицы — из реестра причин, свой вид — пропом `stubs` (ADR 0123).
  */
 export const DataGrid = ({
   table: tableProp,
   height = '100%',
   maxHeight = '100%',
-  stub,
-  filterStub,
-  errorStub,
+  stubs,
   colorMode = 'auto',
   contrast = 'auto',
   icons,
@@ -304,29 +302,39 @@ export const DataGrid = ({
   // главнее. Тот же расчёт видят компоненты слотов (SL21).
   const showSkeleton = isSkeletonShown(table)
 
-  const noData = !showSkeleton && rows.length === 0
-  // Пусто из-за фильтра — своя заглушка поверх тела, шапка с фильтрами остаётся.
-  const filtered = isFilteringActive(state)
-  const showStub = noData && !!stub && !filtered && !loadError.stubShown
-  const showFilterStub = noData && filtered && !loadError.stubShown
+  // Заглушка пустой таблицы — первая по приоритету запись реестра (ADR 0123); скелет
+  // главнее любой. `grid` встаёт вместо таблицы, `body` — под шапкой.
+  const stubContext: StubContext = {
+    table,
+    rowCount: rows.length,
+    loadError: {
+      shown: loadError.stubShown,
+      error: (table.options as any).loadError,
+      reason: loadError.reason,
+      retry: loadError.retry,
+      pending: loadError.pending,
+    },
+  }
+  const activeStub = showSkeleton
+    ? undefined
+    : resolveStub(stubEntriesOf(table), stubContext)
+  const gridStub = activeStub?.placement === 'grid' ? activeStub : undefined
+  const bodyStub = activeStub?.placement === 'body' ? activeStub : undefined
+  const stubTitle =
+    activeStub && activeStub.announce !== false
+      ? activeStub.title(labels)
+      : undefined
 
-  // Заглушки пустой таблицы — над закреплённым футером, в таблице; под незакреплённым и
-  // без футера — после таблицы (ADR 0118, §3).
-  const emptyStubs =
-    showFilterStub || loadError.stubShown ? (
-      <>
-        {showFilterStub && <FilterStub table={table} render={filterStub} />}
-        {loadError.stubShown && (
-          <LoadErrorStub
-            error={(table.options as any).loadError}
-            reason={loadError.reason}
-            retry={loadError.retry}
-            pending={loadError.pending}
-            render={errorStub}
-          />
-        )}
-      </>
-    ) : null
+  // Заглушки под шапкой — над закреплённым футером, в таблице; под незакреплённым и без
+  // футера — после таблицы (ADR 0118, §3).
+  const emptyStubs = bodyStub ? (
+    <EmptyStub
+      entry={bodyStub}
+      context={stubContext}
+      render={stubs?.[bodyStub.id]}
+      className={dataGridStyles['table__body-stub']}
+    />
+  ) : null
   const stubsAboveFooter =
     !!(table.options as any).enableFooter &&
     getFooterPosition(table) === 'pinned'
@@ -358,8 +366,8 @@ export const DataGrid = ({
       }
     : undefined
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
-  useScrollbarWidthVar(getScrollElement, wrapperRef, !showStub)
-  useSkeletonWave(wrapperRef, showSkeleton && !showStub)
+  useScrollbarWidthVar(getScrollElement, wrapperRef, !gridStub)
+  useSkeletonWave(wrapperRef, showSkeleton && !gridStub)
 
   const containerStyles = getTableHeight({ height, maxHeight })
   // Инлайн — только РАНТАЙМ-переменные (высоты шапки/тела, drag-офсеты) и
@@ -380,59 +388,6 @@ export const DataGrid = ({
   const contrastAttr = contrastAttribute(contrast)
   const colorModeAttr = colorMode === 'light' ? 'light' : undefined
 
-  // LiveRegion — первым во фрагменте обеих веток: переживает переход в заглушку
-  // и объявляет пустой результат.
-  if (showStub) {
-    return (
-      <>
-        <LiveRegion
-          table={table}
-          labels={labels}
-          loading={showLinearProgress || showSkeleton}
-          rowCount={rows.length}
-          themeNode={scrollableNodeRef}
-        />
-        <PluginRenderVersionContext.Provider value={renderVersion}>
-          <ThemeScope
-            colorMode={colorMode}
-            contrast={contrast}
-            rootRef={wrapperRef}
-            host={table as never}
-          >
-            <IconsProvider icons={icons}>
-              <LocalizationProvider localization={localization}>
-                <div
-                  ref={wrapperRef}
-                  className={clsx(
-                    dataGridStyles['table__theme-wrapper'],
-                    themeClassName,
-                  )}
-                  data-tsr-contrast={contrastAttr}
-                  data-tsr-color-mode={colorModeAttr}
-                  data-toolbar={enableToolbar || undefined}
-                  data-status-bar={hasStatusBar || undefined}
-                  style={{ ...containerStyles, ...style }}
-                >
-                  {toolbar}
-                  <div
-                    className={clsx(
-                      'data-grid__container',
-                      dataGridStyles['table__stub-container'],
-                    )}
-                    ref={scrollableNodeRef}
-                  >
-                    <div className={dataGridStyles.table__stub}>{stub}</div>
-                  </div>
-                  {statusBar}
-                </div>
-              </LocalizationProvider>
-            </IconsProvider>
-          </ThemeScope>
-        </PluginRenderVersionContext.Provider>
-      </>
-    )
-  }
-
   return (
     <>
       <LiveRegion
@@ -441,6 +396,7 @@ export const DataGrid = ({
         loading={showLinearProgress || showSkeleton}
         failed={loadError.present}
         rowCount={rows.length}
+        stubTitle={stubTitle}
         themeNode={scrollableNodeRef}
       />
       <PluginRenderVersionContext.Provider value={renderVersion}>
@@ -501,66 +457,86 @@ export const DataGrid = ({
                       data-kn-guard="before"
                     />
                   )}
-                  <div
-                    className={clsx(
-                      'data-grid__container',
-                      dataGridStyles.table__container,
-                      {
-                        [dataGridStyles['table__container--skeleton']]:
-                          showSkeleton,
-                      },
-                    )}
-                    ref={scrollableNodeRef}
-                    // Firefox держит прокручиваемую область в порядке Tab (KN32).
-                    tabIndex={keyboardNavigation ? -1 : undefined}
-                    onFocus={
-                      keyboardNavigation ? releaseContainerFocus : undefined
-                    }
-                    data-resizing={isResizingColumns !== false}
-                    data-column-dragging={
-                      state.columnDraggingActiveId != null || undefined
-                    }
-                    data-row-dragging={
-                      rowDragging?.activeId != null || undefined
-                    }
-                    data-row-drop-invalid={
-                      (rowDragging?.activeId != null &&
-                        rowDragging.acceptable === false) ||
-                      undefined
-                    }
-                    data-row-animation={
-                      (table.options as any).enableRowAnimation !== false ||
-                      undefined
-                    }
-                    data-load-failed={loadError.stubShown || undefined}
-                    data-filter-empty={showFilterStub || undefined}
-                    onCopy={handleCopy}
-                  >
-                    <DataGridTable
-                      table={table}
-                      layout={layout}
-                      headStyles={headStyles}
-                      headerGroups={headerGroups}
-                      rows={rows}
-                      leafColumns={leafColumns}
-                      virtualRows={virtualRows}
-                      virtualColumns={virtualColumns}
-                      isVirtualColumns={!hasNestedGroups}
-                      isResizingColumns={isResizingColumns}
-                      keyboardNavigation={keyboardNavigation}
-                      label={tableLabel}
-                      busy={showLinearProgress}
-                      skeleton={showSkeleton}
-                      loadingLabel={loadingLabel}
-                      endContent={stubsAboveFooter ? emptyStubs : undefined}
-                      style={{
-                        ...columnSizes,
-                        ...columnShiftVars(columnShifts),
-                        ...virtualPaddingStyles,
-                      }}
-                    />
-                    {!stubsAboveFooter && emptyStubs}
-                  </div>
+                  {/* Заглушка вместо таблицы — в том же дереве: тулбар и нижняя панель
+                      не перемонтируются при переходе (ADR 0123). */}
+                  {gridStub ? (
+                    <div
+                      className={clsx(
+                        'data-grid__container',
+                        dataGridStyles['table__stub-container'],
+                      )}
+                      ref={scrollableNodeRef}
+                    >
+                      <div className={dataGridStyles.table__stub}>
+                        <EmptyStub
+                          entry={gridStub}
+                          context={stubContext}
+                          render={stubs?.[gridStub.id]}
+                          className={dataGridStyles['table__grid-stub']}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={clsx(
+                        'data-grid__container',
+                        dataGridStyles.table__container,
+                        {
+                          [dataGridStyles['table__container--skeleton']]:
+                            showSkeleton,
+                        },
+                      )}
+                      ref={scrollableNodeRef}
+                      // Firefox держит прокручиваемую область в порядке Tab (KN32).
+                      tabIndex={keyboardNavigation ? -1 : undefined}
+                      onFocus={
+                        keyboardNavigation ? releaseContainerFocus : undefined
+                      }
+                      data-resizing={isResizingColumns !== false}
+                      data-column-dragging={
+                        state.columnDraggingActiveId != null || undefined
+                      }
+                      data-row-dragging={
+                        rowDragging?.activeId != null || undefined
+                      }
+                      data-row-drop-invalid={
+                        (rowDragging?.activeId != null &&
+                          rowDragging.acceptable === false) ||
+                        undefined
+                      }
+                      data-row-animation={
+                        (table.options as any).enableRowAnimation !== false ||
+                        undefined
+                      }
+                      data-empty-stub={bodyStub?.id}
+                      onCopy={handleCopy}
+                    >
+                      <DataGridTable
+                        table={table}
+                        layout={layout}
+                        headStyles={headStyles}
+                        headerGroups={headerGroups}
+                        rows={rows}
+                        leafColumns={leafColumns}
+                        virtualRows={virtualRows}
+                        virtualColumns={virtualColumns}
+                        isVirtualColumns={!hasNestedGroups}
+                        isResizingColumns={isResizingColumns}
+                        keyboardNavigation={keyboardNavigation}
+                        label={tableLabel}
+                        busy={showLinearProgress}
+                        skeleton={showSkeleton}
+                        loadingLabel={loadingLabel}
+                        endContent={stubsAboveFooter ? emptyStubs : undefined}
+                        style={{
+                          ...columnSizes,
+                          ...columnShiftVars(columnShifts),
+                          ...virtualPaddingStyles,
+                        }}
+                      />
+                      {!stubsAboveFooter && emptyStubs}
+                    </div>
+                  )}
                   {keyboardNavigation && (
                     <div
                       ref={guardAfterRef}

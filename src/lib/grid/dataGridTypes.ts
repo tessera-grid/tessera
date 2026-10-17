@@ -1,6 +1,5 @@
-import type { FilterStubRender } from './filtering/FilterStub'
-import type { ErrorStubRender } from './loadError/LoadError'
-import type { CSSProperties, ReactNode } from 'react'
+import type { StubsOverride } from '../core/stubs'
+import type { CSSProperties } from 'react'
 
 import type { TableLabels } from '../core/localization'
 import type { ColorMode, ContrastMode } from '../core/themeVariables'
@@ -40,18 +39,12 @@ export interface DataGridProps {
   height?: number | string | 'auto'
   /** number — max-высота в px; string — в процентах. */
   maxHeight?: number | string
-  /** Компонент, отображающийся при отсутствии данных. */
-  stub?: ReactNode
   /**
-   * Заглушка пустого результата при активном фильтре или поиске (ADR 0045, FL28):
-   * узел или функция от `{ reset }`. По умолчанию — подпись и «Сбросить фильтры».
+   * Свой вид заглушек пустой таблицы по причине (ADR 0123): `noData`, `noColumns`,
+   * `columnsHidden`, `filtered`, `loadError` и причины плагинов — узел или функция от
+   * `{ action, error }`. Какую заглушку показать, решает грид.
    */
-  filterStub?: FilterStubRender
-  /**
-   * Заглушка ошибки первой загрузки (ADR 0096): узел или функция от
-   * `{ error, retry }`. По умолчанию — иконка, «Couldn't load the data», причина, «Retry».
-   */
-  errorStub?: ErrorStubRender
+  stubs?: StubsOverride
   /** Доп. CSS-класс на обёртке грида (несущей `.data-grid-theme`). */
   className?: string
   /** Инлайн-стиль обёртки грида (пер-инстансное переопределение токенов темы). */

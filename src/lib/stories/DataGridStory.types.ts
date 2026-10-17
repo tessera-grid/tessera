@@ -47,6 +47,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * `columnPinning` (закрепление до прихода данных, когда кнопок шапки ещё нет).
    */
   initialColumnPinning?: ColumnPinningState
+  /** Все колонки скрыты состоянием приложения (`columnVisibility`, ADR 0123); на лету. */
+  hideAllColumns?: boolean
   /** Первая колонка данных закреплена слева сразу при открытии; переключается на лету. */
   pinFirstColumn?: boolean
   /**
@@ -71,8 +73,8 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   localization?: DataGridProps['localization']
   /** Свои иконки грида (переопределение части иконок по ключу). */
   icons?: DataGridProps['icons']
-  /** Заглушка ошибки первой загрузки (ADR 0096). */
-  errorStub?: DataGridProps['errorStub']
+  /** Свой вид заглушек пустой таблицы по причине (ADR 0123). */
+  stubs?: DataGridProps['stubs']
   /** Язык подписей: `ru` — русский словарь историй под `localization`. */
   locale?: 'en' | 'ru'
 

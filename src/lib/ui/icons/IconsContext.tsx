@@ -40,6 +40,7 @@ import {
   RotateCw,
 } from 'lucide-react'
 
+import { EmptyStateIllustration } from './EmptyStateIllustration'
 import { CheckboxOutlineIcon } from './icons'
 
 /**
@@ -118,6 +119,8 @@ export interface TableIcons {
   /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
   loadMoreFailed: IconComponent
   retry: IconComponent
+  /** Иллюстрация заглушек пустой таблицы (ADR 0123) */
+  emptyState: IconComponent
   /** Плашка и заглушка ошибки загрузки данных (ADR 0096) */
   loadFailed: IconComponent
   /** Кнопка «наверх» в нижней панели (ADR 0082) */
@@ -173,6 +176,7 @@ export const DEFAULT_ICONS: TableIcons = {
   actionFailed: CircleAlert,
   loadMoreFailed: CircleAlert,
   retry: RotateCw,
+  emptyState: EmptyStateIllustration,
   loadFailed: CircleAlert,
   backToTop: ArrowUpToLine,
   backToStart: ArrowLeftToLine,

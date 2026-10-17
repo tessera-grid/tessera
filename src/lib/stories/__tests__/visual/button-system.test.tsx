@@ -414,6 +414,15 @@ describe('Button system (ADR 0098)', () => {
       const Story = composed[key]
       const screen = await render(<Story />)
       await Story.play?.({ canvasElement: screen.container } as never)
+      // В покое: кнопка, включившаяся с приходом данных, доигрывает переход цвета.
+      await Promise.all(
+        document
+          .getAnimations()
+          .filter(
+            animation => animation.effect?.getTiming().iterations !== Infinity,
+          )
+          .map(animation => animation.finished.catch(() => undefined)),
+      )
       await check(key, false)
       await screen.unmount()
     }

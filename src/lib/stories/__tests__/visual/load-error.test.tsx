@@ -2,11 +2,11 @@ import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import type { ErrorStubRender } from '../../../grid/loadError/LoadError'
+import type { StubsOverride } from '../../../core/stubs'
 import type { TableLabels } from '../../../core/localization'
 import type { TableIcons } from '../../../ui/icons'
 import { keyboardNavigation, quickSearch, rowExpanding } from '../../../plugins'
@@ -73,8 +73,7 @@ interface GridProps {
   onRetry?: () => unknown
   loading?: 'initial' | 'refresh' | false
   minDurationMs?: number
-  errorStub?: ErrorStubRender
-  stub?: ReactNode
+  stubs?: StubsOverride
   mode?: Mode
   localization?: Partial<TableLabels>
   icons?: Partial<TableIcons>
@@ -90,8 +89,7 @@ const Grid = ({
   onRetry,
   loading,
   minDurationMs = 0,
-  errorStub,
-  stub,
+  stubs,
   mode = 'plain',
   localization,
   icons,
@@ -134,8 +132,7 @@ const Grid = ({
       <div style={{ width, height: 420 }}>
         <DataGrid
           table={table as never}
-          errorStub={errorStub}
-          stub={stub}
+          stubs={stubs}
           localization={localization}
           icons={icons}
           style={
@@ -399,7 +396,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
       loading: 'initial',
       loadError: SERVER_DOWN,
       onRetry: () => {},
-      stub: <div data-testid="app-stub">No data</div>,
+      stubs: { noData: <div data-testid="app-stub">No data</div> },
     })
     await expect.poll(stubEl).not.toBeNull()
     expect(stubEl()!.querySelector('svg')).not.toBeNull()
@@ -415,22 +412,24 @@ describe('Ошибка первой загрузки: заглушка', () => {
     expect(stubBox.width).toBeCloseTo(scroller().clientWidth, 0)
   })
 
-  test('LE8: errorStub переопределяет заглушку — узел или функция от { error, retry }', async () => {
+  test('LE8: stubs.loadError переопределяет заглушку — узел или функция от { action, error }', async () => {
     const onRetry = vi.fn()
     const { update } = await mount({
       data: EMPTY,
       loadError: SERVER_DOWN,
       onRetry,
-      errorStub: <p data-testid="own">Own stub</p>,
+      stubs: { loadError: <p data-testid="own">Own stub</p> },
     })
     await expect.poll(() => q('[data-testid="own"]')).not.toBeNull()
     expect(stubEl()!.textContent).toBe('Own stub')
     await update({
-      errorStub: ({ error, retry }) => (
-        <button type="button" data-testid="own-retry" onClick={retry}>
-          {(error as Error).message}
-        </button>
-      ),
+      stubs: {
+        loadError: ({ action, error }) => (
+          <button type="button" data-testid="own-retry" onClick={action}>
+            {(error as Error).message}
+          </button>
+        ),
+      },
     })
     await expect
       .poll(() => q('[data-testid="own-retry"]')?.textContent)
@@ -439,7 +438,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
     expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
-  test('LE9: ошибка без данных главнее скелета, stub и filterStub; без ошибки — как раньше', async () => {
+  test('LE9: ошибка без данных главнее скелета, заглушки «нет данных» и пустого фильтра; без ошибки — как раньше', async () => {
     const skeleton = await mount({ data: EMPTY, loading: 'initial' })
     await expect
       .poll(() => q('.data-grid__container[class*="skeleton"]'))
@@ -451,7 +450,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
 
     const own = await mount({
       data: EMPTY,
-      stub: <div data-testid="app-stub">No data</div>,
+      stubs: { noData: <div data-testid="app-stub">No data</div> },
     })
     await expect.poll(() => q('[data-testid="app-stub"]')).not.toBeNull()
     await own.update({ loadError: SERVER_DOWN })

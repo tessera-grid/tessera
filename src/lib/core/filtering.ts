@@ -6,6 +6,7 @@
  */
 import { readPluginHooks } from './definePlugin'
 import { searchColumnIdsOf } from './searchColumns'
+import type { StubEntry } from './stubs'
 import {
   runServerAction,
   type ServerActionContext,
@@ -150,4 +151,24 @@ export const setSearchByUser = (table: unknown, search: string) => {
 export const resetFiltersByUser = (table: unknown) => {
   if (columnFiltersOf(table).length > 0) setColumnFiltersByUser(table, [])
   if (searchOf(table) !== '') setSearchByUser(table, '')
+}
+
+/**
+ * Заглушка пустого результата фильтра или поиска (ADR 0045, §9; ADR 0123): запись
+ * реестра у моделей фильтрации и поиска, «Reset filters» сбрасывает и то и другое.
+ */
+export const FILTERED_STUB: StubEntry = {
+  id: 'filtered',
+  priority: 40,
+  placement: 'body',
+  when: ({ table, rowCount }) =>
+    rowCount === 0 &&
+    (columnFiltersOf(table).length > 0 || searchOf(table).trim() !== ''),
+  title: labels => labels.noRowsMatchFilters,
+  action: ({ table }, labels) => ({
+    label: labels.resetFilters,
+    run: () => resetFiltersByUser(table),
+    testId: 'filter-stub-reset',
+  }),
+  testId: 'filter-stub',
 }

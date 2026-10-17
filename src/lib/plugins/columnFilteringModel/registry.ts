@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { FILTERED_STUB } from '../../core/filtering'
 import { createSearchAwareFilteredRowModel } from '../../core/filteredRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { columnFilterTypesFeature } from './columnFilterTypesFeature'
@@ -55,6 +56,7 @@ export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
     // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
     lifetime: ['server'],
     diagnose: neverInert,
+    stubs: [FILTERED_STUB],
     features: columnFilteringModelFeatures,
     slices: ['columnFilters'],
     // Выключенная модель не фильтрует: эффективный срез пуст, сохранённый не меняется

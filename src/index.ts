@@ -81,6 +81,15 @@ export {
 } from './lib/core/definePlugin'
 // Первая загрузка для компонентов слотов: значения из данных — скелетом (ADR 0060, SL21).
 export { isSkeletonShown } from './lib/core/skeletonOptions'
+// Заглушки пустой таблицы: записи реестра для `definePlugin({ stubs })` и проп `stubs` (ADR 0123).
+export type {
+  StubAction,
+  StubContext,
+  StubEntry,
+  StubId,
+  StubRenderProps,
+  StubsOverride,
+} from './lib/core/stubs'
 
 // Единый дескриптор действия слота (кебаб-меню): плагины объявляют действия
 // данными, ядро решает подачу (инлайн-кнопка или строка меню). `SlotAction<TCtx>`

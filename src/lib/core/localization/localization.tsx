@@ -213,8 +213,12 @@ export interface TableLabels {
   announceCopy: (cells: number) => string
   /** Объявление окончания загрузки (`rows` — число строк) */
   announceLoaded: (rows: number) => string
-  /** Объявление пустого результата */
+  /** Заголовок заглушки и объявление пустого результата (ADR 0123) */
   noData: string
+  /** Заглушка: видимых колонок нет (ADR 0123) */
+  noColumnsTitle: string
+  /** Заглушка: все колонки скрыты (ADR 0123) */
+  columnsHiddenTitle: string
   /** Скрытые подписи заголовков служебных колонок (`columnDef.serviceLabel`) */
   expandColumn: string
   reorderColumn: string
@@ -434,6 +438,8 @@ export const DEFAULT_LABELS: TableLabels = {
     cells === 1 ? 'Copied 1 cell' : `Copied ${cells} cells`,
   announceLoaded: rows => (rows === 1 ? 'Loaded 1 row' : `Loaded ${rows} rows`),
   noData: 'No data',
+  noColumnsTitle: 'No columns',
+  columnsHiddenTitle: 'All columns are hidden',
   expandColumn: 'Expand',
   reorderColumn: 'Reorder',
   rowActionsColumn: 'Actions',

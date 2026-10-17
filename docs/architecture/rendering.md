@@ -28,17 +28,22 @@ flowchart TB
 `DataGrid` подписан на состояние единственным `useTableState(table, …)`, а компоненты —
 на свои срезы через `useSlice`/`useTableState` (см. [reactivity.md](reactivity.md)).
 
-`props`: `table`, `height`, `maxHeight`, `stub`, `filterStub`, `colorMode`, `icons`,
+`props`: `table`, `height`, `maxHeight`, `stubs`, `colorMode`, `icons`,
 `localization`. `colorMode` управляет темой на CSS-переменных; `icons` и
 `localization` питают два контекста переопределения, потребляемых кнопками
 плагинов (см. [theming-and-overrides.md](theming-and-overrides.md)).
 
-Две заглушки. `stub` — пустые данные: заменяет таблицу целиком (тулбар и нижняя
-панель остаются). `filterStub` — пустой результат при активном фильтре или поиске
-([ADR 0045](../decisions/0045-filtering.md), §9): встаёт поверх пустого тела, шапка с
-кнопками фильтров остаётся; без пропа — подпись и «Сбросить фильтры». На это время
-контейнер прокрутки — колонка (`data-filter-empty`): иначе при колонках уже грида
-заглушка встала бы сбоку от таблицы.
+Заглушки пустой таблицы — реестр причин ([ADR 0123](../decisions/0123-empty-state-stubs.md),
+`core/stubs.ts`): запись — причина, приоритет, условие `when`, тексты из `localization`,
+иллюстрация из `icons`, действие. Ядро несёт `loadError`, `noColumns`, `noData`; модели
+фильтрации и поиска — `filtered`, `columnVisibility` — `columnsHidden`; автор плагина —
+свои записи полем `stubs` в `definePlugin`. Грид показывает первую по приоритету запись с
+выполненным условием (скелет главнее любой) и рисует её примитивом `Stub` (`EmptyStub`);
+`stubs` грида меняет вид по `id`, но не выбор. `grid` заменяет таблицу целиком (тулбар и
+нижняя панель остаются), `body` встаёт под шапкой — контейнер прокрутки на это время
+колонка (`data-empty-stub`), иначе при колонках уже грида заглушка встала бы сбоку.
+Появление заглушки объявляется её заголовком (`LiveRegion`), кроме `loadError` — у него
+своё объявление.
 
 ## Два layout: flex против grid
 
@@ -347,9 +352,8 @@ start` — кнопка держит свою ширину, обёртка её 
   одно объявление). Со строками: `LinearProgress` смонтирован всегда и по ключу
   вспыхивает красным светом (`::after` полосы, `useErrorFlash`), приглушение снято сразу,
   `LoadErrorBanner` — после полосы, в порядке Tab перед телом. Без строк:
-  `LoadErrorStub` (или `errorStub`) в контейнере прокрутки, который на это время
-  становится колонкой (`data-load-failed`); ошибка главнее скелета, `stub` и
-  `filterStub`. Рецепт: `loadError: error`, `onRetry: refetch`.
+  запись `loadError` реестра заглушек под шапкой (`data-empty-stub="loadError"`); ошибка
+  главнее скелета и заглушек `noData` и `filtered`. Рецепт: `loadError: error`, `onRetry: refetch`.
 
 ### Каталог скелетов
 

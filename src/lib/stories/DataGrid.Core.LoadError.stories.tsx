@@ -21,7 +21,7 @@ const meta = {
     ...dataGridMeta.argTypes,
     loadError: { control: false },
     onRetry: { control: false },
-    errorStub: { control: false },
+    stubs: { control: false },
   },
 } satisfies Meta<StoryProps>
 
@@ -80,7 +80,7 @@ export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
   },
 }
 
-/** Своя заглушка: `errorStub` получает ошибку и повтор. */
+/** Своя заглушка: `stubs.loadError` получает ошибку и повтор (ADR 0123). */
 export const LoadErrorCustomStub: StoryObj<StoryProps> = {
   name: 'Custom error stub',
   parameters: showControls([]),
@@ -88,15 +88,17 @@ export const LoadErrorCustomStub: StoryObj<StoryProps> = {
     dataOverride: [],
     loadError: SERVER_ERROR,
     onRetry: fn(),
-    errorStub: ({ error, retry }) => (
-      <div style={{ display: 'grid', gap: 8, justifyItems: 'center' }}>
-        <strong>Reports are unavailable</strong>
-        <span>{(error as Error).message}</span>
-        <button type="button" onClick={retry}>
-          Try again
-        </button>
-      </div>
-    ),
+    stubs: {
+      loadError: ({ action, error }) => (
+        <div style={{ display: 'grid', gap: 8, justifyItems: 'center' }}>
+          <strong>Reports are unavailable</strong>
+          <span>{(error as Error).message}</span>
+          <button type="button" onClick={action}>
+            Try again
+          </button>
+        </div>
+      ),
+    },
   },
   play: async ({ canvasElement }) => {
     await until(() =>

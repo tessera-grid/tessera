@@ -34,6 +34,7 @@ import {
   columnFilteringTimeZoneType,
   columnPinningLeafPinningType,
   pinFirstColumnType,
+  hideAllColumnsType,
   columnSortingModelMultiSortType,
   columnSortingModelServerType,
   columnSortingMultiSortType,
@@ -197,6 +198,7 @@ export const dataGridArgTypes = {
     {
       enableColumnPinning: enableColumnPinningType,
       pinFirstColumn: pinFirstColumnType,
+      hideAllColumns: hideAllColumnsType,
       ...when('enableColumnPinning', {
         columnPinningLeafPinning: columnPinningLeafPinningType,
       }),

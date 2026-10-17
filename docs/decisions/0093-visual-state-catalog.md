@@ -3,6 +3,9 @@
 - **Статус:** Принято; внедряется этапами (см. «Этапы внедрения»), облачные снимки
   Chromatic (§6) — внедрены [ADR 0103](0103-ci-and-releases.md).
 - **Дата:** 2026-10-11
+- **Изменено:** [ADR 0123](0123-empty-state-stubs.md) (2026-10-17) — состояние `body.empty`
+  снимает `Core/Stubs — Default` (заглушка `noData` библиотеки) вместо `Core — Empty
+(stub)`.
 - **Связано:**
   - [ADR 0009](0009-test-coverage-visual-and-performance.md),
     [ADR 0043](0043-honest-test-coverage.md) — виды тестов и честное покрытие; меняются

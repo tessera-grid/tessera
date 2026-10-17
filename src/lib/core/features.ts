@@ -44,6 +44,7 @@ import {
   type SlotActions,
 } from './headerActions'
 import type { NarrowMap, NarrowState } from './effectiveState'
+import type { StubEntry } from './stubs'
 import {
   reportPluginError,
   type PluginDiagnose,
@@ -115,6 +116,8 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   slots?: PluginSlot[]
   /** Декларативные действия слота (кебаб/инлайн). */
   slotActions?: SlotAction[]
+  /** Заглушки пустой таблицы плагина — записи реестра (ADR 0123). */
+  stubs?: StubEntry[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
@@ -174,6 +177,8 @@ export interface FoldedEntryConfig {
   slots: RenderSlots
   slotActions: SlotActions
   contextMenuActions: ContextMenuAction[]
+  /** Заглушки пустой таблицы активных записей (ADR 0123). */
+  stubEntries: StubEntry[]
   keyboardActions: KeyboardAction[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
@@ -219,6 +224,7 @@ export const foldEntries = (
   const slots = createEmptyRenderSlots()
   const slotActions = createEmptySlotActions()
   const contextMenuActions: ContextMenuAction[] = []
+  const stubEntries: StubEntry[] = []
   const keyboardActions: KeyboardAction[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
@@ -269,6 +275,8 @@ export const foldEntries = (
       }
     })
 
+    if (entry.stubs) stubEntries.push(...entry.stubs)
+
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
 
     if (entry.column) {
@@ -301,6 +309,7 @@ export const foldEntries = (
     slots,
     slotActions,
     contextMenuActions,
+    stubEntries,
     keyboardActions: sortKeyboardActionsByPriority(keyboardActions),
     actionMenu,
     serviceColumns,

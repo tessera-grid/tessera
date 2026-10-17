@@ -31,6 +31,7 @@ import type {
 } from './pluginDiagnostics'
 import type { SkeletonOptions } from './skeletonOptions'
 import type { FooterPosition } from './footer'
+import type { StubEntry } from './stubs'
 import type { RefreshOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -51,6 +52,8 @@ export interface CommonOptions {
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9
   contextMenuActions?: ContextMenuAction[]
+  /** Заглушки пустой таблицы плагинов (ADR 0123). */
+  stubEntries?: StubEntry[]
   keyboardActions?: KeyboardAction[]
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9

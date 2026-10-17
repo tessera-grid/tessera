@@ -23,7 +23,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
 
-/** Ядро грида: все тумблеры, загрузка, заглушка, подписи и иконки. */
+/** Ядро грида: все тумблеры, загрузка, подписи и иконки; заглушки — в Core/Stubs. */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -67,16 +67,6 @@ export const Loading: StoryObj<StoryProps> = {
   },
   args: {
     loading: 'refresh',
-  },
-}
-
-export const Stub: StoryObj<StoryProps> = {
-  name: 'Empty (stub)',
-  parameters: { ...vrStates('body.empty'), ...showControls(['showStub']) },
-  args: {
-    containerHeight: '460',
-    height: '360',
-    showStub: true,
   },
 }
 

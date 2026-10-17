@@ -7,6 +7,7 @@
 import { globalFilteringFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { FILTERED_STUB } from '../../core/filtering'
 import { createSearchAwareFilteredRowModel } from '../../core/filteredRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { canSearchColumn, quickSearchFilter } from './search'
@@ -38,6 +39,7 @@ export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({
   // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
   lifetime: ['server'],
   diagnose: neverInert,
+  stubs: [FILTERED_STUB],
   features: quickSearchModelFeatures,
   slices: ['globalFilter'],
   // Выключенная модель не ищет: эффективный срез пуст, сохранённый не меняется

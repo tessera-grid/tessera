@@ -13,6 +13,7 @@ import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
+import { hasVisibleDataColumns } from '../../core/stubs'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton, ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { runExport } from '../dataExportModel/runExport'
@@ -41,6 +42,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
 
   // Выбор строк меняет доступность значений оси «Строки».
   useTableState(table, state => state.rowSelection)
+  useTableState(table, state => state.columnVisibility)
   const resolved = resolveAxes(table)
   const beforeData = isSkeletonShown(table)
   const axes =
@@ -77,6 +79,17 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   }
 
   const icon = <DownloadIcon width={16} height={16} />
+  // Без видимых колонок выгружать нечего (ADR 0123, ES10).
+  if (!hasVisibleDataColumns(table)) {
+    return (
+      <ToolbarButton
+        label={labels.export}
+        icon={icon}
+        disabled
+        data-testid="export-button"
+      />
+    )
+  }
   if (single) {
     const isServer = whereOf(table, single) === 'server'
     return (

@@ -1,0 +1,48 @@
+.stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  box-sizing: border-box;
+  min-height: 0;
+  padding: calc(var(--tsr-ref-space-4) * 2) var(--tsr-ref-space-4);
+  overflow: hidden;
+  color: var(--tsr-comp-control-color);
+  font-family: var(--tsr-comp-font-family);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Иллюстрация сжимается в низком и узком гриде, чтобы подпись оставалась видна. */
+.media {
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.media svg {
+  min-height: 0;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
+.title {
+  margin: 0;
+  color: var(--tsr-comp-fg);
+  font-weight: 500;
+}
+
+.description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-width: 480px;
+  margin: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--tsr-comp-load-more-reason-color);
+}

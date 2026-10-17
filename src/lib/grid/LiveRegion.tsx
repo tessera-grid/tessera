@@ -17,6 +17,8 @@ interface LiveRegionProps {
   /** Загрузка закончилась отказом (ADR 0096): об отказе скажет своё объявление. */
   failed?: boolean
   rowCount: number
+  /** Заголовок заглушки пустой таблицы: её появление объявляется (ADR 0123, ES12). */
+  stubTitle?: string
   /** Узел внутри `.data-grid-theme` — сама область лежит вне темы. */
   themeNode?: RefObject<HTMLElement | null>
 }
@@ -48,6 +50,7 @@ export const LiveRegion = ({
   loading,
   failed = false,
   rowCount,
+  stubTitle,
   themeNode,
 }: LiveRegionProps) => {
   // Каждое объявление — новый узел: повтор того же текста тоже попадает в область.
@@ -125,24 +128,28 @@ export const LiveRegion = ({
   useOnChange(selected, count =>
     announceLabel(table, l => l.announceSelection(count)),
   )
+  const loadingEnded = useRef(false)
   useOnChange(loading, (isLoading, wasLoading) => {
     if (wasLoading && !isLoading && !failed) {
+      loadingEnded.current = true
       announceLabel(table, l =>
-        rowCount === 0 ? l.noData : l.announceLoaded(rowCount),
+        rowCount === 0 ? (stubTitle ?? l.noData) : l.announceLoaded(rowCount),
       )
     }
   })
-  useOnChange(rowCount, (count, before) => {
-    // Пустой результат фильтра уже объявлен числом строк.
-    if (filtersChanged.current) return
-    if (count === 0 && before > 0 && !loading) {
-      announceLabel(table, l => l.noData)
+  // Появилась заглушка — объявить её заголовок; пустой результат фильтра уже объявлен
+  // числом строк, конец загрузки — выше.
+  useOnChange(stubTitle, title => {
+    if (!title || loading || filtersChanged.current || loadingEnded.current) {
+      return
     }
+    announceLabel(table, () => title)
   })
 
-  // Флаг живёт один коммит: эффекты выше уже прочли его.
+  // Флаги живут один коммит: эффекты выше уже прочли их.
   useEffect(() => {
     filtersChanged.current = false
+    loadingEnded.current = false
   })
 
   return (

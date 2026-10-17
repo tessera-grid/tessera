@@ -402,6 +402,7 @@ export const useCreateTable = <
     slots: folded.slots,
     slotActions: folded.slotActions,
     contextMenuActions: folded.contextMenuActions,
+    stubEntries: folded.stubEntries,
     keyboardActions: folded.keyboardActions,
     pluginDiagnostics: folded.pluginDiagnostics,
     pluginRenderVersion: argsStore.current.renderVersion,

@@ -65,6 +65,9 @@ describe('Утечки при пересоздании таблицы', () => {
       await frames(2)
     }
     try {
+      // Пустые данные первого рендера — заглушка «нет данных» (ADR 0123): таблица с
+      // DnD-контекстами монтируется на первых данных и держит их пропсами (`leaks.ts`).
+      await change(-2)
       await change(-1)
       await settled(mounted.container)
       tracking = true

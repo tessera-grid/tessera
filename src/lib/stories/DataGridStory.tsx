@@ -6,7 +6,7 @@ import {
   Updater,
   functionalUpdate,
 } from '@tanstack/react-table'
-import { Grid, NoDataStub } from './_shims'
+import { Grid } from './_shims'
 import { loadingArg, panelFlag } from './__mocks__/utils/dataGridControls'
 import { useExpandedState } from '../../lib/core/createState'
 import { useRowSelectionState } from '../../lib/core/createState'
@@ -66,7 +66,7 @@ const StoryGrid = memo(
     localization,
     locale,
     icons,
-    errorStub,
+    stubs,
 
     showStub,
     headerNesting,
@@ -80,6 +80,7 @@ const StoryGrid = memo(
     initialGrouping,
     initialColumnPinning,
     pinFirstColumn,
+    hideAllColumns,
     initialExpanded,
     expandAll,
     extraPlugins,
@@ -188,6 +189,17 @@ const StoryGrid = memo(
       setColumnPinning(prev => pinnedFirst(prev, !!pinFirstColumn))
     }
 
+    // Приложение скрыло все колонки своим состоянием (ADR 0123, S2); «Show all» его меняет.
+    const controlsVisibility = hideAllColumns !== undefined
+    const [columnVisibility, setColumnVisibility] = useState<
+      Record<string, boolean>
+    >({})
+    const [appliedHideAll, setAppliedHideAll] = useState<boolean>()
+    if (appliedHideAll !== hideAllColumns) {
+      setAppliedHideAll(hideAllColumns)
+      setColumnVisibility(hideAllColumns ? hiddenAll(columnsGetter) : {})
+    }
+
     const { expanded, onExpandedChange } = useExpandedState(
       expandAll ? true : (initialExpanded ?? expandingInitialState),
     )
@@ -236,8 +248,16 @@ const StoryGrid = memo(
       data,
       state: {
         ...(columnPinning !== undefined ? { columnPinning } : {}),
+        ...(controlsVisibility ? { columnVisibility } : {}),
       },
       handlers: {
+        ...(controlsVisibility
+          ? {
+              onColumnVisibilityChange: (
+                updater: Updater<Record<string, boolean>>,
+              ) => setColumnVisibility(prev => functionalUpdate(updater, prev)),
+            }
+          : {}),
         ...(controlsPinning
           ? {
               onColumnPinningChange: (updater: Updater<ColumnPinningState>) =>
@@ -347,8 +367,7 @@ const StoryGrid = memo(
           contrast={contrast}
           localization={labels}
           icons={icons}
-          stub={<NoDataStub label="No Data!" />}
-          errorStub={errorStub}
+          stubs={stubs}
         />
       </>
     )
@@ -371,6 +390,16 @@ const StoryGrid = memo(
     )
   },
 )
+
+/** Все листовые колонки скрыты: видимость, которую задало бы приложение. */
+const hiddenAll = (columns: readonly any[]): Record<string, boolean> =>
+  Object.fromEntries(
+    columns.flatMap(function leaves(column: any): [string, boolean][] {
+      return column.columns
+        ? column.columns.flatMap(leaves)
+        : [[column.id ?? column.accessorKey, false]]
+    }),
+  )
 
 export const StoryComponent = memo((props: StoryProps) => (
   <StoryGrid

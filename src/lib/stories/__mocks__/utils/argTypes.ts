@@ -286,6 +286,9 @@ export const enableColumnDraggingType = booleanControl(
 export const enableColumnPinningType = booleanControl(
   'Закрепление колонок кнопкой в заголовке (плагин `columnPinning`)',
 )
+export const hideAllColumnsType = booleanControl(
+  'Все колонки скрыты состоянием приложения (`columnVisibility`): заглушка «все колонки скрыты» (ADR 0123)',
+)
 export const pinFirstColumnType = booleanControl(
   'Первая колонка закреплена слева сразу при открытии (начальное закрепление, переключается на лету)',
 )
