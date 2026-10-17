@@ -167,7 +167,7 @@ describe('панель сценария (ADR 0117)', () => {
     await expect.poll(() => Math.abs(slideOf() - x)).toBeGreaterThan(100)
   })
 
-  test('SN17: «Воспроизвести» проходит шаги само — полоска к следующему заливается всё время шага, значок до её конца текущий, затем шаг сменяется; последний шаг выполняется сразу, и воспроизведение останавливается; «Пауза» останавливает раньше — заливка замирает на месте, «Воспроизвести» продолжает её с того же места; «Далее» и переход к шагу впереди доливают её с того же места', async () => {
+  test('SN17: «Воспроизвести» проходит шаги само — полоска к следующему заливается всё время шага, значок до её конца текущий, затем шаг сменяется; последний шаг выполняется сразу, и воспроизведение останавливается; «Пауза» останавливает раньше — заливка замирает на месте, «Воспроизвести» продолжает её с того же места; «Далее» доливает её с того же места', async () => {
     const screen = await render(<GuidePanelPlayground />)
     await expect.poll(() => byId('guide-play')).toBeTruthy()
     const toggle = byId('guide-toggle')
@@ -258,36 +258,27 @@ describe('панель сценария (ADR 0117)', () => {
     await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
     await pausedScreen.unmount()
 
-    // «Далее» и переход к шагу впереди после паузы доливают полоску с того же места.
-    const pourFromPause = async (act: () => void) => {
-      const view = await render(<GuidePanelPlayground />)
-      await expect.poll(() => byId('guide-play')).toBeTruthy()
-      button('guide-play').click()
-      await expect.poll(firstFill, { interval: 5 }).toBeGreaterThan(0.4)
-      button('guide-play').click()
+    // «Далее» после паузы доливает полоску с того же места.
+    const view = await render(<GuidePanelPlayground />)
+    await expect.poll(() => byId('guide-play')).toBeTruthy()
+    button('guide-play').click()
+    await expect.poll(firstFill, { interval: 5 }).toBeGreaterThan(0.4)
+    button('guide-play').click()
+    await frame()
+    const from = firstFill()
+    button('guide-next').click()
+    let dropped = false
+    const started = performance.now()
+    while (!/шаг 2 из 3/.test(byId('guide-toggle').textContent ?? '')) {
+      if (performance.now() - started > 3000) break
+      if (firstFill() < from - 0.02) dropped = true
       await frame()
-      const from = firstFill()
-      act()
-      let dropped = false
-      const started = performance.now()
-      while (!/шаг [23] из 3/.test(byId('guide-toggle').textContent ?? '')) {
-        if (performance.now() - started > 3000) break
-        if (firstFill() < from - 0.02) dropped = true
-        await frame()
-      }
-      expect(dropped).toBe(false)
-      expect(byId('guide-toggle').textContent).toMatch(/шаг [23] из 3/)
-      // Конфетти пройденного шага догорают: следующий тест начинает без них.
-      await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
-      await view.unmount()
     }
-    await pourFromPause(() => button('guide-next').click())
-    await pourFromPause(() =>
-      document
-        .querySelector<HTMLElement>('[data-step-index="1"]')!
-        .closest('button')!
-        .click(),
-    )
+    expect(dropped).toBe(false)
+    expect(byId('guide-toggle').textContent).toContain('шаг 2 из 3')
+    // Конфетти пройденного шага догорают: следующий тест начинает без них.
+    await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
+    await view.unmount()
   })
 
   test('SN21: при уменьшенном движении — без конфетти, сдвига ряда и анимации раскрытия: шаг сменяется сразу', async () => {
@@ -412,7 +403,7 @@ describe('панель сценария (ADR 0117)', () => {
     await idle()
     expect(confetti()).toHaveLength(0)
   })
-  test('SN24: нажатие на шаг переходит к нему ускоренно — полоски между шагами заливаются (назад — пустеют) по 120 мс на шаг, значок каждого пройденного вперёд — с конфетти, назад — без; значок выбранного «подпрыгивает», последний — пройден; шаг — кнопка; нажатие посреди перехода меняет цель', async () => {
+  test('SN24: нажатие на шаг переходит к нему сразу — шаги до него пройдены, после — будущие, без заливки полосок, конфетти и «подпрыгивания», лента без плавности; последний — пройден; переход «Далее» и воспроизведение прерываются; шаг — кнопка', async () => {
     await render(<GuidePanelManySteps />)
     await expect.poll(() => byId('guide-next')).toBeTruthy()
     const toggle = byId('guide-toggle')
@@ -431,106 +422,99 @@ describe('панель сценария (ADR 0117)', () => {
         bar.parentElement!.getBoundingClientRect().width
       )
     }
+    const states = () =>
+      [...document.querySelectorAll<HTMLElement>('[data-step-state]')].map(
+        each => each.dataset.stepState,
+      )
+    const statesAt = (step: number, count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        index < step ? 'done' : index === step ? 'current' : 'next',
+      )
+    // Анимации значков и полосок: подпрыгивание, заливка, откат.
+    const stepAnimations = () =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-step-index], [data-step-fill]',
+        ),
+      ].flatMap(element => element.getAnimations())
+    const idle = () =>
+      expect
+        .poll(() => document.getAnimations().length, { timeout: 3000 })
+        .toBe(0)
+    const count = states().length
     // Шаг — кнопка, доступна с клавиатуры; имя — её видимый текст, без своей подписи.
     expect(stepButton(4).tagName).toBe('BUTTON')
     expect(stepButton(4).hasAttribute('aria-label')).toBe(false)
     expect(stepButton(4).hasAttribute('aria-labelledby')).toBe(false)
 
-    // Частица конфетти — от значка, ближайшего к её началу полёта.
-    const seen = new WeakSet<Element>()
-    const burstFrom = new Set<number>()
-    const trackBursts = () => {
-      for (const piece of confetti()) {
-        if (seen.has(piece)) continue
-        seen.add(piece)
-        const at = piece.getBoundingClientRect()
-        const badges = [
-          ...document.querySelectorAll<HTMLElement>('[data-step-index]'),
-        ]
-        const nearest = badges
-          .map(each => {
-            const box = each.getBoundingClientRect()
-            return {
-              index: Number(each.dataset.stepIndex),
-              distance: Math.hypot(
-                box.left + box.width / 2 - (at.left + at.width / 2),
-                box.top + box.height / 2 - (at.top + at.height / 2),
-              ),
-            }
-          })
-          .sort((a, b) => a.distance - b.distance)[0]!
-        burstFrom.add(nearest.index)
-      }
-    }
-
-    // Вперёд на 4 шага: подряд, ускоренно, значок каждого пройденного — с конфетти.
-    const start = performance.now()
+    // Вперёд на 4 шага — за один кадр, без заливки, конфетти и подпрыгивания.
+    await idle()
+    const before = slideOf()
     stepButton(4).click()
-    const order: number[] = []
-    while (performance.now() - start < 3000) {
-      trackBursts()
-      await frame()
-      trackBursts()
-      for (let index = 0; index < 4; index++) {
-        if (!order.includes(index) && fillOf(index) > 0.99) order.push(index)
-      }
-      if (/шаг 5 из/.test(toggle.textContent ?? '')) break
-    }
-    const took = performance.now() - start
+    await frame()
     expect(toggle.textContent).toMatch(/шаг 5 из/)
-    expect(order).toEqual([0, 1, 2, 3])
-    expect(took).toBeGreaterThan(4 * 120 - 60)
-    expect(took).toBeLessThan(4 * 120 + 600)
-    expect([...burstFrom].sort()).toEqual([0, 1, 2, 3])
-    expect(badge(4).dataset.stepState).toBe('current')
-    expect(badge(4).getAnimations().length).toBeGreaterThan(0)
+    expect(states()).toEqual(statesAt(4, count))
     for (let index = 0; index < 4; index++) {
-      expect(badge(index).dataset.stepState).toBe('done')
+      expect(fillOf(index)).toBeGreaterThan(0.99)
     }
-    await expect
-      .poll(() => document.getAnimations().length, { timeout: 3000 })
-      .toBe(0)
+    expect(fillOf(4)).toBe(0)
+    expect(confetti()).toHaveLength(0)
+    expect(stepAnimations()).toHaveLength(0)
+    // Лента уже у нового шага и дальше не едет.
+    const x = slideOf()
+    expect(x).not.toBe(before)
+    await frame()
+    await frame()
+    expect(slideOf()).toBe(x)
 
-    // Назад через название шага: полоски пустеют, шаги снова будущие, без конфетти.
-    await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
-    stepButton(1).querySelector('strong')!.click()
-    let backPieces = 0
-    while (!/шаг 2 из/.test(toggle.textContent ?? '')) {
-      if (performance.now() - start > 8000) break
-      backPieces = Math.max(backPieces, confetti().length)
-      await frame()
-    }
-    expect(backPieces).toBe(0)
-    await expect
-      .poll(() => toggle.textContent, { timeout: 3000 })
-      .toMatch(/шаг 2 из/)
+    // Назад через название шага настоящим нажатием: полоски пусты, шаги снова будущие.
+    await userEvent.click(stepButton(1).querySelector('strong')!)
+    expect(toggle.textContent).toMatch(/шаг 2 из/)
+    expect(states()).toEqual(statesAt(1, count))
     for (let index = 1; index < 4; index++) expect(fillOf(index)).toBe(0)
-    expect(badge(1).dataset.stepState).toBe('current')
-    expect(badge(2).dataset.stepState).toBe('next')
-    await expect
-      .poll(() => document.getAnimations().length, { timeout: 3000 })
-      .toBe(0)
+    expect(confetti()).toHaveLength(0)
+    expect(stepAnimations()).toHaveLength(0)
 
-    // Посреди перехода — новая цель: дальше идёт к ней.
-    stepButton(9).click()
-    await expect
-      .poll(() => toggle.textContent, { timeout: 3000 })
-      .toMatch(/шаг [3-5] из/)
+    // Посреди заливки «Далее» — нажатие на шаг прерывает её, шаг дальше не меняется.
+    await idle()
+    button('guide-next').click()
+    await frame()
+    expect(byId('guide').dataset.busy).toBe('true')
     stepButton(6).click()
-    await expect
-      .poll(() => toggle.textContent, { timeout: 3000 })
-      .toMatch(/шаг 7 из/)
-    await sleep(500)
+    await frame()
     expect(toggle.textContent).toMatch(/шаг 7 из/)
-    await settled()
+    expect(states()).toEqual(statesAt(6, count))
+    // Значок, пройденный «Далее», доигрывает её подпрыгивание — оно не от перехода.
+    expect(
+      stepAnimations().filter(
+        animation => (animation.effect as KeyframeEffect).target !== badge(1),
+      ),
+    ).toHaveLength(0)
+    await sleep(400)
+    expect(toggle.textContent).toMatch(/шаг 7 из/)
+    expect(button('guide-next').disabled).toBe(false)
 
-    // Нажатие на последний шаг выполняет его: сценарий пройден (SN16).
-    const last = document.querySelectorAll('[data-step-index]').length - 1
-    stepButton(last).click()
-    await expect
-      .poll(() => toggle.textContent, { timeout: 5000 })
-      .toContain('пройден')
-    expect(badge(last).dataset.stepState).toBe('done')
+    // Посреди воспроизведения — нажатие на шаг останавливает его.
+    await idle()
+    button('guide-play').click()
+    await expect.poll(() => fillOf(6), { interval: 5 }).toBeGreaterThan(0.1)
+    stepButton(2).click()
+    await frame()
+    expect(toggle.textContent).toMatch(/шаг 3 из/)
+    expect(byId('guide-play').textContent).toContain('Воспроизвести')
+    expect(stepAnimations()).toHaveLength(0)
+    await sleep(1700)
+    expect(toggle.textContent).toMatch(/шаг 3 из/)
+
+    // Нажатие на последний шаг выполняет его сразу и без конфетти (SN16).
+    await idle()
+    stepButton(count - 1).click()
+    await frame()
+    expect(toggle.textContent).toContain('пройден')
+    expect(states()).toEqual(statesAt(count, count))
+    expect(button('guide-next').disabled).toBe(true)
+    expect(confetti()).toHaveLength(0)
+    expect(stepAnimations()).toHaveLength(0)
   })
   test('SN25: шаги одной высоты — по самому высокому; при наведении шаг подсвечен тусклой подложкой на всю высоту, без наведения подложки нет', async () => {
     await render(<GuidePanelManySteps />)

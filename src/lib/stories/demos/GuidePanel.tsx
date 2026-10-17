@@ -1,8 +1,9 @@
 /**
  * Панель клиентского сценария истории (ADR 0117). Свёрнутая — только «Воспроизвести»:
  * шаги идут сами. Раскрытая — шаги степпером в один ряд (пройденные — зелёные) и кнопки
- * «Назад», «Далее», «Сначала»; `play` в тестах нажимает те же кнопки. Пройденный шаг отмечается взрывом конфетти, при уменьшенном движении —
- * без него. Сворачивается, как `DemoPanel`; кнопки шагов видны и в свёрнутой.
+ * «Назад», «Далее», «Сначала»; `play` в тестах нажимает те же кнопки. Шаг, пройденный
+ * «Далее» или воспроизведением, отмечается взрывом конфетти, при уменьшенном движении —
+ * без него; нажатие на шаг переходит к нему сразу, без анимаций. Сворачивается, как `DemoPanel`; кнопки шагов видны и в свёрнутой.
  */
 import {
   type ReactNode,
@@ -73,8 +74,6 @@ const POP_MS = 250
 const STEP_MS = 1500
 /** Заливка полоски к следующему шагу, мс: после неё шаг сменяется. */
 const FILL_MS = 200
-/** Заливка полоски на шаг при переходе к выбранному шагу, мс: ускоренно. */
-const JUMP_MS = 120
 /** Полёт конфетти, мс; гаснуть они начинают с этой доли полёта. */
 const CONFETTI_MS = 500
 const CONFETTI_FADE_FROM = 0.55
@@ -282,7 +281,7 @@ export const GuidePanel = ({
   onBack: () => void
   onNext: () => void
   onRestart: () => void
-  /** Сразу к шагу: без анимаций — в свёрнутой панели и при уменьшенном движении. */
+  /** Сразу к шагу. */
   onJump: (index: number) => void
   defaultExpanded?: boolean
 }) => {
@@ -298,20 +297,18 @@ export const GuidePanel = ({
   // Полоска шага `index` к следующему заливается цветом (вперёд) или пустеет (назад);
   // после неё шаг сменяется. `timed` — заливка воспроизведения на всё время шага:
   // значок до её конца текущий, «Пауза» её замораживает, «Далее» и переход вперёд
-  // доливают с того же места, «Назад» прерывает. `fast` — переход к выбранному шагу:
-  // шаги подряд, ускоренно; пройденные вперёд — с конфетти. `from` — доля, с которой
-  // полоска доливается.
+  // доливают с того же места, «Назад» прерывает. `from` — доля, с которой полоска
+  // доливается.
   const [move, setMove] = useState<{
     index: number
     back: boolean
     timed?: boolean
-    fast?: boolean
     from?: number
   } | null>(null)
-  // Выбранный нажатием шаг: переход идёт к нему, пока не дойдёт.
-  const target = useRef<number | null>(null)
   // Идущая заливка полоски: пауза и продолжение воспроизведения.
   const fill = useRef<Animation | undefined>(undefined)
+  // Шаг сменило нажатие на шаг: лента едет к нему без плавности.
+  const instantSlide = useRef(false)
   // Шаг под указателем: подложка-карточка.
   const [hovered, setHovered] = useState<number | null>(null)
   const blocking = move !== null && !move.timed
@@ -330,7 +327,6 @@ export const GuidePanel = ({
   // Значок пройденного шага зеленеет с конфетти, затем заливается полоска.
   const advance = () => {
     if (blocking) return
-    target.current = null
     const badge = expanded ? badgeOf(step) : null
     if (badge) void burst(badge)
     // Последний шаг — сценарий пройден, шаг не меняется.
@@ -351,22 +347,14 @@ export const GuidePanel = ({
     const bar = list.current?.querySelector<HTMLElement>(
       `[data-step-fill="${move.index}"]`,
     )
-    // Шаг, пройденный переходом вперёд, отмечается, как пройденный «Далее».
-    if (move.fast && !move.back) {
-      const passed = list.current?.querySelector<HTMLElement>(
-        `[data-step-index="${move.index}"]`,
-      )
-      if (passed) void burst(passed)
-    }
     const from = move.from ?? 0
     const frames = [
       { transform: `scaleX(${from})` },
       { transform: 'scaleX(1)' },
     ]
     const animation = bar?.animate(move.back ? frames.reverse() : frames, {
-      duration:
-        (move.timed ? STEP_MS : move.fast ? JUMP_MS : FILL_MS) * (1 - from),
-      easing: move.timed || move.fast ? 'linear' : 'ease-in-out',
+      duration: (move.timed ? STEP_MS : FILL_MS) * (1 - from),
+      easing: move.timed ? 'linear' : 'ease-in-out',
       // Заливка воспроизведения держится полной, пока шаг не сменился.
       fill: move.timed ? 'forwards' : 'none',
     })
@@ -385,17 +373,6 @@ export const GuidePanel = ({
         if (move.back) backRef.current()
         else nextRef.current()
         const reached = move.back ? move.index : move.index + 1
-        // Переход к выбранному шагу — дальше, пока не дошёл.
-        const goal = target.current
-        if (goal !== null && goal !== reached) {
-          setMove(
-            goal > reached
-              ? { index: reached, back: false, fast: true }
-              : { index: reached - 1, back: true, fast: true },
-          )
-          return
-        }
-        target.current = null
         const badge = list.current?.querySelector<HTMLElement>(
           `[data-step-index="${reached}"]`,
         )
@@ -439,7 +416,6 @@ export const GuidePanel = ({
   const back = () => {
     setAutoplay(false)
     if (blocking) return
-    target.current = null
     // Из пройденного — к предпоследнему шагу: последний выполнился бы снова.
     if (finished) setFinished(false)
     if (step === 0) return
@@ -450,42 +426,18 @@ export const GuidePanel = ({
       onBack()
     }
   }
-  // Нажатие на значок или название шага: ускоренно через шаги между текущим и
-  // выбранным; нажатие посреди перехода меняет цель.
+  // Нажатие на значок или название шага — сразу к нему, без анимаций: идущий переход
+  // шага и воспроизведение прерываются.
   const jumpTo = (index: number) => {
     setAutoplay(false)
-    // Пройденный сценарий на последнем шаге и остаётся.
-    if (finished && index === last) {
-      const badge = animated() ? badgeOf(index) : null
-      if (badge) pop(badge)
-      return
-    }
-    if (finished) setFinished(false)
-    if (!animated()) {
-      target.current = null
-      setMove(null)
-      onJump(index)
-      if (index === last) setFinished(true)
-      return
-    }
-    target.current = index
-    if (blocking) return
-    if (index === step) {
-      target.current = null
-      if (move?.timed) setMove(null)
-      const badge = finished ? badgeOf(index) : null
-      if (badge) pop(badge)
-      return
-    }
-    setMove(
-      index > step
-        ? { index: step, back: false, fast: true, from: poured() }
-        : { index: step - 1, back: true, fast: true },
-    )
+    setMove(null)
+    setFinished(index === last)
+    if (index === step) return
+    instantSlide.current = true
+    onJump(index)
   }
   const restart = () => {
     setAutoplay(false)
-    target.current = null
     setMove(null)
     setFinished(false)
     onRestart()
@@ -571,17 +523,19 @@ export const GuidePanel = ({
   const reducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  // Смена шага прокручивает ленту к активному — он по центру окна. Первый раз и при
-  // уменьшенном движении — сразу.
+  // Смена шага прокручивает ленту к активному — он по центру окна. Первый раз, после
+  // нажатия на шаг и при уменьшенном движении — сразу.
   const scrolled = useRef(false)
   useLayoutEffect(() => {
     const element = viewport.current
     if (!element || !slider) return
+    const smooth = scrolled.current && !reducedMotion && !instantSlide.current
     element.scrollTo({
       left: BLEED + (step + 0.5) * stepWidth - element.clientWidth / 2,
-      behavior: scrolled.current && !reducedMotion ? 'smooth' : 'instant',
+      behavior: smooth ? 'smooth' : 'instant',
     })
     scrolled.current = true
+    instantSlide.current = false
   }, [step, slider, stepWidth, reducedMotion])
   return (
     // Отступ — padding обёртки: margin карточки схлопнулся бы через обёртки Storybook и
