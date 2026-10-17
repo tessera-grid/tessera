@@ -297,8 +297,8 @@ export const GuidePanel = ({
   const list = useRef<HTMLOListElement>(null)
   // Полоска шага `index` к следующему заливается цветом (вперёд) или пустеет (назад);
   // после неё шаг сменяется. `timed` — заливка воспроизведения на всё время шага:
-  // значок до её конца текущий, а «Далее», «Назад» и «Пауза» её прерывают. `fast` —
-  // переход к выбранному шагу: шаги подряд, ускоренно, без конфетти.
+  // значок до её конца текущий, «Пауза» её замораживает, а «Далее» и «Назад» прерывают.
+  // `fast` — переход к выбранному шагу: шаги подряд, ускоренно, без конфетти.
   const [move, setMove] = useState<{
     index: number
     back: boolean
@@ -307,6 +307,8 @@ export const GuidePanel = ({
   } | null>(null)
   // Выбранный нажатием шаг: переход идёт к нему, пока не дойдёт.
   const target = useRef<number | null>(null)
+  // Идущая заливка полоски: пауза и продолжение воспроизведения.
+  const fill = useRef<Animation | undefined>(undefined)
   // Шаг под указателем: подложка-карточка.
   const [hovered, setHovered] = useState<number | null>(null)
   const blocking = move !== null && !move.timed
@@ -350,6 +352,7 @@ export const GuidePanel = ({
       // Заливка воспроизведения держится полной, пока шаг не сменился.
       fill: move.timed ? 'forwards' : 'none',
     })
+    fill.current = animation
     let alive = true
     void (animation?.finished ?? Promise.resolve()).then(
       () => {
@@ -393,6 +396,7 @@ export const GuidePanel = ({
     return () => {
       alive = false
       animation?.cancel()
+      fill.current = undefined
     }
   }, [move, nextRef, backRef, lastRef])
   const advanceRef = useLatest(advance)
@@ -471,11 +475,12 @@ export const GuidePanel = ({
   const togglePlay = () => {
     if (playing) {
       setAutoplay(false)
-      // Пауза сбрасывает заливку воспроизведения: шаг остаётся текущим.
-      if (move?.timed) setMove(null)
+      // Заливка воспроизведения замирает на месте: шаг остаётся текущим.
+      if (move?.timed) fill.current?.pause()
       return
     }
     if (finished) restart()
+    else if (move?.timed) fill.current?.play()
     setAutoplay(true)
   }
   const ellipsis = {
