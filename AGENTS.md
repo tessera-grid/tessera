@@ -610,7 +610,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       панели, SL12 — доступность; SL16 — без вертикальной прокрутки, место полосы — в
       `test:engines`; SL18 — `skeletonCell`; SL20 — токены размеров; SL21 — слот автора
       плагина; SL26 — пересчёт строк
-      при смене высоты строки и шапки; SL23–SL25 — дерево:
+      при смене высоты строки и шапки; SL27 — `columnsCount` без колонок; SL23–SL25 — дерево:
       отступ, линии, колонка раскрытия), `play` историй сценариев «Skeleton» (SL6, SL2
       и SL8 — Data arrives, SL5 — Rows count, SL9 — Columns count), модульные
       `skeletonOptions` (SL13, SL22 — план строк дерева) и `skeletonCell` (SL19 — длина

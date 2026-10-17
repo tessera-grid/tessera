@@ -760,6 +760,30 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(skeletonRows().length).toBeLessThan(tall)
   })
 
+  test('SL27: без колонок скелет рисует columnsCount одинаковых колонок; при известных колонках columnsCount не действует', async () => {
+    const props = (extra: Args) => ({
+      ...BASE,
+      loading: 'initial' as const,
+      dataOverride: [],
+      skeletonOptions: { rowsCount: 'auto' as const, columnsCount: 4 },
+      ...extra,
+    })
+    const cells = () => cellsOf(skeletonRows()[0]!, SKELETON_CELL)
+    const screen = await render(
+      <Stories.AllFeatures {...props({ columnsOverride: [] })} />,
+    )
+    await waitSkeleton()
+    expect(cells()).toHaveLength(4)
+    expect(new Set(cells().map(cell => box(cell).width)).size).toBe(1)
+
+    // Колонки пришли — скелет по ним, а не по columnsCount.
+    await screen.rerender(<Stories.AllFeatures {...props({})} />)
+    await expect
+      .poll(() => cells().map(cell => cell.dataset.columnId))
+      .toEqual(headCellsNow().map(cell => cell.dataset.columnId))
+    expect(cells()).toHaveLength(BASE.columnCount!)
+  })
+
   test('SL24: линии дерева у скелета — при treeLines (поворот к подстроке, продолжение ветки к сестре, отросток у родителя), без treeLines линий нет', async () => {
     const props = (treeLines: boolean) => ({
       ...BASE,

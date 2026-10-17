@@ -419,11 +419,11 @@ const ROWS_COUNT: readonly GuideStoryStep[] = [
   {
     ...OPENED,
     title: 'Строки по высоте области',
-    hint: "rowsCount: 'auto' (по умолчанию) — строк скелета столько, сколько помещается по высоте области; последняя может быть обрезана.",
+    hint: "rowsCount: 'auto' (по умолчанию) — строк скелета столько, сколько помещается по высоте области прокрутки.",
   },
   {
-    title: `Разбивка по ${PAGE_SIZE} строк`,
-    hint: 'Таблица открыта заново с разбивкой на страницы: строк скелета не больше размера страницы, даже если помещается больше.',
+    title: `Размер страницы — ${PAGE_SIZE} строк`,
+    hint: 'Размер страницы жестко ограничен пагинацией. Количество строк скелетов не превышает этого значения.',
     remount: true,
     props: () => ({
       enablePagination: true,
@@ -431,23 +431,23 @@ const ROWS_COUNT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: `Строки по ${TALL_ROW} px`,
-    hint: `Строки выше (rowHeight: ${TALL_ROW}): помещается меньше страницы — строк скелета меньше, они по-прежнему доходят до низа.`,
+    title: `Размер строки — ${TALL_ROW}px`,
+    hint: `Увеличенная высота строки (rowHeight: ${TALL_ROW}): строк скелета меньше, но количество также подстраивается под высоту области прокрутки.`,
     props: () => ({ rowHeight: TALL_ROW }),
   },
   {
-    title: `Область ниже — ${LOW_AREA} px`,
+    title: `Размер тела таблицы — ${LOW_AREA}px`,
     hint: 'Область меньше — строк меньше: расчёт идёт по высоте области прокрутки.',
     props: () => ({ height: LOW_AREA, maxHeight: LOW_AREA }),
   },
   {
     title: `Своё число строк — ${OWN_ROWS}`,
-    hint: `skeletonOptions: { rowsCount: ${OWN_ROWS} } — ровно столько строк, даже если помещается больше: расчёт по высоте не нужен.`,
+    hint: `skeletonOptions: { rowsCount: ${OWN_ROWS} } — фиксированное количество строк, вне зависимости от области прокрутки.`,
     props: () => ({ skeletonOptions: { rowsCount: OWN_ROWS } }),
   },
   {
     ...ANSWERED,
-    hint: `Пришли ${OWN_ROWS} строки — столько, сколько приложение знало заранее и показало скелетом.`,
+    hint: `Загружено ${OWN_ROWS} строки. Их количество было известно заранее, поэтому сдвиг лейаута минимален.`,
     props: ({ rows }) => ({
       loading: false,
       dataOverride: rows.slice(0, OWN_ROWS),
@@ -553,41 +553,34 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
 
 // --- S3 ------------------------------------------------------------------------------
 
-const KNOWN_COLUMNS = 4
 const DEFAULT_COLUMNS = 8
 
 const COLUMNS_COUNT: readonly GuideStoryStep[] = [
   {
     ...OPENED,
-    title: 'Колонки известны',
-    hint: 'Скелет повторяет колонки таблицы — число, порядок, ширины; columnsCount не действует.',
-  },
-  {
-    title: 'Колонки придут с сервера — их число известно',
-    hint: 'columns: [] и skeletonOptions.columnsCount — столько одинаковых колонок на всю ширину.',
-    props: () => ({ columnsOverride: [] }),
-  },
-  {
     title: 'Число колонок неизвестно',
-    hint: `Без columnsCount — ${DEFAULT_COLUMNS} одинаковых колонок.`,
-    props: ({ args }) => ({
-      skeletonOptions: { ...args.skeletonOptions, columnsCount: undefined },
+    hint: `Колонки придут с сервера, их число неизвестно. По умолчанию отображается ${DEFAULT_COLUMNS} одинаковых колонок на всю ширину.`,
+    props: () => ({
+      loading: 'initial',
+      dataOverride: [],
+      columnsOverride: [],
     }),
   },
   {
-    title: 'Сервер прислал колонки и данные',
-    hint: 'Скелет сменяется настоящими колонками и строками.',
-    props: ({ rows }) => ({
-      loading: false,
-      columnsOverride: undefined,
-      dataOverride: rows,
-    }),
+    title: 'Структура таблицы известна заранее',
+    hint: 'Скелет повторяет колонки таблицы — число, порядок, размер.',
+    props: () => ({ columnsOverride: undefined }),
+  },
+  {
+    ...ANSWERED,
+    title: 'Данные загружены',
+    hint: 'Вместо скелетов отобразились реальные данные, сдвиг лейаута минимален.',
   },
 ]
 
 /**
- * S3: число колонок скелета — известны колонки — как у таблицы; `columns: []` —
- * `columnsCount` одинаковых, без числа — 8 (SL9).
+ * S3: число колонок скелета по мере загрузки — неизвестно — 8 одинаковых, пришли
+ * колонки — как у таблицы (SL9).
  */
 export const SkeletonColumnsCount: StoryObj<StoryProps> = {
   name: 'Columns count',
@@ -603,12 +596,13 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
       rowHeight: 'Высота строк на колонки скелета не влияет',
       headerHeight: 'Высота шапки на колонки скелета не влияет',
       defaultColumn:
-        'Ширина колонок таблицы видна на первом шаге и без контрола',
+        'Ширина колонок таблицы видна на втором шаге и без контрола',
     }),
   },
   args: {
     columnCount: 6,
-    skeletonOptions: { rowsCount: 'auto', columnsCount: KNOWN_COLUMNS },
+    // Без columnsCount: число колонок неизвестно (SL9).
+    skeletonOptions: { rowsCount: 'auto' },
   },
   argTypes: SKELETON_OPTIONS_CONTROL,
   render: args => (
@@ -624,23 +618,21 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
     const widths = () => cells().map(cell => box(cell).width)
     await step(COLUMNS_COUNT[0]!.title, async () => {
       await waitSkeleton(canvas)
-      // Колонки таблицы, а не columnsCount: те же id, что у заголовков.
-      await expect(cells().map(cell => cell.dataset.columnId)).toEqual(
-        headCells(canvas).map(cell => cell.dataset.columnId),
-      )
-      await expect(cells().length).not.toBe(KNOWN_COLUMNS)
-    })
-    await step(COLUMNS_COUNT[1]!.title, async () => {
-      await guideNext(canvas)
-      await until(() => expect(widths()).toHaveLength(KNOWN_COLUMNS))
-      await expect(new Set(widths()).size).toBe(1)
-    })
-    await step(COLUMNS_COUNT[2]!.title, async () => {
-      await guideNext(canvas)
       await until(() => expect(widths()).toHaveLength(DEFAULT_COLUMNS))
       await expect(new Set(widths()).size).toBe(1)
     })
-    await step(COLUMNS_COUNT[3]!.title, async () => {
+    await step(COLUMNS_COUNT[1]!.title, async () => {
+      await guideNext(canvas)
+      // Колонки таблицы: те же id, что у заголовков; данных ещё нет.
+      await until(() =>
+        expect(cells().map(cell => cell.dataset.columnId)).toEqual(
+          headCells(canvas).map(cell => cell.dataset.columnId),
+        ),
+      )
+      await expect(cells().length).not.toBe(DEFAULT_COLUMNS)
+      await expect(dataRows(canvas)).toHaveLength(0)
+    })
+    await step(COLUMNS_COUNT[2]!.title, async () => {
       await guideNext(canvas)
       await waitData(canvas)
     })
