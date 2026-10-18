@@ -46,20 +46,29 @@ export const FooterDefault: StoryObj<StoryProps> = {
   name: 'Default',
   parameters: {
     ...vrStates('head.footer'),
-    ...showControls([
-      'enableFooter',
-      'footerPosition',
-      'enableKeyboardNavigation',
-      'enablePagination',
-      'paginationInitialPageSize',
-      'enableQuickSearch',
-      'enableInfiniteScroll',
-    ]),
+    ...showControls(
+      [
+        'enableFooter',
+        'footerPosition',
+        'showStub',
+        'loading',
+        'enableRowAnimation',
+        'enableColumnPinning',
+        'pinFirstColumn',
+        'enableKeyboardNavigation',
+        'enablePagination',
+        'paginationInitialPageSize',
+        'enableQuickSearch',
+        'enableInfiniteScroll',
+      ],
+      {
+        headerHeight: 'Футер встаёт под шапкой при любой её высоте',
+        defaultColumn:
+          'Футер повторяет ширины колонок, своего поведения у него нет',
+      },
+    ),
   },
-  args: {
-    columnCount: 7,
-    enableFooter: true,
-  },
+  args: FOOTER_ARGS,
 }
 
 // --- Чтение грида в `play` и шагах -------------------------------------------------
