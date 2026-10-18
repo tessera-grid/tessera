@@ -6,11 +6,11 @@ import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 import tailwindcss from '@tailwindcss/vite'
 
-import { BUILD_TARGET } from './browser-targets'
+import { BUILD_TARGET } from './browser-targets.ts'
 import {
   withExtensions,
   writeCommonJsDeclarations,
-} from './scripts/declarations'
+} from './scripts/declarations.ts'
 
 const resolvePath = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))

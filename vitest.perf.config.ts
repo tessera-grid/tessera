@@ -8,10 +8,10 @@ import {
   perfRecord,
   perfTraceStart,
   perfTraceStop,
-} from './src/lib/stories/__tests__/perf.commands'
-import { TOUCH_BLINK_SETTINGS } from './src/lib/stories/__tests__/engines'
-import { forcedColors } from './src/lib/stories/__tests__/motion.commands'
-import { testCommands } from './vitest.commands'
+} from './src/lib/stories/__tests__/perf.commands.ts'
+import { TOUCH_BLINK_SETTINGS } from './src/lib/stories/__tests__/engines.ts'
+import { forcedColors } from './src/lib/stories/__tests__/motion.commands.ts'
+import { testCommands } from './vitest.commands.ts'
 
 const commands = { perfTraceStart, perfTraceStop, perfRecord, forcedColors }
 /** Набор утечек (ADR 0092, LK14): dev-сборка React держит отладочные ссылки. */

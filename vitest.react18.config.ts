@@ -7,14 +7,14 @@ import {
   MOBILE_SUITE,
   TOUCH_BLINK_SETTINGS,
   TOUCH_SUITE,
-} from './src/lib/stories/__tests__/engines'
+} from './src/lib/stories/__tests__/engines.ts'
 import {
   REACT18_EXCLUSIONS,
   REACT18_ROOT,
   SSR_SUITE,
-} from './src/lib/stories/__tests__/react18'
-import base from './vitest.config'
-import { testCommands } from './vitest.commands'
+} from './src/lib/stories/__tests__/react18.ts'
+import base from './vitest.config.ts'
+import { testCommands } from './vitest.commands.ts'
 
 // Прогон на React 18 (ADR 0091, EV1): браузерные наборы `npm test` с React и React DOM
 // 18 из `tools/react18` (`npm ci --prefix tools/react18`). Не барьер — обязателен перед

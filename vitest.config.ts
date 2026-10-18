@@ -13,8 +13,8 @@ import {
   MOBILE_SUITE,
   TOUCH_BLINK_SETTINGS,
   TOUCH_SUITE,
-} from './src/lib/stories/__tests__/engines'
-import { testCommands } from './vitest.commands'
+} from './src/lib/stories/__tests__/engines.ts'
+import { testCommands } from './vitest.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
 // virtualization and performance behaviour depend on real layout and frame

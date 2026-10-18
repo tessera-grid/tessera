@@ -8,7 +8,6 @@ const build = process.argv.includes('build')
 
 const config: StorybookConfig = {
   stories: [
-    '../src/**/*.mdx',
     build
       ? '../src/**/!(*.dev).stories.@(ts|tsx)'
       : '../src/**/*.stories.@(ts|tsx)',

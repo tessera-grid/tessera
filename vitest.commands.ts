@@ -1,23 +1,23 @@
 // Команды браузерных тестов — один объект для Chromium, движков и мобильной эмуляции
 // (ADR 0084, CB3): конфиг, переопределяющий `test`, их не теряет.
-import { axTree } from './src/lib/stories/__tests__/a11y.commands'
+import { axTree } from './src/lib/stories/__tests__/a11y.commands.ts'
 import {
   collectGarbage,
   domCounters,
   globalListeners,
   heapUsed,
   retainingPaths,
-} from './src/lib/stories/__tests__/memory.commands'
+} from './src/lib/stories/__tests__/memory.commands.ts'
 import {
   forcedColors,
   moreContrast,
   reducedMotion,
-} from './src/lib/stories/__tests__/motion.commands'
+} from './src/lib/stories/__tests__/motion.commands.ts'
 import {
   heldModuleRequests,
   releaseModule,
   routeModule,
-} from './src/lib/stories/__tests__/network.commands'
+} from './src/lib/stories/__tests__/network.commands.ts'
 import {
   realDrag,
   realDragHold,
@@ -30,11 +30,11 @@ import {
   realTouchMove,
   realTouchUp,
   realWheel,
-} from './src/lib/stories/__tests__/pointer.commands'
+} from './src/lib/stories/__tests__/pointer.commands.ts'
 import {
   renderTraceStart,
   renderTraceStop,
-} from './src/lib/stories/__tests__/work.commands'
+} from './src/lib/stories/__tests__/work.commands.ts'
 
 // Дерево доступности Chromium через CDP (ADR 0033); настоящий drag мышью (TQ3);
 // задержка и отказ загрузки модуля (ADR 0061); касания мобильной эмуляции (ADR 0084);

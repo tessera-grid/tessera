@@ -8,7 +8,7 @@ import {
   CPU_THROTTLE_RATE,
   FRAME_BUDGET_60FPS,
   LONG_TASK_MS,
-} from './perf.constants'
+} from './perf.constants.ts'
 
 // Измерение плавности скролла через Playwright CDP `Tracing`. Трейс процессный,
 // поэтому ловит работу главного потока рендерера в iframe (где Vitest монтирует

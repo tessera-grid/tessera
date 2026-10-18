@@ -4,7 +4,7 @@ import type { BrowserCommand } from 'vitest/node'
 import {
   createHeapSnapshotParser,
   type HeapSnapshot,
-} from './heapSnapshotParser'
+} from './heapSnapshotParser.ts'
 
 // Память страницы теста через CDP (ADR 0092): сборка мусора, счётчики DOM, обработчики
 // на `window` и `document`, размер кучи и путь удержания объекта. Только Chromium.

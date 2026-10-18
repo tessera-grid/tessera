@@ -1,8 +1,8 @@
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
-import base from './vitest.config'
-import { testCommands } from './vitest.commands'
+import base from './vitest.config.ts'
+import { testCommands } from './vitest.commands.ts'
 
 // Наборы, чьё поведение зависит от движка браузера, — в Firefox и WebKit (основной
 // `npm test` идёт в одном Chromium). Сессии правки: `blur` у удаляемого из DOM

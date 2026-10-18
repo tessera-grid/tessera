@@ -6,9 +6,9 @@ import {
   ENGINE_EXCLUSIONS,
   MOBILE_SUITE,
   TOUCH_SUITE,
-} from './src/lib/stories/__tests__/engines'
-import base from './vitest.config'
-import { testCommands } from './vitest.commands'
+} from './src/lib/stories/__tests__/engines.ts'
+import base from './vitest.config.ts'
+import { testCommands } from './vitest.commands.ts'
 
 // Прогон в движках (ADR 0084): все визуальные наборы в Firefox и WebKit, кроме
 // исключений с причиной, и мобильная эмуляция с касаниями. Не барьер — обязателен
