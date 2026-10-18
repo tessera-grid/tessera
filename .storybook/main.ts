@@ -17,6 +17,7 @@ const config: StorybookConfig = {
     '@storybook/addon-vitest',
     '@storybook/addon-a11y',
     'storybook-addon-pseudo-states',
+    'storybook-addon-tag-badges',
   ],
   framework: {
     name: '@storybook/react-vite',
