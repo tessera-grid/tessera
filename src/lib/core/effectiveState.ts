@@ -33,7 +33,7 @@ export type NarrowMap = Record<string, NarrowState[]>
 
 const MAX_FORCED_RENDERS = 2
 
-const handlerOf = (key: string) =>
+export const handlerOf = (key: string) =>
   `on${key.charAt(0).toUpperCase()}${key.slice(1)}Change`
 
 /** Применить цепочку сужений; `undefined` от любого звена — без таблицы не посчитать. */

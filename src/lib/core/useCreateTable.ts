@@ -54,7 +54,7 @@ import {
   resolvePluginSet,
   type PluginSetStore,
 } from './pluginSet'
-import { useEffectiveState } from './effectiveState'
+import { handlerOf, useEffectiveState } from './effectiveState'
 import {
   type CoreTableHandlers,
   type CoreTableState,
@@ -322,11 +322,29 @@ export const useCreateTable = <
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу срезов
     [folded.narrow, sliceKeys],
   )
+  // `useTable` сливает опции с прежними: обработчик снятого сужения остался бы в
+  // таблице и писал бы мимо среза — срез, который снова ведёт TanStack, получает запись в атом.
+  const narrowedKeys = useRef(new Set<string>())
+  for (const key of Object.keys(narrow)) narrowedKeys.current.add(key)
+  const releasedSliceHandlers = Object.fromEntries(
+    [...narrowedKeys.current]
+      .filter(key => !(key in narrow))
+      .map(key => [
+        handlerOf(key),
+        (updater: unknown) =>
+          makeStateUpdater(
+            key as never,
+            tableRef.current as unknown as Parameters<
+              typeof makeStateUpdater
+            >[1],
+          )(updater as never),
+      ]),
+  )
   const ownedSliceHandlers = Object.fromEntries(
     Object.entries(slices.listeners)
       .filter(([key]) => !(key in narrow))
       .map(([key, listener]) => [
-        `on${key.charAt(0).toUpperCase()}${key.slice(1)}Change`,
+        handlerOf(key),
         (updater: unknown) => {
           const t = tableRef.current as unknown as Parameters<
             typeof makeStateUpdater
@@ -398,6 +416,7 @@ export const useCreateTable = <
     onColumnAutoSizingChange,
     // Прочие onXChange потребителя (onExpandedChange/onRowSelectionChange/
     // onGroupingChange/onRowOrderChange…); для суженных срезов — обёртки слоя.
+    ...releasedSliceHandlers,
     ...restHandlers,
     ...ownedSliceHandlers,
     ...effective.handlers,

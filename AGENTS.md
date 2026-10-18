@@ -767,7 +767,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `reactiveArgs` (RX1–RX3, RX21, RX24 — живые аргументы фабрик, `setup` раз на
       значение аргументов), `pluginLifetime`
       (RX4–RX7 — договоры на время жизни и `initialPageSize`), `effectiveState`
-      (RX9–RX10, RX12–RX13, RX25 — эффективное состояние, пересчёт при смене данных и колонок), визуальные `reactive-args`
+      (RX9–RX10, RX12–RX13, RX25–RX26 — эффективное состояние, пересчёт при смене данных и колонок, снятие сужения на лету), визуальные `reactive-args`
       (RX8, RX11, RX14–RX20, RX22–RX23 — аргументы на лету, сужение и отмена
       действий при запрете),
       [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md);

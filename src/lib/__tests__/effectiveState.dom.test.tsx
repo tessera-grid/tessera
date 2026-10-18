@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Эффективное состояние при сужении параметров (ADR 0039, §4, RX9–RX10, RX12–RX13, RX25):
+ * Эффективное состояние при сужении параметров (ADR 0039, §4, RX9–RX10, RX12–RX13, RX25–RX26):
  * TanStack видит «сохранённое ∩ допустимое», сохранённое не переписывается —
  * вернули параметр, вернулось прежнее. Смена смысла состояния — сброс.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -13,8 +13,10 @@ import { useCreateTable } from '../core/useCreateTable'
 import {
   columnPinning,
   columnSorting,
+  quickSearchModel,
   rowExpanding,
   rowSelection,
+  rowSelectionModel,
 } from '../plugins'
 
 ;(
@@ -208,5 +210,29 @@ describe('эффективное состояние при сужении', () =
 
     mount(<ColumnsHost columns={nestedColumns} />)
     expect(captured.getColumn('name').getIsPinned()).toBe(false)
+  })
+
+  it('RX26: сужение, снятое на лету, возвращает срез TanStack — поиск и выбор строк снова применяются', () => {
+    const ModelsHost = ({ enabled }: { enabled: boolean }) => {
+      captured = useCreateTable({
+        columns: flatColumns as never,
+        data: flatData,
+        plugins: [
+          quickSearchModel({ enabled }),
+          rowSelectionModel({ enabled }),
+        ],
+      })
+      return null
+    }
+    mount(<ModelsHost enabled={false} />)
+    mount(<ModelsHost enabled />)
+
+    act(() => captured.setGlobalFilter('A'))
+    expect(
+      captured.getRowModel().rows.map((row: { id: string }) => row.id),
+    ).toEqual(['1', '3'])
+
+    act(() => captured.getRow('1').toggleSelected(true))
+    expect(captured.getRow('1').getIsSelected()).toBe(true)
   })
 })
