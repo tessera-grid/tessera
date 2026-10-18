@@ -21,6 +21,7 @@ import {
 } from '../../__mocks__/filteringData'
 import { bodyRows, humanClick, revealCellButtons, Stories } from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
+import { tokenPx } from './tree-lines-helpers'
 
 // Фильтрация (ADR 0045): кнопка фильтра в заголовке, панель условия, дебаунс,
 // кебаб, клавиатура. Условия по значениям (FL2, FL4–FL6, FL14, FL26) — модульные
@@ -431,6 +432,40 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await expect.poll(rowIds).toEqual(ALL)
     expect(searchInput()!.value).toBe('')
     expect(clear()).toBeNull()
+  })
+
+  test('FL42: кнопки поля поиска без текста и с текстом отстоят от правого края на токен, как от верхнего и нижнего, не перекрываются, текст не заходит под них', async () => {
+    await renderFiltering(TOOLBAR)
+    const input = searchInput()!
+    const inset = tokenPx('--tsr-comp-quick-search-button-inset')
+    const button = (id: string) =>
+      document
+        .querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+        .getBoundingClientRect()
+    const expectInset = (ids: string[]) => {
+      const field = input.getBoundingClientRect()
+      const rects = ids.map(button)
+      const last = rects[rects.length - 1]
+      expect(field.right - last.right).toBeCloseTo(inset, 0)
+      expect(last.top - field.top).toBeCloseTo(inset, 0)
+      expect(field.bottom - last.bottom).toBeCloseTo(inset, 0)
+      rects
+        .slice(1)
+        .forEach((rect, i) =>
+          expect(rect.left).toBeGreaterThanOrEqual(rects[i].right - 0.5),
+        )
+      const style = getComputedStyle(input)
+      const textRight =
+        field.right -
+        parseFloat(style.borderRightWidth) -
+        parseFloat(style.paddingRight)
+      expect(textRight).toBeLessThanOrEqual(rects[0].left + 0.5)
+    }
+
+    expectInset(['quick-search-hint'])
+    await userEvent.type(input, 'paris')
+    await expect.poll(rowIds).toEqual(['0', '5', '10'])
+    expectInset(['quick-search-hint', 'quick-search-clear'])
   })
 
   test('FL16: с filteredCount — «показано N из M» при активном фильтре или поиске; без них или без опции элемента нет; при обоих плагинах — один', async () => {
