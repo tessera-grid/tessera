@@ -768,7 +768,6 @@
     var(--tsr-comp-error-flash-color) var(--tsr-comp-loader-glow-opacity),
     transparent
   );
-  --tsr-comp-load-error-icon-color: var(--tsr-sys-danger);
   /* Плашка — примитив кита Alert (ADR 0096, §9). */
   --tsr-comp-alert-bg: var(--tsr-comp-popup-bg);
   --tsr-comp-alert-shadow: var(--tsr-comp-shadow-action);

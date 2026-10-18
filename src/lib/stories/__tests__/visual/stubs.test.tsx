@@ -5,7 +5,7 @@ import { render } from 'vitest-browser-react'
 import { useState } from 'react'
 
 import { definePlugin } from '../../../core/definePlugin'
-import type { StubsOverride } from '../../../core/stubs'
+import { ILLUSTRATION_SIZE, type StubsOverride } from '../../../core/stubs'
 import type { TableLabels } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -21,7 +21,7 @@ import { Stub } from '../../../ui/Stub'
 import { humanClick } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
 
-// Заглушки пустой таблицы (ADR 0123, ES4–ES14): реестр причин, тексты из `localization`,
+// Заглушки пустой таблицы (ADR 0123, ES4–ES15): реестр причин, тексты из `localization`,
 // иллюстрация из `icons`, проп `stubs`, тулбар без колонок. ES1–ES3 — модульные `stubs`.
 
 interface Row {
@@ -69,6 +69,7 @@ interface HostProps {
   localization?: Partial<TableLabels>
   icons?: Partial<TableIcons>
   colorMode?: 'light' | 'dark'
+  gridHeight?: number
 }
 
 const Host = ({
@@ -78,6 +79,7 @@ const Host = ({
   columnVisibility: visibility,
   initialColumnFilters,
   withOffline,
+  gridHeight = 380,
   ...props
 }: HostProps) => {
   // Набор плагинов — договор на время жизни таблицы: стенд его не меняет.
@@ -102,8 +104,14 @@ const Host = ({
     }),
   } as never)
   return (
-    <div style={{ height: 420, display: 'flex', flexDirection: 'column' }}>
-      <DataGrid table={table as never} height={380} {...props} />
+    <div
+      style={{
+        height: gridHeight + 40,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <DataGrid table={table as never} height={gridHeight} {...props} />
     </div>
   )
 }
@@ -276,24 +284,28 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     expect(typeof byTestId('own-show')!.onclick).toBe('function')
   })
 
-  test('ES9: иллюстрация — icons.emptyState, по умолчанию в цветах темы; переопределяется через icons', async () => {
-    const standard = await render(<Host data={NO_ROWS} />)
-    await expect.poll(() => byTestId('no-data-stub')).not.toBeNull()
-    const markup = byTestId('no-data-stub')!.querySelector('svg')!.innerHTML
-    expect(markup).toContain('var(--tsr-comp-control-color)')
-    expect(markup).toContain('var(--tsr-comp-bg)')
-    await standard.unmount()
+  test('ES9: иллюстрация каждой встроенной заглушки — общая icons.emptyState, по умолчанию в цветах темы; переопределяется через icons', async () => {
+    for (const { props, testId } of Object.values(STUBS)) {
+      const standard = await render(<Host {...props} />)
+      await expect.poll(() => byTestId(testId)).not.toBeNull()
+      const markup = byTestId(testId)!.querySelector('svg')!.innerHTML
+      expect(markup, testId).toContain('var(--tsr-comp-control-color)')
+      expect(markup, testId).toContain('var(--tsr-comp-bg)')
+      await standard.unmount()
 
-    await render(
-      <Host
-        data={NO_ROWS}
-        icons={{ emptyState: () => <svg data-testid="own-illustration" /> }}
-      />,
-    )
-    await expect.poll(() => byTestId('own-illustration')).not.toBeNull()
-    expect(
-      byTestId('no-data-stub')!.contains(byTestId('own-illustration')),
-    ).toBe(true)
+      const own = await render(
+        <Host
+          {...props}
+          icons={{ emptyState: () => <svg data-testid="own-illustration" /> }}
+        />,
+      )
+      await expect.poll(() => byTestId(testId)).not.toBeNull()
+      expect(
+        byTestId(testId)!.contains(byTestId('own-illustration')),
+        testId,
+      ).toBe(true)
+      await own.unmount()
+    }
   })
 
   test('ES10: без видимых колонок поиск и «Экспорт» выключены, «Фильтры» доступны при активных фильтрах, «Колонки» — если колонки есть, иначе выключена', async () => {
@@ -406,5 +418,32 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
       />,
     )
     await expect.poll(() => byTestId('own-offline')).not.toBeNull()
+  })
+
+  test('ES15: иллюстрация целиком или никак — в низком гриде скрыта и заголовок виден, место выросло — в полный размер; вместо таблицы и под шапкой', async () => {
+    for (const { props, testId } of [STUBS.noData, STUBS.filtered]) {
+      const stub = () => byTestId(testId)!
+      const media = () => stub().firstElementChild as HTMLElement
+      const view = await render(<Host {...props} gridHeight={180} />)
+      await expect.poll(() => byTestId(testId)).not.toBeNull()
+      await expect.poll(() => media().hidden, { message: testId }).toBe(true)
+      const box = stub().getBoundingClientRect()
+      const title = stub().querySelector('p')!.getBoundingClientRect()
+      expect(title.top, testId).toBeGreaterThanOrEqual(box.top)
+      expect(title.bottom, testId).toBeLessThanOrEqual(box.bottom)
+
+      await view.rerender(<Host {...props} gridHeight={600} />)
+      await expect.poll(() => media().hidden, { message: testId }).toBe(false)
+      expect(
+        media().querySelector('svg')!.getBoundingClientRect().height,
+        testId,
+      ).toBe(ILLUSTRATION_SIZE)
+      const shown = stub().getBoundingClientRect()
+      expect(
+        media().getBoundingClientRect().top,
+        testId,
+      ).toBeGreaterThanOrEqual(shown.top)
+      await view.unmount()
+    }
   })
 })

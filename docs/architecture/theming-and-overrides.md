@@ -146,10 +146,11 @@
   `--tsr-comp-loader-height`; приглушение тела и футера — `--tsr-comp-loader-dim-opacity`.
 - **Ошибка загрузки данных** (ADR [0096](../decisions/0096-load-error.md)): красный свет
   под шапкой — `--tsr-comp-load-error-glow` (цвет ошибки с силой свечения, в высокой
-  контрастности — линия `Mark`), иконка — `--tsr-comp-load-error-icon-color`, плашка —
+  контрастности — линия `Mark`), плашка —
   `--tsr-comp-load-error-banner-bg` / `-shadow` / `-radius` / `-max-width` (по умолчанию
   поверхность поповера, 36rem); подписи — `loadErrorTitle`, `loadFailedTitle`, `loadRetry`,
-  `loadErrorDismiss`, `announceLoadError`, `announceLoadFailed`; иконка — `icons.loadFailed`.
+  `loadErrorDismiss`, `announceLoadError`, `announceLoadFailed`; иконка плашки —
+  `icons.loadFailed`, у заглушки — общая иллюстрация `icons.emptyState` (ADR 0123).
 - **Индикатор включённого действия** (ADR [0062](../decisions/0062-active-action-indicator.md)):
   точка на кнопке заголовка и кебабе, номер приоритета сортировки, счётчики тулбара —
   `--tsr-comp-active-indicator` (по умолчанию `--tsr-comp-loader-bar`), цифры —

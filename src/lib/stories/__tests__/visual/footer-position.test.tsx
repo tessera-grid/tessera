@@ -530,9 +530,12 @@ describe('Положение футера', () => {
       const pinned = await render(<Grid {...props} />)
       await apply()
       await expect.poll(() => q(stub)).not.toBeNull()
+      // Место заглушки под шапкой отдаёт наблюдатель размеров — к кадру после появления.
+      await expect
+        .poll(() => rect(q(stub)!).bottom, { message: stub })
+        .toBeLessThanOrEqual(rect(footer()).top + 1)
       const box = rect(q(stub)!)
       expect(box.top, stub).toBeGreaterThanOrEqual(rect(head()).bottom - 1)
-      expect(box.bottom, stub).toBeLessThanOrEqual(rect(footer()).top + 1)
       expect(precedes(q(stub)!, footer()), stub).toBe(true)
       expectNear(rect(footer()).bottom, clientBottom(), stub)
       // Заглушка — во всю видимую ширину области, как без футера (FL41).

@@ -390,7 +390,7 @@ describe('Ошибка обновления: свет и плашка', () => {
 })
 
 describe('Ошибка первой загрузки: заглушка', () => {
-  test('LE7: loadError без строк — заглушка поверх пустого тела вместо скелета и stub: иконка, заголовок, причина, «Retry»; шапка на месте', async () => {
+  test('LE7: loadError без строк — заглушка поверх пустого тела вместо скелета и stub: иллюстрация, заголовок, причина, «Retry»; шапка на месте', async () => {
     await mount({
       data: EMPTY,
       loading: 'initial',
@@ -564,7 +564,7 @@ const sys = (name: string) => {
 }
 
 describe('Подписи, режимы, доступность, перерисовка, плавность', () => {
-  test('LE12: подписи — localization, иконка — icons.loadFailed, вид — токены --tsr-comp-load-error-* и --tsr-comp-alert-*', async () => {
+  test('LE12: подписи — localization, иконка плашки — icons.loadFailed, иллюстрация заглушки — icons.emptyState, вид — токены --tsr-comp-load-error-* и --tsr-comp-alert-*', async () => {
     const OwnIcon = (props: Record<string, unknown>) => (
       <svg data-testid="own-icon" {...props} />
     )
@@ -605,7 +605,7 @@ describe('Подписи, режимы, доступность, перерисо
       loadError: SERVER_DOWN,
       onRetry: () => {},
       localization: labels,
-      icons: { loadFailed: OwnIcon as never },
+      icons: { emptyState: OwnIcon as never },
     })
     await expect.poll(stubEl).not.toBeNull()
     expect(stubEl()!.textContent).toContain('Загрузить не удалось')

@@ -93,9 +93,8 @@ const CORE_STUBS: StubEntry[] = [
     when: ({ loadError }) => loadError.shown,
     title: labels => labels.loadFailedTitle,
     description: ({ loadError }) => loadError.reason,
-    media: 'loadFailed',
-    mediaSize: 24,
-    mediaColor: 'var(--tsr-comp-load-error-icon-color)',
+    media: 'emptyState',
+    mediaSize: ILLUSTRATION_SIZE,
     action: ({ loadError }, labels) =>
       loadError.retry && {
         label: labels.loadRetry,

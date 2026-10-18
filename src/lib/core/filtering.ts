@@ -7,7 +7,7 @@
 import { reportAction, sourceOf } from './debugActions'
 import { readPluginHooks } from './definePlugin'
 import { searchColumnIdsOf } from './searchColumns'
-import type { StubEntry } from './stubs'
+import { ILLUSTRATION_SIZE, type StubEntry } from './stubs'
 import {
   runServerAction,
   type ServerActionContext,
@@ -204,6 +204,8 @@ export const FILTERED_STUB: StubEntry = {
     rowCount === 0 &&
     (columnFiltersOf(table).length > 0 || searchOf(table).trim() !== ''),
   title: labels => labels.noRowsMatchFilters,
+  media: 'emptyState',
+  mediaSize: ILLUSTRATION_SIZE,
   action: ({ table }, labels) => ({
     label: labels.resetFilters,
     run: () => resetFiltersByUser(table),
