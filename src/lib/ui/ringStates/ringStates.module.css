@@ -157,11 +157,12 @@
   animation-play-state: paused;
 }
 
-/* Гаснет переходом движения (BS17); появление и заливка — сразу. */
+/* Гаснет плавно, с замедлением (BS17); появление и заливка — сразу. */
 .ring[data-error-flash='off']::after {
   opacity: 0;
   transition:
-    var(--tsr-comp-reveal-transition),
+    opacity var(--tsr-comp-error-flash-fade-duration)
+      var(--tsr-comp-motion-easing-out),
     --tsr-ring-fill var(--tsr-comp-error-flash-fill-duration)
       var(--tsr-comp-motion-easing);
 }

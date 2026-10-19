@@ -430,9 +430,10 @@
       var(--tsr-comp-pending-glow-strength),
     transparent
   );
-  /* Переход света ожидания в красную заливку и её удержание; гаснет переходом движения. */
+  /* Переход света ожидания в красную заливку, её удержание и угасание (темп сигналов внимания, как подсветка). */
   --tsr-comp-error-flash-fill-duration: 600ms;
   --tsr-comp-error-flash-duration: 1200ms;
+  --tsr-comp-error-flash-fade-duration: 500ms;
   /* Иконка упавшего пункта меню и отметка ошибки на кебабе (ADR 0078). */
   --tsr-comp-action-error-color: var(--tsr-sys-danger);
   /* Подсветка пришедших ленивых детей (ADR 0056): держится, затем гаснет. */

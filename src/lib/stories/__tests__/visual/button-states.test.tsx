@@ -402,14 +402,20 @@ describe('Button states: error flash', () => {
     expect(performance.now() - start).toBeLessThan(1100)
   })
 
-  test('BS17: after the hold the red light fades out with the motion transition instead of dropping', async () => {
+  test('BS17: after the hold the red light fades out smoothly over the error fade duration instead of dropping', async () => {
     const screen = await renderIcon({ errorFlash: 0 })
     await flashIcon(screen)
     await expect
-      .poll(() => button().getAttribute('data-error-flash'), { timeout: 2000 })
+      .poll(() => button().getAttribute('data-error-flash'), {
+        timeout: 2000,
+        interval: 10,
+      })
       .toBe('off')
     // Гаснет: красный слой ещё нарисован, а прозрачность уходит к нулю переходом.
     expect(toRgba(shadowsOf(ring().boxShadow)[4]!.color)[3]).toBeGreaterThan(0)
+    // Плавно: через 150 мс угасания свет ещё виден — быстрый переход уже погасил бы его.
+    await new Promise(resolve => setTimeout(resolve, 150))
+    expect(parseFloat(ring().opacity)).toBeGreaterThan(0.05)
     await expect
       .poll(() =>
         button().getAttribute('data-error-flash') === 'off'
