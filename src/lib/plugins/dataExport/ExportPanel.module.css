@@ -57,6 +57,19 @@
   cursor: default;
 }
 
+/*
+ * Высокая контрастность (ADR 0087, HC10): пункт под указателем и клавиатурой — `Highlight`,
+ * как в меню; фон токена и тень фокуса браузер снял бы.
+ */
+@media (forced-colors: active) {
+  .item:is(:hover, :focus-visible):not([data-disabled]),
+  .item:is(:hover, :focus-visible):not([data-disabled]) * {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}
+
 .itemIcon {
   composes: itemIcon from '../../grid/headerActions/ActionMenu.module.css';
 }

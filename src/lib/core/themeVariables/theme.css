@@ -1034,7 +1034,7 @@
     --tsr-comp-cell-pinned-bg: Highlight;
     --tsr-comp-cell-pinned-hovered-bg: Canvas;
     --tsr-comp-cell-pinned-selected-hovered-bg: Highlight;
-    --tsr-comp-focus-ring: CanvasText;
+    --tsr-comp-focus-ring: Highlight;
     --tsr-comp-pending-glow-1: Highlight;
     --tsr-comp-pending-glow-2: Highlight;
     --tsr-comp-pending-glow-3: Highlight;

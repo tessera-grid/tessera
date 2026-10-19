@@ -60,10 +60,14 @@
   pointer-events: none;
 }
 
-/* Высокая контрастность (ADR 0087): пункт под указателем и клавиатурой — `Highlight`. */
+/*
+ * Высокая контрастность (ADR 0087): пункт под указателем и клавиатурой — `Highlight`.
+ * Цвета системные; без `forced-color-adjust: none` Chromium кладёт под текст подложку Canvas.
+ */
 @media (forced-colors: active) {
   .item[data-highlighted],
   .item[data-highlighted] * {
+    forced-color-adjust: none;
     background-color: Highlight;
     color: HighlightText;
   }

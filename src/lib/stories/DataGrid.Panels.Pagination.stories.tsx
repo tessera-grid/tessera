@@ -48,6 +48,9 @@ export const Pagination: StoryObj<StoryProps> = {
     // enableColumnSorting — смена сортировки вернёт на первую страницу.
     enablePagination: true,
     dataCount: 1000,
+    // Грид в окне матрицы контраста (ADR 0089, CX16): тело прокручивается, пейджер виден.
+    height: '460',
+    maxHeight: '460',
   },
 }
 

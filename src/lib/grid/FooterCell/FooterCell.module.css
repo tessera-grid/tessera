@@ -86,6 +86,11 @@
     background-color: Mark;
   }
 
+  /* Текст на заливке — системного цвета; без этого Chromium кладёт под него подложку Canvas. */
+  .footer__cell[data-column-highlight] * {
+    forced-color-adjust: none;
+  }
+
   .footer__cell[data-column-highlight],
   .footer__cell[data-column-highlight] * {
     color: MarkText;

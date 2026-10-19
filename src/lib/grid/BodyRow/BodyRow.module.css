@@ -187,13 +187,22 @@
  * фокуса на `Highlight` — `HighlightText`. Слой прихода не рисуется.
  */
 @media (forced-colors: active) {
-  :where(:global(.data-grid-theme):not([data-refreshing])) .body__row:hover {
-    outline: 1px solid Highlight;
-    outline-offset: -1px;
+  /*
+   * Текст на заливке — системного цвета; без этого Chromium кладёт под него подложку
+   * Canvas. Строка и ячейки остаются под режимом: слои тона браузер снимает.
+   */
+  .body__row:is([data-selected='true'], [data-highlight]) > * * {
+    forced-color-adjust: none;
   }
 
+  /* Разделители ячеек внутри заливки — её цветом (`BodyCell`): рамка цвета текста — только фокус. */
   .body__row[data-selected='true'] {
     --tsr-comp-focus-ring: HighlightText;
+    --tsr-forced-divider: Highlight;
+  }
+
+  .body__row[data-highlight] {
+    --tsr-forced-divider: Mark;
   }
 
   .body__row[data-selected='true'],
@@ -226,10 +235,22 @@
     content: none;
   }
 
-  /* Будущий родитель слота — контуром, как наведение (ADR 0109, §4). */
-  .body__row[data-row-drop-parent] {
-    outline: 1px solid Highlight;
-    outline-offset: -1px;
+  /*
+   * Наведение и будущий родитель слота (ADR 0109, §4) — рамкой на слое строки поверх
+   * ячеек: контур самой строки перекрыли бы ячейки и их разделители.
+   */
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    .body__row:hover::after,
+  .body__row[data-row-drop-parent]::after {
+    content: '';
+    border: 2px solid Highlight;
+    background-color: transparent;
+    opacity: 1;
+    transition: none;
+  }
+
+  .body__row[data-selected='true']:hover::after {
+    border-color: HighlightText;
   }
 }
 

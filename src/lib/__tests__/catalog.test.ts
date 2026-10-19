@@ -171,7 +171,7 @@ describe('Каталог визуальных состояний', () => {
       .filter(s => /forcedColors:\s*'active'/.test(s.body))
       .map(s => `${s.file}:${s.name}`)
     expect(forced).toContain(
-      'DataGrid.Core.HighContrast.stories.tsx:HighContrast',
+      'DataGrid.Core.HighContrast.stories.tsx:HighContrastDefault',
     )
   })
 

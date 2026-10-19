@@ -119,7 +119,12 @@ type Api = {
 }
 let table: Api
 
-const Grid = ({ selected = [] as string[] }) => {
+const FOOTER_COLUMNS = COLUMNS.map(column => ({
+  ...column,
+  footer: () => `Sum ${column.header}`,
+}))
+
+const Grid = ({ selected = [] as string[], footer = false }) => {
   const data = useMemo(
     () =>
       Array.from({ length: 8 }, (_, i) => ({
@@ -131,9 +136,10 @@ const Grid = ({ selected = [] as string[] }) => {
     [],
   )
   table = useCreateTable({
-    columns: COLUMNS as never,
+    columns: (footer ? FOOTER_COLUMNS : COLUMNS) as never,
     data,
     getRowId: (row: Item) => row.id,
+    enableFooter: footer,
     state: { columnPinning: { start: ['a'], end: [] } },
     plugins: [
       columnPinning(),
@@ -151,8 +157,8 @@ const Grid = ({ selected = [] as string[] }) => {
   )
 }
 
-const mount = async (selected: string[] = []) => {
-  const screen = await render(<Grid selected={selected} />)
+const mount = async (selected: string[] = [], footer = false) => {
+  const screen = await render(<Grid selected={selected} footer={footer} />)
   await expect
     .poll(() => document.querySelectorAll('.data-grid__body-row').length)
     .toBeGreaterThan(0)
@@ -224,6 +230,36 @@ const toward = (rgb: number[], from: string, to: string) => {
   return t >= 0.25 && off < 60
 }
 
+const textBox = (text: Node) => {
+  const range = document.createRange()
+  range.selectNodeContents(text)
+  return range.getBoundingClientRect()
+}
+
+/**
+ * Доля пикселей заливки `fill` под строкой текста: подложка Chromium (`Canvas` под
+ * текстом) закрывает заливку целиком — доля около нуля.
+ */
+const fillUnderText = (
+  shot: (x: number, y: number) => number[],
+  text: Node,
+  fill: string,
+) => {
+  const box = textBox(text)
+  const target = toRgba(fill)
+  let hits = 0
+  let total = 0
+  for (let x = box.left + 1; x < box.right - 1; x++) {
+    for (let y = box.top + 2; y < box.bottom - 2; y += 2) {
+      total++
+      if (shot(x, y).every((value, i) => Math.abs(value - target[i]!) < 40)) {
+        hits++
+      }
+    }
+  }
+  return hits / total
+}
+
 describe('Высокая контрастность (ADR 0087)', () => {
   test('HC1: выбранная строка — фон Highlight и у закреплённой ячейки, текст HighlightText, флажок различим', async () => {
     await mount(['r2'])
@@ -275,7 +311,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('HC3: кольцо фокуса активной ячейки видно на выбранной строке и в диапазоне — контраст к Highlight ≥ 3:1', async () => {
+  test('HC3: кольцо фокуса активной ячейки видно на выбранной строке и в диапазоне — контраст к Highlight ≥ 3:1; на обычной строке — Highlight, не цвет сетки', async () => {
     await mount(['r2'])
     const cell = cellEl('r2', 'b')
     cell.focus()
@@ -299,17 +335,115 @@ describe('Высокая контрастность (ADR 0087)', () => {
     await expect
       .poll(() => ringContrast(inRange))
       .toBeGreaterThanOrEqual(paletteFloor())
+
+    // Обычная строка: кольцо Highlight, сетка вокруг — CanvasText. Снимок без сжатия.
+    await page.viewport(414, 720)
+    try {
+      const plain = cellEl('r1', 'b')
+      plain.focus()
+      await userEvent.keyboard('{ArrowRight}{ArrowLeft}')
+      await expect.poll(() => document.activeElement).toBe(plain)
+      await expect.poll(() => style(plain).outlineColor).toBe(sys('Highlight'))
+      const shot = await snapshot()
+      const box = plain.getBoundingClientRect()
+      const y = box.top + box.height / 2
+      expect(shot(box.left + 0.5, y), 'кольцо').toEqual(
+        toRgba(sys('Highlight')).slice(0, 3),
+      )
+      const next = cellEl('r1', 'c').getBoundingClientRect()
+      expect(shot(next.right - 0.5, y), 'сетка').toEqual(
+        toRgba(sys('CanvasText')).slice(0, 3),
+      )
+    } finally {
+      await page.viewport(414, 896)
+    }
   })
 
-  test('HC4: наведение строки — контур 1px Highlight без заливки', async () => {
-    await mount()
-    await userEvent.hover(cellEl('r3', 'b'))
-    const row = rowEl('r3')
-    // Цвет контура строки переходит (токен перехода строки) — ждём конечный.
-    await expect.poll(() => style(row).outlineColor).toBe(sys('Highlight'))
-    expect(style(row).outlineStyle).toBe('solid')
-    expect(style(row).outlineWidth).toBe('1px')
-    expect(style(row).backgroundColor).toBe(sys('Canvas'))
+  test('HC15: разделители внутри выбранной строки, диапазона и подсветки — цветом заливки, вне заливок — прежние', async () => {
+    // Окно в рамку раннера: снимок без сжатия, разделитель в 1px — целыми пикселями.
+    await page.viewport(414, 720)
+    try {
+      await mount(['r2'])
+      table.highlight({ row: 'r4' }, { tone: 'danger' })
+      selectCell(cellEl('r5', 'b'))
+      selectCell(cellEl('r6', 'c'), true)
+      await expect
+        .poll(() => cellEl('r6', 'b').getAttribute('data-cell-selected'))
+        .toBe('true')
+      await expect
+        .poll(() => style(cellEl('r6', 'b')).backgroundColor)
+        .toBe(sys('Highlight'))
+      await expect
+        .poll(() => style(rowEl('r4')).backgroundColor)
+        .toBe(sys('Mark'))
+      const shot = await snapshot()
+      // Разделитель между ячейками b и c — правая рамка ячейки b.
+      const divider = (row: string) => {
+        const b = cellEl(row, 'b').getBoundingClientRect()
+        return shot(b.right - 0.5, b.top + b.height / 2)
+      }
+      const rgb = (name: string) => toRgba(sys(name)).slice(0, 3)
+      expect(divider('r2'), 'выбранная строка').toEqual(rgb('Highlight'))
+      expect(divider('r4'), 'подсветка строки').toEqual(rgb('Mark'))
+      expect(divider('r6'), 'диапазон').toEqual(rgb('Highlight'))
+      expect(divider('r1'), 'обычная строка').toEqual(rgb('CanvasText'))
+    } finally {
+      await page.viewport(414, 896)
+    }
+  })
+
+  test('HC4: наведение строки — рамка 2px Highlight, ячейки — контур 1px Highlight, без заливки', async () => {
+    // Окно в рамку раннера: снимок без сжатия, линия в 1px — целыми пикселями.
+    await page.viewport(414, 720)
+    try {
+      await mount(['r5'])
+      await userEvent.hover(cellEl('r3', 'b'))
+      const row = rowEl('r3')
+      await expect.poll(() => style(row).backgroundColor).toBe(sys('Canvas'))
+      // Контур ячейки переходит (токен перехода строки) — ждём конечный.
+      await expect
+        .poll(() => style(cellEl('r3', 'b')).outlineColor)
+        .toBe(sys('Highlight'))
+      // Контур виден на экране, а не только в стилях: ячейки его не перекрывают.
+      const shot = await snapshot()
+      const highlight = toRgba(sys('Highlight')).slice(0, 3)
+      const box = row.getBoundingClientRect()
+      for (const column of ['a', 'b', 'c']) {
+        const cell = cellEl('r3', column).getBoundingClientRect()
+        const x = cell.left + cell.width / 2
+        for (const y of [
+          box.top + 0.5,
+          box.top + 1.5,
+          box.bottom - 1.5,
+          box.bottom - 0.5,
+        ]) {
+          expect(shot(x, y), `строка, ${column} @ ${y}`).toEqual(highlight)
+        }
+      }
+      const cell = cellEl('r3', 'b').getBoundingClientRect()
+      expect(
+        shot(cell.left + 0.5, cell.top + cell.height / 2),
+        'ячейка, левый край',
+      ).toEqual(highlight)
+      // Без заливки: середина строки — фон палитры.
+      expect(
+        shot(cell.left + cell.width - 4, cell.top + cell.height / 2),
+      ).toEqual(toRgba(sys('Canvas')).slice(0, 3))
+      // На выбранной строке рамка — HighlightText: Highlight на Highlight не видно.
+      await userEvent.hover(cellEl('r5', 'b'))
+      const selected = rowEl('r5')
+      await expect
+        .poll(() => style(selected).backgroundColor)
+        .toBe(sys('Highlight'))
+      const selectedBox = selected.getBoundingClientRect()
+      const selectedShot = await snapshot()
+      expect(
+        selectedShot(cell.left + cell.width / 2, selectedBox.top + 0.5),
+        'выбранная строка, верхний край',
+      ).toEqual(toRgba(sys('HighlightText')).slice(0, 3))
+    } finally {
+      await page.viewport(414, 896)
+    }
   })
 
   test('HC5: подсветка строки, ячейки и колонки любого тона — фон Mark, текст MarkText', async () => {
@@ -328,6 +462,68 @@ describe('Высокая контрастность (ADR 0087)', () => {
     for (const cell of [cellEl('r3', 'b'), cellEl('r5', 'c')]) {
       await expect.poll(() => style(cell).backgroundColor).toBe(sys('Mark'))
       expect(style(textOf(cell)).color).toBe(sys('MarkText'))
+    }
+  })
+
+  test('HC14: текст на заливках Highlight и Mark — без подложки Canvas в теле, шапке и футере', async () => {
+    await mount(['r2'], true)
+    selectCell(cellEl('r0', 'b'))
+    selectCell(cellEl('r1', 'b'), true)
+    table.highlight({ row: 'r4' }, { tone: 'danger' })
+    table.highlight({ cell: ['r3', 'b'] }, { tone: 'warning' })
+    table.highlight({ column: 'c' }, { tone: 'success' })
+    const column = (kind: 'head' | 'footer') =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__${kind}-cell[data-column-id="c"]`,
+      )!
+    const cases: [string, HTMLElement, string][] = [
+      ['выбранная строка', cellEl('r2', 'b'), 'Highlight'],
+      ['выбранная строка, закреплённая', cellEl('r2', 'a'), 'Highlight'],
+      ['диапазон', cellEl('r1', 'b'), 'Highlight'],
+      ['подсветка строки', cellEl('r4', 'b'), 'Mark'],
+      ['подсветка строки, закреплённая', cellEl('r4', 'a'), 'Mark'],
+      ['подсветка ячейки', cellEl('r3', 'b'), 'Mark'],
+      ['подсветка колонки', cellEl('r5', 'c'), 'Mark'],
+      ['подсветка колонки на выбранной строке', cellEl('r2', 'c'), 'Mark'],
+      ['подсветка колонки на подсвеченной строке', cellEl('r4', 'c'), 'Mark'],
+      ['подсветка колонки, шапка', column('head'), 'Mark'],
+      ['подсветка колонки, футер', column('footer'), 'Mark'],
+    ]
+    // Заливка — у ячейки или, если та прозрачна, у строки; переходит — ждём конечную.
+    const fillOf = (cell: HTMLElement) => {
+      const own = style(cell).backgroundColor
+      const row = cell.closest('.data-grid__body-row')
+      return toRgba(own)[3]! > 0.99 || !row ? own : style(row).backgroundColor
+    }
+    for (const [name, cell, fill] of cases) {
+      await expect.poll(() => fillOf(cell), { message: name }).toBe(sys(fill))
+    }
+    const shot = await snapshot()
+    for (const [name, cell, fill] of cases) {
+      const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT, {
+        acceptNode: node =>
+          node.textContent!.trim()
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT,
+      })
+      const text = walker.nextNode()!
+      expect
+        .soft(style(text.parentElement!).color, `${name}: цвет текста`)
+        .toBe(sys(`${fill}Text`))
+      const box = textBox(text)
+      const target = toRgba(sys(fill))
+      // Подложка Canvas закрыла бы заливку под текстом целиком.
+      expect
+        .soft(fillUnderText(shot, text, sys(fill)), name)
+        .toBeGreaterThan(0.25)
+      // Заливка рядом с текстом — ровный системный цвет, без слоя тона.
+      const aside = shot(box.right + 6, (box.top + box.bottom) / 2)
+      expect
+        .soft(
+          aside.every((value, i) => Math.abs(value - target[i]!) < 8),
+          `${name}: заливка ${aside} вместо ${target}`,
+        )
+        .toBe(true)
     }
   })
 
@@ -463,6 +659,17 @@ describe('Высокая контрастность (ADR 0087)', () => {
       '[role="radio"][data-checked]',
     )!
     expect(style(checked).color).toBe(sys('HighlightText'))
+    // Подпись выбранного сегмента видна на экране: без подложки Canvas под ней.
+    await expect
+      .poll(() => style(indicator).backgroundColor)
+      .toBe(sys('Highlight'))
+    const label = document.createTreeWalker(checked, NodeFilter.SHOW_TEXT)
+    let text = label.nextNode()
+    while (text && !text.textContent!.trim()) text = label.nextNode()
+    expect(
+      fillUnderText(await snapshot(), text!, sys('Highlight')),
+      'сегмент',
+    ).toBeGreaterThan(0.25)
     const on = document.querySelector<HTMLElement>('[role="switch"]')!
     expect(style(on).backgroundColor).toBe(sys('Highlight'))
     const thumb = on.firstElementChild as HTMLElement
@@ -503,23 +710,70 @@ describe('Высокая контрастность (ADR 0087)', () => {
   })
 
   test('HC13: история «High contrast» — все состояния на одном экране', async () => {
-    await render(<composed.HighContrast />)
+    const screen = await render(<composed.HighContrastDefault />)
+    await composed.HighContrastDefault.play?.({
+      canvasElement: screen.container,
+    } as never)
+    const highlight = toRgba(sys('Highlight'))
+    const one = <T extends Element = HTMLElement>(selector: string) =>
+      document.querySelector<T & HTMLElement>(selector)
+
     await expect
-      .poll(() =>
-        document.querySelector('.data-grid__body-row[data-selected="true"]'),
-      )
+      .poll(() => one('.data-grid__body-row[data-selected="true"]'))
       .not.toBeNull()
-    const selected = document.querySelector<HTMLElement>(
-      '.data-grid__body-row[data-selected="true"]',
-    )!
     await expect
-      .poll(() => style(selected).backgroundColor)
+      .poll(
+        () =>
+          style(one('.data-grid__body-row[data-selected="true"]')!)
+            .backgroundColor,
+      )
       .toBe(sys('Highlight'))
+    const pinned = one(
+      '.data-grid__body-row[data-selected="true"] [data-cell-pinned="left"]:not([data-column-id^="actionColumn"])',
+    )
+    expect(pinned).not.toBeNull()
+    expect(style(pinned!).backgroundColor).toBe(sys('Highlight'))
     await expect
-      .poll(() =>
-        document.querySelector('.data-grid__body-row[data-highlight]'),
-      )
+      .poll(() => one('.data-grid__body-row[data-highlight]'))
       .not.toBeNull()
-    expect(document.querySelector('[data-tree-depth]')).not.toBeNull()
+    expect(one('[data-tree-depth]')).not.toBeNull()
+
+    // Шеврон ленивой строки ждёт детей.
+    const chevron = one('.row-expand-button[aria-busy="true"]')
+    expect(chevron).not.toBeNull()
+    expect(toRgba(tokenIn(chevron!, '--tsr-comp-pending-glow-1'))).toEqual(
+      highlight,
+    )
+
+    // Ячейка ждёт сохранения, другая — с отказом сервера.
+    const saving = one('.cell-edit-feedback[data-pending]')
+    expect(saving).not.toBeNull()
+    expect(toRgba(tokenIn(saving!, '--tsr-comp-pending-glow-1'))).toEqual(
+      highlight,
+    )
+    const failed = one('.data-grid__body-cell [aria-invalid="true"]')
+    expect(failed).not.toBeNull()
+    expect(toRgba(tokenIn(failed!, '--tsr-comp-error-flash-glow'))).toEqual(
+      toRgba(sys('Mark')),
+    )
+
+    // Тулбар: «Колонки» активна (скрыта колонка), выгрузка на месте.
+    expect(one('[role="toolbar"] button[data-active]')).not.toBeNull()
+    expect(
+      [...document.querySelectorAll('[role="toolbar"] button')].some(button =>
+        `${button.getAttribute('aria-label')} ${button.textContent}`.includes(
+          'Export',
+        ),
+      ),
+    ).toBe(true)
+
+    // Второй грид — скелет первой загрузки.
+    const stripe = [
+      ...document.querySelectorAll<HTMLElement>(
+        '.data-grid__body-cell--skeleton [class*="skeleton"]',
+      ),
+    ].find(el => el.getBoundingClientRect().width > 10)
+    expect(stripe).toBeTruthy()
+    expect(style(stripe!).backgroundColor).toBe(sys('GrayText'))
   })
 })

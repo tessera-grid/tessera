@@ -65,8 +65,19 @@
   stroke-width: 3;
 }
 
-/* Высокая контрастность (ADR 0087): залитый флажок различим и на выбранной строке. */
+/*
+ * Высокая контрастность (ADR 0087): рамку не системного цвета браузер красит цветом
+ * галочки — пустой флажок пропал бы; залитый различим и на выбранной строке.
+ */
 @media (forced-colors: active) {
+  .checkbox {
+    border-color: CanvasText;
+  }
+
+  .checkbox:hover:not(:disabled) {
+    border-color: Highlight;
+  }
+
   .checkbox[data-checked],
   .checkbox[data-indeterminate] {
     border-color: HighlightText;

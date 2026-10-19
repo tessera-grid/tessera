@@ -197,6 +197,33 @@
   opacity: 1;
 }
 
+/*
+ * Высокая контрастность (ADR 0087): чип — системная кнопка, открытый поповер — `Highlight`.
+ * Иконка берёт цвет кнопки, а не цвет текста выбранной или подсвеченной строки.
+ */
+@media (forced-colors: active) {
+  :is(.data-grid__body-row, [data-row-ghost]) .row__button button {
+    background-color: ButtonFace;
+    color: ButtonText;
+    box-shadow: none;
+  }
+
+  :is(.data-grid__body-row, [data-row-ghost])
+    .row__button
+    button:is([data-active], [data-popup-open]) {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  :is(.data-grid__body-row, [data-row-ghost]) .row__button button * {
+    color: inherit;
+  }
+
+  .data-grid__body-row .row__button button::before {
+    display: none;
+  }
+}
+
 /* Скрытие hidden-кнопок строки */
 
 :is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden {

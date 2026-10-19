@@ -82,6 +82,12 @@
 /* Высокая контрастность (ADR 0087): выбранный — `Highlight` токенами; наведение на
    невыбранный — цвет текста, а не `HighlightText` выбранного. */
 @media (forced-colors: active) {
+  /* Подпись выбранного — системного цвета; без этого Chromium кладёт под неё подложку Canvas. */
+  .segment[data-checked],
+  .segment[data-checked] * {
+    forced-color-adjust: none;
+  }
+
   .segment:hover:not([data-checked]):not([data-disabled]) {
     color: CanvasText;
   }

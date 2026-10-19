@@ -694,8 +694,9 @@ describe('Повышенный контраст (ADR 0088)', () => {
       const sys = (name: string) => resolve(document.body, name)
       expect(style(rowEl('r2')).backgroundColor).toBe(sys('Highlight'))
       expect(style(rowEl('r2')).outlineStyle).toBe('none')
+      // Наведение режима ADR 0087 — рамка на слое строки поверх ячеек (HC4).
       await expect
-        .poll(() => style(rowEl('r3')).outlineColor)
+        .poll(() => style(rowEl('r3'), '::after').borderTopColor)
         .toBe(sys('Highlight'))
     } finally {
       await cmd.forcedColors(false)

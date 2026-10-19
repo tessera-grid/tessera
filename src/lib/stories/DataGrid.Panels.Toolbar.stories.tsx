@@ -62,6 +62,9 @@ export const ToolbarAllButtons: StoryObj<StoryProps> = {
     enableColumnFiltering: true,
     enableColumnVisibility: true,
     enableDataExport: true,
+    // Грид в окне матрицы контраста (ADR 0089, CX16).
+    height: '460',
+    maxHeight: '460',
   },
 }
 

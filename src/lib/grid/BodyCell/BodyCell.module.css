@@ -270,8 +270,43 @@
  * текста своей заливки.
  */
 @media (forced-colors: active) {
+  /*
+   * Разделители: прозрачный контур ячейки браузер красит цветом текста — он и рисует
+   * сетку; рамки раскладки `grid` — тем же цветом. Внутри заливки (строки или ячейки) —
+   * её цветом: рамкой цвета текста остаётся только кольцо фокуса.
+   */
+  .body__cell {
+    outline-color: var(--tsr-forced-divider, CanvasText);
+  }
+
+  .body__cell[data-layout='grid'][data-layout] {
+    border-color: var(--tsr-forced-divider, CanvasText);
+  }
+
+  /* Наведение ячейки — контур `Highlight`: цвет токена браузер подменил бы. */
+  :where(:global(.data-grid-theme):not([data-refreshing]))
+    .body__cell:hover:not(
+      [data-actions-column-cell='true']
+    )[data-cell-interact='true'] {
+    outline-color: Highlight;
+  }
+
+  /*
+   * Текст на заливке — системного цвета; без этого Chromium кладёт под него подложку
+   * Canvas. Сама ячейка остаётся под режимом: слои тона и кромки браузер снимает.
+   */
+  .body__cell:is(
+      [data-cell-selected='true']:not([data-cell-focused='true']),
+      [data-highlight],
+      [data-column-highlight]
+    )
+    * {
+    forced-color-adjust: none;
+  }
+
   .body__cell[data-cell-selected='true']:not([data-cell-focused='true']) {
     --tsr-comp-focus-ring: HighlightText;
+    --tsr-forced-divider: Highlight;
 
     background-color: Highlight;
   }
@@ -283,12 +318,17 @@
 
   .body__cell:is([data-highlight], [data-column-highlight]) {
     --tsr-comp-focus-ring: MarkText;
+    --tsr-forced-divider: Mark;
 
     background-color: Mark;
   }
 
-  .body__cell:is([data-highlight], [data-column-highlight]),
-  .body__cell:is([data-highlight], [data-column-highlight]) * {
+  /* Сильнее цвета выбранной строки: заливка ячейки лежит поверх её заливки. */
+  :global(.data-grid__body-row)
+    .body__cell:is([data-highlight], [data-column-highlight]),
+  :global(.data-grid__body-row)
+    .body__cell:is([data-highlight], [data-column-highlight])
+    * {
     color: MarkText;
   }
 }

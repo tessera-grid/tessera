@@ -53,13 +53,26 @@ export const reducedMotion: BrowserCommand<[reduce: boolean]> = async (
   await settleMedia(context, '(prefers-reduced-motion: reduce)', reduce)
 }
 
-// Эмуляция высокой контрастности Windows (`forced-colors: active`, ADR 0087).
-export const forcedColors: BrowserCommand<[active: boolean]> = async (
-  context,
-  active,
-) => {
-  await context.page.emulateMedia({ forcedColors: active ? 'active' : 'none' })
+/**
+ * Эмуляция высокой контрастности Windows (`forced-colors: active`, ADR 0087). `scheme` —
+ * палитра Chromium: `dark` — тёмная контрастная тема. `null` снимает переопределение
+ * схемы, и Chromium берёт схему ОС, а не светлую схему контекста: возвращайте исходную.
+ */
+export const forcedColors: BrowserCommand<
+  [active: boolean, scheme?: 'light' | 'dark' | null]
+> = async (context, active, scheme) => {
+  await context.page.emulateMedia({
+    forcedColors: active ? 'active' : 'none',
+    ...(scheme !== undefined && { colorScheme: scheme }),
+  })
   await settleMedia(context, '(forced-colors: active)', active)
+  if (scheme) {
+    await settleMedia(
+      context,
+      '(prefers-color-scheme: dark)',
+      scheme === 'dark',
+    )
+  }
 }
 
 // Эмуляция системной просьбы о контрасте (`prefers-contrast: more`, ADR 0088).

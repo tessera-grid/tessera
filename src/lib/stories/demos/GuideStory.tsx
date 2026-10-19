@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import { dataGridMeta } from '../dataGridMeta'
+import type { CatalogState } from '../__mocks__/catalog'
 import { getData } from '../__mocks__/data'
 import { normalizeArgs } from '../__mocks__/utils/normalizeArgs'
 import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
@@ -28,7 +29,19 @@ export interface GuideStoryStep extends GuideStep {
   enter?: (root: HTMLElement) => void
   /** Шаг открывает грид заново: опции на время жизни таблицы (`initialPageSize`). */
   remount?: boolean
+  /** Состояния каталога, которые показывает шаг: матрица контраста — во всех сочетаниях. */
+  states?: CatalogState[]
+  /**
+   * Псевдо-состояние шага (`{ hover: '<селектор>' }`): человек наводит сам, матрица
+   * контраста ставит классы `pseudo-*`.
+   */
+  pseudo?: Record<string, string | string[]>
+  /** Короткое состояние (вспышка): матрица контраста проверяет его сразу после шага. */
+  immediate?: boolean
 }
+
+/** Шаги смонтированных гайдов по их корню — их признаки читает матрица контраста. */
+export const guideSteps = new WeakMap<Element, readonly GuideStoryStep[]>()
 
 /**
  * Аргументы грида истории сценария с гайдом (ADR 0117, SN27–SN28): умолчания меты и
@@ -73,6 +86,9 @@ export const GuideStory = ({
     .slice(0, guide.step + 1)
     .filter(step => step.remount).length
   const root = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    if (root.current) guideSteps.set(root.current, steps)
+  }, [steps])
   // Шаг гайда — действие истории (ADR 0124, CL16): до эффектов грида, которые он вызовет.
   const stepTitle = steps[guide.step]?.title
   useLayoutEffect(() => {
@@ -88,7 +104,11 @@ export const GuideStory = ({
     if (root.current) enter?.(root.current)
   }, [enter, guide.step, guide.run])
   return (
-    <div ref={root} style={{ display: 'flex', flexDirection: 'column' }}>
+    <div
+      ref={root}
+      data-guide-root=""
+      style={{ display: 'flex', flexDirection: 'column' }}
+    >
       <GuidePanel
         title={title}
         steps={steps}
