@@ -32,7 +32,6 @@ import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
 import { LiveRegion } from './LiveRegion'
 import { EmptyStub } from './stubs/EmptyStub'
 import { type StubContext, resolveStub, stubEntriesOf } from '../core/stubs'
-import { getFooterPosition } from '../core/footer'
 import { PluginRenderVersionContext } from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
@@ -326,8 +325,7 @@ export const DataGrid = ({
       ? activeStub.title(labels)
       : undefined
 
-  // Заглушки под шапкой — над закреплённым футером, в таблице; под незакреплённым и без
-  // футера — после таблицы (ADR 0118, §3).
+  // Заглушки под шапкой — перед футером в таблице, без футера — после таблицы (ADR 0118, §3).
   const emptyStubs = bodyStub ? (
     <EmptyStub
       entry={bodyStub}
@@ -336,9 +334,7 @@ export const DataGrid = ({
       className={dataGridStyles['table__body-stub']}
     />
   ) : null
-  const stubsAboveFooter =
-    !!(table.options as any).enableFooter &&
-    getFooterPosition(table) === 'pinned'
+  const stubsAboveFooter = !!(table.options as any).enableFooter
 
   const showLinearProgress = refreshLoading && !showSkeleton
   // Свечение и приглушение — с задержкой и минимумом; aria-busy и объявление — сразу.

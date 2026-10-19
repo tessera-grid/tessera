@@ -513,7 +513,7 @@ describe('Положение футера', () => {
     await expect.poll(() => document.activeElement).toBe(pinnedCell)
   })
 
-  test("FT10: без строк с заглушкой фильтра или ошибки загрузки — в 'pinned' футер у низа под заглушкой, в 'inline' — под шапкой перед заглушкой", async () => {
+  test('FT10: без строк с заглушкой фильтра или ошибки загрузки — в обоих режимах заглушка между шапкой и футером, футер у низа области под ней', async () => {
     const stubs = [
       {
         props: { data: [], loadError: new Error('Down') },
@@ -526,35 +526,35 @@ describe('Положение футера', () => {
         apply: async () => api!.setGlobalFilter('zzz'),
       },
     ]
-    for (const { props, stub, apply } of stubs) {
-      const pinned = await render(<Grid {...props} />)
-      await apply()
-      await expect.poll(() => q(stub)).not.toBeNull()
-      // Место заглушки под шапкой отдаёт наблюдатель размеров — к кадру после появления.
-      await expect
-        .poll(() => rect(q(stub)!).bottom, { message: stub })
-        .toBeLessThanOrEqual(rect(footer()).top + 1)
-      const box = rect(q(stub)!)
-      expect(box.top, stub).toBeGreaterThanOrEqual(rect(head()).bottom - 1)
-      expect(precedes(q(stub)!, footer()), stub).toBe(true)
-      expectNear(rect(footer()).bottom, clientBottom(), stub)
-      // Заглушка — во всю видимую ширину области, как без футера (FL41).
-      expectNear(box.left, rect(scroller()).left + scroller().clientLeft, stub)
-      expectNear(box.width, scroller().clientWidth, stub)
-      await pinned.unmount()
-
-      const inline = await render(<Grid {...props} footerPosition="inline" />)
-      await apply()
-      await expect.poll(() => q(stub)).not.toBeNull()
-      expect(rect(footer()).top, stub).toBeLessThanOrEqual(
-        rect(head()).bottom + 1,
-      )
-      expect(rect(q(stub)!).top, stub).toBeGreaterThanOrEqual(
-        rect(footer()).bottom - 1,
-      )
-      expect(precedes(footer(), q(stub)!), stub).toBe(true)
-      await inline.unmount()
-    }
+    const positions = ['pinned', 'inline'] as const
+    for (const { props, stub, apply } of stubs)
+      for (const position of positions) {
+        const message = `${stub} ${position}`
+        const view = await render(<Grid {...props} footerPosition={position} />)
+        await apply()
+        await expect.poll(() => q(stub)).not.toBeNull()
+        // Место заглушки под шапкой отдаёт наблюдатель размеров — к кадру после появления.
+        await expect
+          .poll(() => rect(q(stub)!).bottom, { message })
+          .toBeLessThanOrEqual(rect(footer()).top + 1)
+        const box = rect(q(stub)!)
+        expect(box.top, message).toBeGreaterThanOrEqual(rect(head()).bottom - 1)
+        expect(precedes(q(stub)!, footer()), message).toBe(true)
+        // В 'inline' футер едет к низу движением строк (FT12) — к концу движения.
+        await expect
+          .poll(() => Math.abs(rect(footer()).bottom - clientBottom()), {
+            message,
+          })
+          .toBeLessThanOrEqual(1)
+        // Заглушка — во всю видимую ширину области, как без футера (FL41).
+        expectNear(
+          box.left,
+          rect(scroller()).left + scroller().clientLeft,
+          message,
+        )
+        expectNear(box.width, scroller().clientWidth, message)
+        await view.unmount()
+      }
   })
 
   test("FT11: футер скелета первой загрузки у низа области — с тенью в 'pinned' и с линией в 'inline'", async () => {

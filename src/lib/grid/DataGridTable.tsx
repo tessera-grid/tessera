@@ -44,7 +44,7 @@ interface DataGridTableProps {
   skeleton: boolean
   /** Статус «Loading» скелета. */
   loadingLabel: string
-  /** Заглушка пустой таблицы над закреплённым футером (ADR 0118, §3). */
+  /** Заглушка пустой таблицы перед футером (ADR 0118, §3). */
   endContent?: ReactNode
   style: CSSProperties
 }
@@ -153,20 +153,20 @@ export const DataGridTable = ({
     isVirtualColumns,
     nextAriaRowIndex: headerGroups.length + rowWindow.offset + rows.length + 1,
   }
-  // Конец таблицы — до закреплённого футера и после незакреплённого (ADR 0118, §3).
+  // Конец таблицы — до закреплённого футера и после незакреплённого, заглушка — всегда
+  // перед футером (ADR 0118, §3).
   const tableEnd = skeleton ? null : (
-    <>
-      <RenderSlot slot={tableEndSlot} context={endContext} />
-      {endContent != null && (
-        <TableEndRow
-          navigable={!!keyboardNavigation}
-          columnCount={leafColumns.length}
-        >
-          {endContent}
-        </TableEndRow>
-      )}
-    </>
+    <RenderSlot slot={tableEndSlot} context={endContext} />
   )
+  const stubRow =
+    skeleton || endContent == null ? null : (
+      <TableEndRow
+        navigable={!!keyboardNavigation}
+        columnCount={leafColumns.length}
+      >
+        {endContent}
+      </TableEndRow>
+    )
 
   return (
     <div
@@ -255,6 +255,7 @@ export const DataGridTable = ({
         )}
         {!skeleton && <RenderSlot slot={bodyEndSlot} context={endContext} />}
         {!footerInline && tableEnd}
+        {stubRow}
         {footer && !skeleton && (
           <MemoizedFooter
             layout={layout}
