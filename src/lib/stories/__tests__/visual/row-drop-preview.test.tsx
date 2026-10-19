@@ -686,11 +686,12 @@ describe('Бросок в свёрнутые группы (ADR 0109)', () => {
           getComputedStyle(parent).backgroundImage,
           `treeLines ${treeLines}`,
         ).toContain(tokenColor('--tsr-comp-row-drop-parent-bg', parent))
-        // Ветка родителя не подсвечена.
+        // Ветка родителя не подсвечена: у строки — только слой состояния (ADR 0126).
         for (const id of ['node-1-0', 'node-1-1'])
-          expect(getComputedStyle(rowById(id)!).backgroundImage, id).toBe(
-            'none',
-          )
+          expect(
+            getComputedStyle(rowById(id)!).backgroundImage,
+            id,
+          ).not.toContain(tokenColor('--tsr-comp-row-drop-parent-bg', parent))
         // Уровень 0 — родителя нет.
         const back = { x: at.x - dragged.step, y: at.y }
         await pointer.realMouseMove(at, back, 1)
@@ -743,9 +744,10 @@ describe('Бросок в свёрнутые группы (ADR 0109)', () => {
         document.body.append(probe)
         const highlight = getComputedStyle(probe).color
         probe.remove()
-        const style = getComputedStyle(rowById('node-1')!)
-        expect(style.outlineStyle).toBe('solid')
-        expect(style.outlineColor).toBe(highlight)
+        // Рамка — на слое строки поверх ячеек: контур самой строки они перекрыли бы.
+        const style = getComputedStyle(rowById('node-1')!, '::after')
+        expect(style.borderTopStyle).toBe('solid')
+        expect(style.borderTopColor).toBe(highlight)
       }
     } finally {
       await pointer.forcedColors(false)

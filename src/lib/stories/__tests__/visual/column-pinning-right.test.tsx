@@ -368,10 +368,13 @@ describe('Column Pinning — right side, row states', () => {
         `.data-grid__body-row[data-row-id="${id}"]`,
       )!
     await expect.poll(() => row('r0')).toBeTruthy()
-    const bg = (id: string, column: string) =>
-      getComputedStyle(
+    // Фон закреплённой ячейки и слои поверх: наведение и выбор — слой строки (ADR 0126).
+    const bg = (id: string, column: string) => {
+      const style = getComputedStyle(
         row(id).querySelector<HTMLElement>(`[data-column-id="${column}"]`)!,
-      ).backgroundColor
+      )
+      return `${style.backgroundColor} ${style.backgroundImage}`
+    }
     const actions = row('r0').querySelector<HTMLElement>(
       `[data-column-id="${ROW_ACTIONS_COLUMN_ID}"]`,
     )!

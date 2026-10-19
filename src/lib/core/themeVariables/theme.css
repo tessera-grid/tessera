@@ -328,30 +328,6 @@
   );
   /* Сплошной: край выделения — индикатор состояния, контраст ≥ 3:1 (WCAG 1.4.11). */
   --tsr-comp-cell-selected-border-color: var(--tsr-sys-info);
-  /* Закреплённые ячейки (ADR 0011, CP28): фон строки плюс тон текста — непрозрачно
-   * (маскирует прокручиваемый контент) и в одну сторону в обеих темах. Тон ступенями:
-   * покой 3 %, hover 7 % (= 4 % hover строки + 3 %), выбор 9 % и 13 %. */
-  --tsr-comp-cell-pinned-bg: color-mix(
-    in oklch,
-    var(--tsr-sys-surface),
-    var(--tsr-sys-fg)
-      calc(var(--tsr-sys-tint-pinned) + var(--tsr-sys-tint-selected))
-  );
-  --tsr-comp-cell-pinned-hovered-bg: color-mix(
-    in oklch,
-    var(--tsr-sys-surface),
-    var(--tsr-sys-fg)
-      calc(var(--tsr-sys-tint-pinned) + var(--tsr-sys-tint-hover))
-  );
-  --tsr-comp-cell-pinned-selected-hovered-bg: color-mix(
-    in oklch,
-    var(--tsr-sys-surface),
-    var(--tsr-sys-fg)
-      calc(
-        var(--tsr-sys-tint-pinned) + var(--tsr-sys-tint-selected) +
-          var(--tsr-sys-tint-hover)
-      )
-  );
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
   --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-4);
   --tsr-comp-cell-content-padding: 0px var(--tsr-comp-cell-content-padding-x);
@@ -502,6 +478,9 @@
     system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial,
     sans-serif;
   --tsr-comp-numeric-font-feature: tabular-nums;
+  /* Закреплённые ячейки (ADR 0011, CP28): фон строки плюс ступень тона текста —
+   * непрозрачно, маскирует прокручиваемый контент; наведение и выбор ложатся слоем
+   * строки поверх (ADR 0126). */
   --tsr-comp-cell-odd-pinned-left-bg: color-mix(
     in oklch,
     var(--tsr-sys-bg),
@@ -1031,9 +1010,6 @@
     --tsr-comp-row-hovered-bg: Canvas;
     --tsr-comp-row-selected-bg: Highlight;
     --tsr-comp-row-selected-hovered-bg: Highlight;
-    --tsr-comp-cell-pinned-bg: Highlight;
-    --tsr-comp-cell-pinned-hovered-bg: Canvas;
-    --tsr-comp-cell-pinned-selected-hovered-bg: Highlight;
     --tsr-comp-focus-ring: Highlight;
     --tsr-comp-pending-glow-1: Highlight;
     --tsr-comp-pending-glow-2: Highlight;
@@ -1068,6 +1044,14 @@
 /* С линиями дерева шаг отступа — свой (ADR 0102); шаг, заданный приложением на теме, главнее. */
 :where(.data-grid-theme[data-tree-lines]) {
   --tsr-comp-row-nesting-indent: var(--tsr-comp-tree-line-indent);
+}
+
+/* Слой состояния строки (ADR 0126): наведение и выбор ложатся поверх фона строки и её
+ * закреплённых ячеек, которые наследуют его; цвет — чтобы наведение шло переходом. */
+@property --tsr-row-state {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
 }
 
 /* Слои подсветки (ADR 0080, 0101): цвет с начальным «прозрачным», чтобы постановка

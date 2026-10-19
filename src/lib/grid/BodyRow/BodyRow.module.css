@@ -6,7 +6,15 @@
   height: var(--tsr-comp-row-height);
   z-index: 1;
   background-color: var(--tsr-comp-row-bg);
-  transition: var(--tsr-comp-row-transition);
+  /*
+   * Наведение и выбор — слой поверх фона строки (ADR 0126): закреплённые ячейки
+   * наследуют его и кладут поверх своего фона, состояние сдвигает их одинаково.
+   */
+  background-image: linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
+  transition:
+    var(--tsr-comp-row-transition),
+    --tsr-row-state var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing);
 
   /* Бэкграунд нечетной строки (odd) */
 
@@ -15,86 +23,34 @@
   }
 
   /*
-   * Бэкграунд строки при наведении (hover); во время обновления данных — нет (ADR 0094),
-   * у слота перетаскивания — нет: это место броска, а не строка под указателем (ADR 0108).
+   * Наведение; во время обновления данных — нет (ADR 0094), у слота перетаскивания —
+   * нет: это место броска, а не строка под указателем (ADR 0108).
    */
 
   :where(:global(.data-grid-theme):not([data-refreshing]))
     &:hover:where(:not([data-row-draggable='true'])) {
-    background-color: var(--tsr-comp-row-hovered-bg);
+    --tsr-row-state: var(--tsr-comp-row-hovered-bg);
+
     outline: var(--tsr-comp-row-hovered-outline);
     outline-offset: -1px;
   }
 
-  /* Бэкграунд выбранной строки (selected) */
+  /* Выбранная строка */
 
   &:is([data-selected='true']) {
-    background-color: var(--tsr-comp-row-selected-bg);
+    --tsr-row-state: var(--tsr-comp-row-selected-bg);
+
     outline: var(--tsr-comp-row-selected-outline);
     outline-offset: -1px;
   }
 
-  /* Бэкграунд выбранной строки при наведении (selected + hover) */
+  /* Выбранная строка под наведением */
 
   :where(:global(.data-grid-theme):not([data-refreshing]))
     &:hover:is([data-selected='true']):where(
       :not([data-row-draggable='true'])
     ) {
-    background-color: var(--tsr-comp-row-selected-hovered-bg);
-  }
-
-  /*
-   * Закреплённые ячейки с непрозрачной подложкой — слева и справа (колонка действий —
-   * только в правом блоке, не одна) — повторяют наведение и выбор строки.
-   */
-
-  /* selected + pinned */
-
-  &:is([data-selected='true'])
-    > :global(
-      .data-grid__body-cell:is(
-        [data-cell-pinned='left'],
-        [data-cell-pinned='right']:not([data-actions-column-cell='true']),
-        [data-cell-pinned='right'][data-actions-column-cell='true']:not(
-            [data-cell-first-right-pinned='true']
-          )
-      )
-    ) {
-    background-color: var(--tsr-comp-cell-pinned-bg) !important;
-  }
-
-  /* selected + hover + pinned */
-
-  :where(:global(.data-grid-theme):not([data-refreshing]))
-    &:hover:is([data-selected='true'])
-    > :global(
-      .data-grid__body-cell:is(
-        [data-cell-pinned='left'],
-        [data-cell-pinned='right']:not([data-actions-column-cell='true']),
-        [data-cell-pinned='right'][data-actions-column-cell='true']:not(
-            [data-cell-first-right-pinned='true']
-          )
-      )
-    ) {
-    background-color: var(
-      --tsr-comp-cell-pinned-selected-hovered-bg
-    ) !important;
-  }
-
-  /* not selected + hover + pinned */
-
-  :where(:global(.data-grid-theme):not([data-refreshing]))
-    &:hover:not([data-selected='true'])
-    > :global(
-      .data-grid__body-cell:is(
-        [data-cell-pinned='left'],
-        [data-cell-pinned='right']:not([data-actions-column-cell='true']),
-        [data-cell-pinned='right'][data-actions-column-cell='true']:not(
-            [data-cell-first-right-pinned='true']
-          )
-      )
-    ) {
-    background-color: var(--tsr-comp-cell-pinned-hovered-bg) !important;
+    --tsr-row-state: var(--tsr-comp-row-selected-hovered-bg);
   }
 
   /* Слот перетаскивания — скелет строки поверх соседей (ADR 0108). */
@@ -155,10 +111,9 @@
  * Строка держит переход появления и затухания (ADR 0101).
  */
 .body__row[data-highlight] {
-  background-image: linear-gradient(
-    var(--tsr-highlight-row),
-    var(--tsr-highlight-row)
-  );
+  background-image:
+    linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
+    linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
 
 /*
@@ -168,22 +123,23 @@
 .body__row[data-row-drop-parent] {
   --tsr-highlight-row: var(--tsr-comp-row-drop-parent-bg);
 
-  background-image: linear-gradient(
-    var(--tsr-highlight-row),
-    var(--tsr-highlight-row)
-  );
+  background-image:
+    linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
+    linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
 
 .body__row[data-highlight] {
   transition:
     var(--tsr-comp-row-transition),
+    --tsr-row-state var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing),
     --tsr-highlight-row var(--tsr-comp-highlight-fade-duration)
       var(--tsr-comp-motion-easing-out);
 }
 
 /*
- * Высокая контрастность (ADR 0087): выбор — текст `HighlightText` на `Highlight`
- * (фон — токенами темы), подсветка — `Mark`, наведение — контур без заливки. Кольцо
+ * Высокая контрастность (ADR 0087): выбор — текст `HighlightText` на `Highlight`,
+ * подсветка — `Mark`, наведение — контур без заливки: слой состояния браузер снимает. Кольцо
  * фокуса на `Highlight` — `HighlightText`. Слой прихода не рисуется.
  */
 @media (forced-colors: active) {
@@ -195,10 +151,19 @@
     forced-color-adjust: none;
   }
 
-  /* Разделители ячеек внутри заливки — её цветом (`BodyCell`): рамка цвета текста — только фокус. */
+  /*
+   * Разделители ячеек внутри заливки — её цветом (`BodyCell`): рамка цвета текста — только
+   * фокус. Заливка доходит до закреплённых ячеек токенами их фона (ADR 0126).
+   */
   .body__row[data-selected='true'] {
     --tsr-comp-focus-ring: HighlightText;
     --tsr-forced-divider: Highlight;
+    --tsr-comp-cell-pinned-left-bg: Highlight;
+    --tsr-comp-cell-pinned-right-bg: Highlight;
+    --tsr-comp-cell-odd-pinned-left-bg: Highlight;
+    --tsr-comp-cell-odd-pinned-right-bg: Highlight;
+
+    background-color: Highlight;
   }
 
   .body__row[data-highlight] {
@@ -210,8 +175,13 @@
     color: HighlightText;
   }
 
+  /* Подсветка главнее выбора (ADR 0126): правило позже, той же силы. */
   .body__row[data-highlight] {
     --tsr-comp-focus-ring: MarkText;
+    --tsr-comp-cell-pinned-left-bg: Mark;
+    --tsr-comp-cell-pinned-right-bg: Mark;
+    --tsr-comp-cell-odd-pinned-left-bg: Mark;
+    --tsr-comp-cell-odd-pinned-right-bg: Mark;
 
     background-color: Mark;
   }
@@ -219,16 +189,6 @@
   .body__row[data-highlight],
   .body__row[data-highlight] * {
     color: MarkText;
-  }
-
-  .body__row[data-highlight]
-    > :global(
-      .data-grid__body-cell:is(
-        [data-cell-pinned='left'],
-        [data-cell-pinned='right']
-      )
-    ) {
-    background-color: Mark !important;
   }
 
   .body__row::after {

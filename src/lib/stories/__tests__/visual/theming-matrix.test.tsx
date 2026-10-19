@@ -11,6 +11,7 @@ import { DataGrid } from '../../../../lib/grid/DataGrid'
 import { rowActions, rowSelection } from '../../../../lib/plugins'
 import { useColumns } from '../../__mocks__/columns'
 import { useData } from '../../__mocks__/data'
+import { rowState } from '../helpers'
 
 // Матрица темизации: для КАЖДОГО компонента в КАЖДОМ состоянии
 // сверяем вычисленный стиль реального DOM-элемента с резолвом его компонент-токена,
@@ -119,7 +120,7 @@ describe('Theming matrix — DOM ↔ component token ↔ state', () => {
         .toBe(resolveColor('--tsr-comp-head-bg', dark))
     })
 
-    test(`TT-03 row hover bg = --tsr-comp-row-hovered-bg`, async () => {
+    test(`TT-03 row hover layer over the row bg = --tsr-comp-row-hovered-bg`, async () => {
       const c = await renderGrid(mode)
       // Не первую строку: index 0 перекрыт sticky-шапкой (курсор попал бы в неё).
       // index 2 — чётная (не odd), ниже шапки.
@@ -130,7 +131,7 @@ describe('Theming matrix — DOM ↔ component token ↔ state', () => {
       const cell = row.querySelector<HTMLElement>('.data-grid__body-cell')!
       await userEvent.hover(cell)
       await expect
-        .poll(() => bg(row), { timeout: 5000, interval: 100 })
+        .poll(() => rowState(row), { timeout: 5000, interval: 100 })
         .toBe(resolveColor('--tsr-comp-row-hovered-bg', dark))
     })
 
@@ -145,7 +146,7 @@ describe('Theming matrix — DOM ↔ component token ↔ state', () => {
         .toBe(resolveColor('--tsr-comp-head-cell-hovered-bg', dark))
     })
 
-    test(`TT-04 selected row bg = --tsr-comp-row-selected-bg`, async () => {
+    test(`TT-04 selected row layer over the row bg = --tsr-comp-row-selected-bg`, async () => {
       const c = await renderGrid(mode)
       // Клик по чекбоксу «выбрать все» в шапке → все строки выбраны.
       const headCheckbox = c.querySelector<HTMLElement>(
@@ -170,7 +171,7 @@ describe('Theming matrix — DOM ↔ component token ↔ state', () => {
       // Уводим курсор, чтобы не сработал selected-hovered.
       await userEvent.hover(c.querySelector<HTMLElement>('.data-grid__head')!)
       await expect
-        .poll(() => bg(row), { timeout: 5000, interval: 100 })
+        .poll(() => rowState(row), { timeout: 5000, interval: 100 })
         .toBe(resolveColor('--tsr-comp-row-selected-bg', dark))
     })
   })

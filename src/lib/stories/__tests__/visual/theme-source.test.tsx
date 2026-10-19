@@ -18,6 +18,7 @@ import {
   rowSelection,
 } from '../../../plugins'
 import * as themingStories from '../../Theming.stories'
+import { rowState } from '../helpers'
 import {
   contrast,
   effectiveBg,
@@ -267,16 +268,19 @@ describe('Источник темы и её смена (ADR 0090)', () => {
       pinnedCell,
       headCell: () => q('.data-grid__head-cell[data-column-id="b"]'),
     }
+    // Строка и закреплённая ячейка — слоем состояния строки поверх фона (ADR 0126).
+    const fill = (name: string, el: HTMLElement) =>
+      name === 'headCell' ? style(el).backgroundColor : rowState(el)
     for (const [name, get] of Object.entries(watch)) {
-      const initial = style(get()).backgroundColor
+      const initial = fill(name, get())
       await userEvent.hover(name === 'headCell' ? get() : plainCell())
       const seen: string[] = []
       for (let i = 0; i < 8; i++) {
         await frame()
-        seen.push(style(get()).backgroundColor)
+        seen.push(fill(name, get()))
       }
       await settle()
-      const final = style(get()).backgroundColor
+      const final = fill(name, get())
       expect(final, `${name}: наведение меняет фон`).not.toBe(initial)
       expect(
         seen.some(color => color !== initial && color !== final),

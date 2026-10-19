@@ -23,6 +23,14 @@ export const humanClick = (element: Element) =>
   userEvent.click(element, { delay: HUMAN_PRESS_MS })
 
 /**
+ * Слой состояния строки (ADR 0126): наведение и выбор ложатся поверх её фона, а
+ * `background-color` строки — всегда фон чётной или нечётной строки. Закреплённые
+ * ячейки наследуют слой.
+ */
+export const rowState = (element: Element) =>
+  getComputedStyle(element).getPropertyValue('--tsr-row-state').trim()
+
+/**
  * Навести на ячейку и дождаться, пока её скрытые кнопки доедут до своей ширины
  * (ADR 0076): клик по кнопке посреди раскрытия уходит мимо. Бесконечные анимации
  * (кольцо ожидания) не ждём.

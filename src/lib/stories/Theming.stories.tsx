@@ -213,13 +213,13 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-row-hovered-bg',
     arg: 'rowHoverBg',
     label: 'row-hovered-bg',
-    desc: 'Фон строки при наведении курсора.',
+    desc: 'Слой строки при наведении курсора — поверх её фона.',
   },
   {
     token: '--tsr-comp-row-selected-bg',
     arg: 'rowSelectedBg',
     label: 'row-selected-bg',
-    desc: 'Фон выбранной (отмеченной) строки.',
+    desc: 'Слой выбранной (отмеченной) строки — поверх её фона.',
   },
   {
     token: '--tsr-comp-cell-outline-color',
@@ -228,10 +228,10 @@ const GRID_TOKENS: TokenControl[] = [
     desc: 'Цвет аутлайна ячейки шапки при наведении.',
   },
   {
-    token: '--tsr-comp-cell-pinned-bg',
+    token: '--tsr-comp-cell-pinned-left-bg',
     arg: 'pinnedBg',
-    label: 'cell-pinned-bg',
-    desc: 'Фон закреплённой (pinned) ячейки.',
+    label: 'cell-pinned-left-bg',
+    desc: 'Фон закреплённой (pinned) ячейки; наведение и выбор ложатся слоем строки поверх.',
   },
   {
     token: '--tsr-comp-cell-pinned-border-color',

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
 import { DEFAULT_LABELS } from '../../../core/localization'
-import { renderGrid } from '../helpers'
+import { renderGrid, rowState } from '../helpers'
 import { composed } from '../stories'
 import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
@@ -214,7 +214,7 @@ describe('Обновление данных (ADR 0094)', () => {
       await sleep(400)
       finishTransitions()
       return {
-        rowBg: style(row).backgroundColor,
+        rowBg: rowState(row),
         outline: style(cell).outlineColor,
         buttons: [
           ...cell.querySelectorAll<HTMLElement>('.cell__button--hidden'),

@@ -212,10 +212,10 @@
 /*
  * Слои фона ячейки поверх `background-color`: сверху вниз — тинт выделения ячеек,
  * подсветка ячейки, колонки (ADR 0080, §2). Текст, кромки выделения и фокус-кольцо
- * лежат выше и не тонируются. Подсветку строки рисует фон самой строки: прозрачные
- * ячейки её пропускают, а свой слой строки получают только ячейки с непрозрачной
- * подложкой закрепления — иначе прозрачная закреплённая ячейка поверх прокрученной
- * удвоила бы тон.
+ * лежат выше и не тонируются. Подсветку строки и её состояние (наведение, выбор)
+ * рисует фон самой строки: прозрачные ячейки их пропускают, а свои слои строки получают
+ * только ячейки с непрозрачной подложкой закрепления (ADR 0126) — иначе прозрачная
+ * закреплённая ячейка поверх прокрученной удвоила бы тон.
  */
 .body__cell:is(
   [data-highlight],
@@ -232,18 +232,12 @@
 }
 
 .body__cell:is(
-    [data-cell-pinned='left'],
-    [data-cell-pinned='right']:not([data-actions-column-cell='true']),
-    [data-cell-pinned='right'][data-actions-column-cell='true']:not(
-        [data-cell-first-right-pinned='true']
-      )
-  ):is(
-    [data-highlight],
-    [data-column-highlight],
-    [data-cell-selected='true'],
-    :global(.data-grid__body-row[data-highlight]) *,
-    :global(.data-grid__body-row[data-row-drop-parent]) *
-  ) {
+  [data-cell-pinned='left'],
+  [data-cell-pinned='right']:not([data-actions-column-cell='true']),
+  [data-cell-pinned='right'][data-actions-column-cell='true']:not(
+      [data-cell-first-right-pinned='true']
+    )
+) {
   background-image:
     linear-gradient(
       var(--tsr-cell-selection-tint, transparent),
@@ -251,7 +245,8 @@
     ),
     linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column)),
-    linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row));
+    linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
+    linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
 
 /* Подсветка проявляется и гаснет одним переходом (ADR 0101). */
@@ -304,9 +299,14 @@
     forced-color-adjust: none;
   }
 
+  /* Заливка ячейки главнее строки (ADR 0126): закреплённой — токенами её фона. */
   .body__cell[data-cell-selected='true']:not([data-cell-focused='true']) {
     --tsr-comp-focus-ring: HighlightText;
     --tsr-forced-divider: Highlight;
+    --tsr-comp-cell-pinned-left-bg: Highlight;
+    --tsr-comp-cell-pinned-right-bg: Highlight;
+    --tsr-comp-cell-odd-pinned-left-bg: Highlight;
+    --tsr-comp-cell-odd-pinned-right-bg: Highlight;
 
     background-color: Highlight;
   }
@@ -319,6 +319,10 @@
   .body__cell:is([data-highlight], [data-column-highlight]) {
     --tsr-comp-focus-ring: MarkText;
     --tsr-forced-divider: Mark;
+    --tsr-comp-cell-pinned-left-bg: Mark;
+    --tsr-comp-cell-pinned-right-bg: Mark;
+    --tsr-comp-cell-odd-pinned-left-bg: Mark;
+    --tsr-comp-cell-odd-pinned-right-bg: Mark;
 
     background-color: Mark;
   }

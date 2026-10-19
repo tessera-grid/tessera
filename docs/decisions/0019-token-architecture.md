@@ -4,6 +4,11 @@
 (механику слоя + шиппинг), заменяя ad-hoc-именование токенов на строгую
 трёхуровневую систему. Ломающее изменение по именам токенов (pre-1.0).
 
+Изменено: [ADR 0126](0126-cell-fill-precedence.md) (2026-10-19) — TT-03, TT-04:
+`--tsr-comp-row-hovered-bg` и `-selected-bg` — цвет слоя поверх фона строки; токены
+`--tsr-comp-cell-pinned-bg`, `-pinned-hovered-bg`, `-pinned-selected-hovered-bg` удалены
+(ломающее изменение).
+
 ## Контекст
 
 После ADR 0018 токены грида жили в двух ad-hoc-неймспейсах: `--data-grid-*`
@@ -146,8 +151,8 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 | TI-07  | Каждая тема-зависимая semantic-роль определена в тёмном блоке                                          | ✔ `theming-invariants.test.tsx`      |
 | TT-01  | Фон строки тела = `--tsr-comp-row-bg`                                                                  | ✔ `theming-matrix.test.tsx`          |
 | TT-02  | Фон нечётной строки = `--tsr-comp-row-odd-bg`                                                          | ✔ `theming-matrix.test.tsx`          |
-| TT-03  | Фон строки при наведении = `--tsr-comp-row-hovered-bg`                                                 | ✔ `theming-matrix.test.tsx`          |
-| TT-04  | Фон выбранной строки = `--tsr-comp-row-selected-bg`                                                    | ✔ `theming-matrix.test.tsx`          |
+| TT-03  | Слой строки при наведении поверх её фона = `--tsr-comp-row-hovered-bg` (ADR 0126)                      | ✔ `theming-matrix.test.tsx`          |
+| TT-04  | Слой выбранной строки поверх её фона = `--tsr-comp-row-selected-bg` (ADR 0126)                         | ✔ `theming-matrix.test.tsx`          |
 | TT-12  | Фон шапки = `--tsr-comp-head-bg`                                                                       | ✔ `theming-matrix.test.tsx`          |
 | TT-13  | Фон ячейки шапки при наведении = `--tsr-comp-head-cell-hovered-bg`                                     | ✔ `theming-matrix.test.tsx`          |
 | TT-16  | Цвет кнопки сортировки = `--tsr-comp-control-color`                                                    | ✔ `theming-header-controls.test.tsx` |

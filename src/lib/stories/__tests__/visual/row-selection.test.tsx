@@ -6,6 +6,7 @@ import { describe, expect, onTestFinished, test, vi } from 'vitest'
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { rowState } from '../helpers'
 
 // Each Row Selection requirement is its own named test, prefixed with its spec ID
 // (RS1–RS18 from the requirements table in docs/decisions/0014-row-selection.md).
@@ -183,15 +184,15 @@ describe('Row Selection — row checkbox', () => {
 
     // Move the pointer off the rows first so `:hover` doesn't taint the reading.
     await userEvent.hover(selectionHeadCell(container)!)
-    const unselectedBg = getComputedStyle(first()).backgroundColor
+    const unselectedBg = rowState(first())
 
     await userEvent.click(rowCheckbox(first())!)
     await expect.poll(() => isRowSelected(first())).toBe(true)
     await userEvent.hover(selectionHeadCell(container)!)
 
-    // Selecting drives a distinct resting background (the selected token) — the
+    // Selecting lays the selected token over the row background (ADR 0126) — the
     // exact rgb is theme-dependent, so the requirement is that it changes.
-    const selectedBg = getComputedStyle(first()).backgroundColor
+    const selectedBg = rowState(first())
     expect(selectedBg).not.toBe(unselectedBg)
 
     // Restore: deselecting drops the selected marker (self-restoring).

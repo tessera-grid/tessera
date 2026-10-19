@@ -9,6 +9,7 @@ import {
   getScroller,
   humanClick,
   revealCellButtons,
+  rowState,
   scrollToEnd,
 } from '../helpers'
 import {
@@ -460,7 +461,7 @@ describe('Row expanding: arrival highlight', () => {
       rowOf('lazy-c0')!.querySelector<HTMLElement>('.data-grid__body-cell')!,
     )
     await expect
-      .poll(() => getComputedStyle(rowOf('lazy-c0')!).backgroundColor)
+      .poll(() => rowState(rowOf('lazy-c0')!))
       .toBe(
         colorIn(rowOf('lazy-c0')!, 'var(--tsr-comp-row-selected-hovered-bg)'),
       )

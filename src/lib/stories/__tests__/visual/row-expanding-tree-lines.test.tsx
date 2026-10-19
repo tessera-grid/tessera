@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { getScroller, humanClick, scrollToEnd } from '../helpers'
+import { getScroller, humanClick, rowState, scrollToEnd } from '../helpers'
 import { composed } from '../stories'
 import { makeData } from '../../__mocks__/data'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
@@ -441,9 +441,7 @@ describe('Row expanding: tree lines', () => {
       '--tsr-comp-row-selected-hovered-bg',
       row,
     )
-    await expect
-      .poll(() => getComputedStyle(row).backgroundColor)
-      .toBe(selectedHovered)
+    await expect.poll(() => rowState(row)).toBe(selectedHovered)
     const shot = await snapshot()
     expect(verticalAt(shot, x, y)).toBe(true)
   })

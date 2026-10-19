@@ -17,7 +17,7 @@ import {
 } from '../../../plugins'
 import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
-import { humanClick, renderGrid } from '../helpers'
+import { humanClick, renderGrid, rowState } from '../helpers'
 import { composed } from '../stories'
 import {
   contrast,
@@ -222,15 +222,9 @@ describe('Повышенный контраст (ADR 0088)', () => {
 
     const screen = await mount(['r2'])
     await userEvent.hover(cellEl('r4', 'b'))
-    await changes(
-      '--tsr-sys-tint-hover',
-      wrapper,
-      () => style(rowEl('r4')).backgroundColor,
-    )
-    await changes(
-      '--tsr-sys-tint-selected',
-      wrapper,
-      () => style(rowEl('r2')).backgroundColor,
+    await changes('--tsr-sys-tint-hover', wrapper, () => rowState(rowEl('r4')))
+    await changes('--tsr-sys-tint-selected', wrapper, () =>
+      rowState(rowEl('r2')),
     )
     await changes(
       '--tsr-sys-tint-pinned',
@@ -570,7 +564,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
       await settle()
       const row = rowEl('r2')
       expect(style(row).outlineStyle).toBe('none')
-      expect(style(row).backgroundColor).toBe(
+      expect(rowState(row)).toBe(
         resolve(row, 'color-mix(in oklch, var(--tsr-sys-fg) 30%, transparent)'),
       )
       await screen.unmount()
@@ -671,9 +665,9 @@ describe('Повышенный контраст (ADR 0088)', () => {
         wrapper(),
         `color-mix(in oklch, var(--tsr-sys-fg) ${pct}%, transparent)`,
       )
-    expect(style(rowEl('r3')).backgroundColor, 'наведение').toBe(overlay(4))
+    expect(rowState(rowEl('r3')), 'наведение').toBe(overlay(4))
     expect(style(rowEl('r3')).outlineStyle).toBe('none')
-    expect(style(rowEl('r2')).backgroundColor, 'выбор').toBe(overlay(6))
+    expect(rowState(rowEl('r2')), 'выбор').toBe(overlay(6))
     expect(style(rowEl('r2')).outlineStyle).toBe('none')
     for (const id of ['r5', 'r6']) {
       const base =

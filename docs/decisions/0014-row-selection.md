@@ -2,6 +2,7 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменено:** [ADR 0126](0126-cell-fill-precedence.md) (2026-10-19) — выбор — слой поверх фона строки; закреплённые ячейки берут тот же слой.
 - **Изменено:** [ADR 0120](0120-model-and-interface-plugins.md) (2026-10-16) — модель выбора —
   плагин `rowSelectionModel` (`subRows`, запрет при группировке, срез `rowSelection` аргументами;
   вид выбранной строки и `aria-selected` — у модели); `rowSelection` её включает и добавляет
@@ -137,9 +138,9 @@ Hook `isAllRowsSelected` — флаг режима «выбрано всё по�
 хардкода мок-данных: состояние читается из атрибутов, а не из литералов мока):
 
 - **`data-selected` на `role="row"`** (`BodyRow.tsx`) — `row.getIsSelected()`;
-  реактивен (`useSelector`). На нём `BodyRow.module.css` включает фон
-  выбранной строки (`--tsr-comp-row-selected-bg`, при наведении —
-  `--tsr-comp-row-selected-hovered-bg`).
+  реактивен (`useSelector`). На нём `BodyRow.module.css` кладёт поверх фона строки
+  слой выбора (`--tsr-comp-row-selected-bg`, при наведении —
+  `--tsr-comp-row-selected-hovered-bg`; [ADR 0126](0126-cell-fill-precedence.md)).
 - **`data-checked` / `data-indeterminate` / `data-unchecked` на чекбоксе**
   (`.row-select-checkbox`) — состояние, которое проставляет Base UI Checkbox;
   блокировка — нативным `disabled` / `data-disabled`.
