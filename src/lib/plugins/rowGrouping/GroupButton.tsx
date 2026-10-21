@@ -3,44 +3,52 @@ import { memo } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { IconButton } from '../../ui/IconButton'
+import {
+  IconButton,
+  type DerivedButtonProps,
+  type RevealProps,
+} from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
-import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
 import styles from './GroupButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
-export interface GroupButtonProps {
-  isGrouped: boolean
-  onClick: () => void
-  disabled?: boolean
+export interface GroupButtonProps extends DerivedButtonProps, RevealProps {
+  grouped: boolean
 }
 
 export const GroupButton = memo(
-  ({ isGrouped, onClick, disabled = false }: GroupButtonProps) => {
-    const { group, grouped } = useIcons()
-    const GroupIcon = isGrouped ? grouped : group
+  ({
+    grouped,
+    revealOnHover = true,
+    disabled = false,
+    ...button
+  }: GroupButtonProps) => {
+    const { group: GroupIcon, grouped: GroupedIcon } = useIcons()
 
     const labels = useLocalization()
 
-    const title = isGrouped ? labels.ungroup : labels.group
+    const title = grouped ? labels.ungroup : labels.group
 
     return (
       <div
-        className={clsx('cell__button', 'cell__button--hidden')}
-        data-button-active={isGrouped}
+        className={clsx(
+          'cell__button',
+          revealOnHover && 'cell__button--hidden',
+        )}
+        data-button-active={grouped}
       >
         <IconButton
           className="column-group__button"
-          active={isGrouped}
+          active={grouped}
+          activeIcon={<GroupedIcon width={16} height={16} />}
           disabledClassName={styles.disabled}
-          onClick={onClick}
           disabled={disabled}
           aria-disabled={disabled}
           label={title}
+          {...button}
         >
           <GroupIcon width={16} height={16} />
-          <ActiveDot shown={isGrouped} />
         </IconButton>
       </div>
     )

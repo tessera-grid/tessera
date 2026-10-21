@@ -325,6 +325,45 @@
   min-width: 0;
 }
 
+/*
+ * Кнопка ячейки, заголовка или строки ждёт, вспыхивает отказом или несёт его отметку
+ * (ADR 0128, DB2): видна и без наведения — иначе ожидание и отказ не увидеть.
+ */
+:is(.data-grid__head-cell, .data-grid__body-cell, [data-row-ghost])
+  .cell__button--hidden:has(
+    .data-grid__icon-button:is([aria-busy='true'], [data-error-flash]),
+    [data-failure-indicator]
+  ) {
+  opacity: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: unset;
+  min-width: 0;
+}
+
+:is(.data-grid__body-row, [data-row-ghost])
+  .row__button--hidden:has(
+    .data-grid__icon-button:is([aria-busy='true'], [data-error-flash]),
+    [data-failure-indicator]
+  ) {
+  opacity: 1;
+  --tsr-comp-button-color: inherit;
+  --tsr-comp-control-active-color: inherit;
+  --tsr-comp-control-disabled-color: inherit;
+  --tsr-comp-shadow-action: inherit;
+  --tsr-comp-action-button-bg: inherit;
+}
+
+/* Включённая кнопка строки (ADR 0128, §3) видна и без наведения, как у ячейки. */
+:is(.data-grid__body-row, [data-row-ghost])
+  .row__button--hidden[data-button-active='true'] {
+  opacity: 1;
+  --tsr-comp-button-color: inherit;
+  --tsr-comp-control-active-color: inherit;
+  --tsr-comp-control-disabled-color: inherit;
+  --tsr-comp-shadow-action: inherit;
+  --tsr-comp-action-button-bg: inherit;
+}
+
 /* Ручка колонки ждёт или вспыхивает ошибкой (ADR 0114): раскрыта и без наведения. */
 .data-grid__head-cell
   .cell__button--hidden:has(

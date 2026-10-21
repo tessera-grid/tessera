@@ -1,46 +1,40 @@
-import { MouseEvent, ReactNode, memo } from 'react'
+import { ReactNode, memo } from 'react'
 
 import clsx from 'clsx'
 
-import { IconButton } from '../../ui/IconButton'
+import {
+  IconButton,
+  type ActiveProps,
+  type DerivedButtonProps,
+  type RevealProps,
+} from '../../ui/IconButton'
 
 import '../cellControls/buttonVisibility.css'
 
-export interface RowButtonProps {
-  title: string
+export interface RowButtonProps
+  extends DerivedButtonProps, RevealProps, ActiveProps {
+  /** Тултип и доступное имя кнопки (`aria-label`). */
+  label: string
   icon: ReactNode
-  onClick: (event: MouseEvent<HTMLButtonElement>) => void
-  disabled?: boolean
-  testId?: string
-  showTooltipWhenDisabled?: boolean
-  isVisible?: boolean
 }
 
 export const RowButton = memo(
   ({
-    title,
+    label,
     icon,
-    disabled = false,
-    onClick,
-    testId,
-    showTooltipWhenDisabled = false,
-    isVisible = false,
-  }: RowButtonProps) => {
-    return (
-      <div className={clsx('row__button', !isVisible && 'row__button--hidden')}>
-        <IconButton
-          data-testid={testId}
-          variant="overlay"
-          label={title}
-          tooltipWhenDisabled={showTooltipWhenDisabled}
-          onClick={onClick}
-          disabled={disabled}
-        >
-          {icon}
-        </IconButton>
-      </div>
-    )
-  },
+    active,
+    revealOnHover = true,
+    ...button
+  }: RowButtonProps) => (
+    <div
+      className={clsx('row__button', revealOnHover && 'row__button--hidden')}
+      data-button-active={active || undefined}
+    >
+      <IconButton variant="overlay" label={label} active={active} {...button}>
+        {icon}
+      </IconButton>
+    </div>
+  ),
 )
 
 RowButton.displayName = 'RowButton'

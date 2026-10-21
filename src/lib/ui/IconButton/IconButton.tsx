@@ -1,5 +1,6 @@
 import {
   type ButtonHTMLAttributes,
+  type MouseEvent,
   type ReactElement,
   type ReactNode,
   forwardRef,
@@ -8,6 +9,7 @@ import {
 import { Button as BaseButton } from '@base-ui/react/button'
 import clsx from 'clsx'
 
+import { Bubble } from '../Bubble'
 import { Tooltip, type TooltipSide } from '../Tooltip'
 import {
   type ButtonStatesProps,
@@ -16,6 +18,7 @@ import {
   useButtonStates,
   useFailure,
 } from '../buttonStates'
+import { useActiveNameCheck } from './useActiveNameCheck'
 
 import styles from './IconButton.module.css'
 
@@ -29,12 +32,45 @@ export interface ButtonTooltipProps {
   tooltipWhenDisabled?: boolean
 }
 
+/**
+ * Общие пропсы производных кнопок кита (ADR 0128): занятость, отказ и тултип
+ * выключенной — как у базы.
+ */
+export interface DerivedButtonProps extends ButtonStatesProps, FailureProps {
+  disabled?: boolean
+  tooltipWhenDisabled?: boolean
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void
+  'data-testid'?: string
+}
+
+/**
+ * Включённое состояние кнопки (ADR 0129): цвет значка и бабл — точка или число. Узел
+ * бабла есть только у кнопки, которой передан `active`.
+ */
+export interface ActiveProps {
+  /** Действие включено: фильтр задан, колонки скрыты, режим выбран. */
+  active?: boolean
+  /** Число в бабле вместо точки — у включённой кнопки при `count` > 0. */
+  count?: number
+  /** Значок включённой кнопки вместо обычного; бабл остаётся. */
+  activeIcon?: ReactNode
+  /** `false` — без бабла; цвет значка остаётся. */
+  indicator?: boolean
+}
+
+/** Кнопка ячейки, заголовка или строки (ADR 0128). */
+export interface RevealProps {
+  /** Скрыта до наведения на своё место; включённая, занятая и с отметкой отказа видна всегда. */
+  revealOnHover?: boolean
+}
+
 export interface IconButtonProps
   extends
     ButtonHTMLAttributes<HTMLButtonElement>,
     ButtonStatesProps,
     FailureProps,
-    ButtonTooltipProps {
+    ButtonTooltipProps,
+    ActiveProps {
   /** Доступное имя и тултип кнопки. */
   label?: string
   /** `ghost` — прозрачная; `overlay` — непрозрачный чип поверх контента (действия строки). */
@@ -43,8 +79,6 @@ export interface IconButtonProps
   shape?: 'circle' | 'square'
   /** Размер: `compact` — `--tsr-comp-button-size-compact` (ручки перетаскивания). */
   size?: 'default' | 'compact'
-  /** Активное состояние: сортировка, закрепление, открытый поповер. */
-  active?: boolean
   /** Выключенная остаётся в порядке фокуса (`aria-disabled`) — Base UI Button. */
   focusableWhenDisabled?: boolean
   /** Свой элемент вместо кнопки (напр. `<Popover.Trigger />`) — рендер-проп Base UI. */
@@ -69,7 +103,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       variant = 'ghost',
       shape = 'circle',
       size = 'default',
-      active = false,
+      active,
+      count,
+      activeIcon,
+      indicator = true,
       className,
       disabledClassName,
       disabled,
@@ -91,6 +128,12 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       busy,
     )
     const described = useFailure(failure, rest['aria-describedby'])
+    const accessibleName = rest['aria-label'] ?? label
+    const ownState =
+      rest['aria-pressed'] !== undefined ||
+      rest['aria-expanded'] !== undefined ||
+      rest['aria-checked'] !== undefined
+    useActiveNameCheck(active, accessibleName, ownState)
 
     const button = (
       <BaseButton
@@ -117,7 +160,22 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           disabled && disabledClassName,
         )}
       >
-        {children}
+        {active && activeIcon !== undefined ? activeIcon : children}
+        {active !== undefined && (
+          <Bubble
+            size={count ? 'sm' : 'dot'}
+            tone="active"
+            className={styles.indicator}
+            data-active-indicator=""
+            data-count={count || undefined}
+            data-shown={
+              active && indicator && !states.active && failure === undefined
+            }
+            aria-hidden
+          >
+            {count ? countText(count) : null}
+          </Bubble>
+        )}
         {failure !== undefined && (
           <FailureMark
             id={described.id}
@@ -147,3 +205,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 )
 
 IconButton.displayName = 'IconButton'
+
+/** Число бабла: больше 99 — «99+», полное число — в подписи кнопки. */
+const countText = (count: number) => (count > 99 ? '99+' : String(count))

@@ -54,6 +54,36 @@
   background-color: var(--tsr-comp-control-active-hover-bg);
 }
 
+/*
+ * Бабл включённого состояния (ADR 0129): точка — внутри кнопки в правом верхнем углу,
+ * число — на углу кнопки; появляется и исчезает через токены движения. Кнопка-носитель
+ * уже `position: relative` (дуга ожидания).
+ */
+.indicator {
+  --_at: translate(0, 0);
+
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  opacity: 0;
+  transform: var(--_at) scale(0.4);
+  transition:
+    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+.indicator[data-count] {
+  --_at: translate(45%, -35%);
+
+  top: 0;
+  right: 0;
+}
+
+.indicator[data-shown='true'] {
+  opacity: 1;
+  transform: var(--_at);
+}
+
 .iconButton:focus-visible {
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }

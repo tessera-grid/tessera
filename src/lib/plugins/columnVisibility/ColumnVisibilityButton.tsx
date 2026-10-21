@@ -13,12 +13,9 @@ import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
 import { isWaitingForColumns } from '../../core/skeletonOptions'
 import { dataColumnsOf } from '../../core/stubs'
-import { Bubble } from '../../ui/Bubble'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton, ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { getShowAll, type VisibilityTable } from './columnTree'
-
-import styles from './ColumnVisibilityMenu.module.css'
 
 const ColumnVisibilityPopover = preloadable(() =>
   import('./ColumnVisibilityPopover').then(
@@ -41,16 +38,7 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
   const hidden = getShowAll(table as unknown as VisibilityTable).length
   const active = hidden > 0
   const label = active ? labels.columnsWithHidden(hidden) : labels.columns
-  const icon = (
-    <span className={styles.icon}>
-      <ColumnsIcon width={16} height={16} />
-      {active && (
-        <Bubble size="sm" tone="active" className={styles.count} aria-hidden>
-          {hidden}
-        </Bubble>
-      )}
-    </span>
-  )
+  const icon = <ColumnsIcon width={16} height={16} />
 
   if (isWaitingForColumns(table)) {
     return <ToolbarSkeleton data-testid="column-visibility-skeleton" />
@@ -73,6 +61,7 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
       label={label}
       icon={icon}
       active={active}
+      count={hidden}
       aria-haspopup="dialog"
       data-testid="column-visibility-button"
       {...popover.trigger}
@@ -87,6 +76,7 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
         label={label}
         icon={icon}
         active={active}
+        count={hidden}
         open={popover.open}
         onOpenChange={popover.onOpenChange}
       />

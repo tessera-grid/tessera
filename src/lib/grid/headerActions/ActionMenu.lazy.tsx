@@ -20,7 +20,7 @@ import {
   preloadActionPanel,
   type SlotAction,
 } from '../../core/headerActions'
-import { ActiveDot, ErrorDot, actionDot } from './ActiveDot'
+import { ErrorDot, kebabActive } from './ErrorDot'
 import type { ActionMenuProps } from './ActionMenu'
 import type { ActionInlineMenuProps } from './ActionInlineMenu'
 import type { ActionPanelProps } from './ActionPanel'
@@ -32,7 +32,6 @@ import {
 import { type KebabState, useKebabState, useMergedFlash } from './useKebabState'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
-import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 const ActionMenuImpl = preloadable(() =>
@@ -66,10 +65,13 @@ const KebabPlaceholder = ({
   onOpen,
   loading,
   activeCount,
+  active,
   kebab,
 }: {
   variant: Variant
   activeCount: number
+  /** Включён кебаб — узел бабла только у кебаба с включаемыми действиями (ADR 0129). */
+  active: boolean | undefined
   open: boolean
   onOpen: () => void
   loading: PanelButtonState
@@ -86,10 +88,11 @@ const KebabPlaceholder = ({
       aria-expanded={open}
       onClick={onOpen}
       onPointerLeave={kebab.leave}
+      active={active}
+      indicator={!kebab.failed}
       {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
-      <ActiveDot shown={activeCount > 0 && !kebab.failed} />
       <ErrorDot shown={kebab.failed} />
     </IconButton>
   )
@@ -131,13 +134,13 @@ const InlinePlaceholder = ({
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const active = action.active?.(context) ?? false
-  const adornment = action.adornment?.(context)
+  const active = action.active?.(context)
 
   const button = (
     <IconButton
       className={action.className?.(context)}
       active={active}
+      count={action.count?.(context)}
       label={label}
       aria-label={ariaLabel}
       aria-haspopup={popup}
@@ -146,7 +149,6 @@ const InlinePlaceholder = ({
       {...panelButtonProps(loading)}
     >
       {action.icon(context)}
-      {actionDot(!!action.active, active, !!adornment)}
     </IconButton>
   )
 
@@ -159,14 +161,7 @@ const InlinePlaceholder = ({
       className={clsx(wrapperBase, !open && hiddenClass)}
       data-button-active={active || !!loading?.pending}
     >
-      {adornment ? (
-        <span className={buttonStyles.anchor}>
-          {button}
-          {adornment}
-        </span>
-      ) : (
-        button
-      )}
+      {button}
     </div>
   )
 }
@@ -216,6 +211,7 @@ export const ActionMenu = ({
     <KebabPlaceholder
       variant={variant}
       activeCount={activeCount}
+      active={kebabActive(actions, activeCount)}
       open={menu.open}
       onOpen={() => kebab.openChange(true)}
       loading={loading}

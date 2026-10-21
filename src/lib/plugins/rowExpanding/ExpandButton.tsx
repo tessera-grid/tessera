@@ -1,29 +1,19 @@
-import { MouseEvent } from 'react'
-
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { IconButton } from '../../ui/IconButton'
+import { IconButton, type DerivedButtonProps } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 
 import styles from './ExpandButton.module.css'
 
-export interface ExpandButtonProps {
+export interface ExpandButtonProps extends DerivedButtonProps {
   expanded: boolean
-  disabled?: boolean
-  /** Раскрытие ждёт промиса `onExpandRow` / `loadChildren` (ADR 0041, 0054). */
-  pending?: boolean
-  /** Номер последней неудачной попытки — ключ вспышки контура (ADR 0055). */
-  errorFlash?: number
-  onClick: (e: MouseEvent) => void
 }
 
 export const ExpandButton = ({
   expanded,
   disabled = false,
-  pending = false,
-  errorFlash,
-  onClick,
+  ...button
 }: ExpandButtonProps) => {
   const { expand, expanded: expandedIcon } = useIcons()
   // Свой значок раскрытой строки заменяет шеврон и не поворачивается (ADR 0062, AI14).
@@ -38,19 +28,14 @@ export const ExpandButton = ({
       <IconButton
         className="row-expand-button"
         disabled={disabled}
-        pending={pending}
-        errorFlash={errorFlash}
         aria-expanded={expanded}
-        onClick={onClick}
         label={label}
+        {...button}
       >
         <ExpandIcon
           width={16}
           height={16}
-          className={clsx(styles.icon, {
-            [styles.expanded]: expanded && !swapped,
-            [styles.disabled]: disabled && !expanded,
-          })}
+          className={clsx(styles.icon, expanded && !swapped && styles.expanded)}
         />
       </IconButton>
     </div>

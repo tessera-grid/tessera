@@ -263,15 +263,15 @@ describe('Индикатор активного действия', () => {
     await userEvent.click(sort('name'))
     await userEvent.keyboard('{/Shift}')
 
-    const anchor = (id: string) => sort(id).parentElement!
     await expect
-      .poll(() => anchor('name').querySelector('[data-sort-priority]'))
+      .poll(() => sort('name').querySelector('[data-count]'))
       .not.toBeNull()
     for (const id of ['age', 'name']) {
-      expect(dotOf(sort(id)), id).toBeNull()
-      const priority = anchor(id).querySelector<HTMLElement>(
-        '[data-sort-priority]',
-      )!
+      expect(
+        sort(id).querySelector('[data-active-indicator]:not([data-count])'),
+        id,
+      ).toBeNull()
+      const priority = sort(id).querySelector<HTMLElement>('[data-count]')!
       const style = getComputedStyle(priority)
       expect(style.backgroundColor).toBe(
         tokenColor('--tsr-comp-active-indicator'),
@@ -635,8 +635,8 @@ describe('Индикатор активного действия', () => {
           nextOperation="desc"
           onClick={noop}
         />
-        <PinButton isPinned={on} onClick={noop} />
-        <GroupButton isGrouped={on} onClick={noop} />
+        <PinButton pinned={on} onClick={noop} />
+        <GroupButton grouped={on} onClick={noop} />
       </div>
     )
     const buttons = () =>
@@ -668,8 +668,10 @@ describe('Индикатор активного действия', () => {
       </div>,
     )
     const sort = document.querySelector<HTMLElement>('.column-sort__button')!
-    expect(dotOf(sort)).toBeNull()
-    expect(document.querySelector('[data-sort-priority="1"]')).not.toBeNull()
+    expect(
+      sort.querySelector('[data-active-indicator]:not([data-count])'),
+    ).toBeNull()
+    expect(document.querySelector('[data-count="1"]')).not.toBeNull()
   })
 
   test('AI16: PinButton и GroupButton во включённом состоянии берут значок из icons.pinned / icons.grouped, в выключенном — из pin / group', async () => {
@@ -682,8 +684,8 @@ describe('Индикатор активного действия', () => {
         }}
       >
         <div className="data-grid-theme">
-          <PinButton isPinned={on} onClick={noop} />
-          <GroupButton isGrouped={on} onClick={noop} />
+          <PinButton pinned={on} onClick={noop} />
+          <GroupButton grouped={on} onClick={noop} />
         </div>
       </IconsProvider>
     )

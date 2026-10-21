@@ -8,7 +8,7 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import type { SlotAction } from '../../core/headerActions'
-import { actionDot, ErrorDot } from './ActiveDot'
+import { ErrorDot } from './ErrorDot'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
@@ -20,7 +20,6 @@ import {
   useServerActionMarks,
 } from '../../core/serverActions'
 
-import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import gridStyles from '../../grid/DataGrid/DataGrid.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
@@ -62,8 +61,7 @@ export const ActionPanel = ({
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const active = action.active?.(context) ?? false
-  const adornment = action.adornment?.(context)
+  const active = action.active?.(context)
 
   const button = (
     <Popover.Trigger
@@ -72,6 +70,8 @@ export const ActionPanel = ({
           ref={triggerRef}
           className={action.className?.(context)}
           active={active}
+          count={action.count?.(context)}
+          indicator={!failure}
           label={label}
           aria-label={ariaLabel}
           {...panelButtonProps(loading)}
@@ -80,7 +80,6 @@ export const ActionPanel = ({
           aria-describedby={failure ? reasonId : undefined}
         >
           {action.icon(context)}
-          {actionDot(!!action.active, active && !failure, !!adornment)}
           <ErrorDot shown={!!failure} delayed />
         </IconButton>
       }
@@ -103,14 +102,7 @@ export const ActionPanel = ({
           active || visible || !!loading?.pending || server.pending
         }
       >
-        {adornment ? (
-          <span className={buttonStyles.anchor}>
-            {button}
-            {adornment}
-          </span>
-        ) : (
-          button
-        )}
+        {button}
         {failure && (
           <span id={reasonId} className={gridStyles['visually-hidden']}>
             {serverActionReason(failure, labels)}

@@ -62,6 +62,7 @@ export const FilterSummaryPopover = ({
         label={label}
         icon={icon}
         active={items.length > 0}
+        count={items.length}
         disabled={items.length === 0}
         data-testid="filter-summary-button"
         render={<Popover.Trigger />}

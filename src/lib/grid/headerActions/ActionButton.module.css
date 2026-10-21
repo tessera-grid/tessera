@@ -1,8 +1,4 @@
-.anchor {
-  position: relative;
-  display: inline-flex;
-}
-
+/* Отметка отказа кебаба и кнопки с панелью (ADR 0078, ADR 0116) — в углу бабла. */
 .dot {
   position: absolute;
   top: 3px;

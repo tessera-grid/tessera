@@ -1,6 +1,6 @@
 /**
  * Правый слот ячейки: кнопка входа в режим правки. Появляется по hover и без него
- * места не занимает (`CellButton showOnHover` → класс cell__button--hidden). Показ
+ * места не занимает (`CellButton revealOnHover` → класс cell__button--hidden). Показ
  * гейтит предикат `canEditCell` по контексту ячейки; в режиме правки этой ячейки кнопки
  * нет (её место занял редактор во владельце cellSlot), как и пока сохранение ждёт
  * сервера. Ячейка подписана только на своё состояние, а не на весь срез.
@@ -40,7 +40,7 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
 
   return (
     <CellButton
-      title={labels.editCell}
+      label={labels.editCell}
       icon={<EditIcon width={16} height={16} />}
       onClick={event => startEditSession(table, row, column, sourceOf(event))}
     />

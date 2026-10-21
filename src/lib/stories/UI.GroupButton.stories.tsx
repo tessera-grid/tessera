@@ -2,24 +2,36 @@ import { Meta, StoryObj } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
 
 import { GroupButton } from '../plugins/rowGrouping/GroupButton'
+import {
+  DERIVED_BUTTON_ARGS,
+  DERIVED_BUTTON_ARG_TYPES,
+  DERIVED_BUTTON_CONTROLS,
+  DISABLED_ARGS,
+} from './__mocks__/derivedButton'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
- * Кнопка группировки по колонке (ADR 0016): клик переключает «сгруппировано». В
- * рамке заголовка проявляется при наведении, включённая видна всегда.
- * Вид, размер и состояния — база `UI/IconButton` (ADR 0098); здесь — только свои.
+ * Кнопка группировки по колонке (ADR 0016, ADR 0128): скрыта до наведения на заголовок,
+ * клик переключает «сгруппировано»; `revealOnHover`, ожидание, отказ и выключение — из
+ * контролов.
  */
 const meta = {
   title: 'Tessera/UI/GroupButton',
+  tags: ['done'],
   component: GroupButton,
-  args: { isGrouped: false, disabled: false, onClick: () => {} },
+  argTypes: DERIVED_BUTTON_ARG_TYPES,
+  args: { ...DERIVED_BUTTON_ARGS, grouped: false, revealOnHover: true },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (
       <UiCanvas host="head" caption="City" width={200}>
         <GroupButton
           {...args}
-          onClick={() => updateArgs({ isGrouped: !args.isGrouped })}
+          onClick={event => {
+            args.onClick?.(event)
+            updateArgs({ grouped: !args.grouped })
+          }}
         />
       </UiCanvas>
     )
@@ -30,14 +42,35 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const GroupButtonBasic: Story = { name: 'Basic' }
+export const GroupButtonDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls(
+    'grouped',
+    'revealOnHover',
+    ...DERIVED_BUTTON_CONTROLS,
+  ),
+}
 
 export const GroupButtonGrouped: Story = {
   name: 'Grouped',
-  args: { isGrouped: true },
+  parameters: noControls(),
+  args: { grouped: true },
+}
+
+export const GroupButtonAlwaysVisible: Story = {
+  name: 'Always visible',
+  parameters: noControls(),
+  args: { revealOnHover: false },
+}
+
+export const GroupButtonPending: Story = {
+  name: 'Pending',
+  parameters: noControls(),
+  args: { pending: true },
 }
 
 export const GroupButtonDisabled: Story = {
   name: 'Disabled',
-  args: { disabled: true },
+  parameters: noControls(),
+  args: { ...DISABLED_ARGS, revealOnHover: false },
 }

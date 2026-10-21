@@ -98,11 +98,11 @@ describe('IconButton', () => {
 // --- Tooltip (TT1–TT6) --------------------------------------------------------
 
 describe('Кнопки действий', () => {
-  test('AB1: у RowButton и CellButton доступное имя кнопки — title', async () => {
+  test('AB1: у RowButton и CellButton доступное имя кнопки — label', async () => {
     const screen = await render(
       <>
-        <RowButton title="Row options" icon={<span />} onClick={() => {}} />
-        <CellButton title="Edit cell" icon={<span />} onClick={() => {}} />
+        <RowButton label="Row options" icon={<span />} onClick={() => {}} />
+        <CellButton label="Edit cell" icon={<span />} onClick={() => {}} />
       </>,
     )
     expect(

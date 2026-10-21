@@ -1,10 +1,12 @@
-export {
-  CellButton,
-  type CellEditButtonProps,
-} from './lib/grid/Actions/CellButton'
+export { CellButton, type CellButtonProps } from './lib/grid/Actions/CellButton'
 export { RowButton, type RowButtonProps } from './lib/grid/Actions/RowButton'
 export { Button, type ButtonProps } from './lib/ui/Button'
-export { IconButton, type IconButtonProps } from './lib/ui/IconButton'
+export {
+  IconButton,
+  type ActiveProps,
+  type DerivedButtonProps,
+  type IconButtonProps,
+} from './lib/ui/IconButton'
 export {
   Segments,
   type SegmentOption,
@@ -33,7 +35,10 @@ export {
   SelectCheckbox,
   type SelectCheckboxProps,
 } from './lib/ui/SelectCheckbox/SelectCheckbox'
-export { ExpandButton } from './lib/plugins/rowExpanding/ExpandButton'
+export {
+  ExpandButton,
+  type ExpandButtonProps,
+} from './lib/plugins/rowExpanding/ExpandButton'
 export {
   GroupButton,
   type GroupButtonProps,

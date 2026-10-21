@@ -33,7 +33,7 @@ const meta = {
 export default meta
 
 export const ColumnSorting: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableColumnSorting',
     'columnSortingRemoval',
@@ -165,7 +165,7 @@ export const SortingStateSorted: StoryObj<StoryProps> = {
     await waitFor(() =>
       expect(
         headCell(canvasElement, 'firstName').querySelector(
-          '.column-sort__priority',
+          '[data-active-indicator][data-count]',
         ),
       ).not.toBeNull(),
     )

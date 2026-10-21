@@ -3,6 +3,7 @@ import { useArgs } from 'storybook/preview-api'
 
 import { Segments } from '../ui/Segments'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Сегменты (ADR 0074): выбор одного из немногих коротких вариантов. Стрелки переводят
@@ -10,6 +11,7 @@ import { UiCanvas } from './__mocks__/UiCanvas'
  */
 const meta = {
   title: 'Tessera/UI/Segments',
+  tags: ['done'],
   component: Segments,
   args: {
     value: 'csv',
@@ -37,10 +39,14 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SegmentsBasic: Story = { name: 'Basic' }
+export const SegmentsDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls('options', 'disabled'),
+}
 
 export const SegmentsThree: Story = {
   name: 'With disabled option',
+  parameters: noControls(),
   args: {
     options: [
       { value: 'csv', label: 'CSV' },
@@ -52,6 +58,7 @@ export const SegmentsThree: Story = {
 
 export const SegmentsLongLabel: Story = {
   name: 'Long label',
+  parameters: noControls(),
   args: {
     options: [
       { value: 'csv', label: 'CSV' },
@@ -62,5 +69,6 @@ export const SegmentsLongLabel: Story = {
 
 export const SegmentsDisabled: Story = {
   name: 'Disabled',
+  parameters: noControls(),
   args: { disabled: true },
 }

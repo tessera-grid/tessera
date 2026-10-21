@@ -1,16 +1,3 @@
 .disabled {
   cursor: not-allowed;
 }
-
-.anchor {
-  position: relative;
-  display: inline-flex;
-}
-
-/* Оверлей в углу кнопки — чтобы бейдж не растягивал её геометрию. */
-.priority {
-  position: absolute;
-  top: 0;
-  right: 0;
-  transform: translate(45%, -35%);
-}

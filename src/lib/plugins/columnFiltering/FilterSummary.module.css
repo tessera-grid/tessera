@@ -1,14 +1,3 @@
-.icon {
-  position: relative;
-  display: inline-flex;
-}
-
-.count {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-}
-
 .positioner {
   composes: positioner from '../../ui/Popup/Popup.module.css';
 }

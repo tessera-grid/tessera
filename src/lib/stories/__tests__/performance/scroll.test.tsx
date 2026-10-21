@@ -37,6 +37,8 @@ import {
 import { makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid } from './hosts'
+import type { TesseraFeatureEntry } from '../../../core/features'
+import { CellButton } from '../../../grid/Actions/CellButton'
 import {
   cellSelectionModel,
   columnFilteringModel,
@@ -180,6 +182,7 @@ const AI10_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
+const AV11_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
 const GL13_COST = { ratio: 1.3, plusMs: 4 }
@@ -485,7 +488,11 @@ describe('Производительность прокрутки — индик
         })
         await waitForGrid()
         await expect
-          .poll(() => document.querySelector('[data-sort-priority]') !== null)
+          .poll(
+            () =>
+              document.querySelector('[data-active-indicator][data-count]') !==
+              null,
+          )
           .toBe(sorted)
         // Медленно, без быстрой прокрутки: заголовки рисуются с кнопками, а не скелетами.
         const x = await measureScrollWork('x', CONTENT_SCROLL.x)
@@ -1426,6 +1433,92 @@ describe('Производительность — общая волна ске�
         wave.p95Ms,
         `x p95=${wave.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Включённое состояние кнопок (ADR 0129, AV11): 1000×1000 без плагинов, кнопка ячейки в
+// каждой ячейке; спокойная прокрутка с включёнными кнопками (бабл виден) против тех же
+// кнопок без `active` (узла бабла нет).
+const cellButtonsSeed = (active: boolean): TesseraFeatureEntry => {
+  const Button = () => (
+    <CellButton
+      label={active ? 'Note, set' : 'Note'}
+      icon={<svg />}
+      active={active || undefined}
+      revealOnHover={false}
+    />
+  )
+  return {
+    id: 'perfCellButtons',
+    slots: [
+      { id: 'perfCellButtons', slot: 'rightCellSlot', component: Button },
+    ],
+  }
+}
+
+describe('Производительность прокрутки — включённые кнопки', () => {
+  test(
+    'AV11: спокойная прокрутка 1000×1000 с включёнными кнопками во всех строках — в пределах цены против той же выборки без них',
+    async () => {
+      const measure = async (active: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: [cellButtonsSeed(active)],
+        })
+        await waitForGrid()
+        await expect
+          .poll(
+            () =>
+              document.querySelector(
+                '[data-active-indicator][data-shown="true"]',
+              ) !== null,
+          )
+          .toBe(active)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const active = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, AV11_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('AV11-base', 'кнопки без active', base, false)
+      await record('AV11', 'включённые кнопки', active, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          active[axis].p95Ms,
+          `${axis} p95=${active[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
     },
     PERF_TIMEOUT * 2,
   )

@@ -9,7 +9,6 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import type { SlotAction } from '../../core/headerActions'
-import { actionDot } from './ActiveDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { useLatest } from '../../core/useLatest'
 import { useCloseOnGridScroll } from './useCloseOnGridScroll'
@@ -19,7 +18,6 @@ import { useAvailabilityChecks } from './useAvailabilityChecks'
 import { useMenuSections } from './useMenuSections'
 import { useStateWhileOpen } from './useStateWhileOpen'
 
-import buttonStyles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 export interface ActionInlineMenuProps {
@@ -74,8 +72,7 @@ export const ActionInlineMenu = ({
 
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const active = action.active?.(context) ?? false
-  const adornment = action.adornment?.(context)
+  const active = action.active?.(context)
 
   const button = (
     <Menu.Trigger
@@ -83,11 +80,11 @@ export const ActionInlineMenu = ({
         <IconButton
           className={action.className?.(context)}
           active={active}
+          count={action.count?.(context)}
           label={label}
           aria-label={ariaLabel}
         >
           {action.icon(context)}
-          {actionDot(!!action.active, active, !!adornment)}
         </IconButton>
       }
     />
@@ -111,14 +108,7 @@ export const ActionInlineMenu = ({
         className={clsx(wrapperBase, !visible && hiddenClass)}
         data-button-active={active}
       >
-        {adornment ? (
-          <span className={buttonStyles.anchor}>
-            {button}
-            {adornment}
-          </span>
-        ) : (
-          button
-        )}
+        {button}
       </div>
       {section ? (
         <ActionMenuPopup

@@ -355,6 +355,20 @@ export const BASE_CONTROLS = [
 export type BaseControl = (typeof BASE_CONTROLS)[number]
 
 /**
+ * История состояния примитива `UI/*`: вкладки Controls нет, вариации — в `Default`
+ * (ADR 0117, SN30).
+ */
+export const noControls = () => ({ controls: { disable: true } })
+
+/**
+ * `Default` примитива `UI/*`: явный список контролов — только то, что осмысленно менять
+ * (ADR 0117, SN30).
+ */
+export const defaultControls = (...names: string[]) => ({
+  controls: { include: names },
+})
+
+/**
  * Панель истории: базовый набор и `names`. `hidden` убирает базовый контрол, который
  * в истории ни на что не влияет, — с причиной.
  */

@@ -1,0 +1,9 @@
+/* Заголовок куска грида: фон шапки и фон наведения, как у ячейки шапки грида. */
+.head {
+  background: var(--tsr-comp-head-bg);
+  transition: var(--tsr-comp-head-cell-transition);
+}
+
+.head:hover {
+  background: var(--tsr-comp-head-cell-hovered-bg);
+}

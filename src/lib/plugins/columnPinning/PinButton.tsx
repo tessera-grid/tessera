@@ -3,44 +3,52 @@ import { memo } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { IconButton } from '../../ui/IconButton'
+import {
+  IconButton,
+  type DerivedButtonProps,
+  type RevealProps,
+} from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
-import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
 import styles from './PinButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
-export interface PinButtonProps {
-  isPinned: boolean
-  onClick: () => void
-  disabled?: boolean
+export interface PinButtonProps extends DerivedButtonProps, RevealProps {
+  pinned: boolean
 }
 
 export const PinButton = memo(
-  ({ isPinned, onClick, disabled = false }: PinButtonProps) => {
-    const { pin, pinned } = useIcons()
-    const PinIcon = isPinned ? pinned : pin
+  ({
+    pinned,
+    revealOnHover = true,
+    disabled = false,
+    ...button
+  }: PinButtonProps) => {
+    const { pin: PinIcon, pinned: PinnedIcon } = useIcons()
 
     const labels = useLocalization()
 
-    const title = isPinned ? labels.unpin : labels.pin
+    const title = pinned ? labels.unpin : labels.pin
 
     return (
       <div
-        className={clsx('cell__button', 'cell__button--hidden')}
-        data-button-active={isPinned}
+        className={clsx(
+          'cell__button',
+          revealOnHover && 'cell__button--hidden',
+        )}
+        data-button-active={pinned}
       >
         <IconButton
           className="column-pin__button"
-          active={isPinned}
+          active={pinned}
+          activeIcon={<PinnedIcon width={16} height={16} />}
           disabledClassName={styles.disabled}
-          onClick={onClick}
           disabled={disabled}
           aria-disabled={disabled}
           label={title}
+          {...button}
         >
           <PinIcon width={16} height={16} />
-          <ActiveDot shown={isPinned} />
         </IconButton>
       </div>
     )

@@ -11,6 +11,7 @@ const root = fileURLToPath(new URL('../../../', import.meta.url))
 export const ENTRY = {
   index: `${root}src/index.ts`,
   plugins: `${root}src/plugins.ts`,
+  ui: `${root}src/ui.ts`,
   useCreateTable: `${root}src/lib/core/useCreateTable.ts`,
   storyToggles: `${root}src/lib/stories/__mocks__/utils/argsToPlugins.ts`,
 } as const

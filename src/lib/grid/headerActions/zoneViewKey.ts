@@ -57,7 +57,7 @@ const inlineView = (action: SlotAction, ctx: unknown, labels: TableLabels) => {
     action.inlineAsMenu?.(ctx) ?? null,
     viewOf(readSyncDisabled(action, ctx)),
     viewOf(action.icon(ctx)),
-    viewOf(action.adornment?.(ctx)),
+    action.count?.(ctx) ?? null,
     viewOf(action.menuItems?.(ctx, labels)),
   ]
 }

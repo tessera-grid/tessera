@@ -88,23 +88,23 @@ const BUTTON_FAMILY: Member[] = [
   {
     name: 'PinButton',
     sel: '.column-pin__button',
-    node: d => <PinButton isPinned={false} onClick={noop} disabled={d} />,
+    node: d => <PinButton pinned={false} onClick={noop} disabled={d} />,
   },
   {
     name: 'GroupButton',
     sel: '.column-group__button',
-    node: d => <GroupButton isGrouped={false} onClick={noop} disabled={d} />,
+    node: d => <GroupButton grouped={false} onClick={noop} disabled={d} />,
   },
   {
     name: 'RowButton',
     sel: 'button',
     node: d => (
       <RowButton
-        title="a"
+        label="a"
         icon={<span>i</span>}
         onClick={noop}
         disabled={d}
-        isVisible
+        revealOnHover={false}
       />
     ),
   },

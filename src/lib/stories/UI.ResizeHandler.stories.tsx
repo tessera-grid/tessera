@@ -4,6 +4,7 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import { ResizeHandler } from '../plugins/columnSizing/ResizeHandler'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 const MIN_SIZE = 80
 const MAX_SIZE = 400
@@ -31,7 +32,12 @@ const ResizeHandlerDemo = ({ disabled }: ResizeHandlerDemoProps) => {
   }
 
   return (
-    <UiCanvas host="head" caption={`Name · ${size}px`} width={size}>
+    <UiCanvas
+      host="head"
+      caption={`Name · ${size}px`}
+      nextColumn="City"
+      width={size}
+    >
       <ResizeHandler
         isResizing={isResizing}
         size={size}
@@ -62,6 +68,7 @@ const ResizeHandlerDemo = ({ disabled }: ResizeHandlerDemoProps) => {
 
 const meta = {
   title: 'Tessera/UI/ResizeHandler',
+  tags: ['done'],
   component: ResizeHandlerDemo,
   args: { disabled: false },
 } satisfies Meta<typeof ResizeHandlerDemo>
@@ -70,9 +77,13 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ResizeHandlerBasic: Story = { name: 'Basic' }
+export const ResizeHandlerDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls('disabled'),
+}
 
 export const ResizeHandlerDisabled: Story = {
   name: 'Disabled',
+  parameters: noControls(),
   args: { disabled: true },
 }

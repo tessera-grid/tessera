@@ -2,7 +2,6 @@ import { CSSProperties, ReactNode } from 'react'
 
 import { Toolbar } from '@base-ui/react/toolbar'
 import { Meta, StoryObj } from '@storybook/react'
-import clsx from 'clsx'
 
 import '../core/themeVariables/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
@@ -12,10 +11,9 @@ import { LinearProgress } from '../ui/LinearProgress'
 import popup from '../ui/Popup/Popup.module.css'
 import { ToolbarButton } from '../ui/ToolbarButton'
 import { useIcons } from '../ui/icons'
-import ring from '../ui/ringStates/ringStates.module.css'
 
-// Анимации загрузки в одном месте: свечение под шапкой (ADR 0094) и ожидание кнопок,
-// ячейки в правке и пункта меню (ADR 0055, 0057, 0078) — одни оттенки и один ритм.
+// Анимации загрузки в одном месте: свечение под шапкой (ADR 0094), дуга ожидания кнопок
+// (ADR 0127) и спиннер пункта меню (ADR 0078) — одни оттенки и один ритм.
 // `slowdown` растягивает все периоды, чтобы разглядеть переливание.
 
 interface LoadingAnimationsProps {
@@ -37,8 +35,7 @@ const Canvas = ({
         display: 'flex',
         flexDirection: 'column',
         gap: 32,
-        padding: 24,
-        background: 'var(--tsr-sys-surface)',
+        padding: 16,
         color: 'var(--tsr-sys-fg)',
         fontFamily: 'var(--tsr-comp-font-family)',
         fontSize: 13,
@@ -130,79 +127,6 @@ const SquareButtons = ({ sizes }: { sizes: number[] }) => {
   )
 }
 
-interface PendingCellProps {
-  width: number
-  value: string
-  /** Ждёт ли ячейка сервера; без ожидания — обычная соседка. */
-  pending?: boolean
-  /** Фаза света от 0 до 1 — в гриде её считает ключ ячейки. */
-  phase?: number
-}
-
-/** Ячейка, чьё сохранение ждёт сервера: слой ожидания поверх ячейки, как в гриде. */
-const PendingCell = ({
-  width,
-  value,
-  pending = true,
-  phase = 0,
-}: PendingCellProps) => (
-  <div
-    style={
-      {
-        position: 'relative',
-        flex: 'none',
-        width,
-        height: 50,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        boxSizing: 'border-box',
-        background: 'var(--tsr-comp-row-bg)',
-        borderRight: '1px solid var(--tsr-comp-cell-divider-color)',
-        borderBottom: '1px solid var(--tsr-comp-cell-divider-color)',
-        fontSize: 'var(--tsr-comp-cell-font-size)',
-      } as CSSProperties
-    }
-  >
-    {value}
-    {pending && (
-      <span
-        className={clsx(ring.ring, ring.layer)}
-        data-pending=""
-        style={
-          {
-            '--tsr-pending-phase': phase,
-            position: 'absolute',
-            inset: 'var(--tsr-comp-focus-ring-width)',
-            pointerEvents: 'none',
-          } as CSSProperties
-        }
-      />
-    )}
-  </div>
-)
-
-/** Ячейки вплотную, как в строке или колонке грида. */
-const CellStrip = ({
-  direction,
-  children,
-}: {
-  direction: 'row' | 'column'
-  children: ReactNode
-}) => (
-  <div
-    style={{
-      display: 'inline-flex',
-      flexDirection: direction,
-      alignSelf: 'flex-start',
-      borderTop: '1px solid var(--tsr-comp-cell-divider-color)',
-      borderLeft: '1px solid var(--tsr-comp-cell-divider-color)',
-    }}
-  >
-    {children}
-  </div>
-)
-
 const MenuWithPendingItem = () => {
   const { download: Download, columns: Columns } = useIcons()
   const items = [
@@ -264,10 +188,6 @@ const SideBySideDemo = ({ slowdown }: LoadingAnimationsProps) => (
       </Row>
     </div>
     <div>
-      <Caption>Editing cell — saving</Caption>
-      <PendingCell width={200} value="Australia" />
-    </div>
-    <div>
       <Caption>Menu item — action in progress</Caption>
       <MenuWithPendingItem />
     </div>
@@ -287,44 +207,6 @@ const LargeButtonsDemo = ({ slowdown }: LoadingAnimationsProps) => (
   </Canvas>
 )
 
-const CellEditingDemo = ({ slowdown }: LoadingAnimationsProps) => (
-  <Canvas slowdown={slowdown}>
-    <div>
-      <Caption>
-        Two adjacent cells in a row — the middle ones are saving
-      </Caption>
-      <CellStrip direction="row">
-        <PendingCell width={140} value="Andorra" pending={false} />
-        <PendingCell width={160} value="Odell" phase={0.23} />
-        <PendingCell width={160} value="Fahey" phase={0.71} />
-        <PendingCell width={100} value="40" pending={false} />
-      </CellStrip>
-    </div>
-    <div>
-      <Caption>
-        Two adjacent cells in a column — the top ones are saving
-      </Caption>
-      <CellStrip direction="column">
-        <PendingCell width={200} value="Wallis and Futuna" phase={0.48} />
-        <PendingCell width={200} value="Palestine" phase={0.07} />
-        <PendingCell width={200} value="Poland" pending={false} />
-      </CellStrip>
-    </div>
-    <div>
-      <Caption>Cells of different width</Caption>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <PendingCell width={120} value="31" phase={0.6} />
-        <PendingCell width={240} value="Wallis and Futuna" phase={0.35} />
-        <PendingCell
-          width={480}
-          value="A long comment that was just saved"
-          phase={0.9}
-        />
-      </div>
-    </div>
-  </Canvas>
-)
-
 const MenuSpinnerDemo = ({ slowdown }: LoadingAnimationsProps) => (
   <Canvas slowdown={slowdown}>
     <div>
@@ -340,6 +222,7 @@ const MenuSpinnerDemo = ({ slowdown }: LoadingAnimationsProps) => (
 
 const meta = {
   title: 'Tessera/UI/Loading animations',
+  tags: ['done'],
   component: SideBySideDemo,
   args: { slowdown: 1 },
   argTypes: {
@@ -361,11 +244,6 @@ export const LoadingAnimationsSlowMotion: Story = {
 export const LoadingAnimationsLargeButtons: Story = {
   name: 'Large buttons',
   render: args => <LargeButtonsDemo {...args} />,
-}
-
-export const LoadingAnimationsCellEditing: Story = {
-  name: 'Editing cell',
-  render: args => <CellEditingDemo {...args} />,
 }
 
 export const LoadingAnimationsMenuSpinner: Story = {

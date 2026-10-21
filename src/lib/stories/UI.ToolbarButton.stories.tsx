@@ -1,15 +1,21 @@
 import { Toolbar } from '@base-ui/react/toolbar'
 import { Meta, StoryObj } from '@storybook/react'
-import { fn } from 'storybook/test'
 
 import { ToolbarButton } from '../ui/ToolbarButton'
 import { useIcons } from '../ui/icons'
+import {
+  DERIVED_BUTTON_ARGS,
+  DERIVED_BUTTON_ARG_TYPES,
+  DERIVED_BUTTON_CONTROLS,
+  ACTIVE_ARG_TYPES,
+  DISABLED_ARGS,
+} from './__mocks__/derivedButton'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
- * Кнопка тулбара (ADR 0035): иконка с тултипом; живёт внутри `Toolbar.Root`. Активное
- * состояние — точка; ожидание и вспышка ошибки — ADR 0055.
- * Вид, размер и состояния — база `UI/IconButton` (ADR 0098); здесь — только свои.
+ * Кнопка верхнего тулбара (ADR 0035, ADR 0128): иконка с тултипом внутри `Toolbar.Root`;
+ * включённая — бабл: точка или число `count` (ADR 0129); ожидание, отказ и выключение — из контролов.
  */
 const ToolbarButtonDemo = (
   props: Omit<Parameters<typeof ToolbarButton>[0], 'icon'>,
@@ -26,34 +32,40 @@ const ToolbarButtonDemo = (
 
 const meta = {
   title: 'Tessera/UI/ToolbarButton',
+  tags: ['done'],
   component: ToolbarButtonDemo,
-  argTypes: { errorFlash: { table: { disable: true } } },
-  args: {
-    label: 'Columns',
-    active: false,
-    disabled: false,
-    pending: false,
-    onClick: fn(),
-  },
+  argTypes: { ...DERIVED_BUTTON_ARG_TYPES, ...ACTIVE_ARG_TYPES },
+  args: { ...DERIVED_BUTTON_ARGS, label: 'Columns', active: false, count: 0 },
 } satisfies Meta<typeof ToolbarButtonDemo>
 
 export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ToolbarButtonBasic: Story = { name: 'Basic' }
+export const ToolbarButtonDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls(
+    'label',
+    'active',
+    'count',
+    ...DERIVED_BUTTON_CONTROLS,
+  ),
+}
 
 export const ToolbarButtonActive: Story = {
   name: 'Active',
-  args: { active: true, label: 'Columns, 2 hidden' },
+  parameters: noControls(),
+  args: { active: true, count: 2, label: 'Columns, 2 hidden' },
 }
 
 export const ToolbarButtonPending: Story = {
   name: 'Pending',
+  parameters: noControls(),
   args: { pending: true },
 }
 
 export const ToolbarButtonDisabled: Story = {
   name: 'Disabled',
-  args: { disabled: true },
+  parameters: noControls(),
+  args: DISABLED_ARGS,
 }

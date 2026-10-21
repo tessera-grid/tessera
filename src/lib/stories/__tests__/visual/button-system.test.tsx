@@ -388,13 +388,13 @@ describe('Button system (ADR 0098)', () => {
 
     // Производные из историй UI — с наведением.
     const ui = {
-      SortButton: composeStories(sortStories).SortButtonBasic,
-      PinButton: composeStories(pinStories).PinButtonBasic,
-      GroupButton: composeStories(groupStories).GroupButtonBasic,
-      ExpandButton: composeStories(expandStories).ExpandButtonBasic,
+      SortButton: composeStories(sortStories).SortButtonDefault,
+      PinButton: composeStories(pinStories).PinButtonDefault,
+      GroupButton: composeStories(groupStories).GroupButtonDefault,
+      ExpandButton: composeStories(expandStories).ExpandButtonDefault,
       CellButton: composeStories(cellStories).CellButtonAlwaysVisible,
-      RowButton: composeStories(rowStories).RowButtonVisible,
-      ToolbarButton: composeStories(toolbarStories).ToolbarButtonBasic,
+      RowButton: composeStories(rowStories).RowButtonAlwaysVisible,
+      ToolbarButton: composeStories(toolbarStories).ToolbarButtonDefault,
     }
     for (const [label, Story] of Object.entries(ui)) {
       const screen = await render(<Story />)

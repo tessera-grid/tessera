@@ -30,7 +30,7 @@ const BODY_CELL = '.data-grid__body-cell'
 /** ColumnSorting plugin's sort toggle, rendered per sortable header. */
 const SORT_BUTTON = '.column-sort__button'
 /** Multi-sort priority badge, rendered only while 2+ columns are sorted. */
-const PRIORITY_BADGE = '.column-sort__priority'
+const PRIORITY_BADGE = '[data-active-indicator][data-count]'
 /** A header cell of a real (non-action) data column. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 
@@ -498,12 +498,12 @@ describe('Column Sorting — multi-sort requirements', () => {
     // First-added column is priority 1, second-added is priority 2.
     await expect
       .poll(() =>
-        priorityOf(dataCell(container, 0))?.getAttribute('data-sort-priority'),
+        priorityOf(dataCell(container, 0))?.getAttribute('data-count'),
       )
       .toBe('1')
-    expect(
-      priorityOf(dataCell(container, 1))?.getAttribute('data-sort-priority'),
-    ).toBe('2')
+    expect(priorityOf(dataCell(container, 1))?.getAttribute('data-count')).toBe(
+      '2',
+    )
   })
 
   test('CS19: `max` caps the number of columns in the multi-sort', async () => {

@@ -7,19 +7,30 @@ import { AsyncActionTable } from './__mocks__/AsyncActionTable'
 import { UiCanvas } from './__mocks__/UiCanvas'
 import { VariantGrid } from './__mocks__/VariantGrid'
 import { playAsyncAction, useAsyncAction } from './__mocks__/asyncAction'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Кнопка-иконка кита (ADR 0098): база кнопок шапки, ячейки, строки, тулбара и панелей.
  * Размер один; форма `circle` или `square`; `ghost` — прозрачная, `overlay` — чип поверх
- * контента (действия строки); `label` — имя и тултип.
+ * контента (действия строки); `label` — имя и тултип. Включённая — цвет и бабл: точка,
+ * число `count` или свой значок (ADR 0129).
  */
-const IconButtonDemo = (
-  props: Omit<Parameters<typeof IconButton>[0], 'children'>,
-) => {
-  const { pin: PinIcon } = useIcons()
+const IconButtonDemo = ({
+  withActiveIcon,
+  ...props
+}: Omit<Parameters<typeof IconButton>[0], 'children' | 'activeIcon'> & {
+  /** Свой значок включённой кнопки — `activeIcon`. */
+  withActiveIcon?: boolean
+}) => {
+  const { pin: PinIcon, actionBlocked: LockIcon } = useIcons()
   return (
     <UiCanvas>
-      <IconButton {...props}>
+      <IconButton
+        {...props}
+        activeIcon={
+          withActiveIcon ? <LockIcon width={16} height={16} /> : undefined
+        }
+      >
         <PinIcon width={16} height={16} />
       </IconButton>
     </UiCanvas>
@@ -35,6 +46,10 @@ const meta = {
     variant: { control: 'inline-radio', options: ['ghost', 'overlay'] },
     shape: { control: 'inline-radio', options: ['circle', 'square'] },
     size: { control: 'inline-radio', options: ['default', 'compact'] },
+    count: { control: { type: 'number', min: 0 }, if: { arg: 'active' } },
+    withActiveIcon: { if: { arg: 'active' } },
+    indicator: { if: { arg: 'active' } },
+    tooltipWhenDisabled: { if: { arg: 'disabled' } },
   },
   args: {
     label: 'Pin column',
@@ -42,7 +57,11 @@ const meta = {
     size: 'default',
     variant: 'ghost',
     active: false,
+    count: 0,
+    withActiveIcon: false,
+    indicator: true,
     disabled: false,
+    tooltipWhenDisabled: false,
     pending: false,
     onClick: fn(),
   },
@@ -52,15 +71,47 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const IconButtonBasic: Story = { name: 'Basic' }
+export const IconButtonDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls(
+    'label',
+    'variant',
+    'shape',
+    'size',
+    'active',
+    'count',
+    'withActiveIcon',
+    'indicator',
+    'pending',
+    'failure',
+    'disabled',
+    'tooltipWhenDisabled',
+  ),
+}
 
 export const IconButtonActive: Story = {
   name: 'Active',
+  parameters: noControls(),
   args: { active: true },
+}
+
+// Число вместо точки: бабл растёт и встаёт на угол кнопки.
+export const IconButtonActiveCount: Story = {
+  name: 'Active — count',
+  parameters: noControls(),
+  args: { active: true, count: 3, label: 'Pin column, 3 pinned' },
+}
+
+// Свой значок включённой кнопки; бабл остаётся.
+export const IconButtonActiveIcon: Story = {
+  name: 'Active — icon',
+  parameters: noControls(),
+  args: { active: true, withActiveIcon: true },
 }
 
 export const IconButtonOverlay: Story = {
   name: 'Overlay',
+  parameters: noControls(),
   args: { variant: 'overlay' },
 }
 
@@ -71,6 +122,7 @@ export const IconButtonOverlay: Story = {
  */
 export const IconButtonVariants: Story = {
   name: 'Variants',
+  parameters: noControls(),
   render: function Render() {
     const { pin: PinIcon } = useIcons()
     const icon = <PinIcon width={16} height={16} />
@@ -117,7 +169,7 @@ export const IconButtonVariants: Story = {
  */
 export const IconButtonAsyncAction: Story = {
   name: 'Async action',
-  parameters: { requirements: ['UB10', 'IR12'] },
+  parameters: { ...noControls(), requirements: ['UB10', 'IR12'] },
   render: function Render() {
     const { pin: PinIcon } = useIcons()
     const icon = <PinIcon width={16} height={16} />

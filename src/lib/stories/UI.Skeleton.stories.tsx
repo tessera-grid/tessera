@@ -2,13 +2,16 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import { Skeleton } from '../ui/Skeleton'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Плейсхолдер загрузки (ADR 0017, ADR 0060): размеры — токены скелета по роли, волна —
- * бегущий блик. Контролы — ширина, высота и анимация.
+ * бегущий блик; без волны (`animation: false`) — скелет быстрой прокрутки и хвоста ленты.
+ * Контролы — ширина, высота и анимация.
  */
 const meta = {
   title: 'Tessera/UI/Skeleton',
+  tags: ['done'],
   component: Skeleton,
   args: {
     width: 160,
@@ -31,16 +34,15 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SkeletonBasic: Story = { name: 'Basic' }
-
-export const SkeletonStatic: Story = {
-  name: 'Static',
-  args: { animation: false },
+export const SkeletonDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls('width', 'height', 'animation'),
 }
 
 /** Роли скелетов грида: полоска ячейки, квадрат контрола, текст панели, строка меню. */
 export const SkeletonRoles: Story = {
   name: 'Roles',
+  parameters: noControls(),
   render: args => (
     <UiCanvas>
       <div style={{ display: 'grid', gap: 12, width: 240 }}>

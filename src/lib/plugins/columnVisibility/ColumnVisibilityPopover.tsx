@@ -25,6 +25,8 @@ export interface ColumnVisibilityPopoverProps {
   /** Подпись кнопки: с числом скрытых колонок, когда они есть. */
   label: string
   icon: ReactNode
+  /** Сколько колонок скрыто — число бабла кнопки (ADR 0129). */
+  count: number
   active: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -35,6 +37,7 @@ export const ColumnVisibilityPopover = ({
   label,
   icon,
   active,
+  count,
   open,
   onOpenChange,
 }: ColumnVisibilityPopoverProps) => {
@@ -51,6 +54,7 @@ export const ColumnVisibilityPopover = ({
         label={label}
         icon={icon}
         active={active}
+        count={count}
         data-testid="column-visibility-button"
         render={<Popover.Trigger />}
       />

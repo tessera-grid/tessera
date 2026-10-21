@@ -1,50 +1,40 @@
-import { MouseEvent, ReactNode, memo } from 'react'
+import { ReactNode, memo } from 'react'
 
 import clsx from 'clsx'
 
-import { IconButton } from '../../ui/IconButton'
+import {
+  IconButton,
+  type ActiveProps,
+  type DerivedButtonProps,
+  type RevealProps,
+} from '../../ui/IconButton'
 
 import '../cellControls/buttonVisibility.css'
 
-export interface CellEditButtonProps {
+export interface CellButtonProps
+  extends DerivedButtonProps, RevealProps, ActiveProps {
   /** Тултип и доступное имя кнопки (`aria-label`). */
-  title: string
+  label: string
   icon: ReactNode
-  onClick: (event: MouseEvent<HTMLButtonElement>) => void
-  showOnHover?: boolean
-  showTooltipWhenDisabled?: boolean
-  disabled?: boolean
-  testId?: string
 }
 
 export const CellButton = memo(
   ({
-    title,
+    label,
     icon,
-    showOnHover = true,
-    showTooltipWhenDisabled = false,
-    disabled = false,
-    onClick,
-    testId,
-  }: CellEditButtonProps) => {
-    return (
-      <div
-        className={clsx('cell__button', {
-          'cell__button--hidden': showOnHover,
-        })}
-      >
-        <IconButton
-          data-testid={testId}
-          disabled={disabled}
-          label={title}
-          tooltipWhenDisabled={showTooltipWhenDisabled}
-          onClick={onClick}
-        >
-          {icon}
-        </IconButton>
-      </div>
-    )
-  },
+    active,
+    revealOnHover = true,
+    ...button
+  }: CellButtonProps) => (
+    <div
+      className={clsx('cell__button', revealOnHover && 'cell__button--hidden')}
+      data-button-active={active || undefined}
+    >
+      <IconButton label={label} active={active} {...button}>
+        {icon}
+      </IconButton>
+    </div>
+  ),
 )
 
 CellButton.displayName = 'CellButton'

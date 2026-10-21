@@ -2,31 +2,35 @@ import { Meta, StoryObj } from '@storybook/react'
 import { useArgs } from 'storybook/preview-api'
 
 import { ExpandButton } from '../plugins/rowExpanding/ExpandButton'
+import {
+  DERIVED_BUTTON_ARGS,
+  DERIVED_BUTTON_ARG_TYPES,
+  DERIVED_BUTTON_CONTROLS,
+  DISABLED_ARGS,
+} from './__mocks__/derivedButton'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
- * Тоггл раскрытия строки (ADR 0015): шеврон поворачивается; ожидание подгрузки —
- * свет, отказ — вспышка (ADR 0055); цикл «ожидание → отказ» — история
- * `UI/IconButton` «Async action».
- * Вид, размер и состояния — база `UI/IconButton` (ADR 0098); здесь — только свои.
+ * Тоггл раскрытия строки в ячейке (ADR 0015, ADR 0128): клик поворачивает шеврон;
+ * ожидание, отказ и выключение — из контролов.
  */
 const meta = {
   title: 'Tessera/UI/ExpandButton',
+  tags: ['done'],
   component: ExpandButton,
-  argTypes: { errorFlash: { table: { disable: true } } },
-  args: {
-    expanded: false,
-    pending: false,
-    disabled: false,
-    onClick: () => {},
-  },
+  argTypes: DERIVED_BUTTON_ARG_TYPES,
+  args: { ...DERIVED_BUTTON_ARGS, expanded: false },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (
-      <UiCanvas>
+      <UiCanvas host="cell" column="Group" caption="Group A" width={200}>
         <ExpandButton
           {...args}
-          onClick={() => updateArgs({ expanded: !args.expanded })}
+          onClick={event => {
+            args.onClick?.(event)
+            updateArgs({ expanded: !args.expanded })
+          }}
         />
       </UiCanvas>
     )
@@ -37,19 +41,25 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ExpandButtonBasic: Story = { name: 'Basic' }
+export const ExpandButtonDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls('expanded', ...DERIVED_BUTTON_CONTROLS),
+}
 
 export const ExpandButtonExpanded: Story = {
   name: 'Expanded',
+  parameters: noControls(),
   args: { expanded: true },
 }
 
 export const ExpandButtonPending: Story = {
   name: 'Pending',
+  parameters: noControls(),
   args: { pending: true },
 }
 
 export const ExpandButtonDisabled: Story = {
   name: 'Disabled',
-  args: { disabled: true },
+  parameters: noControls(),
+  args: { ...DISABLED_ARGS, expanded: false },
 }

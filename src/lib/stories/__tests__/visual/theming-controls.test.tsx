@@ -160,10 +160,10 @@ describe('Theming matrix — form controls', () => {
     test('TT-29 row action button base color+bg', async () => {
       const c = await renderThemed(
         <RowButton
-          title="a"
+          label="a"
           icon={<span>i</span>}
           onClick={() => {}}
-          isVisible
+          revealOnHover={false}
         />,
         dark,
       )

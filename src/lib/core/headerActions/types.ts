@@ -121,8 +121,8 @@ export interface SlotAction<
   placement?: 'auto' | 'menu'
   /** Класс инлайн-кнопки — escape для плагин-специфичной подачи. */
   className?: (ctx: TCtx) => string | undefined
-  /** Довесок ИНЛАЙН-кнопки (бейдж и т.п.), рядом с иконкой. */
-  adornment?: (ctx: TCtx) => ReactNode
+  /** Число в бабле включённой ИНЛАЙН-кнопки вместо точки (ADR 0129). */
+  count?: (ctx: TCtx) => number | undefined
   /** Показывать ли ИНЛАЙН-подачу как мини-меню (поповер) из `menuItems`. */
   inlineAsMenu?: (ctx: TCtx) => boolean
   /**

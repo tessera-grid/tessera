@@ -406,7 +406,7 @@ Chromium) и рендерят компоненты напрямую, читая 
 | BU3 | Счётчик одного размера: `Bubble` без `size` — `sm`, высота и кегль как у номера мультисортировки                    | visual                                          |
 | BU4 | Прокидывает `className` и произвольные атрибуты (`data-*`, `aria-hidden`)                                           | ✔ `BU4: forwards className and arbitrary props` |
 | BU5 | Тон `accent`: цифры цвета `--tsr-comp-accent-fg`, контраст с фоном пузырька не меньше 4,5:1 в светлой и тёмной теме | visual                                          |
-| AB1 | `RowButton` и `CellButton`: доступное имя кнопки — `title` (`aria-label`), тултип его не заменяет                   | visual                                          |
+| AB1 | `RowButton` и `CellButton`: доступное имя кнопки — `label` (`aria-label`, ADR 0128), тултип его не заменяет         | visual                                          |
 
 **Иконки**
 

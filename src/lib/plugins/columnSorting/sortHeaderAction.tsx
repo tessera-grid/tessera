@@ -1,15 +1,12 @@
 /**
  * Дескриптор действия сортировки. Инлайн — циклящая иконка-кнопка с
- * бейджем приоритета мультисорта; в кебаб-меню — пункты asc/desc/сброс. Длина
+ * номером приоритета мультисорта в бабле; в кебаб-меню — пункты asc/desc/сброс. Длина
  * сортировки читается через `table.atoms.sorting.get()`; реактивность обеспечивает
  * грид подпиской на `table.atoms.sorting`.
  */
 import type { MouseEvent } from 'react'
 
-import clsx from 'clsx'
-
 import type { TableLabels } from '../../core/localization'
-import { Bubble } from '../../ui/Bubble'
 import { useIcons } from '../../ui/icons'
 import type { HeaderAction, HeaderMenuItem } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
@@ -17,7 +14,6 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { runServerAction } from '../../core/serverActions'
 import type { ColumnSortingHooks } from './types'
 
-import styles from '../../plugins/columnSorting/SortButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 type SortDir = 'asc' | 'desc' | 'none'
@@ -86,25 +82,7 @@ export const sortHeaderAction: HeaderAction = {
   },
   active: ({ column }) => !!column.getIsSorted(),
   className: () => 'column-sort__button',
-  adornment: ctx => {
-    const multi = getMultiSortPosition(ctx)
-
-    if (!multi) {
-      return null
-    }
-
-    return (
-      <Bubble
-        size="sm"
-        tone="active"
-        className={clsx('column-sort__priority', styles.priority)}
-        data-sort-priority={multi.position}
-        aria-hidden
-      >
-        {multi.position}
-      </Bubble>
-    )
-  },
+  count: ctx => getMultiSortPosition(ctx)?.position,
   onSelect: ({ column, table }, event?: MouseEvent<HTMLButtonElement>) => {
     const { onToggleColumnSort } = readPluginHooks<ColumnSortingHooks>(
       table,

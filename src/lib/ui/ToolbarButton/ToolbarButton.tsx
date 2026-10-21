@@ -7,19 +7,20 @@ import {
 
 import { Toolbar } from '@base-ui/react/toolbar'
 
-import { IconButton } from '../IconButton'
-import { type ButtonStatesProps, type FailureProps } from '../buttonStates'
+import {
+  IconButton,
+  type ActiveProps,
+  type DerivedButtonProps,
+} from '../IconButton'
 
 export interface ToolbarButtonProps
   extends
     Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
-    ButtonStatesProps,
-    FailureProps {
+    DerivedButtonProps,
+    ActiveProps {
   /** Тултип и доступное имя кнопки. */
   label: string
   icon: ReactNode
-  /** Активное состояние (напр. часть колонок скрыта). */
-  active?: boolean
   /** Триггер всплывающего окна (напр. `<Popover.Trigger />`) — рендер-проп Base UI. */
   render?: ReactElement
 }
@@ -33,11 +34,15 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     {
       label,
       icon,
-      active = false,
+      active,
+      count,
+      activeIcon,
+      indicator,
       className,
       pending,
       errorFlash,
       failure,
+      tooltipWhenDisabled,
       onClick,
       render,
       ...rest
@@ -52,9 +57,13 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           label={label}
           shape="square"
           active={active}
+          count={count}
+          activeIcon={activeIcon}
+          indicator={indicator}
           pending={pending}
           errorFlash={errorFlash}
           failure={failure}
+          tooltipWhenDisabled={tooltipWhenDisabled}
           onClick={onClick}
           className={className}
           render={render}

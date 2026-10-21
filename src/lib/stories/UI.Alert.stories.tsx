@@ -4,6 +4,7 @@ import { CircleAlert, RotateCw } from 'lucide-react'
 import { Alert } from '../ui/Alert'
 import { Button } from '../ui/Button'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Плашка (ADR 0096, §9): иконка, заголовок, описание одной строкой, действие и закрытие.
@@ -60,15 +61,26 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const AlertBasic: Story = { name: 'With action and dismiss' }
+export const AlertDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls(
+    'shown',
+    'title',
+    'description',
+    'action',
+    'dismissible',
+  ),
+}
 
 export const AlertTitleOnly: Story = {
   name: 'Title only',
+  parameters: noControls(),
   args: { description: '', action: false, dismissible: false },
 }
 
 export const AlertLongDescription: Story = {
   name: 'Long description',
+  parameters: noControls(),
   args: {
     description: `Gateway timeout ${'while aggregating orders '.repeat(6)}`,
   },

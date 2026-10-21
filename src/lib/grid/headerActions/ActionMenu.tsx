@@ -14,7 +14,7 @@ import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import { countActiveActions, type SlotAction } from '../../core/headerActions'
-import { ActiveDot, ErrorDot } from './ActiveDot'
+import { ErrorDot, kebabActive } from './ErrorDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useCloseOnGridScroll } from './useCloseOnGridScroll'
@@ -130,9 +130,10 @@ export const ActionMenu = ({
           onFocus={kebab.intent}
           onPointerLeave={kebab.leave}
           onBlur={kebab.leave}
+          active={kebabActive(actions, activeCount)}
+          indicator={!kebab.failed}
         >
           <MenuIcon width={16} height={16} />
-          <ActiveDot shown={activeCount > 0 && !kebab.failed} />
           <ErrorDot shown={kebab.failed} />
         </IconButton>
       }

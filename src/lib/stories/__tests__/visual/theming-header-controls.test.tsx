@@ -123,7 +123,7 @@ describe('Theming matrix — header controls', () => {
 
     // --- PinButton -------------------------------------------------------------
     test('TT-19p pin button pinned color = --tsr-comp-control-active-color', async () => {
-      const c = await renderThemed(<PinButton isPinned onClick={noop} />, dark)
+      const c = await renderThemed(<PinButton pinned onClick={noop} />, dark)
       const btn = c.querySelector('.column-pin__button')!
       expect(read(btn, 'color')).toBe(
         resolveColor('--tsr-comp-control-active-color', dark),
@@ -137,10 +137,7 @@ describe('Theming matrix — header controls', () => {
 
     // --- GroupButton -----------------------------------------------------------
     test('TT-19g group button active color = --tsr-comp-control-active-color', async () => {
-      const c = await renderThemed(
-        <GroupButton isGrouped onClick={noop} />,
-        dark,
-      )
+      const c = await renderThemed(<GroupButton grouped onClick={noop} />, dark)
       const btn = c.querySelector('.column-group__button')!
       expect(read(btn, 'color')).toBe(
         resolveColor('--tsr-comp-control-active-color', dark),

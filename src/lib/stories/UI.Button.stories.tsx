@@ -7,6 +7,7 @@ import { AsyncActionTable } from './__mocks__/AsyncActionTable'
 import { UiCanvas } from './__mocks__/UiCanvas'
 import { VariantGrid } from './__mocks__/VariantGrid'
 import { playAsyncAction, useAsyncAction } from './__mocks__/asyncAction'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Кнопка с подписью (ADR 0097): `outline` — на поверхности грида, `ghost` — в
@@ -65,12 +66,16 @@ const meta = {
   argTypes: {
     errorFlash: { table: { disable: true } },
     variant: { control: 'inline-radio', options: ['outline', 'ghost'] },
+    tooltip: { control: 'text' },
+    failure: { control: 'text' },
+    tooltipWhenDisabled: { if: { arg: 'disabled' } },
   },
   args: {
     children: 'Retry',
     variant: 'outline',
     withIcon: true,
     disabled: false,
+    tooltipWhenDisabled: false,
     pending: false,
     onClick: fn(),
   },
@@ -80,21 +85,36 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ButtonOutline: Story = { name: 'Outline' }
+export const ButtonDefault: Story = {
+  name: 'Default',
+  parameters: defaultControls(
+    'children',
+    'variant',
+    'withIcon',
+    'tooltip',
+    'pending',
+    'failure',
+    'disabled',
+    'tooltipWhenDisabled',
+  ),
+}
 
 export const ButtonGhost: Story = {
   name: 'Ghost',
+  parameters: noControls(),
   args: { variant: 'ghost', withIcon: false, children: 'Reset' },
 }
 
 export const ButtonPending: Story = {
   name: 'Pending',
+  parameters: noControls(),
   args: { pending: true },
   ...inBothVariants,
 }
 
 export const ButtonDisabled: Story = {
   name: 'Disabled',
+  parameters: noControls(),
   args: { disabled: true },
   ...inBothVariants,
 }
@@ -105,6 +125,7 @@ export const ButtonDisabled: Story = {
  */
 export const ButtonVariants: Story = {
   name: 'Variants',
+  parameters: noControls(),
   render: function Render() {
     const { retry: RetryIcon } = useIcons()
     const icon = <RetryIcon width={16} height={16} aria-hidden="true" />
@@ -140,7 +161,7 @@ export const ButtonVariants: Story = {
  */
 export const ButtonAsyncAction: Story = {
   name: 'Async action',
-  parameters: { requirements: ['UB9'] },
+  parameters: { ...noControls(), requirements: ['UB9'] },
   render: function Render() {
     const { retry: RetryIcon } = useIcons()
     const icon = <RetryIcon width={16} height={16} aria-hidden="true" />

@@ -1,26 +1,26 @@
-import { MouseEvent, memo, useMemo } from 'react'
+import { memo, useMemo } from 'react'
 
 import { SortDirection } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { Bubble } from '../../ui/Bubble'
-import { IconButton } from '../../ui/IconButton'
+import {
+  IconButton,
+  type DerivedButtonProps,
+  type RevealProps,
+} from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
-import { ActiveDot } from '../../grid/headerActions/ActiveDot'
 
 import styles from './SortButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
-export interface SortButtonProps {
+export interface SortButtonProps extends DerivedButtonProps, RevealProps {
   operation: SortDirection | false
   nextOperation: SortDirection | false
   /** Позиция столбца среди сортируемых (нумерация с нуля). */
   sortIndex?: number
   /** Сколько столбцов сортируется всего. */
   sortCount?: number
-  onClick: (event: MouseEvent<HTMLButtonElement>) => void
-  disabled?: boolean
 }
 
 export const SortButton = memo(
@@ -29,8 +29,9 @@ export const SortButton = memo(
     nextOperation,
     sortIndex,
     sortCount = 0,
-    onClick,
+    revealOnHover = true,
     disabled = false,
+    ...button
   }: SortButtonProps) => {
     const {
       sort: SortIcon,
@@ -57,45 +58,34 @@ export const SortButton = memo(
     const showIndex = sortIndex !== undefined
     const position = showIndex ? sortIndex + 1 : 0
 
-    // Бейдж скрыт от скринридера (aria-hidden) — приоритет несёт aria-label.
+    // Номер приоритета — число бабла (ADR 0129); скринридеру его несёт aria-label.
     const ariaLabel = showIndex
       ? `${title}, ${labels.sortPriority(position, sortCount)}`
       : title
 
     return (
       <div
-        className={clsx('cell__button', 'cell__button--hidden')}
+        className={clsx(
+          'cell__button',
+          revealOnHover && 'cell__button--hidden',
+        )}
         data-button-active={!!operation}
       >
-        <span className={styles.anchor}>
-          <IconButton
-            className="column-sort__button"
-            active={!!operation}
-            disabledClassName={styles.disabled}
-            onClick={onClick}
-            disabled={disabled}
-            aria-disabled={disabled}
-            label={title}
-            aria-label={ariaLabel}
-          >
-            {operation === 'asc' && <SortAscIcon width={16} height={16} />}
-            {operation === 'desc' && <SortDescIcon width={16} height={16} />}
-            {!operation && <SortIcon width={16} height={16} />}
-            {/* Номер приоритета занимает место точки (ADR 0062). */}
-            {!showIndex && <ActiveDot shown={!!operation} />}
-          </IconButton>
-          {showIndex && (
-            <Bubble
-              size="sm"
-              tone="active"
-              className={clsx('column-sort__priority', styles.priority)}
-              data-sort-priority={position}
-              aria-hidden
-            >
-              {position}
-            </Bubble>
-          )}
-        </span>
+        <IconButton
+          className="column-sort__button"
+          active={!!operation}
+          count={showIndex ? position : undefined}
+          disabledClassName={styles.disabled}
+          disabled={disabled}
+          aria-disabled={disabled}
+          label={title}
+          aria-label={ariaLabel}
+          {...button}
+        >
+          {operation === 'asc' && <SortAscIcon width={16} height={16} />}
+          {operation === 'desc' && <SortDescIcon width={16} height={16} />}
+          {!operation && <SortIcon width={16} height={16} />}
+        </IconButton>
       </div>
     )
   },

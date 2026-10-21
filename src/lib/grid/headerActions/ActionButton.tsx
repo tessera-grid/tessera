@@ -20,9 +20,7 @@ import {
   type ActionStatus,
   type SlotAction,
 } from '../../core/headerActions'
-import { actionDot } from './ActiveDot'
 
-import styles from '../../grid/headerActions/ActionButton.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
 
 interface ActionButtonProps {
@@ -67,15 +65,15 @@ export const ActionButton = ({
     )
   }
   const disabled = syncDisabled !== false
-  const active = action.active?.(context) ?? false
+  const active = action.active?.(context)
   const label = action.label(context, labels)
   const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const adornment = action.adornment?.(context)
 
   const button = (
     <IconButton
       className={action.className?.(context)}
       active={active}
+      count={action.count?.(context)}
       onClick={event =>
         runMenuAction(action, context, event, { keepError: false })
       }
@@ -88,7 +86,6 @@ export const ActionButton = ({
       aria-label={ariaLabel}
     >
       {action.icon(context)}
-      {actionDot(!!action.active, active, !!adornment)}
     </IconButton>
   )
 
@@ -102,14 +99,7 @@ export const ActionButton = ({
       className={wrapperClassName}
       data-button-active={active || !!entry?.pending || server.pending}
     >
-      {adornment ? (
-        <span className={styles.anchor}>
-          {button}
-          {adornment}
-        </span>
-      ) : (
-        button
-      )}
+      {button}
     </div>
   )
 }
