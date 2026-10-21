@@ -108,7 +108,7 @@ interface ToolbarSlot {
 со скруглёнными углами** (`--tsr-comp-toolbar-button-radius`, по умолчанию
 `--tsr-comp-control-radius`), размер `--tsr-comp-toolbar-button-size` (не меньше
 24×24, [ADR 0034](0034-wcag-22-dragging-and-target-size.md)). Цвета и состояния —
-как у action-кнопок ячеек (плоская, без тени): `action-button-color`, hover —
+как у action-кнопок ячеек (плоская, без тени): `control-color`, hover —
 `control-hover-bg`, **активное** состояние (открыт поповер кнопки или
 `active`-признак) — `control-active-color` + `control-active-hover-bg`, disabled —
 `control-disabled-color`, фокус — `focus-ring`, переход — `action-button-transition`.

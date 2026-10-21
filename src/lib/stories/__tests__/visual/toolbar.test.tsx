@@ -231,7 +231,7 @@ describe('ToolbarButton (F4)', () => {
     const [density, settings, exportButton] = toolbarButtons()
 
     expect(read(density, 'color')).toBe(
-      resolveToken('--tsr-comp-action-button-color', 'color'),
+      resolveToken('--tsr-comp-control-color', 'color'),
     )
     await userEvent.hover(density)
     await expect

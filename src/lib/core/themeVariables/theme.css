@@ -586,10 +586,9 @@
   /* Контур выключенного (ADR 0088) — `outline` целиком. */
   --tsr-comp-switch-off-outline: none;
 
-  /* Кнопки действий. Цвет значка — псевдоним канона `control-color`. Фон, hover и
-   * тень — вариант «поверх контента» (кнопки действий строки над прозрачной колонкой
-   * действий, ADR 0017): непрозрачный фон, светлый непрозрачный hover, тень. */
-  --tsr-comp-action-button-color: var(--tsr-comp-control-color);
+  /* Кнопки действий: цвет значка — `control-color`. Фон, hover и тень — вариант
+   * «поверх контента» (кнопки действий строки над прозрачной колонкой действий,
+   * ADR 0017): непрозрачный фон, светлый непрозрачный hover, тень. */
   --tsr-comp-action-button-bg: var(--tsr-sys-elevated);
   --tsr-comp-action-button-hover-bg: color-mix(
     in oklch,

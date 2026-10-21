@@ -169,7 +169,7 @@ describe('Theming matrix — form controls', () => {
       )
       const btn = c.querySelector<HTMLElement>('button')!
       expect(read(btn, 'color')).toBe(
-        resolveColor('--tsr-comp-action-button-color', dark),
+        resolveColor('--tsr-comp-control-color', dark),
       )
       expect(read(btn, 'background-color')).toBe(
         resolveColor('--tsr-comp-action-button-bg', dark),

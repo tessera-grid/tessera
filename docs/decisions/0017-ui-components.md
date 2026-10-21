@@ -27,6 +27,9 @@
   ([ADR 0060](0060-initial-loading-skeleton.md), SL20). 2026-10-16 — `Skeleton` с волной
   внутри рамки грида со скелетом встаёт в общую наклонную волну рамки; вне рамки волна
   прежняя, SK2 не меняется ([ADR 0121](0121-shared-skeleton-wave.md)).
+  2026-10-22 — псевдоним `--tsr-comp-action-button-color` удалён: его не читал ни один
+  компонент, и переопределение во внешней теме ничего не меняло; цвет значка кнопок
+  F2 и F4 — `--tsr-comp-control-color`.
 - **Связано:**
   - [ADR 0003](0003-formalize-tech-stack.md) — стек контролов: примитивы Base UI
     (фундамент shadcn), стилизация Tailwind v4 + cva и CSS Modules поверх
@@ -203,13 +206,13 @@ relative-якорь кнопки, круглая геометрия кнопки
 `theming-contracts.test.tsx` (TC-1…TC-10) и `theming-popups.test.tsx` (PP1–PP8) и `theming-motion.test.tsx` (MO1–MO6): новый член добавляется в список семейства
 и обязан пройти контракт.
 
-| Семейство                | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **F1 icon-контролы**     | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round`                                                                |
-| **F2 action-кнопки**     | RowButton, CellButton                                              | rest `control-color` (`action-button-color` — псевдоним) · непрозрачный фон «чипа» `action-button-bg` · hover — слой `control-hover-bg` поверх фона · **без тени** · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round` |
-| **F3 форм-контролы**     | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                                                                                        |
-| **F4 кнопки тулбара**    | ToolbarButton ([ADR 0035](0035-toolbar-and-column-visibility.md))  | rest `control-color` · hover-bg `control-hover-bg` · active `control-active-color`+`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition `action-button-transition` · radius `toolbar-button-radius` (квадратная)                                                    |
-| **F5 кнопки с подписью** | Button ([ADR 0097](0097-text-button.md))                           | подпись `button-color` (`control-color`) · hover-bg `control-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` снаружи · transition `action-button-transition` · рамка `button-border` у `outline`, без рамки у `ghost` · radius `button-radius`                                       |
+| Семейство                | Члены                                                              | Признак → канонический токен                                                                                                                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F1 icon-контролы**     | IconButton (база), SortButton, PinButton, GroupButton, DragHandler | rest `control-color` · active `control-active-color` · hover-bg `control-hover-bg`/`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition (единая, `action-button-transition`) · radius `radius-round`                            |
+| **F2 action-кнопки**     | RowButton, CellButton                                              | rest `control-color` · непрозрачный фон «чипа» `action-button-bg` · hover — слой `control-hover-bg` поверх фона · **без тени** · **disabled `control-disabled-color`** · focus `focus-ring` (из базы IconButton) · transition `action-button-transition` · radius `radius-round` |
+| **F3 форм-контролы**     | Checkbox, Switch                                                   | accent `checkbox-checked-bg`/`switch-track-on` · focus `focus-ring`+`-width` · **disabled `disabled-opacity`** · transition `button-cell-transition` · radius `checkbox-radius`/`radius-pill`                                                                                    |
+| **F4 кнопки тулбара**    | ToolbarButton ([ADR 0035](0035-toolbar-and-column-visibility.md))  | rest `control-color` · hover-bg `control-hover-bg` · active `control-active-color`+`-active-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` · transition `action-button-transition` · radius `toolbar-button-radius` (квадратная)                |
+| **F5 кнопки с подписью** | Button ([ADR 0097](0097-text-button.md))                           | подпись `button-color` (`control-color`) · hover-bg `control-hover-bg` · **disabled `control-disabled-color`** · focus `focus-ring`+`-width` снаружи · transition `action-button-transition` · рамка `button-border` у `outline`, без рамки у `ghost` · radius `button-radius`   |
 
 F5 проходит TC-1, TC-2, TC-7 и TC-8 вместе с F1/F2/F4; цвет покоя (TC-6) и радиус
 (TC-3) у неё свои — подпись цветом текста, скругление контролов.
@@ -219,8 +222,7 @@ F4 проходит TC-1, TC-2 и TC-6…TC-8 вместе с F1/F2 (едины�
 
 **Единые цвета и тени (TC-6…TC-8).** Канон — токены `control-*`: цвет покоя
 `control-color`, hover `control-hover-bg`, активное `control-active-*`, disabled
-`control-disabled-color`. `action-button-color` — **псевдоним** канона (внешняя тема,
-переопределявшая его, продолжает работать, а значения не расходятся). **Плоские кнопки
+`control-disabled-color`. **Плоские кнопки
 без тени** (шапка, ячейки, тулбар, кнопки в панелях); `shadow-action` есть у
 всплывающих поверхностей (меню, поповеры) и у **варианта кнопки «поверх контента»**.
 
