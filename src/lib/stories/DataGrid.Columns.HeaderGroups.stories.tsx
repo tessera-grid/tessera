@@ -14,7 +14,7 @@ const meta = {
 export default meta
 
 export const HeaderGroups: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   args: {
     headerNesting: 'nested',
   },

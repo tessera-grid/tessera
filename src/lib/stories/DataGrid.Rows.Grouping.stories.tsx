@@ -29,7 +29,7 @@ export default meta
 const rowGroupingData = makeData({ shape: 'flat', count: 12 })
 
 export const RowGrouping: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   args: {
     // Реальные данные из генератора (см. rowGroupingData) — группировка видна на
     // настоящих строках, а не на захардкоженных.

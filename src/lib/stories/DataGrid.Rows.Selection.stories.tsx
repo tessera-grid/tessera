@@ -35,7 +35,7 @@ const subRowSelectionTree = makeData({
 })
 
 export const RowSelection: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableRowSelection',
     'rowSelectionSubRows',

@@ -73,7 +73,7 @@ const GRID = {
 }
 
 export const Filtering: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableQuickSearch',
     'quickSearchDebounceMs',

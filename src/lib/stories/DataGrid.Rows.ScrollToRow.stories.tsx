@@ -21,8 +21,8 @@ const meta = {
 
 export default meta
 
-export const ScrollToRowBasic: StoryObj<StoryProps> = {
-  name: 'Basic',
+export const ScrollToRowDefault: StoryObj<StoryProps> = {
+  name: 'Default',
   args: {
     enableRowExpanding: true,
     rowExpandingMaxDepth: 3,
@@ -49,7 +49,8 @@ export const ScrollToRowBasic: StoryObj<StoryProps> = {
       { dataCount: 'данные подаёт демо' },
     ),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
     await waitForRows(canvasElement)
     await userEvent.click(screen.getByRole('button', { name: /Демо/ }))
     const id = screen.getByRole('textbox', { name: 'Id строки' })

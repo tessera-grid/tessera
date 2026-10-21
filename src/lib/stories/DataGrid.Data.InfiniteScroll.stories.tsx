@@ -28,7 +28,7 @@ const delayControl = {
 const layout = { containerHeight: '600', height: '480', maxHeight: '480' }
 
 export const InfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls(['serverDelayMs', 'blockSize'], {
     dataCount: 'данные подаёт демо',
     columnCount: 'колонки задаёт демо',

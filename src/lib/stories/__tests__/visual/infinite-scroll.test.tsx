@@ -710,7 +710,7 @@ describe('Лента: итог и доступность', () => {
 })
 
 describe('Лента: демо-истории', () => {
-  test('IS18: «Basic» — у края блок дописывается, счётчик растёт; «Errors» — строка ошибки, «Retry» догружает', async () => {
+  test('IS18: «Default» — у края блок дописывается, счётчик растёт; «Errors» — строка ошибки, «Retry» догружает', async () => {
     const basic = await render(<composed.InfiniteScroll serverDelayMs={50} />)
     const count = () =>
       document.querySelector('[data-testid="loaded-rows-count"]')?.textContent

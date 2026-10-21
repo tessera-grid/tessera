@@ -38,7 +38,7 @@ const meta = {
 export default meta
 
 export const TextOverflow: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   args: {
     containerHeight: '560',
     height: '460',

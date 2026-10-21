@@ -22,7 +22,7 @@ const meta = {
 export default meta
 
 export const RowActions: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableRowActions',
     'rowActionsWidth',
@@ -36,7 +36,7 @@ export const RowActions: StoryObj<StoryProps> = {
 
 /**
  * Плагин действий без единого действия: колонки действий нет (ADR 0050). Колонку с
- * действиями показывает история «Basic».
+ * действиями показывает история «Default».
  */
 export const RowActionsWithoutActions: StoryObj<StoryProps> = {
   name: 'No actions',

@@ -14,7 +14,7 @@ const meta = {
 export default meta
 
 export const OverflowTooltip: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls(['enableFooter']),
   args: {
     // Узкие колонки с длинным текстом: наведение на обрезанный текст шапки, тела или

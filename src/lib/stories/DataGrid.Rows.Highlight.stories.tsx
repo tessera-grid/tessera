@@ -33,7 +33,7 @@ const meta = {
 export default meta
 
 export const RowHighlight: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   args: {
     enableRowActions: true,
     // Действия строки — только «Delete» демо-плагина.
@@ -61,7 +61,8 @@ export const RowHighlight: StoryObj<StoryProps> = {
       { dataCount: 'данные подаёт демо' },
     ),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
     await waitForRows(canvasElement)
     const row = (id: string) => bodyRow(canvasElement, id)
     const remove = async (id: string) => {

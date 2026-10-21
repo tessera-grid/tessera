@@ -402,7 +402,7 @@ describe('Row Dragging — nested rows (subrows)', () => {
 })
 
 // --- Storybook parity ---------------------------------------------------------
-// Свой `play` историй с перетаскиванием строк (демо «Basic» и сценарии) — дымовой
+// Свой `play` историй с перетаскиванием строк (демо «Default» и сценарии) — дымовой
 // прогон, чтобы сломанный сценарий падал и в `npm test`. Мета `play` не несёт (ADR 0117, SN12).
 
 describe('Row Dragging — Storybook play parity', () => {

@@ -24,7 +24,7 @@ const meta = {
 export default meta
 
 export const CellSelection: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableCellSelection',
     'cellSelectionRangeSelection',

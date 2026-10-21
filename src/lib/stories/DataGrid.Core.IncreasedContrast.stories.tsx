@@ -64,7 +64,7 @@ const args: Partial<StoryProps> = {
 }
 
 export const IncreasedContrast: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   args,
   // Дымовой тест (ADR 0088, MC11): режим включён, выбор — контуром, дерево на месте.
   parameters: {

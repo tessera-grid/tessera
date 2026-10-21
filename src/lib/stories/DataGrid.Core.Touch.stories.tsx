@@ -17,7 +17,7 @@ const meta = {
 export default meta
 
 export const Touch: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableColumnSorting',
     'columnSortingRemoval',

@@ -56,7 +56,7 @@ const failModeControl = {
 } as const
 
 export const CellEditing: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   args: {
     enableCellEditing: true,
     // Немного колонок/строк без виртуализации: кнопка редактирования появляется в

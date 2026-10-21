@@ -28,7 +28,7 @@ const GRID = {
 }
 
 export const WithStatusBar: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: { ...vrStates('panel.statusBar'), ...showControls([]) },
   args: {
     // Демо-слоты нижней панели: один слева, два справа (порядок по `order`).

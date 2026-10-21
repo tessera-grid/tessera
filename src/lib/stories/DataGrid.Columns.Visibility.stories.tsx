@@ -19,7 +19,7 @@ const meta = {
 export default meta
 
 export const ColumnVisibility: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableColumnVisibility',
     'enableRowSelection',

@@ -21,7 +21,7 @@ const meta = {
 export default meta
 
 export const ColumnPinning: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls(['enableColumnPinning', 'columnPinningLeafPinning']),
   args: {
     enableColumnPinning: true,

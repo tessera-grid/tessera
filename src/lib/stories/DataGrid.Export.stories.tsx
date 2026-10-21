@@ -48,7 +48,7 @@ const GRID = {
 }
 
 export const Export: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableDataExport',
     'dataExportAllow',

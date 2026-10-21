@@ -24,7 +24,7 @@ const meta = {
 export default meta
 
 export const WithToolbar: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([]),
   args: {
     // Демо-кнопки в двух подгруппах (`view` и `data`): видны порядок, разделитель

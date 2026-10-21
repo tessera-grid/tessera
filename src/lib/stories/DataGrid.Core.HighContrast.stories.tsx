@@ -132,7 +132,7 @@ export const HighContrastCellSelectionStateRange = {
 
 export const HighContrastHeaderGroups = {
   ...twin(columnsHeaderGroupsMeta, HeaderGroups),
-  name: 'Columns/Header groups — Basic',
+  name: 'Columns/Header groups — Default',
   tags: ['!test'],
 }
 
@@ -258,13 +258,13 @@ export const HighContrastFilteringStateOptions = {
 
 export const HighContrastPagination = {
   ...twin(panelsPaginationMeta, Pagination),
-  name: 'Panels/Pagination — Basic',
+  name: 'Panels/Pagination — Default',
   tags: ['!test'],
 }
 
 export const HighContrastWithStatusBar = {
   ...twin(panelsStatusBarMeta, WithStatusBar),
-  name: 'Panels/Status bar — Basic',
+  name: 'Panels/Status bar — Default',
   tags: ['!test'],
 }
 

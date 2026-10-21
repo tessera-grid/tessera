@@ -39,8 +39,10 @@ export default meta
 const rowDraggingPlay: NonNullable<StoryObj<StoryProps>['play']> = async ({
   args,
   canvasElement,
+  globals,
   step,
 }) => {
+  if (globals.catalog !== true) return
   // Во время скелета первой загрузки строк данных нет — тянуть нечего.
   if (!args.enableRowDragging || args.loading === 'initial') return
 
@@ -79,7 +81,7 @@ const rowDraggingPlay: NonNullable<StoryObj<StoryProps>['play']> = async ({
 }
 
 export const RowDragging: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableRowDragging',
     'rowDraggingExpandDelay',

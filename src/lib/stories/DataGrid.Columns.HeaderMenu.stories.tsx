@@ -56,7 +56,7 @@ const activeIndicatorArgs: Partial<StoryProps> = {
 }
 
 export const HeaderActionMenu: StoryObj<StoryProps> = {
-  name: 'Basic',
+  name: 'Default',
   parameters: showControls([
     'enableColumnSorting',
     'columnSortingRemoval',
