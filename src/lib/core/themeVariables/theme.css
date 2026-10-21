@@ -644,6 +644,12 @@
   /* Сегменты (ADR 0074, SG2): дорожка, приподнятый выбранный сегмент. */
   --tsr-comp-segments-height: 28px;
   --tsr-comp-segments-padding: 2px;
+  /* Промежуток между сегментами и отступ подписи внутри сегмента. */
+  --tsr-comp-segments-gap: 2px;
+  --tsr-comp-segments-item-padding-x: 8px;
+  /* Подпись — как у кнопки с подписью (ADR 0097), а не шрифт окружения (SG6). */
+  --tsr-comp-segments-font-size: var(--tsr-comp-button-font-size);
+  --tsr-comp-segments-font-weight: var(--tsr-comp-button-font-weight);
   --tsr-comp-segments-radius: var(--tsr-comp-control-radius);
   --tsr-comp-segments-track-bg: color-mix(
     in oklch,

@@ -10,8 +10,8 @@ import { DATA_GRID_THEME_CLASS } from '../../../core/themeVariables'
 import { Segments, type SegmentOption } from '../../../ui/Segments'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
-// Примитив `ui/Segments` (ADR 0074, SG1–SG4): семантика radiogroup, вид из токенов,
-// доступность, движение. SG5 (экспорт и история) — модульный `uiStories`.
+// Примитив `ui/Segments` (ADR 0074, SG1–SG4, SG6–SG7): семантика radiogroup, вид из токенов,
+// доступность, движение, подпись из токенов и тултип обрезанной подписи. SG5 (экспорт и история) — модульный `uiStories`.
 
 const reducedMotion = (
   commands as unknown as { reducedMotion: (reduce: boolean) => Promise<void> }
@@ -28,16 +28,24 @@ const OPTIONS: SegmentOption[] = [
 const Harness = ({
   options = OPTIONS,
   width = 260,
+  font,
 }: {
   options?: SegmentOption[]
   width?: number
+  /** Шрифт окружения: подпись его не наследует (SG6). */
+  font?: { fontSize: number; fontWeight: number }
 }) => {
   const [value, setValue] = useState(options[0]!.value)
   return (
     // Примитив лежит на поверхности темы (поповер, тулбар), а не на странице.
     <div
       className={DATA_GRID_THEME_CLASS}
-      style={{ width, padding: 16, background: 'var(--tsr-sys-surface)' }}
+      style={{
+        width,
+        padding: 16,
+        background: 'var(--tsr-sys-surface)',
+        ...font,
+      }}
     >
       <button type="button" data-testid="before">
         before
@@ -205,5 +213,53 @@ describe('ui/Segments', () => {
       segment('csv').getBoundingClientRect().left,
       0,
     )
+  })
+
+  test('SG6: подпись — размер и вес из токенов сегментов при любом шрифте окружения; отступ подписи и промежуток — токены', async () => {
+    await render(<Harness font={{ fontSize: 20, fontWeight: 300 }} />)
+    const el = segment('csv')
+    const style = getComputedStyle(el)
+    expect(style.fontSize).toBe(
+      resolve('--tsr-comp-segments-font-size', 'font-size'),
+    )
+    expect(style.fontSize).toBe('13px')
+    expect(style.fontWeight).toBe('500')
+    expect(style.paddingLeft).toBe(
+      resolve('--tsr-comp-segments-item-padding-x', 'padding-left'),
+    )
+    const track = getComputedStyle(el.parentElement!)
+    expect(track.columnGap).toBe(
+      resolve('--tsr-comp-segments-gap', 'column-gap'),
+    )
+  })
+
+  test('SG7: обрезанная подпись — целиком в тултипе при наведении и фокусе с клавиатуры; у помещающейся подписи тултипа нет', async () => {
+    const LONG = 'Excel workbook with typed cells'
+    await render(
+      <Harness
+        width={240}
+        options={[
+          { value: 'csv', label: 'CSV' },
+          { value: 'xlsx', label: LONG },
+        ]}
+      />,
+    )
+    const tooltip = () =>
+      [...document.querySelectorAll('[data-side]')]
+        .map(el => el.textContent?.trim())
+        .find(Boolean)
+    await userEvent.hover(segment('csv'))
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(tooltip()).toBeUndefined()
+    await userEvent.hover(segment('xlsx'))
+    await expect.poll(tooltip, { timeout: 2000 }).toBe(LONG)
+    await userEvent.unhover(segment('xlsx'))
+    await expect.poll(tooltip, { timeout: 2000 }).toBeUndefined()
+    // Клавиатура: Tab на выбранный, стрелка — на длинный.
+    document.querySelector<HTMLElement>('[data-testid="before"]')!.focus()
+    await userEvent.tab()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(segment('xlsx'))
+    await expect.poll(tooltip, { timeout: 2000 }).toBe(LONG)
   })
 })

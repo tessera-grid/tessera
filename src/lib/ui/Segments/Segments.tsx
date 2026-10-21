@@ -4,6 +4,8 @@ import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
 import clsx from 'clsx'
 
+import { Tooltip } from '../Tooltip'
+
 import styles from './Segments.module.css'
 
 export interface SegmentOption<V extends string = string> {
@@ -49,16 +51,18 @@ export const Segments = <V extends string>({
     >
       {/* Рамка выбранного — одна на дорожку и ездит к выбранному сегменту (SG4). */}
       {index >= 0 && <span className={styles.indicator} aria-hidden />}
+      {/* Обрезанная подпись — целиком в тултипе при наведении и фокусе (SG7). */}
       {options.map(option => (
-        <Radio.Root
-          key={option.value}
-          value={option.value}
-          disabled={option.disabled}
-          className={styles.segment}
-          data-value={option.value}
-        >
-          <span className={styles.label}>{option.label}</span>
-        </Radio.Root>
+        <Tooltip key={option.value} title={option.label} overflowOnly>
+          <Radio.Root
+            value={option.value}
+            disabled={option.disabled}
+            className={styles.segment}
+            data-value={option.value}
+          >
+            <span className={styles.label}>{option.label}</span>
+          </Radio.Root>
+        </Tooltip>
       ))}
     </RadioGroup>
   )

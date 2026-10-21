@@ -1,5 +1,5 @@
 .track {
-  --_gap: 2px;
+  --_gap: var(--tsr-comp-segments-gap);
 
   position: relative;
   display: grid;
@@ -43,9 +43,12 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: 0 8px;
+  padding: 0 var(--tsr-comp-segments-item-padding-x);
   color: var(--tsr-comp-segments-color);
   font: inherit;
+  font-size: var(--tsr-comp-segments-font-size);
+  font-weight: var(--tsr-comp-segments-font-weight);
+  line-height: var(--tsr-comp-button-icon-size);
   background-color: transparent;
   border: 0;
   border-radius: calc(
