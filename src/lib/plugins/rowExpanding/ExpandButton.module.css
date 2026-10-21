@@ -6,7 +6,3 @@
 .expanded {
   transform: rotate(180deg);
 }
-
-.disabled {
-  transform: rotate(90deg);
-}

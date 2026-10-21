@@ -2,6 +2,10 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-01
+- **Изменён:** 2026-10-22 — RE74: выключенный тоггл (публичный `ExpandButton` с
+  `disabled`) не поворачивает шеврон вбок, а смотрит по своему состоянию, как включённый, и
+  только сереет. Поворот на 90° остался от ранней версии, где свёрнутый шеврон смотрел
+  вбок; после RE11 он давал третье положение, которого у тоггла нет.
 - **Изменён:** [ADR 0119](0119-tree-data-model.md) (2026-10-16) — модель дерева
   (`rowExpandingFeature` и модель раскрытия) есть и у плагина `rowExpandingModel` без
   интерфейса; `rowExpanding` приносит её с переключателем и пределом `maxDepth`.
@@ -238,13 +242,14 @@ Chromium) и гоняют историю `RowExpanding` (детерминиро�
 
 **Доступность и внешний вид**
 
-| ID   | Требование                                                                                                                                 | Тест                                       |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| RE10 | В `treegrid` (с `keyboardNavigation`) `aria-expanded` строки отражает раскрытие, у листа его нет                                           | ✔ `RE10: in a treegrid …`                  |
-| RE11 | Шеврон тоггла смотрит вниз у свёрнутой строки и вверх у раскрытой                                                                          | ✔ `RE11: the toggle chevron points down …` |
-| RE12 | Без `keyboardNavigation` (`role="table"`) раскрытие — `aria-expanded` тоггла, у строк его нет; раскрытое дерево проходит axe в обеих темах | ✔ `RE12: without keyboard navigation …`    |
-| RE13 | Имя и тултип тоггла — действие по состоянию: `expandRow` у свёрнутой строки, `collapseRow` у раскрытой; состояние несёт `aria-expanded`    | ✔ `RE13: the toggle name and tooltip …`    |
-| RE41 | Поворот шеврона анимирован: переход `transform` длительностью `--tsr-comp-motion-duration`                                                 | ✔ `RE41: the chevron turn is animated …`   |
+| ID   | Требование                                                                                                                                                                           | Тест                                                |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| RE10 | В `treegrid` (с `keyboardNavigation`) `aria-expanded` строки отражает раскрытие, у листа его нет                                                                                     | ✔ `RE10: in a treegrid …`                           |
+| RE11 | Шеврон тоггла смотрит вниз у свёрнутой строки и вверх у раскрытой                                                                                                                    | ✔ `RE11: the toggle chevron points down …`          |
+| RE12 | Без `keyboardNavigation` (`role="table"`) раскрытие — `aria-expanded` тоггла, у строк его нет; раскрытое дерево проходит axe в обеих темах                                           | ✔ `RE12: without keyboard navigation …`             |
+| RE13 | Имя и тултип тоггла — действие по состоянию: `expandRow` у свёрнутой строки, `collapseRow` у раскрытой; состояние несёт `aria-expanded`                                              | ✔ `RE13: the toggle name and tooltip …`             |
+| RE41 | Поворот шеврона анимирован: переход `transform` длительностью `--tsr-comp-motion-duration`                                                                                           | ✔ `RE41: the chevron turn is animated …`            |
+| RE74 | Выключенный тоггл (`ExpandButton` с `disabled`) смотрит по своему состоянию, как включённый: вниз у свёрнутой строки и вверх у раскрытой; цвет — `--tsr-comp-control-disabled-color` | ✔ `RE74: a disabled toggle points like its state …` |
 
 См. [plugins-and-slots.md](../architecture/plugins-and-slots.md) про механизм
 плагинов и `renderComponent` и [rendering.md](../architecture/rendering.md) про

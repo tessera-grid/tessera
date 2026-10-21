@@ -11,9 +11,11 @@ import { waitForBodyText } from './column-pinning-helpers'
 import { AXE_OPTIONS, gridRoot, inBothThemes } from './a11y-helpers'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
+import { ExpandButton } from '../../../plugins/rowExpanding/ExpandButton'
+import { UiCanvas } from '../../__mocks__/UiCanvas'
 
 // Each Row Expanding requirement is its own named test, prefixed with its spec ID
-// (RE1–RE11 from the requirements table in docs/decisions/0015-row-expanding.md).
+// (RE1–RE11, RE41, RE74 from the requirements table in docs/decisions/0015-row-expanding.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -320,6 +322,43 @@ describe('Row Expanding — chevron motion', () => {
     await expect
       .poll(() => isRowExpanded(firstExpandableRow(container)))
       .toBe(false)
+  })
+})
+
+describe('Row Expanding — disabled toggle', () => {
+  test('RE74: a disabled toggle points like its state — down when collapsed, up when expanded — and is coloured --tsr-comp-control-disabled-color', async () => {
+    const Toggles = ({ expanded }: { expanded: boolean }) => (
+      <UiCanvas host="cell">
+        <ExpandButton expanded={expanded} data-testid="enabled" />
+        <ExpandButton expanded={expanded} disabled data-testid="disabled" />
+      </UiCanvas>
+    )
+    const button = (id: string) =>
+      document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+    const turn = (id: string) => {
+      const icon = button(id).querySelector('svg')!
+      icon.getAnimations().forEach(animation => animation.finish())
+      const { a, b, c, d } = new DOMMatrix(getComputedStyle(icon).transform)
+      return [a, b, c, d].map(Math.round)
+    }
+
+    const screen = await render(<Toggles expanded={false} />)
+    expect(turn('disabled'), 'свёрнутая').toEqual(turn('enabled'))
+    expect(turn('disabled')).toEqual([1, 0, 0, 1])
+    await screen.rerender(<Toggles expanded />)
+    expect(turn('disabled'), 'раскрытая').toEqual(turn('enabled'))
+    expect(turn('disabled')).toEqual([-1, 0, 0, -1])
+
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--tsr-comp-control-disabled-color)'
+    button('disabled').parentElement!.append(probe)
+    const disabledColor = getComputedStyle(probe).color
+    probe.remove()
+    button('disabled')
+      .getAnimations({ subtree: true })
+      .forEach(animation => animation.finish())
+    expect(getComputedStyle(button('disabled')).color).toBe(disabledColor)
+    await screen.unmount()
   })
 })
 
