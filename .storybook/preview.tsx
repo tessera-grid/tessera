@@ -75,6 +75,8 @@ const preview: Preview = {
     catalog: { description: 'Visual catalog canvas', defaultValue: false },
   },
   parameters: {
+    // Холст без полей Storybook: отступ задаёт сама история (16px), как у грида.
+    layout: 'fullscreen',
     // Снимки Chromatic (ADR 0093, §6): каждая история — в базовом режиме, узловые —
     // во всех режимах осей (тег `vr-modes` и `vrModes`); движение уменьшено.
     chromatic: { modes: BASE_MODES, prefersReducedMotion: 'reduce' },
@@ -104,7 +106,7 @@ const preview: Preview = {
       },
     },
     // Порядок групп: от ядра к фичам и служебным песочницам; внутри фичи — порядок
-    // экспортов файла (Basic первым).
+    // экспортов файла (Default первым).
     options: {
       storySort: {
         order: [

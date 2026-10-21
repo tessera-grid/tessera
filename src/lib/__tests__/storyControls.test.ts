@@ -3,7 +3,8 @@
  * Controls — у каждого аргумента-данных есть контрол в общей мете, кроме перечисленных
  * ниже с причиной. Список аргументов — из типа `FeatureToggles`: новая опция фабрики
  * без контрола роняет тест — панель не отстаёт от фич. Показ контролов в историях —
- * только свои и базовый набор (ADR 0117, SN1–SN6).
+ * только свои и базовый набор (ADR 0117, SN1–SN6); у примитивов `UI/*` — только в
+ * `Default` (SN30).
  * Запуск: npx vitest run --config vitest.node.config.ts storyControls
  */
 import { describe, expect, it } from 'vitest'
@@ -231,7 +232,7 @@ interface RawStory {
   argTypes?: Record<string, ArgType>
   parameters?: {
     scenario?: string
-    controls?: { include?: string[] }
+    controls?: { include?: string[]; exclude?: string[]; disable?: boolean }
     controlsHidden?: Record<string, string>
   }
 }
@@ -261,6 +262,12 @@ const GUIDE_CONTROLS_LATER: Record<string, string> = {
     'истории сценариев с контролами — позже',
   'DataGrid.Rows.TreeData.stories.tsx':
     'истории сценариев с контролами — позже',
+}
+
+/** Витрины `UI.*` без своего примитива: контролы во всех историях (SN30). */
+const UI_SHOWCASES: Record<string, string> = {
+  'UI.LoadingAnimations.stories.tsx':
+    'витрина анимаций без Default: замедление нужно во всех её историях',
 }
 
 interface StoryEntry {
@@ -467,4 +474,52 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
       exists: false,
     })
   })
+
+  it(
+    'SN30: истории UI.<Компонент> — первая Default с явным списком контролов, у остальных историй файла вкладка Controls скрыта; витрина без Default — только в исключениях с причиной',
+    async () => {
+      const problems: string[] = []
+      for (const [path, load] of Object.entries(storyModules)) {
+        const file = path.split('/').pop()!
+        if (!file.startsWith('UI.')) continue
+        const { default: meta, ...stories } = await load()
+        // Порядок экспортов модуля — порядок историй в файле.
+        const order = Object.keys(stories)
+        const controlsOf = (id: string) => ({
+          ...meta?.parameters?.controls,
+          ...stories[id]?.parameters?.controls,
+        })
+        // Скрыта вкладка целиком: пустой `include` историям со своим `render` и `play`
+        // Storybook не применяет и показывает таблицу пропов.
+        const hidden = (id: string) => controlsOf(id).disable === true
+        if (UI_SHOWCASES[file]) {
+          if (order.some(id => id.endsWith('Default'))) {
+            problems.push(`${file}: в исключениях, но есть Default`)
+          }
+          continue
+        }
+        const [first, ...rest] = order
+        if (!first?.endsWith('Default') || stories[first]?.name !== 'Default') {
+          problems.push(`${file}: первая история — не Default`)
+        } else if (
+          controlsOf(first).disable === true ||
+          !stories[first]?.parameters?.controls?.include?.length
+        ) {
+          problems.push(
+            `${file}: у Default нет явного списка контролов (defaultControls)`,
+          )
+        }
+        for (const id of rest) {
+          if (!hidden(id))
+            problems.push(`${file} ${id}: вкладка Controls не скрыта`)
+        }
+      }
+      const unknown = Object.keys(UI_SHOWCASES).filter(
+        file =>
+          !Object.keys(storyModules).some(path => path.endsWith(`/${file}`)),
+      )
+      expect([...problems, ...unknown]).toEqual([])
+    },
+    STORIES_TIMEOUT,
+  )
 })

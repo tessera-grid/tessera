@@ -748,7 +748,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     - _Истории по сценариям:_ модульные `storyControls` (SN1–SN6 — базовый набор и свой
       список `showControls`, скрытие с причиной, заданные аргументы видны, подопция только с тумблером,
       полная панель только в песочнице, условия базовых `dataCount`/`columnCount`;
-      SN28 — у истории сценария с гайдом контролов нет, у файла есть `Default`)
+      SN28 — у истории сценария с гайдом контролов нет, у файла есть `Default`; SN30 — у
+      историй `UI/*` контролы только у `Default`)
       и `storyScenarios` (SN7–SN8 — у каждого сценария таблицы «Сценарии»
       ADR своя история с `parameters.scenario`, один к одному; SN11–SN13 — `play`
       истории сценария только в тестах каталога, мета без `play`, `*.dev.stories.tsx`
@@ -890,7 +891,18 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC/BU,
       [ADR 0017](docs/decisions/0017-ui-components.md) — `IconButton`, `Tooltip`,
       `Switch`, `Skeleton`, `LinearProgress`, иконки; SK4 — `Skeleton` в `/ui` — в
-      модульном `uiStories`); `tooltip-pass-through` (TP1–TP2 —
+      модульном `uiStories`); `derived-buttons` (DB1–DB2 — общие пропсы занятости, отказа и
+      тултипа выключенной у семи производных кнопок, `revealOnHover` и видимость занятой и
+      отмеченной кнопки; DB5 — `active` у `CellButton` и `RowButton`), модульный
+      `derivedButtons` (DB3–DB4 — имена в публичных типах `/ui`, устройство историй)
+      ([ADR 0128](docs/decisions/0128-derived-button-contract.md)); `active-state` (AV1–AV3,
+      AV5–AV7, AV10 — бабл включённой кнопки в базе `IconButton`: точка, число `count` на
+      углу кнопки, свой значок, `indicator`, производные кнопки и счётчики тулбара,
+      раскрытие без бабла, ожидание и отказ главнее, контраст и `forced-colors`), модульный
+      `activeState.dom` (AV4, AV8–AV9 — узел бабла только с `active`, предупреждение о
+      неизменной подписи, истории), перф AV11 — в `scroll`
+      ([ADR 0129](docs/decisions/0129-button-active-state.md));
+      `tooltip-pass-through` (TP1–TP2 —
       подсказка без обрезки пропускает указатель насквозь, W8 сужен,
       [ADR 0100](docs/decisions/0100-pass-through-tooltips.md)); `button-states` (BS1, BS2,
       BS8, BS13, BS19 — занятость `pending`, вспышка `errorFlash`, угасание дуги),
@@ -964,7 +976,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     [ADR 0082](docs/decisions/0082-back-to-top.md); GL13 — спокойная прокрутка 1000×1000
     во время обновления данных против той же выборки без него,
     [ADR 0094](docs/decisions/0094-loading-glow.md); FT14 — спокойная прокрутка 1000×1000
-    с футером `inline` против `pinned`, [ADR 0118](docs/decisions/0118-column-footer.md)).
+    с футером `inline` против `pinned`, [ADR 0118](docs/decisions/0118-column-footer.md); AV11 —
+    спокойная прокрутка 1000×1000 с включёнными кнопками ячеек против тех же без `active`,
+    [ADR 0129](docs/decisions/0129-button-active-state.md)).
   - **`memory/`** — утечки памяти, только Chromium (CDP): `unmount` (LK1–LK4 —
     размонтирование в разных состояниях и посреди отложенной работы), `recreate`
     (LK5–LK6 — смена данных, колонок и плагинов), `session` (LK7–LK9, LK13 — долгая
@@ -1194,8 +1208,8 @@ ADR и не с кода.** Прожарка — короткий диалог с
 - **Фича — минимум одна история**, включающая её через тумблеры и аргументы, как
   соседние (`enableColumnVisibility`, `enablePagination`). Файл на фичу —
   `src/lib/stories/DataGrid.<Группа>.<Фича>.stories.tsx` с заголовком
-  `Tessera/DataGrid/<Группа>/<Фича>`; название истории — вариант на английском (`Basic`,
-  `Tree lines`); имя экспорта уникально среди всех историй (тесты берут истории по нему). Аргументы
+  `Tessera/DataGrid/<Группа>/<Фича>`; название истории — вариант на английском (Default,
+  Tree lines); имя экспорта уникально среди всех историй (тесты берут истории по нему). Аргументы
   плагинов — по правилу [ADR 0106](docs/decisions/0106-flag-and-predicate-naming.md):
   тумблер `enable<Фабрика>`, подопции `<фабрика><Опция>`, колбэки `on*` из API; их тип
   `FeatureToggles` выводится из опций фабрик. Новый плагин добавляется в фабрики
@@ -1209,8 +1223,9 @@ ADR и не с кода.** Прожарка — короткий диалог с
   контрол, не влияющий на историю, убирается вторым аргументом с причиной; списки
   проверяет тот же страж (SN1–SN6, [ADR 0117](docs/decisions/0117-story-controls.md)).
 - **Публичный примитив `/ui`** (экспорт `src/ui.ts`) — история `UI.<Компонент>.stories.tsx`
-  с заголовком `Tessera/UI/<Компонент>` на холсте `__mocks__/UiCanvas`: контролы по пропам,
-  варианты — состояния. Экспорт без истории роняет страж `uiStories`.
+  с заголовком `Tessera/UI/<Компонент>` на холсте `__mocks__/UiCanvas`: контролы по пропам —
+  только у `Default`, первой истории файла; варианты — истории состояний без вкладки
+  Controls (`noControls()`, ADR 0117, SN30). Экспорт без истории роняет страж `uiStories`.
 - **Сценарий — отдельная история**: комбинации с другими плагинами, режимы (серверный,
   большие данные), крайние состояния (пусто, ошибка, ожидание), опции, меняющие
   результат. Так, у экспорта это: простой, с пресетами от плагинов, серверный. Название
