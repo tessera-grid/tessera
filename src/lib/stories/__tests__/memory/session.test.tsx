@@ -9,6 +9,7 @@ import {
   expectFlat,
   frames,
   hover,
+  hoverSettled,
   measureSlope,
   mount,
   parkPointer,
@@ -215,8 +216,11 @@ describe('Утечки в долгой сессии', () => {
       await waitFor(() => menu() !== null)
       await escape()
 
+      // Кнопка фильтра раскрывается со сдвигом: тултип — когда она встала.
       await hover(head)
-      await hover(head.querySelector<HTMLElement>('.column-filter__button')!)
+      await hoverSettled(
+        head.querySelector<HTMLElement>('.column-filter__button')!,
+      )
       await waitFor(() =>
         [...document.querySelectorAll('[data-side]')].some(
           el => el.textContent?.trim() === 'Filter',

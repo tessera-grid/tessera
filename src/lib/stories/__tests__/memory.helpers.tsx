@@ -391,11 +391,20 @@ const settleAnimations = async (element: Element) => {
   )
 }
 
-/** Клик в темпе человека: нажатие, пауза, отпускание. */
-export const click = async (element: Element) => {
+/**
+ * Наводит указатель на кнопку ячейки, когда она встала: кнопки проявляются шириной и
+ * сдвигают соседей (ADR 0076) — центр, взятый посреди раскрытия, уезжает из-под
+ * указателя, и `pointerleave` гасит тултип.
+ */
+export const hoverSettled = async (element: Element) => {
   await hover(element)
   await settleAnimations(element)
   await hover(element)
+}
+
+/** Клик в темпе человека: нажатие, пауза, отпускание. */
+export const click = async (element: Element) => {
+  await hoverSettled(element)
   await memory.realMouseDown(pointer)
   await new Promise(resolve => setTimeout(resolve, 100))
   await memory.realMouseUp()

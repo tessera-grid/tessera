@@ -12,6 +12,7 @@ import {
   flushReactBookkeeping,
   frames,
   hover,
+  hoverSettled,
   memory,
   mount,
   parkPointer,
@@ -231,7 +232,8 @@ describe('Утечки при размонтировании', () => {
         async ({ container }) => {
           const head = headCell(container, 'country')
           await hover(head)
-          await hover(
+          // Кнопка раскрывается со сдвигом: наводим, когда она встала.
+          await hoverSettled(
             head.querySelector<HTMLElement>('.column-filter__button')!,
           )
           await waitFor(() => tooltip()?.textContent?.trim() === 'Filter')
