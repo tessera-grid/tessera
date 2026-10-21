@@ -12,8 +12,8 @@ import { contrast, effectiveBg, toRgba } from './a11y-helpers'
 
 // Каждое требование темизации — отдельный именованный тест:
 // TH1–TH8 (внешняя темизация + тёмный режим), TK1–TK4 (уровни токенов
-// --tsr-ref/sys/comp). Витрина Theming рендерит грид с включённым
-// лоадером; его полоса читает `--tsr-comp-loader-bar`, а это ПЛОСКИЙ токен
+// --tsr-ref/sys/comp). Витрина Theming рендерится с включённым
+// лоадером (`loading: 'refresh'`); его полоса читает `--tsr-comp-loader-bar`, а это ПЛОСКИЙ токен
 // (`var(--info, …)`, без color-mix), поэтому вычисленный `background-color`
 // сравнивается с задаваемым rgb без хрупкой математики oklch.
 
@@ -26,7 +26,9 @@ const THEME_WRAPPER = `.${'data-grid-theme'}`
 type Args = Partial<Parameters<typeof composed.Playground>[0]>
 
 async function renderTheming(args: Args = {}) {
-  const { container } = await render(<composed.Playground {...args} />)
+  const { container } = await render(
+    <composed.Playground loading="refresh" {...args} />,
+  )
   await expect.poll(() => container.querySelector(LOADER_BAR)).not.toBeNull()
   return container
 }

@@ -1,6 +1,11 @@
 import { CSSProperties, memo, useLayoutEffect, useRef, useState } from 'react'
 
 import { Meta, StoryObj } from '@storybook/react'
+import {
+  type ColumnPinningState,
+  type Updater,
+  functionalUpdate,
+} from '@tanstack/react-table'
 
 import { Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
@@ -12,10 +17,12 @@ import {
   columnSizing,
   columnSorting,
   rowActions,
+  rowDragging,
   rowSelection,
 } from '../../lib/plugins'
 import { useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
+import { rowActionsDemo } from './__mocks__/plugins/rowActionsDemo/rowActionsDemo'
 import { expect } from 'storybook/test'
 import { settle, until } from './__mocks__/catalogPlay'
 
@@ -48,7 +55,7 @@ const PALETTE: TokenControl[] = [
     token: '--background',
     arg: 'background',
     label: 'background',
-    desc: 'Базовый фон холста. Задаёт фон нечётных строк, закреплённых слева ячеек и drag-клона.',
+    desc: 'Базовый фон холста. Задаёт фон нечётных строк, их закреплённых ячеек и drag-клона.',
   },
   {
     token: '--foreground',
@@ -60,13 +67,13 @@ const PALETTE: TokenControl[] = [
     token: '--card',
     arg: 'card',
     label: 'card',
-    desc: 'Фон карточки. Задаёт фон чётных строк, кнопок действий и thumb переключателя.',
+    desc: 'Фон карточки. Задаёт фон чётных строк, их закреплённых ячеек, кнопок действий и thumb переключателя.',
   },
   {
     token: '--muted',
     arg: 'muted',
     label: 'muted',
-    desc: 'Приглушённый фон. Задаёт шапку, закреплённые ячейки и hover кнопок действий.',
+    desc: 'Приглушённый фон. Задаёт фон шапки и футера, включая закреплённые ячейки шапки.',
   },
   {
     token: '--primary',
@@ -96,7 +103,7 @@ const PALETTE: TokenControl[] = [
     token: '--destructive',
     arg: 'destructive',
     label: 'destructive',
-    desc: 'Цвет ошибки/опасности. Фон строки при недопустимом drop.',
+    desc: 'Цвет ошибки/опасности. Свет и плашка ошибки загрузки, отказ действия, полоски слота при недопустимом drop.',
   },
   {
     token: '--info',
@@ -119,19 +126,19 @@ const SEMANTIC: TokenControl[] = [
     token: '--tsr-sys-bg',
     arg: 'sysBg',
     label: 'sys-bg',
-    desc: 'Роль базового фона. Фон нечётных строк, drag-клона, закреплённых слева ячеек.',
+    desc: 'Роль базового фона. Фон нечётных строк, их закреплённых ячеек и drag-клона.',
   },
   {
     token: '--tsr-sys-surface',
     arg: 'sysSurface',
     label: 'sys-surface',
-    desc: 'Роль поверхности. Фон чётных строк, кнопок действий, thumb переключателя.',
+    desc: 'Роль поверхности. Фон чётных строк, их закреплённых ячеек, кнопок действий, thumb переключателя.',
   },
   {
     token: '--tsr-sys-muted',
     arg: 'sysMuted',
     label: 'sys-muted',
-    desc: 'Роль приглушённого фона. Шапка, закреплённые ячейки, hover кнопок действий.',
+    desc: 'Роль приглушённого фона. Шапка и футер, включая закреплённые ячейки шапки.',
   },
   {
     token: '--tsr-sys-accent',
@@ -161,7 +168,7 @@ const SEMANTIC: TokenControl[] = [
     token: '--tsr-sys-danger',
     arg: 'sysDanger',
     label: 'sys-danger',
-    desc: 'Роль опасности. Фон строки при недопустимом drop.',
+    desc: 'Роль опасности. Свет и плашка ошибки загрузки, отказ действия, полоски слота при недопустимом drop.',
   },
   {
     token: '--tsr-sys-info',
@@ -225,7 +232,7 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-cell-outline-color',
     arg: 'cellOutline',
     label: 'cell-outline-color',
-    desc: 'Цвет аутлайна ячейки шапки при наведении.',
+    desc: 'Обводка ячейки тела при наведении и рамка поля правки в фокусе.',
   },
   {
     token: '--tsr-comp-cell-pinned-left-bg',
@@ -270,16 +277,10 @@ const GRID_TOKENS: TokenControl[] = [
     desc: 'Цвет галочки внутри чекбокса.',
   },
   {
-    token: '--tsr-comp-action-button-color',
-    arg: 'actionColor',
-    label: 'action-button-color',
-    desc: 'Цвет иконок кнопок действий (псевдоним `control-color`).',
-  },
-  {
     token: '--tsr-comp-action-button-bg',
     arg: 'actionBg',
     label: 'action-button-bg',
-    desc: 'Непрозрачный фон «чипа» кнопок действий строки (тени нет).',
+    desc: 'Непрозрачный фон кнопок действий строки поверх содержимого; тень — `shadow-action`.',
   },
   {
     token: '--tsr-comp-accent',
@@ -297,7 +298,7 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-loader-bar',
     arg: 'loaderBar',
     label: 'loader-bar',
-    desc: 'Цвет свечения обновления данных под шапкой (оттенки выводятся из него).',
+    desc: 'Основной цвет свечения обновления под шапкой и индикатора включённой кнопки; три других оттенка свечения — свои токены `sys-info-sky/-indigo/-violet`.',
   },
   {
     token: '--tsr-comp-scrollbar-thumb',
@@ -353,7 +354,7 @@ const SHADOW_TOKENS: ShadowControl[] = [
     arg: 'shadowAction',
     label: 'shadow-action',
     desc: 'Тень всплывающих кнопок действий над строкой.',
-    default: 'rgb(0 0 0 / 20%) 0px 0px 4px 2px',
+    default: '0px 0px 4px 2px var(--tsr-sys-shadow-elevated)',
   },
 ]
 
@@ -410,7 +411,8 @@ const RESOLVED_DEFAULTS: Record<string, string> = Object.fromEntries(
 
 interface ThemingArgs {
   colorMode: 'light' | 'dark'
-  loading: 'refresh' | false
+  loading: 'off' | 'initial' | 'refresh'
+  loadError: boolean
   [arg: string]: string | boolean
 }
 
@@ -446,10 +448,15 @@ const buildThemeStyle = (args: ThemingArgs): CSSProperties => {
 
 const ThemingDemo = memo((args: ThemingArgs) => {
   const columns = useColumns(6)
-  const { data } = useData({ count: 12, showStub: false })
+  const { data, setData } = useData({ count: 12, showStub: false })
 
   const { rowSelection: selection, onRowSelectionChange } =
     useRowSelectionState()
+  // Закреплённая колонка с первого кадра: токены закреплённых ячеек видны сразу.
+  const [pinning, setPinning] = useState<ColumnPinningState>({
+    start: ['country'],
+    end: [],
+  })
 
   const table = useCreateTable({
     // Демо-колонки строятся отдельным хелпером (мок) с иной вариантностью типов,
@@ -457,16 +464,29 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     // покрыт визуал-тестами).
     columns: columns as never,
     data,
-    loading: args.loading,
+    loading: args.loading === 'off' ? false : args.loading,
+    loadError: args.loadError ? new Error('Demo load error') : undefined,
+    enableFooter: true,
+    state: { columnPinning: pinning },
+    handlers: {
+      onColumnPinningChange: (updater: Updater<ColumnPinningState>) =>
+        setPinning(prev => functionalUpdate(updater, prev)),
+    },
     // Набор фич подобран так, чтобы витрина задействовала как можно больше
-    // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing) и
-    // колонка действий (rowActions).
+    // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing),
+    // кнопки действий строки (rowActions), клон и счётчик перетаскивания
+    // (rowDragging).
     plugins: [
       rowSelection({ rowSelection: selection, onRowSelectionChange }),
       columnSorting(),
       columnPinning(),
       columnSizing(),
-      rowActions({ width: 40 }),
+      rowDragging({
+        onRowOrderChange: (updater: Updater<any[]>) =>
+          setData(prev => functionalUpdate(updater, prev)),
+      }),
+      rowActions(),
+      { id: 'rowActionsDemo', slotActions: rowActionsDemo },
     ],
   })
 
@@ -514,7 +534,8 @@ const meta = {
   title: 'Tessera/Theming',
   component: ThemingDemo,
   args: {
-    loading: 'refresh',
+    loading: 'off',
+    loadError: false,
     ...RESOLVED_DEFAULTS,
     ...Object.fromEntries(
       SHADOW_TOKENS.map(({ arg, default: def }) => [arg, def]),
@@ -527,10 +548,16 @@ const meta = {
     loading: {
       name: 'loading (loader)',
       description:
-        'Обновление данных (`loading` refresh): свечение под шапкой — чтобы увидеть токены loader-*.',
+        'Загрузка данных: `refresh` — свечение под шапкой (токены loader-*), наведение на время гаснет; `initial` — скелет первой загрузки (skeleton-bg).',
       control: 'inline-radio',
-      options: ['off', 'refresh'],
-      mapping: { off: false },
+      options: ['off', 'refresh', 'initial'],
+      table: { category: 'Режим' },
+    },
+    loadError: {
+      name: 'loadError',
+      description:
+        'Отказ загрузки: красный свет под шапкой и плашка — чтобы увидеть destructive/sys-danger.',
+      control: 'boolean',
       table: { category: 'Режим' },
     },
     ...colorArgTypes(PALETTE, 'shadcn — мост (broad)'),
