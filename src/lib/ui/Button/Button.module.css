@@ -11,6 +11,10 @@
   padding: 0 var(--tsr-comp-button-padding-x);
   color: var(--tsr-comp-button-color);
   font: inherit;
+  /* Подпись — из токенов, а не шрифт окружения. */
+  font-size: var(--tsr-comp-button-font-size);
+  font-weight: var(--tsr-comp-button-font-weight);
+  line-height: var(--tsr-comp-button-icon-size);
   white-space: nowrap;
   background-color: transparent;
   border: 1px solid var(--tsr-comp-button-border);
@@ -28,6 +32,10 @@
   flex: none;
   width: var(--tsr-comp-button-icon-size);
   height: var(--tsr-comp-button-icon-size);
+}
+
+.button[data-with-icon] {
+  padding-left: var(--tsr-comp-button-padding-x-icon);
 }
 
 .button[data-variant='ghost'] {

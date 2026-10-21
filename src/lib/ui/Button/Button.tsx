@@ -78,6 +78,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         data-error-flash={states['data-error-flash']}
         data-pending-leaving={states['data-pending-leaving']}
         data-variant={variant}
+        data-with-icon={icon ? '' : undefined}
         onClick={states.onClick}
         className={clsx(
           'data-grid__button',

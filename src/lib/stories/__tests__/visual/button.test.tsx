@@ -12,9 +12,9 @@ import { SvgIcon } from '@/lib/ui/icons'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
-// Кнопка с подписью `Button` (ADR 0097, BN1–BN6, BN9): размер и форма из токенов,
+// Кнопка с подписью `Button` (ADR 0097, BN1–BN6, BN9–BN11): размер и форма из токенов,
 // варианты `outline` и `ghost`, контракт семейства F5, ожидание и вспышка, высокая
-// контрастность, axe и встроенные кнопки грида и плагинов. BN7 — в модульном
+// контрастность, axe, встроенные кнопки грида и плагинов, подпись и отступ при иконке. BN7 — в модульном
 // `uiStories`, BN8 — модульный `uiKitButtons`.
 
 const fx = commands as unknown as {
@@ -101,8 +101,8 @@ describe('Button (ADR 0097)', () => {
     expect(Math.round(label.left - icon.right)).toBe(6)
     const host = button!.parentElement!
     expect(style(button!).height).toBe('32px')
-    expect(style(button!).paddingLeft).toBe(
-      token(host, '--tsr-comp-button-padding-x', 'padding-left'),
+    expect(style(button!).paddingRight).toBe(
+      token(host, '--tsr-comp-button-padding-x', 'padding-right'),
     )
     expect(style(button!).borderTopLeftRadius).toBe(
       token(host, '--tsr-comp-control-radius', 'border-top-left-radius'),
@@ -124,7 +124,7 @@ describe('Button (ADR 0097)', () => {
       </Theme>,
     )
     expect(style(button!).height).toBe('40px')
-    expect(style(button!).paddingLeft).toBe('20px')
+    expect(style(button!).paddingRight).toBe('20px')
     expect(style(button!).columnGap).toBe('10px')
     expect(style(button!).borderTopLeftRadius).toBe('3px')
     // Без иконки — только подпись.
@@ -386,5 +386,83 @@ describe('Button (ADR 0097)', () => {
         .not.toBeNull()
       expectKit(q('[data-testid="infinite-scroll-error"] button'), 'outline')
     })
+  })
+
+  test('BN10: the label takes font size and weight from the tokens whatever the surrounding font; built-in buttons in a stub, the alert and a popover share one size', async () => {
+    const screen = await render(
+      <Theme style={{ fontSize: 20, fontWeight: 300 }}>
+        <Button>Retry</Button>
+      </Theme>,
+    )
+    const button = buttons()[0]!
+    const host = button.parentElement!
+    expect(style(button).fontSize).toBe(
+      token(host, '--tsr-comp-button-font-size', 'font-size'),
+    )
+    expect(style(button).fontSize).toBe('13px')
+    expect(style(button).fontWeight).toBe('500')
+    await screen.rerender(
+      <Theme
+        style={
+          {
+            fontSize: 20,
+            '--tsr-comp-button-font-size': '15px',
+            '--tsr-comp-button-font-weight': '600',
+          } as CSSProperties
+        }
+      >
+        <Button>Retry</Button>
+      </Theme>,
+    )
+    expect(style(button).fontSize).toBe('15px')
+    expect(style(button).fontWeight).toBe('600')
+    await screen.unmount()
+
+    // Встроенные кнопки: заглушка (шрифт 14px), плашка и поповер (13px) — одна подпись.
+    const sizes: string[] = []
+    const run = async (
+      Story: (typeof composed)[keyof typeof composed],
+      selector: string,
+    ) => {
+      const story = await render(<Story />)
+      await Story.play?.({ canvasElement: story.container } as never)
+      const el = document.querySelector<HTMLElement>(selector)
+      expect(el, selector).not.toBeNull()
+      sizes.push(`${style(el!).fontSize} ${style(el!).fontWeight}`)
+      await story.unmount()
+    }
+    await run(composed.LoadErrorFirstLoad, '[data-testid="load-error-retry"]')
+    await run(composed.LoadErrorRefresh, '[data-testid="load-error-retry"]')
+    await run(composed.FilteringStateText, '[data-testid="filter-reset"]')
+    expect(sizes).toEqual(['13px 500', '13px 500', '13px 500'])
+  })
+
+  test('BN11: with an icon the left padding is the icon padding token and the right one the regular padding; without an icon both are the regular padding', async () => {
+    const screen = await render(
+      <Theme>
+        <Button icon={<SvgIcon width={14} height={14} />}>Retry</Button>
+        <Button>Reset</Button>
+      </Theme>,
+    )
+    const [withIcon, plain] = buttons()
+    const host = withIcon!.parentElement!
+    const regular = token(host, '--tsr-comp-button-padding-x', 'padding-left')
+    expect(style(withIcon!).paddingLeft).toBe(
+      token(host, '--tsr-comp-button-padding-x-icon', 'padding-left'),
+    )
+    expect(style(withIcon!).paddingLeft).toBe('10px')
+    expect(style(withIcon!).paddingRight).toBe(regular)
+    expect(style(plain!).paddingLeft).toBe(regular)
+    expect(style(plain!).paddingRight).toBe(regular)
+    await screen.rerender(
+      <Theme
+        style={{ '--tsr-comp-button-padding-x-icon': '4px' } as CSSProperties}
+      >
+        <Button icon={<SvgIcon width={14} height={14} />}>Retry</Button>
+        <Button>Reset</Button>
+      </Theme>,
+    )
+    expect(style(withIcon!).paddingLeft).toBe('4px')
+    expect(style(plain!).paddingLeft).toBe(regular)
   })
 })

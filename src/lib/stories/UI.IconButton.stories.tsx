@@ -1,5 +1,3 @@
-import { Fragment } from 'react'
-
 import { Meta, StoryObj } from '@storybook/react'
 import { fn } from 'storybook/test'
 
@@ -7,6 +5,7 @@ import { IconButton } from '../ui/IconButton'
 import { useIcons } from '../ui/icons'
 import { AsyncActionTable } from './__mocks__/AsyncActionTable'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { VariantGrid } from './__mocks__/VariantGrid'
 import { playAsyncAction, useAsyncAction } from './__mocks__/asyncAction'
 
 /**
@@ -29,6 +28,7 @@ const IconButtonDemo = (
 
 const meta = {
   title: 'Tessera/UI/IconButton',
+  tags: ['done'],
   component: IconButtonDemo,
   argTypes: {
     errorFlash: { table: { disable: true } },
@@ -76,42 +76,35 @@ export const IconButtonVariants: Story = {
     const icon = <PinIcon width={16} height={16} />
     return (
       <UiCanvas>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, auto)',
-            gap: 12,
-            alignItems: 'center',
-          }}
-        >
-          {(
+        <VariantGrid
+          columns={['Rest', 'Active', 'Pending', 'Disabled']}
+          rows={(
             [
-              ['ghost', 'circle', 'default'],
-              ['ghost', 'square', 'default'],
-              ['overlay', 'circle', 'default'],
-              ['ghost', 'square', 'compact'],
+              ['ghost', 'circle', 'default', 'Ghost · circle'],
+              ['ghost', 'square', 'default', 'Ghost · square'],
+              ['overlay', 'circle', 'default', 'Overlay · circle'],
+              ['ghost', 'square', 'compact', 'Ghost · square · compact'],
             ] as const
-          ).map(([variant, shape, size]) => (
-            <Fragment key={`${variant}-${shape}-${size}`}>
-              {(['rest', 'active', 'pending', 'disabled'] as const).map(
-                state => (
-                  <IconButton
-                    key={state}
-                    variant={variant}
-                    shape={shape}
-                    size={size}
-                    active={state === 'active'}
-                    pending={state === 'pending'}
-                    disabled={state === 'disabled'}
-                    label={`${variant} ${shape} ${size} ${state}`}
-                  >
-                    {icon}
-                  </IconButton>
-                ),
-              )}
-            </Fragment>
-          ))}
-        </div>
+          ).map(([variant, shape, size, label]) => ({
+            label,
+            cells: (['rest', 'active', 'pending', 'disabled'] as const).map(
+              state => (
+                <IconButton
+                  key={state}
+                  variant={variant}
+                  shape={shape}
+                  size={size}
+                  active={state === 'active'}
+                  pending={state === 'pending'}
+                  disabled={state === 'disabled'}
+                  label={`${variant} ${shape} ${size} ${state}`}
+                >
+                  {icon}
+                </IconButton>
+              ),
+            ),
+          }))}
+        />
       </UiCanvas>
     )
   },

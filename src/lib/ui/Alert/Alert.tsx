@@ -27,7 +27,7 @@ export interface AlertProps extends Omit<
   description?: string
   /** Действие — кнопка кита. */
   action?: ReactNode
-  /** Закрытие: кнопка-крестик с подписью; без него кнопки нет. */
+  /** Закрытие: квадратная кнопка-крестик с подписью; без него кнопки нет. */
   dismiss?: { label: string; onClick: () => void }
 }
 
@@ -82,6 +82,7 @@ export const Alert = ({
       {dismiss && (
         <IconButton
           label={dismiss.label}
+          shape="square"
           className={styles.dismiss}
           onClick={dismiss.onClick}
           data-alert-dismiss=""

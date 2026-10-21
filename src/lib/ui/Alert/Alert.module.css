@@ -55,6 +55,11 @@
   min-width: 0;
 }
 
+/* Без кнопок справа текст отстоит от края, как иконка слева. */
+.text:last-child {
+  padding-right: calc(var(--tsr-ref-space-1) * 2);
+}
+
 .title {
   flex: none;
   font-weight: 500;

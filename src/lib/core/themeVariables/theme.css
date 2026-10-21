@@ -546,9 +546,13 @@
   --tsr-comp-button-radius-square: var(--tsr-comp-control-radius);
   --tsr-comp-button-radius-circle: 50%;
   --tsr-comp-button-color: var(--tsr-comp-control-color);
-  /* Кнопка с подписью (ADR 0097): отступ и промежуток иконки. */
+  /* Кнопка с подписью (ADR 0097): отступ и промежуток иконки, подпись. */
   --tsr-comp-button-padding-x: 12px;
+  /* Слева при иконке: у глифа свои поля внутри 16px — видимый край как у подписи справа. */
+  --tsr-comp-button-padding-x-icon: 10px;
   --tsr-comp-button-gap: 6px;
+  --tsr-comp-button-font-size: 0.8125rem;
+  --tsr-comp-button-font-weight: 500;
   /* Рамка `outline` — цвет границ грида: не спорит со светом ожидания. */
   --tsr-comp-button-border: var(--tsr-sys-border);
 
@@ -742,7 +746,10 @@
   /* Плашка — примитив кита Alert (ADR 0096, §9). */
   --tsr-comp-alert-bg: var(--tsr-comp-popup-bg);
   --tsr-comp-alert-shadow: var(--tsr-comp-shadow-action);
-  --tsr-comp-alert-radius: var(--tsr-comp-control-radius);
+  /* Угол параллелен углам кнопок внутри: их скругление плюс отступ плашки. */
+  --tsr-comp-alert-radius: calc(
+    var(--tsr-comp-button-radius-square) + var(--tsr-ref-space-1)
+  );
   --tsr-comp-alert-max-width: 36rem;
   --tsr-comp-alert-icon-color: var(--tsr-sys-danger);
   /* Приглушённое описание — как причина отказа ленты, с её надстройкой контраста. */

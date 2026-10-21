@@ -20,11 +20,14 @@ const Harness = ({
   shown = true,
   description = 'Server responded 503',
   onDismiss = () => {},
+  bare = false,
   style,
 }: {
   shown?: boolean
   description?: string
   onDismiss?: () => void
+  /** Без действия и закрытия: последним стоит текст. */
+  bare?: boolean
   style?: CSSProperties
 }) => (
   <div
@@ -41,8 +44,10 @@ const Harness = ({
       icon={<svg data-testid="alert-icon" width={16} height={16} />}
       title="Couldn't refresh the data"
       description={description}
-      action={<Button data-testid="alert-action">Retry</Button>}
-      dismiss={{ label: 'Dismiss', onClick: onDismiss }}
+      action={
+        bare ? undefined : <Button data-testid="alert-action">Retry</Button>
+      }
+      dismiss={bare ? undefined : { label: 'Dismiss', onClick: onDismiss }}
       data-testid="alert"
     />
   </div>
@@ -59,7 +64,7 @@ const tooltipShows = (text: string) =>
   )
 
 describe('Плашка кита Alert (ADR 0096)', () => {
-  test('LE18: иконка, заголовок, описание одной строкой с … и тултипом, действие и закрытие с подписью; вид — токены --tsr-comp-alert-*; появление и уход токенами движения, уходя держит описание и не откликается на указатель; axe в обеих темах', async () => {
+  test('LE18: иконка, заголовок, описание одной строкой с … и тултипом, действие и квадратная кнопка закрытия с подписью; текст без кнопок отстоит от правого края, как иконка от левого; кнопки со скруглением кита, угол плашки больше на её отступ; вид — токены --tsr-comp-alert-*; появление и уход токенами движения, уходя держит описание и не откликается на указатель; axe в обеих темах', async () => {
     const onDismiss = vi.fn()
     const view = await render(
       <Harness
@@ -97,8 +102,39 @@ describe('Плашка кита Alert (ADR 0096)', () => {
       alert()!.querySelector('[data-testid="alert-action"]'),
     ).not.toBeNull()
     expect(dismiss().getAttribute('aria-label')).toBe('Dismiss')
+    // Кнопки — со скруглением кита, угол плашки больше на её отступ: углы параллельны.
+    expect(dismiss().getAttribute('data-shape')).toBe('square')
+    const px = (value: string) => parseFloat(value)
+    const probe = document.createElement('div')
+    probe.style.borderRadius = 'var(--tsr-comp-button-radius-square)'
+    alert()!.parentElement!.append(probe)
+    const kitRadius = px(getComputedStyle(probe).borderTopLeftRadius)
+    probe.remove()
+    const action = alert()!.querySelector<HTMLElement>(
+      '[data-testid="alert-action"]',
+    )!
+    for (const button of [dismiss(), action]) {
+      expect(px(getComputedStyle(button).borderTopLeftRadius)).toBe(kitRadius)
+    }
+    expect(px(getComputedStyle(alert()!).borderTopLeftRadius)).toBe(
+      kitRadius + px(getComputedStyle(alert()!).paddingTop),
+    )
     await userEvent.click(dismiss())
     expect(onDismiss).toHaveBeenCalledTimes(1)
+
+    // Без кнопок длинный текст обрезается на том же расстоянии от правого края, что иконка
+    // от левого.
+    await view.rerender(
+      <Harness description={LONG} bare style={{ display: 'flex' }} />,
+    )
+    const box = alert()!.getBoundingClientRect()
+    const iconInset =
+      alert()!
+        .querySelector('[data-testid="alert-icon"]')!
+        .getBoundingClientRect().left - box.left
+    expect(box.right - description().getBoundingClientRect().right).toBe(
+      iconInset,
+    )
 
     // axe — на токенах темы, без подменённых цветов.
     await view.rerender(<Harness description={LONG} />)

@@ -892,19 +892,25 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `Switch`, `Skeleton`, `LinearProgress`, иконки; SK4 — `Skeleton` в `/ui` — в
       модульном `uiStories`); `tooltip-pass-through` (TP1–TP2 —
       подсказка без обрезки пропускает указатель насквозь, W8 сужен,
-      [ADR 0100](docs/decisions/0100-pass-through-tooltips.md)); `button-states` (BS1–BS17 —
-      свет `pending` и красный свет `errorFlash` у `IconButton` и `ToolbarButton`),
-      `ring-press` (BS18 — смена состояния посреди нажатия не теряет клик, ещё и в
+      [ADR 0100](docs/decisions/0100-pass-through-tooltips.md)); `button-states` (BS1, BS2,
+      BS8, BS13, BS19 — занятость `pending`, вспышка `errorFlash`, угасание дуги),
+      `ring-press` (BS18 — смена фазы дуги посреди нажатия не теряет клик, ещё и в
       `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md));
-      `button` (BN1–BN6, BN9 — кнопка с подписью `Button`: токены, `outline` и `ghost`,
-      семейство F5, ожидание, высокая контрастность, axe, встроенные кнопки), модульные
+      `pending-arc` (IR1–IR11, IR31–IR32 — дуга по контуру кнопки, её длина и круг, рамка
+      и тень, занятость без наведения, кольцо фокуса снаружи, красное заполнение и
+      угасание, отметка `failure` и её текст, уменьшенное движение, приглушённая подпись
+      занятой кнопки, рамка с началом угасания), `play` истории
+      «UI/IconButton — Async action» (IR12); помощник `pendingArcOf` из
+      `__tests__/helpers.tsx` ([ADR 0127](docs/decisions/0127-initiator-pending-and-failure.md));
+      `button` (BN1–BN6, BN9–BN11 — кнопка с подписью `Button`: токены, `outline` и `ghost`,
+      семейство F5, ожидание, высокая контрастность, axe, встроенные кнопки, размер и вес
+      подписи, отступ при иконке), модульные
       `uiStories` (BN7) и `uiKitButtons` (BN8 — страж кнопок по месту)
-      ([ADR 0097](docs/decisions/0097-text-button.md)); `button-system` (UB1–UB4, UB7 —
+      ([ADR 0097](docs/decisions/0097-text-button.md)); `button-system` (UB1–UB4, UB7, UB11 —
       общие токены `Button` и `IconButton`, формы `circle` и `square`, состояния, тултип
-      в базе, кнопки историй по токенам), модульные `uiStories` (UB5 — истории
+      в базе, кнопки историй по токенам, кольцо фокуса у всех вариантов), модульные `uiStories` (UB5 — истории
       «Variants») и `uiKitButtons` (UB6 — производные из базы, тултип только у базы) ([ADR 0098](docs/decisions/0098-button-system.md));
-      `loading-light` (LL1–LL6 — пятна света без общего направления, фаза кнопок и
-      ячеек и её постоянство на узле, статичный красный свет ошибки, спиннер, сила света,
+      `loading-light` (LL4 — спиннер без дорожки; LL1–LL3, LL5, LL6 сняты ADR 0127,
       [ADR 0095](docs/decisions/0095-pending-and-error-light.md)); `segments` (SG1–SG4 —
       сегменты `ui/Segments`: radiogroup, токены, axe, движение), SG5 — в модульном
       `uiStories`; панель экспорта в виде меню — EP1–EP5 в `export`

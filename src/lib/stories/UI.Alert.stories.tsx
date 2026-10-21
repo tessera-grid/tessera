@@ -20,6 +20,7 @@ interface AlertStoryArgs {
 
 const meta = {
   title: 'Tessera/UI/Alert',
+  tags: ['done'],
   args: {
     shown: true,
     title: "Couldn't refresh the data",

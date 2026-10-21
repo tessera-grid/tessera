@@ -1,5 +1,3 @@
-import { Fragment } from 'react'
-
 import { Meta, StoryObj } from '@storybook/react'
 import { fn } from 'storybook/test'
 
@@ -7,33 +5,62 @@ import { Button } from '../ui/Button'
 import { useIcons } from '../ui/icons'
 import { AsyncActionTable } from './__mocks__/AsyncActionTable'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { VariantGrid } from './__mocks__/VariantGrid'
 import { playAsyncAction, useAsyncAction } from './__mocks__/asyncAction'
 
 /**
  * Кнопка с подписью (ADR 0097): `outline` — на поверхности грида, `ghost` — в
  * поповерах. Иконка, ожидание, вспышка ошибки и выключение — из контролов.
  */
-const ButtonDemo = ({
-  withIcon,
-  ...props
-}: Omit<Parameters<typeof Button>[0], 'icon'> & { withIcon: boolean }) => {
+type ButtonDemoProps = Omit<Parameters<typeof Button>[0], 'icon'> & {
+  withIcon: boolean
+}
+
+const DemoButton = ({ withIcon, ...props }: ButtonDemoProps) => {
   const { retry: RetryIcon } = useIcons()
   return (
+    <Button
+      {...props}
+      icon={
+        withIcon ? (
+          <RetryIcon width={16} height={16} aria-hidden="true" />
+        ) : undefined
+      }
+    />
+  )
+}
+
+const ButtonDemo = (props: ButtonDemoProps) => (
+  <UiCanvas>
+    <DemoButton {...props} />
+  </UiCanvas>
+)
+
+const VARIANTS = ['outline', 'ghost'] as const
+const VARIANT_LABELS = { outline: 'Outline', ghost: 'Ghost' }
+
+/** Состояние в обоих вариантах рядом: контрол варианта в такой истории не нужен. */
+const inBothVariants: Pick<Story, 'render' | 'argTypes'> = {
+  render: args => (
     <UiCanvas>
-      <Button
-        {...props}
-        icon={
-          withIcon ? (
-            <RetryIcon width={16} height={16} aria-hidden="true" />
-          ) : undefined
-        }
+      <VariantGrid
+        columns={VARIANTS.map(variant => VARIANT_LABELS[variant])}
+        rows={[
+          {
+            cells: VARIANTS.map(variant => (
+              <DemoButton key={variant} {...args} variant={variant} />
+            )),
+          },
+        ]}
       />
     </UiCanvas>
-  )
+  ),
+  argTypes: { variant: { table: { disable: true } } },
 }
 
 const meta = {
   title: 'Tessera/UI/Button',
+  tags: ['done'],
   component: ButtonDemo,
   argTypes: {
     errorFlash: { table: { disable: true } },
@@ -63,11 +90,13 @@ export const ButtonGhost: Story = {
 export const ButtonPending: Story = {
   name: 'Pending',
   args: { pending: true },
+  ...inBothVariants,
 }
 
 export const ButtonDisabled: Story = {
   name: 'Disabled',
   args: { disabled: true },
+  ...inBothVariants,
 }
 
 /**
@@ -81,29 +110,24 @@ export const ButtonVariants: Story = {
     const icon = <RetryIcon width={16} height={16} aria-hidden="true" />
     return (
       <UiCanvas>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, auto)',
-            gap: 12,
-            alignItems: 'center',
-          }}
-        >
-          {(['outline', 'ghost'] as const).map(variant => (
-            <Fragment key={variant}>
-              <Button variant={variant}>Rest</Button>
+        <VariantGrid
+          columns={['Rest', 'With icon', 'Pending', 'Disabled']}
+          rows={(['outline', 'ghost'] as const).map(variant => ({
+            label: VARIANT_LABELS[variant],
+            cells: [
+              <Button variant={variant}>Reset</Button>,
               <Button variant={variant} icon={icon}>
-                Icon
-              </Button>
+                Retry
+              </Button>,
               <Button variant={variant} icon={icon} pending>
-                Pending
-              </Button>
+                Retry
+              </Button>,
               <Button variant={variant} disabled>
-                Disabled
-              </Button>
-            </Fragment>
-          ))}
-        </div>
+                Reset
+              </Button>,
+            ],
+          }))}
+        />
       </UiCanvas>
     )
   },

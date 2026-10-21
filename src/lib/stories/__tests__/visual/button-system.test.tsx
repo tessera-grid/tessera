@@ -19,9 +19,9 @@ import * as toolbarStories from '../../UI.ToolbarButton.stories'
 import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 
-// Единая система кнопок (ADR 0098, UB1–UB4, UB7): общие токены `Button` и
+// Единая система кнопок (ADR 0098, UB1–UB4, UB7, UB11): общие токены `Button` и
 // `IconButton`, формы и состояния баз, тултип в базе, кнопки грида и плагинов в
-// историях. UB5 — в модульном `uiStories`, UB6 — модульный `uiKitButtons`.
+// историях, кольцо фокуса у всех вариантов. UB5 — в модульном `uiStories`, UB6 — модульный `uiKitButtons`.
 
 const Theme = ({
   children,
@@ -315,7 +315,7 @@ describe('Button system (ADR 0098)', () => {
     expect(document.activeElement).toBe(explained)
   })
 
-  test('UB7: buttons of the grid and plugins in the stories match the kit — size, icon, the radius of their shape, rest color and hover; panel buttons are square, the rest are circles', async () => {
+  test('UB7: buttons of the grid and plugins in the stories match the kit — size, icon, the radius of their shape, rest color and hover; panel and alert buttons are square, the rest are circles', async () => {
     /** Кнопка не из кита, которой можно быть: роль контрола или часть поля. */
     const allowed = (button: HTMLElement) =>
       [
@@ -348,11 +348,12 @@ describe('Button system (ADR 0098)', () => {
         expect(style(button).height, `${name} высота`).toBe(t.size)
         if (isIcon) expect(`${box.width}px`, `${name} ширина`).toBe(t.size)
         const shape = isText ? 'square' : button.getAttribute('data-shape')
-        // Кнопки панелей (тулбар, нижняя панель) — квадратные, остальные — круглые.
+        // Кнопки панелей (тулбар, нижняя панель) и плашки — квадратные, остальные — круглые.
         if (isIcon) {
-          const panel = !!button.closest(
-            '[role="toolbar"], [data-testid="data-grid-status-bar"]',
-          )
+          const panel =
+            !!button.closest(
+              '[role="toolbar"], [data-testid="data-grid-status-bar"]',
+            ) || button.matches('[data-alert-dismiss]')
           expect(shape, `${name} форма`).toBe(panel ? 'square' : 'circle')
         }
         expect(style(button).borderTopLeftRadius, `${name} скругление`).toBe(
@@ -429,5 +430,40 @@ describe('Button system (ADR 0098)', () => {
       await screen.unmount()
     }
     expect(checked.length).toBeGreaterThan(20)
+  })
+
+  test('UB11: keyboard focus on IconButton of ghost and overlay variants, circle and square shapes, default and compact sizes is the outer focus ring; overlay keeps its own shadow under the ring', async () => {
+    await render(
+      <Theme>
+        <IconButton aria-label="Ghost circle">{icon}</IconButton>
+        <IconButton aria-label="Ghost square" shape="square">
+          {icon}
+        </IconButton>
+        <IconButton aria-label="Overlay" variant="overlay">
+          {icon}
+        </IconButton>
+        <IconButton aria-label="Overlay active" variant="overlay" active>
+          {icon}
+        </IconButton>
+        <IconButton aria-label="Compact" shape="square" size="compact">
+          {icon}
+        </IconButton>
+      </Theme>,
+    )
+    const host = buttons()[0]!.parentElement!
+    const ring = `${token(host, '--tsr-comp-focus-ring', 'color')} 0px 0px 0px ${token(host, '--tsr-comp-focus-ring-width', 'width')}`
+    const shadow = token(host, '--tsr-comp-shadow-action', 'box-shadow')
+    for (const button of buttons()) {
+      const name = button.getAttribute('aria-label')
+      await userEvent.tab()
+      expect(document.activeElement, name!).toBe(button)
+      expect(button.matches(':focus-visible'), name!).toBe(true)
+      const boxShadow = style(button).boxShadow
+      // Кольцо — первым слоем, поверх остальных.
+      expect(boxShadow.startsWith(ring), `${name}: ${boxShadow}`).toBe(true)
+      if (button.getAttribute('data-variant') === 'overlay') {
+        expect(boxShadow, name!).toContain(shadow)
+      }
+    }
   })
 })
