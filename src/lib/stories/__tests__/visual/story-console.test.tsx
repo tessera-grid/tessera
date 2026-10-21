@@ -19,7 +19,7 @@ import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
 
 // Консоль историй (ADR 0124): CL1, CL3, CL7, CL9–CL12. CL5 и CL8 — в `play` песочницы
-// `Tessera/Dev/Console`, CL2, CL4, CL6, CL13–CL14 — модульные `storyConsole`.
+// `Tessera/DEV/Console`, CL2, CL4, CL6, CL13–CL14 — модульные `storyConsole`.
 
 const { ConsoleGuideEvents } = composeStories(consoleStories)
 const { SkeletonDataArrives } = composeStories(skeletonStories)

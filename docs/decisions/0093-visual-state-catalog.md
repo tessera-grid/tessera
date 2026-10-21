@@ -320,7 +320,7 @@ Tests из Storybook — он тратит тот же лимит.
   в ней — с историями этапа 4 (VR4–VR6).
 - **Стражи** — `scripts/catalog.ts`: снимков полной сборки сейчас 178 при бюджете 600
   (VR11), пропуск снимка — только с `vrSkipReason` (VR10). `check:requirements` читает
-  ID из `parameters.requirements` историй (VR12); первая такая история — `Catalog/Canvas`
+  ID из `parameters.requirements` историй (VR12); первая такая история — `Tessera/DEV/AutoTests`
   (VR16).
 - **Открыть меню синтетическим кликом `storybook/test` не вышло**: поповер «Колонки»
   не открылся. VR16 поэтому проверяет высоту холста, а вмещение открытых меню и

@@ -128,5 +128,5 @@
 | S2  | Протяжка ширины — один жест: его срезы в группе со счётчиком, а не поток записей | CL4        | `ConsoleCoalescing`  |
 | S3  | Разработчик оставляет только колбэки и очищает журнал                            | CL8        | `ConsoleFilter`      |
 
-Истории — в `src/lib/stories/Console.dev.stories.tsx` (`Tessera/Dev/Console`): песочницы
+Истории — в `src/lib/stories/Console.dev.stories.tsx` (`Tessera/DEV/Console`): песочницы
 обвязки историй, в сборку Storybook не входят (ADR 0117, SN13).

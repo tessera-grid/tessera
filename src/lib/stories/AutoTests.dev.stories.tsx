@@ -12,13 +12,12 @@ import { showControls } from './__mocks__/utils/dataGridControls'
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/Catalog',
+  title: 'Tessera/DEV/AutoTests',
 } satisfies Meta<StoryProps>
 
 export default meta
 
-export const CatalogCanvas: StoryObj<StoryProps> = {
-  name: 'Canvas',
+export const Default: StoryObj<StoryProps> = {
   parameters: {
     requirements: ['VR16'],
     ...showControls(['enableColumnVisibility']),

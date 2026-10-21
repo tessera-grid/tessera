@@ -8,7 +8,7 @@ import * as stories from '../../GuidePanel.dev.stories'
 
 // Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27) — с движением: каталог
 // гоняет истории с уменьшенным движением, и порядок конфетти и сдвига виден только здесь.
-// SN16, SN18–SN20 — в `play` песочницы `Tessera/Dev/Guide panel`.
+// SN16, SN18–SN20 — в `play` песочницы `Tessera/DEV/Guide panel`.
 
 const { GuidePanelCollapsed, GuidePanelManySteps, GuidePanelPlayground } =
   composeStories(stories)
