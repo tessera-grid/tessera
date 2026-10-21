@@ -14,6 +14,7 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
+import { seed } from './__mocks__/seed'
 
 /** Меню заголовка (ADR 0024) и индикатор включённого действия (ADR 0062). */
 const meta = {
@@ -26,7 +27,23 @@ export default meta
 
 // Индикатор включённого действия (ADR 0062): отсортируйте, отфильтруйте или закрепите
 // колонку — на её кнопке появится точка; скройте колонку — на «Колонках» число скрытых.
+/** Включённые действия в покое: сортировка «Name», фильтр «Age», закрепление «City». */
+const activeActions = seed(
+  'activeIndicatorDemo',
+  (table: {
+    setSorting?: (value: { id: string; desc: boolean }[]) => void
+    setColumnFilters?: (value: { id: string; value: unknown }[]) => void
+  }) => {
+    table.setSorting?.([{ id: 'name', desc: false }])
+    table.setColumnFilters?.([
+      { id: 'age', value: { operator: 'greaterThanOrEqual', value: 30 } },
+    ])
+  },
+)
+
 const activeIndicatorArgs: Partial<StoryProps> = {
+  extraPlugins: [activeActions],
+  initialColumnPinning: { start: ['city'], end: [] },
   columnsOverride: filteringColumns,
   dataOverride: filteringData,
   enableColumnSorting: true,
@@ -140,7 +157,9 @@ export const HeaderMenuStateKebab: StoryObj<StoryProps> = {
   name: 'State: kebab',
   parameters: {
     ...vrStates('head.kebab'),
-    pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
+    catalogPseudo: {
+      hover: ['.data-grid__head-cell[data-column-id="country"]'],
+    },
     ...showControls([
       'enableColumnSorting',
       'columnSortingRemoval',
@@ -159,7 +178,7 @@ export const HeaderMenuStateKebab: StoryObj<StoryProps> = {
   args: HEADER_MENU_ARGS,
   play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)
-    await applyPseudoStates(id, parameters.pseudo)
+    await applyPseudoStates(id, parameters.catalogPseudo)
   },
 }
 

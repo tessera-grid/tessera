@@ -125,6 +125,8 @@ export const PinningStateBothSides: StoryObj<StoryProps> = {
   },
   args: {
     enableColumnPinning: true,
+    // Справа — колонка данных: кнопки колонки действий скрыты до наведения.
+    initialColumnPinning: { start: [], end: ['total'] },
     enableRowActions: true,
     enableRowSelection: true,
     dataCount: 30,
@@ -144,6 +146,25 @@ export const PinningStateBothSides: StoryObj<StoryProps> = {
         'data-cell-pinned',
         'left',
       ),
+    )
+    // Тело уходит под закреплённые колонки: без прокрутки они не отличаются от обычных.
+    const pinnedLeft = () =>
+      bodyCell(canvasElement, 'item-id-0', 'country').getBoundingClientRect()
+        .left
+    const before = pinnedLeft()
+    canvasElement.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!.scrollLeft = 400
+    await waitFor(() =>
+      expect(
+        canvasElement.querySelector<HTMLElement>('.data-grid__container')!
+          .scrollLeft,
+      ).toBe(400),
+    )
+    expect(pinnedLeft()).toBe(before)
+    expect(bodyCell(canvasElement, 'item-id-0', 'total')).toHaveAttribute(
+      'data-cell-pinned',
+      'right',
     )
     await settle()
   },

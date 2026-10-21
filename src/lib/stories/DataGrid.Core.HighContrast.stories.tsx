@@ -1,76 +1,86 @@
-import { Meta, StoryObj } from '@storybook/react'
-import { useArgs } from 'storybook/preview-api'
-import { expect, userEvent } from 'storybook/test'
-import type { TesseraFeatureEntry } from '../core/features'
+import { Meta } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
-import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
-import { bodyRow, settle, until } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-
-/** Строка без детей в данных, чьих детей грузит «сервер», который не отвечает. */
-const LAZY_ROW = 'item-id-4'
-/** Строки, где `play` правит `visits`: сохранение первой ждёт сервера, второй — отказ. */
-const SAVING_ROW = 'item-id-5'
-const FAILED_ROW = 'item-id-6'
-const EDITED_COLUMN = 'visits'
+import { type TwinSource, forced } from './__mocks__/catalog'
+import cellsContextMenuMeta, {
+  ContextMenuStateOpen,
+} from './DataGrid.Cells.ContextMenu.stories'
+import cellsEditingMeta, {
+  EditingStateEditing,
+  EditingStateSaving,
+  EditingStateError,
+} from './DataGrid.Cells.Editing.stories'
+import cellsKeyboardMeta, {
+  KeyboardStateFocusedCell,
+} from './DataGrid.Cells.Keyboard.stories'
+import cellsSelectionMeta, {
+  CellSelectionStateRange,
+} from './DataGrid.Cells.Selection.stories'
+import columnsHeaderGroupsMeta, {
+  HeaderGroups,
+} from './DataGrid.Columns.HeaderGroups.stories'
+import columnsHeaderMenuMeta, {
+  ActiveActionIndicator,
+  HeaderMenuStateKebab,
+  HeaderMenuStateOpen,
+} from './DataGrid.Columns.HeaderMenu.stories'
+import columnsPinningMeta, {
+  PinningStateBothSides,
+} from './DataGrid.Columns.Pinning.stories'
+import columnsResizingDraggingMeta, {
+  ResizingStateHandle,
+} from './DataGrid.Columns.ResizingDragging.stories'
+import columnsSortingMeta, {
+  SortingStateSorted,
+  SortingStateTooltip,
+} from './DataGrid.Columns.Sorting.stories'
+import columnsVisibilityMeta, {
+  VisibilityStatePanel,
+} from './DataGrid.Columns.Visibility.stories'
+import coreFooterMeta, { FooterDefault } from './DataGrid.Core.Footer.stories'
+import coreLoadErrorMeta, {
+  LoadErrorRefresh,
+  LoadErrorFirstLoad,
+} from './DataGrid.Core.LoadError.stories'
+import coreSkeletonMeta, {
+  SkeletonDefault,
+} from './DataGrid.Core.Skeleton.stories'
+import coreMeta, { Loading, CoreStateHoveredRow } from './DataGrid.Core.stories'
+import coreStubsMeta, { StubsDefault } from './DataGrid.Core.Stubs.stories'
+import dataMeta, { Grouped } from './DataGrid.Data.stories'
+import exportMeta, { ExportStatePanel } from './DataGrid.Export.stories'
+import filteringMeta, {
+  FilteringStateText,
+  FilteringStateDate,
+  FilteringStateOptions,
+} from './DataGrid.Filtering.stories'
+import panelsPaginationMeta, {
+  Pagination,
+} from './DataGrid.Panels.Pagination.stories'
+import panelsStatusBarMeta, {
+  WithStatusBar,
+  PanelsNarrowStatusBar,
+} from './DataGrid.Panels.StatusBar.stories'
+import panelsToolbarMeta, {
+  ToolbarAllButtons,
+} from './DataGrid.Panels.Toolbar.stories'
+import rowsActionsMeta, {
+  ActionsStateSection,
+} from './DataGrid.Rows.Actions.stories'
+import rowsExpandingMeta, {
+  RowExpandingTreeLines,
+} from './DataGrid.Rows.Expanding.stories'
+import rowsHighlightMeta, {
+  HighlightStateLit,
+} from './DataGrid.Rows.Highlight.stories'
+import rowsSelectionMeta, {
+  RowSelectionStateSelected,
+} from './DataGrid.Rows.Selection.stories'
 
 /**
- * Демо-состояния: две выбранные строки, подсветка строки и колонки, скрытая колонка —
- * один раз на таблицу, как только появились строки (история подаёт данные эффектом).
- */
-const highContrastDemo: TesseraFeatureEntry = {
-  id: 'highContrastDemo',
-  setup: table => {
-    const t = table as {
-      getCoreRowModel: () => { rows: unknown[] }
-      setRowSelection?: (value: Record<string, boolean>) => void
-      setColumnVisibility?: (value: Record<string, boolean>) => void
-      highlight: (target: object, options?: object) => unknown
-    }
-    let frame = 0
-    const apply = () => {
-      if (t.getCoreRowModel().rows.length === 0) {
-        frame = requestAnimationFrame(apply)
-        return
-      }
-      t.setRowSelection?.({ 'item-id-1': true, 'item-id-2': true })
-      t.setColumnVisibility?.({ gender: false })
-      t.highlight({ row: 'item-id-3' }, { tone: 'danger' })
-      t.highlight({ column: 'age' }, { tone: 'success' })
-    }
-    apply()
-    return () => cancelAnimationFrame(frame)
-  },
-}
-
-/** Открывает правку `visits` строки клавишей F2 и сохраняет значение Enter. */
-const commitEdit = async (
-  canvas: HTMLElement,
-  row: string,
-  value: string,
-  column = EDITED_COLUMN,
-) => {
-  const cell = () =>
-    bodyRow(canvas, row).querySelector<HTMLElement>(
-      `.data-grid__body-cell[data-column-id="${column}"]`,
-    )!
-  await until(() => expect(bodyRow(canvas, row)).not.toBeNull())
-  cell().focus()
-  await until(() => expect(cell()).toHaveAttribute('data-kn-active', 'true'))
-  await userEvent.keyboard('{F2}')
-  await until(() => expect(cell().querySelector('input')).not.toBeNull())
-  await userEvent.keyboard(`{Control>}a{/Control}${value}{Enter}`)
-  return cell
-}
-
-/**
- * Высокая контрастность (ADR 0087): выбор, подсветка, линии дерева, свет ожидания
- * шеврона и ячеек, отказ сохранения, тулбар и скелет первой загрузки на одном экране.
- * Включите в DevTools Rendering → «Emulate CSS media feature forced-colors: active»
- * или контрастную тему Windows; выделите ячейки мышью, наведите на строку, откройте
- * кебаб заголовка, «Columns» (флажки колонок) и выгрузку (Segments).
+ * Высокая контрастность (ADR 0087): каждое состояние каталога — близнец своей истории со
+ * снимком Chromatic в `forced-colors` (ADR 0093, VR17). Включите в DevTools Rendering →
+ * «Emulate CSS media feature forced-colors: active» или контрастную тему Windows.
  */
 const meta = {
   ...dataGridMeta,
@@ -81,112 +91,215 @@ const meta = {
 
 export default meta
 
-export const HighContrastDefault: StoryObj<StoryProps> = {
-  name: 'Default',
-  // Снимок Chromatic — с эмуляцией высокой контрастности (ADR 0093, VR9).
-  parameters: {
-    chromatic: { forcedColors: 'active' },
-    ...showControls([
-      'dataNesting',
-      'enableColumnSorting',
-      'columnSortingRemoval',
-      'columnSortingMultiSort',
-      'columnSortingServer',
-      'columnSortingRevertOnReject',
-      'enableColumnPinning',
-      'pinFirstColumn',
-      'columnPinningLeafPinning',
-      'enableHeaderActionMenu',
-      'headerActionMenuMode',
-      'headerActionMenuThreshold',
-      'enableRowSelection',
-      'rowSelectionSubRows',
-      'rowSelectionSelectedCount',
-      'enableRowExpanding',
-      'rowExpandingMaxDepth',
-      'rowExpandingColumn',
-      'enableTreeLines',
-      'enableCellSelection',
-      'cellSelectionRangeSelection',
-      'cellSelectionDragSelection',
-      'cellSelectionMultiRange',
-      'enableKeyboardNavigation',
-      'enableCellEditing',
-      'enableColumnVisibility',
-      'enableDataExport',
-    ]),
-  },
-  args: {
-    dataNesting: 'nested',
-    enableRowExpanding: true,
-    rowExpandingHasChildren: row => row.id === LAZY_ROW,
-    rowExpandingLoadChildren: () => new Promise<never>(() => {}),
-    enableTreeLines: true,
-    initialExpanded: true,
-    enableRowSelection: true,
-    enableColumnPinning: true,
-    // Закреплённые ячейки выбранной строки; служебные колонки не уходят при прокрутке.
-    pinFirstColumn: true,
-    enableColumnSorting: true,
-    enableCellSelection: true,
-    enableKeyboardNavigation: true,
-    enableHeaderActionMenu: true,
-    enableCellEditing: true,
-    // Свой предикат отключает демо-хуки правки: колбэк истории доходит до плагина.
-    cellEditingCanEditCell: ({ column }) => column.id === EDITED_COLUMN,
-    onCellEdit: ({ rowId }) =>
-      rowId === SAVING_ROW
-        ? new Promise<void>(() => {})
-        : Promise.reject(new Error('The server refused the value')),
-    enableColumnVisibility: true,
-    enableDataExport: true,
-    extraPlugins: [highContrastDemo],
-    columnCount: 8,
-    dataCount: 40,
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
-  },
-  play: async ({ canvasElement }) => {
-    const toggle = () =>
-      bodyRow(canvasElement, LAZY_ROW)?.querySelector<HTMLElement>(
-        '.row-expand-button',
-      ) ?? null
-    await until(() => expect(toggle()).not.toBeNull())
-    await userEvent.click(toggle()!)
-    await until(() => expect(toggle()).toHaveAttribute('aria-busy', 'true'))
+const twin = <S extends TwinSource>(source: TwinSource, story: S) =>
+  forced(source, story, meta)
 
-    await commitEdit(canvasElement, SAVING_ROW, '41')
-    await commitEdit(canvasElement, FAILED_ROW, '42')
-    await until(() =>
-      expect(
-        bodyRow(canvasElement, FAILED_ROW).querySelector(
-          '[aria-invalid="true"]',
-        ),
-      ).not.toBeNull(),
-    )
-    await settle()
-  },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs()
-    return (
-      <>
-        <StoryComponent {...normalizeArgs(args)} updateArgs={updateArgs} />
-        {/* Скелет первой загрузки рядом с данными: в одном гриде их не бывает. */}
-        <StoryComponent
-          {...normalizeArgs({
-            ...args,
-            loading: 'initial',
-            extraPlugins: [],
-            enableColumnVisibility: false,
-            enableDataExport: false,
-            containerHeight: '232',
-            height: '200',
-            maxHeight: '200',
-          })}
-          updateArgs={updateArgs}
-        />
-      </>
-    )
-  },
+export const HighContrastContextMenuStateOpen = {
+  ...twin(cellsContextMenuMeta, ContextMenuStateOpen),
+  name: 'Cells/Context menu — State: open',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingStateEditing = {
+  ...twin(cellsEditingMeta, EditingStateEditing),
+  name: 'Cells/Editing — State: editing',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingStateSaving = {
+  ...twin(cellsEditingMeta, EditingStateSaving),
+  name: 'Cells/Editing — State: saving',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingStateError = {
+  ...twin(cellsEditingMeta, EditingStateError),
+  name: 'Cells/Editing — State: save error',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardStateFocusedCell = {
+  ...twin(cellsKeyboardMeta, KeyboardStateFocusedCell),
+  name: 'Cells/Keyboard — State: focused cell',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionStateRange = {
+  ...twin(cellsSelectionMeta, CellSelectionStateRange),
+  name: 'Cells/Selection — State: cell range',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderGroups = {
+  ...twin(columnsHeaderGroupsMeta, HeaderGroups),
+  name: 'Columns/Header groups — Basic',
+  tags: ['!test'],
+}
+
+export const HighContrastActiveActionIndicator = {
+  ...twin(columnsHeaderMenuMeta, ActiveActionIndicator),
+  name: 'Columns/Header menu — Active indicator',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuStateKebab = {
+  ...twin(columnsHeaderMenuMeta, HeaderMenuStateKebab),
+  name: 'Columns/Header menu — State: kebab',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuStateOpen = {
+  ...twin(columnsHeaderMenuMeta, HeaderMenuStateOpen),
+  name: 'Columns/Header menu — State: menu open',
+  tags: ['!test'],
+}
+
+export const HighContrastPinningStateBothSides = {
+  ...twin(columnsPinningMeta, PinningStateBothSides),
+  name: 'Columns/Pinning — State: pinned both sides',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingStateHandle = {
+  ...twin(columnsResizingDraggingMeta, ResizingStateHandle),
+  name: 'Columns/Resizing & dragging — State: resize handle',
+  tags: ['!test'],
+}
+
+export const HighContrastSortingStateSorted = {
+  ...twin(columnsSortingMeta, SortingStateSorted),
+  name: 'Columns/Sorting — State: sorted',
+  tags: ['!test'],
+}
+
+export const HighContrastSortingStateTooltip = {
+  ...twin(columnsSortingMeta, SortingStateTooltip),
+  name: 'Columns/Sorting — State: tooltip',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityStatePanel = {
+  ...twin(columnsVisibilityMeta, VisibilityStatePanel),
+  name: 'Columns/Visibility — State: columns panel',
+  tags: ['!test'],
+}
+
+export const HighContrastFooterDefault = {
+  ...twin(coreFooterMeta, FooterDefault),
+  name: 'Core/Footer — Default',
+  tags: ['!test'],
+}
+
+export const HighContrastLoadErrorRefresh = {
+  ...twin(coreLoadErrorMeta, LoadErrorRefresh),
+  name: 'Core/Load error — Refresh error',
+  tags: ['!test'],
+}
+
+export const HighContrastLoadErrorFirstLoad = {
+  ...twin(coreLoadErrorMeta, LoadErrorFirstLoad),
+  name: 'Core/Load error — First load error',
+  tags: ['!test'],
+}
+
+export const HighContrastSkeletonDefault = {
+  ...twin(coreSkeletonMeta, SkeletonDefault),
+  name: 'Core/Skeleton — Default',
+  tags: ['!test'],
+}
+
+export const HighContrastLoading = {
+  ...twin(coreMeta, Loading),
+  name: 'Core — Loading',
+  tags: ['!test'],
+}
+
+export const HighContrastCoreStateHoveredRow = {
+  ...twin(coreMeta, CoreStateHoveredRow),
+  name: 'Core — State: hovered row',
+  tags: ['!test'],
+}
+
+export const HighContrastStubsDefault = {
+  ...twin(coreStubsMeta, StubsDefault),
+  name: 'Core/Stubs — Default',
+  tags: ['!test'],
+}
+
+export const HighContrastGrouped = {
+  ...twin(dataMeta, Grouped),
+  name: 'Data & scale — Grouped & aggregated',
+  tags: ['!test'],
+}
+
+export const HighContrastExportStatePanel = {
+  ...twin(exportMeta, ExportStatePanel),
+  name: 'Export — State: export panel',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringStateText = {
+  ...twin(filteringMeta, FilteringStateText),
+  name: 'Filtering — State: text filter',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringStateDate = {
+  ...twin(filteringMeta, FilteringStateDate),
+  name: 'Filtering — State: date filter',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringStateOptions = {
+  ...twin(filteringMeta, FilteringStateOptions),
+  name: 'Filtering — State: options filter',
+  tags: ['!test'],
+}
+
+export const HighContrastPagination = {
+  ...twin(panelsPaginationMeta, Pagination),
+  name: 'Panels/Pagination — Basic',
+  tags: ['!test'],
+}
+
+export const HighContrastWithStatusBar = {
+  ...twin(panelsStatusBarMeta, WithStatusBar),
+  name: 'Panels/Status bar — Basic',
+  tags: ['!test'],
+}
+
+export const HighContrastPanelsNarrowStatusBar = {
+  ...twin(panelsStatusBarMeta, PanelsNarrowStatusBar),
+  name: 'Panels/Status bar — Narrow',
+  tags: ['!test'],
+}
+
+export const HighContrastToolbarAllButtons = {
+  ...twin(panelsToolbarMeta, ToolbarAllButtons),
+  name: 'Panels/Toolbar — All buttons',
+  tags: ['!test'],
+}
+
+export const HighContrastActionsStateSection = {
+  ...twin(rowsActionsMeta, ActionsStateSection),
+  name: 'Rows/Actions — State: nested section',
+  tags: ['!test'],
+}
+
+export const HighContrastRowExpandingTreeLines = {
+  ...twin(rowsExpandingMeta, RowExpandingTreeLines),
+  name: 'Rows/Expanding — Tree lines',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightStateLit = {
+  ...twin(rowsHighlightMeta, HighlightStateLit),
+  name: 'Rows/Highlight — State: highlights',
+  tags: ['!test'],
+}
+
+export const HighContrastRowSelectionStateSelected = {
+  ...twin(rowsSelectionMeta, RowSelectionStateSelected),
+  name: 'Rows/Selection — State: selected rows',
+  tags: ['!test'],
 }

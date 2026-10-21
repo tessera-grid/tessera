@@ -153,7 +153,7 @@
 ## Сценарии
 
 Своих историй нет: решение согласует уже существующие состояния. Их вид в режиме —
-`Core/High contrast — Default` ([ADR 0087](0087-forced-colors.md), HC13).
+близнецы историй каталога в `Core/High contrast` ([ADR 0093](0093-visual-state-catalog.md), VR17).
 
 ## Требования
 

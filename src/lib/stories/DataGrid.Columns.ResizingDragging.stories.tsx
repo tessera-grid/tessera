@@ -89,7 +89,9 @@ export const ResizingStateHandle: StoryObj<StoryProps> = {
   name: 'State: resize handle',
   parameters: {
     ...vrStates('head.resizeHandle'),
-    pseudo: { hover: ['.data-grid__head-cell[data-column-id="country"]'] },
+    catalogPseudo: {
+      hover: ['.data-grid__head-cell[data-column-id="country"]'],
+    },
     ...showControls(['enableColumnSizing']),
   },
   args: {
@@ -101,7 +103,7 @@ export const ResizingStateHandle: StoryObj<StoryProps> = {
   },
   play: async ({ canvasElement, id, parameters }) => {
     await waitForRows(canvasElement)
-    await applyPseudoStates(id, parameters.pseudo)
+    await applyPseudoStates(id, parameters.catalogPseudo)
   },
 }
 

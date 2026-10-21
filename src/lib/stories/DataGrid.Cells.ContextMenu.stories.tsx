@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
-import { userEvent } from 'storybook/test'
+import { expect, userEvent } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
@@ -97,9 +97,19 @@ export const ContextMenuStateOpen: StoryObj<StoryProps> = {
     const cell = bodyCell(canvasElement, 'item-id-1', 'firstName')
     await userEvent.hover(cell)
     await sleep(500)
-    await userEvent.pointer({ keys: '[MouseRight]', target: cell })
+    // Меню встаёт у точки нажатия: без координат событие пришло бы из угла окна.
+    const box = cell.getBoundingClientRect()
+    const clientX = box.left + box.width / 2
+    const clientY = box.top + box.height / 2
+    await userEvent.pointer({
+      keys: '[MouseRight]',
+      target: cell,
+      coords: { clientX, clientY },
+    })
     const menu = await waitForPopup('menu')
     await settle()
     expectPopupInCanvas(canvasElement, menu)
+    const { left, top } = menu.getBoundingClientRect()
+    expect(Math.abs(left - clientX) + Math.abs(top - clientY)).toBeLessThan(24)
   },
 }

@@ -226,6 +226,7 @@ interface ArgType {
 
 interface RawStory {
   name?: string
+  tags?: string[]
   args?: Record<string, unknown>
   argTypes?: Record<string, ArgType>
   parameters?: {
@@ -282,6 +283,8 @@ const sharedMetaStories = async (): Promise<StoryEntry[]> => {
       continue
     }
     for (const [name, story] of Object.entries(stories)) {
+      // Близнец высокой контрастности повторяет контролы своей истории (ADR 0093, VR17).
+      if (story.tags?.includes('!test')) continue
       entries.push({
         id: `${path.replace('../stories/', '')} ${name}`,
         story,

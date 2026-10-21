@@ -182,10 +182,11 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
     ...vrModes({
       ...vrStates('body.hover'),
       requirements: ['VR8'],
-      pseudo: {
+      catalogPseudo: {
+        // Строка и одна ячейка под указателем — с кнопкой правки.
         hover: HOVERED_ROWS.flatMap(row => [
           row,
-          `${row} .data-grid__body-cell`,
+          `${row} .data-grid__body-cell[data-column-id="age"]`,
         ]),
       },
     }),
@@ -223,7 +224,7 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
         'true',
       ),
     )
-    await applyPseudoStates(id, parameters.pseudo)
+    await applyPseudoStates(id, parameters.catalogPseudo)
     // Кнопки наведённой строки видны, у соседней — нет: вид не зависит от указателя.
     const hidden = (row: string) =>
       [
@@ -233,6 +234,8 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
       ].map(button => getComputedStyle(button).opacity)
     await waitFor(() => expect(hidden('item-id-2')).toContain('1'))
     expect(hidden('item-id-3').every(opacity => opacity === '0')).toBe(true)
+    // В высокой контрастности цвет чипа системный (ADR 0087), его прячет прозрачность обёртки.
+    if (matchMedia('(forced-colors: active)').matches) return
     // Чип действий строки — тоже: значок наведённой строки закрашен, у соседней прозрачен.
     const chipColor = (row: string) =>
       getComputedStyle(

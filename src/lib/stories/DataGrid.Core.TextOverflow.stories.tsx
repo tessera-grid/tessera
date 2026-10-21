@@ -90,7 +90,8 @@ export const TextOverflow: StoryObj<StoryProps> = {
       'containerWidth',
     ]),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
     await waitForRows(canvasElement)
     const row = () => orderedRows(canvasElement)[0]!
     await userEvent.hover(row().querySelector('[data-column-id="account"]')!)

@@ -87,7 +87,10 @@ export const bodyCell = (canvas: HTMLElement, row: string, column: string) =>
     `.data-grid__body-cell[data-column-id="${column}"]`,
   )!
 
-/** Класс аддона псевдо-состояний для состояния из `parameters.pseudo`. */
+/**
+ * Класс аддона псевдо-состояний для состояния из `parameters.catalogPseudo`. Не `pseudo`:
+ * его аддон пишет в глобалы, и наведение переходит на строки следующих историй.
+ */
 const PSEUDO_CLASS: Record<string, string> = {
   hover: 'pseudo-hover',
   focus: 'pseudo-focus',

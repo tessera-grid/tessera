@@ -27,7 +27,7 @@ import { submittedCellsSeed } from '../performance/perf-cases'
 import { composed } from '../stories'
 import { contrast, toRgba } from './a11y-helpers'
 
-// Высокая контрастность Windows (ADR 0087, HC1–HC10, HC13): эмуляция
+// Высокая контрастность Windows (ADR 0087, HC1–HC10): эмуляция
 // `forced-colors: active` в Chromium (`npm test`) и Firefox (`test:engines`). Ожидаемые
 // цвета — системные цвета палитры эмуляции, их отдаёт сам браузер. WebKit режим не
 // подменяет (у Safari его нет) — набор там пропущен. HC11 — в `theming-invariants`.
@@ -124,7 +124,17 @@ const FOOTER_COLUMNS = COLUMNS.map(column => ({
   footer: () => `Sum ${column.header}`,
 }))
 
-const Grid = ({ selected = [] as string[], footer = false }) => {
+/** Вложенная шапка — раскладка `grid` (HC19). */
+const NESTED_COLUMNS = [
+  COLUMNS[0]!,
+  { id: 'g', header: 'G', columns: COLUMNS.slice(1) },
+]
+
+const Grid = ({
+  selected = [] as string[],
+  footer = false,
+  nested = false,
+}) => {
   const data = useMemo(
     () =>
       Array.from({ length: 8 }, (_, i) => ({
@@ -136,7 +146,11 @@ const Grid = ({ selected = [] as string[], footer = false }) => {
     [],
   )
   table = useCreateTable({
-    columns: (footer ? FOOTER_COLUMNS : COLUMNS) as never,
+    columns: (nested
+      ? NESTED_COLUMNS
+      : footer
+        ? FOOTER_COLUMNS
+        : COLUMNS) as never,
     data,
     getRowId: (row: Item) => row.id,
     enableFooter: footer,
@@ -157,8 +171,14 @@ const Grid = ({ selected = [] as string[], footer = false }) => {
   )
 }
 
-const mount = async (selected: string[] = [], footer = false) => {
-  const screen = await render(<Grid selected={selected} footer={footer} />)
+const mount = async (
+  selected: string[] = [],
+  footer = false,
+  nested = false,
+) => {
+  const screen = await render(
+    <Grid selected={selected} footer={footer} nested={nested} />,
+  )
   await expect
     .poll(() => document.querySelectorAll('.data-grid__body-row').length)
     .toBeGreaterThan(0)
@@ -171,6 +191,20 @@ const rowEl = (id: string) =>
   )!
 const cellEl = (rowId: string, columnId: string) =>
   rowEl(rowId).querySelector<HTMLElement>(`[data-column-id="${columnId}"]`)!
+const headCellEl = (columnId: string) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${columnId}"]`,
+  )!
+const rgbOf = (name: string) => toRgba(sys(name)).slice(0, 3)
+/**
+ * Пиксель цвета `want` с допуском в 4 по каналу: закреплённые ячейки и шапка
+ * полупрозрачны на сотую (`--tsr-comp-opacity`) и смешиваются с подложкой.
+ */
+const expectPixel = (rgb: number[], want: number[], label: string) =>
+  expect(
+    Math.max(...rgb.map((v, i) => Math.abs(v - want[i]!))),
+    `${label}: [${rgb}] вместо [${want}]`,
+  ).toBeLessThanOrEqual(4)
 const textOf = (cell: HTMLElement) =>
   cell.querySelector<HTMLElement>('.data-grid__cell-wrapper-title') ?? cell
 
@@ -311,7 +345,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('HC3: кольцо фокуса активной ячейки видно на выбранной строке и в диапазоне — контраст к Highlight ≥ 3:1; на обычной строке — Highlight, не цвет сетки', async () => {
+  test('HC3: кольцо фокуса активной ячейки видно на выбранной строке и в диапазоне — контраст к Highlight ≥ 3:1; на обычной строке — Highlight, отличимо от разделителей GrayText', async () => {
     await mount(['r2'])
     const cell = cellEl('r2', 'b')
     cell.focus()
@@ -336,7 +370,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
       .poll(() => ringContrast(inRange))
       .toBeGreaterThanOrEqual(paletteFloor())
 
-    // Обычная строка: кольцо Highlight, сетка вокруг — CanvasText. Снимок без сжатия.
+    // Обычная строка: кольцо Highlight, разделитель строк — GrayText. Снимок без сжатия.
     await page.viewport(414, 720)
     try {
       const plain = cellEl('r1', 'b')
@@ -346,47 +380,135 @@ describe('Высокая контрастность (ADR 0087)', () => {
       await expect.poll(() => style(plain).outlineColor).toBe(sys('Highlight'))
       const shot = await snapshot()
       const box = plain.getBoundingClientRect()
-      const y = box.top + box.height / 2
-      expect(shot(box.left + 0.5, y), 'кольцо').toEqual(
-        toRgba(sys('Highlight')).slice(0, 3),
+      expect(shot(box.left + 0.5, box.top + box.height / 2), 'кольцо').toEqual(
+        rgbOf('Highlight'),
       )
       const next = cellEl('r1', 'c').getBoundingClientRect()
-      expect(shot(next.right - 0.5, y), 'сетка').toEqual(
-        toRgba(sys('CanvasText')).slice(0, 3),
-      )
+      expect(
+        shot(next.left + next.width / 2, next.top + 0.5),
+        'разделитель',
+      ).toEqual(rgbOf('GrayText'))
+      expect(rgbOf('GrayText')).not.toEqual(rgbOf('Highlight'))
     } finally {
       await page.viewport(414, 896)
     }
   })
 
-  test('HC15: разделители внутри выбранной строки, диапазона и подсветки — цветом заливки, вне заливок — прежние', async () => {
+  test('HC15: разделители строк внутри выбранных строк, диапазона и подсветки — цветом заливки, вне заливок — GrayText', async () => {
     // Окно в рамку раннера: снимок без сжатия, разделитель в 1px — целыми пикселями.
     await page.viewport(414, 720)
     try {
-      await mount(['r2'])
-      table.highlight({ row: 'r4' }, { tone: 'danger' })
+      await mount(['r2', 'r3'])
+      table.highlight({ column: 'a' }, { tone: 'danger' })
       selectCell(cellEl('r5', 'b'))
       selectCell(cellEl('r6', 'c'), true)
-      await expect
-        .poll(() => cellEl('r6', 'b').getAttribute('data-cell-selected'))
-        .toBe('true')
       await expect
         .poll(() => style(cellEl('r6', 'b')).backgroundColor)
         .toBe(sys('Highlight'))
       await expect
-        .poll(() => style(rowEl('r4')).backgroundColor)
+        .poll(() => style(cellEl('r1', 'a')).backgroundColor)
         .toBe(sys('Mark'))
+      await expect
+        .poll(() => style(rowEl('r3')).backgroundColor)
+        .toBe(sys('Highlight'))
       const shot = await snapshot()
-      // Разделитель между ячейками b и c — правая рамка ячейки b.
-      const divider = (row: string) => {
-        const b = cellEl(row, 'b').getBoundingClientRect()
-        return shot(b.right - 0.5, b.top + b.height / 2)
+      // Разделитель над строкой — верхняя рамка её ячейки.
+      const divider = (row: string, column: string) => {
+        const box = cellEl(row, column).getBoundingClientRect()
+        return shot(box.left + box.width / 2, box.top + 0.5)
       }
-      const rgb = (name: string) => toRgba(sys(name)).slice(0, 3)
-      expect(divider('r2'), 'выбранная строка').toEqual(rgb('Highlight'))
-      expect(divider('r4'), 'подсветка строки').toEqual(rgb('Mark'))
-      expect(divider('r6'), 'диапазон').toEqual(rgb('Highlight'))
-      expect(divider('r1'), 'обычная строка').toEqual(rgb('CanvasText'))
+      expectPixel(
+        divider('r3', 'b'),
+        rgbOf('Highlight'),
+        'выбранные строки подряд',
+      )
+      expectPixel(divider('r1', 'a'), rgbOf('Mark'), 'подсветка колонки')
+      expectPixel(divider('r6', 'b'), rgbOf('Highlight'), 'диапазон')
+      expectPixel(divider('r1', 'b'), rgbOf('GrayText'), 'вне заливок')
+    } finally {
+      await page.viewport(414, 896)
+    }
+  })
+
+  test('HC18: плоская шапка — линии 1px GrayText между строками, под шапкой и над закреплённым футером; вертикальных линий и контура ячейки нет', async () => {
+    await page.viewport(414, 720)
+    try {
+      await mount([], true)
+      await expect
+        .poll(() => style(rowEl('r1')).backgroundColor)
+        .toBe(sys('Canvas'))
+      const shot = await snapshot()
+      const gray = rgbOf('GrayText')
+      const canvas = rgbOf('Canvas')
+      const r1 = rowEl('r1').getBoundingClientRect()
+      const r2 = rowEl('r2').getBoundingClientRect()
+      const c = cellEl('r1', 'c').getBoundingClientRect()
+      // Между строками — одна линия по всей ширине: служебная, закреплённая, обычные ячейки.
+      for (const [name, x] of [
+        ['a', cellEl('r1', 'a').getBoundingClientRect().left + 10],
+        ['b', cellEl('r1', 'b').getBoundingClientRect().left + 10],
+        ['служебная', r1.left + 10],
+        ['c', c.left + 10],
+      ] as const) {
+        expectPixel(shot(x, r2.top + 0.5), gray, `линия, ${name}`)
+        expectPixel(shot(x, r2.top - 0.5), canvas, `одна линия, ${name}`)
+      }
+      const head = document
+        .querySelector('.data-grid__head')!
+        .getBoundingClientRect()
+      expectPixel(shot(c.left + 10, head.bottom - 0.5), gray, 'под шапкой')
+      const footer = document
+        .querySelector('.data-grid__footer')!
+        .getBoundingClientRect()
+      expectPixel(shot(c.left + 10, footer.top + 0.5), gray, 'над футером')
+      // Ни вертикальных линий, ни контура ячейки: края ячеек — фон.
+      const b = cellEl('r1', 'b').getBoundingClientRect()
+      const y = r1.top + r1.height / 2
+      expectPixel(shot(b.left + 0.5, y), canvas, 'левый край ячейки')
+      expectPixel(shot(b.right - 0.5, y), canvas, 'правый край ячейки')
+      expectPixel(shot(c.left + 0.5, y), canvas, 'левый край соседа')
+    } finally {
+      await page.viewport(414, 896)
+    }
+  })
+
+  test('HC19: вложенная шапка — рамки ячеек шапки и тела одной линией 1px GrayText, без контура ячейки', async () => {
+    await page.viewport(414, 720)
+    try {
+      await mount([], false, true)
+      await expect.poll(() => headCellEl('g')).toBeTruthy()
+      await expect
+        .poll(() => style(rowEl('r1')).backgroundColor)
+        .toBe(sys('Canvas'))
+      const shot = await snapshot()
+      const gray = rgbOf('GrayText')
+      const canvas = rgbOf('Canvas')
+      const b = cellEl('r1', 'b').getBoundingClientRect()
+      const y = b.top + b.height / 2
+      expectPixel(shot(b.right - 0.5, y), gray, 'тело: линия между b и c')
+      expectPixel(shot(b.right + 0.5, y), canvas, 'тело: одна линия')
+      expectPixel(
+        shot(b.left + 0.5, y),
+        canvas,
+        'тело: левый край b без контура',
+      )
+      const r2 = cellEl('r2', 'b').getBoundingClientRect()
+      const x = b.left + b.width / 2
+      expectPixel(shot(x, r2.top + 0.5), gray, 'тело: линия между строками')
+      expectPixel(shot(x, r2.top - 0.5), canvas, 'тело: одна линия')
+      const headB = headCellEl('b').getBoundingClientRect()
+      const headY = headB.top + headB.height / 2
+      expectPixel(
+        shot(headB.right - 0.5, headY),
+        gray,
+        'шапка: линия между b и c',
+      )
+      const group = headCellEl('g').getBoundingClientRect()
+      expectPixel(shot(x, group.bottom - 0.5), gray, 'шапка: под группой')
+      const head = document
+        .querySelector('.data-grid__head')!
+        .getBoundingClientRect()
+      expectPixel(shot(x, head.bottom - 0.5), gray, 'под шапкой')
     } finally {
       await page.viewport(414, 896)
     }
@@ -707,73 +829,5 @@ describe('Высокая контрастность (ADR 0087)', () => {
     // Фон пункта переходит (токен перехода пунктов) — ждём конечный.
     await expect.poll(() => style(item).backgroundColor).toBe(sys('Highlight'))
     expect(style(item).color).toBe(sys('HighlightText'))
-  })
-
-  test('HC13: история «High contrast» — все состояния на одном экране', async () => {
-    const screen = await render(<composed.HighContrastDefault />)
-    await composed.HighContrastDefault.play?.({
-      canvasElement: screen.container,
-    } as never)
-    const highlight = toRgba(sys('Highlight'))
-    const one = <T extends Element = HTMLElement>(selector: string) =>
-      document.querySelector<T & HTMLElement>(selector)
-
-    await expect
-      .poll(() => one('.data-grid__body-row[data-selected="true"]'))
-      .not.toBeNull()
-    await expect
-      .poll(
-        () =>
-          style(one('.data-grid__body-row[data-selected="true"]')!)
-            .backgroundColor,
-      )
-      .toBe(sys('Highlight'))
-    const pinned = one(
-      '.data-grid__body-row[data-selected="true"] [data-cell-pinned="left"]:not([data-column-id^="actionColumn"])',
-    )
-    expect(pinned).not.toBeNull()
-    expect(style(pinned!).backgroundColor).toBe(sys('Highlight'))
-    await expect
-      .poll(() => one('.data-grid__body-row[data-highlight]'))
-      .not.toBeNull()
-    expect(one('[data-tree-depth]')).not.toBeNull()
-
-    // Шеврон ленивой строки ждёт детей.
-    const chevron = one('.row-expand-button[aria-busy="true"]')
-    expect(chevron).not.toBeNull()
-    expect(toRgba(tokenIn(chevron!, '--tsr-comp-pending-glow-1'))).toEqual(
-      highlight,
-    )
-
-    // Ячейка ждёт сохранения, другая — с отказом сервера.
-    const saving = one('.cell-edit-feedback[data-pending]')
-    expect(saving).not.toBeNull()
-    expect(toRgba(tokenIn(saving!, '--tsr-comp-pending-glow-1'))).toEqual(
-      highlight,
-    )
-    const failed = one('.data-grid__body-cell [aria-invalid="true"]')
-    expect(failed).not.toBeNull()
-    expect(toRgba(tokenIn(failed!, '--tsr-comp-error-flash-glow'))).toEqual(
-      toRgba(sys('Mark')),
-    )
-
-    // Тулбар: «Колонки» активна (скрыта колонка), выгрузка на месте.
-    expect(one('[role="toolbar"] button[data-active]')).not.toBeNull()
-    expect(
-      [...document.querySelectorAll('[role="toolbar"] button')].some(button =>
-        `${button.getAttribute('aria-label')} ${button.textContent}`.includes(
-          'Export',
-        ),
-      ),
-    ).toBe(true)
-
-    // Второй грид — скелет первой загрузки.
-    const stripe = [
-      ...document.querySelectorAll<HTMLElement>(
-        '.data-grid__body-cell--skeleton [class*="skeleton"]',
-      ),
-    ].find(el => el.getBoundingClientRect().width > 10)
-    expect(stripe).toBeTruthy()
-    expect(style(stripe!).backgroundColor).toBe(sys('GrayText'))
   })
 })

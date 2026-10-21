@@ -137,6 +137,59 @@ export const vrModes = (parameters: Record<string, unknown> = {}) => ({
   },
 })
 
+export interface TwinSource {
+  args?: object
+  argTypes?: object
+  decorators?: unknown
+  loaders?: unknown
+  parameters?: Record<string, unknown>
+  render?: unknown
+  play?: unknown
+}
+
+const list = (value: unknown) =>
+  value === undefined ? [] : Array.isArray(value) ? value : [value]
+
+/** Истории каталога, у которых есть близнец высокой контрастности (VR17). */
+export const forcedTwinSources = new WeakSet<object>()
+
+/**
+ * Близнец истории каталога для снимка в высокой контрастности (ADR 0093, §1, VR17):
+ * аргументы, декораторы, `render` и `play` истории и её меты, `forcedColors` и базовый
+ * режим. Состояние, требования и сценарий остаются у исходной истории. Поля меты, общие
+ * с метой файла близнеца (`base`), не копируются — их даёт сама мета файла.
+ */
+export const forced = <S extends TwinSource>(
+  meta: TwinSource,
+  story: S,
+  base: TwinSource = {},
+): S => {
+  const own = <K extends keyof TwinSource>(key: K) =>
+    meta[key] === base[key] ? undefined : meta[key]
+  const parameters = { ...meta.parameters, ...story.parameters }
+  if (!parameters.vrStates) {
+    throw new Error('forced: близнец — только у истории каталога (vrStates)')
+  }
+  forcedTwinSources.add(story)
+  delete parameters.vrStates
+  delete parameters.requirements
+  delete parameters.scenario
+  const snapshot = { ...(parameters.chromatic as object | undefined) }
+  delete (snapshot as { modes?: unknown }).modes
+  return {
+    args: { ...own('args'), ...story.args },
+    argTypes: { ...own('argTypes'), ...story.argTypes },
+    decorators: [...list(story.decorators), ...list(own('decorators'))],
+    loaders: [...list(story.loaders), ...list(own('loaders'))],
+    render: story.render ?? own('render'),
+    play: story.play,
+    parameters: {
+      ...parameters,
+      chromatic: { ...snapshot, forcedColors: 'active', modes: BASE_MODES },
+    },
+  } as unknown as S
+}
+
 /**
  * Среда истории по глобалам: запасная палитра — сброс ролей shadcn на `<html>` (их
  * читают и порталы), каталог — класс на `<html>`: без полос прокрутки (VR16).

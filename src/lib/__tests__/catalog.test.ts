@@ -21,12 +21,14 @@ import {
 } from '../../../scripts/catalog'
 import mainConfig from '../../../vitest.config'
 import {
+  BASE_MODES,
   CATALOG_STATES,
   CONTRASTS,
   FULL_MODES,
   PALETTES,
   THEMES,
   WIDTHS,
+  forcedTwinSources,
   vrModes,
 } from '../stories/__mocks__/catalog'
 import { A11Y_EXCLUSIONS, KEPT_STORY_TESTS } from '../stories/__tests__/catalog'
@@ -60,6 +62,22 @@ const projects = (
 
 const byName = (name: string) =>
   projects.find(project => project.test.name === name)
+
+interface LoadedStory {
+  tags?: string[]
+  parameters?: {
+    vrStates?: string[]
+    requirements?: string[]
+    scenario?: string
+    chromatic?: { forcedColors?: string; modes?: unknown }
+  }
+}
+
+const storyModules = import.meta.glob<Record<string, LoadedStory>>(
+  '../stories/*.stories.tsx',
+)
+
+const HIGH_CONTRAST = 'DataGrid.Core.HighContrast.stories.tsx'
 
 describe('Каталог визуальных состояний', () => {
   it('VR1: каждая история Tessera/** идёт в npm test проектом storybook — рендер без исключений и console.error, play проходит; StrictMode включён', () => {
@@ -126,7 +144,7 @@ describe('Каталог визуальных состояний', () => {
     }
   })
 
-  it("VR9: истории с тегом vr-modes снимаются в режимах тема × палитра × контраст × ширина; высокая контрастность — истории с chromatic.forcedColors: 'active'", () => {
+  it('VR9: истории с тегом vr-modes снимаются в режимах тема × палитра × контраст × ширина; высокая контрастность — близнецы историй каталога: chromatic.forcedColors ставит только forced()', () => {
     // Полный перебор осей, каждый режим — на холсте каталога.
     const modes = Object.values(FULL_MODES)
     expect(modes).toHaveLength(
@@ -170,10 +188,47 @@ describe('Каталог визуальных состояний', () => {
       .flatMap(storyExports)
       .filter(s => /forcedColors:\s*'active'/.test(s.body))
       .map(s => `${s.file}:${s.name}`)
-    expect(forced).toContain(
-      'DataGrid.Core.HighContrast.stories.tsx:HighContrastDefault',
-    )
+    // Высокую контрастность ставит только `forced()` близнецов (VR17).
+    expect(forced).toEqual([])
   })
+
+  it('VR17: у каждой истории каталога — один близнец высокой контрастности в Core/High contrast, вне тестов каталога; близнец без истории каталога и тег !test вне близнецов роняют страж', async () => {
+    const sources: [string, LoadedStory][] = []
+    const twins: string[] = []
+    const wrong: string[] = []
+    for (const [path, load] of Object.entries(storyModules)) {
+      const file = path.replace('../stories/', '')
+      const { default: _meta, ...stories } = await load()
+      for (const [name, story] of Object.entries(stories)) {
+        const id = `${file}:${name}`
+        if (story.parameters?.vrStates) sources.push([id, story])
+        if (!story.tags?.includes('!test')) continue
+        const { chromatic, vrStates, requirements, scenario } =
+          story.parameters ?? {}
+        if (
+          file !== HIGH_CONTRAST ||
+          chromatic?.forcedColors !== 'active' ||
+          chromatic.modes !== BASE_MODES ||
+          vrStates ||
+          requirements ||
+          scenario
+        ) {
+          wrong.push(id)
+        } else {
+          twins.push(id)
+        }
+      }
+    }
+    expect(sources.length).toBeGreaterThan(0)
+    expect(wrong).toEqual([])
+    // Близнецы регистрируются при импорте своего файла — проверка после загрузки всех.
+    expect(
+      sources
+        .filter(([, story]) => !forcedTwinSources.has(story))
+        .map(([id]) => id),
+    ).toEqual([])
+    expect(twins).toHaveLength(sources.length)
+  }, 60_000)
 
   it('VR10: история вне снимков несёт причину; история без снимка и без причины роняет страж', () => {
     expect(unexplainedSkips(storyFiles())).toEqual([])

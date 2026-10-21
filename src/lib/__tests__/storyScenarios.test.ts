@@ -1,5 +1,5 @@
 /**
- * Клиентские сценарии и истории (ADR 0117, §5–§8; SN7–SN8, SN11–SN13): у каждого сценария таблицы
+ * Клиентские сценарии и истории (ADR 0117, §5–§8; SN7–SN8, SN11–SN13, SN29): у каждого сценария таблицы
  * «Сценарии» принятого ADR — ровно одна история, и история ссылается на свой сценарий
  * через `parameters.scenario: '<ADR>/S<n>'`.
  * Запуск: npx vitest run --config vitest.node.config.ts storyScenarios
@@ -128,6 +128,7 @@ describe('сценарии и истории (ADR 0117)', () => {
 type RawModule = Record<
   string,
   {
+    name?: string
     parameters?: { scenario?: string }
     play?: (context: unknown) => unknown
   }
@@ -161,6 +162,34 @@ describe('проигрывание сценариев (ADR 0117, §6–§8)', ()
           }
           const touched: string[] = []
           await story.play({
+            globals: {},
+            args: {},
+            id: name,
+            canvasElement: trap(touched, 'canvasElement'),
+            step: trap(touched, 'step'),
+          })
+          if (touched.length) {
+            wrong.push(`${path} ${name}: вне каталога — ${touched.join(', ')}`)
+          }
+        }
+      }
+      expect(wrong).toEqual([])
+    },
+    TIMEOUT,
+  )
+
+  it(
+    'SN29: Default открывается в покое — её play вне тестов каталога ничего не делает',
+    async () => {
+      const wrong: string[] = []
+      for (const [path, load] of Object.entries(rawModules)) {
+        const { default: meta, ...exports } = await load()
+        for (const [name, story] of Object.entries(exports)) {
+          if ((story.name ?? name) !== 'Default') continue
+          const play = story.play ?? meta?.play
+          if (typeof play !== 'function') continue
+          const touched: string[] = []
+          await play({
             globals: {},
             args: {},
             id: name,

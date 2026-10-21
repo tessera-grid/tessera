@@ -8,6 +8,7 @@ import { expect, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import { byTestId, firstRowText, settle, until } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
+import { seed } from './__mocks__/seed'
 
 /** Нижняя панель (ADR 0038): счётчик выбора, узкая ширина, своя пагинация вместо панели. */
 const meta = {
@@ -77,10 +78,18 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
     ]),
   },
   // Узкая колонка (ADR 0038, SB7–SB13): нижняя панель в две строки — счётчик выбора
-  // сверху, пагинация снизу, кнопки переносятся. Выберите строки, чтобы появился
-  // счётчик; меняйте containerWidth, чтобы увидеть компактный и полный вид.
+  // сверху, пагинация снизу, кнопки переносятся. Меняйте containerWidth, чтобы увидеть
+  // компактный и полный вид.
   args: {
     ...GRID,
+    extraPlugins: [
+      seed(
+        'narrowSelection',
+        (table: {
+          setRowSelection?: (value: Record<string, boolean>) => void
+        }) => table.setRowSelection?.({ 'item-id-1': true, 'item-id-2': true }),
+      ),
+    ],
     containerWidth: 320,
     enableRowSelection: true,
     rowSelectionSelectedCount: true,

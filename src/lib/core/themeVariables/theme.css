@@ -1011,6 +1011,8 @@
     --tsr-comp-row-selected-bg: Highlight;
     --tsr-comp-row-selected-hovered-bg: Highlight;
     --tsr-comp-focus-ring: Highlight;
+    /* Разделители тише текста, как линии дерева: кольцо и наведение заметнее (HC18). */
+    --tsr-comp-cell-divider-color: GrayText;
     --tsr-comp-pending-glow-1: Highlight;
     --tsr-comp-pending-glow-2: Highlight;
     --tsr-comp-pending-glow-3: Highlight;

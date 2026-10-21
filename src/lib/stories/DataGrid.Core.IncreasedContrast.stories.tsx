@@ -93,7 +93,8 @@ export const IncreasedContrast: StoryObj<StoryProps> = {
       'enableKeyboardNavigation',
     ]),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
     const selected = () =>
       canvasElement.querySelector<HTMLElement>(
         '.data-grid__body-row[data-selected="true"]',

@@ -73,3 +73,19 @@
   width: var(--tsr-table-end-viewport, 100%);
   max-width: 100%;
 }
+
+/*
+ * Высокая контрастность (ADR 0087, HC18): тень над закреплённым футером режим снимает —
+ * линия разделителя поверх его ячеек. У незакреплённого линия своя (рамка или граница тела).
+ */
+@media (forced-colors: active) {
+  .footer:not([data-position='inline'])::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: var(--tsr-comp-z-index-head);
+    height: 1px;
+    background-color: var(--tsr-comp-cell-divider-color);
+    pointer-events: none;
+  }
+}

@@ -10,7 +10,7 @@ import type { StubsOverride } from '../../../core/stubs'
 import type { TableLabels } from '../../../core/localization'
 import type { TableIcons } from '../../../ui/icons'
 import { keyboardNavigation, quickSearch, rowExpanding } from '../../../plugins'
-import { humanClick } from '../helpers'
+import { humanClick, rowState } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 // Ошибка загрузки данных (ADR 0096, LE1–LE15, LE17): красный свет под шапкой, плашка
@@ -248,11 +248,10 @@ describe('Ошибка обновления: свет и плашка', () => {
     await expect
       .poll(() => getComputedStyle(q('.data-grid__body')!).opacity)
       .toBe('1')
-    const rest = getComputedStyle(row).backgroundColor
+    // Наведение — слоем состояния строки поверх её фона (ADR 0126).
+    const rest = rowState(row)
     await userEvent.hover(row)
-    await expect
-      .poll(() => getComputedStyle(row).backgroundColor)
-      .not.toBe(rest)
+    await expect.poll(() => rowState(row)).not.toBe(rest)
   })
 
   test('LE3: плашка под шапкой по центру видимой ширины — иконка, заголовок, причина, «Retry», «Dismiss»; длинная причина — с многоточием и тултипом; раскладку не сдвигает, при горизонтальной прокрутке на месте', async () => {
