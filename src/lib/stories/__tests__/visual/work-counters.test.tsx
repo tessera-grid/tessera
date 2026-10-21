@@ -191,11 +191,16 @@ describe('Счётчики работы', () => {
     const rowHeight = document
       .querySelector('.data-grid__body-row')!
       .getBoundingClientRect().height
-    await browser.realWheel(at, rowHeight, 1, 0)
+    // Колесо не ждёт прокрутки: тик засчитан, когда `scrollTop` дошёл до цели, — иначе
+    // под нагрузкой замер кончается раньше, чем строка смонтирована.
+    const wheel = async (rows: number) => {
+      await browser.realWheel(at, rowHeight, 1, 0)
+      await expect.poll(() => grid.scrollTop).toBe(rowHeight * rows)
+    }
+    await wheel(1)
     // Тики подряд — быстрая прокрутка со скелетами (ADR 0008); один тик — спокойная.
     await waitForQuietDocument(500)
-    const work = await measure(() => browser.realWheel(at, rowHeight, 1, 0))
-    expect(grid.scrollTop).toBe(rowHeight * 2)
+    const work = await measure(() => wheel(2))
     expect(rowRenders(work), describeWork(work)).toBe(1)
     expect(renders(work, BodyCell), describeWork(work)).toBe(windowSize().cells)
   })
