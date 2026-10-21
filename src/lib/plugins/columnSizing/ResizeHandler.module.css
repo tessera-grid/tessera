@@ -41,6 +41,8 @@
 
 .handler {
   border-style: solid;
+  /* Черта — цветом грипа, а не глобальным сбросом рамок окружения. */
+  border-color: currentColor;
   align-self: center;
   border-radius: var(--tsr-comp-resize-handler-radius, 2px);
   border-width: 2px;

@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { revealedHandleWidth } from '../helpers'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
+import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { composed } from '../stories'
 import {
   pinFirstColumn,
@@ -812,6 +813,46 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
       )
       .toBe(true)
     await userEvent.keyboard('{Escape}')
+  })
+})
+
+describe('Грип вне грида (ADR 0111)', () => {
+  test('GB11: черта грипа — цветом грипа и вне грида: глобальный сброс цвета рамок окружения её не перекрашивает', async () => {
+    const reset = document.createElement('style')
+    reset.textContent = '* { border-color: rgb(255, 0, 0); }'
+    document.head.append(reset)
+    try {
+      await render(
+        <div className="data-grid-theme">
+          <div
+            className="data-grid__head-cell"
+            style={{ position: 'relative', width: 200, height: 50 }}
+          >
+            <ResizeHandler
+              isResizing={false}
+              size={200}
+              minSize={80}
+              onResize={() => {}}
+              onResizeEnd={() => {}}
+              onResizeCancel={() => {}}
+              onEscape={() => {}}
+              onResetSize={() => {}}
+              onResizeBy={() => {}}
+            />
+          </div>
+        </div>,
+      )
+      const separator = document.querySelector<HTMLElement>(
+        `${RESIZE_GRIP} [role="separator"]`,
+      )!
+      const style = getComputedStyle(separator)
+      expect(style.borderTopColor).not.toBe('rgb(255, 0, 0)')
+      expect(style.borderTopColor).toBe(
+        getComputedStyle(separator.closest(RESIZE_GRIP)!).color,
+      )
+    } finally {
+      reset.remove()
+    }
   })
 })
 
