@@ -70,22 +70,25 @@
 - **Нижняя панель** (ADR 0038): `--tsr-comp-status-bar-height` / `-padding-x` /
   `-gap` / `-bg` / `-divider-color`. `--tsr-comp-status-bar-offset` выставляет сам
   грид, когда есть `statusBarSlot`, — его не переопределяют.
-- **Свет ожидания и ошибки** (ADR [0055](../decisions/0055-button-pending-and-error-flash.md),
-  [0095](../decisions/0095-pending-and-error-light.md)): четыре пятна оттенков
-  `--tsr-comp-pending-glow-1…4` (оттенки свечения загрузки с силой
-  `--tsr-comp-pending-glow-strength`), ореол `--tsr-comp-pending-glow-halo`, период
-  `--tsr-comp-pending-glow-duration`. У кнопки — внешние тени со сдвигом
-  `--tsr-comp-pending-glow-offset` и размытием `-blur`; у ячейки в правке — полоса по
-  периметру внутри (`--tsr-comp-cell-pending-glow-width` / `-height` / `-depth` /
-  `-opacity`); у спиннера пункта меню — дуга `--tsr-comp-pending-spinner-arc` по дорожке
-  `--tsr-comp-pending-spinner-track` толщиной `--tsr-comp-pending-ring-width`, цвет дуги
-  перетекает `--tsr-comp-pending-spinner-1…4`. Ошибка `errorFlash` — ровный красный
-  `--tsr-comp-error-flash-glow` (цвет `--tsr-comp-error-flash-color` той же силы),
-  нарастает за `--tsr-comp-error-flash-fill-duration`, держится `-duration` и гаснет
-  переходом движения. Свет — `::after` носителя: `::before` у `IconButton` и
-  `ToolbarButton` остаётся за слоями наведения. Без движения пятна стоят по диагоналям
-  в полную силу; пока грид прокручивается (`data-scrolling`), анимации света на паузе
+- **Ожидание и отказ кнопок** (ADR [0055](../decisions/0055-button-pending-and-error-flash.md),
+  [0127](../decisions/0127-initiator-pending-and-failure.md)): по контуру кнопки бежит дуга
+  толщиной `--tsr-comp-pending-ring-width` и длиной `--tsr-comp-pending-arc` процентов
+  периметра; круг — 0,5 `--tsr-comp-pending-glow-duration`, цвет перетекает
+  `--tsr-comp-pending-spinner-1…4`. Отказ `errorFlash` — дуга встаёт, краснеет
+  (`--tsr-comp-error-flash-color`) и за `--tsr-comp-error-flash-fill-duration` заполняет
+  контур, держится `-duration` и гаснет за `-fade-duration`; с `failure` после вспышки
+  остаётся точка отказа. Дуга — SVG-слой `PendingArc` последним ребёнком кнопки, радиус
+  — из её `border-radius`; `--tsr-ring-border` — рамка кнопки, от которой отсчитан
+  внешний край. У спиннера пункта меню — дуга `--tsr-comp-pending-spinner-arc` без
+  дорожки. Пока грид прокручивается (`data-scrolling`), дуга стоит
   (ADR [0078](../decisions/0078-async-menu-actions.md), MI25).
+- **Свет ячейки в правке** (ADR [0057](../decisions/0057-async-cell-edit-feedback.md),
+  [0095](../decisions/0095-pending-and-error-light.md); снимается этапом 2 ADR 0127): четыре
+  пятна оттенков `--tsr-comp-pending-glow-1…4` (оттенки свечения загрузки с силой
+  `--tsr-comp-pending-glow-strength`) полосой по периметру внутри
+  (`--tsr-comp-cell-pending-glow-width` / `-height` / `-depth` / `-opacity`); отказ —
+  ровный `--tsr-comp-error-flash-glow`. Без движения пятна стоят по диагоналям в полную
+  силу.
 - **Подсветка** (ADR [0080](../decisions/0080-highlight-api.md)): заливка тона —
   `--tsr-comp-highlight-<tone>-bg` для `danger`/`warning`/`success` (роли
   `--tsr-sys-danger`, новые `--tsr-sys-warning` и `--tsr-sys-success` с мостом к

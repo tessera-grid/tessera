@@ -24,7 +24,7 @@ import {
   rowActionMenu,
   rowActions,
 } from '../../../plugins'
-import { humanClick } from '../helpers'
+import { humanClick, pendingArcOf } from '../helpers'
 import { composed } from '../stories'
 import { ContextMenuAsync } from '../../DataGrid.Cells.ContextMenu.stories'
 import { RowActionsAsync } from '../../DataGrid.Rows.Actions.stories'
@@ -567,7 +567,7 @@ describe('Причина блокировки и клавиатура', () => {
 })
 
 describe('Долгое действие', () => {
-  test('MI8: onSelect вернул промис — меню закрывается, кебаб бликует и виден без наведения, тултип и имя перечисляют ждущие действия', async () => {
+  test('MI8: onSelect вернул промис — меню закрывается, у кебаба дуга ожидания и он виден без наведения, имя перечисляет ждущие действия; тултипа у занятого кебаба нет (ADR 0127)', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
     await parkPointer()
@@ -577,8 +577,10 @@ describe('Долгое действие', () => {
     expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(
       'Row options. Running: Remove',
     )
+    expect(pendingArcOf(rowKebab('r1')!)?.dataset.phase).toBe('pending')
     await userEvent.hover(rowKebab('r1')!)
-    await expect.poll(tooltipShown('Row options. Running: Remove')).toBe(true)
+    await new Promise(resolve => setTimeout(resolve, 400))
+    expect(tooltipShown('Row options. Running: Remove')()).toBe(false)
 
     probe.lastRun('remove').done.resolve()
     await expect
@@ -817,7 +819,7 @@ describe('Контекстное меню, виртуализация, инла�
     await userEvent.hover(nameCell('r1'))
     await humanClick(button())
     await expect.poll(() => button().getAttribute('aria-busy')).toBe('true')
-    expect(getComputedStyle(button(), '::after').content).not.toBe('none')
+    expect(pendingArcOf(button())?.dataset.phase).toBe('pending')
     await humanClick(button())
     expect(probe.runs.length).toBe(1)
 
@@ -907,14 +909,14 @@ describe('Контекстное меню, виртуализация, инла�
 })
 
 describe('Свет во время прокрутки', () => {
-  test('MI25: пока грид прокручивается, анимации света кнопок на паузе; после остановки прокрутки идут снова', async () => {
+  test('MI25: пока грид прокручивается, анимации дуги кнопок на паузе; после остановки прокрутки идут снова', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
     await parkPointer()
-    /** Состояние всех анимаций света кнопки — одно на всех или 'mixed'. */
+    /** Состояние всех анимаций дуги кнопки (ADR 0127) — одно на всех или 'mixed'. */
     const playState = () => {
       const states = new Set(
-        getComputedStyle(rowKebab('r1')!, '::after')
+        getComputedStyle(pendingArcOf(rowKebab('r1')!)!.firstElementChild!)
           .animationPlayState.split(',')
           .map(state => state.trim()),
       )

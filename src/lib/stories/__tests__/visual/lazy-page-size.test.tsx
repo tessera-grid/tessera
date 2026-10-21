@@ -1,7 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { humanClick } from '../helpers'
+import { humanClick, pendingArcOf } from '../helpers'
 import {
   MODULE,
   holdModule,
@@ -26,9 +26,7 @@ describe('Размер страницы — ожидание загрузки', 
 
     await humanClick(pageSizeButton())
     await expect.poll(busy).toBe('true')
-    expect(getComputedStyle(pageSizeButton(), '::after').content).not.toBe(
-      'none',
-    )
+    expect(pendingArcOf(pageSizeButton())?.dataset.phase).toBe('pending')
     await userEvent.keyboard('{Escape}')
     await expect.poll(busy).toBeNull()
 

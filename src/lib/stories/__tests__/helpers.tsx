@@ -23,6 +23,13 @@ export const humanClick = (element: Element) =>
   userEvent.click(element, { delay: HUMAN_PRESS_MS })
 
 /**
+ * Дуга ожидания и отказа кнопки кита (ADR 0127): слой SVG последним ребёнком кнопки,
+ * фаза — `data-phase` (`pending`, `leaving`, `error`, `off`); без дуги — `null`.
+ */
+export const pendingArcOf = (button: Element) =>
+  button.querySelector<SVGSVGElement>(':scope > svg[data-pending-arc]')
+
+/**
  * Слой состояния строки (ADR 0126): наведение и выбор ложатся поверх её фона, а
  * `background-color` строки — всегда фон чётной или нечётной строки. Закреплённые
  * ячейки наследуют слой.

@@ -5,7 +5,13 @@ import clsx from 'clsx'
 
 import { type ButtonTooltipProps } from '../IconButton'
 import { Tooltip } from '../Tooltip'
-import { type ButtonStatesProps, useButtonStates } from '../buttonStates'
+import {
+  type ButtonStatesProps,
+  FailureMark,
+  type FailureProps,
+  useButtonStates,
+  useFailure,
+} from '../buttonStates'
 
 import styles from './Button.module.css'
 
@@ -13,6 +19,7 @@ export interface ButtonProps
   extends
     ButtonHTMLAttributes<HTMLButtonElement>,
     ButtonStatesProps,
+    FailureProps,
     ButtonTooltipProps {
   /** `outline` — с рамкой, на поверхности грида; `ghost` — без рамки, в поповерах. */
   variant?: 'outline' | 'ghost'
@@ -43,17 +50,21 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       focusableWhenDisabled,
       pending,
       errorFlash,
+      failure,
       onClick,
       children,
       ...rest
     },
     forwardedRef,
   ) => {
+    const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
     const states = useButtonStates(
       forwardedRef,
       { pending, errorFlash },
       onClick,
+      busy,
     )
+    const described = useFailure(failure, rest['aria-describedby'])
 
     const button = (
       <BaseButton
@@ -61,6 +72,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled}
         focusableWhenDisabled={focusableWhenDisabled || tooltipWhenDisabled}
         {...rest}
+        aria-describedby={described.describedBy}
         ref={states.ref}
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
         data-error-flash={states['data-error-flash']}
@@ -76,19 +88,28 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {icon}
         {children}
+        {failure !== undefined && (
+          <FailureMark
+            id={described.id}
+            text={failure}
+            shown={!states.active}
+          />
+        )}
+        {states.arc}
       </BaseButton>
     )
 
-    return tooltip ? (
+    // Обёртка — всегда: тултип отметки отказа появляется посреди жизни кнопки и не
+    // должен её перемонтировать (без заголовка `Tooltip` рисует один триггер). Занятая
+    // кнопка тултип не показывает; с отметкой отказа тултип — её текст.
+    return (
       <Tooltip
-        title={tooltip}
+        title={failure ?? tooltip}
         side={tooltipSide}
-        disabled={!!disabled && !tooltipWhenDisabled}
+        disabled={(!!disabled && !tooltipWhenDisabled) || pending || busy}
       >
         {button}
       </Tooltip>
-    ) : (
-      button
     )
   },
 )

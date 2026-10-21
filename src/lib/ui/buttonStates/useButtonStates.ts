@@ -3,6 +3,7 @@ import {
   type MouseEvent,
   type MouseEventHandler,
   type RefObject,
+  createElement,
   useCallback,
   useEffect,
   useRef,
@@ -10,8 +11,10 @@ import {
 } from 'react'
 
 import { assignRef } from '../assignRef'
+import { type ArcPhase, PendingArc } from './PendingArc'
 import {
   type ErrorFlashPhase,
+  phaseLayerOf,
   longestTransition,
   useErrorFlash,
 } from './useErrorFlash'
@@ -19,7 +22,7 @@ import {
 import styles from '../ringStates/ringStates.module.css'
 
 export interface ButtonStatesProps {
-  /** Ждёт асинхронного действия: кольцо по контуру, `aria-busy`, нажатия игнорируются. */
+  /** Ждёт асинхронного действия: дуга по контуру, `aria-busy`, нажатия игнорируются. */
   pending?: boolean
   /** Ключ вспышки ошибки: каждое новое значение — вспышка (ADR 0055). */
   errorFlash?: number
@@ -35,11 +38,6 @@ const useOwnRef = <T extends HTMLElement>(forwardedRef: ForwardedRef<T>) => {
   const ref = useCallback(
     (node: T | null) => {
       own.current = node
-      // Своя фаза света ожидания: соседние кнопки не идут в ногу. Одна на узел: новый
-      // ref снаружи на каждом рендере сдвигал бы свет и пересчитывал его стиль (MI23).
-      if (node && !node.style.getPropertyValue('--tsr-pending-phase')) {
-        node.style.setProperty('--tsr-pending-phase', String(Math.random()))
-      }
       assignRef(forwardedRef, node)
     },
     [forwardedRef],
@@ -48,20 +46,20 @@ const useOwnRef = <T extends HTMLElement>(forwardedRef: ForwardedRef<T>) => {
 }
 
 /**
- * Ожидание кончилось без ошибки: свет ещё живёт и гаснет переходом до конца самого
- * долгого перехода `::after` (ADR 0055, BS19). Фаза выводится при рендере, как вспышка:
- * снятие `aria-busy` и начало угасания — в одном коммите, свет не мигает.
+ * Ожидание кончилось без ошибки: дуга ещё бежит и гаснет переходом до конца самого
+ * долгого перехода её слоя (ADR 0055, BS19). Фаза выводится при рендере, как вспышка:
+ * снятие `aria-busy` и начало угасания — в одном коммите, дуга не мигает.
  */
 const usePendingLeave = (
   ref: RefObject<HTMLElement | null>,
-  pending: boolean,
+  lit: boolean,
   flash: ErrorFlashPhase,
 ) => {
-  const [wasPending, setWasPending] = useState(pending)
+  const [wasLit, setWasLit] = useState(lit)
   const [leaving, setLeaving] = useState(false)
-  if (pending !== wasPending) {
-    setWasPending(pending)
-    setLeaving(!pending)
+  if (lit !== wasLit) {
+    setWasLit(lit)
+    setLeaving(!lit)
   }
 
   useEffect(() => {
@@ -71,24 +69,30 @@ const usePendingLeave = (
     }
     const timer = setTimeout(
       () => setLeaving(false),
-      longestTransition(getComputedStyle(el, '::after')),
+      longestTransition(phaseLayerOf(el)),
     )
     return () => clearTimeout(timer)
   }, [ref, leaving])
 
-  // Вспышка ошибки сама ведёт свет дальше — угасание ей не нужно.
-  return leaving && !pending && flash === undefined
+  // Вспышка ошибки сама ведёт дугу дальше — угасание ей не нужно.
+  return leaving && !lit && flash === undefined
 }
 
-/** Ожидание и вспышка ошибки базовой кнопки (ADR 0055). */
+/**
+ * Ожидание и вспышка ошибки базовой кнопки (ADR 0055, ADR 0127). `busy` — ожидание,
+ * которое отметили снаружи `aria-busy` (серверное действие, ADR 0116): дуга есть, нажатия
+ * не глушатся.
+ */
 export const useButtonStates = <T extends HTMLElement>(
   forwardedRef: ForwardedRef<T>,
   { pending = false, errorFlash }: ButtonStatesProps,
   onClick: MouseEventHandler<T> | undefined,
+  busy = false,
 ) => {
   const { own, ref } = useOwnRef(forwardedRef)
   const flash = useErrorFlash(own, errorFlash)
-  const leaving = usePendingLeave(own, pending, flash)
+  const lit = pending || busy
+  const leaving = usePendingLeave(own, lit, flash)
 
   const handleClick = (event: MouseEvent<T>) => {
     if (pending) {
@@ -98,6 +102,17 @@ export const useButtonStates = <T extends HTMLElement>(
     onClick?.(event)
   }
 
+  const phase: ArcPhase | undefined =
+    flash === 'on'
+      ? 'error'
+      : flash === 'off'
+        ? 'off'
+        : lit
+          ? 'pending'
+          : leaving
+            ? 'leaving'
+            : undefined
+
   return {
     ref,
     className: styles.ring,
@@ -105,5 +120,9 @@ export const useButtonStates = <T extends HTMLElement>(
     'data-error-flash': flash,
     'data-pending-leaving': leaving || undefined,
     onClick: handleClick,
+    /** Дуга ожидания и отказа — последним ребёнком кнопки. */
+    arc: phase && createElement(PendingArc, { phase }),
+    /** Кнопка в ожидании или держит красный контур: отметка отказа появится с его угасанием. */
+    active: lit || flash === 'on',
   }
 }

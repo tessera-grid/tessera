@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import '../../../core/themeVariables/theme.css'
 import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
+import { pendingArcOf } from '../helpers'
 import { SvgIcon } from '@/lib/ui/icons'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
@@ -203,7 +204,7 @@ describe('Button (ADR 0097)', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  test('BN4: pending shows the pending light and aria-busy and ignores presses; a new errorFlash value flashes; the outline border fades out meanwhile', async () => {
+  test('BN4: pending shows the pending arc and aria-busy and ignores presses; a new errorFlash value flashes; the outline border fades out meanwhile', async () => {
     const onClick = vi.fn()
     const long = { '--tsr-comp-error-flash-duration': '10s' } as CSSProperties
     const screen = await render(
@@ -217,8 +218,8 @@ describe('Button (ADR 0097)', () => {
     const [pending, flashing] = buttons()
     expect(pending!.getAttribute('aria-busy')).toBe('true')
     expect(pending!.disabled).toBe(false)
-    expect(style(pending!, '::after').animationName).not.toBe('none')
-    // Рамка уходит переходом, а не пропадает: форму рисует свет.
+    expect(pendingArcOf(pending!)?.dataset.phase).toBe('pending')
+    // Рамка уходит переходом, а не пропадает: форму рисует дуга (ADR 0127).
     expect(style(pending!).transitionProperty).toContain('border-color')
     await expect
       .poll(() => style(pending!).borderTopColor, { timeout: 2000 })
@@ -240,13 +241,7 @@ describe('Button (ADR 0097)', () => {
       </Theme>,
     )
     expect(flashing!.getAttribute('data-error-flash')).toBe('on')
-    await expect
-      .poll(() =>
-        parseFloat(
-          style(flashing!, '::after').getPropertyValue('--tsr-ring-fill'),
-        ),
-      )
-      .toBe(100)
+    expect(pendingArcOf(flashing!)?.dataset.phase).toBe('error')
     await expect
       .poll(() => style(flashing!).borderTopColor, { timeout: 2000 })
       .toBe('rgba(0, 0, 0, 0)')

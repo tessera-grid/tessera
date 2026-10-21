@@ -22,7 +22,7 @@ import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
 import { ToolbarButton } from '@/lib/ui/ToolbarButton'
 import { SvgIcon } from '@/lib/ui/icons'
-import { renderGrid } from '../helpers'
+import { pendingArcOf, renderGrid } from '../helpers'
 import { submittedCellsSeed } from '../performance/perf-cases'
 import { composed } from '../stories'
 import { contrast, toRgba } from './a11y-helpers'
@@ -67,23 +67,6 @@ const tokenIn = (el: Element, name: string) => {
   const value = getComputedStyle(probe).color
   probe.remove()
   return value
-}
-
-/** Части значения через запятую верхнего уровня; у тени — её цвет. */
-const topLevelParts = (value: string) => {
-  const parts: string[] = []
-  let depth = 0
-  let start = 0
-  for (let i = 0; i < value.length; i++) {
-    if (value[i] === '(') depth++
-    else if (value[i] === ')') depth--
-    else if (value[i] === ',' && depth === 0) {
-      parts.push(value.slice(start, i))
-      start = i + 1
-    }
-  }
-  parts.push(value.slice(start))
-  return parts.map(part => part.replace(/\s*-?[\d.]+px/g, '').trim())
 }
 
 /**
@@ -649,7 +632,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('HC6: свет ожидания кнопки — цветом Highlight; ошибка — ровный свет цветом Mark', async () => {
+  test('HC6: дуга ожидания кнопки — цветом Highlight; отказ — контур цветом Mark (ADR 0127)', async () => {
     const Button = ({
       pending,
       flash,
@@ -665,25 +648,20 @@ describe('Высокая контрастность (ADR 0087)', () => {
     )
     const screen = await render(<Button pending flash={0} />)
     const button = () => document.querySelector('button')!
-    const ring = () => style(button(), '::after')
+    const arc = () => pendingArcOf(button())!
+    const line = () => style(arc().firstElementChild!)
     const highlight = toRgba(sys('Highlight'))
     for (const i of [1, 2, 3, 4]) {
-      expect(toRgba(tokenIn(button(), `--tsr-comp-pending-glow-${i}`))).toEqual(
-        highlight,
-      )
+      expect(
+        toRgba(tokenIn(button(), `--tsr-comp-pending-spinner-${i}`)),
+      ).toEqual(highlight)
     }
-    expect(ring().forcedColorAdjust).toBe('none')
-    expect(ring().boxShadow).not.toBe('none')
+    expect(style(arc()).forcedColorAdjust).toBe('none')
+    expect(toRgba(line().stroke)).toEqual(highlight)
     await frame()
     await screen.rerender(<Button pending={false} flash={1} />)
     expect(button().getAttribute('data-error-flash')).toBe('on')
-    await expect
-      .poll(() => parseFloat(ring().getPropertyValue('--tsr-ring-fill')))
-      .toBe(100)
-    // Ровный слой ошибки — пятый в списке теней.
-    expect(toRgba(topLevelParts(ring().boxShadow)[4]!)).toEqual(
-      toRgba(sys('Mark')),
-    )
+    expect(toRgba(line().stroke)).toEqual(toRgba(sys('Mark')))
   })
 
   test('HC7: свет ячейки в правке — те же цвета: ожидание Highlight, ошибка Mark', async () => {

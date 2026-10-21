@@ -28,6 +28,15 @@ export const longestTransition = (style: CSSStyleDeclaration): number => {
 export type ErrorFlashPhase = 'on' | 'off' | undefined
 
 /**
+ * Стиль слоя, который ведёт фазу носителя: дуга кнопки (ADR 0127), а без неё — `::after`
+ * (свет ячейки, полоса загрузки).
+ */
+export const phaseLayerOf = (el: HTMLElement): CSSStyleDeclaration => {
+  const arc = el.querySelector(':scope > [data-pending-arc]')
+  return arc ? getComputedStyle(arc) : getComputedStyle(el, '::after')
+}
+
+/**
  * Вспышка ошибки кнопки (ADR 0055): каждое новое значение `key` заливает контур цветом
  * ошибки на `--tsr-comp-error-flash-duration` (`on`), затем он гаснет переходом движения
  * (`off`). Значение при монтировании вспышку не запускает.
@@ -62,7 +71,7 @@ export const useErrorFlash = (
               '--tsr-comp-error-flash-duration',
             ),
           )
-        : longestTransition(getComputedStyle(el, '::after'))
+        : longestTransition(phaseLayerOf(el))
     const timer = setTimeout(
       () => setPhase(phase === 'on' ? 'off' : undefined),
       ms,

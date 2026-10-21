@@ -30,14 +30,14 @@
 }
 
 /* Иконка одного размера, что бы ни передал вызов. */
-.iconButton > svg {
+.iconButton > svg:not([data-pending-arc]) {
   flex: none;
   width: var(--tsr-comp-button-icon-size, 16px);
   height: var(--tsr-comp-button-icon-size, 16px);
 }
 
-/* Низкая специфичность — любой прикладной hover перекрывает базовый */
-:where(.iconButton:not(:disabled, [data-disabled])):hover {
+/* Низкая специфичность — любой прикладной hover перекрывает базовый; занятая — без наведения */
+:where(.iconButton:not(:disabled, [data-disabled], [aria-busy='true'])):hover {
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
@@ -65,6 +65,11 @@
   cursor: default;
 }
 
+/* Занятая кнопка выглядит недоступной (ADR 0127, IR31). */
+.iconButton[aria-busy='true'] {
+  color: var(--tsr-comp-control-disabled-color);
+}
+
 /*
  * Вариант «поверх контента» (ADR 0017, TC-9): непрозрачный фон, тень и светлый
  * непрозрачный hover слоем под иконкой.
@@ -87,7 +92,10 @@
   transition: var(--tsr-comp-overlay-hover-transition);
 }
 
-.iconButton[data-variant='overlay']:hover:not(:disabled)::before {
+.iconButton[data-variant='overlay']:hover:not(
+    :disabled,
+    [aria-busy='true']
+  )::before {
   opacity: 1;
 }
 

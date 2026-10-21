@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
-import { revealedHandleWidth } from '../helpers'
+import { pendingArcOf, revealedHandleWidth } from '../helpers'
 
 import { DEFAULT_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
@@ -483,12 +483,12 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await checkAxe()
         if (server.browser !== 'webkit') {
           await pointer.forcedColors(true)
-          const glow = getComputedStyle(handleOf(a!)).getPropertyValue(
-            '--tsr-comp-pending-glow-1',
-          )
-          expect(toRgba(glow.trim())).toEqual(sys('Highlight'))
-          const ring = getComputedStyle(handleOf(a!), '::after')
-          expect(ring.boxShadow).not.toBe('none')
+          // Дуга ожидания ручки (ADR 0127) — цветом Highlight.
+          const arc = pendingArcOf(handleOf(a!))!
+          expect(getComputedStyle(arc).forcedColorAdjust).toBe('none')
+          expect(
+            toRgba(getComputedStyle(arc.firstElementChild!).stroke),
+          ).toEqual(sys('Highlight'))
           await pointer.forcedColors(false)
         }
         await settleMoves(false, new Error('no'))

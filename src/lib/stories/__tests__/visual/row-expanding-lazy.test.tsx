@@ -8,6 +8,7 @@ import { composed } from '../stories'
 import {
   getScroller,
   humanClick,
+  pendingArcOf,
   revealCellButtons,
   rowState,
   scrollToEnd,
@@ -106,9 +107,7 @@ describe('Row expanding: lazy children', () => {
       .poll(() => toggleOf('lazy')!.getAttribute('aria-busy'))
       .toBe('true')
     expect(rowOf('lazy')!.getAttribute('aria-busy')).toBe('true')
-    expect(getComputedStyle(toggleOf('lazy')!, '::after').content).not.toBe(
-      'none',
-    )
+    expect(pendingArcOf(toggleOf('lazy')!)?.dataset.phase).toBe('pending')
     answer.resolve(kids('lazy', 2))
     await waitRow('lazy-c1')
     expect(rowOf('lazy-c0')).not.toBeNull()

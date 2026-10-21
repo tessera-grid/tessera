@@ -15,7 +15,7 @@ import {
 } from '../../../plugins'
 import type { RowDragEnd } from '../../../plugins'
 import type { Row } from '../../../types'
-import { settleRowMotion } from '../helpers'
+import { pendingArcOf, settleRowMotion } from '../helpers'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 import {
   HANDLE,
@@ -802,13 +802,12 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       await checkAxe()
       if (server.browser !== 'webkit') {
         await pointer.forcedColors(true)
-        const glow = getComputedStyle(handleOf('node-0-0')).getPropertyValue(
-          '--tsr-comp-pending-glow-1',
+        // Дуга ожидания ручки (ADR 0127) — цветом Highlight.
+        const arc = pendingArcOf(handleOf('node-0-0'))!
+        expect(getComputedStyle(arc).forcedColorAdjust).toBe('none')
+        expect(toRgba(getComputedStyle(arc.firstElementChild!).stroke)).toEqual(
+          sys('Highlight'),
         )
-        expect(toRgba(glow.trim())).toEqual(sys('Highlight'))
-        const ring = getComputedStyle(handleOf('node-0-0'), '::after')
-        expect(ring.forcedColorAdjust).toBe('none')
-        expect(ring.boxShadow).not.toBe('none')
         await pointer.forcedColors(false)
       }
       await settleMoves(false, new Error('no'))

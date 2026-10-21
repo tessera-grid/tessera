@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { LAZY_PENDING_DELAY_MS } from '../../../core/lazyOpening'
-import { humanClick } from '../helpers'
+import { humanClick, pendingArcOf } from '../helpers'
 import {
   MODULE,
   columnsButton,
@@ -36,10 +36,8 @@ describe('Ленивые поповеры — ожидание', () => {
     await expect
       .poll(() => columnsButton().getAttribute('aria-busy'))
       .toBe('true')
-    // Блик — кольцо по контуру поверх кнопки.
-    expect(getComputedStyle(columnsButton(), '::after').content).not.toBe(
-      'none',
-    )
+    // Ожидание — дуга по контуру кнопки (ADR 0127).
+    expect(pendingArcOf(columnsButton())?.dataset.phase).toBe('pending')
     await releaseModule(MODULE.columns)
     await expect.poll(columnsPopover).not.toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()

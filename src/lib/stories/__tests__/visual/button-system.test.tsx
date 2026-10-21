@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import '../../../core/themeVariables/theme.css'
 import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
+import { pendingArcOf } from '../helpers'
 import { SvgIcon } from '@/lib/ui/icons'
 import * as cellStories from '../../UI.CellButton.stories'
 import * as expandStories from '../../UI.ExpandButton.stories'
@@ -238,7 +239,7 @@ describe('Button system (ADR 0098)', () => {
       token(host, '--tsr-comp-focus-ring', 'color'),
     )
     expect(pending!.getAttribute('aria-busy')).toBe('true')
-    expect(style(pending!, '::after').animationName).not.toBe('none')
+    expect(pendingArcOf(pending!)?.dataset.phase).toBe('pending')
     await screen.rerender(
       <Theme style={long}>
         <IconButton aria-label="Probe">{icon}</IconButton>
@@ -249,6 +250,7 @@ describe('Button system (ADR 0098)', () => {
       </Theme>,
     )
     expect(error!.getAttribute('data-error-flash')).toBe('on')
+    expect(pendingArcOf(error!)?.dataset.phase).toBe('error')
     expect(style(off!).color).toBe(
       token(host, '--tsr-comp-control-disabled-color', 'color'),
     )

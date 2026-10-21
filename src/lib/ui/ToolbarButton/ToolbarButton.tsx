@@ -8,12 +8,13 @@ import {
 import { Toolbar } from '@base-ui/react/toolbar'
 
 import { IconButton } from '../IconButton'
-import { type ButtonStatesProps } from '../buttonStates'
+import { type ButtonStatesProps, type FailureProps } from '../buttonStates'
 
 export interface ToolbarButtonProps
   extends
     Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
-    ButtonStatesProps {
+    ButtonStatesProps,
+    FailureProps {
   /** Тултип и доступное имя кнопки. */
   label: string
   icon: ReactNode
@@ -36,6 +37,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       className,
       pending,
       errorFlash,
+      failure,
       onClick,
       render,
       ...rest
@@ -52,6 +54,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           active={active}
           pending={pending}
           errorFlash={errorFlash}
+          failure={failure}
           onClick={onClick}
           className={className}
           render={render}

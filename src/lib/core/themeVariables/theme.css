@@ -346,12 +346,13 @@
     var(--tsr-sys-fg) 62%,
     transparent
   );
-  /* Толщина дорожки и дуги спиннера ожидания (LL4). */
-  --tsr-comp-pending-ring-width: 1px;
-  /*
-   * Свет вокруг кнопки в ожидании: голова, хвост из трёх оттенков и слабый ореол.
-   * Кнопки мелкие — свет тише полосы под шапкой: сила оттенков от силы свечения.
-   */
+  /* Толщина дуги ожидания кнопки и спиннера (ADR 0127, LL4). */
+  --tsr-comp-pending-ring-width: 2px;
+  /* Кольцо фокуса занятой кнопки и кнопки в отказе — тоньше дуги, не забивает её. */
+  --tsr-comp-pending-focus-ring-width: 1px;
+  /* Длина дуги ожидания кнопки — процент периметра, число (ADR 0127). */
+  --tsr-comp-pending-arc: 25;
+  /* Пятна света ячейки в правке: сила оттенков от силы свечения (ADR 0095). */
   --tsr-comp-pending-glow-strength: 81%;
   --tsr-comp-pending-glow-1: color-mix(
     in oklch,
@@ -373,26 +374,14 @@
     var(--tsr-comp-loader-glow-4) var(--tsr-comp-pending-glow-strength),
     transparent
   );
-  --tsr-comp-pending-glow-halo: color-mix(
-    in oklch,
-    var(--tsr-comp-loader-glow-1) 15%,
-    transparent
-  );
-  /* Дуги спиннера — оттенки свечения в полную силу: спиннер — тонкая линия. */
+  /* Оттенки дуги кнопки и спиннера — оттенки свечения в полную силу: дуга — тонкая линия. */
   --tsr-comp-pending-spinner-1: var(--tsr-comp-loader-bar);
   --tsr-comp-pending-spinner-2: var(--tsr-sys-info-sky);
   --tsr-comp-pending-spinner-3: var(--tsr-sys-info-indigo);
   --tsr-comp-pending-spinner-4: var(--tsr-sys-info-violet);
-  /* Дорожка спиннера и длина его дуги (доля круга). */
-  --tsr-comp-pending-spinner-track: color-mix(
-    in oklch,
-    var(--tsr-sys-fg) 12%,
-    transparent
-  );
+  /* Длина дуги спиннера (доля круга). */
   --tsr-comp-pending-spinner-arc: 0.25turn;
-  /* Насколько свет выходит за кнопку и как размыт; период оборота. */
-  --tsr-comp-pending-glow-offset: 2px;
-  --tsr-comp-pending-glow-blur: 4px;
+  /* Период ожидания: круг дуги кнопки — половина, цикл оттенков — 1,7. */
   --tsr-comp-pending-glow-duration: var(--tsr-comp-loader-duration);
   --tsr-comp-error-flash-color: var(--tsr-sys-danger);
   /* Красный свет ошибки — той же силы, что свет ожидания: тень та же, меняется цвет. */
@@ -406,8 +395,8 @@
       var(--tsr-comp-pending-glow-strength),
     transparent
   );
-  /* Переход света ожидания в красную заливку, её удержание и угасание (темп сигналов внимания, как подсветка). */
-  --tsr-comp-error-flash-fill-duration: 600ms;
+  /* Заполнение контура красным при отказе, удержание и угасание (темп сигналов внимания, как подсветка). */
+  --tsr-comp-error-flash-fill-duration: 200ms;
   --tsr-comp-error-flash-duration: 1200ms;
   --tsr-comp-error-flash-fade-duration: 500ms;
   /* Иконка упавшего пункта меню и отметка ошибки на кебабе (ADR 0078). */
@@ -1017,7 +1006,6 @@
     --tsr-comp-pending-glow-2: Highlight;
     --tsr-comp-pending-glow-3: Highlight;
     --tsr-comp-pending-glow-4: Highlight;
-    --tsr-comp-pending-glow-halo: Highlight;
     --tsr-comp-pending-spinner-1: Highlight;
     --tsr-comp-pending-spinner-2: Highlight;
     --tsr-comp-pending-spinner-3: Highlight;

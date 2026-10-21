@@ -1,33 +1,171 @@
 /*
- * Ожидание и вспышка ошибки (ADR 0055, ADR 0057): общий модуль кнопок и ячейки в правке.
- * Ожидание — `aria-busy` или `data-pending`, ошибка — `data-error-flash`. Свет — `::after`
- * носителя: у кнопки — тени снаружи, у ячейки — полоса по периметру внутри.
+ * Ожидание и отказ (ADR 0055, ADR 0127): общий модуль кнопок, ячейки в правке и спиннера.
+ * Ожидание — `aria-busy` или `data-pending`, отказ — `data-error-flash`. У кнопки — дуга
+ * по контуру (`PendingArc`, слой `.arc`), у ячейки в правке — свет-пятна `::after` по
+ * периметру внутри (ADR 0057, снимается этапом 2 ADR 0127).
  * `::before` не трогаем — им пользуются слои наведения кнопок строки.
  */
-
-/* Насколько ожидание перешло в ошибку: 0% — свет ожидания, 100% — красная заливка. */
-@property --tsr-ring-fill {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 0%;
-}
 
 .ring {
   position: relative;
 }
 
+/* Занятая кнопка: без наведения — курсор обычный (IR5). */
+.ring[aria-busy='true'] {
+  cursor: default;
+}
+
+/* Пока контур заливается красным, переходы кнопки (цвет подписи) идут в такт заливке. */
+.ring[data-error-flash='on'] {
+  transition-duration: var(--tsr-comp-error-flash-fill-duration);
+  transition-timing-function: var(--tsr-comp-motion-easing-out);
+}
+
 /*
- * У кнопки `::after` есть всегда, состояния меняют только его вид: появление и
- * исчезновение `::after` посреди нажатия перестраивает кадр, и Firefox, не успев его
- * нарисовать, отдаёт отпускание кнопки родителю — клик теряется (ADR 0055, BS18).
+ * Кольцо фокуса — снаружи дуги и красного контура, с зазором в толщину дуги (IR6); с
+ * началом угасания красного — снова обычное, вместе с рамкой и отметкой.
  */
-.ring:not(.layer)::after {
-  content: '';
+.ring:is([aria-busy='true'], [data-error-flash='on']):focus-visible {
+  box-shadow: none;
+  outline: var(--tsr-comp-pending-focus-ring-width) solid
+    var(--tsr-comp-focus-ring);
+  outline-offset: var(--tsr-comp-pending-ring-width);
+}
+
+/*
+ * Дуга кнопки (ADR 0127): средняя линия — на половину толщины внутрь от внешнего края
+ * кнопки (`--tsr-ring-border` — рамка кнопки, от которой отсчитан абсолютный слой),
+ * радиус ставит `PendingArc`. Длина — доля периметра (`pathLength` 100).
+ */
+/* Промежуток дуги — число без `calc()`: с ним Chromium меняет `stroke-dasharray` скачком. */
+@property --tsr-pending-arc-gap {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 75;
+}
+
+.arc {
+  --_w: var(--tsr-comp-pending-ring-width);
+  --_b: var(--tsr-ring-border, 0px);
+  --tsr-pending-arc-gap: calc(100 - var(--tsr-comp-pending-arc));
+  --_arc: var(--tsr-comp-pending-arc) var(--tsr-pending-arc-gap);
+
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  top: calc(var(--_w) / 2 - var(--_b));
+  left: calc(var(--_w) / 2 - var(--_b));
+  width: calc(100% + 2 * var(--_b) - var(--_w));
+  height: calc(100% + 2 * var(--_b) - var(--_w));
+  overflow: visible;
   pointer-events: none;
+}
+
+.arc > rect {
+  --_from: 0 100;
+
+  fill: none;
+  stroke: var(--tsr-comp-pending-spinner-1);
+  stroke-width: var(--_w);
+  stroke-linecap: round;
+  stroke-dasharray: var(--_arc);
+}
+
+.arc[data-from-pending] > rect {
+  --_from: var(--_arc);
+}
+
+/* Круг — половина периода у кнопки любого размера; оттенки — как у спиннера. */
+.arc:is([data-phase='pending'], [data-phase='leaving']) > rect {
+  animation:
+    pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite,
+    spinnerTones calc(var(--tsr-comp-pending-glow-duration) * 1.7) ease-in-out
+      infinite;
+}
+
+/* Ожидание кончилось успехом — дуга гаснет переходом проявления (BS19), не останавливаясь. */
+.arc[data-phase='leaving'] {
   opacity: 0;
+  transition: var(--tsr-comp-reveal-transition);
+}
+
+/*
+ * Отказ: дуга встаёт (тот же `pendingRun` на паузе — без скачка) и за время заливки
+ * дорастает до всего контура, перетекая в красный; быстрый старт роста продолжает ход
+ * дуги. Конечный вид — в самом свойстве: без движения он сразу (IR11).
+ */
+.arc:is([data-phase='error'], [data-phase='off']) > rect {
+  stroke: var(--tsr-comp-error-flash-color);
+  stroke-dasharray: 100 0;
+  animation:
+    pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite
+      paused,
+    pendingFill var(--tsr-comp-error-flash-fill-duration)
+      var(--tsr-comp-motion-easing-out) both;
+}
+
+/* Из ожидания: оттенки встают на паузу — заливка перетекает в красный от текущего (IR7). */
+.arc[data-from-pending]:is([data-phase='error'], [data-phase='off']) > rect {
+  animation:
+    pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite
+      paused,
+    spinnerTones calc(var(--tsr-comp-pending-glow-duration) * 1.7) ease-in-out
+      infinite paused,
+    pendingFill var(--tsr-comp-error-flash-fill-duration)
+      var(--tsr-comp-motion-easing-out) both;
+}
+
+/* Гаснет плавно, с замедлением (BS17 → IR7). */
+.arc[data-phase='off'] {
+  opacity: 0;
+  transition: opacity var(--tsr-comp-error-flash-fade-duration)
+    var(--tsr-comp-motion-easing-out);
+}
+
+@keyframes pendingRun {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+/* Начальный цвет не задан — берётся нижележащий: оттенок дуги на паузе или красный. */
+@keyframes pendingFill {
+  from {
+    stroke-dasharray: var(--_from);
+  }
+  to {
+    stroke: var(--tsr-comp-error-flash-color);
+  }
+}
+
+/* Отметка отказа (IR9) — на месте точки включённого действия (ADR 0062). */
+.failure {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
+    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+.failure[data-shown='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Описание отметки для `aria-describedby`: в имя кнопки не входит. */
+.failureText {
+  display: none;
+}
+
+/*
+ * Ячейка в правке (ADR 0057, ADR 0095): свет-пятна по периметру. Насколько ожидание
+ * перешло в ошибку: 0% — свет ожидания, 100% — красная заливка.
+ */
+@property --tsr-ring-fill {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
 }
 
 /*
@@ -35,12 +173,7 @@
  * растворяются, а на их месте поднимается ровный красный свет по всей площади. Он горит
  * статично, пока держится вспышка, затем гаснет (`off`).
  */
-.ring:is(
-    [aria-busy='true'],
-    [data-pending],
-    [data-pending-leaving],
-    [data-error-flash]
-  )::after {
+.ring.layer:is([data-pending], [data-error-flash])::after {
   --_t: var(--tsr-comp-pending-glow-duration);
   --_e: var(--tsr-comp-error-flash-glow);
   --_s1: color-mix(
@@ -118,9 +251,7 @@
  * цвет пятна — один `color-mix()`. Вложенные смеси разбираются заново при каждом
  * пересчёте стиля, а он идёт и на паузе света при прокрутке (MI23).
  */
-.ring:is([aria-busy='true'], [data-pending], [data-pending-leaving]):not(
-    [data-error-flash]
-  )::after {
+.ring.layer[data-pending]:not([data-error-flash])::after {
   --_s1: color-mix(
     in oklch,
     var(--tsr-comp-pending-glow-1) var(--tsr-pending-spot-f1),
@@ -144,21 +275,15 @@
   --_fill: transparent;
 }
 
-/* Ожидание кончилось успехом — свет гаснет переходом проявления (BS19), пятна живут. */
-.ring[data-pending-leaving]::after {
-  opacity: 0;
-  transition: var(--tsr-comp-reveal-transition);
-}
-
 /* Заливка — переходом от света ожидания или от нуля, если ожидания не было. */
-.ring[data-error-flash]::after {
+.ring.layer[data-error-flash]::after {
   --tsr-ring-fill: 100%;
   /* Красный свет ровный: пятна, уже растворённые, больше не двигаются. */
   animation-play-state: paused;
 }
 
 /* Гаснет плавно, с замедлением (BS17); появление и заливка — сразу. */
-.ring[data-error-flash='off']::after {
+.ring.layer[data-error-flash='off']::after {
   opacity: 0;
   transition:
     opacity var(--tsr-comp-error-flash-fade-duration)
@@ -168,8 +293,8 @@
 }
 
 /*
- * Пятна света ожидания кнопки: угол, под которым пятно выходит за кнопку, и его яркость.
- * У каждого пятна свои — пятна живут независимо.
+ * Пятна света ячейки: угол, под которым пятно стоит на кромке, и его яркость. У каждого
+ * пятна свои — пятна живут независимо.
  */
 @property --tsr-pending-spot-a1 {
   syntax: '<angle>';
@@ -223,12 +348,7 @@
  * Покой пятен — четыре по диагоналям в полную силу. Его видно, когда анимация не идёт:
  * при уменьшенном движении гаситель темы обрывает её, а свет ожидания остаётся.
  */
-.ring:is(
-    [aria-busy='true'],
-    [data-pending],
-    [data-pending-leaving],
-    [data-error-flash]
-  )::after {
+.ring.layer:is([data-pending], [data-error-flash])::after {
   --tsr-pending-spot-a1: 45deg;
   --tsr-pending-spot-a2: 135deg;
   --tsr-pending-spot-a3: 225deg;
@@ -237,42 +357,6 @@
   --tsr-pending-spot-f2: 100%;
   --tsr-pending-spot-f3: 100%;
   --tsr-pending-spot-f4: 100%;
-}
-
-/*
- * Кнопка — свет вокруг неё, а не контур (оттенки свечения загрузки, ADR 0094).
- * Четыре пятна, по оттенку на каждое: пятно разгорается в своём месте, дрейфует то по,
- * то против часовой, гаснет и, погашенное, переносится в другое место. Периоды пятен не
- * кратны друг другу, фаза кнопки своя (`--tsr-pending-phase` от 0 до 1 ставит кнопка) —
- * свет вспыхивает то тут, то там, без общего направления. Пятно — силуэт кнопки,
- * сдвинутый наружу по своему углу; внешняя тень внутри кнопки не рисуется. Заливка
- * ошибки — та же тень, но вокруг всей кнопки.
- */
-.ring:not(.layer):is(
-    [aria-busy='true'],
-    [data-pending],
-    [data-pending-leaving],
-    [data-error-flash]
-  )::after {
-  --_d: var(--tsr-comp-pending-glow-offset);
-  --_b: var(--tsr-comp-pending-glow-blur);
-
-  box-shadow:
-    calc(cos(var(--tsr-pending-spot-a1)) * var(--_d))
-      calc(sin(var(--tsr-pending-spot-a1)) * var(--_d)) var(--_b) var(--_s1),
-    calc(cos(var(--tsr-pending-spot-a2)) * var(--_d))
-      calc(sin(var(--tsr-pending-spot-a2)) * var(--_d)) var(--_b) var(--_s2),
-    calc(cos(var(--tsr-pending-spot-a3)) * var(--_d))
-      calc(sin(var(--tsr-pending-spot-a3)) * var(--_d)) var(--_b) var(--_s3),
-    calc(cos(var(--tsr-pending-spot-a4)) * var(--_d))
-      calc(sin(var(--tsr-pending-spot-a4)) * var(--_d)) var(--_b) var(--_s4),
-    0 0 var(--_b) var(--_d) var(--_fill),
-    0 0 calc(var(--_b) / 2)
-      color-mix(
-        in oklch,
-        var(--tsr-comp-pending-glow-halo),
-        transparent var(--tsr-ring-fill)
-      );
 }
 
 /* Пятно горит — дрейфует на 20–30°; погасло — за 1% периода переносится в другое место. */
@@ -433,10 +517,9 @@
 }
 
 /*
- * Ячейка — те же пятна света, что у кнопок, но внутри, у кромок: снаружи свет лёг бы на
- * соседние ячейки. Пятно — эллипс с центром на кромке по своему углу (угол проецируется
- * на рамку ячейки): свет вспыхивает в разных местах контура. Заливка ошибки — ровная
- * полоса по всему периметру.
+ * Ячейка — пятна света внутри, у кромок: снаружи свет лёг бы на соседние ячейки. Пятно —
+ * эллипс с центром на кромке по своему углу (угол проецируется на рамку ячейки): свет
+ * вспыхивает в разных местах контура. Заливка ошибки — ровная полоса по всему периметру.
  */
 .ring.layer:is([data-pending], [data-error-flash]) {
   --_depth: var(--tsr-comp-cell-pending-glow-depth);
@@ -523,11 +606,10 @@
 }
 
 /*
- * Спиннер ожидания (пункт меню, ADR 0078, LL4): по бледной дорожке бежит дуга в
- * четверть круга той же толщины со скруглёнными концами. Свет не выходит за дорожку
- * (без ореола); цвет дуги перетекает оттенками свечения загрузки — синий → голубой →
- * индиго → фиолетовый. Оборот — 0,5 длительности света ожидания, цикл цвета — период
- * быстрого пятна (1,7).
+ * Спиннер ожидания (пункт меню, ADR 0078, LL4): дуга в четверть круга со скруглёнными
+ * концами бежит по кругу без дорожки; цвет перетекает оттенками свечения загрузки —
+ * синий → голубой → индиго → фиолетовый. Оборот — 0,5 длительности света ожидания,
+ * цикл цвета — 1,7.
  */
 @property --tsr-spinner-tone {
   syntax: '<color>';
@@ -545,15 +627,19 @@
   0%,
   100% {
     --tsr-spinner-tone: var(--tsr-comp-pending-spinner-1);
+    stroke: var(--tsr-comp-pending-spinner-1);
   }
   25% {
     --tsr-spinner-tone: var(--tsr-comp-pending-spinner-2);
+    stroke: var(--tsr-comp-pending-spinner-2);
   }
   50% {
     --tsr-spinner-tone: var(--tsr-comp-pending-spinner-3);
+    stroke: var(--tsr-comp-pending-spinner-3);
   }
   75% {
     --tsr-spinner-tone: var(--tsr-comp-pending-spinner-4);
+    stroke: var(--tsr-comp-pending-spinner-4);
   }
 }
 
@@ -565,17 +651,12 @@
 
   position: relative;
   border-radius: 50%;
-  background: radial-gradient(
-    farthest-side,
-    transparent calc(100% - var(--_w) - 0.5px),
-    var(--tsr-comp-pending-spinner-track) calc(100% - var(--_w))
-  );
   animation:
     spinnerTurn calc(var(--_t) * 0.5) linear infinite,
     spinnerTones calc(var(--_t) * 1.7) ease-in-out infinite;
 }
 
-/* Дуга: сектор длины дуги и два круга-конца на средней линии, под маской дорожки. */
+/* Дуга: сектор длины дуги и два круга-конца на средней линии, под маской кольца. */
 .spinner::after {
   --_a: var(--tsr-comp-pending-spinner-arc);
   --_m: calc(50% - var(--_w) / 2);
@@ -610,22 +691,34 @@
 }
 
 /*
- * Пока грид прокручивается, свет кнопок и ячеек стоит (ADR 0078): пятна перерисовывают
- * носитель на каждом кадре, а на прокрутке кадр и так занят. Без движения пауза не
- * нужна и вредна: она застала бы оборванную анимацию на погашенном первом кадре.
+ * Пока грид прокручивается, дуга кнопок и свет ячеек стоят (ADR 0078): они
+ * перерисовывают носитель на каждом кадре, а на прокрутке кадр и так занят. Без движения
+ * пауза не нужна и вредна: она застала бы оборванную анимацию на первом кадре.
  */
 @media (prefers-reduced-motion: no-preference) {
-  :global(.data-grid__container[data-scrolling]) .ring::after {
+  :global(.data-grid__container[data-scrolling]) .ring::after,
+  :global(.data-grid__container[data-scrolling]) .arc > rect {
     animation-play-state: paused;
   }
 }
 
 /*
- * Высокая контрастность (ADR 0087): свет — тени и градиенты, браузер снял бы их. Слой
- * не перекрашивается, цвета — системные из токенов (`Highlight`, `Mark`).
+ * Высокая контрастность (ADR 0087): свет и дуга — тени, градиенты и SVG, браузер
+ * перекрасил бы их. Слой не перекрашивается, цвета — системные из токенов (`Highlight`,
+ * `Mark`).
  */
 @media (forced-colors: active) {
-  .ring::after {
+  .ring::after,
+  .arc {
     forced-color-adjust: none;
+  }
+
+  /* Только системные цвета: отказ сразу `Mark`, без смеси с `Highlight`; растёт длина. */
+  .arc[data-from-pending]:is([data-phase='error'], [data-phase='off']) > rect {
+    animation:
+      pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear
+        infinite paused,
+      pendingFill var(--tsr-comp-error-flash-fill-duration)
+        var(--tsr-comp-motion-easing-out) both;
   }
 }

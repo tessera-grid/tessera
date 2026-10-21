@@ -118,13 +118,13 @@ export const IconButtonVariants: Story = {
 }
 
 /**
- * Асинхронное действие: нажатие — ожидание (свет, `aria-busy`, нажатия не доходят),
- * через полторы секунды — ответ. Столбцы — исход: отказ со вспышкой ошибки или успех,
- * когда свет просто гаснет; строки — варианты и формы. Нажмите снова — по кругу.
+ * Асинхронное действие: нажатие — ожидание (дуга, `aria-busy`, нажатия не доходят),
+ * через полторы секунды — ответ. Столбцы — исход: отказ со вспышкой и отметкой или успех,
+ * когда дуга просто гаснет; строки — варианты и формы. Нажмите снова — повтор.
  */
 export const IconButtonAsyncAction: Story = {
   name: 'Async action',
-  parameters: { requirements: ['UB10'] },
+  parameters: { requirements: ['UB10', 'IR12'] },
   render: function Render() {
     const { pin: PinIcon } = useIcons()
     const icon = <PinIcon width={16} height={16} />

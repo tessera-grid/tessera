@@ -14,6 +14,8 @@
   white-space: nowrap;
   background-color: transparent;
   border: 1px solid var(--tsr-comp-button-border);
+  /* Дуга ожидания отсчитывает внешний край кнопки от рамки (ADR 0127). */
+  --tsr-ring-border: 1px;
   border-radius: var(--tsr-comp-button-radius-square);
   outline: 0;
   cursor: pointer;
@@ -22,7 +24,7 @@
 }
 
 /* Иконка одного размера с иконками `IconButton` (ADR 0098). */
-.button > svg {
+.button > svg:not([data-pending-arc]) {
   flex: none;
   width: var(--tsr-comp-button-icon-size);
   height: var(--tsr-comp-button-icon-size);
@@ -32,13 +34,16 @@
   border-color: transparent;
 }
 
-/* Ожидание и вспышка ошибки: рамка плавно уходит — форму кнопки рисует свет. */
-.button:is([aria-busy='true'], [data-error-flash]) {
+/*
+ * Ожидание и красный контур: рамка плавно уходит — форму кнопки рисует дуга; с началом
+ * угасания красного возвращается (IR32).
+ */
+.button:is([aria-busy='true'], [data-error-flash='on']) {
   border-color: transparent;
 }
 
 /* Низкая специфичность — прикладной hover перекрывает базовый. */
-:where(.button:not(:disabled, [data-disabled])):hover {
+:where(.button:not(:disabled, [data-disabled], [aria-busy='true'])):hover {
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
@@ -46,7 +51,8 @@
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }
 
-.button:is(:disabled, [data-disabled]) {
+/* Занятая кнопка выглядит недоступной (ADR 0127, IR31). */
+.button:is(:disabled, [data-disabled], [aria-busy='true']) {
   color: var(--tsr-comp-control-disabled-color);
   cursor: default;
 }

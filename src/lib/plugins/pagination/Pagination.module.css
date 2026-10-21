@@ -48,6 +48,8 @@
   height: var(--tsr-comp-toolbar-button-size);
   padding: 0 8px;
   border: 1px solid var(--tsr-comp-control-border);
+  /* Дуга ожидания отсчитывает внешний край кнопки от рамки (ADR 0127). */
+  --tsr-ring-border: 1px;
   border-radius: var(--tsr-comp-control-radius);
   background-color: transparent;
   color: inherit;
@@ -57,8 +59,13 @@
   transition: var(--tsr-comp-action-button-transition);
 }
 
-.trigger:hover {
+.trigger:not([aria-busy='true']):hover {
   background-color: var(--tsr-comp-control-hover-bg);
+}
+
+/* Ожидание и красный контур: рамка уходит — форму кнопки рисует дуга (IR32). */
+.trigger:is([aria-busy='true'], [data-error-flash='on']) {
+  border-color: transparent;
 }
 
 /* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */

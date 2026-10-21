@@ -9,7 +9,13 @@ import { Button as BaseButton } from '@base-ui/react/button'
 import clsx from 'clsx'
 
 import { Tooltip, type TooltipSide } from '../Tooltip'
-import { type ButtonStatesProps, useButtonStates } from '../buttonStates'
+import {
+  type ButtonStatesProps,
+  FailureMark,
+  type FailureProps,
+  useButtonStates,
+  useFailure,
+} from '../buttonStates'
 
 import styles from './IconButton.module.css'
 
@@ -27,6 +33,7 @@ export interface IconButtonProps
   extends
     ButtonHTMLAttributes<HTMLButtonElement>,
     ButtonStatesProps,
+    FailureProps,
     ButtonTooltipProps {
   /** Доступное имя и тултип кнопки. */
   label?: string
@@ -69,17 +76,21 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       focusableWhenDisabled,
       pending,
       errorFlash,
+      failure,
       onClick,
       children,
       ...rest
     },
     forwardedRef,
   ) => {
+    const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
     const states = useButtonStates(
       forwardedRef,
       { pending, errorFlash },
       onClick,
+      busy,
     )
+    const described = useFailure(failure, rest['aria-describedby'])
 
     const button = (
       <BaseButton
@@ -88,6 +99,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         disabled={disabled}
         focusableWhenDisabled={focusableWhenDisabled || tooltipWhenDisabled}
         {...rest}
+        aria-describedby={described.describedBy}
         ref={states.ref}
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
         data-error-flash={states['data-error-flash']}
@@ -106,15 +118,25 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         )}
       >
         {children}
+        {failure !== undefined && (
+          <FailureMark
+            id={described.id}
+            text={failure}
+            shown={!states.active}
+          />
+        )}
+        {states.arc}
       </BaseButton>
     )
 
-    // Без подписи тултипа нет — и обёртки тоже: кнопок в гриде много.
+    // Без подписи тултипа нет — и обёртки тоже: кнопок в гриде много; отметка отказа без
+    // подписи — только описание. Занятая кнопка тултип не показывает; с отметкой отказа
+    // тултип — её текст.
     return label ? (
       <Tooltip
-        title={label}
+        title={failure ?? label}
         side={tooltipSide}
-        disabled={!!disabled && !tooltipWhenDisabled}
+        disabled={(!!disabled && !tooltipWhenDisabled) || pending || busy}
       >
         {button}
       </Tooltip>
