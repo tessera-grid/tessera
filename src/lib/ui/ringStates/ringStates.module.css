@@ -646,7 +646,7 @@
 .spinner {
   --_t: var(--tsr-comp-pending-glow-duration);
   --_w: var(--tsr-comp-pending-ring-width);
-  /* Без движения анимация оборвана — дуга стоит наверху первым оттенком. */
+  /* Без движения анимация оборвана — дуга стоит от верха по часовой первым оттенком. */
   --tsr-spinner-tone: var(--tsr-comp-pending-spinner-1);
 
   position: relative;
@@ -656,7 +656,8 @@
     spinnerTones calc(var(--_t) * 1.7) ease-in-out infinite;
 }
 
-/* Дуга: сектор длины дуги и два круга-конца на средней линии, под маской кольца. */
+/* Дуга: сектор от верха по часовой, как у круглой кнопки, и два круга-конца на средней
+   линии, под маской кольца. */
 .spinner::after {
   --_a: var(--tsr-comp-pending-spinner-arc);
   --_m: calc(50% - var(--_w) / 2);
@@ -667,19 +668,17 @@
   border-radius: 50%;
   background:
     radial-gradient(
-      circle at calc(50% - sin(var(--_a) / 2) * var(--_m))
-        calc(50% - cos(var(--_a) / 2) * var(--_m)),
+      circle at 50% calc(50% - var(--_m)),
       var(--tsr-spinner-tone) calc(var(--_w) / 2 - 0.35px),
       transparent calc(var(--_w) / 2 + 0.35px)
     ),
     radial-gradient(
-      circle at calc(50% + sin(var(--_a) / 2) * var(--_m))
-        calc(50% - cos(var(--_a) / 2) * var(--_m)),
+      circle at calc(50% + sin(var(--_a)) * var(--_m))
+        calc(50% - cos(var(--_a)) * var(--_m)),
       var(--tsr-spinner-tone) calc(var(--_w) / 2 - 0.35px),
       transparent calc(var(--_w) / 2 + 0.35px)
     ),
     conic-gradient(
-      from calc(var(--_a) / -2),
       var(--tsr-spinner-tone) 0turn var(--_a),
       transparent var(--_a)
     );

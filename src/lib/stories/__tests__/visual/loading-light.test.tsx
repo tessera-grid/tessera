@@ -79,7 +79,7 @@ const onCircle = (el: Element, radius: number, degrees: number) => {
 }
 
 describe('Спиннер ожидания (ADR 0095)', () => {
-  test('LL4: спиннер — дуга в четверть круга бежит по кругу без дорожки, середина прозрачна, свет не выходит за линию дуги; цвет дуги перетекает оттенками --tsr-comp-pending-spinner-1…4; оборот 0,5, цикл цвета 1,7 длительности света; без движения — дуга первым оттенком (ADR 0127)', async () => {
+  test('LL4: спиннер — дуга в четверть круга бежит по кругу без дорожки, середина прозрачна, свет не выходит за линию дуги; цвет дуги перетекает оттенками --tsr-comp-pending-spinner-1…4; оборот 0,5, цикл цвета 1,7 длительности света; дуга в фазе с дугой круглой кнопки — в начале оборота от верха по часовой; без движения — так и стоит первым оттенком (ADR 0127)', async () => {
     // Толщина крупнее, чем в пункте меню, — чтобы мерить пиксели; геометрия — от токена.
     const WIDTH = 6
     const SIZE = 96
@@ -126,7 +126,7 @@ describe('Спиннер ожидания (ADR 0095)', () => {
       ).toBe(tone(index))
     }
 
-    // Кадр: дуга наверху первым оттенком.
+    // Кадр начала оборота: дуга от верха по часовой первым оттенком, как у круглой кнопки.
     turn.pause()
     turn.currentTime = 0
     tones.currentTime = 0
@@ -140,14 +140,14 @@ describe('Спиннер ожидания (ADR 0095)', () => {
     const at = (radius: number, degrees: number) =>
       shot(...onCircle(el, radius, degrees - 90))
     // Дуга — четверть круга на средней линии: внутри её края — оттенок.
-    for (const degrees of [0, 30, -30, 40, -40]) {
+    for (const degrees of [5, 30, 45, 60, 85]) {
       expect(
         distance(at(middle, degrees), first),
         `arc ${degrees}°`,
       ).toBeLessThan(40)
     }
     // Дорожки нет: вне дуги на средней линии — фон.
-    for (const degrees of [60, -60, 180]) {
+    for (const degrees of [-30, 120, 180]) {
       expect(
         distance(at(middle, degrees), background),
         `no track ${degrees}°`,
@@ -155,17 +155,20 @@ describe('Спиннер ожидания (ADR 0095)', () => {
     }
     // Середина прозрачна, свет не выходит за линию дуги ни внутрь, ни наружу.
     expect(distance(at(0, 0), background)).toBeLessThan(4)
-    expect(distance(at(outer - WIDTH - 3, 0), background)).toBeLessThan(4)
-    expect(distance(at(outer + 3, 0), background)).toBeLessThan(4)
+    expect(distance(at(outer - WIDTH - 3, 45), background)).toBeLessThan(4)
+    expect(distance(at(outer + 3, 45), background)).toBeLessThan(4)
     await screen.unmount()
 
-    // Без движения дуга стоит наверху первым оттенком.
+    // Без движения дуга стоит от верха по часовой первым оттенком.
     await reducedMotion(true)
     await render(<Spinner />)
     await frame()
     const still = await snapshot()
     expect(
-      distance(still(...onCircle(spinner(), middle, -90)), first),
+      distance(still(...onCircle(spinner(), middle, 45 - 90)), first),
     ).toBeLessThan(40)
+    expect(
+      distance(still(...onCircle(spinner(), middle, -30 - 90)), background),
+    ).toBeLessThan(4)
   })
 })
