@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   gap: var(--tsr-comp-status-bar-gap);
-  font-size: 0.8125rem;
+  font-size: var(--tsr-comp-status-bar-font-size);
   color: var(--tsr-comp-control-color);
 }
 

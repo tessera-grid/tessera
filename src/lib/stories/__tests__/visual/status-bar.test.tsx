@@ -1,9 +1,12 @@
+import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { Stories, getScroller } from '../helpers'
+import { composed } from '../stories'
+import { tableLabels } from '../labels'
 
-// Нижняя панель грида (ADR 0038, SB1–SB4, SB6). Каждый тест — одно требование,
+// Нижняя панель грида (ADR 0038, SB1–SB4, SB6, SB15). Каждый тест — одно требование,
 // назван по его ID. Состояние читается из DOM-контракта (data-*) и вычисленных
 // стилей, а не из хешированных классов CSS-модулей. SB5 — модульный
 // (`src/lib/__tests__/statusBar.test.ts`).
@@ -37,11 +40,11 @@ const resolveToken = (token: string, prop = 'background-color') => {
 }
 
 const renderStatusBar = (extra: { enableFooter?: boolean } = {}) =>
-  render(<Stories.WithStatusBar {...GRID} {...extra} />)
+  render(<Stories.StatusBarPlayground {...GRID} {...extra} />)
 
 describe('Status bar', () => {
   test('SB1: with a statusBarSlot the panel renders below the table; without slots — none', async () => {
-    const plain = await render(<Stories.AllFeatures {...GRID} />)
+    const plain = await render(<Stories.DataGridPlayground {...GRID} />)
     expect(statusBar()).toBeNull()
     await plain.unmount()
 
@@ -127,5 +130,31 @@ describe('Status bar', () => {
     bar.style.setProperty('--tsr-comp-status-bar-height', '60px')
     expect(read(bar, 'height')).toBe('60px')
     bar.style.removeProperty('--tsr-comp-status-bar-height')
+  })
+
+  test('SB15: the selected count and the pagination share one text size — --tsr-comp-status-bar-font-size, the cell size by default', async () => {
+    const { container } = await render(<composed.SelectedCount {...GRID} />)
+    const checkbox = () =>
+      container.querySelector<HTMLElement>(
+        '[data-row-id] input[type="checkbox"], [data-row-id] [role="checkbox"]',
+      )
+    await expect.poll(checkbox).not.toBeNull()
+    await userEvent.click(checkbox()!)
+    const count = () =>
+      statusBar()?.querySelector<HTMLElement>('[data-status-count]')
+    await expect
+      .poll(() => count()?.textContent)
+      .toBe(tableLabels.selectedRows(1))
+    const range = byTestId('pagination-range')
+    const size = resolveToken('--tsr-comp-status-bar-font-size', 'font-size')
+    expect(size).toBe(resolveToken('--tsr-comp-cell-font-size', 'font-size'))
+    expect(read(count()!, 'font-size')).toBe(size)
+    expect(read(range, 'font-size')).toBe(size)
+
+    const bar = statusBar()!
+    bar.style.setProperty('--tsr-comp-status-bar-font-size', '15px')
+    expect(read(count()!, 'font-size')).toBe('15px')
+    expect(read(range, 'font-size')).toBe('15px')
+    bar.style.removeProperty('--tsr-comp-status-bar-font-size')
   })
 })

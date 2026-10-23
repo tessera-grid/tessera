@@ -5,6 +5,7 @@
   height: var(--tsr-comp-status-bar-height);
   padding: 0 var(--tsr-comp-status-bar-padding-x);
   gap: var(--tsr-comp-status-bar-gap);
+  font-size: var(--tsr-comp-status-bar-font-size);
   background-color: var(--tsr-comp-status-bar-bg);
   border-top: 1px solid var(--tsr-comp-status-bar-divider-color);
 }
