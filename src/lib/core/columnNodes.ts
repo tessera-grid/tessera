@@ -41,6 +41,11 @@ export const leafColumnsOf = (header: NodeHeader) => [
   ).values(),
 ]
 
+/** Колонки узла: он сам, его подгруппы и листья — без повторов вершины растянутого листа. */
+export const nodeColumnIdsOf = (header: NodeHeader) => [
+  ...new Set(header.getLeafHeaders().map(item => item.column.id)),
+]
+
 /** Зона узла: закреплён, только если закреплены все его листья с одной стороны. */
 export const zoneOf = (header: NodeHeader): PinZone => {
   const sides = new Set(leafColumnsOf(header).map(leaf => leaf.getIsPinned()))

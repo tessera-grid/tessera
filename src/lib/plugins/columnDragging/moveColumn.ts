@@ -10,11 +10,12 @@ import {
   draggableIndexOfNode,
   isMovableNode,
   leafColumnsOf,
+  nodeColumnIdsOf,
   moveBlock,
   siblingsOf,
 } from '../../core/columnNodes'
 import {
-  flashLeaves,
+  flashNode,
   neighboursOf,
   readColumnMoves,
   settleColumnMove,
@@ -75,7 +76,8 @@ export const applyNodeMove = (
   const hoverIndex = draggableIndexOfNode(target)
   ;(table as MoveTable).setColumnOrder(() => next)
   // Колонка вспыхивает на новом месте, как строка (ADR 0114, §4).
-  flashLeaves(table, leaves, 'arrival')
+  const nodes = nodeColumnIdsOf(active)
+  flashNode(table, nodes, 'arrival')
   const result = readPluginHooks<Partial<ColumnDraggingHooks>>(
     table as Parameters<typeof readPluginHooks>[0],
     'columnDragging',
@@ -88,7 +90,7 @@ export const applyNodeMove = (
   settleColumnMove(
     table,
     active.column.id,
-    { leaves, ...neighboursOf(base, leaves) },
+    { leaves, nodes, ...neighboursOf(base, leaves) },
     result,
   )
   return next

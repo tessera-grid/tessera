@@ -13,6 +13,8 @@ import { isThenable, rejectionText } from '../../core/thenable'
 export interface ColumnMoveEntry {
   attempt: number
   leaves: readonly string[]
+  /** Колонки узла для вспышки: группа, её подгруппы и листья; без них — листья. */
+  nodes?: readonly string[]
   /** Лист сразу за узлом до переноса. */
   before?: string
   /** Лист сразу перед узлом до переноса. */
@@ -34,12 +36,12 @@ interface MoveTable {
 
 const NO_MOVES: ColumnMoves = {}
 
-/** Вспышка колонок узла — каждого листа (ADR 0114, §4). */
-export const flashLeaves = (
+/** Вспышка узла (ADR 0114, §4): заголовков группы и подгрупп и каждого листа. */
+export const flashNode = (
   table: unknown,
-  leaves: readonly string[],
+  columns: readonly string[],
   tone: 'arrival' | 'danger',
-) => leaves.forEach(column => flashMoved(table, { column }, tone))
+) => columns.forEach(column => flashMoved(table, { column }, tone))
 
 export const readColumnMoves = (table: unknown): ColumnMoves =>
   (table as MoveTable).atoms.columnMoves?.get() ?? NO_MOVES
@@ -92,7 +94,7 @@ const reject = (
   if (table.options.columnDragRevertOnReject !== false) {
     table.setColumnOrder(prev => restoreBlock(prev, entry))
   }
-  flashLeaves(table, entry.leaves, 'danger')
+  flashNode(table, entry.nodes ?? entry.leaves, 'danger')
   table.setColumnMoveFailed?.(prev => ({ ...prev, [columnId]: entry.attempt }))
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(reason) ?? labels.moveColumnFailed

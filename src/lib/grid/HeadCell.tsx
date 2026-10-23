@@ -99,16 +99,11 @@ export const HeadCellView = ({
   // шапку не перерисовывают (ADR 0099, PF5).
   useTableState(table as never, () => getHeadCellState(header))
 
-  // Подсветка колонки (ADR 0080) — только у листа: группа над ним не подсвечивается.
+  // Подсветка колонки (ADR 0080) — по id колонки ячейки: у растянутого листа это
+  // плейсхолдер верха цепочки; подсветка листа группу над ним не заливает.
   const columnHighlight = useColumnHighlight(table, header.column.id)
   const highlighted = highlightRender([
-    {
-      layer: 'column',
-      state:
-        header.isPlaceholder || header.column.columns.length > 0
-          ? undefined
-          : columnHighlight,
-    },
+    { layer: 'column', state: columnHighlight },
   ])
 
   const {

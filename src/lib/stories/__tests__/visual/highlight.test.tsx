@@ -385,7 +385,7 @@ describe('Подсветка: цели', () => {
     }
   })
 
-  test('HL3: highlight({ column }) заливает заголовок, тело и футер; под вложенной шапкой — только лист', async () => {
+  test('HL3: highlight({ column }) заливает заголовок, тело и футер; под вложенной шапкой подсветка листа, в том числе растянутого, группу не заливает; цель-группа — только её заголовок', async () => {
     const screen = await mount()
     let before = await snapshot()
     await act(() => {
@@ -408,15 +408,42 @@ describe('Подсветка: цели', () => {
 
     await mount({ columns: NESTED })
     before = await snapshot()
+    const leaves: { clear: () => void }[] = []
     await act(() => {
-      table.highlight({ column: 'a' }, { tone: 'warning' })
-      table.highlight({ column: 'g' }, { tone: 'warning' })
+      leaves.push(
+        table.highlight({ column: 'a' }, { tone: 'warning' }),
+        table.highlight({ column: 'c' }, { tone: 'warning' }),
+      )
     })
     lit = await snapshot()
-    expect(
-      distance(colorAt(lit, headEl('a')), colorAt(before, headEl('a'))),
-    ).toBeGreaterThan(8)
+    // `c` растянут на обе строки шапки: его ячейка — верх цепочки заголовков.
+    for (const id of ['a', 'c']) {
+      expect(
+        distance(colorAt(lit, headEl(id)), colorAt(before, headEl(id))),
+      ).toBeGreaterThan(8)
+    }
     expect(colorAt(lit, headEl('g'))).toEqual(colorAt(before, headEl('g')))
+
+    await act(() => {
+      leaves.forEach(handle => handle.clear())
+      table.highlight({ column: 'g' }, { tone: 'warning' })
+    })
+    await expect
+      .poll(() => headEl('a').hasAttribute('data-column-highlight'))
+      .toBe(false)
+    await expect
+      .poll(async () => {
+        const group = await snapshot()
+        return distance(
+          colorAt(group, headEl('g')),
+          colorAt(before, headEl('g')),
+        )
+      })
+      .toBeGreaterThan(8)
+    const group = await snapshot()
+    for (const el of [headEl('a'), cellEl('r0', 'a')]) {
+      expect(colorAt(group, el)).toEqual(colorAt(before, el))
+    }
   })
 
   test('HL4: duration — заливка держится заданное время, затем гаснет переходом токена затухания', async () => {
