@@ -29,7 +29,7 @@ export type ErrorFlashPhase = 'on' | 'off' | undefined
 
 /**
  * Стиль слоя, который ведёт фазу носителя: дуга кнопки (ADR 0127), а без неё — `::after`
- * (свет ячейки, полоса загрузки).
+ * (полоса загрузки).
  */
 export const phaseLayerOf = (el: HTMLElement): CSSStyleDeclaration => {
   const arc = el.querySelector(':scope > [data-pending-arc]')

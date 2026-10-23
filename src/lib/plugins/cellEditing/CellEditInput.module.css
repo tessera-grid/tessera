@@ -61,8 +61,12 @@
   outline-offset: -1px;
 }
 
-/* Сохранение ждёт сервера (ADR 0041): отправленное значение — как текст обычной ячейки. */
+/*
+ * Сохранение ждёт сервера (ADR 0041): отправленное значение — как текст обычной ячейки
+ * и во всю её ширину, чтобы кнопка правки осталась на месте (ADR 0127, IR16).
+ */
 .pending {
+  width: 100%;
   min-width: 0;
   font-size: var(--tsr-comp-cell-font-size);
   line-height: 1rem;
@@ -72,9 +76,8 @@
 }
 
 /*
- * Слой обратной связи поверх ячейки (ADR 0057): свет ожидания и ошибки — `::after`
- * модуля колец, подсветка сохранения — `::before`: держится, пока есть отметка, затем
- * гаснет.
+ * Слой поверх ячейки (ADR 0057): подсветка сохранения держится, пока есть отметка,
+ * затем гаснет.
  */
 /* Внутри фокус-кольца и рамки выделения ячейки: они рисуются поверх по краю. */
 span.feedback {
@@ -96,35 +99,4 @@ span.feedback::before {
 span.feedback[data-saved]::before {
   opacity: 1;
   transition: none;
-}
-
-/* Сервер отказал (ADR 0041): значение из данных и метка ошибки справа. */
-.failed {
-  display: flex;
-  align-items: center;
-  gap: var(--tsr-ref-space-1);
-  width: 100%;
-  min-width: 0;
-}
-
-.failedContent {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.failedIcon {
-  display: inline-flex;
-  flex: none;
-  color: var(--tsr-comp-cell-error-color);
-}
-
-/* Текст отказа для скринридера: видимым его делает подсказка `title`. */
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }

@@ -2,8 +2,9 @@
  * Правый слот ячейки: кнопка входа в режим правки. Появляется по hover и без него
  * места не занимает (`CellButton revealOnHover` → класс cell__button--hidden). Показ
  * гейтит предикат `canEditCell` по контексту ячейки; в режиме правки этой ячейки кнопки
- * нет (её место занял редактор во владельце cellSlot), как и пока сохранение ждёт
- * сервера. Ячейка подписана только на своё состояние, а не на весь срез.
+ * нет (её место занял редактор во владельце cellSlot). Пока сохранение ждёт сервера,
+ * кнопка в ожидании, после отказа — с отметкой; нажатие открывает правку с черновиком
+ * (ADR 0127, §6). Ячейка подписана только на своё состояние, а не на весь срез.
  */
 import { sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
@@ -28,20 +29,28 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
     (state: CellEditingState) => cellEditingViewOf(state, row.id, column.id),
   )
 
-  // Ячейка уже в правке или ждёт сервера — кнопка не нужна.
-  if (view === 'editing' || (view && view.status === 'pending')) {
+  // Ячейка уже в правке — кнопка не нужна.
+  if (view === 'editing') {
     return null
   }
 
-  // Предикат из опций гейтит показ по контексту; false → кнопки нет вовсе.
-  if (!hooks.canEditCell(props)) {
+  // Предикат из опций гейтит показ по контексту; отправленное сохранение кнопку держит.
+  if (!view && !hooks.canEditCell(props)) {
     return null
   }
 
+  const failed = view?.status === 'error'
   return (
     <CellButton
       label={labels.editCell}
       icon={<EditIcon width={16} height={16} />}
+      pending={view?.status === 'pending'}
+      errorFlash={failed ? view.attempt : undefined}
+      failure={
+        failed
+          ? labels.actionFailedRetry(view.error || labels.saveFailed)
+          : undefined
+      }
       onClick={event => startEditSession(table, row, column, sourceOf(event))}
     />
   )

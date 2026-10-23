@@ -4,27 +4,19 @@
  * показывает контент как есть. Редактор берётся из `hooks.editor` (BYO со своей
  * дизайн-системой) либо дефолтный встроенный. Сессия правки живёт в срезе плагина
  * (ADR 0040, §2): редактор стартует с черновика и пишет его через `setDraft`, поэтому
- * текст переживает прокрутку, смену страницы и сортировку. Сохранение с промисом
- * показывает ожидание, отказ — «ошибку» с меткой (ADR 0041, §2). Слой поверх ячейки
- * несёт блик ожидания, вспышку отказа и подсветку сохранения (ADR 0057).
+ * текст переживает прокрутку, смену страницы и сортировку. Пока сохранение с промисом
+ * ждёт, ячейка показывает отправленное значение, после отказа — значение из данных;
+ * ожидание и отказ показывает кнопка правки (ADR 0127, §6). Слой поверх ячейки несёт
+ * подсветку сохранения (ADR 0057).
  */
 import { reportAction, sourceOf } from '../../core/debugActions'
-import {
-  useId,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react'
+import { useState, type ReactNode } from 'react'
 
 import clsx from 'clsx'
 
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection, useTableState } from '../../core/reactivity'
-import { useErrorFlash } from '../../ui/buttonStates/useErrorFlash'
-import ring from '../../ui/ringStates/ringStates.module.css'
-import { useIcons } from '../../ui/icons'
 import { CellEditInput } from './CellEditInput'
 import styles from './CellEditInput.module.css'
 import {
@@ -41,19 +33,6 @@ import {
   setEditError,
 } from './session'
 import type { CellEditingHooks, CellEditingState, CellEditor } from './types'
-
-/**
- * Фаза света ожидания от 0 до 1 по ключу ячейки: соседние ячейки вспыхивают не в такт,
- * а одна и та же ячейка — всегда одинаково.
- */
-const pendingPhase = (key: string) => {
-  let hash = 2166136261
-  for (let i = 0; i < key.length; i++) {
-    hash = Math.imul(hash ^ key.charCodeAt(i), 16777619)
-  }
-  hash = Math.imul(hash ^ (hash >>> 15), 0x2c1b3c6d)
-  return ((hash ^ (hash >>> 12)) >>> 0) / 2 ** 32
-}
 
 /** Дефолтный редактор: встроенный инлайн-ввод (Enter и потеря фокуса — коммит, Escape — отмена). */
 const defaultEditor: CellEditor = ({
@@ -79,8 +58,6 @@ export const CellEditField = (
 ) => {
   const { row, column, table, content, hooks } = props
   const labels = useLocalization()
-  const { saveFailed: FailedIcon } = useIcons()
-  const errorId = useId()
   // Подписка только на состояние этой ячейки: ввод черновика другие ячейки не
   // перерисовывает.
   const view = useSliceProjection(
@@ -105,75 +82,32 @@ export const CellEditField = (
       cellKey(row.id, column.id) in
       ((state as { cellSaved?: object }).cellSaved ?? {}),
   ) as boolean
-  const layerRef = useRef<HTMLSpanElement>(null)
-  const flash = useErrorFlash(
-    layerRef,
-    submitted?.status === 'error' ? submitted.attempt : undefined,
-  )
-  // Слой появляется с первым ожиданием или сохранением и остаётся до размонтирования:
-  // блик переходит во вспышку, а подсветка гаснет на том же элементе.
+  // Слой появляется с первым сохранением и остаётся до размонтирования: подсветка гаснет
+  // на том же элементе.
   const [layer, setLayer] = useState(false)
-  if (!layer && (pending || saved)) {
+  if (!layer && saved) {
     setLayer(true)
   }
   const feedback = layer ? (
     <span
-      ref={layerRef}
-      className={clsx(
-        'cell-edit-feedback',
-        ring.ring,
-        ring.layer,
-        styles.feedback,
-      )}
+      className={clsx('cell-edit-feedback', styles.feedback)}
       aria-hidden="true"
-      style={
-        {
-          '--tsr-pending-phase': pendingPhase(cellKey(row.id, column.id)),
-        } as CSSProperties
-      }
-      data-pending={pending || undefined}
-      data-error-flash={flash}
       data-saved={saved || undefined}
     />
   ) : null
 
-  // Сохранение ждёт сервера — отправленное значение и свет по периметру (ADR 0057, §1).
+  // Сохранение ждёт сервера — отправленное значение; ожидание показывает кнопка правки.
   if (submitted && pending) {
     return (
       <>
         {feedback}
-        <span className={styles.pending} aria-busy="true">
-          {submitted.draft}
-        </span>
+        <span className={styles.pending}>{submitted.draft}</span>
       </>
     )
   }
 
-  // Сервер отказал — значение из данных с меткой и текстом отказа; черновик ждёт
-  // повторной правки.
-  if (submitted) {
-    return (
-      <>
-        {feedback}
-        <span
-          className={styles.failed}
-          aria-invalid="true"
-          aria-describedby={errorId}
-          title={submitted.error}
-        >
-          <span className={styles.failedContent}>{content}</span>
-          <span className={styles.failedIcon} aria-hidden="true">
-            <FailedIcon width={14} height={14} />
-          </span>
-          <span id={errorId} className={styles.visuallyHidden}>
-            {submitted.error}
-          </span>
-        </span>
-      </>
-    )
-  }
-
-  // Не в правке — отдаём собственный контент ячейки как есть.
+  // Не в правке или сервер отказал — собственный контент ячейки, то есть значение из
+  // данных; черновик отказа ждёт повторной правки, отметка — на кнопке правки.
   if (view !== 'editing') {
     return (
       <>

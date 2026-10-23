@@ -3,10 +3,14 @@
  * Асинхронный контракт бизнес-колбэков (ADR 0041, AS1, AS4, AS7–AS10, AS12): промис от
  * `onCellEdit` отделяет ячейку в ожидание, отказ переводит её в «ошибку» с
  * черновиком; поздний итог снятого ожидания игнорируется. Отметки сохранения
- * (ADR 0057, CF7).
+ * (ADR 0057, CF7). Света по периметру ячейки нет — ожидание и отказ на кнопке правки
+ * (ADR 0127, IR21).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
-import { act, createElement } from 'react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { Fragment, act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -54,12 +58,18 @@ const Host = ({ plugins, data = rows, probe = false }: HostProps) => {
     return null
   }
   const cell = captured.getRow('1').getAllCells()[0]
+  const slots = captured.getRenderSlots()
+  const own = (entries: { id: string; component: never }[]) =>
+    entries.find(entry => entry.id === 'cellEditing')!.component
+  // Содержимое ячейки и кнопка правки — носитель ожидания и отказа (ADR 0127, §6).
   return createElement(
-    captured
-      .getRenderSlots()
-      .cellSlot.find((entry: { id: string }) => entry.id === 'cellEditing')
-      .component,
-    { ...cell.getContext(), content: 'content' },
+    Fragment,
+    null,
+    createElement(own(slots.cellSlot), {
+      ...cell.getContext(),
+      content: 'content',
+    }),
+    createElement(own(slots.rightCellSlot), cell.getContext()),
   )
 }
 
@@ -73,8 +83,14 @@ const render = (props: HostProps) => {
 }
 
 const state = () => captured.atoms['plugin:cellEditing'].get()
-const busy = () => container!.querySelector('[aria-busy="true"]')
-const failed = () => container!.querySelector('[aria-invalid="true"]')
+const busy = () => container!.querySelector('button[aria-busy="true"]')
+/** Описание отметки отказа на кнопке правки. */
+const failed = () => {
+  const ids = container!
+    .querySelector('button[aria-describedby]')
+    ?.getAttribute('aria-describedby')
+  return ids ? document.getElementById(ids.split(' ')[0]!) : null
+}
 
 /** Открыть правку первой ячейки и сохранить `value` через Enter. */
 const editAndCommit = (value: string) => {
@@ -153,12 +169,14 @@ describe('асинхронный контракт бизнес-колбэков'
     const plugins = [cellEditing({ onCellEdit: () => save.promise })]
     render({ plugins, probe: true })
     editAndCommit('kept')
-    expect(busy()?.textContent).toBe('kept')
+    expect(busy()).not.toBeNull()
+    expect(container!.textContent).toBe('kept')
 
     render({ plugins, probe: false })
     expect(busy()).toBeNull()
     render({ plugins, probe: true })
-    expect(busy()?.textContent).toBe('kept')
+    expect(busy()).not.toBeNull()
+    expect(container!.textContent).toBe('kept')
 
     save.reject(new Error('down'))
     await flush()
@@ -372,5 +390,29 @@ describe('асинхронный контракт бизнес-колбэков'
       now.mockRestore()
       vi.useRealTimers()
     }
+  })
+})
+
+describe('ожидание и отказ у кнопки правки (ADR 0127)', () => {
+  it('IR21: света по периметру ячейки нет — у ячейки в ожидании и после отказа нет слоя света, токенов --tsr-comp-cell-pending-glow-* в теме нет', async () => {
+    const save = deferred()
+    render({
+      plugins: [cellEditing({ onCellEdit: () => save.promise })],
+      probe: true,
+    })
+    editAndCommit('new')
+    expect(busy()).not.toBeNull()
+    expect(container!.querySelector('.cell-edit-feedback')).toBeNull()
+
+    save.reject(new Error('down'))
+    await flush()
+    expect(failed()?.textContent).toContain('down')
+    expect(container!.querySelector('.cell-edit-feedback')).toBeNull()
+
+    const theme = readFileSync(
+      join(process.cwd(), 'src/lib/core/themeVariables/theme.css'),
+      'utf8',
+    )
+    expect(theme).not.toMatch(/--tsr-comp-cell-pending-glow-/)
   })
 })

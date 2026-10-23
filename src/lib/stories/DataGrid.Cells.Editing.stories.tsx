@@ -12,6 +12,7 @@ import { expect, waitFor, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import {
   consoleText,
+  releaseFocus,
   rowAt,
   settle,
   until,
@@ -55,8 +56,8 @@ const failModeControl = {
   options: ['never', 'always'],
 } as const
 
-export const CellEditing: StoryObj<StoryProps> = {
-  name: 'Default',
+export const CellEditingPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   args: {
     enableCellEditing: true,
     // Немного колонок/строк без виртуализации: кнопка редактирования появляется в
@@ -251,11 +252,12 @@ export const EditingStateSaving: StoryObj<StoryProps> = {
     await waitFor(() =>
       expect(cell().querySelector('[aria-busy="true"]')).not.toBeNull(),
     )
+    await releaseFocus(cell)
     await settle()
   },
 }
 
-/** Сервер отказал в сохранении (ADR 0093, VR4): ячейка с отметкой ошибки. */
+/** Сервер отказал в сохранении (ADR 0093, VR4): отметка отказа на кнопке правки (ADR 0127). */
 export const EditingStateError: StoryObj<StoryProps> = {
   name: 'State: save error',
   parameters: {
@@ -270,9 +272,14 @@ export const EditingStateError: StoryObj<StoryProps> = {
   play: async ({ canvasElement }) => {
     const cell = await editCell(canvasElement, { value: '42' })
     await waitFor(() => expect(cell().querySelector('input')).toBeNull())
-    await waitFor(() =>
-      expect(cell().querySelector('[aria-invalid="true"]')).not.toBeNull(),
+    await waitFor(
+      () =>
+        expect(
+          cell().querySelector('[data-failure-indicator][data-shown="true"]'),
+        ).not.toBeNull(),
+      { timeout: 5000 },
     )
+    await releaseFocus(cell)
     await settle()
   },
 }
