@@ -6,13 +6,14 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import main from '../../../.storybook/main'
 import preview from '../../../.storybook/preview'
 import {
   SNAPSHOT_BUDGET,
   countSnapshots,
+  guideStepCounts,
   handMadeModes,
   isStoryTestFile,
   storyExports,
@@ -29,8 +30,10 @@ import {
   THEMES,
   WIDTHS,
   forcedTwinSources,
+  stepTwins,
   vrModes,
 } from '../stories/__mocks__/catalog'
+import { forcedStep } from '../stories/__mocks__/catalogPlay'
 import { A11Y_EXCLUSIONS, KEPT_STORY_TESTS } from '../stories/__tests__/catalog'
 
 const ROOT = join(__dirname, '..', '..', '..')
@@ -69,6 +72,7 @@ interface LoadedStory {
     vrStates?: string[]
     requirements?: string[]
     scenario?: string
+    guideStep?: number
     chromatic?: { forcedColors?: string; modes?: unknown }
   }
 }
@@ -77,7 +81,7 @@ const storyModules = import.meta.glob<Record<string, LoadedStory>>(
   '../stories/*.stories.tsx',
 )
 
-const HIGH_CONTRAST = 'DataGrid.Core.HighContrast.stories.tsx'
+const HIGH_CONTRAST = 'HighContrast.vr.stories.tsx'
 
 describe('Каталог визуальных состояний', () => {
   it('VR1: каждая история Tessera/** идёт в npm test проектом storybook — рендер без исключений и console.error, play проходит; StrictMode включён', () => {
@@ -192,7 +196,7 @@ describe('Каталог визуальных состояний', () => {
     expect(forced).toEqual([])
   })
 
-  it('VR17: у каждой истории каталога — один близнец высокой контрастности в Core/High contrast, вне тестов каталога; близнец без истории каталога и тег !test вне близнецов роняют страж', async () => {
+  it('VR17: у каждой истории каталога — один близнец высокой контрастности в Tessera/Common/High contrast (HighContrast.vr.stories.tsx), вне тестов каталога; близнец без истории каталога и тег !test вне близнецов роняют страж', async () => {
     const sources: [string, LoadedStory][] = []
     const twins: string[] = []
     const wrong: string[] = []
@@ -214,7 +218,7 @@ describe('Каталог визуальных состояний', () => {
           scenario
         ) {
           wrong.push(id)
-        } else {
+        } else if (!story.parameters?.guideStep) {
           twins.push(id)
         }
       }
@@ -229,6 +233,116 @@ describe('Каталог визуальных состояний', () => {
     ).toEqual([])
     expect(twins).toHaveLength(sources.length)
   }, 60_000)
+
+  it('DG3: у каждого шага гайда — один близнец высокой контрастности: play проходит гайд до шага, forcedColors, базовый режим, тег !test, без scenario, requirements и vrStates; шаг без близнеца и близнец без шага роняют страж', async () => {
+    // Близнец шага останавливает play после своего шага.
+    vi.stubGlobal('requestAnimationFrame', (run: () => void) => setTimeout(run))
+    vi.stubGlobal('document', { getAnimations: () => [] })
+    try {
+      const played: string[] = []
+      const source = {
+        parameters: { scenario: 'X/S1' },
+        play: async ({
+          step,
+        }: {
+          step: (label: string, run: () => unknown) => Promise<void>
+        }) => {
+          for (const label of ['a', 'b', 'c']) await step(label, () => {})
+        },
+      }
+      const twin = forcedStep({}, source, 2)
+      await (twin.play as typeof source.play)({
+        step: async (label, run) => {
+          played.push(label)
+          await run()
+        },
+      })
+      expect(played).toEqual(['a', 'b'])
+      stepTwins.delete(source)
+      expect(() => forcedStep({}, { parameters: {} }, 1)).toThrow()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+
+    const counts = guideStepCounts(storyFiles())
+    expect(counts.size).toBeGreaterThan(0)
+    const loaded = new Map<string, LoadedStory>()
+    const wrong: string[] = []
+    for (const [path, load] of Object.entries(storyModules)) {
+      const file = path.replace('../stories/', '')
+      const { default: _meta, ...stories } = await load()
+      for (const [name, story] of Object.entries(stories)) {
+        loaded.set(`${file}:${name}`, story)
+        const { guideStep, chromatic, scenario, requirements, vrStates } =
+          story.parameters ?? {}
+        if (!guideStep) continue
+        if (
+          file !== HIGH_CONTRAST ||
+          !story.tags?.includes('!test') ||
+          chromatic?.forcedColors !== 'active' ||
+          chromatic.modes !== BASE_MODES ||
+          scenario ||
+          requirements ||
+          vrStates
+        ) {
+          wrong.push(`${file}:${name}: вид близнеца шага`)
+        }
+      }
+    }
+    // Шаги истории — ровно 1…N, где N — шаги её play.
+    for (const [id, steps] of counts) {
+      const twinned = [...(stepTwins.get(loaded.get(id)!) ?? [])].sort(
+        (a, b) => a - b,
+      )
+      const expected = Array.from({ length: steps }, (_, i) => i + 1)
+      if (twinned.join() !== expected.join()) {
+        wrong.push(`${id}: шагов ${steps}, близнецы [${twinned.join()}]`)
+      }
+    }
+    const sources = new Set([...counts.keys()].map(id => loaded.get(id)))
+    for (const story of stepTwins.keys()) {
+      if (!sources.has(story as LoadedStory)) {
+        wrong.push('близнец шага без истории сценария')
+      }
+    }
+    expect(wrong).toEqual([])
+  }, 60_000)
+
+  it('DG7: скрипт бюджета снимков считает близнецов шагов в базовом режиме', () => {
+    const modes = Object.keys(FULL_MODES).length
+    const twin = [
+      'export const T = {',
+      '  ...twinStep(stories, stories.A, 1),',
+      "  name: 'A, шаг 1',",
+      "  tags: ['!test'],",
+      '}',
+    ].join('\n')
+    expect(countSnapshots([{ file: 'x', text: twin }], modes)).toBe(1)
+
+    const files = storyFiles()
+    const highContrast = files.filter(({ file }) => file === HIGH_CONTRAST)
+    const twins = [...highContrast[0]!.text.matchAll(/twinStep\(/g)].length
+    const steps = [...guideStepCounts(files).values()].reduce(
+      (a, b) => a + b,
+      0,
+    )
+    expect(twins).toBe(steps)
+    // Каждый близнец шага — один снимок в бюджете сборки.
+    const withoutSteps = files.map(file =>
+      file.file === HIGH_CONTRAST
+        ? {
+            ...file,
+            text: file.text.replace(
+              /^export const HighContrast\w+Step\d+ = \{[\s\S]*?^\}\n?/gm,
+              '',
+            ),
+          }
+        : file,
+    )
+    expect(
+      countSnapshots(files, modes) - countSnapshots(withoutSteps, modes),
+    ).toBe(steps)
+  })
 
   it('VR10: история вне снимков несёт причину; история без снимка и без причины роняет страж', () => {
     expect(unexplainedSkips(storyFiles())).toEqual([])
@@ -282,6 +396,29 @@ describe('Каталог визуальных состояний', () => {
 
   it('VR7: панели — тулбар, нижняя панель, пагинация, узкая ширина — истории каталога', () => {
     expect(missingStates('panel')).toEqual([])
+  })
+
+  it('DG1: реестр содержит область drag — rowHandle, columnHandle, row, column, rowInvalid, groupParent, pending, rejected, landed; у каждого есть носитель', () => {
+    expect([...CATALOG_STATES.drag].sort()).toEqual(
+      [
+        'rowHandle',
+        'columnHandle',
+        'row',
+        'column',
+        'rowInvalid',
+        'groupParent',
+        'pending',
+        'rejected',
+        'landed',
+      ].sort(),
+    )
+    // Носитель — шаг гайда со `states` (VR14; проверку во всех сочетаниях даёт DG2).
+    const declared = stepStates()
+    expect(
+      CATALOG_STATES.drag
+        .map(state => `drag.${state}`)
+        .filter(state => !declared.has(state)),
+    ).toEqual([])
   })
 
   it('VR13: дымовые тесты историй ADR 0042 и тесты «история …» — play-функции своих историй; отдельных файлов *-stories.test.tsx нет', () => {
@@ -349,8 +486,19 @@ const statesOf = () =>
     ),
   )
 
+/** Состояния, которые объявляют шаги гайдов полем `states`. */
+const stepStates = () =>
+  new Set(
+    storyFiles().flatMap(file =>
+      [...file.text.matchAll(/\bstates: \[([^\]]*)\]/g)].flatMap(list =>
+        [...list[1]!.matchAll(/'([\w.]+)'/g)].map(state => state[1]!),
+      ),
+    ),
+  )
+
+/** Состояние каталога показывает история `vrStates` или шаг гайда со `states` (ADR 0117). */
 const missingStates = (area: keyof typeof CATALOG_STATES) => {
-  const shown = new Set(statesOf().map(s => s.state))
+  const shown = new Set([...statesOf().map(s => s.state), ...stepStates()])
   return CATALOG_STATES[area]
     .map(state => `${area}.${state}`)
     .filter(state => !shown.has(state))

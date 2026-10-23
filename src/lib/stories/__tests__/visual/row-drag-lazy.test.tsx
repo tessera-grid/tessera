@@ -4,7 +4,7 @@ import { server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
@@ -266,7 +266,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       )
       await settleRowMotion()
 
-      await fromHandleMenu('row-2', DEFAULT_LABELS.indentRow)
+      await fromHandleMenu('row-2', ENGLISH_LABELS.indentRow)
       expect(lastEnd(), 'вложить').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -275,7 +275,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           index: 2,
         }),
       )
-      await fromHandleMenu('row-2', DEFAULT_LABELS.outdentRow)
+      await fromHandleMenu('row-2', ENGLISH_LABELS.outdentRow)
       expect(lastEnd(), 'вынести').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -284,7 +284,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           index: 3,
         }),
       )
-      await fromHandleMenu('row-2', DEFAULT_LABELS.moveDown)
+      await fromHandleMenu('row-2', ENGLISH_LABELS.moveDown)
       expect(lastEnd(), 'вниз').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -292,7 +292,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           index: 4,
         }),
       )
-      await fromHandleMenu('row-2', DEFAULT_LABELS.moveUp)
+      await fromHandleMenu('row-2', ENGLISH_LABELS.moveUp)
       expect(lastEnd(), 'вверх').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -470,7 +470,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         .toBe('on')
       await expect
         .poll(announced)
-        .toContain(DEFAULT_LABELS.announceMoveFailed('Server said no'))
+        .toContain(ENGLISH_LABELS.announceMoveFailed('Server said no'))
     } finally {
       await screen.unmount()
     }
@@ -676,13 +676,13 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       const page = order()
       await userEvent.click(
         document.querySelector<HTMLElement>(
-          `[aria-label="${DEFAULT_LABELS.nextPage}"]`,
+          `[aria-label="${ENGLISH_LABELS.nextPage}"]`,
         )!,
       )
       await expect.poll(() => rowById('node-0-0')).toBeNull()
       await userEvent.click(
         document.querySelector<HTMLElement>(
-          `[aria-label="${DEFAULT_LABELS.previousPage}"]`,
+          `[aria-label="${ENGLISH_LABELS.previousPage}"]`,
         )!,
       )
       await expect.poll(() => rowById('node-0-0')).not.toBeNull()

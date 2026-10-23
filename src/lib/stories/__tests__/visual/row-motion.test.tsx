@@ -2,11 +2,11 @@ import * as React from 'react'
 import { useEffect, useMemo } from 'react'
 
 import axe from 'axe-core'
-import { commands, server, userEvent } from 'vitest/browser'
+import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, onTestFinished, test } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columns } from '../../__mocks__/columns'
@@ -16,6 +16,10 @@ import {
   type FeatureToggles,
 } from '../../__mocks__/utils/argsToPlugins'
 import { composed } from '../stories'
+import type { StoryProps } from '../../DataGridStory.types'
+import { dataGridMeta } from '../../dataGridMeta'
+import { RowDraggingLazyTreeDemo } from '../../demos/sessionDemos'
+import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
 import { Stories, humanClick, settleRowMotion } from '../helpers'
 import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS, resolveColor } from './a11y-helpers'
@@ -33,7 +37,9 @@ const SCROLLER = '.data-grid__container'
 /** Движение по умолчанию (250 мс) с запасом на кадры, мс. */
 const SETTLE_MS = 600
 
-type ExpandingArgs = Partial<Parameters<typeof composed.RowExpanding>[0]>
+type ExpandingArgs = Partial<
+  Parameters<typeof composed.RowExpandingPlayground>[0]
+>
 type Pointer = {
   realDragHold: (from: object, to: object) => Promise<void>
   realMouseUp: () => Promise<void>
@@ -121,7 +127,7 @@ afterEach(() => {
 })
 
 const renderExpanding = async (args: ExpandingArgs = {}) => {
-  const screen = await render(<composed.RowExpanding {...args} />)
+  const screen = await render(<composed.RowExpandingPlayground {...args} />)
   await expect.poll(() => rowsTopDown().length).toBeGreaterThan(3)
   return screen
 }
@@ -236,7 +242,7 @@ const dragFrame = (scroller: HTMLElement) => {
  * зоны от её границы (зона — пятая часть высоты), выборка по кадрам.
  */
 const dragToEdge = async (depth = 1) => {
-  await render(<composed.RowDragging />)
+  await render(<composed.RowDraggingPlayground />)
   await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
   const [first] = rowsTopDown()
   await userEvent.hover(first)
@@ -419,7 +425,7 @@ describe('Движение строк (ADR 0107)', () => {
 
   test('RM5: поиск — прошедшие строки переезжают, ушедшие гаснут призраками, вернувшиеся проявляются', async () => {
     await render(
-      <composed.Filtering
+      <composed.FilteringPlayground
         enableToolbar
         quickSearchDebounceMs={0}
         columnFilteringDebounceMs={0}
@@ -505,9 +511,11 @@ describe('Движение строк (ADR 0107)', () => {
     await screen.unmount()
 
     // Скелет → данные.
-    const skeleton = await render(<composed.RowExpanding loading="initial" />)
+    const skeleton = await render(
+      <composed.RowExpandingPlayground loading="initial" />,
+    )
     const loaded = await sampleFrames(still, () =>
-      skeleton.rerender(<composed.RowExpanding loading={false} />),
+      skeleton.rerender(<composed.RowExpandingPlayground loading={false} />),
     )
     expect(rowsTopDown().length).toBeGreaterThan(3)
     expect(loaded.every(Boolean)).toBe(true)
@@ -541,7 +549,7 @@ describe('Движение строк (ADR 0107)', () => {
       { id: 'leaf', firstName: 'leaf', lastName: 'Doe' },
     ]
     await render(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         dataOverride={roots}
         rowExpandingHasChildren={
           ((row: { original: { childCount?: number } }) =>
@@ -587,7 +595,7 @@ describe('Движение строк (ADR 0107)', () => {
   })
 
   test('RM9: перетаскивание — соседи и слот-заливка сдвигаются переходом, только пока строку тащат', async () => {
-    await render(<composed.RowDragging />)
+    await render(<composed.RowDraggingPlayground />)
     await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
     const [first, second, , fourth] = rowsTopDown()
     const neighbourId = second.dataset.rowId!
@@ -713,7 +721,7 @@ describe('Движение строк (ADR 0107)', () => {
   })
 
   test('RM10: бросок мышью — после броска ни одна строка не переезжает повторно', async () => {
-    await render(<composed.RowDragging />)
+    await render(<composed.RowDraggingPlayground />)
     await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
     const [first, , , fourth] = rowsTopDown()
     await userEvent.hover(first)
@@ -742,7 +750,13 @@ describe('Движение строк (ADR 0107)', () => {
   })
 
   test('RM11: перестановка с клавиатуры и из меню ручки переезжает, как бросок', async () => {
-    await render(<composed.RowDragging enableKeyboardNavigation />)
+    // Все колонки в окне: в узком кадре с полосой прокрутки WebKit клик по обрезанной
+    // ячейке сдвигает область, грид после переезда возвращает её, и прокрутка доводит
+    // движение до конца (RM12).
+    const viewport = { width: innerWidth, height: innerHeight }
+    await page.viewport(900, 720)
+    onTestFinished(() => page.viewport(viewport.width, viewport.height))
+    await render(<composed.RowDraggingPlayground enableKeyboardNavigation />)
     await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
     const [first, second] = rowsTopDown()
     const firstId = first.dataset.rowId!
@@ -763,7 +777,7 @@ describe('Движение строк (ADR 0107)', () => {
     await userEvent.keyboard('{Enter}')
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-        node => node.textContent?.trim() === DEFAULT_LABELS.moveUp,
+        node => node.textContent?.trim() === ENGLISH_LABELS.moveUp,
       )
     await expect.poll(item).toBeTruthy()
     const menu = await sampleFrames(
@@ -945,7 +959,7 @@ describe('Движение строк (ADR 0107)', () => {
 
   test('RM28: поле правки, открытое в едущей строке, берёт фокус без прокрутки грида', async () => {
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         height={500}
         columnCount={6}
         dataCount={30}
@@ -1022,7 +1036,7 @@ describe('Движение строк (ADR 0107)', () => {
           ViewTransition?: React.ComponentType<{ children: React.ReactNode }>
         }
       ).ViewTransition
-      const story = <composed.RowExpanding />
+      const story = <composed.RowExpandingPlayground />
       await render(
         ViewTransition ? <ViewTransition>{story}</ViewTransition> : story,
       )
@@ -1084,7 +1098,7 @@ describe('Приземление перестановки вспышкой (ADR 
   test('LD1: бросок мышью — облако пропадает в кадре отпускания, без полёта и угасания, с движением строк и без него; строка в том же кадре на новом месте', async () => {
     for (const motion of [true, false]) {
       const screen = await render(
-        <composed.RowDragging enableRowAnimation={motion} />,
+        <composed.RowDraggingPlayground enableRowAnimation={motion} />,
       )
       const movedId = await holdFirstOverFourth()
       const frames = await sampleFrames(
@@ -1111,7 +1125,7 @@ describe('Приземление перестановки вспышкой (ADR 
   })
 
   test('LD2: брошенная строка вспыхивает слоем прихода, держится время прихода и гаснет; соседи не вспыхивают', async () => {
-    await render(<composed.RowDragging />)
+    await render(<composed.RowDraggingPlayground />)
     const movedId = await holdFirstOverFourth()
     await pointer.realMouseUp()
     await expect.poll(() => document.querySelector(SLOT)).toBeNull()
@@ -1127,7 +1141,7 @@ describe('Приземление перестановки вспышкой (ADR 
   })
 
   test('LD3: перестановка с клавиатуры и из меню ручки вспыхивает так же', async () => {
-    await render(<composed.RowDragging enableKeyboardNavigation />)
+    await render(<composed.RowDraggingPlayground enableKeyboardNavigation />)
     await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
     const [first] = rowsTopDown()
     const firstId = first.dataset.rowId!
@@ -1146,7 +1160,7 @@ describe('Приземление перестановки вспышкой (ADR 
     await userEvent.keyboard('{Enter}')
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-        node => node.textContent?.trim() === DEFAULT_LABELS.moveUp,
+        node => node.textContent?.trim() === ENGLISH_LABELS.moveUp,
       )
     await expect.poll(item).toBeTruthy()
     await userEvent.click(item()!)
@@ -1166,13 +1180,13 @@ describe('Приземление перестановки вспышкой (ADR 
       )
     }
     let screen = await render(
-      <composed.RowDragging enableRowAnimation={false} />,
+      <composed.RowDraggingPlayground enableRowAnimation={false} />,
     )
     await dropAndCheck()
     await screen.unmount()
     await pointer.reducedMotion(true)
     try {
-      screen = await render(<composed.RowDragging />)
+      screen = await render(<composed.RowDraggingPlayground />)
       await dropAndCheck()
     } finally {
       await pointer.reducedMotion(false)
@@ -1184,7 +1198,21 @@ describe('Приземление перестановки вспышкой (ADR 
 describe('Движение строк — прокрутка после перетаскивания (ADR 0107)', () => {
   test('RM29: прокрутка после перетаскивания и смены строк выше не сдвигает строки окна ни в одном кадре — строки не наезжают друг на друга', async () => {
     const screen = await render(
-      <composed.RowDraggingLazyTree loadDelayMs={0} moveDelayMs={0} />,
+      // Демо ленивого дерева без гайда: перенос сохраняется сразу.
+      <RowDraggingLazyTreeDemo
+        {...normalizeArgs({
+          ...dataGridMeta.args,
+          enableRowDragging: true,
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 3,
+          enableTreeLines: true,
+          containerHeight: '640',
+          height: '540',
+          maxHeight: '540',
+        } as StoryProps)}
+        loadDelayMs={0}
+        moveDelayMs={0}
+      />,
     )
     try {
       await expect.poll(() => rowById('node-5')).not.toBeNull()

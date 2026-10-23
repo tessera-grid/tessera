@@ -35,6 +35,23 @@ export const storyExports = ({ file, text }: StoryFile): StoryExport[] => {
   }))
 }
 
+/**
+ * Шаги гайдов (ADR 0130, DG3): история сценария (`scenario`) → число вызовов `step(` в её
+ * экспорте — столько шагов проходит её `play`. Песочницы `*.dev` не снимаются.
+ */
+export const guideStepCounts = (files: StoryFile[]) =>
+  new Map(
+    files
+      .filter(({ file }) => !file.includes('.dev.'))
+      .flatMap(storyExports)
+      .filter(story => /\bscenario:\s*'/.test(story.body))
+      .map((story): [string, number] => [
+        `${story.file}:${story.name}`,
+        (story.body.match(/\bstep\(/g) ?? []).length,
+      ])
+      .filter(([, steps]) => steps > 0),
+  )
+
 const skipsSnapshot = (body: string) => /disableSnapshot:\s*true/.test(body)
 const hasVrModes = (body: string) => /\bvrModes\(/.test(body)
 const hasVrTag = (body: string) => /['"]vr-modes['"]/.test(body)
