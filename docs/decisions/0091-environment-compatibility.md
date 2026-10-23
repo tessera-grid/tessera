@@ -163,7 +163,27 @@ StrictMode не включён ни в историях, ни в тестах. �
   были инертны. `core/inertProp` отдаёт булево в 19 и пустую строку в 18.
 - **`useLayoutEffect` при серверном рендере на React 18** — предупреждение на каждый хук
   (в 19 его нет). Хуки грида идут через `core/useIsomorphicLayoutEffect`: без DOM —
-  `useEffect`; `react-hooks/exhaustive-deps` проверяет его как `useLayoutEffect`.
+  `useEffect`; `react-hooks/exhaustive-deps` проверяет его как `useLayoutEffect`. Тем же
+  хуком — и обвязка историй, которую EV4 рендерит на сервере: среда каталога, панель
+  гайда, консоль и её запись аргументов (EV4 падал в `test:react18`, найдено
+  2026-10-22).
+- **Половина изменения на кадр под React 18** (найдено 2026-10-22, двенадцать тестов
+  `test:react18`). React 18 коммитит обновления атомов TanStack (`useSyncExternalStore`)
+  в синхронной полосе, а `setState` вне событий React — в полосе по умолчанию, отдельной
+  задачей; React 19 сводит их в один коммит. Грид видел полизменения:
+  - срез с сужением (ADR 0039) ядро хранило в `useState` — теперь в атоме TanStack
+    (`core/effectiveState`): LT7, LT8, SA12, истории RowDraggingCollapsedGroups и
+    RowDraggingLazyTree;
+  - запись атома и состояния приложения из таймера или промиса — раскрытие паузой
+    (ADR 0109), итог `loadChildren` и `onExpandRow`, итог промиса `onRowDragEnd` —
+    идёт через `core/oneCommit` (`flushSync` в React 18): NX1, NX3, NX7, LT3, AL10;
+  - старт перетаскивания dnd-kit коммитится позже атома `rowDragging`: слот-скелет
+    строки следует `isDragging` dnd-kit, как `data-row-draggable` (RM27);
+  - `setOver` dnd-kit — в полосе по умолчанию, место броска из `onDragOver` в атоме —
+    раньше: в React 18 смена места применяется в layout-эффекте коммита `over` со
+    сдвигом последнего движения (PV5). Отпустили до этого коммита — бросок по видимому
+    превью, как у dnd-kit: сценарий истории RowDraggingLazyTree отпускает, когда слот
+    встал под группой.
 - **`reorderRows` менял данные приложения на месте** (`subRows` и `parentId`).
   Обновитель `onRowOrderChange` в StrictMode вызывается дважды — второй вызов отменял
   перенос подстроки (DN2). Теперь копирует затронутые группы и строки (EV10).

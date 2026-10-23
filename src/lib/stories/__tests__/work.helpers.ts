@@ -175,6 +175,8 @@ export const measureWork = async (
   action: () => Promise<unknown> | unknown,
   { table, models = [], quietFrames = 3 }: MeasureOptions = {},
 ): Promise<Work> => {
+  // Кадр прежнего действия дорисовывается до замера: иначе его раскладка попадёт в счёт.
+  await frames(2)
   const root = rootOf(grid)
   let previous = fibersOf(root)
   const work: Work = {

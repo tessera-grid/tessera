@@ -18,6 +18,7 @@ import {
   withoutRow,
   withRowNear,
 } from '../../core/rowMoves'
+import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
 import type { RowMoveFailed } from './rowDraggingFeature'
 import { flashMoved } from '../../core/moveFlash'
@@ -277,8 +278,9 @@ export const commitRowMove = (
       reject(t, commit, entry, reason)
     }
   }
+  // Стадия модели и `data` приложения меняются одним коммитом: строка не пропадает.
   result.then(
-    () => settle(true),
-    reason => settle(false, reason),
+    () => inOneCommit(() => settle(true)),
+    reason => inOneCommit(() => settle(false, reason)),
   )
 }

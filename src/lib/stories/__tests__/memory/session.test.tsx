@@ -19,6 +19,7 @@ import {
   type GridProps,
 } from '../memory.helpers'
 import { rightClick } from '../visual/lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Долгая сессия (ADR 0092, LK7–LK9, LK13): живой грид повторяет одно и то же
 // действие; после прогрева узлы, обработчики, куча и состояние таблицы не растут с
@@ -114,7 +115,7 @@ const mountSession = async () => {
     // Приход ленивых детей и их сброс.
     container
       .querySelector<HTMLElement>(
-        '.data-grid__body-row[data-row-id="item-id-1"] [aria-label="Expand row"]',
+        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label="${tableLabels.expandRow}"]`,
       )!
       .click()
     await waitFor(
@@ -122,7 +123,7 @@ const mountSession = async () => {
     )
     container
       .querySelector<HTMLElement>(
-        '.data-grid__body-row[data-row-id="item-id-1"] [aria-label="Collapse row"]',
+        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label="${tableLabels.collapseRow}"]`,
       )!
       .click()
     await frames(2)
@@ -131,7 +132,11 @@ const mountSession = async () => {
     // Правка ячейки.
     const cell = bodyCell(container, 'country', 2)
     await hover(cell)
-    await click(cell.querySelector<HTMLElement>('[aria-label="Edit cell"]')!)
+    await click(
+      cell.querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.editCell}"]`,
+      )!,
+    )
     await waitFor(() => cell.querySelector('input') !== null)
     await userEvent.keyboard('{Control>}a{/Control}Edited{Enter}')
     await waitFor(() => cell.querySelector('input') === null)
@@ -223,7 +228,7 @@ describe('Утечки в долгой сессии', () => {
       )
       await waitFor(() =>
         [...document.querySelectorAll('[data-side]')].some(
-          el => el.textContent?.trim() === 'Filter',
+          el => el.textContent?.trim() === tableLabels.filter,
         ),
       )
       await parkPointer()

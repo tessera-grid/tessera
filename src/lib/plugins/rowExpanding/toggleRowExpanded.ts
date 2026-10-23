@@ -2,6 +2,7 @@ import type { Row } from '../../types'
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
 import { reportOutcome } from '../../core/debugActions'
+import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
   markExpandFailed,
@@ -108,8 +109,9 @@ export const toggleRowExpanded = (
     const error = rejectionText(value) ?? labels.loadChildrenFailed
     announceLabel(table, all => all.announceExpandFailed(error))
   }
+  // Снятие ожидания и сворачивание при отказе — одним коммитом.
   result.then(
-    value => settle(true, value),
-    reason => settle(false, reason),
+    value => inOneCommit(() => settle(true, value)),
+    reason => inOneCommit(() => settle(false, reason)),
   )
 }

@@ -1,7 +1,8 @@
 // Разбор снимка кучи V8 по кускам (ADR 0092, LK16): строка снимка целиком в общем
 // прогоне превышает предел длины строки V8. Метаданные — до `"nodes"`, дальше только
 // массивы; нужные `nodes`, `edges`, `strings` собираются поэлементно, остальные
-// пропускаются.
+// пропускаются. `nodes` и `edges` — в `Uint32Array` по числам из метаданных: в обычный
+// массив V8 кладёт не больше 2^27 элементов, а рёбер большой кучи втрое больше (LK17).
 
 export interface HeapSnapshot {
   snapshot: {
@@ -11,13 +12,19 @@ export interface HeapSnapshot {
       edge_fields: string[]
       edge_types: [string[]]
     }
+    node_count: number
+    edge_count: number
   }
-  nodes: number[]
-  edges: number[]
+  nodes: Uint32Array
+  edges: Uint32Array
   strings: string[]
 }
 
-const KEPT = new Set(['nodes', 'edges', 'strings'])
+interface Column {
+  values: Uint32Array
+  length: number
+}
+
 const QUOTE = 34
 const BACKSLASH = 92
 
@@ -42,10 +49,13 @@ const stringEnd = (text: string, start: number) => {
 export const createHeapSnapshotParser = () => {
   let carry = ''
   let header: HeapSnapshot['snapshot'] | undefined
-  const arrays: Record<string, unknown[]> = {
-    nodes: [],
-    edges: [],
-    strings: [],
+  const columns: Record<string, Column> = {}
+  const strings: string[] = []
+  const pushNumber = (column: Column, value: number) => {
+    if (column.length === column.values.length || value >>> 0 !== value) {
+      throw new Error('снимок кучи не сходится с метаданными')
+    }
+    column.values[column.length++] = value
   }
   /** Ключ текущего массива верхнего уровня; `undefined` — между ключами. */
   let key: string | undefined
@@ -62,6 +72,15 @@ export const createHeapSnapshotParser = () => {
           snapshot: HeapSnapshot['snapshot']
         }
       ).snapshot
+      const { meta, node_count, edge_count } = header
+      columns.nodes = {
+        values: new Uint32Array(node_count * meta.node_fields.length),
+        length: 0,
+      }
+      columns.edges = {
+        values: new Uint32Array(edge_count * meta.edge_fields.length),
+        length: 0,
+      }
       i = at
     }
     while (i < text.length) {
@@ -82,17 +101,20 @@ export const createHeapSnapshotParser = () => {
         i++
         continue
       }
-      const kept = KEPT.has(key) && depth === 0 ? arrays[key] : undefined
+      const top = depth === 0
       if (code === QUOTE) {
         const end = stringEnd(text, i)
         if (end < 0) return text.slice(i)
-        if (kept) kept.push(JSON.parse(text.slice(i, end + 1)))
+        if (top && key === 'strings') {
+          strings.push(JSON.parse(text.slice(i, end + 1)) as string)
+        }
         i = end + 1
       } else if (isNumberChar(code)) {
         let end = i + 1
         while (end < text.length && isNumberChar(text.charCodeAt(end))) end++
         if (end === text.length) return text.slice(i)
-        if (kept) kept.push(Number(text.slice(i, end)))
+        const column = top ? columns[key] : undefined
+        if (column) pushNumber(column, Number(text.slice(i, end)))
         i = end
       } else if (code === 91) {
         depth++
@@ -117,14 +139,20 @@ export const createHeapSnapshotParser = () => {
       return carry.length
     },
     finish(): HeapSnapshot {
-      if (carry.trim().replace(/[}\s]/g, '') !== '' || !header) {
+      const { nodes, edges } = columns
+      if (
+        carry.trim().replace(/[}\s]/g, '') !== '' ||
+        !header ||
+        nodes!.length !== nodes!.values.length ||
+        edges!.length !== edges!.values.length
+      ) {
         throw new Error('снимок кучи оборван')
       }
       return {
         snapshot: header,
-        nodes: arrays.nodes as number[],
-        edges: arrays.edges as number[],
-        strings: arrays.strings as string[],
+        nodes: nodes!.values,
+        edges: edges!.values,
+        strings,
       }
     },
   }

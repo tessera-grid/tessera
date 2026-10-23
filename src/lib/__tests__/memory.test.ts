@@ -31,6 +31,14 @@ const BOUNDED: Record<string, string> = {
     'тексты выданных предупреждений: их набор конечен — по одному на место в коде',
   'core/wallTime.ts:formatters':
     'форматтер на часовой пояс: поясов конечное число',
+  'core/localization/resolveLabels.ts:COUNT_KEYS':
+    'константный набор подписей с параметром count',
+  'core/localization/resolveLabels.ts:numberFormats':
+    'форматтер чисел на язык: языков конечное число',
+  'core/localization/resolveLabels.ts:listFormats':
+    'форматтер списков на язык: языков конечное число',
+  'core/localization/resolveLabels.ts:pluralRules':
+    'правила форм слова на язык: языков конечное число',
 }
 
 const MODULE_COLLECTION =

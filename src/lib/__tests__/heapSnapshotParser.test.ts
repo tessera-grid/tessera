@@ -62,8 +62,8 @@ describe('Снимок кучи по кускам (ADR 0092)', () => {
     for (const size of [1, 2, 3, 7, 64, SNAPSHOT.length]) {
       const { heap, maxCarried } = parseInChunks(SNAPSHOT, size)
       expect(heap.snapshot, `size ${size}`).toEqual(whole.snapshot)
-      expect(heap.nodes, `size ${size}`).toEqual(whole.nodes)
-      expect(heap.edges, `size ${size}`).toEqual(whole.edges)
+      expect(Array.from(heap.nodes), `size ${size}`).toEqual(whole.nodes)
+      expect(Array.from(heap.edges), `size ${size}`).toEqual(whole.edges)
       expect(heap.strings, `size ${size}`).toEqual(whole.strings)
       // До метаданных держится их начало; дальше — не больше куска и одного токена.
       expect(maxCarried, `size ${size}`).toBeLessThanOrEqual(
@@ -75,4 +75,43 @@ describe('Снимок кучи по кускам (ADR 0092)', () => {
     cut.push(SNAPSHOT.slice(0, SNAPSHOT.indexOf('"strings":') + 15))
     expect(() => cut.finish()).toThrow('снимок кучи оборван')
   })
+
+  it('LK17: снимок, где чисел рёбер больше 2^27 — предела обычного массива V8, — разбирается; снимок, не сходящийся с node_count и edge_count, — ошибка', () => {
+    const edgeCount = Math.ceil((2 ** 27 + 1) / 3)
+    const header = (count: number) =>
+      JSON.stringify({
+        snapshot: {
+          meta: {
+            node_fields: ['type', 'name', 'id', 'self_size', 'edge_count'],
+            node_types: [['object'], 'string', 'number', 'number', 'number'],
+            edge_fields: ['type', 'name_or_index', 'to_node'],
+            edge_types: [['property'], 'string_or_number', 'node'],
+          },
+          node_count: 1,
+          edge_count: count,
+        },
+      }).slice(0, -1) + `,"nodes":[0,0,1,0,${count}],"edges":[`
+    const tail = '0,0,0],"strings":[""]}'
+
+    const parser = createHeapSnapshotParser()
+    parser.push(header(edgeCount))
+    const block = 1 << 16
+    const chunk = '0,0,0,'.repeat(block)
+    let left = edgeCount - 1
+    for (; left >= block; left -= block) {
+      parser.push(chunk)
+    }
+    parser.push('0,0,0,'.repeat(left) + tail)
+    const heap = parser.finish()
+    expect(heap.edges.length).toBe(edgeCount * 3)
+    expect(heap.edges.length).toBeGreaterThan(2 ** 27)
+
+    const extra = createHeapSnapshotParser()
+    expect(() => extra.push(header(1) + '0,0,0,' + tail)).toThrow(
+      'снимок кучи не сходится с метаданными',
+    )
+    const short = createHeapSnapshotParser()
+    short.push(header(2) + tail)
+    expect(() => short.finish()).toThrow('снимок кучи оборван')
+  }, 60_000)
 })

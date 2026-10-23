@@ -9,6 +9,7 @@
  */
 import { useRef, useState } from 'react'
 
+import { createAtom, useSelector } from '@tanstack/react-store'
 import { functionalUpdate } from '@tanstack/react-table'
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
 
@@ -98,7 +99,10 @@ export const useEffectiveState = ({
   initial = {},
   listeners = {},
 }: EffectiveStateParams) => {
-  const [inner, setInner] = useState<Record<string, unknown>>({})
+  // Атом, а не состояние React: в React 18 запись вне событий (таймер, промис) иначе
+  // коммитилась бы отдельно от записей в атомы TanStack той же задачи.
+  const [innerAtom] = useState(() => createAtom<Record<string, unknown>>({}))
+  const inner = useSelector(innerAtom)
   // Синхронная копия `inner`: новое значение нужно колбэку сразу, вне функции обновления.
   const innerRef = useRef(inner)
   const cache = useRef(new Map<string, CacheEntry>())
@@ -153,7 +157,7 @@ export const useEffectiveState = ({
               : getAtoms()?.[key]?.get()) as never,
         )
         innerRef.current = { ...prev, [key]: next }
-        setInner(innerRef.current)
+        innerAtom.set(innerRef.current)
         listener?.(next)
       }
 

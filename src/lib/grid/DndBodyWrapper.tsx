@@ -4,20 +4,24 @@
 // переупорядочивания — getRowDraggingEvents.
 import {
   type PropsWithChildren,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
 import {
   DndContext,
+  type DragMoveEvent,
   type DragStartEvent,
   DragOverlay,
   MouseSensor,
   PointerSensor,
   TouchSensor,
   closestCenter,
+  useDndContext,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -45,6 +49,7 @@ import { OverlayBodyRow } from './OverlayBodyRow'
 import { windowedListSortingStrategy } from './dnd/windowedListSortingStrategy'
 import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 import { useLatest } from '../core/useLatest'
+import { REACT_MAJOR } from '../core/reactVersion'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow extends { id: string }>(
@@ -62,6 +67,27 @@ export const getSortableRowIds = (
   rows: readonly { id: string }[],
   virtualRows: readonly { index: number }[],
 ): string[] => virtualRows.map(virtualRow => rows[virtualRow.index].id)
+
+/**
+ * Смена места броска — в коммите `over` dnd-kit (ADR 0108, PV5). React 18 коммитит
+ * атом перетаскивания раньше состояния dnd-kit: линии кадр опережали бы сдвиги строк.
+ */
+const OverCommit = ({
+  pendingRef,
+  applyRef,
+}: {
+  pendingRef: RefObject<DragMoveEvent | null>
+  applyRef: RefObject<(event: DragMoveEvent) => void>
+}) => {
+  const { over } = useDndContext()
+  useIsomorphicLayoutEffect(() => {
+    const event = pendingRef.current
+    if (!event) return
+    pendingRef.current = null
+    applyRef.current(event)
+  }, [over, pendingRef, applyRef])
+  return null
+}
 
 export interface DndBodyWrapperProps {
   table: Table<any, any>
@@ -127,6 +153,9 @@ export const DndBodyWrapper = ({
     expandTimer,
   })
   const rowModelChange = useLatest(onRowModelChange)
+  const dragMove = useLatest(onRowDragMove ?? (() => {}))
+  const pendingOver = useRef<DragMoveEvent | null>(null)
+  const deferOver = REACT_MAJOR < 19
   const startDrag = (event: DragStartEvent) => {
     const { row } = event.active.data.current as { row: { depth: number } }
     dropLevel.start(
@@ -218,14 +247,35 @@ export const DndBodyWrapper = ({
       measuring={measuring}
       autoScroll={autoScrollOnlyY}
       onDragStart={startDrag}
-      onDragMove={onRowDragMove}
+      onDragMove={event => {
+        // Отложенная смена места применится с последним сдвигом указателя.
+        if (pendingOver.current) {
+          pendingOver.current = { ...pendingOver.current, delta: event.delta }
+        }
+        onRowDragMove?.(event)
+      }}
       // Смена места без движения указателя (автопрокрутка, сдвиг соседей) — то же
       // превью броска (ADR 0108, PV5).
-      onDragOver={onRowDragMove}
-      onDragEnd={onRowDragEnd}
-      onDragCancel={onRowDragCancel}
-      onDragAbort={onRowDragAbort}
+      onDragOver={
+        deferOver
+          ? (event: DragMoveEvent) => (pendingOver.current = event)
+          : onRowDragMove
+      }
+      // Отпустили до коммита смены места — бросок по видимому превью, как у dnd-kit.
+      onDragEnd={event => {
+        pendingOver.current = null
+        onRowDragEnd?.(event)
+      }}
+      onDragCancel={event => {
+        pendingOver.current = null
+        onRowDragCancel?.(event)
+      }}
+      onDragAbort={event => {
+        pendingOver.current = null
+        onRowDragAbort?.(event)
+      }}
     >
+      {deferOver && <OverCommit pendingRef={pendingOver} applyRef={dragMove} />}
       <SortableContext
         id="data-grid-sortable-rows"
         items={items}

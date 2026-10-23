@@ -31,6 +31,7 @@ import {
 } from '../../core/rowMoves'
 import { commitRowMove } from './commitRowMove'
 import { reportAction } from '../../core/debugActions'
+import { inOneCommit } from '../../core/oneCommit'
 import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
 import { dropPlace } from './dropPlace'
 import type { ExpandTimer } from './expandTimer'
@@ -194,12 +195,15 @@ export const getRowDraggingEvents = (
       detail: { rowId: group.id },
       source: 'pointer',
     })
-    onRowDraggingChange(prev =>
-      prev.activeId === null
-        ? prev
-        : { ...prev, openedByDelay: [...prev.openedByDelay, group.id] },
-    )
-    setExpandedByUser(group, true)
+    // Отметка и раскрытие — одним коммитом: свёрнутая отмеченная группа — отказ загрузки.
+    inOneCommit(() => {
+      onRowDraggingChange(prev =>
+        prev.activeId === null
+          ? prev
+          : { ...prev, openedByDelay: [...prev.openedByDelay, group.id] },
+      )
+      setExpandedByUser(group, true)
+    })
   }
 
   /** Свернуть группы, раскрытые паузой, кроме `keep`. */

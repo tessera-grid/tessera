@@ -147,7 +147,13 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
         listeners={listeners}
         attributes={attributes}
       >
-        <BodyRowCells {...props} isRowInteract={isRowInteract} />
+        <BodyRowCells
+          {...props}
+          // Слот — по dnd-kit, как `data-row-draggable`: в React 18 его старт коммитится
+          // позже атома перетаскивания.
+          slotDepth={isDragging ? props.slotDepth : undefined}
+          isRowInteract={isRowInteract}
+        />
       </ItemDraggableWrapper>
     </div>
   )

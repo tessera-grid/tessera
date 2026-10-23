@@ -25,6 +25,7 @@ import {
   type MeasureOptions,
   type Work,
 } from '../work.helpers'
+import { tableLabels } from '../labels'
 
 // Счётчики работы (ADR 0099, этап 2, PF2–PF11): работа ключевых действий считается —
 // коммиты React, отрисованные компоненты, узлы, раскладки, пересборки моделей строк.
@@ -224,7 +225,9 @@ describe('Счётчики работы', () => {
     const work = await measure(
       () =>
         userEvent.click(
-          document.querySelector<HTMLElement>('[aria-label="Next page"]')!,
+          document.querySelector<HTMLElement>(
+            `[aria-label="${tableLabels.nextPage}"]`,
+          )!,
         ),
       { models: ['coreRowModel', 'paginatedRowModel'] },
     )
@@ -248,7 +251,7 @@ describe('Счётчики работы', () => {
     })
     await userEvent.click(
       document.querySelector<HTMLElement>(
-        '[data-row-id="item-id-2"] [aria-label="Expand row"]',
+        `[data-row-id="item-id-2"] [aria-label="${tableLabels.expandRow}"]`,
       )!,
     )
     await expect.poll(() => answer).toBeDefined()
@@ -311,7 +314,7 @@ describe('Счётчики работы', () => {
     )!
     await userEvent.hover(head)
     const button = head.querySelector<HTMLElement>(
-      '[aria-label^="Column options"]',
+      `[aria-label^="${tableLabels.headerMenu}"]`,
     )!
     await waitForQuietDocument(300)
     const work = await measure(() => userEvent.click(button))
@@ -349,7 +352,7 @@ describe('Счётчики работы', () => {
       probe(),
       headerActionMenu({ mode: 'always' }),
     ])
-    await userEvent.click(await headButton('Column options'))
+    await userEvent.click(await headButton(tableLabels.headerMenu))
     await expect.poll(() => menuItem('Wide only')).toBeTruthy()
     expect(menuItem('Wide only')).not.toHaveAttribute('aria-disabled', 'true')
     widen(table())
@@ -429,7 +432,8 @@ describe('Счётчики работы — кнопки заголовка по
       document.querySelector<HTMLElement>(
         '.data-grid__head-cell[data-column-id="firstName"]',
       )!
-    const kebab = () => head().querySelector('[aria-label^="Column options"]')
+    const kebab = () =>
+      head().querySelector(`[aria-label^="${tableLabels.headerMenu}"]`)
     await expect.poll(kebab).toBeNull()
     const r = head().getBoundingClientRect()
     const at = { x: r.right, y: r.top + r.height / 2 }

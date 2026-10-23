@@ -29,6 +29,7 @@ import {
   releaseModule,
   rightClick,
 } from '../visual/lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Утечки при размонтировании (ADR 0092, LK1–LK4): грид со всеми плагинами монтируется
 // и размонтируется в разных состояниях; после сборки мусора таблица и корень грида
@@ -204,7 +205,7 @@ describe('Утечки при размонтировании', () => {
           await hover(headCell(container, 'country'))
           await click(
             headCell(container, 'country').querySelector<HTMLElement>(
-              '[aria-label^="Column options"]',
+              `[aria-label^="${tableLabels.headerMenu}"]`,
             )!,
           )
           await waitFor(() => menu() !== null)
@@ -236,7 +237,9 @@ describe('Утечки при размонтировании', () => {
           await hoverSettled(
             head.querySelector<HTMLElement>('.column-filter__button')!,
           )
-          await waitFor(() => tooltip()?.textContent?.trim() === 'Filter')
+          await waitFor(
+            () => tooltip()?.textContent?.trim() === tableLabels.filter,
+          )
         },
       ],
       [
@@ -254,7 +257,9 @@ describe('Утечки при размонтировании', () => {
           const cell = bodyCell(container, 'country')
           await hover(cell)
           await click(
-            cell.querySelector<HTMLElement>('[aria-label="Edit cell"]')!,
+            cell.querySelector<HTMLElement>(
+              `[aria-label="${tableLabels.editCell}"]`,
+            )!,
           )
           await waitFor(() => cell.querySelector('input') !== null)
         },
@@ -322,7 +327,9 @@ describe('Утечки при размонтировании', () => {
           },
           async ({ container }) => {
             container
-              .querySelector<HTMLElement>('[aria-label="Expand row"]')!
+              .querySelector<HTMLElement>(
+                `[aria-label="${tableLabels.expandRow}"]`,
+              )!
               .click()
             await waitFor(() => childrenAsked > 0)
           },
@@ -348,7 +355,9 @@ describe('Утечки при размонтировании', () => {
             const cell = bodyCell(container, 'country')
             await hover(cell)
             await click(
-              cell.querySelector<HTMLElement>('[aria-label="Edit cell"]')!,
+              cell.querySelector<HTMLElement>(
+                `[aria-label="${tableLabels.editCell}"]`,
+              )!,
             )
             await waitFor(() => cell.querySelector('input') !== null)
             await userEvent.keyboard('{Control>}a{/Control}Changed{Enter}')
