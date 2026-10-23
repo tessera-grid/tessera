@@ -25,6 +25,11 @@ export const ENGINE_EXCLUSIONS: EngineExclusion[] = [
     reason: 'снимки дерева доступности через CDP — только Chromium (ADR 0033)',
   },
   {
+    file: 'src/lib/stories/__tests__/visual/work-counters.test.tsx',
+    reason:
+      'раскладки и пересчёты стилей — трейс CDP, только Chromium; счёт React от движка не зависит (ADR 0099)',
+  },
+  {
     file: MOBILE_SUITE,
     reason: 'касания — проект mobile, эмуляция iPhone и Pixel',
   },

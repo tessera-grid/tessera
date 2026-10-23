@@ -143,10 +143,19 @@
   background-color: var(--tsr-comp-action-button-bg);
 }
 
-/* Высокая контрастность (ADR 0087): активная кнопка — `Highlight`. */
+/*
+ * Высокая контрастность (ADR 0087): активная кнопка — `Highlight`, бабл на ней — парой
+ * `Canvas`. Без пары Firefox снимает фон бабла в `Canvas`, а цвет числа наследует от
+ * кнопки — `HighlightText`, и число пропадает.
+ */
 @media (forced-colors: active) {
   .iconButton:is([data-active], [data-popup-open]) {
     background-color: Highlight;
     color: HighlightText;
+  }
+
+  .iconButton .indicator {
+    background-color: Canvas;
+    color: CanvasText;
   }
 }
