@@ -1,8 +1,8 @@
 /**
- * Содержимое меню колонок (ADR 0035, CV3–CV11): поиск, дерево колонок с
- * трёхсостоянными галочками групп и кнопки «Показать все» / «Сбросить». Дерево
- * разворачивается в плоский список и виртуализируется: при тысячах колонок
- * рисуются только видимые строки (I4–I5).
+ * Содержимое меню колонок (ADR 0035, CV3–CV11; ADR 0133): поиск, корень «Все колонки»,
+ * дерево колонок с трёхсостоянными галочками групп и линиями дерева, подвал «Выбрано N
+ * колонок» и «Сбросить». Дерево разворачивается в плоский список и виртуализируется:
+ * при тысячах колонок рисуются только видимые строки (I4–I5).
  */
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { type RefObject, useRef, useState } from 'react'
@@ -10,6 +10,7 @@ import { type RefObject, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 
 import { useLocalization } from '../../core/localization'
+import { TreeLines } from '../../grid/TreeLinesLayer'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
@@ -18,9 +19,10 @@ import { Tooltip } from '../../ui/Tooltip'
 import {
   type ColumnTreeNode,
   buildColumnTree,
+  countVisibleColumns,
   filterColumnTree,
   getCheckState,
-  getShowAll,
+  getRootNode,
   getToggle,
 } from './columnTree'
 import {
@@ -41,56 +43,92 @@ interface ColumnVisibilityMenuProps {
   searchRef?: RefObject<HTMLInputElement | null>
 }
 
-const flatten = (nodes: ColumnTreeNode[]): ColumnTreeNode[] =>
-  nodes.flatMap(node => [node, ...flatten(node.children)])
+/** Строка дерева: узел и его линии — `1` на уровне, где ветка предка идёт дальше. */
+interface TreeRow {
+  node: ColumnTreeNode
+  branch: string
+}
+
+/** Плоский список под корнем «Все колонки»: уровень узла — его глубина + 1. */
+const flatten = (nodes: ColumnTreeNode[], prefix = ''): TreeRow[] =>
+  nodes.flatMap((node, index) => {
+    const branch = prefix + (index < nodes.length - 1 ? '1' : '0')
+    return [{ node, branch }, ...flatten(node.children, branch)]
+  })
+
+/** Строка-флажок дерева: колонка, группа или корень «Все колонки» (глубина −1). */
+const CheckRow = ({
+  node,
+  label,
+  table,
+  action,
+}: {
+  node: ColumnTreeNode
+  label: string
+  table: VisibilityControlTable
+  action: 'toggleColumn' | 'toggleAll'
+}) => {
+  const state = getCheckState(node)
+  const toggle = getToggle(node)
+
+  return (
+    <label
+      className={styles.row}
+      style={{
+        paddingInlineStart: `calc(8px + ${node.depth + 1} * var(--tsr-tree-indent))`,
+      }}
+      data-disabled={toggle === null || undefined}
+    >
+      <SelectCheckbox
+        selected={state === 'checked'}
+        indeterminate={state === 'indeterminate'}
+        disabled={toggle === null}
+        label={label}
+        // Меню — в композите тулбара: без tabIndex галочки выпали бы из порядка Tab.
+        tabIndex={toggle === null ? undefined : 0}
+        onClick={event => {
+          if (!toggle) return
+          reportAction(table, {
+            plugin: 'columnVisibility',
+            action,
+            detail: { columnIds: toggle.columnIds, visible: toggle.visible },
+            source: sourceOf(event),
+          })
+          setColumnsVisible(table, toggle.columnIds, toggle.visible)
+        }}
+      />
+      <Tooltip title={label} overflowOnly>
+        <span className={styles.label}>{label}</span>
+      </Tooltip>
+    </label>
+  )
+}
 
 const ColumnRow = ({
-  node,
+  row: { node, branch },
   table,
   top,
 }: {
-  node: ColumnTreeNode
+  row: TreeRow
   table: VisibilityControlTable
   top: number
-}) => {
-  const state = getCheckState(node)
-  const toggle = getToggle(node, table)
-
-  return (
-    <li
-      className={styles.item}
-      style={{ transform: `translateY(${top}px)` }}
-      data-column-id={node.id}
-      data-column-group={node.children.length > 0 || undefined}
-    >
-      <label
-        className={styles.row}
-        style={{ paddingInlineStart: `calc(8px + ${node.depth} * 16px)` }}
-        data-disabled={toggle === null || undefined}
-      >
-        <SelectCheckbox
-          selected={state === 'checked'}
-          indeterminate={state === 'indeterminate'}
-          disabled={toggle === null}
-          label={node.label}
-          onClick={event => {
-            if (!toggle) return
-            reportAction(table, {
-              plugin: 'columnVisibility',
-              action: 'toggleColumn',
-              detail: { columnIds: toggle.columnIds, visible: toggle.visible },
-              source: sourceOf(event),
-            })
-            setColumnsVisible(table, toggle.columnIds, toggle.visible)
-          }}
-        />
-        <Tooltip title={node.label} overflowOnly>
-          <span className={styles.label}>{node.label}</span>
-        </Tooltip>
-      </label>
-    </li>
-  )
-}
+}) => (
+  <li
+    className={styles.item}
+    style={{ transform: `translateY(${top}px)` }}
+    data-column-id={node.id}
+    data-column-group={node.children.length > 0 || undefined}
+  >
+    <CheckRow
+      node={node}
+      label={node.label}
+      table={table}
+      action="toggleColumn"
+    />
+    {/* После строки: подложка наведения не закрывает линии. */}
+    <TreeLines branch={branch} open={node.children.length > 0} />
+  </li>
+)
 
 export const ColumnVisibilityMenu = ({
   table,
@@ -108,8 +146,8 @@ export const ColumnVisibilityMenu = ({
   }))
 
   const control = table as unknown as VisibilityControlTable
-  const rows = flatten(filterColumnTree(buildColumnTree(control), query))
-  const hiddenCount = getShowAll(control).length
+  const found = filterColumnTree(buildColumnTree(control), query)
+  const rows = flatten(found)
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -140,21 +178,32 @@ export const ColumnVisibilityMenu = ({
         }}
       />
       {rows.length > 0 ? (
-        <div ref={scrollRef} className={styles.scroller}>
-          <ul
-            className={styles.tree}
-            style={{ height: virtualizer.getTotalSize() }}
-            aria-label={labels.columns}
-          >
-            {virtualizer.getVirtualItems().map(item => (
-              <ColumnRow
-                key={`${rows[item.index].id}-${item.index}`}
-                node={rows[item.index]}
-                table={control}
-                top={item.start}
-              />
-            ))}
-          </ul>
+        <div className={styles.columns}>
+          <div className={styles.root} data-testid="column-visibility-all">
+            <CheckRow
+              node={getRootNode(found)}
+              label={labels.allColumns}
+              table={control}
+              action="toggleAll"
+            />
+            <TreeLines branch="" open />
+          </div>
+          <div ref={scrollRef} className={styles.scroller}>
+            <ul
+              className={styles.tree}
+              style={{ height: virtualizer.getTotalSize() }}
+              aria-label={labels.columns}
+            >
+              {virtualizer.getVirtualItems().map(item => (
+                <ColumnRow
+                  key={`${rows[item.index].node.id}-${item.index}`}
+                  row={rows[item.index]}
+                  table={control}
+                  top={item.start}
+                />
+              ))}
+            </ul>
+          </div>
         </div>
       ) : (
         <p className={styles.empty} role="status">
@@ -162,20 +211,9 @@ export const ColumnVisibilityMenu = ({
         </p>
       )}
       <div className={styles.footer}>
-        <Button
-          variant="ghost"
-          disabled={hiddenCount === 0}
-          onClick={event => {
-            reportAction(table, {
-              plugin: 'columnVisibility',
-              action: 'showAll',
-              source: sourceOf(event),
-            })
-            setColumnsVisible(control, getShowAll(control), true)
-          }}
-        >
-          {labels.showAllColumns}
-        </Button>
+        <span className={styles.count} data-testid="column-visibility-count">
+          {labels.selectedColumns(countVisibleColumns(control))}
+        </span>
         <Button
           variant="ghost"
           onClick={event => {

@@ -1,7 +1,7 @@
 /**
- * Headless-проверки модели меню колонок (ADR 0035, CV4, CV6, CV7, CV9–CV13; ADR 0046, PB7):
- * дерево, галочки групп, переключение, поиск, «Показать все» / «Сбросить», общий
- * срез и бизнес-колбэк.
+ * Headless-проверки модели меню колонок (ADR 0035, CV4, CV6, CV7, CV10–CV13; ADR 0046,
+ * PB7; ADR 0133, HA4–HA5): дерево, галочки групп, корень «Все колонки», переключение,
+ * поиск, «Сбросить», общий срез и бизнес-колбэк.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { constructTable } from '@tanstack/react-table'
@@ -18,7 +18,7 @@ import {
   type ColumnTreeNode,
   filterColumnTree,
   getCheckState,
-  getShowAll,
+  getRootNode,
   getToggle,
 } from '../plugins/columnVisibility/columnTree'
 import {
@@ -122,26 +122,16 @@ describe('columnVisibility — модель меню', () => {
 
   it('CV7: клик по группе показывает всех потомков, если хоть один скрыт, иначе скрывает всех', () => {
     const partial = build({ state: { columnVisibility: { first: false } } })
-    expect(
-      getToggle(find(buildColumnTree(partial), 'person'), partial),
-    ).toEqual({ columnIds: ['first'], visible: true })
+    expect(getToggle(find(buildColumnTree(partial), 'person'))).toEqual({
+      columnIds: ['first'],
+      visible: true,
+    })
 
     const visible = build()
-    expect(
-      getToggle(find(buildColumnTree(visible), 'person'), visible),
-    ).toEqual({ columnIds: ['first', 'last'], visible: false })
-  })
-
-  it('CV9: последнюю видимую пользовательскую колонку скрыть нельзя', () => {
-    const table = build({
-      plugins: [rowSelection()],
-      state: { columnVisibility: { first: false, last: false } },
+    expect(getToggle(find(buildColumnTree(visible), 'person'))).toEqual({
+      columnIds: ['first', 'last'],
+      visible: false,
     })
-    const tree = buildColumnTree(table)
-    // Служебная колонка выбора видима, но не считается: age — последняя своя.
-    expect(getToggle(find(tree, 'age'), table)).toBeNull()
-    // Показать группу при этом можно.
-    expect(getToggle(find(tree, 'person'), table)?.visible).toBe(true)
   })
 
   it('CV10: поиск без учёта регистра — совпавшая группа со всеми потомками, лист — с цепочкой родителей', () => {
@@ -156,24 +146,57 @@ describe('columnVisibility — модель меню', () => {
     expect(filterColumnTree(tree, '  ')).toBe(tree)
   })
 
-  it('CV11: «Показать все» открывает все скрываемые; «Сбросить» возвращает initialState.columnVisibility', () => {
-    const table = build({
-      columns: [
-        ...NESTED,
-        { id: 'locked', accessorKey: 'age', header: 'L', enableHiding: false },
-      ],
-      initialState: { columnVisibility: { age: false } },
-    })
-    expect(getShowAll(table)).toEqual(['age'])
-
-    setColumnsVisible(table, ['first', 'last'], false)
-    expect(getShowAll(table)).toEqual(['first', 'last', 'age'])
-    setColumnsVisible(table, getShowAll(table), true)
-    expect(getShowAll(table)).toEqual([])
+  it('CV11: «Сбросить» возвращает initialState.columnVisibility', () => {
+    const table = build({ initialState: { columnVisibility: { age: false } } })
+    setColumnsVisible(table, ['first', 'last', 'age'], true)
+    setColumnsVisible(table, ['first'], false)
 
     resetColumnsVisibility(table)
     expect(table.getColumn('age').getIsVisible()).toBe(false)
     expect(table.getColumn('first').getIsVisible()).toBe(true)
+    expect(table.getColumn('last').getIsVisible()).toBe(true)
+  })
+
+  it('HA4: при непустом поиске корень считает и переключает только найденные колонки', () => {
+    const table = build({ state: { columnVisibility: { age: false } } })
+    const tree = buildColumnTree(table)
+    // Найдено «Last name»: скрыть все — только её, «Age» скрыта, но вне поиска.
+    const found = getRootNode(filterColumnTree(tree, 'last'))
+    expect(getCheckState(found)).toBe('checked')
+    expect(getToggle(found)).toEqual({ columnIds: ['last'], visible: false })
+    // Найдена группа целиком — её листья; без поиска — все, скрытая «Age» показывается.
+    expect(
+      getRootNode(filterColumnTree(tree, 'person')).leaves.map(l => l.id),
+    ).toEqual(['first', 'last'])
+    const all = getRootNode(tree)
+    expect(getCheckState(all)).toBe('indeterminate')
+    expect(getToggle(all)).toEqual({ columnIds: ['age'], visible: true })
+  })
+
+  it('HA5: колонки с enableHiding: false корень не меняет и в своём состоянии не учитывает; если все защищены — корень заблокирован', () => {
+    const LOCKED = {
+      id: 'locked',
+      accessorKey: 'age',
+      header: 'L',
+      enableHiding: false,
+    }
+    const table = build({
+      columns: [...NESTED, LOCKED],
+      state: { columnVisibility: { first: false, last: false, age: false } },
+    })
+    // Видна только защищённая — для корня все скрываемые скрыты.
+    const root = getRootNode(buildColumnTree(table))
+    expect(getCheckState(root)).toBe('unchecked')
+    expect(getToggle(root)?.columnIds).not.toContain('locked')
+
+    const visible = build({ columns: [...NESTED, LOCKED] })
+    expect(getToggle(getRootNode(buildColumnTree(visible)))).toEqual({
+      columnIds: ['first', 'last', 'age'],
+      visible: false,
+    })
+
+    const onlyLocked = build({ columns: [LOCKED] })
+    expect(getToggle(getRootNode(buildColumnTree(onlyLocked)))).toBeNull()
   })
 
   it('CV12: видимость — общий срез: контролируемый state и handler управляют меню', () => {
@@ -194,7 +217,7 @@ describe('columnVisibility — модель меню', () => {
       plugins: [columnVisibility({ onToggleColumnVisibility: onToggle })],
     })
 
-    const group = getToggle(find(buildColumnTree(table), 'person'), table)!
+    const group = getToggle(find(buildColumnTree(table), 'person'))!
     setColumnsVisible(table, group.columnIds, group.visible)
     expect(onToggle).toHaveBeenLastCalledWith(['first', 'last'], false)
 

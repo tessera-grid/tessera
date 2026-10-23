@@ -3,11 +3,12 @@
  * иллюстрация и иконка действия — из `icons`; своя заглушка приложения из пропа
  * `stubs` заменяет вид, получая действие записи и ошибку загрузки.
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 
 import { useLocalization } from '../../core/localization'
 import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useLatest } from '../../core/useLatest'
 import type { StubContext, StubEntry, StubRender } from '../../core/stubs'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
@@ -61,6 +62,12 @@ export const EmptyStub = ({
     entry.placement === 'body' && render === undefined,
   )
   const action = entry.action?.(context, labels)
+  const actionRef = useRef<HTMLButtonElement>(null)
+  const focusOnMount = useLatest(action?.focusOnMount)
+  // Только при появлении заглушки: запрос фокуса одноразовый.
+  useEffect(() => {
+    if (focusOnMount.current?.()) actionRef.current?.focus()
+  }, [focusOnMount])
   const marks = {
     'data-testid': entry.testId ?? `${entry.id}-stub`,
     'data-stub': entry.id,
@@ -96,6 +103,7 @@ export const EmptyStub = ({
       action={
         action && (
           <Button
+            ref={actionRef}
             pending={action.pending}
             onClick={action.run}
             icon={

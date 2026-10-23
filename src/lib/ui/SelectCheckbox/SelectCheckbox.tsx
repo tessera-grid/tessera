@@ -12,6 +12,8 @@ export interface SelectCheckboxProps {
   indeterminate?: boolean
   disabled?: boolean
   label?: string
+  /** `0` — флажок в порядке Tab и внутри композита Base UI (поповер тулбара). */
+  tabIndex?: number
   onClick: (event: ChangeEvent<HTMLInputElement>, checked: boolean) => void
 }
 
@@ -21,6 +23,7 @@ export const SelectCheckbox = memo(
     indeterminate,
     disabled,
     label,
+    tabIndex,
     onClick,
   }: SelectCheckboxProps) => {
     const {
@@ -50,6 +53,8 @@ export const SelectCheckbox = memo(
         indeterminate={indeterminate}
         onCheckedChange={handleCheckedChange}
         disabled={disabled}
+        // Явный `undefined` перебил бы tabindex самого Base UI.
+        {...(tabIndex === undefined ? {} : { tabIndex })}
         aria-label={label}
       >
         <Checkbox.Indicator keepMounted className={styles.indicator}>

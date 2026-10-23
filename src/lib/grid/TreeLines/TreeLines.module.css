@@ -1,7 +1,9 @@
 /*
  * Линии дерева (ADR 0102). Вертикаль уровня k — под началом текста строки глубины k−1:
  * (k−1) × шаг + отступ. Линии — рамки: при дробном масштабе рамка не схлопывается в
- * ноль, в отличие от прямоугольника и стопа градиента в 1px (ADR 0084).
+ * ноль, в отличие от прямоугольника и стопа градиента в 1px (ADR 0084). Шаг, отступ и
+ * длина поворота дерева вне таблицы (меню колонок, ADR 0133) — `--tsr-tree-indent`,
+ * `--tsr-tree-inset` и `--tsr-tree-elbow-width`.
  */
 .lines {
   position: absolute;
@@ -14,8 +16,9 @@
 .joinedElbow,
 .stub {
   --tsr-tree-x: calc(
-    var(--tsr-comp-row-nesting-indent) * (var(--tsr-tree-level) - 1) +
-      var(--tsr-comp-tree-line-inset)
+    var(--tsr-tree-indent, var(--tsr-comp-row-nesting-indent)) *
+      (var(--tsr-tree-level) - 1) +
+      var(--tsr-tree-inset, var(--tsr-comp-tree-line-inset))
   );
 
   position: absolute;
@@ -35,9 +38,12 @@
 .elbow,
 .joinedElbow {
   top: calc(-1 * var(--tsr-tree-line-overlap, 0px));
-  width: calc(
-    var(--tsr-comp-row-nesting-indent) - var(--tsr-comp-tree-line-gap) +
-      var(--tsr-comp-tree-line-width) / 2
+  width: var(
+    --tsr-tree-elbow-width,
+    calc(
+      var(--tsr-comp-row-nesting-indent) - var(--tsr-comp-tree-line-gap) +
+        var(--tsr-comp-tree-line-width) / 2
+    )
   );
   height: calc(
     50% + var(--tsr-tree-line-overlap, 0px) + var(--tsr-comp-tree-line-width) /

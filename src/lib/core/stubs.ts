@@ -30,6 +30,8 @@ export interface StubAction {
   pending?: boolean
   icon?: keyof TableIcons
   testId?: string
+  /** Кнопка берёт фокус при появлении заглушки, если вернёт `true` (зовётся в эффекте). */
+  focusOnMount?: () => boolean
 }
 
 export interface StubEntry {

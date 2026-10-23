@@ -352,28 +352,6 @@
   --tsr-comp-pending-focus-ring-width: 1px;
   /* Длина дуги ожидания кнопки — процент периметра, число (ADR 0127). */
   --tsr-comp-pending-arc: 25;
-  /* Пятна света ячейки в правке: сила оттенков от силы свечения (ADR 0095). */
-  --tsr-comp-pending-glow-strength: 81%;
-  --tsr-comp-pending-glow-1: color-mix(
-    in oklch,
-    var(--tsr-comp-loader-glow-1) var(--tsr-comp-pending-glow-strength),
-    transparent
-  );
-  --tsr-comp-pending-glow-2: color-mix(
-    in oklch,
-    var(--tsr-comp-loader-glow-2) var(--tsr-comp-pending-glow-strength),
-    transparent
-  );
-  --tsr-comp-pending-glow-3: color-mix(
-    in oklch,
-    var(--tsr-comp-loader-glow-3) var(--tsr-comp-pending-glow-strength),
-    transparent
-  );
-  --tsr-comp-pending-glow-4: color-mix(
-    in oklch,
-    var(--tsr-comp-loader-glow-4) var(--tsr-comp-pending-glow-strength),
-    transparent
-  );
   /* Оттенки дуги кнопки и спиннера — оттенки свечения в полную силу: дуга — тонкая линия. */
   --tsr-comp-pending-spinner-1: var(--tsr-comp-loader-bar);
   --tsr-comp-pending-spinner-2: var(--tsr-sys-info-sky);
@@ -384,17 +362,6 @@
   /* Период ожидания: круг дуги кнопки — половина, цикл оттенков — 1,7. */
   --tsr-comp-pending-glow-duration: var(--tsr-comp-loader-duration);
   --tsr-comp-error-flash-color: var(--tsr-sys-danger);
-  /* Красный свет ошибки — той же силы, что свет ожидания: тень та же, меняется цвет. */
-  --tsr-comp-error-flash-glow: color-mix(
-    in oklch,
-    color-mix(
-        in oklch,
-        var(--tsr-comp-error-flash-color) var(--tsr-comp-loader-glow-opacity),
-        transparent
-      )
-      var(--tsr-comp-pending-glow-strength),
-    transparent
-  );
   /* Заполнение контура красным при отказе, удержание и угасание (темп сигналов внимания, как подсветка). */
   --tsr-comp-error-flash-fill-duration: 200ms;
   --tsr-comp-error-flash-duration: 1200ms;
@@ -442,20 +409,13 @@
     transparent
   );
   --tsr-comp-tree-line-width: 1.5px;
-  /* Шаг отступа дерева с линиями: поворот ветки 16px и зазор до текста. */
-  --tsr-comp-tree-line-indent: calc(16px + var(--tsr-comp-tree-line-gap));
-  --tsr-comp-tree-line-radius: 14px;
+  /* Шаг отступа дерева с линиями: поворот ветки 10px и зазор до текста (ADR 0133). */
+  --tsr-comp-tree-line-indent: calc(10px + var(--tsr-comp-tree-line-gap));
+  --tsr-comp-tree-line-radius: 9px;
   /* Вертикаль уровня — под началом текста: горизонтальный отступ содержимого ячейки. */
   --tsr-comp-tree-line-inset: var(--tsr-ref-space-4);
   /* Зазор между концом поворота и текстом строки. */
   --tsr-comp-tree-line-gap: calc(var(--tsr-ref-space-1) * 3);
-  /* Пятно света ожидания ячейки: полуоси эллипса с центром на кромке. */
-  --tsr-comp-cell-pending-glow-width: 64px;
-  --tsr-comp-cell-pending-glow-height: 40px;
-  /* Глубина полосы света у кромок: внутри отступов содержимого, до текста не доходит. */
-  --tsr-comp-cell-pending-glow-depth: 10px;
-  /* Свет ложится поверх текста — в ячейке он тише, чем у кнопки. */
-  --tsr-comp-cell-pending-glow-opacity: 0.8;
   --tsr-comp-cell-saved-color: var(--tsr-comp-row-arrival-color);
   --tsr-comp-cell-saved-duration: var(--tsr-comp-row-arrival-duration);
   --tsr-comp-cell-saved-fade-duration: var(
@@ -622,6 +582,8 @@
   --tsr-comp-status-bar-height: 48px;
   --tsr-comp-status-bar-padding-x: 12px;
   --tsr-comp-status-bar-gap: 16px;
+  /* Кегль текста панели — счётчиков и пагинации (SB15). */
+  --tsr-comp-status-bar-font-size: var(--tsr-comp-cell-font-size);
   --tsr-comp-status-bar-bg: var(--tsr-sys-surface);
   --tsr-comp-status-bar-divider-color: var(--tsr-sys-border);
   /* Сдвиг области таблицы над панелью; ставит грид, когда есть `statusBarSlot`. */
@@ -669,8 +631,9 @@
   --tsr-comp-popup-check-transition:
     opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
     transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
-  /* Меню колонок (columnVisibility): ширина поповера и высота списка до прокрутки. */
-  --tsr-comp-column-menu-width: 260px;
+  /* Панели со списком — «Колонки», «Фильтры», варианты фильтра: ширина — предел меню
+   * (ADR 0133, HA11); высота списка до прокрутки. */
+  --tsr-comp-column-menu-width: var(--tsr-comp-popup-max-width);
   --tsr-comp-column-menu-max-height: 320px;
 
   /* Поле быстрого поиска в тулбаре (ADR 0045). */
@@ -1014,16 +977,11 @@
     --tsr-comp-focus-ring: Highlight;
     /* Разделители тише текста, как линии дерева: кольцо и наведение заметнее (HC18). */
     --tsr-comp-cell-divider-color: GrayText;
-    --tsr-comp-pending-glow-1: Highlight;
-    --tsr-comp-pending-glow-2: Highlight;
-    --tsr-comp-pending-glow-3: Highlight;
-    --tsr-comp-pending-glow-4: Highlight;
     --tsr-comp-pending-spinner-1: Highlight;
     --tsr-comp-pending-spinner-2: Highlight;
     --tsr-comp-pending-spinner-3: Highlight;
     --tsr-comp-pending-spinner-4: Highlight;
     --tsr-comp-error-flash-color: Mark;
-    --tsr-comp-error-flash-glow: Mark;
     --tsr-comp-load-error-glow: Mark;
     --tsr-comp-tree-line-color: GrayText;
     --tsr-comp-skeleton-bg: GrayText;

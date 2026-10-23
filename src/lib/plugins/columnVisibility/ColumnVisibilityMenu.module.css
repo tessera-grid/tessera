@@ -9,9 +9,31 @@
 }
 
 .menu {
+  /* Дерево галочек — линиями дерева таблицы (ADR 0133): тот же поворот и зазор, что у
+   * дерева строк. Вертикаль уровня — под центром галочки родителя, поэтому шаг уровня
+   * длиннее шага строк на полгалочки, а длина поворота задана явно. */
+  --tsr-tree-inset: calc(8px + var(--tsr-comp-checkbox-size) / 2);
+  --tsr-tree-indent: calc(
+    var(--tsr-comp-tree-line-indent) + var(--tsr-comp-checkbox-size) / 2
+  );
+  --tsr-tree-elbow-width: calc(
+    var(--tsr-comp-tree-line-indent) - var(--tsr-comp-tree-line-gap) +
+      var(--tsr-comp-tree-line-width) / 2
+  );
+
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Корень и список без зазора: линия корня переходит в ветки списка. */
+.columns {
+  display: flex;
+  flex-direction: column;
+}
+
+.root {
+  position: relative;
 }
 
 .search {
@@ -81,8 +103,16 @@
 
 .footer {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+.count {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

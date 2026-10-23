@@ -11,9 +11,10 @@ import { Stories, revealCellButtons } from '../helpers'
 import axe from 'axe-core'
 
 import { AXE_OPTIONS } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Плагин columnVisibility (ADR 0035, CV1–CV3, CV5, CV8, CV14–CV18 визуальные).
-// Модель меню (CV4, CV6, CV7, CV9–CV13) — модульные тесты
+// Модель меню (CV4, CV6, CV7, CV10–CV13) — модульные тесты
 // `src/lib/__tests__/columnVisibility.test.ts`. Состояние читается из DOM/ARIA
 // (role, aria-*, data-column-id), а не из хешированных классов.
 
@@ -59,7 +60,8 @@ const LocalizedGrid = () => {
         localization={{
           columns: 'Колонки',
           searchColumns: 'Поиск',
-          showAllColumns: 'Показать все',
+          allColumns: 'Все колонки',
+          selectedColumns: 'Выбрано {count}',
           resetColumns: 'Сбросить',
         }}
         icons={{ columns: CustomColumnsIcon }}
@@ -82,7 +84,7 @@ const openMenu = async () => {
   await expect.poll(() => menu()?.hasAttribute('data-open')).toBe(true)
 }
 
-const KEBAB = '[aria-label="Column options"]'
+const KEBAB = `[aria-label="${tableLabels.headerMenu}"]`
 const kebabOf = (id: string) =>
   document.querySelector<HTMLElement>(
     `.data-grid__head-cell[data-column-id="${id}"] ${KEBAB}`,
@@ -101,12 +103,12 @@ const openKebab = async (id: string) => {
 }
 
 const renderPlugin = (args = {}) =>
-  mount(<Stories.ColumnVisibility {...GRID} {...args} />)
+  mount(<Stories.ColumnVisibilityPlayground {...GRID} {...args} />)
 
 describe('columnVisibility', () => {
   test('CV1: the plugin adds a Columns button to the toolbar; without it or with enabled:false — none', async () => {
     const off = await render(
-      <Stories.ColumnVisibility
+      <Stories.ColumnVisibilityPlayground
         {...GRID}
         enableColumnVisibility={false}
         enableToolbar
@@ -119,7 +121,7 @@ describe('columnVisibility', () => {
     await off.unmount()
 
     await renderPlugin()
-    expect(button()!.getAttribute('aria-label')).toBe('Columns')
+    expect(button()!.getAttribute('aria-label')).toBe(tableLabels.columns)
     expect(document.querySelector('[role="toolbar"]')!.contains(button())).toBe(
       true,
     )
@@ -129,10 +131,10 @@ describe('columnVisibility', () => {
     await renderPlugin()
     await openMenu()
     expect(menu()!.getAttribute('role')).toBe('dialog')
-    expect(menu()!.getAttribute('aria-label')).toBe('Columns')
+    expect(menu()!.getAttribute('aria-label')).toBe(tableLabels.columns)
     await expect
       .poll(() => document.activeElement?.getAttribute('aria-label'))
-      .toBe('Find column')
+      .toBe(tableLabels.searchColumns)
 
     await userEvent.keyboard('{Escape}')
     await expect
@@ -211,7 +213,15 @@ describe('columnVisibility', () => {
     const actions = [...menu()!.querySelectorAll('button')].map(
       node => node.textContent,
     )
-    expect(actions).toEqual(['Показать все', 'Сбросить'])
+    expect(actions).toEqual(['Сбросить'])
+    expect(
+      menu()!.querySelector('[data-testid="column-visibility-all"]')!
+        .textContent,
+    ).toBe('Все колонки')
+    expect(
+      menu()!.querySelector('[data-testid="column-visibility-count"]')!
+        .textContent,
+    ).toBe('Выбрано 1')
   })
 
   test('CV17: the toolbar and the open menu pass axe', async () => {
@@ -244,14 +254,14 @@ describe('columnVisibility', () => {
     await expect.poll(() => button()!.hasAttribute('data-active')).toBe(false)
   })
 
-  test('CV14: the header kebab has Hide column (Hide group for a group); none for the last visible or enableHiding:false', async () => {
+  test('CV14: the header kebab has Hide column (Hide group for a group); none for enableHiding:false', async () => {
     const onToggle = vi.fn()
     const flat = await renderPlugin({
       enableHeaderActionMenu: true,
       onToggleColumnVisibility: onToggle,
     })
     await openKebab('firstName')
-    await userEvent.click(menuItem('Hide column')!)
+    await userEvent.click(menuItem(tableLabels.hideColumn)!)
     await expect.poll(() => headIds()).not.toContain('firstName')
     expect(onToggle).toHaveBeenCalledWith(['firstName'], false)
     await flat.unmount()
@@ -261,15 +271,14 @@ describe('columnVisibility', () => {
       headerNesting: 'nested',
     })
     await openKebab('name')
-    expect(menuItem('Hide column')).toBeUndefined()
-    await userEvent.click(menuItem('Hide group')!)
+    expect(menuItem(tableLabels.hideColumn)).toBeUndefined()
+    await userEvent.click(menuItem(tableLabels.hideGroup)!)
     await expect.poll(() => headIds()).not.toContain('firstName')
     expect(headIds()).not.toContain('lastName')
     await nested.unmount()
 
-    // enableHiding:false — пункта нет; защищённая видимая колонка не даёт c стать
-    // последней, поэтому у c пункт остаётся.
-    const last = await renderPlugin({
+    // enableHiding:false — пункта нет; у остальных он есть, у последней видимой тоже.
+    await renderPlugin({
       enableHeaderActionMenu: true,
       columnsOverride: [
         { id: 'a', accessorKey: 'a', header: 'A', enableHiding: false },
@@ -280,20 +289,11 @@ describe('columnVisibility', () => {
     })
     expect(kebabOf('a')).toBeNull()
     await openKebab('b')
-    await userEvent.click(menuItem('Hide column')!)
+    await userEvent.click(menuItem(tableLabels.hideColumn)!)
     await expect.poll(() => headIds()).not.toContain('b')
-    // c — не последняя видимая (a защищена, но видима): пункт есть.
     await openKebab('c')
-    expect(menuItem('Hide column')).toBeTruthy()
+    expect(menuItem(tableLabels.hideColumn)).toBeTruthy()
     await userEvent.keyboard('{Escape}')
-    await last.unmount()
-
-    await renderPlugin({
-      enableHeaderActionMenu: true,
-      columnsOverride: [{ id: 'only', accessorKey: 'only', header: 'Only' }],
-      dataOverride: [{ id: '1', only: 'x' }],
-    })
-    expect(kebabOf('only')).toBeNull()
   })
 
   test('CV15: a hidden pinned column returns to its pinned block when shown', async () => {

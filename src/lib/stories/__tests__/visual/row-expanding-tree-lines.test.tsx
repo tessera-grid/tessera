@@ -1,12 +1,12 @@
 import axe from 'axe-core'
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 
 import { getScroller, humanClick, rowState, scrollToEnd } from '../helpers'
 import { composed } from '../stories'
 import { makeData } from '../../__mocks__/data'
-import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
+import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { pinFirstColumn } from './column-pinning-helpers'
 import {
   TREE,
@@ -22,6 +22,7 @@ import {
   treeGeometry,
   verticalAt,
 } from './tree-lines-helpers'
+import { tableLabels } from '../labels'
 
 // Линии дерева: ветки со скруглёнными поворотами (ADR 0102, TL1–TL6) и общие гарантии
 // ADR 0058 (RE53, RE55–RE58) и шаг ADR 0059 (RE62). Линии проверяются по пикселям
@@ -32,6 +33,19 @@ const textLeft = (cell: HTMLElement) =>
   cell
     .querySelector<HTMLElement>('.data-grid__cell-wrapper-title')!
     .getBoundingClientRect().left
+
+/** Каналы цвета без холста: холст теряет точность каналов цвета с прозрачностью 12 %. */
+const channels = (color: string) => {
+  const [r, g, b, a = 1] = color.match(/[\d.]+/g)!.map(Number)
+  const scale = color.startsWith('color(') ? 255 : 1
+  return [r! * scale, g! * scale, b! * scale, a]
+}
+
+// Окно не шире 900px: кадр теста снимается в масштабе 1. В уменьшенном кадре Firefox и
+// WebKit привязывают линию в 1px к пикселям экрана и схлопывают её (TL7 — `zoom`).
+const viewport = { width: innerWidth, height: innerHeight }
+beforeAll(() => page.viewport(900, 700))
+afterAll(() => page.viewport(viewport.width, viewport.height))
 
 const waitTree = () =>
   expect.poll(() => rowEl(TREE.falkland) ?? null).not.toBeNull()
@@ -58,7 +72,8 @@ describe('Row expanding: tree lines', () => {
     let shot = await snapshot()
     expect(verticalAt(shot, x, top + height * 0.25), 'vertical').toBe(true)
     expect(
-      horizontalAt(shot, x + g.radius + 1, mid),
+      // Середина прямого участка между концом дуги и зазором до текста.
+      horizontalAt(shot, (x + g.radius + textLeft(cell) - g.gap) / 2, mid),
       'horizontal after the arc',
     ).toBe(true)
     expect(
@@ -69,13 +84,23 @@ describe('Row expanding: tree lines', () => {
       horizontalAt(shot, textLeft(cell) - g.gap + 3, mid),
       'gap before the text',
     ).toBe(false)
-    // Угол скруглён: у угла горизонтали нет — линия ушла вверх по дуге.
-    expect(horizontalAt(shot, x + 1, mid, 3), 'rounded corner').toBe(false)
+    // Угол скруглён: у вертикали линия выше середины строки — ушла вверх по дуге.
+    const inkY = (px: number) => {
+      let darkest = 0
+      for (let dy = -6; dy <= 2; dy += 0.5)
+        if (shot.at(px, mid + dy) < shot.at(px, mid + darkest)) darkest = dy
+      return darkest
+    }
+    expect(inkY(x + 1), 'rounded corner').toBeLessThanOrEqual(-2)
 
     // Радиус — из токена: с нулевым угол прямой.
     restore = themeTokens({ '--tsr-comp-tree-line-radius': '0px' })
     shot = await snapshot()
     expect(horizontalAt(shot, x + 1, mid), 'square corner').toBe(true)
+    expect(
+      Math.abs(inkY(x + 1)),
+      'square corner at the middle',
+    ).toBeLessThanOrEqual(1)
   })
 
   test('TL2: a non-last child continues its parent line down without gaps through the row border; the last child ends it with the turn', async () => {
@@ -214,20 +239,20 @@ describe('Row expanding: tree lines', () => {
     ).toBe(false)
   })
 
-  test('TL6: by default 1.5px lines of a 12% neutral in both themes, overlaps no darker than the line, a 28px step — a 16px turn and a 12px gap before the text; the theme overrides color, width, radius, step, inset and gap', async () => {
+  test('TL6: by default 1.5px lines of a 12% neutral in both themes, overlaps no darker than the line, a 22px step — a 10px turn and a 12px gap before the text; the theme overrides color, width, radius, step, inset and gap', async () => {
     await render(<composed.RowExpandingTreeLines />)
     await waitTree()
     await showRow(TREE.portugal)
     let g = treeGeometry()
     expect(g.width).toBe(1.5)
-    expect([g.step, g.gap]).toEqual([28, 12])
-    expect(getComputedStyle(indentOf(TREE.zimbabwe)).paddingLeft).toBe('56px')
+    expect([g.step, g.gap]).toEqual([22, 12])
+    expect(getComputedStyle(indentOf(TREE.zimbabwe)).paddingLeft).toBe('44px')
 
     await inBothThemes(async () => {
       const cell = indentOf(TREE.portugal)
       const row = rowEl(TREE.portugal)!
-      const color = toRgba(tokenColor('--tsr-comp-tree-line-color', row))
-      const fg = toRgba(tokenColor('--tsr-sys-fg', row))
+      const color = channels(tokenColor('--tsr-comp-tree-line-color', row))
+      const fg = channels(tokenColor('--tsr-sys-fg', row))
       // Цвет текста с прозрачностью 12 %.
       for (const i of [0, 1, 2])
         expect(Math.abs(color[i]! - fg[i]!)).toBeLessThanOrEqual(3)
@@ -295,7 +320,7 @@ describe('Row expanding: tree lines', () => {
 
   test('RE55: grouped rows and their children get lines by depth', async () => {
     await render(
-      <composed.RowGrouping
+      <composed.RowGroupingPlayground
         enableRowExpanding
         enableTreeLines
         initialGrouping={['gender']}
@@ -390,7 +415,9 @@ describe('Row expanding: tree lines', () => {
     )
     await waitTree()
     await humanClick(
-      document.querySelector<HTMLElement>('[aria-label="Next page"]')!,
+      document.querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.nextPage}"]`,
+      )!,
     )
     await expect.poll(() => rowEl('node-2-0')).not.toBeNull()
     await showRow('node-2-0')

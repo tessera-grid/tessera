@@ -1,7 +1,7 @@
 /**
- * Модель меню колонок (ADR 0035, CV3–CV13): дерево пользовательских колонок в
- * порядке отображения, состояние галочек, переключение с защитой последней видимой
- * колонки и фильтр поиска. Чистые функции над колонками TanStack.
+ * Модель меню колонок (ADR 0035, CV3–CV13; ADR 0133): дерево пользовательских колонок
+ * в порядке отображения, состояние галочек, корень «Все колонки», переключение и
+ * фильтр поиска. Чистые функции над колонками TanStack.
  */
 export interface VisibilityColumn {
   id: string
@@ -58,7 +58,7 @@ export const getUserLeaves = (table: VisibilityTable): VisibilityColumn[] =>
     .map(({ column }) => column)
 
 /** Сколько пользовательских колонок видно сейчас; мемоизированный список TanStack, если есть. */
-const countVisibleUserLeaves = (table: VisibilityTable): number =>
+export const countVisibleColumns = (table: VisibilityTable): number =>
   (
     table.getVisibleLeafColumns?.() ??
     table.getAllLeafColumns().filter(column => column.getIsVisible())
@@ -109,12 +109,11 @@ export const getCheckState = (node: ColumnTreeNode): CheckState => {
 
 /**
  * Что сделает клик: показать скрываемые скрытые листья, если хоть один скрыт, иначе
- * скрыть все скрываемые. `null` — клик недоступен (нечего менять или скрытие убрало
- * бы последнюю видимую колонку).
+ * скрыть все скрываемые. `null` — скрываемых листьев нет. Последнюю видимую колонку
+ * скрыть можно: таблица покажет заглушку `columnsHidden` (ADR 0133).
  */
 export const getToggle = (
   node: ColumnTreeNode,
-  table: VisibilityTable,
 ): { columnIds: string[]; visible: boolean } | null => {
   const hideable = node.leaves.filter(leaf => leaf.getCanHide())
   const hidden = hideable.filter(leaf => !leaf.getIsVisible())
@@ -122,35 +121,36 @@ export const getToggle = (
   if (hidden.length > 0) {
     return { columnIds: hidden.map(leaf => leaf.id), visible: true }
   }
-  if (hideable.length === 0) {
-    return null
-  }
-
-  // Здесь все скрываемые листья узла видимы: после скрытия останутся остальные видимые.
-  return countVisibleUserLeaves(table) - hideable.length === 0
+  return hideable.length === 0
     ? null
     : { columnIds: hideable.map(leaf => leaf.id), visible: false }
 }
 
-/**
- * Скрыть видимые скрываемые листья (действие «Скрыть» в заголовке, CV14). `null` —
- * скрывать нечего или скрытие убрало бы последнюю видимую колонку.
- */
-export const getHide = (
-  leaves: VisibilityColumn[],
-  table: VisibilityTable,
-): string[] | null => {
+/** Скрыть видимые скрываемые листья (действие «Скрыть» в заголовке, CV14). */
+export const getHide = (leaves: VisibilityColumn[]): string[] | null => {
   const hiding = leaves.filter(
     leaf =>
       !leaf.getIsActionsColumn?.() && leaf.getCanHide() && leaf.getIsVisible(),
   )
-  if (hiding.length === 0) {
-    return null
-  }
-  return countVisibleUserLeaves(table) - hiding.length === 0
-    ? null
-    : hiding.map(leaf => leaf.id)
+  return hiding.length === 0 ? null : hiding.map(leaf => leaf.id)
 }
+
+const foundLeaves = (nodes: ColumnTreeNode[]): VisibilityColumn[] =>
+  nodes.flatMap(node =>
+    node.children.length > 0 ? foundLeaves(node.children) : node.leaves,
+  )
+
+/**
+ * Корень «Все колонки» над деревом (ADR 0133, HA2–HA5): листья — скрываемые колонки
+ * дерева (при поиске — найденного), так что состояние и клик — как у группы.
+ */
+export const getRootNode = (nodes: ColumnTreeNode[]): ColumnTreeNode => ({
+  id: 'all',
+  label: '',
+  depth: -1,
+  leaves: foundLeaves(nodes).filter(leaf => leaf.getCanHide()),
+  children: nodes,
+})
 
 /** Показать все скрываемые скрытые колонки. */
 export const getShowAll = (table: VisibilityTable): string[] =>

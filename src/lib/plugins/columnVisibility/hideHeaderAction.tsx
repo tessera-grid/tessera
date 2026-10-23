@@ -7,7 +7,12 @@ import type { HeaderComponentProps } from '../../core/createSlots'
 import type { HeaderAction } from '../../core/headerActions'
 import { isCoveredHeader } from '../../core/headerSpans'
 import { useIcons } from '../../ui/icons'
-import { getHide, type VisibilityColumn } from './columnTree'
+import {
+  countVisibleColumns,
+  getHide,
+  type VisibilityColumn,
+} from './columnTree'
+import { requestStubFocus } from './columnsHiddenStub'
 import { columnVisibilityInertReason } from './inertReason'
 import {
   setColumnsVisible,
@@ -23,9 +28,7 @@ const leavesOf = ({ column }: HeaderComponentProps) =>
   column.getLeafColumns() as unknown as VisibilityColumn[]
 
 const hideIds = (ctx: HeaderComponentProps) =>
-  ctx.header && isCoveredHeader(ctx.header)
-    ? null
-    : getHide(leavesOf(ctx), ctx.table as unknown as VisibilityControlTable)
+  ctx.header && isCoveredHeader(ctx.header) ? null : getHide(leavesOf(ctx))
 
 const isGroup = ({ column }: HeaderComponentProps) => column.columns.length > 0
 
@@ -40,12 +43,9 @@ export const hideHeaderAction: HeaderAction = {
   label: (ctx, labels) => (isGroup(ctx) ? labels.hideGroup : labels.hideColumn),
   onSelect: ctx => {
     const ids = hideIds(ctx)
-    if (ids) {
-      setColumnsVisible(
-        ctx.table as unknown as VisibilityControlTable,
-        ids,
-        false,
-      )
-    }
+    if (!ids) return
+    const table = ctx.table as unknown as VisibilityControlTable
+    if (countVisibleColumns(table) === ids.length) requestStubFocus(table)
+    setColumnsVisible(table, ids, false)
   },
 }

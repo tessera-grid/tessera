@@ -20,6 +20,7 @@ import type { TableIcons } from '../../../ui/icons'
 import { Stub } from '../../../ui/Stub'
 import { humanClick } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Заглушки пустой таблицы (ADR 0123, ES4–ES15): реестр причин, тексты из `localization`,
 // иллюстрация из `icons`, проп `stubs`, тулбар без колонок. ES1–ES3 — модульные `stubs`.
@@ -218,7 +219,7 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await render(<Host columns={NO_COLUMNS} />)
     await expect.poll(() => byTestId('no-columns-stub')).not.toBeNull()
     const stub = byTestId('no-columns-stub')!
-    expect(stub.textContent).toContain('No columns')
+    expect(stub.textContent).toContain(tableLabels.noColumnsTitle)
     expect(stub.querySelector('svg')).not.toBeNull()
     expect(bodyRows()).toHaveLength(0)
     expect(q('.data-grid__head')).toBeNull()
@@ -230,7 +231,7 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await render(<OwnVisibility />)
     await expect.poll(() => byTestId('columns-hidden-stub')).not.toBeNull()
     const stub = byTestId('columns-hidden-stub')!
-    expect(stub.textContent).toContain('All columns are hidden')
+    expect(stub.textContent).toContain(tableLabels.columnsHiddenTitle)
     expect(byTestId('no-columns-stub')).toBeNull()
     await humanClick(byTestId('columns-hidden-show-all')!)
     await expect.poll(() => bodyRows().length).toBe(2)
@@ -241,7 +242,7 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await render(<Host data={NO_ROWS} />)
     await expect.poll(() => byTestId('no-data-stub')).not.toBeNull()
     const stub = byTestId('no-data-stub')!
-    expect(stub.textContent).toContain('No data')
+    expect(stub.textContent).toContain(tableLabels.noData)
     expect(stub.querySelector('svg')).not.toBeNull()
   })
 
@@ -376,7 +377,7 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await humanClick(byTestId('columns-hidden-show-all')!)
     await expect.poll(() => bodyRows().length).toBe(2)
     await humanClick(byTestId('hide-all')!)
-    await expect.poll(liveText).toContain('All columns are hidden')
+    await expect.poll(liveText).toContain(tableLabels.columnsHiddenTitle)
   })
 
   test('ES13: axe с color-contrast у каждой встроенной заглушки в светлой и тёмной темах', async () => {
