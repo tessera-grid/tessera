@@ -21,6 +21,14 @@ import {
   SMALL,
 } from './perf-cases'
 import { renderPluginsGrid } from './hosts'
+import { RU_LABELS } from '../../__mocks__/localization.ru'
+import {
+  columnFiltering,
+  columnVisibility,
+  pagination,
+  quickSearch,
+  rowSelection,
+} from '../../../plugins'
 
 // Производительность ПЕРВОЙ ОТРИСОВКИ (mount → первый кадр). Половина перф-матрицы:
 // операция «отрисовка» × объём (небольшой/большой) × плагины (без/все).
@@ -289,5 +297,76 @@ describe('Производительность первой отрисовки �
       }
     },
     PERF_TIMEOUT * 4,
+  )
+})
+
+// Словарь подписей (ADR 0132, LC11): монтирование 1000×1000 с русским словарём-шаблонами
+// и языком `ru-RU` против английских умолчаний. Плагины — те, чьи подписи видны сразу:
+// тулбар, нижняя панель, пагинация.
+describe('Производительность первой отрисовки — словарь подписей', () => {
+  test(
+    'LC11: монтирование 1000×1000 с русским словарём-шаблонами не дороже базы с английскими умолчаниями',
+    async () => {
+      const dataOverride = makeData({ shape: 'flat', count: LARGE.dataCount })
+      const plugins = [
+        pagination(),
+        rowSelection({ selectedCount: true }),
+        quickSearch(),
+        columnFiltering(),
+        columnVisibility(),
+      ]
+      const measure = async (russian: boolean) => {
+        const result = await measureRenderWork(
+          () =>
+            renderPluginsGrid({
+              ...LARGE,
+              plugins,
+              dataOverride,
+              ...(russian ? { localization: RU_LABELS, locale: 'ru-RU' } : {}),
+            }),
+          () => headCells().length > 0,
+          { warmup: false },
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const russian = medianRun(runs.variant, r => r.longestMs)
+      // Шум замера монтирования — до ~30% между прогонами; больше — регрессия.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 40 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'render',
+          size: '1000×1000',
+          plugins: 'labels',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('LC11-base', 'английские умолчания', base, false)
+      await record('LC11', 'русский словарь-шаблоны, ru-RU', russian, true)
+
+      expect(
+        russian.longestMs,
+        `русский словарь longest=${russian.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })

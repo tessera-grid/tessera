@@ -8,7 +8,7 @@ import {
   runMenuAction,
   startAvailabilityChecks,
 } from '../core/headerActions'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 
 // Асинхронные действия меню (ADR 0078): текст отказа (MI15) и неизменность
 // синхронного контракта (MI22).
@@ -44,20 +44,20 @@ describe('menuActionStatus', () => {
           ? 'Locked by Bob'
           : undefined,
     })
-    expect(actionErrorText(own, ctx, new Error('E_LOCK'), DEFAULT_LABELS)).toBe(
+    expect(actionErrorText(own, ctx, new Error('E_LOCK'), ENGLISH_LABELS)).toBe(
       'Locked by Bob',
     )
-    expect(actionErrorText(own, ctx, new Error('down'), DEFAULT_LABELS)).toBe(
+    expect(actionErrorText(own, ctx, new Error('down'), ENGLISH_LABELS)).toBe(
       'down',
     )
-    expect(actionErrorText(action(), ctx, 'timeout', DEFAULT_LABELS)).toBe(
+    expect(actionErrorText(action(), ctx, 'timeout', ENGLISH_LABELS)).toBe(
       'timeout',
     )
-    expect(actionErrorText(action(), ctx, new Error(''), DEFAULT_LABELS)).toBe(
-      DEFAULT_LABELS.actionFailedFallback,
+    expect(actionErrorText(action(), ctx, new Error(''), ENGLISH_LABELS)).toBe(
+      ENGLISH_LABELS.actionFailedFallback,
     )
-    expect(actionErrorText(action(), ctx, { code: 1 }, DEFAULT_LABELS)).toBe(
-      DEFAULT_LABELS.actionFailedFallback,
+    expect(actionErrorText(action(), ctx, { code: 1 }, ENGLISH_LABELS)).toBe(
+      ENGLISH_LABELS.actionFailedFallback,
     )
   })
 

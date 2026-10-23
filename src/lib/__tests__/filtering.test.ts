@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 import { dataExport } from '../plugins/dataExport'
 import { exportRowsOf } from '../plugins/dataExportModel/exportData'
 import { rowLabel } from '../plugins/dataExport/rowLabel'
@@ -241,7 +241,7 @@ describe('фильтрация и экспорт', () => {
     const axes = resolveAxes(table)!
     expect(axes.rows.map(row => row.value)).toContain('view')
     expect(axes.viewBy).toEqual(['filtering'])
-    expect(rowLabel(DEFAULT_LABELS, 'view', axes.viewBy)).toBe('With filters')
+    expect(rowLabel(ENGLISH_LABELS, 'view', axes.viewBy)).toBe('With filters')
 
     const exported = (scope: 'view' | 'selected') =>
       exportRowsOf(table, scope).map(row => row.id)

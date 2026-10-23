@@ -86,8 +86,12 @@ export const useLoadError = ({
     announced.current = key
     announceLabel(table, labels =>
       hasRows
-        ? labels.announceLoadError(reason)
-        : labels.announceLoadFailed(reason),
+        ? reason
+          ? labels.announceLoadErrorReason(reason)
+          : labels.announceLoadError
+        : reason
+          ? labels.announceLoadFailedReason(reason)
+          : labels.announceLoadFailed,
     )
   }, [table, present, key, hasRows, reason])
 

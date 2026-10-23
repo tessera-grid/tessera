@@ -9,12 +9,13 @@ import { quickSearch } from '../../../plugins'
 import { filteringColumns, filteringData } from '../../__mocks__/filteringData'
 import { bodyRows } from '../helpers'
 import { composed } from '../stories'
+import { tableLabels } from '../labels'
 
 // Подсказка быстрого поиска (ADR 0053): QS1–QS2, QS4–QS5, QS8. QS3, QS6–QS7 —
 // модульные (`src/lib/__tests__/quickSearchHint.dom.test.tsx`), QS9 — `play` истории
 // «Filtering — Server».
 
-const HINT = 'Search in columns: Name, City, Age, Visits'
+const HINT = tableLabels.searchColumnsHint(['Name', 'City', 'Age', 'Visits'])
 
 const input = () =>
   document.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
@@ -57,7 +58,7 @@ const toggleColumn = async (id: string) => {
 
 describe('Quick search hint', () => {
   test('QS1: the info icon shows the search columns, in display order, on hover and on focus', async () => {
-    await mount(<composed.Filtering />)
+    await mount(<composed.FilteringPlayground />)
     await userEvent.hover(info())
     await expect.poll(tooltipText, { timeout: 3000 }).toContain(HINT)
     await userEvent.unhover(info())
@@ -72,7 +73,7 @@ describe('Quick search hint', () => {
   })
 
   test('QS2: the same text is the accessible description of the field', async () => {
-    await mount(<composed.Filtering />)
+    await mount(<composed.FilteringPlayground />)
     expect(description()).toBe(HINT)
     expect(info().getAttribute('aria-label')).toBe(HINT)
   })
@@ -105,7 +106,7 @@ describe('Quick search hint', () => {
 
   test('QS5: with no search columns the field is disabled with a reason; the typed search is kept and works again once a column returns', async () => {
     await mount(
-      <composed.Filtering
+      <composed.FilteringPlayground
         enableColumnVisibility
         columnsOverride={[
           { id: 'name', accessorKey: 'name', header: 'Name' },
@@ -126,7 +127,7 @@ describe('Quick search hint', () => {
     await toggleColumn('name')
     await expect.poll(() => isDisabled()).toBe(true)
     expect(input()!.value).toBe('Alice')
-    expect(description()).toBe('No columns to search')
+    expect(description()).toBe(tableLabels.searchNoColumns)
     await expect.poll(() => bodyRows().length).toBe(total)
 
     await toggleColumn('name')
@@ -138,7 +139,7 @@ describe('Quick search hint', () => {
     'QS8: the icon and its tooltip pass axe with color-contrast (%s); the icon target is at least 24×24',
     async colorMode => {
       const { container } = await mount(
-        <composed.Filtering colorMode={colorMode} />,
+        <composed.FilteringPlayground colorMode={colorMode} />,
       )
       await userEvent.hover(info())
       await expect.poll(tooltipText, { timeout: 3000 }).toContain(HINT)

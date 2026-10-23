@@ -11,6 +11,7 @@ import { columnFiltering, keyboardNavigation } from '../../../plugins'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { bodyRows, humanClick } from '../helpers'
 import { waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Фильтр дат (ADR 0047): панель с календарём, время у datetime, клавиатура, тема,
 // локализация, сводка, axe, серверный режим. Условия по значениям, пресеты и пояс
@@ -413,7 +414,7 @@ describe('Фильтр дат — вид', () => {
     await openFilter('created')
     const button = day('2026-03-10')
     const nav = calendar()!.querySelector<HTMLElement>(
-      'button[aria-label="Previous month"]',
+      `button[aria-label="${tableLabels.previousMonth}"]`,
     )!
     const duration = resolve(
       '--tsr-comp-motion-duration',
@@ -528,7 +529,7 @@ describe('Фильтр дат — вид', () => {
     await openSummary()
     expect(item('birth')).toContain('On Mar 15, 1990')
     expect(item('created')).toContain('Between Mar 15, 2026, 9:30 AM – …')
-    expect(item('closed')).toContain('Today')
+    expect(item('closed')).toContain(tableLabels.filterPresetToday)
     await english.unmount()
 
     await render(

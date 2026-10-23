@@ -230,6 +230,7 @@ export interface PerfRecord {
     | 'rowExpanding'
     | 'rowActions'
     | 'columnFiltering, rowGrouping'
+    | 'labels'
     | 'rowSelection, rowExpanding, highlight'
     | 'rowDragging, rowExpanding'
     | 'models'

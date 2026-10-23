@@ -17,7 +17,13 @@ export const rowLabel = (
         ? labels.exportAll
         : labels.exportLoaded(loaded)
     case 'view':
-      return labels.exportView(viewBy)
+      return labels.exportView(
+        viewBy.map(feature =>
+          feature === 'sorting'
+            ? labels.exportViewSorting
+            : labels.exportViewFiltering,
+        ),
+      )
     case 'page':
       return labels.exportPage
     case 'selected':

@@ -1,7 +1,16 @@
+export { DEFAULT_LABELS, type TableLabels } from './labels'
+export { LocalizationContext, useLocalization } from './localization'
 export {
   LocalizationProvider,
-  useLocalization,
-  DEFAULT_LABELS,
-  type TableLabels,
   type LocalizationProviderProps,
-} from './localization'
+} from './provider'
+export {
+  DEFAULT_LOCALE,
+  ENGLISH_LABELS,
+  LABEL_PARAMS,
+  PLURAL_FORMS,
+  formatTemplate,
+  resolveLabels,
+  unknownLabelKeys,
+  type LabelDictionary,
+} from './resolveLabels'

@@ -12,6 +12,7 @@ import type { LoadOptions } from '../../../plugins/columnFilteringModel/types'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { bodyRows, humanClick } from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Фильтр вариантов (ADR 0048): чек-лист, поиск, счётчики, виртуализация, клавиатура,
 // справочник с loadOptions, подписи в ячейке и сводке, сервер, локализация, axe.
@@ -462,7 +463,7 @@ describe('Фильтр вариантов — справочник', () => {
     await expect
       .poll(() => panel()!.querySelector('[aria-busy="true"]'))
       .not.toBeNull()
-    expect(panel()!.textContent).toContain('Loading…')
+    expect(panel()!.textContent).toContain(tableLabels.filterLoadingOptions)
     await expect.poll(optionValues).toEqual(['m1', 'm2', 'm3'])
     // StrictMode (ADR 0091) запускает эффект дважды: первый вызов отменён сразу.
     const live = () => signals.filter(call => !call.signal.aborted)
@@ -504,7 +505,7 @@ describe('Фильтр вариантов — справочник', () => {
     await openFilter('manager')
     const alert = () => panel()!.querySelector('[role="alert"]')
     await expect.poll(alert).not.toBeNull()
-    expect(alert()!.textContent).toContain("Couldn't load values")
+    expect(alert()!.textContent).toContain(tableLabels.filterOptionsError)
     expect(rowIds()).toEqual(['2', '5'])
     // Отмеченное значение показано и без ответа справочника.
     fail = false
@@ -578,7 +579,7 @@ describe('Фильтр вариантов — подписи и вид', () => {
       )?.textContent ?? null
     await expect.poll(() => item('tags')).toContain('Any of: VIP, Partner +1')
     expect(item('manager')).toContain('None of: Alice Moss')
-    expect(item('status')).toContain('Is empty')
+    expect(item('status')).toContain(tableLabels.filterEmpty)
   })
 
   test('SF19: server — грид не фильтрует; onFilterChange получает значения как есть; счётчики — только из option.count', async () => {
@@ -614,7 +615,7 @@ describe('Фильтр вариантов — подписи и вид', () => {
     await closePanel()
     await openFilter('city')
     expect(optionValues()).toEqual([])
-    expect(panel()!.textContent).toContain('No values')
+    expect(panel()!.textContent).toContain(tableLabels.filterNoOptions)
   })
 
   test('SF20: подписи панели — из localization, иконки — из icons', async () => {

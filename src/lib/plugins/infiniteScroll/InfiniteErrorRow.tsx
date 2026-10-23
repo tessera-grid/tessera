@@ -19,6 +19,7 @@ import {
   isKeyboardNavigationEnabled,
 } from '../../core/keyboardNavigation'
 import { useLocalization } from '../../core/localization'
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'
@@ -104,6 +105,25 @@ export const InfiniteErrorRow = ({
     observer.observe(scroller)
     return () => observer.disconnect()
   }, [failed])
+
+  // Под незакреплённым футером строка встаёт за нижним краем: у края — доводим в вид.
+  useIsomorphicLayoutEffect(() => {
+    const row = rowRef.current
+    const scroller = row?.closest<HTMLElement>('.data-grid__container')
+    const atEdge = failed && !!loaderOf(table)?.takeFailedAtEdge()
+    if (!atEdge || !row || !scroller || !isFooterInline(table)) return
+    const bottom =
+      scroller.getBoundingClientRect().top +
+      scroller.clientTop +
+      scroller.clientHeight
+    const overflow = row.getBoundingClientRect().bottom - bottom
+    if (overflow > 0) {
+      scroller.scrollTo({
+        top: scroller.scrollTop + overflow,
+        behavior: 'instant',
+      })
+    }
+  }, [failed, table])
 
   if (!failed || infiniteScrollInertReason(table)) return null
 

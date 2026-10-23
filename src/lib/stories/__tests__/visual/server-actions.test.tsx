@@ -14,6 +14,7 @@ import { keyboardNavigation } from '../../../plugins/keyboardNavigation'
 import { pagination } from '../../../plugins/pagination'
 import { quickSearch } from '../../../plugins/quickSearch'
 import { humanClick, revealCellButtons } from '../helpers'
+import { tableLabels } from '../labels'
 
 // Серверные действия (ADR 0116): ожидание у причины и свечение, отказ — откат, плашка с
 // повтором и вспышка — настоящими событиями браузера. SA1–SA3, SA10 — модульные
@@ -160,7 +161,7 @@ const filterButton = () =>
   headCell('name')!.querySelector<HTMLElement>('.column-filter__button')!
 const kebab = () =>
   headCell('name')!.querySelector<HTMLElement>(
-    '[aria-label^="Column options"]',
+    `[aria-label^="${tableLabels.headerMenu}"]`,
   )!
 const range = () =>
   document.querySelector<HTMLElement>('[data-testid="pagination-range"]')!
@@ -274,7 +275,7 @@ describe('серверные действия (ADR 0116)', () => {
     const item = await vi.waitFor(() => {
       const found = [
         ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-      ].find(node => node.textContent?.trim() === 'Sort descending')
+      ].find(node => node.textContent?.trim() === tableLabels.sortDescending)
       if (!found) throw new Error('menu not open')
       return found
     })
@@ -482,18 +483,18 @@ describe('серверные действия (ADR 0116)', () => {
   test('SA8: отказ смены страницы или её размера возвращает pageIndex и pageSize', async () => {
     await mount({ paginationServer: true, pageSize: 25 })
     await userEvent.click(pageButton('next'))
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
     lastCall().answer.reject(SERVER_ERROR)
-    await expect.poll(range).toBe('1–25 of 1000')
+    await expect.poll(range).toBe('1–25 of 1,000')
 
     await userEvent.click(pageButton('next'))
     lastCall().answer.resolve()
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
 
     await chooseSize(50)
-    await expect.poll(range).toBe('1–50 of 1000')
+    await expect.poll(range).toBe('1–50 of 1,000')
     lastCall().answer.reject(SERVER_ERROR)
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
   })
 
   test('SA11: отказ показывает красный свет и плашку с причиной; «Повторить» повторяет отказавшее действие; loadError приложения главнее; ошибку грида снимает успех следующего действия или «Закрыть»', async () => {
@@ -522,7 +523,7 @@ describe('серверные действия (ADR 0116)', () => {
     lastCall().answer.reject(undefined)
     await expect
       .poll(() => banner()?.textContent ?? '')
-      .toContain("Sorting wasn't applied")
+      .toContain(tableLabels.serverActionFailedSorting)
     await userEvent.click(pageButton('next'))
     lastCall().answer.resolve()
     await expect.poll(banner).toBeNull()
@@ -567,7 +568,7 @@ describe('серверные действия (ADR 0116)', () => {
       .toBe('on')
     await expect
       .poll(liveText)
-      .toContain("Couldn't refresh the data: Sorting is unavailable")
+      .toContain(tableLabels.announceLoadErrorReason('Sorting is unavailable'))
 
     await userEvent.click(pageButton('next'))
     lastCall().answer.reject(SERVER_ERROR)
@@ -603,9 +604,9 @@ describe('серверные действия (ADR 0116)', () => {
     pageButton('next').focus()
     await userEvent.keyboard('{Enter}')
     await expect.poll(() => lit(pageButton('next'))).toBe(true)
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
     lastCall().answer.reject(SERVER_ERROR)
-    await expect.poll(range).toBe('1–25 of 1000')
+    await expect.poll(range).toBe('1–25 of 1,000')
     expect(document.activeElement).toBe(pageButton('next'))
   })
 })

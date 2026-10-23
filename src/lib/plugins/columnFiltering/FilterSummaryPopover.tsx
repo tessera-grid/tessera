@@ -76,7 +76,7 @@ export const FilterSummaryPopover = ({
           {...themeData}
         >
           <Popover.Popup
-            aria-label={labels.filters(0, 0)}
+            aria-label={labels.filters}
             finalFocus={triggerRef}
             className={clsx(themeClass, styles.popup)}
             data-testid="filter-summary"

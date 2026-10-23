@@ -1,7 +1,7 @@
 import type { StubsOverride } from '../core/stubs'
 import type { CSSProperties } from 'react'
 
-import type { TableLabels } from '../core/localization'
+import type { LabelDictionary } from '../core/localization'
 import type { ColorMode, ContrastMode } from '../core/themeVariables'
 import type { TableIcons } from '../ui/icons'
 import type { PluginDiagnostic } from '../core/pluginDiagnostics'
@@ -30,8 +30,13 @@ export interface DataGridProps {
   contrast?: ContrastMode
   /** Переопределение иконок таблицы. */
   icons?: Partial<TableIcons>
-  /** Переопределение подписей элементов управления (локализация). */
-  localization?: Partial<TableLabels>
+  /**
+   * Подписи таблицы: строка-шаблон с `{имя}` или функция; формы слова — ключами
+   * `<ключ>_<форма>` (ADR 0132).
+   */
+  localization?: LabelDictionary
+  /** Язык форм слова, чисел и списков в подписях (BCP 47), по умолчанию `en-US`. */
+  locale?: string
   /**
    * number — высота в px; string — в процентах (50%, 100%); auto — контейнер по
    * flexbox с flex: 1.

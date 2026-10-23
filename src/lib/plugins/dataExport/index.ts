@@ -21,4 +21,7 @@ export type {
 } from '../dataExportModel/types'
 
 /** Готовые форматы выгрузки. Объект, а не функция-фабрика: фабрики баррели — плагины. */
-export const exportFormats = { csv: csvFormat, xlsx: xlsxFormat }
+export const exportFormats: {
+  csv: typeof csvFormat
+  xlsx: typeof xlsxFormat
+} = { csv: csvFormat, xlsx: xlsxFormat }

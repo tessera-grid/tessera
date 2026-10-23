@@ -12,6 +12,7 @@ import type { TableIcons } from '../../../ui/icons'
 import { keyboardNavigation, quickSearch, rowExpanding } from '../../../plugins'
 import { humanClick, rowState } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Ошибка загрузки данных (ADR 0096, LE1–LE15, LE17): красный свет под шапкой, плашка
 // ошибки обновления, заглушка ошибки первой загрузки, повтор, объявление, клавиатура,
@@ -270,7 +271,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     const head = q('.data-grid__head-cell')!.getBoundingClientRect()
     expect(box.top).toBeGreaterThanOrEqual(head.bottom)
     expect(banner()!.querySelector('svg')).not.toBeNull()
-    expect(banner()!.textContent).toContain("Couldn't refresh the data")
+    expect(banner()!.textContent).toContain(tableLabels.loadErrorTitle)
     expect(banner()!.textContent).toContain('Server responded 503')
     expect(retryButton()).not.toBeNull()
     expect(dismissButton()).not.toBeNull()
@@ -285,7 +286,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     await expect
       .poll(() => banner()?.querySelector('[data-alert-description]') ?? null)
       .toBeNull()
-    expect(banner()!.textContent).toContain("Couldn't refresh the data")
+    expect(banner()!.textContent).toContain(tableLabels.loadErrorTitle)
 
     // Длинная причина — многоточие, полный текст в тултипе.
     const long = `Gateway timeout ${'while aggregating orders '.repeat(8)}`
@@ -399,7 +400,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
     })
     await expect.poll(stubEl).not.toBeNull()
     expect(stubEl()!.querySelector('svg')).not.toBeNull()
-    expect(stubEl()!.textContent).toContain("Couldn't load the data")
+    expect(stubEl()!.textContent).toContain(tableLabels.loadFailedTitle)
     expect(stubEl()!.textContent).toContain('Server responded 503')
     expect(retryButton()).not.toBeNull()
     expect(q('[data-testid="app-stub"]')).toBeNull()
@@ -484,7 +485,7 @@ describe('Объявление, клавиатура, подписи', () => {
     await update({ loading: false, loadError: SERVER_DOWN })
     await expect
       .poll(() => liveRegion().textContent)
-      .toBe("Couldn't refresh the data: Server responded 503")
+      .toBe(tableLabels.announceLoadErrorReason('Server responded 503'))
     await pause(100)
     observer.disconnect()
     expect(said.some(text => text.includes('Loaded'))).toBe(false)
@@ -505,7 +506,7 @@ describe('Объявление, клавиатура, подписи', () => {
     await update({ loadError: 'Disk is full' })
     await expect
       .poll(() => liveRegion().textContent)
-      .toBe("Couldn't load the data: Disk is full")
+      .toBe(tableLabels.announceLoadFailedReason('Disk is full'))
   })
 
   test('LE11: «Retry» и «Dismiss» — в порядке Tab перед телом, Enter и Space работают; после «Dismiss» фокус в теле', async () => {

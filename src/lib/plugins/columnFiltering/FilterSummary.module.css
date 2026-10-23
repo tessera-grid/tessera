@@ -19,7 +19,7 @@
 .item {
   composes: item from '../../ui/Popup/Popup.module.css';
   justify-content: space-between;
-  cursor: default;
+  --_item-cursor: default;
 }
 
 .text {

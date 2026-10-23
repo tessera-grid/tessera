@@ -29,6 +29,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Длинный текст (ADR 0083; TX1–TX7, TX9–TX11, TX13). Модульный TX8 — в
 // `textOverflow`, перф TX12 — в `interaction`.
@@ -243,7 +244,9 @@ const narrowUntil = async (target: string) => {
 const openRowMenu = async (id = 'r1') => {
   await userEvent.hover(cellEl(id))
   const kebab = () =>
-    rowEl(id).querySelector<HTMLElement>('[aria-label^="Row options"]')
+    rowEl(id).querySelector<HTMLElement>(
+      `[aria-label^="${tableLabels.rowMenu}"]`,
+    )
   await expect.poll(kebab).not.toBeNull()
   await humanClick(kebab()!)
   await expect.poll(() => items().length).toBeGreaterThan(0)
@@ -459,17 +462,19 @@ describe('Длинный текст', () => {
     }
     expect(layout()).toBe('full')
     expect(shownForm(count('selected-rows-count'))).toBe(
-      '25 rows selected, 12 hidden by filters',
+      `${tableLabels.selectedRows(25)}, ${tableLabels.selectedRowsHidden(12)}`,
     )
 
     await narrowUntil('compact')
     expect(shownForm(count('selected-rows-count'))).toBe(
-      '25 selected, 12 hidden',
+      `${tableLabels.selectedRowsShort(25)}, ${tableLabels.selectedRowsHiddenShort(12)}`,
     )
-    expect(shownForm(count('filtered-rows-count'))).toBe('60 / 120')
+    expect(shownForm(count('filtered-rows-count'))).toBe(
+      tableLabels.filteredRowsShort(60, 120),
+    )
     // Доступный текст — полная форма; короткая из него исключена.
     expect(count('selected-rows-count').textContent).toBe(
-      '25 rows selected, 12 hidden by filters',
+      `${tableLabels.selectedRows(25)}, ${tableLabels.selectedRowsHidden(12)}`,
     )
     expect(
       shortOf(count('selected-rows-count'))!.getAttribute('aria-hidden'),
@@ -482,10 +487,10 @@ describe('Длинный текст', () => {
       statusBar().querySelector<HTMLElement>(
         '[data-testid="loaded-rows-count"]',
       )!
-    expect(shownForm(loaded())).toBe('Loaded 30 of 100,000')
+    expect(shownForm(loaded())).toBe(tableLabels.loadedRowsOf(30, 100000))
     await narrowUntil('compact')
-    expect(shownForm(loaded())).toBe('30 / 100,000')
-    expect(loaded().textContent).toBe('Loaded 30 of 100,000')
+    expect(shownForm(loaded())).toBe(tableLabels.loadedRowsOfShort(30, 100000))
+    expect(loaded().textContent).toBe(tableLabels.loadedRowsOf(30, 100000))
   })
 
   test('TX7: числа счётчиков и диапазон пагинации не обрезаются ни в одном виде панели', async () => {

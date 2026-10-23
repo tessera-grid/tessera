@@ -23,8 +23,16 @@ export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
   return (
     <StatusBarCount
       data-testid="loaded-rows-count"
-      full={labels.loadedRows(loaded, rowCount)}
-      short={labels.loadedRowsShort(loaded, rowCount)}
+      full={
+        rowCount === undefined
+          ? labels.loadedRows(loaded)
+          : labels.loadedRowsOf(loaded, rowCount)
+      }
+      short={
+        rowCount === undefined
+          ? labels.loadedRowsShort(loaded)
+          : labels.loadedRowsOfShort(loaded, rowCount)
+      }
     />
   )
 }

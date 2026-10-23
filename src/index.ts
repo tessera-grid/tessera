@@ -134,4 +134,8 @@ export {
   DEFAULT_ICONS,
 } from './lib/ui/icons'
 
-export { type TableLabels, DEFAULT_LABELS } from './lib/core/localization'
+export {
+  type TableLabels,
+  type LabelDictionary,
+  DEFAULT_LABELS,
+} from './lib/core/localization'

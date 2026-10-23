@@ -10,6 +10,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { pagination } from '../../../plugins/pagination'
 import { Stories, bodyRows, getScroller } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Пагинация в нижней панели (ADR 0038, PG2–PG4, PG6, PG11–PG18). Каждый тест —
 // одно требование, назван по его ID. Состояние читается из DOM-контракта (role,
@@ -57,7 +58,7 @@ const mount = async (node: ReactElement) => {
 }
 
 const renderPagination = (extra: object = {}) =>
-  mount(<Stories.Pagination {...GRID} {...extra} />)
+  mount(<Stories.PaginationPlayground {...GRID} {...extra} />)
 
 // Сторис не пробрасывают localization/icons — PG16 рендерит грид напрямую.
 const LOCALIZED_COLUMNS = [{ id: 'a', accessorKey: 'a', header: 'A' }]
@@ -113,9 +114,9 @@ describe('Pagination', () => {
 
   test('PG3: the range shows "from–to of total"; an empty set shows "0–0 of 0" with all buttons disabled', async () => {
     const full = await renderPagination()
-    expect(range()).toBe('1–25 of 1000')
+    expect(range()).toBe('1–25 of 1,000')
     await userEvent.click(pageButton('last'))
-    await expect.poll(range).toBe('976–1000 of 1000')
+    await expect.poll(range).toBe('976–1,000 of 1,000')
     await full.unmount()
 
     await renderPagination({ dataCount: 0 })
@@ -126,7 +127,7 @@ describe('Pagination', () => {
   test('PG4: choosing a page size changes pageSize and returns to the first page; pageSizes:false hides the choice', async () => {
     await renderPagination()
     await userEvent.click(pageButton('next'))
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
 
     await expect.poll(sizeTrigger).not.toBeNull()
     await userEvent.click(sizeTrigger()!)
@@ -140,7 +141,7 @@ describe('Pagination', () => {
       return item
     })
     await userEvent.click(option)
-    await expect.poll(range).toBe('1–100 of 1000')
+    await expect.poll(range).toBe('1–100 of 1,000')
     expect(firstRowId()).toBe('item-id-0')
   })
 
@@ -175,7 +176,7 @@ describe('Pagination', () => {
     await renderPagination({ onPageChange, enableColumnSorting: true })
 
     await userEvent.click(pageButton('next'))
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
     expect(onPageChange).toHaveBeenCalledTimes(1)
     expect(onPageChange).toHaveBeenLastCalledWith(1, 25, {
       signal: expect.any(AbortSignal),
@@ -184,7 +185,7 @@ describe('Pagination', () => {
     // Сортировка возвращает на первую страницу сама — это не действие с пагинацией.
     const sort = document.querySelector<HTMLElement>('.column-sort__button')!
     await userEvent.click(sort)
-    await expect.poll(range).toBe('1–25 of 1000')
+    await expect.poll(range).toBe('1–25 of 1,000')
     expect(onPageChange).toHaveBeenCalledTimes(1)
   })
 
@@ -192,12 +193,16 @@ describe('Pagination', () => {
     const result = await renderPagination()
     await userEvent.click(pageButton('next'))
     await userEvent.click(pageButton('next'))
-    await expect.poll(range).toBe('51–75 of 1000')
+    await expect.poll(range).toBe('51–75 of 1,000')
 
-    await result.rerender(<Stories.Pagination {...GRID} dataCount={900} />)
+    await result.rerender(
+      <Stories.PaginationPlayground {...GRID} dataCount={900} />,
+    )
     await expect.poll(range).toBe('51–75 of 900')
 
-    await result.rerender(<Stories.Pagination {...GRID} dataCount={30} />)
+    await result.rerender(
+      <Stories.PaginationPlayground {...GRID} dataCount={30} />,
+    )
     await expect.poll(range).toBe('26–30 of 30')
   })
 
@@ -220,19 +225,24 @@ describe('Pagination', () => {
     await expect.poll(() => scroller.scrollTop).toBeGreaterThan(0)
 
     await userEvent.click(pageButton('next'))
-    await expect.poll(range).toBe('26–50 of 1000')
+    await expect.poll(range).toBe('26–50 of 1,000')
     await expect.poll(() => scroller.scrollTop).toBe(0)
   })
 
   test('PG13: the control is a labelled navigation; buttons are labelled, disabled ones stay focusable; the size choice has a label', async () => {
     await renderPagination()
     expect(nav()!.tagName).toBe('NAV')
-    expect(nav()!.getAttribute('aria-label')).toBe('Pagination')
+    expect(nav()!.getAttribute('aria-label')).toBe(tableLabels.pagination)
     expect(
       (['first', 'previous', 'next', 'last'] as const).map(action =>
         pageButton(action).getAttribute('aria-label'),
       ),
-    ).toEqual(['First page', 'Previous page', 'Next page', 'Last page'])
+    ).toEqual([
+      tableLabels.firstPage,
+      tableLabels.previousPage,
+      tableLabels.nextPage,
+      tableLabels.lastPage,
+    ])
 
     const first = pageButton('first')
     expect(first.getAttribute('aria-disabled')).toBe('true')
@@ -241,7 +251,9 @@ describe('Pagination', () => {
 
     await expect.poll(sizeTrigger).not.toBeNull()
     const [labelId] = sizeTrigger()!.getAttribute('aria-labelledby')!.split(' ')
-    expect(document.getElementById(labelId!)!.textContent).toBe('Rows per page')
+    expect(document.getElementById(labelId!)!.textContent).toBe(
+      tableLabels.rowsPerPage,
+    )
   })
 
   test('PG21: загруженный выбор размера страницы, как и заглушка до загрузки, назван подписью и значением', async () => {
@@ -266,9 +278,9 @@ describe('Pagination', () => {
   test('PG14: a page change is announced in the live region: "Page N of M"', async () => {
     await renderPagination()
     await userEvent.click(pageButton('next'))
-    await expect.poll(live).toBe('Page 2 of 40')
+    await expect.poll(live).toBe(tableLabels.pageAnnouncement(2, 40))
     await userEvent.click(pageButton('last'))
-    await expect.poll(live).toBe('Page 40 of 40')
+    await expect.poll(live).toBe(tableLabels.pageAnnouncement(40, 40))
   })
 
   test('PG15: aria-rowcount counts rows of all pages, aria-rowindex runs through the page offset', async () => {

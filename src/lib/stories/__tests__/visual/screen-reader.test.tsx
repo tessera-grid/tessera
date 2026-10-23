@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 
 import { Stories, bodyRows, renderGrid } from '../helpers'
 import { waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Уровень 2 (ADR 0033): эмулятор скринридера `@guidepup/virtual-screen-reader`
 // слушает фокус и live-области реального DOM; грид ведётся реальными клавишами,
@@ -22,7 +23,7 @@ describe('Эмулятор скринридера (SR)', () => {
     await render(
       <>
         <button id="before-grid">before</button>
-        <Stories.KeyboardNavigation />
+        <Stories.KeyboardPlayground />
       </>,
     )
     await waitForGrid()
@@ -69,7 +70,9 @@ describe('Эмулятор скринридера (SR)', () => {
 
     await userEvent.keyboard(' ')
     await settle()
-    expect(await spoken()).toContain('polite: 1 row selected')
+    expect(await spoken()).toContain(
+      `polite: ${tableLabels.announceSelection(1)}`,
+    )
   })
 
   test('SR4: правка ячейки — поле «Edit …», недопустимое значение объявляет ошибку', async () => {
@@ -125,7 +128,7 @@ describe('Эмулятор скринридера (SR)', () => {
   })
 
   test('SR6: перестановка строки Alt+Shift+↓ — фокус следует и озвучивается', async () => {
-    await render(<Stories.RowDragging enableKeyboardNavigation />)
+    await render(<Stories.RowDraggingPlayground enableKeyboardNavigation />)
     await waitForGrid()
     await virtual.start({ container: document.body })
     const moved = bodyRows()[0].getAttribute('data-row-id')
@@ -149,7 +152,7 @@ describe('Эмулятор скринридера (SR)', () => {
 
   test('SR7: фокус на строке treegrid озвучивает раскрытие, уровень и позицию', async () => {
     await render(
-      <Stories.RowGrouping
+      <Stories.RowGroupingPlayground
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}

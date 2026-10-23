@@ -9,18 +9,18 @@ import { createRoot } from 'react-dom/client'
 import { describe, expect, it } from 'vitest'
 
 import {
-  DEFAULT_LABELS,
+  ENGLISH_LABELS,
   LocalizationProvider,
   type TableLabels,
   useLocalization,
-} from '../core/localization/localization'
+} from '../core/localization'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
 
 const shortForms = (labels: TableLabels) => [
-  labels.loadedRowsShort(12_340, 100_000),
+  labels.loadedRowsOfShort(12_340, 100_000),
   labels.loadedRowsShort(12_340),
   labels.selectedRowsShort(12),
   labels.selectedRowsHiddenShort(3),
@@ -29,7 +29,7 @@ const shortForms = (labels: TableLabels) => [
 
 describe('Короткие формы счётчиков', () => {
   it('TX8: короткие формы счётчиков задаются через localization', () => {
-    expect(shortForms(DEFAULT_LABELS)).toEqual([
+    expect(shortForms(ENGLISH_LABELS)).toEqual([
       '12,340 / 100,000',
       '12,340',
       '12 selected',
@@ -47,7 +47,8 @@ describe('Короткие формы счётчиков', () => {
       root.render(
         <LocalizationProvider
           localization={{
-            loadedRowsShort: loaded => `L${loaded}`,
+            loadedRowsShort: count => `L${count}`,
+            loadedRowsOfShort: count => `L${count}`,
             selectedRowsShort: count => `S${count}`,
             selectedRowsHiddenShort: count => `H${count}`,
             filteredRowsShort: (shown, total) => `F${shown}/${total}`,

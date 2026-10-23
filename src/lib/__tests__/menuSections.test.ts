@@ -10,7 +10,7 @@ import {
   resolveMenuLevel,
   sectionKey,
 } from '../core/headerActions'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 
 // Вложенные разделы меню (ADR 0079, NM17): стек уровней и разрешение раздела без DOM;
 // меню без `submenu` работает как прежде.
@@ -36,9 +36,9 @@ describe('menuSections', () => {
     const plain = [leaf('edit'), leaf('delete')]
     const onChange = vi.fn()
     const loads = createSectionLoads(onChange)
-    const root = resolveMenuLevel(plain, [], {}, DEFAULT_LABELS, loads)
+    const root = resolveMenuLevel(plain, [], {}, ENGLISH_LABELS, loads)
     expect(root).toEqual({ path: [], items: { status: 'done', items: plain } })
-    expect(resolveMenuItems(plain[0]!, {}, DEFAULT_LABELS)).toHaveLength(1)
+    expect(resolveMenuItems(plain[0]!, {}, ENGLISH_LABELS)).toHaveLength(1)
 
     // Синхронный раздел внутри раздела.
     const inner: MenuAction = {
@@ -63,16 +63,16 @@ describe('menuSections', () => {
 
     // Асинхронный раздел: без загрузки — «загрузка», чтение её не начинает.
     expect(
-      resolveMenuLevel(menu, ['move'], {}, DEFAULT_LABELS, loads).items,
+      resolveMenuLevel(menu, ['move'], {}, ENGLISH_LABELS, loads).items,
     ).toEqual({ status: 'loading' })
     expect(load).not.toHaveBeenCalled()
 
-    loadSection(move, sectionKey(['move']), {}, DEFAULT_LABELS, loads)
-    loadSection(move, sectionKey(['move']), {}, DEFAULT_LABELS, loads)
+    loadSection(move, sectionKey(['move']), {}, ENGLISH_LABELS, loads)
+    loadSection(move, sectionKey(['move']), {}, ENGLISH_LABELS, loads)
     expect(load).toHaveBeenCalledTimes(1)
     // Путь глубже незагруженного раздела обрезается.
     expect(
-      resolveMenuLevel(menu, ['move', 'projects'], {}, DEFAULT_LABELS, loads)
+      resolveMenuLevel(menu, ['move', 'projects'], {}, ENGLISH_LABELS, loads)
         .path,
     ).toEqual(['move'])
 
@@ -82,7 +82,7 @@ describe('menuSections', () => {
       menu,
       ['move', 'projects'],
       {},
-      DEFAULT_LABELS,
+      ENGLISH_LABELS,
       loads,
     )
     expect(nested.title).toBe('Projects')
@@ -95,24 +95,24 @@ describe('menuSections', () => {
 
     // Исчезнувший раздел обрезает путь до живого уровня.
     expect(
-      resolveMenuLevel(menu, ['gone', 'x'], {}, DEFAULT_LABELS, loads).path,
+      resolveMenuLevel(menu, ['gone', 'x'], {}, ENGLISH_LABELS, loads).path,
     ).toEqual([])
 
     // Отказ и повтор только с force; abort оставляет итоги, reset забывает.
     loads.reset()
-    loadSection(move, sectionKey(['move']), {}, DEFAULT_LABELS, loads)
+    loadSection(move, sectionKey(['move']), {}, ENGLISH_LABELS, loads)
     fail(new Error('down'))
     await flush()
     expect(loads.get(sectionKey(['move']))?.status).toBe('failed')
-    loadSection(move, sectionKey(['move']), {}, DEFAULT_LABELS, loads)
+    loadSection(move, sectionKey(['move']), {}, ENGLISH_LABELS, loads)
     expect(load).toHaveBeenCalledTimes(2)
-    loadSection(move, sectionKey(['move']), {}, DEFAULT_LABELS, loads, true)
+    loadSection(move, sectionKey(['move']), {}, ENGLISH_LABELS, loads, true)
     expect(load).toHaveBeenCalledTimes(3)
     expect(loads.get(sectionKey(['move']))?.status).toBe('loading')
     loads.abort()
     expect(loads.get(sectionKey(['move']))).toBeUndefined()
 
-    loadSection(move, sectionKey(['move']), {}, DEFAULT_LABELS, loads)
+    loadSection(move, sectionKey(['move']), {}, ENGLISH_LABELS, loads)
     answer([leaf('inbox')])
     await flush()
     loads.abort()

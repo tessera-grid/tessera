@@ -28,7 +28,13 @@ import {
   contrastAttribute,
   ThemeScope,
 } from '../core/themeVariables'
-import { DEFAULT_LABELS, LocalizationProvider } from '../core/localization'
+import {
+  DEFAULT_LOCALE,
+  LocalizationContext,
+  resolveLabels,
+  unknownLabelKeys,
+} from '../core/localization'
+import { logWarn } from '../core/logger'
 import { LiveRegion } from './LiveRegion'
 import { EmptyStub } from './stubs/EmptyStub'
 import { type StubContext, resolveStub, stubEntriesOf } from '../core/stubs'
@@ -104,6 +110,7 @@ export const DataGrid = ({
   contrast = 'auto',
   icons,
   localization,
+  locale = DEFAULT_LOCALE,
   className,
   style,
 }: DataGridProps) => {
@@ -203,10 +210,19 @@ export const DataGrid = ({
   const hasNestedGroups = headerGroupsDepth > 1
 
   const labels = useMemo(
-    () =>
-      localization ? { ...DEFAULT_LABELS, ...localization } : DEFAULT_LABELS,
-    [localization],
+    () => resolveLabels(localization, locale),
+    [localization, locale],
   )
+  // Опечатка в словаре из JSON молча оставила бы английскую подпись (ADR 0132, LC8).
+  useEffect(() => {
+    for (const key of localization ? unknownLabelKeys(localization) : []) {
+      logWarn(
+        table,
+        `localization: unknown label key "${key}"`,
+        `localization:${key}`,
+      )
+    }
+  }, [table, localization])
   const tableLabel = labels.table
   // Заглушка той же высоты, пока грузится чанк: раскладка не прыгает.
   const toolbar = enableToolbar && (
@@ -409,7 +425,7 @@ export const DataGrid = ({
           host={table as never}
         >
           <IconsProvider icons={icons}>
-            <LocalizationProvider localization={localization}>
+            <LocalizationContext.Provider value={labels}>
               <FastScrollProvider store={fastScrollStore}>
                 <div
                   ref={wrapperRef}
@@ -550,7 +566,7 @@ export const DataGrid = ({
                   {statusBar}
                 </div>
               </FastScrollProvider>
-            </LocalizationProvider>
+            </LocalizationContext.Provider>
           </IconsProvider>
         </ThemeScope>
       </PluginRenderVersionContext.Provider>

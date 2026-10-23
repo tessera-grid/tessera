@@ -24,7 +24,12 @@ export const FilterSummaryButton = ({ table }: ToolbarComponentProps) => {
   useTableState(table, state => [state.columnFilters, state.columnVisibility])
   const items = filterSummaryOf(table)
   const hidden = items.filter(item => item.hidden).length
-  const label = labels.filters(items.length, hidden)
+  const label =
+    items.length === 0
+      ? labels.filters
+      : hidden > 0
+        ? labels.filtersActiveHidden(items.length, hidden)
+        : labels.filtersActive(items.length)
   const icon = <FilterIcon width={16} height={16} />
   const popover = useLazyPopover(
     table,

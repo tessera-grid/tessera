@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 import { columnPinning } from '../plugins/columnPinning'
 import { columnSorting } from '../plugins/columnSorting'
 import { dataExport } from '../plugins/dataExport'
@@ -220,14 +220,14 @@ describe('dataExport — оси настроек', () => {
   })
 
   it('EX10: подпись view называет учитываемое, остальные — из локализации', () => {
-    expect(rowLabel(DEFAULT_LABELS, 'all', [])).toBe('All rows')
-    expect(rowLabel(DEFAULT_LABELS, 'view', ['sorting'])).toBe('With sorting')
-    expect(rowLabel(DEFAULT_LABELS, 'page', [])).toBe('Current page')
-    expect(rowLabel(DEFAULT_LABELS, 'selected', [])).toBe('Selected rows')
+    expect(rowLabel(ENGLISH_LABELS, 'all', [])).toBe('All rows')
+    expect(rowLabel(ENGLISH_LABELS, 'view', ['sorting'])).toBe('With sorting')
+    expect(rowLabel(ENGLISH_LABELS, 'page', [])).toBe('Current page')
+    expect(rowLabel(ENGLISH_LABELS, 'selected', [])).toBe('Selected rows')
     expect(
       rowLabel(
         {
-          ...DEFAULT_LABELS,
+          ...ENGLISH_LABELS,
           exportView: features => `С учётом: ${features.join(', ')}`,
         },
         'view',

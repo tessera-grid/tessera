@@ -96,12 +96,11 @@ export const LiveRegion = ({
   useOnChange(sorting, value => {
     const [id, desc] = value.split(':')
     announceLabel(table, l =>
-      id
-        ? l.announceSort(
-            columnName(table, id),
-            desc === 'true' ? 'descending' : 'ascending',
-          )
-        : l.announceSort(null, null),
+      !id
+        ? l.announceSortCleared
+        : desc === 'true'
+          ? l.announceSortDescending(columnName(table, id))
+          : l.announceSortAscending(columnName(table, id)),
     )
   })
   // Фильтр или поиск применён — объявить число строк (ADR 0045, FL32). В серверном

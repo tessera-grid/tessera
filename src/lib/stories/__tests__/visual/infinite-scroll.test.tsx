@@ -29,6 +29,7 @@ import {
   inBothThemes,
   toRgba,
 } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Бесконечная прокрутка — лента (ADR 0081; IS1–IS4, IS7, IS9–IS15, IS18): ответы
 // «сервера» держит тест — промис каждого вызова `onLoadMore` в очереди `calls`.
@@ -368,7 +369,7 @@ describe('Лента: хвост ожидания и ответ', () => {
       rowEl('r29')!.getBoundingClientRect().width,
       0,
     )
-    expect(errorRow()!.textContent).toContain("Couldn't load more rows")
+    expect(errorRow()!.textContent).toContain(tableLabels.loadMoreFailed)
     expect(errorRow()!.textContent).toContain('Server error')
     const icon = errorRow()!.querySelector<SVGElement>('svg')!
     expect(icon.getBoundingClientRect().width).toBeGreaterThan(0)
@@ -451,7 +452,7 @@ describe('Лента: смена условия выборки', () => {
       call.reject(new Error('late'))
       await frames(4)
       expect(errorRow(), name).toBeNull()
-      expect(liveText(), name).not.toContain("Couldn't load more rows")
+      expect(liveText(), name).not.toContain(tableLabels.loadMoreFailed)
       await cleanup()
       calls = []
     }
@@ -475,15 +476,15 @@ describe('Лента: итог и доступность', () => {
 
   test('IS9: loadedCount — «Loaded N of M» при известном итоге, «Loaded N» без него; без опции панели нет', async () => {
     const known = await mount({ loadedCount: true })
-    expect(counter()?.textContent).toBe('Loaded 30 of 100')
+    expect(counter()?.textContent).toBe(tableLabels.loadedRowsOf(30, 100))
     await scrollToEnd()
     await pendingCall()
     await respond(20)
-    expect(counter()?.textContent).toBe('Loaded 50 of 100')
+    expect(counter()?.textContent).toBe(tableLabels.loadedRowsOf(50, 100))
     await known.unmount()
 
     const unknown = await mount({ loadedCount: true, knownTotal: false })
-    expect(counter()?.textContent).toBe('Loaded 30')
+    expect(counter()?.textContent).toBe(tableLabels.loadedRows(30))
     await unknown.unmount()
 
     await mount()
@@ -507,13 +508,13 @@ describe('Лента: итог и доступность', () => {
     await scrollToEnd()
     await pendingCall()
     await respond(20)
-    await expect.poll(liveText).toContain('Loaded 20 more rows')
+    await expect.poll(liveText).toContain(tableLabels.announceMoreLoaded(20))
     scroller().scrollTop = scroller().scrollHeight
     await frames(4)
     expect(rowEl('r49')!.getAttribute('aria-rowindex')).toBe('51')
     await pendingCall()
     await fail()
-    await expect.poll(liveText).toContain("Couldn't load more rows")
+    await expect.poll(liveText).toContain(tableLabels.loadMoreFailed)
     expect(errorRow()!.getAttribute('aria-rowindex')).toBe('52')
   })
 
@@ -647,7 +648,7 @@ describe('Лента: итог и доступность', () => {
     }
 
     const client = await mount({ plugins: [dataExport()] })
-    expect(await rowsLabel()).toContain('Loaded rows (30)')
+    expect(await rowsLabel()).toContain(tableLabels.exportLoaded(30))
     await userEvent.keyboard('{Escape}')
     await client.unmount()
 
@@ -655,7 +656,7 @@ describe('Лента: итог и доступность', () => {
       plugins: [dataExport({ server: true, onExport: async () => {} })],
     })
     const label = await rowsLabel()
-    expect(label).toContain('All rows')
+    expect(label).toContain(tableLabels.exportAll)
     expect(label).not.toContain('Loaded')
   })
 
@@ -711,20 +712,22 @@ describe('Лента: итог и доступность', () => {
 
 describe('Лента: демо-истории', () => {
   test('IS18: «Default» — у края блок дописывается, счётчик растёт; «Errors» — строка ошибки, «Retry» догружает', async () => {
-    const basic = await render(<composed.InfiniteScroll serverDelayMs={50} />)
+    const basic = await render(
+      <composed.InfiniteScrollPlayground serverDelayMs={50} />,
+    )
     const count = () =>
       document.querySelector('[data-testid="loaded-rows-count"]')?.textContent
-    await expect.poll(count).toBe('Loaded 50 of 1,000')
+    await expect.poll(count).toBe(tableLabels.loadedRowsOf(50, 1000))
     await scrollToEnd()
-    await expect.poll(count).toBe('Loaded 100 of 1,000')
+    await expect.poll(count).toBe(tableLabels.loadedRowsOf(100, 1000))
     await basic.unmount()
 
     await render(<composed.InfiniteScrollErrors serverDelayMs={50} />)
-    await expect.poll(count).toBe('Loaded 50 of 1,000')
+    await expect.poll(count).toBe(tableLabels.loadedRowsOf(50, 1000))
     await scrollToEnd()
     await expect.poll(errorRow).not.toBeNull()
     await humanClick(retryButton()!)
-    await expect.poll(count).toBe('Loaded 100 of 1,000')
+    await expect.poll(count).toBe(tableLabels.loadedRowsOf(100, 1000))
   })
 
   test('IS19: хвост — строки скелета по раскладке колонок: вид ячейки по skeletonCell, длина полоски по колонке, высота строки грида, без волны', async () => {
