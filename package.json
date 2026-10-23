@@ -80,7 +80,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "storybook:public": "node scripts/storybook-public.mjs dev",
+    "build-storybook": "storybook build",
+    "build-storybook:public": "node scripts/storybook-public.mjs build"
   },
   "peerDependencies": {
     "@tanstack/react-table": "^9",

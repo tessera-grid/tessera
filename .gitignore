@@ -24,6 +24,7 @@ tmp/
 
 # Storybook
 storybook-static/
+storybook-public/
 
 # Editors
 .idea/

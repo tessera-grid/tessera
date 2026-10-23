@@ -1,16 +1,20 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 
 /**
- * `*.dev.stories.tsx` — песочницы обвязки историй: в `storybook dev` и тестах, но не в
- * `storybook build` (и значит не в Chromatic).
+ * Наборы историй (ADR 0117 §8): `storybook dev` и тесты — все файлы; сборка для
+ * Chromatic — без песочниц обвязки `*.dev`; публичный набор (`STORYBOOK_TARGET=public`, и
+ * в сборке, и в `storybook dev`) — ещё и без историй только для снимков `*.vr`.
  */
 const build = process.argv.includes('build')
+const publicStories = process.env.STORYBOOK_TARGET === 'public'
 
 const config: StorybookConfig = {
   stories: [
-    build
-      ? '../src/**/!(*.dev).stories.@(ts|tsx)'
-      : '../src/**/*.stories.@(ts|tsx)',
+    publicStories
+      ? '../src/**/!(*.dev|*.vr).stories.@(ts|tsx)'
+      : build
+        ? '../src/**/!(*.dev).stories.@(ts|tsx)'
+        : '../src/**/*.stories.@(ts|tsx)',
   ],
   addons: [
     '@storybook/addon-docs',
@@ -18,6 +22,35 @@ const config: StorybookConfig = {
     '@storybook/addon-a11y',
     'storybook-addon-pseudo-states',
     'storybook-addon-tag-badges',
+  ],
+  // Порядок дерева: песочница всех фич, ядро, фичи, служебные разделы; внутри раздела —
+  // порядок экспортов файла. Storybook 11 сортирует индекс отсюда, а не из preview.
+  storySorts: [
+    {
+      order: [
+        'Tessera',
+        [
+          'DataGrid',
+          [
+            'Playground',
+            'Core',
+            'Data loading',
+            'Columns',
+            'Rows',
+            'Cells',
+            'Filtering',
+            'Export',
+            'Panels',
+            'Accessibility',
+            'Plugin API',
+            'Data & scale',
+          ],
+          'Customization',
+          'Theming',
+          'UI',
+        ],
+      ],
+    },
   ],
   framework: {
     name: '@storybook/react-vite',
