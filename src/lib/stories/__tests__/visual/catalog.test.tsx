@@ -24,7 +24,7 @@ const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 const renderTexts = async () => {
   // 25 колонок — больше мока: имена дополнительных колонок генерирует faker.
   const screen = await render(
-    <composed.AllFeatures columnCount={25} dataCount={30} />,
+    <composed.DataGridPlayground columnCount={25} dataCount={30} />,
   )
   await waitForGrid()
   // Колонки виртуализированы: тексты собираются по всей ширине прокруткой.

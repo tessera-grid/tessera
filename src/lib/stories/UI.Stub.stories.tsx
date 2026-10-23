@@ -53,8 +53,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const StubDefault: Story = {
-  name: 'Default',
+export const StubPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls('title', 'description', 'illustration', 'action'),
 }
 

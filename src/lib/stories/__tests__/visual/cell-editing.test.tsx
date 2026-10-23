@@ -30,9 +30,11 @@ const bodyCell = (container: HTMLElement, columnId: string) =>
 
 /** Рендер канонической истории Cell Editing и ожидание строк тела. */
 async function renderCellEditing(
-  args: Partial<Parameters<typeof composed.CellEditing>[0]> = {},
+  args: Partial<Parameters<typeof composed.CellEditingPlayground>[0]> = {},
 ) {
-  const { container } = await render(<composed.CellEditing {...args} />)
+  const { container } = await render(
+    <composed.CellEditingPlayground {...args} />,
+  )
   await expect
     .poll(() => container.querySelectorAll(BODY_CELL).length)
     .toBeGreaterThan(3)

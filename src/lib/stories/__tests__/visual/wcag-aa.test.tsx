@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-react'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import {
   Stories,
   bodyRows,
@@ -50,7 +50,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       cell => cell.getAttribute('data-column-id') === columnId,
     )!
     expect(label).toBe(
-      DEFAULT_LABELS.editCellValue(header.textContent!.trim() || columnId),
+      ENGLISH_LABELS.editCellValue(header.textContent!.trim() || columnId),
     )
     await userEvent.keyboard('{Escape}')
   })
@@ -64,7 +64,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       .not.toBeNull()
 
     const progress = document.querySelector('[role="progressbar"]')!
-    expect(progress.getAttribute('aria-label')).toBe(DEFAULT_LABELS.loading)
+    expect(progress.getAttribute('aria-label')).toBe(ENGLISH_LABELS.loading)
     expect(gridRoot().getAttribute('aria-busy')).toBe('true')
     expect(byRule(await violations(), 'aria-progressbar-name')).toEqual([])
   })
@@ -74,11 +74,11 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     // Своя status-область скелета (соседняя live-область грида W9 пуста).
     const status = () =>
       Array.from(document.querySelectorAll('[role="status"]')).find(
-        el => el.textContent === DEFAULT_LABELS.loading,
+        el => el.textContent === ENGLISH_LABELS.loading,
       )
     await expect.poll(status).toBeTruthy()
 
-    expect(status()!.textContent).toBe(DEFAULT_LABELS.loading)
+    expect(status()!.textContent).toBe(ENGLISH_LABELS.loading)
     expect(
       document.querySelector(
         '[role="table"], [role="grid"], [role="treegrid"]',
@@ -242,8 +242,10 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       .getAttribute('data-column-id')!
 
     // Окончание загрузки.
-    await screen.rerender(<Stories.AllFeatures {...args} loading={false} />)
-    await expect.poll(live).toBe(DEFAULT_LABELS.announceLoaded(5))
+    await screen.rerender(
+      <Stories.DataGridPlayground {...args} loading={false} />,
+    )
+    await expect.poll(live).toBe(ENGLISH_LABELS.announceLoaded(5))
 
     // Сортировка.
     await revealCellButtons(sortButton.closest('.data-grid__head-cell')!)
@@ -259,7 +261,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     await userEvent.click(
       bodyRows()[0].querySelector<HTMLElement>('.row-select-checkbox')!,
     )
-    await expect.poll(live).toBe(DEFAULT_LABELS.announceSelection(1))
+    await expect.poll(live).toBe(ENGLISH_LABELS.announceSelection(1))
 
     // Копирование выделения ячеек.
     const cell = bodyRows()[1].querySelector<HTMLElement>(
@@ -272,13 +274,13 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
         clipboardData: new DataTransfer(),
       }),
     )
-    await expect.poll(live).toBe(DEFAULT_LABELS.announceCopy(1))
+    await expect.poll(live).toBe(ENGLISH_LABELS.announceCopy(1))
 
     // Пустой результат.
     await screen.rerender(
-      <Stories.AllFeatures {...args} loading={false} dataCount={0} />,
+      <Stories.DataGridPlayground {...args} loading={false} dataCount={0} />,
     )
-    await expect.poll(live).toBe(DEFAULT_LABELS.noData)
+    await expect.poll(live).toBe(ENGLISH_LABELS.noData)
     await screen.unmount()
 
     // Отключение объявлений ядра.
@@ -297,7 +299,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
 
   test('W10: с иерархией строк грид — treegrid, строки несут aria-level/setsize/posinset', async () => {
     const screen = await render(
-      <Stories.RowGrouping
+      <Stories.RowGroupingPlayground
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}
@@ -347,7 +349,10 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
 
     // Без клавиатурной навигации — таблица без атрибутов уровня.
     await render(
-      <Stories.RowGrouping enableRowExpanding initialGrouping={['gender']} />,
+      <Stories.RowGroupingPlayground
+        enableRowExpanding
+        initialGrouping={['gender']}
+      />,
     )
     await expect
       .poll(() => document.querySelector('.data-grid__body-row'))
@@ -395,7 +400,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
 
   test('W12: Alt+Shift+→/← вкладывают строку в предыдущую группу и выносят обратно', async () => {
     await render(
-      <Stories.RowDragging
+      <Stories.RowDraggingPlayground
         dataNesting="nested"
         enableRowExpanding
         initialExpanded
@@ -490,7 +495,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
 
   test('W16: фокус на строке treegrid — ←/→ раскрывают, сворачивают и ведут к ячейке и родителю', async () => {
     await render(
-      <Stories.RowGrouping
+      <Stories.RowGroupingPlayground
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}

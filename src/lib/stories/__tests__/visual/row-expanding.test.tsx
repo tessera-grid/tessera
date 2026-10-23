@@ -6,7 +6,7 @@ import axe from 'axe-core'
 
 import { composed } from '../stories'
 import { settleRowMotion } from '../helpers'
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { waitForBodyText } from './column-pinning-helpers'
 import { AXE_OPTIONS, gridRoot, inBothThemes } from './a11y-helpers'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
@@ -19,7 +19,7 @@ import { UiCanvas } from '../../__mocks__/UiCanvas'
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
-// Tests drive the `RowExpanding` story: a deterministic generated tree (group
+// Tests drive the `RowExpandingPlayground` story: a deterministic generated tree (group
 // roots with nested groups one level down) plus a couple of flat leaf roots,
 // started collapsed. State is read from the DOM/ARIA contract (row
 // `data-expanded`/`aria-expanded`, the `.row-expand-button` toggle, the service
@@ -39,7 +39,9 @@ const DEPTH_OFFSET_PX = ROW_NESTING_INDENT_PX
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-type RowExpandingArgs = Partial<Parameters<typeof composed.RowExpanding>[0]>
+type RowExpandingArgs = Partial<
+  Parameters<typeof composed.RowExpandingPlayground>[0]
+>
 
 /** Body rows in visual (top-to-bottom) order — real rows only (skip padding). */
 const rowsTopDown = (container: HTMLElement) =>
@@ -72,7 +74,9 @@ const paddingLeftOf = (el: HTMLElement) =>
 
 /** Render the RowExpanding story and wait until its rows are on screen. */
 async function renderRowExpanding(args: RowExpandingArgs = {}) {
-  const { container } = await render(<composed.RowExpanding {...args} />)
+  const { container } = await render(
+    <composed.RowExpandingPlayground {...args} />,
+  )
   await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
   return container
 }
@@ -366,7 +370,7 @@ describe('Row Expanding — accessibility', () => {
   test('RE12: without keyboard navigation (role=table) the toggle carries aria-expanded, rows do not, and the expanded tree passes axe', async () => {
     // Обычные строки и строки с перетаскиванием (DraggableBodyRow).
     for (const args of [{}, { enableRowDragging: true }]) {
-      const view = await render(<composed.RowExpanding {...args} />)
+      const view = await render(<composed.RowExpandingPlayground {...args} />)
       const { container } = view
       await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
       expect(container.querySelector('[role="table"]')).not.toBeNull()
@@ -396,19 +400,19 @@ describe('Row Expanding — accessibility', () => {
     const container = await renderRowExpanding()
     const toggle = () => rowToggle(firstExpandableRow(container))!
 
-    expect(toggle().getAttribute('aria-label')).toBe(DEFAULT_LABELS.expandRow)
+    expect(toggle().getAttribute('aria-label')).toBe(ENGLISH_LABELS.expandRow)
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
     await userEvent.hover(toggle())
-    expect(await waitForBodyText(DEFAULT_LABELS.expandRow)).toBe(true)
+    expect(await waitForBodyText(ENGLISH_LABELS.expandRow)).toBe(true)
 
     await userEvent.click(toggle())
     await expect.poll(() => toggle().getAttribute('aria-expanded')).toBe('true')
-    expect(toggle().getAttribute('aria-label')).toBe(DEFAULT_LABELS.collapseRow)
+    expect(toggle().getAttribute('aria-label')).toBe(ENGLISH_LABELS.collapseRow)
     await settleRowMotion(container)
     // Указатель уходит и возвращается — тултип открывается заново, уже раскрытой строки.
     await userEvent.hover(rowsTopDown(container).at(-1)!)
     await userEvent.hover(toggle())
-    expect(await waitForBodyText(DEFAULT_LABELS.collapseRow)).toBe(true)
+    expect(await waitForBodyText(ENGLISH_LABELS.collapseRow)).toBe(true)
 
     // Restore.
     await userEvent.click(toggle())
@@ -439,7 +443,7 @@ describe('Row Expanding — nesting step', () => {
     await tree.unmount()
 
     await render(
-      <composed.RowGrouping
+      <composed.RowGroupingPlayground
         enableRowExpanding
         initialGrouping={['gender']}
         initialExpanded={true}

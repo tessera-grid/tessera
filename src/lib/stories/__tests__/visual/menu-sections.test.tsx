@@ -29,6 +29,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { rowsTopDown, waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Вложенные разделы меню действий (ADR 0079, NM1–NM16, NM19): смена содержимого на
 // месте, навигация, фокус, асинхронный раздел. Промисы раздела — в руках теста.
@@ -270,7 +271,7 @@ const rowEl = (id: string) =>
     `.data-grid__body-row[data-row-id="${id}"]`,
   )!
 const rowKebab = (id = 'r1') =>
-  rowEl(id).querySelector<HTMLElement>('[aria-label^="Row options"]')
+  rowEl(id).querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)
 const nameCell = (id = 'r1') =>
   rowEl(id).querySelector<HTMLElement>('[data-column-id="name"]')!
 const items = () => [
@@ -611,7 +612,7 @@ describe('Асинхронный раздел', () => {
     const failed = () =>
       menu()?.querySelector<HTMLElement>('[data-section-failed]')
     await expect.poll(failed).not.toBeNull()
-    expect(failed()!.textContent).toBe("Couldn't load")
+    expect(failed()!.textContent).toBe(tableLabels.sectionLoadFailed)
     expect(failed()!.querySelector('[class*="itemFailed"] svg')).not.toBeNull()
     const describedBy = failed()!.getAttribute('aria-describedby')!
     expect(document.getElementById(describedBy)!.textContent).toBe(
@@ -651,7 +652,7 @@ describe('Асинхронный раздел', () => {
     probe.runs[0]!.resolve()
     await expect
       .poll(() => rowKebab()!.getAttribute('aria-label'))
-      .toBe('Row options')
+      .toBe(tableLabels.rowMenu)
   })
 })
 
@@ -663,7 +664,7 @@ describe('Где работает, доступность', () => {
     )!
     await userEvent.hover(head)
     const headKebab = head.querySelector<HTMLElement>(
-      '[aria-label^="Column options"]',
+      `[aria-label^="${tableLabels.headerMenu}"]`,
     )!
     await humanClick(headKebab)
     await expect.poll(() => item('Freeze')).toBeTruthy()
@@ -773,7 +774,7 @@ describe('Демо-история', () => {
     await waitForGrid()
     const first = rowsTopDown()[0]!
     const kebab = () =>
-      first.querySelector<HTMLElement>('[aria-label^="Row options"]')
+      first.querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)
     await userEvent.hover(first)
     await expect.poll(kebab).not.toBeNull()
     await humanClick(kebab()!)

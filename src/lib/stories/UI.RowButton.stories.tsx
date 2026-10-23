@@ -51,8 +51,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const RowButtonDefault: Story = {
-  name: 'Default',
+export const RowButtonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls(
     'label',
     'revealOnHover',

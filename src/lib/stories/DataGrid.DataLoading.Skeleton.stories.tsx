@@ -23,7 +23,7 @@ import { createConsoleLog } from './demos/consoleLog'
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/DataGrid/Core/Skeleton',
+  title: 'Tessera/DataGrid/Data loading/Skeleton',
   tags: ['done'],
 } satisfies Meta<StoryProps>
 
@@ -187,8 +187,8 @@ const DATA_ARRIVES_CONTROLS = [
  * контролы и функции всех её сценариев, включая тулбар (ADR 0122), и `loading` —
  * скелет, свечение обновления или данные.
  */
-export const SkeletonDefault: StoryObj<StoryProps> = {
-  name: 'Default',
+export const SkeletonPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: {
     ...vrStates('body.skeleton'),
     ...showControls([
@@ -216,7 +216,7 @@ export const SkeletonDefault: StoryObj<StoryProps> = {
  * раскладку таблицы со служебными колонками, итогами и панелями; с `tree` —
  * развёрнутыми подстроками, с раскрытием строк — квадратами раскрытия и, с `treeLines`,
  * линиями дерева; пришли данные — всё на тех же местах, без задержки (SL6, SL2, SL8).
- * Функции включает гайд, поэтому контролов нет — вариации в `Default`.
+ * Функции включает гайд, поэтому контролов нет — вариации в `Playground`.
  */
 export const SkeletonDataArrives: StoryObj<StoryProps> = {
   name: 'Data arrives',

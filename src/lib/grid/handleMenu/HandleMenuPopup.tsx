@@ -81,6 +81,7 @@ export const HandleMenuPopup = ({
                   className={menuStyles.item}
                   disabled={item.disabled}
                   label={item.label}
+                  data-item-id={item.id}
                   onClick={event => {
                     reportAction(table, {
                       plugin,

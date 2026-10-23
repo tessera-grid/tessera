@@ -21,8 +21,8 @@ const meta = {
 
 export default meta
 
-export const ScrollToRowDefault: StoryObj<StoryProps> = {
-  name: 'Default',
+export const ScrollToRowPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   args: {
     enableRowExpanding: true,
     rowExpandingMaxDepth: 3,

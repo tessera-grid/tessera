@@ -15,8 +15,8 @@ const meta = {
 
 export default meta
 
-export const KeyboardNavigation: StoryObj<StoryProps> = {
-  name: 'Navigation',
+export const KeyboardPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableColumnSorting',
     'columnSortingRemoval',

@@ -1,0 +1,339 @@
+import { Meta, StoryObj } from '@storybook/react'
+import type { TesseraFeatureEntry } from '../core/features'
+import type { StoryProps } from './DataGridStory.types'
+import { dataGridMeta } from './dataGridMeta'
+import { expect, userEvent } from 'storybook/test'
+import {
+  applyPseudoStates,
+  guideNext,
+  openMenuBy,
+  settle,
+  until,
+  waitForPopup,
+} from './__mocks__/catalogPlay'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+
+const gridTheme = (canvas: HTMLElement) =>
+  canvas.querySelector<HTMLElement>('.data-grid-theme[class*="theme-wrapper"]')!
+
+/** Две выбранные строки — один раз, как только появились строки. */
+const selectionDemo: TesseraFeatureEntry = {
+  id: 'increasedContrastDemo',
+  setup: table => {
+    const t = table as {
+      getCoreRowModel: () => { rows: unknown[] }
+      setRowSelection?: (value: Record<string, boolean>) => void
+    }
+    let frame = 0
+    const apply = () => {
+      if (t.getCoreRowModel().rows.length === 0) {
+        frame = requestAnimationFrame(apply)
+        return
+      }
+      t.setRowSelection?.({ 'item-id-1': true, 'item-id-2': true })
+    }
+    apply()
+    return () => cancelAnimationFrame(frame)
+  },
+}
+
+/**
+ * Повышенный контраст (ADR 0088): вид в режиме и по истории на клиентский сценарий S1–S2.
+ * Переключите `contrast` в `Playground`: `auto` следует системе (DevTools Rendering →
+ * «prefers-contrast: more»), `standard` — обычный вид.
+ */
+const meta = {
+  ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
+  title: 'Tessera/Customization/Increased contrast',
+  tags: ['done'],
+} satisfies Meta<StoryProps>
+
+export default meta
+
+const args: Partial<StoryProps> = {
+  contrast: 'more',
+  dataNesting: 'nested',
+  enableRowExpanding: true,
+  enableTreeLines: true,
+  initialExpanded: true,
+  enableRowSelection: true,
+  enableColumnPinning: true,
+  enableColumnSorting: true,
+  enableKeyboardNavigation: true,
+  enableHeaderActionMenu: true,
+  enableColumnVisibility: true,
+  extraPlugins: [selectionDemo],
+  columnCount: 8,
+  dataCount: 40,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
+}
+
+export const IncreasedContrastPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  args,
+  // Дымовой тест (ADR 0088, MC11): режим включён, выбор — контуром, дерево на месте.
+  parameters: {
+    requirements: ['MC11'],
+    ...showControls([
+      'dataNesting',
+      'contrast',
+      'enableColumnSorting',
+      'columnSortingRemoval',
+      'columnSortingMultiSort',
+      'columnSortingServer',
+      'columnSortingRevertOnReject',
+      'enableColumnPinning',
+      'columnPinningLeafPinning',
+      'enableColumnVisibility',
+      'enableHeaderActionMenu',
+      'headerActionMenuMode',
+      'headerActionMenuThreshold',
+      'enableRowSelection',
+      'rowSelectionSubRows',
+      'rowSelectionSelectedCount',
+      'enableRowExpanding',
+      'rowExpandingMaxDepth',
+      'rowExpandingColumn',
+      'enableTreeLines',
+      'enableKeyboardNavigation',
+    ]),
+  },
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
+    const selected = () =>
+      canvasElement.querySelector<HTMLElement>(
+        '.data-grid__body-row[data-selected="true"]',
+      )
+    await until(() => expect(selected()).not.toBeNull())
+    expect(gridTheme(canvasElement)).toHaveAttribute(
+      'data-tsr-contrast',
+      'more',
+    )
+    expect(getComputedStyle(selected()!).outlineStyle).toBe('solid')
+    expect(canvasElement.querySelector('[data-tree-depth]')).not.toBeNull()
+    await settle()
+  },
+}
+
+const selectedRow = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('.data-grid__body-row[data-selected="true"]')
+
+const HOVERED_ROW = '.data-grid__body-row[data-row-id="item-id-3"]'
+
+/** Цвет линии дерева (ADR 0102: линии — рамки элементов в ячейке отступа). */
+const treeLineColor = (root: HTMLElement) =>
+  getComputedStyle(
+    root.querySelector<HTMLElement>('[data-tree-depth] [aria-hidden] > span')!,
+  ).borderLeftColor
+
+/** Первый непрозрачный фон от узла вверх. */
+const backgroundOf = (el: HTMLElement | null): string => {
+  for (; el; el = el.parentElement) {
+    const bg = getComputedStyle(el).backgroundColor
+    if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg
+  }
+  return 'white'
+}
+
+const luminance = ([r, g, b]: Uint8ClampedArray) => {
+  const linear = (c: number) =>
+    c / 255 <= 0.03928 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4
+  return 0.2126 * linear(r!) + 0.7152 * linear(g!) + 0.0722 * linear(b!)
+}
+
+/** Контраст цвета (любой записи, с прозрачностью) к фону грида. */
+const contrastToBg = (root: HTMLElement, color: string) => {
+  const ctx = document.createElement('canvas').getContext('2d')!
+  const pixel = (...colors: string[]) => {
+    for (const fill of colors) {
+      ctx.fillStyle = fill
+      ctx.fillRect(0, 0, 1, 1)
+    }
+    return ctx.getImageData(0, 0, 1, 1).data
+  }
+  const bg = backgroundOf(gridTheme(root))
+  const [a, b] = [luminance(pixel(bg, color)), luminance(pixel(bg))]
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+}
+
+/** Заливка состояния строки — слой `--tsr-row-state` (ADR 0126). */
+const rowStateColor = (row: HTMLElement) =>
+  getComputedStyle(row).getPropertyValue('--tsr-row-state')
+
+/** Рамка палитры приложения в рецепте S2. */
+const RECIPE_BORDER = 'rgb(29, 78, 216)'
+
+// --- S1 ------------------------------------------------------------------------------
+
+const ENABLE: readonly GuideStoryStep[] = [
+  {
+    title: 'Обычный контраст',
+    hint: 'Приложение не задаёт контраст, система его не просит: выбранные строки и линии дерева — бледные тона.',
+    props: () => ({ contrast: 'auto' }),
+  },
+  {
+    title: 'Повышенный контраст',
+    hint: 'Приложение включает contrast="more": выбранные строки обведены контуром, линии дерева темнее.',
+    props: () => ({ contrast: 'more' }),
+  },
+  {
+    title: 'Наведение на строку',
+    hint: 'Наведите указатель на строку — её обводит контур, а не только бледная заливка.',
+    pseudo: { hover: HOVERED_ROW },
+  },
+  {
+    title: 'Меню колонки',
+    hint: 'У меню рамка поверх тени; пункт под указателем обведён контуром.',
+    enter: root =>
+      openMenuBy(() =>
+        root.querySelector<HTMLElement>(
+          '.data-grid__head-cell [data-action-menu]',
+        ),
+      ),
+  },
+]
+
+/** S1: приложение включает повышенный контраст — тона и контуры по шагам. */
+export const IncreasedContrastEnable: StoryObj<StoryProps> = {
+  name: 'Enable increased contrast',
+  parameters: {
+    scenario: '0088/S1',
+    ...guideControls(),
+  },
+  render: storyArgs => (
+    <GuideStory
+      title="Повышенный контраст"
+      steps={ENABLE}
+      args={guideArgs(args, storyArgs)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, id, step }) => {
+    if (globals.catalog !== true) return
+    let line = 0
+    await step(ENABLE[0].title, async () => {
+      await until(() => expect(selectedRow(canvas)).not.toBeNull())
+      await settle()
+      expect(gridTheme(canvas)).not.toHaveAttribute('data-tsr-contrast')
+      expect(getComputedStyle(selectedRow(canvas)!).outlineStyle).toBe('none')
+      line = contrastToBg(canvas, treeLineColor(canvas))
+    })
+    await step(ENABLE[1].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(gridTheme(canvas)).toHaveAttribute('data-tsr-contrast', 'more'),
+      )
+      await settle()
+      const row = getComputedStyle(selectedRow(canvas)!)
+      expect(row.outlineStyle).toBe('solid')
+      expect(row.outlineWidth).toBe('1px')
+      expect(contrastToBg(canvas, treeLineColor(canvas))).toBeGreaterThan(line)
+    })
+    await step(ENABLE[2].title, async () => {
+      await guideNext(canvas)
+      const row = canvas.querySelector<HTMLElement>(HOVERED_ROW)!
+      expect(getComputedStyle(row).outlineStyle).toBe('none')
+      // Наведение — псевдо-состояние; классы снимаются: матрица контраста ставит свои.
+      await applyPseudoStates(id, ENABLE[2].pseudo!)
+      expect(getComputedStyle(row).outlineStyle).toBe('solid')
+      expect(contrastToBg(canvas, rowStateColor(row))).toBeGreaterThan(1)
+      row.classList.remove('pseudo-hover')
+      await settle()
+    })
+    await step(ENABLE[3].title, async () => {
+      await guideNext(canvas)
+      const menu = await waitForPopup('menu')
+      expect(getComputedStyle(menu).outlineStyle).toBe('solid')
+      await userEvent.keyboard('{ArrowDown}')
+      await until(() =>
+        expect(
+          menu.querySelector('[role="menuitem"][data-highlighted]'),
+        ).not.toBeNull(),
+      )
+      expect(
+        getComputedStyle(
+          menu.querySelector<HTMLElement>(
+            '[role="menuitem"][data-highlighted]',
+          )!,
+        ).outlineStyle,
+      ).toBe('solid')
+      await settle()
+    })
+  },
+}
+
+// --- S2 ------------------------------------------------------------------------------
+
+/**
+ * Правило приложения: свои рычаги и своя рамка палитры поверх надстройки — перебивает
+ * её без `!important`.
+ */
+const RECIPE = `
+.contrast-recipe .data-grid-theme[data-tsr-contrast='more'] {
+  --tsr-sys-tint-hover: 10%;
+  --tsr-sys-tint-selected: 14%;
+  --border: #1d4ed8;
+}
+`
+
+const recipe = (on: boolean) => (root: HTMLElement) =>
+  root.classList.toggle('contrast-recipe', on)
+
+const RECIPE_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Надстройка из коробки',
+    hint: 'Повышенный контраст включён: рамка грида — цвет палитры приложения, тона наведения и выбора — из надстройки.',
+    enter: recipe(false),
+  },
+  {
+    title: 'Правило приложения',
+    hint: 'Приложение задаёт свою рамку палитры и свои доли тона наведения и выбора: рамка грида синяя, заливка выбранных строк плотнее. Правило перебивает надстройку без !important.',
+    enter: recipe(true),
+  },
+]
+
+/** S2: приложение задаёт свои рычаги и рамку палитры поверх надстройки. */
+export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
+  name: 'Own levers and palette',
+  parameters: {
+    scenario: '0088/S2',
+    ...guideControls(),
+  },
+  render: storyArgs => (
+    <>
+      <style>{RECIPE}</style>
+      <GuideStory
+        title="Свои рычаги и палитра"
+        steps={RECIPE_STEPS}
+        args={guideArgs(args, storyArgs)}
+      />
+    </>
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let fill = 0
+    await step(RECIPE_STEPS[0].title, async () => {
+      await until(() => expect(selectedRow(canvas)).not.toBeNull())
+      await settle()
+      expect(getComputedStyle(gridTheme(canvas)).borderTopColor).not.toBe(
+        RECIPE_BORDER,
+      )
+      fill = contrastToBg(canvas, rowStateColor(selectedRow(canvas)!))
+    })
+    await step(RECIPE_STEPS[1].title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(getComputedStyle(gridTheme(canvas)).borderTopColor).toBe(
+          RECIPE_BORDER,
+        ),
+      )
+      await settle()
+      expect(
+        contrastToBg(canvas, rowStateColor(selectedRow(canvas)!)),
+      ).toBeGreaterThan(fill)
+    })
+  },
+}

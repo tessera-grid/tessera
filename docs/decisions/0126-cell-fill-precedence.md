@@ -153,7 +153,7 @@
 ## Сценарии
 
 Своих историй нет: решение согласует уже существующие состояния. Их вид в режиме —
-близнецы историй каталога в `Core/High contrast` ([ADR 0093](0093-visual-state-catalog.md), VR17).
+близнецы историй каталога в `Tessera/Common/High contrast` ([ADR 0093](0093-visual-state-catalog.md), VR17).
 
 ## Требования
 

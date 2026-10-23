@@ -140,6 +140,6 @@
   отдельный файл: модуль грузится один раз на документ), модульные PB7–PB9 в
   `columnVisibility`, `export`, `filtering`. Переписаны TB3, TB4, SB1, FL15, FL18.
 - **Истории.** `enableToolbar` / `enableStatusBar` — тройной выбор «auto / on / off»;
-  группа Panels: «Panels/Presence — From plugins» и «Panels/Status bar — Off (own
+  группа Panels: «Panels/Presence — Playground» и «Panels/Status bar — Off (own
   pager)» (дымовой `visual/panels-stories`, PB12); явные `enableToolbar: true`
   в историях, где тулбар и так вызывают плагины, убраны.

@@ -11,6 +11,7 @@ import {
   scrollerOf,
   withWideViewport,
 } from './column-pinning-helpers'
+import { tableLabels } from '../labels'
 
 // CP31–CP33, CP35: футер следует закреплению колонок (ADR 0011).
 
@@ -48,8 +49,14 @@ const scrollTo = async (container: HTMLElement, left: number) => {
 describe('Column Pinning — footer', () => {
   test('CP31: footer cells of left- and right-pinned columns stick with their body columns on horizontal scroll and carry an opaque backing', async () => {
     const container = await renderColumnPinning({ enableFooter: true })
-    await pinViaPopover(headCellById(container, 'firstName'), 'Pin left')
-    await pinViaPopover(headCellById(container, 'lastName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'firstName'),
+      tableLabels.pinLeft,
+    )
+    await pinViaPopover(
+      headCellById(container, 'lastName'),
+      tableLabels.pinRight,
+    )
     await expect
       .poll(() =>
         footerCell(container, 'lastName')?.getAttribute('data-cell-pinned'),
@@ -78,8 +85,8 @@ describe('Column Pinning — footer', () => {
     await page.viewport(900, innerHeight)
     try {
       const container = await renderHeaderGroupsPinning({ enableFooter: true })
-      await pinViaPopover(headCellById(container, 'name'), 'Pin left')
-      await pinViaPopover(headCellById(container, 'info'), 'Pin right')
+      await pinViaPopover(headCellById(container, 'name'), tableLabels.pinLeft)
+      await pinViaPopover(headCellById(container, 'info'), tableLabels.pinRight)
       await expect
         .poll(() =>
           footerCell(container, 'gender')?.getAttribute('data-cell-pinned'),
@@ -104,7 +111,7 @@ describe('Column Pinning — footer', () => {
         columnCount: 5,
         enableFooter: true,
       })
-      await pinViaPopover(headCellById(flat, 'lastName'), 'Pin right')
+      await pinViaPopover(headCellById(flat, 'lastName'), tableLabels.pinRight)
       await expect
         .poll(() =>
           footerCell(flat, 'lastName')?.getAttribute('data-cell-pinned'),
@@ -119,7 +126,7 @@ describe('Column Pinning — footer', () => {
       await cleanup()
 
       const nested = await renderHeaderGroupsPinning({ enableFooter: true })
-      await pinViaPopover(headCellById(nested, 'info'), 'Pin right')
+      await pinViaPopover(headCellById(nested, 'info'), tableLabels.pinRight)
       await expect
         .poll(() =>
           footerCell(nested, 'gender')?.getAttribute('data-cell-pinned'),
@@ -175,7 +182,10 @@ describe('Column Pinning — footer', () => {
 
     // Пользовательский правый пин: действия входят в правый блок — закреплены с подложкой.
     scroller.scrollLeft = 0
-    await pinViaPopover(headCellById(container, 'lastName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'lastName'),
+      tableLabels.pinRight,
+    )
     await expect
       .poll(() =>
         footerCell(container, 'lastName')?.getAttribute('data-cell-pinned'),

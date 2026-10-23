@@ -1,8 +1,9 @@
-import { Archive, RefreshCw, Share2, Trash2 } from 'lucide-react'
+import { Archive, DatabaseZap, RefreshCw, Share2, Trash2 } from 'lucide-react'
 
 import type {
   ContextMenuAction,
   DisabledResult,
+  HeaderAction,
   RowAction,
 } from '../../../../../lib/core/headerActions'
 
@@ -72,6 +73,77 @@ export const asyncRowActionsDemo: RowAction[] = [
       await wait(ASYNC_DEMO_DELAY_MS)
       if (indexOf(ctx) % 3 === 0) {
         throw new Error('Row is locked by another user')
+      }
+    },
+  },
+]
+
+/**
+ * «Сервер» демо-действия колонки: отвечает через `ASYNC_DEMO_DELAY_MS` или, пока
+ * придержан, ждёт `release` — так гайд держит ожидание на виду, пока его смотрят.
+ * Проверки доступности и выполнение придерживаются отдельно.
+ */
+export const createDemoServer = () => {
+  const channel = () => {
+    let held = false
+    const waiting = new Set<() => void>()
+    return {
+      hold: () => {
+        held = true
+      },
+      release: () => {
+        held = false
+        waiting.forEach(resolve => resolve())
+        waiting.clear()
+      },
+      answer: (signal?: AbortSignal) =>
+        held
+          ? new Promise<void>((resolve, reject) => {
+              waiting.add(resolve)
+              signal?.addEventListener('abort', () => {
+                waiting.delete(resolve)
+                reject(signal.reason)
+              })
+            })
+          : wait(ASYNC_DEMO_DELAY_MS, signal),
+    }
+  }
+  return { checks: channel(), runs: channel() }
+}
+
+export type DemoServer = ReturnType<typeof createDemoServer>
+
+/**
+ * Действие колонки — построить индекс на сервере (ADR 0078): Country уже с индексом,
+ * вычисляемую Total индексировать нельзя, построение по Last Name сервер отклоняет.
+ */
+export const asyncHeaderActionsDemo = (
+  server: DemoServer = createDemoServer(),
+): HeaderAction[] => [
+  {
+    id: 'asyncBuildIndex',
+    slot: 'rightHeaderSlot',
+    placement: 'menu',
+    icon: () => <DatabaseZap width={16} height={16} />,
+    label: () => 'Build index',
+    disabled: async (ctx, signal): Promise<DisabledResult> => {
+      await server.checks.answer(signal)
+      switch (ctx.column.id) {
+        case 'country':
+          return { kind: 'done', reason: 'The column is already indexed' }
+        case 'total':
+          return {
+            kind: 'forbidden',
+            reason: "Computed columns can't be indexed",
+          }
+        default:
+          return false
+      }
+    },
+    onSelect: async ctx => {
+      await server.runs.answer()
+      if (ctx.column.id === 'lastName') {
+        throw new Error('Index build timed out')
       }
     },
   },

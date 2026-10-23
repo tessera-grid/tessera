@@ -1,7 +1,7 @@
 import axe from 'axe-core'
-import { commands, server, userEvent } from 'vitest/browser'
+import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 import type { CSSProperties, ReactNode } from 'react'
 
 import '../../../core/themeVariables/theme.css'
@@ -306,6 +306,11 @@ describe('Button (ADR 0097)', () => {
   })
 
   test('BN9: built-in labelled buttons are kit Buttons — outline for load-error Retry, the infinite-scroll Retry and the filter stub reset; ghost in the filter, summary, columns and export panels', async () => {
+    // Истории каталога открывают панель у колонки справа: в окне 414px с полосой
+    // прокрутки WebKit её кнопка обрезана краем, и панель у кнопки выходит за кадр.
+    const viewport = { width: innerWidth, height: innerHeight }
+    await page.viewport(900, 720)
+    onTestFinished(() => page.viewport(viewport.width, viewport.height))
     const q = (selector: string) =>
       document.querySelector<HTMLElement>(selector)
     const run = async (
@@ -318,13 +323,17 @@ describe('Button (ADR 0097)', () => {
       await screen.unmount()
     }
 
-    // Ошибка загрузки: плашка и заглушка.
-    await run(composed.LoadErrorRefresh, () =>
-      expectKit(q('[data-testid="load-error-retry"]'), 'outline'),
-    )
-    await run(composed.LoadErrorFirstLoad, () =>
-      expectKit(q('[data-testid="load-error-retry"]'), 'outline'),
-    )
+    // Ошибка загрузки: сообщение при данных и заглушка без них (Playground).
+    for (const firstLoad of [false, true]) {
+      const screen = await render(
+        <composed.LoadErrorPlayground firstLoad={firstLoad} />,
+      )
+      await expect
+        .poll(() => q('[data-testid="load-error-retry"]'))
+        .toBeTruthy()
+      expectKit(q('[data-testid="load-error-retry"]'), 'outline')
+      await screen.unmount()
+    }
 
     // Панели фильтра: текст, дата, варианты.
     await run(composed.FilteringStateText, () =>
@@ -360,8 +369,8 @@ describe('Button (ADR 0097)', () => {
     await run(composed.VisibilityStatePanel, () => {
       const footer = [
         ...document.querySelectorAll<HTMLElement>('button'),
-      ].filter(button => /Show all|Reset/.test(button.textContent ?? ''))
-      expect(footer).toHaveLength(2)
+      ].filter(button => /Reset/.test(button.textContent ?? ''))
+      expect(footer).toHaveLength(1)
       for (const button of footer) expectKit(button, 'ghost')
     })
     await run(composed.ExportStatePanel, () =>
@@ -431,8 +440,20 @@ describe('Button (ADR 0097)', () => {
       sizes.push(`${style(el!).fontSize} ${style(el!).fontWeight}`)
       await story.unmount()
     }
-    await run(composed.LoadErrorFirstLoad, '[data-testid="load-error-retry"]')
-    await run(composed.LoadErrorRefresh, '[data-testid="load-error-retry"]')
+    // Ошибка загрузки — Playground: заглушка без данных и сообщение при данных.
+    for (const firstLoad of [true, false]) {
+      const story = await render(
+        <composed.LoadErrorPlayground firstLoad={firstLoad} />,
+      )
+      await expect
+        .poll(() => document.querySelector('[data-testid="load-error-retry"]'))
+        .toBeTruthy()
+      const el = document.querySelector<HTMLElement>(
+        '[data-testid="load-error-retry"]',
+      )!
+      sizes.push(`${style(el).fontSize} ${style(el).fontWeight}`)
+      await story.unmount()
+    }
     await run(composed.FilteringStateText, '[data-testid="filter-reset"]')
     expect(sizes).toEqual(['13px 500', '13px 500', '13px 500'])
   })

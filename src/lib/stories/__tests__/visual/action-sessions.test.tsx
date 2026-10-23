@@ -149,7 +149,7 @@ describe('Сессии действий', () => {
     const onCellEdit = vi.fn()
     const onEditCancel = vi.fn()
     const edit = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableCellEditing
         cellEditingCanEditCell={allow}
@@ -173,7 +173,7 @@ describe('Сессии действий', () => {
 
     const onRowDragCancel = vi.fn()
     const rows = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableRowDragging
         onRowDragCancel={onRowDragCancel}
@@ -196,7 +196,7 @@ describe('Сессии действий', () => {
     const onColumnDragEnd = vi.fn()
     const onColumnDragCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableColumnDragging
         onColumnDragEnd={onColumnDragEnd}
@@ -228,12 +228,12 @@ describe('Сессии действий', () => {
       onEditCancel,
     }
     const screen = await render(
-      <Stories.AllFeatures {...args} cellEditingCanEditCell={allow} />,
+      <Stories.DataGridPlayground {...args} cellEditingCanEditCell={allow} />,
     )
     const original = await startEdit()
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellEditingCanEditCell={deny} />,
+      <Stories.DataGridPlayground {...args} cellEditingCanEditCell={deny} />,
     )
     await expect.poll(() => ageCell().querySelector('input')).toBeNull()
     expect(ageCell().textContent).toBe(original)
@@ -252,7 +252,7 @@ describe('Сессии действий', () => {
     const onColumnResizeEnd = vi.fn()
     const onColumnResizeCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableColumnSizing
         onColumnResizeEnd={onColumnResizeEnd}
@@ -277,12 +277,12 @@ describe('Сессии действий', () => {
   test('SS13: запрет перетаскивания или ресайза на лету зовёт колбэк отмены с revoke', async () => {
     const onRowDragCancel = vi.fn()
     const rowArgs = { ...GRID, enableRowDragging: true, onRowDragCancel }
-    const rows = await render(<Stories.AllFeatures {...rowArgs} />)
+    const rows = await render(<Stories.DataGridPlayground {...rowArgs} />)
     await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
     const [rowId] = rowIdOrder(document.body)
     const drop = await startRowDrag()
     await rows.rerender(
-      <Stories.AllFeatures {...rowArgs} rowDraggingCanDragRow={deny} />,
+      <Stories.DataGridPlayground {...rowArgs} rowDraggingCanDragRow={deny} />,
     )
     await expect.poll(() => document.body.style.cursor).toBe('default')
     firePointer('pointerup', document, drop.x, drop.y)
@@ -296,10 +296,13 @@ describe('Сессии действий', () => {
       enableColumnDragging: true,
       onColumnDragCancel,
     }
-    const columns = await render(<Stories.AllFeatures {...columnArgs} />)
+    const columns = await render(<Stories.DataGridPlayground {...columnArgs} />)
     const column = await startColumnDrag()
     await columns.rerender(
-      <Stories.AllFeatures {...columnArgs} enableColumnDragging={false} />,
+      <Stories.DataGridPlayground
+        {...columnArgs}
+        enableColumnDragging={false}
+      />,
     )
     await expect.poll(() => document.body.style.cursor).toBe('default')
     firePointer('pointerup', document, column.x, column.y)
@@ -318,10 +321,10 @@ describe('Сессии действий', () => {
       onColumnResizeEnd,
       onColumnResizeCancel,
     }
-    const resize = await render(<Stories.AllFeatures {...resizeArgs} />)
+    const resize = await render(<Stories.DataGridPlayground {...resizeArgs} />)
     const { columnId, width, initial } = await startResize()
     await resize.rerender(
-      <Stories.AllFeatures {...resizeArgs} enableColumnSizing={false} />,
+      <Stories.DataGridPlayground {...resizeArgs} enableColumnSizing={false} />,
     )
     await expect.poll(width).toBe(initial)
     expect(onColumnResizeEnd).not.toHaveBeenCalled()
@@ -334,7 +337,7 @@ describe('Сессии действий', () => {
   test('SS3: черновик правки переживает прокрутку — строка ушла из окна виртуализации и вернулась, редактор с тем же текстом', async () => {
     const onEditCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         dataCount={300}
         enableCellEditing
@@ -364,7 +367,7 @@ describe('Сессии действий', () => {
     const pageButton = (action: 'previous' | 'next') =>
       document.querySelector<HTMLElement>(`[data-page-action="${action}"]`)!
     const paged = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         dataCount={100}
         enablePagination
@@ -383,7 +386,7 @@ describe('Сессии действий', () => {
     await paged.unmount()
 
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableColumnSorting
         columnSortingRemoval
@@ -422,12 +425,12 @@ describe('Сессии действий', () => {
       onRowDragCancel,
       dataOverride: data,
     }
-    const rows = await render(<Stories.AllFeatures {...rowArgs} />)
+    const rows = await render(<Stories.DataGridPlayground {...rowArgs} />)
     await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
     const [rowId] = rowIdOrder(document.body)
     const drop = await startRowDrag()
     await rows.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...rowArgs}
         dataOverride={data.filter(row => row.id !== rowId)}
       />,
@@ -448,10 +451,10 @@ describe('Сессии действий', () => {
       onColumnDragCancel,
       columnsOverride: plainColumns,
     }
-    const columns = await render(<Stories.AllFeatures {...columnArgs} />)
+    const columns = await render(<Stories.DataGridPlayground {...columnArgs} />)
     const column = await startColumnDrag()
     await columns.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...columnArgs}
         columnsOverride={plainColumns.filter(c => c.id !== column.columnId)}
       />,
@@ -474,10 +477,10 @@ describe('Сессии действий', () => {
       onColumnResizeCancel,
       columnsOverride: plainColumns,
     }
-    const resize = await render(<Stories.AllFeatures {...resizeArgs} />)
+    const resize = await render(<Stories.DataGridPlayground {...resizeArgs} />)
     const { columnId } = await startResize()
     await resize.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...resizeArgs}
         columnsOverride={plainColumns.filter(c => c.id !== columnId)}
       />,
@@ -494,7 +497,7 @@ describe('Сессии действий', () => {
     const onCellEdit = vi.fn()
     const onEditCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableCellEditing
         cellEditingCanEditCell={allow}
@@ -516,7 +519,7 @@ describe('Сессии действий', () => {
   test('SS8: потеря фокуса с недопустимым значением оставляет редактор открытым с ошибкой и черновиком', async () => {
     const onEditCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableCellEditing
         validateCellEdit={value => (/^d+$/.test(value) ? null : 'Digits only')}
@@ -545,7 +548,7 @@ describe('Сессии действий', () => {
 
   test('SS21: текст ошибки validate переживает размонтирование — строка ушла из окна виртуализации и вернулась, редактор с черновиком и той же ошибкой', async () => {
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         dataCount={300}
         enableCellEditing
@@ -573,7 +576,7 @@ describe('Сессии действий', () => {
     const onCellEdit = vi.fn()
     const onEditCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableCellEditing
         cellEditingCanEditCell={allow}
@@ -601,7 +604,7 @@ describe('Сессии действий', () => {
     const onRowDragEnd = vi.fn()
     const onRowDragCancel = vi.fn()
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableRowDragging
         enableKeyboardNavigation

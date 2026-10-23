@@ -12,6 +12,7 @@ import {
   firstRowText,
   guideNext,
   headCell,
+  releaseFocus,
   settle,
   until,
   waitForRows,
@@ -28,12 +29,13 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Columns/Sorting',
+  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta
 
-export const ColumnSorting: StoryObj<StoryProps> = {
-  name: 'Default',
+export const ColumnSortingPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableColumnSorting',
     'columnSortingRemoval',
@@ -162,13 +164,16 @@ export const SortingStateSorted: StoryObj<StoryProps> = {
     await user.keyboard('{Shift>}')
     await user.click(sort('firstName'))
     await user.keyboard('{/Shift}')
-    await waitFor(() =>
+    const sorted = () =>
       expect(
         headCell(canvasElement, 'firstName').querySelector(
           '[data-active-indicator][data-count]',
         ),
-      ).not.toBeNull(),
-    )
+      ).not.toBeNull()
+    await waitFor(sorted)
+    // Сортировка без кольца фокуса нажатой кнопки.
+    await releaseFocus()
+    sorted()
     await settle()
   },
 }

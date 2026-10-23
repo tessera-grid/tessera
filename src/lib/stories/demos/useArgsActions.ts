@@ -2,8 +2,9 @@
  * Смена аргументов Storybook — действия истории в консоли (ADR 0124, CL16):
  * «Контрол enableRowDragging: true → false».
  */
-import { useLayoutEffect, useRef } from 'react'
+import { useRef } from 'react'
 
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { type ConsoleLog, preview } from './consoleLog'
 
 /** Служебные пропсы истории, не контролы. */
@@ -12,7 +13,7 @@ const SKIP = new Set(['consoleLog', 'updateArgs', 'colorMode'])
 export const useArgsActions = (log: ConsoleLog | undefined, args?: object) => {
   const last = useRef<Record<string, unknown> | undefined>(undefined)
   // До эффектов грида: запись контрола встаёт перед записями, которые он вызвал.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const before = last.current
     const next = (args ?? {}) as Record<string, unknown>
     last.current = next

@@ -31,13 +31,13 @@ const columnValues = (container: HTMLElement, colIndex: string) =>
 describe('истории DataGrid: аргументы-договоры на время жизни', () => {
   test('смена serverColumnSorting после монтирования пересоздаёт грид: клик сортировки не меняет порядок строк', async () => {
     const { container, rerender } = await render(
-      <composed.ColumnSorting columnSortingServer={false} />,
+      <composed.ColumnSortingPlayground columnSortingServer={false} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)
 
-    await rerender(<composed.ColumnSorting columnSortingServer />)
+    await rerender(<composed.ColumnSortingPlayground columnSortingServer />)
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)
@@ -53,6 +53,10 @@ describe('истории DataGrid: аргументы-договоры на вр
       .poll(() => firstDataHead(container).getAttribute('aria-sort'))
       .not.toBe('none')
 
-    expect(columnValues(container, colIndex)).toEqual(before)
+    // Перед кликом Playwright в Firefox прокручивает к кнопке липкой шапки на ~17px, и
+    // снизу может смонтироваться ещё строка: сравнивается порядок общих строк.
+    expect(columnValues(container, colIndex).slice(0, before.length)).toEqual(
+      before,
+    )
   })
 })

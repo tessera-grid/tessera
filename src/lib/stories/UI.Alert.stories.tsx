@@ -61,8 +61,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const AlertDefault: Story = {
-  name: 'Default',
+export const AlertPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls(
     'shown',
     'title',

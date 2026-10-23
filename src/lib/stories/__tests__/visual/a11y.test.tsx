@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { bodyRows, headCells, renderGrid } from '../helpers'
 import { byRule, gridRoot, violations } from './a11y-helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
@@ -167,7 +167,7 @@ describe('Доступность (a11y)', () => {
     )
     expect(buttons.length).toBeGreaterThan(0)
     buttons.forEach(button =>
-      expect(button.getAttribute('aria-label')).toBe(DEFAULT_LABELS.editCell),
+      expect(button.getAttribute('aria-label')).toBe(ENGLISH_LABELS.editCell),
     )
     expect(byRule(await violations(), 'button-name')).toEqual([])
   })

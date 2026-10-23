@@ -82,15 +82,15 @@ export const SEL = {
 /** 60fps frame budget in milliseconds (1000 / 60). */
 export { FRAME_BUDGET_60FPS } from './perf.constants'
 
-type GridArgs = Partial<ComponentProps<typeof Stories.AllFeatures>>
+type GridArgs = Partial<ComponentProps<typeof Stories.DataGridPlayground>>
 
 /**
- * Render the DataGrid via the AllFeatures story with sensible sizing defaults.
+ * Render the DataGrid via the DataGridPlayground story with sensible sizing defaults.
  * Pass `enable*` flags / columnCount / dataCount to shape the case under test.
  */
 export function renderGrid(args: GridArgs = {}) {
   return render(
-    <Stories.AllFeatures
+    <Stories.DataGridPlayground
       containerHeight={600}
       height={500}
       columnCount={20}

@@ -479,7 +479,9 @@ const PARENT = `${BODY_ROW}[data-row-drop-parent]`
 const renderCollapsed = async (props: Record<string, unknown> = {}) => {
   // Грид во весь вьюпорт тестов: цели выше зоны автопрокрутки.
   const screen = await render(
-    <composed.RowDraggingCollapsedGroups
+    // Дерево истории «Tree lines» со свёрнутыми группами: «Collapsed groups» — гайд.
+    <composed.RowDraggingTreeLines
+      initialExpanded={undefined}
       containerHeight={760}
       height={700}
       maxHeight={700}

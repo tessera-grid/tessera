@@ -23,9 +23,15 @@ const meta = {
 
 export default meta
 
-export const WithToolbar: StoryObj<StoryProps> = {
-  name: 'Default',
-  parameters: showControls([]),
+export const ToolbarPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: showControls([
+    'enableToolbar',
+    'enableColumnVisibility',
+    'enableQuickSearch',
+    'enableColumnFiltering',
+    'enableDataExport',
+  ]),
   args: {
     // Демо-кнопки в двух подгруппах (`view` и `data`): видны порядок, разделитель
     // и состояния F4 — активное (Settings) и disabled (Export). Тулбар вызывают

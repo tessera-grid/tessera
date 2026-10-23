@@ -6,7 +6,13 @@ import {
 import { addons } from 'storybook/preview-api'
 import { expect, userEvent, waitFor } from 'storybook/test'
 
-import { PLAY_ARGS } from './catalog'
+import { guideSteps } from '../demos/GuideStory'
+import {
+  PLAY_ARGS,
+  type TwinSource,
+  forcedTwin,
+  registerStepTwin,
+} from './catalog'
 
 // Помощники `play` историй-состояний каталога (ADR 0093, VR4–VR8): история доводит
 // грид до состояния и заканчивается в покое — по нему каталог проверяет axe и
@@ -32,6 +38,144 @@ export const settle = async () => {
 export const until = <T>(check: () => T) =>
   waitFor(check, { timeout: LOAD_TIMEOUT })
 
+/**
+ * Снимает фокус, оставленный действиями `play`: снимок состояния — без кольца фокуса.
+ * `holder` — узел, куда фокус приходит не сразу (закрытый редактор отдаёт его ячейке).
+ */
+export const releaseFocus = async (holder?: () => Element) => {
+  if (holder) {
+    await until(() =>
+      expect(holder().contains(document.activeElement)).toBe(true),
+    )
+  }
+  const focused = document.activeElement
+  if (focused instanceof HTMLElement) focused.blur()
+  await until(() => expect(document.activeElement).toBe(document.body))
+}
+
+type StepRun = (label: string, run: () => unknown) => unknown
+interface PlayContext {
+  step: StepRun
+  id?: string
+  canvasElement?: HTMLElement
+}
+type Play = (context: PlayContext) => Promise<void>
+
+/** Проигрывание гайда дошло до шага близнеца. */
+const STEP_REACHED = Symbol('step-reached')
+
+/**
+ * Близнец шага `step` (с 1) истории сценария для снимка в высокой контрастности
+ * (ADR 0130, DG3): `play` истории проходит гайд и останавливается после этого шага.
+ * Псевдо-состояние шага (`pseudo`) — наведение, которое в гайде делает человек, —
+ * близнец ставит сам.
+ */
+export const forcedStep = <S extends TwinSource>(
+  meta: TwinSource,
+  story: S,
+  step: number,
+  base: TwinSource = {},
+): S => {
+  registerStepTwin(meta, story, step)
+  const twin = forcedTwin(meta, story, base)
+  const play = story.play as Play
+  return {
+    ...twin,
+    parameters: { ...twin.parameters, guideStep: step },
+    play: async (context: PlayContext) => {
+      let done = 0
+      let reached = ''
+      try {
+        await play({
+          ...context,
+          step: async (label, run) => {
+            await context.step(label, run)
+            done++
+            if (done !== step) return
+            reached = label
+            throw STEP_REACHED
+          },
+        })
+      } catch (error) {
+        if (error !== STEP_REACHED) throw error
+      }
+      const root = context.canvasElement?.querySelector('[data-guide-root]')
+      const pseudo = root
+        ? guideSteps.get(root)?.find(item => item.title === reached)?.pseudo
+        : undefined
+      if (pseudo && context.id) await applyPseudoStates(context.id, pseudo)
+      await settle()
+    },
+  }
+}
+
+export interface Point {
+  x: number
+  y: number
+}
+
+export const centerOf = (el: Element): Point => {
+  const box = el.getBoundingClientRect()
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+}
+
+/**
+ * Берёт ручку и держит над точкой `to`, не отпуская (ADR 0130, DG4): события указателя
+ * для `PointerSensor` dnd-kit, без Playwright. Нажатие — на ручку, движение и отпускание
+ * — на документ: ручка строки, ушедшей в слот, перемонтируется, и события на её прежний
+ * узел никуда не дошли бы.
+ */
+export const dragHold = async (handle: HTMLElement, to: Point, steps = 12) => {
+  let at = centerOf(handle)
+  const fire = (type: string, point: Point) =>
+    (type === 'pointerdown' ? handle : handle.ownerDocument).dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: point.x,
+        clientY: point.y,
+      }),
+    )
+  /** Ведёт указатель к точке за `count` кадров, не отпуская. */
+  const moveTo = async (target: Point, count = steps) => {
+    const from = at
+    for (let i = 1; i <= count; i++) {
+      at = {
+        x: from.x + ((target.x - from.x) * i) / count,
+        y: from.y + ((target.y - from.y) * i) / count,
+      }
+      fire('pointermove', at)
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
+  }
+  fire('pointerdown', at)
+  await moveTo(to)
+  return {
+    moveTo,
+    /** Где сейчас указатель. */
+    point: () => at,
+    /** Отпускает там, где держит: бросок. */
+    release: () => fire('pointerup', at),
+    /** Escape: перетаскивание отменяется, строка или колонка остаётся на месте. */
+    cancel: () =>
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          code: 'Escape',
+          bubbles: true,
+        }),
+      ),
+  }
+}
+
+export type HeldDrag = Awaited<ReturnType<typeof dragHold>>
+
 export const waitForRows = (canvas: HTMLElement) =>
   until(() =>
     expect(canvas.querySelector('.data-grid__body-row')).not.toBeNull(),
@@ -40,8 +184,24 @@ export const waitForRows = (canvas: HTMLElement) =>
 export const byTestId = (id: string) =>
   document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
 
-/** Текст записей консоли истории (ADR 0124), и свёрнутой. */
-export const consoleText = () => byTestId('story-console-log')?.innerText ?? ''
+/**
+ * Текст записей консоли истории (ADR 0124), и свёрнутой: как `innerText` — запись строкой,
+ * ячейки через табуляцию. `innerText` свёрнутой инертной консоли WebKit отдаёт пустым.
+ */
+export const consoleText = () => {
+  const log = byTestId('story-console-log')
+  if (!log) return ''
+  return [...log.children]
+    .filter(part => (part as HTMLElement).style.display !== 'none')
+    .flatMap(part =>
+      part instanceof HTMLTableElement
+        ? [...part.rows].map(row =>
+            [...row.cells].map(cell => cell.textContent).join('\t'),
+          )
+        : [part.textContent ?? ''],
+    )
+    .join('\n')
+}
 
 /** Строки тела в порядке модели, а не монтирования. */
 export const orderedRows = (canvas: HTMLElement) =>
@@ -76,6 +236,32 @@ export const headCell = (canvas: HTMLElement, column: string) =>
   canvas.querySelector<HTMLElement>(
     `.data-grid__head-cell[data-column-id="${column}"]`,
   )!
+
+/** Кнопка меню колонки — по признаку, а не по подписи: подпись зависит от языка. */
+export const headKebab = (canvas: ParentNode, column: string) =>
+  canvas.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${column}"] [data-action-menu]`,
+  )
+
+/** Кнопка меню строки — по признаку, а не по подписи. */
+export const rowKebab = (row: ParentNode | undefined) =>
+  row?.querySelector<HTMLElement>('[data-action-menu="row"]') ?? null
+
+/**
+ * Действие шага гайда: открыть меню нажатием на его кнопку. Нажатие повторяется, пока
+ * меню не откроется, — кнопка готова не сразу после появления строк; таймером, а не
+ * кадрами: в фоновой вкладке кадры стоят.
+ */
+export const openMenuBy = (button: () => HTMLElement | null | undefined) => {
+  let tries = 0
+  const run = () => {
+    if (document.querySelector('[role="menu"][data-open]') || ++tries > 40)
+      return
+    if (!document.querySelector('[role="menu"]')) button()?.click()
+    setTimeout(run, 100)
+  }
+  setTimeout(run, 0)
+}
 
 export const bodyRow = (canvas: HTMLElement, row: string) =>
   canvas.querySelector<HTMLElement>(

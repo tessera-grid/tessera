@@ -34,8 +34,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SkeletonDefault: Story = {
-  name: 'Default',
+export const SkeletonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls('width', 'height', 'animation'),
 }
 

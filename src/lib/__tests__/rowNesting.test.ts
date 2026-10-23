@@ -8,7 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { registerAnnouncer } from '../core/announcer'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 import { getRowDraggableOffsetLeft } from '../plugins/rowDragging/getRowDraggableOffsetLeft'
 import { getRowDraggingEvents } from '../plugins/rowDragging/getRowDraggingEvents'
 
@@ -39,7 +39,7 @@ describe('шаг вложенности при перетаскивании', ()
 
     // Смонтированный грид с переопределённым шагом в теме.
     unregister = registerAnnouncer(table, {
-      labels: DEFAULT_LABELS,
+      labels: ENGLISH_LABELS,
       say: () => {},
       token: name => (name === '--tsr-comp-row-nesting-indent' ? ' 24px' : ''),
     })
@@ -49,7 +49,7 @@ describe('шаг вложенности при перетаскивании', ()
   it('RE64: шаг читается из темы при перетаскивании, а не при отрисовке грида', () => {
     let reads = 0
     unregister = registerAnnouncer(table, {
-      labels: DEFAULT_LABELS,
+      labels: ENGLISH_LABELS,
       say: () => {},
       token: name => {
         if (name === '--tsr-comp-row-nesting-indent') reads++

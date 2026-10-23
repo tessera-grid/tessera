@@ -114,8 +114,10 @@ type Background = (
   kind: 'text' | 'icon' | 'control',
 ) => number[] | null
 
-/** Контраст границы флажка к фону вокруг; `null` — флажок не измерить. */
-type ControlRatio = (el: Element) => number | null
+/** Граница флажка и фон вокруг: их цвета и контраст; `null` — флажок не измерить. */
+type ControlRatio = (
+  el: Element,
+) => { ratio: number; fg: number[]; bg: number[] } | null
 
 export interface Measure {
   background: Background
@@ -298,9 +300,11 @@ const pixelControl =
         else counts.set(key, [rgb, 1])
       }
     }
-    let best = 1
+    let best = { ratio: 1, fg: around, bg: around }
     for (const [rgb, count] of counts.values()) {
-      if (count >= 6) best = Math.max(best, contrast(rgb, around))
+      const ratio = contrast(rgb, around)
+      if (count >= 6 && ratio > best.ratio)
+        best = { ratio, fg: rgb, bg: around }
     }
     return best
   }
@@ -318,12 +322,15 @@ export const styleMeasure: Measure = {
     const s = style(el)
     const around = effectiveBg(el.parentElement!)
     const fill = toRgba(s.backgroundColor)
-    return Math.max(
-      fill[3]! > 0.99 ? contrast(fill, around) : 0,
+    const border = toRgba(s.borderTopColor)
+    const byFill = fill[3]! > 0.99 ? contrast(fill, around) : 0
+    const byBorder =
       parseFloat(s.borderTopWidth) > 0 || fill[3]! <= 0.99
-        ? contrast(toRgba(s.borderTopColor), around)
-        : 0,
-    )
+        ? contrast(border, around)
+        : 0
+    return byFill >= byBorder
+      ? { ratio: byFill, fg: fill, bg: around }
+      : { ratio: byBorder, fg: border, bg: around }
   },
 }
 
@@ -484,10 +491,13 @@ const visible = (el: Element, min = 0.9) => {
   return opacityOf(el) >= min
 }
 
-/** Выключенное WCAG освобождает от контраста. */
+/**
+ * Выключенное WCAG освобождает от контраста, как и занятая кнопка: нажатий она не
+ * выполняет (1.4.11). Строка и контейнер с `aria-busy` не освобождаются.
+ */
 const disabled = (el: Element) =>
   !!el.closest(
-    '[disabled], [aria-disabled="true"], [data-disabled]:not([data-disabled="false"])',
+    '[disabled], [aria-disabled="true"], [data-disabled]:not([data-disabled="false"]), :is(button, [role="button"])[aria-busy="true"]',
   )
 
 const ownText = (el: Element) =>
@@ -532,6 +542,46 @@ export interface Finding {
   need: number
 }
 
+/** Пары системных цветов палитры `forced-colors`: знак (текст, иконка, флажок) и фон. */
+const SYSTEM_PAIRS = [
+  ['CanvasText', 'Canvas'],
+  ['HighlightText', 'Highlight'],
+  ['Highlight', 'Canvas'],
+  ['ButtonText', 'ButtonFace'],
+  ['MarkText', 'Mark'],
+  ['SelectedItemText', 'SelectedItem'],
+]
+
+const systemColor = (name: string) => {
+  const probe = document.createElement('span')
+  probe.style.color = name
+  document.body.append(probe)
+  const value = toRgba(getComputedStyle(probe).color)
+  probe.remove()
+  return value
+}
+
+const sameColor = (a: number[], b: number[]) =>
+  a.slice(0, 3).every((c, i) => Math.abs(c - b[i]!) <= 2)
+
+/**
+ * Порог знака — текста, иконки, флажка — в `forced-colors`: цвета задаёт палитра
+ * системы, и знак её пары не контрастнее самой пары — у эмуляции Firefox
+ * `HighlightText` на `Highlight` и `Highlight` на `Canvas` 2,94:1.
+ */
+const systemPairCap = () => {
+  const pairs = SYSTEM_PAIRS.map(([fg, bg]) => {
+    const pair = [systemColor(fg!), systemColor(bg!)] as const
+    return { pair, ratio: contrast(...pair) }
+  })
+  return (fg: number[], bg: number[], need: number) => {
+    const own = pairs.find(
+      ({ pair }) => sameColor(fg, pair[0]) && sameColor(bg, pair[1]),
+    )
+    return own ? Math.min(need, own.ratio) : need
+  }
+}
+
 /**
  * Нарушения порогов в корнях для одного сочетания. `dim` — приглушённое тело при
  * обновлении данных (ADR 0094, GL12): его тексты сводятся по прозрачности и держат 3:1.
@@ -544,6 +594,10 @@ export const auditRoots = (
   dim?: number,
 ) => {
   const more = combo.mode === 'more'
+  const cap =
+    combo.mode === 'forced'
+      ? systemPairCap()
+      : (_fg: number[], _bg: number[], need: number) => need
   const found = new Map<string, Finding>()
   let checked = 0
   const report = (kind: string, el: Element, ratio: number, need: number) => {
@@ -580,10 +634,16 @@ export const auditRoots = (
           : null
       if (textBg) {
         const need = isLarge(el) ? (more ? 4.5 : 3) : more ? 7 : 4.5
-        report('text', el, contrast(toRgba(style(el).color), textBg), need)
+        const fg = toRgba(style(el).color)
+        report('text', el, contrast(fg, textBg), cap(fg, textBg, need))
       }
       // Иконка контрола — WCAG 1.4.11; декоративная графика (стрелка поповера) — нет.
-      if (el instanceof SVGSVGElement && el.closest(CONTROLS)) {
+      // Слой дуги ожидания и отказа — не иконка: его контраст — IR28–IR29 ADR 0127.
+      if (
+        el instanceof SVGSVGElement &&
+        el.closest(CONTROLS) &&
+        !el.hasAttribute('data-pending-arc')
+      ) {
         const paint = iconPaint(el)
         const bg =
           paint &&
@@ -592,10 +652,13 @@ export const auditRoots = (
           painted(paint)
             ? background(el, 'icon')
             : null
-        if (bg) report('icon', el, contrast(toRgba(paint), bg), 3)
+        if (bg) {
+          const fg = toRgba(paint)
+          report('icon', el, contrast(fg, bg), cap(fg, bg, 3))
+        }
       }
-      const ratio = el.getAttribute('role') === 'checkbox' ? control(el) : null
-      if (ratio !== null) report('control', el, ratio, 3)
+      const box = el.getAttribute('role') === 'checkbox' ? control(el) : null
+      if (box) report('control', el, box.ratio, cap(box.fg, box.bg, 3))
     }
   }
   return { findings: [...found.values()], checked }

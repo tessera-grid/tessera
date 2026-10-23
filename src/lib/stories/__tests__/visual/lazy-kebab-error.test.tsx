@@ -10,6 +10,7 @@ import {
   releaseModule,
   sleep,
 } from './lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Ошибка загрузки модуля кебаба заголовка (ADR 0061, LZ22). Отдельный файл: модуль
 // грузится один раз на документ.
@@ -19,7 +20,7 @@ afterEach(() => releaseModule(MODULE.kebab))
 const head = () =>
   document.querySelector<HTMLElement>('.data-grid__head-cell[data-column-id]')!
 const kebab = () =>
-  head().querySelector<HTMLElement>('[aria-label="Column options"]')!
+  head().querySelector<HTMLElement>(`[aria-label="${tableLabels.headerMenu}"]`)!
 const flash = () => kebab().getAttribute('data-error-flash')
 
 describe('Кебаб заголовка — ошибка загрузки', () => {
@@ -40,7 +41,7 @@ describe('Кебаб заголовка — ошибка загрузки', () =
     await expect.poll(flash).toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain("Couldn't load Column options. Try again.")
+      .toContain(tableLabels.loadFailed(tableLabels.headerMenu))
     await sleep(100)
     expect(document.querySelector('[role="menu"]')).toBeNull()
 

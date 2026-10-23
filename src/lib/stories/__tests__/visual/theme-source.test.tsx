@@ -26,6 +26,7 @@ import {
   resolveColor,
   toRgba,
 } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Источник темы и её смена (ADR 0090, TM1–TM10, TM12): проп `colorMode`, `.dark` у
 // предка, переходы при смене, порталы, `color-scheme` и предупреждение о смеси палитр.
@@ -209,7 +210,7 @@ const schemeOf = (el: Element) => style(el).colorScheme
 const openMenu = async () => {
   const kebab = () =>
     document.querySelector<HTMLElement>(
-      '.data-grid__head-cell[data-column-id="b"] [aria-label^="Column options"]',
+      `.data-grid__head-cell[data-column-id="b"] [aria-label^="${tableLabels.headerMenu}"]`,
     )
   await expect.poll(kebab).not.toBeNull()
   kebab()!.focus()

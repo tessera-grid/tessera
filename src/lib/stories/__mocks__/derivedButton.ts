@@ -18,7 +18,7 @@ export const DERIVED_BUTTON_ARG_TYPES = {
   'data-testid': { table: { disable: true } },
 }
 
-/** Контролы `Default` производной кнопки: занятость, отказ и выключенная (ADR 0117, SN30). */
+/** Контролы `Playground` производной кнопки: занятость, отказ и выключенная (ADR 0117, SN30). */
 export const DERIVED_BUTTON_CONTROLS = [
   'pending',
   'failure',

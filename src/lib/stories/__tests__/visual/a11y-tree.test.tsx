@@ -44,7 +44,7 @@ describe('Дерево доступности (AX)', () => {
 
   test('AX2: treegrid с раскрытой группой — level и expanded у строк', async () => {
     await render(
-      <Stories.RowGrouping
+      <Stories.RowGroupingPlayground
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}

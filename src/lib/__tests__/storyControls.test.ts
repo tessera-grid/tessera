@@ -4,7 +4,7 @@
  * ниже с причиной. Список аргументов — из типа `FeatureToggles`: новая опция фабрики
  * без контрола роняет тест — панель не отстаёт от фич. Показ контролов в историях —
  * только свои и базовый набор (ADR 0117, SN1–SN6); у примитивов `UI/*` — только в
- * `Default` (SN30).
+ * `Playground` (SN30).
  * Запуск: npx vitest run --config vitest.node.config.ts storyControls
  */
 import { describe, expect, it } from 'vitest'
@@ -217,7 +217,7 @@ describe('панель Controls историй DataGrid', () => {
 
 /** Истории с полной панелью Controls. */
 const FULL_PANEL: Record<string, string> = {
-  AllFeatures: 'песочница: все фичи вместе',
+  DataGridPlayground: 'песочница грида: все фичи вместе',
 }
 
 interface ArgType {
@@ -242,8 +242,7 @@ interface RawStory {
  * Список только сокращается — переведённый файл из него убирается.
  */
 const GUIDE_CONTROLS_LATER: Record<string, string> = {
-  'Console.dev.stories.tsx':
-    'песочницы обвязки консоли, без Default — переводятся позже',
+  'Console.dev.stories.tsx': 'песочницы обвязки консоли — переводятся позже',
   'DataGrid.Cells.Selection.stories.tsx':
     'истории сценариев с контролами — позже',
   'DataGrid.Columns.Sorting.stories.tsx':
@@ -255,7 +254,6 @@ const GUIDE_CONTROLS_LATER: Record<string, string> = {
     'истории сценариев с контролами — позже',
   'DataGrid.Panels.Toolbar.stories.tsx':
     'истории сценариев с контролами — позже',
-  'DataGrid.PluginApi.stories.tsx': 'раздел без Default — переводится позже',
   'DataGrid.Rows.Grouping.stories.tsx':
     'истории сценариев с контролами — позже',
   'DataGrid.Rows.Selection.stories.tsx':
@@ -267,8 +265,18 @@ const GUIDE_CONTROLS_LATER: Record<string, string> = {
 /** Витрины `UI.*` без своего примитива: контролы во всех историях (SN30). */
 const UI_SHOWCASES: Record<string, string> = {
   'UI.LoadingAnimations.stories.tsx':
-    'витрина анимаций без Default: замедление нужно во всех её историях',
+    'витрина анимаций без Playground: замедление нужно во всех её историях',
 }
+
+/** Файлы без `Playground` (SN31): песочнице раздела нечего крутить. */
+const WITHOUT_PLAYGROUND: Record<string, string> = {
+  ...UI_SHOWCASES,
+}
+
+/** Служебный раздел: песочницы обвязки и истории только для снимков (ADR 0117 §8). */
+const COMMON = 'Tessera/Common/'
+
+const titleOf = (meta: unknown) => (meta as { title?: string })?.title ?? ''
 
 interface StoryEntry {
   id: string
@@ -420,7 +428,7 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
   )
 
   it(
-    'SN28: история сценария с гайдом не показывает контролов — базовые скрыты с причиной, своего списка и args нет; у файла есть Default с контролами; список переводимых позже только сокращается',
+    'SN28: история сценария с гайдом не показывает контролов — базовые скрыты с причиной, своего списка и args нет, вкладка Controls скрыта; у файла есть Playground с контролами; список переводимых позже только сокращается',
     async () => {
       const stories = await sharedMetaStories()
       const fileOf = (entry: StoryEntry) => entry.id.split(' ')[0]!
@@ -435,6 +443,10 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
             name => `${entry.id}: базовый ${name} не скрыт с причиной`,
           ),
           ...(entry.story.args ? [`${entry.id}: есть args`] : []),
+          // Пустой `include` Storybook не применяет и показывает всю панель.
+          ...(entry.story.parameters?.controls?.disable === true
+            ? []
+            : [`${entry.id}: вкладка Controls не скрыта`]),
         ]
       }
       const files = new Set(scenarios.map(fileOf))
@@ -442,14 +454,14 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
         const sandbox = stories.find(
           entry =>
             fileOf(entry) === file &&
-            entry.story.name === 'Default' &&
+            entry.story.name === 'Playground' &&
             shown(entry).length > 0,
         )
         const found = [
           ...scenarios
             .filter(entry => fileOf(entry) === file)
             .flatMap(problems),
-          ...(sandbox ? [] : [`${file}: нет Default с контролами`]),
+          ...(sandbox ? [] : [`${file}: нет Playground с контролами`]),
         ]
         if (!(file in GUIDE_CONTROLS_LATER)) return found
         return found.length === 0
@@ -476,7 +488,7 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
   })
 
   it(
-    'SN30: истории UI.<Компонент> — первая Default с явным списком контролов, у остальных историй файла вкладка Controls скрыта; витрина без Default — только в исключениях с причиной',
+    'SN30: истории UI.<Компонент> — первая Playground с явным списком контролов, у остальных историй файла вкладка Controls скрыта; витрина без Playground — только в исключениях с причиной',
     async () => {
       const problems: string[] = []
       for (const [path, load] of Object.entries(storyModules)) {
@@ -493,20 +505,23 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
         // Storybook не применяет и показывает таблицу пропов.
         const hidden = (id: string) => controlsOf(id).disable === true
         if (UI_SHOWCASES[file]) {
-          if (order.some(id => id.endsWith('Default'))) {
-            problems.push(`${file}: в исключениях, но есть Default`)
+          if (order.some(id => id.endsWith('Playground'))) {
+            problems.push(`${file}: в исключениях, но есть Playground`)
           }
           continue
         }
         const [first, ...rest] = order
-        if (!first?.endsWith('Default') || stories[first]?.name !== 'Default') {
-          problems.push(`${file}: первая история — не Default`)
+        if (
+          !first?.endsWith('Playground') ||
+          stories[first]?.name !== 'Playground'
+        ) {
+          problems.push(`${file}: первая история — не Playground`)
         } else if (
           controlsOf(first).disable === true ||
           !stories[first]?.parameters?.controls?.include?.length
         ) {
           problems.push(
-            `${file}: у Default нет явного списка контролов (defaultControls)`,
+            `${file}: у Playground нет явного списка контролов (defaultControls)`,
           )
         }
         for (const id of rest) {
@@ -519,6 +534,87 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
           !Object.keys(storyModules).some(path => path.endsWith(`/${file}`)),
       )
       expect([...problems, ...unknown]).toEqual([])
+    },
+    STORIES_TIMEOUT,
+  )
+
+  it(
+    'SN31: каждый файл вне Tessera/Common начинается историей Playground; историй Default и Basic нет; файл без Playground — только в списке с причиной',
+    async () => {
+      const problems: string[] = []
+      const files: string[] = []
+      for (const [path, load] of Object.entries(storyModules)) {
+        const file = path.split('/').pop()!
+        const { default: meta, ...stories } = await load()
+        if (titleOf(meta).startsWith(COMMON)) continue
+        files.push(file)
+        const order = Object.keys(stories)
+        for (const id of order) {
+          const name = stories[id]?.name ?? id
+          if (name === 'Default' || name === 'Basic') {
+            problems.push(`${file} ${id}: история ${name}`)
+          }
+        }
+        const hasPlayground = order.some(id => id.endsWith('Playground'))
+        if (file in WITHOUT_PLAYGROUND) {
+          if (hasPlayground) {
+            problems.push(`${file}: в исключениях, но есть Playground`)
+          }
+          continue
+        }
+        const [first] = order
+        if (
+          !first?.endsWith('Playground') ||
+          stories[first]?.name !== 'Playground'
+        ) {
+          problems.push(`${file}: первая история — не Playground`)
+        }
+      }
+      const unknown = Object.keys(WITHOUT_PLAYGROUND)
+        .filter(file => !files.includes(file))
+        .map(file => `${file}: в исключениях, но файла нет`)
+      expect([...problems, ...unknown]).toEqual([])
+    },
+    STORIES_TIMEOUT,
+  )
+
+  it(
+    'SN32: Playground показывает свои контролы сверх базового набора — тумблер или подопцию фичи, проп примитива или свой argTypes; полная панель — только у DataGrid/Playground',
+    async () => {
+      const problems: string[] = []
+      for (const [path, load] of Object.entries(storyModules)) {
+        const file = path.split('/').pop()!
+        const { default: meta, ...stories } = await load()
+        if (titleOf(meta).startsWith(COMMON)) continue
+        const id = Object.keys(stories).find(name =>
+          name.endsWith('Playground'),
+        )
+        const story = id ? stories[id] : undefined
+        if (!id || !story) continue
+        const metaTypes = meta?.argTypes ?? {}
+        const include = story.parameters?.controls?.include
+        if (Object.keys(dataGridArgTypes).every(name => name in metaTypes)) {
+          if (id in FULL_PANEL) {
+            if (include) problems.push(`${file} ${id}: не полная панель`)
+          } else if (!include) {
+            problems.push(`${file} ${id}: полная панель`)
+          } else if (
+            include.every(name =>
+              (BASE_CONTROLS as readonly string[]).includes(name),
+            )
+          ) {
+            problems.push(`${file} ${id}: только базовый набор`)
+          }
+        } else if (story.parameters?.controls?.disable === true) {
+          problems.push(`${file} ${id}: вкладка Controls скрыта`)
+        } else if (
+          !include?.length &&
+          Object.keys({ ...metaTypes, ...story.argTypes }).length === 0
+        ) {
+          problems.push(`${file} ${id}: нет своих контролов`)
+        }
+      }
+      expect(problems).toEqual([])
     },
     STORIES_TIMEOUT,
   )

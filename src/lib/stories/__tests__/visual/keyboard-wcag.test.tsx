@@ -2,9 +2,12 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
 import { composed } from '../stories'
+import { PINNING_NESTED, SHALLOW_LEAVES } from './header-fixtures'
+import { tableLabels } from '../labels'
+import { ColumnDraggingGrid } from './columns-fixtures'
 
 // Соответствие WCAG 2.1.1: каждое требование — свой именованный тест `KB<n>`
 // (таблица требований в docs/decisions/0031-wcag-keyboard.md). Ввод — реальные
@@ -31,7 +34,7 @@ async function renderFromOutside() {
   await render(
     <>
       <button id="before-grid">before</button>
-      <composed.KeyboardNavigation />
+      <composed.KeyboardPlayground />
     </>,
   )
   await expect
@@ -88,7 +91,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   test('KB6: Ctrl+Shift+стрелка расширяет выделение до края, Ctrl+A выделяет все ячейки', async () => {
     const dataCount = 6
     await render(
-      <composed.KeyboardNavigation dataCount={dataCount} columnCount={4} />,
+      <composed.KeyboardPlayground dataCount={dataCount} columnCount={4} />,
     )
     await expect
       .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
@@ -131,7 +134,12 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   })
 
   test('KB5: заголовки групп вложенной шапки в навигации — группа закрепляется с клавиатуры', async () => {
-    await render(<composed.HeaderGroupsPinning enableKeyboardNavigation />)
+    await render(
+      <composed.ColumnPinningPlayground
+        {...PINNING_NESTED}
+        enableKeyboardNavigation
+      />,
+    )
     await expect.poll(() => headCellById('name')).toBeTruthy()
 
     // Группа `name` — верхняя строка над растянутым листом `firstName`.
@@ -157,7 +165,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     const item = () =>
       Array.from(
         document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-      ).find(el => el.textContent?.trim() === 'Pin left')
+      ).find(el => el.textContent?.trim() === tableLabels.pinLeft)
     await expect.poll(item).toBeTruthy()
     // Меню, открытое с клавиатуры, держит фокус на пункте; стрелкой — до «Pin left».
     await expect.poll(() => active().getAttribute('role')).toBe('menuitem')
@@ -173,7 +181,9 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
 
   test('HS10: растянутый лист шапки — стрелки проходят его за один шаг; без навигации кебаб достижим Tab и открывается Enter', async () => {
     // С keyboardNavigation: `visits` растянут на две нижние строки под `info`.
-    const nav = await render(<composed.HeaderGroupsShallowLeaves />)
+    const nav = await render(
+      <composed.HeaderGroupsPlayground {...SHALLOW_LEAVES} />,
+    )
     await expect.poll(() => headCellById('visits')).toBeTruthy()
     const gender = headCellById('gender')
     gender.focus()
@@ -189,12 +199,15 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     // Без плагина: Tab идёт по строкам шапки — от кебаба группы `more-info` до кебаба
     // растянутого `visits` в той же строке; Enter открывает меню.
     await render(
-      <composed.HeaderGroupsShallowLeaves enableKeyboardNavigation={false} />,
+      <composed.HeaderGroupsPlayground
+        {...SHALLOW_LEAVES}
+        enableKeyboardNavigation={false}
+      />,
     )
     await expect.poll(() => headCellById('visits')).toBeTruthy()
     const kebab = (id: string) =>
       headCellById(id).querySelector<HTMLElement>(
-        '[aria-label="Column options"]',
+        `[aria-label="${tableLabels.headerMenu}"]`,
       )!
     kebab('more-info').focus()
     for (let i = 0; i < 10 && active() !== kebab('visits'); i++) {
@@ -208,11 +221,11 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
           item.textContent?.trim(),
         ),
       )
-      .toContain('Hide column')
+      .toContain(tableLabels.hideColumn)
   })
 
   test('KB2: ширина колонки меняется с клавиатуры через фокусируемый separator', async () => {
-    await render(<composed.KeyboardNavigation enableColumnSizing />)
+    await render(<composed.KeyboardPlayground enableColumnSizing />)
     await expect
       .poll(() => document.querySelector(`${HEAD_CELL} [role="separator"]`))
       .toBeTruthy()
@@ -225,7 +238,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     const valueNow = () => Number(separator.getAttribute('aria-valuenow'))
 
     expect(separator.getAttribute('aria-label')).toBe(
-      DEFAULT_LABELS.resizeColumn,
+      ENGLISH_LABELS.resizeColumn,
     )
     const min = Number(separator.getAttribute('aria-valuemin'))
     const max = Number(separator.getAttribute('aria-valuemax') ?? Infinity)
@@ -256,7 +269,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   })
 
   test('KB3: Alt+Shift+←/→ на заголовке переставляют колонку, фокус следует за ней', async () => {
-    await render(<composed.ColumnDragging enableKeyboardNavigation />)
+    await render(<ColumnDraggingGrid enableKeyboardNavigation />)
     const movable = () =>
       Array.from(document.querySelectorAll<HTMLElement>(HEAD_CELL))
         .filter(cell => cell.querySelector('.drag__handler--column'))
@@ -284,7 +297,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   })
 
   test('KB4: Alt+Shift+↑/↓ на ячейке переставляют строку, фокус следует за ней', async () => {
-    await render(<composed.RowDragging enableKeyboardNavigation />)
+    await render(<composed.RowDraggingPlayground enableKeyboardNavigation />)
     const rowAt = (index: number) =>
       document.querySelector<HTMLElement>(`${BODY_ROW}[data-index='${index}']`)
     await expect.poll(() => rowAt(1)).toBeTruthy()
@@ -315,7 +328,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
 
   test('KB7: групповая строка rowGrouping раскрывается и сворачивается с клавиатуры', async () => {
     await render(
-      <composed.RowGrouping
+      <composed.RowGroupingPlayground
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}
@@ -351,7 +364,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   test('KB8: из редактора, меню и контекстного меню фокус возвращается в грид, Tab уводит из него', async () => {
     await render(
       <>
-        <composed.KeyboardNavigation />
+        <composed.KeyboardPlayground />
         <button id="after-grid">after</button>
       </>,
     )
@@ -405,7 +418,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
 
   test('KB10: аудит — каждый интерактивный контрол грида со всеми плагинами достижим с клавиатуры', async () => {
     await render(
-      <composed.AllFeatures
+      <composed.DataGridPlayground
         enableKeyboardNavigation
         enableColumnSorting
         enableColumnSizing
@@ -554,7 +567,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
       .poll(() =>
         document.querySelector('[role="menu"]')?.getAttribute('aria-label'),
       )
-      .toBe(DEFAULT_LABELS.contextMenu)
+      .toBe(ENGLISH_LABELS.contextMenu)
 
     await press('{Escape}')
     await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()

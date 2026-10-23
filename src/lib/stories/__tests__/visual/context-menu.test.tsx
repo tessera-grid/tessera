@@ -3,9 +3,10 @@ import { describe, expect, test } from 'vitest'
 
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
+import { tableLabels } from '../labels'
 
 // Каждое требование contextMenu — свой именованный тест `CM<n>` (ADR 0030).
-// Гоняет историю `ContextMenu` (contextMenu + cellSelection). Меню портируется в
+// Гоняет историю `ContextMenuPlayground` (contextMenu + cellSelection). Меню портируется в
 // document.body — читаем по `role="menu"`/`role="menuitem"`, не из container'а.
 
 const BODY_ROW = '.data-grid__body-row'
@@ -71,10 +72,14 @@ const menuItems = () =>
     i.textContent?.trim(),
   )
 
-type ContextMenuArgs = Partial<Parameters<typeof composed.ContextMenu>[0]>
+type ContextMenuArgs = Partial<
+  Parameters<typeof composed.ContextMenuPlayground>[0]
+>
 
 async function renderContextMenu(args: ContextMenuArgs = {}) {
-  const { container } = await render(<composed.ContextMenu {...args} />)
+  const { container } = await render(
+    <composed.ContextMenuPlayground {...args} />,
+  )
   await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
   return container
 }
@@ -91,7 +96,7 @@ describe('Context Menu', () => {
     const container = await renderContextMenu()
     rightClick(cellAt(container, 1, 0))
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
-    expect(menuItems()).toContain('Copy')
+    expect(menuItems()).toContain(tableLabels.copy)
   })
 
   test('CM7: right-clicking a non-selected cell selects it first', async () => {

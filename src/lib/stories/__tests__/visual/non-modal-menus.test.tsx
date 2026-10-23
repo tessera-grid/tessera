@@ -18,6 +18,7 @@ import { humanClick } from '../helpers'
 import { composed } from '../stories'
 import { rowsTopDown, waitForGrid } from './core-helpers'
 import { columnHandle, handleCell, renderHandleGrid } from './lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Немодальные меню грида (ADR 0085, MM1–MM5): без подложки и блокировки прокрутки,
 // нажатие мимо закрывает меню и доходит до цели, прокрутка грида пользователем
@@ -114,7 +115,7 @@ const row = (id: string) =>
 const cell = (id: string, column = 'name') =>
   row(id).querySelector<HTMLElement>(`[data-column-id="${column}"]`)!
 const rowKebab = (id: string) =>
-  row(id).querySelector<HTMLElement>('[aria-label^="Row options"]')
+  row(id).querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)
 const headCell = (id: string) =>
   document.querySelector<HTMLElement>(
     `.data-grid__head-cell[data-column-id="${id}"]`,
@@ -149,7 +150,7 @@ describe('Немодальные меню', () => {
     await userEvent.hover(headCell('city'))
     await humanClick(
       headCell('city').querySelector<HTMLElement>(
-        '[aria-label^="Column options"]',
+        `[aria-label^="${tableLabels.headerMenu}"]`,
       )!,
     )
     await expectNonModal()
@@ -259,7 +260,7 @@ describe('Немодальные меню', () => {
     await waitForGrid()
     const first = rowsTopDown()[0]!
     const kebab = () =>
-      first.querySelector<HTMLElement>('[aria-label^="Row options"]')
+      first.querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)
     await userEvent.hover(first)
     await expect.poll(kebab).not.toBeNull()
     expect(

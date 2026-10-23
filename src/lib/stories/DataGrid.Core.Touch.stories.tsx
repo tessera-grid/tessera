@@ -1,46 +1,51 @@
+import { useState } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
+import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import { showControls } from './__mocks__/utils/dataGridControls'
+import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import { WithConsole } from './demos/StoryConsole'
+import { createConsoleLog } from './demos/consoleLog'
 
 /**
- * Касания (ADR 0086): грид в окне телефона со всеми целями под палец. Откройте в
- * мобильном окне (Viewport) или с телефона: кнопки шапки видны, касание ячейки
- * показывает её кнопки, долгое нажатие открывает контекстное меню, грип и ручки тянутся.
+ * Касания (ADR 0086): таблица в окне телефона со всеми целями под палец. Таблица узнаёт
+ * касания по экрану без наведения и с грубым указателем и по событиям пальца: окно
+ * Storybook меняет только размер — проверяйте в режиме устройства DevTools браузера
+ * или с телефона.
  */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Core/Touch',
+  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta
 
-export const Touch: StoryObj<StoryProps> = {
-  name: 'Default',
-  parameters: showControls([
-    'enableColumnSorting',
-    'columnSortingRemoval',
-    'columnSortingMultiSort',
-    'columnSortingServer',
-    'columnSortingRevertOnReject',
-    'enableColumnSizing',
-    'enableColumnDragging',
-    'columnDraggingRevertOnReject',
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-    'enableRowDragging',
-    'rowDraggingExpandDelay',
-    'rowDraggingRevertOnReject',
-    'enableCellEditing',
-    'enableCellSelection',
-    'cellSelectionRangeSelection',
-    'cellSelectionDragSelection',
-    'cellSelectionMultiRange',
-    'enableContextMenu',
-    'containerWidth',
-  ]),
+const NOT_TOUCH = 'На касания не влияет'
+
+/** Плагины с целями под палец: кнопки шапки и ячеек, грип, ручки, флажки, меню. */
+export const TouchPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: showControls(
+    [
+      'enableColumnSorting',
+      'enableColumnSizing',
+      'enableColumnDragging',
+      'enableRowSelection',
+      'enableRowDragging',
+      'enableCellEditing',
+      'enableCellSelection',
+      'enableContextMenu',
+      'containerWidth',
+    ],
+    {
+      containerHeight: NOT_TOUCH,
+      maxHeight: NOT_TOUCH,
+      defaultColumn: NOT_TOUCH,
+    },
+  ),
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   args: {
     enableColumnSorting: true,
@@ -54,8 +59,15 @@ export const Touch: StoryObj<StoryProps> = {
     columnCount: 8,
     dataCount: 60,
     containerWidth: 360,
-    containerHeight: '560',
+    // Строк больше, чем помещается: таблица прокручивается пальцем внутри себя.
     height: '460',
-    maxHeight: '460',
+  },
+  render: function Render(args) {
+    const [consoleLog] = useState(createConsoleLog)
+    return (
+      <WithConsole log={consoleLog} args={args}>
+        <StoryComponent {...normalizeArgs(args)} />
+      </WithConsole>
+    )
   },
 }

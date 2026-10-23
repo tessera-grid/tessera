@@ -7,13 +7,14 @@ import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { rowState } from '../helpers'
+import { tableLabels } from '../labels'
 
 // Each Row Selection requirement is its own named test, prefixed with its spec ID
 // (RS1–RS18 from the requirements table in docs/decisions/0014-row-selection.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
-// Tests drive the `RowSelection` story (flat rows, whole page visible) for the
+// Tests drive the `RowSelectionPlayground` story (flat rows, whole page visible) for the
 // per-row and select-all-on-page mechanics, and the `SubRowSelection` story (a
 // deterministic tree) for the sub-row cascade. State is read from the DOM/ARIA
 // contract (checkbox `data-checked`/`data-indeterminate`, row `data-selected`),
@@ -45,7 +46,9 @@ const iconOf = (cb: Element) => cb.querySelector<SVGElement>('svg')
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-type RowSelectionArgs = Partial<Parameters<typeof composed.RowSelection>[0]>
+type RowSelectionArgs = Partial<
+  Parameters<typeof composed.RowSelectionPlayground>[0]
+>
 type SubRowArgs = Partial<Parameters<typeof composed.SubRowSelection>[0]>
 
 /** Body rows in visual (top-to-bottom) order — real rows only (skip padding). */
@@ -75,7 +78,9 @@ const isRowSelected = (row: HTMLElement) =>
 
 /** Render the RowSelection story and wait until its rows are on screen. */
 async function renderRowSelection(args: RowSelectionArgs = {}) {
-  const { container } = await render(<composed.RowSelection {...args} />)
+  const { container } = await render(
+    <composed.RowSelectionPlayground {...args} />,
+  )
   await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
   return container
 }
@@ -401,7 +406,9 @@ describe('Row Selection — selected count', () => {
     )
     await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
-    await expect.poll(() => counter()!.textContent).toBe('1 row selected')
+    await expect
+      .poll(() => counter()!.textContent)
+      .toBe(tableLabels.selectedRows(1))
     expect(counter()!.closest('[data-align]')!.getAttribute('data-align')).toBe(
       'start',
     )
@@ -411,7 +418,9 @@ describe('Row Selection — selected count', () => {
       .poll(() => rowsTopDown(container)[0]?.dataset.rowId)
       .toBe('item-id-25')
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
-    await expect.poll(() => counter()!.textContent).toBe('2 rows selected')
+    await expect
+      .poll(() => counter()!.textContent)
+      .toBe(tableLabels.selectedRows(2))
   })
 
   test('RS21: with nothing selected the text is empty and the panel stays (the grid height does not change)', async () => {
@@ -428,7 +437,9 @@ describe('Row Selection — selected count', () => {
 
     const checkbox = rowCheckbox(rowsTopDown(container)[0])!
     await userEvent.click(checkbox)
-    await expect.poll(() => counter()!.textContent).toBe('1 row selected')
+    await expect
+      .poll(() => counter()!.textContent)
+      .toBe(tableLabels.selectedRows(1))
     await userEvent.click(checkbox)
     await expect.poll(() => counter()!.textContent).toBe('')
 
@@ -442,7 +453,9 @@ describe('Row Selection — selected count', () => {
     )
     await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
-    await expect.poll(() => counter()!.textContent).toBe('1 row selected')
+    await expect
+      .poll(() => counter()!.textContent)
+      .toBe(tableLabels.selectedRows(1))
 
     const { violations } = await axe.run(statusBar()!, AXE_OPTIONS)
     expect(violations).toEqual([])

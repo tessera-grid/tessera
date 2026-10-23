@@ -36,6 +36,7 @@ import {
 import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
 import {
   asyncContextActionsDemo,
+  asyncHeaderActionsDemo,
   asyncRowActionsDemo,
 } from '../plugins/asyncActionsDemo/asyncActionsDemo'
 import {
@@ -158,6 +159,9 @@ export type FeatureToggles = Toggles &
     actionsDemo?: 'basic' | 'async' | 'nested' | 'none'
   }
 
+/** Действия асинхронного демо строки и колонки — одни на все рендеры. */
+const ASYNC_SLOT_ACTIONS = [...asyncRowActionsDemo, ...asyncHeaderActionsDemo()]
+
 const capitalize = (name: string) => name[0]!.toUpperCase() + name.slice(1)
 
 /** Аргументы фабрики из аргументов истории: тумблер, подопции по префиксу, колбэки. */
@@ -233,7 +237,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     {
       id: 'asyncActionsDemo',
       enabled: o.actionsDemo === 'async',
-      slotActions: asyncRowActionsDemo,
+      slotActions: ASYNC_SLOT_ACTIONS,
       contextMenuActions: asyncContextActionsDemo,
     },
     // Вложенные разделы меню (ADR 0079).

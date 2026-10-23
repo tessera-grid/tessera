@@ -141,6 +141,7 @@ const ActionMenuItem = ({
         'aria-checked': !!item.active,
       })}
       data-action-id={action.id}
+      data-item-id={item.id}
     >
       <span className={styles.itemIcon} aria-hidden>
         {item.icon}

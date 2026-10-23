@@ -9,6 +9,7 @@ import { humanClick, renderGrid, revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 import { headCellById, renderColumnPinning } from './column-pinning-helpers'
 import { waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Тултип инлайн-кнопок, открывающих поповер (ADR 0024, AM31): с панелью (фильтр) и с
 // мини-меню (закрепление с обеих сторон) — как у обычной кнопки действия; тултип и
@@ -47,13 +48,13 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     // Кнопка раскрывается по ширине (ADR 0076): наведение — после раскрытия.
     await revealCellButtons(head)
     await userEvent.hover(filter())
-    await expect.poll(tooltipShown('Filter')).toBe(true)
+    await expect.poll(tooltipShown(tableLabels.filter)).toBe(true)
 
     await humanClick(filter())
     await expect
       .poll(() => document.querySelector('[data-testid="filter-panel"]'))
       .not.toBeNull()
-    await expect.poll(tooltipShown('Filter')).toBe(false)
+    await expect.poll(tooltipShown(tableLabels.filter)).toBe(false)
     await userEvent.keyboard('{Escape}')
     await screen.unmount()
 
@@ -62,13 +63,13 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     const pin = () => cell.querySelector<HTMLElement>('.column-pin__button')!
     await revealCellButtons(cell)
     await userEvent.hover(pin())
-    await expect.poll(tooltipShown('Pin column')).toBe(true)
+    await expect.poll(tooltipShown(tableLabels.pin)).toBe(true)
 
     await humanClick(pin())
     await expect
       .poll(() => document.querySelectorAll('[role="menuitem"]').length)
       .toBeGreaterThan(0)
-    await expect.poll(tooltipShown('Pin column')).toBe(false)
+    await expect.poll(tooltipShown(tableLabels.pin)).toBe(false)
     await userEvent.keyboard('{Escape}')
   })
 
@@ -85,11 +86,11 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
       '.data-grid__head-cell[data-column-id]',
     )!
     const headKebab = head.querySelector<HTMLElement>(
-      '[aria-label="Column options"]',
+      `[aria-label="${tableLabels.headerMenu}"]`,
     )!
     await userEvent.hover(head)
     await userEvent.hover(headKebab)
-    await expect.poll(tooltipShown('Column options')).toBe(true)
+    await expect.poll(tooltipShown(tableLabels.headerMenu)).toBe(true)
     await (await header).unmount()
 
     await render(<composed.RowActionMenu />)
@@ -101,10 +102,10 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     const rowKebab = actionCell()!.querySelector<HTMLElement>(
       '[aria-haspopup="menu"]',
     )!
-    expect(rowKebab.getAttribute('aria-label')).toBe('Row options')
+    expect(rowKebab.getAttribute('aria-label')).toBe(tableLabels.rowMenu)
     await userEvent.hover(actionCell()!.closest('.data-grid__body-row')!)
     await userEvent.hover(rowKebab)
-    await expect.poll(tooltipShown('Row options')).toBe(true)
+    await expect.poll(tooltipShown(tableLabels.rowMenu)).toBe(true)
   })
 })
 
@@ -116,7 +117,7 @@ describe('Тултип кебаба после меню', () => {
       '.data-grid__body-row',
     )[1]!
     const kebab = () =>
-      row.querySelector<HTMLElement>('[aria-label^="Row options"]')!
+      row.querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)!
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
     const menuItems = () => [
       ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
@@ -129,14 +130,14 @@ describe('Тултип кебаба после меню', () => {
     // Открыли мышью, закрыли Escape — фокус вернулся с клавиатуры, тултип есть.
     await userEvent.hover(row)
     await expect
-      .poll(() => row.querySelector('[aria-label^="Row options"]'))
+      .poll(() => row.querySelector(`[aria-label^="${tableLabels.rowMenu}"]`))
       .not.toBeNull()
     await humanClick(kebab())
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
-    expect(tooltipShown('Row options')()).toBe(false)
+    expect(tooltipShown(tableLabels.rowMenu)()).toBe(false)
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => menuItems().length).toBe(0)
-    await expect.poll(tooltipShown('Row options')).toBe(true)
+    await expect.poll(tooltipShown(tableLabels.rowMenu)).toBe(true)
     await away()
 
     // Открыли и выбрали мышью — фокус вернулся на кебаб, тултипа нет и после ухода.
@@ -147,9 +148,9 @@ describe('Тултип кебаба после меню', () => {
     await expect.poll(() => menuItems().length).toBe(0)
     await expect.poll(() => document.activeElement).toBe(kebab())
     await sleep(400)
-    expect(tooltipShown('Row options')()).toBe(false)
+    expect(tooltipShown(tableLabels.rowMenu)()).toBe(false)
     await away()
     await sleep(400)
-    expect(tooltipShown('Row options')()).toBe(false)
+    expect(tooltipShown(tableLabels.rowMenu)()).toBe(false)
   })
 })

@@ -10,6 +10,7 @@ import {
   nextFrame,
   rowIdOrder,
 } from '../../rowDragging.dnd'
+import { tableLabels } from '../labels'
 
 // Аргументы фабрик на лету (ADR 0039, RX8, RX11, RX14–RX20, RX22–RX23): история
 // перерисовывается с новым значением аргумента на том же экземпляре таблицы, и
@@ -34,7 +35,7 @@ const counter = () =>
   document.querySelector<HTMLElement>('[data-testid="selected-rows-count"]')
 const kebabs = () =>
   document.querySelectorAll(
-    '.data-grid__head-cell [aria-label="Column options"]',
+    `.data-grid__head-cell [aria-label="${tableLabels.headerMenu}"]`,
   )
 const actionCell = () =>
   document.querySelector<HTMLElement>(
@@ -102,18 +103,18 @@ describe('Аргументы фабрик на лету', () => {
       enableColumnSorting: true,
       enableColumnPinning: true,
     }
-    const screen = await render(<Stories.AllFeatures {...args} />)
+    const screen = await render(<Stories.DataGridPlayground {...args} />)
     await waitForGrid()
     // Порог по умолчанию 3: пин + сортировка остаются инлайн.
     expect(kebabs()).toHaveLength(0)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} headerActionMenuMode={'always'} />,
+      <Stories.DataGridPlayground {...args} headerActionMenuMode={'always'} />,
     )
     await expect.poll(() => kebabs().length).toBeGreaterThan(0)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} headerActionMenuThreshold={5} />,
+      <Stories.DataGridPlayground {...args} headerActionMenuThreshold={5} />,
     )
     await expect.poll(() => kebabs().length).toBe(0)
   })
@@ -121,7 +122,7 @@ describe('Аргументы фабрик на лету', () => {
   test('RX19: width и collapsedWidth колонки действий на лету меняют её ширину', async () => {
     const args = { ...GRID, enableRowActions: true }
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...args}
         rowActionsWidth={120}
         rowActionsCollapsedWidth={56}
@@ -133,7 +134,7 @@ describe('Аргументы фабрик на лету', () => {
       .toBe(120)
 
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...args}
         rowActionsWidth={200}
         rowActionsCollapsedWidth={56}
@@ -154,11 +155,11 @@ describe('Аргументы фабрик на лету', () => {
       [...document.querySelectorAll('[role="option"]')].map(node =>
         node.textContent?.trim(),
       )
-    const screen = await render(<Stories.Pagination {...args} />)
+    const screen = await render(<Stories.PaginationPlayground {...args} />)
     await expect.poll(range).toBe('1–25 of 100')
 
     await screen.rerender(
-      <Stories.Pagination {...args} paginationPageSizes={[10, 50]} />,
+      <Stories.PaginationPlayground {...args} paginationPageSizes={[10, 50]} />,
     )
     await expect.poll(trigger).not.toBeNull()
     await userEvent.click(trigger()!)
@@ -168,14 +169,14 @@ describe('Аргументы фабрик на лету', () => {
 
   test('RX22: флаг multiRange у cellSelection на лету действует со следующего действия', async () => {
     const args = { ...GRID, enableCellSelection: true }
-    const screen = await render(<Stories.AllFeatures {...args} />)
+    const screen = await render(<Stories.DataGridPlayground {...args} />)
     await waitForGrid()
     await userEvent.click(cellAt(0, 1))
     await ctrlClick(cellAt(2, 1))
     await expect.poll(selectedCells).toBe(2)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellSelectionMultiRange={false} />,
+      <Stories.DataGridPlayground {...args} cellSelectionMultiRange={false} />,
     )
     await userEvent.click(cellAt(0, 1))
     await ctrlClick(cellAt(2, 1))
@@ -185,19 +186,28 @@ describe('Аргументы фабрик на лету', () => {
   test('RX23: canDragRow у rowDragging на лету включает и выключает перетаскивание строк', async () => {
     const args = { ...GRID, enableRowDragging: true }
     const screen = await render(
-      <Stories.AllFeatures {...args} rowDraggingCanDragRow={denyRowDrag} />,
+      <Stories.DataGridPlayground
+        {...args}
+        rowDraggingCanDragRow={denyRowDrag}
+      />,
     )
     await waitForGrid()
     await vi.waitFor(() => expect(bodyRows().length).toBeGreaterThan(0))
     expect(rowHandles()).toBe(0)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} rowDraggingCanDragRow={allowRowDrag} />,
+      <Stories.DataGridPlayground
+        {...args}
+        rowDraggingCanDragRow={allowRowDrag}
+      />,
     )
     await expect.poll(rowHandles).toBeGreaterThan(0)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} rowDraggingCanDragRow={denyRowDrag} />,
+      <Stories.DataGridPlayground
+        {...args}
+        rowDraggingCanDragRow={denyRowDrag}
+      />,
     )
     await expect.poll(rowHandles).toBe(0)
   })
@@ -210,19 +220,19 @@ describe('Аргументы фабрик на лету', () => {
     }
     const rowIds = () => bodyRows().map(row => row.dataset.rowId)
     const screen = await render(
-      <Stories.AllFeatures {...args} rowExpandingMaxDepth={3} />,
+      <Stories.DataGridPlayground {...args} rowExpandingMaxDepth={3} />,
     )
     // Всё дерево раскрыто: item-id-0-0-0 — ребёнок строки глубины 1.
     await expect.poll(rowIds).toContain('item-id-0-0-0')
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} rowExpandingMaxDepth={1} />,
+      <Stories.DataGridPlayground {...args} rowExpandingMaxDepth={1} />,
     )
     await expect.poll(rowIds).not.toContain('item-id-0-0-0')
     expect(rowIds()).toContain('item-id-0-0')
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} rowExpandingMaxDepth={3} />,
+      <Stories.DataGridPlayground {...args} rowExpandingMaxDepth={3} />,
     )
     await expect.poll(rowIds).toContain('item-id-0-0-0')
   })
@@ -232,26 +242,35 @@ describe('Аргументы фабрик на лету', () => {
     const allowAll = () => true
     const denyAll = () => false
     const screen = await render(
-      <Stories.AllFeatures {...args} cellSelectionCanSelectCell={allowAll} />,
+      <Stories.DataGridPlayground
+        {...args}
+        cellSelectionCanSelectCell={allowAll}
+      />,
     )
     await waitForGrid()
     await userEvent.click(cellAt(0, 1))
     await expect.poll(selectedCells).toBe(1)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellSelectionCanSelectCell={denyAll} />,
+      <Stories.DataGridPlayground
+        {...args}
+        cellSelectionCanSelectCell={denyAll}
+      />,
     )
     await expect.poll(selectedCells).toBe(0)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellSelectionCanSelectCell={allowAll} />,
+      <Stories.DataGridPlayground
+        {...args}
+        cellSelectionCanSelectCell={allowAll}
+      />,
     )
     await expect.poll(selectedCells).toBe(1)
   })
 
   test('RX14: перетаскивание строки или колонки, запрещённое посреди действия, отменяется как по Escape', async () => {
     const rowArgs = { ...GRID, enableRowDragging: true }
-    const rows = await render(<Stories.AllFeatures {...rowArgs} />)
+    const rows = await render(<Stories.DataGridPlayground {...rowArgs} />)
     await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
     const before = rowIdOrder(document.body)
     const handle = bodyRows()[0].querySelector<HTMLElement>(HANDLE)!
@@ -262,7 +281,10 @@ describe('Аргументы фабрик на лету', () => {
     await expect.poll(() => document.body.style.cursor).not.toBe('default')
 
     await rows.rerender(
-      <Stories.AllFeatures {...rowArgs} rowDraggingCanDragRow={denyRowDrag} />,
+      <Stories.DataGridPlayground
+        {...rowArgs}
+        rowDraggingCanDragRow={denyRowDrag}
+      />,
     )
     await expect.poll(() => document.body.style.cursor).toBe('default')
     firePointer('pointerup', document, hx, target.top + target.height / 2)
@@ -271,7 +293,7 @@ describe('Аргументы фабрик на лету', () => {
     await rows.unmount()
 
     const columnArgs = { ...GRID, enableColumnDragging: true }
-    const columns = await render(<Stories.AllFeatures {...columnArgs} />)
+    const columns = await render(<Stories.DataGridPlayground {...columnArgs} />)
     await waitForGrid()
     const columnIds = () => headCells().map(cell => cell.dataset.columnId)
     const order = columnIds()
@@ -290,7 +312,10 @@ describe('Аргументы фабрик на лету', () => {
     await expect.poll(() => document.body.style.cursor).toBe('grabbing')
 
     await columns.rerender(
-      <Stories.AllFeatures {...columnArgs} enableColumnDragging={false} />,
+      <Stories.DataGridPlayground
+        {...columnArgs}
+        enableColumnDragging={false}
+      />,
     )
     await expect.poll(() => document.body.style.cursor).toBe('default')
     firePointer('pointerup', document, cx + 200, cy)
@@ -301,7 +326,7 @@ describe('Аргументы фабрик на лету', () => {
   test('RX15: ресайз колонки, запрещённый посреди действия, отменяется как по Escape — ширина возвращается к исходной', async () => {
     const onColumnResizeEnd = vi.fn()
     const args = { ...GRID, enableColumnSizing: true, onColumnResizeEnd }
-    const screen = await render(<Stories.AllFeatures {...args} />)
+    const screen = await render(<Stories.DataGridPlayground {...args} />)
     await waitForGrid()
     const cell = headCells().find(head =>
       head.querySelector('.resize__handler--column'),
@@ -330,7 +355,7 @@ describe('Аргументы фабрик на лету', () => {
     await expect.poll(width).toBeGreaterThan(initial + 40)
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} enableColumnSizing={false} />,
+      <Stories.DataGridPlayground {...args} enableColumnSizing={false} />,
     )
     await expect.poll(width).toBe(initial)
     mouse('mousemove', document, x0 + 160)
@@ -345,7 +370,7 @@ describe('Аргументы фабрик на лету', () => {
     const deny = () => false
     const args = { ...GRID, enableCellEditing: true }
     const screen = await render(
-      <Stories.AllFeatures {...args} cellEditingCanEditCell={allow} />,
+      <Stories.DataGridPlayground {...args} cellEditingCanEditCell={allow} />,
     )
     await waitForGrid()
     const cell = () =>
@@ -363,7 +388,7 @@ describe('Аргументы фабрик на лету', () => {
     await userEvent.type(input, '999')
 
     await screen.rerender(
-      <Stories.AllFeatures {...args} cellEditingCanEditCell={deny} />,
+      <Stories.DataGridPlayground {...args} cellEditingCanEditCell={deny} />,
     )
     await expect.poll(() => cell().querySelector('input')).toBeNull()
     expect(cell().textContent).toBe(original)

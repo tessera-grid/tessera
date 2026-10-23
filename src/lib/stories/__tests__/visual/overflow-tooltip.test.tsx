@@ -3,13 +3,14 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
+import { overflowColumns, overflowData } from '../../__mocks__/overflowColumns'
 import { humanClick } from '../helpers'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 // Тултип у обрезанного текста ячейки (ADR 0075, OT1–OT10). Наведение — настоящий
-// указатель Playwright; узкие колонки истории «Overflow tooltip» обрезают длинный текст.
+// указатель Playwright; узкие колонки мока `overflowColumns` обрезают длинный текст.
 
 const LONG_NAME = 'Bartholomew Montgomery-Fitzgerald'
 const SHORT_NAME = 'Bob'
@@ -19,7 +20,20 @@ const FITTING_CITY = 'Saint Petersburg'
 /** Больше задержки показа (200 мс) с запасом: тултипа нет — значит, не будет. */
 const SETTLE_MS = 500
 
-type Args = Partial<Parameters<typeof composed.OverflowTooltip>[0]>
+type Args = Partial<Parameters<typeof composed.DataGridPlayground>[0]>
+
+/** Песочница ядра с узкими колонками, длинным текстом и футером. */
+const OverflowGrid = (args: Args) => (
+  <composed.DataGridPlayground
+    columnsOverride={overflowColumns}
+    dataOverride={overflowData}
+    enableFooter
+    containerHeight="560"
+    height="460"
+    maxHeight="460"
+    {...args}
+  />
+)
 
 const pointer = commands as unknown as {
   realDragHold: (from: object, to: object, steps?: number) => Promise<void>
@@ -27,7 +41,7 @@ const pointer = commands as unknown as {
 }
 
 async function renderOverflow(args: Args = {}) {
-  const view = await render(<composed.OverflowTooltip {...args} />)
+  const view = await render(<OverflowGrid {...args} />)
   await expect
     .poll(() => document.querySelectorAll('.data-grid__body-row').length)
     .toBeGreaterThan(3)
@@ -144,7 +158,7 @@ describe('Overflow tooltip — тултип у обрезанного текст
       .closest('.data-grid__head-cell')!
       .querySelector<HTMLElement>('.column-sort__button')!
     await userEvent.hover(button)
-    await tipShown(DEFAULT_LABELS.sortDescending)
+    await tipShown(ENGLISH_LABELS.sortDescending)
     expect(openTips()).not.toContain(LONG_HEADER)
   })
 
@@ -205,7 +219,7 @@ describe('Overflow tooltip — тултип у обрезанного текст
 
     // Строка с длинным именем исчезает из данных без прокрутки и без указателя.
     await view.rerender(
-      <composed.OverflowTooltip
+      <OverflowGrid
         enableKeyboardNavigation
         dataOverride={[{ id: 'only', name: 'Zoe', company: 'Acme', city: '' }]}
       />,

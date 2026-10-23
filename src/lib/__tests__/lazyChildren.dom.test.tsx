@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerAnnouncer } from '../core/announcer'
 import type { TesseraFeatureEntry } from '../core/features'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 import { readPluginHooks } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 import { rowExpanding, rowGrouping } from '../plugins'
@@ -372,7 +372,7 @@ describe('Склейка ответов loadChildren (ADR 0066)', () => {
   const tick = (ms = 1) => act(() => vi.advanceTimersByTimeAsync(ms))
   const listen = () => {
     const say = vi.fn()
-    registerAnnouncer(captured, { say, labels: DEFAULT_LABELS })
+    registerAnnouncer(captured, { say, labels: ENGLISH_LABELS })
     return say
   }
   const countWrites = (key: 'loadedChildren' | 'rowExpandPending') => {
@@ -449,7 +449,7 @@ describe('Склейка ответов loadChildren (ADR 0066)', () => {
     expect(coreRow('c').getIsExpanded()).toBe(false)
     expect(Object.keys(captured.atoms.rowExpandFailed.get())).toEqual(['c'])
     expect(say).toHaveBeenCalledWith(
-      DEFAULT_LABELS.announceExpandFailed('down'),
+      ENGLISH_LABELS.announceExpandFailed('down'),
     )
   })
 
@@ -464,7 +464,7 @@ describe('Склейка ответов loadChildren (ADR 0066)', () => {
     toggle('c')
     await tick()
     await tick(FRAME)
-    expect(say.mock.calls).toEqual([[DEFAULT_LABELS.announceChildrenLoaded(5)]])
+    expect(say.mock.calls).toEqual([[ENGLISH_LABELS.announceChildrenLoaded(5)]])
   })
 
   it('RE70: ответ строки, ушедшей из data до кадра, не применяется, даже если строка вернулась', async () => {

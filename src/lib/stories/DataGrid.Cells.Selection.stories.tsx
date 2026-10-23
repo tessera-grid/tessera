@@ -5,6 +5,7 @@ import { expect, userEvent } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import {
   guideNext,
+  releaseFocus,
   rowAt,
   settle,
   until,
@@ -23,8 +24,8 @@ const meta = {
 
 export default meta
 
-export const CellSelection: StoryObj<StoryProps> = {
-  name: 'Default',
+export const CellSelectionPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableCellSelection',
     'cellSelectionRangeSelection',
@@ -53,7 +54,7 @@ export const CellSelectionPredicate: StoryObj<StoryProps> = {
     'cellSelectionMultiRange',
   ]),
   args: {
-    ...CellSelection.args,
+    ...CellSelectionPlayground.args,
     // `canSelectCell` запрещает выделять колонку Age: клик по ней не выделяет, а
     // диапазон через неё её пропускает. Служебные колонки закрыты всегда, предикат
     // только сужает. Функцию в панели не задать — контрола нет.
@@ -94,11 +95,14 @@ export const CellSelectionStateRange: StoryObj<StoryProps> = {
     }
     press(cell(2, 1))
     press(cell(4, 3), true)
-    await until(() =>
+    const selected = () =>
       expect(
         canvasElement.querySelectorAll('[data-cell-selected="true"]'),
-      ).toHaveLength(9),
-    )
+      ).toHaveLength(9)
+    await until(selected)
+    // Диапазон без кольца фокуса ячейки-якоря.
+    await releaseFocus()
+    selected()
     await settle()
   },
 }

@@ -31,7 +31,7 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { OVERLAY, dragRowOnto, rowIdOrder } from './rowDragging.dnd'
-import { BASE_CONTROLS, showControls } from './__mocks__/utils/dataGridControls'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 
 /** API плагинов: аргументы на лету (ADR 0039), колбэки сессий перетаскивания и ширины (ADR 0040). */
 const meta = {
@@ -82,8 +82,8 @@ const PAGE_SIZE_PRESETS: Record<
 const makeReactiveTree = () =>
   makeData({ shape: 'tree', count: 40, depth: 3, breadth: 2 })
 
-export const ReactiveArgs: StoryObj<SessionsArgs> = {
-  name: 'Arguments on the fly',
+export const PluginApiPlayground: StoryObj<SessionsArgs> = {
+  name: 'Playground',
   args: {
     ...GRID,
     // Аргументы фабрик меняются на той же таблице (ADR 0039): раскройте глубокие
@@ -134,7 +134,9 @@ export const ReactiveArgs: StoryObj<SessionsArgs> = {
       { dataCount: 'данные подаёт демо' },
     ),
   },
-  play: async ({ canvasElement, id }) => {
+  play: async ({ canvasElement, globals, id }) => {
+    // Дымовой сценарий — только в тестах каталога: Playground открывается в покое (SN29).
+    if (globals.catalog !== true) return
     await waitForRows(canvasElement)
     const expanded = (index: number) =>
       rowAt(canvasElement, index).getAttribute('data-expanded')
@@ -216,12 +218,7 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
 // --- Канал действий (ADR 0125) ---------------------------------------------------
 
 /** Набор функций задаёт гайд: базовые контролы скрыты. */
-const GUIDED = showControls(
-  [],
-  Object.fromEntries(
-    BASE_CONTROLS.map(name => [name, 'Таблицу по шагам задаёт гайд сценария']),
-  ),
-)
+const GUIDED = guideControls()
 
 const guided = (title: string, steps: readonly GuideStoryStep[]) =>
   function Render(args: StoryProps) {

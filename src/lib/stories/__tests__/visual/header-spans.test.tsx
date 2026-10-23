@@ -6,6 +6,8 @@ import axe from 'axe-core'
 import { Stories } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { pinViaPopover } from './column-pinning-helpers'
+import { PINNING_NESTED, SHALLOW_LEAVES } from './header-fixtures'
+import { tableLabels } from '../labels'
 
 // Нативные спаны вложенной шапки (ADR 0049, HS2–HS6, HS9, HS11–HS13). HS1, HS7–HS8, HS14 —
 // модульные (`src/lib/__tests__/headerSpans.test.ts`), HS10 — в `keyboard-wcag`.
@@ -19,7 +21,7 @@ const HEAD_CELL = '.data-grid__head-cell'
 const TITLE = '.data-grid__cell-wrapper-title'
 const SORT_BUTTON = '.column-sort__button'
 const RESIZE_GRIP = '.resize__handler--column'
-const KEBAB = '[aria-label="Column options"]'
+const KEBAB = `[aria-label="${tableLabels.headerMenu}"]`
 const SCROLLER = '.data-grid__container'
 
 const headCells = (id: string) =>
@@ -44,10 +46,10 @@ const near = (actual: number, expected: number) =>
   expect(Math.abs(actual - expected)).toBeLessThanOrEqual(1)
 
 const mount = async (
-  args: Partial<Parameters<typeof Stories.HeaderGroupsShallowLeaves>[0]> = {},
+  args: Partial<Parameters<typeof Stories.HeaderGroupsPlayground>[0]> = {},
 ) => {
   const result = await render(
-    <Stories.HeaderGroupsShallowLeaves {...GRID} {...args} />,
+    <Stories.HeaderGroupsPlayground {...SHALLOW_LEAVES} {...GRID} {...args} />,
   )
   await expect.poll(() => headCells('age').length).toBe(1)
   return result
@@ -150,7 +152,7 @@ describe('Нативные спаны вложенной шапки', () => {
 
   test('HS6: под вложенной шапкой у каждой служебной колонки ровно одна ячейка шапки на всю высоту', async () => {
     await render(
-      <Stories.HeaderGroups
+      <Stories.HeaderGroupsPlayground
         {...GRID}
         enableRowSelection
         enableRowExpanding
@@ -205,9 +207,11 @@ describe('Нативные спаны вложенной шапки', () => {
   })
 
   test('HS11: закреплённый растянутый лист остаётся на месте при горизонтальной прокрутке во всех своих строках', async () => {
-    await render(<Stories.HeaderGroupsPinning {...GRID} />)
+    await render(
+      <Stories.ColumnPinningPlayground {...PINNING_NESTED} {...GRID} />,
+    )
     await expect.poll(() => headCells('total').length).toBe(1)
-    await pinViaPopover(head('total'), 'Pin left')
+    await pinViaPopover(head('total'), tableLabels.pinLeft)
     await expect
       .poll(() => head('total').getAttribute('data-cell-pinned'))
       .toBe('left')
@@ -259,7 +263,7 @@ describe('Нативные спаны вложенной шапки', () => {
     const stretched = await actionsOf('visits')
     const regular = await actionsOf('age')
     expect(stretched).toEqual(regular)
-    expect(stretched.items).toContain('Hide column')
-    expect(stretched.buttons).toContain('Pin column')
+    expect(stretched.items).toContain(tableLabels.hideColumn)
+    expect(stretched.buttons).toContain(tableLabels.pin)
   })
 })

@@ -16,13 +16,10 @@ import { DEFAULT_REFRESH_OPTIONS } from '../../../../lib/core/loadingDisplay'
 import { DEFAULT_COLUMN } from '../../../../lib/core/defaultColumn'
 import {
   DEFAULT_ROW_HEIGHT,
-  HEAD_ROW_HEIGHT_VAR,
   MIN_HEADER_HEIGHT,
   MIN_ROW_HEIGHT,
-  ROW_HEIGHT_VAR,
 } from '../../../../lib/core/rowHeights'
-
-const STORY_PARAM = 'параметр истории'
+import { COLUMN_COUNT, DATA_COUNT } from '../../DataGridStory.types'
 
 /** Умолчания настроек-данных фильтров и поиска — те же, что у фабрик. */
 export const DEFAULT_COLUMN_FILTERING_OPTIONS = {
@@ -53,7 +50,7 @@ const sizeControl = (
   defaultSummary: string,
 ): InputType => ({
   control: 'text',
-  description: `${description}: число — px, иначе CSS-значение; пусто — умолчание`,
+  description,
   table: { defaultValue: { summary: defaultSummary } },
 })
 
@@ -118,62 +115,51 @@ export const inCategory = <T extends Record<string, InputType>>(
 // --- Данные и размеры ---------------------------------------------------------
 
 export const columnCountType = numberControl(
-  'Количество колонок мока; 0 — колонки ещё не пришли с сервера (`columns: []`)',
+  'Число колонок',
   { min: 0, max: 1000, step: 5 },
-  STORY_PARAM,
+  String(COLUMN_COUNT),
 )
 export const dataCountType = numberControl(
-  'Количество строк верхнего уровня мока',
+  'Число строк',
   { min: 0, max: 100_000, step: 10 },
-  STORY_PARAM,
+  String(DATA_COUNT),
 )
 export const dataNestingType = radioControl(
-  'Вложенность строк мока: flat — плоские, nested — дети у каждой 10-й строки (видны с раскрытием строк)',
+  'Вложенные строки: flat — без них, nested — дочерние строки у каждой 10-й строки (видны с раскрытием строк)',
   ['flat', 'nested'],
   'flat',
 )
-export const localeType = radioControl(
-  'Язык подписей грида: en — по умолчанию библиотеки, ru — русский словарь историй (`localization`)',
-  ['en', 'ru'],
-  'en',
-)
-export const containerHeightType = numberControl(
-  'Высота контейнера вокруг грида, px',
-  { min: 100, max: 1000, step: 100 },
-  STORY_PARAM,
-)
-export const heightType = sizeControl('Высота грида (`height`)', '100%')
-export const maxHeightType = sizeControl(
-  'Максимальная высота грида (`maxHeight`)',
-  '100%',
-)
+/** Язык подписей задаёт переключатель Language в тулбаре: в панели Controls его нет. */
+export const localeType: InputType = { table: { disable: true } }
+export const heightType = sizeControl('Высота таблицы', '100%')
+export const maxHeightType = sizeControl('Максимальная высота таблицы', '100%')
 export const containerSizeType = sizeControl(
-  'Высота контейнера вокруг грида',
+  'Высота контейнера таблицы',
   'по содержимому',
 )
 export const expandAllType = booleanControl(
   'Раскрыть все строки (`expanded: true`), выключить — свернуть все; на лету',
 )
 export const showStubType = booleanControl(
-  'Пустые данные: грид показывает заглушку «нет данных»',
+  'Пустые данные: таблица показывает заглушку «нет данных»',
 )
 export const rowHeightType = numberControl(
-  `Высота строк тела, футера и скелета (\`rowHeight\`), px; не ниже ${MIN_ROW_HEIGHT}`,
+  `Высота строки, минимум ${MIN_ROW_HEIGHT}px`,
   { min: MIN_ROW_HEIGHT, max: 120, step: 2 },
-  `токен темы ${ROW_HEIGHT_VAR}, иначе ${DEFAULT_ROW_HEIGHT}`,
+  String(DEFAULT_ROW_HEIGHT),
 )
 export const headerHeightType = numberControl(
-  `Высота строки шапки (\`headerHeight\`), px; не ниже ${MIN_HEADER_HEIGHT}`,
+  `Высота строки хедера колонок, минимум ${MIN_HEADER_HEIGHT}px`,
   { min: MIN_HEADER_HEIGHT, max: 120, step: 2 },
-  `токен темы ${HEAD_ROW_HEIGHT_VAR}, иначе как rowHeight`,
+  'как у строки',
 )
 export const defaultColumnType = objectControl(
-  'Размеры колонок без своих (`defaultColumn`): дополняет умолчания библиотеки',
+  'Ширина колонок по умолчанию',
   '{ size?: number; minSize?: number; maxSize?: number }',
   { size: 150, ...DEFAULT_COLUMN },
 )
 export const headerNestingType = radioControl(
-  'Вложенность шапки: flat — плоская, nested — группы заголовков',
+  'Вложенность хедера колонок: flat — одна строка, nested — группы колонок',
   ['flat', 'nested'],
   'flat',
 )
@@ -189,7 +175,7 @@ export const loadingType: InputType = {
   options: ['off', 'initial', 'refresh'],
   mapping: { off: false },
   description:
-    'Загрузка данных (`loading`): `initial` — скелет первой загрузки, `refresh` — свечение под шапкой и приглушение тела (ADR 0094)',
+    'Загрузка данных (`loading`): `initial` — скелет первой загрузки, `refresh` — свечение под хедером колонок и приглушение тела (ADR 0094)',
   table: { defaultValue: { summary: 'false' } },
 }
 export const skeletonOptionsType = objectControl(
@@ -210,9 +196,7 @@ export const refreshOptionsType = objectControl(
   'RefreshOptions',
   DEFAULT_REFRESH_OPTIONS,
 )
-export const enableFooterType = booleanControl(
-  'Футер с агрегированными значениями колонок (`enableFooter`)',
-)
+export const enableFooterType = booleanControl('Футер колонок')
 /** Положение футера (ADR 0118): у низа области или за последней строкой. */
 export const footerPositionType: InputType = {
   control: 'inline-radio',
@@ -261,7 +245,7 @@ export const columnSortingMultiSortType = booleanControl(
   true,
 )
 export const columnSortingServerType = booleanControl(
-  'Серверная сортировка (`server`): меняется только состояние и колбэк, порядок строк мока не меняется',
+  'Сортирует сервер (`server`): таблица меняет состояние и вызывает колбэк, а строки не переставляет — сервера в истории нет, порядок остаётся прежним',
 )
 export const columnSortingRevertOnRejectType = booleanControl(
   'Откатывать сортировку при отказе промиса `onToggleColumnSort` в серверном режиме (`revertOnReject`, ADR 0116)',
@@ -271,7 +255,7 @@ export const enableColumnSortingModelType = booleanControl(
   'Сортировка без кнопок: порядок строк по состоянию `sorting` (плагин `columnSortingModel`)',
 )
 export const columnSortingModelServerType = booleanControl(
-  'Серверная сортировка модели (`server`): строки мока не переупорядочиваются',
+  'Сортирует сервер (`server`): таблица строки не переставляет — сервера в истории нет, порядок остаётся прежним',
 )
 export const columnSortingModelMultiSortType = booleanControl(
   'Несколько колонок в срезе `sorting` (`multiSort`); иначе действует только первая',
@@ -286,6 +270,7 @@ export const enableColumnDraggingType = booleanControl(
 export const enableColumnPinningType = booleanControl(
   'Закрепление колонок кнопкой в заголовке (плагин `columnPinning`)',
 )
+export const retrySucceedsType = booleanControl('Повтор загрузки удаётся')
 export const hideAllColumnsType = booleanControl(
   'Все колонки скрыты состоянием приложения (`columnVisibility`): заглушка «все колонки скрыты» (ADR 0123)',
 )
@@ -293,7 +278,7 @@ export const pinFirstColumnType = booleanControl(
   'Первая колонка закреплена слева сразу при открытии (начальное закрепление, переключается на лету)',
 )
 export const columnPinningLeafPinningType = booleanControl(
-  'Закрепление отдельных листьев под вложенной шапкой (`leafPinning`)',
+  'Закрепление отдельных листьев под вложенным хедером колонок (`leafPinning`)',
 )
 export const enableColumnVisibilityType = booleanControl(
   'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (плагин `columnVisibility`)',
@@ -472,7 +457,7 @@ export const enableQuickSearchModelType = booleanControl(
   'Поиск без поля: строки по состоянию `globalFilter` (плагин `quickSearchModel`)',
 )
 export const enableInfiniteScrollType = booleanControl(
-  'Бесконечная прокрутка — лента: у края грид просит блок (плагин `infiniteScroll`); данные дописывает история',
+  'Бесконечная прокрутка — лента: у края таблица просит блок (плагин `infiniteScroll`); данные дописывает история',
 )
 export const infiniteScrollThresholdType = numberControl(
   'За сколько строк до края просить блок (`threshold`)',

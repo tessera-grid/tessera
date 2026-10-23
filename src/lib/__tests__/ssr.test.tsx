@@ -50,7 +50,7 @@ describe('Серверный рендер', () => {
     const preview = (await import('../../../.storybook/preview')).default
     setProjectAnnotations([preview])
     const core = composeStories(
-      await import('../stories/DataGrid.Core.stories'),
+      await import('../stories/DataGrid.Playground.stories'),
     )
     const filtering = composeStories(
       await import('../stories/DataGrid.Filtering.stories'),

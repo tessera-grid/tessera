@@ -38,7 +38,7 @@ const treeLinesData = makeData({
   breadth: 2,
 })
 
-// Данные для истории Rows/Expanding — Default (генератор, а не захардкоженные строки).
+// Данные для истории Rows/Expanding — Playground (генератор, а не захардкоженные строки).
 // Дерево из 3 уровней: корни (depth 0) и их дети (depth 1) — узлы `isGroup`, у
 // внуков (depth 2) детей нет. Три уровня специально: при `maxExpandingDepth = 1`
 // раскрывать можно только корни, а группы глубже (depth 1) тоггла не получают
@@ -76,8 +76,8 @@ const failModeControl = {
   options: ['never', 'always'],
 } as const
 
-export const RowExpanding: StoryObj<StoryProps> = {
-  name: 'Default',
+export const RowExpandingPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   args: {
     // Реальные данные из генератора (см. rowExpandingData) — раскрытие видно на
     // настоящих subRows, а не на захардкоженных строках.

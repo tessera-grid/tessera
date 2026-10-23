@@ -16,7 +16,7 @@ import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/DEV/Console',
+  title: 'Tessera/Common/Console',
 } satisfies Meta<StoryProps>
 
 export default meta

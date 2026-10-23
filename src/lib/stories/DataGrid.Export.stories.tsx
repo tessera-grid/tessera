@@ -47,8 +47,8 @@ const GRID = {
   enableDataExport: true,
 }
 
-export const Export: StoryObj<StoryProps> = {
-  name: 'Default',
+export const ExportPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableDataExport',
     'dataExportAllow',
@@ -274,6 +274,11 @@ export const ExportStatePanel: StoryObj<StoryProps> = {
       canvasElement.querySelector<HTMLElement>('[data-testid="export-button"]'),
     )
     expectPopupInCanvas(canvasElement, panel)
+    // Клик `play` браузер не считает указателем и показал бы кольцо фокуса первого пункта;
+    // фокус — на панели, как после открытия мышью.
+    panel.focus()
+    await until(() => expect(document.activeElement).toBe(panel))
+    expect(panel.querySelector(':focus-visible')).toBeNull()
   },
 }
 
@@ -354,10 +359,13 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
     try {
       await step(OWN_BUTTON[0].title, async () => {
         await waitForRows(canvas)
+        // Своя кнопка приходит слотом тулбара позже строк.
+        await until(() =>
+          expect(
+            canvas.querySelector('[data-testid="own-export"]'),
+          ).not.toBeNull(),
+        )
         expect(canvas.querySelector('[data-testid="export-button"]')).toBeNull()
-        expect(
-          canvas.querySelector('[data-testid="own-export"]'),
-        ).not.toBeNull()
       })
       await step(OWN_BUTTON[1].title, async () => {
         await guideNext(canvas)

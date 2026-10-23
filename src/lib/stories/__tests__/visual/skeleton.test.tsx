@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { definePlugin, isSkeletonShown } from '../../../../index'
 import { Skeleton } from '../../../../ui'
 import type { MenuAction, RowAction } from '../../../core/headerActions'
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { isSkeletonParentRow } from '../../../core/skeletonOptions'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -18,12 +18,13 @@ import { Stories, getScroller, humanClick } from '../helpers'
 import { statusBarDemoPlugins } from '../../statusBarDemo'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { HANDLE, pointer, slot } from './row-drop-helpers'
+import { tableLabels } from '../labels'
 
 // Скелет первой загрузки по раскладке грида (ADR 0060). Скелет и грид после загрузки —
 // один экземпляр таблицы: тест переключает `loading` и сравнивает геометрию.
 // SL2, SL5, SL6, SL8, SL9 — в `play` историй сценариев скелета.
 
-type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
+type Args = Partial<Parameters<typeof Stories.DataGridPlayground>[0]>
 
 const BASE: Args = {
   containerHeight: 600,
@@ -62,9 +63,11 @@ const renderToggle = async (args: Args, skeleton = true) => {
     ...args,
     loading: (on ? 'initial' : false) as 'initial' | false,
   })
-  const screen = await render(<Stories.AllFeatures {...props(skeleton)} />)
+  const screen = await render(
+    <Stories.DataGridPlayground {...props(skeleton)} />,
+  )
   const set = async (on: boolean) => {
-    await screen.rerender(<Stories.AllFeatures {...props(on)} />)
+    await screen.rerender(<Stories.DataGridPlayground {...props(on)} />)
   }
   return { screen, set }
 }
@@ -360,7 +363,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     for (const colorMode of ['light', 'dark'] as const) {
       // eslint-disable-next-line no-await-in-loop
       const screen = await render(
-        <Stories.AllFeatures
+        <Stories.DataGridPlayground
           {...BASE}
           loading="initial"
           enableRowSelection
@@ -372,7 +375,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       await waitSkeleton()
       const status = Array.from(
         document.querySelectorAll<HTMLElement>('[role="status"]'),
-      ).find(el => el.textContent === DEFAULT_LABELS.loading)!
+      ).find(el => el.textContent === ENGLISH_LABELS.loading)!
       expect(status).toBeTruthy()
       for (const part of [
         '.data-grid__head--skeleton',
@@ -551,7 +554,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     document.head.append(style)
     try {
       const screen = await render(
-        <Stories.AllFeatures
+        <Stories.DataGridPlayground
           {...BASE}
           loading="initial"
           enableRowSelection
@@ -614,7 +617,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       await userEvent.hover(nameCell()!)
       const kebab = () =>
         document.querySelector<HTMLElement>(
-          '.data-grid__body-row [aria-label^="Row options"]',
+          `.data-grid__body-row [aria-label^="${tableLabels.rowMenu}"]`,
         )
       await expect.poll(kebab).not.toBeNull()
       await humanClick(kebab()!)
@@ -681,7 +684,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
         ),
       )
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         loading="initial"
         enableRowExpandingModel
@@ -711,7 +714,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
 
     // Модель есть, но дерево придёт свёрнутым — скелет плоский.
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         loading="initial"
         enableRowExpandingModel
@@ -736,7 +739,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       )
     // Шапка задана явно: смена высоты строки её не двигает.
     const screen = await render(
-      <Stories.AllFeatures {...props({ headerHeight: 60 })} />,
+      <Stories.DataGridPlayground {...props({ headerHeight: 60 })} />,
     )
     await waitSkeleton()
     expect(skeletonRows()).toHaveLength(fit())
@@ -744,7 +747,9 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     const headBefore = head()
 
     await screen.rerender(
-      <Stories.AllFeatures {...props({ headerHeight: 60, rowHeight: 80 })} />,
+      <Stories.DataGridPlayground
+        {...props({ headerHeight: 60, rowHeight: 80 })}
+      />,
     )
     await expect.poll(() => skeletonRows()[0]?.offsetHeight).toBe(80)
     expect(head()).toBe(headBefore)
@@ -753,7 +758,9 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     expect(tall).toBeLessThan(before)
 
     await screen.rerender(
-      <Stories.AllFeatures {...props({ headerHeight: 200, rowHeight: 80 })} />,
+      <Stories.DataGridPlayground
+        {...props({ headerHeight: 200, rowHeight: 80 })}
+      />,
     )
     await expect.poll(head).toBeGreaterThanOrEqual(200)
     await expect.poll(() => skeletonRows().length).toBe(fit())
@@ -770,14 +777,14 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     })
     const cells = () => cellsOf(skeletonRows()[0]!, SKELETON_CELL)
     const screen = await render(
-      <Stories.AllFeatures {...props({ columnsOverride: [] })} />,
+      <Stories.DataGridPlayground {...props({ columnsOverride: [] })} />,
     )
     await waitSkeleton()
     expect(cells()).toHaveLength(4)
     expect(new Set(cells().map(cell => box(cell).width)).size).toBe(1)
 
     // Колонки пришли — скелет по ним, а не по columnsCount.
-    await screen.rerender(<Stories.AllFeatures {...props({})} />)
+    await screen.rerender(<Stories.DataGridPlayground {...props({})} />)
     await expect
       .poll(() => cells().map(cell => cell.dataset.columnId))
       .toEqual(headCellsNow().map(cell => cell.dataset.columnId))
@@ -793,7 +800,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       enableRowExpanding: true,
       enableTreeLines: treeLines,
     })
-    const screen = await render(<Stories.AllFeatures {...props(true)} />)
+    const screen = await render(<Stories.DataGridPlayground {...props(true)} />)
     await waitSkeleton()
     const indentCell = (row: Element) =>
       cellsOf(row, SKELETON_CELL).find(
@@ -828,7 +835,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       rows.some(row => depth(row) === '0' && parts(row).includes('stub')),
     ).toBe(true)
 
-    await screen.rerender(<Stories.AllFeatures {...props(false)} />)
+    await screen.rerender(<Stories.DataGridPlayground {...props(false)} />)
     await expect
       .poll(() => skeletonRows().filter(row => depth(row) !== undefined).length)
       .toBe(0)
@@ -847,7 +854,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     // Первая загрузка как у приложения: данных ещё нет — один и тот же пустой массив.
     const noRows: never[] = []
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({ loading: 'initial', dataOverride: noRows })}
       />,
     )
@@ -883,7 +890,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
 
     // Пустой ответ при тех же данных: загрузка кончилась — колонки нет.
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({ loading: false, dataOverride: noRows })}
       />,
     )
@@ -896,7 +903,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
         dataOverride: noRows,
         expandAll: false,
       })
-    await screen.rerender(<Stories.AllFeatures {...flat()} />)
+    await screen.rerender(<Stories.DataGridPlayground {...flat()} />)
     await waitSkeleton()
     await expect.poll(() => expandHead()).toBeTruthy()
     const flatSquares = () =>
@@ -909,14 +916,16 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     const scattered = flatSquares()
     expect(scattered).toEqual(scattered.map((_, i) => isSkeletonParentRow(i)))
     expect(new Set(scattered)).toEqual(new Set([true, false]))
-    await screen.rerender(<Stories.AllFeatures {...flat()} rowHeight={52} />)
+    await screen.rerender(
+      <Stories.DataGridPlayground {...flat()} rowHeight={52} />,
+    )
     await waitSkeleton()
     expect(flatSquares().slice(0, scattered.length)).toEqual(
       scattered.slice(0, flatSquares().length),
     )
     // Раскрытие строк выключено — колонки нет и в скелете.
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({
           loading: 'initial',
           dataOverride: noRows,
@@ -926,7 +935,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     )
     await expect.poll(() => expandHead()).toBeUndefined()
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({ loading: 'initial', dataOverride: noRows })}
       />,
     )
@@ -935,14 +944,14 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
 
     // Пришло дерево: колонка раскрытия на месте, остальные не сдвинулись.
     await screen.rerender(
-      <Stories.AllFeatures {...props({ loading: false })} />,
+      <Stories.DataGridPlayground {...props({ loading: false })} />,
     )
     await waitData()
     expect(geometry(headCellsNow())).toEqual(head)
 
     // Пришли плоские данные: колонки раскрытия нет (RE14).
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({ loading: false, dataNesting: 'flat' })}
       />,
     )

@@ -9,6 +9,7 @@ import { expect, waitFor, userEvent } from 'storybook/test'
 import {
   bodyRow,
   guideNext,
+  releaseFocus,
   settle,
   waitForRows,
 } from './__mocks__/catalogPlay'
@@ -34,8 +35,8 @@ const subRowSelectionTree = makeData({
   breadth: 3,
 })
 
-export const RowSelection: StoryObj<StoryProps> = {
-  name: 'Default',
+export const RowSelectionPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableRowSelection',
     'rowSelectionSubRows',
@@ -129,11 +130,14 @@ export const RowSelectionStateSelected: StoryObj<StoryProps> = {
         )!,
       )
     }
-    await waitFor(() =>
+    const checked = () =>
       expect(
         bodyRow(canvasElement, 'item-id-2').querySelector('[role="checkbox"]'),
-      ).toHaveAttribute('aria-checked', 'true'),
-    )
+      ).toHaveAttribute('aria-checked', 'true')
+    await waitFor(checked)
+    // Выбор без кольца фокуса нажатого флажка.
+    await releaseFocus()
+    checked()
     await settle()
   },
 }

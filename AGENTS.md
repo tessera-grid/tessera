@@ -147,32 +147,34 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 
 ### Команды (все через npm)
 
-| Задача                    | Команда                      | Примечания                                                          |
-| ------------------------- | ---------------------------- | ------------------------------------------------------------------- |
-| Сборка библиотеки         | `npm run build`              | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).        |
-| Инварианты темы в `dist`  | `npm run check:theme`        | После `build`: проверяет `dist/style.css` (ADR 0018/0019).          |
-| Требования ↔ тесты        | `npm run check:requirements` | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).             |
-| Tree-shaking плагинов     | `npm run check:tree-shaking` | После `build`: импорт одного плагина не тянет другие (IV3).         |
-| Пересборка при правках    | `npm run dev`                | `vite build --watch`. Долгоживущая — запускать в фоне.              |
-| Проверка типов            | `npm run typecheck`          | `tsc --noEmit`. **Включает stories.** Первый барьер.                |
-| Линт                      | `npm run lint`               | Плоский конфиг ESLint.                                              |
-| Форматирование (запись)   | `npm run format`             | Prettier.                                                           |
-| Форматирование (проверка) | `npm run format:check`       | Немутирующая; используйте в проходе проверок.                       |
-| Storybook (live)          | `npm run storybook`          | Dev-сервер на :6006. Долгоживущий — в фоне.                         |
-| Storybook (сборка)        | `npm run build-storybook`    | Статическая сборка; хороший headless smoke-тест.                    |
-| Тесты                     | `npm test`                   | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка.  |
-| Тесты (watch)             | `npm run test:watch`         | Vitest watch mode.                                                  |
-| Тесты в Firefox и WebKit  | `npm run test:browsers`      | Наборы, зависящие от движка (сессии правки, фокус, ADR 0040/0084).  |
-| Все наборы в движках      | `npm run test:engines`       | Firefox, WebKit, эмуляция iPhone/Pixel (ADR 0084). ~25 мин.         |
-| Порог браузеров в CSS     | `npm run check:browsers`     | После `build`: `dist/style.css` в `browserslist` (ADR 0084).        |
-| Наборы на React 18        | `npm run test:react18`       | Браузерные наборы и SSR на React 18 из `tools/react18` (ADR 0091).  |
-| Пакет у потребителя       | `npm run check:package`      | После `build`: publint, attw, фикстуры из npm (ADR 0091). Сеть.     |
-| Перф-матрица + дашборд    | `npm run perf`               | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.     |
-| Перф-дашборд (пересбор)   | `npm run perf:report`        | Пересобирает борд из `latest.json` без прогона.                     |
-| Перф против ревизии       | `npm run perf:compare`       | `-- <ref> [--cases …]`: вперемешку, вердикт по 10 % (ADR 0099).     |
-| Самопроверка сравнения    | `npm run perf:selftest`      | PF15–PF16: A против A и подмешанная работа, ~20 мин.                |
-| Черновик выпуска          | `npm run release:draft`      | Раздел версии в `CHANGELOG.md` из коммитов, без коммита (ADR 0103). |
-| Выпуск версии             | `npm run release`            | Версия, тег и пуш; только по просьбе автора (ADR 0103).             |
+| Задача                        | Команда                          | Примечания                                                              |
+| ----------------------------- | -------------------------------- | ----------------------------------------------------------------------- |
+| Сборка библиотеки             | `npm run build`                  | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).            |
+| Инварианты темы в `dist`      | `npm run check:theme`            | После `build`: проверяет `dist/style.css` (ADR 0018/0019).              |
+| Требования ↔ тесты            | `npm run check:requirements`     | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).                 |
+| Tree-shaking плагинов         | `npm run check:tree-shaking`     | После `build`: импорт одного плагина не тянет другие (IV3).             |
+| Пересборка при правках        | `npm run dev`                    | `vite build --watch`. Долгоживущая — запускать в фоне.                  |
+| Проверка типов                | `npm run typecheck`              | `tsc --noEmit`. **Включает stories.** Первый барьер.                    |
+| Линт                          | `npm run lint`                   | Плоский конфиг ESLint.                                                  |
+| Форматирование (запись)       | `npm run format`                 | Prettier.                                                               |
+| Форматирование (проверка)     | `npm run format:check`           | Немутирующая; используйте в проходе проверок.                           |
+| Storybook (live)              | `npm run storybook`              | Все истории, включая `Tessera/Common`, на :6006. Долгоживущий — в фоне. |
+| Storybook (live, публичный)   | `npm run storybook:public`       | Как увидит посетитель Pages: без `*.dev` и `*.vr`, на :6008.            |
+| Storybook (сборка)            | `npm run build-storybook`        | Сборка для Chromatic; хороший headless smoke-тест.                      |
+| Storybook (сборка, публичная) | `npm run build-storybook:public` | Для Pages: без `*.dev` и `*.vr` (ADR 0117 §8).                          |
+| Тесты                         | `npm test`                       | Vitest **browser mode** (Playwright/Chromium). Реальная раскладка.      |
+| Тесты (watch)                 | `npm run test:watch`             | Vitest watch mode.                                                      |
+| Тесты в Firefox и WebKit      | `npm run test:browsers`          | Наборы, зависящие от движка (сессии правки, фокус, ADR 0040/0084).      |
+| Все наборы в движках          | `npm run test:engines`           | Firefox, WebKit, эмуляция iPhone/Pixel (ADR 0084). ~25 мин.             |
+| Порог браузеров в CSS         | `npm run check:browsers`         | После `build`: `dist/style.css` в `browserslist` (ADR 0084).            |
+| Наборы на React 18            | `npm run test:react18`           | Браузерные наборы и SSR на React 18 из `tools/react18` (ADR 0091).      |
+| Пакет у потребителя           | `npm run check:package`          | После `build`: publint, attw, фикстуры из npm (ADR 0091). Сеть.         |
+| Перф-матрица + дашборд        | `npm run perf`                   | Prod-конфиг (`vitest.perf.config.ts`) → `performance-results/`.         |
+| Перф-дашборд (пересбор)       | `npm run perf:report`            | Пересобирает борд из `latest.json` без прогона.                         |
+| Перф против ревизии           | `npm run perf:compare`           | `-- <ref> [--cases …]`: вперемешку, вердикт по 10 % (ADR 0099).         |
+| Самопроверка сравнения        | `npm run perf:selftest`          | PF15–PF16: A против A и подмешанная работа, ~20 мин.                    |
+| Черновик выпуска              | `npm run release:draft`          | Раздел версии в `CHANGELOG.md` из коммитов, без коммита (ADR 0103).     |
+| Выпуск версии                 | `npm run release`                | Версия, тег и пуш; только по просьбе автора (ADR 0103).                 |
 
 Тесты выполняются в **реальном браузере**, а не в jsdom — см. [Проверки](#4-checks).
 
@@ -384,6 +386,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `defaultColumn`), модульный `rowHeights` (RH7 — минимум, CW1 — слияние
       умолчаний), перф RH8 — в `scroll`
       ([ADR 0077](docs/decisions/0077-row-height-and-default-column-width.md)).
+    - _Высота таблицы:_ `play` историй `Core/Sizing` (GH1–GH4 — `height` числом, в
+      процентах и `'auto'`, контейнер без высоты с `maxHeight`; рамка контейнера —
+      `containerFrame`, панель над гридом — `appPanelHeight`), `table-height` (GH5 —
+      тулбар и нижняя панель внутри `maxHeight` в контейнере без высоты); смена
+      `defaultColumn` на лету — `play` истории «Columns/Resizing — Default column width» (CW3,
+      ADR 0077) ([ADR 0131](docs/decisions/0131-table-height.md)).
     - _Тултип обрезанного текста:_ `overflow-tooltip` (OT1–OT10 — тело, шапка, футер,
       сужение кнопками ячейки, клавиатурный фокус, кнопки, прокрутка и нажатие, правка
       и тач, уход из DOM, флаг, axe), перф OT11 — в `scroll`
@@ -406,8 +414,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       служебные колонки, `aria-rowspan`/`aria-colspan`, пиннинг, axe, кебаб), модульные
       `headerSpans` (HS1, HS7–HS8, HS14 — позиция из `header.rowSpan` v9, полная
       высота, без `columnDef.rowSpan`, `make` служебной колонки без глубины), HS10 — в `keyboard-wcag`,
+      история «Columns/Header groups» (S1), фикстура `visual/header-fixtures.ts`
       [ADR 0049](docs/decisions/0049-native-header-spans.md).
-    - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19, CP30),
+    - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19, CP30), гайды «Columns/Pinning» (S1–S2),
       `column-pinning-right` (CP20–CP27, CP29, CP34 — правые закреплённые ячейки следуют наведению и выбору строки), `column-pinning-footer`
       (CP31–CP33, CP35 — футер следует закреплению, ячейка колонки действий — как её заголовок) — [ADR 0011](docs/decisions/0011-column-pinning.md),
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
@@ -425,7 +434,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       GB1–GB5, GB10 — грип на границе колонок без маски, сдвиг соседа, закрепление и вложенная
       шапка, прежнее поведение, кнопки не прячутся при протяжке), `action-menu` (GB6 — кнопки в кебаб по ширине), модульный
       `slots` (GB7 — расчёт вместимости), `work-counters` (GB8), `play` истории
-      «Columns/Resizing & dragging — Narrow columns» (GB9)
+      «Columns/Resizing — Resize columns» (GB9)
       ([ADR 0111](docs/decisions/0111-resize-grip-on-column-border.md)),
       `column-dragging` (D14–D18, D20–D30, D32, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md)),
       `column-dragging-nested` (ND1–ND5, ND7, ND10, ND12–ND13, ND15) и модульные
@@ -437,14 +446,13 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       ширине, axe, вспышка после переноса, `danger` при отказе), `touch` (CO8),
       `row-drag-lazy` (CO14, CO16 — откат обычной строки, `danger` строки), модульные
       `columnDragging` (CO4–CO5), `slots` (CO9) и `moveRevert` (CO15 — `revertOnReject:
-false`), `work-counters` (CO10), `play` историй «Columns/Resizing & dragging —
+false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       Dragging — Server» (CO12, CO17) и «Rows/Dragging — Lazy tree (server)» (CO19)
       ([ADR 0114](docs/decisions/0114-async-column-moves.md));
       `column-motion` (CN1–CN11 — переезд шапки, тела и футера, без повтора после броска,
       откат, группа блоком, виртуализация и призраки, без движения показа, закрепления и
       ширины, посреди движения, флаг и уменьшенное движение, токены, фокус, коммиты React),
-      модульный `columnMotion` (CN12 — план), перф CN13 — в `interaction`, `play` истории
-      «Columns/Motion — Keyboard and server rejection» (CN14)
+      модульный `columnMotion` (CN12 — план), перф CN13 — в `interaction`
       ([ADR 0115](docs/decisions/0115-column-motion.md)).
     - _Строки:_ `row-selection` (RS1–RS18, [ADR 0014](docs/decisions/0014-row-selection.md);
       RS19–RS22 — счётчик в нижней панели, [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md)),
@@ -511,11 +519,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки),
       `action-panel-loading` (AM28–AM30 — ожидание загрузки панели, отмена, ошибка),
       `header-action-tooltips` (AM31–AM32 — тултип кнопок с панелью и мини-меню, кебабов заголовка и строки),
-      [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md).
+      история «Columns/Header menu — Actions in menu» (S1), [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md).
     - _Асинхронные пункты меню:_ `menu-actions-async` (MI1–MI14, MI16–MI21, MI24–MI28 —
       проверка доступности промисом, причина блокировки, клавиатура, ожидание и отказ
       действия на кебабе и в пункте, контекстное меню, виртуализация, инлайн-кнопка,
-      axe, демо-истории, свет кнопок стоит во время прокрутки), модульный `menuActionStatus`
+      axe, демо-истории, свет кнопок стоит во время прокрутки; гайд «Columns/Header menu — Async actions», S1), модульный `menuActionStatus`
       (MI15, MI22 — текст отказа, синхронный контракт), перф MI23 — в `scroll`
       ([ADR 0078](docs/decisions/0078-async-menu-actions.md)).
     - _Вложенные разделы меню:_ `menu-sections` (NM1–NM16, NM19–NM25 — шеврон и `hint`, сдвиг
@@ -528,9 +536,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       прокрутки, нажатие мимо доходит до цели, закрытие прокруткой грида, другой
       триггер одним нажатием, кебаб закреплённой колонки в Firefox)
       ([ADR 0085](docs/decisions/0085-non-modal-menus.md)).
-    - _Высокая контрастность:_ `forced-colors` (HC1–HC10, HC14–HC15 — выбор и выделение
-      `Highlight`, кольцо фокуса на заливке, наведение контуром, подсветка `Mark`, свет
-      ожидания и ошибки, линии дерева и скелет `GrayText`, меню и примитивы, текст на
+    - _Высокая контрастность:_ `forced-colors` (HC1–HC6, HC8–HC10, HC14–HC15 — выбор и
+      выделение `Highlight`, кольцо фокуса на заливке, наведение контуром, подсветка
+      `Mark`, дуга ожидания и отказ, линии дерева и скелет `GrayText`, меню и примитивы, текст на
       заливках без подложки — по пикселям; эмуляция в Chromium и Firefox; шаги гайдов в
       режиме — матрица контраста, CX12–CX14), HC11 — в `theming-invariants`, перф HC12 —
       `performance/forced-colors` ([ADR 0087](docs/decisions/0087-forced-colors.md)).
@@ -565,6 +573,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       порталы и `color-scheme` по фактической теме, предупреждение о смеси палитр, axe,
       история `Theming/Theme sources`), перф TM11 — `performance/theme-source`
       ([ADR 0090](docs/decisions/0090-theme-source-and-switching.md)).
+    - _Локализация словарём:_ модульный `localization` (LC1–LC4 — строка или функция,
+      подстановки `{имя}`, формы слова по `Intl.PluralRules` и `_zero`, числа и списки по
+      языку; LC6–LC7 — составные подписи отдельными ключами, английский словарь шаблонами),
+      визуальный `localization` (LC5 — проп `locale` у `DataGrid`, LC8 — тип словаря и
+      предупреждение о неизвестном ключе, LC9 — словарь из JSON переводит таблицу, LC10 — смена языка на
+      лету без пересоздания), перф LC11 — в `first-render`
+      ([ADR 0132](docs/decisions/0132-key-value-localization.md)).
     - _Совместимость окружений:_ `environment` (EV2 — ref триггера `Tooltip`, EV3 —
       StrictMode в тестах, EV5 — гидратация серверного HTML), модульные `ssr` (EV4,
       EV6 — серверный рендер и импорт без DOM; в `test:react18` — на React 18),
@@ -608,7 +623,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     - _Индикатор включённого действия:_ `active-indicator` (AI1–AI8, AI11–AI16 — точка на кнопке
       заголовка, номер приоритета на её месте, точка и имя кебаба, контраст, токен,
       счётчик «Колонок», движение, ключи иконок включённого состояния, публичные примитивы `/ui`), модульный `activeIndicator` (AI9), перф AI10 — в
-      `scroll`, [ADR 0062](docs/decisions/0062-active-action-indicator.md).
+      `scroll`, история «Columns/Header menu — Active actions» (S1), [ADR 0062](docs/decisions/0062-active-action-indicator.md).
     - _Обновление данных:_ `loading-glow` (GL1–GL12 — свечение под шапкой, течение и
       дыхание цветов, приглушение тела и футера, наведение гаснет, задержка и минимум
       показа, `aria-busy` сразу, скелет главнее, уменьшенное движение, `Highlight` в
@@ -619,7 +634,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       без приглушения, плашка и её ширина, повтор и закрытие, заглушка первой загрузки
       и `errorStub`, порядок заглушек, объявление, клавиатура, подписи и токены, режимы,
       axe в трёх ролях, строки не перерисовываются, плавность; LE20 — уход свечения
-      посреди роста от текущих значений), `play` истории «Refresh error — server» (LE16)
+      посреди роста от текущих значений), `play` историй «Data loading/Load error» (S1–S2, LE16, LE21)
       ([ADR 0096](docs/decisions/0096-load-error.md)).
     - _Скелет первой загрузки:_ `skeleton` (SL1 — колонки и ширины, SL3 — закреплённые
       при прокрутке, SL4 — шапка, SL7 — полоски, SL10 — только видимые колонки, SL11 —
@@ -652,6 +667,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       [ADR 0035](docs/decisions/0035-toolbar-and-column-visibility.md); порядок кнопок —
       `toolbar` (TB17, TB18, TB20) и модульные `toolbar` (TB16, TB19),
       [ADR 0051](docs/decisions/0051-toolbar-button-order.md).
+    - _Скрытие всех колонок:_ `hide-all-columns` (HA1–HA3, HA6–HA7, HA9, HA11–HA12 —
+      последняя колонка галочкой и кебабом, корень «Все колонки» над деревом, клавиатура,
+      «Выбрано: N колонок», фокус на кнопке заглушки, axe, ширина поповеров со списком,
+      линии дерева меню), модульные `columnVisibility` (HA4–HA5 — корень при поиске и
+      защищённые колонки) и `localization` (HA8), перф HA10 — в `interaction`, истории
+      «Columns/Visibility — Toggle all» и «— Nested headers» (S1–S2)
+      ([ADR 0133](docs/decisions/0133-hide-all-columns.md)).
     - _Тулбар до прихода данных:_ `toolbar-before-data` (TF1–TF6, TF8–TF11 — поиск, «Фильтры»
       и серверный экспорт доступны, скелеты клиентского экспорта и, без колонок, поиска и
       «Колонок» на месте контрола, волна, фокус, пустой результат, axe), модульные `export`
@@ -670,14 +692,15 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       модульные PB7–PB9 (в `columnVisibility`, `export`, `filtering`), `play` историй
       (PB12 — «Panels/Status bar — Off (own pager)»; DS6 — «Panels/Pagination — Server», ADR 0042),
       [ADR 0046](docs/decisions/0046-toolbar-and-status-bar-visibility.md).
-    - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6; SB7–SB14 — узкая ширина — `status-bar-narrow`; SB5 — модульный
+    - _Нижняя панель и пагинация:_ `status-bar` (SB1–SB4, SB6, SB15 — кегль текста панели; SB7–SB14 — узкая ширина — `status-bar-narrow`; SB5 — модульный
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
-    - _Футер колонок:_ `footer-position` (FT1–FT2, FT4–FT13, FT15–FT16 — строка итогов,
+    - _Футер колонок:_ `footer-position` (FT1–FT2, FT4–FT13, FT15–FT17 — строка итогов,
       `pinned` у низа области и в короткой таблице, `inline` за последней строкой, вид,
       закреплённые колонки, клавиатура, `scrollToRow`, пагинация, лента и заглушки до или
-      после футера, скелет, движение строк, axe, грид без высоты), `play` истории
+      после футера, скелет, движение строк, axe, грид без высоты, строка ошибки ленты в
+      виду после отказа у края), `play` истории
       «Core/Footer — Position switch» (FT3), перф FT14 — в `scroll`
       ([ADR 0118](docs/decisions/0118-column-footer.md)).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
@@ -724,8 +747,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `theming-loading` / `theming-overlays` (TT-01…TT-40) и `theming-invariants`
       (TI-05… — статические инварианты токенов) —
       [ADR 0019](docs/decisions/0019-token-architecture.md); `theming-contracts`
-      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO5 — движение; RW1, RW3 — плавное раскрытие ширины кнопок ячейки, мгновенное во время прокрутки, [ADR 0076](docs/decisions/0076-smooth-cell-button-reveal.md)), `theming-popups` (PP1–PP8 — единый вид
-      поповеров),
+      (TC-1…TC-10 — единые контракты по семействам, `theming-motion` (MO1–MO5 — движение; RW1, RW3 — плавное раскрытие ширины кнопок ячейки, мгновенное во время прокрутки, [ADR 0076](docs/decisions/0076-smooth-cell-button-reveal.md)), `theming-popups` (PP1–PP9 — единый вид
+      поповеров), модульный `cssComposes` (PP10 — `composes` без переобъявлений свойств),
       [ADR 0017](docs/decisions/0017-ui-components.md)).
     - _Доступность:_ `a11y` (A1–A10, прогон axe-core,
       [ADR 0020](docs/decisions/0020-accessibility.md)); `wcag-aa` (W1–W17 —
@@ -748,15 +771,16 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     - _Истории по сценариям:_ модульные `storyControls` (SN1–SN6 — базовый набор и свой
       список `showControls`, скрытие с причиной, заданные аргументы видны, подопция только с тумблером,
       полная панель только в песочнице, условия базовых `dataCount`/`columnCount`;
-      SN28 — у истории сценария с гайдом контролов нет, у файла есть `Default`; SN30 — у
-      историй `UI/*` контролы только у `Default`)
+      SN28 — у истории сценария с гайдом контролов нет, у файла есть `Playground`; SN30 — у
+      историй `UI/*` контролы только у `Playground`; SN31 — каждый раздел вне
+      `Tessera/Common` начинается `Playground`; SN32 — у неё свои контролы сверх базовых)
       и `storyScenarios` (SN7–SN8 — у каждого сценария таблицы «Сценарии»
       ADR своя история с `parameters.scenario`, один к одному; SN11–SN13 — `play`
-      истории сценария только в тестах каталога, мета без `play`, `*.dev.stories.tsx`
-      не в сборке); панель гайда — `guide-panel` (SN14–SN15, SN17, SN21–SN26 —
+      истории сценария только в тестах каталога, мета без `play`, три сборки историй:
+      `*.dev` — ни в одной, `*.vr` — не в публичной); панель гайда — `guide-panel` (SN14–SN15, SN17, SN21–SN26 —
       свёрнута по умолчанию и плавное раскрытие, заливка полоски и затем шаг, откат «Назад», переход к шагу нажатием, шаги одной высоты, воспроизведение,
-      уменьшенное движение, значок не обрезан, конфетти следуют за значком) и `play` песочницы
-      `Tessera/DEV/Guide panel` (SN16 — последний шаг выполняется при переходе, SN18 — лента шагов, SN19 — узкая
+      уменьшенное движение, значок не обрезан, конфетти следуют за значком; SN33 — шаг назад через действие возвращает таблицу в состояние шага; SN34 — линия прогресса свёрнутой панели) и `play` песочницы
+      `Tessera/Common/Guide panel` (SN16 — последний шаг выполняется при переходе, SN18 — лента шагов, SN19 — узкая
       ширина, SN20 — минимальная ширина)
       ([ADR 0117](docs/decisions/0117-story-controls.md)).
     - _Консоль историй:_ `story-console` (CL1, CL3, CL7, CL9–CL12, CL15–CL16 — место и
@@ -765,7 +789,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       грида, шаг гайда и смена аргумента), модульный `storyConsole` (CL2, CL4, CL6,
       CL13–CL14, CL17 — колбэки и длительность, группы действий и склейка в них, записи
       истории, предел журнала и значений, закрытие группы), `play` песочницы
-      `Tessera/DEV/Console` (CL5 — жизненный цикл, CL8 — фильтры и очистка)
+      `Tessera/Common/Console` (CL5 — жизненный цикл, CL8 — фильтры и очистка)
       ([ADR 0124](docs/decisions/0124-story-console.md)).
     - _Канал действий:_ `debug-actions` (AL4–AL5, AL9–AL25 — действия ядра и каждого
       плагина на настоящих событиях: источник, фаза жеста, причина отложенного итога),
@@ -784,7 +808,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       `reactiveArgs` (RX1–RX3, RX21, RX24 — живые аргументы фабрик, `setup` раз на
       значение аргументов), `pluginLifetime`
       (RX4–RX7 — договоры на время жизни и `initialPageSize`), `effectiveState`
-      (RX9–RX10, RX12–RX13, RX25–RX26 — эффективное состояние, пересчёт при смене данных и колонок, снятие сужения на лету), визуальные `reactive-args`
+      (RX9–RX10, RX12–RX13, RX25–RX27 — эффективное состояние, пересчёт при смене данных и колонок, снятие сужения на лету, в том числе у среза ядра), визуальные `reactive-args`
       (RX8, RX11, RX14–RX20, RX22–RX23 — аргументы на лету, сужение и отмена
       действий при запрете),
       [ADR 0039](docs/decisions/0039-reactive-plugin-arguments.md);
@@ -800,14 +824,16 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       (AS1, AS4, AS7–AS10, AS12 — промис от колбэка, ожидание, «ошибка» и её
       снятие, откат раскрытия),
       визуальные `async-callbacks` (AS2–AS3 — ячейка в ожидании, правка других не
-      ждёт; AS5–AS6 — «ошибка» с меткой, объявлением и повторной правкой; AS11 —
+      ждёт; AS5–AS6 — значение из данных, объявление и повторная правка; AS11 —
       раскрытие в ожидании; AS13 — axe и контраст новых состояний; AS15 — раскрытие без промиса не ждёт),
       [ADR 0041](docs/decisions/0041-async-business-callbacks.md); вид асинхронной
-      правки — визуальные `async-callbacks` (CF1–CF6, CF8–CF11 — свет по периметру,
-      закрепление, выделение и фокус, красный свет отказа, подсветка сохранения,
-      виртуализация, уменьшенное движение, объявления, контраст, токены), модульный
-      `asyncCallbacks` (CF7 — отметки сохранения), перф CF12 — в `scroll`
-      ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md)).
+      правки — визуальные `async-callbacks` (CF1, CF4–CF6, CF8–CF11 — значение в
+      ожидании, подсветка сохранения, виртуализация, уменьшенное движение, объявления,
+      контраст, токены), модульный `asyncCallbacks` (CF7 — отметки сохранения), перф
+      CF12 — в `scroll` ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md));
+      ожидание и отказ на кнопке правки — визуальный `async-callbacks` (IR16), модульный
+      `asyncCallbacks` (IR21 — света по периметру нет)
+      ([ADR 0127](docs/decisions/0127-initiator-pending-and-failure.md)).
     - _Демо-истории:_ `play` историй Cells/Editing, Rows/Expanding, Plugin API (DS1–DS5 —
       сценарий истории в интерфейсе и журнале колбэков,
       [ADR 0042](docs/decisions/0042-demo-story-smoke-tests.md); отдельных файлов
@@ -886,6 +912,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
       перф LT12 — в `interaction`, `play` истории «Rows/Dragging — Lazy tree (server)»
       (LT14); помощники перетаскивания мышью — `visual/row-drop-helpers.ts`
       ([ADR 0112](docs/decisions/0112-lazy-tree-row-moves.md)).
+    - _Перетаскивание из `play`:_ `drag-in-play` (DG4–DG5 — строка и колонка событиями
+      указателя без Playwright, облако и слот стоят, кадр удержания детерминирован),
+      помощник `dragHold` из `__mocks__/catalogPlay.ts`; модульный `catalog` (DG1 —
+      область `drag` реестра, DG3 — близнец у каждого шага гайда, DG7 — бюджет снимков их
+      считает), `contrast-guides` (DG2 — каждое `drag.*` проверено матрицей), `play`
+      истории «Rows/Dragging — Move» (DG6 — вспышка приземления)
+      ([ADR 0130](docs/decisions/0130-dnd-catalog-and-step-twins.md)).
     - _Рантайм-переключение:_ `plugin-runtime-toggle` (паритет enable/disable без
       перезагрузки, [ADR 0010](docs/decisions/0010-invert-core-plugins-registry.md)).
     - _UI-примитивы:_ `ui-components` (IB/TT/SW/SK/PR/IC/BU,
@@ -986,7 +1019,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
     держит обработчики прошлых рендеров), `detector` (LK11–LK12 —
     детектор ловит подсаженные утечки и печатает путь удержания); модульный `memory`
     (LK10 — страж кэшей уровня модуля, LK14 — проект `memory-prod` в `npm run perf`)
-    и `heapSnapshotParser` (LK16 — снимок кучи по кускам, без строки целиком).
+    и `heapSnapshotParser` (LK16 — снимок кучи по кускам, без строки целиком; LK17 —
+    рёбра сверх предела обычного массива V8).
     Грид монтируется своим корнем, мышь — по координатам: `expect.poll` и `userEvent` с
     элементом Vitest держит до конца теста. Удержания вне кода грида — с причиной в
     `leaks.ts` ([ADR 0092](docs/decisions/0092-memory-leaks.md)).
@@ -1028,6 +1062,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Resizing & drag
   мимо редактора), — `humanClick` из `__tests__/helpers.tsx`: настоящий клик
   Playwright с паузой между нажатием и отпусканием. Мгновенный `userEvent.click`
   гонок фокуса между `mousedown` и `click` не ловит (ADR 0021, KN30; ADR 0043, TQ3).
+- **Подписи таблицы — по ключу словаря, не строкой языка.** Тесты ищут и сверяют
+  подпись через `tableLabels` из `__tests__/labels.ts` (`tableLabels.headerMenu`,
+  `tableLabels.selectedRows(2)`), `play` историй — через `storyLabels(args.locale)`
+  (ADR 0117 §6а); кнопка меню колонки и строки — `[data-action-menu]`. Строкой
+  остаются только подписи, которые задаёт сам тест (свои действия, примитивы `/ui`).
 - Не выдумывайте проходящий `npm test` — если что-то не покрыто, так и скажите.
 
 ### Как относиться к падающей проверке
@@ -1174,16 +1213,20 @@ ADR и не с кода.** Прожарка — короткий диалог с
 `guideNext` из `__mocks__/catalogPlay.ts`; шаги `step(...)` названы как шаги
 панели. Требование, чью формулировку сценарий проверяет целиком, доказывается в этом
 `play` (`parameters.requirements`), отдельного теста у него нет; требование шире
-сценария — визуальный или модульный тест. Вид фичи в покое снимает `Default`: её
+сценария — визуальный или модульный тест. Вид фичи в покое снимает `Playground`: её
 состояние задают аргументы и плагин-«семя» (`setup`/`reconcile`), а `play`, если есть,
 только проверяет и вне тестов каталога ничего не делает (SN29); видимое
 состояние посреди сценария (меню, правка, ожидание, вспышка) — шаг гайда: матрица контраста
 проходит каждый шаг (ADR 0089, §7). Шаг объявляет признаки для неё: `states` — состояния
 реестра каталога, `pseudo` — наведение или фокус, которые человек делает сам,
 `immediate` — короткое состояние. Истории `State: …` уходят при переводе файлов на
-`Default` и гайды. Мета историй `play` не несёт (SN12).
-Песочницы самой обвязки историй — файлы `*.dev.stories.tsx` (раздел `Tessera/DEV`):
-они в `storybook dev` и тестах, но не в `storybook build` и Chromatic (SN13).
+`Playground` и гайды. Мета историй `play` не несёт (SN12).
+Раздел `Tessera/Common` — истории для разработки Tessera, а не для пользователя грида
+(ADR 0117 §8, SN13): песочницы обвязки `*.dev.stories.tsx` — в `storybook dev` и тестах,
+но ни в одной сборке; истории только для снимков `*.vr.stories.tsx` — в `storybook dev` и
+сборке для Chromatic (`build-storybook`), но не в публичной (`build-storybook:public`).
+Живой Storybook — в двух режимах: полный `npm run storybook` и публичный
+`npm run storybook:public` (тот же набор, что в публичной сборке).
 
 Каждая история — ещё и тест каталога визуальных состояний
 ([ADR 0093](docs/decisions/0093-visual-state-catalog.md)): `npm test` гоняет все истории
@@ -1201,22 +1244,37 @@ ADR и не с кода.** Прожарка — короткий диалог с
 помощниками `__mocks__/catalogPlay.ts` (`openPopup` и `expectPopupInCanvas` для меню и
 панелей, `applyPseudoStates(id, …)` для наведения и фокуса), либо шаг гайда с `states`.
 Матрица контраста проверяет каждое состояние реестра (VR14): новое состояние попадает и в неё.
-У истории каталога (`vrStates`) — близнец высокой контрастности в `Core/High contrast`:
+У истории каталога (`vrStates`) — близнец высокой контрастности в `Tessera/Common/High contrast`
+(`HighContrast.vr.stories.tsx`):
 строка `HighContrast<Экспорт>` с `twin(meta, story)` и тегом `!test` — снимок Chromatic
 в `forced-colors` (VR17).
+У каждого шага каждого гайда — тоже близнец: строка `HighContrast<Экспорт>Step<n>` с
+`twinStep(<модуль>, <модуль>.<Экспорт>, n)`, его `play` останавливается после шага `n`;
+новый шаг `step(...)` в `play` истории сценария требует нового близнеца (страж DG3,
+[ADR 0130](docs/decisions/0130-dnd-catalog-and-step-twins.md)).
 
+- **Как писать гайд** — [ADR 0117](docs/decisions/0117-story-controls.md) §6а: шаг — одно
+  видимое и новое состояние, сам приходит к своему состоянию при переходе и откате;
+  пояснение — сначала что произошло и почему, затем что показывает таблица; части
+  интерфейса — по роли, без цветов, подписей в кавычках, имён API и ID требований;
+  описания контролов — абстрактно и прямо; тексты и `done` — после «ОК» пользователя.
+- **Каждый раздел начинается историей `Playground`** (ADR 0117, SN31–SN32): фича в покое
+  и все её нужные контролы — тумблер, подопции, которые меняют результат её сценариев, и
+  базовый набор без того, что на раздел не влияет; без лишних. Историй `Default` и
+  `Basic` нет; экспорт — `<Префикс>Playground`. Исключения — только с причиной в
+  `WITHOUT_PLAYGROUND` стража `storyControls`; раздел `Tessera/Common` правило не касается.
 - **Фича — минимум одна история**, включающая её через тумблеры и аргументы, как
   соседние (`enableColumnVisibility`, `enablePagination`). Файл на фичу —
   `src/lib/stories/DataGrid.<Группа>.<Фича>.stories.tsx` с заголовком
-  `Tessera/DataGrid/<Группа>/<Фича>`; название истории — вариант на английском (Default,
-  Tree lines); имя экспорта уникально среди всех историй (тесты берут истории по нему). Аргументы
+  `Tessera/DataGrid/<Группа>/<Фича>`; название истории — вариант на английском (Tree lines,
+  Narrow); имя экспорта уникально среди всех историй (тесты берут истории по нему). Аргументы
   плагинов — по правилу [ADR 0106](docs/decisions/0106-flag-and-predicate-naming.md):
   тумблер `enable<Фабрика>`, подопции `<фабрика><Опция>`, колбэки `on*` из API; их тип
   `FeatureToggles` выводится из опций фабрик. Новый плагин добавляется в фабрики
   `argsToPlugins`, его тумблер и настройки-данные — в контролы общей меты
   (`__mocks__/utils/dataGridControls.ts`) со значением по умолчанию, как у библиотеки;
   имя не по правилу или аргумент без контрола роняет страж `storyControls` (FN5).
-  Все контролы видны только в песочнице `Core/All features`; история показывает базовый
+  Все контролы видны только в песочнице `DataGrid/Playground`; история показывает базовый
   набор «Данные и размеры» и свой явный список — `showControls([...])`, выведенный из
   клиентских сценариев фичи: заданные ей аргументы и то, что меняет результат её
   сценариев (подопция — только если влияет, и только с тумблером). Базовый
@@ -1224,7 +1282,7 @@ ADR и не с кода.** Прожарка — короткий диалог с
   проверяет тот же страж (SN1–SN6, [ADR 0117](docs/decisions/0117-story-controls.md)).
 - **Публичный примитив `/ui`** (экспорт `src/ui.ts`) — история `UI.<Компонент>.stories.tsx`
   с заголовком `Tessera/UI/<Компонент>` на холсте `__mocks__/UiCanvas`: контролы по пропам —
-  только у `Default`, первой истории файла; варианты — истории состояний без вкладки
+  только у `Playground`, первой истории файла; варианты — истории состояний без вкладки
   Controls (`noControls()`, ADR 0117, SN30). Экспорт без истории роняет страж `uiStories`.
 - **Сценарий — отдельная история**: комбинации с другими плагинами, режимы (серверный,
   большие данные), крайние состояния (пусто, ошибка, ожидание), опции, меняющие

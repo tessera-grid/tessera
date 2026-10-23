@@ -16,7 +16,7 @@ import { columnSorting } from '../plugins/columnSorting'
 import { columnPinning } from '../plugins/columnPinning'
 import { headerActionMenu } from '../plugins/headerActionMenu'
 import { ActionsZone } from '../grid/headerActions/ActionsZone'
-import { DEFAULT_LABELS } from '../core/localization'
+import { ENGLISH_LABELS } from '../core/localization'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -94,7 +94,7 @@ describe('ActionsZone (happy-dom)', () => {
     // Схлопывание → реальный Base UI-кебаб (триггер-кнопка с aria-label headerMenu),
     // инлайн-кнопки pin/sort ушли в меню (портал, до открытия не в DOM).
     const kebab = container.querySelector(
-      `button[aria-label="${DEFAULT_LABELS.headerMenu}"]`,
+      `button[aria-label="${ENGLISH_LABELS.headerMenu}"]`,
     )
     expect(kebab).toBeTruthy()
     // Инлайн-дескрипторов в зоне не осталось (только триггер кебаба).

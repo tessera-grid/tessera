@@ -3,7 +3,7 @@ import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
@@ -214,7 +214,7 @@ const moveRightByMenu = async (id: string) => {
   await expect.poll(() => document.querySelector('[role="menu"]')).toBeTruthy()
   const item = [
     ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-  ].find(entry => entry.textContent?.trim() === DEFAULT_LABELS.moveRight)!
+  ].find(entry => entry.textContent?.trim() === ENGLISH_LABELS.moveRight)!
   await userEvent.click(item)
 }
 
@@ -289,17 +289,21 @@ describe('Движение колонок (ADR 0115)', () => {
         y: from.y,
       })
       const read = () => [...columnLefts('c1'), ...columnLefts('c2')]
+      const held = read()
       const frames = await sampleFrames(read, () => pointer.realMouseUp())
       const final = read()
       expect(final[0] - leftOf(headOf('c0'))).toBeCloseTo(2 * WIDTH, 0)
+      // Переезда нет — нет промежуточных положений: кадр стоит как при удержании или
+      // уже на месте. Коммит броска Firefox иногда отдаёт кадром позже.
       for (const frame of frames.slice(1)) {
         frame.forEach((left, i) =>
           expect(
-            Math.abs(left - final[i]),
+            Math.min(Math.abs(left - final[i]), Math.abs(left - held[i])),
             `кадр ${frames.indexOf(frame)}`,
           ).toBeLessThan(1),
         )
       }
+      expect(frames.at(-1)).toEqual(final)
     } finally {
       await screen.unmount()
     }
@@ -429,7 +433,11 @@ describe('Движение колонок (ADR 0115)', () => {
       expect(shown.length, 'призрак есть').toBeGreaterThan(2)
       expect(headOf('c0'), 'колонка ушла из окна').toBeNull()
       expect(shown.every(frame => frame.hidden && !frame.marked)).toBe(true)
-      expect(shown[0].left).toBeCloseTo(from, 0)
+      // Firefox и WebKit ставят время старта анимации до тяжёлого кадра перестановки:
+      // на первом кадре призрак уже в пути — но не левее прежнего места.
+      if (server.browser === 'chromium')
+        expect(shown[0].left).toBeCloseTo(from, 0)
+      else expect(shown[0].left).toBeGreaterThanOrEqual(from - 0.5)
       expect(shown.at(-1)!.left).toBeGreaterThan(from + WIDTH)
       expect(ghostCells(), 'призраки ушли').toHaveLength(0)
     } finally {

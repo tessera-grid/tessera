@@ -20,9 +20,11 @@ const GRID = {
   maxHeight: '460',
 }
 
-export const PanelsFromPlugins: StoryObj<StoryProps> = {
-  name: 'From plugins',
+export const PresencePlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
+    'enableToolbar',
+    'enableStatusBar',
     'enableColumnVisibility',
     'enableRowSelection',
     'rowSelectionSubRows',

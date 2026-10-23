@@ -2,12 +2,13 @@ import {
   type PropsWithChildren,
   type ReactNode,
   useEffect,
-  useLayoutEffect,
   useState,
 } from 'react'
 import type { Args } from '@storybook/react'
 import { UPDATE_STORY_ARGS } from 'storybook/internal/core-events'
 import { addons } from 'storybook/preview-api'
+
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 
 // Оси каталога визуальных состояний (ADR 0093, §1, VR9, VR16): тема, палитра, контраст
 // и ширина. Ширина — режим Chromatic (`viewport`), остальное — глобалы Storybook.
@@ -66,6 +67,18 @@ export const CATALOG_STATES = {
     'tooltip',
   ],
   panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
+  // Перетаскивание (ADR 0130): шаги гайдов историй строк и колонок.
+  drag: [
+    'rowHandle',
+    'columnHandle',
+    'row',
+    'column',
+    'rowInvalid',
+    'groupParent',
+    'pending',
+    'rejected',
+    'landed',
+  ],
 } as const
 
 type Area = keyof typeof CATALOG_STATES
@@ -153,6 +166,14 @@ const list = (value: unknown) =>
 /** Истории каталога, у которых есть близнец высокой контрастности (VR17). */
 export const forcedTwinSources = new WeakSet<object>()
 
+/** Истории сценариев и номера их шагов с близнецом (ADR 0130, DG3). */
+export const stepTwins = new Map<object, number[]>()
+
+const parametersOf = (meta: TwinSource, story: TwinSource) => ({
+  ...meta.parameters,
+  ...story.parameters,
+})
+
 /**
  * Близнец истории каталога для снимка в высокой контрастности (ADR 0093, §1, VR17):
  * аргументы, декораторы, `render` и `play` истории и её меты, `forcedColors` и базовый
@@ -164,13 +185,37 @@ export const forced = <S extends TwinSource>(
   story: S,
   base: TwinSource = {},
 ): S => {
-  const own = <K extends keyof TwinSource>(key: K) =>
-    meta[key] === base[key] ? undefined : meta[key]
-  const parameters = { ...meta.parameters, ...story.parameters }
-  if (!parameters.vrStates) {
+  if (!parametersOf(meta, story).vrStates) {
     throw new Error('forced: близнец — только у истории каталога (vrStates)')
   }
   forcedTwinSources.add(story)
+  return forcedTwin(meta, story, base)
+}
+
+/**
+ * Регистрирует близнеца шага `step` истории сценария (ADR 0130, DG3); его `play` даёт
+ * `forcedStep` из `catalogPlay`.
+ */
+export const registerStepTwin = (
+  meta: TwinSource,
+  story: TwinSource,
+  step: number,
+) => {
+  if (!parametersOf(meta, story).scenario) {
+    throw new Error('forcedStep: близнец шага — только у истории сценария')
+  }
+  stepTwins.set(story, [...(stepTwins.get(story) ?? []), step])
+}
+
+/** Близнец без проверки источника: общая часть `forced` и `forcedStep`. */
+export const forcedTwin = <S extends TwinSource>(
+  meta: TwinSource,
+  story: S,
+  base: TwinSource = {},
+): S => {
+  const own = <K extends keyof TwinSource>(key: K) =>
+    meta[key] === base[key] ? undefined : meta[key]
+  const parameters = parametersOf(meta, story)
   delete parameters.vrStates
   delete parameters.requirements
   delete parameters.scenario
@@ -199,7 +244,7 @@ export const CatalogEnvironment = ({
   palette,
   children,
 }: PropsWithChildren<{ catalog: boolean; palette: Palette }>) => {
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const html = document.documentElement
     if (catalog) html.classList.add('tsr-catalog')
     const fallback = palette === 'tessera'

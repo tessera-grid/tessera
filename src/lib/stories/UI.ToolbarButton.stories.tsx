@@ -42,8 +42,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ToolbarButtonDefault: Story = {
-  name: 'Default',
+export const ToolbarButtonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls(
     'label',
     'active',

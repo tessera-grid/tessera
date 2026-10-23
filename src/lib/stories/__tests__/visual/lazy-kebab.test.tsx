@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { humanClick, renderGrid } from '../helpers'
 import { waitForGrid } from './core-helpers'
 import { MODULE, holdModule, releaseModule, sleep } from './lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Кебаб заголовка до загрузки своего модуля (ADR 0061, LZ21). Отдельный файл: модуль
 // грузится один раз на документ.
@@ -13,7 +14,7 @@ afterEach(() => releaseModule(MODULE.kebab))
 const head = () =>
   document.querySelector<HTMLElement>('.data-grid__head-cell[data-column-id]')!
 const kebab = () =>
-  head().querySelector<HTMLElement>('[aria-label="Column options"]')!
+  head().querySelector<HTMLElement>(`[aria-label="${tableLabels.headerMenu}"]`)!
 const busy = () => kebab().getAttribute('aria-busy')
 const menu = () => document.querySelector('[role="menu"]')
 

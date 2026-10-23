@@ -39,8 +39,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SegmentsDefault: Story = {
-  name: 'Default',
+export const SegmentsPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls('options', 'disabled'),
 }
 

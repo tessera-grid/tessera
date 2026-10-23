@@ -70,6 +70,20 @@ const preview: Preview = {
         dynamicTitle: true,
       },
     },
+    // Язык подписей таблицы (ADR 0132): английские умолчания или русский словарь историй.
+    locale: {
+      description: 'Language of the table labels',
+      defaultValue: 'en',
+      toolbar: {
+        title: 'Language',
+        icon: 'globe',
+        items: [
+          { value: 'en', title: 'English' },
+          { value: 'ru', title: 'Русский' },
+        ],
+        dynamicTitle: true,
+      },
+    },
     // Холст каталога: без полос прокрутки, не ниже 640 px (VR16). Включают проекты
     // каталога в Vitest и режимы Chromatic, в живом Storybook — выключен.
     catalog: { description: 'Visual catalog canvas', defaultValue: false },
@@ -105,34 +119,23 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
-    // Порядок групп: от ядра к фичам и служебным песочницам; внутри фичи — порядок
-    // экспортов файла (Default первым).
-    options: {
-      storySort: {
-        order: [
-          'Tessera',
-          [
-            'DataGrid',
-            [
-              'Core',
-              'Columns',
-              'Rows',
-              'Cells',
-              'Filtering',
-              'Export',
-              'Panels',
-              'Accessibility',
-              'Plugin API',
-              'Data & scale',
-              'Sizing',
-            ],
-            'Theming',
-            'UI',
-          ],
-        ],
-      },
-    },
   },
+  // Число на вкладке Controls Storybook считает по всем argTypes с контролом, без учёта
+  // `controls.include`: скрытым списком контролам — `table.disable` (ADR 0117).
+  argTypesEnhancers: [
+    ({ argTypes, parameters }) => {
+      const include: unknown = parameters.controls?.include
+      if (!Array.isArray(include)) return argTypes
+      return Object.fromEntries(
+        Object.entries(argTypes).map(([name, argType]) => [
+          name,
+          include.includes(name)
+            ? argType
+            : { ...argType, table: { ...argType.table, disable: true } },
+        ]),
+      )
+    },
+  ],
   decorators: [
     (Story, context) => {
       const theme: ThemeName =
@@ -148,6 +151,10 @@ const preview: Preview = {
       // грида: примитивы `/ui` отдали бы проп в DOM.
       if ('colorMode' in context.argTypes) {
         context.args.colorMode = theme === 'dark' ? 'dark' : 'auto'
+      }
+      // Язык подписей — из тулбара, как и тема; аргумент `locale` есть у историй таблицы.
+      if ('locale' in context.args) {
+        context.args.locale = context.globals.locale === 'ru' ? 'ru' : 'en'
       }
 
       return (

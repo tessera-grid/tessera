@@ -1,5 +1,12 @@
 // Демо-компонент историй DataGrid: собирает таблицу из аргументов Storybook.
-import { memo, useCallback, useContext, useMemo, useState } from 'react'
+import {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import {
   type ColumnPinningState,
   GroupingState,
@@ -16,6 +23,7 @@ import type { DebugAction } from '../../lib/core/debugActions'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { useLatest } from '../../lib/core/useLatest'
 import { DataGrid } from '../../lib/grid/DataGrid'
+import { DATA_GRID_THEME_CLASS } from '../../lib/core/themeVariables'
 import { BatchToolbar } from './BatchToolbar'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
@@ -34,6 +42,9 @@ import { loggedCallback, loggedCallbacks } from './demos/consoleLog'
 import { useTableConsole } from './demos/useTableConsole'
 
 const expandingInitialState = {}
+
+/** «Сервер» отвечает на повтор загрузки за это время, мс (ADR 0096). */
+const RETRY_ANSWER_MS = 800
 
 // Демо cellEditing: показ кнопки разрешён только на этих колонках (требование
 // «условие показа по контексту ячейки»). Коммит пишет значение в мок-данные —
@@ -63,6 +74,9 @@ const StoryGrid = memo(
     dataNesting,
 
     containerHeight,
+    containerFrame,
+    appPanelHeight,
+    gridClassName,
     containerWidth,
     height,
     maxHeight,
@@ -86,6 +100,7 @@ const StoryGrid = memo(
     initialColumnPinning,
     pinFirstColumn,
     hideAllColumns,
+    retrySucceeds,
     initialExpanded,
     expandAll,
     extraPlugins,
@@ -122,36 +137,64 @@ const StoryGrid = memo(
       return columnsWithCount
     }, [columnsOverride, headerNesting, columnsWithCount])
 
+    // «Сервер» отвечает на повтор (ADR 0096): загрузка, затем ошибка снята; при первой
+    // загрузке — строки мока вместо пустого ответа. Новая ошибка сбрасывает повтор.
+    const [retry, setRetry] = useState<'idle' | 'loading' | 'done'>('idle')
+    const [retryFor, setRetryFor] = useState(options.loadError)
+    if (retryFor !== options.loadError) {
+      setRetryFor(options.loadError)
+      setRetry('idle')
+    }
+    useEffect(() => {
+      if (retry !== 'loading') return
+      const timer = setTimeout(() => setRetry('done'), RETRY_ANSWER_MS)
+      return () => clearTimeout(timer)
+    }, [retry])
+    const firstLoad = dataOverride?.length === 0
+    const answered = retry === 'done' && firstLoad ? undefined : dataOverride
+    const onRetry = options.onRetry
+    const retryHandler = useMemo(() => {
+      if (!onRetry) return undefined
+      const logged = consoleLog
+        ? loggedCallback(consoleLog, 'onRetry', onRetry)
+        : onRetry
+      return retrySucceeds
+        ? () => {
+            logged()
+            setRetry('loading')
+          }
+        : logged
+    }, [onRetry, consoleLog, retrySucceeds])
     const { data: mockData, setData: setMockData } = useData({
       count: dataCount,
       nesting: dataNesting,
       showStub,
-      skip: dataOverride !== undefined,
+      skip: answered !== undefined,
     })
 
     // Явно переданный набор имеет приоритет над генерируемым. Перестановки и правки
     // пишутся в его локальную копию; новый `dataOverride` (ответ «сервера») её сбрасывает.
     const [edited, setEdited] = useState<{ source: any[]; data: any[] }>()
-    const data = dataOverride
-      ? edited?.source === dataOverride
+    const data = answered
+      ? edited?.source === answered
         ? edited.data
-        : dataOverride
+        : answered
       : mockData
     const setData = useCallback(
       (updater: Updater<any[]>) => {
-        if (!dataOverride) {
+        if (!answered) {
           setMockData(updater)
           return
         }
         setEdited(prev => ({
-          source: dataOverride,
+          source: answered,
           data: functionalUpdate(
             updater,
-            prev?.source === dataOverride ? prev.data : dataOverride,
+            prev?.source === answered ? prev.data : answered,
           ),
         }))
       },
-      [dataOverride, setMockData],
+      [answered, setMockData],
     )
 
     // Grouping контролируется только когда задан initialGrouping — иначе
@@ -331,15 +374,17 @@ const StoryGrid = memo(
           : {}),
       },
       // Ядровые (не плагинные) опции остаются флагами.
-      loading: loadingArg(options.loading),
+      loading:
+        retry === 'loading'
+          ? firstLoad
+            ? 'initial'
+            : 'refresh'
+          : loadingArg(options.loading),
       skeletonOptions: options.skeletonOptions,
       refreshOptions: options.refreshOptions,
-      loadError: options.loadError,
+      loadError: retry === 'idle' ? options.loadError : undefined,
       onDebugAction,
-      onRetry:
-        consoleLog && options.onRetry
-          ? loggedCallback(consoleLog, 'onRetry', options.onRetry)
-          : options.onRetry,
+      onRetry: retryHandler,
       enableFooter: options.enableFooter,
       footerPosition: options.footerPosition,
       enableToolbar: panelFlag(options.enableToolbar),
@@ -403,34 +448,87 @@ const StoryGrid = memo(
             selectedDataCount={selectedDataCount}
           />
         )}
+        {appPanelHeight !== undefined && (
+          <div
+            data-testid="app-panel"
+            style={{
+              flex: 'none',
+              height: appPanelHeight,
+              marginBottom: 8,
+              boxSizing: 'border-box',
+              padding: '8px 12px',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: 'var(--muted)',
+              color: 'var(--foreground)',
+              fontSize: 13,
+            }}
+          >
+            Панель приложения · {appPanelHeight}px
+          </div>
+        )}
         <DataGrid
+          className={gridClassName}
           table={table as never}
           height={sizeArg(height)}
           maxHeight={sizeArg(maxHeight)}
           colorMode={colorMode}
           contrast={contrast}
           localization={labels}
+          locale={locale === 'ru' ? 'ru-RU' : undefined}
           icons={icons}
           stubs={stubs}
         />
       </>
     )
 
+    const container = sizeArg(containerHeight)
     return (
-      <Grid
-        style={{
-          padding: 16,
-          height: sizeArg(containerHeight),
-          ...(containerWidth !== undefined && {
-            width: containerWidth,
-            boxSizing: 'border-box',
-          }),
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div style={column}>{body}</div>
-      </Grid>
+      <>
+        {containerFrame && (
+          <div
+            className={DATA_GRID_THEME_CLASS}
+            data-testid="app-container-label"
+            style={{
+              padding: '12px 16px 0',
+              color: 'var(--muted-foreground)',
+              fontSize: 12,
+            }}
+          >
+            Контейнер приложения ·{' '}
+            {typeof container === 'number'
+              ? `${container}px`
+              : (container ?? 'без высоты')}
+          </div>
+        )}
+        <Grid
+          style={{
+            padding: 16,
+            // В рамке высота — у самого контейнера, без отступов истории.
+            height: containerFrame ? undefined : container,
+            ...(containerWidth !== undefined && {
+              width: containerWidth,
+              boxSizing: 'border-box',
+            }),
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div
+            data-testid={containerFrame ? 'app-container' : undefined}
+            style={{
+              ...column,
+              ...(containerFrame && {
+                height: container,
+                outline: '1px dashed var(--muted-foreground)',
+                outlineOffset: 4,
+              }),
+            }}
+          >
+            {body}
+          </div>
+        </Grid>
+      </>
     )
   },
 )
@@ -456,8 +554,11 @@ export const StoryComponent = memo((props: StoryProps) => {
       ])}
       {...props}
       consoleLog={consoleLog}
-      // Под консолью область — по высоте таблицы: консоль сразу за рамкой (ADR 0124).
-      containerHeight={consoleLog ? 'auto' : props.containerHeight}
+      // Под консолью область — по высоте таблицы: консоль сразу за рамкой (ADR 0124);
+      // рамка контейнера держит его высоту (ADR 0131).
+      containerHeight={
+        consoleLog && !props.containerFrame ? 'auto' : props.containerHeight
+      }
     />
   )
 })

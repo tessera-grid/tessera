@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 import { revealedHandleWidth } from '../helpers'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { composed } from '../stories'
 import {
@@ -11,6 +11,7 @@ import {
   renderColumnPinning,
   scrollerOf,
 } from './column-pinning-helpers'
+import { ColumnResizingGrid } from './columns-fixtures'
 
 // Every Column Resizing requirement is its own named test, prefixed with its spec
 // ID (CR1–CR16 from the requirements table in docs/decisions/0013-column-sizing.md).
@@ -36,11 +37,11 @@ const GRIP_ACTIVE_HEIGHT = 20
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-type StoryArgs = Partial<Parameters<typeof composed.ColumnResizing>[0]>
+type StoryArgs = Partial<Parameters<typeof ColumnResizingGrid>[0]>
 
 /** Render the ColumnResizing story and wait until its header cells are on screen. */
 async function renderColumnResizing(args: StoryArgs = {}) {
-  const { container } = await render(<composed.ColumnResizing {...args} />)
+  const { container } = await render(<ColumnResizingGrid {...args} />)
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)
@@ -334,7 +335,7 @@ describe('Column Resizing — requirements', () => {
       Array.from(
         document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
       ).find(
-        item => item.textContent?.trim() === DEFAULT_LABELS.resetColumnWidth,
+        item => item.textContent?.trim() === ENGLISH_LABELS.resetColumnWidth,
       )
     await expect.poll(reset).toBeTruthy()
     onColumnResizeEnd.mockClear()
@@ -752,8 +753,9 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
     }
 
     // Вложенная шапка: грип группы — на её правой границе.
-    container = (await render(<composed.HeaderGroups enableColumnSizing />))
-      .container
+    container = (
+      await render(<composed.HeaderGroupsPlayground enableColumnSizing />)
+    ).container
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)
@@ -808,7 +810,7 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
     await expect
       .poll(() =>
         [...document.querySelectorAll('[role="menuitem"]')].some(
-          item => item.textContent?.trim() === DEFAULT_LABELS.resetColumnWidth,
+          item => item.textContent?.trim() === ENGLISH_LABELS.resetColumnWidth,
         ),
       )
       .toBe(true)

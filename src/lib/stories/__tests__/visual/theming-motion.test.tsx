@@ -44,7 +44,7 @@ const SAMPLES: [string, string][] = [
 
 const renderAll = async () => {
   await render(
-    <composed.AllFeatures
+    <composed.DataGridPlayground
       containerHeight={500}
       height={400}
       dataCount={20}

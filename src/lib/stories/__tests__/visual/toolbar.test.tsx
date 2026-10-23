@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest'
 
 import { toolbarDemoPlugins } from '../../toolbarDemo'
 import { Stories, getScroller } from '../helpers'
+import { tableLabels } from '../labels'
 
 // Рамка грида и верхний тулбар (ADR 0035, TB1–TB7, TB10–TB15). Каждый тест — одно
 // требование, назван по его ID. Состояние читается из DOM/ARIA-контракта (role,
@@ -47,11 +48,11 @@ const mount = async (node: ReactElement) => {
   return result
 }
 
-const renderToolbar = () => mount(<Stories.WithToolbar {...GRID} />)
+const renderToolbar = () => mount(<Stories.ToolbarPlayground {...GRID} />)
 
 describe('Grid frame', () => {
   test('TB1: the grid has a rounded frame from --tsr-comp-frame-* tokens; width 0 removes it', async () => {
-    await render(<Stories.AllFeatures {...GRID} />)
+    await render(<Stories.DataGridPlayground {...GRID} />)
     const el = frame()
     expect(read(el, 'border-top-width')).toBe('1px')
     expect(read(el, 'border-top-color')).toBe(
@@ -68,7 +69,7 @@ describe('Grid frame', () => {
   })
 
   test('TB2: content is clipped to the frame; the table container keeps scrolling', async () => {
-    await render(<Stories.AllFeatures {...GRID} />)
+    await render(<Stories.DataGridPlayground {...GRID} />)
     expect(read(frame(), 'overflow')).toBe('hidden')
     const scroller = getScroller()
     expect(read(scroller, 'overflow')).toBe('auto')
@@ -80,7 +81,7 @@ describe('Toolbar', () => {
   test('TB3: the toolbar is labelled and stands above the table', async () => {
     await renderToolbar()
     const el = toolbar()!
-    expect(el.getAttribute('aria-label')).toBe('Table toolbar')
+    expect(el.getAttribute('aria-label')).toBe(tableLabels.toolbar)
     expect(rect(el).bottom).toBeLessThanOrEqual(rect(getScroller()).top + 0.5)
   })
 
@@ -120,7 +121,7 @@ describe('Toolbar', () => {
     expect(read(head(), 'border-top-width')).toBe('0px')
     await flat.unmount()
 
-    await mount(<Stories.WithToolbar {...GRID} headerNesting="nested" />)
+    await mount(<Stories.ToolbarPlayground {...GRID} headerNesting="nested" />)
     expect(head().dataset.layout).toBe('grid')
     expect(read(head(), 'border-top-width')).toBe('0px')
   })
@@ -148,7 +149,10 @@ describe('Toolbar', () => {
     await grouped.unmount()
 
     await mount(
-      <Stories.WithToolbar {...GRID} extraPlugins={[toolbarDemoPlugins[0]]} />,
+      <Stories.ToolbarPlayground
+        {...GRID}
+        extraPlugins={[toolbarDemoPlugins[0]]}
+      />,
     )
     expect(toolbarButtons()).toHaveLength(2)
     expect(toolbar()!.querySelectorAll('[role="separator"]')).toHaveLength(0)
@@ -166,15 +170,15 @@ describe('Toolbar', () => {
     await userEvent.keyboard('{ArrowRight}')
     expect(label()).toBe('Settings')
     await userEvent.keyboard('{ArrowRight}')
-    expect(label()).toBe('Export')
+    expect(label()).toBe(tableLabels.export)
     await userEvent.keyboard('{ArrowRight}')
     expect(label()).toBe('Density')
     await userEvent.keyboard('{ArrowLeft}')
-    expect(label()).toBe('Export')
+    expect(label()).toBe(tableLabels.export)
     await userEvent.keyboard('{Home}')
     expect(label()).toBe('Density')
     await userEvent.keyboard('{End}')
-    expect(label()).toBe('Export')
+    expect(label()).toBe(tableLabels.export)
 
     await userEvent.keyboard('{Tab}')
     expect(toolbar()!.contains(document.activeElement)).toBe(false)
@@ -187,7 +191,7 @@ describe('Toolbar', () => {
       rect(head()).bottom
 
     const plain = await render(
-      <Stories.AllFeatures {...GRID} loading="refresh" />,
+      <Stories.DataGridPlayground {...GRID} loading="refresh" />,
     )
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
@@ -196,7 +200,7 @@ describe('Toolbar', () => {
     const withoutToolbar = offsetFromHead()
     await plain.unmount()
 
-    await mount(<Stories.WithToolbar {...GRID} loading="refresh" />)
+    await mount(<Stories.ToolbarPlayground {...GRID} loading="refresh" />)
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
       .poll(() => document.querySelector('[role="progressbar"]'))
@@ -281,7 +285,7 @@ describe('Toolbar button order', () => {
 
   const renderBuiltIns = (enableQuickSearch = true) =>
     mount(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...GRID}
         enableColumnVisibility
         enableColumnFiltering

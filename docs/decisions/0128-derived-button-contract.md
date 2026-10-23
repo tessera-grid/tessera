@@ -11,6 +11,8 @@
   - [ADR 0127](0127-initiator-pending-and-failure.md) — IR15 (`CellButton` с `pending`,
     `errorFlash`, `failure`, видна без наведения) выполняется здесь, а не на этапе 2, и для
     всех производных кнопок.
+- **Изменено:** [ADR 0117](0117-story-controls.md) (2026-10-22) — первая история `UI/<Кнопка>` —
+  `Playground` вместо `Default` (DB4, SN31).
 - **Связано:** [ADR 0017](0017-ui-components.md) — UI-примитивы; [ADR 0106](0106-flag-and-predicate-naming.md)
   — правило имён; [ADR 0076](0076-smooth-cell-button-reveal.md) — раскрытие кнопок ячейки;
   [ADR 0117](0117-story-controls.md) — истории.
@@ -94,13 +96,13 @@
 
 Каждая производная кнопка — история `UI/<Кнопка>` одного устройства:
 
-- **`Default`** — песочница в рамке своего места (`UiCanvas` с `host` ячейки, заголовка или
+- **`Playground`** — песочница в рамке своего места (`UiCanvas` с `host` ячейки, заголовка или
   строки, `ToolbarButton` — в тулбаре): скрыта до наведения, где есть `revealOnHover`;
   клик переключает своё состояние (раскрыта, сгруппирована, закреплена, сортировка по
   кругу), у кнопок без состояния — пишет действие; контролы — по пропсам кнопки.
 - **Истории состояний** — включённое (`Expanded`, `Grouped`, `Pinned`, `Sorted`,
   `Active` у `ToolbarButton`, `CellButton` и `RowButton`), `Pending`, `Disabled` с тултипом выключенной; у кнопок с `revealOnHover` —
-  ещё `Always visible`. Вкладки Controls у них нет — контролы только у `Default`
+  ещё `Always visible`. Вкладки Controls у них нет — контролы только у `Playground`
   ([ADR 0117](0117-story-controls.md), SN30).
 - **Особые** — свои как есть (`Multi-sort` у `SortButton`).
 
@@ -137,7 +139,7 @@
 | DB1 | `CellButton`, `RowButton`, `ExpandButton`, `GroupButton`, `PinButton`, `SortButton` и `ToolbarButton` принимают `disabled`, `tooltipWhenDisabled`, `pending`, `errorFlash`, `failure`, `onClick` с событием и `data-testid`; занятая — `aria-busy` и дуга, нажатия не доходят; `errorFlash` — вспышка отказа; `failure` — отметка и её текст тултипом; выключенная с `tooltipWhenDisabled` — тултип при наведении | визуальный |
 | DB2 | `revealOnHover` у `CellButton`, `RowButton`, `PinButton`, `SortButton`, `GroupButton`: по умолчанию кнопка скрыта до наведения на свою ячейку, заголовок или строку и видна при наведении; `false` — видна всегда; включённая, занятая и с отметкой отказа видна без наведения                                                                                                                                    | визуальный |
 | DB3 | Публичные типы `/ui`: `label` вместо `title`, `revealOnHover` вместо `showOnHover` и `isVisible`, `tooltipWhenDisabled` вместо `showTooltipWhenDisabled`, `pinned` и `grouped` вместо `isPinned` и `isGrouped`, `data-testid` вместо `testId`, тип `CellButtonProps`; старых имён в типах нет; `DerivedButtonProps` экспортируется                                                                                | модульный  |
-| DB4 | Истории `UI/<Кнопка>` семи производных кнопок: первая — `Default` в рамке своего места (`host` холста или тулбар); есть истории `Pending` и `Disabled`, у кнопок со своим состоянием и у `CellButton` и `RowButton` — история включённого состояния, у кнопок с `revealOnHover` — `Always visible`                                                                                                                | модульный  |
+| DB4 | Истории `UI/<Кнопка>` семи производных кнопок: первая — `Playground` в рамке своего места (`host` холста или тулбар); есть истории `Pending` и `Disabled`, у кнопок со своим состоянием и у `CellButton` и `RowButton` — история включённого состояния, у кнопок с `revealOnHover` — `Always visible`                                                                                                             | модульный  |
 | DB5 | `CellButton` и `RowButton` с `active` — цвет `--tsr-comp-control-active-color` и точка включённого действия ADR 0062 в правом верхнем углу кнопки; без `active` — цвет покоя `--tsr-comp-button-color`, точки нет                                                                                                                                                                                                 | визуальный |
 
 ## План внедрения

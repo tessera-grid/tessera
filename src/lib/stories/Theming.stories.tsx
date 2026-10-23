@@ -533,6 +533,7 @@ const colorArgTypes = (
 const meta = {
   title: 'Tessera/Theming',
   component: ThemingDemo,
+  tags: ['done'],
   args: {
     loading: 'off',
     loadError: false,
@@ -824,7 +825,7 @@ export const ThemeSources: StoryObj<{ appPalette: boolean }> = {
     appPalette: {
       name: 'Палитра приложения',
       description:
-        'Роли shadcn приложения; выключено — грид на своих значениях.',
+        'Роли shadcn приложения; выключено — таблица на своих значениях.',
       control: { type: 'boolean' },
     },
   },

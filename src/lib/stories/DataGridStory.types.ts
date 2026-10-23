@@ -51,6 +51,11 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   initialColumnPinning?: ColumnPinningState
   /** Все колонки скрыты состоянием приложения (`columnVisibility`, ADR 0123); на лету. */
   hideAllColumns?: boolean
+  /**
+   * «Сервер» отвечает на повтор загрузки (ADR 0096): после `onRetry` — загрузка, затем
+   * ошибка снята, а при первой загрузке приходят строки.
+   */
+  retrySucceeds?: boolean
   /** Первая колонка данных закреплена слева сразу при открытии; переключается на лету. */
   pinFirstColumn?: boolean
   /**
@@ -68,6 +73,15 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   onDebugAction?: OnDebugAction
 
   containerHeight: number | string
+  /**
+   * Контейнер приложения пунктирной рамкой с подписью высоты (ADR 0131): высота
+   * контейнера держится и под консолью.
+   */
+  containerFrame?: boolean
+  /** Панель приложения над гридом в контейнере, px (ADR 0131, `height: 'auto'`). */
+  appPanelHeight?: number
+  /** Класс на корне грида — стили темы приложения (ADR 0077, RH3). */
+  gridClassName?: string
   /** Ширина контейнера истории, px; по умолчанию — вся ширина. */
   containerWidth?: number
   height: DataGridProps['height']

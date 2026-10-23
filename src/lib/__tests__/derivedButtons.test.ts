@@ -87,7 +87,7 @@ describe('Производные кнопки кита (ADR 0128)', () => {
     expect(names('GroupButton')).toContain('grouped')
   })
 
-  it('DB4: истории UI/<Кнопка> — первая Default в рамке своего места, есть Pending и Disabled, у кнопок со своим состоянием и у CellButton и RowButton — история включённого, у кнопок с revealOnHover — Always visible', () => {
+  it('DB4: истории UI/<Кнопка> — первая Playground в рамке своего места, есть Pending и Disabled, у кнопок со своим состоянием и у CellButton и RowButton — история включённого, у кнопок с revealOnHover — Always visible', () => {
     for (const button of BUTTONS) {
       const source = readFileSync(
         new URL(`../stories/UI.${button}.stories.tsx`, import.meta.url),
@@ -97,8 +97,8 @@ describe('Производные кнопки кита (ADR 0128)', () => {
         ...source.matchAll(/export const (\w+): Story = \{\s*name: '([^']+)'/g),
       ].map(([, id, name]) => ({ id, name }))
       expect(stories[0], button).toEqual({
-        id: `${button}Default`,
-        name: 'Default',
+        id: `${button}Playground`,
+        name: 'Playground',
       })
       expect(
         /<UiCanvas\s+host="(cell|head|row)"|<Toolbar\.Root>/.test(source),

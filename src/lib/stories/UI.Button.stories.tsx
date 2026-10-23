@@ -85,8 +85,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ButtonDefault: Story = {
-  name: 'Default',
+export const ButtonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls(
     'children',
     'variant',

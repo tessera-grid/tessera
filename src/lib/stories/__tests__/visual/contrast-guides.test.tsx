@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { render } from 'vitest-browser-react'
-import { page } from 'vitest/browser'
+import { page, server } from 'vitest/browser'
 import { beforeAll, describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
@@ -339,6 +339,12 @@ const all = emptyResult()
 let walked = 0
 
 const known = baseline as Record<string, string>
+
+/** Истории сценариев без гайда — с причиной; их вид проверяет каталог. */
+const WITHOUT_GUIDE: Record<string, string> = {
+  'DataGrid/Core/Stubs/StubsCustom':
+    'своя заглушка в покое, без шагов — решение пользователя 2026-10-23',
+}
 const OWN_KEYS = /^CX1[23] /
 
 describe('Шаги гайдов в матрице контраста (ADR 0089, §7)', () => {
@@ -351,8 +357,10 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       '[data-testid="story-console"] { display: none !important; }'
     document.head.append(hide)
     const guides = (await loadStories()).filter(
-      ({ path, Story }) =>
-        Story.parameters.scenario && !path.includes('.dev.stories'),
+      ({ path, story, Story }) =>
+        Story.parameters.scenario &&
+        !path.includes('.dev.stories') &&
+        !(story in WITHOUT_GUIDE),
     )
     for (const { story, Story } of guides) {
       const result = await walkGuide(story, Story)
@@ -385,9 +393,12 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       ...all.findings.map(f => f.key),
       ...all.axeViolations.map(v => v.key),
     ])
+    // WebKit не подменяет цвета в forced-colors: его находки в режиме — не проверка (CX10).
+    const forcing = server.browser !== 'webkit'
     expect(
       all.findings
         .filter(f => !(f.key in known))
+        .filter(f => forcing || !f.key.includes('/forced-'))
         .map(f => `${f.key} — ${f.ratio.toFixed(2)}:1 < ${f.need}:1`),
     ).toEqual([])
     // База шагов только сокращается, как CX8.
@@ -500,6 +511,21 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     )
     expect(tall.fit.length).toBeGreaterThan(0)
     expect(tall.fit[0]).toMatch(/проверяемая область больше окна/)
+  })
+
+  test('DG2: каждое состояние drag.* объявлено шагом гайда истории сценария перетаскивания и проверено матрицей во всех сочетаниях шага', () => {
+    const dragging = ['/Rows/Dragging/', '/Columns/Dragging/']
+    const covered = new Set(
+      all.audits
+        .filter(a => dragging.some(title => a.story.includes(title)))
+        .filter(a => COMBOS.every(combo => a.checked[comboLabel(combo)]! > 0))
+        .flatMap(a => a.states),
+    )
+    expect(
+      CATALOG_STATES.drag
+        .map(state => `drag.${state}`)
+        .filter(state => !covered.has(state)),
+    ).toEqual([])
   })
 
   test('VR14: каждое состояние реестра объявлено историей каталога или шагом гайда и проверено во всех двенадцати сочетаниях', async () => {

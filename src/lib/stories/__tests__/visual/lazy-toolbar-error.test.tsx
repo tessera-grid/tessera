@@ -11,6 +11,7 @@ import {
   renderToolbarGrid,
   sleep,
 } from './lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Ошибка загрузки модуля поповера (ADR 0061, LZ5). Отдельный файл: модуль грузится
 // один раз на документ.
@@ -29,7 +30,7 @@ describe('Ленивые поповеры — ошибка загрузки', ()
       .toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain("Couldn't load Columns. Try again.")
+      .toContain(tableLabels.loadFailed(tableLabels.columns))
     await sleep(100)
     expect(columnsPopover()).toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()
@@ -50,7 +51,7 @@ describe('Ленивые поповеры — ошибка загрузки', ()
     announcements.stop()
     expect(
       announcements.messages.filter(
-        text => text === "Couldn't load Columns. Try again.",
+        text => text === tableLabels.loadFailed(tableLabels.columns),
       ).length,
     ).toBeGreaterThanOrEqual(1)
   })

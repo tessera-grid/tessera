@@ -33,6 +33,7 @@ import {
   updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { labelPattern, storyLabels } from './__mocks__/storyLabels'
 import { showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 
@@ -72,8 +73,8 @@ const GRID = {
   quickSearchFilteredCount: true,
 }
 
-export const Filtering: StoryObj<StoryProps> = {
-  name: 'Default',
+export const FilteringPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableQuickSearch',
     'quickSearchDebounceMs',
@@ -292,7 +293,8 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
       'serverDelayMs',
     ]),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
+    const labels = storyLabels(args.locale)
     const firstName = () => firstRowText(canvasElement, 'name')
     await openFilter(canvasElement, 'name')
     await userEvent.type(byTestId('filter-value')!, 'bob')
@@ -302,16 +304,18 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     expect(consoleText()).toContain('"value":"bob"')
     await until(() => expect(consoleText()).toContain('server'))
     await until(() => expect(firstName()).toBe('Bob 1'))
-    expect(filteredCount()).toBe('Showing 29 of 200')
+    expect(filteredCount()).toBe(labels.filteredRows(29, 200))
 
     await userEvent.type(byTestId('quick-search')!, 'paris')
     await until(() => expect(consoleText()).toContain('onSearchChange'))
     expect(consoleText()).toContain('search="paris"')
     // Bob — каждая 7-я строка, Paris — каждая 5-я: оба — каждая 35-я.
-    await until(() => expect(filteredCount()).toBe('Showing 6 of 200'))
+    await until(() => expect(filteredCount()).toBe(labels.filteredRows(6, 200)))
     expect(firstName()).toBe('Bob 15')
     expect(consoleText()).toContain('columnIds="name,city,age,visits"')
-    expect(searchHint()).toBe('Search in columns: Name, City, Age, Visits')
+    expect(searchHint()).toBe(
+      labels.searchColumnsHint(['Name', 'City', 'Age', 'Visits']),
+    )
 
     // Скрытая колонка уходит из поиска: запрос повторяется с новым набором.
     await openPopup(() => byTestId('column-visibility-button'))
@@ -324,7 +328,9 @@ export const FilteringServer: StoryObj<FilteringServerArgs> = {
     await until(() =>
       expect(consoleText()).toContain('columnIds="name,city,visits"'),
     )
-    expect(searchHint()).toBe('Search in columns: Name, City, Visits')
+    expect(searchHint()).toBe(
+      labels.searchColumnsHint(['Name', 'City', 'Visits']),
+    )
     await settle()
   },
 }
@@ -372,7 +378,8 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
       'dateLocale',
     ]),
   },
-  play: async ({ canvasElement, id }) => {
+  play: async ({ args, canvasElement, id }) => {
+    const labels = storyLabels(args.locale)
     const calendar = async (column: string) => {
       await openFilter(canvasElement, column)
       await until(() => expect(byTestId('filter-calendar')).not.toBeNull())
@@ -391,12 +398,12 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
     // datetime: 15 марта по UTC — все 20 строк этого дня.
     await calendar('createdAt')
     await pickDay('2026', '2026-03-15')
-    await until(() => expect(filteredCount()).toBe('Showing 20 of 60'))
+    await until(() => expect(filteredCount()).toBe(labels.filteredRows(20, 60)))
     await closeFilter()
 
     // В Токио строки после 15:00 UTC уходят на 16-е.
     await updateArgs(id, { timeZone: 'Asia/Tokyo' })
-    await until(() => expect(filteredCount()).toBe('Showing 14 of 60'))
+    await until(() => expect(filteredCount()).toBe(labels.filteredRows(14, 60)))
 
     // date: «до 1 марта 1980» вдобавок к фильтру дат создания.
     await calendar('birthDate')
@@ -410,7 +417,11 @@ export const FilteringDates: StoryObj<FilteringDatesArgs> = {
     await until(() => expect(before()).not.toBeNull())
     await userEvent.click(before()!)
     await pickDay('1980', '1980-03-01')
-    await until(() => expect(filteredCount()).toMatch(/^Showing [1-9] of 60$/))
+    await until(() =>
+      expect(filteredCount()).toMatch(
+        labelPattern(args.locale, n => labels.filteredRows(n, 60), '[1-9]'),
+      ),
+    )
     await closeFilter()
     await settle()
   },
@@ -452,13 +463,18 @@ export const FilteringOptions: StoryObj<StoryProps> = {
       'columnFilteringTimeZone',
     ]),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
+    const labels = storyLabels(args.locale)
     await waitForRows(canvasElement)
     expect(firstRowText(canvasElement, 'status')).toBe('Lead')
 
     await openOptions(canvasElement, 'status')
     await userEvent.click(checkboxOf('won'))
-    await until(() => expect(filteredCount()).toMatch(/^Showing \d+ of 60$/))
+    await until(() =>
+      expect(filteredCount()).toMatch(
+        labelPattern(args.locale, n => labels.filteredRows(n, 60)),
+      ),
+    )
     const afterStatus = filteredCount()
     await closeFilter()
 
@@ -481,7 +497,9 @@ export const FilteringOptions: StoryObj<StoryProps> = {
     await userEvent.click(checkboxOf('vip'))
     await userEvent.click(checkboxOf('partner'))
     await until(() => expect(filteredCount()).not.toBe(afterStatus))
-    expect(filteredCount()).toMatch(/^Showing \d+ of 60$/)
+    expect(filteredCount()).toMatch(
+      labelPattern(args.locale, n => labels.filteredRows(n, 60)),
+    )
     await settle()
   },
 }
@@ -514,7 +532,8 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
       'serverDelayMs',
     ]),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
+    const labels = storyLabels(args.locale)
     await openOptions(canvasElement, 'managerId')
     await until(() => expect(consoleText()).toContain('loadOptions'))
     await userEvent.type(byTestId('filter-options-search')!, 'alice')
@@ -541,7 +560,7 @@ export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
     await userEvent.click(byTestId('filter-summary-button')!)
     await until(() =>
       expect(byTestId('filter-summary')).toHaveTextContent(
-        'Any of: Alice Moss',
+        `${labels.filterAnyOf}: Alice Moss`,
       ),
     )
     await settle()
@@ -806,7 +825,7 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
       args={normalizeArgs(args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     const ages = () => cellsOf(canvas, 'age').map(Number)
@@ -827,7 +846,7 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await userEvent.click(
         canvas.querySelector<HTMLElement>(
-          '[data-testid="pagination"] button[aria-label="Next page"]',
+          `[data-testid="pagination"] button[aria-label="${storyLabels(args.locale).nextPage}"]`,
         )!,
       )
       await until(() => expect(rangeText(canvas)).toMatch(/^11–15 /))

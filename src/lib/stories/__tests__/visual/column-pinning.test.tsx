@@ -1,4 +1,4 @@
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
@@ -20,8 +20,18 @@ import {
 import { composed } from './column-pinning-helpers'
 import { luminance, toRgba } from './a11y-helpers'
 import { parkPointer } from '../pointer'
+import { tableLabels } from '../labels'
 
-// CP1–CP12: кнопка, переключение и sticky-рендер закрепления.
+const pointer = commands as unknown as {
+  realWheel: (
+    at: { x: number; y: number },
+    deltaY: number,
+    ticks: number,
+    intervalMs: number,
+  ) => Promise<void>
+}
+
+// CP1–CP12, CP36: кнопка, переключение и sticky-рендер закрепления.
 // Каждое требование — отдельный тест с ID из таблицы требований
 // docs/decisions/0011-column-pinning.md (правило именования — ADR 0009).
 // Story ColumnPinning переполнена по обеим осям — у sticky-требований (CP10–CP12)
@@ -101,7 +111,7 @@ describe('Column Pinning — requirements', () => {
     await userEvent.hover(cell)
     const button = pinButtonOf(cell)
     await userEvent.hover(button)
-    expect(await waitForBodyText('Pin column')).toBe(true)
+    expect(await waitForBodyText(tableLabels.pin)).toBe(true)
 
     // Pin it, then the same trigger's tooltip flips to "Unpin column".
     await userEvent.click(button)
@@ -115,7 +125,7 @@ describe('Column Pinning — requirements', () => {
     // fires a fresh enter and re-opens the tooltip with its flipped label.
     await userEvent.hover(renderedDataCells(container)[3])
     await userEvent.hover(pinnedButton)
-    expect(await waitForBodyText('Unpin column')).toBe(true)
+    expect(await waitForBodyText(tableLabels.unpin)).toBe(true)
   })
 
   test('CP7: clicking pins the column left; clicking again unpins it', async () => {
@@ -223,13 +233,49 @@ describe('Column Pinning — requirements', () => {
     expect(parseFloat(border)).toBeGreaterThan(0)
   })
 
+  test('CP36: pinned cells of rows mounted after a horizontal scroll stick to their edge like rows mounted before it', async () => {
+    const container = await renderColumnPinning()
+    await pinFirstColumn(container)
+    const scroller = scrollerOf(container)
+    const rows = () => [
+      ...container.querySelectorAll<HTMLElement>('.data-grid__body-row'),
+    ]
+    const pinnedLeft = (row: HTMLElement) =>
+      row
+        .querySelector(`${BODY_CELL}[data-cell-pinned='left']`)!
+        .getBoundingClientRect().left
+    const edge = pinnedLeft(rows()[0]!)
+    scroller.scrollLeft = 400
+    await expect.poll(() => scroller.scrollLeft).toBeGreaterThan(0)
+    const mounted = new Set(rows().map(row => row.dataset.rowId))
+    // Колесом вниз, ниже порога быстрой прокрутки: строки ниже окна монтируются.
+    const box = scroller.getBoundingClientRect()
+    await pointer.realWheel(
+      { x: box.left + box.width / 2, y: box.top + box.height / 2 },
+      100,
+      6,
+      120,
+    )
+    await expect
+      .poll(() => rows().filter(row => !mounted.has(row.dataset.rowId)).length)
+      .toBeGreaterThan(0)
+    await expect
+      .poll(() => scroller.hasAttribute('data-fast-scrolling'))
+      .toBe(false)
+    for (const row of rows()) {
+      expect(Math.abs(pinnedLeft(row) - edge), row.dataset.rowId).toBeLessThan(
+        1,
+      )
+    }
+  })
+
   test('CP28: in both themes a pinned cell is tinted the same way against its row (even and odd), and the pinned header matches the header', async () => {
     const lum = (el: Element) =>
       luminance(toRgba(getComputedStyle(el).backgroundColor))
     for (const theme of ['light', 'dark'] as const) {
       const screen = await render(
         <div className={theme === 'dark' ? 'dark' : undefined}>
-          <composed.ColumnPinning />
+          <composed.ColumnPinningPlayground />
         </div>,
       )
       await expect

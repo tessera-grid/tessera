@@ -12,7 +12,7 @@ import { showControls } from './__mocks__/utils/dataGridControls'
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/DEV/AutoTests',
+  title: 'Tessera/Common/AutoTests',
 } satisfies Meta<StoryProps>
 
 export default meta

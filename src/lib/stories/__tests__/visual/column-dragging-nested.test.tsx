@@ -3,11 +3,13 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { firePointer, nextFrame } from '../../rowDragging.dnd'
 import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 import { pinViaPopover, withWideViewport } from './column-pinning-helpers'
+import { tableLabels } from '../labels'
+import { HeaderGroupsDraggingGrid } from './columns-fixtures'
 
 // Перетаскивание под вложенной шапкой (ADR 0052): ND1–ND5, ND7, ND10, ND12–ND13,
 // ND15. ND6, ND8–ND9, ND11 — модульные; ND14 — перф в `interaction`.
@@ -28,11 +30,11 @@ const HANDLE = '.drag__handler--column'
 const BODY_ROW = '.data-grid__body-row'
 const OVERLAY = '.data-grid-head__cell--overlay'
 
-type Args = Partial<Parameters<typeof composed.HeaderGroupsDragging>[0]>
+type Args = Partial<Parameters<typeof HeaderGroupsDraggingGrid>[0]>
 
 const mount = async (args: Args = {}) => {
   const result = await render(
-    <composed.HeaderGroupsDragging enableRowDragging={false} {...args} />,
+    <HeaderGroupsDraggingGrid enableRowDragging={false} {...args} />,
   )
   await expect
     .poll(() => document.querySelectorAll(`${BODY_ROW} [aria-colindex]`).length)
@@ -202,13 +204,13 @@ describe('DnD under nested headers', () => {
       await expect.poll(() => leafOrder().indexOf('firstName')).toBe(4)
 
       await openMenu('firstName')
-      expect(isDisabled(menuItem(DEFAULT_LABELS.moveLeft))).toBe(true)
-      await userEvent.click(menuItem(DEFAULT_LABELS.moveRight))
+      expect(isDisabled(menuItem(ENGLISH_LABELS.moveLeft))).toBe(true)
+      await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
       await expect
         .poll(() => leafOrder().slice(4, 6))
         .toEqual(['lastName', 'firstName'])
       await openMenu('firstName')
-      expect(isDisabled(menuItem(DEFAULT_LABELS.moveRight))).toBe(true)
+      expect(isDisabled(menuItem(ENGLISH_LABELS.moveRight))).toBe(true)
       await userEvent.keyboard('{Escape}')
     })
   })
@@ -216,7 +218,7 @@ describe('DnD under nested headers', () => {
   test('ND7: pinned nodes do not move; with leafPinning a group segment moves only within its zone', async () => {
     await withWideViewport(async () => {
       const pinned = await mount({ enableColumnPinning: true })
-      await pinViaPopover(head('name'), 'Pin left')
+      await pinViaPopover(head('name'), tableLabels.pinLeft)
       await expect
         .poll(() => head('name', 'left').getAttribute('data-cell-pinned'))
         .toBe('left')
@@ -225,7 +227,7 @@ describe('DnD under nested headers', () => {
       await pinned.unmount()
 
       await mount({ enableColumnPinning: true, columnPinningLeafPinning: true })
-      await pinViaPopover(head('gender'), 'Pin left')
+      await pinViaPopover(head('gender'), tableLabels.pinLeft)
       await expect.poll(() => leafOrder()[0]).toBe('gender')
       // Незакреплённый сегмент `info` — к левому краю центральной зоны, не дальше.
       await dragTo('info', 2)
@@ -268,7 +270,7 @@ describe('DnD under nested headers', () => {
   test('ND12: a group handle is a named menu button with a target of at least 24×24', async () => {
     await mount()
     const handle = handleOf('info')
-    expect(handle.getAttribute('aria-label')).toBe(DEFAULT_LABELS.moveColumn)
+    expect(handle.getAttribute('aria-label')).toBe(ENGLISH_LABELS.moveColumn)
     expect(handle.getAttribute('aria-haspopup')).toBe('menu')
     // Как TS1: квадрат 24×24 вокруг ручки целиком её, либо до соседних целей
     // не ближе половины квадрата.
@@ -327,7 +329,7 @@ describe('DnD under nested headers', () => {
 
   test('ND15: the "Header Groups — dragging" story moves a group and keeps row handles', async () => {
     await withWideViewport(async () => {
-      await render(<composed.HeaderGroupsDragging />)
+      await render(<HeaderGroupsDraggingGrid />)
       await expect
         .poll(() => document.querySelectorAll(`${BODY_ROW} ${HANDLE}`).length)
         .toBeGreaterThan(0)

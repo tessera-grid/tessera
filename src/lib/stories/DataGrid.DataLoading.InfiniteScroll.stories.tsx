@@ -15,7 +15,7 @@ import { showControls } from './__mocks__/utils/dataGridControls'
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
-  title: 'Tessera/DataGrid/Data/Infinite scroll',
+  title: 'Tessera/DataGrid/Data loading/Infinite scroll',
 } satisfies Meta<StoryProps>
 
 export default meta
@@ -27,8 +27,8 @@ const delayControl = {
 
 const layout = { containerHeight: '600', height: '480', maxHeight: '480' }
 
-export const InfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
-  name: 'Default',
+export const InfiniteScrollPlayground: StoryObj<InfiniteScrollDemoProps> = {
+  name: 'Playground',
   parameters: showControls(['serverDelayMs', 'blockSize'], {
     dataCount: 'данные подаёт демо',
     columnCount: 'колонки задаёт демо',

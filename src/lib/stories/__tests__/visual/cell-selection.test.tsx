@@ -7,7 +7,7 @@ import { composed } from '../stories'
 // Каждое требование cellSelection — свой именованный тест `CR<n>` (таблица
 // требований в docs/decisions/0029-cell-range-selection.md), чтобы `npm test`
 // сообщал и валил их по отдельности (правило именования — ADR 0009).
-// Тесты гоняют историю `CellSelection` (умеренный грид, обе оси в окне) и читают
+// Тесты гоняют историю `CellSelectionPlayground` (умеренный грид, обе оси в окне) и читают
 // состояние из DOM-контракта: ячейка `data-cell-selected` / `data-cell-focused`,
 // кромки — из инлайн-переменных `--tsr-sel-edge-*`. Взаимодействие — нативные
 // MouseEvent'ы (детерминированно, как DnD-хореография в других тестах): стоковые
@@ -85,10 +85,14 @@ const dragCells = (start: Element, path: Element[]) => {
 
 // --- Rendering ----------------------------------------------------------------
 
-type CellSelectionArgs = Partial<Parameters<typeof composed.CellSelection>[0]>
+type CellSelectionArgs = Partial<
+  Parameters<typeof composed.CellSelectionPlayground>[0]
+>
 
 async function renderCellSelection(args: CellSelectionArgs = {}) {
-  const { container } = await render(<composed.CellSelection {...args} />)
+  const { container } = await render(
+    <composed.CellSelectionPlayground {...args} />,
+  )
   await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
   return container
 }

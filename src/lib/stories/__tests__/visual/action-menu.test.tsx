@@ -11,16 +11,17 @@ import {
   revealPin,
 } from './column-pinning-helpers'
 import { composed } from '../stories'
+import { tableLabels } from '../labels'
 
 // Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
-// Чёрный ящик над раскладкой: истории `HeaderActionMenu` / `RowActionMenu` через
+// Чёрный ящик над раскладкой: истории `HeaderMenuPlayground` / `RowActionMenu` через
 // composeStories, реальный Chromium. Один тест = одно требование (AM<n>).
 
 const HEAD_CELL = '.data-grid__head-cell'
 /** Заголовки реальных (не сервисных) колонок. */
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
-const KEBAB = '[aria-label^="Column options"]'
-const ROW_KEBAB = '[aria-label="Row options"]'
+const KEBAB = `[aria-label^="${tableLabels.headerMenu}"]`
+const ROW_KEBAB = `[aria-label="${tableLabels.rowMenu}"]`
 const ACTION_CELL =
   '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
 
@@ -41,7 +42,7 @@ const closeMenu = async () => {
 }
 
 async function renderHeaderMenu(args: Record<string, unknown> = {}) {
-  const view = await render(<composed.HeaderActionMenu {...args} />)
+  const view = await render(<composed.HeaderMenuPlayground {...args} />)
   await expect
     .poll(() => dataHeadCells(view.container).length)
     .toBeGreaterThan(3)
@@ -89,9 +90,9 @@ describe('Action menu — header', () => {
     expect(document.querySelectorAll('[role="group"]').length).toBe(3)
     expect(labels).toEqual(
       expect.arrayContaining([
-        'Sort ascending',
-        'Sort descending',
-        'Clear sorting',
+        tableLabels.sortAscending,
+        tableLabels.sortDescending,
+        tableLabels.clearSort,
       ]),
     )
 
@@ -111,7 +112,7 @@ describe('Action menu — header', () => {
     ).toBe(0)
 
     // Тот же инстанс, включаем меню → схлопывание.
-    view.rerender(<composed.HeaderActionMenu enableHeaderActionMenu />)
+    view.rerender(<composed.HeaderMenuPlayground enableHeaderActionMenu />)
     await expect
       .poll(
         () => view.container.querySelectorAll(`${HEAD_CELL} ${KEBAB}`).length,
@@ -130,8 +131,8 @@ describe('Action menu — header', () => {
     const colId = firstCol.getAttribute('data-column-id')!
 
     await userEvent.click(firstCol.querySelector<HTMLElement>(KEBAB)!)
-    await expect.poll(() => menuItemByText('Pin column')).toBeTruthy()
-    await userEvent.click(menuItemByText('Pin column')!)
+    await expect.poll(() => menuItemByText(tableLabels.pin)).toBeTruthy()
+    await userEvent.click(menuItemByText(tableLabels.pin)!)
 
     const pinnedCell = () =>
       container.querySelector<HTMLElement>(
@@ -143,7 +144,7 @@ describe('Action menu — header', () => {
 
     // Переоткрываем меню того же столбца — подпись стала «Unpin column».
     await userEvent.click(pinnedCell()!.querySelector<HTMLElement>(KEBAB)!)
-    await expect.poll(() => menuItemByText('Unpin column')).toBeTruthy()
+    await expect.poll(() => menuItemByText(tableLabels.unpin)).toBeTruthy()
 
     await closeMenu()
   })
@@ -177,7 +178,7 @@ describe('Action menu — header', () => {
       `${HEAD_CELL} .column-pin__button`,
     )!
     expect(pin).toBeTruthy()
-    expect(pin.getAttribute('aria-label')).toBe('Pin column')
+    expect(pin.getAttribute('aria-label')).toBe(tableLabels.pin)
     expect(pin.querySelector('svg')).toBeTruthy()
     expect(
       pin.closest('.cell__button')?.getAttribute('data-button-active'),

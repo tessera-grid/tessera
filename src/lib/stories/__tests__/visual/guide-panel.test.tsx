@@ -3,16 +3,18 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import * as skeletonStories from '../../DataGrid.Core.Skeleton.stories'
+import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
+import * as visibilityStories from '../../DataGrid.Columns.Visibility.stories'
 import * as stories from '../../GuidePanel.dev.stories'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27) — с движением: каталог
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN34) — с движением: каталог
 // гоняет истории с уменьшенным движением, и порядок конфетти и сдвига виден только здесь.
-// SN16, SN18–SN20 — в `play` песочницы `Tessera/DEV/Guide panel`.
+// SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
 const { GuidePanelCollapsed, GuidePanelManySteps, GuidePanelPlayground } =
   composeStories(stories)
 const { SkeletonDataArrives } = composeStories(skeletonStories)
+const { ColumnVisibilityToggleAll } = composeStories(visibilityStories)
 
 const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
@@ -626,6 +628,109 @@ describe('панель сценария (ADR 0117)', () => {
       expect(expandColumn()).toBeNull()
       await goTo(5)
       await expect.poll(expandColumn).not.toBeNull()
+    } finally {
+      await motion.reducedMotion(false)
+    }
+  })
+
+  test('SN33: «Назад» и нажатие на прошлый шаг возвращают таблицу в состояние этого шага, даже если отменённый шаг выполнил действие', async () => {
+    await motion.reducedMotion(true)
+    try {
+      // «Toggle all»: шаг 2 снимает флажок всех колонок — таблица уходит в заглушку.
+      await render(<ColumnVisibilityToggleAll />)
+      await expect.poll(() => byId('guide-next')).toBeTruthy()
+      byId('guide-toggle').click()
+      const stub = () =>
+        document.querySelector('[data-testid="columns-hidden-stub"]')
+      const rows = () =>
+        document.querySelectorAll('.data-grid__body-row').length
+      const stepButton = (index: number) =>
+        document.querySelector<HTMLButtonElement>(
+          `[data-step-button="${index}"]`,
+        )!
+      const toHidden = async () => {
+        stepButton(1).click()
+        await expect.poll(stub).not.toBeNull()
+        expect(rows()).toBe(0)
+      }
+      await expect.poll(rows).toBeGreaterThan(0)
+
+      await toHidden()
+      byId('guide-back').click()
+      await expect.poll(rows).toBeGreaterThan(0)
+      expect(stub()).toBeNull()
+
+      await toHidden()
+      stepButton(0).click()
+      await expect.poll(rows).toBeGreaterThan(0)
+      expect(stub()).toBeNull()
+    } finally {
+      await motion.reducedMotion(false)
+    }
+  })
+
+  test('SN34: свёрнутая панель показывает прогресс линией по нижнему краю — доля шаг / (шагов − 1), пройденный — вся; воспроизведение заливает её вместе с шагом в реальном времени, пауза замораживает; перезапуск без отката; в раскрытой линии нет', async () => {
+    await render(<GuidePanelPlayground stepCount={3} expanded={false} />)
+    await expect.poll(() => byId('guide-progress')).toBeTruthy()
+    const bar = () => byId('guide-progress')
+    const layer = () => bar().parentElement!.parentElement!
+    const share = () =>
+      bar().getBoundingClientRect().width /
+      bar().parentElement!.getBoundingClientRect().width
+    const panel = byId('guide').getBoundingClientRect()
+    // Линия — у нижнего края панели, во всю её ширину.
+    const track = bar().parentElement!.getBoundingClientRect()
+    expect(track.height).toBe(2)
+    expect(Math.round(panel.bottom - track.bottom)).toBeLessThanOrEqual(1)
+    expect(Math.round(track.width)).toBe(Math.round(panel.width) - 2)
+    expect(getComputedStyle(bar()).backgroundColor).not.toBe(
+      getComputedStyle(bar().parentElement!).backgroundColor,
+    )
+    expect(share()).toBe(0)
+    expect(getComputedStyle(layer()).opacity).toBe('1')
+
+    // Воспроизведение в свёрнутой панели: линия растёт посреди шага, а не скачком.
+    byId('guide-play').click()
+    await expect.poll(share).toBeGreaterThan(0.1)
+    expect(byId('guide-toggle').textContent).toContain('шаг 1 из 3')
+    const [running] = bar().getAnimations()
+    expect(running!.effect!.getComputedTiming().duration).toBe(1500)
+    // «Пауза» замораживает линию на месте.
+    byId('guide-play').click()
+    // Пауза встаёт со следующего кадра.
+    await sleep(100)
+    const frozen = share()
+    await sleep(300)
+    expect(share()).toBeCloseTo(frozen, 3)
+    // Продолжение — с того же места, до конца сценария.
+    byId('guide-play').click()
+    await expect
+      .poll(() => byId('guide-toggle').textContent, { timeout: 8000 })
+      .toContain('пройден')
+    expect(share()).toBeCloseTo(1, 2)
+
+    // Перезапуск: линия сразу пустая, без отката.
+    byId('guide-play').click()
+    expect(bar().getAnimations()).toEqual([])
+    await expect.poll(() => byId('guide-toggle').textContent).toContain('шаг 1')
+    expect(share()).toBeLessThan(0.05)
+    byId('guide-play').click()
+
+    // Раскрытая панель — без линии.
+    byId('guide-toggle').click()
+    await expect.poll(() => getComputedStyle(layer()).opacity).toBe('0')
+
+    // Уменьшенное движение — без заливки: линия меняется сразу.
+    await motion.reducedMotion(true)
+    try {
+      await render(<GuidePanelPlayground stepCount={3} expanded={false} />)
+      await expect.poll(() => byId('guide-progress')).toBeTruthy()
+      byId('guide-play').click()
+      await expect
+        .poll(() => byId('guide-toggle').textContent, { timeout: 8000 })
+        .toContain('шаг 2')
+      expect(bar().getAnimations()).toEqual([])
+      expect(share()).toBeCloseTo(0.5, 2)
     } finally {
       await motion.reducedMotion(false)
     }

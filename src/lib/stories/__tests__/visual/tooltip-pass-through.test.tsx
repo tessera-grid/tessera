@@ -34,7 +34,7 @@ const openTooltip = async (trigger: HTMLElement) => {
 
 /** Кнопка раскрытия второй раскрываемой строки: её подсказка встаёт над строкой выше. */
 const expandToggle = async () => {
-  await render(<composed.RowExpanding enableColumnSorting />)
+  await render(<composed.RowExpandingPlayground enableColumnSorting />)
   const toggles = () => [
     ...document.querySelectorAll<HTMLElement>('.row-expand-button'),
   ]
@@ -67,11 +67,13 @@ describe('Подсказки насквозь', () => {
   test('TP2: указатель, перешедший с триггера на подсказку без overflowOnly, её закрывает, наведение достаётся элементу под ней', async () => {
     const toggle = await expandToggle()
     const at = await openTooltip(toggle)
+    const shown = tooltip()!
     await pointer.realMouseMove(center(toggle), at, 4)
     const under = document.elementFromPoint(at.x, at.y)!
     expect(under.matches(':hover')).toBe(true)
     await new Promise(resolve => setTimeout(resolve, 500))
-    expect(tooltip()).toBeNull()
+    // Под подсказкой может оказаться другой триггер — открытой будет уже его подсказка.
+    expect(shown.isConnected && shown.hasAttribute('data-open')).toBe(false)
     await userEvent.hover(document.body)
   })
 })

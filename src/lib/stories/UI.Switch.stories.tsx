@@ -28,8 +28,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SwitchDefault: Story = {
-  name: 'Default',
+export const SwitchPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls('checked', 'disabled'),
 }
 

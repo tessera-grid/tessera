@@ -22,7 +22,7 @@ const HIDDEN = ".cell__button--hidden:not([data-button-active='true'])"
 describe('Раскрытие кнопок ячейки в движках', () => {
   test('CB6: кнопка ячейки раскрывается через промежуточные ширины в Chromium, Firefox и WebKit; во время прокрутки — сразу', async () => {
     await render(
-      <composed.AllFeatures
+      <composed.DataGridPlayground
         containerHeight={500}
         height={400}
         dataCount={20}

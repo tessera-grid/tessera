@@ -5,19 +5,13 @@
  * «Далее» или воспроизведением, отмечается взрывом конфетти, при уменьшенном движении —
  * без него; нажатие на шаг переходит к нему сразу, без анимаций. Сворачивается, как `DemoPanel`; кнопки шагов видны и в свёрнутой.
  */
-import {
-  type ReactNode,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 import { Check as CheckIcon, Pause, Play } from 'lucide-react'
 
 import '../../core/themeVariables/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { useLatest } from '../../core/useLatest'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
@@ -307,6 +301,10 @@ export const GuidePanel = ({
   } | null>(null)
   // Идущая заливка полоски: пауза и продолжение воспроизведения.
   const fill = useRef<Animation | undefined>(undefined)
+  // Линия прогресса свёрнутой панели (SN34) и её заливка — вместе с полоской шага.
+  const progressBar = useRef<HTMLSpanElement>(null)
+  const progressFill = useRef<Animation | undefined>(undefined)
+  const expandedRef = useLatest(expanded)
   // Шаг сменило нажатие на шаг: лента едет к нему без плавности.
   const instantSlide = useRef(false)
   // Шаг под указателем: подложка-карточка.
@@ -359,12 +357,27 @@ export const GuidePanel = ({
       fill: move.timed ? 'forwards' : 'none',
     })
     fill.current = animation
+    // Линия прогресса идёт с полоской шага кадр в кадр: та же доля пути, то же время.
+    const span = lastRef.current
+    const share = (part: number) => `scaleX(${(move.index + part) / span})`
+    const lineFrames = [{ transform: share(from) }, { transform: share(1) }]
+    const mirror = progressBar.current?.animate(
+      move.back ? lineFrames.reverse() : lineFrames,
+      {
+        duration: (move.timed ? STEP_MS : FILL_MS) * (1 - from),
+        easing: move.timed ? 'linear' : 'ease-in-out',
+        fill: 'forwards',
+      },
+    )
+    progressFill.current = mirror
     let alive = true
     void (animation?.finished ?? Promise.resolve()).then(
       () => {
         if (!alive) return
         setMove(null)
-        if (move.timed) {
+        // Свёрнутая панель воспроизводит без конфетти и «подпрыгиваний»: их не видно.
+        const visible = expandedRef.current
+        if (move.timed && visible) {
           const done = list.current?.querySelector<HTMLElement>(
             `[data-step-index="${move.index}"]`,
           )
@@ -379,27 +392,29 @@ export const GuidePanel = ({
         // Последний шаг выполняется сразу: значок зеленеет с конфетти (SN16).
         if (!move.back && reached === lastRef.current) {
           setFinished(true)
-          if (badge) void burst(badge)
+          if (badge && visible) void burst(badge)
           return
         }
         // Значок нового текущего шага «подпрыгивает»: вперёд — следующего, назад —
         // прошлого, снова числом.
-        if (badge) pop(badge)
+        if (badge && visible) pop(badge)
       },
       () => {},
     )
     return () => {
       alive = false
       animation?.cancel()
+      mirror?.cancel()
       fill.current = undefined
+      progressFill.current = undefined
     }
-  }, [move, nextRef, backRef, lastRef])
+  }, [move, nextRef, backRef, lastRef, expandedRef])
   const advanceRef = useLatest(advance)
-  // Воспроизведение: полоска к следующему шагу заливается всё время шага; последний
-  // шаг выполняется сразу при переходе на него.
+  // Воспроизведение: полоска к следующему шагу заливается всё время шага — и в свёрнутой
+  // панели: по ней идёт линия прогресса (SN34); последний шаг выполняется сразу.
   useEffect(() => {
     if (!playing || move) return
-    const timed = step < last && expanded && !stillMotion()
+    const timed = step < last && !stillMotion()
     const timer = setTimeout(
       () => {
         if (timed) setMove({ index: step, back: false, timed: true })
@@ -446,11 +461,17 @@ export const GuidePanel = ({
     if (playing) {
       setAutoplay(false)
       // Заливка воспроизведения замирает на месте: шаг остаётся текущим.
-      if (move?.timed) fill.current?.pause()
+      if (move?.timed) {
+        fill.current?.pause()
+        progressFill.current?.pause()
+      }
       return
     }
     if (finished) restart()
-    else if (move?.timed) fill.current?.play()
+    else if (move?.timed) {
+      fill.current?.play()
+      progressFill.current?.play()
+    }
     setAutoplay(true)
   }
   const ellipsis = {
@@ -463,7 +484,7 @@ export const GuidePanel = ({
   const [width, setWidth] = useState(0)
   // Затемнение края — только если за ним есть шаги: следит за прокруткой ленты.
   const [edges, setEdges] = useState({ left: false, right: false })
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = viewport.current
     if (!element) return
     const readEdges = () => {
@@ -500,7 +521,7 @@ export const GuidePanel = ({
   // Свёрнутое тело — вне фокуса и дерева доступности; атрибутом: в React 18 у пропа
   // `inert` нет булевой формы.
   const body = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     body.current?.toggleAttribute('inert', !expanded)
   }, [expanded])
   const icons = useIcons()
@@ -520,13 +541,15 @@ export const GuidePanel = ({
   const mask = `linear-gradient(to right, ${
     fadeLeft ? `transparent, #000 ${fade}px` : '#000, #000'
   }, ${fadeRight ? `#000 calc(100% - ${fade}px), transparent` : '#000, #000'})`
+  // Доля пройденных шагов: первый шаг — пусто, пройденный сценарий — вся линия.
+  const progress = finished ? 1 : last === 0 ? 0 : step / last
   const reducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   // Смена шага прокручивает ленту к активному — он по центру окна. Первый раз, после
   // нажатия на шаг и при уменьшенном движении — сразу.
   const scrolled = useRef(false)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = viewport.current
     if (!element || !slider) return
     const smooth = scrolled.current && !reducedMotion && !instantSlide.current
@@ -546,6 +569,7 @@ export const GuidePanel = ({
         data-testid="guide"
         data-busy={blocking || undefined}
         style={{
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           minWidth: MIN_PANEL_WIDTH,
@@ -635,6 +659,49 @@ export const GuidePanel = ({
             {playing ? 'Пауза' : 'Воспроизвести'}
           </Button>
         </div>
+        {/*
+         * Прогресс свёрнутой панели — линия по нижнему краю (SN34): доля пройденных
+         * шагов, цвета полосок шагов; при воспроизведении идёт с заливкой шага.
+         */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'inherit',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            opacity: expanded ? 0 : 1,
+            transition: reducedMotion
+              ? undefined
+              : `opacity ${EXPAND_MS}ms ease`,
+          }}
+        >
+          <span
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 2,
+              background: 'var(--border)',
+            }}
+          >
+            {/* Без перехода: растёт заливкой шага, к началу — сразу, без отката. */}
+            <span
+              ref={progressBar}
+              data-testid="guide-progress"
+              data-progress={progress}
+              style={{
+                display: 'block',
+                height: '100%',
+                background: DONE,
+                transformOrigin: 'left',
+                transform: `scaleX(${progress})`,
+              }}
+            />
+          </span>
+        </span>
         {/* Тело всегда в DOM: раскрывается по высоте, от 0fr к 1fr. */}
         <div
           ref={body}

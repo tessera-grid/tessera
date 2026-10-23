@@ -11,6 +11,39 @@ const getNamesWithCounter = (row: any, key: string) => {
   return `${names.slice(0, 2).join(', ')} ${names.length > 2 ? `(and ${names.length - 2} more)` : `(${names.length} records)`}`
 }
 
+interface FooterRows {
+  flatRows: { getValue: (columnId: string) => unknown }[]
+}
+
+interface FooterTable {
+  getFilteredRowModel?: () => FooterRows
+  getCoreRowModel: () => FooterRows
+}
+
+/** Суммы колонок по модели строк: модель неизменна, итог считается раз на модель. */
+const sums = new WeakMap<object, Map<string, number>>()
+
+/** Итог футера — сумма колонки по отфильтрованным строкам, включая вложенные. */
+const sumFooter =
+  (columnId: string, suffix = '') =>
+  ({ table }: { table: unknown }) => {
+    const t = table as FooterTable
+    const { flatRows } = t.getFilteredRowModel
+      ? t.getFilteredRowModel()
+      : t.getCoreRowModel()
+    let byColumn = sums.get(flatRows)
+    if (!byColumn) sums.set(flatRows, (byColumn = new Map()))
+    let sum = byColumn.get(columnId)
+    if (sum === undefined) {
+      sum = flatRows.reduce(
+        (total, row) => total + (Number(row.getValue(columnId)) || 0),
+        0,
+      )
+      byColumn.set(columnId, sum)
+    }
+    return `${sum}${suffix}`
+  }
+
 export const columns: any[] = [
   columnHelper.accessor('country', {
     id: 'country',
@@ -133,7 +166,7 @@ export const columns: any[] = [
     // В сгруппированной строке getValue() возвращает агрегат (сумму),
     // в обычной — исходное значение.
     cell: cell => cell.getValue(),
-    footer: '111',
+    footer: sumFooter('visits'),
     aggregationFn: 'sum' as never,
     size: 150,
     minSize: 150,
@@ -155,7 +188,7 @@ export const columns: any[] = [
     // Сумма в сгруппированной строке (getValue() = агрегат), иначе исходное.
     cell: cell =>
       cell.row.getIsGrouped() ? `${cell.getValue()}$` : cell.getValue(),
-    footer: '5213$',
+    footer: sumFooter('total', '$'),
     size: 150,
     minSize: 150,
     maxSize: 700,
@@ -256,7 +289,7 @@ export const groupedColumns: any[] = [
       columnHelper.accessor<any, any>('visits', {
         id: 'visits',
         header: 'Visits',
-        footer: '111',
+        footer: sumFooter('visits'),
         size: 150,
         minSize: 150,
         maxSize: 700,
@@ -273,7 +306,7 @@ export const groupedColumns: any[] = [
     header: 'Total',
     aggregatedCell: cell => `${cell.getValue()}$`,
     cell: cell => `${cell.getValue()}$`,
-    footer: '5213$',
+    footer: sumFooter('total', '$'),
     size: 150,
     minSize: 150,
     maxSize: 700,

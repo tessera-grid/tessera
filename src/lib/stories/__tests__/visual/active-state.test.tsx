@@ -32,6 +32,16 @@ const fc = commands as unknown as {
 
 afterEach(() => document.documentElement.classList.remove('dark'))
 
+/** Системный цвет палитры, как его отдаёт браузер. */
+const systemColor = (name: string) => {
+  const probe = document.createElement('span')
+  probe.style.color = name
+  document.body.append(probe)
+  const value = toRgba(getComputedStyle(probe).color)
+  probe.remove()
+  return value
+}
+
 const settle = () =>
   document
     .getAnimations()
@@ -385,12 +395,21 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
       const surface = background[3]
         ? background
         : toRgba(getComputedStyle(canvas()).backgroundColor)
+      // В forced-colors цвета задаёт палитра системы: бабл `Canvas` на кнопке `Highlight`
+      // не контрастнее этой пары палитры (у эмуляции Firefox — 2,94:1).
+      const need =
+        mode === 'forced-colors'
+          ? Math.min(
+              3,
+              contrast(systemColor('Highlight'), systemColor('Canvas')),
+            )
+          : 3
       for (const id of ['dot', 'icon']) {
         const dot = bubbleOf(byId(id))!
         expect(
           contrast(toRgba(getComputedStyle(dot).backgroundColor), surface),
           `${mode}: ${id}`,
-        ).toBeGreaterThanOrEqual(3)
+        ).toBeGreaterThanOrEqual(need)
       }
       const number = getComputedStyle(bubbleOf(byId('count'))!)
       expect(

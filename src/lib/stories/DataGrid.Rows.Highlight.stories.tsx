@@ -32,8 +32,8 @@ const meta = {
 
 export default meta
 
-export const RowHighlight: StoryObj<StoryProps> = {
-  name: 'Default',
+export const RowHighlightPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   args: {
     enableRowActions: true,
     // Действия строки — только «Delete» демо-плагина.

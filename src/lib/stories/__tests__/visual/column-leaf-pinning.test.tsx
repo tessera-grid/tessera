@@ -6,6 +6,8 @@ import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { tableLabels } from '../labels'
+import { LEAF_PINNING } from './header-fixtures'
 
 // Reorder-out (LP1–LP10): под вложенной шапкой за opt-in флагом
 // `columnPinningLeafPinning` закрепляется любая единица — лист или группа любого уровня.
@@ -23,12 +25,12 @@ const LAST_ROW_HEAD = `${HEAD_CELL}[data-last-headers-row='true']`
 const MIDDLE_ROW_HEAD = `${HEAD_CELL}:not([data-first-headers-row='true']):not([data-last-headers-row='true'])`
 
 type LeafPinningArgs = Partial<
-  Parameters<typeof composed.HeaderGroupsLeafPinning>[0]
+  Parameters<typeof composed.ColumnPinningPlayground>[0]
 >
 
 async function renderLeafPinning(args: LeafPinningArgs = {}) {
   const { container } = await render(
-    <composed.HeaderGroupsLeafPinning {...args} />,
+    <composed.ColumnPinningPlayground {...LEAF_PINNING} {...args} />,
   )
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -83,7 +85,7 @@ const menuItemByText = (text: string) =>
  */
 const pinLeafViaPopover = async (
   cell: HTMLElement,
-  item: 'Pin left' | 'Pin right' = 'Pin left',
+  item: string = tableLabels.pinLeft,
 ) => {
   await userEvent.click(await revealLeafPin(cell))
   await expect.poll(() => menuItemByText(item)).toBeTruthy()
@@ -371,7 +373,10 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     expect(headCellsById(container, 'name').length).toBe(1)
 
     // Pin the `lastName` leaf RIGHT via its popover (symmetric to LP2's left pin).
-    await pinLeafViaPopover(leafHeadCell(container, 'lastName'), 'Pin right')
+    await pinLeafViaPopover(
+      leafHeadCell(container, 'lastName'),
+      tableLabels.pinRight,
+    )
 
     // The leaf's body cell is now sticky at the right edge.
     await expect

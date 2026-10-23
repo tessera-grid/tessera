@@ -20,6 +20,7 @@ import {
   inBothThemes,
   toRgba,
 } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Ленивые дети строк (ADR 0054): RE17–RE18, RE20, RE23–RE25, RE30–RE33, RE37, RE40;
 // подсветка прихода (ADR 0056): RE42, RE45–RE49; склейка ответов (ADR 0066): RE66.
@@ -63,10 +64,10 @@ type Loader = (row: { id: string }) => Person[] | Promise<Person[]>
 
 const renderLazy = (
   loadChildren: Loader,
-  args: Partial<Parameters<typeof composed.RowExpanding>[0]> = {},
+  args: Partial<Parameters<typeof composed.RowExpandingPlayground>[0]> = {},
 ) =>
   render(
-    <composed.RowExpanding
+    <composed.RowExpandingPlayground
       dataOverride={ROOTS}
       rowExpandingHasChildren={hasChildren as never}
       rowExpandingLoadChildren={loadChildren as never}
@@ -142,7 +143,7 @@ describe('Row expanding: lazy children', () => {
     await expect.poll(() => toggleOf('lazy')).toBeNull()
     expect(rowOf('lazy')!.hasAttribute('data-expanded')).toBe(false)
     await screen.rerender(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         dataOverride={[...ROOTS]}
         rowExpandingHasChildren={hasChildren as never}
         rowExpandingLoadChildren={(() => []) as never}
@@ -159,7 +160,9 @@ describe('Row expanding: lazy children', () => {
       .poll(() => toggleOf('lazy')!.getAttribute('data-error-flash'))
       .toBe('on')
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('false')
-    await expect.poll(liveText).toContain("Couldn't load: Server down")
+    await expect
+      .poll(liveText)
+      .toContain(tableLabels.announceExpandFailed('Server down'))
   })
 
   test('RE25: a failure with a saved answer keeps the row expanded with the old children; flash and announcement are the same', async () => {
@@ -178,7 +181,9 @@ describe('Row expanding: lazy children', () => {
       .toBe('on')
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('true')
     expect(rowOf('lazy-c1')).not.toBeNull()
-    await expect.poll(liveText).toContain("Couldn't load: Timeout")
+    await expect
+      .poll(liveText)
+      .toContain(tableLabels.announceExpandFailed('Timeout'))
   })
 
   test('RE30: column "auto" shows the expanding column when a root is marked by hasChildren and no row has subRows', async () => {
@@ -190,7 +195,7 @@ describe('Row expanding: lazy children', () => {
     await waitRow('lazy')
     expect(expandingHead()).not.toBeNull()
     await screen.rerender(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         dataOverride={[person('x'), person('y')]}
         rowExpandingHasChildren={hasChildren as never}
         rowExpandingLoadChildren={(() => []) as never}
@@ -236,7 +241,7 @@ describe('Row expanding: lazy children', () => {
       rowExpandingHasChildren: hasChildren as never,
       rowExpandingLoadChildren: load as never,
     }
-    const screen = await render(<composed.RowExpanding {...args} />)
+    const screen = await render(<composed.RowExpandingPlayground {...args} />)
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)
     await waitRow('lazy-c1')
@@ -247,7 +252,7 @@ describe('Row expanding: lazy children', () => {
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('true')
 
     await screen.rerender(
-      <composed.RowExpanding {...args} enableColumnSorting />,
+      <composed.RowExpandingPlayground {...args} enableColumnSorting />,
     )
     const sort = document.querySelector<HTMLElement>(
       ".data-grid__head-cell[data-column-id='firstName'] .column-sort__button",
@@ -261,7 +266,7 @@ describe('Row expanding: lazy children', () => {
     await screen.unmount()
 
     await render(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         {...args}
         enablePagination
         paginationInitialPageSize={10}
@@ -271,11 +276,15 @@ describe('Row expanding: lazy children', () => {
     await humanClick(toggleOf('lazy')!)
     await waitRow('lazy-c1')
     await humanClick(
-      document.querySelector<HTMLElement>('[aria-label="Next page"]')!,
+      document.querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.nextPage}"]`,
+      )!,
     )
     await expect.poll(() => rowOf('lazy')).toBeNull()
     await humanClick(
-      document.querySelector<HTMLElement>('[aria-label="Previous page"]')!,
+      document.querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.previousPage}"]`,
+      )!,
     )
     await waitRow('lazy-c1')
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('true')
@@ -308,7 +317,7 @@ describe('Row expanding: lazy children', () => {
   test('RE37: a rejected onExpandRow promise without loadChildren gives the same flash and announcement', async () => {
     const tree = [{ ...person('p'), subRows: [person('p-c0')] }, person('q')]
     await render(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         dataOverride={tree}
         onExpandRow={(_row, expanded) =>
           expanded ? Promise.reject(new Error('No access')) : undefined
@@ -321,7 +330,9 @@ describe('Row expanding: lazy children', () => {
       .poll(() => toggleOf('p')!.getAttribute('data-error-flash'))
       .toBe('on')
     expect(rowOf('p')!.getAttribute('data-expanded')).toBe('false')
-    await expect.poll(liveText).toContain("Couldn't load: No access")
+    await expect
+      .poll(liveText)
+      .toContain(tableLabels.announceExpandFailed('No access'))
   })
 })
 
@@ -403,7 +414,7 @@ describe('Row expanding: arrival highlight', () => {
       ),
     ]
     await render(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         dataOverride={many}
         rowExpandingHasChildren={hasChildren as never}
         rowExpandingLoadChildren={asyncKids(2) as never}
@@ -488,13 +499,13 @@ describe('Row expanding: arrival highlight', () => {
     const first = await renderLazy(asyncKids(2))
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)
-    await expect.poll(liveText).toBe('Loaded 2 rows')
+    await expect.poll(liveText).toBe(tableLabels.announceChildrenLoaded(2))
     await first.unmount()
 
     const empty = await renderLazy(() => Promise.resolve([]))
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)
-    await expect.poll(liveText).toBe('No rows')
+    await expect.poll(liveText).toBe(tableLabels.announceChildrenLoaded(0))
     await empty.unmount()
 
     const custom = await renderLazy(asyncKids(1), {

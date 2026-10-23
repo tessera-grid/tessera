@@ -3,9 +3,10 @@
  * и записи самой истории. Свёрнутая — заголовок со счётчиком и кнопки истории;
  * раскрытая — переключатели видов, «Очистить» и список записей.
  */
-import { type ReactNode, useId, useLayoutEffect, useRef, useState } from 'react'
+import { type ReactNode, useId, useRef, useState } from 'react'
 
 import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { ConsoleFilters } from './ConsoleFilters'
@@ -194,7 +195,7 @@ export const StoryConsole = ({
   // Свёрнутое тело — вне фокуса и дерева доступности; атрибутом: в React 18 у пропа
   // `inert` нет булевой формы.
   const body = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     body.current?.toggleAttribute('inert', !expanded)
   }, [expanded])
 
@@ -207,7 +208,7 @@ export const StoryConsole = ({
   const rows = useRef<HTMLTableSectionElement>(null)
   const empty = useRef<HTMLDivElement>(null)
   const stuck = useRef(true)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = list.current
     const body = rows.current
     if (!element || !body || !table.current || !empty.current) return
@@ -267,7 +268,7 @@ export const StoryConsole = ({
       unsubscribe()
     }
   }, [log, hidden])
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = list.current
     if (element && expanded && stuck.current) {
       element.scrollTop = element.scrollHeight

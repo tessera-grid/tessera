@@ -18,6 +18,8 @@ import {
   headVsBodyColumns,
   withWideViewport,
 } from './column-pinning-helpers'
+import { tableLabels } from '../labels'
+import { PINNING_NESTED } from './header-fixtures'
 
 // CP13–CP19, CP30: вложенная шапка и сервисные столбцы.
 // Каждое требование — отдельный тест с ID из таблицы требований
@@ -44,7 +46,10 @@ describe('Column Pinning — nested headers and service columns', () => {
     // `enableColumnPinning`), so a live toggle matches a fresh mount — the top
     // group buttons appear, and leaf headers stay button-free.
     const { container, rerender } = await render(
-      <composed.HeaderGroupsPinning enableColumnPinning={false} />,
+      <composed.ColumnPinningPlayground
+        {...PINNING_NESTED}
+        enableColumnPinning={false}
+      />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -54,7 +59,7 @@ describe('Column Pinning — nested headers and service columns', () => {
 
     // Toggle the plugin on without a remount — top-level group headers reveal
     // their pin toggle (as a fresh mount would), leaves stay button-free.
-    await rerender(<composed.HeaderGroupsPinning enableColumnPinning />)
+    await rerender(<composed.ColumnPinningPlayground {...PINNING_NESTED} />)
     await expect
       .poll(() => container.querySelector(PIN_BUTTON) !== null)
       .toBe(true)
@@ -85,7 +90,7 @@ describe('Column Pinning — nested headers and service columns', () => {
     // The `name` group spans the firstName + lastName leaves (see the mock).
     // Group headers default to `both` sides → pin via the inline popover.
     const nameGroup = headCellById(container, 'name')
-    await pinViaPopover(nameGroup, 'Pin left')
+    await pinViaPopover(nameGroup, tableLabels.pinLeft)
 
     // The group header itself goes sticky-left…
     await expect
@@ -111,7 +116,7 @@ describe('Column Pinning — nested headers and service columns', () => {
   test('CP19: a pinned group and its leaves stick to the left edge with the correct offset', async () => {
     const container = await renderHeaderGroupsPinning()
     const nameGroup = headCellById(container, 'name')
-    await pinViaPopover(nameGroup, 'Pin left')
+    await pinViaPopover(nameGroup, tableLabels.pinLeft)
     await expect
       .poll(() =>
         headCellById(container, 'name').getAttribute('data-cell-pinned'),
@@ -221,7 +226,7 @@ describe('Column Pinning — nested headers and service columns', () => {
   test('CP30: under nested headers, with free space on the right, a right-pinned group and its leaves line up with their body columns', async () => {
     await withWideViewport(async () => {
       const container = await renderHeaderGroupsPinning()
-      await pinViaPopover(headCellById(container, 'name'), 'Pin right')
+      await pinViaPopover(headCellById(container, 'name'), tableLabels.pinRight)
       await expect
         .poll(() =>
           headCellById(container, 'name').getAttribute('data-cell-pinned'),

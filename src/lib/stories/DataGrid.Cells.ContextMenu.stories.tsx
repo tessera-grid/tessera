@@ -22,8 +22,8 @@ const meta = {
 
 export default meta
 
-export const ContextMenu: StoryObj<StoryProps> = {
-  name: 'Default',
+export const ContextMenuPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableCellSelection',
     'cellSelectionRangeSelection',

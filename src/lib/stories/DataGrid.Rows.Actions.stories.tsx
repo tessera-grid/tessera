@@ -7,6 +7,7 @@ import {
   bodyRow,
   expectPopupInCanvas,
   openPopup,
+  rowKebab,
   settle,
   waitForRows,
 } from './__mocks__/catalogPlay'
@@ -21,8 +22,8 @@ const meta = {
 
 export default meta
 
-export const RowActions: StoryObj<StoryProps> = {
-  name: 'Default',
+export const RowActionsPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: showControls([
     'enableRowActions',
     'rowActionsWidth',
@@ -166,10 +167,7 @@ export const ActionsStateSection: StoryObj<StoryProps> = {
     const row = bodyRow(canvasElement, 'item-id-1')
     await userEvent.hover(row)
     const menu = await openPopup(
-      () =>
-        bodyRow(canvasElement, 'item-id-1').querySelector<HTMLElement>(
-          '[aria-label^="Row options"]',
-        ),
+      () => rowKebab(bodyRow(canvasElement, 'item-id-1')),
       'menu',
     )
     await userEvent.click(

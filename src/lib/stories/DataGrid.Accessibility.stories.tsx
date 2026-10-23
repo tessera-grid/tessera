@@ -2,7 +2,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import { Grid } from './_shims'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { RowGrouping } from './DataGrid.Rows.Grouping.stories'
+import { RowGroupingPlayground } from './DataGrid.Rows.Grouping.stories'
 import { showControls } from './__mocks__/utils/dataGridControls'
 
 /** Ручная проверка доступности (ADR 0020, ADR 0021, ADR 0031): grid, treegrid, перестановка с клавиатуры. */
@@ -13,6 +13,33 @@ const meta = {
 } satisfies Meta<StoryProps>
 
 export default meta
+
+/**
+ * Роль таблицы: без клавиатурной навигации — `table`, с ней — `grid`, с иерархией
+ * (дерево или группы) — `treegrid`. Проверяйте вкладкой Accessibility и скринридером.
+ */
+export const AccessibilityPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: showControls([
+    'enableKeyboardNavigation',
+    'dataNesting',
+    'enableRowExpanding',
+    'enableTreeLines',
+    'enableRowGrouping',
+    'enableRowSelection',
+    'enableCellSelection',
+    'enableColumnSorting',
+    'enableFooter',
+  ]),
+  args: {
+    enableKeyboardNavigation: true,
+    columnCount: 8,
+    dataCount: 30,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
+  },
+}
 
 // --- Ручная проверка доступности (docs/testing/screen-readers.md) ------------------
 
@@ -74,7 +101,7 @@ export const A11yTreeGrid: StoryObj<StoryProps> = {
   ]),
   args: {
     // treegrid: группировка по gender с раскрытием — уровни строк и фокус на строке.
-    ...RowGrouping.args,
+    ...RowGroupingPlayground.args,
     enableKeyboardNavigation: true,
     enableRowExpanding: true,
     initialGrouping: ['gender'],

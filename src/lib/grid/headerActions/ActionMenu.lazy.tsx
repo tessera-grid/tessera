@@ -93,7 +93,7 @@ const KebabPlaceholder = ({
       {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
-      <ErrorDot shown={kebab.failed} />
+      <ErrorDot shown={kebab.failed} delayed />
     </IconButton>
   )
 

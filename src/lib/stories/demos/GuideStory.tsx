@@ -3,8 +3,9 @@
  * грида — накопительно, от первого шага до текущего — и может выполнить действие при
  * входе в него (прокрутку). «Сначала» перемонтирует грид, как новое открытие.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import { dataGridMeta } from '../dataGridMeta'
@@ -40,22 +41,29 @@ export interface GuideStoryStep extends GuideStep {
   immediate?: boolean
 }
 
+/** Открытое меню или поповер таблицы. */
+const OPEN_POPUP = '[role="menu"][data-open], [role="dialog"][data-open]'
+
+const isGuideToggle = (target: EventTarget) =>
+  target instanceof Element && !!target.closest('[data-testid="guide-toggle"]')
+
 /** Шаги смонтированных гайдов по их корню — их признаки читает матрица контраста. */
 export const guideSteps = new WeakMap<Element, readonly GuideStoryStep[]>()
 
 /**
  * Аргументы грида истории сценария с гайдом (ADR 0117, SN27–SN28): умолчания меты и
  * свои — аргументы Storybook, оставшиеся в URL или сессии, функции не включают; из
- * них — только тема декоратора.
+ * них — только тема и язык из тулбара.
  */
 export const guideArgs = (
   own: Partial<StoryProps>,
-  storybook: Pick<StoryProps, 'colorMode'>,
+  storybook: Pick<StoryProps, 'colorMode' | 'locale'>,
 ): StoryProps =>
   normalizeArgs({
     ...dataGridMeta.args,
     ...own,
     colorMode: storybook.colorMode,
+    locale: storybook.locale,
   } as StoryProps)
 
 export const GuideStory = ({
@@ -85,13 +93,22 @@ export const GuideStory = ({
   const mounts = steps
     .slice(0, guide.step + 1)
     .filter(step => step.remount).length
+  // Шаг назад через действие: грид открывается заново с пропсами целевого шага (SN33).
+  const [shown, setShown] = useState({ step: guide.step, rewinds: 0 })
+  if (shown.step !== guide.step) {
+    const undone = steps.slice(guide.step + 1, shown.step + 1)
+    setShown({
+      step: guide.step,
+      rewinds: shown.rewinds + (undone.some(step => step.enter) ? 1 : 0),
+    })
+  }
   const root = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (root.current) guideSteps.set(root.current, steps)
   }, [steps])
   // Шаг гайда — действие истории (ADR 0124, CL16): до эффектов грида, которые он вызовет.
   const stepTitle = steps[guide.step]?.title
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     consoleLog.action({
       plugin: 'story',
       action: `Шаг ${guide.step + 1} · ${stepTitle}`,
@@ -100,14 +117,27 @@ export const GuideStory = ({
   }, [consoleLog, guide.step, guide.run, stepTitle])
   useArgsActions(consoleLog, args)
   const enter = steps[guide.step]?.enter
+  // Нажатие на заголовок гайда — мимо поповера таблицы, и он закрывается: шаг с открытым
+  // поповером заново доводит таблицу до своего состояния.
+  const [reentries, setReentries] = useState(0)
+  const popupAtToggle = useRef(false)
   useEffect(() => {
     if (root.current) enter?.(root.current)
-  }, [enter, guide.step, guide.run])
+  }, [enter, guide.step, guide.run, shown.rewinds, reentries])
   return (
     <div
       ref={root}
       data-guide-root=""
       style={{ display: 'flex', flexDirection: 'column' }}
+      onPointerDownCapture={event => {
+        popupAtToggle.current =
+          isGuideToggle(event.target) && !!document.querySelector(OPEN_POPUP)
+      }}
+      onClick={event => {
+        if (popupAtToggle.current && isGuideToggle(event.target))
+          setReentries(count => count + 1)
+        popupAtToggle.current = false
+      }}
     >
       <GuidePanel
         title={title}
@@ -119,7 +149,7 @@ export const GuideStory = ({
         onJump={guide.jump}
       />
       <StoryComponent
-        key={`${guide.run}-${mounts}`}
+        key={`${guide.run}-${mounts}-${shown.rewinds}`}
         {...args}
         {...props}
         consoleLog={consoleLog}

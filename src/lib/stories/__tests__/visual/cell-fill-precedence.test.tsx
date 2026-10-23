@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { render } from 'vitest-browser-react'
-import { page, userEvent } from 'vitest/browser'
+import { page, server, userEvent } from 'vitest/browser'
 import { beforeAll, describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
@@ -28,7 +28,10 @@ import {
 // колонок и диапазоном ячеек — в шести режимах, по пикселям снимка. Один проход собирает
 // заливку каждой ячейки каждой строки в покое и под наведением; тесты сверяют собранное.
 
-const COMBOS: Combo[] = [
+/** WebKit не подменяет цвета в forced-colors (у Safari режима нет): FP1–FP2 там пропущены. */
+const forcing = server.browser !== 'webkit'
+
+const MODES: Combo[] = [
   { palette: 'stories', theme: 'light', mode: 'standard' },
   { palette: 'stories', theme: 'dark', mode: 'standard' },
   { palette: 'stories', theme: 'light', mode: 'more' },
@@ -36,6 +39,7 @@ const COMBOS: Combo[] = [
   { palette: 'stories', theme: 'light', mode: 'forced', scheme: 'light' },
   { palette: 'stories', theme: 'light', mode: 'forced', scheme: 'dark' },
 ]
+const COMBOS = MODES.filter(combo => forcing || combo.mode !== 'forced')
 
 /** Обычные колонки — точка отсчёта для закреплённых и служебных. */
 const REGULAR = ['b', 'c', 'd']
@@ -245,7 +249,10 @@ describe('Первенство заливок ячейки (ADR 0126)', () => {
     }
   }, 600_000)
 
-  test('FP1: первенство в forced-colors — диапазон Highlight и на подсвеченной строке, якорь — заливка строки, подсветка ячейки на выбранной строке Mark, строка выбранная и подсвеченная Mark с текстом MarkText, нечётная как чётная', () => {
+  test('FP1: первенство в forced-colors — диапазон Highlight и на подсвеченной строке, якорь — заливка строки, подсветка ячейки на выбранной строке Mark, строка выбранная и подсвеченная Mark с текстом MarkText, нечётная как чётная', ({
+    skip,
+  }) => {
+    skip(!forcing, 'WebKit не подменяет цвета в forced-colors')
     expect(forcedFacts).toHaveLength(2)
     const problems: string[] = []
     for (const { combo, system, markRowText, markText } of forcedFacts) {
@@ -285,7 +292,10 @@ describe('Первенство заливок ячейки (ADR 0126)', () => {
     expect(problems).toEqual([])
   })
 
-  test('FP2: forced-colors — служебная, закреплённые и колонка действий залиты как обычная ячейка строки в том же состоянии, наведение заливку не меняет', () => {
+  test('FP2: forced-colors — служебная, закреплённые и колонка действий залиты как обычная ячейка строки в том же состоянии, наведение заливку не меняет', ({
+    skip,
+  }) => {
+    skip(!forcing, 'WebKit не подменяет цвета в forced-colors')
     const forced = samples.filter(s => s.combo.mode === 'forced')
     expect(forced.length).toBeGreaterThan(0)
     const problems: string[] = []

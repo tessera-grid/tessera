@@ -18,7 +18,7 @@ import { cssVar, nextFrame } from './core-helpers'
 // `tabindex`, `data-kn-active`, `document.activeElement`, `data-index` строки,
 // `data-column-id` ячейки.
 
-type StoryArgs = Partial<Parameters<typeof composed.KeyboardNavigation>[0]>
+type StoryArgs = Partial<Parameters<typeof composed.KeyboardPlayground>[0]>
 
 const NAV_CELL = '[data-kn-cell]'
 const BODY_ROW = '.data-grid__body-row'
@@ -85,7 +85,7 @@ const press = (keys: string) => userEvent.keyboard(keys)
 // --- Render -------------------------------------------------------------------
 
 async function renderNavigation(args: StoryArgs = {}) {
-  const screen = await render(<composed.KeyboardNavigation {...args} />)
+  const screen = await render(<composed.KeyboardPlayground {...args} />)
   await expect
     .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
     .toBeGreaterThan(3)
@@ -105,7 +105,7 @@ async function renderWithNeighbours(args: StoryArgs = {}) {
   const screen = await render(
     <>
       <button id="before-grid">before</button>
-      <composed.KeyboardNavigation {...args} />
+      <composed.KeyboardPlayground {...args} />
       <button id="after-grid">after</button>
     </>,
   )
@@ -531,7 +531,7 @@ describe('Клавиатурная навигация (keyboardNavigation)', () 
   })
 
   test('KN24: Enter на ячейке колонки раскрытия раскрывает и сворачивает строку', async () => {
-    await render(<composed.RowExpanding enableKeyboardNavigation />)
+    await render(<composed.RowExpandingPlayground enableKeyboardNavigation />)
     await expect
       .poll(() => document.querySelectorAll(`${BODY_ROW} ${BODY_CELL}`).length)
       .toBeGreaterThan(3)

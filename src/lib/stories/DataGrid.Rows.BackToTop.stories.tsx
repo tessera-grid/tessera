@@ -37,6 +37,32 @@ const meta = {
 
 export default meta
 
+/**
+ * Кнопка живёт в нижней панели: её даёт `enableStatusBar`, пагинация или лента.
+ * Прокрутите вниз или вправо на два экрана — кнопка вернёт к краю.
+ */
+export const BackToTopPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: showControls([
+    'enableBackToTop',
+    'backToTopThreshold',
+    'backToTopHorizontalThreshold',
+    'backToTopAxes',
+    'enableStatusBar',
+    'enablePagination',
+    'paginationInitialPageSize',
+  ]),
+  args: {
+    containerHeight: '600',
+    height: '480',
+    maxHeight: '480',
+    enableBackToTop: true,
+    enableStatusBar: true,
+    dataCount: 1000,
+    columnCount: 30,
+  },
+}
+
 export const BackToTopPagination: StoryObj<StoryProps> = {
   name: 'Pagination',
   parameters: showControls([

@@ -219,7 +219,7 @@ const Sandbox = (args: SandboxArgs) => {
 }
 
 const meta = {
-  title: 'Tessera/DEV/Guide panel',
+  title: 'Tessera/Common/Guide panel',
   render: args => <Sandbox {...args} />,
   parameters: { layout: 'fullscreen' },
   args: {

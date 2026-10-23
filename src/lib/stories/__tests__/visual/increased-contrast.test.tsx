@@ -26,6 +26,7 @@ import {
   resolveColor as resolve,
   toRgba,
 } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Повышенный контраст (ADR 0088, MC1–MC9, MC11): рычаги тонов, надстройка по
 // `prefers-contrast: more` (эмуляция Playwright) и пропу `contrast`. Контраст — по
@@ -172,10 +173,10 @@ const Primitives = ({ mode }: { mode?: 'more' }) => {
 }
 
 const openKebabMenu = async (mode?: ContrastMode) => {
-  const screen = await render(<composed.HeaderActionMenu contrast={mode} />)
+  const screen = await render(<composed.HeaderMenuPlayground contrast={mode} />)
   const kebab = () =>
     document.querySelector<HTMLElement>(
-      '.data-grid__head-cell [aria-label^="Column options"]',
+      `.data-grid__head-cell [aria-label^="${tableLabels.headerMenu}"]`,
     )
   // Настоящим нажатием, как пользователь: Enter по фокусу в WebKit иногда терялся.
   // Модуль меню ленивый — первое открытие в WebKit дольше секунды.
@@ -242,7 +243,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
     )
     await tree.unmount()
 
-    const skeletons = await render(<composed.SkeletonDefault />)
+    const skeletons = await render(<composed.SkeletonPlayground />)
     await expect.poll(skeletonStripe).toBeTruthy()
     await changes(
       '--tsr-sys-tint-fill',
@@ -284,7 +285,9 @@ describe('Повышенный контраст (ADR 0088)', () => {
     })
     await tree.unmount()
 
-    const skeletons = await render(<composed.SkeletonDefault contrast="more" />)
+    const skeletons = await render(
+      <composed.SkeletonPlayground contrast="more" />,
+    )
     await expect.poll(skeletonStripe).toBeTruthy()
     await inBothThemes(async () => {
       const stripe = skeletonStripe()!
@@ -633,13 +636,13 @@ describe('Повышенный контраст (ADR 0088)', () => {
 
     // Тултип кебаба — тоже в портале.
     const headKebab = document.querySelector<HTMLElement>(
-      '.data-grid__head-cell [aria-label^="Column options"]',
+      `.data-grid__head-cell [aria-label^="${tableLabels.headerMenu}"]`,
     )!
     await userEvent.hover(headKebab.closest('.data-grid__head-cell')!)
     await userEvent.hover(headKebab)
     const tooltip = () =>
       [...document.querySelectorAll<HTMLElement>('[data-side]')].find(el =>
-        el.textContent?.trim().startsWith('Column options'),
+        el.textContent?.trim().startsWith(tableLabels.headerMenu),
       )
     await expect.poll(tooltip).toBeTruthy()
     expect(tooltip()!.closest('[data-tsr-contrast="more"]')).not.toBeNull()

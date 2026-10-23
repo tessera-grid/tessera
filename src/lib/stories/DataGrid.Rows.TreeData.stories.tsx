@@ -47,6 +47,25 @@ const expandColumn = (canvas: HTMLElement) =>
 const lines = (canvas: HTMLElement) =>
   canvas.querySelectorAll('[data-tree-depth]').length
 
+/** Дерево с переключателем и линиями; `expandAll` раскрывает все уровни, `rowExpandingMaxDepth` ограничивает глубину. */
+export const TreeDataPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: showControls([
+    'dataNesting',
+    'enableRowExpanding',
+    'rowExpandingMaxDepth',
+    'expandAll',
+    'enableTreeLines',
+    'enableKeyboardNavigation',
+  ]),
+  args: {
+    ...FIXED_HEIGHT,
+    dataNesting: 'nested',
+    enableRowExpanding: true,
+    enableTreeLines: true,
+  },
+}
+
 // --- S1 ------------------------------------------------------------------------------
 
 const READ_ONLY = [

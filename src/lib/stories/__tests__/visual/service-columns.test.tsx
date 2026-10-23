@@ -13,6 +13,7 @@ import {
   revealPin,
   withWideViewport,
 } from './column-pinning-helpers'
+import { tableLabels } from '../labels'
 
 // Золотой оракул композиции сервисных колонок — сеть безопасности под инверсию
 // ядра (docs/decisions/0010-invert-core-plugins-registry.md). Читает
@@ -140,7 +141,7 @@ describe('Сервисные колонки — порядок при закре
       const head = (id: string) => serviceHead(id)!
       await expect.poll(services).toEqual(expected)
 
-      await pinViaPopover(head('firstName'), 'Pin right')
+      await pinViaPopover(head('firstName'), tableLabels.pinRight)
       await expect
         .poll(() => head('firstName').getAttribute('data-cell-pinned'))
         .toBe('right')
@@ -156,8 +157,8 @@ describe('Сервисные колонки — порядок при закре
       // Снять оба закрепления: у двусторонней колонки — повторным выбором отмеченной
       // стороны, у односторонней — кликом по кнопке.
       await userEvent.click(await revealPin(head('firstName')))
-      await expect.poll(() => menuItemByText('Pin right')).toBeTruthy()
-      await userEvent.click(menuItemByText('Pin right')!)
+      await expect.poll(() => menuItemByText(tableLabels.pinRight)).toBeTruthy()
+      await userEvent.click(menuItemByText(tableLabels.pinRight)!)
       await expect
         .poll(() =>
           /left|right/.test(

@@ -1,12 +1,12 @@
 import axe from 'axe-core'
 import { composeStories } from '@storybook/react'
-import { commands, page, userEvent } from 'vitest/browser'
+import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
 import * as editingStories from '../../DataGrid.Cells.Editing.stories'
 import * as consoleStories from '../../Console.dev.stories'
-import * as skeletonStories from '../../DataGrid.Core.Skeleton.stories'
+import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
 import { StoryComponent } from '../../DataGridStory'
 import type { StoryProps } from '../../DataGridStory.types'
 import { dataGridMeta } from '../../dataGridMeta'
@@ -19,7 +19,7 @@ import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
 
 // Консоль историй (ADR 0124): CL1, CL3, CL7, CL9–CL12. CL5 и CL8 — в `play` песочницы
-// `Tessera/DEV/Console`, CL2, CL4, CL6, CL13–CL14 — модульные `storyConsole`.
+// `Tessera/Common/Console`, CL2, CL4, CL6, CL13–CL14 — модульные `storyConsole`.
 
 const { ConsoleGuideEvents } = composeStories(consoleStories)
 const { SkeletonDataArrives } = composeStories(skeletonStories)
@@ -323,7 +323,13 @@ describe('консоль историй (ADR 0124)', () => {
     ).toBeLessThan(names.lastIndexOf('Плагины'))
   })
 
-  test('CL9: консоль не добавляет гриду работы — коммиты React, отрисованные компоненты и пересборки моделей строк при сортировке с консолью и без неё одинаковы', async () => {
+  test('CL9: консоль не добавляет гриду работы — коммиты React, отрисованные компоненты и пересборки моделей строк при сортировке с консолью и без неё одинаковы', async ({
+    skip,
+  }) => {
+    skip(
+      server.browser !== 'chromium',
+      'measureWork — трейс CDP, только Chromium (ADR 0099)',
+    )
     await motion.reducedMotion(true)
     try {
       const sortWork = async (log?: ConsoleLog) => {
@@ -418,7 +424,8 @@ describe('консоль историй (ADR 0124)', () => {
     expect(button.closest('[inert]')).toBeNull()
     expect(button.getBoundingClientRect().height).toBeGreaterThan(0)
     await humanClick(button)
-    await expect.poll(() => list().innerText).toContain('external')
+    // Свёрнутый список инертен: его `innerText` WebKit отдаёт пустым.
+    await expect.poll(() => list().textContent).toContain('external')
   })
 
   test('CL12: в каталоге счётчик событий скрыт — снимок свёрнутой консоли не зависит от числа событий', async () => {

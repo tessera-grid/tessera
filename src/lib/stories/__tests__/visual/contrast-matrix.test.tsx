@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-react'
-import { page } from 'vitest/browser'
+import { page, server } from 'vitest/browser'
 import { beforeAll, describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
@@ -240,11 +240,23 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
     }
   })
 
-  test('CX10: forced-colors — текст, иконки и флажки во всех областях к фону по пикселям снимка', () => {
+  test('CX10: forced-colors — текст, иконки и флажки во всех областях к фону по пикселям снимка', ({
+    skip,
+  }) => {
+    skip(
+      server.browser === 'webkit',
+      'WebKit не подменяет цвета в forced-colors',
+    )
     expectClean(findings.CX10)
   })
 
-  test('CX11: фон по пикселям видит подложку браузера под текстом на заливке', async () => {
+  test('CX11: фон по пикселям видит подложку браузера под текстом на заливке', async ({
+    skip,
+  }) => {
+    skip(
+      server.browser !== 'chromium',
+      'подложку под строкой текста кладёт только Chromium; WebKit цвета не подменяет',
+    )
     // Строка текста — в самом блоке с заливкой: подложку Chromium кладёт по нему.
     const Stand = ({ adjust }: { adjust: boolean }) => (
       <div style={{ padding: 24 }}>

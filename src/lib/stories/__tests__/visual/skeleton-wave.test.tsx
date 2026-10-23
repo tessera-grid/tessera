@@ -21,7 +21,7 @@ const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
 }
 
-type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
+type Args = Partial<Parameters<typeof Stories.DataGridPlayground>[0]>
 
 const BASE: Args = {
   containerHeight: 600,
@@ -112,7 +112,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
   })
 
   test('WV1: блик всех скелетов рамки — тела, футера, квадратов служебных колонок и нижней панели — на одной наклонной полосе: ниже строка — левее блик', async () => {
-    await render(<Stories.AllFeatures {...BASE} />)
+    await render(<Stories.DataGridPlayground {...BASE} />)
     await waitWave()
     const bars = waveBars()
     const kinds = {
@@ -169,7 +169,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
       return (to - from) / 0.999
     }
     const narrow = await render(
-      <Stories.AllFeatures {...BASE} columnCount={6} />,
+      <Stories.DataGridPlayground {...BASE} columnCount={6} />,
     )
     await waitWave()
     const narrowDuration =
@@ -178,7 +178,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     await narrow.unmount()
 
     const wide = await render(
-      <Stories.AllFeatures {...BASE} columnCount={1000} />,
+      <Stories.DataGridPlayground {...BASE} columnCount={1000} />,
     )
     await waitWave()
     expect(waveAnimations()[0]!.effect!.getComputedTiming().duration).toBe(
@@ -190,7 +190,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     await wide.unmount()
 
     // Пауза выше сдвинула фазу: прокрутка — на свежем гриде, без вмешательства в волну.
-    await render(<Stories.AllFeatures {...BASE} columnCount={1000} />)
+    await render(<Stories.DataGridPlayground {...BASE} columnCount={1000} />)
     await waitWave()
     getScroller().scrollLeft = 3000
     await sleep(400)
@@ -217,7 +217,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
   })
 
   test('WV3: светятся только полоски — пиксели полоски под полосой света меняются, фон ячейки рядом с ней нет', async () => {
-    await render(<Stories.AllFeatures {...BASE} columnCount={6} />)
+    await render(<Stories.DataGridPlayground {...BASE} columnCount={6} />)
     await waitWave()
     const bar = waveBars().find(
       candidate =>
@@ -264,11 +264,13 @@ describe('Общая волна скелетов (ADR 0121)', () => {
   })
 
   test('WV4: скелеты, смонтированные посреди загрузки — колонки после горизонтальной прокрутки и строки после роста области, — сразу в той же полосе', async () => {
-    const screen = await render(<Stories.AllFeatures {...BASE} height={300} />)
+    const screen = await render(
+      <Stories.DataGridPlayground {...BASE} height={300} />,
+    )
     await waitWave()
     const before = new Set(waveBars())
     getScroller().scrollLeft = 1500
-    await screen.rerender(<Stories.AllFeatures {...BASE} height={500} />)
+    await screen.rerender(<Stories.DataGridPlayground {...BASE} height={500} />)
     await sleep(400)
     const bars = waveBars()
     const mounted = bars.filter(bar => !before.has(bar))
@@ -287,7 +289,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
       --tsr-comp-skeleton-frame-wave: rgb(255, 0, 0);
     }`
     document.head.append(style)
-    const screen = await render(<Stories.AllFeatures {...BASE} />)
+    const screen = await render(<Stories.DataGridPlayground {...BASE} />)
     await waitWave()
     const timing = waveAnimations()[0]!.effect!.getComputedTiming()
     expect(timing.duration).toBe(1200)
@@ -310,7 +312,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     await screen.unmount()
 
     await motion.reducedMotion(true)
-    await render(<Stories.AllFeatures {...BASE} />)
+    await render(<Stories.DataGridPlayground {...BASE} />)
     await waitWave()
     for (const candidate of waveBars()) {
       // Полоса целиком за левым краем скелета.
@@ -373,7 +375,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
         <span data-testid="outside" className={DATA_GRID_THEME_CLASS}>
           <Skeleton width={120} height={16} />
         </span>
-        <Stories.AllFeatures {...BASE} columnCount={6} />
+        <Stories.DataGridPlayground {...BASE} columnCount={6} />
       </>,
     )
     await waitWave()
@@ -393,7 +395,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
         <span data-testid="outside" className={DATA_GRID_THEME_CLASS}>
           <Skeleton width={120} height={16} />
         </span>
-        <Stories.AllFeatures {...BASE} columnCount={6} loading={false} />
+        <Stories.DataGridPlayground {...BASE} columnCount={6} loading={false} />
       </>,
     )
     await expect

@@ -27,9 +27,20 @@ const GRID = {
   maxHeight: '460',
 }
 
-export const WithStatusBar: StoryObj<StoryProps> = {
-  name: 'Default',
-  parameters: { ...vrStates('panel.statusBar'), ...showControls([]) },
+export const StatusBarPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: {
+    ...vrStates('panel.statusBar'),
+    ...showControls([
+      'enableStatusBar',
+      'enableFooter',
+      'enableRowSelection',
+      'rowSelectionSelectedCount',
+      'enablePagination',
+      'paginationInitialPageSize',
+      'paginationPageSizes',
+    ]),
+  },
   args: {
     // Демо-слоты нижней панели: один слева, два справа (порядок по `order`).
     // Включите enableFooter — панель встанет под футером одной линией.

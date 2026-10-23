@@ -126,6 +126,7 @@ export const ActionMenu = ({
           pending={opening.pending || kebab.running}
           errorFlash={flash}
           {...pendingAttributes(server.pending)}
+          data-action-menu={variant}
           onPointerEnter={kebab.intent}
           onFocus={kebab.intent}
           onPointerLeave={kebab.leave}
@@ -134,7 +135,7 @@ export const ActionMenu = ({
           indicator={!kebab.failed}
         >
           <MenuIcon width={16} height={16} />
-          <ErrorDot shown={kebab.failed} />
+          <ErrorDot shown={kebab.failed} delayed />
         </IconButton>
       }
     />

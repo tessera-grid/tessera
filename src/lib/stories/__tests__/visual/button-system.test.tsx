@@ -333,6 +333,8 @@ describe('Button system (ADR 0098)', () => {
           '[data-testid="quick-search-clear"]',
           // Список размера страницы — триггер Select (ADR 0038).
           '[aria-haspopup="listbox"]',
+          // Консоль истории (ADR 0124) — обвязка, не грид.
+          '[data-testid="story-console"] button',
         ].join(','),
       )
     const checked: string[] = []
@@ -388,13 +390,13 @@ describe('Button system (ADR 0098)', () => {
 
     // Производные из историй UI — с наведением.
     const ui = {
-      SortButton: composeStories(sortStories).SortButtonDefault,
-      PinButton: composeStories(pinStories).PinButtonDefault,
-      GroupButton: composeStories(groupStories).GroupButtonDefault,
-      ExpandButton: composeStories(expandStories).ExpandButtonDefault,
+      SortButton: composeStories(sortStories).SortButtonPlayground,
+      PinButton: composeStories(pinStories).PinButtonPlayground,
+      GroupButton: composeStories(groupStories).GroupButtonPlayground,
+      ExpandButton: composeStories(expandStories).ExpandButtonPlayground,
       CellButton: composeStories(cellStories).CellButtonAlwaysVisible,
       RowButton: composeStories(rowStories).RowButtonAlwaysVisible,
-      ToolbarButton: composeStories(toolbarStories).ToolbarButtonDefault,
+      ToolbarButton: composeStories(toolbarStories).ToolbarButtonPlayground,
     }
     for (const [label, Story] of Object.entries(ui)) {
       const screen = await render(<Story />)
@@ -402,13 +404,16 @@ describe('Button system (ADR 0098)', () => {
       await screen.unmount()
     }
 
+    const loadErrorRetry = () =>
+      expect
+        .poll(() => document.querySelector('[data-testid="load-error-retry"]'))
+        .toBeTruthy()
     // Кнопки грида и плагинов в историях каталога.
     const grids = [
       'ToolbarAllButtons',
-      'Pagination',
-      'HeaderMenuStateKebab',
-      'LoadErrorRefresh',
-      'LoadErrorFirstLoad',
+      'PaginationPlayground',
+      'HeaderMenuPlayground',
+      'LoadErrorPlayground',
       'FilteringStateOptions',
       'VisibilityStatePanel',
       'ExportStatePanel',
@@ -417,6 +422,8 @@ describe('Button system (ADR 0098)', () => {
       const Story = composed[key]
       const screen = await render(<Story />)
       await Story.play?.({ canvasElement: screen.container } as never)
+      // У Playground ошибки загрузки нет `play`: ждём кнопку повтора сообщения.
+      if (key === 'LoadErrorPlayground') await loadErrorRetry()
       // В покое: кнопка, включившаяся с приходом данных, доигрывает переход цвета.
       await Promise.all(
         document
@@ -429,6 +436,11 @@ describe('Button system (ADR 0098)', () => {
       await check(key, false)
       await screen.unmount()
     }
+    // Ошибка первой загрузки — заглушка с кнопкой повтора.
+    const firstLoad = await render(<composed.LoadErrorPlayground firstLoad />)
+    await loadErrorRetry()
+    await check('LoadErrorFirstLoad', false)
+    await firstLoad.unmount()
     expect(checked.length).toBeGreaterThan(20)
   })
 

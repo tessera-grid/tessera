@@ -28,8 +28,8 @@ export default meta
 // числом различных значений (gender) агрегирует их в несколько групп-строк.
 const rowGroupingData = makeData({ shape: 'flat', count: 12 })
 
-export const RowGrouping: StoryObj<StoryProps> = {
-  name: 'Default',
+export const RowGroupingPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   args: {
     // Реальные данные из генератора (см. rowGroupingData) — группировка видна на
     // настоящих строках, а не на захардкоженных.

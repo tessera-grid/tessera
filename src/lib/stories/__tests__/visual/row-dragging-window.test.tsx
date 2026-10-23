@@ -46,7 +46,7 @@ const shiftY = (row: HTMLElement) => {
  * окно на `rows` строк ниже, и увести указатель в середину — прокрутка встаёт.
  */
 const dragPastWindow = async (rows = 5) => {
-  const { container } = await render(<composed.RowDragging />)
+  const { container } = await render(<composed.RowDraggingPlayground />)
   await expect
     .poll(() => container.querySelectorAll(ROW).length)
     .toBeGreaterThan(3)

@@ -32,8 +32,8 @@ const meta = {
 
 export default meta
 
-export const Pagination: StoryObj<StoryProps> = {
-  name: 'Default',
+export const PaginationPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: {
     ...vrStates('panel.pagination'),
     ...showControls([

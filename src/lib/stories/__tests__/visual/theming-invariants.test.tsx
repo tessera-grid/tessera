@@ -45,6 +45,7 @@ const RUNTIME_ALLOWLIST = new Set([
   '--tsr-comp-head-height',
   '--tsr-comp-body-height',
   '--tsr-comp-scrollbar-actual-width',
+  '--tsr-comp-grid-max-height',
 ])
 
 const matchAll = (css: string, re: RegExp) =>

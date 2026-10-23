@@ -26,6 +26,7 @@ import {
   inBothThemes,
   toRgba,
 } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Кнопка «наверх» (ADR 0082; BT1–BT2, BT4–BT11, BT15). Модульные BT3, BT12–BT13 —
 // в `backToTop`, перф BT14 — в `scroll`.
@@ -204,7 +205,9 @@ const recordUntilEdge = async (
 const descending = (values: number[]) =>
   values.every((value, i) => i === 0 || value <= values[i - 1]!)
 const pager = () =>
-  document.querySelector<HTMLElement>('nav[aria-label="Pagination"]')
+  document.querySelector<HTMLElement>(
+    `nav[aria-label="${tableLabels.pagination}"]`,
+  )
 const shown = () =>
   button() !== null && getComputedStyle(button()!).visibility === 'visible'
 const rect = (el: Element) => el.getBoundingClientRect()

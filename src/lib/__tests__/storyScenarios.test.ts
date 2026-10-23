@@ -179,13 +179,13 @@ describe('проигрывание сценариев (ADR 0117, §6–§8)', ()
   )
 
   it(
-    'SN29: Default открывается в покое — её play вне тестов каталога ничего не делает',
+    'SN29: Playground открывается в покое — её play вне тестов каталога ничего не делает',
     async () => {
       const wrong: string[] = []
       for (const [path, load] of Object.entries(rawModules)) {
         const { default: meta, ...exports } = await load()
         for (const [name, story] of Object.entries(exports)) {
-          if ((story.name ?? name) !== 'Default') continue
+          if ((story.name ?? name) !== 'Playground') continue
           const play = story.play ?? meta?.play
           if (typeof play !== 'function') continue
           const touched: string[] = []
@@ -219,17 +219,21 @@ describe('проигрывание сценариев (ADR 0117, §6–§8)', ()
     TIMEOUT,
   )
 
-  it('SN13: *.dev.stories.tsx — в историях storybook dev и тестов, но не storybook build; остальные истории — в обоих', async () => {
+  it('SN13: наборы историй — storybook dev и тесты все файлы; storybook build (для Chromatic) без *.dev; с STORYBOOK_TARGET=public сборка и storybook dev без *.dev и *.vr; storybook:public и build-storybook:public ставят переменную сами', async () => {
     const argv = process.argv
-    const storiesOf = async (args: string[]) => {
+    const storiesOf = async (args: string[], target?: string) => {
       process.argv = [...argv.slice(0, 2), ...args]
+      vi.unstubAllEnvs()
+      if (target) vi.stubEnv('STORYBOOK_TARGET', target)
       vi.resetModules()
       const { default: config } = await import('../../../.storybook/main')
       return config.stories as string[]
     }
     try {
       const dev = await storiesOf(['dev'])
+      const devPublic = await storiesOf(['dev'], 'public')
       const build = await storiesOf(['build'])
+      const published = await storiesOf(['build'], 'public')
       const included = (patterns: string[], file: string) =>
         patterns.some(pattern =>
           matchesGlob(`../src/lib/stories/${file}`, pattern),
@@ -238,16 +242,38 @@ describe('проигрывание сценариев (ADR 0117, §6–§8)', ()
         /\.stories\.tsx$/.test(file),
       )
       const devFiles = files.filter(file => file.endsWith('.dev.stories.tsx'))
+      const vrFiles = files.filter(file => file.endsWith('.vr.stories.tsx'))
       expect(devFiles.length).toBeGreaterThan(0)
+      expect(vrFiles.length).toBeGreaterThan(0)
       for (const file of files) {
+        const sandbox = devFiles.includes(file)
+        const snapshotOnly = vrFiles.includes(file)
         expect(included(dev, file), `dev: ${file}`).toBe(true)
-        expect(included(build, file), `build: ${file}`).toBe(
-          !devFiles.includes(file),
+        expect(included(build, file), `build: ${file}`).toBe(!sandbox)
+        expect(included(published, file), `public: ${file}`).toBe(
+          !sandbox && !snapshotOnly,
+        )
+        expect(included(devPublic, file), `dev public: ${file}`).toBe(
+          !sandbox && !snapshotOnly,
         )
       }
     } finally {
       process.argv = argv
+      vi.unstubAllEnvs()
       vi.resetModules()
     }
+    const root = join(__dirname, '..', '..', '..')
+    const { scripts } = JSON.parse(
+      readFileSync(join(root, 'package.json'), 'utf8'),
+    ) as { scripts: Record<string, string> }
+    expect(scripts['storybook:public']).toBe(
+      'node scripts/storybook-public.mjs dev',
+    )
+    expect(scripts['build-storybook:public']).toBe(
+      'node scripts/storybook-public.mjs build',
+    )
+    expect(
+      readFileSync(join(root, 'scripts', 'storybook-public.mjs'), 'utf8'),
+    ).toMatch(/STORYBOOK_TARGET: 'public'/)
   })
 })

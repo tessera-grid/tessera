@@ -63,8 +63,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SortButtonDefault: Story = {
-  name: 'Default',
+export const SortButtonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls(
     'operation',
     'sortIndex',

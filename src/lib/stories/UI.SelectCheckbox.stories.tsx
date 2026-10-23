@@ -36,8 +36,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SelectCheckboxDefault: Story = {
-  name: 'Default',
+export const SelectCheckboxPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls('selected', 'indeterminate', 'disabled'),
 }
 

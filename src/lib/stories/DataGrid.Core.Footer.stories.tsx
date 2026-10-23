@@ -91,8 +91,8 @@ const FeedGrid = ({
  * Вид строки футера для каталога: грид по содержимому, сумма Total — в футере. Песочница
  * фичи: контролы всех её сценариев; с `enableInfiniteScroll` — лента с «сервером».
  */
-export const FooterDefault: StoryObj<FooterDefaultArgs> = {
-  name: 'Default',
+export const FooterPlayground: StoryObj<FooterDefaultArgs> = {
+  name: 'Playground',
   parameters: {
     ...vrStates('head.footer'),
     ...showControls(
@@ -339,7 +339,9 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
       cell = canvas.querySelector<HTMLElement>(
         '.data-grid__body-row [data-kn-cell]',
       )!
-      cell.focus()
+      // Как фокус грида — без прокрутки: первая смонтированная строка — над окном, и
+      // WebKit прокрутил бы к ней уже после замера.
+      cell.focus({ preventScroll: true })
       await until(() => expect(cell!.dataset.knActive).toBe('true'))
       scrollTop = scrollerOf(canvas).scrollTop
       body = canvas.querySelector('.data-grid__body')
@@ -371,7 +373,9 @@ const focusLastRow = afterRows(root => {
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       scroller.scrollTop -= rect(footerOf(root)).height
-      lastRowOf(root).querySelector<HTMLElement>('[data-kn-cell]')?.focus()
+      lastRowOf(root)
+        .querySelector<HTMLElement>('[data-kn-cell]')
+        ?.focus({ preventScroll: true })
     }),
   )
 })
@@ -511,6 +515,10 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
       ).toBeTruthy()
       await expect(rect(errorRow()!).top).toBeGreaterThanOrEqual(
         rect(footer).bottom - 1,
+      )
+      // Шаг начат у края — строка ошибки в области целиком (FT17).
+      await expect(rect(errorRow()!).bottom).toBeLessThanOrEqual(
+        clientBottom(canvas) + 1,
       )
     })
     await settle()
@@ -758,6 +766,13 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(stub()).not.toBeNull())
       const footer = footerOf(canvas)
+      // Итоги — по найденным строкам: их нет.
+      const sumOf = (column: string) =>
+        footer
+          .querySelector(`[data-column-id="${column}"]`)
+          ?.textContent?.trim()
+      await expect(sumOf('visits')).toBe('0')
+      await expect(sumOf('total')).toBe('0$')
       await until(() =>
         expect(rect(stub()!).bottom).toBeLessThanOrEqual(rect(footer).top + 1),
       )

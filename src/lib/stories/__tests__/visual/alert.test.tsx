@@ -146,8 +146,11 @@ describe('Плашка кита Alert (ADR 0096)', () => {
       expect(result.violations).toEqual([])
     })
 
-    // Уходя, держит последнее описание и не откликается на указатель.
-    await view.rerender(<Harness shown={false} description="" />)
+    // Уходя, держит последнее описание и не откликается на указатель. Уход длиннее
+    // перерисовки: в WebKit она дольше 150 мс токена, и плашка ушла бы до проверки.
+    const slow = { '--tsr-comp-motion-duration': '1000ms' } as CSSProperties
+    await view.rerender(<Harness description={LONG} style={slow} />)
+    await view.rerender(<Harness shown={false} description="" style={slow} />)
     expect(alert()!.getAttribute('data-leaving')).toBe('true')
     expect(description().textContent).toBe(LONG)
     expect(getComputedStyle(alert()!).pointerEvents).toBe('none')

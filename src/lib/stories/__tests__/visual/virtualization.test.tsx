@@ -81,7 +81,7 @@ describe('Виртуализация — окно строк и столбцов
   })
 
   test('V3: при вложенных заголовках виртуализация столбцов отключена — набор не меняется при скролле', async () => {
-    render(<Stories.HeaderGroups />)
+    render(<Stories.HeaderGroupsPlayground />)
     await waitForGrid()
 
     const scroller = getScroller()

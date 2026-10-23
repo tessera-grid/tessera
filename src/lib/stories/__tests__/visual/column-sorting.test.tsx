@@ -3,13 +3,14 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { composed } from '../stories'
+import { tableLabels } from '../labels'
 
 // Every Column Sorting requirement is its own named test, prefixed with its spec
 // ID (CS1–CS13 from the requirements table in docs/decisions/0012-column-sorting.md).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
-// Tests drive the canonical `ColumnSorting` story, sized to overflow vertically so
+// Tests drive the canonical `ColumnSortingPlayground` story, sized to overflow vertically so
 // the row-ordering requirements (CS12–CS13) have enough rendered rows to prove the
 // order against. Synthetic input drives the mechanics; the two things it can't do —
 // the CSS `:hover` reveal (CS5) and the Base UI tooltip (CS7) — use trusted browser
@@ -36,11 +37,13 @@ const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-type StoryArgs = Partial<Parameters<typeof composed.ColumnSorting>[0]>
+type StoryArgs = Partial<Parameters<typeof composed.ColumnSortingPlayground>[0]>
 
 /** Render the ColumnSorting story and wait until its header cells are on screen. */
 async function renderColumnSorting(args: StoryArgs = {}) {
-  const { container } = await render(<composed.ColumnSorting {...args} />)
+  const { container } = await render(
+    <composed.ColumnSortingPlayground {...args} />,
+  )
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)
@@ -249,21 +252,21 @@ describe('Column Sorting — requirements', () => {
     // Unsorted → next action is "Sort descending" (sortDescFirst).
     let button = await revealSort(cell)
     await userEvent.hover(button)
-    expect(await waitForBodyText('Sort descending')).toBe(true)
+    expect(await waitForBodyText(tableLabels.sortDescending)).toBe(true)
 
     // After first click the column is desc → next action is "Sort ascending".
     await userEvent.click(button)
     await userEvent.hover(renderedDataCells(container)[2])
     button = sortButtonOf(firstDataCell(container))
     await userEvent.hover(button)
-    expect(await waitForBodyText('Sort ascending')).toBe(true)
+    expect(await waitForBodyText(tableLabels.sortAscending)).toBe(true)
 
     // After second click it is asc → next action clears the sort.
     await userEvent.click(button)
     await userEvent.hover(renderedDataCells(container)[2])
     button = sortButtonOf(firstDataCell(container))
     await userEvent.hover(button)
-    expect(await waitForBodyText('Clear sorting')).toBe(true)
+    expect(await waitForBodyText(tableLabels.clearSort)).toBe(true)
   })
 
   test('CS8: the icon reflects the current direction', async () => {
@@ -411,7 +414,7 @@ describe('Column Sorting — requirements', () => {
     // entry and folded reactively from the active plugin set, so toggling a plugin
     // on AFTER mount must register its header slot and reveal the button.
     const { container, rerender } = await render(
-      <composed.ColumnSorting enableColumnSorting={false} />,
+      <composed.ColumnSortingPlayground enableColumnSorting={false} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -419,7 +422,7 @@ describe('Column Sorting — requirements', () => {
     expect(container.querySelector(SORT_BUTTON)).toBeNull()
 
     // Toggle the plugin on — the sort button must appear without a remount.
-    await rerender(<composed.ColumnSorting enableColumnSorting />)
+    await rerender(<composed.ColumnSortingPlayground enableColumnSorting />)
     await expect
       .poll(() => container.querySelectorAll(SORT_BUTTON).length)
       .toBeGreaterThan(0)
@@ -554,7 +557,7 @@ describe('Column Sorting — multi-sort requirements', () => {
     const label = sortButtonOf(dataCell(container, 0)).getAttribute(
       'aria-label',
     )
-    expect(label).toContain('Sort priority 1 of 2')
+    expect(label).toContain(tableLabels.sortPriority(1, 2))
   })
 
   test('CS23: server multi-sort keeps row order but tracks every sorted column', async () => {

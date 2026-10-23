@@ -1,4 +1,4 @@
-import { commands, page, userEvent } from 'vitest/browser'
+import { commands, page, server, userEvent } from 'vitest/browser'
 import {
   afterAll,
   beforeAll,
@@ -38,6 +38,8 @@ import {
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
 import { Stories, humanClick, renderGrid, settleRowMotion } from '../helpers'
 import { composed } from '../stories'
+import { tableLabels } from '../labels'
+import { ColumnDraggingGrid } from './columns-fixtures'
 
 // Канал действий грида (ADR 0125): действия ядра и плагинов на настоящих событиях
 // браузера. AL1–AL2 — в `play` историй «Plugin API», AL3, AL7–AL8 — модульные
@@ -91,7 +93,9 @@ const menuItem = (label: string) =>
 const rowEl = (id: string) => q(`.data-grid__body-row[data-row-id="${id}"]`)
 const nameCell = (id: string) => cellOf(rowEl(id)!, 'name')
 const rowKebab = (id: string) =>
-  rowEl(id)?.querySelector<HTMLElement>('[aria-label^="Row options"]') ?? null
+  rowEl(id)?.querySelector<HTMLElement>(
+    `[aria-label^="${tableLabels.rowMenu}"]`,
+  ) ?? null
 const probeHead = () => headCell('name')
 
 interface Deferred<T> {
@@ -243,8 +247,8 @@ describe('канал действий (ADR 0125)', () => {
     await humanClick(
       rowEl('r3')!.querySelector<HTMLElement>('.drag__handler--column')!,
     )
-    await expect.poll(() => menuItem('Move down')).toBeTruthy()
-    await humanClick(menuItem('Move down')!)
+    await expect.poll(() => menuItem(tableLabels.moveDown)).toBeTruthy()
+    await humanClick(menuItem(tableLabels.moveDown)!)
     await expect
       .poll(() => lastOf('rowDragging', 'handleMenu:moveDown'))
       .toMatchObject({ source: 'pointer' })
@@ -305,7 +309,9 @@ describe('канал действий (ADR 0125)', () => {
     // Пункт кебаба шапки — от имени плагина-владельца.
     await userEvent.hover(probeHead())
     await humanClick(
-      probeHead().querySelector<HTMLElement>('[aria-label^="Column options"]')!,
+      probeHead().querySelector<HTMLElement>(
+        `[aria-label^="${tableLabels.headerMenu}"]`,
+      )!,
     )
     await expect.poll(() => menuItem('Freeze'), { timeout: 4000 }).toBeTruthy()
     await humanClick(menuItem('Freeze')!)
@@ -397,7 +403,7 @@ describe('канал действий (ADR 0125)', () => {
       return answer.promise
     }
     await render(
-      <composed.RowExpanding
+      <composed.RowExpandingPlayground
         dataOverride={LAZY_ROOTS}
         rowExpandingHasChildren={
           ((row: { original: { childCount: number } }) =>
@@ -492,7 +498,7 @@ describe('канал действий (ADR 0125)', () => {
       .toMatchObject({ source: 'keyboard' })
   })
 
-  test('AL15: columnVisibility — открыть поповер, флажок колонки, поиск колонок, «Показать все», «Сбросить»', async () => {
+  test('AL15: columnVisibility — открыть поповер, флажок колонки, флажок «Все колонки», поиск колонок, «Сбросить»', async () => {
     await renderGrid({ enableColumnVisibility: true, onDebugAction })
     await expect
       .poll(() => q('[data-testid="column-visibility-button"]'))
@@ -505,10 +511,20 @@ describe('канал действий (ADR 0125)', () => {
       .poll(() => q('[data-testid="column-visibility-menu"]'))
       .toBeTruthy()
     const menu = q('[data-testid="column-visibility-menu"]')!
-    await humanClick(menu.querySelector<HTMLElement>('.row-select-checkbox')!)
+    await humanClick(
+      menu.querySelector<HTMLElement>('[data-column-id] .row-select-checkbox')!,
+    )
     await expect
       .poll(() => lastOf('columnVisibility', 'toggleColumn'))
       .toMatchObject({ source: 'pointer' })
+    await humanClick(
+      menu.querySelector<HTMLElement>(
+        '[data-testid="column-visibility-all"] .row-select-checkbox',
+      )!,
+    )
+    await expect
+      .poll(() => lastOf('columnVisibility', 'toggleAll'))
+      .toMatchObject({ source: 'pointer', detail: { visible: true } })
     await userEvent.type(menu.querySelector('input[type="search"]')!, 'a')
     await expect
       .poll(() => lastOf('columnVisibility', 'searchColumns'))
@@ -517,9 +533,7 @@ describe('канал действий (ADR 0125)', () => {
       [...menu.querySelectorAll<HTMLButtonElement>('button')].find(
         each => each.textContent === label,
       )!
-    await humanClick(button('Show all'))
-    await expect.poll(() => lastOf('columnVisibility', 'showAll')).toBeTruthy()
-    await humanClick(button('Reset'))
+    await humanClick(button(tableLabels.resetColumns))
     await expect.poll(() => lastOf('columnVisibility', 'reset')).toBeTruthy()
   })
 
@@ -575,7 +589,7 @@ describe('канал действий (ADR 0125)', () => {
   test('AL11: rowDragging — жест переноса мышью: начало и бросок, отмена Escape; итог onRowDragEnd — с cause', async () => {
     const moves: Deferred<void>[] = []
     await render(
-      <composed.RowDragging
+      <composed.RowDraggingPlayground
         onRowDragEnd={() => {
           const move = deferred<void>()
           moves.push(move)
@@ -630,7 +644,7 @@ describe('канал действий (ADR 0125)', () => {
   test('AL12: columnDragging — жест переноса мышью: начало и бросок, отмена Escape; итог onColumnDragEnd — с cause', async () => {
     const moves: Deferred<void>[] = []
     await render(
-      <composed.ColumnDragging
+      <ColumnDraggingGrid
         columnCount={6}
         onColumnDragEnd={() => {
           const move = deferred<void>()
@@ -692,7 +706,7 @@ describe('канал действий (ADR 0125)', () => {
 
   test('AL14: columnFiltering — открыть панель, изменить условие, снять фильтр в панели и в сводке', async () => {
     await render(
-      <composed.Filtering
+      <composed.FilteringPlayground
         containerHeight={700}
         height={620}
         enableToolbar
@@ -766,7 +780,7 @@ describe('канал действий (ADR 0125)', () => {
           await userEvent.hover(probeHead())
           await humanClick(
             probeHead().querySelector<HTMLElement>(
-              '[aria-label^="Column options"]',
+              `[aria-label^="${tableLabels.headerMenu}"]`,
             )!,
           )
         },
@@ -832,7 +846,9 @@ describe('канал действий (ADR 0125)', () => {
   })
 
   test('AL18: cellSelection — жест выделения мышью: начало и конец, расширение Shift, копирование Ctrl+C', async () => {
-    await render(<composed.CellSelection onDebugAction={onDebugAction} />)
+    await render(
+      <composed.CellSelectionPlayground onDebugAction={onDebugAction} />,
+    )
     await expect.poll(() => bodyRows().length).toBeGreaterThan(3)
     const cell = (row: number, column: number) =>
       bodyRows()[row]!.querySelectorAll<HTMLElement>(
@@ -858,6 +874,16 @@ describe('канал действий (ADR 0125)', () => {
       .toMatchObject({ source: 'pointer' })
 
     await userEvent.keyboard('{Control>}c{/Control}')
+    // Playwright в Firefox не исполняет по Ctrl+C команду копирования — событие шлёт тест.
+    if (server.browser === 'firefox') {
+      document.activeElement!.dispatchEvent(
+        new ClipboardEvent('copy', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: new DataTransfer(),
+        }),
+      )
+    }
     await expect
       .poll(() => lastOf('cellSelection', 'copy'))
       .toMatchObject({ source: 'keyboard', detail: { cells: 12 } })
@@ -872,7 +898,7 @@ describe('канал действий (ADR 0125)', () => {
       age: 20 + i,
     }))
     const grid = (rows: typeof data) => (
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         containerHeight={600}
         height={500}
         columnCount={6}
@@ -990,7 +1016,7 @@ describe('канал действий (ADR 0125)', () => {
   })
   test('AL20: quickSearch — запрос после дебаунса одним действием, очистка', async () => {
     await render(
-      <composed.Filtering
+      <composed.FilteringPlayground
         containerHeight={700}
         height={620}
         enableToolbar
@@ -1216,7 +1242,7 @@ describe('канал действий (ADR 0125)', () => {
     const reset = () =>
       [
         ...(q('[data-testid="filter-stub"]')?.querySelectorAll('button') ?? []),
-      ].find(each => each.textContent === 'Reset filters')
+      ].find(each => each.textContent === tableLabels.resetFilters)
     await expect.poll(reset).toBeTruthy()
     await humanClick(reset()!)
     await expect

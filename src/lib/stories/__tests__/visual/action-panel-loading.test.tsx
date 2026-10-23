@@ -10,6 +10,7 @@ import { LAZY_PENDING_DELAY_MS } from '../../../core/lazyOpening'
 import { headerActionMenu } from '../../../plugins'
 import { humanClick } from '../helpers'
 import { waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Загрузка содержимого панели действия перед открытием (ADR 0024, AM28–AM30):
 // ожидание на кнопке, его отмена, ошибка загрузки. `preload` тестового действия —
@@ -77,7 +78,7 @@ const head = () =>
   )!
 const inlineButton = () => head().querySelector<HTMLElement>('.probe__button')!
 const kebab = () =>
-  head().querySelector<HTMLElement>('[aria-label="Column options"]')!
+  head().querySelector<HTMLElement>(`[aria-label="${tableLabels.headerMenu}"]`)!
 const panel = () => document.querySelector('[data-testid="probe-panel"]')
 const menuItem = () =>
   [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(el =>
@@ -218,9 +219,7 @@ describe('Панель действия — загрузка содержимо�
     await expect
       .poll(() => inlineButton().getAttribute('data-error-flash'))
       .toBe('on')
-    await expect
-      .poll(() => messages)
-      .toContain("Couldn't load Probe. Try again.")
+    await expect.poll(() => messages).toContain(tableLabels.loadFailed('Probe'))
     await sleep(100)
     expect(panel()).toBeNull()
     expect(inlineButton().getAttribute('aria-busy')).toBeNull()

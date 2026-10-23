@@ -29,6 +29,27 @@ const GRID = {
 const TOGGLE = '.row-expand-button'
 const CHILD = 'item-id-0-0'
 
+/** Раскройте строку, отсортируйте, найдите или перетащите — строки едут к новым местам. */
+export const RowMotionPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: showControls([
+    'enableRowAnimation',
+    'dataNesting',
+    'enableRowExpanding',
+    'enableTreeLines',
+    'enableColumnSorting',
+    'enableQuickSearch',
+    'enableColumnFiltering',
+    'enableRowDragging',
+  ]),
+  args: {
+    ...GRID,
+    dataNesting: 'nested',
+    enableRowExpanding: true,
+    enableColumnSorting: true,
+  },
+}
+
 export const RowMotionTree: StoryObj<StoryProps> = {
   name: 'Tree',
   args: {

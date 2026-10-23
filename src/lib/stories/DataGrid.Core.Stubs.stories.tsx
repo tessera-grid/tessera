@@ -1,27 +1,32 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { useState } from 'react'
 import { expect } from 'storybook/test'
 
 import { definePlugin, readPluginHooks } from '../core/definePlugin'
-import { ILLUSTRATION_SIZE } from '../core/stubs'
-import { EmptyStateIllustration } from '../ui/icons/EmptyStateIllustration'
+import { Button } from '../ui/Button'
 import { Stub } from '../ui/Stub'
+import { StoryComponent } from './DataGridStory'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import { byTestId, guideNext, settle, until } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
 import { showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { WithConsole } from './demos/StoryConsole'
+import { type ConsoleLog, createConsoleLog } from './demos/consoleLog'
 
 /**
  * Заглушки пустой таблицы (ADR 0123): реестр причин — нет данных, нет колонок, все
  * колонки скрыты, фильтр ничего не нашёл, ошибка загрузки; свой вид — пропом `stubs`,
- * своя причина — записью плагина. `Default` — песочница, S1–S5 — сценарии.
+ * своя причина — записью плагина. `Playground` — песочница, S1–S5 — сценарии.
  */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Core/Stubs',
+  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta
@@ -74,8 +79,6 @@ const offline = definePlugin<{ enabled?: boolean; offline?: boolean }>()({
         ).offline,
       title: () => 'You are offline',
       description: () => 'Data will appear once the connection is back.',
-      media: 'emptyState',
-      mediaSize: ILLUSTRATION_SIZE,
       testId: 'offline-stub',
     },
   ],
@@ -85,8 +88,8 @@ const offline = definePlugin<{ enabled?: boolean; offline?: boolean }>()({
  * Песочница заглушек и снимок каталога `body.empty`: по умолчанию данных нет — заглушка
  * библиотеки. `columnCount: 0` — нет колонок, `hideAllColumns` — все скрыты.
  */
-export const StubsDefault: StoryObj<StoryProps> = {
-  name: 'Default',
+export const StubsPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
   parameters: {
     ...vrStates('body.empty'),
     ...showControls(['showStub', 'hideAllColumns', ...PANEL_CONTROLS]),
@@ -98,8 +101,8 @@ export const StubsDefault: StoryObj<StoryProps> = {
 
 const NO_COLUMNS: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки и данные загружаются',
-    hint: 'columns: [] — скелет одинаковых колонок, в тулбаре скелеты (ADR 0122).',
+    title: 'Ожидание списка колонок от сервера',
+    hint: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -108,7 +111,7 @@ const NO_COLUMNS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Данные пришли, колонки — нет',
-    hint: 'Показать нечего: заглушка «No columns» вместо таблицы; поиск, «Экспорт», «Фильтры» и «Колонки» выключены.',
+    hint: 'Список колонок отсутствует. В таблице отображается заглушка, без заголовков и строк.',
     props: ({ rows }) => ({ loading: false, dataOverride: rows }),
   },
 ]
@@ -128,16 +131,33 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
       args={normalizeArgs(args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
     await step(NO_COLUMNS[0]!.title, async () => {
-      await waitTestId('column-visibility-skeleton')
+      for (const id of [
+        'quick-search-skeleton',
+        'export-skeleton',
+        'column-visibility-skeleton',
+      ]) {
+        await waitTestId(id)
+      }
+      await expect(
+        canvas.querySelector('.data-grid__body-row--skeleton'),
+      ).not.toBeNull()
+      await expect(byTestId('pagination-range')?.textContent).toBe('')
     })
     await step(NO_COLUMNS[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('no-columns-stub')
+      await expect(byTestId('no-columns-stub')).toHaveTextContent(
+        labels.noColumnsTitle,
+      )
       await expect(bodyRows(canvas)).toHaveLength(0)
+      await expect(
+        canvas.querySelectorAll('[role="columnheader"]'),
+      ).toHaveLength(0)
       for (const id of [
         'quick-search',
         'export-button',
@@ -153,27 +173,54 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
 
 // --- S2 ------------------------------------------------------------------------------
 
+/**
+ * Пользователь снимает флажок всех колонок в меню «Колонки» и закрывает меню, как
+ * `Escape`: заглушку ничто не заслоняет (ADR 0133). Закрытое меню возвращает фокус на
+ * кнопку «Колонки» — шаг его снимает, как если бы пользователь ушёл к заглушке.
+ */
+const hideAllFromMenu = (root: HTMLElement) => {
+  const menu = () =>
+    document.querySelector<HTMLElement>(
+      '[data-testid="column-visibility-menu"]',
+    )
+  const button = () =>
+    root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
+  const blurWhenClosed = () => {
+    if (menu()) return requestAnimationFrame(blurWhenClosed)
+    if (document.activeElement === button()) button()!.blur()
+  }
+  const run = () => {
+    const box = menu()?.querySelector<HTMLElement>(
+      '[data-testid="column-visibility-all"] [role="checkbox"]',
+    )
+    if (box && menu()!.hasAttribute('data-open')) {
+      box.click()
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+      requestAnimationFrame(blurWhenClosed)
+      return
+    }
+    if (button()?.hasAttribute('data-base-ui-click-trigger') && !menu())
+      button()!.click()
+    requestAnimationFrame(run)
+  }
+  requestAnimationFrame(run)
+}
+
 const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица с колонками',
-    hint: 'Видимостью колонок владеет приложение (columnVisibility).',
+    title: 'Видимость колонок в тулбаре',
+    hint: 'Таблица отображает список колонок. Включен виджет по управлению их видимостью.',
   },
   {
-    title: 'Приложение скрыло все колонки',
-    hint: 'Через меню так нельзя (CV9), а состоянием приложения — можно: заглушка с «Show all», «Колонки» в тулбаре доступна.',
-    props: () => ({ hideAllColumns: true }),
-  },
-  {
-    title: 'Пользователь показывает все колонки',
-    hint: '«Show all» возвращает скрытые колонки — строки снова на месте.',
-    enter: root =>
-      root
-        .querySelector<HTMLElement>('[data-testid="columns-hidden-show-all"]')
-        ?.click(),
+    title: 'Пользователь скрыл все колонки',
+    hint: 'Пользователь снял флажок всех колонок в меню видимости. Все колонки скрыты, в таблице отображается заглушка.',
+    enter: hideAllFromMenu,
   },
 ]
 
-/** S2: приложение скрыло все колонки, пользователь их возвращает. */
+/** S2: пользователь скрыл все колонки в меню — заглушка с кнопкой возврата. */
 export const StubsColumnsHidden: StoryObj<StoryProps> = {
   name: 'All columns hidden',
   parameters: {
@@ -188,20 +235,40 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
       args={normalizeArgs(args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
     await step(COLUMNS_HIDDEN[0]!.title, async () => {
       await until(() => expect(bodyRows(canvas).length).toBeGreaterThan(0))
+      await expect(
+        canvas.querySelectorAll('[role="columnheader"]').length,
+      ).toBeGreaterThan(0)
+      await expect(byTestId('column-visibility-button')).not.toBeNull()
+      await expect(byTestId('column-visibility-button')).not.toHaveAttribute(
+        'data-active',
+      )
     })
     await step(COLUMNS_HIDDEN[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('columns-hidden-stub')
+      await until(() => expect(byTestId('column-visibility-menu')).toBeNull())
+      await until(() =>
+        expect(document.activeElement).not.toBe(
+          byTestId('column-visibility-button'),
+        ),
+      )
+      await expect(bodyRows(canvas)).toHaveLength(0)
+      await expect(
+        canvas.querySelectorAll('[role="columnheader"]'),
+      ).toHaveLength(0)
+      await expect(byTestId('columns-hidden-show-all')).toHaveTextContent(
+        labels.showAllColumns,
+      )
       await expect(disabled('column-visibility-button')).toBe(false)
-    })
-    await step(COLUMNS_HIDDEN[2]!.title, async () => {
-      await guideNext(canvas)
-      await until(() => expect(bodyRows(canvas).length).toBeGreaterThan(0))
-      await expect(byTestId('columns-hidden-stub')).toBeNull()
+      await expect(byTestId('column-visibility-button')).toHaveAttribute(
+        'data-active',
+        'true',
+      )
     })
     await settle()
   },
@@ -212,12 +279,12 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
 const NO_DATA: readonly GuideStoryStep[] = [
   {
     title: 'Данные загружаются',
-    hint: 'Скелет первой загрузки главнее любой заглушки.',
+    hint: 'Данных еще нет, в теле таблицы отображаются скелеты.',
     props: () => ({ loading: 'initial', dataOverride: [] }),
   },
   {
-    title: 'Сервер ответил: строк нет',
-    hint: 'Заглушка библиотеки по умолчанию — иллюстрация и «No data»; свою задают в stubs.noData.',
+    title: 'Данные на сервере отсутствуют',
+    hint: 'В теле таблицы отображается заглушка.',
     props: () => ({ loading: false }),
   },
 ]
@@ -239,8 +306,9 @@ export const StubsNoData: StoryObj<StoryProps> = {
       args={normalizeArgs(args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
     await step(NO_DATA[0]!.title, async () => {
       await until(() =>
         expect(
@@ -252,6 +320,7 @@ export const StubsNoData: StoryObj<StoryProps> = {
     await step(NO_DATA[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('no-data-stub')
+      await expect(byTestId('no-data-stub')).toHaveTextContent(labels.noData)
       await expect(byTestId('no-data-stub')!.querySelector('svg')).not.toBe(
         null,
       )
@@ -262,63 +331,66 @@ export const StubsNoData: StoryObj<StoryProps> = {
 
 // --- S4 ------------------------------------------------------------------------------
 
-/** Своя заглушка приложения — примитивом кита `Stub`. */
-const ownStub = (title: string, testId: string) => (
+/**
+ * Фон своей заглушки — оттенки приложения поверх поверхности темы: мягкие пятна в обеих
+ * темах, текст на них сохраняет контраст.
+ */
+const ORDERS_BACKGROUND = [
+  'radial-gradient(circle at 20% 15%, color-mix(in oklch, #6366f1 28%, transparent), transparent 55%)',
+  'radial-gradient(circle at 85% 90%, color-mix(in oklch, #ec4899 24%, transparent), transparent 50%)',
+  'linear-gradient(135deg, color-mix(in oklch, #6366f1 8%, var(--tsr-sys-surface)), color-mix(in oklch, #ec4899 8%, var(--tsr-sys-surface)))',
+].join(', ')
+
+/** Своя заглушка пустого ответа: текст, фон и действие приложения, без иллюстрации таблицы. */
+const ordersStub = (log: ConsoleLog) => (
   <Stub
-    data-testid={testId}
-    media={<EmptyStateIllustration width={96} height={96} />}
-    title={title}
-    description="Our own stub from the stubs prop."
+    data-testid="own-no-data"
+    // На всю область заглушки: `Stub` ставит содержимое посередине.
+    style={{ height: '100%', background: ORDERS_BACKGROUND }}
+    title="No orders yet"
+    description="Orders you create appear here."
+    action={
+      <Button
+        data-testid="own-no-data-action"
+        onClick={() => log.log('Create order')}
+      >
+        Create order
+      </Button>
+    }
   />
 )
 
-const CUSTOM: readonly GuideStoryStep[] = [
-  {
-    title: 'Пустой ответ — своя заглушка',
-    hint: 'stubs.noData — узел приложения вместо заглушки библиотеки.',
-    props: () => ({ dataOverride: [] }),
-  },
-  {
-    title: 'Колонок нет — своя заглушка',
-    hint: 'stubs.noColumns; какую заглушку показать, по-прежнему решает грид.',
-    props: () => ({ columnsOverride: [] }),
-  },
-]
-
-/** S4: приложение подменяет вид заглушек своими. */
+/** S4: приложение показывает свою заглушку пустого ответа — пропом `stubs`. */
 export const StubsCustom: StoryObj<StoryProps> = {
   name: 'Custom stubs',
   parameters: {
     scenario: '0123/S4',
     ...showControls([], {
-      dataCount: 'Строк нет: сценарий — про свои заглушки',
+      dataCount: 'Строк нет: сценарий — про свою заглушку',
     }),
   },
-  args: {
-    ...FIXED_HEIGHT,
-    stubs: {
-      noData: ownStub('Nothing here yet', 'own-no-data'),
-      noColumns: ownStub('Pick columns to see data', 'own-no-columns'),
-    },
+  args: FIXED_HEIGHT,
+  render: function Render(args) {
+    const [consoleLog] = useState(createConsoleLog)
+    return (
+      <WithConsole log={consoleLog} args={args}>
+        <StoryComponent
+          {...normalizeArgs(args)}
+          dataOverride={[]}
+          stubs={{ noData: ordersStub(consoleLog) }}
+        />
+      </WithConsole>
+    )
   },
-  render: args => (
-    <GuideStory
-      title="Свои заглушки"
-      steps={CUSTOM}
-      args={normalizeArgs(args)}
-    />
-  ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, globals }) => {
     if (globals.catalog !== true) return
-    await step(CUSTOM[0]!.title, async () => {
-      await waitTestId('own-no-data')
-    })
-    await step(CUSTOM[1]!.title, async () => {
-      await guideNext(canvas)
-      await waitTestId('own-no-columns')
-      await expect(byTestId('own-no-data')).toBeNull()
-    })
-    await settle()
+    await waitTestId('own-no-data')
+    await expect(byTestId('no-data-stub')).not.toHaveTextContent(
+      storyLabels(args.locale).noData,
+    )
+    await expect(byTestId('own-no-data-action')).toHaveTextContent(
+      'Create order',
+    )
   },
 }
 
@@ -327,11 +399,11 @@ export const StubsCustom: StoryObj<StoryProps> = {
 const PLUGIN_REASON: readonly GuideStoryStep[] = [
   {
     title: 'Связь есть',
-    hint: 'Плагин автора добавил причину «offline» в реестр полем stubs у definePlugin.',
+    hint: 'Таблица со строками.',
   },
   {
     title: 'Связь пропала',
-    hint: 'Условие записи плагина выполнено, а её приоритет выше встроенных: заглушка «You are offline».',
+    hint: 'Вместо таблицы — заглушка плагина о потере связи.',
     props: () => ({ extraPlugins: [offline({ offline: true })] }),
   },
 ]
@@ -360,6 +432,10 @@ export const StubsPluginReason: StoryObj<StoryProps> = {
     await step(PLUGIN_REASON[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('offline-stub')
+      await expect(byTestId('offline-stub')).toHaveTextContent(
+        'You are offline',
+      )
+      await expect(bodyRows(canvas)).toHaveLength(0)
     })
     await settle()
   },

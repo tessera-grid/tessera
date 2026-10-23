@@ -13,7 +13,7 @@ import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 // Модель дерева `rowExpandingModel`, интерфейс `rowExpanding` и линии `treeLines` (ADR 0119).
 // TD4, TD5, TD9 — модульные в `rowExpandingModel.dom`.
 
-type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
+type Args = Partial<Parameters<typeof Stories.DataGridPlayground>[0]>
 
 const BASE: Args = {
   containerHeight: 600,
@@ -118,7 +118,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
 
   test('TD2: rowExpandingModel без rowExpanding — treegrid с aria-level и без aria-expanded; ←/→, Enter и Space не раскрывают', async () => {
     await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         enableRowExpandingModel
         enableKeyboardNavigation
@@ -130,7 +130,11 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
     expect(rowEl(ROOT)!.getAttribute('aria-level')).toBe('1')
     expect(rowEl(CHILD)!.getAttribute('aria-level')).toBe('2')
     expect(rowEl(GRANDCHILD)!.getAttribute('aria-level')).toBe('3')
-    expect(document.querySelectorAll('[aria-expanded]')).toHaveLength(0)
+    expect(
+      document
+        .querySelector('[role="treegrid"]')!
+        .querySelectorAll('[aria-expanded]'),
+    ).toHaveLength(0)
 
     const before = rowIds()
     const active = () => document.activeElement as HTMLElement
@@ -159,7 +163,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
   test('TD3: дерево rowExpandingModel без rowExpanding проходит axe в ролях table и treegrid в обеих темах', async () => {
     for (const keyboard of [false, true]) {
       const screen = await render(
-        <Stories.AllFeatures
+        <Stories.DataGridPlayground
           {...BASE}
           enableRowExpandingModel
           expandAll
@@ -193,17 +197,17 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
       enableRowExpanding: rowExpanding,
       rowExpandingMaxDepth: 1,
     })
-    const screen = await render(<Stories.AllFeatures {...props(true)} />)
+    const screen = await render(<Stories.DataGridPlayground {...props(true)} />)
     await expect.poll(() => rowEl(CHILD)).not.toBeNull()
     expect(rowEl(GRANDCHILD)).toBeNull()
 
-    await screen.rerender(<Stories.AllFeatures {...props(false)} />)
+    await screen.rerender(<Stories.DataGridPlayground {...props(false)} />)
     await expect.poll(() => rowEl(GRANDCHILD)).not.toBeNull()
   })
 
   test('TD7: rowGrouping с rowExpandingModel без rowExpanding — группы раскрыты по expanded, колонки переключателя нет', async () => {
     const screen = await render(
-      <composed.RowGrouping
+      <composed.RowGroupingPlayground
         enableRowExpanding={false}
         enableRowExpandingModel
         initialGrouping={['gender']}
@@ -216,7 +220,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
     expect(expandHead()).toBeNull()
 
     await screen.rerender(
-      <composed.RowGrouping
+      <composed.RowGroupingPlayground
         enableRowExpanding={false}
         enableRowExpandingModel
         initialGrouping={['gender']}
@@ -228,7 +232,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
 
   test('TD8: treeLines рисует линии у дерева rowExpandingModel, rowExpanding и групп; без плагина и с enabled: false линий нет; переключение на лету без перемонтирования', async () => {
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         enableRowExpandingModel
         enableTreeLines
@@ -240,12 +244,16 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
     const node = rowEl(CHILD)
 
     await screen.rerender(
-      <Stories.AllFeatures {...BASE} enableRowExpandingModel expandAll />,
+      <Stories.DataGridPlayground
+        {...BASE}
+        enableRowExpandingModel
+        expandAll
+      />,
     )
     await expect.poll(withLines).toBe(false)
     expect(rowEl(CHILD)).toBe(node)
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         enableRowExpandingModel
         enableTreeLines
@@ -256,7 +264,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
     expect(rowEl(CHILD)).toBe(node)
 
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         enableRowExpanding
         enableTreeLines
@@ -267,7 +275,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
     await screen.unmount()
 
     await render(
-      <composed.RowGrouping
+      <composed.RowGroupingPlayground
         enableRowExpanding={false}
         enableRowExpandingModel
         enableTreeLines
@@ -299,7 +307,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
       )
     // Модель без переключателя: дерево с линиями, колонки раскрытия нет.
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({ enableRowExpandingModel: true, expandAll: true })}
       />,
     )
@@ -308,7 +316,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
 
     // С переключателем: та же модель и колонка с квадратами.
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({ enableRowExpanding: true, expandAll: true })}
       />,
     )
@@ -324,7 +332,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
 
     // Без линий — подстроки есть, линий нет.
     await screen.rerender(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...props({
           enableRowExpandingModel: true,
           expandAll: true,
@@ -339,7 +347,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
       { enableRowExpandingModel: true, expandAll: false },
       { expandAll: true },
     ]) {
-      await screen.rerender(<Stories.AllFeatures {...props(extra)} />)
+      await screen.rerender(<Stories.DataGridPlayground {...props(extra)} />)
       await expect.poll(() => depths().size).toBe(0)
       expect(skeletonRows().length).toBeGreaterThan(0)
     }

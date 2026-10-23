@@ -129,7 +129,7 @@ export const recordAttribute = (target: () => Element | null, name: string) => {
 }
 
 export const renderContextMenuGrid = async () => {
-  const screen = await render(<composed.ContextMenu />)
+  const screen = await render(<composed.ContextMenuPlayground />)
   await expect
     .poll(() => document.querySelectorAll(BODY_CELL).length)
     .toBeGreaterThan(4)

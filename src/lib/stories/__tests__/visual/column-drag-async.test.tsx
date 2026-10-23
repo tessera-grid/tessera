@@ -4,10 +4,14 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 import { pendingArcOf, revealedHandleWidth } from '../helpers'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 import { withWideViewport } from './column-pinning-helpers'
+import {
+  ColumnDraggingGrid,
+  HeaderGroupsDraggingGrid,
+} from './columns-fixtures'
 
 // Асинхронный перенос колонок (ADR 0114): промис `onColumnDragEnd` — ожидание на ручке,
 // отказ возвращает колонку к прежним соседям; ручка — кнопка кита, раскрывается по ширине.
@@ -78,7 +82,7 @@ const settleMoves = async (ok = true, reason?: unknown) => {
 
 const renderGrid = async (
   args: Record<string, unknown> = {},
-  Story: typeof composed.ColumnDragging = composed.ColumnDragging,
+  Story: typeof ColumnDraggingGrid = ColumnDraggingGrid,
 ) => {
   moves.length = 0
   asyncMoves = true
@@ -121,6 +125,19 @@ const dragAfter = async (id: string, targetId: string) => {
   await expect.poll(() => document.querySelector(OVERLAY)).toBeNull()
 }
 
+/** Группа «Info» шапки историй: подгруппа и листья, вспыхивающие с ней. */
+const GROUP_NODES = ['info', 'more-info', 'age', 'gender', 'visits']
+
+/** Перенести группу на шаг влево из меню её ручки. */
+const moveGroupLeft = async (id: string) => {
+  const before = order()
+  await reveal(id)
+  await userEvent.click(handleOf(id))
+  await expect.poll(menu).toBeTruthy()
+  await userEvent.click(menuItem(ENGLISH_LABELS.moveLeft))
+  await expect.poll(order).not.toEqual(before)
+}
+
 /** Увести указатель из шапки. */
 const away = async () => {
   const r = head(order()[0]!).getBoundingClientRect()
@@ -156,7 +173,7 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await reveal(d!)
         await userEvent.click(handleOf(d!))
         await expect.poll(menu).toBeTruthy()
-        await userEvent.click(menuItem(DEFAULT_LABELS.moveRight))
+        await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
         await expect.poll(() => order().indexOf(d!)).toBeGreaterThan(2)
         expect(handleOf(d!).getAttribute('aria-busy'), 'меню').toBe('true')
         await settleMoves()
@@ -236,11 +253,11 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
           .toBe('on')
         await expect
           .poll(announced)
-          .toContain(DEFAULT_LABELS.announceColumnMoveFailed('Server said no'))
+          .toContain(ENGLISH_LABELS.announceColumnMoveFailed('Server said no'))
         await screen.unmount()
 
         // Группа под вложенной шапкой возвращается блоком листьев.
-        screen = await renderGrid({}, composed.HeaderGroupsDragging)
+        screen = await renderGrid({}, HeaderGroupsDraggingGrid)
         const groups = () =>
           [
             ...document.querySelectorAll<HTMLElement>(
@@ -261,7 +278,7 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await reveal(group!)
         await userEvent.click(handleOf(group!))
         await expect.poll(menu).toBeTruthy()
-        await userEvent.click(menuItem(DEFAULT_LABELS.moveRight))
+        await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
         await expect.poll(order).not.toEqual(leavesBefore)
         await settleMoves(false, new Error('no'))
         await expect.poll(order).toEqual(leavesBefore)
@@ -274,9 +291,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('CO13: колонка после переноса — броском, с Alt+Shift+стрелками и из меню ручки — сразу вспыхивает слоем подсветки колонки тоном arrival', async () => {
+  test('CO13: колонка после переноса — броском, с Alt+Shift+стрелками и из меню ручки — сразу вспыхивает слоем подсветки колонки тоном arrival; группа — целиком', async () => {
     await withWideViewport(async () => {
-      const screen = await renderGrid()
+      let screen = await renderGrid()
       try {
         const [a, b, c, d] = order()
         await dragAfter(a!, b!)
@@ -293,17 +310,25 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await reveal(d!)
         await userEvent.click(handleOf(d!))
         await expect.poll(menu).toBeTruthy()
-        await userEvent.click(menuItem(DEFAULT_LABELS.moveRight))
+        await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
         await expect.poll(() => tone(d!), { message: 'меню' }).toBe('arrival')
         await settleMoves()
         await expect.poll(() => tone(a!), { timeout: 4000 }).toBeNull()
+        await screen.unmount()
+
+        screen = await renderGrid({}, HeaderGroupsDraggingGrid)
+        await moveGroupLeft('info')
+        for (const id of GROUP_NODES) {
+          await expect.poll(() => tone(id), { message: id }).toBe('arrival')
+        }
+        expect(tone('name'), 'сосед не вспыхивает').toBeNull()
       } finally {
         await screen.unmount()
       }
     })
   })
 
-  test('CO18: при отказе колонка подсвечивается тоном danger там, где оказалась — после отката на прежнем месте, без отката на новом', async () => {
+  test('CO18: при отказе колонка подсвечивается тоном danger там, где оказалась — после отката на прежнем месте, без отката на новом; группа — целиком', async () => {
     await withWideViewport(async () => {
       let screen = await renderGrid()
       try {
@@ -322,6 +347,14 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await settleMoves(false, new Error('no'))
         await expect.poll(() => tone(x!)).toBe('danger')
         expect(order().indexOf(x!), 'без отката').toBe(1)
+        await screen.unmount()
+
+        screen = await renderGrid({}, HeaderGroupsDraggingGrid)
+        await moveGroupLeft('info')
+        await settleMoves(false, new Error('no'))
+        for (const id of GROUP_NODES) {
+          await expect.poll(() => tone(id), { message: id }).toBe('danger')
+        }
       } finally {
         await screen.unmount()
       }
@@ -381,9 +414,11 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
           .poll(() => wrapperOf(a!).getBoundingClientRect().width)
           .toBe(0)
 
-        // Клавиатурный фокус заголовка раскрывает ручку.
-        head(b!).focus()
-        await userEvent.keyboard('{Shift}')
+        // Клавиатурный фокус заголовка раскрывает ручку: стрелкой с соседнего, а не
+        // фокусом от скрипта — его `:focus-visible` в Firefox и WebKit не даёт.
+        head(a!).focus()
+        await userEvent.keyboard('{ArrowRight}')
+        expect(document.activeElement).toBe(head(b!))
         await expect
           .poll(() => wrapperOf(b!).getBoundingClientRect().width)
           .toBe(revealedHandleWidth(handleOf(b!)))

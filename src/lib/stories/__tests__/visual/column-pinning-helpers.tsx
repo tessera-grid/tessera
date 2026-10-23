@@ -3,6 +3,8 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { expect } from 'vitest'
 import { composed } from '../stories'
+import { tableLabels } from '../labels'
+import { PINNING_NESTED } from './header-fixtures'
 
 export { composed }
 
@@ -34,11 +36,15 @@ export const headCellById = (container: HTMLElement, id: string) =>
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-export type StoryArgs = Partial<Parameters<typeof composed.ColumnPinning>[0]>
+export type StoryArgs = Partial<
+  Parameters<typeof composed.ColumnPinningPlayground>[0]
+>
 
 /** Render the ColumnPinning story and wait until its header cells are on screen. */
 export async function renderColumnPinning(args: StoryArgs = {}) {
-  const { container } = await render(<composed.ColumnPinning {...args} />)
+  const { container } = await render(
+    <composed.ColumnPinningPlayground {...args} />,
+  )
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)
@@ -51,7 +57,9 @@ export const scrollerOf = (container: HTMLElement) =>
 
 /** Render the nested-header pinning story and wait for its header rows. */
 export async function renderHeaderGroupsPinning(args: StoryArgs = {}) {
-  const { container } = await render(<composed.HeaderGroupsPinning {...args} />)
+  const { container } = await render(
+    <composed.ColumnPinningPlayground {...PINNING_NESTED} {...args} />,
+  )
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)
@@ -129,10 +137,7 @@ export const menuItemByText = (text: string) =>
  * it to open the mini-menu, then choose «Pin left» / «Pin right». One-sided
  * columns (`pinSides`) pin directly on button click — use `revealPin` there.
  */
-export const pinViaPopover = async (
-  cell: HTMLElement,
-  item: 'Pin left' | 'Pin right',
-) => {
+export const pinViaPopover = async (cell: HTMLElement, item: string) => {
   const button = await revealPin(cell)
   await userEvent.click(button)
   await expect.poll(() => menuItemByText(item)).toBeTruthy()

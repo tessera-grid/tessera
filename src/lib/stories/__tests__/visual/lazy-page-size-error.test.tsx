@@ -11,6 +11,7 @@ import {
   renderToolbarGrid,
   sleep,
 } from './lazy-helpers'
+import { tableLabels } from '../labels'
 
 // Ошибка загрузки выбора размера страницы (ADR 0061, LZ16). Отдельный файл: модуль
 // грузится один раз на документ.
@@ -29,7 +30,7 @@ describe('Размер страницы — ошибка загрузки', () =
     await expect.poll(flash).toBe('on')
     await expect
       .poll(() => announcements.messages)
-      .toContain("Couldn't load Rows per page. Try again.")
+      .toContain(tableLabels.loadFailed(tableLabels.rowsPerPage))
     await sleep(100)
     expect(pageSizeOptions()).toBe(0)
     // Вспышка держится --tsr-comp-error-flash-duration (1200 мс), затем гаснет. Ждём

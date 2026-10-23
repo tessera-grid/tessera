@@ -8,6 +8,7 @@ import { composed } from '../stories'
 // the row suite instead of duplicating them. Only the choreography below is
 // column-specific (horizontal activation, head-cell targets).
 import { firePointer, nextFrame } from '../../rowDragging.dnd'
+import { ColumnDraggingGrid } from './columns-fixtures'
 
 // Every Column Dragging requirement is its own named test, prefixed with its spec
 // ID (D15–D30, the column block of the shared drag & drop requirements table in
@@ -40,11 +41,11 @@ const SCROLLER = '.data-grid__container'
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-type StoryArgs = Partial<Parameters<typeof composed.ColumnDragging>[0]>
+type StoryArgs = Partial<Parameters<typeof ColumnDraggingGrid>[0]>
 
 /** Render the ColumnDragging story and wait until its header cells are on screen. */
 async function renderColumnDragging(args: StoryArgs = {}) {
-  const { container } = await render(<composed.ColumnDragging {...args} />)
+  const { container } = await render(<ColumnDraggingGrid {...args} />)
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)

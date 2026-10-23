@@ -41,8 +41,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const ExpandButtonDefault: Story = {
-  name: 'Default',
+export const ExpandButtonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls('expanded', ...DERIVED_BUTTON_CONTROLS),
 }
 

@@ -6,6 +6,7 @@ import { useColumns } from '../../__mocks__/columns'
 import { useCreateTable } from '../../../core/useCreateTable'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { DataGrid } from '../../../grid/DataGrid'
+import type { LabelDictionary } from '../../../core/localization'
 
 interface PluginsGridProps {
   columnCount: number
@@ -13,6 +14,9 @@ interface PluginsGridProps {
   plugins: readonly TesseraFeatureEntry[]
   /** Готовые данные: меряется монтирование, а не генератор. */
   dataOverride?: ReturnType<typeof getData>
+  /** Словарь подписей и язык (ADR 0132, LC11). */
+  localization?: LabelDictionary
+  locale?: string
 }
 
 /**
@@ -25,6 +29,8 @@ const PluginsGrid = ({
   dataCount,
   plugins,
   dataOverride,
+  localization,
+  locale,
 }: PluginsGridProps) => {
   const columns = useColumns(columnCount)
   const data = useMemo(
@@ -45,7 +51,12 @@ const PluginsGrid = ({
         flexDirection: 'column',
       }}
     >
-      <DataGrid table={table as never} height={500} />
+      <DataGrid
+        table={table as never}
+        height={500}
+        localization={localization}
+        locale={locale}
+      />
     </div>
   )
 }

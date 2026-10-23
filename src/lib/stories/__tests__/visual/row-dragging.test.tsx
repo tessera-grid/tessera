@@ -28,7 +28,7 @@ import { violations } from './a11y-helpers'
 // docs/decisions/0006-dnd-with-dnd-kit.md; columns are D15–D30).
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
-// docs/decisions/0009-test-coverage-visual-and-performance.md). All tests drive the canonical `RowDragging`
+// docs/decisions/0009-test-coverage-visual-and-performance.md). All tests drive the canonical `RowDraggingPlayground`
 // story, sized to overflow on both axes so the auto-scroll requirements (D12–D14)
 // have real scroll distance. The thin Storybook `play` in dataGridMeta.tsx is
 // only a demo scenario now; the assertions live here. Synthetic pointer events
@@ -37,7 +37,7 @@ import { violations } from './a11y-helpers'
 
 /** Render the RowDragging story and wait until its rows are on screen. */
 async function renderRowDragging() {
-  const { container } = await render(<composed.RowDragging />)
+  const { container } = await render(<composed.RowDraggingPlayground />)
   await expect
     .poll(() => container.querySelectorAll(ROW).length)
     .toBeGreaterThan(3)
@@ -350,7 +350,7 @@ describe('Row Dragging — requirements', () => {
 describe('Row Dragging — nested rows (subrows)', () => {
   async function renderNested() {
     const { container } = await render(
-      <composed.RowDragging
+      <composed.RowDraggingPlayground
         dataNesting="nested"
         enableRowExpanding
         initialExpanded

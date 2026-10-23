@@ -5,21 +5,21 @@ import * as accessibility from '../DataGrid.Accessibility.stories'
 import * as cellsContextMenu from '../DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditing from '../DataGrid.Cells.Editing.stories'
 import * as cellsKeyboard from '../DataGrid.Cells.Keyboard.stories'
-import * as cellsOverflowTooltip from '../DataGrid.Cells.OverflowTooltip.stories'
 import * as cellsSelection from '../DataGrid.Cells.Selection.stories'
 import * as columnsHeaderGroups from '../DataGrid.Columns.HeaderGroups.stories'
 import * as columnsHeaderMenu from '../DataGrid.Columns.HeaderMenu.stories'
 import * as columnsPinning from '../DataGrid.Columns.Pinning.stories'
-import * as columnsResizingDragging from '../DataGrid.Columns.ResizingDragging.stories'
+import * as columnsDragging from '../DataGrid.Columns.Dragging.stories'
+import * as columnsResizing from '../DataGrid.Columns.Resizing.stories'
 import * as columnsSorting from '../DataGrid.Columns.Sorting.stories'
 import * as columnsVisibility from '../DataGrid.Columns.Visibility.stories'
-import * as core from '../DataGrid.Core.stories'
-import * as coreSkeleton from '../DataGrid.Core.Skeleton.stories'
-import * as coreTextOverflow from '../DataGrid.Core.TextOverflow.stories'
+import * as playground from '../DataGrid.Playground.stories'
+import * as coreSkeleton from '../DataGrid.DataLoading.Skeleton.stories'
+import * as coreLongText from '../DataGrid.Core.LongText.stories'
 import * as coreTouch from '../DataGrid.Core.Touch.stories'
-import * as coreLoadError from '../DataGrid.Core.LoadError.stories'
-import * as coreIncreasedContrast from '../DataGrid.Core.IncreasedContrast.stories'
-import * as dataInfiniteScroll from '../DataGrid.Data.InfiniteScroll.stories'
+import * as coreLoadError from '../DataGrid.DataLoading.LoadError.stories'
+import * as coreIncreasedContrast from '../Customization.IncreasedContrast.stories'
+import * as dataInfiniteScroll from '../DataGrid.DataLoading.InfiniteScroll.stories'
 import * as coreSizing from '../DataGrid.Core.Sizing.stories'
 import * as exportStories from '../DataGrid.Export.stories'
 import * as filtering from '../DataGrid.Filtering.stories'
@@ -41,17 +41,17 @@ export const composed = {
   ...composeStories(cellsContextMenu),
   ...composeStories(cellsEditing),
   ...composeStories(cellsKeyboard),
-  ...composeStories(cellsOverflowTooltip),
   ...composeStories(cellsSelection),
   ...composeStories(columnsHeaderGroups),
   ...composeStories(columnsHeaderMenu),
   ...composeStories(columnsPinning),
-  ...composeStories(columnsResizingDragging),
+  ...composeStories(columnsResizing),
+  ...composeStories(columnsDragging),
   ...composeStories(columnsSorting),
   ...composeStories(columnsVisibility),
-  ...composeStories(core),
+  ...composeStories(playground),
   ...composeStories(coreSkeleton),
-  ...composeStories(coreTextOverflow),
+  ...composeStories(coreLongText),
   ...composeStories(coreTouch),
   ...composeStories(coreLoadError),
   ...composeStories(coreIncreasedContrast),

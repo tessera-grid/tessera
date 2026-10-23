@@ -24,7 +24,9 @@ describe('контролы историй (ADR 0117)', () => {
       enableRowExpanding: true,
       expandAll,
     })
-    const screen = await render(<Stories.AllFeatures {...props(false)} />)
+    const screen = await render(
+      <Stories.DataGridPlayground {...props(false)} />,
+    )
     await expect
       .poll(() => document.querySelectorAll(BODY_ROW).length)
       .toBeGreaterThan(3)
@@ -35,12 +37,12 @@ describe('контролы историй (ADR 0117)', () => {
       )
     expect(child()).toBeNull()
 
-    await screen.rerender(<Stories.AllFeatures {...props(true)} />)
+    await screen.rerender(<Stories.DataGridPlayground {...props(true)} />)
     await expect.poll(child).not.toBeNull()
     // Та же строка на месте: грид не перемонтирован.
     expect(document.querySelector(BODY_ROW)).toBe(first)
 
-    await screen.rerender(<Stories.AllFeatures {...props(false)} />)
+    await screen.rerender(<Stories.DataGridPlayground {...props(false)} />)
     await expect.poll(child).toBeNull()
     expect(document.querySelector(BODY_ROW)).toBe(first)
   })

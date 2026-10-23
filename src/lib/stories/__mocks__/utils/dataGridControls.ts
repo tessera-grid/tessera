@@ -1,5 +1,5 @@
 /**
- * Контролы историй DataGrid по группам. Все — в песочнице `All features`; остальные
+ * Контролы историй DataGrid по группам. Все — в песочнице `DataGrid/Playground`; остальные
  * истории показывают базовый набор и свой список через `showControls` (ADR 0117).
  * Настройка фичи видна, пока фича включена; форма мока — пока история не подаёт свои
  * данные и колонки. Имена — по правилу ADR 0106: `enable<Фабрика>` и `<фабрика><Опция>`.
@@ -35,6 +35,7 @@ import {
   columnPinningLeafPinningType,
   pinFirstColumnType,
   hideAllColumnsType,
+  retrySucceedsType,
   columnSortingModelMultiSortType,
   columnSortingModelServerType,
   columnSortingMultiSortType,
@@ -162,6 +163,7 @@ export const dataGridArgTypes = {
   }),
   ...inCategory('Ядро: панели и состояния', {
     loading: loadingType,
+    retrySucceeds: retrySucceedsType,
     ...whenEq('loading', 'initial', { skeletonOptions: skeletonOptionsType }),
     ...whenEq('loading', 'refresh', { refreshOptions: refreshOptionsType }),
     contrast: contrastType,
@@ -355,13 +357,13 @@ export const BASE_CONTROLS = [
 export type BaseControl = (typeof BASE_CONTROLS)[number]
 
 /**
- * История состояния примитива `UI/*`: вкладки Controls нет, вариации — в `Default`
+ * История состояния примитива `UI/*`: вкладки Controls нет, вариации — в `Playground`
  * (ADR 0117, SN30).
  */
 export const noControls = () => ({ controls: { disable: true } })
 
 /**
- * `Default` примитива `UI/*`: явный список контролов — только то, что осмысленно менять
+ * `Playground` примитива `UI/*`: явный список контролов — только то, что осмысленно менять
  * (ADR 0117, SN30).
  */
 export const defaultControls = (...names: string[]) => ({
@@ -383,19 +385,22 @@ export const showControls = (
 })
 
 /**
- * Панель истории сценария с гайдом (ADR 0117, SN28): контролов нет — таблицу и её
- * функции по шагам задаёт гайд, вариации — в песочнице `Default` фичи.
+ * Панель истории сценария с гайдом (ADR 0117, SN28): вкладки Controls нет — таблицу и
+ * её функции по шагам задаёт гайд, вариации — в песочнице `Playground` фичи. Пустой
+ * `include` Storybook не применяет, поэтому вкладка скрыта целиком.
  */
-export const guideControls = () =>
-  showControls(
+export const guideControls = () => {
+  const { controls, controlsHidden } = showControls(
     [],
     Object.fromEntries(
       BASE_CONTROLS.map(name => [
         name,
-        'Таблицу и её функции по шагам задаёт гайд; вариации — в Default',
+        'Таблицу и её функции по шагам задаёт гайд; вариации — в Playground',
       ]),
     ),
   )
+  return { controls: { ...controls, disable: true }, controlsHidden }
+}
 
 /**
  * Вариант «auto» флага панели (ADR 0046): в Controls это строка радио, а до истории

@@ -33,7 +33,7 @@ import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 // Плагины модели без интерфейса (ADR 0120): видимое состояние модели без контролов.
 
-type Args = Partial<Parameters<typeof Stories.AllFeatures>[0]>
+type Args = Partial<Parameters<typeof Stories.DataGridPlayground>[0]>
 
 const BASE: Args = {
   containerHeight: 600,
@@ -65,7 +65,7 @@ const rowEl = (id: string) =>
 describe('Плагины модели без интерфейса (ADR 0120)', () => {
   test('MP13: rowSelectionModel без колонки флажков — выбранная строка залита выбором и несёт aria-selected; axe с color-contrast в обеих темах', async () => {
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         enableRowSelectionModel
         enableKeyboardNavigation
@@ -111,7 +111,7 @@ describe('Плагины модели без интерфейса (ADR 0120)', (
       },
     ]
     const screen = await render(
-      <Stories.AllFeatures
+      <Stories.DataGridPlayground
         {...BASE}
         enableCellSelectionModel
         enableKeyboardNavigation

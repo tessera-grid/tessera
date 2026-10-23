@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 
 import { humanClick } from '../helpers'
 
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import {
@@ -16,6 +16,8 @@ import {
   nextFrame,
   sortByIndex,
 } from '../../rowDragging.dnd'
+import { tableLabels } from '../labels'
+import { ColumnDraggingGrid } from './columns-fixtures'
 
 // Cross-plugin (сквозные) requirements live here, prefixed `X<n>`, one named test
 // per requirement (docs/decisions/0023-cross-plugin-interactions.md). Unlike the
@@ -28,8 +30,8 @@ const CHECKBOX = '.row-select-checkbox'
 
 const HEAD_CELL = '.data-grid__head-cell'
 const DATA_HEAD_CELL = `${HEAD_CELL}[data-actions-column-cell='false']`
-const KEBAB = '[aria-label="Column options"]'
-const ROW_KEBAB = '[aria-label="Row options"]'
+const KEBAB = `[aria-label="${tableLabels.headerMenu}"]`
+const ROW_KEBAB = `[aria-label="${tableLabels.rowMenu}"]`
 const ACTION_CELL =
   '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]'
 
@@ -61,7 +63,7 @@ const rowBySignature = (container: HTMLElement, signature: string) =>
  */
 async function renderSelectableDraggable() {
   const { container } = await render(
-    <composed.RowDragging
+    <composed.RowDraggingPlayground
       enableRowSelection
       dataCount={12}
       containerHeight={620}
@@ -118,7 +120,7 @@ describe('Cross-plugin — rowSelection × rowDragging', () => {
 describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
   test('X2: header and row kebabs collapse independently — both menus work', async () => {
     const { container } = await render(
-      <composed.AllFeatures
+      <composed.DataGridPlayground
         enableColumnPinning
         enableColumnSorting
         enableRowGrouping
@@ -154,7 +156,11 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
     await expect
       .poll(() => menuTexts())
       .toEqual(
-        expect.arrayContaining(['Pin column', 'Sort ascending', 'Group']),
+        expect.arrayContaining([
+          tableLabels.pin,
+          tableLabels.sortAscending,
+          tableLabels.group,
+        ]),
       )
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => menuTexts().length).toBe(0)
@@ -319,7 +325,7 @@ const dragColumnOnto = async (source: HTMLElement, target: HTMLElement) => {
 describe('Cross-plugin — columnPinning × columnSizing', () => {
   test('X3: resizing a left-pinned column re-flows the next pinned column’s sticky offset', async () => {
     const { container } = await render(
-      <composed.ColumnPinning enableColumnSizing dataCount={40} />,
+      <composed.ColumnPinningPlayground enableColumnSizing dataCount={40} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -340,8 +346,8 @@ describe('Cross-plugin — columnPinning × columnSizing', () => {
     await userEvent.click(
       await revealControl(headCellById(container, 'firstName'), PIN_BUTTON),
     )
-    await expect.poll(() => menuItemByText('Pin left')).toBeTruthy()
-    await userEvent.click(menuItemByText('Pin left')!)
+    await expect.poll(() => menuItemByText(tableLabels.pinLeft)).toBeTruthy()
+    await userEvent.click(menuItemByText(tableLabels.pinLeft)!)
     await expect
       .poll(() =>
         headCellById(container, 'firstName').getAttribute('data-cell-pinned'),
@@ -373,7 +379,7 @@ describe('Cross-plugin — columnPinning × columnSizing', () => {
 describe('Cross-plugin — columnPinning × rowSelection', () => {
   test('X4: the leading selection column joins the left-pinned block and offsets the user-pinned column', async () => {
     const { container } = await render(
-      <composed.ColumnPinning enableRowSelection dataCount={40} />,
+      <composed.ColumnPinningPlayground enableRowSelection dataCount={40} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -410,7 +416,7 @@ describe('Cross-plugin — columnPinning × rowSelection', () => {
 describe('Cross-plugin — columnDragging × columnSorting', () => {
   test('X5: a header sorts on click and keeps its sort after being dragged to a new position', async () => {
     const { container } = await render(
-      <composed.ColumnDragging enableColumnSorting dataCount={40} />,
+      <ColumnDraggingGrid enableColumnSorting dataCount={40} />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
@@ -462,7 +468,7 @@ describe('Cross-plugin — columnDragging × columnSorting', () => {
 describe('Cross-plugin — rowSelection × rowGrouping', () => {
   test('X6: row selection is inert only under ACTIVE grouping, not when the plugin is merely enabled', async () => {
     const { container } = await render(
-      <composed.RowGrouping enableRowSelection />,
+      <composed.RowGroupingPlayground enableRowSelection />,
     )
     await expect
       .poll(() => container.querySelectorAll(BODY_ROW).length)
@@ -516,7 +522,7 @@ const firstPagedRow = (container: HTMLElement) => sortedRows(container)[0]
 
 async function renderPaged(extra: object) {
   const { container } = await render(
-    <composed.Pagination {...PAGED} {...extra} />,
+    <composed.PaginationPlayground {...PAGED} {...extra} />,
   )
   await expect.poll(() => sortedRows(container).length).toBeGreaterThan(4)
   await expect.poll(pageRange).toBe('1–25 of 100')
@@ -585,13 +591,13 @@ describe('Cross-plugin — pagination', () => {
     const moveDown = await expect
       .poll(() =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          item => item.textContent?.trim() === DEFAULT_LABELS.moveDown,
+          item => item.textContent?.trim() === ENGLISH_LABELS.moveDown,
         ),
       )
       .toBeTruthy()
       .then(() =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          item => item.textContent?.trim() === DEFAULT_LABELS.moveDown,
+          item => item.textContent?.trim() === ENGLISH_LABELS.moveDown,
         )!,
       )
     await userEvent.click(moveDown)

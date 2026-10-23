@@ -1,9 +1,9 @@
 import type { RowSelectionState } from '@tanstack/react-table'
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, onTestFinished, test } from 'vitest'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { syncStickyGeometry } from '../../../core/stickyGeometry'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -21,9 +21,12 @@ import {
   headVsBodyColumns,
   scrollerOf,
   withWideViewport,
+  composed,
 } from './column-pinning-helpers'
+import { openPopup } from '../../__mocks__/catalogPlay'
+import { tableLabels } from '../labels'
 
-// CP20–CP27, CP29, CP34: закрепление справа, колонка действий, виртуализация.
+// CP20–CP27, CP29, CP34, CP37: закрепление справа, колонка действий, виртуализация.
 // Каждое требование — отдельный тест с ID из таблицы требований
 // docs/decisions/0011-column-pinning.md (правило именования — ADR 0009).
 // Селекторы и хелперы — column-pinning-helpers.tsx.
@@ -36,8 +39,8 @@ describe('Column Pinning — right side', () => {
     // two directional items, and clicking the trigger does not pin on its own.
     const both = headCellById(container, 'firstName')
     await userEvent.click(await revealPin(both))
-    await expect.poll(() => menuItemByText('Pin left')).toBeTruthy()
-    expect(menuItemByText('Pin right')).toBeTruthy()
+    await expect.poll(() => menuItemByText(tableLabels.pinLeft)).toBeTruthy()
+    expect(menuItemByText(tableLabels.pinRight)).toBeTruthy()
     expect(both.getAttribute('data-cell-pinned')).toBe('false')
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => menuItems().length).toBe(0)
@@ -60,7 +63,10 @@ describe('Column Pinning — right side', () => {
     // Pin a both-sided column right via the popover. It must render sticky at the
     // right edge immediately — without scrolling — even under column virtualization
     // (the range extractor re-windows on the pinning change).
-    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'firstName'),
+      tableLabels.pinRight,
+    )
 
     const rightHead = () =>
       container.querySelector<HTMLElement>(
@@ -82,7 +88,10 @@ describe('Column Pinning — right side', () => {
 
   test('CP22: a right-pinned column keeps a background and a left divider border', async () => {
     const container = await renderColumnPinning()
-    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'firstName'),
+      tableLabels.pinRight,
+    )
 
     const body = container.querySelector<HTMLElement>(
       `${BODY_CELL}[data-column-id='firstName'][data-cell-pinned='right']`,
@@ -162,7 +171,10 @@ describe('Column Pinning — right side', () => {
 
     // Pin a both-sided data column right → row-actions is no longer first-right
     // and joins the pinned block with the same backing (body).
-    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'firstName'),
+      tableLabels.pinRight,
+    )
     await expect
       .poll(() =>
         actionsBody(container).getAttribute('data-cell-first-right-pinned'),
@@ -175,7 +187,7 @@ describe('Column Pinning — right side', () => {
     const head = actionsHead(container)
     await expect.poll(() => isOpaque(head)).toBe(true)
     expect(getComputedStyle(head).position).toBe('sticky')
-    expect(head.textContent).toBe(DEFAULT_LABELS.rowActionsColumn)
+    expect(head.textContent).toBe(ENGLISH_LABELS.rowActionsColumn)
     expect(
       Array.from(head.querySelectorAll<HTMLElement>('*')).some(
         el =>
@@ -196,7 +208,10 @@ describe('Column Pinning — right side', () => {
 
   test('CP24: a user right-pin sits left of the row-actions column, which never carries a divider', async () => {
     const container = await renderColumnPinning({ enableRowActions: true })
-    await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'firstName'),
+      tableLabels.pinRight,
+    )
 
     const userPin = container.querySelector<HTMLElement>(
       `${BODY_CELL}[data-column-id='firstName'][data-cell-pinned='right']`,
@@ -290,8 +305,14 @@ describe('Column Pinning — right side', () => {
   test('CP29: with free space on the right, right-pinned headers keep the left edge and width of their body columns', async () => {
     await withWideViewport(async () => {
       const container = await renderColumnPinning({ columnCount: 5 })
-      await pinViaPopover(headCellById(container, 'lastName'), 'Pin right')
-      await pinViaPopover(headCellById(container, 'firstName'), 'Pin right')
+      await pinViaPopover(
+        headCellById(container, 'lastName'),
+        tableLabels.pinRight,
+      )
+      await pinViaPopover(
+        headCellById(container, 'firstName'),
+        tableLabels.pinRight,
+      )
       await expect
         .poll(
           () =>
@@ -306,6 +327,46 @@ describe('Column Pinning — right side', () => {
         expect(head, id!).toEqual(body)
       }
     })
+  })
+
+  test('CP37: a pinned cell reports its pinned box after a relayout inside it — the row-actions kebab menu stays at the kebab after opening a section', async () => {
+    const viewport = { width: innerWidth, height: innerHeight }
+    await page.viewport(900, 720)
+    onTestFinished(() => page.viewport(viewport.width, viewport.height))
+    const screen = await render(
+      <composed.RowActionsNested
+        dataCount={20}
+        containerHeight="460"
+        height="360"
+        maxHeight="360"
+      />,
+    )
+    const scroller = scrollerOf(screen.container)
+    const kebab = () =>
+      screen.container.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label^="${tableLabels.rowMenu}"]`,
+      )
+    await expect.poll(kebab).not.toBeNull()
+    expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
+    await userEvent.hover(kebab()!.closest('.data-grid__body-row')!)
+    await openPopup(kebab, 'menu')
+    const item = (label: string) =>
+      [...document.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find(
+        node => node.textContent?.trim().startsWith(label),
+      )
+    await expect.poll(() => item('Status')).toBeTruthy()
+    await userEvent.click(item('Status')!)
+    await expect.poll(() => item('Archived')).toBeTruthy()
+    for (const animation of document.getAnimations()) animation.finish()
+    const area = scroller.getBoundingClientRect()
+    const box = kebab()!.getBoundingClientRect()
+    expect(box.right).toBeLessThanOrEqual(area.right)
+    expect(box.left).toBeGreaterThanOrEqual(area.left)
+    const menu = document
+      .querySelector('[role="menu"]')!
+      .getBoundingClientRect()
+    expect(menu.left).toBeGreaterThanOrEqual(0)
+    expect(menu.right).toBeLessThanOrEqual(innerWidth)
   })
 })
 

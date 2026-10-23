@@ -18,7 +18,7 @@ const BY_ACTIONS = `[data-column-id='${ROW_ACTIONS_COLUMN_ID}']`
 describe('Row actions — служебная колонка действий', () => {
   test('RA1: под вложенной шапкой колонка действий замыкает ряд и присутствует в шапке', async () => {
     const { container } = await render(
-      <composed.HeaderGroups enableRowActions />,
+      <composed.HeaderGroupsPlayground enableRowActions />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)

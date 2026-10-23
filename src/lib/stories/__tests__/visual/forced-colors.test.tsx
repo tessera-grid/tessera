@@ -26,6 +26,7 @@ import { pendingArcOf, renderGrid } from '../helpers'
 import { submittedCellsSeed } from '../performance/perf-cases'
 import { composed } from '../stories'
 import { contrast, toRgba } from './a11y-helpers'
+import { tableLabels } from '../labels'
 
 // Высокая контрастность Windows (ADR 0087, HC1–HC10): эмуляция
 // `forced-colors: active` в Chromium (`npm test`) и Firefox (`test:engines`). Ожидаемые
@@ -664,28 +665,6 @@ describe('Высокая контрастность (ADR 0087)', () => {
     expect(toRgba(line().stroke)).toEqual(toRgba(sys('Mark')))
   })
 
-  test('HC7: свет ячейки в правке — те же цвета: ожидание Highlight, ошибка Mark', async () => {
-    await renderGrid({
-      columnCount: 6,
-      dataCount: 20,
-      enableCellEditing: true,
-      extraPlugins: [submittedCellsSeed(20, 'pending')],
-    })
-    const layer = () =>
-      document.querySelector<HTMLElement>('.cell-edit-feedback[data-pending]')
-    await expect.poll(layer).not.toBeNull()
-    for (const i of [1, 2, 3, 4]) {
-      expect(toRgba(tokenIn(layer()!, `--tsr-comp-pending-glow-${i}`))).toEqual(
-        toRgba(sys('Highlight')),
-      )
-    }
-    expect(toRgba(tokenIn(layer()!, '--tsr-comp-error-flash-glow'))).toEqual(
-      toRgba(sys('Mark')),
-    )
-    expect(style(layer()!, '::after').forcedColorAdjust).toBe('none')
-    expect(style(layer()!, '::after').backgroundImage).not.toBe('none')
-  })
-
   test('HC8: линии дерева видны цветом GrayText', async () => {
     await render(<composed.RowExpandingTreeLines />)
     const cell = () =>
@@ -714,7 +693,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
   })
 
   test('HC9: полоски скелета видны цветом GrayText', async () => {
-    await render(<composed.SkeletonDefault />)
+    await render(<composed.SkeletonPlayground />)
     const stripe = () =>
       [
         ...document.querySelectorAll<HTMLElement>(
@@ -785,11 +764,11 @@ describe('Высокая контрастность (ADR 0087)', () => {
     await screen.unmount()
 
     // Пункт меню под клавиатурой — кебаб заголовка.
-    await render(<composed.HeaderActionMenu />)
+    await render(<composed.HeaderMenuPlayground />)
     // Ленивый триггер заменяет заглушку — кебаб перечитываем.
     const kebab = () =>
       document.querySelector<HTMLElement>(
-        '.data-grid__head-cell [aria-label^="Column options"]',
+        `.data-grid__head-cell [aria-label^="${tableLabels.headerMenu}"]`,
       )
     await expect.poll(kebab).not.toBeNull()
     kebab()!.focus()

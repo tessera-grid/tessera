@@ -9,7 +9,7 @@ import { composed } from '../stories'
 // So `npm test` reports — and fails — each requirement individually, and the test
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
-// Tests drive the `RowGrouping` story: a flat deterministic generated set, started
+// Tests drive the `RowGroupingPlayground` story: a flat deterministic generated set, started
 // ungrouped. Grouping is toggled by clicking a column header's group button and
 // state is read from the DOM contract (the `.column-group__button` + its
 // `data-button-active` wrapper, the row `data-group-row`), not from mock literals.
@@ -29,11 +29,13 @@ const GROUP_ICON_SIZE = 16
 
 // --- Rendering / DOM helpers --------------------------------------------------
 
-type StoryArgs = Partial<Parameters<typeof composed.RowGrouping>[0]>
+type StoryArgs = Partial<Parameters<typeof composed.RowGroupingPlayground>[0]>
 
 /** Render the RowGrouping story and wait until its header cells are on screen. */
 async function renderRowGrouping(args: StoryArgs = {}) {
-  const { container } = await render(<composed.RowGrouping {...args} />)
+  const { container } = await render(
+    <composed.RowGroupingPlayground {...args} />,
+  )
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)

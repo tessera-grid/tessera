@@ -4,7 +4,7 @@ import { cleanup, render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
-import { DEFAULT_LABELS } from '../../../core/localization'
+import { ENGLISH_LABELS } from '../../../core/localization'
 import { renderGrid, rowState } from '../helpers'
 import { composed } from '../stories'
 import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
@@ -257,19 +257,21 @@ describe('Обновление данных (ADR 0094)', () => {
     observer.observe(document.body, { subtree: true, childList: true })
     try {
       const screen = await render(
-        <composed.AllFeatures {...GRID} loading="refresh" />,
+        <composed.DataGridPlayground {...GRID} loading="refresh" />,
       )
       await waitForGrid()
       await sleep(150)
       expect(loader()).toBeNull()
       expect(refreshing()).toBe(false)
-      await screen.rerender(<composed.AllFeatures {...GRID} loading={false} />)
+      await screen.rerender(
+        <composed.DataGridPlayground {...GRID} loading={false} />,
+      )
       await sleep(600)
       expect(seen).not.toContain(true)
       await cleanup()
 
       // Без раннего снятия — через задержку.
-      await render(<composed.AllFeatures {...GRID} loading="refresh" />)
+      await render(<composed.DataGridPlayground {...GRID} loading="refresh" />)
       await waitForGrid()
       const started = performance.now()
       await expect.poll(loader).not.toBeNull()
@@ -279,7 +281,7 @@ describe('Обновление данных (ADR 0094)', () => {
 
       // Своя задержка из опций.
       await render(
-        <composed.AllFeatures
+        <composed.DataGridPlayground
           {...GRID}
           loading="refresh"
           refreshOptions={{ delayMs: 0 }}
@@ -293,11 +295,13 @@ describe('Обновление данных (ADR 0094)', () => {
 
   test('GL6: показанные свечение и приглушение держатся не меньше refreshOptions.minDurationMs (по умолчанию 500 мс)', async () => {
     const screen = await render(
-      <composed.AllFeatures {...GRID} loading="refresh" />,
+      <composed.DataGridPlayground {...GRID} loading="refresh" />,
     )
     await waitForGrid()
     await expect.poll(loader).not.toBeNull()
-    await screen.rerender(<composed.AllFeatures {...GRID} loading={false} />)
+    await screen.rerender(
+      <composed.DataGridPlayground {...GRID} loading={false} />,
+    )
     await sleep(300)
     expect(loader()).not.toBeNull()
     expect(refreshing()).toBe(true)
@@ -308,7 +312,7 @@ describe('Обновление данных (ADR 0094)', () => {
   test('GL7: aria-busy таблицы и объявление об окончании загрузки — по флагу, без задержки показа и без минимума', async () => {
     const table = () => el('[role="table"], [role="grid"], [role="treegrid"]')!
     const screen = await render(
-      <composed.AllFeatures {...GRID} loading="refresh" />,
+      <composed.DataGridPlayground {...GRID} loading="refresh" />,
     )
     await waitForGrid()
     // До показа свечения таблица уже занята.
@@ -316,13 +320,15 @@ describe('Обновление данных (ADR 0094)', () => {
     expect(table().getAttribute('aria-busy')).toBe('true')
 
     await expect.poll(loader).not.toBeNull()
-    await screen.rerender(<composed.AllFeatures {...GRID} loading={false} />)
+    await screen.rerender(
+      <composed.DataGridPlayground {...GRID} loading={false} />,
+    )
     // Свечение ещё держит минимум, а таблица уже свободна и окончание объявлено.
     await expect.poll(() => table().getAttribute('aria-busy')).toBeNull()
     expect(loader()).not.toBeNull()
     await expect
       .poll(() => el('[role="status"][aria-live]')?.textContent ?? '')
-      .toContain(DEFAULT_LABELS.announceLoaded(GRID.dataCount))
+      .toContain(ENGLISH_LABELS.announceLoaded(GRID.dataCount))
   })
 
   test('GL8: скелет главнее — при `loading` initial нет ни свечения, ни приглушения', async () => {
@@ -410,7 +416,7 @@ describe('Обновление данных (ADR 0094)', () => {
     for (const colorMode of ['light', 'dark'] as const) {
       await renderRefreshing({ colorMode })
       expect(loader()!.getAttribute('role')).toBe('progressbar')
-      expect(loader()!.getAttribute('aria-label')).toBe(DEFAULT_LABELS.loading)
+      expect(loader()!.getAttribute('aria-label')).toBe(ENGLISH_LABELS.loading)
       const { violations } = await axe.run(wrapper(), AXE_OPTIONS)
       expect(
         violations.map(v => v.id),

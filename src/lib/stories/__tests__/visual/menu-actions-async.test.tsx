@@ -36,6 +36,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { rowsTopDown, waitForGrid } from './core-helpers'
+import { tableLabels } from '../labels'
 
 // Асинхронные и заблокированные пункты меню действий (ADR 0078, MI1–MI14,
 // MI16–MI21, MI24): проверка доступности промисом из `disabled`, причина блокировки,
@@ -234,7 +235,9 @@ const rowEl = (id: string) =>
     `.data-grid__body-row[data-row-id="${id}"]`,
   )
 const rowKebab = (id: string) =>
-  rowEl(id)?.querySelector<HTMLElement>('[aria-label^="Row options"]') ?? null
+  rowEl(id)?.querySelector<HTMLElement>(
+    `[aria-label^="${tableLabels.rowMenu}"]`,
+  ) ?? null
 const nameCell = (id: string) =>
   rowEl(id)!.querySelector<HTMLElement>('[data-column-id="name"]')!
 const headCell = () =>
@@ -242,7 +245,9 @@ const headCell = () =>
     '.data-grid__head-cell[data-column-id="name"]',
   )!
 const headKebab = () =>
-  headCell().querySelector<HTMLElement>('[aria-label^="Column options"]')!
+  headCell().querySelector<HTMLElement>(
+    `[aria-label^="${tableLabels.headerMenu}"]`,
+  )!
 const items = () => [
   ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
 ]
@@ -307,7 +312,7 @@ describe('Проверка доступности пунктов', () => {
     const archive = item('Archive')!
     expect(isPending(archive)).toBe(true)
     expect(isDisabled(archive)).toBe(true)
-    expect(description(archive)).toBe('Checking availability')
+    expect(description(archive)).toBe(tableLabels.availabilityChecking)
     const spinner = archive.querySelector<HTMLElement>('[data-item-spinner]')!
     expect(spinner.closest('[class*="itemCheck"]')).not.toBeNull()
     expect(getComputedStyle(spinner).animationName).not.toBe('none')
@@ -586,7 +591,7 @@ describe('Долгое действие', () => {
     await expect
       .poll(() => rowKebab('r1')!.getAttribute('aria-busy'))
       .toBeNull()
-    expect(rowKebab('r1')!.getAttribute('aria-label')).toBe('Row options')
+    expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(tableLabels.rowMenu)
   })
 
   test('MI9: пока действие ждёт, его пункт в этой строке заблокирован; другие пункты той же строки и то же действие в другой строке работают', async () => {
@@ -596,7 +601,7 @@ describe('Долгое действие', () => {
     await openRowMenu()
     expect(isDisabled(item('Remove'))).toBe(true)
     expect(isPending(item('Remove'))).toBe(true)
-    expect(description(item('Remove'))).toBe('In progress')
+    expect(description(item('Remove'))).toBe(tableLabels.actionRunning)
     expect(isDisabled(item('Export'))).toBe(false)
     await humanClick(item('Export')!)
     await expect.poll(() => probe.runs.length).toBe(2)
@@ -622,7 +627,7 @@ describe('Долгое действие', () => {
     expect(rowKebab('r1')!.getAttribute('aria-busy')).toBe('true')
 
     probe.lastRun('exportRow').done.resolve()
-    await expect.poll(label).toBe('Row options')
+    await expect.poll(label).toBe(tableLabels.rowMenu)
     expect(rowKebab('r1')!.getAttribute('aria-busy')).toBeNull()
   })
 
@@ -636,12 +641,12 @@ describe('Долгое действие', () => {
     probe.lastRun('remove').done.reject(new Error('Row is locked'))
     await expect
       .poll(() => liveRegion().textContent)
-      .toBe('Remove failed: Row is locked')
+      .toBe(tableLabels.announceActionFailed('Remove', 'Row is locked'))
   })
 })
 
 describe('Отказ действия', () => {
-  test('MI12: отказ — вспышка на кебабе и отметка ошибки, кебаб виден без наведения, тултип и имя называют упавшее действие', async () => {
+  test('MI12: отказ — вспышка на кебабе, отметка ошибки проступает с началом угасания красного, кебаб виден без наведения, тултип и имя называют упавшее действие', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
     await parkPointer()
@@ -650,9 +655,17 @@ describe('Отказ действия', () => {
     await expect
       .poll(() => rowKebab('r1')!.getAttribute('data-error-flash'))
       .toBe('on')
+    // Пока красный держится, отметки не видно: она не сливается с контуром.
     expect(errorDot().dataset.shown).toBe('true')
-    expect(getComputedStyle(errorDot()).opacity).not.toBe('0')
+    expect(getComputedStyle(errorDot()).opacity).toBe('0')
     expect(kebabWrapper().getAttribute('class')).not.toContain('--hidden')
+    await expect
+      .poll(() => rowKebab('r1')!.getAttribute('data-error-flash'), {
+        timeout: 2000,
+        interval: 10,
+      })
+      .toBe('off')
+    await expect.poll(() => getComputedStyle(errorDot()).opacity).toBe('1')
     expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(
       'Row options. Failed: Remove',
     )
@@ -668,7 +681,7 @@ describe('Отказ действия', () => {
 
     await openRowMenu()
     await expect.poll(() => errorDot().dataset.shown).toBe('false')
-    expect(rowKebab('r1')!.getAttribute('aria-label')).toBe('Row options')
+    expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(tableLabels.rowMenu)
     expect(failedIcon(item('Remove'))).not.toBeNull()
     await closeMenu()
 
@@ -784,14 +797,14 @@ describe('Контекстное меню, виртуализация, инла�
     await userEvent.hover(headCell())
     await humanClick(headKebab())
     await humanClick(
-      items().find(el => el.textContent?.includes('Sort descending'))!,
+      items().find(el => el.textContent?.includes(tableLabels.sortDescending))!,
     )
     await expect.poll(() => rowEl('r1')).toBeNull()
     probe.lastRun('remove').done.reject(new Error('locked'))
     await userEvent.hover(headCell())
     await humanClick(headKebab())
     await humanClick(
-      items().find(el => el.textContent?.includes('Clear sorting'))!,
+      items().find(el => el.textContent?.includes(tableLabels.clearSort))!,
     )
     await expect.poll(() => errorDot()?.dataset.shown).toBe('true')
     await screen.unmount()
@@ -800,11 +813,15 @@ describe('Контекстное меню, виртуализация, инла�
     const paged = await renderGrid({ paged: true })
     await runFromMenu('Remove')
     await humanClick(
-      document.querySelector<HTMLElement>('[aria-label="Next page"]')!,
+      document.querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.nextPage}"]`,
+      )!,
     )
     await expect.poll(() => rowEl('r1')).toBeNull()
     await humanClick(
-      document.querySelector<HTMLElement>('[aria-label="Previous page"]')!,
+      document.querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.previousPage}"]`,
+      )!,
     )
     await expect
       .poll(() => rowKebab('r1')?.getAttribute('aria-busy'))
@@ -830,7 +847,7 @@ describe('Контекстное меню, виртуализация, инла�
     expect(button().getAttribute('aria-busy')).toBeNull()
     await expect
       .poll(() => liveRegion().textContent)
-      .toBe('Remove failed: locked')
+      .toBe(tableLabels.announceActionFailed('Remove', 'locked'))
   })
 
   test('MI20: инлайн-кнопка с асинхронным disabled заблокирована, dev-предупреждение один раз, рендер не вызывает disabled повторно', async () => {
@@ -962,7 +979,7 @@ describe('Демо-истории', () => {
     const view = await render(<composed.RowActionsAsync />)
     await waitForGrid()
     const kebabOf = (row: HTMLElement) =>
-      row.querySelector<HTMLElement>('[aria-label^="Row options"]')
+      row.querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)
     const first = rowsTopDown()[0]!
     await userEvent.hover(first)
     await expect.poll(() => kebabOf(first)).not.toBeNull()

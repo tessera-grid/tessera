@@ -42,8 +42,8 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const GroupButtonDefault: Story = {
-  name: 'Default',
+export const GroupButtonPlayground: Story = {
+  name: 'Playground',
   parameters: defaultControls(
     'grouped',
     'revealOnHover',

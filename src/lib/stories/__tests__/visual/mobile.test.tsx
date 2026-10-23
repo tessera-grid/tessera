@@ -25,7 +25,7 @@ const center = (el: Element): Point => {
 describe('Мобильные — касания', () => {
   test('CB4: в эмуляции iPhone и Pixel грид рисуется, прокручивается касанием, касание выбирает строку', async () => {
     await render(
-      <composed.AllFeatures
+      <composed.DataGridPlayground
         containerHeight={600}
         height={500}
         dataCount={200}

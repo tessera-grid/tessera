@@ -8,6 +8,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import { keyboardNavigation } from '../../../plugins/keyboardNavigation'
 import { rowDragging } from '../../../plugins/rowDragging'
 import { humanClick } from '../helpers'
+import { tableLabels } from '../labels'
 
 // PE1–PE2: падение рендера плагина изолировано (ADR 0037). Компоненты плагина бросают
 // исключение для одной колонки/строки; грид и остальные ячейки обязаны отрисоваться.
@@ -156,7 +157,7 @@ describe('Изоляция падений плагинов (ADR 0037)', () => {
       // Хост перерисовывается на pointerdown — новые колонки посреди нажатия.
       await userEvent.hover(handle.closest('.data-grid__body-cell')!)
       await humanClick(handle)
-      await expect.poll(() => menuItem('Move down')).toBeTruthy()
+      await expect.poll(() => menuItem(tableLabels.moveDown)).toBeTruthy()
       expect(handleOf('3')).toBe(handle)
       await view.unmount()
     }

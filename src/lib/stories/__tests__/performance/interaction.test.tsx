@@ -69,6 +69,7 @@ import {
   makeOptionFilteringData,
   optionFilteringColumns,
 } from '../../__mocks__/filteringData'
+import { tableLabels } from '../labels'
 
 // Отзывчивость на ВЗАИМОДЕЙСТВИЕ (INP): выбор ОДНОЙ строки меняет только
 // срез rowSelection на одну запись — законной работы минимум (обновить одну строку и
@@ -871,6 +872,141 @@ describe('Отзывчивость взаимодействий — подсве
   )
 })
 
+// Корень «Все колонки» меню (ADR 0133, HA10). «Скрыть все» — против скрытия одной
+// колонки той же галочкой меню. «Показать все» убирает заглушку и монтирует таблицу
+// заново — против монтирования того же грида. Замер — второе нажатие после прогрева.
+const rootColumnsCheckbox = () =>
+  columnsMenu()?.querySelector<HTMLElement>(
+    '[data-testid="column-visibility-all"] [role="checkbox"]',
+  )
+const HA10_COST = { ratio: 1.3, plusMs: 40 }
+const HA10_ARGS = { ...LARGE, ...ALL_PLUGINS, ...COLUMN_VISIBILITY }
+
+const openHa10Menu = async () => {
+  await renderGrid(HA10_ARGS)
+  await waitForGrid()
+  await waitForColumnsButton()
+  await openColumnsMenu()
+}
+
+const recordHa10 = (
+  id: string,
+  label: string,
+  r: Awaited<ReturnType<typeof measureInteractionWork>>,
+  ceiling: number | undefined,
+) =>
+  recordPerf({
+    id,
+    label,
+    operation: 'interaction',
+    size: '1000×1000',
+    plugins: 'all',
+    cpuThrottle: CPU_THROTTLE_RATE,
+    metrics: [
+      {
+        kind: 'load',
+        metric: 'longest',
+        valueMs: r.longestMs,
+        targetMs: INTERACTION_BUDGET_MS,
+        ceilingMs: ceiling,
+        ...r,
+      },
+    ],
+  })
+
+describe('Отзывчивость — корень «Все колонки»', () => {
+  test(
+    'HA10: «скрыть все» корнем на 1000 колонок не дороже скрытия одной колонки, «показать все» — не дороже монтирования той же таблицы',
+    async () => {
+      // Прогрев скрывает, после клика вне замера — показывает, замер снова скрывает.
+      const measureHide = async (isRoot: boolean) => {
+        await openHa10Menu()
+        const target = () =>
+          (isRoot ? rootColumnsCheckbox() : firstColumnCheckbox())!
+        const checked = () => target().getAttribute('aria-checked')
+        target().click()
+        await expect.poll(checked).toBe('false')
+        const result = await measureInteractionWork(
+          async () => target().click(),
+          { afterWarmup: () => expect(checked()).toBe('true') },
+        )
+        expect(checked()).toBe('false')
+        await cleanup()
+        return result
+      }
+      const hideRuns = await againstBase(measureHide)
+      const hideBase = medianRun(hideRuns.base, r => r.longestMs)
+      const hideAll = medianRun(hideRuns.variant, r => r.longestMs)
+
+      const rowsReady = () =>
+        !!document.querySelector('.data-grid__body .data-grid__body-row')
+      const measureShow = async (isRoot: boolean) => {
+        if (!isRoot) {
+          const mount = await measureRenderWork(
+            () => renderGrid(HA10_ARGS),
+            rowsReady,
+            { warmup: false },
+          )
+          await cleanup()
+          return mount
+        }
+        await openHa10Menu()
+        const checked = () =>
+          rootColumnsCheckbox()!.getAttribute('aria-checked')
+        const result = await measureInteractionWork(
+          async () => rootColumnsCheckbox()!.click(),
+          { afterWarmup: () => expect(checked()).toBe('false') },
+        )
+        expect(checked()).toBe('true')
+        expect(rowsReady()).toBe(true)
+        await cleanup()
+        return result
+      }
+      const showRuns = await againstBase(measureShow)
+      const mountBase = medianRun(showRuns.base, r => r.longestMs)
+      const showAll = medianRun(showRuns.variant, r => r.longestMs)
+      const ceiling = {
+        hide: ceilingOver(hideBase.longestMs, HA10_COST),
+        show: ceilingOver(mountBase.longestMs, HA10_COST),
+      }
+
+      await recordHa10(
+        'HA10-hide-base',
+        'скрыть одну колонку галочкой меню',
+        hideBase,
+        undefined,
+      )
+      await recordHa10(
+        'HA10-hide',
+        'скрыть все колонки корнем «Все колонки»',
+        hideAll,
+        ceiling.hide,
+      )
+      await recordHa10(
+        'HA10-show-base',
+        'монтирование той же таблицы',
+        mountBase,
+        undefined,
+      )
+      await recordHa10(
+        'HA10-show',
+        'показать все колонки корнем «Все колонки» из заглушки',
+        showAll,
+        ceiling.show,
+      )
+      expect(
+        hideAll.longestMs,
+        `скрыть все longest=${hideAll.longestMs.toFixed(1)}ms, одна колонка ${hideBase.longestMs.toFixed(1)}ms, потолок ${ceiling.hide.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling.hide)
+      expect(
+        showAll.longestMs,
+        `показать все longest=${showAll.longestMs.toFixed(1)}ms, монтирование ${mountBase.longestMs.toFixed(1)}ms, потолок ${ceiling.show.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling.show)
+    },
+    PERF_TIMEOUT * 4,
+  )
+})
+
 // Скелет первой загрузки (ADR 0060, SL15): смена скелета на данные (выключение
 // `loading: 'initial'`) — самая длинная задача против монтирования того же грида сразу с
 // данными: смена рисует те же строки.
@@ -897,7 +1033,7 @@ describe('Отзывчивость — смена скелета на данны
             .toBeTruthy()
           const result = await measureTransitionWork(async () => {
             await screen.rerender(
-              <Stories.AllFeatures
+              <Stories.DataGridPlayground
                 containerHeight={600}
                 height={500}
                 {...args}
@@ -1878,7 +2014,9 @@ describe('Отзывчивость — разделы меню', () => {
       const backRow = () =>
         document.querySelector<HTMLElement>('[data-menu-back]')
       const kebab = () =>
-        document.querySelector<HTMLElement>('[aria-label^="Row options"]')
+        document.querySelector<HTMLElement>(
+          `[aria-label^="${tableLabels.rowMenu}"]`,
+        )
       const inSection = () => menuItem('Destination 99') !== undefined
       const closeMenu = async () => {
         ;(document.activeElement as HTMLElement | null)?.dispatchEvent(
@@ -2154,7 +2292,9 @@ describe('Отзывчивость — длинные подписи меню', 
         } as Parameters<typeof renderGrid>[0])
         await waitForGrid()
         const kebab = () =>
-          document.querySelector<HTMLElement>('[aria-label^="Row options"]')
+          document.querySelector<HTMLElement>(
+            `[aria-label^="${tableLabels.rowMenu}"]`,
+          )
         const open = () =>
           document.querySelectorAll('[role="menuitem"]').length === 20
         await expect.poll(kebab).not.toBeNull()
