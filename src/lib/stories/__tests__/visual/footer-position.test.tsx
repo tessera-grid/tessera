@@ -22,8 +22,9 @@ import {
   renderColumnPinning,
   scrollerOf,
 } from './column-pinning-helpers'
+import { tableLabels } from '../labels'
 
-// Футер колонок и его положение (ADR 0118, FT1–FT2, FT4–FT13, FT15–FT16): закреплённый
+// Футер колонок и его положение (ADR 0118, FT1–FT2, FT4–FT13, FT15–FT17): закреплённый
 // у низа области, незакреплённый за последней строкой. FT3 — `play` истории
 // «Core/Footer — Position switch», FT14 — перф в `scroll`.
 
@@ -353,8 +354,14 @@ describe('Положение футера', () => {
 
     s.scrollLeft = 0
     s.scrollTop = 0
-    await pinViaPopover(headCellById(container, 'firstName'), 'Pin left')
-    await pinViaPopover(headCellById(container, 'lastName'), 'Pin right')
+    await pinViaPopover(
+      headCellById(container, 'firstName'),
+      tableLabels.pinLeft,
+    )
+    await pinViaPopover(
+      headCellById(container, 'lastName'),
+      tableLabels.pinRight,
+    )
     await expect
       .poll(() => footerCell('lastName').getAttribute('data-cell-pinned'))
       .toBe('right')
@@ -513,6 +520,35 @@ describe('Положение футера', () => {
     await expect.poll(() => document.activeElement).toBe(pinnedCell)
   })
 
+  test("FT17: лента в 'inline' — отказ блока у края оставляет область у края, строка ошибки под футером видна целиком; вдали от края прокрутка не меняется", async () => {
+    const answers: ((error: Error) => void)[] = []
+    const onLoadMore = () =>
+      new Promise<void>((_, reject) => answers.push(reject))
+    const tail = () => q('.data-grid__body--infinite-tail')
+    await mount({ footerPosition: 'inline', onLoadMore })
+
+    // У края: блок в пути, отказ — строка ошибки в области целиком.
+    await scrollToEnd()
+    await expect.poll(tail).not.toBeNull()
+    answers.at(-1)!(new Error('Down'))
+    await expect.poll(errorRow).not.toBeNull()
+    await frame()
+    expect(rect(errorRow()!).top).toBeGreaterThanOrEqual(
+      rect(footer()).bottom - 1,
+    )
+    expect(rect(errorRow()!).bottom).toBeLessThanOrEqual(clientBottom() + 1)
+
+    // Вдали от края: пока блок в пути, пользователь ушёл вверх — отказ прокрутку не трогает.
+    answers.length = 0
+    errorRow()!.querySelector<HTMLElement>('[data-kn-body-end]')!.click()
+    await expect.poll(tail).not.toBeNull()
+    await scrollTop(0)
+    answers.at(-1)!(new Error('Down'))
+    await expect.poll(errorRow).not.toBeNull()
+    await frame()
+    expect(scroller().scrollTop).toBe(0)
+  })
+
   test('FT10: без строк с заглушкой фильтра или ошибки загрузки — в обоих режимах заглушка между шапкой и футером, футер у низа области под ней', async () => {
     const stubs = [
       {
@@ -546,13 +582,15 @@ describe('Положение футера', () => {
             message,
           })
           .toBeLessThanOrEqual(1)
-        // Заглушка — во всю видимую ширину области, как без футера (FL41).
+        // Заглушка — во всю видимую ширину области, как без футера (FL41). После
+        // движения: пока футер едет, область выше, и WebKit показывает полосу прокрутки.
+        const settled = rect(q(stub)!)
         expectNear(
-          box.left,
+          settled.left,
           rect(scroller()).left + scroller().clientLeft,
           message,
         )
-        expectNear(box.width, scroller().clientWidth, message)
+        expectNear(settled.width, scroller().clientWidth, message)
         await view.unmount()
       }
   })

@@ -78,6 +78,8 @@ export class InfiniteLoader {
   private awaiting: number | null = null
   /** Ответ без строк: позиция прокрутки, до смены которой блок не просим. */
   private stalledAt: number | null = null
+  /** Отказ пришёл, когда конец загруженных строк был в виду (ADR 0118, FT17). */
+  private failedAtEdge = false
 
   constructor(
     private readonly measure: (
@@ -176,6 +178,7 @@ export class InfiniteLoader {
       if (generation !== this.generation) return
       const reason = reasonOf(error)
       this.report('loadMoreRejected', reason)
+      this.failedAtEdge = (this.measure(this.sentinel)?.distance ?? 1) <= 0
       this.phase = 'error'
       this.input?.setValue({ status: 'error', tailRows: 0, reason })
       announceLabel(this.input?.table, labels =>
@@ -220,6 +223,13 @@ export class InfiniteLoader {
     }
   }
 
+  /** Был ли пользователь у края при последнем отказе; ответ — один раз на отказ. */
+  takeFailedAtEdge() {
+    const atEdge = this.failedAtEdge
+    this.failedAtEdge = false
+    return atEdge
+  }
+
   /** Условие выборки сменилось или грид ушёл: загрузка в пути устарела. */
   cancel({ abort }: { abort: boolean }) {
     if (abort) this.abort?.abort()
@@ -258,14 +268,20 @@ export class InfiniteLoader {
   }
 }
 
-/** Загрузчик ленты таблицы: его заводит хвост, повтор просит строка ошибки (ADR 0118). */
+/**
+ * Загрузчик ленты таблицы: его заводит хвост, повтор просит строка ошибки (ADR 0118).
+ * Ключ — `store`: объект таблицы у слотов меняется со сменой состояния.
+ */
 const loaders = new WeakMap<object, InfiniteLoader>()
 
+const storeOf = (table: object) => (table as { store: object }).store
+
 export const registerLoader = (table: object, loader: InfiniteLoader) => {
-  loaders.set(table, loader)
+  const store = storeOf(table)
+  loaders.set(store, loader)
   return () => {
-    if (loaders.get(table) === loader) loaders.delete(table)
+    if (loaders.get(store) === loader) loaders.delete(store)
   }
 }
 
-export const loaderOf = (table: object) => loaders.get(table)
+export const loaderOf = (table: object) => loaders.get(storeOf(table))
