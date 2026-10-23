@@ -39,8 +39,8 @@
 .item {
   composes: item from '../../ui/Popup/Popup.module.css';
   --_line: calc(1.2 * var(--tsr-comp-popup-font-size));
-  align-items: flex-start;
-  padding-block: calc(
+  --_item-align: flex-start;
+  --_item-padding-block: calc(
     (var(--tsr-comp-popup-item-min-height) - var(--_line)) / 2
   );
 }

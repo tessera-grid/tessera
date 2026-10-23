@@ -32,16 +32,20 @@
   transform: scale(0.97);
 }
 
+/*
+ * Наследники через `composes` меняют пункт приватными переменными, а не свойствами:
+ * у двух классов одной специфичности победил бы тот, что раньше в сборке (PP10).
+ */
 .item {
   display: flex;
-  align-items: center;
+  align-items: var(--_item-align, center);
   gap: 8px;
   box-sizing: border-box;
   min-height: var(--tsr-comp-popup-item-min-height);
-  padding: 6px 8px;
+  padding: var(--_item-padding-block, 6px) 8px;
   border-radius: var(--tsr-comp-popup-item-radius);
   line-height: 1.2;
-  cursor: pointer;
+  cursor: var(--_item-cursor, pointer);
   user-select: none;
   outline: none;
   transition: var(--tsr-comp-popup-item-transition);

@@ -17,6 +17,7 @@ import {
 } from '../../../plugins'
 import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
+import { tableLabels } from '../labels'
 
 // Контракт единого вида поповеров (ADR 0017, PP1–PP3): кебаб, меню колонок, панель
 // экспорта, панель фильтра со списком условий и список размера страницы делят
@@ -83,7 +84,7 @@ const filterAnchor = (columnId: string) => {
   const head = query(`.data-grid__head-cell[data-column-id="${columnId}"]`)[0]
   return (
     head.querySelector<HTMLElement>('.column-filter__button') ??
-    head.querySelector<HTMLElement>('[aria-label="Column options"]')!
+    head.querySelector<HTMLElement>(`[aria-label="${tableLabels.headerMenu}"]`)!
   )
 }
 
@@ -94,9 +95,11 @@ const openFilterPanel = async (columnId: string) => {
   )
   const anchor = filterAnchor(columnId)
   await userEvent.click(anchor)
-  if (anchor.getAttribute('aria-label') === 'Column options') {
+  if (anchor.getAttribute('aria-label') === tableLabels.headerMenu) {
     const item = () =>
-      query('[role="menuitem"]').find(el => el.textContent?.trim() === 'Filter')
+      query('[role="menuitem"]').find(
+        el => el.textContent?.trim() === tableLabels.filter,
+      )
     await expect.poll(item).toBeTruthy()
     await userEvent.click(item()!)
   }
@@ -114,11 +117,13 @@ const POPOVERS: Popover[] = [
     name: 'action menu',
     open: async () => {
       await revealCellButtons(
-        query('[aria-label="Column options"]')[0].closest(
+        query(`[aria-label="${tableLabels.headerMenu}"]`)[0].closest(
           '.data-grid__head-cell',
         )!,
       )
-      await userEvent.click(query('[aria-label="Column options"]')[0])
+      await userEvent.click(
+        query(`[aria-label="${tableLabels.headerMenu}"]`)[0],
+      )
       await expect
         .poll(() => query('[role="menuitem"]').length)
         .toBeGreaterThan(0)
@@ -127,7 +132,9 @@ const POPOVERS: Popover[] = [
     items: () => query('[role="menuitem"]'),
     gap: () =>
       gapFrom(
-        query('[aria-label="Column options"]')[0].getBoundingClientRect(),
+        query(
+          `[aria-label="${tableLabels.headerMenu}"]`,
+        )[0].getBoundingClientRect(),
         query('[role="menu"]')[0],
       ),
   },
@@ -211,7 +218,8 @@ const POPOVERS: Popover[] = [
         query('[data-testid="filter-operator"]')[0].getBoundingClientRect(),
         query('[role="listbox"]')[0].parentElement as HTMLElement,
       ),
-    // Список закрывается выбором текущего условия, панель — Escape.
+    // Список закрывается выбором текущего условия, панель — Escape; панель доигрывает
+    // закрытие в DOM — её пункты не должны достаться следующему поповеру.
     close: async () => {
       await userEvent.click(
         query('[role="option"]').find(
@@ -219,6 +227,13 @@ const POPOVERS: Popover[] = [
         )!,
       )
       await userEvent.keyboard('{Escape}')
+      await expect
+        .poll(
+          () =>
+            query('[data-testid="filter-panel"]').length +
+            query('[role="option"]').length,
+        )
+        .toBe(0)
     },
   },
   {
@@ -249,7 +264,7 @@ const POPOVERS: Popover[] = [
 
 const renderAll = async () => {
   await render(
-    <composed.AllFeatures
+    <composed.DataGridPlayground
       containerHeight={500}
       height={400}
       dataCount={50}

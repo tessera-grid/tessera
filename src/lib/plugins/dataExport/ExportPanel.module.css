@@ -35,11 +35,12 @@
   composes: item from '../../grid/headerActions/ActionMenu.module.css';
   width: 100%;
   color: inherit;
-  font: inherit;
+  /* Шрифт кнопки — от панели; высоту строки задаёт пункт поповера. */
+  font-family: inherit;
+  font-size: inherit;
   text-align: start;
   background-color: transparent;
   border: 0;
-  cursor: pointer;
 }
 
 .item:hover:not([data-disabled]) {
