@@ -8,6 +8,21 @@ import { composed } from '../stories'
 
 // Высота строк и шапки, ширина колонок по умолчанию (ADR 0077, RH1–RH6, CW2).
 
+/** Колонки без своего size и одна со своим — ширина из defaultColumn (CW2). */
+const DEFAULT_COLUMN_WIDTH = {
+  defaultColumn: { size: 220 },
+  columnsOverride: [
+    { id: 'name', accessorKey: 'name', header: 'Name' },
+    { id: 'company', accessorKey: 'company', header: 'Company' },
+    { id: 'city', accessorKey: 'city', header: 'City (size: 100)', size: 100 },
+  ],
+  dataOverride: [
+    { id: '1', name: 'Ann', company: 'Acme', city: 'Oslo' },
+    { id: '2', name: 'Bob', company: 'Globex', city: 'Rome' },
+  ],
+  enableColumnSizing: true,
+}
+
 const BODY_ROW = '.data-grid__body-row'
 const HEAD = '.data-grid__head'
 const HEAD_CELL = ".data-grid__head-cell[data-actions-column-cell='false']"
@@ -31,7 +46,7 @@ afterEach(() => {
 describe('Высота строк и шапки, ширина колонок по умолчанию', () => {
   test('RH1: rowHeight задаёт высоту строк тела, футера и скелета; без него — 50px', async () => {
     const view = await render(
-      <composed.RowHeight rowHeight={60} enableFooter />,
+      <composed.SizingPlayground rowHeight={60} enableFooter />,
     )
     await waitForRows()
     expect(new Set(rows().map(heightOf))).toEqual(new Set([60]))
@@ -39,7 +54,7 @@ describe('Высота строк и шапки, ширина колонок п�
     await view.unmount()
 
     const skeleton = await render(
-      <composed.RowHeight rowHeight={60} loading="initial" />,
+      <composed.SizingPlayground rowHeight={60} loading="initial" />,
     )
     await expect
       .poll(
@@ -54,7 +69,9 @@ describe('Высота строк и шапки, ширина колонок п�
     }
     await skeleton.unmount()
 
-    await render(<composed.RowHeight rowHeight={undefined} enableFooter />)
+    await render(
+      <composed.SizingPlayground rowHeight={undefined} enableFooter />,
+    )
     await waitForRows()
     expect(new Set(rows().map(heightOf))).toEqual(new Set([50]))
     expect(heightOf(document.querySelector('.data-grid__footer')!)).toBe(50)
@@ -62,7 +79,11 @@ describe('Высота строк и шапки, ширина колонок п�
 
   test('RH2: headerHeight задаёт высоту каждой строки шапки и --tsr-comp-head-height; без него — как rowHeight', async () => {
     const view = await render(
-      <composed.HeaderHeight rowHeight={44} headerHeight={72} />,
+      <composed.SizingPlayground
+        rowHeight={44}
+        headerHeight={72}
+        headerNesting="nested"
+      />,
     )
     await waitForRows()
     // Вложенная шапка мока: Info → More Info → Age — три строки.
@@ -73,7 +94,7 @@ describe('Высота строк и шапки, ширина колонок п�
     expect(new Set(rows().map(heightOf))).toEqual(new Set([44]))
     await view.unmount()
 
-    await render(<composed.RowHeight rowHeight={60} />)
+    await render(<composed.SizingPlayground rowHeight={60} />)
     await waitForRows()
     expect(cssVar('--tsr-comp-head-height')).toBe('61px')
     for (const cell of document.querySelectorAll(HEAD_CELL)) {
@@ -113,13 +134,21 @@ describe('Высота строк и шапки, ширина колонок п�
 
   test('RH5: смена высоты на лету не пересоздаёт таблицу, перерисовывает строки и шапку, полная высота пересчитана, пустых полос нет', async () => {
     const view = await render(
-      <composed.RowHeight rowHeight={50} dataNesting="flat" dataCount={200} />,
+      <composed.SizingPlayground
+        rowHeight={50}
+        dataNesting="flat"
+        dataCount={200}
+      />,
     )
     await waitForRows()
     const scroller = getScroller()
 
     await view.rerender(
-      <composed.RowHeight rowHeight={70} dataNesting="flat" dataCount={200} />,
+      <composed.SizingPlayground
+        rowHeight={70}
+        dataNesting="flat"
+        dataCount={200}
+      />,
     )
     await expect
       .poll(() => new Set(rows().map(heightOf)))
@@ -139,7 +168,7 @@ describe('Высота строк и шапки, ширина колонок п�
   })
 
   test('RH6: PageUp/PageDown листают на число строк новой высоты', async () => {
-    await render(<composed.KeyboardNavigation rowHeight={80} />)
+    await render(<composed.KeyboardPlayground rowHeight={80} />)
     await waitForRows()
     const cell = document.querySelector<HTMLElement>(
       `${BODY_ROW}[data-index='0'] .data-grid__body-cell[data-kn-cell][data-actions-column-cell='false']`,
@@ -174,7 +203,7 @@ describe('Высота строк и шапки, ширина колонок п�
 
   test('RH9: при наименьшей высоте со всеми плагинами, раскрытой строкой и ячейкой в правке содержимое умещается без прокрутки, кнопки с контуром фокуса — в границах ячейки', async () => {
     await render(
-      <composed.AllFeatures
+      <composed.DataGridPlayground
         rowHeight={40}
         headerHeight={36}
         enableRowSelection
@@ -252,7 +281,7 @@ describe('Высота строк и шапки, ширина колонок п�
   })
 
   test('CW2: колонки без своего size получают defaultColumn.size, со своим — свой; size меньше прежнего минимума соблюдается', async () => {
-    await render(<composed.DefaultColumnWidth />)
+    await render(<composed.SizingPlayground {...DEFAULT_COLUMN_WIDTH} />)
     await expect.poll(() => document.querySelectorAll(HEAD_CELL).length).toBe(3)
     const widths = [...document.querySelectorAll<HTMLElement>(HEAD_CELL)]
       .sort(

@@ -22,6 +22,18 @@
   --tsr-comp-status-bar-offset: var(--tsr-comp-status-bar-height);
 }
 
+.table__container,
+.table__stub-container {
+  /*
+   * Без предела высоты корня (`--tsr-comp-grid-max-height` из `maxHeight`) значение
+   * недействительно и `max-height` — `none`.
+   */
+  max-height: calc(
+    var(--tsr-comp-grid-max-height) - var(--tsr-comp-frame-border-width) * 2 -
+      var(--tsr-comp-toolbar-offset) - var(--tsr-comp-status-bar-offset)
+  );
+}
+
 .table__container {
   height: calc(
     100% - var(--tsr-comp-toolbar-offset) - var(--tsr-comp-status-bar-offset)
