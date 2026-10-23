@@ -241,9 +241,23 @@ export const useCreateTable = <
     [argsSignature],
   )
 
+  // По значениям: объект, собранный на каждый рендер, сбрасывал бы кэши колонок TanStack.
+  const resolvedDefaultColumn = useMemo(
+    () =>
+      resolveDefaultColumn({
+        size: defaultColumn?.size,
+        minSize: defaultColumn?.minSize,
+        maxSize: defaultColumn?.maxSize,
+      }),
+    [defaultColumn?.size, defaultColumn?.minSize, defaultColumn?.maxSize],
+  )
+
+  // TanStack сливает `defaultColumn` в колонки при их сборке, а собирает их заново только
+  // по новому массиву `columns`: новые умолчания — новый массив (ADR 0077, CW3).
   const injectedColumns = useMemo(
     () => injectServiceColumns(columns, serviceColumns),
-    [columns, serviceColumns],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- новый массив на смену умолчаний
+    [columns, serviceColumns, resolvedDefaultColumn],
   )
 
   // Сервисные колонки для пиннинга: id (таргет пина) + объявленная плагином политика —
@@ -322,13 +336,15 @@ export const useCreateTable = <
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу срезов
     [folded.narrow, sliceKeys],
   )
+  // Срезы, которыми ядро владеет само: сужение снимается, а обработчик остаётся у владельца.
+  const owned = { columnPinning: displayedPinning }
   // `useTable` сливает опции с прежними: обработчик снятого сужения остался бы в
   // таблице и писал бы мимо среза — срез, который снова ведёт TanStack, получает запись в атом.
   const narrowedKeys = useRef(new Set<string>())
   for (const key of Object.keys(narrow)) narrowedKeys.current.add(key)
   const releasedSliceHandlers = Object.fromEntries(
     [...narrowedKeys.current]
-      .filter(key => !(key in narrow))
+      .filter(key => !(key in narrow) && !(key in owned))
       .map(key => [
         handlerOf(key),
         (updater: unknown) =>
@@ -356,7 +372,7 @@ export const useCreateTable = <
   )
   const effective = useEffectiveState({
     narrow,
-    owned: { columnPinning: displayedPinning },
+    owned,
     state: { ...restState, ...slices.state },
     handlers: restHandlers,
     listeners: slices.listeners,
@@ -370,17 +386,6 @@ export const useCreateTable = <
     },
     initial: { ...INITIAL_EFFECTIVE_STATE, ...slices.initial },
   })
-
-  // По значениям: объект, собранный на каждый рендер, сбрасывал бы кэши колонок TanStack.
-  const resolvedDefaultColumn = useMemo(
-    () =>
-      resolveDefaultColumn({
-        size: defaultColumn?.size,
-        minSize: defaultColumn?.minSize,
-        maxSize: defaultColumn?.maxSize,
-      }),
-    [defaultColumn?.size, defaultColumn?.minSize, defaultColumn?.maxSize],
-  )
 
   const controlledState = {
     ...restState,

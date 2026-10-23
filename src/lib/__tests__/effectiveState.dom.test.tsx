@@ -235,4 +235,21 @@ describe('эффективное состояние при сужении', () =
     act(() => captured.getRow('1').toggleSelected(true))
     expect(captured.getRow('1').getIsSelected()).toBe(true)
   })
+
+  it('RX27: сужение среза ядра, снятое на лету, оставляет срез ядру — включённый leafPinning сразу закрепляет лист под группой', () => {
+    const PinningHost = ({ leafPinning }: { leafPinning: boolean }) => {
+      captured = useCreateTable({
+        columns: nestedColumns as never,
+        data: flatData,
+        plugins: [columnPinning({ leafPinning })],
+      })
+      return null
+    }
+    mount(<PinningHost leafPinning={false} />)
+    mount(<PinningHost leafPinning />)
+
+    act(() => captured.getColumn('name').pin('start'))
+    expect(captured.getColumn('name').getIsPinned()).toBe('start')
+    expect(captured.options.state.columnPinning.start).toEqual(['name'])
+  })
 })
