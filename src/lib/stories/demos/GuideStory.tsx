@@ -28,9 +28,10 @@ export interface GuideStoryStep extends GuideStep {
   props?: (context: GuideContext) => Partial<StoryProps>
   /**
    * Действие при входе в шаг — то, что сделал бы пользователь (прокрутка); `app` — то,
-   * что делает приложение посреди шага (данные меняются извне).
+   * что делает приложение посреди шага (данные меняются извне). Возвращённая функция
+   * снимает то, что действие оставило, при уходе с шага.
    */
-  enter?: (root: HTMLElement, app: GuideApp) => void
+  enter?: (root: HTMLElement, app: GuideApp) => unknown
   /** Шаг открывает грид заново: опции на время жизни таблицы (`initialPageSize`). */
   remount?: boolean
   /** Состояния каталога, которые показывает шаг: матрица контраста — во всех сочетаниях. */
@@ -51,6 +52,45 @@ export interface GuideStoryStep extends GuideStep {
 export interface GuideApp {
   update: (change: (props: Partial<StoryProps>) => Partial<StoryProps>) => void
 }
+
+/** Что действие шага знает о своём времени: уход с шага прерывает его. */
+export interface StepRun {
+  signal: AbortSignal
+  /** Снять при уходе с шага то, что действие оставило (удержанное перетаскивание). */
+  onLeave: (undo: () => void) => void
+}
+
+/**
+ * Действие шага, идущее во времени (ADR 0117, SN36): перетаскивание, ожидание ответа
+ * «сервера». Уход с шага прерывает его — `signal` — и снимает оставленное. Пока оно
+ * идёт, у корня гайда `data-step-action="running"`, когда дошло — `"done:<номер шага>"`:
+ * отметка прошлого шага не сходит за отметку нового.
+ */
+export const stepAction =
+  (
+    run: (root: HTMLElement, step: StepRun, app: GuideApp) => Promise<unknown>,
+  ) =>
+  (root: HTMLElement, app: GuideApp) => {
+    const controller = new AbortController()
+    const undo: (() => void)[] = []
+    const step = root.dataset.guideStep
+    root.setAttribute('data-step-action', 'running')
+    run(root, { signal: controller.signal, onLeave: fn => undo.push(fn) }, app)
+      .then(() => {
+        if (!controller.signal.aborted) {
+          root.setAttribute('data-step-action', `done:${step}`)
+        }
+      })
+      // Сбой действия виден в консоли — каталог роняет историю с `console.error`.
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) console.error(error)
+      })
+    return () => {
+      controller.abort()
+      root.removeAttribute('data-step-action')
+      for (const fn of undo.reverse()) fn()
+    }
+  }
 
 /** Открытое меню или поповер таблицы. */
 const OPEN_POPUP = '[role="menu"][data-open], [role="dialog"][data-open]'
@@ -158,12 +198,14 @@ export const GuideStory = ({
   const [reentries, setReentries] = useState(0)
   const popupAtToggle = useRef(false)
   useEffect(() => {
-    if (root.current) enter?.(root.current, app)
+    const leave = root.current ? enter?.(root.current, app) : undefined
+    return typeof leave === 'function' ? (leave as () => void) : undefined
   }, [enter, app, guide.step, guide.run, shown.rewinds, reentries])
   return (
     <div
       ref={root}
       data-guide-root=""
+      data-guide-step={guide.step}
       style={{ display: 'flex', flexDirection: 'column' }}
       onPointerDownCapture={event => {
         popupAtToggle.current =

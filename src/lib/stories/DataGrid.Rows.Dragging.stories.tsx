@@ -6,16 +6,19 @@ import { makeData } from './__mocks__/data'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import type { RowDragEnd } from '../plugins'
 import type { Row } from '../types'
-import { expect, userEvent, waitFor } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import {
   type HeldDrag,
+  cancelDrag,
   centerOf,
   dragHold,
   guideNext,
-  releaseFocus,
+  pollUntil,
   settle,
+  shieldHeldDrag,
+  sleep,
+  stepDone,
   until,
-  updateArgs,
 } from './__mocks__/catalogPlay'
 import {
   DRAG_FILL,
@@ -30,7 +33,13 @@ import {
   sortedRows,
 } from './rowDragging.dnd'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  type StepRun,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /** Перетаскивание строк (ADR 0006). */
 const meta = {
@@ -224,61 +233,92 @@ const layoutStill = async (el: Element) => {
 }
 
 /**
- * Берёт строку `id` за ручку и держит над строкой `overId` так, чтобы текст облака
- * встал на уровень `depth` (ADR 0108): слот — на этом уровне. Цели — в верхней части
- * окна грида, вдали от автопрокрутки (ADR 0130, §4).
+ * Подводит строку в среднюю полосу окна прокруткой самого окна, не грида: у краёв окна
+ * dnd-kit прокручивал бы страницу сам, и цель уезжала бы из-под указателя.
+ */
+const centerInWindow = async (row: Element) => {
+  const box = row.getBoundingClientRect()
+  if (box.top >= innerHeight * 0.25 && box.bottom <= innerHeight * 0.75) return
+  scrollBy({
+    top: box.top + box.height / 2 - innerHeight / 2,
+    behavior: 'instant',
+  })
+  await layoutStill(row)
+}
+
+/** Строка тела, а не её призрак движения (ADR 0107). */
+const rowOf = (root: ParentNode, id: string) =>
+  root.querySelector<HTMLElement>(
+    `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`,
+  )
+
+/** Отступ уровня строки — по колонке с отступом дерева. */
+const indentOf = (root: ParentNode, selector: string) =>
+  parseFloat(
+    getComputedStyle(root.querySelector(`${selector} ${LEVEL_CELL}`)!)
+      .paddingLeft,
+  )
+
+const rowIndent = (root: ParentNode, id: string) =>
+  indentOf(root, `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`)
+
+/**
+ * Действие шага: берёт строку `id` за ручку и держит над строкой `overId` так, чтобы
+ * текст облака встал на уровень `depth` (ADR 0108): слот — на этом уровне. Цели — в
+ * верхней части окна грида, вдали от автопрокрутки (ADR 0130, §4). Уход с шага
+ * отменяет удержание; пока оно держится, мышь и нажатия на панель гайда его не трогают.
  */
 const holdRowAtLevel = async (
-  canvas: HTMLElement,
+  root: HTMLElement,
   id: string,
   overId: string,
   depth: number,
+  { signal, onLeave }: StepRun,
 ) => {
-  // Грид — к верху окна: у нижнего края окна dnd-kit прокручивал бы страницу.
-  const container = canvas.querySelector('.data-grid__container')!
-  container.scrollIntoView({ block: 'start' })
+  // Удержание прошлого шага отменено: строка вернулась на место.
+  await pollUntil(() => !root.querySelector('[data-row-dragging]'), signal)
+  const container = root.querySelector('.data-grid__container')!
+  await centerInWindow(rowOf(root, overId)!)
   await layoutStill(container)
+  signal.throwIfAborted()
   // Тема самого грида: у других узлов темы на холсте шаг без линий дерева.
   const theme = container.closest('.data-grid-theme')!
   const step = tokenPx(theme, '--tsr-comp-row-nesting-indent')
-  const rowOf = (rowId: string) =>
-    canvas.querySelector<HTMLElement>(
-      `${ROW}[data-row-id="${rowId}"]:not([data-row-ghost])`,
-    )!
-  const source = rowOf(id)
+  const source = rowOf(root, id)!
   const cell = source.querySelector<HTMLElement>(
     `${USER_CELL} > .data-grid__cell-wrapper-content`,
   )!
-  const sourceDepth = Math.round(
-    parseFloat(
-      getComputedStyle(source.querySelector(LEVEL_CELL)!).paddingLeft,
-    ) / step,
-  )
+  const sourceDepth = Math.round(rowIndent(root, id) / step)
   const levelZero =
     cell.getBoundingClientRect().left +
     parseFloat(getComputedStyle(cell).paddingLeft) -
     sourceDepth * step
   const handle = source.querySelector<HTMLElement>(HANDLE)!
   const from = centerOf(handle)
-  const over = rowOf(overId).getBoundingClientRect()
+  const lift = shieldHeldDrag()
+  onLeave(lift)
+  onLeave(cancelDrag)
+  // Строку берут на месте: взятая группа сворачивает дерево, цель меряется после.
+  const held = await dragHold(handle, { x: from.x, y: from.y + 8 }, 4, signal)
+  await pollUntil(() => !!document.querySelector(CLOUD_TITLE), signal)
+  await layoutStill(rowOf(root, overId)!)
+  await centerInWindow(rowOf(root, overId)!)
+  signal.throwIfAborted()
+  const over = rowOf(root, overId)!.getBoundingClientRect()
   const y = over.top + over.height / 2 + (over.top > from.y ? 6 : -6)
-  const held = await dragHold(handle, { x: from.x, y })
-  await until(() => expect(document.querySelector(CLOUD_TITLE)).not.toBeNull())
-  // Облако встаёт под указатель кадром позже своего появления.
-  await nextFrame()
-  await nextFrame()
   const cloud = document.querySelector(CLOUD_TITLE)!.getBoundingClientRect()
-  await held.moveTo({ x: from.x + levelZero + depth * step - cloud.left, y }, 4)
-  return held
-}
-
-/** Отменяет удержание и ждёт, пока грид его закончит. */
-const cancelHold = async (canvas: HTMLElement, held: HeldDrag) => {
-  held.cancel()
-  await until(() =>
-    expect(canvas.querySelector('[data-row-dragging]')).toBeNull(),
-  )
-  await settle()
+  /** Указатель, при котором текст облака стоит на уровне `level`. */
+  const xAt = (level: number) => from.x + levelZero + level * step - cloud.left
+  await held.moveTo({ x: xAt(depth), y }, 12)
+  return {
+    ...held,
+    xAt,
+    /** Бросок: удерживать больше нечего — фильтр событий снят. */
+    release: () => {
+      held.release()
+      lift()
+    },
+  }
 }
 
 const ROW_MOVE: readonly GuideStoryStep[] = [
@@ -292,17 +332,28 @@ const ROW_MOVE: readonly GuideStoryStep[] = [
     title: 'Строку взяли за ручку',
     hint: 'Возьмите строку за ручку и ведите над группой. Облако со строкой идёт за указателем, на месте броска — слот-скелет на уровне будущего родителя, линии дерева — как после броска.',
     states: ['drag.row'],
+    enter: stepAction((root, run) =>
+      holdRowAtLevel(root, 'row-0', 'node-0-0', 1, run),
+    ),
   },
   {
     title: 'Недопустимое место',
     hint: 'Ведите группу с детьми внутрь другой группы: дерево не глубже двух уровней. Полоски слота красные, бросок здесь не сработает.',
     states: ['drag.rowInvalid'],
+    enter: stepAction((root, run) =>
+      holdRowAtLevel(root, 'node-0', 'node-1', 1, run),
+    ),
   },
   {
     title: 'Бросок',
     hint: 'Отпустите строку на допустимом месте: облако пропадает, строка встаёт на место и коротко вспыхивает.',
     states: ['drag.landed'],
     immediate: true,
+    enter: stepAction(async (root, run) => {
+      const held = await holdRowAtLevel(root, 'row-0', 'node-0-0', 1, run)
+      run.signal.throwIfAborted()
+      held.release()
+    }),
   },
 ]
 
@@ -342,66 +393,88 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    const row = (id: string) =>
-      canvas.querySelector<HTMLElement>(
-        `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`,
-      )
     const invalid = () =>
       canvas
         .querySelector('.data-grid__container')!
         .hasAttribute('data-row-drop-invalid')
-    let held: HeldDrag | undefined
     await step(ROW_MOVE[0].title, async () => {
-      await until(() => expect(row('node-0-1')).not.toBeNull())
-      expect(row('row-0')!.querySelector(HANDLE)).not.toBeNull()
+      await until(() => expect(rowOf(canvas, 'node-0-1')).not.toBeNull())
+      expect(rowOf(canvas, 'row-0')!.querySelector(HANDLE)).not.toBeNull()
     })
     await step(ROW_MOVE[1].title, async () => {
       await guideNext(canvas)
-      await settle()
-      held = await holdRowAtLevel(canvas, 'row-0', 'node-0-0', 1)
+      await stepDone(canvas)
       await until(() =>
         expect(
           canvas.querySelector(`${DRAG_FILL} [class*="skeleton"]`),
         ).not.toBeNull(),
       )
       // Слот — на уровне детей группы, отступом глубже корня.
-      const indent = (selector: string) =>
-        parseFloat(
-          getComputedStyle(canvas.querySelector(`${selector} ${LEVEL_CELL}`)!)
-            .paddingLeft,
-        )
       await until(() =>
-        expect(indent(DRAG_FILL)).toBe(
-          indent(`${ROW}[data-row-id="node-0-0"]`),
-        ),
+        expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-0-0')),
       )
       expect(invalid()).toBe(false)
     })
     await step(ROW_MOVE[2].title, async () => {
-      // Клик «Далее» отпустил бы строку: удержание снимается до него.
-      await cancelHold(canvas, held!)
       await guideNext(canvas)
-      await settle()
-      held = await holdRowAtLevel(canvas, 'node-0', 'node-1-0', 1)
+      await stepDone(canvas)
       await until(() => expect(invalid()).toBe(true))
     })
     await step(ROW_MOVE[3].title, async () => {
-      await cancelHold(canvas, held!)
-      await guideNext(canvas)
-      await settle()
-      // Вспышка держится на время снимка (ADR 0130, DG6).
+      // Вспышка держится на время снимка (ADR 0130, DG6): токен — до броска шага.
       canvas
         .querySelector<HTMLElement>('.data-grid-theme')!
         .style.setProperty('--tsr-comp-flash-duration', '600000ms')
-      held = await holdRowAtLevel(canvas, 'row-0', 'node-0-0', 1)
-      held.release()
+      await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
       await until(() =>
-        expect(row('row-0')).toHaveAttribute('data-flash', 'arrived'),
+        expect(rowOf(canvas, 'row-0')).toHaveAttribute('data-flash', 'arrived'),
       )
     })
     await settle()
   },
+}
+
+type HeldRow = Awaited<ReturnType<typeof holdRowAtLevel>>
+
+/**
+ * Держит строку над корневой группой на уровне её детей, пока пауза её не раскроет
+ * (ADR 0109).
+ */
+const pauseOver = async (
+  root: HTMLElement,
+  held: HeldRow,
+  groupId: string,
+  signal: AbortSignal,
+) => {
+  // Движение во время паузы сбросило бы её таймер: цель — когда раскладка встала.
+  await layoutStill(rowOf(root, groupId)!)
+  await centerInWindow(rowOf(root, groupId)!)
+  signal.throwIfAborted()
+  const target = rowOf(root, groupId)!.getBoundingClientRect()
+  let y = target.top + target.height / 2 + 1
+  // Корневая группа: её дети — на первом уровне.
+  await held.moveTo({ x: held.xAt(1), y }, 4)
+  // Слот переезжает за указателем, и место броска может уйти к соседней группе:
+  // указатель доводится к своей, пока пауза соседней не сработала.
+  for (let tries = 0; ; tries++) {
+    await sleep(80)
+    signal.throwIfAborted()
+    const parent = root.querySelector<HTMLElement>('[data-row-drop-parent]')
+    if (parent?.dataset.rowId === groupId) break
+    if (tries === 12) throw new Error(`Место броска не в группе ${groupId}`)
+    const box = rowOf(root, groupId)!.getBoundingClientRect()
+    const below = !parent || parent.getBoundingClientRect().top < box.top
+    y = Math.min(Math.max(y + (below ? 6 : -6), box.top + 2), box.bottom - 2)
+    await held.moveTo({ x: held.xAt(1), y }, 2)
+  }
+  await pollUntil(() => !!rowOf(root, `${groupId}-0`), signal)
+  await pollUntil(
+    () => !!rowOf(root, groupId)?.hasAttribute('data-row-drop-parent'),
+    signal,
+  )
+  signal.throwIfAborted()
 }
 
 /**
@@ -418,10 +491,23 @@ const COLLAPSED_GROUPS: readonly GuideStoryStep[] = [
     title: 'Пауза над группой',
     hint: 'Возьмите строку за ручку и задержите над свёрнутой группой на уровне её детей: через паузу группа раскрывается, будущий родитель обведён.',
     states: ['drag.groupParent'],
+    enter: stepAction(async (root, run) => {
+      // Сначала на корневом уровне: там пауза ничего не раскрывает.
+      const held = await holdRowAtLevel(root, 'row-0', 'row-1', 0, run)
+      await pauseOver(root, held, 'node-1', run.signal)
+    }),
   },
   {
     title: 'Бросок в другую группу',
     hint: 'Задержите строку над второй группой и отпустите: строка ложится в неё, а первая группа, раскрытая паузой, снова свёрнута.',
+    enter: stepAction(async (root, run) => {
+      const held = await holdRowAtLevel(root, 'row-0', 'row-1', 0, run)
+      await pauseOver(root, held, 'node-1', run.signal)
+      // Строки ниже доезжают после раскрытия (ADR 0107) — цель меряется на месте.
+      await sleep(400)
+      await pauseOver(root, held, 'node-2', run.signal)
+      held.release()
+    }),
   },
 ]
 
@@ -463,57 +549,25 @@ export const RowDraggingCollapsedGroups: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    const row = (id: string) =>
-      canvas.querySelector<HTMLElement>(
-        `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`,
-      )
-    const indentOf = (id: string) =>
-      parseFloat(
-        getComputedStyle(row(id)!.querySelector(LEVEL_CELL)!).paddingLeft,
-      )
-    const slow = { timeout: 5000 }
-    /** Держит строку над группой на уровне её детей, пока пауза её не раскроет. */
-    const pauseOver = async (held: HeldDrag, groupId: string) => {
-      // Движение во время паузы сбросило бы её таймер: цель — когда раскладка встала.
-      await layoutStill(row(groupId)!)
-      const target = row(groupId)!.getBoundingClientRect()
-      await held.moveTo(
-        { x: held.point().x, y: target.top + target.height / 2 + 1 },
-        4,
-      )
-      await waitFor(() => expect(row(`${groupId}-0`)).not.toBeNull(), slow)
-      await until(() =>
-        expect(row(groupId)!.hasAttribute('data-row-drop-parent')).toBe(true),
-      )
-    }
-    let held: HeldDrag | undefined
     await step(COLLAPSED_GROUPS[0].title, async () => {
-      await until(() => expect(row('node-2')).not.toBeNull())
-      expect(row('node-1-0')).toBeNull()
+      await until(() => expect(rowOf(canvas, 'node-2')).not.toBeNull())
+      expect(rowOf(canvas, 'node-1-0')).toBeNull()
     })
     await step(COLLAPSED_GROUPS[1].title, async () => {
       await guideNext(canvas)
-      await settle()
-      // Сначала над листом: пауза над ним ничего не раскрывает.
-      held = await holdRowAtLevel(canvas, 'row-0', 'row-1', 1)
-      await pauseOver(held, 'node-1')
+      await stepDone(canvas)
+      expect(rowOf(canvas, 'node-1-0')).not.toBeNull()
+      expect(rowOf(canvas, 'node-1')).toHaveAttribute('data-row-drop-parent')
     })
     await step(COLLAPSED_GROUPS[2].title, async () => {
-      // Клик «Далее» отпустил бы строку: удержание снимается до него.
-      await cancelHold(canvas, held!)
       await guideNext(canvas)
-      await settle()
-      // Сначала над листом: пауза над ним ничего не раскрывает.
-      held = await holdRowAtLevel(canvas, 'row-0', 'row-1', 1)
-      await pauseOver(held, 'node-1')
-      // Строки ниже доезжают после раскрытия (ADR 0107) — цель меряется на месте.
-      await new Promise(resolve => setTimeout(resolve, 400))
-      await pauseOver(held, 'node-2')
-      held.release()
+      await stepDone(canvas)
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
-      await until(() => expect(row('node-1-0')).toBeNull())
-      expect(row('node-2-0')).not.toBeNull()
-      await until(() => expect(indentOf('row-0')).toBe(indentOf('node-2-0')))
+      await until(() => expect(rowOf(canvas, 'node-1-0')).toBeNull())
+      expect(rowOf(canvas, 'node-2-0')).not.toBeNull()
+      await until(() =>
+        expect(rowIndent(canvas, 'row-0')).toBe(rowIndent(canvas, 'node-2-0')),
+      )
     })
     await settle()
   },
@@ -580,31 +634,126 @@ const createLazyTreeServer = () => {
   }
 }
 
+type LazyTreeServer = ReturnType<typeof createLazyTreeServer>
+
 let lazyTreeServer = createLazyTreeServer()
+
+/** Ход сценария на смонтированном гриде: свой «сервер» и число пройденных стадий. */
+interface LazyTreeSession {
+  server: LazyTreeServer
+  done: number
+}
+
+/** Новое открытие грида («Сначала», шаг назад) — новый «сервер» и ход с начала. */
+const lazyTreeSessions = new WeakMap<Element, LazyTreeSession>()
+
+const lazyTreeSession = (root: HTMLElement) => {
+  const grid = root.querySelector('.data-grid__container')!
+  let session = lazyTreeSessions.get(grid)
+  if (!session) {
+    lazyTreeServer = createLazyTreeServer()
+    session = { server: lazyTreeServer, done: 0 }
+    lazyTreeSessions.set(grid, session)
+  }
+  return session
+}
+
+type LazyTreeStage = (
+  root: HTMLElement,
+  run: StepRun,
+  server: LazyTreeServer,
+) => Promise<void>
+
+/** Раскрывает группу её переключателем; дети придут с «сервера». */
+const expandGroup =
+  (id: string): LazyTreeStage =>
+  async (root, { signal }) => {
+    await pollUntil(() => !!rowOf(root, id), signal)
+    rowOf(root, id)!.querySelector<HTMLElement>('.row-expand-button')!.click()
+  }
+
+/**
+ * Держит лист над свёрнутой корневой группой на уровне её детей, пока дети не придут, и
+ * отпускает.
+ */
+const dropIntoGroup =
+  (id: string, groupId: string): LazyTreeStage =>
+  async (root, run) => {
+    await pollUntil(() => !!rowOf(root, id), run.signal)
+    const held = await holdRowAtLevel(root, id, groupId, 1, run)
+    // Указатель не двигается: слот переезжает к группе, и она смещается на строку.
+    await pollUntil(() => !!rowOf(root, `${groupId}-0`), run.signal)
+    await pollUntil(
+      () => !!rowOf(root, groupId)?.hasAttribute('data-row-drop-parent'),
+      run.signal,
+    )
+    held.release()
+  }
+
+/** «Сервер» отвечает на перенос, который ждёт. */
+const answerMove =
+  (ok: boolean): LazyTreeStage =>
+  async (_root, { signal }, server) => {
+    await pollUntil(() => server.moves.length > 0, signal)
+    signal.throwIfAborted()
+    server.answer(ok)
+  }
+
+/**
+ * Стадии сценария по порядку; шаг гайда проходит их до своего состояния — с того места,
+ * где грид стоит: переход вперёд добавляет стадии, новое открытие грида начинает с первой.
+ */
+const LAZY_TREE_STAGES: readonly LazyTreeStage[] = [
+  expandGroup('node-0'),
+  expandGroup('node-0-0'),
+  dropIntoGroup('node-0-0-0', 'node-1'),
+  answerMove(true),
+  dropIntoGroup('node-0-0-1', 'node-1'),
+  answerMove(false),
+  dropIntoGroup('node-0-0-2', 'node-1'),
+  answerMove(false),
+]
+
+/** Действие шага: проходит стадии до `count`-й. */
+const lazyTreeUpTo = (count: number) =>
+  stepAction(async (root, run) => {
+    const session = lazyTreeSession(root)
+    while (session.done < count) {
+      await LAZY_TREE_STAGES[session.done]!(root, run, session.server)
+      // Запуск, прерванный уходом с шага, стадию не засчитывает.
+      run.signal.throwIfAborted()
+      session.done++
+    }
+  })
 
 const LAZY_TREE: readonly GuideStoryStep[] = [
   {
     title: 'Ленивое дерево',
-    hint: 'Дети групп приходят с сервера при раскрытии. Группы «Node 0» и её первая подгруппа раскрыты.',
+    hint: 'Дети групп приходят с сервера при раскрытии. Первая группа и её первая подгруппа раскрываются — их дети загружены.',
+    enter: lazyTreeUpTo(2),
   },
   {
     title: 'Перенос ждёт сервера',
     hint: 'Строку бросили в свёрнутую группу: пауза загрузила её детей, перенос сохраняется на сервере — по ручке строки бежит дуга ожидания.',
     states: ['drag.pending'],
+    enter: lazyTreeUpTo(3),
   },
   {
     title: 'Сервер сохранил',
     hint: 'Ответ пришёл: дуга погасла, строка осталась в новой группе и коротко вспыхнула тоном успеха.',
+    enter: lazyTreeUpTo(4),
   },
   {
     title: 'Отказ сервера',
     hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место, ручка отмечена отказом, строка коротко вспыхнула тоном ошибки.',
     states: ['drag.rejected'],
+    enter: lazyTreeUpTo(6),
   },
   {
     title: 'Отказ без отката',
     hint: 'С `revertOnReject: false` отклонённая строка остаётся там, куда её бросили, и коротко вспыхивает тоном ошибки.',
     props: () => ({ rowDraggingRevertOnReject: false }),
+    enter: lazyTreeUpTo(8),
   },
 ]
 
@@ -651,78 +800,43 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    const row = (id: string) =>
-      canvas.querySelector<HTMLElement>(
-        `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`,
-      )
-    const toggle = (id: string) =>
-      row(id)!.querySelector<HTMLElement>('.row-expand-button')!
-    const handleOf = (id: string) => row(id)!.querySelector(HANDLE)!
+    const handleOf = (id: string) => rowOf(canvas, id)!.querySelector(HANDLE)!
     const order = () =>
       [...canvas.querySelectorAll<HTMLElement>(`${ROW}:not([data-row-ghost])`)]
         .sort((a, b) => a.offsetTop - b.offsetTop)
         .map(item => item.dataset.rowId)
-    const slow = { timeout: 5000 }
-
-    /** Держит лист над свёрнутой группой на уровне её детей, пока дети не придут, и отпускает. */
-    const dropInto = async (id: string, groupId: string) => {
-      // Грид — к верху окна, цель меряется, когда раскладка встала (ADR 0130, §4).
-      canvas
-        .querySelector('.data-grid__container')!
-        .scrollIntoView({ block: 'start' })
-      await layoutStill(row(groupId)!)
-      const source = row(id)!
-      const levelStep =
-        2 *
-        (source.querySelector(LEVEL_CELL)!.getBoundingClientRect().left -
-          source.getBoundingClientRect().left)
-      const { hx } = await beginDrag(source.querySelector<HTMLElement>(HANDLE)!)
-      const target = row(groupId)!.getBoundingClientRect()
-      const ty = target.top + target.height / 2
-      firePointer('pointermove', document, hx + levelStep, ty)
-      await nextFrame()
-      firePointer('pointermove', document, hx + levelStep, ty + 1)
-      await waitFor(() => expect(row(`${groupId}-0`)).not.toBeNull(), slow)
-      // Бросок — когда dnd-kit отметил группу родителем места, а не по кадрам.
-      await until(() =>
-        expect(row(groupId)).toHaveAttribute('data-row-drop-parent'),
-      )
-      firePointer('pointerup', document, hx + levelStep, ty + 1)
-      await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
-    }
+    const slow = { timeout: 10_000 }
 
     await step(LAZY_TREE[0].title, async () => {
-      lazyTreeServer = createLazyTreeServer()
-      await until(() => expect(row('node-1')).not.toBeNull())
-      await userEvent.click(toggle('node-0'))
-      await waitFor(() => expect(row('node-0-0')).not.toBeNull(), slow)
-      await userEvent.click(toggle('node-0-0'))
-      await waitFor(() => expect(row('node-0-0-2')).not.toBeNull(), slow)
-      await releaseFocus()
+      await stepDone(canvas)
+      await until(() => expect(rowOf(canvas, 'node-0-0-2')).not.toBeNull())
     })
     await step(LAZY_TREE[1].title, async () => {
       await guideNext(canvas)
-      await settle()
-      await dropInto('node-0-0-0', 'node-1')
+      await stepDone(canvas)
       await until(() =>
-        expect(row('node-0-0-0')).toHaveAttribute('aria-busy', 'true'),
+        expect(rowOf(canvas, 'node-0-0-0')).toHaveAttribute(
+          'aria-busy',
+          'true',
+        ),
       )
     })
     await step(LAZY_TREE[2].title, async () => {
       await guideNext(canvas)
-      lazyTreeServer.answer(true)
+      await stepDone(canvas)
       await until(() =>
-        expect(row('node-0-0-0')).not.toHaveAttribute('aria-busy'),
+        expect(rowOf(canvas, 'node-0-0-0')).not.toHaveAttribute('aria-busy'),
       )
       const placed = order()
       expect(placed.indexOf('node-0-0-0')).toBe(placed.indexOf('node-1') + 1)
-      expect(row('node-0-0-0')).toHaveAttribute('data-flash', 'accepted')
+      expect(rowOf(canvas, 'node-0-0-0')).toHaveAttribute(
+        'data-flash',
+        'accepted',
+      )
     })
     await step(LAZY_TREE[3].title, async () => {
       await guideNext(canvas)
-      await settle()
-      await dropInto('node-0-0-1', 'node-1')
-      lazyTreeServer.answer(false)
+      await stepDone(canvas)
       await waitFor(() => {
         const back = order()
         expect(back.indexOf('node-0-0-1')).toBe(back.indexOf('node-0-0') + 1)
@@ -733,15 +847,19 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
           handleOf('node-0-0-1').querySelector('[data-failure-indicator]'),
         ).not.toBeNull(),
       )
-      expect(row('node-0-0-1')).toHaveAttribute('data-flash', 'reverted')
+      expect(rowOf(canvas, 'node-0-0-1')).toHaveAttribute(
+        'data-flash',
+        'reverted',
+      )
     })
     await step(LAZY_TREE[4].title, async () => {
       await guideNext(canvas)
-      await settle()
-      await dropInto('node-0-0-2', 'node-1')
-      lazyTreeServer.answer(false)
+      await stepDone(canvas)
       await until(() =>
-        expect(row('node-0-0-2')).toHaveAttribute('data-flash', 'reverted'),
+        expect(rowOf(canvas, 'node-0-0-2')).toHaveAttribute(
+          'data-flash',
+          'reverted',
+        ),
       )
       const kept = order()
       expect(kept.indexOf('node-0-0-2')).toBe(kept.indexOf('node-1') + 1)

@@ -205,7 +205,8 @@ export const KeyboardMoving: StoryObj<StoryProps> = {
       const cell = focusedActive(canvas)!
       expect(cell.dataset.columnId).toBe(lastColumnId(canvas))
       expect(hasRing(cell)).toBe(true)
-      expect(rowAt(canvas, 0)).toBeNull()
+      // Первая строка уходит из окна виртуализации кадром позже фокуса.
+      await until(() => expect(rowAt(canvas, 0)).toBeNull())
       await settle()
     })
   },

@@ -34,6 +34,29 @@ export const settle = async () => {
   await new Promise(resolve => requestAnimationFrame(resolve))
 }
 
+/**
+ * Ждёт условие в действии шага гайда (ADR 0117, SN36). Не `waitFor`: тот на время
+ * ожидания включает среду `act` React, и консоль Storybook полна предупреждений.
+ * Всегда хотя бы одна задача: StrictMode прерывает первый запуск эффекта синхронно, и
+ * прерывание видно только после неё.
+ */
+export const pollUntil = async (
+  check: () => boolean,
+  signal?: AbortSignal,
+  timeout = LOAD_TIMEOUT,
+) => {
+  const start = performance.now()
+  await sleep(0)
+  signal?.throwIfAborted()
+  while (!check()) {
+    if (performance.now() - start > timeout) {
+      throw new Error(`Шаг гайда не дождался: ${check.toString()}`)
+    }
+    await sleep(16)
+    signal?.throwIfAborted()
+  }
+}
+
 /** Ждёт, пока проверка пройдёт: задержки демо-«сервера» длиннее таймаута `waitFor`. */
 export const until = <T>(check: () => T) =>
   waitFor(check, { timeout: LOAD_TIMEOUT })
@@ -123,9 +146,14 @@ export const centerOf = (el: Element): Point => {
  * Берёт ручку и держит над точкой `to`, не отпуская (ADR 0130, DG4): события указателя
  * для `PointerSensor` dnd-kit, без Playwright. Нажатие — на ручку, движение и отпускание
  * — на документ: ручка строки, ушедшей в слот, перемонтируется, и события на её прежний
- * узел никуда не дошли бы.
+ * узел никуда не дошли бы. `signal` — уход с шага гайда: движение обрывается.
  */
-export const dragHold = async (handle: HTMLElement, to: Point, steps = 12) => {
+export const dragHold = async (
+  handle: HTMLElement,
+  to: Point,
+  steps = 12,
+  signal?: AbortSignal,
+) => {
   let at = centerOf(handle)
   const fire = (type: string, point: Point) =>
     (type === 'pointerdown' ? handle : handle.ownerDocument).dispatchEvent(
@@ -146,6 +174,7 @@ export const dragHold = async (handle: HTMLElement, to: Point, steps = 12) => {
   const moveTo = async (target: Point, count = steps) => {
     const from = at
     for (let i = 1; i <= count; i++) {
+      signal?.throwIfAborted()
       at = {
         x: from.x + ((target.x - from.x) * i) / count,
         y: from.y + ((target.y - from.y) * i) / count,
@@ -163,15 +192,77 @@ export const dragHold = async (handle: HTMLElement, to: Point, steps = 12) => {
     /** Отпускает там, где держит: бросок. */
     release: () => fire('pointerup', at),
     /** Escape: перетаскивание отменяется, строка или колонка остаётся на месте. */
-    cancel: () =>
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'Escape',
-          code: 'Escape',
-          bubbles: true,
-        }),
-      ),
+    cancel: cancelDrag,
   }
+}
+
+/**
+ * Escape: удержанное перетаскивание отменяется; без перетаскивания — ничего. От `body`,
+ * а не от документа: обработчик клавиш Storybook читает атрибуты цели.
+ */
+export const cancelDrag = () =>
+  document.body.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      code: 'Escape',
+      bubbles: true,
+    }),
+  )
+
+/** События указателя, по которым dnd-kit ведёт и заканчивает перетаскивание. */
+const DRAG_POINTER = ['pointermove', 'pointerup', 'pointercancel']
+
+/** Через сколько dnd-kit после отмены перестаёт глотать клики на документе (50 мс). */
+const DRAG_CLICK_RELEASE = 100
+
+/**
+ * Пока шаг гайда держит перетаскивание (ADR 0117, SN36), события указателя на узлах
+ * страницы не доходят до dnd-kit — он слушает документ: мышь увела бы облако, а
+ * нажатие «Далее» стало бы броском. Удержание шлёт события самому документу — их
+ * фильтр пропускает. Клик по обвязке гайда (панель, консоль) dnd-kit на время
+ * перетаскивания глотает — фильтр отменяет удержание и повторяет клик, когда dnd-kit
+ * отпустил документ. Фильтр на странице один, сколько бы удержаний его ни просили;
+ * возвращает снятие своей просьбы — повторное ничего не делает.
+ */
+export const shieldHeldDrag = () => {
+  if (shield.holders++ === 0) {
+    const html = document.documentElement
+    for (const type of DRAG_POINTER) html.addEventListener(type, stopPointer)
+    window.addEventListener('click', passClick, true)
+  }
+  let lifted = false
+  return () => {
+    if (lifted) return
+    lifted = true
+    if (--shield.holders > 0) return
+    const html = document.documentElement
+    for (const type of DRAG_POINTER) html.removeEventListener(type, stopPointer)
+    window.removeEventListener('click', passClick, true)
+  }
+}
+
+const shield = { holders: 0, replaying: false }
+
+const stopPointer = (event: Event) => event.stopPropagation()
+
+const passClick = (event: MouseEvent) => {
+  const target = event.target
+  if (
+    shield.replaying ||
+    !(target instanceof HTMLElement) ||
+    !target.closest('[data-guide-root]') ||
+    target.closest('.data-grid__container')
+  ) {
+    return
+  }
+  event.stopImmediatePropagation()
+  event.preventDefault()
+  cancelDrag()
+  setTimeout(() => {
+    shield.replaying = true
+    target.click()
+    shield.replaying = false
+  }, DRAG_CLICK_RELEASE)
 }
 
 export type HeldDrag = Awaited<ReturnType<typeof dragHold>>
@@ -358,6 +449,28 @@ export const expectPopupInCanvas = (
   expect(box.right).toBeLessThanOrEqual(frame.right)
 }
 
+/** Действие шага гайда (`stepAction`) дошло до состояния шага. */
+export const stepDone = (canvas: HTMLElement) =>
+  waitFor(
+    () => {
+      const root = canvas.querySelector<HTMLElement>('[data-guide-root]')!
+      expect(root).toHaveAttribute(
+        'data-step-action',
+        `done:${root.dataset.guideStep}`,
+      )
+    },
+    { timeout: STEP_ACTION_TIMEOUT },
+  )
+
+/** Перетаскивание с паузой над группой и ответом «сервера» — дольше загрузки. */
+const STEP_ACTION_TIMEOUT = 15_000
+
+/** Номер шага, на котором стоит гайд. */
+const currentGuideStep = (panel: HTMLElement) =>
+  [...panel.querySelectorAll('[data-testid="guide-steps"] ol > li')].findIndex(
+    item => item.getAttribute('aria-current') === 'step',
+  )
+
 /**
  * Шаг сценария (ADR 0117, §6): раскрыть панель сценария, нажать «Далее» и дождаться
  * смены шага — как человек. Переход на последний шаг выполняет и его (SN16).
@@ -374,6 +487,9 @@ export const guideNext = async (canvas: HTMLElement) => {
     '[data-testid="guide-next"]',
   )!
   await until(() => expect(next).toBeEnabled())
+  const from = currentGuideStep(panel)
   await userEvent.click(next)
+  // Клик может дойти не сразу: удерживающий шаг повторяет его (`shieldHeldDrag`).
+  await until(() => expect(currentGuideStep(panel)).not.toBe(from))
   await until(() => expect(panel).not.toHaveAttribute('data-busy'))
 }
