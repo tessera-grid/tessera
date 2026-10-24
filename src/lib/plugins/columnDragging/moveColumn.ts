@@ -77,7 +77,7 @@ export const applyNodeMove = (
   ;(table as MoveTable).setColumnOrder(() => next)
   // Колонка вспыхивает на новом месте, как строка (ADR 0114, §4).
   const nodes = nodeColumnIdsOf(active)
-  flashNode(table, nodes, 'arrival')
+  flashNode(table, nodes, 'arrived')
   const result = readPluginHooks<Partial<ColumnDraggingHooks>>(
     table as Parameters<typeof readPluginHooks>[0],
     'columnDragging',

@@ -24,7 +24,6 @@ import {
   rowExpanding,
   rowSelection,
 } from '../../../plugins'
-import { markArrivals } from '../../../plugins/rowExpanding/rowArrivals'
 import type {
   HighlightOptions,
   HighlightTarget,
@@ -756,7 +755,7 @@ describe('Подсветка и состояния строк', () => {
     )
   })
 
-  test('HL12: слои складываются; тинт выделения ячеек — поверх заливки; слой прихода — поверх всего', async () => {
+  test('HL12: слои складываются; тинт выделения ячеек — поверх заливки; вспышка итога — над подсветкой', async () => {
     await mount({ cells: true, tree: true })
     await act(() => {
       table.highlight({ row: 'r1' }, { tone: 'warning' })
@@ -795,8 +794,14 @@ describe('Подсветка и состояния строк', () => {
     const tinted = colorAt(selected, cellEl('r3', 'a'))
     expect(tinted[2]! - plain[2]!).toBeGreaterThan(3)
 
-    // Приход поверх подсветки — виден.
-    await act(() => markArrivals(table, ['r1']))
+    // Вспышка итога над подсветкой — видна (ADR 0134).
+    await act(() =>
+      (
+        table as unknown as {
+          flashOutcome: (target: { row: string }, outcome: string) => void
+        }
+      ).flashOutcome({ row: 'r1' }, 'arrived'),
+    )
     const arrived = await snapshot()
     expect(
       distance(
@@ -806,7 +811,7 @@ describe('Подсветка и состояния строк', () => {
     ).toBeGreaterThan(6)
   })
 
-  test('HL13: встроенные тоны отличимы по оттенку от выделения ячеек и прихода в обеих темах', async () => {
+  test('HL13: встроенные тоны отличимы по оттенку от выделения ячеек и вспышки arrived в обеих темах', async () => {
     await mount()
     await inBothThemes(async () => {
       const surface = toRgba(resolve('var(--tsr-sys-surface)'))
@@ -814,7 +819,7 @@ describe('Подсветка и состояния строк', () => {
         over(toRgba(resolve(`var(${token})`)), surface)
       const system = [
         solid('--tsr-comp-cell-selected-bg'),
-        solid('--tsr-comp-row-arrival-color'),
+        solid('--tsr-comp-flash-arrived-bg'),
       ]
       for (const tone of TONES) {
         const fill = solid(`--tsr-comp-highlight-${tone}-bg`)

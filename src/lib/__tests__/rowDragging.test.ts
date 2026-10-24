@@ -18,7 +18,8 @@ import {
   rowDragging,
 } from '../plugins/rowDragging'
 import { createExpandTimer } from '../plugins/rowDragging/expandTimer'
-import { markRowDrop } from '../plugins/rowDragging/rowDrops'
+import { commitRowMove } from '../plugins/rowDragging/commitRowMove'
+import { rowHighlightKey } from '../core/highlights/highlightFeature'
 import { __resetLogger } from '../core/logger'
 import { captureInertWarnings } from './inertWarnings'
 import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
@@ -333,23 +334,32 @@ describe('rowDragging — пауза над свёрнутой группой (A
   })
 })
 
-describe('rowDragging — отметки перестановки (ADR 0110)', () => {
-  it('LD5: отметка снимается по истечении времени прихода; повторная перестановка обновляет момент; срез highlights не меняется', () => {
+describe('rowDragging — вспышка перестановки (ADR 0110, ADR 0134)', () => {
+  it('LD5: перестановка пишет вспышку arrived строки в срез вспышек ядра; повторная перестановка перезапускает время; срез highlights не меняется', () => {
     vi.useFakeTimers({
       toFake: ['setTimeout', 'clearTimeout', 'performance'],
     })
     try {
       const { table } = build([])
       const highlights = table.atoms.highlights?.get()
-      // Без смонтированного грида время прихода — запасные 300 мс.
-      markRowDrop(table, '1')
-      expect(Object.keys(table.atoms.rowDrops.get())).toEqual(['1'])
+      const flash = () => table.atoms.flashes.get()[rowHighlightKey('1')]
+      const move = () =>
+        commitRowMove(
+          table,
+          { rowId: '1', dragIndex: 0, hoverIndex: 1, index: 1 },
+          undefined,
+        )
+      // Без смонтированного грида удержание и угасание — запасные 300 и 500 мс.
+      move()
+      expect(flash()?.outcome).toBe('arrived')
       vi.advanceTimersByTime(200)
-      markRowDrop(table, '1')
+      move()
       vi.advanceTimersByTime(200)
-      expect('1' in table.atoms.rowDrops.get(), 'момент обновлён').toBe(true)
+      expect(flash()?.out, 'время перезапущено').toBeUndefined()
       vi.advanceTimersByTime(100)
-      expect(table.atoms.rowDrops.get()).toEqual({})
+      expect(flash()?.out).toBe(true)
+      vi.advanceTimersByTime(500)
+      expect(flash()).toBeUndefined()
       expect(table.atoms.highlights?.get()).toBe(highlights)
     } finally {
       vi.useRealTimers()

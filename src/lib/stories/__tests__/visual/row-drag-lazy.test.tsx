@@ -509,13 +509,13 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     }
   })
 
-  test('CO16: при отказе строка подсвечивается тоном danger там, где оказалась — после отката на прежнем месте, без отката на новом', async () => {
-    const tone = (id: string) => rowById(id)?.getAttribute('data-highlight')
+  test('CO16: при отказе строка вспыхивает reverted там, где оказалась — после отката на прежнем месте, без отката на новом', async () => {
+    const tone = (id: string) => rowById(id)?.getAttribute('data-flash')
     const reverted = await renderTree({ asyncMove: true })
     try {
       await dropAfter('row-2', 'group-0', 0, 'row-0')
       await settleMoves(false, '')
-      await expect.poll(() => tone('row-2')).toBe('danger')
+      await expect.poll(() => tone('row-2')).toBe('reverted')
       expect(order().slice(-1)).toEqual(['row-2'])
     } finally {
       await reverted.unmount()
@@ -524,7 +524,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     try {
       await dropAfter('row-2', 'group-0', 0, 'row-0')
       await settleMoves(false, '')
-      await expect.poll(() => tone('row-2')).toBe('danger')
+      await expect.poll(() => tone('row-2')).toBe('reverted')
       expect(order().slice(-3)).toEqual(['row-2', 'row-0', 'row-1'])
       expect(harness.onRowOrderChange).toHaveBeenCalledTimes(1)
     } finally {

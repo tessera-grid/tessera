@@ -50,12 +50,12 @@ const announced = () =>
   [...document.querySelectorAll('[aria-live]')]
     .map(region => region.textContent)
     .join('|')
-/** Тон подсветки колонки на заголовке и на ячейке тела. */
-const tone = (id: string) => head(id).getAttribute('data-column-highlight')
+/** Итог вспышки колонки (ADR 0134) на заголовке и на ячейке тела. */
+const tone = (id: string) => head(id).getAttribute('data-column-flash')
 const bodyTone = (id: string) =>
   document
     .querySelector(`.data-grid__body-cell[data-column-id="${id}"]`)
-    ?.getAttribute('data-column-highlight') ?? null
+    ?.getAttribute('data-column-flash') ?? null
 const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
 const menuItem = (label: string) =>
   [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
@@ -127,6 +127,53 @@ const dragAfter = async (id: string, targetId: string) => {
 
 /** Группа «Info» шапки историй: подгруппа и листья, вспыхивающие с ней. */
 const GROUP_NODES = ['info', 'more-info', 'age', 'gender', 'visits']
+
+const ROW_HANDLE = '.drag__handler--column'
+const rowAt = (index: number) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-index="${index}"]`,
+  )!
+const rowById = (id: string) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${id}"]`,
+  )
+
+/** Переставить первую строку вниз с клавиатуры: Alt+Shift+↓ на её ячейке. */
+const moveRowDown = async () => {
+  const cell = rowAt(0).querySelector<HTMLElement>(
+    '.data-grid__body-cell[data-column-id="age"]',
+  )!
+  await userEvent.click(cell)
+  await userEvent.keyboard('{Alt>}{Shift>}{ArrowDown}{/Shift}{/Alt}')
+}
+
+/**
+ * Номера кадров, в которых впервые выполнились условия цели и кнопки после `trigger`:
+ * выборка по кадрам, как их видит пользователь.
+ */
+const framesOf = async (
+  target: () => boolean,
+  button: () => boolean,
+  trigger: () => void,
+) => {
+  const seen: { target?: number; button?: number } = {}
+  let frame = 0
+  let running = true
+  const sample = () => {
+    if (!running) return
+    frame++
+    if (seen.target === undefined && target()) seen.target = frame
+    if (seen.button === undefined && button()) seen.button = frame
+    requestAnimationFrame(sample)
+  }
+  requestAnimationFrame(sample)
+  trigger()
+  await expect
+    .poll(() => seen.target !== undefined && seen.button !== undefined)
+    .toBe(true)
+  running = false
+  return seen
+}
 
 /** Перенести группу на шаг влево из меню её ручки. */
 const moveGroupLeft = async (id: string) => {
@@ -291,27 +338,27 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('CO13: колонка после переноса — броском, с Alt+Shift+стрелками и из меню ручки — сразу вспыхивает слоем подсветки колонки тоном arrival; группа — целиком', async () => {
+  test('CO13: колонка после переноса — броском, с Alt+Shift+стрелками и из меню ручки — сразу вспыхивает arrived; группа — целиком', async () => {
     await withWideViewport(async () => {
       let screen = await renderGrid()
       try {
         const [a, b, c, d] = order()
         await dragAfter(a!, b!)
-        expect(tone(a!), 'мышь').toBe('arrival')
-        expect(bodyTone(a!), 'ячейки колонки').toBe('arrival')
+        expect(tone(a!), 'мышь').toBe('arrived')
+        expect(bodyTone(a!), 'ячейки колонки').toBe('arrived')
         expect(tone(b!), 'соседи не вспыхивают').toBeNull()
 
         head(c!).focus()
         await userEvent.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
         await expect
           .poll(() => tone(c!), { message: 'клавиатура' })
-          .toBe('arrival')
+          .toBe('arrived')
 
         await reveal(d!)
         await userEvent.click(handleOf(d!))
         await expect.poll(menu).toBeTruthy()
         await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
-        await expect.poll(() => tone(d!), { message: 'меню' }).toBe('arrival')
+        await expect.poll(() => tone(d!), { message: 'меню' }).toBe('arrived')
         await settleMoves()
         await expect.poll(() => tone(a!), { timeout: 4000 }).toBeNull()
         await screen.unmount()
@@ -319,7 +366,7 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         screen = await renderGrid({}, HeaderGroupsDraggingGrid)
         await moveGroupLeft('info')
         for (const id of GROUP_NODES) {
-          await expect.poll(() => tone(id), { message: id }).toBe('arrival')
+          await expect.poll(() => tone(id), { message: id }).toBe('arrived')
         }
         expect(tone('name'), 'сосед не вспыхивает').toBeNull()
       } finally {
@@ -328,14 +375,14 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('CO18: при отказе колонка подсвечивается тоном danger там, где оказалась — после отката на прежнем месте, без отката на новом; группа — целиком', async () => {
+  test('CO18: при отказе колонка вспыхивает reverted там, где оказалась — после отката на прежнем месте, без отката на новом; группа — целиком', async () => {
     await withWideViewport(async () => {
       let screen = await renderGrid()
       try {
         const [a, b] = order()
         await dragAfter(a!, b!)
         await settleMoves(false, new Error('no'))
-        await expect.poll(() => tone(a!)).toBe('danger')
+        await expect.poll(() => tone(a!)).toBe('reverted')
         await expect
           .poll(() => order().indexOf(a!), { message: 'откат' })
           .toBe(0)
@@ -345,7 +392,7 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         const [x, y] = order()
         await dragAfter(x!, y!)
         await settleMoves(false, new Error('no'))
-        await expect.poll(() => tone(x!)).toBe('danger')
+        await expect.poll(() => tone(x!)).toBe('reverted')
         expect(order().indexOf(x!), 'без отката').toBe(1)
         await screen.unmount()
 
@@ -353,8 +400,127 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await moveGroupLeft('info')
         await settleMoves(false, new Error('no'))
         for (const id of GROUP_NODES) {
-          await expect.poll(() => tone(id), { message: id }).toBe('danger')
+          await expect.poll(() => tone(id), { message: id }).toBe('reverted')
         }
+      } finally {
+        await screen.unmount()
+      }
+    })
+  })
+
+  test('OF16: перенос строки или колонки — выполненный промис колбэка даёт accepted на цели на её месте; группа колонок — целиком', async () => {
+    await withWideViewport(async () => {
+      let screen = await renderGrid()
+      try {
+        const [a, b] = order()
+        await dragAfter(a!, b!)
+        await settleMoves()
+        await expect.poll(() => tone(a!)).toBe('accepted')
+        expect(bodyTone(a!), 'ячейки колонки').toBe('accepted')
+        expect(order().indexOf(a!), 'на новом месте').toBe(1)
+        expect(tone(b!), 'сосед не вспыхивает').toBeNull()
+        await screen.unmount()
+
+        const rowMoves: Deferred[] = []
+        screen = await renderGrid(
+          {
+            onRowDragEnd: () =>
+              new Promise<void>((resolve, reject) =>
+                rowMoves.push({ resolve, reject }),
+              ),
+          },
+          HeaderGroupsDraggingGrid,
+        )
+        await moveGroupLeft('info')
+        await settleMoves()
+        for (const id of GROUP_NODES) {
+          await expect.poll(() => tone(id), { message: id }).toBe('accepted')
+        }
+        expect(tone('name'), 'сосед не вспыхивает').toBeNull()
+
+        const moved = rowAt(0).dataset.rowId!
+        await moveRowDown()
+        await expect.poll(() => rowMoves.length).toBe(1)
+        rowMoves[0]!.resolve()
+        await expect.poll(() => rowAt(1).dataset.rowId).toBe(moved)
+        await expect
+          .poll(() => rowAt(1).getAttribute('data-flash'))
+          .toBe('accepted')
+        expect(rowAt(0).hasAttribute('data-flash'), 'сосед').toBe(false)
+      } finally {
+        await screen.unmount()
+      }
+    })
+  })
+
+  test('OF17: reverted встроенного носителя — кнопки правки, ручки строки и колонки — начинается в том же кадре, что заполнение контура кнопки-инициатора', async () => {
+    await withWideViewport(async () => {
+      const rowMoves: Deferred[] = []
+      const edits: Deferred[] = []
+      const screen = await renderGrid(
+        {
+          onRowDragEnd: () =>
+            new Promise<void>((resolve, reject) =>
+              rowMoves.push({ resolve, reject }),
+            ),
+          enableCellEditing: true,
+          cellEditingCanEditCell: () => true,
+          onCellEdit: () =>
+            new Promise<void>((resolve, reject) =>
+              edits.push({ resolve, reject }),
+            ),
+        },
+        HeaderGroupsDraggingGrid,
+      )
+      try {
+        // Колонка: отказ переноса — вспышка заголовка и заполнение ручки.
+        await moveGroupLeft('info')
+        await expect.poll(() => moves.length).toBe(1)
+        const column = await framesOf(
+          () => tone('info') === 'reverted',
+          () => handleOf('info').getAttribute('data-error-flash') === 'on',
+          () => moves.splice(0)[0]!.reject(new Error('no')),
+        )
+        expect(column.target, 'колонка').toBe(column.button)
+
+        // Строка: отказ перестановки — вспышка строки и заполнение её ручки.
+        const moved = rowAt(0).dataset.rowId!
+        await moveRowDown()
+        await expect.poll(() => rowMoves.length).toBe(1)
+        const row = await framesOf(
+          () => rowById(moved)?.getAttribute('data-flash') === 'reverted',
+          () =>
+            rowById(moved)
+              ?.querySelector(ROW_HANDLE)
+              ?.getAttribute('data-error-flash') === 'on',
+          () => rowMoves[0]!.reject(new Error('no')),
+        )
+        expect(row.target, 'строка').toBe(row.button)
+
+        // Ячейка: отказ сохранения — вспышка ячейки и заполнение кнопки правки.
+        const cell = () =>
+          rowAt(2).querySelector<HTMLElement>(
+            '.data-grid__body-cell[data-column-id="age"]',
+          )!
+        await userEvent.hover(cell())
+        await expect
+          .poll(() => cell().querySelector('.cell__button button'))
+          .not.toBeNull()
+        await userEvent.click(
+          cell().querySelector<HTMLElement>('.cell__button button')!,
+        )
+        await expect.poll(() => cell().querySelector('input')).not.toBeNull()
+        await userEvent.keyboard('{Control>}a{/Control}77{Enter}')
+        await expect.poll(() => edits.length).toBe(1)
+        const edit = await framesOf(
+          () => cell().getAttribute('data-flash') === 'reverted',
+          () =>
+            cell()
+              .querySelector('.cell__button button')
+              ?.getAttribute('data-error-flash') === 'on',
+          () => edits[0]!.reject(new Error('no')),
+        )
+        expect(edit.target, 'ячейка').toBe(edit.button)
       } finally {
         await screen.unmount()
       }

@@ -27,14 +27,11 @@ import {
   type RowDragOverlayState,
 } from './types'
 
-/** Отметки перестановки (ADR 0110): строка → момент, строка вспыхивает. */
-export type RowDrops = Record<string, number>
 /** Отказы переноса: строка → номер попытки. */
 export type RowMoveFailed = Record<string, number>
 
 interface RowDraggingStateSlice {
   rowDragging: RowDragOverlayState
-  rowDrops: RowDrops
   rowMoves: RowMoves
   rowMoveFailed: RowMoveFailed
 }
@@ -43,7 +40,6 @@ interface RowDraggingOptions {
   /** Пауза над свёрнутой группой до её раскрытия, мс (ADR 0109). */
   rowDragExpandDelay?: number
   onRowDraggingChange?: (updater: Updater<RowDragOverlayState>) => void
-  onRowDropsChange?: (updater: Updater<RowDrops>) => void
   onRowMovesChange?: (updater: Updater<RowMoves>) => void
   onRowMoveFailedChange?: (updater: Updater<RowMoveFailed>) => void
 }
@@ -52,7 +48,6 @@ interface RowDraggingRowAPI {
 }
 interface RowDraggingTableAPI {
   setRowDragging: (updater: Updater<RowDragOverlayState>) => void
-  setRowDrops: (updater: Updater<RowDrops>) => void
   setRowMoves: (updater: Updater<RowMoves>) => void
   setRowMoveFailed: (updater: Updater<RowMoveFailed>) => void
 }
@@ -159,7 +154,6 @@ export const canDragRow = (row: DraggableRow): boolean => {
   return true
 }
 
-const NO_DROPS: RowDrops = {}
 const NO_MOVES: RowMoves = {}
 const NO_FAILS: RowMoveFailed = {}
 
@@ -184,14 +178,12 @@ const sliceSetter =
 export const rowDraggingFeature: TableFeature = {
   getInitialState: state => ({
     rowDragging: DEFAULT_ROW_DRAG_OVERLAY_STATE,
-    rowDrops: NO_DROPS,
     rowMoves: NO_MOVES,
     rowMoveFailed: NO_FAILS,
     ...state,
   }),
   getDefaultTableOptions: table => ({
     onRowDraggingChange: makeStateUpdater('rowDragging', table),
-    onRowDropsChange: makeStateUpdater('rowDrops', table),
     onRowMovesChange: makeStateUpdater('rowMoves', table),
     onRowMoveFailedChange: makeStateUpdater('rowMoveFailed', table),
   }),
@@ -221,25 +213,6 @@ export const rowDraggingFeature: TableFeature = {
             }
           ).atoms.rowDragging
           atom.set(functionalUpdate(updater, atom.get()))
-        },
-      },
-      table_setRowDrops: {
-        fn: (updater: Updater<RowDrops>) => {
-          const opts = table.options as {
-            onRowDropsChange?: (u: Updater<RowDrops>) => void
-          }
-          if (opts.onRowDropsChange) {
-            opts.onRowDropsChange(updater)
-            return
-          }
-          const atom = (
-            table as unknown as {
-              atoms: {
-                rowDrops?: { get: () => RowDrops; set: (v: RowDrops) => void }
-              }
-            }
-          ).atoms.rowDrops
-          atom?.set(functionalUpdate(updater, atom.get()))
         },
       },
       table_setRowMoves: {

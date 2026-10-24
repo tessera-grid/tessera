@@ -15,10 +15,9 @@ import { ENGLISH_LABELS } from '../core/localization'
 import { readPluginHooks } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 import { rowExpanding, rowGrouping } from '../plugins'
-import {
-  readLoadedChildren,
-  readRowArrivals,
-} from '../plugins/rowExpanding/lazyChildrenFeature'
+import { readLoadedChildren } from '../plugins/rowExpanding/lazyChildrenFeature'
+import { readFlashes } from '../core/flashes/flashFeature'
+import { parseTargetKey } from '../core/highlights/highlightFeature'
 import { toggleRowExpanded } from '../plugins/rowExpanding/toggleRowExpanded'
 import type { RowExpandingHooks } from '../plugins/rowExpanding'
 
@@ -44,6 +43,14 @@ const ROWS: Node[] = [
 const hasChildren = (row: { original: Node }) => (row.original.kids ?? 0) > 0
 
 let captured: any
+
+/** Вспышки `arrived` строк по id строки. */
+const arrivals = () =>
+  Object.fromEntries(
+    Object.entries(readFlashes(captured))
+      .filter(([, entry]) => entry.outcome === 'arrived')
+      .map(([key, entry]) => [parseTargetKey(key).rowId, entry]),
+  )
 let root: Root | undefined
 
 afterEach(() => {
@@ -286,7 +293,7 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     expect(coreRow('c').getIsExpanded()).toBe(false)
   })
 
-  it('RE43: синхронный массив из loadChildren и setLoadedChildren отметок прихода не дают', async () => {
+  it('RE43: синхронный массив из loadChildren и setLoadedChildren вспышки прихода не дают', async () => {
     const plugins = [
       rowExpanding({ hasChildren, loadChildren: () => [node('a1')] }),
     ]
@@ -296,11 +303,10 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     act(() => captured.setLoadedChildren('a', [node('a1'), node('a2')]))
     expect(childIds('a')).toEqual(['a1', 'a2'])
     await flush()
-    expect(readRowArrivals(captured)).toEqual({})
+    expect(readFlashes(captured)).toEqual({})
   })
 
-  it('RE44: отметку получают только id, которых не было в прошлом ответе; тот же набор — без новых отметок', async () => {
-    const now = vi.spyOn(performance, 'now').mockReturnValue(100)
+  it('RE44: вспышку arrived получают только id, которых не было в прошлом ответе; тот же набор — без новых вспышек', async () => {
     const loadChildren = vi
       .fn()
       .mockReturnValueOnce(Promise.resolve([node('a1')]))
@@ -309,21 +315,21 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     render({ plugins: [rowExpanding({ hasChildren, loadChildren })] })
     toggle('a')
     await flush()
-    expect(readRowArrivals(captured)).toEqual({ a1: 100 })
+    const first = arrivals()
+    expect(Object.keys(first)).toEqual(['a1'])
     toggle('a')
-    now.mockReturnValue(200)
-    toggle('a')
-    await flush()
-    expect(readRowArrivals(captured)).toEqual({ a1: 100, a2: 200 })
-    toggle('a')
-    now.mockReturnValue(300)
     toggle('a')
     await flush()
-    expect(readRowArrivals(captured)).toEqual({ a1: 100, a2: 200 })
-    now.mockRestore()
+    const second = arrivals()
+    expect(Object.keys(second)).toEqual(['a1', 'a2'])
+    expect(second.a1, 'a1 не вспыхнула заново').toBe(first.a1)
+    toggle('a')
+    toggle('a')
+    await flush()
+    expect(arrivals(), 'тот же набор').toEqual(second)
   })
 
-  it('RE51: отметки снимаются по истечении времени и у строк, ушедших из data', async () => {
+  it('RE51: вспышки прихода снимаются по истечении времени и у строк, ушедших из data', async () => {
     vi.useFakeTimers()
     const now = vi.spyOn(performance, 'now').mockReturnValue(0)
     try {
@@ -337,16 +343,18 @@ describe('Ленивые дети строк (ADR 0054)', () => {
       now.mockReturnValue(200)
       toggle('c')
       await act(() => vi.advanceTimersByTimeAsync(FRAME))
-      expect(readRowArrivals(captured)).toEqual({ a1: 0, c1: 200 })
+      expect(Object.keys(arrivals())).toEqual(['a1', 'c1'])
 
-      // Время a1 вышло (300 мс по умолчанию), c1 — ещё нет.
+      // Удержание и угасание a1 вышли (300 + 500 мс по умолчанию), c1 ещё гаснет.
       now.mockReturnValue(300)
       await act(() => vi.advanceTimersByTimeAsync(300))
-      expect(readRowArrivals(captured)).toEqual({ c1: 200 })
+      now.mockReturnValue(800)
+      await act(() => vi.advanceTimersByTimeAsync(500))
+      expect(Object.keys(arrivals())).toEqual(['c1'])
 
-      // c ушла из данных — её ответ и отметка ребёнка удалены.
+      // c ушла из данных — её ответ и вспышка ребёнка удалены.
       render({ plugins, data: [lazy[0]!] })
-      expect(readRowArrivals(captured)).toEqual({})
+      expect(arrivals()).toEqual({})
     } finally {
       now.mockRestore()
       vi.useRealTimers()

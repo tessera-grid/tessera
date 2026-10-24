@@ -5,7 +5,10 @@
  */
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
-import { flashMoved } from '../../core/moveFlash'
+import {
+  type FlashOutcome,
+  flashOutcome,
+} from '../../core/flashes/flashFeature'
 import { reportOutcome } from '../../core/debugActions'
 import { isThenable, rejectionText } from '../../core/thenable'
 
@@ -36,12 +39,17 @@ interface MoveTable {
 
 const NO_MOVES: ColumnMoves = {}
 
-/** Вспышка узла (ADR 0114, §4): заголовков группы и подгрупп и каждого листа. */
+/** Вспышка итога узла (ADR 0134): заголовков группы и подгрупп и каждого листа. */
 export const flashNode = (
   table: unknown,
   columns: readonly string[],
-  tone: 'arrival' | 'danger',
-) => columns.forEach(column => flashMoved(table, { column }, tone))
+  outcome: FlashOutcome,
+) =>
+  flashOutcome(
+    table,
+    columns.map(column => ({ column })),
+    outcome,
+  )
 
 export const readColumnMoves = (table: unknown): ColumnMoves =>
   (table as MoveTable).atoms.columnMoves?.get() ?? NO_MOVES
@@ -94,7 +102,7 @@ const reject = (
   if (table.options.columnDragRevertOnReject !== false) {
     table.setColumnOrder(prev => restoreBlock(prev, entry))
   }
-  flashNode(table, entry.nodes ?? entry.leaves, 'danger')
+  flashNode(table, entry.nodes ?? entry.leaves, 'reverted')
   table.setColumnMoveFailed?.(prev => ({ ...prev, [columnId]: entry.attempt }))
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(reason) ?? labels.moveColumnFailed
@@ -123,8 +131,10 @@ export const settleColumnMove = (
   t.setColumnMoves?.(prev => ({ ...prev, [columnId]: entry }))
   const settle = (ok: boolean, reason?: unknown) => {
     if (readColumnMoves(table)[columnId]?.attempt !== entry.attempt) return
-    if (ok) dropColumnMove(table, columnId)
-    else reject(t, columnId, entry, reason)
+    if (ok) {
+      dropColumnMove(table, columnId)
+      flashNode(table, entry.nodes ?? entry.leaves, 'accepted')
+    } else reject(t, columnId, entry, reason)
   }
   result.then(
     () => settle(true),

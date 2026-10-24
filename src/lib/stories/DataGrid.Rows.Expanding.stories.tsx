@@ -14,12 +14,15 @@ import { vrStates } from './__mocks__/catalog'
 import {
   bodyRow,
   consoleText,
+  guideNext,
   rowAt,
   settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { untilDone } from './__mocks__/cellGestures'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /** Раскрытие строк (ADR 0015, ADR 0054, ADR 0058): дерево, линии, плоские данные, ленивые дети. */
 const meta = {
@@ -298,5 +301,119 @@ export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
         updateArgs={updateArgs}
       />
     )
+  },
+}
+
+// --- ADR 0134 S3 ---------------------------------------------------------------------
+
+/** «Сервер» раскрытия: держит ответ, пока шаг ожидания на виду, затем отказывает. */
+const createExpandServer = () => {
+  let held = true
+  const waiting = new Set<(reason: Error) => void>()
+  const refusal = () => new Error('The server refused')
+  return {
+    hold: () => {
+      held = true
+    },
+    refuse: () => {
+      held = false
+      waiting.forEach(reject => reject(refusal()))
+      waiting.clear()
+    },
+    onExpandRow: (_row: unknown, expanding: boolean) =>
+      expanding
+        ? new Promise<void>((_, reject) => {
+            if (held) waiting.add(reject)
+            else reject(refusal())
+          })
+        : undefined,
+  }
+}
+
+const EXPAND_SERVER = createExpandServer()
+
+/** Первая строка с кнопкой раскрытия. */
+const expandableOf = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLElement>('.data-grid__body-row')]
+    .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+    .find(row => row.querySelector('.row-expand-button')) ?? null
+const toggleOf = (root: ParentNode) =>
+  expandableOf(root)?.querySelector<HTMLElement>('.row-expand-button') ?? null
+const expandPending = (root: ParentNode) =>
+  expandableOf(root)?.getAttribute('aria-busy') === 'true'
+
+const EXPAND_REJECTED: readonly GuideStoryStep[] = [
+  {
+    title: 'Раскрытие подтверждает сервер',
+    hint: 'Приложение подтверждает каждое раскрытие строки на сервере. Строки с детьми раскрываются кнопкой раскрытия.',
+  },
+  {
+    title: 'Раскрытие ждёт сервера',
+    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а кнопка раскрытия показывает ожидание ответа сервера.',
+    states: ['body.pending'],
+    enter: untilDone(expandPending, root => {
+      EXPAND_SERVER.hold()
+      toggleOf(root)?.click()
+    }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки, кнопка раскрытия залилась красным.',
+    immediate: true,
+    enter: untilDone(
+      root => expandableOf(root)?.getAttribute('data-flash') === 'reverted',
+      root => {
+        if (expandPending(root)) EXPAND_SERVER.refuse()
+        else {
+          EXPAND_SERVER.hold()
+          toggleOf(root)?.click()
+        }
+      },
+    ),
+  },
+]
+
+/** ADR 0134, S3: раскрытие с промисом отклонено — строка свёрнута обратно и вспыхивает. */
+export const ExpandingRejected: StoryObj<StoryProps> = {
+  name: 'Expand refused by the server',
+  parameters: { scenario: '0134/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ в раскрытии"
+      steps={EXPAND_REJECTED}
+      args={guideArgs(
+        {
+          enableRowExpanding: true,
+          dataNesting: 'nested',
+          columnCount: 6,
+          dataCount: 20,
+          onExpandRow: EXPAND_SERVER.onExpandRow as never,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EXPAND_REJECTED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(toggleOf(canvas)).not.toBeNull())
+      expect(expandableOf(canvas)).not.toHaveAttribute('data-expanded', 'true')
+    })
+    await step(EXPAND_REJECTED[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(expandPending(canvas)).toBe(true))
+      expect(expandableOf(canvas)).toHaveAttribute('data-expanded', 'true')
+      expect(toggleOf(canvas)).toHaveAttribute('aria-busy', 'true')
+    })
+    await step(EXPAND_REJECTED[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(expandableOf(canvas)).toHaveAttribute('data-flash', 'reverted'),
+      )
+      expect(expandableOf(canvas)).not.toHaveAttribute('data-expanded', 'true')
+      expect(toggleOf(canvas)).toHaveAttribute('data-error-flash')
+      await settle()
+    })
   },
 }

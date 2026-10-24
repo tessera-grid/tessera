@@ -2,6 +2,7 @@ import type { Row } from '../../types'
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
 import { reportOutcome } from '../../core/debugActions'
+import { flashOutcome } from '../../core/flashes/flashFeature'
 import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
@@ -103,6 +104,8 @@ export const toggleRowExpanded = (
     }
     if (!(lazy && row.id in readLoadedChildren(table))) {
       row.toggleExpanded(false)
+      // Строка свёрнута обратно — в том же кадре, что отказ на переключателе.
+      flashOutcome(table, { row: row.id }, 'reverted')
     }
     markExpandFailed(table, row.id, attempt)
     const labels = announcerLabels(table) ?? DEFAULT_LABELS

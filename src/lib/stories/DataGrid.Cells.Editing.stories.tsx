@@ -250,7 +250,7 @@ const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер сохранил',
-    hint: 'Сервер принял значение. Ожидание снято, ячейка коротко подсвечивается.',
+    hint: 'Сервер принял значение. Ожидание снято, ячейка коротко вспыхивает тоном успеха.',
     immediate: true,
     enter: untilDone(
       root =>
@@ -263,7 +263,7 @@ const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Пользователь сохранил ещё одно значение, но сервер его отклонил. В ячейке снова значение из данных, кнопка правки отмечена отказом.',
+    hint: 'Пользователь сохранил ещё одно значение, но сервер его отклонил. В ячейке снова значение из данных, ячейка коротко вспыхивает тоном ошибки, кнопка правки отмечена отказом.',
     states: ['body.error'],
     enter: untilDone(root => failed(root, SERVER_ROW), reachRefusal),
   },
@@ -317,15 +317,21 @@ export const EditingServer: StoryObj<StoryProps> = {
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(false))
       expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
       expect(consoleText()).toContain('onCellEdit')
-      // Значок кнопки возвращается из приглушённого цвета ожидания переходом; подсветка
-      // сохранения держится атрибутом и дольше — шаг смотрят после перехода.
+      expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
+        'data-flash',
+        'accepted',
+      )
+      // Значок кнопки возвращается из приглушённого цвета ожидания переходом.
       await settle()
-      expect(
-        ageCellOf(canvas, SERVER_ROW)!.querySelector('[data-saved]'),
-      ).not.toBeNull()
     })
     await step(EDIT_SERVER_STEPS[2]!.title, async () => {
       await guideNext(canvas)
+      await until(() =>
+        expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
+          'data-flash',
+          'reverted',
+        ),
+      )
       // Отметка отказа проявляется после вспышки.
       await until(() =>
         expect(
@@ -344,6 +350,110 @@ export const EditingServer: StoryObj<StoryProps> = {
       expect(
         ageCellOf(canvas, SERVER_ROW)!.querySelector('[role="alert"]'),
       ).toHaveTextContent(REFUSAL)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0134 S1 ---------------------------------------------------------------------
+
+const AWAY_SERVER = createEditServer()
+const AWAY_ROW = 'item-id-1'
+const OTHER_ROW = 'item-id-3'
+const AWAY_AGE = '77'
+const OTHER_AGE = '5'
+
+/** Первое значение ждёт сервера, а в другой строке открыта правка с черновиком. */
+const reachAway = (root: HTMLElement) => {
+  if (!pending(root, AWAY_ROW) && !failed(root, AWAY_ROW)) {
+    AWAY_SERVER.hold()
+    save(root, AWAY_ROW, AWAY_AGE)
+  } else draft(root, OTHER_ROW, OTHER_AGE)
+}
+
+const AWAY: readonly GuideStoryStep[] = [
+  {
+    title: 'Значение отправлено на сервер',
+    hint: 'Пользователь сохранил новый возраст, и приложение отправило его на сервер. Пока сервер не ответил, кнопка правки показывает ожидание.',
+    states: ['body.pending'],
+    enter: untilDone(
+      root => pending(root, AWAY_ROW),
+      root => {
+        AWAY_SERVER.hold()
+        save(root, AWAY_ROW, AWAY_AGE)
+      },
+    ),
+  },
+  {
+    title: 'Правка другой ячейки',
+    hint: 'Не дожидаясь ответа, пользователь открыл правку возраста в другой строке и набрал число.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => pending(root, AWAY_ROW) && hasDraft(root, OTHER_ROW, OTHER_AGE),
+      reachAway,
+    ),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер отклонил первое значение. Его ячейка вернулась к значению из данных и коротко вспыхнула тоном ошибки, кнопка правки отмечена отказом, а правка в другой строке продолжается.',
+    immediate: true,
+    enter: untilDone(
+      root => failed(root, AWAY_ROW) && hasDraft(root, OTHER_ROW, OTHER_AGE),
+      root =>
+        pending(root, AWAY_ROW) && hasDraft(root, OTHER_ROW, OTHER_AGE)
+          ? AWAY_SERVER.answer(false)
+          : reachAway(root),
+    ),
+  },
+]
+
+/** ADR 0134, S1: сервер отказал в сохранении, а пользователь уже правит другую ячейку. */
+export const EditingRevertedWhileAway: StoryObj<StoryProps> = {
+  name: 'Refused while editing another cell',
+  parameters: { scenario: '0134/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ, пока идёт другая правка"
+      steps={AWAY}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableKeyboardNavigation: true,
+          columnCount: 6,
+          dataCount: 10,
+          onCellEdit: AWAY_SERVER.save,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let original = ''
+    await step(AWAY[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(pending(canvas, AWAY_ROW)).toBe(true))
+      expect(ageText(canvas, AWAY_ROW)).toBe(AWAY_AGE)
+      original = String(getData(10).find(row => row.id === AWAY_ROW)?.age ?? '')
+    })
+    await step(AWAY[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(inputOf(canvas, OTHER_ROW)?.value).toBe(OTHER_AGE),
+      )
+      expect(pending(canvas, AWAY_ROW)).toBe(true)
+    })
+    await step(AWAY[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(ageCellOf(canvas, AWAY_ROW)).toHaveAttribute(
+          'data-flash',
+          'reverted',
+        ),
+      )
+      expect(ageText(canvas, AWAY_ROW)).toBe(original)
+      await until(() => expect(failed(canvas, AWAY_ROW)).toBe(true))
+      expect(inputOf(canvas, OTHER_ROW)?.value).toBe(OTHER_AGE)
       await settle()
     })
   },

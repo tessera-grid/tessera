@@ -570,7 +570,7 @@ describe('Движение строк (ADR 0107)', () => {
       () => ({
         leaf: topOf(rowById('leaf')!),
         child: rowById('lazy-c0') && opacityOf(rowById('lazy-c0')!),
-        arrived: !!document.querySelector(`${BODY_ROW}[data-arrived]`),
+        arrived: !!document.querySelector(`${BODY_ROW}[data-flash="arrived"]`),
       }),
       () =>
         resolve([
@@ -1083,16 +1083,16 @@ const holdFirstOverFourth = async () => {
   return first.dataset.rowId!
 }
 
-/** Слой вспышки строки виден цветом прихода. */
-const flashing = (row: HTMLElement) => {
-  const layer = getComputedStyle(row, '::after')
-  return (
-    row.hasAttribute('data-arrived') &&
-    Number(layer.opacity) === 1 &&
-    layer.backgroundColor ===
-      resolveColor(row, 'var(--tsr-comp-row-arrival-color)')
-  )
-}
+/** Заливка вспышки строки — тон `arrived` в полную силу (ADR 0134). */
+const rowFlashFill = (row: HTMLElement) =>
+  resolveColor(row, getComputedStyle(row).getPropertyValue('--tsr-flash-row'))
+const arrivedFill = (row: HTMLElement) =>
+  resolveColor(row, 'var(--tsr-comp-flash-arrived-bg)')
+const flashing = (row: HTMLElement) =>
+  row.getAttribute('data-flash') === 'arrived' &&
+  !row.hasAttribute('data-flash-out') &&
+  rowFlashFill(row) === arrivedFill(row)
+const flashed = (row: HTMLElement) => row.hasAttribute('data-flash')
 
 describe('Приземление перестановки вспышкой (ADR 0110)', () => {
   test('LD1: бросок мышью — облако пропадает в кадре отпускания, без полёта и угасания, с движением строк и без него; строка в том же кадре на новом месте', async () => {
@@ -1124,7 +1124,7 @@ describe('Приземление перестановки вспышкой (ADR 
     }
   })
 
-  test('LD2: брошенная строка вспыхивает слоем прихода, держится время прихода и гаснет; соседи не вспыхивают', async () => {
+  test('LD2: брошенная строка вспыхивает arrived, держится время вспышки и гаснет; соседи не вспыхивают', async () => {
     await render(<composed.RowDraggingPlayground />)
     const movedId = await holdFirstOverFourth()
     await pointer.realMouseUp()
@@ -1132,9 +1132,9 @@ describe('Приземление перестановки вспышкой (ADR 
     expect(flashing(rowById(movedId)!)).toBe(true)
     const others = rowsTopDown().filter(row => row.dataset.rowId !== movedId)
     for (const row of others)
-      expect(row.hasAttribute('data-arrived'), row.dataset.rowId).toBe(false)
+      expect(flashed(row), row.dataset.rowId).toBe(false)
     await expect
-      .poll(() => rowById(movedId)!.hasAttribute('data-arrived'), {
+      .poll(() => flashed(rowById(movedId)!), {
         timeout: 2000,
       })
       .toBe(false)
@@ -1150,7 +1150,7 @@ describe('Приземление перестановки вспышкой (ADR 
     await userEvent.keyboard('{Alt>}{Shift>}{ArrowDown}{/Shift}{/Alt}')
     await expect.poll(() => flashing(rowById(firstId)!)).toBe(true)
     await expect
-      .poll(() => rowById(firstId)!.hasAttribute('data-arrived'), {
+      .poll(() => flashed(rowById(firstId)!), {
         timeout: 2000,
       })
       .toBe(false)
@@ -1172,12 +1172,7 @@ describe('Приземление перестановки вспышкой (ADR 
       const movedId = await holdFirstOverFourth()
       await pointer.realMouseUp()
       await expect.poll(() => document.querySelector(SLOT)).toBeNull()
-      expect(rowById(movedId)!.hasAttribute('data-arrived')).toBe(true)
-      expect(
-        getComputedStyle(rowById(movedId)!, '::after').backgroundColor,
-      ).toBe(
-        resolveColor(rowById(movedId)!, 'var(--tsr-comp-row-arrival-color)'),
-      )
+      expect(flashing(rowById(movedId)!)).toBe(true)
     }
     let screen = await render(
       <composed.RowDraggingPlayground enableRowAnimation={false} />,

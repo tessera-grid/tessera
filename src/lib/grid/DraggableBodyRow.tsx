@@ -34,8 +34,7 @@ const transformAt = (y: number) => `translate3d(0px, ${y}px, 0px)`
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived, highlight, flash, moving, movePending } =
-    useRowStateSubscription(row)
+  const { highlight, flash, moving, movePending } = useRowStateSubscription(row)
   // Предикат `canDragRow` с новой ссылкой (ADR 0039, RX23) включает ручку строки мимо мемоизации.
   usePluginRenderVersion()
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
@@ -131,7 +130,6 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
-      data-arrived={arrived || undefined}
       {...highlighted.attrs}
       {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}

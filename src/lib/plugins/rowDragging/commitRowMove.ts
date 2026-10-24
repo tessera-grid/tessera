@@ -21,8 +21,7 @@ import {
 import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
 import type { RowMoveFailed } from './rowDraggingFeature'
-import { flashMoved } from '../../core/moveFlash'
-import { markRowDrop } from './rowDrops'
+import { flashOutcome } from '../../core/flashes/flashFeature'
 import type { RowDraggingHooks } from './types'
 
 type Updater<T> = (prev: T) => T
@@ -168,7 +167,7 @@ export const writeTarget = (
   return true
 }
 
-/** Промис выполнен: ленивый перенос пишется, без ответа цели — ждёт его. */
+/** Перенос записан: ленивый пишется, без ответа цели — ждёт его. */
 const confirm = (table: MoveTable, rowId: string, entry: RowMoveEntry) => {
   const move = entry.lazy
   if (!move) {
@@ -189,7 +188,7 @@ const confirm = (table: MoveTable, rowId: string, entry: RowMoveEntry) => {
 /**
  * Отказ (ADR 0114, §4): при `revertOnReject` ленивый перенос снимается, обычный —
  * откатывается в `data` по id; без отката ленивый записывается, как при успехе. Ручка
- * вспыхивает, строка подсвечивается `danger` там, где оказалась, отказ объявляется.
+ * вспыхивает, строка — `reverted` там, где оказалась (ADR 0134), отказ объявляется.
  */
 const reject = (
   table: MoveTable,
@@ -214,7 +213,7 @@ const reject = (
       original: commit.original,
     })
   }
-  flashMoved(table, { row: rowId }, 'danger')
+  flashOutcome(table, { row: rowId }, 'reverted')
   table.setRowMoveFailed?.(prev => ({ ...prev, [rowId]: entry.attempt }))
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(reason) ?? labels.moveRowFailed
@@ -226,7 +225,7 @@ let lastAttempt = 0
 
 /**
  * Перенос сделан: обычный пишется в `data`, ленивый становится стадией модели; строка
- * вспыхивает (ADR 0110), колбэк получает место после переноса. Промис колбэка — ожидание
+ * вспыхивает `arrived` (ADR 0110, ADR 0134), колбэк получает место после переноса. Промис колбэка — ожидание
  * на ручке, его итог — запись ленивого переноса или отказ (ADR 0112, §3).
  */
 export const commitRowMove = (
@@ -248,7 +247,7 @@ export const commitRowMove = (
       })
     } else commit.write?.()
   }
-  markRowDrop(table, rowId)
+  flashOutcome(table, { row: rowId }, 'arrived')
   const result = onRowDragEnd?.({
     rowId,
     dragIndex: commit.dragIndex,
@@ -274,6 +273,7 @@ export const commitRowMove = (
     }
     if (ok) {
       confirm(t, rowId, entry)
+      flashOutcome(table, { row: rowId }, 'accepted')
     } else {
       reject(t, commit, entry, reason)
     }

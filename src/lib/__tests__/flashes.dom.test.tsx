@@ -10,6 +10,8 @@ import { createRoot, type Root } from 'react-dom/client'
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { definePlugin } from '../core/definePlugin'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
@@ -317,5 +319,41 @@ describe('Вспышка итога: перерисовка только цел�
       rowsRoot.unmount()
       cellsRoot.unmount()
     })
+  })
+})
+
+describe('Вспышка итога: токены темы', () => {
+  it('OF19: токены --tsr-comp-flash-* — в трёх уровнях темы; токенов --tsr-comp-row-arrival-*, --tsr-comp-cell-saved-* и --tsr-comp-highlight-arrival-bg в теме нет', () => {
+    const css = readFileSync(
+      join(process.cwd(), 'src/lib/core/themeVariables/theme.css'),
+      'utf8',
+    )
+    const declared = new Map(
+      [...css.matchAll(/(--tsr-comp-flash-[a-z-]+)\s*:\s*([^;]+);/g)].map(
+        match => [match[1]!, match[2]!],
+      ),
+    )
+    expect([...declared.keys()].sort()).toEqual([
+      '--tsr-comp-flash-accepted-bg',
+      '--tsr-comp-flash-arrived-bg',
+      '--tsr-comp-flash-duration',
+      '--tsr-comp-flash-fade-duration',
+      '--tsr-comp-flash-reverted-bg',
+    ])
+    // Компонентный уровень ссылается на системный и компонентный, не на опорный.
+    const refs = [...declared.values()].flatMap(value =>
+      [...value.matchAll(/var\(\s*(--[a-z0-9-]+)/g)].map(match => match[1]!),
+    )
+    expect(refs.length).toBeGreaterThan(0)
+    expect(
+      refs.filter(
+        ref => !ref.startsWith('--tsr-sys-') && !ref.startsWith('--tsr-comp-'),
+      ),
+    ).toEqual([])
+    expect(
+      css.match(
+        /--tsr-comp-(row-arrival-[a-z-]+|cell-saved-[a-z-]+|highlight-arrival-bg)/g,
+      ),
+    ).toBeNull()
   })
 })

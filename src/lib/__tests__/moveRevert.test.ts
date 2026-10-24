@@ -30,7 +30,7 @@ const rowTable = (data: Item[], answers: Record<string, Item[]> = {}) => {
   const atoms = {
     rowMoves: atom<RowMoves>({}),
     rowMoveFailed: atom<Record<string, number>>({}),
-    rowDrops: atom<Record<string, number>>({}),
+    flashes: atom<Record<string, unknown>>({}),
     loadedChildren: atom<Record<string, readonly unknown[]>>(answers),
   }
   const table = {
@@ -44,8 +44,8 @@ const rowTable = (data: Item[], answers: Record<string, Item[]> = {}) => {
       }),
     },
     getRowId: (item: Item) => item.id,
-    setRowDrops: (updater: (prev: Record<string, number>) => any) =>
-      atoms.rowDrops.set(updater(atoms.rowDrops.get())),
+    setFlashes: (updater: (prev: Record<string, unknown>) => any) =>
+      atoms.flashes.set(updater(atoms.flashes.get())),
     setRowMoves: (updater: (prev: RowMoves) => RowMoves) =>
       atoms.rowMoves.set(updater(atoms.rowMoves.get())),
     setRowMoveFailed: (updater: (prev: Record<string, number>) => any) =>

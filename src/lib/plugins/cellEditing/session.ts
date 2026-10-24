@@ -21,7 +21,7 @@ import {
   setPluginState,
 } from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
-import { dropCellSaved, markCellSaved, readCellSaved } from './cellSavedFeature'
+import { flashOutcome } from '../../core/flashes/flashFeature'
 import type {
   CellEditingHooks,
   CellEditingState,
@@ -256,13 +256,15 @@ const settleSubmitted = (
   if (outcome.ok) {
     delete submitted[key]
     writeEditingState(table, { ...state, submitted })
-    markCellSaved(table, key)
+    flashOutcome(table, { cell: [entry.rowId, entry.columnId] }, 'accepted')
     return
   }
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(outcome.reason) ?? labels.saveFailed
   submitted[key] = { ...entry, status: 'error', error }
   writeEditingState(table, { ...state, submitted })
+  // Значение в ячейке вернулось к данным — в том же кадре, что отказ на кнопке правки.
+  flashOutcome(table, { cell: [entry.rowId, entry.columnId] }, 'reverted')
   announceLabel(table, all =>
     all.announceSaveFailed(columnNameOf(table, entry.columnId), error),
   )
@@ -403,23 +405,6 @@ const reconcileSubmitted = (
   }
 }
 
-/** Отметки сохранения ушедших ячеек и выключенного плагина снимаются (ADR 0057, §3). */
-const reconcileSaved = (table: ReconcileTable, enabled: boolean) => {
-  const keys = Object.keys(readCellSaved(table))
-  if (keys.length === 0) {
-    return
-  }
-  dropCellSaved(
-    table,
-    enabled
-      ? keys.filter(key => {
-          const [rowId, columnId] = key.split(KEY_SEPARATOR) as [string, string]
-          return !hasCell(table, { rowId, columnId })
-        })
-      : keys,
-  )
-}
-
 /**
  * Согласование с таблицей после рендера. Активная сессия: строка или колонка ушла —
  * `unavailable`; плагин выключен или `canEditCell` запретил ячейку — `revoke`. Ячейка вне
@@ -433,7 +418,6 @@ export const reconcileEditSession = (
   const cellHooks = hooks as Partial<CellEditingHooks>
   const t = table as ReconcileTable
   reconcileSubmitted(t, enabled, cellHooks)
-  reconcileSaved(t, enabled)
   const session = readEditSession(table)
   if (!session) {
     return

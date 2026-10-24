@@ -4,9 +4,9 @@
  * модели на пачку.
  */
 import { announceLabel } from '../../core/announcer'
+import { flashOutcome } from '../../core/flashes/flashFeature'
 import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
-import { markArrivals } from './rowArrivals'
 
 export interface BatchTable {
   store: object
@@ -68,7 +68,11 @@ const apply = (table: BatchTable, answers: readonly Answer[]) => {
     count += after.length
     return after.filter(id => !before[i]!.has(id))
   })
-  markArrivals(table, arrived)
+  flashOutcome(
+    table,
+    arrived.map(row => ({ row })),
+    'arrived',
+  )
   announceLabel(table, all => all.announceChildrenLoaded(count))
 }
 

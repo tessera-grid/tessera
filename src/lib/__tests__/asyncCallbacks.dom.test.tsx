@@ -17,9 +17,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { TesseraFeatureEntry } from '../core/features'
 import { useCreateTable } from '../core/useCreateTable'
 import { cellEditing, rowExpanding } from '../plugins'
-import { readCellSaved } from '../plugins/cellEditing/cellSavedFeature'
+import { readFlashes } from '../core/flashes/flashFeature'
+import { targetKey } from '../core/highlights/highlightFeature'
 import {
-  cellKey,
   commitEditSession,
   startEditSession,
 } from '../plugins/cellEditing/session'
@@ -341,10 +341,12 @@ describe('асинхронный контракт бизнес-колбэков'
     expect(await expandWith('resolve')).toEqual([true, false])
   })
 
-  it('CF7: отметки сохранения снимаются по истечении времени, у строк, ушедших из данных, и при выключении плагина', async () => {
-    vi.useFakeTimers()
-    const now = vi.spyOn(performance, 'now').mockReturnValue(0)
-    const onCellEdit = () => Promise.resolve()
+  it('CF7: итог сохранения с промисом — вспышка ячейки в срезе вспышек ядра: успех — accepted, отказ — reverted; своего среза отметок у плагина нет', async () => {
+    const answers: Array<() => Promise<void>> = [
+      () => Promise.resolve(),
+      () => Promise.reject(new Error('down')),
+    ]
+    const onCellEdit = () => answers.shift()!()
     const save = (rowId: string) => {
       act(() =>
         startEditSession(captured, captured.getRow(rowId), { id: 'name' }),
@@ -358,38 +360,15 @@ describe('асинхронный контракт бизнес-колбэков'
         ),
       )
     }
-    try {
-      render({ plugins: [cellEditing({ onCellEdit })] })
-      save('1')
-      await act(() => vi.advanceTimersByTimeAsync(0))
-      now.mockReturnValue(200)
-      save('2')
-      await act(() => vi.advanceTimersByTimeAsync(0))
-      expect(readCellSaved(captured)).toEqual({
-        [cellKey('1', 'name')]: 0,
-        [cellKey('2', 'name')]: 200,
-      })
-
-      // Время первой вышло (300 мс по умолчанию), второй — ещё нет.
-      now.mockReturnValue(300)
-      await act(() => vi.advanceTimersByTimeAsync(300))
-      expect(readCellSaved(captured)).toEqual({ [cellKey('2', 'name')]: 200 })
-
-      // Строка 2 ушла из данных — её отметка снята.
-      render({ plugins: [cellEditing({ onCellEdit })], data: [rows[0]!] })
-      expect(readCellSaved(captured)).toEqual({})
-
-      // Плагин выключен — сняты все.
-      render({ plugins: [cellEditing({ onCellEdit })] })
-      save('1')
-      await act(() => vi.advanceTimersByTimeAsync(0))
-      expect(Object.keys(readCellSaved(captured))).toHaveLength(1)
-      render({ plugins: [cellEditing({ onCellEdit, enabled: false })] })
-      expect(readCellSaved(captured)).toEqual({})
-    } finally {
-      now.mockRestore()
-      vi.useRealTimers()
-    }
+    const outcomeOf = (rowId: string) =>
+      readFlashes(captured)[targetKey({ cell: [rowId, 'name'] })]?.outcome
+    render({ plugins: [cellEditing({ onCellEdit })] })
+    save('1')
+    save('2')
+    await act(async () => {})
+    expect(outcomeOf('1')).toBe('accepted')
+    expect(outcomeOf('2')).toBe('reverted')
+    expect(Object.keys(captured.store.get())).not.toContain('cellSaved')
   })
 })
 

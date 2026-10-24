@@ -1,8 +1,7 @@
 /**
  * Ленивые дети строк (ADR 0054): срез `loadedChildren` — последний ответ
  * `loadChildren` по id строки, срез `rowExpandFailed` — номер последней неудачной
- * попытки (ключ вспышки тоггла), срез `rowArrivals` — момент прихода новых детей
- * (ADR 0056). Методы таблицы `setLoadedChildren` /
+ * попытки (ключ вспышки тоггла). Методы таблицы `setLoadedChildren` /
  * `resetLoadedChildren` — для приложения.
  */
 import {
@@ -15,18 +14,14 @@ import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 export type LoadedChildren = Record<string, readonly unknown[]>
 export type RowExpandFailed = Record<string, number>
-/** Момент прихода строки (`performance.now()`) по её id. */
-export type RowArrivals = Record<string, number>
 
 interface LazyChildrenStateSlice {
   loadedChildren: LoadedChildren
   rowExpandFailed: RowExpandFailed
-  rowArrivals: RowArrivals
 }
 interface LazyChildrenOptions {
   onLoadedChildrenChange?: (updater: Updater<LoadedChildren>) => void
   onRowExpandFailedChange?: (updater: Updater<RowExpandFailed>) => void
-  onRowArrivalsChange?: (updater: Updater<RowArrivals>) => void
 }
 export interface LazyChildrenTableAPI<TData = unknown> {
   /**
@@ -68,7 +63,6 @@ export interface LazyTable {
   atoms: {
     loadedChildren?: Atom<LoadedChildren>
     rowExpandFailed?: Atom<RowExpandFailed>
-    rowArrivals?: Atom<RowArrivals>
     expanded?: { get: () => unknown }
   }
   options: LazyChildrenOptions
@@ -76,12 +70,11 @@ export interface LazyTable {
   updateLazySlice: (key: LazySliceKey, updater: Updater<unknown>) => void
 }
 
-type LazySliceKey = 'loadedChildren' | 'rowExpandFailed' | 'rowArrivals'
+type LazySliceKey = 'loadedChildren' | 'rowExpandFailed'
 
 const HANDLERS = {
   loadedChildren: 'onLoadedChildrenChange',
   rowExpandFailed: 'onRowExpandFailedChange',
-  rowArrivals: 'onRowArrivalsChange',
 } as const
 
 const EMPTY = {}
@@ -101,12 +94,6 @@ export const setLoadedAnswer = (
   table: unknown,
   updater: Updater<LoadedChildren>,
 ) => writeSlice(table as LazyTable, 'loadedChildren', updater)
-
-export const readRowArrivals = (table: unknown): RowArrivals =>
-  (table as LazyTable).atoms.rowArrivals?.get() ?? EMPTY
-
-export const setRowArrivals = (table: unknown, updater: Updater<RowArrivals>) =>
-  writeSlice(table as LazyTable, 'rowArrivals', updater)
 
 export const markExpandFailed = (
   table: unknown,
@@ -134,13 +121,11 @@ export const rowExpandingLazyFeature: TableFeature = {
   getInitialState: state => ({
     loadedChildren: EMPTY,
     rowExpandFailed: EMPTY,
-    rowArrivals: EMPTY,
     ...state,
   }),
   getDefaultTableOptions: table => ({
     onLoadedChildrenChange: makeStateUpdater('loadedChildren', table),
     onRowExpandFailedChange: makeStateUpdater('rowExpandFailed', table),
-    onRowArrivalsChange: makeStateUpdater('rowArrivals', table),
   }),
   constructTableAPIs: table => {
     const lazy = table as unknown as LazyTable

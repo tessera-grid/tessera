@@ -363,10 +363,14 @@ const anyBusy = (root: ParentNode) =>
 const movedRight = (root: ParentNode, id: string) =>
   indexOf(root, id) > INITIAL.indexOf(id)
 
-const rejected = (root: ParentNode, id: string) =>
-  root
-    .querySelector(`${HEAD}[data-column-id="${id}"]`)
-    ?.getAttribute('data-column-highlight') === 'danger'
+/** Сервер отказал в переносе колонки: вспышка отказа или отметка на ручке. */
+const rejected = (root: ParentNode, id: string) => {
+  const head = root.querySelector(`${HEAD}[data-column-id="${id}"]`)
+  return (
+    head?.getAttribute('data-column-flash') === 'reverted' ||
+    !!head?.querySelector(`${HANDLE} [data-failure-indicator]`)
+  )
+}
 
 /**
  * Довести таблицу до состояния шага: колонки `saved` переставлены и сохранены; колонка
@@ -428,18 +432,18 @@ const COLUMN_SERVER: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер сохранил',
-    hint: 'Сервер ответил. Ожидание закончилось, колонка осталась на новом месте.',
+    hint: 'Сервер ответил. Ожидание закончилось, колонка осталась на новом месте и коротко вспыхнула тоном успеха.',
     enter: afterRows(serverStep({ saved: ['country'] })),
   },
   {
     title: 'Отказ сервера',
-    hint: 'Пользователь переставил другую колонку, но сервер отказал. Колонка вернулась к прежним соседям, ручка отмечена ошибкой, а сама колонка подсвечена.',
+    hint: 'Пользователь переставил другую колонку, но сервер отказал. Колонка вернулась к прежним соседям, ручка отмечена ошибкой, а сама колонка коротко вспыхнула тоном ошибки.',
     states: ['drag.rejected'],
     enter: afterRows(serverStep({ saved: ['country'], refused: 'lastName' })),
   },
   {
     title: 'Отказ без отката',
-    hint: 'Приложение не возвращает колонку при отказе. Отклонённая колонка остаётся там, куда её переставили, с отметкой ошибки и подсветкой.',
+    hint: 'Приложение не возвращает колонку при отказе. Отклонённая колонка остаётся там, куда её переставили, с отметкой ошибки, и коротко вспыхивает тоном ошибки.',
     props: () => ({ columnDraggingRevertOnReject: false }),
     enter: afterRows(serverStep({ saved: ['country'], refused: 'age' })),
   },
@@ -497,6 +501,10 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
         expect(handle('country')).not.toHaveAttribute('aria-busy'),
       )
       await expect(headOrder(canvas)).toEqual(placed)
+      await expect(head('country')).toHaveAttribute(
+        'data-column-flash',
+        'accepted',
+      )
     })
     await step(COLUMN_SERVER[3]!.title, async () => {
       const before = headOrder(canvas)
@@ -507,8 +515,8 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       )
       await waitFor(() => expect(headOrder(canvas)).toEqual(before), slow)
       await expect(head('lastName')).toHaveAttribute(
-        'data-column-highlight',
-        'danger',
+        'data-column-flash',
+        'reverted',
       )
       await releaseFocus()
     })
@@ -516,7 +524,7 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       holdErrorFlash(canvas, false)
       await guideNext(canvas)
       await until(() =>
-        expect(head('age')).toHaveAttribute('data-column-highlight', 'danger'),
+        expect(head('age')).toHaveAttribute('data-column-flash', 'reverted'),
       )
       await expect(movedRight(canvas, 'age')).toBe(true)
       await waitFor(

@@ -65,8 +65,6 @@ interface BodyRowCellsProps extends TableBodyRowProps {
 /**
  * Пер-строчная подписка на СВОИ срезы: строка ре-рендерится только когда меняется её
  * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице) либо группировка.
- * `expanded` бывает `true` (все) или картой по id. Возвращает отметку прихода строки
- * (ADR 0056).
  */
 export const useRowStateSubscription = (row: Row<any, any>) => {
   const table = (row as unknown as { table: never }).table
@@ -77,8 +75,6 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       expanded?: true | Record<string, boolean>
       grouping?: unknown
       rowExpandPending?: Record<string, number>
-      rowArrivals?: Record<string, number>
-      rowDrops?: Record<string, number>
       rowMoves?: Record<string, { pending: boolean }>
       highlights?: Highlights
       flashes?: Flashes
@@ -89,8 +85,6 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
       grouping: s.grouping,
       expandPending: s.rowExpandPending?.[row.id] ?? 0,
-      // Приход ленивой строки (ADR 0056) или перестановка (ADR 0110).
-      arrived: row.id in (s.rowArrivals ?? {}) || row.id in (s.rowDrops ?? {}),
       highlight: s.highlights?.[highlightKey],
       flash: s.flashes?.[highlightKey],
       // Перенос не завершён (ADR 0112): ждёт промиса или ответа цели.
@@ -98,7 +92,6 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       movePending: !!move?.pending,
     }
   }) as {
-    arrived: boolean
     highlight?: HighlightTargetState
     flash?: FlashEntry
     moving: boolean
@@ -222,7 +215,7 @@ export const getAriaSelected = (
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived, highlight, flash } = useRowStateSubscription(row)
+  const { highlight, flash } = useRowStateSubscription(row)
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const flashed = flashRender([{ layer: 'row', entry: flash }])
   const nav = useKeyboardNavigationRow(
@@ -273,7 +266,6 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
-      data-arrived={arrived || undefined}
       {...highlighted.attrs}
       {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}

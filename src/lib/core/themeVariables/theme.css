@@ -386,15 +386,6 @@
   --tsr-comp-error-flash-fade-duration: var(--tsr-comp-flash-fade-duration);
   /* Иконка упавшего пункта меню и отметка ошибки на кебабе (ADR 0078). */
   --tsr-comp-action-error-color: var(--tsr-sys-danger);
-  /* Подсветка пришедших ленивых детей (ADR 0056): держится, затем гаснет. */
-  --tsr-comp-row-arrival-color: color-mix(
-    in srgb,
-    var(--tsr-comp-loader-bar) 16%,
-    transparent
-  );
-  --tsr-comp-row-arrival-duration: 300ms;
-  --tsr-comp-row-arrival-fade-duration: 500ms;
-  /* Подсветка ячейки после асинхронного сохранения (ADR 0057): тон пришедших строк. */
   /*
    * Публичная подсветка (ADR 0080): заливка тона слоем фона ячейки — под текстом и
    * индикаторами, поверх фона строки и подложки закреплённых. Синего тона нет: синий
@@ -415,8 +406,6 @@
     var(--tsr-sys-success) 16%,
     transparent
   );
-  /* Вспышка колонки после переноса — как приход строки (ADR 0114, §4). */
-  --tsr-comp-highlight-arrival-bg: var(--tsr-comp-row-arrival-color);
   --tsr-comp-highlight-fade-duration: 500ms;
   /*
    * Вспышка итога на цели (ADR 0134): синий — появилось, зелёный — сервер принял,
@@ -447,11 +436,6 @@
   --tsr-comp-tree-line-inset: var(--tsr-comp-cell-content-padding-x);
   /* Зазор между концом поворота и текстом строки. */
   --tsr-comp-tree-line-gap: calc(var(--tsr-ref-space-1) * 3);
-  --tsr-comp-cell-saved-color: var(--tsr-comp-row-arrival-color);
-  --tsr-comp-cell-saved-duration: var(--tsr-comp-row-arrival-duration);
-  --tsr-comp-cell-saved-fade-duration: var(
-    --tsr-comp-row-arrival-fade-duration
-  );
   /* Typography — theme-agnostic default (system stack); override to use a
    * custom face. Numeric feature aligns digits in columns. */
   --tsr-comp-font-family:

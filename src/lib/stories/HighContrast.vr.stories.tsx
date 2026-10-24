@@ -78,6 +78,7 @@ import panelsToolbarMeta, {
 import rowsActionsMeta, {
   ActionsStateSection,
 } from './DataGrid.Rows.Actions.stories'
+import * as rowsExpandingStories from './DataGrid.Rows.Expanding.stories'
 import rowsExpandingMeta, {
   RowExpandingTreeLines,
 } from './DataGrid.Rows.Expanding.stories'
@@ -1899,6 +1900,54 @@ export const HighContrastEditingServerStep3 = {
 export const HighContrastEditingServerStep4 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 4),
   name: 'Cells/Editing — Server save, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRevertedWhileAwayStep1 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.EditingRevertedWhileAway,
+    1,
+  ),
+  name: 'Cells/Editing — Refused while editing another cell, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRevertedWhileAwayStep2 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.EditingRevertedWhileAway,
+    2,
+  ),
+  name: 'Cells/Editing — Refused while editing another cell, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRevertedWhileAwayStep3 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.EditingRevertedWhileAway,
+    3,
+  ),
+  name: 'Cells/Editing — Refused while editing another cell, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingRejectedStep1 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingRejected, 1),
+  name: 'Rows/Expanding — Expand refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingRejectedStep2 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingRejected, 2),
+  name: 'Rows/Expanding — Expand refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingRejectedStep3 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingRejected, 3),
+  name: 'Rows/Expanding — Expand refused by the server, шаг 3',
   tags: ['!test'],
 }
 

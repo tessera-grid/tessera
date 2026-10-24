@@ -361,13 +361,30 @@ const colorIn = (el: Element, value: string) => {
   return color
 }
 
-const layer = (id: string) => getComputedStyle(rowOf(id)!, '::after')
-const arrived = (id: string) => rowOf(id)?.hasAttribute('data-arrived') ?? null
+/** Заливка вспышки строки (ADR 0134) — слой фона под текстом. */
+const fill = (id: string) =>
+  colorIn(
+    rowOf(id)!,
+    getComputedStyle(rowOf(id)!).getPropertyValue('--tsr-flash-row') ||
+      'transparent',
+  )
+const alpha = (id: string) => toRgba(fill(id))[3]!
+const arrivedFill = (id: string) =>
+  colorIn(rowOf(id)!, 'var(--tsr-comp-flash-arrived-bg)')
+/** Вспышка `arrived` держится: ещё не гаснет. */
+const arrived = (id: string) => {
+  const row = rowOf(id)
+  if (!row) return null
+  return (
+    row.getAttribute('data-flash') === 'arrived' &&
+    !row.hasAttribute('data-flash-out')
+  )
+}
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const asyncKids = (count: number) => (row: { id: string }) =>
   Promise.resolve(kids(row.id, count))
 
-describe('Row expanding: arrival highlight', () => {
+describe('Row expanding: arrival flash', () => {
   let restore = () => {}
   afterEach(async () => {
     restore()
@@ -375,10 +392,10 @@ describe('Row expanding: arrival highlight', () => {
     await reducedMotion(false)
   })
 
-  test('RE42: an async answer highlights the new children with the arrival color; the highlight fades out and the row looks as before', async () => {
+  test('RE42: an async answer flashes the new children arrived under the text; the flash holds, fades out and the row looks as before', async () => {
     restore = themeTokens({
-      '--tsr-comp-row-arrival-duration': '400ms',
-      '--tsr-comp-row-arrival-fade-duration': '200ms',
+      '--tsr-comp-flash-duration': '400ms',
+      '--tsr-comp-flash-fade-duration': '200ms',
     })
     const answer = deferred<Person[]>()
     await renderLazy(() => answer.promise)
@@ -389,24 +406,21 @@ describe('Row expanding: arrival highlight', () => {
     const shown = performance.now()
     for (const id of ['lazy-c0', 'lazy-c1']) {
       expect(arrived(id), id).toBe(true)
-      expect(layer(id).opacity, id).toBe('1')
-      expect(layer(id).backgroundColor, id).toBe(
-        colorIn(rowOf(id)!, 'var(--tsr-comp-row-arrival-color)'),
-      )
+      expect(fill(id), id).toBe(arrivedFill(id))
     }
-    expect(arrived('lazy')).toBe(false)
+    expect(rowOf('lazy')!.hasAttribute('data-flash')).toBe(false)
     // Держится длительность, затем гаснет переходом.
     await wait(250)
     expect(arrived('lazy-c0')).toBe(true)
     await expect.poll(() => arrived('lazy-c0')).toBe(false)
     // Длительность — из токена темы (400 мс), а не умолчание.
     expect(performance.now() - shown).toBeLessThan(900)
-    expect(Number(layer('lazy-c0').opacity)).toBeGreaterThan(0)
-    await expect.poll(() => layer('lazy-c0').opacity).toBe('0')
+    expect(alpha('lazy-c0')).toBeGreaterThan(0)
+    await expect.poll(() => alpha('lazy-c0')).toBe(0)
   })
 
-  test('RE45: a highlighted row that leaves the virtualization window and returns keeps its highlight until the time is up; after that it returns plain', async () => {
-    restore = themeTokens({ '--tsr-comp-row-arrival-duration': '1500ms' })
+  test('RE45: a flashed row that leaves the virtualization window and returns keeps its flash until the time is up; after that it returns plain', async () => {
+    restore = themeTokens({ '--tsr-comp-flash-duration': '1500ms' })
     const many = [
       person('lazy', 2),
       ...Array.from({ length: 120 }, (_, i) =>
@@ -429,19 +443,19 @@ describe('Row expanding: arrival highlight', () => {
     getScroller().scrollTop = 0
     await waitRow('lazy-c0')
     expect(arrived('lazy-c0')).toBe(true)
-    expect(layer('lazy-c0').opacity).toBe('1')
+    expect(fill('lazy-c0')).toBe(arrivedFill('lazy-c0'))
 
     await scrollToEnd('y')
     await expect.poll(() => rowOf('lazy-c0')).toBeNull()
-    await wait(1600)
+    await wait(2100)
     getScroller().scrollTop = 0
     await waitRow('lazy-c0')
-    expect(arrived('lazy-c0')).toBe(false)
-    expect(layer('lazy-c0').opacity).toBe('0')
+    expect(rowOf('lazy-c0')!.hasAttribute('data-flash')).toBe(false)
+    expect(alpha('lazy-c0')).toBe(0)
   })
 
-  test('RE46: the highlight keeps the row layout; selection and hover show through it and it does not catch the pointer', async () => {
-    restore = themeTokens({ '--tsr-comp-row-arrival-duration': '60000ms' })
+  test('RE46: the flash keeps the row layout; selection and hover show through it and it does not catch the pointer', async () => {
+    restore = themeTokens({ '--tsr-comp-flash-duration': '60000ms' })
     await renderLazy(asyncKids(2), {
       enableRowSelection: true,
       rowSelectionSubRows: true,
@@ -453,14 +467,10 @@ describe('Row expanding: arrival highlight', () => {
     expect(arrived('lazy-c0')).toBe(true)
     const lit = rowOf('lazy-c0')!.getBoundingClientRect()
     expect([lit.width, lit.height]).toEqual([plain.width, plain.height])
-    expect(layer('lazy-c0').pointerEvents).toBe('none')
     // Слой полупрозрачен: фон строки под ним виден.
-    const channels = (
-      layer('lazy-c0').backgroundColor.match(/[\d.]+/g) ?? []
-    ).map(Number)
-    expect(channels[3] ?? 1).toBeLessThanOrEqual(0.25)
+    expect(alpha('lazy-c0')).toBeLessThanOrEqual(0.25)
 
-    // Клик сквозь слой выбирает строку; под слоем — фон выбранной строки при наведении.
+    // Клик по вспыхнувшей строке выбирает её; под слоем — фон выбранной строки при наведении.
     await humanClick(
       rowOf('lazy-c0')!.querySelector<HTMLElement>('.row-select-checkbox')!,
     )
@@ -478,11 +488,11 @@ describe('Row expanding: arrival highlight', () => {
     expect(arrived('lazy-c0')).toBe(true)
   })
 
-  test('RE47: with reduced motion the highlight holds for the same duration and drops without a transition', async () => {
+  test('RE47: with reduced motion the flash holds for the same duration and drops without a transition', async () => {
     await reducedMotion(true)
     restore = themeTokens({
-      '--tsr-comp-row-arrival-duration': '400ms',
-      '--tsr-comp-row-arrival-fade-duration': '2000ms',
+      '--tsr-comp-flash-duration': '400ms',
+      '--tsr-comp-flash-fade-duration': '2000ms',
     })
     await renderLazy(asyncKids(1))
     await waitRow('lazy')
@@ -490,9 +500,10 @@ describe('Row expanding: arrival highlight', () => {
     await waitRow('lazy-c0')
     await wait(250)
     expect(arrived('lazy-c0')).toBe(true)
-    expect(layer('lazy-c0').opacity).toBe('1')
+    expect(fill('lazy-c0')).toBe(arrivedFill('lazy-c0'))
     await expect.poll(() => arrived('lazy-c0')).toBe(false)
-    expect(layer('lazy-c0').opacity).toBe('0')
+    // С переходом вспышка гасла бы ещё две секунды.
+    expect(alpha('lazy-c0')).toBe(0)
   })
 
   test('RE48: an async arrival is announced with the row count, an empty answer as "No rows", the label comes from localization; a sync answer is not announced', async () => {
@@ -524,8 +535,8 @@ describe('Row expanding: arrival highlight', () => {
     expect(liveText()).toBe('')
   })
 
-  test('RE49: text of highlighted rows, plain and selected, keeps 4.5:1 through the layer and passes axe in both themes', async () => {
-    restore = themeTokens({ '--tsr-comp-row-arrival-duration': '60000ms' })
+  test('RE49: text of flashed rows, plain and selected, keeps 4.5:1 over the flash and passes axe in both themes', async () => {
+    restore = themeTokens({ '--tsr-comp-flash-duration': '60000ms' })
     await renderLazy(asyncKids(2), {
       enableRowSelection: true,
       rowSelectionSubRows: true,
@@ -550,7 +561,7 @@ describe('Row expanding: arrival highlight', () => {
       1,
     ]
     await inBothThemes(async () => {
-      // Слой лежит и над фоном, и над текстом: axe его не видит — считаем сами.
+      // Вспышка — градиент фона: axe его не видит — считаем сами.
       for (const id of ['lazy-c0', 'lazy-c1']) {
         const row = rowOf(id)!
         const text = [...row.querySelectorAll<HTMLElement>('*')].find(
@@ -560,10 +571,10 @@ describe('Row expanding: arrival highlight', () => {
           toRgba(getComputedStyle(row).backgroundColor),
           backgroundOf(row.parentElement),
         )
-        const tint = toRgba(layer(id).backgroundColor)
+        const lit = over(toRgba(fill(id)), bg)
         const ratio = contrast(
-          over(tint, over(toRgba(getComputedStyle(text).color), bg)),
-          over(tint, bg),
+          over(toRgba(getComputedStyle(text).color), lit),
+          lit,
         )
         expect(ratio, id).toBeGreaterThanOrEqual(4.5)
       }
@@ -584,7 +595,7 @@ describe('Row expanding: answer batching', () => {
   })
 
   test('RE66: several lazy rows expanded by click with answers arriving as separate tasks all show their children, stop waiting and highlight the new children', async () => {
-    restore = themeTokens({ '--tsr-comp-row-arrival-duration': '5000ms' })
+    restore = themeTokens({ '--tsr-comp-flash-duration': '5000ms' })
     const answers = { lazy: deferred<Person[]>(), other: deferred<Person[]>() }
     await renderLazy(
       row => answers[row.id as keyof typeof answers].promise as never,

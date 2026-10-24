@@ -74,35 +74,3 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/*
- * Слой подсветки сохранения (ADR 0057): держится, пока есть отметка, затем гаснет. Лежит
- * под содержимым ячейки — текст и кнопка правки не тонируются; обёртка со слоем — свой
- * контекст наложения, иначе слой ушёл бы под фон ячейки.
- */
-:global(.data-grid__cell-wrapper-content):has(> span.feedback) {
-  isolation: isolate;
-}
-
-/* Внутри фокус-кольца и рамки выделения ячейки: они рисуются поверх по краю. */
-span.feedback {
-  position: absolute;
-  z-index: -1;
-  inset: var(--tsr-comp-focus-ring-width);
-  pointer-events: none;
-}
-
-span.feedback::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-color: var(--tsr-comp-cell-saved-color);
-  opacity: 0;
-  transition: opacity var(--tsr-comp-cell-saved-fade-duration)
-    var(--tsr-comp-motion-easing-out);
-}
-
-span.feedback[data-saved]::before {
-  opacity: 1;
-  transition: none;
-}

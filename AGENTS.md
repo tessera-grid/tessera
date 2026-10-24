@@ -462,9 +462,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `lazyChildren.dom` (RE19, RE21–RE22, RE26–RE29, RE34–RE36 — ответ по строке, его
       согласование с данными, `setLoadedChildren`/`resetLoadedChildren`), перф RE38 — в
       `interaction`, RE39 — в `first-render` ([ADR 0054](docs/decisions/0054-lazy-row-children.md));
-      подсветка прихода — `row-expanding-lazy` (RE42, RE45–RE49 — слой, виртуализация,
-      уменьшенное движение, объявление, контраст), модульные `lazyChildren.dom`
-      (RE43–RE44, RE51 — отметки прихода), перф RE50 — в `interaction`
+      вспышка прихода — `row-expanding-lazy` (RE42, RE45–RE49 — вспышка `arrived`,
+      виртуализация, уменьшенное движение, объявление, контраст), модульные
+      `lazyChildren.dom` (RE43–RE44, RE51 — вспышки прихода), перф RE50 — в `interaction`
       ([ADR 0056](docs/decisions/0056-lazy-children-arrival-highlight.md));
       склейка ответов до кадра — `row-expanding-lazy` (RE66), модульные `lazyChildren.dom`
       (RE65, RE67–RE72 — одна запись на пачку, синхронный ответ и отказ сразу, одно
@@ -605,8 +605,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       вспышка над подсветкой, тоны и контраст, уменьшенное движение, `forced-colors`, без
       объявлений), модульный `flashes.dom` (OF1–OF3, OF5, OF13 — API и массив целей, срез
       отдельно от `highlights`, перезапуск и замена, время жизни и один таймер, перерисовка
-      только цели), перф OF20 — в `scroll`, `play` истории «Plugin API — Outcome flash»
-      (OF21) ([ADR 0134](docs/decisions/0134-outcome-flash.md)).
+      только цели; OF19 — токены темы), встроенные носители — `async-callbacks` (OF14–OF15,
+      OF18 — правка ячейки и отказ раскрытия), `column-drag-async` (OF16–OF17 — `accepted`
+      переносов строки и колонки, отказ в одном кадре с кнопкой-инициатором), перф OF20 —
+      в `scroll`, `play` истории «Plugin API — Outcome flash» (OF21), истории сценариев
+      S1 «Cells/Editing — Refused while editing another cell» и S3 «Rows/Expanding — Expand
+      refused by the server» ([ADR 0134](docs/decisions/0134-outcome-flash.md)).
     - _Бесконечная прокрутка — лента:_ `infinite-scroll` (IS1–IS4, IS7, IS9–IS15, IS18 —
       порог края, хвост скелет-строк и его высота вне окна, ответ без сдвига прокрутки и
       фокуса, строка ошибки с повтором, отмена при смене сортировки, фильтра и поиска,
@@ -834,9 +838,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ждёт; AS5–AS6 — значение из данных, объявление и повторная правка; AS11 —
       раскрытие в ожидании; AS13 — axe и контраст новых состояний; AS15 — раскрытие без промиса не ждёт),
       [ADR 0041](docs/decisions/0041-async-business-callbacks.md); вид асинхронной
-      правки — визуальные `async-callbacks` (CF1, CF4–CF6, CF8–CF11 — значение в
-      ожидании, подсветка сохранения, виртуализация, уменьшенное движение, объявления,
-      контраст, токены), модульный `asyncCallbacks` (CF7 — отметки сохранения), перф
+      правки — визуальные `async-callbacks` (CF1, CF5–CF6, CF8–CF10 — значение в
+      ожидании, вспышка сохранения, виртуализация, уменьшенное движение, объявления,
+      контраст), модульный `asyncCallbacks` (CF7 — итог в срезе вспышек), перф
       CF12 — в `scroll` ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md));
       ожидание и отказ на кнопке правки — визуальный `async-callbacks` (IR16), модульный
       `asyncCallbacks` (IR21 — света по периметру нет)
@@ -895,8 +899,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `interaction`, `play` истории «Rows/Motion» (RM21); дождаться конца движения —
       `settleRowMotion` из `__tests__/helpers.tsx`
       ([ADR 0107](docs/decisions/0107-row-motion.md)); приземление перестановки — `row-motion`
-      (LD1–LD4 — облако пропадает, строка вспыхивает слоем прихода, клавиатура и меню
-      ручки, без движения строк), модульный `rowDragging` (LD5 — отметки перестановки)
+      (LD1–LD4 — облако пропадает, строка вспыхивает `arrived`, клавиатура и меню
+      ручки, без движения строк), модульный `rowDragging` (LD5 — вспышка перестановки)
       ([ADR 0110](docs/decisions/0110-row-drop-flash.md)).
     - _Превью броска строки:_ `row-drop-preview` (PV1–PV5, PV8, PV10–PV11 — слот-скелет, уровень
       отступом и по тексту облака, тон ошибки, линии окна как после броска, тот же кадр,

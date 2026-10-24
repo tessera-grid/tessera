@@ -295,6 +295,28 @@ describe('Асинхронный контракт бизнес-колбэков'
     }
   })
 
+  test('OF18: отклонённый промис onExpandRow даёт reverted на строке, свёрнутой обратно', async () => {
+    const answers: Array<(reason: unknown) => void> = []
+    const { container } = await render(
+      <composed.RowExpandingPlayground
+        onExpandRow={() =>
+          new Promise<void>((_, reject) => answers.push(reject))
+        }
+      />,
+    )
+    const firstExpandable = () =>
+      Array.from(
+        container.querySelectorAll<HTMLElement>('.data-grid__body-row'),
+      ).find(row => row.querySelector('.row-expand-button'))!
+    await expect.poll(() => firstExpandable()).toBeTruthy()
+    const row = firstExpandable()
+    await userEvent.click(row.querySelector<HTMLElement>('.row-expand-button')!)
+    await expect.poll(() => answers.length).toBe(1)
+    expect(row.hasAttribute('data-flash')).toBe(false)
+    answers[0]!(new Error('Server down'))
+    await expect.poll(() => row.getAttribute('data-flash')).toBe('reverted')
+    expect(row.getAttribute('data-expanded')).not.toBe('true')
+  })
   test('AS13:ожидание, «ошибка» и раскрытие в ожидании проходят axe, включая контраст текста', async () => {
     const grid = () =>
       document.querySelector<HTMLElement>(
@@ -351,9 +373,10 @@ describe('Асинхронный контракт бизнес-колбэков'
   })
 })
 
-// Обратная связь асинхронной правки (ADR 0057, CF1, CF4–CF6, CF8–CF11): значение в
-// ожидании, подсветка сохранения; ожидание и отказ — на кнопке правки (ADR 0127). CF7 —
-// модульный (`asyncCallbacks.dom`), CF12 — перф в `scroll`.
+// Обратная связь асинхронной правки (ADR 0057, CF1, CF5–CF6, CF8–CF10): значение в
+// ожидании, вспышка итога на ячейке (ADR 0134, OF14–OF15, OF18); ожидание и отказ — на
+// кнопке правки (ADR 0127). CF7 — модульный (`asyncCallbacks.dom`), CF12 — перф в
+// `scroll`.
 
 const reducedMotion = (
   commands as unknown as { reducedMotion: (reduce: boolean) => Promise<void> }
@@ -380,12 +403,19 @@ const resolvedIn = (el: Element, value: string, prop = 'background-color') => {
   return resolved
 }
 
-const feedbackOf = (index: number) =>
-  ageCell(index).querySelector<HTMLElement>('.cell-edit-feedback')
-const tintOf = (index: number) =>
-  getComputedStyle(feedbackOf(index)!, '::before')
+/** Итог вспышки ячейки (ADR 0134) и её заливка — слой фона под текстом. */
+const flashOf = (index: number) => ageCell(index).getAttribute('data-flash')
+const fillOf = (index: number) =>
+  resolvedIn(
+    ageCell(index),
+    getComputedStyle(ageCell(index)).getPropertyValue('--tsr-flash-cell') ||
+      'transparent',
+  )
+const alphaOf = (index: number) => toRgba(fillOf(index))[3]!
+/** Вспышка `accepted` держится: ещё не гаснет. */
 const savedAt = (index: number) =>
-  feedbackOf(index)?.hasAttribute('data-saved') ?? false
+  flashOf(index) === 'accepted' &&
+  !ageCell(index).hasAttribute('data-flash-out')
 const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 const editableGrid = (props: Record<string, unknown> = {}) =>
@@ -404,7 +434,7 @@ const saveAge = async (index: number, value: string) => {
   await userEvent.keyboard('{Enter}')
 }
 
-describe('Асинхронная правка: значение и подсветка сохранения', () => {
+describe('Асинхронная правка: значение и вспышка итога', () => {
   let restore = () => {}
   afterEach(async () => {
     restore()
@@ -453,10 +483,10 @@ describe('Асинхронная правка: значение и подсве�
     expect(box(ageCell(0))).toEqual(before)
   })
 
-  test('CF4: успех промиса — ячейка подсвечена цветом токена, подсветка держится и гаснет; синхронный onCellEdit подсветки не даёт', async () => {
+  test('OF14: правка ячейки — выполненный промис onCellEdit даёт accepted на ячейке; синхронный onCellEdit вспышки не даёт', async () => {
     restore = themeTokens({
-      '--tsr-comp-cell-saved-duration': '400ms',
-      '--tsr-comp-cell-saved-fade-duration': '200ms',
+      '--tsr-comp-flash-duration': '400ms',
+      '--tsr-comp-flash-fade-duration': '200ms',
     })
     const server = controlledServer()
     const screen = await editableGrid({ onCellEdit: server.onCellEdit })
@@ -465,16 +495,11 @@ describe('Асинхронная правка: значение и подсве�
     await expect.poll(() => server.settle.length).toBe(1)
     server.settle[0].resolve()
     await expect.poll(() => savedAt(0)).toBe(true)
-    const shown = performance.now()
-    expect(tintOf(0).opacity).toBe('1')
-    expect(tintOf(0).backgroundColor).toBe(
-      resolvedIn(ageCell(0), 'var(--tsr-comp-cell-saved-color)'),
+    expect(fillOf(0)).toBe(
+      resolvedIn(ageCell(0), 'var(--tsr-comp-flash-accepted-bg)'),
     )
-    await expect.poll(() => savedAt(0)).toBe(false)
-    // Удержание — из токена (400 мс), а не умолчание.
-    expect(performance.now() - shown).toBeLessThan(900)
-    expect(Number(tintOf(0).opacity)).toBeGreaterThan(0)
-    await expect.poll(() => tintOf(0).opacity).toBe('0')
+    expect(flashOf(1), 'соседняя ячейка').toBeNull()
+    await expect.poll(() => flashOf(0)).toBeNull()
     await screen.unmount()
 
     await editableGrid({ onCellEdit: () => undefined })
@@ -482,11 +507,46 @@ describe('Асинхронная правка: значение и подсве�
     await saveAge(0, '999')
     await expect.poll(() => ageCell(0).querySelector('input')).toBeNull()
     await pause(100)
-    expect(feedbackOf(0)).toBeNull()
+    expect(flashOf(0)).toBeNull()
   })
 
-  test('CF5: успешное сохранение из «ошибки» снимает метку и подсвечивает ячейку', async () => {
-    restore = themeTokens({ '--tsr-comp-cell-saved-duration': '60000ms' })
+  test('OF15: правка ячейки — отклонённый промис даёт reverted на ячейке, и когда фокус уже в другой ячейке, и когда идёт её правка', async () => {
+    restore = themeTokens({ '--tsr-comp-flash-duration': '60000ms' })
+    const server = controlledServer()
+    await editableGrid({
+      onCellEdit: server.onCellEdit,
+      enableKeyboardNavigation: true,
+    })
+    await waitForGrid()
+
+    // Фокус ушёл в другую ячейку.
+    await saveAge(0, '999')
+    await expect.poll(() => server.settle.length).toBe(1)
+    await userEvent.click(ageCell(3))
+    await expect
+      .poll(() => ageCell(3).contains(document.activeElement))
+      .toBe(true)
+    server.settle[0].reject(new Error('Server down'))
+    await expect.poll(() => flashOf(0)).toBe('reverted')
+    expect(fillOf(0)).toBe(
+      resolvedIn(ageCell(0), 'var(--tsr-comp-flash-reverted-bg)'),
+    )
+    expect(flashOf(3), 'ячейка с фокусом').toBeNull()
+
+    // Открыта правка другой ячейки.
+    await saveAge(1, '42')
+    await expect.poll(() => server.settle.length).toBe(2)
+    await openAndType(2, '7')
+    server.settle[1].reject(new Error('Server down'))
+    await expect.poll(() => flashOf(1)).toBe('reverted')
+    expect(
+      ageCell(2).querySelector('input'),
+      'правка не закрыта',
+    ).not.toBeNull()
+  })
+
+  test('CF5: успешное сохранение из «ошибки» снимает метку, ячейка вспыхивает accepted', async () => {
+    restore = themeTokens({ '--tsr-comp-flash-duration': '60000ms' })
     const server = controlledServer()
     await editableGrid({ onCellEdit: server.onCellEdit })
     await waitForGrid()
@@ -508,9 +568,9 @@ describe('Асинхронная правка: значение и подсве�
     expect(failureOf(0)).toBeNull()
   })
 
-  test('CF6: ячейка, ушедшая из окна виртуализации по строке и по колонке, подсвечена при возврате до истечения времени; после — нет', async () => {
+  test('CF6: ячейка, ушедшая из окна виртуализации по строке и по колонке, при возврате до истечения времени со вспышкой; после — нет', async () => {
     // Запас на два круга прокрутки со скелетами быстрой прокрутки в Firefox под StrictMode.
-    restore = themeTokens({ '--tsr-comp-cell-saved-duration': '5000ms' })
+    restore = themeTokens({ '--tsr-comp-flash-duration': '5000ms' })
     await render(
       <Stories.DataGridPlayground
         containerHeight={600}
@@ -537,25 +597,27 @@ describe('Асинхронная правка: значение и подсве�
       else getScroller().scrollLeft = 0
       // После быстрой прокрутки ячейка сперва — скелет; ждём её содержимое.
       await expect.poll(() => savedAt(0), { timeout: 1500 }).toBe(true)
-      expect(tintOf(0).opacity, axis).toBe('1')
+      expect(fillOf(0), axis).toBe(
+        resolvedIn(ageCell(0), 'var(--tsr-comp-flash-accepted-bg)'),
+      )
     }
 
     await scrollToEnd('y')
     await expect.poll(cellGone).toBe(true)
-    await pause(5100)
+    await pause(5600)
     getScroller().scrollTop = 0
     await expect.poll(cellGone).toBe(false)
     await expect
       .poll(() => ageCell(0).querySelector('[class*="skeleton"]'))
       .toBeNull()
-    expect(savedAt(0)).toBe(false)
+    expect(flashOf(0)).toBeNull()
   })
 
-  test('CF8: при уменьшенном движении подсветка сохранения держится ту же длительность и снимается без перехода', async () => {
+  test('CF8: при уменьшенном движении вспышка сохранения держится ту же длительность и снимается без перехода', async () => {
     await reducedMotion(true)
     restore = themeTokens({
-      '--tsr-comp-cell-saved-duration': '400ms',
-      '--tsr-comp-cell-saved-fade-duration': '3000ms',
+      '--tsr-comp-flash-duration': '400ms',
+      '--tsr-comp-flash-fade-duration': '3000ms',
     })
     const server = controlledServer()
     await editableGrid({ onCellEdit: server.onCellEdit })
@@ -567,8 +629,8 @@ describe('Асинхронная правка: значение и подсве�
     await pause(250)
     expect(savedAt(1)).toBe(true)
     await expect.poll(() => savedAt(1)).toBe(false)
-    // С переходом подсветка гасла бы ещё три секунды.
-    expect(tintOf(1).opacity).toBe('0')
+    // С переходом вспышка гасла бы ещё три секунды.
+    expect(alphaOf(1)).toBe(0)
   })
 
   test('CF9: успех сохранения не объявляется; отказ объявляется', async () => {
@@ -591,8 +653,13 @@ describe('Асинхронная правка: значение и подсве�
       .toContain('Age: Server down')
   })
 
-  test('CF10: ячейки в ожидании, в «ошибке» и с подсветкой проходят axe; текст под подсветкой держит 4.5:1 в обеих темах', async () => {
-    restore = themeTokens({ '--tsr-comp-cell-saved-duration': '60000ms' })
+  test('CF10: ячейки в ожидании, в «ошибке» и со вспышкой проходят axe; текст над вспышкой держит 4.5:1 в обеих темах', async () => {
+    // Контур отказа кнопки по умолчанию держится столько же, сколько вспышка: отметка
+    // проступает после него.
+    restore = themeTokens({
+      '--tsr-comp-flash-duration': '60000ms',
+      '--tsr-comp-error-flash-duration': '300ms',
+    })
     const server = controlledServer()
     await editableGrid({ onCellEdit: server.onCellEdit })
     await waitForGrid()
@@ -615,16 +682,15 @@ describe('Асинхронная правка: значение и подсве�
       '[role="table"], [role="grid"], [role="treegrid"]',
     )!
     await inBothThemes(async () => {
-      // Слой лежит и над фоном, и над текстом: axe его не видит — считаем сами.
-      const value = ageCell(2).textContent!.trim()
+      // Вспышка — градиент фона: axe его не видит — считаем сами.
+      const value = valueOf(2)
       const text = [...ageCell(2).querySelectorAll<HTMLElement>('*')].find(
         el => el.childElementCount === 0 && el.textContent!.trim() === value,
       )!
-      const bg = backgroundOf(ageCell(2))
-      const tint = toRgba(tintOf(2).backgroundColor)
+      const lit = over(toRgba(fillOf(2)), backgroundOf(ageCell(2)))
       const ratio = contrast(
-        over(tint, over(toRgba(getComputedStyle(text).color), bg)),
-        over(tint, bg),
+        over(toRgba(getComputedStyle(text).color), lit),
+        lit,
       )
       expect(ratio).toBeGreaterThanOrEqual(4.5)
       const result = await axe.run(grid, {
@@ -633,51 +699,6 @@ describe('Асинхронная правка: значение и подсве�
       })
       expect(result.violations).toEqual([])
     })
-  })
-
-  test('CF11: токены --tsr-comp-cell-saved-* по умолчанию равны --tsr-comp-row-arrival-* и переопределяются отдельно', async () => {
-    await editableGrid({ onCellEdit: never })
-    await waitForGrid()
-    const cell = ageCell(0)
-    const pairs = [
-      [
-        '--tsr-comp-cell-saved-color',
-        '--tsr-comp-row-arrival-color',
-        'background-color',
-      ],
-      [
-        '--tsr-comp-cell-saved-duration',
-        '--tsr-comp-row-arrival-duration',
-        'transition-duration',
-      ],
-      [
-        '--tsr-comp-cell-saved-fade-duration',
-        '--tsr-comp-row-arrival-fade-duration',
-        'transition-duration',
-      ],
-    ] as const
-    for (const [saved, arrival, prop] of pairs) {
-      expect(resolvedIn(cell, `var(${saved})`, prop), saved).toBe(
-        resolvedIn(cell, `var(${arrival})`, prop),
-      )
-    }
-    restore = themeTokens({
-      '--tsr-comp-cell-saved-color': 'rgb(1, 2, 3)',
-      '--tsr-comp-cell-saved-duration': '7s',
-    })
-    expect(resolvedIn(cell, 'var(--tsr-comp-cell-saved-color)')).toBe(
-      'rgb(1, 2, 3)',
-    )
-    expect(resolvedIn(cell, 'var(--tsr-comp-row-arrival-color)')).not.toBe(
-      'rgb(1, 2, 3)',
-    )
-    expect(
-      resolvedIn(
-        cell,
-        'var(--tsr-comp-row-arrival-duration)',
-        'transition-duration',
-      ),
-    ).not.toBe('7s')
   })
 })
 
@@ -710,11 +731,7 @@ describe('Ожидание и отказ сохранения на кнопке 
     /** В ячейке, кроме кнопки, — только значение: ни значков, ни меток. */
     const onlyValue = (index: number) => {
       const content = contentOf(index)
-      return (
-        content.querySelector(
-          'svg, [aria-invalid], [aria-busy], .cell-edit-feedback',
-        ) === null
-      )
+      return content.querySelector('svg, [aria-invalid], [aria-busy]') === null
     }
 
     for (const keyboard of [false, true]) {

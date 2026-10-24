@@ -392,12 +392,12 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       // Вспышка держится на время снимка (ADR 0130, DG6).
       canvas
         .querySelector<HTMLElement>('.data-grid-theme')!
-        .style.setProperty('--tsr-comp-row-arrival-duration', '600000ms')
+        .style.setProperty('--tsr-comp-flash-duration', '600000ms')
       held = await holdRowAtLevel(canvas, 'row-0', 'node-0-0', 1)
       held.release()
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
       await until(() =>
-        expect(row('row-0')!.hasAttribute('data-arrived')).toBe(true),
+        expect(row('row-0')).toHaveAttribute('data-flash', 'arrived'),
       )
     })
     await settle()
@@ -607,16 +607,16 @@ const LAZY_TREE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер сохранил',
-    hint: 'Ответ пришёл: дуга погасла, строка осталась в новой группе.',
+    hint: 'Ответ пришёл: дуга погасла, строка осталась в новой группе и коротко вспыхнула тоном успеха.',
   },
   {
     title: 'Отказ сервера',
-    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место, ручка залилась красным и несёт отметку отказа, строка подсвечена тоном ошибки.',
+    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место, ручка залилась красным и несёт отметку отказа, строка коротко вспыхнула тоном ошибки.',
     states: ['drag.rejected'],
   },
   {
     title: 'Отказ без отката',
-    hint: 'С `revertOnReject: false` отклонённая строка остаётся там, куда её бросили, — с подсветкой ошибки.',
+    hint: 'С `revertOnReject: false` отклонённая строка остаётся там, куда её бросили, и коротко вспыхивает тоном ошибки.',
     props: () => ({ rowDraggingRevertOnReject: false }),
   },
 ]
@@ -729,6 +729,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
       )
       const placed = order()
       expect(placed.indexOf('node-0-0-0')).toBe(placed.indexOf('node-1') + 1)
+      expect(row('node-0-0-0')).toHaveAttribute('data-flash', 'accepted')
     })
     await step(LAZY_TREE[3].title, async () => {
       await guideNext(canvas)
@@ -747,7 +748,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
           'on',
         ),
       )
-      expect(row('node-0-0-1')).toHaveAttribute('data-highlight', 'danger')
+      expect(row('node-0-0-1')).toHaveAttribute('data-flash', 'reverted')
     })
     await step(LAZY_TREE[4].title, async () => {
       await guideNext(canvas)
@@ -756,7 +757,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
       await dropInto('node-0-0-2', 'node-1')
       lazyTreeServer.answer(false)
       await until(() =>
-        expect(row('node-0-0-2')).toHaveAttribute('data-highlight', 'danger'),
+        expect(row('node-0-0-2')).toHaveAttribute('data-flash', 'reverted'),
       )
       const kept = order()
       expect(kept.indexOf('node-0-0-2')).toBe(kept.indexOf('node-1') + 1)
