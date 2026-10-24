@@ -25,9 +25,7 @@ import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
 import * as rowsTreeDataStories from './DataGrid.Rows.TreeData.stories'
 import * as cellsContextMenuStories from './DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditingStories from './DataGrid.Cells.Editing.stories'
-import cellsKeyboardMeta, {
-  KeyboardStateFocusedCell,
-} from './DataGrid.Cells.Keyboard.stories'
+import * as cellsKeyboardStories from './DataGrid.Cells.Keyboard.stories'
 import columnsHeaderGroupsMeta, {
   HeaderGroupsPlayground,
 } from './DataGrid.Columns.HeaderGroups.stories'
@@ -116,9 +114,45 @@ const twinStep = <S extends TwinSource>(
   step: number,
 ) => forcedStep(module.default, story, step, meta)
 
-export const HighContrastKeyboardStateFocusedCell = {
-  ...twin(cellsKeyboardMeta, KeyboardStateFocusedCell),
-  name: 'Cells/Keyboard — State: focused cell',
+export const HighContrastKeyboardMovingStep1 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardMoving, 1),
+  name: 'Cells/Keyboard — Move around, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardMovingStep2 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardMoving, 2),
+  name: 'Cells/Keyboard — Move around, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardMovingStep3 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardMoving, 3),
+  name: 'Cells/Keyboard — Move around, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardActionsStep1 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 1),
+  name: 'Cells/Keyboard — Actions without a mouse, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardActionsStep2 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 2),
+  name: 'Cells/Keyboard — Actions without a mouse, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardActionsStep3 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 3),
+  name: 'Cells/Keyboard — Actions without a mouse, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardActionsStep4 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 4),
+  name: 'Cells/Keyboard — Actions without a mouse, шаг 4',
   tags: ['!test'],
 }
 
