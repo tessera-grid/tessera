@@ -22,7 +22,8 @@ import { AXE_OPTIONS, contrast, inBothThemes, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
 // Включённое состояние кнопок (ADR 0129, AV1–AV3, AV5–AV7, AV10): бабл в базе
-// `IconButton` — точка, число `count`, свой значок; ожидание и отказ главнее бабла.
+// `IconButton` — точка, число `count`, свой значок; ожидание и отказ главнее бабла. Место
+// бабла — FB8–FB9 (ADR 0136).
 // AV4, AV8–AV9 — модульный `activeState.dom`, AV11 — перф в `scroll`.
 
 const fc = commands as unknown as {
@@ -431,5 +432,73 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
         await fc.forcedColors(false)
       }
     }
+  })
+})
+
+// Место бабла (ADR 0136, FB8–FB9): от угла кнопки — токенами темы.
+
+/** Значение токена темы на кнопке. */
+const tokenOf = (name: string) =>
+  getComputedStyle(kit()).getPropertyValue(name).trim()
+
+describe('Место бабла (ADR 0136)', () => {
+  test('FB8: бабл-точка и отметка отказа на её месте стоят от правого и верхнего края кнопки на --tsr-comp-indicator-inset', async () => {
+    /** Отступ знака от правого и верхнего края кнопки. */
+    const gaps = (mark: Element) => {
+      const button = box(kit())
+      const dot = box(mark)
+      return [button.right - dot.right, dot.top - button.top]
+    }
+    for (const failure of [undefined, 'Failed: offline']) {
+      const screen = await render(<Kit active failure={failure} />)
+      settle()
+      const mark = () =>
+        failure
+          ? kit().querySelector<HTMLElement>('[data-failure-indicator]')!
+          : bubbleOf(kit())!
+      expect(getComputedStyle(mark()).opacity, `failure=${failure}`).toBe('1')
+      const inset = parseFloat(tokenOf('--tsr-comp-indicator-inset'))
+      expect(inset).toBe(1)
+      for (const gap of gaps(mark())) expect(gap).toBeCloseTo(inset, 0)
+      // Тема меняет место токеном.
+      kit().style.setProperty('--tsr-comp-indicator-inset', '5px')
+      for (const gap of gaps(mark())) expect(gap).toBeCloseTo(5, 0)
+      await screen.unmount()
+    }
+  })
+
+  test('FB9: бабл с числом сдвинут за угол кнопки на --tsr-comp-indicator-count-offset; размер кнопки и раскладка не меняются', async () => {
+    const screen = await render(<Kit active={false} count={3} />)
+    const plain = box(kit())
+    await screen.rerender(<Kit active count={3} />)
+    settle()
+    const button = box(kit())
+    expect([button.left, button.top, button.width, button.height]).toEqual([
+      plain.left,
+      plain.top,
+      plain.width,
+      plain.height,
+    ])
+    /** Сдвиг числа за правый и верхний край кнопки — доли его размера. */
+    const shift = () => {
+      const bubble = box(bubbleOf(kit())!)
+      return [
+        (bubble.right - button.right) / bubble.width,
+        (button.top - bubble.top) / bubble.height,
+      ]
+    }
+    const [x, y] = tokenOf('--tsr-comp-indicator-count-offset')
+      .split(/\s+/)
+      .map(parseFloat)
+    expect([x, y]).toEqual([55, -45])
+    const [right, up] = shift()
+    expect(right).toBeCloseTo(0.55, 1)
+    expect(up).toBeCloseTo(0.45, 1)
+    // Тема меняет сдвиг токеном.
+    kit().style.setProperty('--tsr-comp-indicator-count-offset', '20% -10%')
+    const [right2, up2] = shift()
+    expect(right2).toBeCloseTo(0.2, 1)
+    expect(up2).toBeCloseTo(0.1, 1)
+    await screen.unmount()
   })
 })

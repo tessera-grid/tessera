@@ -60,28 +60,25 @@
  * уже `position: relative` (дуга ожидания).
  */
 .indicator {
-  --_at: translate(0, 0);
-
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: var(--tsr-comp-indicator-inset);
+  right: var(--tsr-comp-indicator-inset);
   opacity: 0;
-  transform: var(--_at) scale(0.4);
+  transform: scale(0.4);
   transition:
     opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
     transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
 }
 
 .indicator[data-count] {
-  --_at: translate(45%, -35%);
-
   top: 0;
   right: 0;
+  translate: var(--tsr-comp-indicator-count-offset);
 }
 
 .indicator[data-shown='true'] {
   opacity: 1;
-  transform: var(--_at);
+  transform: none;
 }
 
 .iconButton:focus-visible {
