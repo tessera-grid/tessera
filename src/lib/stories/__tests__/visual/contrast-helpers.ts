@@ -55,11 +55,26 @@ export const html = document.documentElement
 export const frame = () =>
   new Promise(resolve => requestAnimationFrame(resolve))
 
-export const finishTransitions = () =>
+const runningTransitions = () =>
   document
     .getAnimations()
     .filter(animation => animation.effect?.getTiming().iterations !== Infinity)
-    .forEach(animation => animation.finish())
+
+export const finishTransitions = () =>
+  runningTransitions().forEach(animation => animation.finish())
+
+/**
+ * Доводит переходы, пока два кадра подряд не начнётся новых: смена эмуляции под
+ * нагрузкой доходит до стилей кадром позже, и переход стартует после первой доводки.
+ */
+const settleTransitions = async () => {
+  for (let quiet = 0, i = 0; quiet < 2 && i < 30; i++) {
+    await frame()
+    const running = runningTransitions()
+    running.forEach(animation => animation.finish())
+    quiet = running.length === 0 ? quiet + 1 : 0
+  }
+}
 
 const fc = commands as unknown as {
   forcedColors: (active: boolean, scheme?: Scheme | null) => Promise<void>
@@ -90,8 +105,8 @@ export const applyCombo = async (combo: Combo, { finish = true } = {}) => {
     if (combo.palette === 'tessera') html.style.setProperty(role, 'initial')
     else html.style.removeProperty(role)
   }
-  await frame()
-  if (finish) finishTransitions()
+  if (finish) await settleTransitions()
+  else await frame()
   await frame()
 }
 
