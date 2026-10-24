@@ -379,7 +379,17 @@ describe('headerActions: кнопки по ширине (ADR 0111)', () => {
 describe('Вместимость кнопок заголовка с ручкой (ADR 0114)', () => {
   it('CO9: число кнопок в ряд вычитает ширину раскрытой ручки — у перетаскиваемой незакреплённой колонки', () => {
     // Ручка сдвигает подпись на 16: компакт 24 + отступ 4 − отступ содержимого 16 + зазор 4.
-    const metrics = { reserve: 80, button: 32, gap: 4, half: 12, handle: 16 }
+    // Колонка без грипа: справа — свой резерв `right`.
+    const metrics = {
+      reserve: 64,
+      right: 16,
+      button: 32,
+      gap: 4,
+      half: 12,
+      gripGap: 4,
+      handle: 16,
+      handleAfterGrip: 24,
+    }
     const header = (column?: object) => ({
       index: 0,
       getSize: () => 190,
@@ -406,5 +416,59 @@ describe('Вместимость кнопок заголовка с ручкой
         metrics,
       ),
     ).toBe(3)
+  })
+})
+
+describe('Вместимость кнопок заголовка — кнопки грида 28px (ADR 0135)', () => {
+  it('GZ5: вместимость — от кнопок грида, промежутков, отступа и зон грипов темы: с ручкой и грипом соседа вторая кнопка — с 166px, третья — со 196px; порог числа действий прежний', () => {
+    // Длины токенов темы по умолчанию: отступ 12, наименьшая подпись 48, кнопка 28 с
+    // иконкой 16, между кнопками 2, до подписи 4, зона грипа 24, от кнопки до неё 8,
+    // ручка 24 — за зоной грипа соседа (12) или на отступе 4.
+    const metrics = {
+      reserve: 12 + 48,
+      right: 12 - (28 - 16) / 2,
+      button: 28,
+      gap: 2,
+      half: 12,
+      gripGap: 8,
+      handle: 24 + 4 - 12 + 4,
+      handleAfterGrip: 24 + 12 - 12 + 4,
+    }
+    const column = {
+      getCanDrag: () => true,
+      getIsPinned: () => false,
+      getCanResize: () => true,
+    }
+    const resizable = { column: { getCanResize: () => true } }
+    const header = (width: number) => ({
+      index: 1,
+      getSize: () => width,
+      column,
+      headerGroup: { headers: [resizable, { column }, resizable] },
+    })
+    expect(headerCapacityOf(header(135), metrics)).toBe(0)
+    expect(headerCapacityOf(header(136), metrics)).toBe(1)
+    expect(headerCapacityOf(header(165), metrics)).toBe(1)
+    expect(headerCapacityOf(header(166), metrics)).toBe(2)
+    expect(headerCapacityOf(header(195), metrics)).toBe(2)
+    expect(headerCapacityOf(header(196), metrics)).toBe(3)
+    // У последней колонки зона грипа целиком внутри: место справа — вся зона.
+    const last = {
+      ...header(166),
+      index: 2,
+      headerGroup: { headers: [resizable, resizable, { column }] },
+    }
+    expect(headerCapacityOf(last, metrics)).toBe(1)
+    // Ширина только уменьшает ряд: порог числа действий сворачивает всё.
+    const actions = ['a', 'b', 'c', 'd'].map(id => action({ id }))
+    const byThreshold = resolveActionLayout({
+      actions,
+      opaqueCount: 0,
+      config: { mode: 'auto', threshold: 3 },
+      ctx: {},
+      capacity: headerCapacityOf(header(400), metrics),
+    })
+    expect(byThreshold.inline).toEqual([])
+    expect(byThreshold.menu).toHaveLength(4)
   })
 })

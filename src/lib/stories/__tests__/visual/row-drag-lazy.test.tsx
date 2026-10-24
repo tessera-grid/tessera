@@ -15,7 +15,7 @@ import {
 } from '../../../plugins'
 import type { RowDragEnd } from '../../../plugins'
 import type { Row } from '../../../types'
-import { pendingArcOf, settleRowMotion } from '../helpers'
+import { arcHeadOf, pendingArcOf, settleRowMotion } from '../helpers'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 import {
   HANDLE,
@@ -796,6 +796,10 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         )
         expect(result.violations).toEqual([])
       })
+    // Красный контур держится 300 мс — меньше, чем идут откат строки и смена режима.
+    document
+      .querySelector<HTMLElement>('.data-grid-theme')!
+      .style.setProperty('--tsr-comp-error-flash-duration', '10s')
     try {
       await expand('node-0', 'node-0-2')
       await dropAfter('node-0-0', 'row-0', 0)
@@ -805,7 +809,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         // Дуга ожидания ручки (ADR 0127) — цветом Highlight.
         const arc = pendingArcOf(handleOf('node-0-0'))!
         expect(getComputedStyle(arc).forcedColorAdjust).toBe('none')
-        expect(toRgba(getComputedStyle(arc.firstElementChild!).stroke)).toEqual(
+        expect(toRgba(getComputedStyle(arcHeadOf(arc)).stroke)).toEqual(
           sys('Highlight'),
         )
         await pointer.forcedColors(false)

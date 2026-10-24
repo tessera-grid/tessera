@@ -29,6 +29,8 @@ export type {
   HighlightTarget,
   HighlightTone,
 } from './lib/core/highlights/highlightFeature'
+// Вспышка итога на цели асинхронного действия (ADR 0134): `table.flashOutcome`.
+export type { FlashOutcome } from './lib/core/flashes/flashFeature'
 // Прокрутка к строке (ADR 0104): `table.scrollToRow`.
 export type {
   ScrollAlign,

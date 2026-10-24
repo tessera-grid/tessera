@@ -162,33 +162,35 @@ export const DragHandler = ({
     </IconButton>
   )
 
-  return (
+  const handleMenu = menu.open && hasMenu && (
+    <HandleMenu
+      anchor={ref}
+      label={label ?? ''}
+      getItems={getMenuItems}
+      onClose={menu.close}
+      table={table}
+      plugin={type === 'row' ? 'rowDragging' : 'columnDragging'}
+    />
+  )
+
+  return type === 'row' ? (
     <>
-      {type === 'row' ? (
-        button
-      ) : (
-        // Ручка колонки шириной 0 до наведения: раскрывается и сдвигает подпись (ADR 0114).
-        <div
-          className={clsx(
-            'cell__button',
-            'cell__button--hidden',
-            styles.columnHandle,
-          )}
-        >
-          {button}
-        </div>
-      )}
-      {menu.open && hasMenu && (
-        <HandleMenu
-          anchor={ref}
-          label={label ?? ''}
-          getItems={getMenuItems}
-          onClose={menu.close}
-          table={table}
-          plugin={type === 'row' ? 'rowDragging' : 'columnDragging'}
-        />
-      )}
+      {button}
+      {handleMenu}
     </>
+  ) : (
+    // Ручка колонки шириной 0 до наведения: раскрывается и сдвигает подпись (ADR 0114).
+    // Меню — внутри обёртки: служебные узлы портала не встают в ряд заголовка.
+    <div
+      className={clsx(
+        'cell__button',
+        'cell__button--hidden',
+        styles.columnHandle,
+      )}
+    >
+      {button}
+      {handleMenu}
+    </div>
   )
 }
 

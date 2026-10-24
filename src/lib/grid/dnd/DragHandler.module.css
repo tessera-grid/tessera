@@ -10,8 +10,9 @@
 
 /*
  * Ручка колонки (ADR 0114). Раскрытая заходит в отступ содержимого и оставляет слева
- * `--tsr-comp-drag-handle-inset`, справа — зазор до подписи; колонка обёртки растёт ровно
- * на сдвиг подписи. В покое обёртка съедает и зазор: подпись — вровень с текстом тела.
+ * `--tsr-comp-drag-handle-inset` — после гриповой колонки слева зону её грипа
+ * (`--tsr-head-handle-inset`, ADR 0135), справа — зазор до подписи; колонка обёртки растёт
+ * ровно на сдвиг подписи. В покое обёртка съедает и зазор: подпись — вровень с текстом тела.
  */
 .columnHandle {
   margin-inline-end: calc(-1 * var(--tsr-comp-cell-content-gap));
@@ -19,7 +20,8 @@
 
 .columnHandle > .handle {
   margin-inline: calc(
-      var(--tsr-comp-drag-handle-inset) - var(--tsr-comp-cell-content-padding-x)
+      var(--tsr-head-handle-inset, var(--tsr-comp-drag-handle-inset)) -
+        var(--tsr-comp-cell-content-padding-x)
     )
     var(--tsr-comp-cell-content-gap);
 }

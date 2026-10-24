@@ -33,7 +33,7 @@ const arc = () =>
 
 const waitFrames = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-// Короткое удержание вспышки — тесты не ждут 1200 мс по умолчанию.
+// Удержание вспышки в тестах — 800 мс: фазу удержания успевают прочитать.
 const FAST_FLASH = {
   '--tsr-comp-error-flash-duration': '800ms',
 } as CSSProperties

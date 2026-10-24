@@ -64,35 +64,44 @@
   }
 }
 
-/* Подсветка колонки (ADR 0080): слой фона ячейки футера. */
-.footer__cell[data-column-highlight] {
-  background-image: linear-gradient(
-    var(--tsr-highlight-column),
-    var(--tsr-highlight-column)
-  );
+/* Подсветка колонки (ADR 0080) и вспышка итога над ней (ADR 0134): слои фона футера. */
+.footer__cell:is([data-column-highlight], [data-column-flash]) {
+  background-image:
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
+    linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column));
 }
 
-/* Подсветка проявляется и гаснет одним переходом (ADR 0101). */
-.footer__cell[data-column-highlight] {
+/* Подсветка проявляется и гаснет одним переходом (ADR 0101), вспышка — временем итога. */
+.footer__cell:is([data-column-highlight], [data-column-flash]) {
   transition:
     var(--tsr-comp-row-transition),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-flash-column var(--tsr-column-flash-time)
       var(--tsr-comp-motion-easing-out);
 }
 
-/* Высокая контрастность (ADR 0087): подсветка колонки — `Mark`. */
+/* Высокая контрастность (ADR 0087): подсветка колонки и вспышка `reverted` — `Mark`. */
 @media (forced-colors: active) {
-  .footer__cell[data-column-highlight] {
+  /* Закреплённую ячейку заливает токен её подложки (ADR 0126). */
+  .footer__cell:is([data-column-highlight], [data-column-flash='reverted']) {
+    --tsr-comp-head-bg: Mark;
+
     background-color: Mark;
   }
 
   /* Текст на заливке — системного цвета; без этого Chromium кладёт под него подложку Canvas. */
-  .footer__cell[data-column-highlight] * {
+  .footer__cell:is([data-column-highlight], [data-column-flash='reverted']) * {
     forced-color-adjust: none;
   }
 
-  .footer__cell[data-column-highlight],
-  .footer__cell[data-column-highlight] * {
+  .footer__cell:is([data-column-highlight], [data-column-flash='reverted']),
+  .footer__cell:is([data-column-highlight], [data-column-flash='reverted']) * {
     color: MarkText;
   }
+}
+
+/* Под виртуализацией колонок спейсер в DOM первый: правые закреплённые — после него. */
+.footer__cell[data-cell-pinned='right'] {
+  order: var(--tsr-virtual-end-order, 0);
 }

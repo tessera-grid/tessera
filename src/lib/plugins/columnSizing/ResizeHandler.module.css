@@ -12,6 +12,33 @@
   touch-action: none;
 }
 
+/*
+ * Пока черта видна, от неё влево ложится затемнение без краёв — на подпись и кнопку рядом:
+ * видно, что грип лежит над ними (ADR 0135). Проявляется вместе с чертой — прозрачностью
+ * обёртки; высота — заголовка, на строки тела не ложится.
+ */
+.wrapper::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  right: 50%;
+  width: var(--tsr-comp-shadow-grip-width);
+  /* Гуще всего у черты, к обоим концам — в прозрачность: резкой границы нет нигде. */
+  background: linear-gradient(
+    to left,
+    transparent,
+    var(--tsr-comp-shadow-grip-color) 4px,
+    transparent
+  );
+  pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  .wrapper::before {
+    display: none;
+  }
+}
+
 .wrapper:hover .handler:not([aria-disabled='true']) {
   height: 20px;
 }

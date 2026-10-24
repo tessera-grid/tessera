@@ -1,19 +1,31 @@
+import { useState } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
+import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import { expect, userEvent } from 'storybook/test'
-import { vrStates } from './__mocks__/catalog'
 import {
+  cellOf,
+  copyFrom,
+  dragCells,
+  isSelected,
+  pressCell,
+  selectedCells,
+  untilDone,
+} from './__mocks__/cellGestures'
+import {
+  consoleText,
   guideNext,
-  releaseFocus,
   rowAt,
   settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { WithConsole } from './demos/StoryConsole'
+import { createConsoleLog } from './demos/consoleLog'
 
 /** Выделение ячеек (ADR 0029); выделение командой приложения без жестов (ADR 0120). */
 const meta = {
@@ -31,79 +43,209 @@ export const CellSelectionPlayground: StoryObj<StoryProps> = {
     'cellSelectionRangeSelection',
     'cellSelectionDragSelection',
     'cellSelectionMultiRange',
+    'enableKeyboardNavigation',
   ]),
   args: {
     enableCellSelection: true,
-    // Умеренный грид (обе оси в окне): клик выделяет ячейку, shift-клик/drag —
-    // прямоугольный диапазон, ctrl/cmd-клик — мульти-диапазон, Ctrl/Cmd+C копирует
-    // выделение в буфер (TSV + HTML). См. ADR 0029.
+    // Нажатие выделяет ячейку, с Shift и протяжкой — диапазон, с Ctrl/Cmd — ещё один
+    // диапазон; Ctrl/Cmd+C копирует выделение, с клавиатурой Shift и стрелки расширяют.
     columnCount: 8,
     dataCount: 40,
     containerHeight: '560',
     height: '460',
     maxHeight: '460',
   },
-}
-
-export const CellSelectionPredicate: StoryObj<StoryProps> = {
-  name: 'Predicate',
-  parameters: showControls([
-    'enableCellSelection',
-    'cellSelectionRangeSelection',
-    'cellSelectionDragSelection',
-    'cellSelectionMultiRange',
-  ]),
-  args: {
-    ...CellSelectionPlayground.args,
-    // `canSelectCell` запрещает выделять колонку Age: клик по ней не выделяет, а
-    // диапазон через неё её пропускает. Служебные колонки закрыты всегда, предикат
-    // только сужает. Функцию в панели не задать — контрола нет.
-    cellSelectionCanSelectCell: cell => cell.column.id !== 'age',
+  render: function Render(args) {
+    const [consoleLog] = useState(createConsoleLog)
+    return (
+      <WithConsole log={consoleLog} args={args}>
+        <StoryComponent {...normalizeArgs(args)} />
+      </WithConsole>
+    )
   },
 }
 
-/** Выделенный диапазон ячеек (ADR 0093, VR4): нажатие и нажатие с Shift. */
-export const CellSelectionStateRange: StoryObj<StoryProps> = {
-  name: 'State: cell range',
-  parameters: {
-    ...vrStates('body.cellRange'),
-    ...showControls([
-      'enableCellSelection',
-      'cellSelectionRangeSelection',
-      'cellSelectionDragSelection',
-      'cellSelectionMultiRange',
-    ]),
+const GRID = { columnCount: 8, dataCount: 40, height: '360' }
+
+// --- ADR 0029 S1 ---------------------------------------------------------------------
+
+const FIRST = { row: 'item-id-1', column: 'firstName' }
+const FIRST_END = { row: 'item-id-3', column: 'age' }
+const SECOND = { row: 'item-id-6', column: 'firstName' }
+const SECOND_END = { row: 'item-id-7', column: 'age' }
+/** Прямоугольник 3 × 3 и прямоугольник 2 × 3: колонки от имени до возраста. */
+const FIRST_CELLS = 9
+const BOTH_CELLS = 15
+
+const at = (root: ParentNode, cell: { row: string; column: string }) =>
+  cellOf(root, cell.row, cell.column)!
+
+const selectOne = (root: HTMLElement) => {
+  if (!isSelected(at(root, FIRST)) || selectedCells(root) !== 1)
+    pressCell(at(root, FIRST))
+}
+
+/** От одной выделенной ячейки — диапазон с Shift; иначе выделение начинается заново. */
+const selectFirstRange = (root: HTMLElement) => {
+  if (selectedCells(root) === 1 && isSelected(at(root, FIRST)))
+    pressCell(at(root, FIRST_END), { shiftKey: true })
+  else pressCell(at(root, FIRST))
+}
+
+const selectBothRanges = (root: HTMLElement) => {
+  if (selectedCells(root) === FIRST_CELLS)
+    dragCells(at(root, SECOND), at(root, SECOND_END), { ctrlKey: true })
+  else selectFirstRange(root)
+}
+
+const RANGE: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейка выделена',
+    hint: 'Пользователь щёлкнул ячейку. Она выделена и стала активной.',
+    enter: untilDone(
+      root => isSelected(at(root, FIRST)) && selectedCells(root) === 1,
+      selectOne,
+    ),
   },
-  args: {
-    enableCellSelection: true,
-    columnCount: 6,
-    dataCount: 20,
-    containerHeight: '460',
-    height: '360',
-    maxHeight: '360',
+  {
+    title: 'Диапазон выделен',
+    hint: 'Пользователь щёлкнул другую ячейку с зажатым Shift. Выделен прямоугольник между ними, у него общий контур.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => selectedCells(root) === FIRST_CELLS,
+      selectFirstRange,
+    ),
   },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    const cell = (row: number, column: number) =>
-      rowAt(canvasElement, row).querySelectorAll<HTMLElement>(
-        '.data-grid__body-cell',
-      )[column]!
-    const press = (target: HTMLElement, shiftKey = false) => {
-      const init = { bubbles: true, cancelable: true, button: 0, shiftKey }
-      target.dispatchEvent(new MouseEvent('mousedown', init))
-      target.dispatchEvent(new MouseEvent('mouseup', init))
-    }
-    press(cell(2, 1))
-    press(cell(4, 3), true)
-    const selected = () =>
+  {
+    title: 'Второй диапазон',
+    hint: 'Пользователь протянул выделение по другим ячейкам с зажатым Ctrl (Cmd на Mac). Добавился второй диапазон, первый остался.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => selectedCells(root) === BOTH_CELLS,
+      selectBothRanges,
+    ),
+  },
+  {
+    title: 'Выделение скопировано',
+    hint: 'Пользователь нажал Ctrl+C. Значения обоих диапазонов попали в буфер — таблицей и текстом через табуляцию, а в консоли появилась запись о копировании.',
+    states: ['body.cellRange'],
+    enter: root => {
+      const copied = { done: false }
+      untilDone(
+        () => copied.done,
+        () => {
+          if (selectedCells(root) !== BOTH_CELLS) selectBothRanges(root)
+          else {
+            copyFrom(at(root, FIRST))
+            copied.done = true
+          }
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0029, S1: пользователь выделяет ячейку, диапазон, второй диапазон и копирует. */
+export const CellSelectionRange: StoryObj<StoryProps> = {
+  name: 'Select and copy',
+  parameters: { scenario: '0029/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выделение и копирование"
+      steps={RANGE}
+      args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(RANGE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(1))
+      expect(isSelected(at(canvas, FIRST))).toBe(true)
+    })
+    await step(RANGE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(FIRST_CELLS))
+    })
+    await step(RANGE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(BOTH_CELLS))
+    })
+    await step(RANGE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(consoleText()).toContain('copy'))
+      const data = copyFrom(at(canvas, FIRST))
+      // Строки обоих диапазонов, ячейки строки — через табуляцию.
       expect(
-        canvasElement.querySelectorAll('[data-cell-selected="true"]'),
-      ).toHaveLength(9)
-    await until(selected)
-    // Диапазон без кольца фокуса ячейки-якоря.
-    await releaseFocus()
-    selected()
-    await settle()
+        data.getData('text/plain').split('\n').length,
+      ).toBeGreaterThanOrEqual(5)
+      expect(data.getData('text/plain')).toContain('\t')
+      expect(data.getData('text/html')).toContain('<table')
+      expect(selectedCells(canvas)).toBe(BOTH_CELLS)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0029 S2 ---------------------------------------------------------------------
+
+const ACROSS = { row: 'item-id-3', column: 'visits' }
+/** Три строки по колонкам от имени до визитов — четыре колонки без возраста. */
+const ACROSS_CELLS = 12
+
+const PREDICATE: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонку возраста выделять нельзя',
+    hint: 'Приложение запретило выделять ячейки возраста, и щелчок по ним выделения не даёт.',
+  },
+  {
+    title: 'Диапазон через запрещённую колонку',
+    hint: 'Пользователь выделил с Shift диапазон поперёк таблицы. Ячейки возраста в него не вошли, остальные выделены.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => selectedCells(root) === ACROSS_CELLS,
+      root => {
+        if (!isSelected(at(root, FIRST))) pressCell(at(root, FIRST))
+        else pressCell(at(root, ACROSS), { shiftKey: true })
+      },
+    ),
+  },
+]
+
+/** ADR 0029, S2: приложение запрещает выделять колонку — диапазон её пропускает. */
+export const CellSelectionPredicate: StoryObj<StoryProps> = {
+  name: 'Forbidden column',
+  parameters: { scenario: '0029/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Запрет выделения колонки"
+      steps={PREDICATE}
+      args={guideArgs(
+        {
+          enableCellSelection: true,
+          cellSelectionCanSelectCell: cell => cell.column.id !== 'age',
+          ...GRID,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const age = () => cellOf(canvas, FIRST.row, 'age')!
+    await step(PREDICATE[0]!.title, async () => {
+      await waitForRows(canvas)
+      pressCell(age())
+      await settle()
+      expect(selectedCells(canvas)).toBe(0)
+    })
+    await step(PREDICATE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(ACROSS_CELLS))
+      expect(isSelected(age())).toBe(false)
+      expect(isSelected(cellOf(canvas, FIRST.row, 'visits'))).toBe(true)
+      await settle()
+    })
   },
 }
 
@@ -118,6 +260,8 @@ const FOUND = [
   },
 ]
 
+const CLICKED = { row: 'item-id-6', column: 'country' }
+
 const selectedCellIds = (root: ParentNode) =>
   [
     ...root.querySelectorAll<HTMLElement>(
@@ -131,7 +275,7 @@ const selectedCellIds = (root: ParentNode) =>
 const BY_COMMAND: readonly GuideStoryStep[] = [
   {
     title: 'Выделения нет',
-    hint: 'Плагин cellSelectionModel без cellSelection: мышью и клавишами выделить нельзя, Ctrl/Cmd+C ничего не копирует.',
+    hint: 'Приложение подключило подсветку выделения без жестов: мышью и клавишами выделить нельзя, копировать нечего.',
     props: () => ({
       enableCellSelectionModel: true,
       enableKeyboardNavigation: true,
@@ -139,12 +283,21 @@ const BY_COMMAND: readonly GuideStoryStep[] = [
   },
   {
     title: 'Приложение выделяет найденное',
-    hint: 'Команда приложения задаёт срез cellSelection аргументом модели — диапазон подсвечен контуром.',
+    hint: 'Приложение нашло значения и выделило их своей командой. Найденные ячейки обведены общим контуром.',
+    states: ['body.cellRange'],
     props: () => ({ cellSelectionModelCellSelection: FOUND }),
   },
   {
     title: 'Щелчок не меняет выделение',
-    hint: 'Пользователь щёлкает ячейку — она становится активной, выделение остаётся тем, что задало приложение.',
+    hint: 'Пользователь щёлкнул ячейку. Она стала активной, а выделение осталось тем, что задало приложение.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root =>
+        cellOf(root, CLICKED.row, CLICKED.column)?.getAttribute(
+          'data-kn-active',
+        ) === 'true',
+      root => pressCell(cellOf(root, CLICKED.row, CLICKED.column)!),
+    ),
   },
 ]
 
@@ -153,20 +306,13 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
   name: 'By command',
   parameters: {
     scenario: '0120/S7',
-    ...showControls(['enableCellSelectionModel']),
-  },
-  args: {
-    columnCount: 8,
-    dataCount: 40,
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Выделение командой приложения"
       steps={BY_COMMAND}
-      args={normalizeArgs(args)}
+      args={guideArgs(GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -180,18 +326,24 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
       'item-id-3/firstName',
       'item-id-3/lastName',
     ]
-    await step(BY_COMMAND[0].title, async () => {
+    await step(BY_COMMAND[0]!.title, async () => {
       await waitForRows(canvas)
       expect(selectedCellIds(canvas)).toEqual([])
     })
-    await step(BY_COMMAND[1].title, async () => {
+    await step(BY_COMMAND[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCellIds(canvas).sort()).toEqual(found))
     })
-    await step(BY_COMMAND[2].title, async () => {
+    await step(BY_COMMAND[2]!.title, async () => {
       await guideNext(canvas)
+      await until(() =>
+        expect(cellOf(canvas, CLICKED.row, CLICKED.column)).toHaveAttribute(
+          'data-kn-active',
+          'true',
+        ),
+      )
       await userEvent.click(
-        rowAt(canvas, 6).querySelector<HTMLElement>(
+        rowAt(canvas, 7).querySelector<HTMLElement>(
           '[data-column-id="country"]',
         )!,
       )

@@ -15,7 +15,10 @@
   transform: none;
 }
 
-/* Отметка отказа после красного света: проявляется, когда он погаснет (ADR 0116). */
+/* Отметка отказа после красного контура: проявляется, когда он погаснет совсем (ADR 0127). */
 .dot[data-delayed][data-shown='true'] {
-  transition-delay: var(--tsr-comp-error-flash-duration);
+  transition-delay: calc(
+    var(--tsr-comp-error-flash-duration) +
+      var(--tsr-comp-error-flash-fade-duration)
+  );
 }

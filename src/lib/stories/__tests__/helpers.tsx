@@ -29,6 +29,18 @@ export const humanClick = (element: Element) =>
 export const pendingArcOf = (button: Element) =>
   button.querySelector<SVGSVGElement>(':scope > svg[data-pending-arc]')
 
+/** Дорожка дуги — весь контур; при отказе она краснеет. */
+export const arcTrackOf = (arc: SVGSVGElement) =>
+  arc.querySelector<SVGRectElement>(':scope > rect')!
+
+/** Отрезки хвоста дуги от головы к концу: `i`-й — `i/8` длины дуги. */
+export const arcTailOf = (arc: SVGSVGElement) => [
+  ...arc.querySelectorAll<SVGRectElement>(':scope > g > rect'),
+]
+
+/** Голова дуги — самый короткий отрезок хвоста, в полную силу. */
+export const arcHeadOf = (arc: SVGSVGElement) => arcTailOf(arc)[0]!
+
 /**
  * Слой состояния строки (ADR 0126): наведение и выбор ложатся поверх её фона, а
  * `background-color` строки — всегда фон чётной или нечётной строки. Закреплённые

@@ -10,7 +10,7 @@ export const overflowColumns = [
     footer: 'Companies registered in total',
     size: 160,
   },
-  { id: 'city', accessorKey: 'city', header: 'City', size: 160 },
+  { id: 'city', accessorKey: 'city', header: 'City', size: 140 },
 ]
 
 export const overflowData = Array.from({ length: 40 }, (_, index) => ({

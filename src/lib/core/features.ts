@@ -25,6 +25,7 @@ import {
 import { commonFeature } from './commonFeature'
 import { expandIncludedModels } from './pluginModels'
 import { actionStatusFeature } from './headerActions/actionStatusFeature'
+import { flashFeature } from './flashes/flashFeature'
 import { highlightFeature } from './highlights/highlightFeature'
 import { scrollToRowFeature } from './scrollToRow/scrollToRowFeature'
 import { serverActionFeature } from './serverActions/serverActionFeature'
@@ -365,6 +366,7 @@ export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
   commonFeature: typeof commonFeature
   actionStatusFeature: typeof actionStatusFeature
   highlightFeature: typeof highlightFeature
+  flashFeature: typeof flashFeature
   scrollToRowFeature: typeof scrollToRowFeature
   serverActionFeature: typeof serverActionFeature
   columnOrderingFeature: typeof columnOrderingFeature
@@ -388,6 +390,7 @@ export const buildTesseraFeatures = <
     commonFeature,
     actionStatusFeature,
     highlightFeature,
+    flashFeature,
     scrollToRowFeature,
     serverActionFeature,
     columnOrderingFeature,

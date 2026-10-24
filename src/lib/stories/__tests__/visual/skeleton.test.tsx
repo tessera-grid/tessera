@@ -506,10 +506,11 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     const rows = Array.from(
       document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
     )
-    await userEvent.hover(rows[0])
-    const handle = rows[0]
-      .querySelector<HTMLElement>(HANDLE)!
-      .getBoundingClientRect()
+    // Наведение — на ячейку ручки: середина всей строки может быть за краем окна, и
+    // прокрутка к ней увела бы первую колонку из окна виртуализации.
+    const handleEl = rows[0].querySelector<HTMLElement>(HANDLE)!
+    await userEvent.hover(handleEl.closest('.data-grid__body-cell')!)
+    const handle = handleEl.getBoundingClientRect()
     const from = {
       x: handle.left + handle.width / 2,
       y: handle.top + handle.height / 2,

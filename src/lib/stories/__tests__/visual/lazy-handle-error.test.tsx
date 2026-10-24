@@ -46,7 +46,7 @@ describe('Меню ручек — ошибка загрузки', () => {
     expect(gripWrapper().querySelector('[data-error-flash]')).toBeNull()
     expect(gripWrapper().hasAttribute('data-error-flash')).toBe(false)
 
-    // Вспышка держится --tsr-comp-error-flash-duration (1200 мс), затем гаснет. Ждём
+    // Вспышка держится --tsr-comp-error-flash-duration (300 мс), затем гаснет. Ждём
     // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
     // отдаёт отпускание кнопки родителю по прежней раскладке.
     await expect.poll(flash, { timeout: 3000 }).toBeNull()

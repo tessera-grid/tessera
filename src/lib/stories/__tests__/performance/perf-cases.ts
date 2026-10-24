@@ -231,6 +231,39 @@ export const sortAllColumnsSeed = (): TesseraFeatureEntry => {
 }
 
 /**
+ * Засев вспышек итога (ADR 0134, OF20): 1500 ячеек — по 500 строк в трёх колонках,
+ * итоги `arrived`, `accepted`, `reverted`. Вспышка ставится после монтирования грида —
+ * время берётся из токенов темы, поэтому `flash()` зовёт тест.
+ */
+export const outcomeFlashSeed = (rows: number) => {
+  let table:
+    | {
+        flashOutcome: (targets: object[], outcome: string) => void
+        getAllLeafColumns: () => { id: string }[]
+      }
+    | undefined
+  const entry: TesseraFeatureEntry = {
+    id: 'perfOutcomeFlash',
+    setup: t => {
+      table = t as typeof table
+    },
+  }
+  const flash = () => {
+    const columns = table!.getAllLeafColumns().slice(0, 3)
+    const outcomes = ['arrived', 'accepted', 'reverted']
+    columns.forEach((column, i) =>
+      table!.flashOutcome(
+        Array.from({ length: Math.min(rows, 500) }, (_, row) => ({
+          cell: [`item-id-${row}`, column.id],
+        })),
+        outcomes[i]!,
+      ),
+    )
+  }
+  return { entry, flash }
+}
+
+/**
  * Засев подсветки (ADR 0080, HL19): каждая 10-я строка и третья колонка залиты.
  * Через публичный `table.highlight` из `setup`, как плагин.
  */

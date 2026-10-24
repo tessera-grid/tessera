@@ -34,7 +34,7 @@ describe('Ленивые поповеры — ошибка загрузки', ()
     await sleep(100)
     expect(columnsPopover()).toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()
-    // Вспышка держится --tsr-comp-error-flash-duration (1200 мс), затем гаснет. Ждём
+    // Вспышка держится --tsr-comp-error-flash-duration (300 мс), затем гаснет. Ждём
     // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
     // отдаёт отпускание кнопки группе тулбара по прежней раскладке.
     await expect

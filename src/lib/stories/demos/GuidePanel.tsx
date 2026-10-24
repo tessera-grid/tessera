@@ -568,6 +568,9 @@ export const GuidePanel = ({
         aria-label={`Scenario: ${title}`}
         data-testid="guide"
         data-busy={blocking || undefined}
+        // Нажатие на панель не забирает фокус у таблицы: открытая правка не сохраняется
+        // потерей фокуса, состояние шага остаётся (SN35).
+        onMouseDown={event => event.preventDefault()}
         style={{
           position: 'relative',
           display: 'flex',

@@ -26,7 +26,6 @@ import {
 } from '../../../plugins'
 import { humanClick, pendingArcOf } from '../helpers'
 import { composed } from '../stories'
-import { ContextMenuAsync } from '../../DataGrid.Cells.ContextMenu.stories'
 import { RowActionsAsync } from '../../DataGrid.Rows.Actions.stories'
 import {
   AXE_OPTIONS,
@@ -646,7 +645,7 @@ describe('Долгое действие', () => {
 })
 
 describe('Отказ действия', () => {
-  test('MI12: отказ — вспышка на кебабе, отметка ошибки проступает с началом угасания красного, кебаб виден без наведения, тултип и имя называют упавшее действие', async () => {
+  test('MI12: отказ — вспышка на кебабе, отметка ошибки проступает после того, как красный контур погас совсем, кебаб виден без наведения, тултип и имя называют упавшее действие', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
     await parkPointer()
@@ -655,16 +654,21 @@ describe('Отказ действия', () => {
     await expect
       .poll(() => rowKebab('r1')!.getAttribute('data-error-flash'))
       .toBe('on')
-    // Пока красный держится, отметки не видно: она не сливается с контуром.
     expect(errorDot().dataset.shown).toBe('true')
-    expect(getComputedStyle(errorDot()).opacity).toBe('0')
     expect(kebabWrapper().getAttribute('class')).not.toContain('--hidden')
-    await expect
-      .poll(() => rowKebab('r1')!.getAttribute('data-error-flash'), {
-        timeout: 2000,
-        interval: 10,
-      })
-      .toBe('off')
+    // Пока красный контур виден — держится и гаснет, — отметки нет: она не сливается с ним.
+    const kebab = rowKebab('r1')!
+    const redVisible = () => {
+      const arc = pendingArcOf(kebab)
+      return !!arc && parseFloat(getComputedStyle(arc).opacity) > 0.05
+    }
+    let sawFade = false
+    while (redVisible()) {
+      sawFade ||= kebab.getAttribute('data-error-flash') === 'off'
+      expect(getComputedStyle(errorDot()).opacity).toBe('0')
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+    expect(sawFade).toBe(true)
     await expect.poll(() => getComputedStyle(errorDot()).opacity).toBe('1')
     expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(
       'Row options. Failed: Remove',
@@ -933,7 +937,7 @@ describe('Свет во время прокрутки', () => {
     /** Состояние всех анимаций дуги кнопки (ADR 0127) — одно на всех или 'mixed'. */
     const playState = () => {
       const states = new Set(
-        getComputedStyle(pendingArcOf(rowKebab('r1')!)!.firstElementChild!)
+        getComputedStyle(pendingArcOf(rowKebab('r1')!)!)
           .animationPlayState.split(',')
           .map(state => state.trim()),
       )
@@ -959,12 +963,11 @@ describe('Свет во время прокрутки', () => {
 })
 
 describe('Демо-истории', () => {
-  test('MI24: «Rows/Actions — Async actions» и «Cells/Context menu — Async items» — ожидание, отказ и причина видны в интерфейсе', async () => {
+  test('MI24: «Rows/Actions — Async actions» — ожидание, отказ и причина видны в интерфейсе', async () => {
     // Storybook отбрасывает аргументы со скрытым условием контрола — composeStories нет:
     // свои аргументы истории должны пройти этот фильтр.
     for (const [story, own] of [
       [composed.RowActionsAsync, RowActionsAsync.args],
-      [composed.ContextMenuAsync, ContextMenuAsync.args],
     ] as const) {
       const args = story.args as Record<string, unknown>
       const argTypes = story.argTypes as Record<string, never>
@@ -997,16 +1000,5 @@ describe('Демо-истории', () => {
       .poll(() => kebabOf(first)?.getAttribute('aria-label'), { timeout: 5000 })
       .toBe('Row options. Failed: Delete')
     await view.unmount()
-
-    await render(<composed.ContextMenuAsync />)
-    await waitForGrid()
-    const second = rowsTopDown()[1]!
-    const cell = second.querySelector<HTMLElement>('[data-column-id]')!
-    await userEvent.click(cell, { button: 'right' })
-    await expect.poll(() => isPending(item('Share'))).toBe(true)
-    await expect
-      .poll(() => description(item('Share')), { timeout: 5000 })
-      .toBe('Sharing is off for this row')
-    await closeMenu()
   })
 })

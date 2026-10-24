@@ -108,10 +108,12 @@
 /*
  * Подсветка строки (ADR 0080): слой фона строки поверх её цвета; закреплённые ячейки
  * с непрозрачной подложкой повторяют его по унаследованной `--tsr-highlight-row`.
- * Строка держит переход появления и затухания (ADR 0101).
+ * Строка держит переход появления и затухания (ADR 0101). Вспышка итога (ADR 0134) —
+ * слоем над подсветкой приложения.
  */
-.body__row[data-highlight] {
+.body__row:is([data-highlight], [data-flash]) {
   background-image:
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
     linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
@@ -124,30 +126,39 @@
   --tsr-highlight-row: var(--tsr-comp-row-drop-parent-bg);
 
   background-image:
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
     linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
 
-.body__row[data-highlight] {
+.body__row:is([data-highlight], [data-flash]) {
   transition:
     var(--tsr-comp-row-transition),
     --tsr-row-state var(--tsr-comp-motion-duration)
       var(--tsr-comp-motion-easing),
     --tsr-highlight-row var(--tsr-comp-highlight-fade-duration)
-      var(--tsr-comp-motion-easing-out);
+      var(--tsr-comp-motion-easing-out),
+    --tsr-flash-row var(--tsr-flash-time) var(--tsr-comp-motion-easing-out);
 }
 
 /*
  * Высокая контрастность (ADR 0087): выбор — текст `HighlightText` на `Highlight`,
  * подсветка — `Mark`, наведение — контур без заливки: слой состояния браузер снимает. Кольцо
- * фокуса на `Highlight` — `HighlightText`. Слой прихода не рисуется.
+ * фокуса на `Highlight` — `HighlightText`. Слой прихода не рисуется; из вспышек итога
+ * рисуется только `reverted` — как подсветка (ADR 0134).
  */
 @media (forced-colors: active) {
   /*
    * Текст на заливке — системного цвета; без этого Chromium кладёт под него подложку
    * Canvas. Строка и ячейки остаются под режимом: слои тона браузер снимает.
    */
-  .body__row:is([data-selected='true'], [data-highlight]) > * * {
+  .body__row:is(
+      [data-selected='true'],
+      [data-highlight],
+      [data-flash='reverted']
+    )
+    > *
+    * {
     forced-color-adjust: none;
   }
 
@@ -166,7 +177,7 @@
     background-color: Highlight;
   }
 
-  .body__row[data-highlight] {
+  .body__row:is([data-highlight], [data-flash='reverted']) {
     --tsr-comp-cell-divider-color: Mark;
   }
 
@@ -176,7 +187,7 @@
   }
 
   /* Подсветка главнее выбора (ADR 0126): правило позже, той же силы. */
-  .body__row[data-highlight] {
+  .body__row:is([data-highlight], [data-flash='reverted']) {
     --tsr-comp-focus-ring: MarkText;
     --tsr-comp-cell-pinned-left-bg: Mark;
     --tsr-comp-cell-pinned-right-bg: Mark;
@@ -186,8 +197,8 @@
     background-color: Mark;
   }
 
-  .body__row[data-highlight],
-  .body__row[data-highlight] * {
+  .body__row:is([data-highlight], [data-flash='reverted']),
+  .body__row:is([data-highlight], [data-flash='reverted']) * {
     color: MarkText;
   }
 

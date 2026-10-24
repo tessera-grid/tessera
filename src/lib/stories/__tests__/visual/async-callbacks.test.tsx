@@ -413,8 +413,14 @@ describe('Асинхронная правка: значение и подсве�
   })
 
   test('CF1: ячейка в ожидании показывает отправленное значение как текст обычной ячейки — цвет, размер, высота строки, без приглушения; раскладка не меняется', async () => {
-    // История сервера: контейнер крупнее шрифта ячейки — значение не должно его унаследовать.
-    await render(<composed.CellEditingServer serverDelayMs={60_000} />)
+    // Песочница с консолью: контейнер крупнее шрифта ячейки — значение не должно его
+    // унаследовать. Сервер не отвечает.
+    await render(
+      <composed.CellEditingPlayground
+        enableKeyboardNavigation
+        onCellEdit={() => new Promise<void>(() => {})}
+      />,
+    )
     await waitForGrid()
     const box = (el: HTMLElement) => [
       el.offsetLeft,

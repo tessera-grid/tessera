@@ -211,7 +211,8 @@
 
 /*
  * Слои фона ячейки поверх `background-color`: сверху вниз — тинт выделения ячеек,
- * подсветка ячейки, колонки (ADR 0080, §2). Текст, кромки выделения и фокус-кольцо
+ * вспышка и подсветка ячейки, вспышка и подсветка колонки (ADR 0080, §2; ADR 0134, §5):
+ * вспышка итога — над подсветкой приложения своей цели. Текст, кромки выделения и фокус-кольцо
  * лежат выше и не тонируются. Подсветку строки и её состояние (наведение, выбор)
  * рисует фон самой строки: прозрачные ячейки их пропускают, а свои слои строки получают
  * только ячейки с непрозрачной подложкой закрепления (ADR 0126) — иначе прозрачная
@@ -220,6 +221,8 @@
 .body__cell:is(
   [data-highlight],
   [data-column-highlight],
+  [data-flash],
+  [data-column-flash],
   [data-cell-selected='true']
 ) {
   background-image:
@@ -227,7 +230,9 @@
       var(--tsr-cell-selection-tint, transparent),
       var(--tsr-cell-selection-tint, transparent)
     ),
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
     linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column));
 }
 
@@ -243,19 +248,30 @@
       var(--tsr-cell-selection-tint, transparent),
       var(--tsr-cell-selection-tint, transparent)
     ),
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
     linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column)),
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
     linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
 
-/* Подсветка проявляется и гаснет одним переходом (ADR 0101). */
-.body__cell:is([data-highlight], [data-column-highlight]) {
+/* Подсветка проявляется и гаснет одним переходом (ADR 0101), вспышка — временем итога. */
+.body__cell:is(
+  [data-highlight],
+  [data-column-highlight],
+  [data-flash],
+  [data-column-flash]
+) {
   transition:
     var(--tsr-comp-row-transition),
     --tsr-highlight-cell var(--tsr-comp-highlight-fade-duration)
       var(--tsr-comp-motion-easing-out),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-flash-cell var(--tsr-flash-time) var(--tsr-comp-motion-easing-out),
+    --tsr-flash-column var(--tsr-column-flash-time)
       var(--tsr-comp-motion-easing-out);
 }
 
@@ -293,7 +309,9 @@
   .body__cell:is(
       [data-cell-selected='true']:not([data-cell-focused='true']),
       [data-highlight],
-      [data-column-highlight]
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
     )
     * {
     forced-color-adjust: none;
@@ -316,7 +334,12 @@
     color: HighlightText;
   }
 
-  .body__cell:is([data-highlight], [data-column-highlight]) {
+  .body__cell:is(
+    [data-highlight],
+    [data-column-highlight],
+    [data-flash='reverted'],
+    [data-column-flash='reverted']
+  ) {
     --tsr-comp-focus-ring: MarkText;
     --tsr-comp-cell-divider-color: Mark;
     --tsr-comp-cell-pinned-left-bg: Mark;
@@ -329,10 +352,25 @@
 
   /* Сильнее цвета выбранной строки: заливка ячейки лежит поверх её заливки. */
   :global(.data-grid__body-row)
-    .body__cell:is([data-highlight], [data-column-highlight]),
+    .body__cell:is(
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    ),
   :global(.data-grid__body-row)
-    .body__cell:is([data-highlight], [data-column-highlight])
+    .body__cell:is(
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    )
     * {
     color: MarkText;
   }
+}
+
+/* Под виртуализацией колонок спейсер в DOM первый: правые закреплённые — после него. */
+.body__cell[data-cell-pinned='right'] {
+  order: var(--tsr-virtual-end-order, 0);
 }

@@ -685,22 +685,44 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
     expect(lastZone.left).toBeCloseTo(lr.right - HALF * 2, 0)
   })
 
-  test('GB2: под грипом нет маски — содержимое заголовка не заходит под зону и не сдвигается при наведении, подпись видна целиком', async () => {
-    const container = await renderColumnResizing({ columnCount: 4 })
+  test('GB2: содержимое заголовка не сдвигается при наведении; кнопки не заходят под зону грипа и видны целиком; подпись под зону заходит и при видимой черте затухает', async () => {
+    const container = await renderColumnResizing({
+      columnCount: 4,
+      enableColumnSorting: true,
+    })
     const [first] = renderedDataCells(container)
     const content = first.querySelector<HTMLElement>(
       '.data-grid__cell-wrapper-content',
     )!
+    const titleEl = first.querySelector<HTMLElement>(
+      '.data-grid__cell-wrapper-title',
+    )!
+    // В покое подпись заходит под зону грипа своей колонки.
+    expect(titleEl.getBoundingClientRect().right).toBeGreaterThan(
+      zoneOf(first).left,
+    )
     const before = getComputedStyle(content).paddingRight
     await revealGrip(first)
     expect(getComputedStyle(content).paddingRight).toBe(before)
+    // Кнопки — левее зоны, целиком в заголовке.
+    const buttons = [
+      ...first.querySelectorAll<HTMLElement>(
+        'button:not(.drag__handler--column)',
+      ),
+    ].filter(b => b.getBoundingClientRect().width > 0)
+    expect(buttons.length).toBeGreaterThan(0)
+    for (const button of buttons) {
+      const r = button.getBoundingClientRect()
+      expect(r.right).toBeLessThanOrEqual(zoneOf(first).left)
+      expect(r.left).toBeGreaterThanOrEqual(first.getBoundingClientRect().left)
+    }
+    // При видимой черте у неё — затемнение, сам контейнер грипа без фона.
     expect(getComputedStyle(wrapperOf(gripOf(first))).backgroundColor).toBe(
       'rgba(0, 0, 0, 0)',
     )
-    const title = first
-      .querySelector<HTMLElement>('.data-grid__cell-wrapper-title')!
-      .getBoundingClientRect()
-    expect(title.right).toBeLessThanOrEqual(zoneOf(first).left)
+    expect(
+      getComputedStyle(wrapperOf(gripOf(first)), '::before').backgroundImage,
+    ).toMatch(/^linear-gradient/)
   })
 
   test('GB3: у соседа ручка перетаскивания колонки и подпись правее зоны грипа слева; зоны нажатия не пересекаются', async () => {

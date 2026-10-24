@@ -21,6 +21,8 @@ import {
   type HighlightTargetState,
 } from '../core/highlights/highlightFeature'
 import { highlightRender } from './highlight'
+import { flashRender } from './flash'
+import type { FlashEntry, Flashes } from '../core/flashes/flashFeature'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -84,10 +86,12 @@ export const BodyCell = memo(
     // Подсветка своей ячейки и своей колонки (ADR 0080) — в той же подписке.
     const cellKey = cellHighlightKey(cell.row.id, cell.column.id)
     const columnKey = columnHighlightKey(cell.column.id)
-    const { cellHighlight, columnHighlight } = useTableState(
-      table as never,
-      (state: unknown) => {
-        const s = state as Record<string, unknown> & { highlights?: Highlights }
+    const { cellHighlight, columnHighlight, cellFlash, columnFlash } =
+      useTableState(table as never, (state: unknown) => {
+        const s = state as Record<string, unknown> & {
+          highlights?: Highlights
+          flashes?: Flashes
+        }
         return {
           columnPinning: s.columnPinning,
           columnSizing: s.columnSizing,
@@ -95,15 +99,22 @@ export const BodyCell = memo(
           columnVisibility: s.columnVisibility,
           cellHighlight: s.highlights?.[cellKey],
           columnHighlight: s.highlights?.[columnKey],
+          cellFlash: s.flashes?.[cellKey],
+          columnFlash: s.flashes?.[columnKey],
         }
-      },
-    ) as {
-      cellHighlight?: HighlightTargetState
-      columnHighlight?: HighlightTargetState
-    }
+      }) as {
+        cellHighlight?: HighlightTargetState
+        columnHighlight?: HighlightTargetState
+        cellFlash?: FlashEntry
+        columnFlash?: FlashEntry
+      }
     const highlighted = highlightRender([
       { layer: 'cell', state: cellHighlight },
       { layer: 'column', state: columnHighlight, describe: false },
+    ])
+    const flashed = flashRender([
+      { layer: 'cell', entry: cellFlash },
+      { layer: 'column', entry: columnFlash },
     ])
 
     const {
@@ -224,6 +235,7 @@ export const BodyCell = memo(
           paddingLeft,
           ...selectionStyle,
           ...highlighted.style,
+          ...flashed.style,
         }}
         tabIndex={nav ? nav.tabIndex : cellSel?.tabIndex}
         onFocus={nav?.onFocus}
@@ -252,6 +264,7 @@ export const BodyCell = memo(
         data-cell-selected={cellSel?.isSelected || undefined}
         data-cell-focused={cellSel?.isFocused || undefined}
         {...highlighted.attrs}
+        {...flashed.attrs}
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}

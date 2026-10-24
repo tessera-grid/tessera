@@ -2,12 +2,14 @@ import { composeStories } from '@storybook/react'
 import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
+import { humanClick } from '../helpers'
 
+import * as editingStories from '../../DataGrid.Cells.Editing.stories'
 import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
 import * as visibilityStories from '../../DataGrid.Columns.Visibility.stories'
 import * as stories from '../../GuidePanel.dev.stories'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN34) — с движением: каталог
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35) — с движением: каталог
 // гоняет истории с уменьшенным движением, и порядок конфетти и сдвига виден только здесь.
 // SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
@@ -15,6 +17,7 @@ const { GuidePanelCollapsed, GuidePanelManySteps, GuidePanelPlayground } =
   composeStories(stories)
 const { SkeletonDataArrives } = composeStories(skeletonStories)
 const { ColumnVisibilityToggleAll } = composeStories(visibilityStories)
+const { EditingSession } = composeStories(editingStories)
 
 const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
@@ -63,6 +66,35 @@ const settled = () =>
     .toBe(false)
 
 describe('панель сценария (ADR 0117)', () => {
+  test('SN35: нажатие мышью на панель гайда не забирает фокус у таблицы — открытая правка не сохраняется потерей фокуса', async () => {
+    const screen = await render(<EditingSession />)
+    try {
+      const input = () =>
+        document.querySelector<HTMLInputElement>(
+          '.data-grid__body-row[data-row-id="item-id-0"] .data-grid__body-cell[data-column-id="age"] input',
+        )
+      await expect.poll(() => input()?.value).toBe('55')
+      input()!.focus()
+      await humanClick(byId('guide-toggle'))
+      await expect
+        .poll(() => byId('guide-toggle').getAttribute('aria-expanded'))
+        .toBe('true')
+      expect(document.activeElement).toBe(input())
+      // Панель раскрывается переходом высоты: кнопка «Далее» — на своём месте после него.
+      await sleep(600)
+      await expect.poll(() => button('guide-next').disabled).toBe(false)
+      await humanClick(button('guide-next'))
+      await expect
+        .poll(() => byId('guide').textContent, { timeout: 5000 })
+        .toContain('2 из 4')
+      // Черновик не сохранён: поле открыто, фокус — в нём.
+      expect(input()?.value).toBe('55')
+      expect(document.activeElement).toBe(input())
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('SN14: панель свёрнута по умолчанию — название, номер шага и «Воспроизвести», без кнопок шагов; раскрытие и сворачивание плавные; свёрнутое тело вне фокуса', async () => {
     await render(<GuidePanelCollapsed />)
     await expect.poll(() => byId('guide-toggle')).toBeTruthy()

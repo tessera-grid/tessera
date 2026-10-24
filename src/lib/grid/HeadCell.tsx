@@ -30,6 +30,7 @@ import {
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
 import { highlightRender, useColumnHighlight } from './highlight'
+import { flashRender, useColumnFlash } from './flash'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
 import type { CommonColumnDef } from '../core/commonFeature.types'
@@ -104,6 +105,10 @@ export const HeadCellView = ({
   const columnHighlight = useColumnHighlight(table, header.column.id)
   const highlighted = highlightRender([
     { layer: 'column', state: columnHighlight },
+  ])
+  // Вспышка итога колонки (ADR 0134) — тем же id колонки ячейки.
+  const flashed = flashRender([
+    { layer: 'column', entry: useColumnFlash(table, header.column.id) },
   ])
 
   const {
@@ -248,9 +253,12 @@ export const HeadCellView = ({
       {...(nav && { [NAV_CELL_ATTR]: '' })}
       data-kn-active={nav?.isActive || undefined}
       style={
-        highlighted.style ? { ...cellStyles, ...highlighted.style } : cellStyles
+        highlighted.style || flashed.style
+          ? { ...cellStyles, ...highlighted.style, ...flashed.style }
+          : cellStyles
       }
       {...highlighted.attrs}
+      {...flashed.attrs}
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
       role="columnheader"
       aria-labelledby={hasTitle ? titleId : undefined}

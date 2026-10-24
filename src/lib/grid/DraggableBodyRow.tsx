@@ -18,6 +18,7 @@ import {
 } from './BodyRow'
 import { ItemDraggableWrapper } from './dnd'
 import { highlightRender } from './highlight'
+import { flashRender } from './flash'
 import { useSlotGlide } from './rowMotion/useSlotGlide'
 import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
@@ -33,11 +34,12 @@ const transformAt = (y: number) => `translate3d(0px, ${y}px, 0px)`
 export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   const { row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived, highlight, moving, movePending } =
+  const { arrived, highlight, flash, moving, movePending } =
     useRowStateSubscription(row)
   // Предикат `canDragRow` с новой ссылкой (ADR 0039, RX23) включает ручку строки мимо мемоизации.
   usePluginRenderVersion()
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
+  const flashed = flashRender([{ layer: 'row', entry: flash }])
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
@@ -131,6 +133,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-group-row={row.getIsGrouped?.() ?? false}
       data-arrived={arrived || undefined}
       {...highlighted.attrs}
+      {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
       data-row-drop-parent={props.dropParent || undefined}
@@ -138,7 +141,9 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       data-last-row={row.getIsLastRow()}
       data-layout={props.layout}
       style={
-        highlighted.style ? { ...rowStyles, ...highlighted.style } : rowStyles
+        highlighted.style || flashed.style
+          ? { ...rowStyles, ...highlighted.style, ...flashed.style }
+          : rowStyles
       }
     >
       <ItemDraggableWrapper

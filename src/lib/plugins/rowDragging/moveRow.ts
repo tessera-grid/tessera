@@ -9,6 +9,7 @@ import { arrayMove } from '@dnd-kit/sortable'
 import { readPluginHooks } from '../../core/definePlugin'
 import { readRowMoves } from '../../core/rowMoves'
 import { commitRowMove, type RowMoveCommit } from './commitRowMove'
+import { canNestInto } from './draggingHelpers'
 import type { RowDraggingHooks } from './types'
 
 interface OrderItem {
@@ -165,7 +166,7 @@ const nestTargetOf = (row: MoveRow, table: unknown) => {
     return undefined
   }
   const target = (table as MoveTable).getCoreRowModel().rows[row.index - 1]
-  return target?.getCanExpand?.() ? target : undefined
+  return target && canNestInto(target, table) ? target : undefined
 }
 
 /** Корневая строка без подстрок вкладывается в предыдущую группу — не группа в группу. */

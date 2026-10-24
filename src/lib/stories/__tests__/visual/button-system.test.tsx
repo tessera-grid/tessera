@@ -347,8 +347,24 @@ describe('Button system (ADR 0098)', () => {
         const isText = button.classList.contains('data-grid__button')
         expect(isIcon || isText, `${name} — кнопка кита`).toBe(true)
         const t = kit(button.parentElement!)
-        expect(style(button).height, `${name} высота`).toBe(t.size)
-        if (isIcon) expect(`${box.width}px`, `${name} ширина`).toBe(t.size)
+        // Кнопки-иконки в ячейках — размер кнопок грида (ADR 0135), ручки — компактный.
+        const size = !isIcon
+          ? t.size
+          : button.getAttribute('data-size') === 'compact'
+            ? token(
+                button.parentElement!,
+                '--tsr-comp-button-size-compact',
+                'height',
+              )
+            : button.closest('.data-grid__cell-wrapper-content')
+              ? token(
+                  button.parentElement!,
+                  '--tsr-comp-grid-button-size',
+                  'height',
+                )
+              : t.size
+        expect(style(button).height, `${name} высота`).toBe(size)
+        if (isIcon) expect(`${box.width}px`, `${name} ширина`).toBe(size)
         const shape = isText ? 'square' : button.getAttribute('data-shape')
         // Кнопки панелей (тулбар, нижняя панель) и плашки — квадратные, остальные — круглые.
         if (isIcon) {

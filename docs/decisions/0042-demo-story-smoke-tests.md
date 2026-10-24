@@ -34,8 +34,8 @@
 
 | ID  | Требование                                                                                                                                                          | Вид    |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| DS1 | «Cells/Editing — Server (async)»: правка кнопкой и `Enter` — ячейка ждёт, затем показывает новое значение; в журнале `onCellEdit` и `saved`                         | visual |
-| DS2 | «Cells/Editing — Sessions»: изменение значения извне во время правки не закрывает редактор; `onCellEdit` в журнале с `original` и `current`                         | visual |
+| DS1 | Гайд «Cells/Editing — Server save»: правка кнопкой и `Enter` — ячейка ждёт, затем показывает новое значение; в журнале `onCellEdit`                                 | visual |
+| DS2 | Гайд «Cells/Editing — Draft survives»: изменение значения извне во время правки не закрывает редактор; `onCellEdit` в журнале с `original` и `current`              | visual |
 | DS3 | «Plugin API — Drag & resize callbacks»: бросок строки мышью — `onRowDragEnd` в журнале                                                                              | visual |
 | DS4 | «Rows/Expanding — Lazy load (async)»: раскрытие ждёт подгрузки (`aria-busy`), затем строка раскрыта; в журнале `onExpandRow` и `loaded`                             | visual |
 | DS5 | «Plugin API — Playground»: `maxDepth` ниже раскрытого уровня прячет раскрытие, возврат значения — возвращает                                                        | visual |

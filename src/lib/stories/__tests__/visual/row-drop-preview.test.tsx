@@ -635,6 +635,43 @@ describe('Бросок в свёрнутые группы (ADR 0109)', () => {
     }
   })
 
+  test('NX11: дерево без переключателя — пауза не раскрывает свёрнутую группу, слот не глубже её уровня, бросок ставит строку сестрой; под раскрытой группой слот и бросок — на уровне её детей', async () => {
+    const screen = await renderCollapsed({
+      enableRowExpanding: false,
+      enableRowExpandingModel: true,
+      initialExpanded: { 'node-2': true },
+    })
+    try {
+      expect(document.querySelector(EXPAND_BUTTON)).toBeNull()
+      const dragged = await dragOver('row-0', 'node-1', 1)
+      await settleSlotAfter('node-1', dragged.at)
+      expect(depthOf(slot()!)).toBe(0)
+      await sleep(800)
+      expect(rowById('node-1-0'), 'пауза').toBeNull()
+      await release()
+      await expect.poll(() => slot()).toBeNull()
+      await settleRowMotion()
+      expect(rowById('node-1-0'), 'после броска').toBeNull()
+      const order = rowsInOrder().map(row => row.dataset.rowId)
+      expect(order.indexOf('row-0')).toBe(order.indexOf('node-1') + 1)
+      expect(depthOf(rowById('row-0')!)).toBe(0)
+
+      // Раскрытая группа: дети видны с отступом — строка вкладывается первым ребёнком.
+      const again = await dragOver('row-1', 'node-2', 1)
+      await settleSlotAfter('node-2', again.at)
+      expect(depthOf(slot()!)).toBe(1)
+      await release()
+      await expect.poll(() => slot()).toBeNull()
+      await settleRowMotion()
+      const after = rowsInOrder().map(row => row.dataset.rowId)
+      expect(after.indexOf('row-1')).toBe(after.indexOf('node-2') + 1)
+      expect(depthOf(rowById('row-1')!)).toBe(1)
+    } finally {
+      await pointer.realMouseUp()
+      await screen.unmount()
+    }
+  })
+
   test('NX3: после броска раскрытые паузой группы сворачиваются, кроме группы броска; во время сессии не сворачиваются; раскрытые до сессии не трогаются; при отмене сворачиваются все', async () => {
     let screen = await renderCollapsed({ rowDraggingExpandDelay: 200 })
     try {

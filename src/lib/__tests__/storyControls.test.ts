@@ -243,8 +243,6 @@ interface RawStory {
  */
 const GUIDE_CONTROLS_LATER: Record<string, string> = {
   'Console.dev.stories.tsx': 'песочницы обвязки консоли — переводятся позже',
-  'DataGrid.Cells.Selection.stories.tsx':
-    'истории сценариев с контролами — позже',
   'DataGrid.Columns.Sorting.stories.tsx':
     'истории сценариев с контролами — позже',
   'DataGrid.Core.Stubs.stories.tsx': 'истории сценариев с контролами — позже',

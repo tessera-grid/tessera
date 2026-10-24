@@ -18,7 +18,7 @@
 }
 
 .error {
-  color: var(--tsr-sys-danger);
+  color: var(--tsr-comp-error-text-color);
   font-size: 0.6875rem;
   line-height: 1;
   white-space: nowrap;
@@ -76,12 +76,18 @@
 }
 
 /*
- * Слой поверх ячейки (ADR 0057): подсветка сохранения держится, пока есть отметка,
- * затем гаснет.
+ * Слой подсветки сохранения (ADR 0057): держится, пока есть отметка, затем гаснет. Лежит
+ * под содержимым ячейки — текст и кнопка правки не тонируются; обёртка со слоем — свой
+ * контекст наложения, иначе слой ушёл бы под фон ячейки.
  */
+:global(.data-grid__cell-wrapper-content):has(> span.feedback) {
+  isolation: isolate;
+}
+
 /* Внутри фокус-кольца и рамки выделения ячейки: они рисуются поверх по краю. */
 span.feedback {
   position: absolute;
+  z-index: -1;
   inset: var(--tsr-comp-focus-ring-width);
   pointer-events: none;
 }

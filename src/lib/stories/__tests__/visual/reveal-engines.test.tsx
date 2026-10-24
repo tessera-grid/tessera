@@ -19,6 +19,16 @@ const pointer = commands as unknown as {
 
 const HIDDEN = ".cell__button--hidden:not([data-button-active='true'])"
 
+/** Ширина кнопки с её полями: кнопка на краю заходит в отступ ячейки (ADR 0135). */
+const outerWidth = (button: Element) => {
+  const style = getComputedStyle(button)
+  return (
+    button.getBoundingClientRect().width +
+    parseFloat(style.marginLeft) +
+    parseFloat(style.marginRight)
+  )
+}
+
 describe('Раскрытие кнопок ячейки в движках', () => {
   test('CB6: кнопка ячейки раскрывается через промежуточные ширины в Chromium, Firefox и WebKit; во время прокрутки — сразу', async () => {
     await render(
@@ -50,7 +60,7 @@ describe('Раскрытие кнопок ячейки в движках', () =>
     await expect.poll(() => wrappers().length).toBeGreaterThan(2)
 
     const first = wrappers()[0]!
-    const full = first.querySelector('button')!.getBoundingClientRect().width
+    const full = outerWidth(first.querySelector('button')!)
     expect(first.getBoundingClientRect().width).toBe(0)
     const target = first.closest('.data-grid__body-cell')!
     target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
@@ -89,7 +99,7 @@ describe('Раскрытие кнопок ячейки в движках', () =>
       })
       expect(scroller.hasAttribute('data-scrolling')).toBe(true)
       expect(second.getBoundingClientRect().width).toBe(
-        second.querySelector('button')!.getBoundingClientRect().width,
+        outerWidth(second.querySelector('button')!),
       )
     } finally {
       clearInterval(scrolling)

@@ -23,6 +23,9 @@ import { __resetLogger } from '../core/logger'
 import { captureInertWarnings } from './inertWarnings'
 import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
 import { reorderRows } from '../plugins/rowDragging/reorderRows'
+import { canNestRow } from '../plugins/rowDragging/moveRow'
+import { rowExpanding } from '../plugins/rowExpanding'
+import { rowExpandingModel } from '../plugins/rowExpandingModel'
 
 const build = (
   extraEntries: any[],
@@ -276,6 +279,8 @@ describe('rowDragging — пауза над свёрнутой группой (A
         }),
         // Шаг уровня для смещения облака: без служебных колонок — 16 px.
         getVisibleLeafColumns: () => [],
+        // Переключатель rowExpanding есть: группу раскрывает пауза (ADR 0109, §5).
+        getKeyboardActions: () => [{ expands: true }],
         atoms: { rowDragging: { get: () => state } },
         setRowDragging: (updater: (prev: typeof state) => typeof state) => {
           state = updater(state)
@@ -349,5 +354,47 @@ describe('rowDragging — отметки перестановки (ADR 0110)', (
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('rowDragging — дерево без переключателя (ADR 0109, §5)', () => {
+  it('NX12: без rowExpanding вложить строку в свёрнутую предыдущую группу нельзя, в раскрытую — можно; с rowExpanding — можно и в свёрнутую', () => {
+    const tree = (...expanding: any[]) => {
+      const entries = [
+        {
+          id: 'reactivity',
+          features: { coreReactivityFeature: storeReactivityBindings() },
+        },
+        ...expanding,
+        rowDragging(),
+      ]
+      const folded = foldEntries(entries)
+      return constructTable({
+        features: buildTesseraFeatures(entries as never),
+        data: [
+          { id: 'g', name: 'G', subRows: [{ id: 'g-0', name: 'G0' }] },
+          { id: 'r', name: 'R' },
+        ],
+        columns: injectServiceColumns(
+          [{ id: 'name', accessorKey: 'name' }],
+          folded.serviceColumns,
+        ),
+        getRowId: (row: any) => row.id,
+        getSubRows: (row: any) => row.subRows,
+        ...folded.options,
+        keyboardActions: folded.keyboardActions,
+      } as never) as any
+    }
+    const canNest = (table: any) => canNestRow(table.getRow('r'), table)
+
+    const model = tree(rowExpandingModel())
+    expect(canNest(model), 'свёрнутая, только модель').toBe(false)
+    model.getRow('g').toggleExpanded(true)
+    expect(canNest(model), 'раскрытая, только модель').toBe(true)
+
+    const off = tree(rowExpandingModel(), rowExpanding({ enabled: false }))
+    expect(canNest(off), 'свёрнутая, rowExpanding выключен').toBe(false)
+
+    expect(canNest(tree(rowExpanding())), 'свёрнутая, rowExpanding').toBe(true)
   })
 })

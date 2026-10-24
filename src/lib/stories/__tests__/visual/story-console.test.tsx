@@ -4,7 +4,7 @@ import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
-import * as editingStories from '../../DataGrid.Cells.Editing.stories'
+import * as expandingStories from '../../DataGrid.Rows.Expanding.stories'
 import * as consoleStories from '../../Console.dev.stories'
 import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
 import { StoryComponent } from '../../DataGridStory'
@@ -23,7 +23,7 @@ import { AXE_OPTIONS } from './a11y-helpers'
 
 const { ConsoleGuideEvents } = composeStories(consoleStories)
 const { SkeletonDataArrives } = composeStories(skeletonStories)
-const { CellEditingSessions } = composeStories(editingStories)
+const { RowExpandingLazy } = composeStories(expandingStories)
 
 const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
@@ -142,7 +142,7 @@ describe('консоль историй (ADR 0124)', () => {
     await fixed.unmount()
 
     // Демо-история: консоль — под гридом.
-    await render(<CellEditingSessions />)
+    await render(<RowExpandingLazy />)
     await expect.poll(() => byTestId('story-console')).not.toBeNull()
     expect(
       byTestId('story-console')!.getBoundingClientRect().top,
@@ -415,17 +415,17 @@ describe('консоль историй (ADR 0124)', () => {
   })
 
   test('CL11: кнопки демо-истории — в заголовке консоли, видны и нажимаются в свёрнутом виде', async () => {
-    await render(<CellEditingSessions />)
+    await render(<RowExpandingLazy />)
     await expect.poll(() => byTestId('story-console-actions')).not.toBeNull()
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
     const button = [
       ...byTestId('story-console-actions')!.querySelectorAll('button'),
-    ].find(each => each.textContent === 'Change first row age externally')!
+    ].find(each => each.textContent === 'Fail next load')!
     expect(button.closest('[inert]')).toBeNull()
     expect(button.getBoundingClientRect().height).toBeGreaterThan(0)
     await humanClick(button)
     // Свёрнутый список инертен: его `innerText` WebKit отдаёт пустым.
-    await expect.poll(() => list().textContent).toContain('external')
+    await expect.poll(() => list().textContent).toContain('next load will fail')
   })
 
   test('CL12: в каталоге счётчик событий скрыт — снимок свёрнутой консоли не зависит от числа событий', async () => {

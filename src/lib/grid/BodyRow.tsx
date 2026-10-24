@@ -17,6 +17,8 @@ import {
   rowHighlightKey,
 } from '../core/highlights/highlightFeature'
 import { highlightRender } from './highlight'
+import { flashRender } from './flash'
+import type { FlashEntry, Flashes } from '../core/flashes/flashFeature'
 import {
   NAV_ROW_ATTR,
   useKeyboardNavigationRow,
@@ -79,6 +81,7 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       rowDrops?: Record<string, number>
       rowMoves?: Record<string, { pending: boolean }>
       highlights?: Highlights
+      flashes?: Flashes
     }
     const move = s.rowMoves?.[row.id]
     return {
@@ -89,6 +92,7 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
       // Приход ленивой строки (ADR 0056) или перестановка (ADR 0110).
       arrived: row.id in (s.rowArrivals ?? {}) || row.id in (s.rowDrops ?? {}),
       highlight: s.highlights?.[highlightKey],
+      flash: s.flashes?.[highlightKey],
       // Перенос не завершён (ADR 0112): ждёт промиса или ответа цели.
       moving: !!move,
       movePending: !!move?.pending,
@@ -96,6 +100,7 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
   }) as {
     arrived: boolean
     highlight?: HighlightTargetState
+    flash?: FlashEntry
     moving: boolean
     movePending: boolean
   }
@@ -151,18 +156,21 @@ export const BodyRowCells = ({
       else centerCells.push({ cell, start: virtualColumn.start })
     }
 
+    // Один массив с ключами: при закреплении ячейка переезжает, а не монтируется заново.
     return (
       <>
-        {startCells.map(cell => (
-          <BodyCell key={cell.id} {...cellProps(cell)} />
-        ))}
         <VirtualCenterSpacer />
-        {centerCells.map(({ cell, start }) => (
-          <BodyCell key={cell.id} {...cellProps(cell, start)} />
-        ))}
-        {endCells.map(cell => (
-          <BodyCell key={cell.id} {...cellProps(cell)} />
-        ))}
+        {[
+          ...startCells.map(cell => (
+            <BodyCell key={cell.id} {...cellProps(cell)} />
+          )),
+          ...centerCells.map(({ cell, start }) => (
+            <BodyCell key={cell.id} {...cellProps(cell, start)} />
+          )),
+          ...endCells.map(cell => (
+            <BodyCell key={cell.id} {...cellProps(cell)} />
+          )),
+        ]}
       </>
     )
   }
@@ -214,8 +222,9 @@ export const getAriaSelected = (
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, ariaRowIndexBase } = props
 
-  const { arrived, highlight } = useRowStateSubscription(row)
+  const { arrived, highlight, flash } = useRowStateSubscription(row)
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
+  const flashed = flashRender([{ layer: 'row', entry: flash }])
   const nav = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
@@ -266,12 +275,15 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-group-row={row.getIsGrouped?.() ?? false}
       data-arrived={arrived || undefined}
       {...highlighted.attrs}
+      {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-interact
       data-last-row={row.getIsLastRow()}
       data-layout={layout}
       style={
-        highlighted.style ? { ...rowStyles, ...highlighted.style } : rowStyles
+        highlighted.style || flashed.style
+          ? { ...rowStyles, ...highlighted.style, ...flashed.style }
+          : rowStyles
       }
     >
       <BodyRowCells {...props} isRowInteract />

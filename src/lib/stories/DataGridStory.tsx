@@ -21,6 +21,7 @@ import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { argsKeyOf } from '../../lib/core/pluginArgs'
 import type { DebugAction } from '../../lib/core/debugActions'
 import { useCreateTable } from '../../lib/core/useCreateTable'
+import { isThenable } from '../../lib/core/thenable'
 import { useLatest } from '../../lib/core/useLatest'
 import { DataGrid } from '../../lib/grid/DataGrid'
 import { DATA_GRID_THEME_CLASS } from '../../lib/core/themeVariables'
@@ -315,12 +316,20 @@ const StoryGrid = memo(
                 CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
               validate: validateCellEdit,
               onEditCancel: options.onEditCancel,
-              onCellEdit: ({ rowId, columnId, value }: CellEditCommit) =>
-                setData(prev =>
-                  prev.map(row =>
-                    row.id === rowId ? { ...row, [columnId]: value } : row,
-                  ),
-                ),
+              onConflict: options.onConflict,
+              // Сохранение истории — промисом: значение пишется в данные после ответа.
+              onCellEdit: (commit: CellEditCommit) => {
+                const { rowId, columnId, value } = commit
+                const write = () =>
+                  setData(prev =>
+                    prev.map(row =>
+                      row.id === rowId ? { ...row, [columnId]: value } : row,
+                    ),
+                  )
+                const saved = options.onCellEdit?.(commit)
+                if (!isThenable(saved)) return write()
+                return saved.then(write)
+              },
             },
           }
         : {}),

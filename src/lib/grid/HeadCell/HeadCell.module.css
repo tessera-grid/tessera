@@ -132,9 +132,85 @@
     border-left: 1px solid var(--tsr-comp-cell-pinned-border-color);
   }
 
-  /* Левая половина — зона грипа соседа слева: ручка и подпись правее неё (ADR 0111). */
+  /*
+   * Зона грипа соседа слева лежит в отступе содержимого: подпись — на линии текста тела,
+   * раскрытая ручка — сразу за зоной, зоны нажатия не пересекаются (ADR 0111, ADR 0135).
+   */
   &[data-after-resizable] {
-    padding-left: calc(var(--tsr-comp-resize-handler-width) / 2);
+    --tsr-head-handle-inset: calc(var(--tsr-comp-resize-handler-width) / 2);
+  }
+
+  /*
+   * Скрытые кнопки в покое не занимают промежутков: подпись доходит до края содержимого.
+   * Без наведения кнопки видны всегда — тогда промежутки есть. Условия покоя — без
+   * `:hover` внутри `:not()`: аддон pseudo-states Storybook переписывает такие правила
+   * неверно, и промежутки появлялись бы только при нажатии на грип.
+   */
+  @media (hover: hover) {
+    &
+      :global(.cell__button--hidden):where(
+        :not([data-button-active='true']):not(
+            :global(.resize__handler--column)
+          ):not(:has(> :global(.drag__handler--column)))
+      ) {
+      --tsr-head-hidden-gap: calc(-1 * var(--tsr-comp-cell-content-gap));
+    }
+
+    &:is(
+        :hover,
+        :focus-within,
+        :has([data-button-active='true'], [aria-haspopup][aria-expanded='true'])
+      )
+      :global(.cell__button--hidden) {
+      --tsr-head-hidden-gap: initial;
+    }
+  }
+
+  & :where(:global(.cell__button--hidden)) {
+    margin-inline-start: var(--tsr-head-hidden-gap);
+  }
+
+  /* Кнопки заголовка — плотнее, чем подпись к ним (ADR 0135). */
+  &
+    :global(.cell__button):not(:global(.resize__handler--column))
+    + :global(.cell__button) {
+    margin-inline-start: var(
+      --tsr-head-hidden-gap,
+      calc(var(--tsr-comp-head-button-gap) - var(--tsr-comp-cell-content-gap))
+    );
+  }
+
+  /*
+   * Подпись, дошедшая до зоны своего грипа, уходит в прозрачность маской — как лента
+   * шагов гайда у края прокрутки: видно, что грип её перекрывает (ADR 0135). Пока кнопки
+   * раскрыты, подпись кончается у них, и маски нет.
+   */
+  &[data-column-resizable='true'] :global(.data-grid__cell-wrapper-title) {
+    mask-image: linear-gradient(
+      to right,
+      #000 calc(100% - var(--tsr-comp-head-grip-fade)),
+      transparent
+    );
+  }
+
+  &[data-column-resizable='true']:is(
+      :hover,
+      :focus-within,
+      :has([data-button-active='true'], [aria-haspopup][aria-expanded='true'])
+    ):has(
+      :global(.data-grid__cell-wrapper-title)
+        ~ :global(.cell__button):not(:global(.resize__handler--column))
+    )
+    :global(.data-grid__cell-wrapper-title) {
+    mask-image: none;
+  }
+
+  /* Кнопка у левого края начинается за зоной грипа соседа. */
+  &[data-after-resizable] :global(.data-grid__cell-wrapper-content) {
+    --tsr-cell-edge-limit-start: calc(
+      var(--tsr-comp-cell-content-padding-x) -
+        var(--tsr-comp-resize-handler-width) / 2
+    );
   }
 
   /* Последний заголовок и заголовок перед правыми закреплёнными: грип целиком внутри. */
@@ -160,6 +236,34 @@
   & :global(.data-grid__cell-wrapper-content) {
     position: static;
   }
+
+  /*
+   * Под зону своего грипа заходит подпись — до черты, где она затухает в фон; кнопка на
+   * краю стоит левее зоны, зоны нажатия не пересекаются (ADR 0135).
+   */
+  --tsr-head-grip-inside: calc(var(--tsr-comp-resize-handler-width) / 2);
+
+  &:is(
+    [data-last-header-in-row='true'],
+    :has(+ .head__cell[data-cell-first-right-pinned='true'])
+  ) {
+    --tsr-head-grip-inside: var(--tsr-comp-resize-handler-width);
+  }
+
+  &[data-column-resizable='true'] :global(.data-grid__cell-wrapper-content) {
+    padding-inline-end: calc(
+      var(--tsr-head-grip-inside) - var(--tsr-comp-resize-handler-width) / 2 +
+        var(--tsr-comp-drag-handle-inset)
+    );
+    /*
+     * Отрицательный предел — поле кнопки: она отходит от отступа за начало зоны грипа на
+     * `--tsr-comp-head-grip-gap` и не прижата к черте.
+     */
+    --tsr-cell-edge-limit-end: calc(
+      var(--tsr-comp-drag-handle-inset) - var(--tsr-comp-resize-handler-width) /
+        2 - var(--tsr-comp-head-grip-gap)
+    );
+  }
 }
 
 /*
@@ -167,19 +271,20 @@
  * grid/cellControls/buttonVisibility.css.
  */
 
-/* Подсветка колонки (ADR 0080): слой фона заголовка-листа. */
-.head__cell[data-column-highlight] {
-  background-image: linear-gradient(
-    var(--tsr-highlight-column),
-    var(--tsr-highlight-column)
-  );
+/* Подсветка колонки (ADR 0080) и вспышка итога над ней (ADR 0134): слои фона заголовка. */
+.head__cell:is([data-column-highlight], [data-column-flash]) {
+  background-image:
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
+    linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column));
 }
 
-/* Подсветка проявляется и гаснет одним переходом (ADR 0101). */
-.head__cell[data-column-highlight] {
+/* Подсветка проявляется и гаснет одним переходом (ADR 0101), вспышка — временем итога. */
+.head__cell:is([data-column-highlight], [data-column-flash]) {
   transition:
     var(--tsr-comp-head-cell-transition),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-flash-column var(--tsr-column-flash-time)
       var(--tsr-comp-motion-easing-out);
 }
 
@@ -194,27 +299,34 @@
 }
 
 :global(.data-grid__container[data-column-dragging])
-  .head__cell[data-column-highlight] {
+  .head__cell:is([data-column-highlight], [data-column-flash]) {
   transition:
     var(--tsr-comp-head-cell-transition),
     var(--tsr-comp-head-cell-shift-transition),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
+      var(--tsr-comp-motion-easing-out),
+    --tsr-flash-column var(--tsr-column-flash-time)
       var(--tsr-comp-motion-easing-out);
 }
 
-/* Высокая контрастность (ADR 0087): подсветка колонки — `Mark`. */
+/* Высокая контрастность (ADR 0087): подсветка колонки и вспышка `reverted` — `Mark`. */
 @media (forced-colors: active) {
-  .head__cell[data-column-highlight] {
+  .head__cell:is([data-column-highlight], [data-column-flash='reverted']) {
     background-color: Mark;
   }
 
   /* Текст на заливке — системного цвета; без этого Chromium кладёт под него подложку Canvas. */
-  .head__cell[data-column-highlight] * {
+  .head__cell:is([data-column-highlight], [data-column-flash='reverted']) * {
     forced-color-adjust: none;
   }
 
-  .head__cell[data-column-highlight],
-  .head__cell[data-column-highlight] * {
+  .head__cell:is([data-column-highlight], [data-column-flash='reverted']),
+  .head__cell:is([data-column-highlight], [data-column-flash='reverted']) * {
     color: MarkText;
   }
+}
+
+/* Под виртуализацией колонок спейсер в DOM первый: правые закреплённые — после него. */
+.head__cell[data-cell-pinned='right'] {
+  order: var(--tsr-virtual-end-order, 0);
 }

@@ -84,6 +84,15 @@
  * и после ухода указателя (ADR 0111).
  */
 .data-grid__head-cell:has(.resize__handler--column[data-button-active='true'])
+  .cell__button--hidden:not([data-button-active='true']),
+/*
+ * У кнопки открыто меню или панель — кнопки ячейки стоят, как при наведении, и пока
+ * указатель на поповере: ряд не сжимается и не сдвигает подпись (ADR 0135). Тултип
+ * `aria-haspopup` не ставит.
+ */
+:is(.data-grid__head-cell, .data-grid__body-cell):has(
+    [aria-haspopup][aria-expanded='true']
+  )
   .cell__button--hidden:not([data-button-active='true']) {
   opacity: 1;
   grid-template-columns: minmax(0, 1fr);
@@ -241,7 +250,9 @@
   opacity: 1;
 }
 
-.data-grid__body-row:has(:focus-visible) .row__button--hidden {
+.data-grid__body-row:has(:focus-visible) .row__button--hidden,
+/* У кнопки строки открыто меню или панель — кнопки строки стоят и на поповере. */
+.data-grid__body-row:has([aria-haspopup][aria-expanded='true']) .row__button--hidden {
   opacity: 1;
 }
 
@@ -294,7 +305,9 @@
   --tsr-comp-action-button-bg: inherit;
 }
 
-.data-grid__body-row:has(:focus-visible) .row__button--hidden {
+.data-grid__body-row:has(:focus-visible) .row__button--hidden,
+.data-grid__body-row:has([aria-haspopup][aria-expanded='true'])
+  .row__button--hidden {
   --tsr-comp-button-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;

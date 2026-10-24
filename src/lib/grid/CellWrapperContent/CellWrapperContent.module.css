@@ -1,4 +1,8 @@
 .cell__wrapper {
+  /* Насколько кнопка на краю заходит в отступ: иконка — на линии текста (ADR 0135). */
+  --tsr-cell-edge-limit-start: var(--tsr-comp-cell-content-padding-x);
+  --tsr-cell-edge-limit-end: var(--tsr-comp-cell-content-padding-x);
+
   display: flex;
   align-items: center;
   position: relative;
@@ -12,6 +16,50 @@
   box-sizing: border-box;
 }
 
+/* Кнопки грида в ячейках — свой размер (ADR 0135); ручки переноса — компактные. */
+.cell__wrapper :global(.data-grid__icon-button):not([data-size='compact']) {
+  --tsr-comp-button-size: var(--tsr-comp-grid-button-size);
+}
+
+/*
+ * Кнопка на краю содержимого заходит в отступ на пустоту вокруг иконки, но не дальше
+ * предела своего края. Поле — у самой кнопки: обёртка раскрытия в покое её обрезает,
+ * и отступ подписи без наведения не меняется.
+ */
+.cell__wrapper {
+  --_around-icon: calc(
+    (var(--tsr-comp-grid-button-size) - var(--tsr-comp-button-icon-size)) / 2
+  );
+  --tsr-cell-edge-inset-start: min(
+    var(--_around-icon),
+    var(--tsr-cell-edge-limit-start)
+  );
+  --tsr-cell-edge-inset-end: min(
+    var(--_around-icon),
+    var(--tsr-cell-edge-limit-end)
+  );
+}
+
+/*
+ * Последняя в потоке: после неё может стоять только грип ширины — он вне потока. Кнопка
+ * с числом в бабле не заходит в отступ: бабл на её углу ячейка обрезала бы.
+ */
+.cell__wrapper
+  > :global(.cell__button):not(:global(.resize__handler--column)):not(
+    :has(~ :not(:global(.resize__handler--column)))
+  )
+  > :global(.data-grid__icon-button):not(:has(> [data-count])) {
+  margin-inline-end: calc(-1 * var(--tsr-cell-edge-inset-end));
+}
+
+.cell__wrapper
+  > :global(.cell__button):first-child:not(
+    :has(> :global(.drag__handler--column))
+  )
+  > :global(.data-grid__icon-button) {
+  margin-inline-start: calc(-1 * var(--tsr-cell-edge-inset-start));
+}
+
 .cell__wrapper--flexCenter {
   justify-content: center !important;
 }
@@ -23,9 +71,15 @@
 /* Только по горизонтали: по высоте содержимое центрируется, а отступ съедал бы место
    кнопки при минимальной высоте строки (ADR 0077). */
 .cell__wrapper--small-padding {
+  --tsr-cell-edge-limit-start: 0px !important;
+  --tsr-cell-edge-limit-end: 0px !important;
+
   padding: 0 4px !important;
 }
 
 .cell__wrapper--no-padding {
+  --tsr-cell-edge-limit-start: 0px !important;
+  --tsr-cell-edge-limit-end: 0px !important;
+
   padding: 0 !important;
 }

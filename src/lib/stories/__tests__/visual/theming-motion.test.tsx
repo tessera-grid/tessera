@@ -267,9 +267,13 @@ describe('Motion contract', () => {
         .poll(() => scroller.hasAttribute('data-scrolling'))
         .toBe(true)
       const wrapper = hiddenWrapper()
-      const full = wrapper
-        .querySelector('button')!
-        .getBoundingClientRect().width
+      // Ширина кнопки с полями: кнопка на краю заходит в отступ ячейки (ADR 0135).
+      const button = wrapper.querySelector('button')!
+      const margins = getComputedStyle(button)
+      const full =
+        button.getBoundingClientRect().width +
+        parseFloat(margins.marginLeft) +
+        parseFloat(margins.marginRight)
       // Ячейка всё время сдвигается прокруткой — Playwright не ждёт неподвижности.
       await userEvent.hover(wrapper.closest('.data-grid__body-cell')!, {
         force: true,

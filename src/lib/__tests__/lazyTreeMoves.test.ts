@@ -148,6 +148,8 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
       const table = {
         options: { enableRowDragging: true, rowDragExpandDelay: 0 },
         getHeaderGroups: () => [],
+        // Переключатель rowExpanding есть: свёрнутая ленивая группа принимает детей (ADR 0109, §5).
+        getKeyboardActions: () => [{ expands: true }],
         atoms: {} as Record<string, unknown>,
         getHooks: () => ({ rowDragging: hooks }),
       }

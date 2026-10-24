@@ -108,13 +108,14 @@ export const ActionPanel = ({
             {serverActionReason(failure, labels)}
           </span>
         )}
+        {/* Попап — внутри обёртки: служебные узлы портала не встают между кнопками ряда. */}
+        <ActionPanelPopup
+          action={action}
+          context={context}
+          anchorRef={triggerRef}
+          close={() => onOpenChange(false)}
+        />
       </div>
-      <ActionPanelPopup
-        action={action}
-        context={context}
-        anchorRef={triggerRef}
-        close={() => onOpenChange(false)}
-      />
     </Popover.Root>
   )
 }

@@ -63,23 +63,26 @@ export const Footer = ({
               else if (pinned === 'end') endH.push(header)
               else centerH.push({ header, start: virtualColumn.start })
             }
+            // Один массив с ключами: при закреплении ячейка переезжает, а не монтируется заново.
             return (
               <>
-                {startH.map(h => (
-                  <FooterCell key={h.id} layout={layout} header={h} />
-                ))}
                 <VirtualCenterSpacer />
-                {centerH.map(({ header, start }) => (
-                  <FooterCell
-                    key={header.id}
-                    layout={layout}
-                    header={header}
-                    absoluteLeft={start}
-                  />
-                ))}
-                {endH.map(h => (
-                  <FooterCell key={h.id} layout={layout} header={h} />
-                ))}
+                {[
+                  ...startH.map(h => (
+                    <FooterCell key={h.id} layout={layout} header={h} />
+                  )),
+                  ...centerH.map(({ header, start }) => (
+                    <FooterCell
+                      key={header.id}
+                      layout={layout}
+                      header={header}
+                      absoluteLeft={start}
+                    />
+                  )),
+                  ...endH.map(h => (
+                    <FooterCell key={h.id} layout={layout} header={h} />
+                  )),
+                ]}
               </>
             )
           })()

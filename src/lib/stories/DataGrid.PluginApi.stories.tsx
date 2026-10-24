@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
+import { Star } from 'lucide-react'
 import { useArgs } from 'storybook/preview-api'
 import { expect, userEvent } from 'storybook/test'
 import type {
@@ -7,7 +8,11 @@ import type {
   ToolbarComponentProps,
 } from '../../lib/core/createSlots'
 import { sourceOf } from '../../lib/core/debugActions'
-import { definePlugin } from '../../lib/core/definePlugin'
+import {
+  definePlugin,
+  type PluginCellStateProps,
+} from '../../lib/core/definePlugin'
+import { CellButton } from '../../lib/grid/Actions/CellButton'
 import { Button } from '../../lib/ui/Button'
 import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
 import type { StoryProps } from './DataGridStory.types'
@@ -291,6 +296,183 @@ export const PluginApiDebugActions: StoryObj<StoryProps> = {
       await until(() =>
         expect(consoleText()).toMatch(/columnSorting\.toggle[^\n]*клавиатура/),
       )
+    })
+    await settle()
+  },
+}
+
+// --- Вспышка итога (ADR 0134) ----------------------------------------------------
+
+interface FavoriteArgs {
+  enabled?: boolean
+  /** Сервер отказывает в записи. */
+  refuse?: boolean
+}
+interface FavoriteHooks {
+  refuse: boolean
+}
+interface FavoriteState {
+  favorites: Record<string, boolean>
+}
+
+const FAVORITE_COLUMN = 'firstName'
+const SERVER_MS = 600
+
+/** Кнопка избранного: отмечает строку сразу, сервер подтверждает или отказывает. */
+const FavoriteButton = ({
+  row,
+  column,
+  table,
+  hooks,
+  state: [{ favorites }, setState],
+}: PluginCellStateProps<FavoriteHooks, FavoriteState>) => {
+  const [pending, setPending] = useState(false)
+  const [failure, setFailure] = useState<{ flash: number; text: string }>()
+  if (column.id !== FAVORITE_COLUMN) {
+    return null
+  }
+  const on = favorites[row.id] ?? false
+  const toggle = async () => {
+    setPending(true)
+    setFailure(undefined)
+    setState({ favorites: { ...favorites, [row.id]: !on } })
+    const refuse = hooks.refuse
+    await new Promise(resolve => setTimeout(resolve, SERVER_MS))
+    setPending(false)
+    if (refuse) {
+      setState({ favorites })
+      setFailure(prev => ({
+        flash: (prev?.flash ?? 0) + 1,
+        text: 'Failed: the server refused. Press to retry',
+      }))
+      table.flashOutcome({ cell: [row.id, column.id] }, 'reverted')
+      return
+    }
+    table.flashOutcome({ cell: [row.id, column.id] }, 'accepted')
+  }
+  return (
+    <CellButton
+      data-testid="favorite"
+      label={on ? 'Remove from favorites' : 'Add to favorites'}
+      icon={<Star size={16} fill={on ? 'currentColor' : 'none'} />}
+      active={on || undefined}
+      indicator={false}
+      revealOnHover={false}
+      pending={pending}
+      errorFlash={failure?.flash}
+      failure={failure?.text}
+      onClick={() => void toggle()}
+    />
+  )
+}
+
+const favorite = definePlugin<FavoriteArgs>()({
+  id: 'favorite',
+  hooks: (args): FavoriteHooks => ({ refuse: args.refuse ?? false }),
+  state: (): FavoriteState => ({ favorites: {} }),
+  slots: [
+    {
+      id: 'favorite',
+      slot: 'rightCellSlot',
+      state: true,
+      component: FavoriteButton,
+    },
+  ],
+})
+const FAVORITE_ACCEPTS = [favorite()]
+const FAVORITE_REFUSES = [favorite({ refuse: true })]
+
+const favoriteOf = (canvas: HTMLElement, index: number) =>
+  rowAt(canvas, index)?.querySelector<HTMLElement>(
+    '[data-testid="favorite"]',
+  ) ?? null
+
+/** Последний вход в шаг: повтор прежнего шага не жмёт кнопку в новом гриде. */
+let pressRun = 0
+
+/**
+ * Нажать кнопку избранного строки, когда она отрисована: шаг «Назад» открывает грид
+ * заново, и вход в шаг приходит раньше строк.
+ */
+const pressFavorite = (index: number) => (root: HTMLElement) => {
+  const run = ++pressRun
+  let tries = 0
+  const press = () => {
+    if (run !== pressRun) return
+    const button = favoriteOf(root, index)
+    if (button) button.click()
+    else if (++tries < 40) setTimeout(press, 50)
+  }
+  press()
+}
+
+const OUTCOME_FLASH: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопка избранного',
+    hint: 'Приложение ставит в ячейки первой колонки кнопку избранного. Нажатие сразу отмечает строку и отправляет запрос на сервер.',
+    props: () => ({ extraPlugins: FAVORITE_ACCEPTS }),
+  },
+  {
+    title: 'Сервер принял',
+    hint: 'Нажата кнопка первой строки: пока сервер отвечает, кнопка ждёт. Запись принята — ячейка с кнопкой коротко вспыхивает тоном успеха, отметка остаётся.',
+    enter: pressFavorite(0),
+    immediate: true,
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Теперь сервер отказывает. Нажата кнопка второй строки: отметка возвращается, ячейка с кнопкой вспыхивает тоном отказа, а на кнопке остаётся отметка с причиной — нажатие повторит запрос.',
+    props: () => ({ extraPlugins: FAVORITE_REFUSES }),
+    enter: pressFavorite(1),
+    immediate: true,
+  },
+]
+
+/** S2: приложение показывает в ячейке итог своего асинхронного действия. */
+export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
+  name: 'Outcome flash',
+  parameters: {
+    scenario: '0134/S2',
+    requirements: ['OF21'],
+    ...GUIDED,
+  },
+  render: guided('Итог действия в ячейке', OUTCOME_FLASH),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const flashOf = (index: number) =>
+      rowAt(canvas, index)
+        .querySelector(`[data-column-id="${FAVORITE_COLUMN}"]`)
+        ?.getAttribute('data-flash')
+    // Ожидание кончилось: значок возвращается к цвету покоя коротким переходом (IR31).
+    const button = (index: number) => favoriteOf(canvas, index)!
+    const iconAtRest = (index: number) =>
+      Promise.all(
+        button(index)
+          .getAnimations({ subtree: true })
+          .filter(
+            animation =>
+              animation instanceof CSSTransition &&
+              animation.transitionProperty === 'color',
+          )
+          .map(animation => animation.finished.catch(() => {})),
+      )
+    await step(OUTCOME_FLASH[0].title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(favoriteOf(canvas, 0)).not.toBeNull())
+    })
+    await step(OUTCOME_FLASH[1].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flashOf(0)).toBe('accepted'))
+      // Вспыхивает ячейка с кнопкой, а не строка целиком.
+      expect(rowAt(canvas, 0).hasAttribute('data-flash')).toBe(false)
+      await iconAtRest(0)
+      expect(button(0).closest('[data-button-active]')).not.toBeNull()
+    })
+    await step(OUTCOME_FLASH[2].title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flashOf(1)).toBe('reverted'))
+      await iconAtRest(1)
+      expect(button(1).closest('[data-button-active]')).toBeNull()
+      expect(button(1).getAttribute('aria-describedby')).toBeTruthy()
     })
     await settle()
   },

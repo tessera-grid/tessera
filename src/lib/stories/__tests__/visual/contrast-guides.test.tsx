@@ -324,7 +324,7 @@ const stand = (
     }) => {
       for (const s of steps) {
         await step(s.title, async () => {
-          s.enter?.(canvasElement)
+          s.enter?.(canvasElement, { update: () => {} })
         })
       }
     },

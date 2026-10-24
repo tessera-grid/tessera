@@ -13,6 +13,7 @@ import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
 import { logWarn } from './logger'
 import type { ModelArgsMismatch } from './pluginModels'
 import { foreignSliceMessage } from './coreState'
+import { pruneFlashes, readFlashes } from './flashes/flashFeature'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
 import { abortServerActions } from './serverActions'
 import {
@@ -93,9 +94,9 @@ export const useTableEffects = (
     }
   })
 
-  // Подсветка целей, ушедших из данных или колонок, снимается (ADR 0080, §1) — при
-  // новой ссылке `data`/`columns`. Скрытые фильтром и страницей строки остаются в
-  // core-модели и подсветку сохраняют.
+  // Подсветка и вспышки целей, ушедших из данных или колонок, снимаются (ADR 0080, §1;
+  // ADR 0134, §4) — при новой ссылке `data`/`columns`. Скрытые фильтром и страницей
+  // строки остаются в core-модели и их сохраняют.
   const pruned = useRef<{ data?: unknown; columns?: unknown }>({})
   useIsomorphicLayoutEffect(() => {
     const t = table as {
@@ -109,17 +110,22 @@ export const useTableEffects = (
       return
     }
     pruned.current = { data, columns }
-    if (Object.keys(readHighlights(table)).length === 0) {
+    const highlighted = Object.keys(readHighlights(table)).length > 0
+    const flashed = Object.keys(readFlashes(table)).length > 0
+    if (!highlighted && !flashed) {
       return
     }
     const core = t.getCoreRowModel().rowsById
     const grouped = t.getGroupedRowModel?.().rowsById
     const columnIds = new Set(t.getAllFlatColumns().map(column => column.id))
-    pruneHighlights(
-      table,
-      id => id in core || (!!grouped && id in grouped),
-      id => columnIds.has(id),
-    )
+    const hasRow = (id: string) => id in core || (!!grouped && id in grouped)
+    const hasColumn = (id: string) => columnIds.has(id)
+    if (highlighted) {
+      pruneHighlights(table, hasRow, hasColumn)
+    }
+    if (flashed) {
+      pruneFlashes(table, hasRow, hasColumn)
+    }
   })
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.

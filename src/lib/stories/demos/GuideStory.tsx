@@ -26,8 +26,11 @@ export interface GuideContext {
 export interface GuideStoryStep extends GuideStep {
   /** Пропсы грида с этого шага: поверх аргументов истории и прежних шагов. */
   props?: (context: GuideContext) => Partial<StoryProps>
-  /** Действие при входе в шаг — то, что сделал бы пользователь (прокрутка). */
-  enter?: (root: HTMLElement) => void
+  /**
+   * Действие при входе в шаг — то, что сделал бы пользователь (прокрутка); `app` — то,
+   * что делает приложение посреди шага (данные меняются извне).
+   */
+  enter?: (root: HTMLElement, app: GuideApp) => void
   /** Шаг открывает грид заново: опции на время жизни таблицы (`initialPageSize`). */
   remount?: boolean
   /** Состояния каталога, которые показывает шаг: матрица контраста — во всех сочетаниях. */
@@ -39,6 +42,14 @@ export interface GuideStoryStep extends GuideStep {
   pseudo?: Record<string, string | string[]>
   /** Короткое состояние (вспышка): матрица контраста проверяет его сразу после шага. */
   immediate?: boolean
+}
+
+/**
+ * Приложение посреди шага: пропсы поверх пропсов шагов до следующего открытия грида —
+ * «Сначала», шага с `remount` или шага назад.
+ */
+export interface GuideApp {
+  update: (change: (props: Partial<StoryProps>) => Partial<StoryProps>) => void
 }
 
 /** Открытое меню или поповер таблицы. */
@@ -103,6 +114,31 @@ export const GuideStory = ({
     })
   }
   const root = useRef<HTMLDivElement>(null)
+  const mount = `${guide.run}-${mounts}-${shown.rewinds}`
+  const [appProps, setAppProps] = useState<{
+    mount: string
+    props: Partial<StoryProps>
+  }>()
+  const live = appProps?.mount === mount ? appProps.props : undefined
+  const mountRef = useRef(mount)
+  useIsomorphicLayoutEffect(() => {
+    mountRef.current = mount
+  }, [mount])
+  const [app] = useState<GuideApp>(() => ({
+    update: change =>
+      setAppProps(prev => {
+        const current = prev?.mount === mountRef.current ? prev.props : {}
+        const props = change(current)
+        return props === current && prev
+          ? prev
+          : { mount: mountRef.current, props }
+      }),
+  }))
+  // Что поменяло приложение посреди шага — в консоль, как действие истории.
+  useEffect(() => {
+    if (appProps)
+      consoleLog.log('app', `${Object.keys(appProps.props).join(', ')} changed`)
+  }, [consoleLog, appProps])
   useIsomorphicLayoutEffect(() => {
     if (root.current) guideSteps.set(root.current, steps)
   }, [steps])
@@ -122,8 +158,8 @@ export const GuideStory = ({
   const [reentries, setReentries] = useState(0)
   const popupAtToggle = useRef(false)
   useEffect(() => {
-    if (root.current) enter?.(root.current)
-  }, [enter, guide.step, guide.run, shown.rewinds, reentries])
+    if (root.current) enter?.(root.current, app)
+  }, [enter, app, guide.step, guide.run, shown.rewinds, reentries])
   return (
     <div
       ref={root}
@@ -149,9 +185,10 @@ export const GuideStory = ({
         onJump={guide.jump}
       />
       <StoryComponent
-        key={`${guide.run}-${mounts}-${shown.rewinds}`}
+        key={mount}
         {...args}
         {...props}
+        {...live}
         consoleLog={consoleLog}
       />
       <StoryConsole log={consoleLog} />

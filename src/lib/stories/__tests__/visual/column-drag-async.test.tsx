@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
-import { pendingArcOf, revealedHandleWidth } from '../helpers'
+import { arcHeadOf, pendingArcOf, revealedHandleWidth } from '../helpers'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
@@ -512,6 +512,10 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
           )
           expect(result.violations).toEqual([])
         })
+      // Красный контур держится 300 мс — меньше, чем идут откат колонки и смена режима.
+      document
+        .querySelector<HTMLElement>('.data-grid-theme')!
+        .style.setProperty('--tsr-comp-error-flash-duration', '10s')
       try {
         const [a, b] = order()
         await dragAfter(a!, b!)
@@ -521,9 +525,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
           // Дуга ожидания ручки (ADR 0127) — цветом Highlight.
           const arc = pendingArcOf(handleOf(a!))!
           expect(getComputedStyle(arc).forcedColorAdjust).toBe('none')
-          expect(
-            toRgba(getComputedStyle(arc.firstElementChild!).stroke),
-          ).toEqual(sys('Highlight'))
+          expect(toRgba(getComputedStyle(arcHeadOf(arc)).stroke)).toEqual(
+            sys('Highlight'),
+          )
           await pointer.forcedColors(false)
         }
         await settleMoves(false, new Error('no'))

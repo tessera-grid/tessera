@@ -25,6 +25,10 @@ const LARGE_KEY_STEP = 50
 /** Сдвиг указателя, после которого нажатие — ресайз, а не клик (px). */
 const CLICK_TOLERANCE = 3
 
+/** Событие из портала меню ширины: всплывает по дереву React, но не по DOM грипа. */
+const fromMenu = (event: MouseEvent | TouchEvent) =>
+  !event.currentTarget.contains(event.target as Node)
+
 export interface ResizeSplitterProps {
   isResizing: boolean
   onResize: (event: unknown) => void
@@ -75,6 +79,7 @@ export const ResizeHandler = memo(
 
     const onResizeStart = useCallback(
       (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
+        if (fromMenu(event)) return
         tapped.current = false
         const touchX =
           'touches' in event ? event.touches[0]?.clientX : undefined
@@ -122,6 +127,7 @@ export const ResizeHandler = memo(
 
     // Клик без сдвига — меню ширины (WCAG 2.5.7, ADR 0034); протяжка — ресайз.
     const onClick = (event: MouseEvent<HTMLDivElement>) => {
+      if (fromMenu(event)) return
       const start = pressedX.current
       pressedX.current = null
       if (tapped.current) {
@@ -225,18 +231,19 @@ export const ResizeHandler = memo(
               className={styles.handler}
             />
           </div>
+          {/* Меню — внутри обёртки: служебные узлы портала не встают в ряд кнопок. */}
+          {menuOpen && (
+            <HandleMenu
+              anchor={wrapperRef}
+              focusTarget={separatorRef}
+              label={labels.columnWidth}
+              getItems={getMenuItems}
+              onClose={menu.close}
+              table={table}
+              plugin="columnSizing"
+            />
+          )}
         </div>
-        {menuOpen && (
-          <HandleMenu
-            anchor={wrapperRef}
-            focusTarget={separatorRef}
-            label={labels.columnWidth}
-            getItems={getMenuItems}
-            onClose={menu.close}
-            table={table}
-            plugin="columnSizing"
-          />
-        )}
       </>
     )
   },

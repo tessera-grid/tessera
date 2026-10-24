@@ -6,6 +6,7 @@ import {
   PIN_ICON_SIZE,
   BODY_CELL,
   PIN_BUTTON,
+  SCROLLER,
   DATA_HEAD_CELL,
   LEFT_PINNED_HEAD,
   renderColumnPinning,
@@ -31,7 +32,7 @@ const pointer = commands as unknown as {
   ) => Promise<void>
 }
 
-// CP1–CP12, CP36: кнопка, переключение и sticky-рендер закрепления.
+// CP1–CP12, CP36, CP38: кнопка, переключение и sticky-рендер закрепления.
 // Каждое требование — отдельный тест с ID из таблицы требований
 // docs/decisions/0011-column-pinning.md (правило именования — ADR 0009).
 // Story ColumnPinning переполнена по обеим осям — у sticky-требований (CP10–CP12)
@@ -269,6 +270,59 @@ describe('Column Pinning — requirements', () => {
     }
   })
 
+  test('CP38: pinning and unpinning a column moves its header, body and footer cells instead of remounting them; the header buttons under the pointer stay shown', async () => {
+    const container = await renderColumnPinning({ enableFooter: true })
+    // Под виртуализацией колонок закреплённые и центральные ячейки — разные блоки строки.
+    expect(container.querySelector('.data-grid__head-row')).not.toBeNull()
+    const head = renderedDataCells(container)[0]!
+    const id = head.dataset.columnId!
+    const cellsOf = () => [
+      container.querySelector(`.data-grid__head-cell[data-column-id='${id}']`),
+      container.querySelector(`${BODY_CELL}[data-column-id='${id}']`),
+      container.querySelector(
+        `.data-grid__footer-cell[data-column-id='${id}']`,
+      ),
+    ]
+    const before = cellsOf()
+    expect(before.every(Boolean)).toBe(true)
+
+    /** Наименьшая прозрачность кнопки закрепления по кадрам, пока колонка не сменит сторону. */
+    const toggleWatchingPin = async (pinned: boolean) => {
+      const button = await revealPin(head)
+      let least = 1
+      let watching = true
+      const frame = () => {
+        const shown = pinButtonOf(head)
+        if (shown) {
+          least = Math.min(
+            least,
+            Number(getComputedStyle(hiddenWrapperOf(shown)).opacity),
+          )
+        }
+        if (watching) requestAnimationFrame(frame)
+      }
+      requestAnimationFrame(frame)
+      await userEvent.click(button)
+      await expect
+        .poll(() => container.querySelector(LEFT_PINNED_HEAD) !== null)
+        .toBe(pinned)
+      // Несколько кадров после смены: перерисовка и пересчёт наведения.
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => requestAnimationFrame(resolve))
+      }
+      watching = false
+      return least
+    }
+
+    expect(await toggleWatchingPin(true), 'закрепление').toBe(1)
+    expect(cellsOf()).toEqual(before)
+    expect(before.every(cell => cell!.isConnected)).toBe(true)
+
+    expect(await toggleWatchingPin(false), 'открепление').toBe(1)
+    expect(cellsOf()).toEqual(before)
+    expect(before.every(cell => cell!.isConnected)).toBe(true)
+  })
+
   test('CP28: in both themes a pinned cell is tinted the same way against its row (even and odd), and the pinned header matches the header', async () => {
     const lum = (el: Element) =>
       luminance(toRgba(getComputedStyle(el).backgroundColor))
@@ -291,6 +345,14 @@ describe('Column Pinning — requirements', () => {
         .not.toBeNull()
       // Курсор вне грида: hover заголовка и строки меняет их фон.
       await parkPointer()
+      // Ячейка при закреплении остаётся той же — её фон доходит до тона переходом.
+      await Promise.all(
+        document
+          .querySelector(SCROLLER)!
+          .getAnimations({ subtree: true })
+          .filter(a => a.effect?.getTiming().iterations !== Infinity)
+          .map(a => a.finished.catch(() => undefined)),
+      )
 
       const rows = [...document.querySelectorAll('.data-grid__body-row')]
       const pinned = (row: Element) =>

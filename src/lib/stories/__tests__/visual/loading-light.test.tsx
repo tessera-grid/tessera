@@ -8,8 +8,8 @@ import { parseDuration } from '@/lib/ui/buttonStates'
 import ringStyles from '@/lib/ui/ringStates/ringStates.module.css'
 import { toRgba } from './a11y-helpers'
 
-// Спиннер ожидания (ADR 0095, LL4; без дорожки — ADR 0127). Дуга кнопок — набор
-// `pending-arc`, свет ячейки в правке — CF* (`async-callbacks`).
+// Спиннер ожидания (ADR 0095, LL4; вид — ADR 0127). Дуга кнопок — набор `pending-arc`,
+// свет ячейки в правке — CF* (`async-callbacks`).
 
 const reducedMotion = (
   commands as unknown as { reducedMotion: (reduce: boolean) => Promise<void> }
@@ -79,7 +79,7 @@ const onCircle = (el: Element, radius: number, degrees: number) => {
 }
 
 describe('Спиннер ожидания (ADR 0095)', () => {
-  test('LL4: спиннер — дуга в четверть круга бежит по кругу без дорожки, середина прозрачна, свет не выходит за линию дуги; цвет дуги перетекает оттенками --tsr-comp-pending-spinner-1…4; оборот 0,5, цикл цвета 1,7 длительности света; дуга в фазе с дугой круглой кнопки — в начале оборота от верха по часовой; без движения — так и стоит первым оттенком (ADR 0127)', async () => {
+  test('LL4: спиннер — дуга --tsr-comp-pending-spinner-arc со скруглённой головой и хвостом, плотность которого падает к концу, бежит по кругу над бледной дорожкой силой --tsr-comp-pending-track-strength, середина прозрачна, свет не выходит за линию дуги; цвет дуги и дорожки перетекает оттенками --tsr-comp-pending-spinner-1…4; оборот 0,5, цикл цвета 1,7 длительности света; дуга в фазе с дугой круглой кнопки — в начале оборота хвост от верха по часовой; без движения — так и стоит первым оттенком (ADR 0127)', async () => {
     // Толщина крупнее, чем в пункте меню, — чтобы мерить пиксели; геометрия — от токена.
     const WIDTH = 6
     const SIZE = 96
@@ -139,19 +139,39 @@ describe('Спиннер ожидания (ADR 0095)', () => {
     const first = toRgba(tone(1)).slice(0, 3)
     const at = (radius: number, degrees: number) =>
       shot(...onCircle(el, radius, degrees - 90))
-    // Дуга — четверть круга на средней линии: внутри её края — оттенок.
-    for (const degrees of [5, 30, 45, 60, 85]) {
-      expect(
-        distance(at(middle, degrees), first),
-        `arc ${degrees}°`,
-      ).toBeLessThan(40)
+    const arcTurn = parseFloat(
+      getComputedStyle(el).getPropertyValue('--tsr-comp-pending-spinner-arc'),
+    )
+    expect(arcTurn).toBe(0.3)
+    const head = arcTurn * 360
+    const strength =
+      parseFloat(
+        getComputedStyle(el).getPropertyValue(
+          '--tsr-comp-pending-track-strength',
+        ),
+      ) / 100
+    // Дорожка — оттенок поверх фона силой токена.
+    const track = background.map((c, i) => c + (first[i]! - c) * strength)
+    // Голова у конца дуги — полный оттенок; к началу хвоста плотность падает до дорожки.
+    expect(distance(at(middle, head - 4), first), 'голова').toBeLessThan(40)
+    const tail = [0.85, 0.6, 0.35, 0.1].map(share =>
+      distance(at(middle, head * share), first),
+    )
+    for (let i = 1; i < tail.length; i += 1) {
+      expect(tail[i], `хвост слабее к концу, шаг ${i}`).toBeGreaterThan(
+        tail[i - 1]!,
+      )
     }
-    // Дорожки нет: вне дуги на средней линии — фон.
-    for (const degrees of [-30, 120, 180]) {
+    // Вне дуги на средней линии — дорожка, а не фон.
+    for (const degrees of [-30, head + 20, 180]) {
+      expect(
+        distance(at(middle, degrees), track),
+        `дорожка ${degrees}°`,
+      ).toBeLessThan(6)
       expect(
         distance(at(middle, degrees), background),
-        `no track ${degrees}°`,
-      ).toBeLessThan(4)
+        `не фон ${degrees}°`,
+      ).toBeGreaterThan(10)
     }
     // Середина прозрачна, свет не выходит за линию дуги ни внутрь, ни наружу.
     expect(distance(at(0, 0), background)).toBeLessThan(4)
@@ -159,16 +179,16 @@ describe('Спиннер ожидания (ADR 0095)', () => {
     expect(distance(at(outer + 3, 45), background)).toBeLessThan(4)
     await screen.unmount()
 
-    // Без движения дуга стоит от верха по часовой первым оттенком.
+    // Без движения дуга стоит хвостом от верха по часовой первым оттенком над дорожкой.
     await reducedMotion(true)
     await render(<Spinner />)
     await frame()
     const still = await snapshot()
     expect(
-      distance(still(...onCircle(spinner(), middle, 45 - 90)), first),
+      distance(still(...onCircle(spinner(), middle, head - 4 - 90)), first),
     ).toBeLessThan(40)
     expect(
-      distance(still(...onCircle(spinner(), middle, -30 - 90)), background),
-    ).toBeLessThan(4)
+      distance(still(...onCircle(spinner(), middle, -30 - 90)), track),
+    ).toBeLessThan(6)
   })
 })

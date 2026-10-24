@@ -136,6 +136,8 @@ export interface CommonColumnDef extends ColumnOptionsDef {
    * квадрат контрола, `'none'` — пусто. Без поля — полоска, у служебной — пусто.
    */
   skeletonCell?: SkeletonCellKind
+  /** Ширина — по кнопке грида из темы (ADR 0135): колонки выбора и раскрытия. */
+  controlSized?: boolean
 }
 
 export interface CommonHeaderAPI {

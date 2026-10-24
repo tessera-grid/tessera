@@ -104,28 +104,29 @@ export const ActionInlineMenu = ({
         if (!next) sections.reset()
       }}
     >
+      {/* Попап — внутри обёртки: служебные узлы портала не встают между кнопками ряда. */}
       <div
         className={clsx(wrapperBase, !visible && hiddenClass)}
         data-button-active={active}
       >
         {button}
+        {section ? (
+          <ActionMenuPopup
+            actions={[action]}
+            context={context}
+            session={checks}
+            sections={sections}
+            close={() => onMenuOpenChange(false)}
+            finalFocus={leave.returnFocus}
+          />
+        ) : (
+          <ActionMenuPopup
+            actions={[action]}
+            context={context}
+            finalFocus={leave.returnFocus}
+          />
+        )}
       </div>
-      {section ? (
-        <ActionMenuPopup
-          actions={[action]}
-          context={context}
-          session={checks}
-          sections={sections}
-          close={() => onMenuOpenChange(false)}
-          finalFocus={leave.returnFocus}
-        />
-      ) : (
-        <ActionMenuPopup
-          actions={[action]}
-          context={context}
-          finalFocus={leave.returnFocus}
-        />
-      )}
     </Menu.Root>
   )
 }

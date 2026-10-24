@@ -140,10 +140,13 @@ export const HeadRow = ({
       role="row"
       aria-rowindex={headerGroup.depth + 1}
     >
-      {startHeaders.map(header => cell(header))}
       <VirtualCenterSpacer />
-      {centerHeaders.map(({ header, start }) => cell(header, start))}
-      {endHeaders.map(header => cell(header))}
+      {/* Один массив с ключами: при закреплении заголовок переезжает, а не монтируется заново. */}
+      {[
+        ...startHeaders.map(header => cell(header)),
+        ...centerHeaders.map(({ header, start }) => cell(header, start)),
+        ...endHeaders.map(header => cell(header)),
+      ]}
     </div>
   )
 }

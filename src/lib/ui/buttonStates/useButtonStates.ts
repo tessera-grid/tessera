@@ -122,7 +122,7 @@ export const useButtonStates = <T extends HTMLElement>(
     onClick: handleClick,
     /** Дуга ожидания и отказа — последним ребёнком кнопки. */
     arc: phase && createElement(PendingArc, { phase }),
-    /** Кнопка в ожидании или держит красный контур: отметка отказа появится с его угасанием. */
-    active: lit || flash === 'on',
+    /** Кнопка в ожидании или с красным контуром: отметка отказа появится, когда он погаснет. */
+    active: lit || flash !== undefined,
   }
 }

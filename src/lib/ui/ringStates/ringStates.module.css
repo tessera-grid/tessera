@@ -33,20 +33,25 @@
 /*
  * Дуга кнопки (ADR 0127): средняя линия — на половину толщины внутрь от внешнего края
  * кнопки (`--tsr-ring-border` — рамка кнопки, от которой отсчитан абсолютный слой),
- * радиус ставит `PendingArc`. Длина — доля периметра (`pathLength` 100).
+ * радиус ставит `PendingArc`. Длины — доли периметра (`pathLength` 100). Оттенок —
+ * `--tsr-spinner-tone` слоя: его ведут `spinnerTones`, дорожка и хвост берут его.
  */
-/* Промежуток дуги — число без `calc()`: с ним Chromium меняет `stroke-dasharray` скачком. */
-@property --tsr-pending-arc-gap {
+/* Ход дуги — зарегистрированное число: `calc()` в ключевых кадрах смещения Chromium меняет скачком. */
+@property --tsr-pending-run {
   syntax: '<number>';
   inherits: true;
-  initial-value: 75;
+  initial-value: 0;
 }
 
 .arc {
   --_w: var(--tsr-comp-pending-ring-width);
   --_b: var(--tsr-ring-border, 0px);
-  --tsr-pending-arc-gap: calc(100 - var(--tsr-comp-pending-arc));
-  --_arc: var(--tsr-comp-pending-arc) var(--tsr-pending-arc-gap);
+  --_track: color-mix(
+    in srgb,
+    var(--tsr-spinner-tone) var(--tsr-comp-pending-track-strength),
+    transparent
+  );
+  --tsr-spinner-tone: var(--tsr-comp-pending-spinner-1);
 
   position: absolute;
   top: calc(var(--_w) / 2 - var(--_b));
@@ -57,22 +62,36 @@
   pointer-events: none;
 }
 
-.arc > rect {
-  --_from: 0 100;
-
+.arc rect {
   fill: none;
-  stroke: var(--tsr-comp-pending-spinner-1);
   stroke-width: var(--_w);
-  stroke-linecap: round;
-  stroke-dasharray: var(--_arc);
 }
 
-.arc[data-from-pending] > rect {
-  --_from: var(--_arc);
+.arcTrack {
+  stroke: var(--_track);
+}
+
+/*
+ * Хвост: отрезок `--_i` длиной `i/8` дуги, голова у всех — на длине дуги от начала
+ * контура (сдвиг `--_shift`); непрозрачность `1/i`. Скруглена только голова.
+ */
+.arcTail > rect {
+  --_d: calc(var(--tsr-comp-pending-arc) * var(--_i) / 8);
+  --_shift: calc(var(--_d) - var(--tsr-comp-pending-arc));
+
+  stroke: var(--tsr-spinner-tone);
+  stroke-opacity: calc(1 / var(--_i));
+  stroke-linecap: butt;
+  stroke-dasharray: var(--_d) calc(100 - var(--_d));
+  stroke-dashoffset: calc(var(--_shift) - var(--tsr-pending-run));
+}
+
+.arcTail > rect:first-child {
+  stroke-linecap: round;
 }
 
 /* Круг — половина периода у кнопки любого размера; оттенки — как у спиннера. */
-.arc:is([data-phase='pending'], [data-phase='leaving']) > rect {
+.arc:is([data-phase='pending'], [data-phase='leaving']) {
   animation:
     pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite,
     spinnerTones calc(var(--tsr-comp-pending-glow-duration) * 1.7) ease-in-out
@@ -87,28 +106,32 @@
 
 /*
  * Отказ: дуга встаёт (тот же `pendingRun` на паузе — без скачка) и за время заливки
- * дорастает до всего контура, перетекая в красный; быстрый старт роста продолжает ход
- * дуги. Конечный вид — в самом свойстве: без движения он сразу (IR11).
+ * гаснет, а дорожка краснеет по всему контуру. Конечный вид — в самих свойствах: без
+ * движения он сразу (IR11).
  */
-.arc:is([data-phase='error'], [data-phase='off']) > rect {
-  stroke: var(--tsr-comp-error-flash-color);
-  stroke-dasharray: 100 0;
-  animation:
-    pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite
-      paused,
-    pendingFill var(--tsr-comp-error-flash-fill-duration)
-      var(--tsr-comp-motion-easing-out) both;
-}
-
-/* Из ожидания: оттенки встают на паузу — заливка перетекает в красный от текущего (IR7). */
-.arc[data-from-pending]:is([data-phase='error'], [data-phase='off']) > rect {
+.arc[data-from-pending]:is([data-phase='error'], [data-phase='off']) {
   animation:
     pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite
       paused,
     spinnerTones calc(var(--tsr-comp-pending-glow-duration) * 1.7) ease-in-out
-      infinite paused,
-    pendingFill var(--tsr-comp-error-flash-fill-duration)
-      var(--tsr-comp-motion-easing-out) both;
+      infinite paused;
+}
+
+.arc:is([data-phase='error'], [data-phase='off']) .arcTail {
+  opacity: 0;
+  transition: opacity var(--tsr-comp-error-flash-fill-duration)
+    var(--tsr-comp-motion-easing-out);
+}
+
+.arc:is([data-phase='error'], [data-phase='off']) .arcTrack {
+  stroke: var(--tsr-comp-error-flash-color);
+  animation: trackFail var(--tsr-comp-error-flash-fill-duration)
+    var(--tsr-comp-motion-easing-out) both;
+}
+
+/* Без ожидания перед отказом контур проявляется из прозрачного (IR8). */
+.arc:not([data-from-pending]) .arcTrack {
+  --_track: transparent;
 }
 
 /* Гаснет плавно, с замедлением (BS17 → IR7). */
@@ -120,14 +143,14 @@
 
 @keyframes pendingRun {
   to {
-    stroke-dashoffset: -100;
+    --tsr-pending-run: 100;
   }
 }
 
-/* Начальный цвет не задан — берётся нижележащий: оттенок дуги на паузе или красный. */
-@keyframes pendingFill {
+/* Из оттенка дорожки (на паузе — тот, что был при отказе) в красный в полную силу. */
+@keyframes trackFail {
   from {
-    stroke-dasharray: var(--_from);
+    stroke: var(--_track);
   }
   to {
     stroke: var(--tsr-comp-error-flash-color);
@@ -207,11 +230,17 @@
     spinnerTones calc(var(--_t) * 1.7) ease-in-out infinite;
 }
 
-/* Дуга: сектор от верха по часовой, как у круглой кнопки, и два круга-конца на средней
-   линии, под маской кольца. */
+/* Дуга: сектор от верха по часовой, как у круглой кнопки, — хвост от прозрачного к
+   оттенку, круг-голова на средней линии на его конце; под ней дорожка, всё под маской
+   кольца. */
 .spinner::after {
   --_a: var(--tsr-comp-pending-spinner-arc);
   --_m: calc(50% - var(--_w) / 2);
+  --_track: color-mix(
+    in srgb,
+    var(--tsr-spinner-tone) var(--tsr-comp-pending-track-strength),
+    transparent
+  );
 
   content: '';
   position: absolute;
@@ -219,20 +248,17 @@
   border-radius: 50%;
   background:
     radial-gradient(
-      circle at 50% calc(50% - var(--_m)),
-      var(--tsr-spinner-tone) calc(var(--_w) / 2 - 0.35px),
-      transparent calc(var(--_w) / 2 + 0.35px)
-    ),
-    radial-gradient(
       circle at calc(50% + sin(var(--_a)) * var(--_m))
         calc(50% - cos(var(--_a)) * var(--_m)),
       var(--tsr-spinner-tone) calc(var(--_w) / 2 - 0.35px),
       transparent calc(var(--_w) / 2 + 0.35px)
     ),
     conic-gradient(
-      var(--tsr-spinner-tone) 0turn var(--_a),
+      transparent 0turn,
+      var(--tsr-spinner-tone) var(--_a),
       transparent var(--_a)
-    );
+    ),
+    linear-gradient(var(--_track), var(--_track));
   mask: radial-gradient(
     farthest-side,
     transparent calc(100% - var(--_w) - 0.5px),
@@ -246,7 +272,7 @@
  * пауза не нужна и вредна: она застала бы оборванную анимацию на первом кадре.
  */
 @media (prefers-reduced-motion: no-preference) {
-  :global(.data-grid__container[data-scrolling]) .arc > rect {
+  :global(.data-grid__container[data-scrolling]) .arc {
     animation-play-state: paused;
   }
 }
@@ -260,12 +286,16 @@
     forced-color-adjust: none;
   }
 
-  /* Только системные цвета: отказ сразу `Mark`, без смеси с `Highlight`; растёт длина. */
-  .arc[data-from-pending]:is([data-phase='error'], [data-phase='off']) > rect {
-    animation:
-      pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear
-        infinite paused,
-      pendingFill var(--tsr-comp-error-flash-fill-duration)
-        var(--tsr-comp-motion-easing-out) both;
+  /* Только системные цвета: дорожки нет — бледный `Highlight` не системный; отказ сразу `Mark`. */
+  .arc {
+    --_track: transparent;
+  }
+
+  .arc:is([data-phase='error'], [data-phase='off']) .arcTrack {
+    animation: none;
+  }
+
+  .spinner::after {
+    --_track: transparent;
   }
 }

@@ -75,6 +75,7 @@ import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
 import { useSkeletonWave } from './useSkeletonWave'
 import { useRowHeights } from './useRowHeights'
+import { useControlColumnSizes } from './useControlColumnSizes'
 import { ScrollingAttribute } from './ScrollingAttribute'
 import type { DataGridProps } from './dataGridTypes'
 
@@ -178,11 +179,9 @@ export const DataGrid = ({
   const wrapperRef = useRef<HTMLDivElement>(null)
   const getScrollElement = useCallback(() => scrollableNodeRef.current, [])
   // Ключ перечитывания токенов: тема и появление корня (без строк — ветка заглушки).
-  const heights = useRowHeights(
-    table,
-    wrapperRef,
-    `${colorMode}|${className}|${rows.length > 0}`,
-  )
+  const themeKey = `${colorMode}|${className}|${rows.length > 0}`
+  const heights = useRowHeights(table, wrapperRef, themeKey)
+  useControlColumnSizes(table, wrapperRef, themeKey)
 
   // Авто-прокрутка при drag-выделении ячеек у края/за пределами таблицы (инертно
   // без плагина cellSelection). См. core/cellSelectionAutoScroll.

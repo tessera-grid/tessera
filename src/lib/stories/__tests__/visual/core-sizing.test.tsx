@@ -74,7 +74,7 @@ describe('Ядро на TanStack — размеры и отступы', () => {
   })
 
   test('R9: горизонтальный отступ контента ячейки зависит от режима', async () => {
-    // Дефолтный режим: COLUMN_CONTENT_PADDING = 16px по горизонтали.
+    // Дефолтный режим: отступ содержимого из темы (ADR 0135 — 12px) по горизонтали.
     renderGrid({ columnCount: 3, dataCount: 3, enableRowActions: true })
     await waitForGrid()
 
@@ -82,8 +82,12 @@ describe('Ядро на TanStack — размеры и отступы', () => {
       rowsTopDown()[0],
     )[0].querySelector<HTMLElement>('.data-grid__cell-wrapper-content')!
     const dataStyle = getComputedStyle(dataWrapper)
-    expect(dataStyle.paddingLeft).toBe('16px')
-    expect(dataStyle.paddingRight).toBe('16px')
+    const padding = dataStyle
+      .getPropertyValue('--tsr-comp-cell-content-padding-x')
+      .trim()
+    expect(padding).toBe('12px')
+    expect(dataStyle.paddingLeft).toBe(padding)
+    expect(dataStyle.paddingRight).toBe(padding)
 
     // Сервисная колонка действий рендерится в режиме smallPadding = 4px.
     const actionCell = document.querySelector<HTMLElement>(

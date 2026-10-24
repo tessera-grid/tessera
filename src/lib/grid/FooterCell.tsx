@@ -13,6 +13,7 @@ import type { Header } from '../types'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
 import { highlightRender, useColumnHighlight } from './highlight'
+import { flashRender, useColumnFlash } from './flash'
 
 import styles from '../grid/FooterCell/FooterCell.module.css'
 
@@ -42,6 +43,9 @@ export const FooterCell = ({
   const highlighted = highlightRender([
     { layer: 'column', state: columnHighlight, describe: false },
   ])
+  const flashed = flashRender([
+    { layer: 'column', entry: useColumnFlash(table, header.column.id) },
+  ])
 
   return (
     <div
@@ -65,8 +69,10 @@ export const FooterCell = ({
               right: pinning.endPinnedOffset,
             }),
         ...highlighted.style,
+        ...flashed.style,
       }}
       {...highlighted.attrs}
+      {...flashed.attrs}
       data-virtual-cell={absoluteLeft !== undefined || undefined}
       aria-colindex={getDisplayColumnIndex(table, header.column.id) + 1}
       data-column-id={header.column.id}

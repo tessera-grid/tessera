@@ -49,6 +49,7 @@
   --tsr-ref-violet-500: #8b5cf6;
 
   --tsr-ref-space-1: 4px;
+  --tsr-ref-space-3: 12px;
   --tsr-ref-space-4: 16px;
 
   --tsr-ref-radius-sm: 6px;
@@ -202,7 +203,7 @@
   );
   --tsr-comp-resize-handler-width: 24px;
   /* Наименьшая подпись заголовка: кнопки, которым не хватает места, — в кебаб (ADR 0111). */
-  --tsr-comp-head-title-min-width: 48px;
+  --tsr-comp-head-title-min-width: 72px;
 
   /* Движение (ADR 0017, MO1–MO3): все переходы собираются из двух базовых токенов.
    * Длительность и кривая нигде больше не пишутся литералами. */
@@ -329,14 +330,29 @@
   /* Сплошной: край выделения — индикатор состояния, контраст ≥ 3:1 (WCAG 1.4.11). */
   --tsr-comp-cell-selected-border-color: var(--tsr-sys-info);
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
-  --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-4);
+  --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-3);
   --tsr-comp-cell-content-padding: 0px var(--tsr-comp-cell-content-padding-x);
   /* Отступ слева от раскрытой ручки колонки — она заходит в отступ содержимого (ADR 0114). */
   --tsr-comp-drag-handle-inset: var(--tsr-ref-space-1);
   --tsr-comp-cell-content-gap: var(--tsr-ref-space-1);
+  /* Между кнопками заголовка: кольцо фокуса 2px не заходит на соседнюю (ADR 0135). */
+  --tsr-comp-head-button-gap: 2px;
+  /* От последней кнопки заголовка до зоны грипа: нажатие кнопки не попадает в грип. */
+  --tsr-comp-head-grip-gap: 4px;
+  /* Подпись под зоной грипа уходит в прозрачность на этой длине, как лента шагов гайда. */
+  --tsr-comp-head-grip-fade: 16px;
   --tsr-comp-cell-font-size: 0.8125rem;
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
   --tsr-comp-cell-error-color: var(--tsr-sys-danger);
+  /*
+   * Красный текст ошибки у поля правки — причина отказа, ошибка проверки значения:
+   * тон ошибки, подмешанный к тексту, держит 4.5:1; в повышенном контрасте — 7:1.
+   */
+  --tsr-comp-error-text-color: color-mix(
+    in oklch,
+    var(--tsr-sys-danger) 80%,
+    var(--tsr-sys-fg)
+  );
   /* Блок ошибки догрузки ленты в конце списка (ADR 0081). */
   --tsr-comp-load-more-height: calc(var(--tsr-comp-row-height) * 2.4);
   --tsr-comp-load-more-icon-color: var(--tsr-sys-danger);
@@ -350,22 +366,24 @@
   --tsr-comp-pending-ring-width: 2px;
   /* Кольцо фокуса занятой кнопки и кнопки в отказе — тоньше дуги, не забивает её. */
   --tsr-comp-pending-focus-ring-width: 1px;
-  /* Длина дуги ожидания кнопки — процент периметра, число (ADR 0127). */
-  --tsr-comp-pending-arc: 25;
+  /* Длина дуги ожидания кнопки с хвостом — процент периметра, число (ADR 0127). */
+  --tsr-comp-pending-arc: 30;
+  /* Дорожка под дугой кнопки и спиннера — оттенок дуги этой силы. */
+  --tsr-comp-pending-track-strength: 15%;
   /* Оттенки дуги кнопки и спиннера — оттенки свечения в полную силу: дуга — тонкая линия. */
   --tsr-comp-pending-spinner-1: var(--tsr-comp-loader-bar);
   --tsr-comp-pending-spinner-2: var(--tsr-sys-info-sky);
   --tsr-comp-pending-spinner-3: var(--tsr-sys-info-indigo);
   --tsr-comp-pending-spinner-4: var(--tsr-sys-info-violet);
   /* Длина дуги спиннера (доля круга). */
-  --tsr-comp-pending-spinner-arc: 0.25turn;
+  --tsr-comp-pending-spinner-arc: 0.3turn;
   /* Период ожидания: круг дуги кнопки — половина, цикл оттенков — 1,7. */
   --tsr-comp-pending-glow-duration: var(--tsr-comp-loader-duration);
   --tsr-comp-error-flash-color: var(--tsr-sys-danger);
-  /* Заполнение контура красным при отказе, удержание и угасание (темп сигналов внимания, как подсветка). */
+  /* Покраснение контура при отказе; удержание и угасание — ритм вспышки итога (ADR 0134). */
   --tsr-comp-error-flash-fill-duration: 200ms;
-  --tsr-comp-error-flash-duration: 1200ms;
-  --tsr-comp-error-flash-fade-duration: 500ms;
+  --tsr-comp-error-flash-duration: var(--tsr-comp-flash-duration);
+  --tsr-comp-error-flash-fade-duration: var(--tsr-comp-flash-fade-duration);
   /* Иконка упавшего пункта меню и отметка ошибки на кебабе (ADR 0078). */
   --tsr-comp-action-error-color: var(--tsr-sys-danger);
   /* Подсветка пришедших ленивых детей (ADR 0056): держится, затем гаснет. */
@@ -400,6 +418,19 @@
   /* Вспышка колонки после переноса — как приход строки (ADR 0114, §4). */
   --tsr-comp-highlight-arrival-bg: var(--tsr-comp-row-arrival-color);
   --tsr-comp-highlight-fade-duration: 500ms;
+  /*
+   * Вспышка итога на цели (ADR 0134): синий — появилось, зелёный — сервер принял,
+   * красный — грид вернул прежнее; время у всех итогов одно.
+   */
+  --tsr-comp-flash-arrived-bg: color-mix(
+    in srgb,
+    var(--tsr-comp-loader-bar) 16%,
+    transparent
+  );
+  --tsr-comp-flash-accepted-bg: var(--tsr-comp-highlight-success-bg);
+  --tsr-comp-flash-reverted-bg: var(--tsr-comp-highlight-danger-bg);
+  --tsr-comp-flash-duration: 300ms;
+  --tsr-comp-flash-fade-duration: 500ms;
   /* Шаг отступа уровня вложенности строк (ADR 0059). */
   --tsr-comp-row-nesting-indent: 16px;
   /* Линии дерева (ADR 0102): ветки со скруглёнными поворотами в отступе первой колонки. */
@@ -413,7 +444,7 @@
   --tsr-comp-tree-line-indent: calc(10px + var(--tsr-comp-tree-line-gap));
   --tsr-comp-tree-line-radius: 9px;
   /* Вертикаль уровня — под началом текста: горизонтальный отступ содержимого ячейки. */
-  --tsr-comp-tree-line-inset: var(--tsr-ref-space-4);
+  --tsr-comp-tree-line-inset: var(--tsr-comp-cell-content-padding-x);
   /* Зазор между концом поворота и текстом строки. */
   --tsr-comp-tree-line-gap: calc(var(--tsr-ref-space-1) * 3);
   --tsr-comp-cell-saved-color: var(--tsr-comp-row-arrival-color);
@@ -501,6 +532,8 @@
   --tsr-comp-button-size: 32px;
   /* Компактная кнопка (ADR 0114): ручки перетаскивания; не меньше зоны нажатия 24×24. */
   --tsr-comp-button-size-compact: 24px;
+  /* Кнопки в ячейках шапки, тела и строк (ADR 0135); тулбар и панели — `button-size`. */
+  --tsr-comp-grid-button-size: 28px;
   --tsr-comp-button-icon-size: 16px;
   /* Формы кнопок: `square` — скруглённый квадрат (и `Button`), `circle` — круг. */
   --tsr-comp-button-radius-square: var(--tsr-comp-control-radius);
@@ -750,6 +783,15 @@
   --tsr-comp-shadow-color: var(--tsr-sys-shadow-color);
   --tsr-comp-shadow-head: 0 4px 8px var(--tsr-comp-shadow-color);
   --tsr-comp-shadow-footer: 0 -4px 8px var(--tsr-comp-shadow-color);
+  /* Затемнение от черты грипа ширины влево — до кнопок, на подпись (ADR 0135). */
+  --tsr-comp-shadow-grip-color: color-mix(
+    in srgb,
+    var(--tsr-comp-shadow-color) 50%,
+    transparent
+  );
+  --tsr-comp-shadow-grip-width: calc(
+    var(--tsr-comp-resize-handler-width) / 2 + var(--tsr-comp-head-grip-gap)
+  );
   --tsr-comp-shadow-drag: var(--tsr-comp-shadow-color) 0 2px 4px 2px;
   --tsr-comp-shadow-drop-bubble: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
   --tsr-comp-shadow-action: 0px 0px 4px 2px var(--tsr-sys-shadow-elevated);
@@ -839,6 +881,11 @@
       var(--tsr-sys-fg) 85%,
       transparent
     );
+    --tsr-comp-error-text-color: color-mix(
+      in oklch,
+      var(--tsr-sys-danger) 55%,
+      var(--tsr-sys-fg)
+    );
     --tsr-comp-popup-group-label-color: color-mix(
       in srgb,
       var(--tsr-sys-fg) 85%,
@@ -894,6 +941,11 @@
     in srgb,
     var(--tsr-sys-fg) 85%,
     transparent
+  );
+  --tsr-comp-error-text-color: color-mix(
+    in oklch,
+    var(--tsr-sys-danger) 55%,
+    var(--tsr-sys-fg)
   );
   --tsr-comp-popup-group-label-color: color-mix(
     in srgb,
@@ -1032,4 +1084,46 @@
   syntax: '<color>';
   inherits: false;
   initial-value: transparent;
+}
+
+/* Слои вспышки итога (ADR 0134) — как у подсветки: слой строки наследуется ячейками. */
+@property --tsr-flash-row {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --tsr-flash-column {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --tsr-flash-cell {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+/*
+ * Время перехода слоя вспышки своей цели и колонки: появление — сразу, уход — угасанием.
+ */
+@property --tsr-flash-time {
+  syntax: '<time>';
+  inherits: false;
+  initial-value: 0s;
+}
+
+@property --tsr-column-flash-time {
+  syntax: '<time>';
+  inherits: false;
+  initial-value: 0s;
+}
+
+.data-grid-theme [data-flash-out] {
+  --tsr-flash-time: var(--tsr-comp-flash-fade-duration);
+}
+
+.data-grid-theme [data-column-flash-out] {
+  --tsr-column-flash-time: var(--tsr-comp-flash-fade-duration);
 }

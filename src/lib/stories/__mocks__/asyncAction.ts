@@ -85,5 +85,9 @@ export const playAsyncAction = async (canvas: HTMLElement) => {
   await until(() => expect(failing).not.toHaveAttribute('aria-busy'))
   await until(() => expect(failing).not.toHaveAttribute('data-error-flash'))
   await until(() => expect(failureShown(failing)).toBe(true))
+  // Нажатия сценария оставляют фокус на кнопке — покой истории без кольца фокуса.
+  const focused = canvas.ownerDocument.activeElement
+  if (focused instanceof HTMLElement && canvas.contains(focused)) focused.blur()
+  expect(canvas.contains(canvas.ownerDocument.activeElement)).toBe(false)
   await settle()
 }

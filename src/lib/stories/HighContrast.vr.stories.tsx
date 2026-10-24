@@ -22,20 +22,11 @@ import * as rowsDraggingStories from './DataGrid.Rows.Dragging.stories'
 import * as rowsGroupingStories from './DataGrid.Rows.Grouping.stories'
 import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
 import * as rowsTreeDataStories from './DataGrid.Rows.TreeData.stories'
-import cellsContextMenuMeta, {
-  ContextMenuStateOpen,
-} from './DataGrid.Cells.ContextMenu.stories'
-import cellsEditingMeta, {
-  EditingStateEditing,
-  EditingStateSaving,
-  EditingStateError,
-} from './DataGrid.Cells.Editing.stories'
+import * as cellsContextMenuStories from './DataGrid.Cells.ContextMenu.stories'
+import * as cellsEditingStories from './DataGrid.Cells.Editing.stories'
 import cellsKeyboardMeta, {
   KeyboardStateFocusedCell,
 } from './DataGrid.Cells.Keyboard.stories'
-import cellsSelectionMeta, {
-  CellSelectionStateRange,
-} from './DataGrid.Cells.Selection.stories'
 import columnsHeaderGroupsMeta, {
   HeaderGroupsPlayground,
 } from './DataGrid.Columns.HeaderGroups.stories'
@@ -124,39 +115,9 @@ const twinStep = <S extends TwinSource>(
   step: number,
 ) => forcedStep(module.default, story, step, meta)
 
-export const HighContrastContextMenuStateOpen = {
-  ...twin(cellsContextMenuMeta, ContextMenuStateOpen),
-  name: 'Cells/Context menu — State: open',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingStateEditing = {
-  ...twin(cellsEditingMeta, EditingStateEditing),
-  name: 'Cells/Editing — State: editing',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingStateSaving = {
-  ...twin(cellsEditingMeta, EditingStateSaving),
-  name: 'Cells/Editing — State: saving',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingStateError = {
-  ...twin(cellsEditingMeta, EditingStateError),
-  name: 'Cells/Editing — State: save error',
-  tags: ['!test'],
-}
-
 export const HighContrastKeyboardStateFocusedCell = {
   ...twin(cellsKeyboardMeta, KeyboardStateFocusedCell),
   name: 'Cells/Keyboard — State: focused cell',
-  tags: ['!test'],
-}
-
-export const HighContrastCellSelectionStateRange = {
-  ...twin(cellsSelectionMeta, CellSelectionStateRange),
-  name: 'Cells/Selection — State: cell range',
   tags: ['!test'],
 }
 
@@ -1012,6 +973,24 @@ export const HighContrastPluginApiReportActionStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastOutcomeFlashFromAppStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 1),
+  name: 'Plugin API — Outcome flash, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastOutcomeFlashFromAppStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 2),
+  name: 'Plugin API — Outcome flash, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastOutcomeFlashFromAppStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 3),
+  name: 'Plugin API — Outcome flash, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastGroupingByApplicationStep1 = {
   ...twinStep(
     rowsGroupingStories,
@@ -1831,5 +1810,183 @@ export const HighContrastDraggingNestedStep2 = {
 export const HighContrastDraggingNestedStep3 = {
   ...twinStep(columnsDraggingStories, columnsDraggingStories.DraggingNested, 3),
   name: 'Columns/Dragging — Header groups, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingValueStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingValue, 1),
+  name: 'Cells/Editing — Edit a value, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingValueStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingValue, 2),
+  name: 'Cells/Editing — Edit a value, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingValueStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingValue, 3),
+  name: 'Cells/Editing — Edit a value, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingServerStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 1),
+  name: 'Cells/Editing — Server save, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingServerStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 2),
+  name: 'Cells/Editing — Server save, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingServerStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 3),
+  name: 'Cells/Editing — Server save, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingServerStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 4),
+  name: 'Cells/Editing — Server save, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSessionStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 1),
+  name: 'Cells/Editing — Draft survives, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSessionStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 2),
+  name: 'Cells/Editing — Draft survives, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSessionStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 3),
+  name: 'Cells/Editing — Draft survives, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSessionStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 4),
+  name: 'Cells/Editing — Draft survives, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingConflictStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 1),
+  name: 'Cells/Editing — Conflict blocks save, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingConflictStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 2),
+  name: 'Cells/Editing — Conflict blocks save, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangeStep1 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionRange,
+    1,
+  ),
+  name: 'Cells/Selection — Select and copy, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangeStep2 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionRange,
+    2,
+  ),
+  name: 'Cells/Selection — Select and copy, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangeStep3 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionRange,
+    3,
+  ),
+  name: 'Cells/Selection — Select and copy, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangeStep4 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionRange,
+    4,
+  ),
+  name: 'Cells/Selection — Select and copy, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionPredicateStep1 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionPredicate,
+    1,
+  ),
+  name: 'Cells/Selection — Forbidden column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionPredicateStep2 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionPredicate,
+    2,
+  ),
+  name: 'Cells/Selection — Forbidden column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCellStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCell,
+    1,
+  ),
+  name: 'Cells/Context menu — Menu on a cell, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCellStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCell,
+    2,
+  ),
+  name: 'Cells/Context menu — Menu on a cell, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCellStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCell,
+    3,
+  ),
+  name: 'Cells/Context menu — Menu on a cell, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCellStep4 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCell,
+    4,
+  ),
+  name: 'Cells/Context menu — Menu on a cell, шаг 4',
   tags: ['!test'],
 }

@@ -32,6 +32,7 @@ import {
   sortAllColumnsSeed,
   actionStatusSeed,
   highlightSeed,
+  outcomeFlashSeed,
   INLINE_HEADER_ACTIONS,
 } from './perf-cases'
 import { makeData } from '../../__mocks__/data'
@@ -181,12 +182,14 @@ const TL8_COST = { ratio: 1.3, plusMs: 4 }
 const AI10_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
+const OF20_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
 const AV11_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
 const GL13_COST = { ratio: 1.3, plusMs: 4 }
 const FT14_COST = { ratio: 1.1, plusMs: 2 }
+const GZ12_COST = { ratio: 1.1, plusMs: 2 }
 const WV8_COST = { ratio: 1.3, plusMs: 40 }
 const WV9_COST = { ratio: 1.3, plusMs: 4 }
 
@@ -543,6 +546,69 @@ describe('Производительность прокрутки — индик
   )
 })
 
+// Кнопки грида 28px (ADR 0135, GZ12): 1000×1000 со всеми плагинами, спокойная прокрутка
+// с кнопками 28px против той же выборки с 32px — токеном темы.
+describe('Производительность прокрутки — кнопки грида 28px', () => {
+  test(
+    'GZ12: прокрутка 1000×1000 со всеми плагинами с кнопками грида 28px — без регрессии против той же выборки с 32px',
+    async () => {
+      const measure = async (compact: boolean) => {
+        const style = document.createElement('style')
+        if (!compact) {
+          style.textContent =
+            '.data-grid-theme.data-grid-theme { --tsr-comp-grid-button-size: 32px; }'
+          document.head.append(style)
+        }
+        const screen = renderGrid({ ...LARGE, ...ALL_PLUGINS })
+        await waitForGrid()
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        style.remove()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const compact = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, GZ12_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('GZ12-base', 'кнопки грида 32px', base, false)
+      await record('GZ12', 'кнопки грида 28px', compact, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          compact[axis].p95Ms,
+          `${axis} p95=${compact[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Высота строки (ADR 0077, RH8): 1000×1000 без плагинов, спокойная прокрутка при
 // строках 40px против той же выборки при 50px — в окне больше строк.
 describe('Производительность прокрутки — высота строки', () => {
@@ -667,6 +733,82 @@ describe('Производительность прокрутки — подсв
           seeded[axis].p95Ms,
           `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вспышка итога на цели (ADR 0134, OF20): 1000×1000 без плагинов, спокойная прокрутка с
+// 1500 ячейками во вспышке (по 500 строк каждого итога) против той же выборки без них.
+// Удержание продлено токеном темы: вспышка держится весь замер.
+describe('Производительность прокрутки — вспышка итога', () => {
+  test(
+    'OF20: спокойная прокрутка 1000×1000 с 1500 ячейками во вспышке не дороже той же выборки без них больше чем на 30 % (или 4 мс)',
+    async () => {
+      const hold = document.createElement('style')
+      hold.textContent =
+        '.data-grid-theme { --tsr-comp-flash-duration: 600s; --tsr-comp-error-flash-duration: 600s; }'
+      document.head.append(hold)
+      const measure = async (seeded: boolean) => {
+        const seed = outcomeFlashSeed(LARGE.dataCount)
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: [seed.entry],
+        })
+        await waitForGrid()
+        if (seeded) {
+          seed.flash()
+        }
+        await expect
+          .poll(() => document.querySelector('[data-flash]') !== null)
+          .toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      try {
+        const runs = await againstBase(measure)
+        const base = medianAxes(runs.base)
+        const seeded = medianAxes(runs.variant)
+        const ceiling = axesCeiling(base, OF20_COST)
+        const record = (
+          id: string,
+          label: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label,
+            operation: 'scroll',
+            size: '1000×1000',
+            plugins: 'none',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: (['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r[axis].p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
+              ...r[axis],
+            })),
+          })
+        await record('OF20-base', 'без вспышек', base, false)
+        await record('OF20', '1500 ячеек во вспышке', seeded, true)
+
+        for (const axis of ['y', 'x'] as const) {
+          expect(
+            seeded[axis].p95Ms,
+            `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+          ).toBeLessThanOrEqual(ceiling[axis])
+        }
+      } finally {
+        hold.remove()
       }
     },
     PERF_TIMEOUT * 2,

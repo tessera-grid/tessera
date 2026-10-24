@@ -1,26 +1,30 @@
+import { useState } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
+import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
+import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
-import { useArgs } from 'storybook/preview-api'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import {
-  CellEditingServerDemo,
-  CellEditingSessionsDemo,
-  type ServerFailMode,
-} from './demos/sessionDemos'
-import { expect, waitFor, userEvent } from 'storybook/test'
-import { vrStates } from './__mocks__/catalog'
+import { untilDone } from './__mocks__/cellGestures'
+import { getData } from './__mocks__/data'
 import {
   consoleText,
-  releaseFocus,
-  rowAt,
+  guideNext,
   settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import {
+  type GuideApp,
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+} from './demos/GuideStory'
+import { WithConsole } from './demos/StoryConsole'
+import { createConsoleLog } from './demos/consoleLog'
 
-/** Правка ячеек (ADR 0028, ADR 0040, ADR 0041): базовая, с сервером, сессии с журналом колбэков. */
+/** Правка ячеек (ADR 0040, ADR 0041): значение, сервер, черновик и конфликт. */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -29,257 +33,542 @@ const meta = {
 
 export default meta
 
-/** Аргументы демо-историй: задержка и отказ «сервера», предустановки на лету. */
-interface SessionsArgs extends StoryProps {
-  serverDelayMs?: number
-  serverFailMode?: ServerFailMode
-  conflictMode?: 'commit' | 'block'
-  loadDelayMs?: number
-  loadFailMode?: ServerFailMode
-  /** ADR 0039: предел мультисортировки на лету. */
-  multiSortMax?: number
-  /** ADR 0039: разрешить правку на лету. */
-  allowEditing?: boolean
-  /** ADR 0039: набор размеров страницы на лету. */
-  pageSizesPreset?: 'default' | 'small' | 'hidden'
-}
-
-const GRID = {
-  columnCount: 6,
-  containerHeight: '560',
-  height: '460',
-  maxHeight: '460',
-}
-
-const failModeControl = {
-  control: 'inline-radio',
-  options: ['never', 'always'],
-} as const
-
 export const CellEditingPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
+  // Правка возраста, числа визитов и пола: кнопка в ячейке по наведению, F2 и Enter с
+  // клавиатуры; Enter и потеря фокуса сохраняют, Escape отменяет.
   args: {
     enableCellEditing: true,
-    // Немного колонок/строк без виртуализации: кнопка редактирования появляется в
-    // правом слоте по hover, а редактируемость гейтит канредактируемые колонки
-    // (age/visits/gender — CELL_EDITABLE_COLUMNS). Коммит по Enter пишет значение
-    // в мок-данные и сразу виден в ячейке.
     columnCount: 6,
     dataCount: 10,
     containerHeight: '560',
     height: '460',
     maxHeight: '460',
   },
-  parameters: showControls(['enableCellEditing']),
-}
-
-export const CellEditingServer: StoryObj<SessionsArgs> = {
-  name: 'Server (async)',
-  args: {
-    ...GRID,
-    // Сохранение с промисом (ADR 0041, 0057): ячейка ждёт сервера с бликом по контуру
-    // и не блокирует правку соседних; отказ — вспышка и «ошибка» с меткой, повторная
-    // правка открывает черновик с текстом отказа; успех — подсветка ячейки.
-    // Задержка сервера — serverDelayMs, отказ каждого сохранения — serverFailMode.
-    enableCellEditing: true,
-    enableKeyboardNavigation: true,
-    serverDelayMs: 1500,
-    serverFailMode: 'never',
-  },
-  argTypes: {
-    serverDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
-    serverFailMode: failModeControl,
-  },
-  // Дымовой сценарий (ADR 0042, DS1): ячейка ждёт сервера, затем показывает новое значение.
-  parameters: {
-    requirements: ['DS1'],
-    ...showControls(
-      [
-        'enableCellEditing',
-        'enableKeyboardNavigation',
-        'serverDelayMs',
-        'serverFailMode',
-      ],
-      { dataCount: 'данные подаёт демо' },
-    ),
-  },
-  play: async ({ canvasElement }) => {
-    const cell = await editCell(canvasElement, { row: 0, value: '77' })
-    await until(() =>
-      expect(cell().querySelector('[aria-busy="true"]')).not.toBeNull(),
-    )
-    await until(() =>
-      expect(cell().querySelector('[aria-busy="true"]')).toBeNull(),
-    )
-    expect(cell()).toHaveTextContent('77')
-    expect(consoleText()).toContain('onCellEdit')
-    expect(consoleText()).toContain('saved age of row-0')
-    await settle()
-  },
+  parameters: showControls(['enableCellEditing', 'enableKeyboardNavigation']),
   render: function Render(args) {
-    const [, updateArgs] = useArgs()
+    const [consoleLog] = useState(createConsoleLog)
     return (
-      <CellEditingServerDemo {...normalizeArgs(args)} updateArgs={updateArgs} />
+      <WithConsole log={consoleLog} args={args}>
+        <StoryComponent {...normalizeArgs(args)} />
+      </WithConsole>
     )
   },
 }
 
-export const CellEditingSessions: StoryObj<SessionsArgs> = {
-  name: 'Sessions',
-  args: {
-    ...GRID,
-    // Сессия правки (ADR 0040): черновик переживает прокрутку (300 строк), потеря
-    // фокуса сохраняет, Escape отменяет — onEditCancel с причиной и черновиком.
-    // «Change … externally» во время правки — конфликт: по умолчанию сохранение
-    // проходит с original/current, в режиме block — onEditCancel с conflict.
-    enableCellEditing: true,
-    enableKeyboardNavigation: true,
-    conflictMode: 'commit',
+// --- Действия шагов ------------------------------------------------------------------
+
+const ageCellOf = (root: ParentNode, row: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${row}"] .data-grid__body-cell[data-column-id="age"]`,
+  )
+const inputOf = (root: ParentNode, row: string) =>
+  ageCellOf(root, row)?.querySelector<HTMLInputElement>('input') ?? null
+/** Значение в ячейке — без кнопки правки и её подписи отказа. */
+const ageText = (root: ParentNode, row: string) => {
+  const copy = ageCellOf(root, row)?.cloneNode(true) as HTMLElement | undefined
+  copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
+  return copy?.textContent?.trim()
+}
+const editButtonOf = (root: ParentNode, row: string) =>
+  ageCellOf(root, row)?.querySelector<HTMLElement>('.cell__button button') ??
+  null
+const pending = (root: ParentNode, row: string) =>
+  editButtonOf(root, row)?.getAttribute('aria-busy') === 'true'
+const failed = (root: ParentNode, row: string) =>
+  !!ageCellOf(root, row)?.querySelector('[data-failure-indicator]')
+const scrollerOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__container')
+
+/** Ячейка вне видимой области таблицы: строка в правке остаётся смонтированной. */
+const outOfView = (root: ParentNode, row: string) => {
+  const cell = ageCellOf(root, row)
+  const scroller = scrollerOf(root)
+  if (!cell || !scroller) return true
+  const box = cell.getBoundingClientRect()
+  const frame = scroller.getBoundingClientRect()
+  return box.bottom <= frame.top || box.top >= frame.bottom
+}
+
+/** Набрать значение в поле — как ввод с клавиатуры. */
+const typeInto = (input: HTMLInputElement, value: string) => {
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const press = (input: HTMLInputElement, key: string) =>
+  input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+
+/** Открыть правку возраста кнопкой ячейки и набрать черновик. */
+const draft = (root: HTMLElement, row: string, value: string) => {
+  const input = inputOf(root, row)
+  if (!input) editButtonOf(root, row)?.click()
+  else if (input.value !== value) typeInto(input, value)
+}
+
+const hasDraft = (root: HTMLElement, row: string, value: string) =>
+  inputOf(root, row)?.value === value
+
+/** Черновик набран — сохранить его клавишей Enter. */
+const save = (root: HTMLElement, row: string, value: string) => {
+  if (hasDraft(root, row, value)) press(inputOf(root, row)!, 'Enter')
+  else draft(root, row, value)
+}
+
+// --- ADR 0040 S1 ---------------------------------------------------------------------
+
+const VALUE_ROW = 'item-id-1'
+const NEW_AGE = '77'
+
+const EDIT_VALUE: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейки, которые можно править',
+    hint: 'Приложение разрешило править возраст, число визитов и пол. У таких ячеек при наведении появляется кнопка правки.',
   },
-  argTypes: {
-    conflictMode: { control: 'inline-radio', options: ['commit', 'block'] },
-  },
-  // Дымовой сценарий (ADR 0042, DS2): изменение извне не закрывает редактор.
-  parameters: {
-    requirements: ['DS2'],
-    ...showControls(
-      ['enableCellEditing', 'enableKeyboardNavigation', 'conflictMode'],
-      { dataCount: 'данные подаёт демо' },
+  {
+    title: 'Поле правки открыто',
+    hint: 'Пользователь нажал кнопку правки в ячейке возраста и набрал новое число. Пока правка не сохранена, в ячейке поле с черновиком.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => hasDraft(root, VALUE_ROW, NEW_AGE),
+      root => draft(root, VALUE_ROW, NEW_AGE),
     ),
   },
-  play: async ({ canvasElement }) => {
-    const cell = await editCell(canvasElement, {
-      row: 0,
-      value: '55',
-      submit: false,
+  {
+    title: 'Значение сохранено',
+    hint: 'Пользователь нажал Enter. Поле закрылось, в ячейке новое значение.',
+    enter: untilDone(
+      root => !inputOf(root, VALUE_ROW) && ageText(root, VALUE_ROW) === NEW_AGE,
+      root => save(root, VALUE_ROW, NEW_AGE),
+    ),
+  },
+]
+
+/** ADR 0040, S1: пользователь правит значение ячейки и сохраняет его. */
+export const EditingValue: StoryObj<StoryProps> = {
+  name: 'Edit a value',
+  parameters: { scenario: '0040/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Правка значения"
+      steps={EDIT_VALUE}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableKeyboardNavigation: true,
+          columnCount: 6,
+          dataCount: 10,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_VALUE[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(editButtonOf(canvas, VALUE_ROW)).not.toBeNull()
+      expect(
+        canvas.querySelector(
+          `.data-grid__body-row[data-row-id="${VALUE_ROW}"] .data-grid__body-cell[data-column-id="firstName"] .cell__button`,
+        ),
+      ).toBeNull()
     })
-    const input = cell().querySelector('input')
-    await userEvent.click(
-      [...canvasElement.ownerDocument.querySelectorAll('button')].find(
-        button => button.textContent === 'Change first row age externally',
-      )!,
-    )
-    await until(() => expect(consoleText()).toContain('external'))
-    expect(document.activeElement).toBe(input)
-
-    await userEvent.keyboard('{Enter}')
-    await until(() => expect(consoleText()).toContain('onCellEdit'))
-    expect(consoleText()).toMatch(/value="55" original=\d+ current=\d+/)
-    await settle()
-  },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs()
-    return (
-      <CellEditingSessionsDemo
-        {...normalizeArgs(args)}
-        updateArgs={updateArgs}
-      />
-    )
+    await step(EDIT_VALUE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(inputOf(canvas, VALUE_ROW)?.value).toBe(NEW_AGE))
+    })
+    await step(EDIT_VALUE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(inputOf(canvas, VALUE_ROW)).toBeNull())
+      expect(ageText(canvas, VALUE_ROW)).toBe(NEW_AGE)
+      await settle()
+    })
   },
 }
 
-const EDITING_ARGS = {
-  enableCellEditing: true,
-  enableKeyboardNavigation: true,
-  columnCount: 6,
-  dataCount: 10,
-  containerHeight: '460',
-  height: '360',
-  maxHeight: '360',
+// --- ADR 0041 S1 ---------------------------------------------------------------------
+
+const REFUSAL = 'The server refused the value'
+
+/** «Сервер» гайда: придерживает ответ, пока шаг ожидания на виду. */
+const createEditServer = () => {
+  let held = true
+  let refuse = false
+  const waiting = new Set<{
+    resolve: () => void
+    reject: (reason: Error) => void
+  }>()
+  const answer = (entry: {
+    resolve: () => void
+    reject: (reason: Error) => void
+  }) => (refuse ? entry.reject(new Error(REFUSAL)) : entry.resolve())
+  return {
+    hold: () => {
+      held = true
+    },
+    answer: (ok: boolean) => {
+      held = false
+      refuse = !ok
+      waiting.forEach(answer)
+      waiting.clear()
+    },
+    save: () =>
+      new Promise<void>((resolve, reject) => {
+        const entry = { resolve, reject }
+        if (held) waiting.add(entry)
+        else answer(entry)
+      }),
+  }
 }
 
-/** Ячейка `age` строки: вход в правку и сохранение перемонтируют её содержимое. */
-const ageCell = (canvas: HTMLElement, row: number) => () =>
-  rowAt(canvas, row).querySelector<HTMLElement>(
-    '.data-grid__body-cell[data-column-id="age"]',
-  )!
+const EDIT_SERVER = createEditServer()
+const SERVER_ROW = 'item-id-1'
+const SAVED_AGE = '77'
+const REFUSED_AGE = '13'
+
+const reachRefusal = (root: HTMLElement) => {
+  EDIT_SERVER.answer(false)
+  if (!pending(root, SERVER_ROW)) save(root, SERVER_ROW, REFUSED_AGE)
+}
+
+const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Значение отправлено на сервер',
+    hint: 'Пользователь сохранил новое значение, и приложение отправило его на сервер. Пока сервер не ответил, кнопка правки показывает ожидание, а соседние ячейки можно править.',
+    states: ['body.pending'],
+    enter: untilDone(
+      root => pending(root, SERVER_ROW),
+      root => {
+        EDIT_SERVER.hold()
+        save(root, SERVER_ROW, SAVED_AGE)
+      },
+    ),
+  },
+  {
+    title: 'Сервер сохранил',
+    hint: 'Сервер принял значение. Ожидание снято, ячейка коротко подсвечивается.',
+    immediate: true,
+    enter: untilDone(
+      root =>
+        !pending(root, SERVER_ROW) && ageText(root, SERVER_ROW) === SAVED_AGE,
+      root => {
+        EDIT_SERVER.answer(true)
+        if (!pending(root, SERVER_ROW)) save(root, SERVER_ROW, SAVED_AGE)
+      },
+    ),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Пользователь сохранил ещё одно значение, но сервер его отклонил. В ячейке снова значение из данных, кнопка правки отмечена отказом.',
+    states: ['body.error'],
+    enter: untilDone(root => failed(root, SERVER_ROW), reachRefusal),
+  },
+  {
+    title: 'Повторная правка',
+    hint: 'Пользователь снова открыл правку. В поле отклонённое значение, а рядом причина отказа от сервера.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => !!ageCellOf(root, SERVER_ROW)?.querySelector('[role="alert"]'),
+      root =>
+        failed(root, SERVER_ROW)
+          ? editButtonOf(root, SERVER_ROW)?.click()
+          : reachRefusal(root),
+    ),
+  },
+]
+
+/** ADR 0041, S1: сохранение ждёт сервера — ожидание, успех, отказ и повторная правка. */
+export const EditingServer: StoryObj<StoryProps> = {
+  name: 'Server save',
+  parameters: {
+    scenario: '0041/S1',
+    requirements: ['DS1'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Сохранение на сервере"
+      steps={EDIT_SERVER_STEPS}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableKeyboardNavigation: true,
+          columnCount: 6,
+          dataCount: 10,
+          onCellEdit: EDIT_SERVER.save,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_SERVER_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(pending(canvas, SERVER_ROW)).toBe(true))
+      expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
+    })
+    await step(EDIT_SERVER_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pending(canvas, SERVER_ROW)).toBe(false))
+      expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
+      expect(consoleText()).toContain('onCellEdit')
+      // Значок кнопки возвращается из приглушённого цвета ожидания переходом; подсветка
+      // сохранения держится атрибутом и дольше — шаг смотрят после перехода.
+      await settle()
+      expect(
+        ageCellOf(canvas, SERVER_ROW)!.querySelector('[data-saved]'),
+      ).not.toBeNull()
+    })
+    await step(EDIT_SERVER_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      // Отметка отказа проявляется после вспышки.
+      await until(() =>
+        expect(
+          ageCellOf(canvas, SERVER_ROW)!.querySelector(
+            '[data-failure-indicator][data-shown="true"]',
+          ),
+        ).not.toBeNull(),
+      )
+      expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
+    })
+    await step(EDIT_SERVER_STEPS[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(inputOf(canvas, SERVER_ROW)?.value).toBe(REFUSED_AGE),
+      )
+      expect(
+        ageCellOf(canvas, SERVER_ROW)!.querySelector('[role="alert"]'),
+      ).toHaveTextContent(REFUSAL)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0040 S2–S3 ------------------------------------------------------------------
+
+const SESSION_ROW = 'item-id-0'
+const SESSION_ROWS = 100
+const DRAFT_AGE = '55'
+
+/** Данные после изменения извне: возраст первой строки на год больше. */
+const changedRows = () =>
+  getData(SESSION_ROWS, 'flat').map(row =>
+    row.id === SESSION_ROW ? { ...row, age: Number(row.age) + 1 } : row,
+  )
+
+const externalAge = () => String(changedRows()[0]!.age)
 
 /**
- * Открывает правку ячейки клавишей F2 и, если задано, набирает значение; `submit` —
- * сохраняет его Enter.
+ * Правка открыта с черновиком, затем приложение меняет данные извне — один раз за
+ * открытие таблицы.
  */
-const editCell = async (
-  canvas: HTMLElement,
-  {
-    row = 1,
-    value,
-    submit = true,
-  }: { row?: number; value?: string; submit?: boolean } = {},
+const draftThenChange = (
+  root: HTMLElement,
+  app: GuideApp,
+  changed: { done: boolean },
 ) => {
-  await waitForRows(canvas)
-  const cell = ageCell(canvas, row)
-  cell().focus()
-  await until(() => expect(cell()).toHaveAttribute('data-kn-active', 'true'))
-  await userEvent.keyboard('{F2}')
-  await until(() => expect(cell().querySelector('input')).not.toBeNull())
-  if (value !== undefined) {
-    await userEvent.keyboard(
-      `{Control>}a{/Control}${value}${submit ? '{Enter}' : ''}`,
+  const scroller = scrollerOf(root)
+  if (scroller && scroller.scrollTop > 0) {
+    scroller.scrollTop = 0
+    return
+  }
+  if (!hasDraft(root, SESSION_ROW, DRAFT_AGE)) {
+    draft(root, SESSION_ROW, DRAFT_AGE)
+    return
+  }
+  if (!changed.done) {
+    changed.done = true
+    app.update(props =>
+      props.dataOverride ? props : { dataOverride: changedRows() },
     )
   }
-  return cell
 }
 
-/** Ячейка в правке (ADR 0093, VR4). */
-export const EditingStateEditing: StoryObj<StoryProps> = {
-  name: 'State: editing',
-  parameters: {
-    ...vrStates('body.editing'),
-    ...showControls(['enableCellEditing', 'enableKeyboardNavigation']),
+const EDIT_SESSION: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка открыта',
+    hint: 'Пользователь открыл правку возраста в первой строке и набрал число, но ещё не сохранил.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => hasDraft(root, SESSION_ROW, DRAFT_AGE),
+      root => draft(root, SESSION_ROW, DRAFT_AGE),
+    ),
   },
-  args: EDITING_ARGS,
-  play: async ({ canvasElement }) => {
-    await editCell(canvasElement)
-    await settle()
+  {
+    title: 'Таблица прокручена',
+    hint: 'Пользователь прокрутил таблицу вниз, и строка с правкой ушла из вида.',
+    enter: untilDone(
+      root =>
+        hasDraft(root, SESSION_ROW, DRAFT_AGE) && outOfView(root, SESSION_ROW),
+      root => {
+        if (!hasDraft(root, SESSION_ROW, DRAFT_AGE))
+          draft(root, SESSION_ROW, DRAFT_AGE)
+        else scrollerOf(root)!.scrollTop = scrollerOf(root)!.scrollHeight
+      },
+    ),
+  },
+  {
+    title: 'Данные изменились извне',
+    hint: 'Пользователь вернулся к строке, а приложение тем временем изменило её возраст. Поле осталось открытым, черновик в нём не тронут.',
+    states: ['body.editing'],
+    enter: (root, app) => {
+      const changed = { done: false }
+      untilDone(
+        () => changed.done && hasDraft(root, SESSION_ROW, DRAFT_AGE),
+        () => draftThenChange(root, app, changed),
+      )(root, app)
+    },
+  },
+  {
+    title: 'Черновик сохранён',
+    hint: 'Пользователь нажал Enter. В ячейке его значение, а в консоли видны и исходное, и изменённое извне.',
+    enter: (root, app) => {
+      const changed = { done: false }
+      untilDone(
+        () =>
+          !inputOf(root, SESSION_ROW) &&
+          ageText(root, SESSION_ROW) === DRAFT_AGE,
+        () => {
+          if (changed.done && hasDraft(root, SESSION_ROW, DRAFT_AGE))
+            press(inputOf(root, SESSION_ROW)!, 'Enter')
+          else draftThenChange(root, app, changed)
+        },
+      )(root, app)
+    },
+  },
+]
+
+/** ADR 0040, S2: черновик правки переживает прокрутку и изменение данных извне. */
+export const EditingSession: StoryObj<StoryProps> = {
+  name: 'Draft survives',
+  parameters: {
+    scenario: '0040/S2',
+    requirements: ['DS2'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Черновик правки"
+      steps={EDIT_SESSION}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableKeyboardNavigation: true,
+          columnCount: 6,
+          dataCount: SESSION_ROWS,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_SESSION[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
+      )
+    })
+    await step(EDIT_SESSION[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(outOfView(canvas, SESSION_ROW)).toBe(true))
+    })
+    await step(EDIT_SESSION[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
+      )
+      await until(() => expect(consoleText()).toContain('dataOverride'))
+      expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE)
+    })
+    await step(EDIT_SESSION[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(inputOf(canvas, SESSION_ROW)).toBeNull())
+      expect(ageText(canvas, SESSION_ROW)).toBe(DRAFT_AGE)
+      expect(consoleText()).toMatch(
+        new RegExp(
+          `value:"${DRAFT_AGE}",original:\\d+,current:${externalAge()}`,
+        ),
+      )
+      await settle()
+    })
   },
 }
 
-/** Ячейка ждёт сервера (ADR 0093, VR4): `onCellEdit` не отвечает. */
-export const EditingStateSaving: StoryObj<StoryProps> = {
-  name: 'State: saving',
-  parameters: {
-    ...vrStates('body.pending'),
-    ...showControls(['enableCellEditing', 'enableKeyboardNavigation']),
+const EDIT_CONFLICT: readonly GuideStoryStep[] = [
+  {
+    title: 'Данные изменились во время правки',
+    hint: 'Пользователь правит возраст, а приложение в это время изменило ту же ячейку.',
+    states: ['body.editing'],
+    enter: (root, app) => {
+      const changed = { done: false }
+      untilDone(
+        () => changed.done && hasDraft(root, SESSION_ROW, DRAFT_AGE),
+        () => draftThenChange(root, app, changed),
+      )(root, app)
+    },
   },
-  args: {
-    ...EDITING_ARGS,
-    // Свой предикат отключает демо-хуки правки: колбэк истории доходит до плагина.
-    cellEditingCanEditCell: () => true,
-    onCellEdit: () => new Promise<void>(() => {}),
+  {
+    title: 'Сохранение отклонено',
+    hint: 'Пользователь нажал Enter. Правка закрылась без сохранения, в ячейке значение, пришедшее извне. Причина отмены видна в консоли.',
+    enter: (root, app) => {
+      const changed = { done: false }
+      untilDone(
+        () =>
+          !inputOf(root, SESSION_ROW) &&
+          ageText(root, SESSION_ROW) === externalAge(),
+        () => {
+          if (changed.done && hasDraft(root, SESSION_ROW, DRAFT_AGE))
+            press(inputOf(root, SESSION_ROW)!, 'Enter')
+          else draftThenChange(root, app, changed)
+        },
+      )(root, app)
+    },
   },
-  play: async ({ canvasElement }) => {
-    const cell = await editCell(canvasElement, { value: '41' })
-    await waitFor(() =>
-      expect(cell().querySelector('[aria-busy="true"]')).not.toBeNull(),
-    )
-    await releaseFocus(cell)
-    await settle()
-  },
-}
+]
 
-/** Сервер отказал в сохранении (ADR 0093, VR4): отметка отказа на кнопке правки (ADR 0127). */
-export const EditingStateError: StoryObj<StoryProps> = {
-  name: 'State: save error',
-  parameters: {
-    ...vrStates('body.error'),
-    ...showControls(['enableCellEditing', 'enableKeyboardNavigation']),
-  },
-  args: {
-    ...EDITING_ARGS,
-    cellEditingCanEditCell: () => true,
-    onCellEdit: () => Promise.reject(new Error('The server refused the value')),
-  },
-  play: async ({ canvasElement }) => {
-    const cell = await editCell(canvasElement, { value: '42' })
-    await waitFor(() => expect(cell().querySelector('input')).toBeNull())
-    await waitFor(
-      () =>
-        expect(
-          cell().querySelector('[data-failure-indicator][data-shown="true"]'),
-        ).not.toBeNull(),
-      { timeout: 5000 },
-    )
-    await releaseFocus(cell)
-    await settle()
+/** ADR 0040, S3: приложение не даёт сохранить правку поверх изменения извне. */
+export const EditingConflict: StoryObj<StoryProps> = {
+  name: 'Conflict blocks save',
+  parameters: { scenario: '0040/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Конфликт правки"
+      steps={EDIT_CONFLICT}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableKeyboardNavigation: true,
+          columnCount: 6,
+          dataCount: SESSION_ROWS,
+          height: '360',
+          onConflict: 'block',
+          onEditCancel: () => undefined,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_CONFLICT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(consoleText()).toContain('dataOverride'))
+      expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE)
+    })
+    await step(EDIT_CONFLICT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(inputOf(canvas, SESSION_ROW)).toBeNull())
+      expect(ageText(canvas, SESSION_ROW)).toBe(externalAge())
+      await until(() => expect(consoleText()).toContain('onEditCancel'))
+      expect(consoleText()).toContain('conflict')
+      await settle()
+    })
   },
 }

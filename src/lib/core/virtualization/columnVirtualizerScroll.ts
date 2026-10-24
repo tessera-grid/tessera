@@ -37,5 +37,7 @@ export const useColumnVirtualizerScroll = ({
     '--virtual-center-width': virtualColumns.length
       ? `${centerWidth}px`
       : undefined,
+    // Спейсер — первым в DOM, на экране — за левыми закреплёнными, правые — после него.
+    '--tsr-virtual-end-order': virtualColumns.length ? '2' : undefined,
   } as CSSProperties
 }

@@ -22,7 +22,7 @@ import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
 import { ToolbarButton } from '@/lib/ui/ToolbarButton'
 import { SvgIcon } from '@/lib/ui/icons'
-import { pendingArcOf, renderGrid } from '../helpers'
+import { arcHeadOf, arcTrackOf, pendingArcOf, renderGrid } from '../helpers'
 import { submittedCellsSeed } from '../performance/perf-cases'
 import { composed } from '../stories'
 import { contrast, toRgba } from './a11y-helpers'
@@ -650,7 +650,6 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const screen = await render(<Button pending flash={0} />)
     const button = () => document.querySelector('button')!
     const arc = () => pendingArcOf(button())!
-    const line = () => style(arc().firstElementChild!)
     const highlight = toRgba(sys('Highlight'))
     for (const i of [1, 2, 3, 4]) {
       expect(
@@ -658,11 +657,14 @@ describe('Высокая контрастность (ADR 0087)', () => {
       ).toEqual(highlight)
     }
     expect(style(arc()).forcedColorAdjust).toBe('none')
-    expect(toRgba(line().stroke)).toEqual(highlight)
+    expect(toRgba(style(arcHeadOf(arc())).stroke)).toEqual(highlight)
+    // Дорожки нет: бледный `Highlight` — не системный цвет.
+    expect(toRgba(style(arcTrackOf(arc())).stroke)[3]).toBe(0)
     await frame()
     await screen.rerender(<Button pending={false} flash={1} />)
     expect(button().getAttribute('data-error-flash')).toBe('on')
-    expect(toRgba(line().stroke)).toEqual(toRgba(sys('Mark')))
+    // Отказ — сразу весь контур `Mark`, без перетекания из смеси.
+    expect(toRgba(style(arcTrackOf(arc())).stroke)).toEqual(toRgba(sys('Mark')))
   })
 
   test('HC8: линии дерева видны цветом GrayText', async () => {

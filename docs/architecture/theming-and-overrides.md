@@ -71,16 +71,19 @@
   `-gap` / `-bg` / `-divider-color`. `--tsr-comp-status-bar-offset` выставляет сам
   грид, когда есть `statusBarSlot`, — его не переопределяют.
 - **Ожидание и отказ кнопок** (ADR [0055](../decisions/0055-button-pending-and-error-flash.md),
-  [0127](../decisions/0127-initiator-pending-and-failure.md)): по контуру кнопки бежит дуга
-  толщиной `--tsr-comp-pending-ring-width` и длиной `--tsr-comp-pending-arc` процентов
-  периметра; круг — 0,5 `--tsr-comp-pending-glow-duration`, цвет перетекает
-  `--tsr-comp-pending-spinner-1…4`. Отказ `errorFlash` — дуга встаёт, краснеет
-  (`--tsr-comp-error-flash-color`) и за `--tsr-comp-error-flash-fill-duration` заполняет
-  контур, держится `-duration` и гаснет за `-fade-duration`; с `failure` после вспышки
-  остаётся точка отказа. Дуга — SVG-слой `PendingArc` последним ребёнком кнопки, радиус
-  — из её `border-radius`; `--tsr-ring-border` — рамка кнопки, от которой отсчитан
-  внешний край. У спиннера пункта меню — дуга `--tsr-comp-pending-spinner-arc` без
-  дорожки. Пока грид прокручивается (`data-scrolling`), дуга стоит
+  [0127](../decisions/0127-initiator-pending-and-failure.md)): по контуру кнопки лежит
+  бледная дорожка (оттенок дуги силой `--tsr-comp-pending-track-strength`) и бежит дуга с
+  хвостом толщиной `--tsr-comp-pending-ring-width` и длиной `--tsr-comp-pending-arc`
+  процентов периметра; круг — 0,5 `--tsr-comp-pending-glow-duration`, цвет перетекает
+  `--tsr-comp-pending-spinner-1…4`. Отказ `errorFlash` — дуга встаёт и за
+  `--tsr-comp-error-flash-fill-duration` гаснет, а дорожка краснеет
+  (`--tsr-comp-error-flash-color`); красный контур держится `-duration` и гаснет за
+  `-fade-duration` — по умолчанию ритм вспышки итога, `--tsr-comp-flash-duration` и
+  `--tsr-comp-flash-fade-duration`; с `failure`, когда он погас, остаётся точка отказа. Дуга — SVG-слой
+  `PendingArc` последним ребёнком кнопки (дорожка — первый `rect`, хвост — `g` из восьми
+  отрезков), радиус — из её `border-radius`; `--tsr-ring-border` — рамка кнопки, от
+  которой отсчитан внешний край. У спиннера пункта меню — та же дорожка и дуга
+  `--tsr-comp-pending-spinner-arc` с хвостом. Пока грид прокручивается (`data-scrolling`), дуга стоит
   (ADR [0078](../decisions/0078-async-menu-actions.md), MI25).
 - **Подсветка** (ADR [0080](../decisions/0080-highlight-api.md)): заливка тона —
   `--tsr-comp-highlight-<tone>-bg` для `danger`/`warning`/`success` (роли
@@ -93,6 +96,15 @@
   строка рисует его своим фоном, ячейки с непрозрачной подложкой закрепления повторяют
   его по `--tsr-highlight-row`; слои — зарегистрированные цветовые свойства, поэтому
   снятие гаснет переходом. Блик всех элементов цели идёт в одной фазе (`startTime` с момента постановки); пока грид прокручивается (`data-scrolling`), полосы нет.
+- **Вспышка итога** (ADR [0134](../decisions/0134-outcome-flash.md)): тоны
+  `--tsr-comp-flash-arrived-bg` (синий, как приход), `--tsr-comp-flash-accepted-bg` (по
+  умолчанию `--tsr-comp-highlight-success-bg`), `--tsr-comp-flash-reverted-bg` (по
+  умолчанию `--tsr-comp-highlight-danger-bg`); удержание и угасание любого итога —
+  `--tsr-comp-flash-duration` и `--tsr-comp-flash-fade-duration`. Слои `--tsr-flash-row`/`-cell`/`-column` лежат над
+  слоями подсветки той же цели; атрибуты — `data-flash` у строки и ячейки,
+  `data-column-flash` у ячеек колонки, заголовка и футера, `-out` — пока гаснет. Время
+  перехода слоя — `--tsr-flash-time`/`--tsr-column-flash-time`: появление сразу, уход — угасанием. В
+  `forced-colors` рисуется только `reverted` — `Mark`.
 - **Общая волна скелетов** (ADR [0121](../decisions/0121-shared-skeleton-wave.md)):
   проход рамки `--tsr-comp-skeleton-frame-wave-duration` (из базовой длительности),
   пауза до первого прохода `--tsr-comp-skeleton-wave-delay`, ширина полосы
@@ -116,7 +128,7 @@
 - **Грип ширины и кнопки заголовка** (ADR
   [0111](../decisions/0111-resize-grip-on-column-border.md)):
   `--tsr-comp-resize-handler-width` (24px) — зона грипа на границе колонок, по половине в
-  каждую; `--tsr-comp-head-title-min-width` (48px) — наименьшая подпись заголовка: кнопки,
+  каждую; `--tsr-comp-head-title-min-width` (72px, ADR 0135) — наименьшая подпись заголовка: кнопки,
   которым не хватает места, уходят в кебаб.
 - **Будущий родитель при перетаскивании строки** (ADR
   [0109](../decisions/0109-drop-into-collapsed-groups.md)):
@@ -162,9 +174,11 @@
 - **Асинхронная правка ячейки** (ADR [0057](../decisions/0057-async-cell-edit-feedback.md),
   [0127](../decisions/0127-initiator-pending-and-failure.md)): ожидание и отказ сохранения
   показывает кнопка правки — дуга, красное заполнение и отметка; ячейка показывает только
-  значение. Слой `cellEditing` поверх ячейки несёт подсветку сохранения —
+  значение. Слой `cellEditing` под содержимым ячейки несёт подсветку сохранения —
   `--tsr-comp-cell-saved-color` / `-duration` / `-fade-duration`, по умолчанию
-  равны `--tsr-comp-row-arrival-*`. Токена приглушения ожидания больше нет.
+  равны `--tsr-comp-row-arrival-*`. Токена приглушения ожидания больше нет. Текст
+  причины отказа и ошибки проверки у поля правки — `--tsr-comp-error-text-color`
+  (тон ошибки с текстом: 4.5:1, в повышенном контрасте 7:1).
 - **Длинный текст** (ADR [0083](../decisions/0083-text-overflow.md)): меню действий и
   панель экспорта не шире `--tsr-comp-popup-max-width` (320px), подпись пункта
   переносится. Где высота задана — `…` и тултип только у обрезанного текста

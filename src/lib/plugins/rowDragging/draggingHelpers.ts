@@ -1,5 +1,6 @@
 import type { Active, Over, UniqueIdentifier } from '@dnd-kit/core'
 
+import { hasExpandToggle } from '../../core/keyboardActions'
 import type { Row } from '../../types'
 import type { RowSortableData } from './types'
 
@@ -37,11 +38,29 @@ export const getMinDepth = (
   return targetItem.depth
 }
 
-export const getMaxDepth = (targetItem: Row<any, any> | undefined) => {
+/**
+ * Строка принимает детей переносом: группа, которую пользователь раскрывает сам, или уже
+ * раскрытая. Свёрнутая группа дерева без переключателя — лист (ADR 0109, §5).
+ */
+export const canNestInto = (row: unknown, table: unknown) => {
+  const r = row as {
+    getCanExpand?: () => boolean
+    getIsExpanded?: () => boolean
+  }
+  return (
+    (r.getCanExpand?.() ?? false) &&
+    ((r.getIsExpanded?.() ?? false) || hasExpandToggle(table))
+  )
+}
+
+export const getMaxDepth = (
+  targetItem: Row<any, any> | undefined,
+  table: unknown,
+) => {
   if (!targetItem) return 0
 
   // Минимальная вложенность + 1, если целевой элемент - это группа, либо минимальная вложенность равняется изначальной вложенности целевого элемента
-  return (targetItem.getCanExpand?.() ?? false)
+  return canNestInto(targetItem, table)
     ? targetItem.depth + 1
     : targetItem.depth
 }

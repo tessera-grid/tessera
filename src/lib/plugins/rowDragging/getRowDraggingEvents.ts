@@ -358,7 +358,7 @@ export const getRowDraggingEvents = (
       const minDepth = getMinDepth(activeRow, targetItem, over.id)
       const maxDepth = closedAfterDelay(targetItem)
         ? targetItem!.depth
-        : getMaxDepth(targetItem)
+        : getMaxDepth(targetItem, table)
       const validDepth = getValidDepth(currentDepth, minDepth, maxDepth)
       // Строка с детьми в группу не вкладывается; ленивый перенос — только с колбэком.
       const acceptable =

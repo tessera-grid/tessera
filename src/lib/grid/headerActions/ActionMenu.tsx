@@ -154,44 +154,45 @@ export const ActionMenu = ({
         }
       }}
     >
-      {variant === 'row' ? (
-        <div className={clsx('row__button', !shown && 'row__button--hidden')}>
-          {trigger}
-        </div>
-      ) : (
-        // Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
-        // открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
-        // AM24, AM25).
-        <div
-          className="cell__button cell__button--hidden"
-          data-button-active={shown}
-        >
-          {trigger}
-        </div>
-      )}
-      <ActionMenuPopup
-        actions={actions}
-        context={context}
-        session={kebab.session}
-        sections={sections}
-        close={() => onMenuOpenChange(false)}
-        onOpenPanel={openPanel}
-        finalFocus={() => !panelTakesFocus.current && leave.returnFocus()}
-      />
-      {panelAction && (
-        <Popover.Root
-          open={panelOpen}
-          onOpenChange={setPanelOpen}
-          onOpenChangeComplete={onPanelOpenChangeComplete}
-        >
-          <ActionPanelPopup
-            action={panelAction}
-            context={context}
-            anchorRef={triggerRef}
-            close={() => setPanelOpen(false)}
-          />
-        </Popover.Root>
-      )}
+      {/*
+       * Как остальные кнопки ячейки/заголовка: по наведению или фокусу; пока меню
+       * открыто или закрывается, `data-button-active` держит кебаб видимым (ADR 0024,
+       * AM24, AM25). Попапы — внутри обёртки: служебные узлы портала не встают между
+       * кнопками ряда.
+       */}
+      <div
+        className={
+          variant === 'row'
+            ? clsx('row__button', !shown && 'row__button--hidden')
+            : 'cell__button cell__button--hidden'
+        }
+        data-button-active={variant === 'row' ? undefined : shown}
+      >
+        {trigger}
+        <ActionMenuPopup
+          actions={actions}
+          context={context}
+          session={kebab.session}
+          sections={sections}
+          close={() => onMenuOpenChange(false)}
+          onOpenPanel={openPanel}
+          finalFocus={() => !panelTakesFocus.current && leave.returnFocus()}
+        />
+        {panelAction && (
+          <Popover.Root
+            open={panelOpen}
+            onOpenChange={setPanelOpen}
+            onOpenChangeComplete={onPanelOpenChangeComplete}
+          >
+            <ActionPanelPopup
+              action={panelAction}
+              context={context}
+              anchorRef={triggerRef}
+              close={() => setPanelOpen(false)}
+            />
+          </Popover.Root>
+        )}
+      </div>
     </Menu.Root>
   )
 }
