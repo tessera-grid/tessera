@@ -28,14 +28,16 @@ import {
   guideNext,
   headCell,
   openPopup,
+  pollUntil,
   settle,
+  stepDone,
   until,
   updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { labelPattern, storyLabels } from './__mocks__/storyLabels'
 import { showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
 
 interface FilteringServerArgs extends StoryProps {
   serverDelayMs?: number
@@ -797,6 +799,18 @@ const SAVED_VIEW_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Пользователь листает дальше',
     hint: 'Дальше видом владеет грид: кнопка «следующая страница» пейджера работает, как обычно.',
+    // Со второй страницы сохранённого вида — на третью.
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => /^(6|11)–/.test(rangeText(root)), signal)
+      if (rangeText(root).startsWith('6–')) {
+        root
+          .querySelector<HTMLElement>(
+            '[data-testid="pagination"] [data-page-action="next"]',
+          )!
+          .click()
+      }
+      await pollUntil(() => rangeText(root).startsWith('11–'), signal)
+    }),
   },
 ]
 
@@ -825,7 +839,7 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
       args={normalizeArgs(args)}
     />
   ),
-  play: async ({ args, canvasElement: canvas, globals, step }) => {
+  play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     const ages = () => cellsOf(canvas, 'age').map(Number)
@@ -844,12 +858,8 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
     })
     await step(SAVED_VIEW_STEPS[2].title, async () => {
       await guideNext(canvas)
-      await userEvent.click(
-        canvas.querySelector<HTMLElement>(
-          `[data-testid="pagination"] button[aria-label="${storyLabels(args.locale).nextPage}"]`,
-        )!,
-      )
-      await until(() => expect(rangeText(canvas)).toMatch(/^11–15 /))
+      await stepDone(canvas)
+      expect(rangeText(canvas)).toMatch(/^11–15 /)
     })
     await settle()
   },

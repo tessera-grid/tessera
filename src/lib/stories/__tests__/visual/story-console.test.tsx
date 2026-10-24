@@ -18,7 +18,7 @@ import { waitForQuietDocument } from '../memory.helpers'
 import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
 
-// Консоль историй (ADR 0124): CL1, CL3, CL7, CL9–CL12. CL5 и CL8 — в `play` песочницы
+// Консоль историй (ADR 0124): CL1, CL3, CL7–CL12. CL5 — в `play` песочницы
 // `Tessera/Common/Console`, CL2, CL4, CL6, CL13–CL14 — модульные `storyConsole`.
 
 const { ConsoleGuideEvents } = composeStories(consoleStories)
@@ -252,6 +252,73 @@ describe('консоль историй (ADR 0124)', () => {
     log.log('server', 'latest')
     await expect.poll(() => items().at(-1)?.textContent).toContain('latest')
     await expect.poll(atBottom).toBe(true)
+  })
+
+  test('CL8: поповер «Фильтры» — строки видов «Действия», «Колбэки», «Состояние», «Жизненный цикл» с галочками и «Показать все»: снятая галочка скрывает записи вида, поставленная — показывает; «Очистить» очищает журнал', async () => {
+    const log = createConsoleLog()
+    await mountHost(log)
+    await userEvent.hover(sortButton())
+    await humanClick(sortButton())
+    toggle().click()
+    const kinds = () =>
+      new Set(
+        [...list().querySelectorAll<HTMLElement>('[data-console-kind]')].map(
+          row => row.dataset.consoleKind,
+        ),
+      )
+    await expect
+      .poll(() => [...kinds()].sort())
+      .toEqual(['action', 'callback', 'lifecycle', 'state'])
+    const all = kinds()
+
+    await humanClick(byTestId('story-console-filters')!)
+    const row = (kind: string) =>
+      document.querySelector<HTMLElement>(`[data-console-filter="${kind}"]`)!
+    const rows = () => [
+      ...document.querySelectorAll<HTMLElement>('[data-console-filter]'),
+    ]
+    await expect.poll(() => rows().length).toBe(4)
+    expect(rows().map(item => item.textContent)).toEqual([
+      'Действия',
+      'Колбэки',
+      'Состояние',
+      'Жизненный цикл',
+    ])
+    expect(
+      rows().every(
+        item =>
+          item.querySelector('[aria-checked]')?.getAttribute('aria-checked') ===
+          'true',
+      ),
+    ).toBe(true)
+
+    // Снятая галочка скрывает записи только своего вида.
+    await humanClick(row('state'))
+    await expect.poll(() => kinds().has('state')).toBe(false)
+    expect(kinds()).toEqual(new Set(['action', 'callback', 'lifecycle']))
+    // Поставленная — показывает их снова: записи скрыты, а не удалены.
+    await humanClick(row('state'))
+    await expect.poll(() => kinds()).toEqual(all)
+
+    for (const kind of ['state', 'lifecycle', 'action']) {
+      // eslint-disable-next-line no-await-in-loop
+      await humanClick(row(kind))
+    }
+    await expect.poll(() => kinds()).toEqual(new Set(['callback']))
+    const showAll = [
+      ...byTestId('story-console-filters-menu')!.querySelectorAll<HTMLElement>(
+        'button',
+      ),
+    ].find(button => button.textContent === 'Показать все')!
+    await humanClick(showAll)
+    await expect.poll(() => kinds()).toEqual(all)
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => byTestId('story-console-filters-menu')).toBeNull()
+    await humanClick(byTestId('story-console-clear')!)
+    await expect.poll(() => kinds().size).toBe(0)
+    expect(log.entries()).toEqual([])
+    expect(list().textContent).toContain('Событий пока нет')
   })
 
   test('CL15: действие грида из onDebugAction — строка вида «Действие» с номером, плагином, действием, деталями и источником; итог с cause ссылается на номер исходного действия', async () => {

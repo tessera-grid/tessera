@@ -17,12 +17,14 @@ import {
   guideNext,
   openPopup,
   orderedRows,
+  pollUntil,
   settle,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
 
 /** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим; своя кнопка приложения (ADR 0120). */
 
@@ -319,6 +321,9 @@ const OWN_EXPORT_BUTTON = [
   },
 ] as StoryProps['extraPlugins']
 
+const ownExportButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="own-export"]')
+
 const OWN_BUTTON: readonly GuideStoryStep[] = [
   {
     title: 'Кнопки «Экспорт» нет',
@@ -327,6 +332,11 @@ const OWN_BUTTON: readonly GuideStoryStep[] = [
   {
     title: 'Приложение выгружает',
     hint: "Своя кнопка зовёт table.exportData({ rows: 'all' }) — грид собирает CSV и скачивает файл export.csv.",
+    // Пользователь нажимает кнопку приложения: одно нажатие — один файл.
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!ownExportButton(root), signal)
+      ownExportButton(root)!.click()
+    }),
   },
 ]
 
@@ -360,18 +370,12 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
       await step(OWN_BUTTON[0].title, async () => {
         await waitForRows(canvas)
         // Своя кнопка приходит слотом тулбара позже строк.
-        await until(() =>
-          expect(
-            canvas.querySelector('[data-testid="own-export"]'),
-          ).not.toBeNull(),
-        )
+        await until(() => expect(ownExportButton(canvas)).not.toBeNull())
         expect(canvas.querySelector('[data-testid="export-button"]')).toBeNull()
       })
       await step(OWN_BUTTON[1].title, async () => {
         await guideNext(canvas)
-        await userEvent.click(
-          canvas.querySelector<HTMLElement>('[data-testid="own-export"]')!,
-        )
+        await stepDone(canvas)
         await until(() => expect(download.names).toEqual(['export.csv']))
       })
     } finally {

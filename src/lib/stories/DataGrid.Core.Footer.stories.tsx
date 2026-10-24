@@ -10,12 +10,24 @@ import { StoryComponent } from './DataGridStory'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
-import { guideNext, settle, until } from './__mocks__/catalogPlay'
+import { pressCell } from './__mocks__/cellGestures'
+import {
+  guideNext,
+  pollUntil,
+  settle,
+  stepDone,
+  until,
+} from './__mocks__/catalogPlay'
 import { getData } from './__mocks__/data'
 import { inCategory } from './__mocks__/utils/argTypes'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /**
  * Футер колонок и его положение (ADR 0118): вид для каталога и по истории на клиентский
@@ -292,11 +304,35 @@ export const InlineFooter: StoryObj<StoryProps> = {
 
 // --- S3 ------------------------------------------------------------------------------
 
+/** Ячейка первой строки, целиком видной под шапкой. */
+const firstVisibleCell = (root: HTMLElement) => {
+  const top = rect(root.querySelector('.data-grid__head')!).bottom
+  return [...root.querySelectorAll<HTMLElement>('.data-grid__body-row')]
+    .filter(row => rect(row).top >= top)
+    .sort((a, b) => rect(a).top - rect(b).top)[0]
+    ?.querySelector<HTMLElement>('[data-kn-cell]')
+}
+
+/** Действие шага: таблица прокручена к середине, пользователь нажал видимую ячейку. */
+const scrollAndPressCell = stepAction(async (root, { signal }) => {
+  await pollUntil(() => !!root.querySelector('.data-grid__body-row'), signal)
+  const scroller = scrollerOf(root)
+  const middle = Math.round((scroller.scrollHeight - scroller.clientHeight) / 2)
+  if (Math.abs(scroller.scrollTop - middle) > 1) scroller.scrollTop = middle
+  // Строки на новом месте монтируются к следующему кадру.
+  await pollUntil(() => !!firstVisibleCell(root), signal)
+  const cell = firstVisibleCell(root)!
+  pressCell(cell)
+  // Ячейка станет активной событием фокуса — без фокуса у страницы оно придёт, когда
+  // страницу откроют: холст Storybook при загрузке фокуса не имеет.
+  await pollUntil(() => document.activeElement === cell, signal)
+})
+
 const SWITCH: readonly GuideStoryStep[] = [
   {
     title: 'Футер у нижнего края',
     hint: 'Строка футера отображается у нижнего края таблицы. Таблица прокручена к середине, ячейка выбрана.',
-    enter: scrollToMiddle,
+    enter: scrollAndPressCell,
   },
   {
     title: 'Футер за последней строкой',
@@ -333,16 +369,11 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
     let body: Element | null = null
     let cell: HTMLElement | undefined
     await step(SWITCH[0].title, async () => {
-      await waitRows(canvas)
-      await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
-      await settle()
-      cell = canvas.querySelector<HTMLElement>(
-        '.data-grid__body-row [data-kn-cell]',
-      )!
-      // Как фокус грида — без прокрутки: первая смонтированная строка — над окном, и
-      // WebKit прокрутил бы к ней уже после замера.
-      cell.focus({ preventScroll: true })
+      await stepDone(canvas)
+      expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0)
+      cell = document.activeElement as HTMLElement
       await until(() => expect(cell!.dataset.knActive).toBe('true'))
+      await settle()
       scrollTop = scrollerOf(canvas).scrollTop
       body = canvas.querySelector('.data-grid__body')
       await expect(footerOf(canvas).dataset.position).toBe('pinned')

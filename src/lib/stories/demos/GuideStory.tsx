@@ -17,10 +17,14 @@ import { StoryConsole } from './StoryConsole'
 import { createConsoleLog } from './consoleLog'
 import { useArgsActions } from './useArgsActions'
 
-/** Что знает шаг: аргументы истории и ответ «сервера» — строки мока по ним. */
+/**
+ * Что знает шаг: аргументы истории, ответ «сервера» — строки мока по ним — и
+ * приложение: колбэк грида меняет через него пропсы до нового открытия грида.
+ */
 export interface GuideContext {
   args: StoryProps
   rows: NonNullable<StoryProps['dataOverride']>
+  app: GuideApp
 }
 
 export interface GuideStoryStep extends GuideStep {
@@ -133,7 +137,23 @@ export const GuideStory = ({
     () => getData(args.dataCount, args.dataNesting),
     [args.dataCount, args.dataNesting],
   )
-  const context: GuideContext = { args, rows }
+  const [appProps, setAppProps] = useState<{
+    mount: string
+    props: Partial<StoryProps>
+  }>()
+  // Открытие грида, к которому относятся пропсы приложения: ставится до эффектов шага.
+  const mountRef = useRef('')
+  const [app] = useState<GuideApp>(() => ({
+    update: change =>
+      setAppProps(prev => {
+        const current = prev?.mount === mountRef.current ? prev.props : {}
+        const props = change(current)
+        return props === current && prev
+          ? prev
+          : { mount: mountRef.current, props }
+      }),
+  }))
+  const context: GuideContext = { args, rows, app }
   const props = steps
     .slice(0, guide.step + 1)
     .reduce<Partial<StoryProps>>(
@@ -155,25 +175,10 @@ export const GuideStory = ({
   }
   const root = useRef<HTMLDivElement>(null)
   const mount = `${guide.run}-${mounts}-${shown.rewinds}`
-  const [appProps, setAppProps] = useState<{
-    mount: string
-    props: Partial<StoryProps>
-  }>()
   const live = appProps?.mount === mount ? appProps.props : undefined
-  const mountRef = useRef(mount)
   useIsomorphicLayoutEffect(() => {
     mountRef.current = mount
   }, [mount])
-  const [app] = useState<GuideApp>(() => ({
-    update: change =>
-      setAppProps(prev => {
-        const current = prev?.mount === mountRef.current ? prev.props : {}
-        const props = change(current)
-        return props === current && prev
-          ? prev
-          : { mount: mountRef.current, props }
-      }),
-  }))
   // Что поменяло приложение посреди шага — в консоль, как действие истории.
   useEffect(() => {
     if (appProps)

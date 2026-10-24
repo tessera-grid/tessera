@@ -14,7 +14,7 @@ import {
 } from '../../lib/core/definePlugin'
 import { CellButton } from '../../lib/grid/Actions/CellButton'
 import { Button } from '../../lib/ui/Button'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -26,11 +26,14 @@ import {
   type ServerFailMode,
 } from './demos/sessionDemos'
 import { argsUpdater } from './__mocks__/catalog'
+import { clickByMouse } from './__mocks__/cellGestures'
 import {
   consoleText,
   guideNext,
+  pollUntil,
   rowAt,
   settle,
+  stepDone,
   until,
   updateArgs,
   waitForRows,
@@ -241,6 +244,64 @@ const guided = (title: string, steps: readonly GuideStoryStep[]) =>
     )
   }
 
+const sortButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    '.data-grid__head-cell[data-column-id="firstName"] .column-sort__button',
+  )
+
+const sortedByFirstName = (root: ParentNode) =>
+  /^(ascending|descending)$/.test(
+    root
+      .querySelector('.data-grid__head-cell[data-column-id="firstName"]')
+      ?.getAttribute('aria-sort') ?? '',
+  )
+
+/** Пользователь нажимает кнопку сортировки First name мышью. */
+const sortByMouse = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!sortButton(root), signal)
+  clickByMouse(sortButton(root)!)
+  await pollUntil(() => sortedByFirstName(root), signal)
+}
+
+const activeCell = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-kn-cell][data-kn-active="true"]')
+
+/** Нажатие клавиши на активной ячейке — как ввод пользователя. */
+const press = (root: ParentNode, key: string) =>
+  activeCell(root)?.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+  )
+
+/**
+ * Пользователь входит в таблицу клавишей Tab, стрелкой доходит до заголовка First name
+ * и нажимает на нём Enter.
+ */
+const sortByKeyboard = async (root: HTMLElement, signal: AbortSignal) => {
+  const head = () =>
+    root.querySelector<HTMLElement>(
+      '.data-grid__head-cell[data-column-id="firstName"][data-kn-cell]',
+    )
+  await pollUntil(() => !!head(), signal)
+  const direction = head()!.getAttribute('aria-sort')
+  document.body.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+  )
+  root.querySelector<HTMLElement>('[data-kn-cell][tabindex="0"]')?.focus()
+  const column = (cell: HTMLElement | null) =>
+    Number(cell?.getAttribute('aria-colindex'))
+  for (let tries = 0; activeCell(root) !== head(); tries++) {
+    if (tries > 30) throw new Error('Шаг гайда не дошёл до заголовка')
+    const active = activeCell(root)
+    if (!active?.classList.contains('data-grid__head-cell'))
+      press(root, 'ArrowUp')
+    else
+      press(root, column(active) < column(head()) ? 'ArrowRight' : 'ArrowLeft')
+    await pollUntil(() => true, signal)
+  }
+  press(root, 'Enter')
+  await pollUntil(() => head()!.getAttribute('aria-sort') !== direction, signal)
+}
+
 const DEBUG_ACTIONS: readonly GuideStoryStep[] = [
   {
     title: 'Журнал пуст',
@@ -250,18 +311,20 @@ const DEBUG_ACTIONS: readonly GuideStoryStep[] = [
   {
     title: 'Сортировка мышью',
     hint: 'Нажмите кнопку сортировки в шапке First name: действие №1 columnSorting, источник «мышь».',
+    enter: stepAction((root, { signal }) => sortByMouse(root, signal)),
   },
   {
     title: 'Сортировка клавишей',
     hint: 'Включена клавиатура: Tab в шапку, Enter на заголовке — то же действие с источником «клавиатура».',
     props: () => ({ enableKeyboardNavigation: true }),
+    // Сортировка мышью — до клавиши, если шаг открыли, минуя прошлый.
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!sortButton(root), signal)
+      if (!sortedByFirstName(root)) await sortByMouse(root, signal)
+      await sortByKeyboard(root, signal)
+    }),
   },
 ]
-
-const sortButton = (canvas: HTMLElement) =>
-  canvas.querySelector<HTMLElement>(
-    '.data-grid__head-cell[data-column-id="firstName"] .column-sort__button',
-  )!
 
 /** S1: приложение пишет действия пользователя в свой журнал через `onDebugAction`. */
 export const PluginApiDebugActions: StoryObj<StoryProps> = {
@@ -281,18 +344,14 @@ export const PluginApiDebugActions: StoryObj<StoryProps> = {
     })
     await step(DEBUG_ACTIONS[1].title, async () => {
       await guideNext(canvas)
-      await userEvent.click(sortButton(canvas))
+      await stepDone(canvas)
       await until(() =>
         expect(consoleText()).toMatch(/#1\b[^\n]*columnSorting[^\n]*мышь/),
       )
     })
     await step(DEBUG_ACTIONS[2].title, async () => {
       await guideNext(canvas)
-      const head = sortButton(canvas).closest<HTMLElement>(
-        '.data-grid__head-cell',
-      )!
-      head.focus()
-      await userEvent.keyboard('{Enter}')
+      await stepDone(canvas)
       await until(() =>
         expect(consoleText()).toMatch(/columnSorting\.toggle[^\n]*клавиатура/),
       )
@@ -505,6 +564,9 @@ const starRows = definePlugin()({
 /** Одна запись на историю: смена набора плагинов — только когда её добавляет шаг. */
 const STAR_ROWS = [starRows()]
 
+const starButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="star-rows"]')
+
 const REPORT_ACTION: readonly GuideStoryStep[] = [
   {
     title: 'Кнопка плагина',
@@ -514,6 +576,11 @@ const REPORT_ACTION: readonly GuideStoryStep[] = [
   {
     title: 'Нажатие кнопки',
     hint: 'Кнопка зовёт table.reportAction: в консоли — действие starRows · starAll, а кнопка показывает его номер.',
+    // Пользователь нажимает кнопку мышью: одно нажатие — одно действие.
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!starButton(root), signal)
+      clickByMouse(starButton(root)!)
+    }),
   },
 ]
 
@@ -528,19 +595,17 @@ export const PluginApiReportAction: StoryObj<StoryProps> = {
   render: guided('Действие плагина', REPORT_ACTION),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    const button = () =>
-      canvas.querySelector<HTMLElement>('[data-testid="star-rows"]')
     await step(REPORT_ACTION[0].title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(button()).not.toBeNull())
+      await until(() => expect(starButton(canvas)).not.toBeNull())
     })
     await step(REPORT_ACTION[1].title, async () => {
       await guideNext(canvas)
-      await userEvent.click(button()!)
+      await stepDone(canvas)
       await until(() =>
         expect(consoleText()).toMatch(/#1\b[^\n]*starRows · starAll[^\n]*мышь/),
       )
-      expect(button()!.textContent).toBe('Star rows · #1')
+      expect(starButton(canvas)!.textContent).toBe('Star rows · #1')
     })
     await settle()
   },

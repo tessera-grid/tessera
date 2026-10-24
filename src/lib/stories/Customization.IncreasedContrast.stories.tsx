@@ -2,17 +2,24 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { expect, userEvent } from 'storybook/test'
+import { expect } from 'storybook/test'
+import { openMenu } from './__mocks__/cellGestures'
 import {
   applyPseudoStates,
   guideNext,
-  openMenuBy,
+  pollUntil,
   settle,
+  stepDone,
   until,
   waitForPopup,
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 const gridTheme = (canvas: HTMLElement) =>
   canvas.querySelector<HTMLElement>('.data-grid-theme[class*="theme-wrapper"]')!
@@ -169,6 +176,22 @@ const RECIPE_BORDER = 'rgb(29, 78, 216)'
 
 // --- S1 ------------------------------------------------------------------------------
 
+/** Указатель зашёл на узел и движется по нему — как мышь пользователя. */
+const hover = (target: HTMLElement) => {
+  const box = target.getBoundingClientRect()
+  const at = {
+    bubbles: true,
+    clientX: box.left + box.width / 2,
+    clientY: box.top + box.height / 2,
+  }
+  for (const type of ['pointerover', 'pointermove'])
+    target.dispatchEvent(
+      new PointerEvent(type, { ...at, pointerType: 'mouse' }),
+    )
+  for (const type of ['mouseover', 'mousemove'])
+    target.dispatchEvent(new MouseEvent(type, at))
+}
+
 const ENABLE: readonly GuideStoryStep[] = [
   {
     title: 'Обычный контраст',
@@ -188,12 +211,18 @@ const ENABLE: readonly GuideStoryStep[] = [
   {
     title: 'Меню колонки',
     hint: 'У меню рамка поверх тени; пункт под указателем обведён контуром.',
-    enter: root =>
-      openMenuBy(() =>
+    enter: stepAction(async (root, { signal }) => {
+      const kebab = () =>
         root.querySelector<HTMLElement>(
           '.data-grid__head-cell [data-action-menu]',
-        ),
-      ),
+        )
+      await pollUntil(() => !!kebab(), signal)
+      if (!document.querySelector('[role="menu"]')) kebab()!.click()
+      await pollUntil(() => !!openMenu(), signal)
+      const item = openMenu()!.querySelector<HTMLElement>('[role="menuitem"]')!
+      hover(item)
+      await pollUntil(() => item.hasAttribute('data-highlighted'), signal)
+    }),
   },
 ]
 
@@ -245,14 +274,9 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
     })
     await step(ENABLE[3].title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       const menu = await waitForPopup('menu')
       expect(getComputedStyle(menu).outlineStyle).toBe('solid')
-      await userEvent.keyboard('{ArrowDown}')
-      await until(() =>
-        expect(
-          menu.querySelector('[role="menuitem"][data-highlighted]'),
-        ).not.toBeNull(),
-      )
       expect(
         getComputedStyle(
           menu.querySelector<HTMLElement>(

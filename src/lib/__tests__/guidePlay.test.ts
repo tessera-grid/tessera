@@ -40,26 +40,7 @@ const SCROLL_PROPS = new Set(['scrollLeft', 'scrollTop'])
  * Истории, чей `play` ещё делает событие шага (ADR 0117, SN36): список только
  * сокращается — переведённая история уходит из него, иначе страж падает.
  */
-const BASELINE: Record<string, string> = {
-  'Console.dev.stories.tsx ConsoleFilter':
-    'событие шага ещё делает play — перевод на enter',
-  'Customization.IncreasedContrast.stories.tsx IncreasedContrastEnable':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.Cells.Selection.stories.tsx CellSelectionByCommand':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.Core.Footer.stories.tsx FooterPositionSwitch':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.Export.stories.tsx ExportOwnButton':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.Filtering.stories.tsx SavedViewRestore':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.PluginApi.stories.tsx PluginApiDebugActions':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.PluginApi.stories.tsx PluginApiReportAction':
-    'событие шага ещё делает play — перевод на enter',
-  'DataGrid.Rows.Selection.stories.tsx SelectionByRowClick':
-    'событие шага ещё делает play — перевод на enter',
-}
+const BASELINE: Record<string, string> = {}
 
 type Declarations = Map<string, ts.Node>
 

@@ -3,10 +3,17 @@ import { expect } from 'storybook/test'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { consoleText, guideNext, settle, until } from './__mocks__/catalogPlay'
+import {
+  consoleText,
+  guideNext,
+  pollUntil,
+  settle,
+  stepDone,
+  until,
+} from './__mocks__/catalogPlay'
 import { BASE_CONTROLS, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
 
 /**
  * Песочница консоли историй (ADR 0124): по истории на сценарий S1–S3. Файл
@@ -218,6 +225,65 @@ export const ConsoleCoalescing: StoryObj<StoryProps> = {
 
 // --- S3 ------------------------------------------------------------------------------
 
+const logItems = (root: ParentNode) =>
+  consoleOf(root).querySelectorAll<HTMLElement>(
+    '[data-testid="story-console-log"] [data-console-kind]',
+  )
+
+const clearButton = (root: ParentNode) =>
+  consoleOf(root).querySelector<HTMLElement>(
+    '[data-testid="story-console-clear"]',
+  )
+
+/** Вид отмечен в поповере «Фильтры». */
+const shownKind = (kind: string) =>
+  filterRow(kind)
+    ?.querySelector('[aria-checked]')
+    ?.getAttribute('aria-checked') === 'true'
+
+/** Строка выбрана флажком, первая колонка отсортирована. */
+const selectAndSort = async (root: HTMLElement, signal: AbortSignal) => {
+  const checkbox = () =>
+    rows(root)[0]?.querySelector<HTMLElement>('.row-select-checkbox')
+  const sort = () => root.querySelector<HTMLElement>('.column-sort__button')
+  // Сортировка уводит выбранную строку с первого места.
+  const selected = () =>
+    !!root.querySelector('.data-grid__body-row[data-selected="true"]')
+  const sorted = () =>
+    /^(ascending|descending)$/.test(
+      sort()?.closest('[aria-sort]')?.getAttribute('aria-sort') ?? '',
+    )
+  await pollUntil(() => !!checkbox() && !!sort(), signal)
+  if (!selected()) checkbox()!.click()
+  if (!sorted()) sort()!.click()
+  await pollUntil(() => selected() && sorted(), signal)
+}
+
+/** Поповером «Фильтры» оставляет видами консоли те, что отбирает `shown`. */
+const setFilters = async (
+  root: HTMLElement,
+  shown: (kind: string) => boolean,
+  signal: AbortSignal,
+) => {
+  const kinds = () =>
+    [...document.querySelectorAll<HTMLElement>('[data-console-filter]')].map(
+      row => row.dataset.consoleFilter!,
+    )
+  const wrong = () => kinds().filter(kind => shownKind(kind) !== shown(kind))
+  if (!filterRow('state')) filtersButton(root).click()
+  // Строки поповера — в следующем кадре после нажатия.
+  await pollUntil(() => !!filterRow('state'), signal)
+  for (const kind of wrong()) filterRow(kind)!.click()
+  await pollUntil(() => wrong().length === 0, signal)
+  if (kinds().every(shown)) filtered.delete(consoleOf(root))
+  else filtered.add(consoleOf(root))
+  filtersButton(root).click()
+  await pollUntil(() => !filterRow('state'), signal)
+}
+
+/** Консоли, у которых шаг скрыл виды: поповер закрыт, и узнать это иначе нельзя. */
+const filtered = new WeakSet<Element>()
+
 const FILTER: readonly GuideStoryStep[] = [
   {
     title: 'Таблица с выбором и сортировкой',
@@ -227,38 +293,33 @@ const FILTER: readonly GuideStoryStep[] = [
   {
     title: 'Выбор и сортировка',
     hint: 'Выбрана строка и отсортирована колонка — в консоли колбэки, срезы и записи цикла.',
-    enter: root => {
-      rows(root)[0]?.querySelector<HTMLElement>('.row-select-checkbox')?.click()
-      root.querySelector<HTMLElement>('.column-sort__button')?.click()
-    },
+    // Фильтры консоли переживают новое открытие грида: шаг возвращает все виды.
+    enter: stepAction(async (root, { signal }) => {
+      await selectAndSort(root, signal)
+      if (filtered.has(consoleOf(root)))
+        await setFilters(root, () => true, signal)
+    }),
   },
   {
     title: 'Только колбэки',
     hint: 'В консоли выключены «Состояние», «Жизненный цикл» и «Действия» — видны только колбэки.',
-    // Поповер «Фильтры» открывается после нажатия: строки — в следующем кадре.
-    enter: root => {
-      const panel = consoleOf(root)
-      const toggle = panel.querySelector<HTMLElement>(
+    enter: stepAction(async (root, { signal }) => {
+      await selectAndSort(root, signal)
+      const toggle = consoleOf(root).querySelector<HTMLElement>(
         '[data-testid="story-console-toggle"]',
       )!
       if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click()
-      filtersButton(root).click()
-      const pick = () => {
-        const rows = HIDDEN_KINDS.map(filterRow)
-        if (rows.some(row => !row)) return requestAnimationFrame(pick)
-        for (const row of rows) row!.click()
-        filtersButton(root).click()
-      }
-      requestAnimationFrame(pick)
-    },
+      await setFilters(root, kind => !HIDDEN_KINDS.includes(kind), signal)
+    }),
   },
   {
     title: 'Журнал очищен',
     hint: '«Очистить» — в консоли пусто.',
-    enter: root =>
-      consoleOf(root)
-        .querySelector<HTMLElement>('[data-testid="story-console-clear"]')
-        ?.click(),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!clearButton(root), signal)
+      clearButton(root)!.click()
+      await pollUntil(() => logItems(root).length === 0, signal)
+    }),
   },
 ]
 
@@ -267,23 +328,19 @@ export const ConsoleFilter: StoryObj<StoryProps> = {
   name: 'Filter and clear',
   parameters: {
     scenario: '0124/S3',
-    requirements: ['CL8'],
     ...NO_CONTROLS,
   },
   render: guide('Фильтр и очистка', FILTER),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    const items = () => [
-      ...consoleOf(canvas).querySelectorAll<HTMLElement>(
-        '[data-testid="story-console-log"] [data-console-kind]',
-      ),
-    ]
-    const kinds = () => new Set(items().map(item => item.dataset.consoleKind))
+    const kinds = () =>
+      new Set([...logItems(canvas)].map(item => item.dataset.consoleKind))
     await step(FILTER[0]!.title, async () => {
       await until(() => expect(rows(canvas).length).toBeGreaterThan(0))
     })
     await step(FILTER[1]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => {
         expect(kinds().has('callback')).toBe(true)
         expect(kinds().has('state')).toBe(true)
@@ -292,37 +349,15 @@ export const ConsoleFilter: StoryObj<StoryProps> = {
     })
     await step(FILTER[2]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect([...kinds()]).toEqual(['callback']))
-      await until(() => expect(filterRow('state')).toBeNull())
-      // Записи скрыты, а не удалены: вид снова включён — записи вернулись.
-      filtersButton(canvas).click()
-      await until(() => expect(filterRow('state')).not.toBeNull())
-      filterRow('state')!.click()
-      await until(() => expect(kinds().has('state')).toBe(true))
-      filterRow('state')!.click()
-      await until(() => expect([...kinds()]).toEqual(['callback']))
-      // «Показать все» возвращает все виды; снова оставляем только колбэки.
-      const showAll = [
-        ...document.querySelectorAll<HTMLElement>(
-          '[data-testid="story-console-filters-menu"] button',
-        ),
-      ].find(button => button.textContent === 'Показать все')!
-      showAll.click()
-      await until(() => {
-        expect(kinds().has('state')).toBe(true)
-        expect(kinds().has('lifecycle')).toBe(true)
-      })
-      for (const kind of HIDDEN_KINDS) filterRow(kind)!.click()
-      await until(() => expect([...kinds()]).toEqual(['callback']))
-      filtersButton(canvas).click()
-      await until(() => expect(filterRow('state')).toBeNull())
+      await stepDone(canvas)
+      expect([...kinds()]).toEqual(['callback'])
+      expect(filterRow('state')).toBeNull()
     })
     await step(FILTER[3]!.title, async () => {
       await guideNext(canvas)
-      await until(() => {
-        expect(items()).toHaveLength(0)
-        expect(consoleText()).toContain('Событий пока нет')
-      })
+      await stepDone(canvas)
+      expect(logItems(canvas)).toHaveLength(0)
+      expect(consoleText()).toContain('Событий пока нет')
     })
     await settle()
   },

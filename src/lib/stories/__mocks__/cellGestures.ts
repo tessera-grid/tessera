@@ -61,6 +61,18 @@ export const pressCell = (cell: HTMLElement, modifiers: Modifiers = {}) => {
   mouse(cell, 'mouseup', modifiers)
 }
 
+/**
+ * Нажатие кнопки мышью, как в браузере: указатель, мышь и `click` со счётчиком нажатий —
+ * `click` без него грид считает нажатием с клавиатуры.
+ */
+export const clickByMouse = (button: HTMLElement) => {
+  pointer(button, 'pointerdown')
+  mouse(button, 'mousedown', { detail: 1 })
+  pointer(button, 'pointerup')
+  mouse(button, 'mouseup', { detail: 1 })
+  mouse(button, 'click', { detail: 1 })
+}
+
 /** Протянуть выделение от ячейки `from` до ячейки `to` с зажатой кнопкой. */
 export const dragCells = (
   from: HTMLElement,

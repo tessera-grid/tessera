@@ -3,7 +3,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
-import { expect, userEvent } from 'storybook/test'
+import { expect } from 'storybook/test'
 import {
   cellOf,
   copyFrom,
@@ -16,7 +16,6 @@ import {
 import {
   consoleText,
   guideNext,
-  rowAt,
   settle,
   until,
   waitForRows,
@@ -341,11 +340,6 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
           'data-kn-active',
           'true',
         ),
-      )
-      await userEvent.click(
-        rowAt(canvas, 7).querySelector<HTMLElement>(
-          '[data-column-id="country"]',
-        )!,
       )
       expect(selectedCellIds(canvas).sort()).toEqual(found)
     })
