@@ -9,6 +9,7 @@ import {
 
 import { Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
+import type { TesseraFeatureEntry } from '../core/features'
 import { useRowSelectionState } from '../../lib/core/createState'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { DataGrid } from '../../lib/grid/DataGrid'
@@ -16,6 +17,8 @@ import {
   columnPinning,
   columnSizing,
   columnSorting,
+  columnVisibility,
+  keyboardNavigation,
   rowActions,
   rowDragging,
   rowSelection,
@@ -23,8 +26,11 @@ import {
 import { useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
 import { rowActionsDemo } from './__mocks__/plugins/rowActionsDemo/rowActionsDemo'
-import { expect } from 'storybook/test'
-import { settle, until } from './__mocks__/catalogPlay'
+import { expect, userEvent } from 'storybook/test'
+import { guideNext, settle, until } from './__mocks__/catalogPlay'
+import { guideControls } from './__mocks__/utils/dataGridControls'
+import type { StoryProps } from './DataGridStory.types'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 // История витрины темизации: контролы Storybook меняют цвет токена, значение
 // прокидывается в грид инлайн-`style` обёртки (бьёт дефолты слоя из theme.css).
@@ -177,16 +183,28 @@ const SEMANTIC: TokenControl[] = [
     desc: 'Роль статуса. По умолчанию — цвет полосы прогресс-бара.',
   },
   {
+    token: '--tsr-sys-success',
+    arg: 'sysSuccess',
+    label: 'sys-success',
+    desc: 'Роль успеха. Тон подсветки и вспышки «успех» — в демо вторая строка.',
+  },
+  {
+    token: '--tsr-sys-warning',
+    arg: 'sysWarning',
+    label: 'sys-warning',
+    desc: 'Роль предупреждения. Тон подсветки и вспышки «предупреждение» — в демо третья строка.',
+  },
+  {
     token: '--tsr-sys-overlay-hover',
     arg: 'sysOverlayHover',
     label: 'sys-overlay-hover',
-    desc: 'Оверлей наведения (один рычаг интенсивности hover-подсветки строк/ячеек).',
+    desc: 'Слой наведения строк и ячеек целиком. Силу тона без смены цвета задаёт tint-hover.',
   },
   {
     token: '--tsr-sys-overlay-selected',
     arg: 'sysOverlaySelected',
     label: 'sys-overlay-selected',
-    desc: 'Оверлей выделения (интенсивность подсветки выбранной строки).',
+    desc: 'Слой выбранной строки целиком. Силу тона без смены цвета задаёт tint-selected.',
   },
 ]
 
@@ -202,7 +220,13 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-head-cell-hovered-bg',
     arg: 'headHoverBg',
     label: 'head-cell-hovered-bg',
-    desc: 'Фон ячейки шапки при наведении (и подложка ресайз-хэндла).',
+    desc: 'Фон ячейки шапки при наведении.',
+  },
+  {
+    token: '--tsr-comp-head-cell-pinned-bg',
+    arg: 'headPinnedBg',
+    label: 'head-cell-pinned-bg',
+    desc: 'Фон закреплённой ячейки шапки.',
   },
   {
     token: '--tsr-comp-row-bg',
@@ -229,6 +253,36 @@ const GRID_TOKENS: TokenControl[] = [
     desc: 'Слой выбранной (отмеченной) строки — поверх её фона.',
   },
   {
+    token: '--tsr-comp-row-selected-hovered-bg',
+    arg: 'rowSelectedHoverBg',
+    label: 'row-selected-hovered-bg',
+    desc: 'Слой выбранной строки под курсором.',
+  },
+  {
+    token: '--tsr-comp-cell-divider-color',
+    arg: 'cellDivider',
+    label: 'cell-divider-color',
+    desc: 'Разделители строк и ячеек.',
+  },
+  {
+    token: '--tsr-comp-frame-border-color',
+    arg: 'frameBorder',
+    label: 'frame-border-color',
+    desc: 'Рамка вокруг таблицы с тулбаром и нижней панелью.',
+  },
+  {
+    token: '--tsr-comp-toolbar-bg',
+    arg: 'toolbarBg',
+    label: 'toolbar-bg',
+    desc: 'Фон тулбара над таблицей.',
+  },
+  {
+    token: '--tsr-comp-status-bar-bg',
+    arg: 'statusBarBg',
+    label: 'status-bar-bg',
+    desc: 'Фон нижней панели со счётчиком выбранных строк.',
+  },
+  {
     token: '--tsr-comp-cell-outline-color',
     arg: 'cellOutline',
     label: 'cell-outline-color',
@@ -238,7 +292,13 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-cell-pinned-left-bg',
     arg: 'pinnedBg',
     label: 'cell-pinned-left-bg',
-    desc: 'Фон закреплённой (pinned) ячейки; наведение и выбор ложатся слоем строки поверх.',
+    desc: 'Фон закреплённой ячейки чётной строки; у закреплённых справа — он же. Наведение и выбор ложатся слоем строки поверх.',
+  },
+  {
+    token: '--tsr-comp-cell-odd-pinned-left-bg',
+    arg: 'pinnedOddBg',
+    label: 'cell-odd-pinned-left-bg',
+    desc: 'Фон закреплённой ячейки нечётной строки (зебра).',
   },
   {
     token: '--tsr-comp-cell-pinned-border-color',
@@ -250,7 +310,7 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-control-color',
     arg: 'controlColor',
     label: 'control-color',
-    desc: 'Цвет иконок контролов шапки (сортировка/пиннинг/группировка) в покое.',
+    desc: 'Цвет кнопок-иконок в покое: шапка, ячейки, строки, тулбар, меню, пагинация, поиск.',
   },
   {
     token: '--tsr-comp-control-active-color',
@@ -286,7 +346,7 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-accent',
     arg: 'accent',
     label: 'accent',
-    desc: 'Общий акцентный цвет грида.',
+    desc: 'Акцент интерфейса: отметка выбранного пункта меню, панель фильтра, текущая страница пагинации.',
   },
   {
     token: '--tsr-comp-skeleton-bg',
@@ -358,6 +418,132 @@ const SHADOW_TOKENS: ShadowControl[] = [
   },
 ]
 
+// Числовые токены — ползунки: значение пишется в токен с единицей.
+interface NumberControl extends TokenControl {
+  default: number
+  unit: '%' | 'px'
+  min: number
+  max: number
+}
+
+// Рычаги тонов (--tsr-sys-tint-*): доля цвета текста в слое, значения светлой темы.
+const TINT_TOKENS: NumberControl[] = [
+  {
+    token: '--tsr-sys-tint-hover',
+    arg: 'tintHover',
+    label: 'tint-hover',
+    desc: 'Сила слоя наведения строк и ячеек, % цвета текста.',
+    default: 4,
+    unit: '%',
+    min: 0,
+    max: 30,
+  },
+  {
+    token: '--tsr-sys-tint-selected',
+    arg: 'tintSelected',
+    label: 'tint-selected',
+    desc: 'Сила слоя выбранной строки, % цвета текста.',
+    default: 6,
+    unit: '%',
+    min: 0,
+    max: 30,
+  },
+  {
+    token: '--tsr-sys-tint-pinned',
+    arg: 'tintPinned',
+    label: 'tint-pinned',
+    desc: 'Подложка закреплённых колонок, % цвета текста.',
+    default: 3,
+    unit: '%',
+    min: 0,
+    max: 30,
+  },
+  {
+    token: '--tsr-sys-tint-fill',
+    arg: 'tintFill',
+    label: 'tint-fill',
+    desc: 'Заливки без текста: скелет, ползунок прокрутки, % цвета текста.',
+    default: 10,
+    unit: '%',
+    min: 0,
+    max: 40,
+  },
+]
+
+// Размеры: строки, шапка, кнопки, отступ, кегль и скругление.
+const SIZE_TOKENS: NumberControl[] = [
+  {
+    token: '--tsr-comp-row-height',
+    arg: 'rowHeight',
+    label: 'row-height',
+    desc: 'Высота строки тела, px.',
+    default: 50,
+    unit: 'px',
+    min: 32,
+    max: 72,
+  },
+  {
+    token: '--tsr-comp-head-row-height',
+    arg: 'headRowHeight',
+    label: 'head-row-height',
+    desc: 'Высота строки шапки, px. Пока не задана — как у строк тела.',
+    default: 50,
+    unit: 'px',
+    min: 32,
+    max: 80,
+  },
+  {
+    token: '--tsr-comp-grid-button-size',
+    arg: 'gridButtonSize',
+    label: 'grid-button-size',
+    desc: 'Кнопки в шапке, ячейках и строках, px; колонка выбора — по ним же. Кнопки тулбара не меняются.',
+    default: 28,
+    unit: 'px',
+    min: 20,
+    max: 40,
+  },
+  {
+    token: '--tsr-comp-cell-content-padding-x',
+    arg: 'cellPaddingX',
+    label: 'cell-content-padding-x',
+    desc: 'Отступ содержимого от краёв ячейки, px.',
+    default: 12,
+    unit: 'px',
+    min: 4,
+    max: 24,
+  },
+  {
+    token: '--tsr-comp-cell-font-size',
+    arg: 'cellFontSize',
+    label: 'cell-font-size',
+    desc: 'Кегль текста ячеек и шапки, px.',
+    default: 13,
+    unit: 'px',
+    min: 11,
+    max: 18,
+  },
+  {
+    token: '--tsr-sys-radius',
+    arg: 'radius',
+    label: 'sys-radius',
+    desc: 'Скругление рамки таблицы, кнопок, меню и тултипов, px.',
+    default: 8,
+    unit: 'px',
+    min: 0,
+    max: 16,
+  },
+]
+
+const NUMBER_TOKENS = [...TINT_TOKENS, ...SIZE_TOKENS]
+
+// Шрифт — строка CSS `font-family`; пусто — шрифт темы.
+const FONT_FAMILY: TokenControl = {
+  token: '--tsr-comp-font-family',
+  arg: 'fontFamily',
+  label: 'font-family',
+  desc: 'Шрифт таблицы (CSS font-family); пусто — шрифт темы.',
+}
+
 // Цветовые токены (резолвятся в rgb для свотчей); тени-строки — отдельно.
 const ALL_TOKENS = [...PALETTE, ...SEMANTIC, ...GRID_TOKENS, SHADOW_COLOR]
 
@@ -413,7 +599,7 @@ interface ThemingArgs {
   colorMode: 'light' | 'dark'
   loading: 'off' | 'initial' | 'refresh'
   loadError: boolean
-  [arg: string]: string | boolean
+  [arg: string]: string | number | boolean
 }
 
 /**
@@ -443,12 +629,83 @@ const buildThemeStyle = (args: ThemingArgs): CSSProperties => {
     }
   })
 
+  NUMBER_TOKENS.forEach(({ token, arg, default: def, unit }) => {
+    const value = args[arg]
+    if (typeof value === 'number' && value !== def) {
+      style[token] = `${value}${unit}`
+    }
+  })
+
+  const font = args[FONT_FAMILY.arg]
+  if (typeof font === 'string' && font.trim()) {
+    style[FONT_FAMILY.token] = font
+  }
+
   return style as CSSProperties
+}
+
+/** Смена размеров открывает таблицу заново: высоту строк и колонок она читает при открытии. */
+const sizeKey = (args: ThemingArgs) =>
+  SIZE_TOKENS.map(({ arg }) => args[arg]).join('|')
+
+const numberArgTypes = (
+  tokens: NumberControl[],
+  category: string,
+): Meta<ThemingArgs>['argTypes'] =>
+  Object.fromEntries(
+    tokens.map(({ arg, label, desc, min, max }) => [
+      arg,
+      {
+        name: label,
+        description: desc,
+        control: { type: 'range', min, max, step: 1 },
+        table: { category },
+      },
+    ]),
+  )
+
+interface DemoTable {
+  getCoreRowModel: () => { rows: unknown[] }
+  setRowSelection: (value: Record<string, boolean>) => void
+  highlight: (
+    target: { row: string },
+    options: { tone: 'success' | 'warning' },
+  ) => { clear: () => void }
+}
+
+/**
+ * Состояния строк с первого кадра, как только пришли строки: выбранная строка (слои
+ * выбора и счётчик нижней панели) и подсветка тонами «успех» и «предупреждение».
+ */
+const rowStatesDemo: TesseraFeatureEntry = {
+  id: 'themingRowStatesDemo',
+  setup: table => {
+    const t = table as unknown as DemoTable
+    let frame = 0
+    let handles: { clear: () => void }[] = []
+    const apply = () => {
+      if (t.getCoreRowModel().rows.length === 0) {
+        frame = requestAnimationFrame(apply)
+        return
+      }
+      t.setRowSelection({ 'item-id-4': true })
+      handles = [
+        t.highlight({ row: 'item-id-1' }, { tone: 'success' }),
+        t.highlight({ row: 'item-id-2' }, { tone: 'warning' }),
+      ]
+    }
+    apply()
+    return () => {
+      cancelAnimationFrame(frame)
+      handles.forEach(handle => handle.clear())
+    }
+  },
 }
 
 const ThemingDemo = memo((args: ThemingArgs) => {
   const columns = useColumns(6)
-  const { data, setData } = useData({ count: 12, showStub: false })
+  // Строк больше окна: видна прокрутка и её ползунок.
+  const { data, setData } = useData({ count: 40, showStub: false })
 
   const { rowSelection: selection, onRowSelectionChange } =
     useRowSelectionState()
@@ -467,6 +724,7 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     loading: args.loading === 'off' ? false : args.loading,
     loadError: args.loadError ? new Error('Demo load error') : undefined,
     enableFooter: true,
+    enableStatusBar: true,
     state: { columnPinning: pinning },
     handlers: {
       onColumnPinningChange: (updater: Updater<ColumnPinningState>) =>
@@ -475,9 +733,16 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     // Набор фич подобран так, чтобы витрина задействовала как можно больше
     // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing),
     // кнопки действий строки (rowActions), клон и счётчик перетаскивания
-    // (rowDragging).
+    // (rowDragging), тулбар (columnVisibility), кольцо фокуса ячейки
+    // (keyboardNavigation).
     plugins: [
-      rowSelection({ rowSelection: selection, onRowSelectionChange }),
+      keyboardNavigation(),
+      columnVisibility(),
+      rowSelection({
+        rowSelection: selection,
+        onRowSelectionChange,
+        selectedCount: true,
+      }),
       columnSorting(),
       columnPinning(),
       columnSizing(),
@@ -487,6 +752,7 @@ const ThemingDemo = memo((args: ThemingArgs) => {
       }),
       rowActions(),
       { id: 'rowActionsDemo', slotActions: rowActionsDemo },
+      rowStatesDemo,
     ],
   })
 
@@ -494,16 +760,17 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     <Grid
       style={{
         padding: 16,
-        height: 480,
+        height: 560,
         display: 'flex',
         flexDirection: 'column',
       }}
     >
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <DataGrid
+          key={sizeKey(args)}
           table={table as never}
-          height={400}
-          maxHeight={400}
+          height={480}
+          maxHeight={480}
           colorMode={args.colorMode}
           style={buildThemeStyle(args)}
         />
@@ -541,6 +808,10 @@ const meta = {
     ...Object.fromEntries(
       SHADOW_TOKENS.map(({ arg, default: def }) => [arg, def]),
     ),
+    ...Object.fromEntries(
+      NUMBER_TOKENS.map(({ arg, default: def }) => [arg, def]),
+    ),
+    fontFamily: '',
   },
   argTypes: {
     // colorMode (light/dark) переключается ГЛОБАЛЬНЫМ тумблером «Theme» в
@@ -565,6 +836,14 @@ const meta = {
     ...colorArgTypes(SEMANTIC, 'Semantic (--tsr-sys-*)'),
     ...colorArgTypes(GRID_TOKENS, 'Component (--tsr-comp-*)'),
     ...colorArgTypes([SHADOW_COLOR], 'Тени'),
+    ...numberArgTypes(TINT_TOKENS, 'Тона (--tsr-sys-tint-*)'),
+    ...numberArgTypes(SIZE_TOKENS, 'Размеры'),
+    fontFamily: {
+      name: FONT_FAMILY.label,
+      description: FONT_FAMILY.desc,
+      control: { type: 'text' },
+      table: { category: 'Размеры' },
+    },
     ...Object.fromEntries(
       SHADOW_TOKENS.map(({ arg, label, desc }) => [
         arg,
@@ -850,6 +1129,129 @@ export const ThemeSources: StoryObj<{ appPalette: boolean }> = {
       'source-prop-dark': 'dark',
       'source-container-dark': 'dark',
       'source-light-in-dark': 'light',
+    })
+    await settle()
+  },
+}
+
+// --- ADR 0135 S1 ---------------------------------------------------------------------
+
+/** Тема приложения: свой размер кнопок таблицы поверх темы грида. */
+const LARGE_BUTTONS = 'theming-large-grid-buttons'
+/** Пример держит кнопки ячеек и строк на виду, как при наведении: их размер видно сразу. */
+const BUTTONS_SHOWN = 'theming-grid-buttons-shown'
+const GRID_BUTTONS_CSS = `
+.${LARGE_BUTTONS}.${DATA_GRID_THEME_CLASS} { --tsr-comp-grid-button-size: 32px; }
+.${BUTTONS_SHOWN}.${BUTTONS_SHOWN} :is(.data-grid__head-cell, .data-grid__body-cell) .cell__button--hidden {
+  opacity: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: unset;
+  min-width: 0;
+}
+.${BUTTONS_SHOWN}.${BUTTONS_SHOWN} .row__button--hidden {
+  opacity: 1;
+  --tsr-comp-button-color: inherit;
+  --tsr-comp-control-active-color: inherit;
+  --tsr-comp-control-disabled-color: inherit;
+  --tsr-comp-shadow-action: inherit;
+  --tsr-comp-action-button-bg: inherit;
+}
+`
+
+const GRID_BUTTON_ARGS: Partial<StoryProps> = {
+  dataNesting: 'nested',
+  enableRowExpanding: true,
+  enableRowSelection: true,
+  enableColumnSorting: true,
+  enableHeaderActionMenu: true,
+  enableCellEditing: true,
+  enableRowActions: true,
+  enableColumnVisibility: true,
+  columnCount: 5,
+  dataCount: 30,
+  containerHeight: '520',
+  height: '420',
+}
+
+const GRID_BUTTONS: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопки по умолчанию',
+    hint: 'Тема приложения размер кнопок не задаёт. Кнопки в заголовке, ячейках и строках — 28px, колонки выбора и раскрытия строк — 36px. Кнопки панели над таблицей — 32px. В примере кнопки ячеек и строк показаны сразу, обычно они появляются при наведении.',
+  },
+  {
+    title: 'Тема задала крупные кнопки',
+    hint: 'Приложение указало в своей теме размер кнопок таблицы 32px. Кнопки в заголовке, ячейках и строках — 32px, колонки выбора и раскрытия — 40px. Кнопки панели над таблицей по-прежнему 32px.',
+    props: () => ({ gridClassName: LARGE_BUTTONS }),
+  },
+]
+
+/** ADR 0135, S1: размер кнопок таблицы задаёт тема приложения одним токеном. */
+export const ThemingGridButtonSize: StoryObj<ThemingArgs> = {
+  name: 'Grid button size',
+  args: { locale: 'en' },
+  parameters: {
+    scenario: '0135/S1',
+    ...guideControls(),
+  },
+  render: storyArgs => (
+    <div className={BUTTONS_SHOWN}>
+      <style>{GRID_BUTTONS_CSS}</style>
+      <GuideStory
+        title="Размер кнопок таблицы из темы"
+        steps={GRID_BUTTONS}
+        args={guideArgs(
+          GRID_BUTTON_ARGS,
+          storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+        )}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const width = (selector: string) => {
+      const el = canvas.querySelector(selector)
+      return el ? Math.round(el.getBoundingClientRect().width) : 0
+    }
+    const sizes = () => ({
+      header: width('.data-grid__head-cell [data-action-menu]'),
+      cell: width('.data-grid__body-cell .cell__button button'),
+      row: width('.data-grid__body-row .row__button button'),
+      toggle: width('button.row-expand-button'),
+      service: [...canvas.querySelectorAll('.data-grid__head-cell')]
+        .slice(0, 2)
+        .map(cell => Math.round(cell.getBoundingClientRect().width)),
+      toolbar: width('[role="toolbar"] button'),
+    })
+    const expectSizes = (button: number, column: number) =>
+      until(() =>
+        expect(sizes()).toEqual({
+          header: button,
+          cell: button,
+          row: button,
+          toggle: button,
+          service: [column, column],
+          toolbar: 32,
+        }),
+      )
+    await step(GRID_BUTTONS[0].title, async () => {
+      await expectSizes(28, 36)
+      // Кнопки ячеек и строк видны без наведения: подсказка шага это обещает.
+      for (const selector of [
+        '.data-grid__body-cell .cell__button button',
+        '.data-grid__body-row .row__button button',
+      ]) {
+        const button = canvas.querySelector<HTMLElement>(selector)!
+        expect(getComputedStyle(button.parentElement!).opacity, selector).toBe(
+          '1',
+        )
+        expect(getComputedStyle(button).color, selector).not.toBe(
+          'rgba(0, 0, 0, 0)',
+        )
+      }
+    })
+    await step(GRID_BUTTONS[1].title, async () => {
+      await guideNext(canvas)
+      await expectSizes(32, 40)
     })
     await settle()
   },

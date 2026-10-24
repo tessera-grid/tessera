@@ -8,6 +8,7 @@ import * as columnsSortingStories from './DataGrid.Columns.Sorting.stories'
 import * as coreFooterStories from './DataGrid.Core.Footer.stories'
 import * as customizationLocalizationStories from './Customization.Localization.stories'
 import * as coreIncreasedContrastStories from './Customization.IncreasedContrast.stories'
+import * as themingStories from './Theming.stories'
 import * as coreSizingStories from './DataGrid.Core.Sizing.stories'
 import * as coreSkeletonStories from './DataGrid.DataLoading.Skeleton.stories'
 import * as coreStubsStories from './DataGrid.Core.Stubs.stories'
@@ -632,6 +633,18 @@ export const HighContrastIncreasedContrastRecipeStep2 = {
     2,
   ),
   name: 'Customization/Increased contrast — Own levers and palette, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingGridButtonSizeStep1 = {
+  ...twinStep(themingStories, themingStories.ThemingGridButtonSize, 1),
+  name: 'Theming — Grid button size, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingGridButtonSizeStep2 = {
+  ...twinStep(themingStories, themingStories.ThemingGridButtonSize, 2),
+  name: 'Theming — Grid button size, шаг 2',
   tags: ['!test'],
 }
 

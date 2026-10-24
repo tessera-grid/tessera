@@ -18,6 +18,17 @@ interface ControlSizedTable {
   setColumnAutoSizing?: (updater: Updater<ColumnSizingState>) => void
 }
 
+/** Размер кнопки грида в px: проба переводит `rem`/`em`/`calc()` токена в пиксели. */
+const buttonSizeOf = (node: HTMLElement) => {
+  const probe = document.createElement('span')
+  probe.hidden = true
+  probe.style.width = `var(${GRID_BUTTON_SIZE_VAR})`
+  node.append(probe)
+  const size = parseFloat(getComputedStyle(probe).width)
+  probe.remove()
+  return size
+}
+
 export const useControlColumnSizes = (
   table: unknown,
   wrapperRef: RefObject<HTMLElement | null>,
@@ -39,9 +50,7 @@ export const useControlColumnSizes = (
     if (!node || !t.setColumnAutoSizing) {
       return
     }
-    const button = parseFloat(
-      getComputedStyle(node).getPropertyValue(GRID_BUTTON_SIZE_VAR),
-    )
+    const button = buttonSizeOf(node)
     const themed =
       Number.isFinite(button) && button !== ACTION_BUTTON_DEFAULT_SIZE
     const width = themed ? controlColumnSize(button) : undefined

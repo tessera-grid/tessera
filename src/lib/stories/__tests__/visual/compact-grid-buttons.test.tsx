@@ -343,7 +343,7 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
 })
 
 describe('Вместимость, служебные колонки и состояния (ADR 0135)', () => {
-  test('GZ6: ширина колонок выбора и раскрытия — кнопка грида плюс 2 × 4px из темы; тема меняет ширину', async () => {
+  test('GZ6: ширина колонок выбора и раскрытия — кнопка грида плюс 2 × 4px из темы; тема в px, rem и em меняет ширину', async () => {
     const mount = async () => {
       const screen = await render(
         <composed.DataGridPlayground
@@ -362,12 +362,24 @@ describe('Вместимость, служебные колонки и сост�
         ...document.querySelectorAll<HTMLElement>(SEL.headCell),
       ].slice(0, 2)
       const widths = service.map(cell => Math.round(box(cell).width))
+      widths.push(
+        Math.round(
+          box(document.querySelector('button.row-expand-button')!).width,
+        ),
+      )
       await screen.unmount()
       return widths
     }
-    expect(await mount()).toEqual([36, 36])
-    restore = themeTokens({ '--tsr-comp-grid-button-size': '32px' })
-    expect(await mount()).toEqual([40, 40])
+    expect(await mount()).toEqual([36, 36, 28])
+    // `em` — от кегля кнопки: ширина колонок следует кнопке, какой она вышла.
+    for (const size of ['32px', '2rem', '2.5em']) {
+      restore = themeTokens({ '--tsr-comp-grid-button-size': size })
+      const [select, expand, toggle] = await mount()
+      expect(toggle, size).not.toBe(28)
+      expect([select, expand], size).toEqual([toggle! + 8, toggle! + 8])
+      restore()
+      restore = () => {}
+    }
   })
 
   test('GZ8: дуга ожидания и кольцо фокуса — по контуру кнопки 28px; кольцо фокуса в покое не заходит на соседнюю кнопку заголовка', async () => {
