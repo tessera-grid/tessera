@@ -8,7 +8,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { LAZY_PENDING_DELAY_MS } from '../../../core/lazyOpening'
 import { headerActionMenu } from '../../../plugins'
-import { humanClick } from '../helpers'
+import { failureShownOn, humanClick } from '../helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
 
@@ -216,9 +216,7 @@ describe('Панель действия — загрузка содержимо�
 
     await clickInline()
     load.reject()
-    await expect
-      .poll(() => inlineButton().getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(inlineButton())).toBe(true)
     await expect.poll(() => messages).toContain(tableLabels.loadFailed('Probe'))
     await sleep(100)
     expect(panel()).toBeNull()

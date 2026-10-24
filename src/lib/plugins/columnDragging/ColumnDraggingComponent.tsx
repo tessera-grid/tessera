@@ -7,6 +7,8 @@
  */
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
+import type { FailedAttempt } from '../../core/failedAttempts'
+import { rejectionText } from '../../core/thenable'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { DragHandler } from '../../grid/dnd'
 import {
@@ -29,13 +31,13 @@ export const ColumnDraggingComponent = ({
   const { busy, failed } = useTableState(table, (state: unknown) => {
     const s = state as {
       columnMoves?: Record<string, unknown>
-      columnMoveFailed?: Record<string, number>
+      columnMoveFailed?: Record<string, FailedAttempt>
     }
     return {
       busy: !!s.columnMoves?.[column.id],
       failed: s.columnMoveFailed?.[column.id],
     }
-  }) as { busy: boolean; failed?: number }
+  }) as { busy: boolean; failed?: FailedAttempt }
 
   if (!column.getCanDrag() || zoneOf(header as never) !== false) {
     return null
@@ -53,7 +55,12 @@ export const ColumnDraggingComponent = ({
       id={column.id}
       type="column"
       busy={busy}
-      errorFlash={failed}
+      failure={
+        failed &&
+        labels.actionFailedRetry(
+          rejectionText(failed.error) ?? labels.moveColumnFailed,
+        )
+      }
       label={labels.moveColumn}
       table={table}
       getMenuItems={() => [

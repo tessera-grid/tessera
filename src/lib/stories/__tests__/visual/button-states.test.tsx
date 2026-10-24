@@ -31,16 +31,9 @@ const button = () => document.querySelector<HTMLButtonElement>('button')!
 const arc = () =>
   button().querySelector<SVGSVGElement>(':scope > svg[data-pending-arc]')
 
-const waitFrames = (ms: number) => new Promise(r => setTimeout(r, ms))
-
-// Удержание вспышки в тестах — 800 мс: фазу удержания успевают прочитать.
-const FAST_FLASH = {
-  '--tsr-comp-error-flash-duration': '800ms',
-} as CSSProperties
-
 const renderIcon = (props: Parameters<typeof IconButton>[0] = {}) =>
   render(
-    <Theme style={FAST_FLASH}>
+    <Theme>
       <IconButton aria-label="Load" {...props}>
         {icon}
       </IconButton>
@@ -77,11 +70,11 @@ describe('Button states: pending', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  test('BS19: pending that ends without an error fades the arc out with the reveal transition while it keeps running; an error at the same moment flashes instead', async () => {
+  test('BS19: pending that ends without an error fades the arc out with the reveal transition while it keeps running; a failure at the same moment stops the arc instead', async () => {
     const screen = await renderIcon({ pending: true })
     expect(arc()!.dataset.phase).toBe('pending')
     await screen.rerender(
-      <Theme style={FAST_FLASH}>
+      <Theme>
         <IconButton aria-label="Load">{icon}</IconButton>
       </Theme>,
     )
@@ -110,74 +103,45 @@ describe('Button states: pending', () => {
       .toBe(false)
     expect(arc()).toBeNull()
 
-    // Отказ в тот же момент — вспышка ведёт дугу, угасания нет.
+    // Отказ в тот же момент — дуга встаёт и гаснет, а не бежит (ADR 0136).
     await screen.rerender(
-      <Theme style={FAST_FLASH}>
-        <IconButton aria-label="Load" pending errorFlash={0}>
+      <Theme>
+        <IconButton aria-label="Load" pending>
           {icon}
         </IconButton>
       </Theme>,
     )
     await screen.rerender(
-      <Theme style={FAST_FLASH}>
-        <IconButton aria-label="Load" errorFlash={1}>
+      <Theme>
+        <IconButton aria-label="Load" failure="Failed: offline">
           {icon}
         </IconButton>
       </Theme>,
     )
-    expect(button().getAttribute('data-error-flash')).toBe('on')
-    expect(button().hasAttribute('data-pending-leaving')).toBe(false)
-    expect(arc()!.dataset.phase).toBe('error')
+    expect(arc()!.dataset.phase).toBe('stopping')
   })
 })
 
-describe('Button states: error flash', () => {
-  test('BS8: mounting with an `errorFlash` value or re-rendering with the same value does not flash', async () => {
-    const screen = await renderIcon({ errorFlash: 5 })
-    await waitFrames(30)
-    expect(button().hasAttribute('data-error-flash')).toBe(false)
-    await screen.rerender(
-      <Theme style={FAST_FLASH}>
-        <IconButton aria-label="Load" errorFlash={5}>
-          {icon}
-        </IconButton>
-      </Theme>,
-    )
-    await waitFrames(30)
-    expect(button().hasAttribute('data-error-flash')).toBe(false)
-    expect(arc()).toBeNull()
-  })
-
-  test('BS13: a pending and a flashing button pass axe with color-contrast in both themes', async () => {
+describe('Button states: failure', () => {
+  test('BS13: a pending button and a button with a failure mark pass axe with color-contrast in both themes', async () => {
     const options = {
       ...AXE_OPTIONS,
       rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
     }
-    const long = {
-      '--tsr-comp-error-flash-duration': '10s',
-    } as CSSProperties
-    const screen = await render(
-      <Theme style={long}>
+    await render(
+      <Theme>
         <IconButton aria-label="Load" pending>
           {icon}
         </IconButton>
-        <IconButton aria-label="Retry" errorFlash={0}>
-          {icon}
-        </IconButton>
-      </Theme>,
-    )
-    await screen.rerender(
-      <Theme style={long}>
-        <IconButton aria-label="Load" pending>
-          {icon}
-        </IconButton>
-        <IconButton aria-label="Retry" errorFlash={1}>
+        <IconButton aria-label="Retry" failure="Failed: offline">
           {icon}
         </IconButton>
       </Theme>,
     )
     const root = button().parentElement!
-    expect(root.querySelector('[data-error-flash="on"]')).not.toBeNull()
+    expect(
+      root.querySelector('[data-failure-indicator][data-shown="true"]'),
+    ).not.toBeNull()
     await inBothThemes(async () => {
       expect((await axe.run(root, options)).violations).toEqual([])
     })

@@ -17,6 +17,9 @@ import { sortHeaderAction } from '../plugins/columnSorting/sortHeaderAction'
 import { columnSorting } from '../plugins/columnSorting'
 import { changePageByUser } from '../plugins/pagination/model'
 import { pagination } from '../plugins/pagination'
+import { reconcileColumnMoves } from '../plugins/columnDragging/commitColumnMove'
+import { reconcileRowMoves } from '../plugins/rowDragging/reconcileRowMoves'
+import { clearExpandFailed } from '../plugins/rowExpanding/lazyChildrenFeature'
 import { quickSearch } from '../plugins/quickSearch'
 
 ;(
@@ -275,5 +278,64 @@ describe('серверные действия (ADR 0116)', () => {
     await settle(() => calls[5].deferred!.reject(SERVER_ERROR))
     expect(sorting()).toEqual([{ id: 'name', desc: true }])
     expect(page().pageIndex).toBe(7)
+  })
+})
+
+describe('Снятие отметки отказа сменой цели (ADR 0127, ADR 0136)', () => {
+  it('IR14: отметку снимает смена цели — прошедшая другая сортировка; строка, ушедшая из модели; скрытая колонка', async () => {
+    // Серверная сортировка отказала — отметка у причины; прошедшая сортировка её снимает.
+    const { calls } = mount({ answer: 'pending' })
+    sort()
+    await settle(() => calls.at(-1)!.deferred!.reject(SERVER_ERROR))
+    expect(status().failed?.kind).toBe('sorting')
+    sort()
+    await settle(() => calls.at(-1)!.deferred!.resolve())
+    expect(status().failed).toBeUndefined()
+
+    // Строка, ушедшая из модели: отметки переноса и раскрытия снимаются.
+    type Fails = Record<string, { attempt: number; error: unknown }>
+    const fail = { attempt: 1, error: SERVER_ERROR }
+    const rows = {
+      atoms: { rowMoveFailed: { get: () => moveFails } },
+      options: { data: [] },
+      getCoreRowModel: () => ({ rowsById: { r1: {} } }),
+      setRowMoveFailed: (updater: (prev: Fails) => Fails) => {
+        moveFails = updater(moveFails)
+      },
+    }
+    let moveFails: Fails = { r1: fail, gone: fail }
+    reconcileRowMoves(rows)
+    expect(Object.keys(moveFails)).toEqual(['r1'])
+
+    let expandFails: Fails = { r1: fail, gone: fail }
+    const lazy = {
+      atoms: { rowExpandFailed: { get: () => expandFails } },
+      options: {},
+      updateLazySlice: (_key: string, updater: (prev: Fails) => Fails) => {
+        expandFails = updater(expandFails)
+      },
+    }
+    clearExpandFailed(lazy, id => id === 'r1')
+    expect(Object.keys(expandFails)).toEqual(['r1'])
+
+    // Колонка, которую скрыли: отметка переноса снимается.
+    let columnFails: Fails = { a: fail, b: fail }
+    const columns = {
+      options: {},
+      atoms: {
+        columnMoves: { get: () => ({}) },
+        columnMoveFailed: { get: () => columnFails },
+      },
+      getAllFlatColumns: () => [
+        { id: 'a', getIsVisible: () => true },
+        { id: 'b', getIsVisible: () => false },
+      ],
+      setColumnOrder: () => {},
+      setColumnMoveFailed: (updater: (prev: Fails) => Fails) => {
+        columnFails = updater(columnFails)
+      },
+    }
+    reconcileColumnMoves(columns)
+    expect(Object.keys(columnFails)).toEqual(['a'])
   })
 })

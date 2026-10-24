@@ -7,13 +7,14 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { logWarn } from '../../core/logger'
 import { useActionStatus } from './useActionStatus'
-import { useMergedFlash } from './useKebabState'
 import {
   pendingAttributes,
+  serverActionReason,
   useServerActionMarks,
 } from '../../core/serverActions'
 import { IconButton } from '../../ui/IconButton'
 import {
+  actionErrorText,
   actionStatusKey,
   readSyncDisabled,
   runMenuAction,
@@ -42,7 +43,7 @@ export const ActionButton = ({
     context.table,
     (status: ActionStatus) => status[actionStatusKey(action, context)],
   )
-  // Серверное действие, начатое этой кнопкой (ADR 0116, §3): свет и вспышка отказа.
+  // Серверное действие, начатое этой кнопкой (ADR 0116, §3): свет и отметка отказа.
   const server = useServerActionMarks(
     context.table,
     cause =>
@@ -50,7 +51,15 @@ export const ActionButton = ({
       !cause.menu &&
       !!cause.columns?.includes(context.column?.id),
   )
-  const errorFlash = useMergedFlash(entry?.flash, server.flash)
+  // Отметка отказа (ADR 0136): своего действия или серверного; снимают повтор и успех.
+  const failure =
+    entry?.failed && !entry.pending
+      ? labels.actionFailedRetry(
+          actionErrorText(action, context, entry.error, labels),
+        )
+      : server.failure && !server.pending
+        ? labels.actionFailedRetry(serverActionReason(server.failure, labels))
+        : undefined
 
   if (action.visible?.(context) === false) {
     return null
@@ -78,7 +87,7 @@ export const ActionButton = ({
         runMenuAction(action, context, event, { keepError: false })
       }
       pending={entry?.pending}
-      errorFlash={errorFlash}
+      failure={failure}
       {...pendingAttributes(server.pending)}
       disabled={disabled}
       aria-disabled={disabled}

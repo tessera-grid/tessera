@@ -582,19 +582,6 @@ const createLazyTreeServer = () => {
 
 let lazyTreeServer = createLazyTreeServer()
 
-/**
- * Держит вспышку отказа на время шага (ADR 0130, DG6): матрица контраста и снимок
- * застают сам отказ, а не угасание красного контура.
- */
-const holdErrorFlash = (canvas: HTMLElement, hold: boolean) => {
-  const theme = canvas
-    .querySelector('.data-grid__container')!
-    .closest<HTMLElement>('.data-grid-theme')!
-  if (hold)
-    theme.style.setProperty('--tsr-comp-error-flash-duration', '600000ms')
-  else theme.style.removeProperty('--tsr-comp-error-flash-duration')
-}
-
 const LAZY_TREE: readonly GuideStoryStep[] = [
   {
     title: 'Ленивое дерево',
@@ -611,7 +598,7 @@ const LAZY_TREE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Отказ сервера',
-    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место, ручка залилась красным и несёт отметку отказа, строка коротко вспыхнула тоном ошибки.',
+    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место, ручка отмечена отказом, строка коротко вспыхнула тоном ошибки.',
     states: ['drag.rejected'],
   },
   {
@@ -734,7 +721,6 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
     await step(LAZY_TREE[3].title, async () => {
       await guideNext(canvas)
       await settle()
-      holdErrorFlash(canvas, true)
       await dropInto('node-0-0-1', 'node-1')
       lazyTreeServer.answer(false)
       await waitFor(() => {
@@ -743,17 +729,15 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
       }, slow)
       // Ручку ищем заново: после отката строка может смонтироваться новым узлом.
       await until(() =>
-        expect(handleOf('node-0-0-1')).toHaveAttribute(
-          'data-error-flash',
-          'on',
-        ),
+        expect(
+          handleOf('node-0-0-1').querySelector('[data-failure-indicator]'),
+        ).not.toBeNull(),
       )
       expect(row('node-0-0-1')).toHaveAttribute('data-flash', 'reverted')
     })
     await step(LAZY_TREE[4].title, async () => {
       await guideNext(canvas)
       await settle()
-      holdErrorFlash(canvas, false)
       await dropInto('node-0-0-2', 'node-1')
       lazyTreeServer.answer(false)
       await until(() =>
@@ -763,10 +747,9 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
       expect(kept.indexOf('node-0-0-2')).toBe(kept.indexOf('node-1') + 1)
       await waitFor(
         () =>
-          expect(handleOf('node-0-0-2')).not.toHaveAttribute(
-            'data-error-flash',
-            'on',
-          ),
+          expect(
+            handleOf('node-0-0-2').querySelector('[data-failure-indicator]'),
+          ).not.toBeNull(),
         slow,
       )
     })

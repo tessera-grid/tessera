@@ -24,7 +24,7 @@ import {
   rowActionMenu,
   rowActions,
 } from '../../../plugins'
-import { humanClick, pendingArcOf } from '../helpers'
+import { failureShownOn, humanClick, pendingArcOf } from '../helpers'
 import { composed } from '../stories'
 import { RowActionsAsync } from '../../DataGrid.Rows.Actions.stories'
 import {
@@ -645,30 +645,20 @@ describe('Долгое действие', () => {
 })
 
 describe('Отказ действия', () => {
-  test('MI12: отказ — вспышка на кебабе, отметка ошибки проступает после того, как красный контур погас совсем, кебаб виден без наведения, тултип и имя называют упавшее действие', async () => {
+  test('MI12: отказ — дуга кебаба останавливается, отметка ошибки появляется сразу, без красного контура, кебаб виден без наведения, тултип и имя называют упавшее действие', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
     await parkPointer()
     probe.lastRun('remove').done.reject(new Error('Row is locked'))
 
-    await expect
-      .poll(() => rowKebab('r1')!.getAttribute('data-error-flash'))
-      .toBe('on')
-    expect(errorDot().dataset.shown).toBe('true')
+    await expect.poll(() => errorDot().dataset.shown).toBe('true')
     expect(kebabWrapper().getAttribute('class')).not.toContain('--hidden')
-    // Пока красный контур виден — держится и гаснет, — отметки нет: она не сливается с ним.
+    // Дуга встала и гаснет, контур не краснеет; отметка проявляется без задержки.
     const kebab = rowKebab('r1')!
-    const redVisible = () => {
-      const arc = pendingArcOf(kebab)
-      return !!arc && parseFloat(getComputedStyle(arc).opacity) > 0.05
-    }
-    let sawFade = false
-    while (redVisible()) {
-      sawFade ||= kebab.getAttribute('data-error-flash') === 'off'
-      expect(getComputedStyle(errorDot()).opacity).toBe('0')
-      await new Promise(resolve => setTimeout(resolve, 10))
-    }
-    expect(sawFade).toBe(true)
+    const arc = pendingArcOf(kebab)!
+    expect(getComputedStyle(arc).animationPlayState).toContain('paused')
+    expect(parseFloat(getComputedStyle(errorDot()).transitionDelay)).toBe(0)
+    await expect.poll(() => pendingArcOf(kebab)).toBeNull()
     await expect.poll(() => getComputedStyle(errorDot()).opacity).toBe('1')
     expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(
       'Row options. Failed: Remove',
@@ -833,7 +823,7 @@ describe('Контекстное меню, виртуализация, инла�
     paged.probe.lastRun('remove').done.resolve()
   })
 
-  test('MI19: инлайн-кнопка с промисом onSelect — кольцо ожидания и aria-busy, повторное нажатие не запускает действие, отказ — вспышка и объявление', async () => {
+  test('MI19: инлайн-кнопка с промисом onSelect — кольцо ожидания и aria-busy, повторное нажатие не запускает действие, отказ — отметка с причиной и объявление', async () => {
     const { probe } = await renderGrid({ menu: false })
     const button = () =>
       rowEl('r1')!.querySelector<HTMLElement>('[aria-label="Remove"]')!
@@ -845,10 +835,11 @@ describe('Контекстное меню, виртуализация, инла�
     expect(probe.runs.length).toBe(1)
 
     probe.lastRun('remove').done.reject(new Error('locked'))
-    await expect
-      .poll(() => button().getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(button())).toBe(true)
     expect(button().getAttribute('aria-busy')).toBeNull()
+    expect(button()).toHaveAccessibleDescription(
+      tableLabels.actionFailedRetry('locked'),
+    )
     await expect
       .poll(() => liveRegion().textContent)
       .toBe(tableLabels.announceActionFailed('Remove', 'locked'))
@@ -1000,5 +991,83 @@ describe('Демо-истории', () => {
       .poll(() => kebabOf(first)?.getAttribute('aria-label'), { timeout: 5000 })
       .toBe('Row options. Failed: Delete')
     await view.unmount()
+  })
+})
+
+describe('Узкая колонка: действие в кебабе (ADR 0127, ADR 0111)', () => {
+  test('IR18: узкая колонка — асинхронное действие заголовка ушло в кебаб: дуга ожидания и отметка отказа у кебаба, у пункта — спиннер и значок ошибки', async () => {
+    const runs: Deferred<void>[] = []
+    const recount: HeaderAction = {
+      id: 'recount',
+      slot: 'rightHeaderSlot',
+      order: 0,
+      icon: () => <span aria-hidden>R</span>,
+      label: () => 'Recount',
+      onSelect: () => {
+        const done = deferred<void>()
+        runs.push(done)
+        return done.promise
+      },
+    }
+    const narrow = definePlugin()({ id: 'narrowProbe', slotActions: [recount] })
+    const NarrowGrid = () => {
+      const table = useCreateTable({
+        columns: [
+          {
+            id: 'name',
+            accessorKey: 'name',
+            header: 'Name',
+            size: 64,
+            minSize: 64,
+          },
+        ] as never,
+        data: DATA.slice(0, 10),
+        getRowId: (row: (typeof DATA)[number]) => row.id,
+        plugins: [narrow(), columnSorting(), headerActionMenu()] as never,
+      })
+      return (
+        <div style={{ width: 400, height: 300 }}>
+          <DataGrid table={table as never} />
+        </div>
+      )
+    }
+    await render(<NarrowGrid />)
+    await waitForGrid()
+    const kebab = () =>
+      headCell().querySelector<HTMLElement>(
+        `[aria-label^="${tableLabels.headerMenu}"]`,
+      )
+    await userEvent.hover(headCell())
+    await expect.poll(kebab).not.toBeNull()
+    expect(
+      headCell().querySelector('[aria-label="Recount"]'),
+      'действие ушло в кебаб',
+    ).toBeNull()
+
+    const openKebab = async () => {
+      await userEvent.hover(headCell())
+      await humanClick(kebab()!)
+      await expect.poll(() => item('Recount')).toBeTruthy()
+    }
+    await openKebab()
+    await humanClick(item('Recount')!)
+    await expect.poll(() => items().length).toBe(0)
+    await expect.poll(() => kebab()!.getAttribute('aria-busy')).toBe('true')
+    expect(pendingArcOf(kebab()!)?.dataset.phase).toBe('pending')
+    await openKebab()
+    expect(item('Recount')!.closest('[data-pending]')).not.toBeNull()
+    await closeMenu()
+
+    runs.at(-1)!.reject(new Error('Busy'))
+    await expect
+      .poll(() =>
+        kebab()!
+          .querySelector<HTMLElement>('[data-error-indicator]')
+          ?.getAttribute('data-shown'),
+      )
+      .toBe('true')
+    await openKebab()
+    expect(failedIcon(item('Recount'))).not.toBeNull()
+    await closeMenu()
   })
 })

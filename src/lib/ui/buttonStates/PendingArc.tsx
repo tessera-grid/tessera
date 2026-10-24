@@ -1,9 +1,9 @@
-import { type CSSProperties, useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import styles from '../ringStates/ringStates.module.css'
 
-/** Фаза дуги: ожидание, угасание после успеха, отказ (красный контур), угасание отказа. */
-export type ArcPhase = 'pending' | 'leaving' | 'error' | 'off'
+/** Фаза дуги: ожидание, угасание после успеха, остановка и угасание после отказа. */
+export type ArcPhase = 'pending' | 'leaving' | 'stopping'
 
 /**
  * Отрезки хвоста с общей головой: `i`-й — `i/N` длины дуги с непрозрачностью `1/i`, в
@@ -33,19 +33,16 @@ const fitRadius = (svg: SVGSVGElement | null) => {
 
 /**
  * Дуга ожидания кнопки (ADR 0127): над бледной дорожкой по контуру бежит дуга с хвостом и
- * повторяет форму кнопки; при отказе дуга гаснет, а дорожка краснеет. Смонтирована, пока
- * у кнопки есть фаза.
+ * повторяет форму кнопки; при отказе дуга встаёт и гаснет вместе с дорожкой (ADR 0136).
+ * Смонтирована, пока у кнопки есть фаза.
  */
 export const PendingArc = ({ phase }: { phase: ArcPhase }) => {
-  // Отказ, пришедший из ожидания, краснеет из оттенка дорожки, без ожидания — из прозрачного.
-  const [fromPending] = useState(phase === 'pending' || phase === 'leaving')
   return (
     <svg
       ref={fitRadius}
       className={styles.arc}
       data-pending-arc=""
       data-phase={phase}
-      data-from-pending={fromPending || undefined}
       aria-hidden
       focusable="false"
     >

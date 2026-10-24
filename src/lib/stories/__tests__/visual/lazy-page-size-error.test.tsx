@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { humanClick } from '../helpers'
+import { failureShownOn, humanClick } from '../helpers'
 import {
   MODULE,
   failModule,
@@ -18,28 +18,28 @@ import { tableLabels } from '../labels'
 
 afterEach(() => releaseModule(MODULE.pageSize))
 
-const flash = () => pageSizeButton().getAttribute('data-error-flash')
+const failed = () => failureShownOn(pageSizeButton())
 
 describe('Размер страницы — ошибка загрузки', () => {
-  test('LZ16: ошибка загрузки выбора размера страницы — список не открывается, вспышка ошибки, объявление с подписью rowsPerPage; следующий клик снова грузит', async () => {
+  test('LZ16: ошибка загрузки выбора размера страницы — список не открывается, отметка отказа, объявление с подписью rowsPerPage; следующий клик снова грузит', async () => {
     await failModule(MODULE.pageSize)
     await renderToolbarGrid()
     const announcements = recordAnnouncements()
 
     await humanClick(pageSizeButton())
-    await expect.poll(flash).toBe('on')
+    await expect.poll(failed).toBe(true)
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.rowsPerPage))
     await sleep(100)
     expect(pageSizeOptions()).toBe(0)
-    // Вспышка держится --tsr-comp-error-flash-duration (300 мс), затем гаснет. Ждём
-    // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
-    // отдаёт отпускание кнопки родителю по прежней раскладке.
-    await expect.poll(flash, { timeout: 3000 }).toBeNull()
 
+    const before = announcements.messages.length
     await humanClick(pageSizeButton())
-    await expect.poll(flash).toBe('on')
+    await expect
+      .poll(() => announcements.messages.length)
+      .toBeGreaterThan(before)
+    await expect.poll(failed).toBe(true)
     announcements.stop()
   })
 })

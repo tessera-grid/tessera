@@ -6,6 +6,7 @@
   покоя кнопок (`control-color`), высота — общий `--tsr-comp-button-size`, иконка —
   `--tsr-comp-button-icon-size`; 2026-10-21 — размер и вес подписи из токенов, отступ
   слева при иконке (BN10–BN11).
+- **Изменено:** [ADR 0136](0136-outcome-on-target-not-button.md) (2026-10-24) — BN4: пропа `errorFlash` нет — отказ задаёт `failure`.
 - **Связано:**
   - [ADR 0017](0017-ui-components.md) — UI-примитивы и контракт семейств кнопок
     (F1–F4); здесь — семейство F5.
@@ -120,7 +121,7 @@
 | BN1  | `Button` — нативная кнопка с подписью и необязательной иконкой перед ней; высота `--tsr-comp-button-size`, отступ `--tsr-comp-button-padding-x`, промежуток `--tsr-comp-button-gap`, скругление `--tsr-comp-button-radius-square` — из токенов | visual |
 | BN2  | `outline` (по умолчанию) — рамка `--tsr-comp-button-border`, `ghost` — без рамки; у обоих прозрачный фон и наведение `control-hover-bg`                                                                                                        | visual |
 | BN3  | Семейство F5: подпись `--tsr-comp-button-color`, выключенная — `control-disabled-color` и нажатия не доходят, внешнее кольцо фокуса `focus-ring`/`focus-ring-width`, переход `action-button-transition`, без тени                              | visual |
-| BN4  | `pending` — свет ожидания и `aria-busy`, нажатия игнорируются; `errorFlash` — вспышка ошибки (ADR 0055, ADR 0095); на время ожидания и вспышки рамка `outline` плавно уходит                                                                   | visual |
+| BN4  | `pending` — дуга ожидания и `aria-busy`, нажатия игнорируются, рамка `outline` плавно уходит; отказ — дуга встаёт, отметка отказа (ADR 0136)                                                                                                   | visual |
 | BN5  | Высокая контрастность: рамка и подпись — `ButtonText`, кольцо фокуса — `Highlight`                                                                                                                                                             | visual |
 | BN6  | axe с `color-contrast` для обоих вариантов, обычной и выключенной кнопки в светлой и тёмной теме                                                                                                                                               | visual |
 | BN7  | Экспорт `Button` из `/ui` и история `UI.Button` с контролами варианта, иконки, ожидания и выключения                                                                                                                                           | unit   |

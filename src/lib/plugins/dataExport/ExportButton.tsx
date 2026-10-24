@@ -13,6 +13,7 @@ import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
+import { rejectionText } from '../../core/thenable'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { hasVisibleDataColumns } from '../../core/stubs'
 import { useIcons } from '../../ui/icons'
@@ -36,8 +37,8 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   const { download: DownloadIcon } = useIcons()
   // Серверная выгрузка не блокирует кнопку (можно выгрузить страницу), клиентская — блокирует.
   const [busy, setBusy] = useState<false | 'server' | 'client'>(false)
-  // Отказ асинхронного формата (XL7) — вспышка контура кнопки (ADR 0055).
-  const [failures, setFailures] = useState(0)
+  // Отказ выгрузки (XL7) — отметка на кнопке до повтора или успеха (ADR 0136).
+  const [failure, setFailure] = useState<string>()
   // Ref, а не state: два клика подряд до перерисовки не должны запустить вторую выгрузку.
   const running = useRef<false | 'server' | 'client'>(false)
 
@@ -68,11 +69,18 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
       source: sourceOf(globalThis.event),
     })
     const pending = runExport(table, settings, { ...report, cause: id })
+    setFailure(undefined)
     if (pending) {
       running.current = isServer ? 'server' : 'client'
       setBusy(isServer ? 'server' : 'client')
       pending
-        .catch(() => setFailures(count => count + 1))
+        .catch((error: unknown) =>
+          setFailure(
+            labels.actionFailedRetry(
+              rejectionText(error) ?? labels.actionFailedFallback,
+            ),
+          ),
+        )
         .finally(() => {
           running.current = false
           setBusy(false)
@@ -106,7 +114,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
         icon={icon}
         disabled={busy && isServer}
         pending={busy === 'client'}
-        errorFlash={failures}
+        failure={failure}
         aria-busy={!!busy || undefined}
         data-testid="export-button"
         onClick={() => start(single, isServer)}
@@ -132,7 +140,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
         axes={axes}
         busy={!!busy}
         pending={busy === 'client'}
-        failures={failures}
+        failure={failure}
         open={popover.open}
         onOpenChange={popover.onOpenChange}
         onRun={start}

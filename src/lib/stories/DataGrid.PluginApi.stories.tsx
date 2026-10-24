@@ -359,7 +359,6 @@ const FavoriteButton = ({
       indicator={false}
       revealOnHover={false}
       pending={pending}
-      errorFlash={failure?.flash}
       failure={failure?.text}
       onClick={() => void toggle()}
     />

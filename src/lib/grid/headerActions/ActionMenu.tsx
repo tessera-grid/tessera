@@ -21,7 +21,7 @@ import { useCloseOnGridScroll } from './useCloseOnGridScroll'
 import { useClosingVisible } from './useClosingVisible'
 import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 import { usePanelOpening } from './usePanelOpening'
-import { type KebabState, useMergedFlash } from './useKebabState'
+import { type KebabState } from './useKebabState'
 import { useMenuSections } from './useMenuSections'
 import { useStateWhileOpen } from './useStateWhileOpen'
 import {
@@ -40,8 +40,6 @@ export interface ActionMenuProps {
   onOpenChange: (open: boolean) => void
   /** Сессия проверок, ждущие и упавшие действия (ADR 0078). */
   kebab: KebabState
-  /** Вспышка от загрузки модуля и отказов действий. */
-  errorFlash?: number
 }
 
 export const ActionMenu = ({
@@ -51,7 +49,6 @@ export const ActionMenu = ({
   open,
   onOpenChange,
   kebab,
-  errorFlash,
 }: ActionMenuProps) => {
   const { menu: MenuIcon } = useIcons()
   const labels = useLocalization()
@@ -102,7 +99,7 @@ export const ActionMenu = ({
   // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения;
   // ждущие и упавшие — блик, отметка ошибки и имя (ADR 0078).
   const activeCount = countActiveActions(actions, context)
-  // Серверное действие, выбранное в кебабе колонки (ADR 0116, §3): свет и вспышка здесь.
+  // Серверное действие, выбранное в кебабе колонки (ADR 0116, §3): свет и отметка здесь.
   const server = useServerActionMarks(
     context.table,
     cause => !!cause.menu && !!cause.columns?.includes(context.column?.id),
@@ -114,7 +111,9 @@ export const ActionMenu = ({
     kebab.running ||
     kebab.failed ||
     server.pending
-  const flash = useMergedFlash(errorFlash, opening.errorFlash, server.flash)
+  // Отметка отказа (ADR 0136): действие меню, серверное действие или загрузка панели.
+  const serverFailed = !!server.failure && !server.pending
+  const failed = kebab.failed || serverFailed
   const trigger = (
     <Menu.Trigger
       render={
@@ -124,7 +123,7 @@ export const ActionMenu = ({
           label={kebab.title}
           aria-label={kebab.ariaLabel}
           pending={opening.pending || kebab.running}
-          errorFlash={flash}
+          failure={opening.failure}
           {...pendingAttributes(server.pending)}
           data-action-menu={variant}
           onPointerEnter={kebab.intent}
@@ -132,10 +131,10 @@ export const ActionMenu = ({
           onPointerLeave={kebab.leave}
           onBlur={kebab.leave}
           active={kebabActive(actions, activeCount)}
-          indicator={!kebab.failed}
+          indicator={!failed}
         >
           <MenuIcon width={16} height={16} />
-          <ErrorDot shown={kebab.failed} delayed />
+          <ErrorDot shown={failed} />
         </IconButton>
       }
     />

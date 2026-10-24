@@ -36,7 +36,7 @@ export const useHandleMenu = (
     )
   const trigger: LazyTriggerState = {
     pending: opening.pending,
-    errorFlash: opening.errorFlash,
+    failure: opening.failure,
     onIntent: () => void HandleMenuPopupImpl.load().catch(noop),
     onCancel: opening.cancel,
   }

@@ -14,11 +14,3 @@
   opacity: 1;
   transform: none;
 }
-
-/* Отметка отказа после красного контура: проявляется, когда он погаснет совсем (ADR 0127). */
-.dot[data-delayed][data-shown='true'] {
-  transition-delay: calc(
-    var(--tsr-comp-error-flash-duration) +
-      var(--tsr-comp-error-flash-fade-duration)
-  );
-}

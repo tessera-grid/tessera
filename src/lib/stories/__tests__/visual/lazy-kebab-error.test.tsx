@@ -1,7 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { humanClick, renderGrid } from '../helpers'
+import { failureShownOn, humanClick, renderGrid } from '../helpers'
 import { waitForGrid } from './core-helpers'
 import {
   MODULE,
@@ -21,10 +21,10 @@ const head = () =>
   document.querySelector<HTMLElement>('.data-grid__head-cell[data-column-id]')!
 const kebab = () =>
   head().querySelector<HTMLElement>(`[aria-label="${tableLabels.headerMenu}"]`)!
-const flash = () => kebab().getAttribute('data-error-flash')
+const failed = () => failureShownOn(kebab())
 
 describe('Кебаб заголовка — ошибка загрузки', () => {
-  test('LZ22: ошибка загрузки модуля кебаба — меню не открывается, вспышка ошибки, объявление с подписью headerMenu; следующий клик снова отвечает', async () => {
+  test('LZ22: ошибка загрузки модуля кебаба — меню не открывается, отметка отказа, объявление с подписью headerMenu; следующий клик снова отвечает', async () => {
     await failModule(MODULE.kebab)
     renderGrid({
       columnCount: 4,
@@ -38,20 +38,20 @@ describe('Кебаб заголовка — ошибка загрузки', () =
 
     await userEvent.hover(head())
     await humanClick(kebab())
-    await expect.poll(flash).toBe('on')
+    await expect.poll(failed).toBe(true)
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.headerMenu))
     await sleep(100)
     expect(document.querySelector('[role="menu"]')).toBeNull()
 
-    // Вспышка держится --tsr-comp-error-flash-duration (300 мс), затем гаснет. Ждём
-    // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
-    // отдаёт отпускание кнопки родителю по прежней раскладке.
-    await expect.poll(flash, { timeout: 3000 }).toBeNull()
+    const before = announcements.messages.length
     await userEvent.hover(head())
     await humanClick(kebab())
-    await expect.poll(flash).toBe('on')
+    await expect
+      .poll(() => announcements.messages.length)
+      .toBeGreaterThan(before)
+    await expect.poll(failed).toBe(true)
     announcements.stop()
   })
 })

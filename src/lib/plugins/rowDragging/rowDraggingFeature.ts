@@ -7,6 +7,7 @@
  * Срезы `rowMoves` — переносы в ожидании промиса `onRowDragEnd`, `rowMoveFailed` —
  * номер последнего отказа строки, ключ вспышки ручки (ADR 0112).
  */
+import type { FailedAttempts } from '../../core/failedAttempts'
 import {
   assignPrototypeAPIs,
   assignTableAPIs,
@@ -27,8 +28,8 @@ import {
   type RowDragOverlayState,
 } from './types'
 
-/** Отказы переноса: строка → номер попытки. */
-export type RowMoveFailed = Record<string, number>
+/** Отказы переноса: строка → попытка и ошибка (отметка на ручке, ADR 0136). */
+export type RowMoveFailed = FailedAttempts
 
 interface RowDraggingStateSlice {
   rowDragging: RowDragOverlayState

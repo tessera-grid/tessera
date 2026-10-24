@@ -379,8 +379,10 @@
   --tsr-comp-pending-spinner-arc: 0.3turn;
   /* Период ожидания: круг дуги кнопки — половина, цикл оттенков — 1,7. */
   --tsr-comp-pending-glow-duration: var(--tsr-comp-loader-duration);
+  /* Отказ кнопки (ADR 0136): дуга встаёт и гаснет за это время, контур не краснеет. */
+  --tsr-comp-pending-stop-duration: 200ms;
   --tsr-comp-error-flash-color: var(--tsr-sys-danger);
-  /* Покраснение контура при отказе; удержание и угасание — ритм вспышки итога (ADR 0134). */
+  /* Красный свет под шапкой при отказе (ADR 0096): рост, удержание и угасание — ритм вспышки итога. */
   --tsr-comp-error-flash-fill-duration: 200ms;
   --tsr-comp-error-flash-duration: var(--tsr-comp-flash-duration);
   --tsr-comp-error-flash-fade-duration: var(--tsr-comp-flash-fade-duration);

@@ -1,7 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { humanClick } from '../helpers'
+import { failureShownOn, humanClick } from '../helpers'
 import {
   MODULE,
   columnHandle,
@@ -21,17 +21,17 @@ import { tableLabels } from '../labels'
 
 afterEach(() => releaseModule(MODULE.handleMenu))
 
-const flash = () => columnHandle().getAttribute('data-error-flash')
+const failed = () => failureShownOn(columnHandle())
 
 describe('Меню ручек — ошибка загрузки', () => {
-  test('LZ14: ошибка загрузки меню — ручка вспыхивает ошибкой, грип без вспышки; объявление с подписью ручки или грипа; следующая попытка снова отвечает', async () => {
+  test('LZ14: ошибка загрузки меню — на ручке отметка отказа, у грипа отметки нет; объявление с подписью ручки или грипа; следующая попытка снова отвечает', async () => {
     await failModule(MODULE.handleMenu)
     await renderHandleGrid()
     const announcements = recordAnnouncements()
 
     await userEvent.hover(handleCell())
     await humanClick(columnHandle())
-    await expect.poll(flash).toBe('on')
+    await expect.poll(failed).toBe(true)
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.moveColumn))
@@ -43,16 +43,15 @@ describe('Меню ручек — ошибка загрузки', () => {
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.columnWidth))
-    expect(gripWrapper().querySelector('[data-error-flash]')).toBeNull()
-    expect(gripWrapper().hasAttribute('data-error-flash')).toBe(false)
+    expect(gripWrapper().querySelector('[data-failure-indicator]')).toBeNull()
 
-    // Вспышка держится --tsr-comp-error-flash-duration (300 мс), затем гаснет. Ждём
-    // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
-    // отдаёт отпускание кнопки родителю по прежней раскладке.
-    await expect.poll(flash, { timeout: 3000 }).toBeNull()
+    const before = announcements.messages.length
     await userEvent.hover(handleCell())
     await humanClick(columnHandle())
-    await expect.poll(flash).toBe('on')
+    await expect
+      .poll(() => announcements.messages.length)
+      .toBeGreaterThan(before)
+    await expect.poll(failed).toBe(true)
     announcements.stop()
     expect(handleMenu()).toBeNull()
   })

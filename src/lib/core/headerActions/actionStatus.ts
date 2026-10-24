@@ -53,12 +53,10 @@ export const actionErrorText = (
   rejectionText(error) ??
   labels.actionFailedFallback
 
-let flashSeq = 0
-
 /**
  * Выбор действия. Промис от `onSelect` — ожидание в срезе до итога; отказ оставляет
- * отметку (`keepError`, меню) или только вспышку (инлайн-кнопка). Пока действие ждёт,
- * повторный выбор в той же цели ничего не делает.
+ * отметку — на кебабе (`keepError`, меню) или на инлайн-кнопке (ADR 0136). Пока действие
+ * ждёт, повторный выбор в той же цели ничего не делает.
  */
 export const runMenuAction = (
   action: MenuAction,
@@ -95,10 +93,7 @@ export const runMenuAction = (
       announceLabel(table, labels => labels.announceActionDone(name(labels)))
     },
     (error: unknown) => {
-      flashSeq += 1
-      const entry: ActionStatusEntry = keepError
-        ? { failed: true, error, flash: flashSeq, action, menu }
-        : { flash: flashSeq }
+      const entry: ActionStatusEntry = { failed: true, error, action, menu }
       writeActionStatus(table, status => ({ ...status, [key]: entry }))
       announceLabel(table, labels =>
         labels.announceActionFailed(
@@ -110,11 +105,10 @@ export const runMenuAction = (
   )
 }
 
-/** Состояние кебаба: ждущие и неувиденные упавшие действия, ключ вспышки. */
+/** Состояние кебаба: ждущие и неувиденные упавшие действия. */
 export interface KebabStatus {
   running: MenuAction[]
   failed: MenuAction[]
-  flash?: number
 }
 
 /** Записи меню этой цели — корня и разделов (ADR 0079). */
@@ -134,9 +128,6 @@ export const kebabStatus = (
     const action = entry.action!
     if (entry.pending) result.running.push(action)
     if (entry.failed && !entry.seen) result.failed.push(action)
-    if (entry.flash !== undefined) {
-      result.flash = Math.max(result.flash ?? 0, entry.flash)
-    }
   }
   return result
 }

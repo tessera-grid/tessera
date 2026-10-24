@@ -7,6 +7,8 @@ import { useSelector } from '@tanstack/react-store'
 
 import type { CellComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
+import type { FailedAttempt } from '../../core/failedAttempts'
+import { rejectionText } from '../../core/thenable'
 import { DragHandler } from '../../grid/dnd'
 import {
   type RowMoveDirection,
@@ -33,7 +35,7 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
   )
   const failed = useSelector(
     atoms.rowMoveFailed as never,
-    (fails: Record<string, number>) => fails[row.id],
+    (fails: Record<string, FailedAttempt>) => fails[row.id],
   )
   const labels = useLocalization()
 
@@ -77,7 +79,12 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
       label={labels.moveRow}
       table={table}
       busy={busy}
-      errorFlash={failed}
+      failure={
+        failed &&
+        labels.actionFailedRetry(
+          rejectionText(failed.error) ?? labels.moveRowFailed,
+        )
+      }
       getMenuItems={isMovableRow(row, table) ? getMenuItems : undefined}
     />
   )

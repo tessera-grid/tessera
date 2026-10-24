@@ -11,6 +11,11 @@ import {
 } from '../../core/flashes/flashFeature'
 import { reportOutcome } from '../../core/debugActions'
 import { isThenable, rejectionText } from '../../core/thenable'
+import {
+  type FailedAttempts,
+  withoutFailure,
+  withoutGone,
+} from '../../core/failedAttempts'
 
 /** Перенос узла в ожидании: его листья и соседи до переноса. */
 export interface ColumnMoveEntry {
@@ -25,13 +30,17 @@ export interface ColumnMoveEntry {
 }
 
 export type ColumnMoves = Readonly<Record<string, ColumnMoveEntry>>
-export type ColumnMoveFailed = Readonly<Record<string, number>>
+/** Отказы переноса: узел → попытка и ошибка (отметка на ручке, ADR 0136). */
+export type ColumnMoveFailed = FailedAttempts
 
 type Updater<T> = (prev: T) => T
 
 interface MoveTable {
   options: { columnDragRevertOnReject?: boolean }
-  atoms: { columnMoves?: { get: () => ColumnMoves } }
+  atoms: {
+    columnMoves?: { get: () => ColumnMoves }
+    columnMoveFailed?: { get: () => ColumnMoveFailed }
+  }
   setColumnOrder: (updater: Updater<string[]>) => void
   setColumnMoves?: (updater: Updater<ColumnMoves>) => void
   setColumnMoveFailed?: (updater: Updater<ColumnMoveFailed>) => void
@@ -103,7 +112,10 @@ const reject = (
     table.setColumnOrder(prev => restoreBlock(prev, entry))
   }
   flashNode(table, entry.nodes ?? entry.leaves, 'reverted')
-  table.setColumnMoveFailed?.(prev => ({ ...prev, [columnId]: entry.attempt }))
+  table.setColumnMoveFailed?.(prev => ({
+    ...prev,
+    [columnId]: { attempt: entry.attempt, error: reason },
+  }))
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(reason) ?? labels.moveColumnFailed
   announceLabel(table, all => all.announceColumnMoveFailed(error))
@@ -125,8 +137,10 @@ export const settleColumnMove = (
     { plugin: 'columnDragging', action: 'commitMove' },
     result,
   )
-  if (!isThenable(result)) return
   const t = table as MoveTable
+  // Новый перенос узла — повтор: отметка прошлого отказа снимается (IR13).
+  t.setColumnMoveFailed?.(prev => withoutFailure(prev, columnId))
+  if (!isThenable(result)) return
   const entry: ColumnMoveEntry = { ...move, attempt: ++lastAttempt }
   t.setColumnMoves?.(prev => ({ ...prev, [columnId]: entry }))
   const settle = (ok: boolean, reason?: unknown) => {
@@ -147,14 +161,23 @@ export const settleColumnMove = (
  * поздний итог его промиса ничего не откатывает (§1). Без переносов — ничего.
  */
 export const reconcileColumnMoves = (table: unknown) => {
+  const t = table as MoveTable
+  const failed = t.atoms.columnMoveFailed?.get()
   const moves = readColumnMoves(table)
   const ids = Object.keys(moves)
-  if (ids.length === 0) return
+  const anyFailed = !!failed && Object.keys(failed).length > 0
+  if (ids.length === 0 && !anyFailed) return
   const columns = (
     table as {
       getAllFlatColumns: () => { id: string; getIsVisible: () => boolean }[]
     }
   ).getAllFlatColumns()
+  // Отметка отказа узла, ушедшего из модели или скрытого, снимается (IR14).
+  if (anyFailed) {
+    const visible = (id: string) =>
+      !!columns.find(column => column.id === id)?.getIsVisible()
+    t.setColumnMoveFailed?.(prev => withoutGone(prev, visible))
+  }
   for (const id of ids) {
     const column = columns.find(item => item.id === id)
     if (!column?.getIsVisible()) dropColumnMove(table, id)

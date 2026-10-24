@@ -326,11 +326,15 @@
 }
 
 /*
- * Ручка строки ждёт или вспыхивает ошибкой (ADR 0112): иконка видна, пока идёт свет, —
- * и без наведения.
+ * Ручка строки ждёт, гаснет её дуга или на ней отметка отказа (ADR 0112, ADR 0136): иконка
+ * видна и без наведения.
  */
 .data-grid__body-cell
-  .drag__handler--column:is([aria-busy='true'], [data-error-flash])
+  .drag__handler--column:is(
+    [aria-busy='true'],
+    [data-pending-leaving],
+    :has([data-failure-indicator])
+  )
   :is(.cell__button--hidden, .row__button--hidden) {
   opacity: 1;
   grid-template-columns: minmax(0, 1fr);
@@ -339,12 +343,12 @@
 }
 
 /*
- * Кнопка ячейки, заголовка или строки ждёт, вспыхивает отказом или несёт его отметку
+ * Кнопка ячейки, заголовка или строки ждёт, гаснет её дуга или несёт отметку отказа
  * (ADR 0128, DB2): видна и без наведения — иначе ожидание и отказ не увидеть.
  */
 :is(.data-grid__head-cell, .data-grid__body-cell, [data-row-ghost])
   .cell__button--hidden:has(
-    .data-grid__icon-button:is([aria-busy='true'], [data-error-flash]),
+    .data-grid__icon-button:is([aria-busy='true'], [data-pending-leaving]),
     [data-failure-indicator]
   ) {
   opacity: 1;
@@ -355,7 +359,7 @@
 
 :is(.data-grid__body-row, [data-row-ghost])
   .row__button--hidden:has(
-    .data-grid__icon-button:is([aria-busy='true'], [data-error-flash]),
+    .data-grid__icon-button:is([aria-busy='true'], [data-pending-leaving]),
     [data-failure-indicator]
   ) {
   opacity: 1;
@@ -377,10 +381,14 @@
   --tsr-comp-action-button-bg: inherit;
 }
 
-/* Ручка колонки ждёт или вспыхивает ошибкой (ADR 0114): раскрыта и без наведения. */
+/* Ручка колонки ждёт, гаснет её дуга или на ней отметка отказа (ADR 0114, ADR 0136): раскрыта и без наведения. */
 .data-grid__head-cell
   .cell__button--hidden:has(
-    > .drag__handler--column:is([aria-busy='true'], [data-error-flash])
+    > .drag__handler--column:is(
+        [aria-busy='true'],
+        [data-pending-leaving],
+        :has([data-failure-indicator])
+      )
   ) {
   opacity: 1;
   grid-template-columns: minmax(0, 1fr);

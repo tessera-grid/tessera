@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { renderGrid, humanClick } from '../helpers'
+import { failureShownOn, humanClick, renderGrid } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import {
@@ -34,15 +34,11 @@ const passesAxe = (root: Element) =>
     expect((await axe.run(root, OPTIONS)).violations).toEqual([])
   })
 
-/** Вспышка держится, пока идёт проверка в обеих темах. */
-const holdFlash = (el: HTMLElement) =>
-  el.style.setProperty('--tsr-comp-error-flash-duration', '10s')
-
 const pagination = () =>
   document.querySelector<HTMLElement>('nav[data-testid="pagination"]')!
 
 describe('Ленивые поповеры — доступность состояний', () => {
-  test('LZ17: ожидание и вспышка ручки перетаскивания и кнопки выбора размера страницы проходят axe с color-contrast в светлой и тёмной теме', async () => {
+  test('LZ17: ожидание и отметка отказа ручки перетаскивания и кнопки выбора размера страницы проходят axe с color-contrast в светлой и тёмной теме', async () => {
     await holdModule(MODULE.pageSize)
     await holdModule(MODULE.handleMenu)
     renderGrid({
@@ -69,22 +65,16 @@ describe('Ленивые поповеры — доступность состо�
     await passesAxe(handleCell())
     await userEvent.keyboard('{Escape}')
 
-    // Вспышка ошибки.
-    holdFlash(pageSizeButton())
+    // Отметка отказа.
     await humanClick(pageSizeButton())
     await failModule(MODULE.pageSize)
-    await expect
-      .poll(() => pageSizeButton().getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(pageSizeButton())).toBe(true)
     await passesAxe(pagination())
 
-    holdFlash(columnHandle())
     await userEvent.hover(handleCell())
     await humanClick(columnHandle())
     await failModule(MODULE.handleMenu)
-    await expect
-      .poll(() => columnHandle().getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(columnHandle())).toBe(true)
     await passesAxe(handleCell())
   })
 })

@@ -42,7 +42,6 @@ const meta = {
   tags: ['done'],
   component: IconButtonDemo,
   argTypes: {
-    errorFlash: { table: { disable: true } },
     variant: { control: 'inline-radio', options: ['ghost', 'overlay'] },
     shape: { control: 'inline-radio', options: ['circle', 'square'] },
     size: { control: 'inline-radio', options: ['default', 'compact'] },

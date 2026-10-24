@@ -14,7 +14,10 @@ import { preloadable } from '../../core/preloadable'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
-import { useServerActionMarks } from '../../core/serverActions'
+import {
+  serverActionReason,
+  useServerActionMarks,
+} from '../../core/serverActions'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { Skeleton } from '../../ui/Skeleton'
 import { useIcons } from '../../ui/icons'
@@ -150,7 +153,13 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
                 open={sizeSelect.open}
                 onOpenChange={sizeSelect.onOpenChange}
                 pending={sizeServer.pending}
-                errorFlash={sizeServer.flash}
+                failure={
+                  sizeServer.failure && !sizeServer.pending
+                    ? labels.actionFailedRetry(
+                        serverActionReason(sizeServer.failure, labels),
+                      )
+                    : undefined
+                }
               />
             </Suspense>
           ) : (

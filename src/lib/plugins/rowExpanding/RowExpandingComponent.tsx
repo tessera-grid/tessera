@@ -5,7 +5,10 @@
  */
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
+import type { FailedAttempt } from '../../core/failedAttempts'
+import { useLocalization } from '../../core/localization'
 import { useSlice, useSliceProjection } from '../../core/reactivity'
+import { rejectionText } from '../../core/thenable'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
 import { toggleRowExpanded } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
@@ -24,8 +27,9 @@ export const RowExpandingComponent = ({
   const failed = useSliceProjection(
     table,
     'rowExpandFailed',
-    (value: Record<string, number> | undefined) => value?.[row.id],
+    (value: Record<string, FailedAttempt> | undefined) => value?.[row.id],
   )
+  const labels = useLocalization()
 
   if (!row.getCanExpand()) {
     return null
@@ -45,7 +49,12 @@ export const RowExpandingComponent = ({
     <ExpandButton
       expanded={row.getIsExpanded()}
       pending={pending}
-      errorFlash={failed}
+      failure={
+        failed &&
+        labels.actionFailedRetry(
+          rejectionText(failed.error) ?? labels.loadChildrenFailed,
+        )
+      }
       onClick={onExpand}
     />
   )

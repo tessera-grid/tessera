@@ -28,8 +28,8 @@ export interface PageSizeSelectProps {
   onOpenChange: (open: boolean) => void
   /** Ждёт серверное действие смены размера (ADR 0116). */
   pending?: boolean
-  /** Ключ вспышки отказа серверного действия. */
-  errorFlash?: number
+  /** Текст отметки отказа серверного действия (ADR 0136). */
+  failure?: string
 }
 
 export const PageSizeSelect = ({
@@ -40,7 +40,7 @@ export const PageSizeSelect = ({
   open,
   onOpenChange,
   pending = false,
-  errorFlash,
+  failure,
 }: PageSizeSelectProps) => {
   const labelId = useId()
   const triggerId = useId()
@@ -74,7 +74,7 @@ export const PageSizeSelect = ({
         id={triggerId}
         aria-labelledby={`${labelId} ${triggerId}`}
         ref={setTrigger}
-        render={<SizeTrigger errorFlash={errorFlash} />}
+        render={<SizeTrigger failure={failure} />}
         {...pendingAttributes(pending)}
         data-testid="page-size-select"
       >

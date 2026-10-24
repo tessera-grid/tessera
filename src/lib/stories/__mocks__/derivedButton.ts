@@ -13,8 +13,6 @@ export const DERIVED_BUTTON_ARGS = {
 export const DERIVED_BUTTON_ARG_TYPES = {
   failure: { control: 'text' as const },
   tooltipWhenDisabled: { if: { arg: 'disabled' } },
-  // Ключ вспышки: каждое новое значение — вспышка; цикл показывает `UI/IconButton`.
-  errorFlash: { table: { disable: true } },
   'data-testid': { table: { disable: true } },
 }
 

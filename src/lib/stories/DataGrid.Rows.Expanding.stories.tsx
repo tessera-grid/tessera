@@ -282,14 +282,12 @@ export const RowExpandingLazyChildren: StoryObj<SessionsArgs> = {
     )
     await userEvent.click(toggle('node-1')!)
     await until(() =>
-      expect(toggle('node-1')).toHaveAttribute('data-error-flash', 'on'),
+      expect(
+        toggle('node-1')!.querySelector('[data-failure-indicator]'),
+      ).not.toBeNull(),
     )
     await until(() =>
       expect(log()).toContain('children of node-1 failed to load'),
-    )
-    // Вспышка отказа отгорела — история в покое.
-    await until(() =>
-      expect(toggle('node-1')).not.toHaveAttribute('data-error-flash', 'on'),
     )
     await settle()
   },
@@ -358,7 +356,7 @@ const EXPAND_REJECTED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки, кнопка раскрытия залилась красным.',
+    hint: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки, кнопка раскрытия отмечена отказом.',
     immediate: true,
     enter: untilDone(
       root => expandableOf(root)?.getAttribute('data-flash') === 'reverted',
@@ -412,7 +410,9 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
         expect(expandableOf(canvas)).toHaveAttribute('data-flash', 'reverted'),
       )
       expect(expandableOf(canvas)).not.toHaveAttribute('data-expanded', 'true')
-      expect(toggleOf(canvas)).toHaveAttribute('data-error-flash')
+      expect(
+        toggleOf(canvas)!.querySelector('[data-failure-indicator]'),
+      ).not.toBeNull()
       await settle()
     })
   },

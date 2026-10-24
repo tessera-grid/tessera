@@ -1,12 +1,14 @@
 /**
  * Кнопка пагинации — кнопка-иконка кита (ADR 0098): иконка с тултипом. На краю
  * набора заблокирована, но остаётся в порядке фокуса (PG13). Начатое ею серверное
- * действие — свет ожидания и вспышка отказа (ADR 0116).
+ * действие — свет ожидания и отметка отказа (ADR 0116, ADR 0136).
  */
 import type { ReactNode } from 'react'
 
+import { useLocalization } from '../../core/localization'
 import {
   pendingAttributes,
+  serverActionReason,
   useServerActionMarks,
 } from '../../core/serverActions'
 import { IconButton } from '../../ui/IconButton'
@@ -35,6 +37,7 @@ export const PageButton = ({
     table,
     cause => cause.control === pageControl(action),
   )
+  const labels = useLocalization()
   return (
     <IconButton
       label={label}
@@ -42,7 +45,11 @@ export const PageButton = ({
       disabled={disabled}
       tooltipWhenDisabled
       data-page-action={action}
-      errorFlash={server.flash}
+      failure={
+        server.failure && !server.pending
+          ? labels.actionFailedRetry(serverActionReason(server.failure, labels))
+          : undefined
+      }
       {...pendingAttributes(server.pending)}
       onClick={onClick}
     >

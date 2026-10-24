@@ -7,7 +7,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import '../../../core/themeVariables/theme.css'
 import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
-import { pendingArcOf } from '../helpers'
+import { failureShownOn, pendingArcOf } from '../helpers'
 import { SvgIcon } from '@/lib/ui/icons'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
@@ -204,15 +204,14 @@ describe('Button (ADR 0097)', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  test('BN4: pending shows the pending arc and aria-busy and ignores presses; a new errorFlash value flashes; the outline border fades out meanwhile', async () => {
+  test('BN4: pending shows the pending arc and aria-busy and ignores presses, the outline border fades out meanwhile; a failure stops the arc and shows the failure mark', async () => {
     const onClick = vi.fn()
-    const long = { '--tsr-comp-error-flash-duration': '10s' } as CSSProperties
     const screen = await render(
-      <Theme style={long}>
+      <Theme>
         <Button pending onClick={onClick}>
           Retry
         </Button>
-        <Button errorFlash={0}>Save</Button>
+        <Button pending>Save</Button>
       </Theme>,
     )
     const [pending, flashing] = buttons()
@@ -229,22 +228,21 @@ describe('Button (ADR 0097)', () => {
     await userEvent.keyboard('{Enter}')
     expect(onClick).not.toHaveBeenCalled()
 
-    expect(flashing!.hasAttribute('data-error-flash')).toBe(false)
-    const border = style(flashing!).borderTopColor
-    expect(border).not.toBe('rgba(0, 0, 0, 0)')
+    expect(failureShownOn(flashing)).toBe(false)
     await screen.rerender(
-      <Theme style={long}>
+      <Theme>
         <Button pending onClick={onClick}>
           Retry
         </Button>
-        <Button errorFlash={1}>Save</Button>
+        <Button failure="Failed: offline">Save</Button>
       </Theme>,
     )
-    expect(flashing!.getAttribute('data-error-flash')).toBe('on')
-    expect(pendingArcOf(flashing!)?.dataset.phase).toBe('error')
+    expect(pendingArcOf(flashing!)?.dataset.phase).toBe('stopping')
+    expect(failureShownOn(flashing)).toBe(true)
+    // Рамка возвращается, пока дуга гаснет.
     await expect
       .poll(() => style(flashing!).borderTopColor, { timeout: 2000 })
-      .toBe('rgba(0, 0, 0, 0)')
+      .not.toBe('rgba(0, 0, 0, 0)')
   })
 
   test('BN5: forced colors — border and label are ButtonText, the focus ring is Highlight', async ({

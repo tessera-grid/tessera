@@ -7,7 +7,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import '../../../core/themeVariables/theme.css'
 import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
-import { pendingArcOf } from '../helpers'
+import { failureShownOn, pendingArcOf } from '../helpers'
 import { SvgIcon } from '@/lib/ui/icons'
 import * as cellStories from '../../UI.CellButton.stories'
 import * as expandStories from '../../UI.ExpandButton.stories'
@@ -209,14 +209,13 @@ describe('Button system (ADR 0098)', () => {
       )
   })
 
-  test('UB3: Button is square and has the same states as IconButton — rest, hover, focus, pending, error and disabled', async () => {
-    const long = { '--tsr-comp-error-flash-duration': '10s' } as CSSProperties
+  test('UB3: Button is square and has the same states as IconButton — rest, hover, focus, pending, failure and disabled', async () => {
     const screen = await render(
-      <Theme style={long}>
+      <Theme>
         <IconButton aria-label="Probe">{icon}</IconButton>
         <Button>Rest</Button>
         <Button pending>Pending</Button>
-        <Button errorFlash={0}>Error</Button>
+        <Button pending>Error</Button>
         <Button disabled>Off</Button>
       </Theme>,
     )
@@ -241,16 +240,16 @@ describe('Button system (ADR 0098)', () => {
     expect(pending!.getAttribute('aria-busy')).toBe('true')
     expect(pendingArcOf(pending!)?.dataset.phase).toBe('pending')
     await screen.rerender(
-      <Theme style={long}>
+      <Theme>
         <IconButton aria-label="Probe">{icon}</IconButton>
         <Button>Rest</Button>
         <Button pending>Pending</Button>
-        <Button errorFlash={1}>Error</Button>
+        <Button failure="Failed: offline">Error</Button>
         <Button disabled>Off</Button>
       </Theme>,
     )
-    expect(error!.getAttribute('data-error-flash')).toBe('on')
-    expect(pendingArcOf(error!)?.dataset.phase).toBe('error')
+    expect(pendingArcOf(error!)?.dataset.phase).toBe('stopping')
+    expect(failureShownOn(error)).toBe(true)
     expect(style(off!).color).toBe(
       token(host, '--tsr-comp-control-disabled-color', 'color'),
     )

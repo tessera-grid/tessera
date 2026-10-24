@@ -70,14 +70,14 @@ const box = (el: Element) => el.getBoundingClientRect()
 
 const Kit = (props: Partial<IconButtonProps>) => (
   <UiCanvas>
-    <IconButton label="Filter" data-testid="kit" errorFlash={0} {...props}>
+    <IconButton label="Filter" data-testid="kit" {...props}>
       <SvgIcon width={16} height={16} data-testid="base-icon" />
     </IconButton>
   </UiCanvas>
 )
 
 describe('Включённое состояние кнопок (ADR 0129)', () => {
-  test('AV1: IconButton с active — цвет --tsr-comp-control-active-color и бабл-точка --tsr-comp-active-indicator в правом верхнем углу; размер кнопки не меняется, точка появляется и исчезает через токены движения; пока кнопка ждёт ответа или вспыхивает отказом, бабла нет, после успеха он возвращается', async () => {
+  test('AV1: IconButton с active — цвет --tsr-comp-control-active-color и бабл-точка --tsr-comp-active-indicator в правом верхнем углу; размер кнопки не меняется, точка появляется и исчезает через токены движения; пока кнопка ждёт ответа, бабла нет, после успеха он возвращается', async () => {
     const screen = await render(<Kit active={false} />)
     const rest = box(kit())
     expect(bubbleOf(kit())).not.toBeNull()
@@ -118,9 +118,6 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
     await expect
       .poll(() => shown(kit()), { timeout: 3000, message: 'успех' })
       .toBe(true)
-    await screen.rerender(<Kit active errorFlash={1} />)
-    expect(kit().getAttribute('data-error-flash')).toBe('on')
-    expect(shown(kit()), 'вспышка отказа').toBe(false)
     await screen.unmount()
   })
 

@@ -139,13 +139,11 @@ const tooltipText = () =>
     .find(Boolean)
 
 describe('Производные кнопки кита (ADR 0128)', () => {
-  test('DB1: все семь кнопок принимают disabled, tooltipWhenDisabled, pending, errorFlash, failure, onClick с событием и data-testid; занятая — aria-busy и дуга, нажатия не доходят; errorFlash — вспышка; failure — отметка и её текст; выключенная с tooltipWhenDisabled — тултип при наведении', async () => {
+  test('DB1: все семь кнопок принимают disabled, tooltipWhenDisabled, pending, failure, onClick с событием и data-testid; занятая — aria-busy и дуга, нажатия не доходят; failure — дуга встаёт, отметка и её текст; выключенная с tooltipWhenDisabled — тултип при наведении', async () => {
     for (const item of CASES) {
       const onClick = vi.fn()
-      // Ключ вспышки с первого рендера: новое значение — уже вспышка.
       const base: Props = {
         onClick,
-        errorFlash: 0,
         'data-testid': 'kit',
         ...(item.reveals && { revealOnHover: false }),
       }
@@ -163,13 +161,9 @@ describe('Производные кнопки кита (ADR 0128)', () => {
       expect(onClick, `${item.name}: занятая`).toHaveBeenCalledTimes(1)
 
       await screen.rerender(
-        <View item={item} props={{ ...base, pending: false, errorFlash: 1 }} />,
-      )
-      expect(button().getAttribute('data-error-flash'), item.name).toBe('on')
-
-      await screen.rerender(
         <View item={item} props={{ ...base, failure: 'Failed: offline' }} />,
       )
+      expect(pendingArcOf(button())?.dataset.phase, item.name).toBe('stopping')
       expect(
         button().querySelector('[data-failure-indicator]'),
         item.name,

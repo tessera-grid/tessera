@@ -6,6 +6,7 @@ import { flashOutcome } from '../../core/flashes/flashFeature'
 import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
+  clearExpandFailed,
   markExpandFailed,
   readLoadedChildren,
   setLoadedAnswer,
@@ -58,6 +59,8 @@ export const toggleRowExpanded = (
   if (pendingRow.getIsExpandPending?.()) {
     return
   }
+  // Новое нажатие — повтор: отметка прошлого отказа снимается (IR13).
+  clearExpandFailed(pendingRow.table, id => id !== row.id)
   const expanding = !row.getIsExpanded()
   // Явное значение: при сохранённом `expanded: true` переключатель TanStack сворачивал
   // бы строку, которую сужение показывает свёрнутой (ленивую без ответа).
@@ -107,7 +110,7 @@ export const toggleRowExpanded = (
       // Строка свёрнута обратно — в том же кадре, что отказ на переключателе.
       flashOutcome(table, { row: row.id }, 'reverted')
     }
-    markExpandFailed(table, row.id, attempt)
+    markExpandFailed(table, row.id, attempt, value)
     const labels = announcerLabels(table) ?? DEFAULT_LABELS
     const error = rejectionText(value) ?? labels.loadChildrenFailed
     announceLabel(table, all => all.announceExpandFailed(error))

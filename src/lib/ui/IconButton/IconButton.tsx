@@ -112,7 +112,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       disabled,
       focusableWhenDisabled,
       pending,
-      errorFlash,
       failure,
       onClick,
       children,
@@ -123,7 +122,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
     const states = useButtonStates(
       forwardedRef,
-      { pending, errorFlash },
+      { pending, failed: failure !== undefined },
       onClick,
       busy,
     )
@@ -145,7 +144,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         aria-describedby={described.describedBy}
         ref={states.ref}
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
-        data-error-flash={states['data-error-flash']}
         data-pending-leaving={states['data-pending-leaving']}
         data-variant={variant}
         data-shape={shape}

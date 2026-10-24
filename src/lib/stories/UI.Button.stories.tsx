@@ -64,7 +64,6 @@ const meta = {
   tags: ['done'],
   component: ButtonDemo,
   argTypes: {
-    errorFlash: { table: { disable: true } },
     variant: { control: 'inline-radio', options: ['outline', 'ghost'] },
     tooltip: { control: 'text' },
     failure: { control: 'text' },

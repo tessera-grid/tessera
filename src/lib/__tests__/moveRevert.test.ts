@@ -154,6 +154,11 @@ describe('Откат переноса при отказе (ADR 0114)', () => {
     column.reject()
     await flush()
     expect(setColumnOrder).not.toHaveBeenCalled()
-    expect(columns.setColumnMoveFailed).toHaveBeenCalledTimes(1)
+    // Перенос снял прежнюю отметку, отказ записал новую — с ошибкой для причины.
+    const fails = columns.setColumnMoveFailed.mock.calls.reduce(
+      (prev: Record<string, unknown>, [updater]) => updater(prev),
+      {},
+    )
+    expect(Object.keys(fails)).toEqual(['a'])
   })
 })

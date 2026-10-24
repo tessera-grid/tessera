@@ -16,31 +16,6 @@ import {
 } from '../../core/headerActions'
 import { useAvailabilityChecks } from './useAvailabilityChecks'
 
-/**
- * Ключ вспышки из нескольких источников: новое большее значение любого из них —
- * новая вспышка. Значения при монтировании вспышку не запускают.
- */
-export const useMergedFlash = (...keys: (number | undefined)[]) => {
-  const [state, setState] = useState({
-    keys,
-    merged: undefined as number | undefined,
-  })
-  if (keys.some((key, index) => key !== state.keys[index])) {
-    const fired = keys.some(
-      (key, index) =>
-        key !== undefined &&
-        (state.keys[index] === undefined || key > state.keys[index]!),
-    )
-    const next = {
-      keys,
-      merged: fired ? (state.merged ?? 0) + 1 : state.merged,
-    }
-    setState(next)
-    return next.merged
-  }
-  return state.merged
-}
-
 export interface KebabState {
   /** Доступное имя кебаба. */
   ariaLabel: string
@@ -50,7 +25,6 @@ export interface KebabState {
   running: boolean
   /** Есть неувиденный отказ — отметка ошибки. */
   failed: boolean
-  flash?: number
   /** Сессия проверки доступности: итоги и повторная проверка пункта. */
   session: Pick<
     ReturnType<typeof useAvailabilityChecks>,
@@ -103,7 +77,6 @@ export const useKebabState = (
     title: kebabLabel(base.label, kebab, context, labels),
     running: kebab.running.length > 0,
     failed: kebab.failed.length > 0,
-    flash: kebab.flash,
     session: {
       checks: session.checks,
       recheck: session.recheck,

@@ -29,7 +29,7 @@ import {
   panelButtonProps,
   usePanelOpening,
 } from './usePanelOpening'
-import { type KebabState, useKebabState, useMergedFlash } from './useKebabState'
+import { type KebabState, useKebabState } from './useKebabState'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -53,7 +53,7 @@ const loadingOf = (
   popover: ReturnType<typeof useLazyPopover>,
 ): PanelButtonState => ({
   pending: popover.trigger.pending,
-  errorFlash: popover.trigger.errorFlash,
+  failure: popover.trigger.failure,
   onIntent: () => {},
   onCancel: popover.opening.cancel,
 })
@@ -93,7 +93,7 @@ const KebabPlaceholder = ({
       {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
-      <ErrorDot shown={kebab.failed} delayed />
+      <ErrorDot shown={kebab.failed} />
     </IconButton>
   )
 
@@ -197,10 +197,9 @@ export const ActionMenu = ({
     menu.open,
     menu.onOpenChange,
   )
-  const flash = useMergedFlash(menu.trigger.errorFlash, kebab.flash)
   const loading: PanelButtonState = {
     pending: menu.trigger.pending || kebab.running,
-    errorFlash: flash,
+    failure: menu.trigger.failure,
     onIntent: kebab.intent,
     onCancel: () => {
       menu.opening.cancel()
@@ -229,7 +228,6 @@ export const ActionMenu = ({
         open={menu.open}
         onOpenChange={kebab.openChange}
         kebab={kebab}
-        errorFlash={flash}
       />
     </Suspense>
   )
@@ -297,7 +295,7 @@ export const ActionPanel = ({
   }
   const loading: PanelButtonState = {
     pending: opening.pending,
-    errorFlash: opening.errorFlash,
+    failure: opening.failure,
     onIntent: () => preloadActionPanel(action, context),
     onCancel: opening.cancel,
   }

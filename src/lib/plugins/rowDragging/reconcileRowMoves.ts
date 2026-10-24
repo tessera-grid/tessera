@@ -11,10 +11,12 @@ import {
   rowIdOf,
 } from '../../core/rowMoves'
 import { dropRowMove, writeTarget } from './commitRowMove'
+import { type FailedAttempts, withoutGone } from '../../core/failedAttempts'
 
 interface ReconcileTable {
   options: { data: readonly unknown[] }
   atoms: {
+    rowMoveFailed?: { get: () => FailedAttempts }
     loadedChildren?: { get: () => Answers }
     rowExpandPending?: { get: () => Record<string, number> }
   }
@@ -34,7 +36,21 @@ const containsRow = (
   return !!rows?.some((item, i) => idOf(item, i, parentId) === rowId)
 }
 
+/** Отметка отказа строки, ушедшей из модели, снимается (IR14). */
+const pruneFailures = (table: unknown) => {
+  const t = table as ReconcileTable & {
+    setRowMoveFailed?: (
+      updater: (prev: FailedAttempts) => FailedAttempts,
+    ) => void
+  }
+  const failed = t.atoms.rowMoveFailed?.get()
+  if (!failed || Object.keys(failed).length === 0) return
+  const { rowsById } = t.getCoreRowModel()
+  t.setRowMoveFailed?.(prev => withoutGone(prev, id => !!rowsById[id]))
+}
+
 export const reconcileRowMoves = (table: unknown) => {
+  pruneFailures(table)
   const moves = readRowMoves(table)
   let any = false
   for (const _ in moves) {

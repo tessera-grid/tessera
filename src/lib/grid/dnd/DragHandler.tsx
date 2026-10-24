@@ -31,8 +31,8 @@ export interface DragHandlerProps {
   table?: unknown
   /** Перенос ждёт промиса `onRowDragEnd`: свет ожидания, меню не открывается (ADR 0112). */
   busy?: boolean
-  /** Номер отказа переноса: новое значение — вспышка ошибки. */
-  errorFlash?: number
+  /** Текст отметки отказа переноса (ADR 0136). */
+  failure?: string
 }
 
 export const DragHandler = ({
@@ -43,7 +43,7 @@ export const DragHandler = ({
   getMenuItems,
   table,
   busy = false,
-  errorFlash,
+  failure,
 }: DragHandlerProps) => {
   const { drag: DragIcon } = useIcons()
   const ref = useRef<HTMLElement | null>(null)
@@ -105,13 +105,8 @@ export const DragHandler = ({
     ref.current = node
     setActivatorNodeRef(node)
   }
-  // Отказ загрузки меню и отказ переноса — общий ключ вспышки: оба только растут.
-  const flashKey =
-    menu.trigger.errorFlash === undefined && errorFlash === undefined
-      ? undefined
-      : (menu.trigger.errorFlash ?? 0) + (errorFlash ?? 0)
-
-  // Квадратная кнопка кита: ожидание и вспышка — как у кнопок (ADR 0112, 0114).
+  // Квадратная кнопка кита: ожидание и отметка отказа — как у кнопок (ADR 0112, 0114,
+  // 0136); отказ загрузки меню — свежее отказа переноса.
   const button = (
     <IconButton
       ref={setNode}
@@ -120,7 +115,7 @@ export const DragHandler = ({
       disabled={disabled}
       className={clsx(styles.handle, 'drag__handler--column')}
       pending={busy || menu.trigger.pending}
-      errorFlash={flashKey}
+      failure={menu.trigger.failure ?? failure}
       {...ownAttributes}
       aria-label={label}
       {...(hasMenu && {

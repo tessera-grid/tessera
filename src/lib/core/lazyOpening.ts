@@ -1,13 +1,13 @@
 // Открытие ленивого поповера или меню после загрузки его модуля (ADR 0061, ADR 0024
 // AM28–AM30): нажатие до загрузки не теряется, долгое ожидание видно, его можно
-// отменить, ошибка загрузки не открывает поповер — элемент вспыхивает, текст
-// объявляется.
+// отменить, ошибка загрузки не открывает поповер — на элементе отметка отказа, текст
+// объявляется (ADR 0136).
 import { reportAction, userSourceOf } from './debugActions'
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 
 import { announceLabel } from './announcer'
 import { type Preloadable, usePreloaded } from './preloadable'
-import type { TableLabels } from './localization'
+import { type TableLabels, useLocalization } from './localization'
 
 /** Ожидание короче этого не показывается — блик не мелькает на каждом нажатии. */
 export const LAZY_PENDING_DELAY_MS = 150
@@ -21,8 +21,9 @@ export interface LazyLoad {
 }
 
 export const useLazyOpening = (table: unknown) => {
+  const labels = useLocalization()
   const [pending, setPending] = useState(false)
-  const [errorFlash, setErrorFlash] = useState<number>()
+  const [failure, setFailure] = useState<string>()
   const stop = useRef<() => void>(undefined)
 
   const cancel = () => {
@@ -38,6 +39,8 @@ export const useLazyOpening = (table: unknown) => {
     onFail?: () => void,
   ) => {
     cancel()
+    // Новая попытка — повтор: отметка прошлого отказа снимается (IR13).
+    setFailure(undefined)
     if (!lazy || lazy.isReady?.()) {
       open()
       return
@@ -81,7 +84,7 @@ export const useLazyOpening = (table: unknown) => {
         if (!active) return
         finish()
         onFail?.()
-        setErrorFlash(key => (key ?? 0) + 1)
+        setFailure(labels.loadFailed(lazy.label(labels)))
         if (table) {
           announceLabel(table, labels => labels.loadFailed(lazy.label(labels)))
         }
@@ -91,13 +94,14 @@ export const useLazyOpening = (table: unknown) => {
 
   useEffect(() => () => stop.current?.(), [])
 
-  return { request, cancel, pending, errorFlash }
+  return { request, cancel, pending, failure }
 }
 
 /** Состояние ленивого открытия для элемента, который его запускает. */
 export interface LazyTriggerState {
   pending: boolean
-  errorFlash?: number
+  /** Текст отметки отказа загрузки модуля. */
+  failure?: string
   /** Наведение или фокус: пора грузить модуль. */
   onIntent?: () => void
   /** Escape или уход фокуса: отменить ожидание. */
@@ -159,7 +163,7 @@ export const useLazyPopover = (
 
   const trigger = {
     pending: opening.pending,
-    errorFlash: opening.errorFlash,
+    failure: opening.failure,
     'aria-expanded': open,
     onClick: (event?: unknown) => onOpenChange(true, event),
     ...lazyTriggerHandlers({

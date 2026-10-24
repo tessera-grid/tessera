@@ -45,7 +45,6 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
       label={labels.editCell}
       icon={<EditIcon width={16} height={16} />}
       pending={view?.status === 'pending'}
-      errorFlash={failed ? view.attempt : undefined}
       failure={
         failed
           ? labels.actionFailedRetry(view.error || labels.saveFailed)

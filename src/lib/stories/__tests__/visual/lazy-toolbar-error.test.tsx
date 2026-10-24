@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { humanClick } from '../helpers'
+import { failureShownOn, humanClick } from '../helpers'
 import {
   MODULE,
   columnsButton,
@@ -19,40 +19,35 @@ import { tableLabels } from '../labels'
 afterEach(() => releaseModule(MODULE.columns))
 
 describe('Ленивые поповеры — ошибка загрузки', () => {
-  test('LZ5: ошибка загрузки у кнопки тулбара — поповер не открывается, вспышка ошибки, объявление с подписью кнопки; следующий клик снова пытается загрузить', async () => {
+  test('LZ5: ошибка загрузки у кнопки тулбара — поповер не открывается, отметка отказа с текстом, объявление с подписью кнопки; следующий клик снова пытается загрузить', async () => {
     await failModule(MODULE.columns)
     await renderToolbarGrid()
     const announcements = recordAnnouncements()
 
     await humanClick(columnsButton())
-    await expect
-      .poll(() => columnsButton().getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(columnsButton())).toBe(true)
+    expect(columnsButton()).toHaveAccessibleDescription(
+      tableLabels.loadFailed(tableLabels.columns),
+    )
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.columns))
     await sleep(100)
     expect(columnsPopover()).toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()
-    // Вспышка держится --tsr-comp-error-flash-duration (300 мс), затем гаснет. Ждём
-    // конца затухания: снятие атрибута посреди нажатия убирает `::after`, и Firefox
-    // отдаёт отпускание кнопки группе тулбара по прежней раскладке.
-    await expect
-      .poll(() => columnsButton().hasAttribute('data-error-flash'), {
-        timeout: 3000,
-      })
-      .toBe(false)
 
-    // Следующий клик — новая попытка: снова вспышка, а не мёртвый клик.
+    // Следующий клик — новая попытка, а не мёртвый клик: модуль снова грузится, отказ
+    // объявляется ещё раз, отметка остаётся.
     await humanClick(columnsButton())
     await expect
-      .poll(() => columnsButton().getAttribute('data-error-flash'))
-      .toBe('on')
+      .poll(
+        () =>
+          announcements.messages.filter(
+            text => text === tableLabels.loadFailed(tableLabels.columns),
+          ).length,
+      )
+      .toBeGreaterThanOrEqual(2)
+    await expect.poll(() => failureShownOn(columnsButton())).toBe(true)
     announcements.stop()
-    expect(
-      announcements.messages.filter(
-        text => text === tableLabels.loadFailed(tableLabels.columns),
-      ).length,
-    ).toBeGreaterThanOrEqual(1)
   })
 })

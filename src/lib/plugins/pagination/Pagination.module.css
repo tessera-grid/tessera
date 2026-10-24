@@ -63,8 +63,8 @@
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
-/* Ожидание и красный контур: рамка уходит — форму кнопки рисует дуга (IR32). */
-.trigger:is([aria-busy='true'], [data-error-flash='on']) {
+/* Ожидание: рамка уходит — форму кнопки рисует дуга (IR32). */
+.trigger[aria-busy='true'] {
   border-color: transparent;
 }
 

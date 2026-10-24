@@ -1,6 +1,6 @@
 /**
  * Единый контракт производных кнопок кита (ADR 0128): имена пропсов в публичных типах
- * `/ui` (DB3) и устройство их историй (DB4).
+ * `/ui` (DB3) и устройство их историй (DB4); пропа вспышки ошибки нет (FB3, ADR 0136).
  */
 import { readFileSync } from 'node:fs'
 
@@ -42,7 +42,6 @@ const COMMON = [
   'disabled',
   'tooltipWhenDisabled',
   'pending',
-  'errorFlash',
   'failure',
   'onClick',
   'data-testid',
@@ -112,6 +111,14 @@ describe('Производные кнопки кита (ADR 0128)', () => {
         ...(REVEALING.includes(button) ? [`${button}AlwaysVisible`] : []),
       ]
       expect(ids, button).toEqual(expect.arrayContaining(expected))
+    }
+  })
+
+  it('FB3: у кнопок кита и производных нет пропа errorFlash — отказ задаёт failure', () => {
+    for (const button of ['IconButton', 'Button', ...BUTTONS]) {
+      const props = names(button)
+      expect(props, button).toContain('failure')
+      expect(props, button).not.toContain('errorFlash')
     }
   })
 })

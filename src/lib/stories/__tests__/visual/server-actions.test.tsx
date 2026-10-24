@@ -13,7 +13,7 @@ import { headerActionMenu } from '../../../plugins/headerActionMenu'
 import { keyboardNavigation } from '../../../plugins/keyboardNavigation'
 import { pagination } from '../../../plugins/pagination'
 import { quickSearch } from '../../../plugins/quickSearch'
-import { humanClick, revealCellButtons } from '../helpers'
+import { failureShownOn, humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 
 // Серверные действия (ADR 0116): ожидание у причины и свечение, отказ — откат, плашка с
@@ -292,7 +292,7 @@ describe('серверные действия (ADR 0116)', () => {
           node.hasAttribute('aria-busy') ||
           node.hasAttribute('aria-invalid') ||
           node.hasAttribute('data-pending') ||
-          node.hasAttribute('data-error-flash'),
+          node.hasAttribute('data-failure-indicator'),
       ).length
     await userEvent.type(searchInput(), 'Row')
     await expect.poll(() => lastCall()?.kind).toBe('search')
@@ -344,18 +344,13 @@ describe('серверные действия (ADR 0116)', () => {
     await expect.poll(() => JSON.stringify(lastCall().args)).toContain('"xy"')
   })
 
-  test('SA18: кнопка фильтра после отказа — красный свет, затем ErrorDot, причина — описание кнопки; в открытой панели у кнопки сброса — иконка ошибки с тултипом причины', async () => {
+  test('SA18: кнопка фильтра после отказа — ErrorDot сразу, причина — описание кнопки; в открытой панели у кнопки сброса — иконка ошибки с тултипом причины', async () => {
     await mount({ paginationServer: true, pageSize: 25, filter: true })
     await filterBy('x')
     lastCall().answer.reject(new Error('Filter is unavailable'))
-    await expect
-      .poll(() => filterButton().getAttribute('data-error-flash'))
-      .toBe('on')
-    // Отметка проявляется, когда погаснет красный свет.
-    expect(errorDot().getAttribute('data-shown')).toBe('true')
-    expect(
-      parseFloat(getComputedStyle(errorDot()).transitionDelay),
-    ).toBeGreaterThan(0)
+    // Отметка проявляется сразу: красного контура перед ней нет (ADR 0136).
+    await expect.poll(() => errorDot().getAttribute('data-shown')).toBe('true')
+    expect(parseFloat(getComputedStyle(errorDot()).transitionDelay)).toBe(0)
     expect(filterReason()).toBe('Filter is unavailable')
 
     await expect.poll(panelFailure).not.toBeNull()
@@ -559,22 +554,21 @@ describe('серверные действия (ADR 0116)', () => {
     expect(harness.calls).toHaveLength(1)
   })
 
-  test('SA12: при отказе у причины вспышка errorFlash, отказ объявляется с причиной', async () => {
+  test('SA12: при отказе на кнопке-причине — отметка отказа с причиной, отказ объявляется с причиной', async () => {
     await mount({ sortingServer: true, paginationServer: true, pageSize: 25 })
     await userEvent.click(sortButton()!)
     lastCall().answer.reject(new Error('Sorting is unavailable'))
-    await expect
-      .poll(() => sortButton()!.getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(sortButton())).toBe(true)
+    expect(sortButton()).toHaveAccessibleDescription(
+      tableLabels.actionFailedRetry('Sorting is unavailable'),
+    )
     await expect
       .poll(liveText)
       .toContain(tableLabels.announceLoadErrorReason('Sorting is unavailable'))
 
     await userEvent.click(pageButton('next'))
     lastCall().answer.reject(SERVER_ERROR)
-    await expect
-      .poll(() => pageButton('next').getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(pageButton('next'))).toBe(true)
   })
 
   test('SA13: с клавиатуры — Enter на заголовке и контролы пагинатора — то же ожидание и откат, фокус остаётся на причине; с keyboardNavigation и без', async () => {
@@ -608,5 +602,51 @@ describe('серверные действия (ADR 0116)', () => {
     lastCall().answer.reject(SERVER_ERROR)
     await expect.poll(range).toBe('1–25 of 1,000')
     expect(document.activeElement).toBe(pageButton('next'))
+  })
+})
+
+describe('Итог серверного действия на таблице (ADR 0136)', () => {
+  test('FB5: отказ серверных сортировки, фильтра и страницы — у кнопки-причины дуга гаснет и появляется отметка, у таблицы — красный свет и плашка; кнопка не вспыхивает', async () => {
+    await mount({
+      sortingServer: true,
+      paginationServer: true,
+      pageSize: 25,
+      filter: true,
+    })
+    const tableSignal = async () => {
+      await expect.poll(redLight).not.toBeNull()
+      await expect.poll(banner).not.toBeNull()
+    }
+    const noButtonFlash = (button: Element) => {
+      expect(button.hasAttribute('data-flash')).toBe(false)
+      expect(
+        button.closest('[data-flash], [data-column-flash]'),
+        'цель не вспыхивает',
+      ).toBeNull()
+    }
+
+    await userEvent.click(sortButton()!)
+    lastCall().answer.reject(new Error('Sorting is unavailable'))
+    await expect.poll(() => failureShownOn(sortButton())).toBe(true)
+    await tableSignal()
+    noButtonFlash(sortButton()!)
+    await userEvent.click(retryButton())
+    lastCall().answer.resolve()
+    await expect.poll(banner).toBeNull()
+
+    await userEvent.click(pageButton('next'))
+    lastCall().answer.reject(SERVER_ERROR)
+    await expect.poll(() => failureShownOn(pageButton('next'))).toBe(true)
+    await tableSignal()
+    noButtonFlash(pageButton('next'))
+    await userEvent.click(retryButton())
+    lastCall().answer.resolve()
+    await expect.poll(banner).toBeNull()
+
+    await filterBy('x')
+    lastCall().answer.reject(SERVER_ERROR)
+    await expect.poll(() => errorDot().getAttribute('data-shown')).toBe('true')
+    await tableSignal()
+    noButtonFlash(filterButton())
   })
 })

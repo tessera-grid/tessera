@@ -10,10 +10,12 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
+import { type FailedAttempts, withoutGone } from '../../core/failedAttempts'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 export type LoadedChildren = Record<string, readonly unknown[]>
-export type RowExpandFailed = Record<string, number>
+/** Отказы раскрытия: строка → попытка и ошибка (отметка на тоггле, ADR 0136). */
+export type RowExpandFailed = FailedAttempts
 
 interface LazyChildrenStateSlice {
   loadedChildren: LoadedChildren
@@ -99,11 +101,24 @@ export const markExpandFailed = (
   table: unknown,
   rowId: string,
   attempt: number,
+  error: unknown,
 ) =>
   writeSlice<RowExpandFailed>(table as LazyTable, 'rowExpandFailed', prev => ({
     ...prev,
-    [rowId]: attempt,
+    [rowId]: { attempt, error },
   }))
+
+/** Снять отметку отказа строки: повтор или уход строки (IR13, IR14). */
+export const clearExpandFailed = (
+  table: unknown,
+  exists: (rowId: string) => boolean,
+) => {
+  const failed = (table as LazyTable).atoms.rowExpandFailed?.get()
+  if (!failed || Object.keys(failed).length === 0) return
+  writeSlice<RowExpandFailed>(table as LazyTable, 'rowExpandFailed', prev =>
+    withoutGone(prev, exists),
+  )
+}
 
 /** Свернуть строки, у которых не осталось ответа (срез `expanded: true` не трогаем). */
 const collapse = (table: LazyTable, rowIds: readonly string[]) => {

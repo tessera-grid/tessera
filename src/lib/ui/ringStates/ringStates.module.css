@@ -1,6 +1,6 @@
 /*
- * Ожидание и отказ (ADR 0055, ADR 0127): общий модуль кнопок и спиннера. Ожидание —
- * `aria-busy`, отказ — `data-error-flash`; дуга по контуру — `PendingArc`, слой `.arc`.
+ * Ожидание и отказ (ADR 0127, ADR 0136): общий модуль кнопок и спиннера. Ожидание —
+ * `aria-busy`, отказ — отметка; дуга по контуру — `PendingArc`, слой `.arc`.
  * `::before` не трогаем — им пользуются слои наведения кнопок строки.
  */
 
@@ -13,17 +13,8 @@
   cursor: default;
 }
 
-/* Пока контур заливается красным, переходы кнопки (цвет подписи) идут в такт заливке. */
-.ring[data-error-flash='on'] {
-  transition-duration: var(--tsr-comp-error-flash-fill-duration);
-  transition-timing-function: var(--tsr-comp-motion-easing-out);
-}
-
-/*
- * Кольцо фокуса — снаружи дуги и красного контура, с зазором в толщину дуги (IR6); с
- * началом угасания красного — снова обычное, вместе с рамкой и отметкой.
- */
-.ring:is([aria-busy='true'], [data-error-flash='on']):focus-visible {
+/* Кольцо фокуса занятой кнопки — снаружи дуги, с зазором в её толщину (IR6). */
+.ring[aria-busy='true']:focus-visible {
   box-shadow: none;
   outline: var(--tsr-comp-pending-focus-ring-width) solid
     var(--tsr-comp-focus-ring);
@@ -104,56 +95,25 @@
   transition: var(--tsr-comp-reveal-transition);
 }
 
-/*
- * Отказ: дуга встаёт (тот же `pendingRun` на паузе — без скачка) и за время заливки
- * гаснет, а дорожка краснеет по всему контуру. Конечный вид — в самих свойствах: без
- * движения он сразу (IR11).
- */
-.arc[data-from-pending]:is([data-phase='error'], [data-phase='off']) {
+/* Отказ (ADR 0136): дуга встаёт (тот же `pendingRun` на паузе — без скачка) и вместе с
+   дорожкой гаснет за время остановки; контур не краснеет. Кебаб и кнопка с панелью
+   отмечают отказ своей точкой (`ErrorDot`) — по ней дуга встаёт так же. */
+.arc[data-phase='stopping'],
+.ring:has(> [data-error-indicator][data-shown='true'])
+  > .arc[data-phase='leaving'] {
+  opacity: 0;
   animation:
     pendingRun calc(var(--tsr-comp-pending-glow-duration) * 0.5) linear infinite
       paused,
     spinnerTones calc(var(--tsr-comp-pending-glow-duration) * 1.7) ease-in-out
       infinite paused;
-}
-
-.arc:is([data-phase='error'], [data-phase='off']) .arcTail {
-  opacity: 0;
-  transition: opacity var(--tsr-comp-error-flash-fill-duration)
-    var(--tsr-comp-motion-easing-out);
-}
-
-.arc:is([data-phase='error'], [data-phase='off']) .arcTrack {
-  stroke: var(--tsr-comp-error-flash-color);
-  animation: trackFail var(--tsr-comp-error-flash-fill-duration)
-    var(--tsr-comp-motion-easing-out) both;
-}
-
-/* Без ожидания перед отказом контур проявляется из прозрачного (IR8). */
-.arc:not([data-from-pending]) .arcTrack {
-  --_track: transparent;
-}
-
-/* Гаснет плавно, с замедлением (BS17 → IR7). */
-.arc[data-phase='off'] {
-  opacity: 0;
-  transition: opacity var(--tsr-comp-error-flash-fade-duration)
+  transition: opacity var(--tsr-comp-pending-stop-duration)
     var(--tsr-comp-motion-easing-out);
 }
 
 @keyframes pendingRun {
   to {
     --tsr-pending-run: 100;
-  }
-}
-
-/* Из оттенка дорожки (на паузе — тот, что был при отказе) в красный в полную силу. */
-@keyframes trackFail {
-  from {
-    stroke: var(--_track);
-  }
-  to {
-    stroke: var(--tsr-comp-error-flash-color);
   }
 }
 
@@ -278,21 +238,17 @@
 }
 
 /*
- * Высокая контрастность (ADR 0087): дуга — SVG, браузер перекрасил бы её. Слой не перекрашивается, цвета — системные из токенов (`Highlight`,
- * `Mark`).
+ * Высокая контрастность (ADR 0087): дуга — SVG, браузер перекрасил бы её. Слой не
+ * перекрашивается, цвета — системные из токенов (`Highlight`).
  */
 @media (forced-colors: active) {
   .arc {
     forced-color-adjust: none;
   }
 
-  /* Только системные цвета: дорожки нет — бледный `Highlight` не системный; отказ сразу `Mark`. */
+  /* Только системные цвета: дорожки нет — бледный `Highlight` не системный. */
   .arc {
     --_track: transparent;
-  }
-
-  .arc:is([data-phase='error'], [data-phase='off']) .arcTrack {
-    animation: none;
   }
 
   .spinner::after {

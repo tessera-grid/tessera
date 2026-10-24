@@ -27,8 +27,6 @@ const NONE: Source = {
 
 export interface ServerActionMarks {
   pending: boolean
-  /** Ключ вспышки отказа — номер отказавшей попытки. */
-  flash?: number
   /** Отказ, начатый этим контролом, — до успеха следующего действия или закрытия плашки. */
   failure?: { kind: ServerActionKind; error: unknown }
 }
@@ -53,7 +51,6 @@ export const useServerActionMarks = (
       const mine = !!failed?.cause && matches(failed.cause)
       return {
         pending: !!pending?.cause && matches(pending.cause),
-        flash: mine ? failed!.attempt : undefined,
         failure: mine ? failed : undefined,
       }
     },

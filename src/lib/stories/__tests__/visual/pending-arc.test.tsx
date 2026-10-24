@@ -14,9 +14,10 @@ import paginationStyles from '@/lib/plugins/pagination/Pagination.module.css'
 import { arcHeadOf, arcTailOf, arcTrackOf, pendingArcOf } from '../helpers'
 import { toRgba } from './a11y-helpers'
 
-// Дуга ожидания и отказ кнопок кита (ADR 0127, IR1–IR11). Кнопки рендерятся напрямую в
-// обёртке темы; состояние читается из ARIA, атрибутов, вычисленных стилей и анимаций
-// слоя дуги, а не из имён CSS-модулей. Слой — дорожка и хвост из восьми отрезков.
+// Дуга ожидания и отказ кнопок кита (ADR 0127, IR1–IR6, IR10–IR11, IR31–IR32; ADR 0136,
+// FB1–FB2). Кнопки рендерятся напрямую в обёртке темы; состояние читается из ARIA,
+// атрибутов, вычисленных стилей и анимаций слоя дуги, а не из имён CSS-модулей. Слой —
+// дорожка и хвост из восьми отрезков.
 
 const reducedMotion = (
   commands as unknown as { reducedMotion: (reduce: boolean) => Promise<void> }
@@ -25,11 +26,6 @@ const reducedMotion = (
 afterEach(() => reducedMotion(false))
 
 const icon = <SvgIcon width={20} height={20} />
-
-// Удержание вспышки в тестах — 800 мс: фазу удержания успевают прочитать.
-const FAST_FLASH = {
-  '--tsr-comp-error-flash-duration': '800ms',
-} as CSSProperties
 
 const Theme = ({
   children,
@@ -40,7 +36,7 @@ const Theme = ({
 }) => (
   <div
     className="data-grid-theme"
-    style={{ display: 'flex', gap: 24, padding: 24, ...FAST_FLASH, ...style }}
+    style={{ display: 'flex', gap: 24, padding: 24, ...style }}
   >
     {children}
   </div>
@@ -60,9 +56,6 @@ const animationOf = (el: Element, name: string) =>
     .getAnimations({ subtree: true })
     .find(a => (a as CSSAnimation).animationName?.includes(name)) as
     CSSAnimation | undefined
-/** Переход непрозрачности хвоста при отказе. */
-const tailFadeOf = (el: Element) =>
-  arcOf(el)!.querySelector('g')!.getAnimations()[0] as CSSTransition | undefined
 const number = (value: string) => parseFloat(value.replace('calc(', ''))
 /** Штрих и пробел отрезка — доли периметра (`pathLength` 100). */
 const dashOf = (rect: SVGRectElement) =>
@@ -373,27 +366,19 @@ describe('Pending arc', () => {
     }
   })
 
-  test('IR6: focus stays on a pending button and stays visible — the focus ring is outside the arc with a gap of its width; pending buttons and buttons holding the red contour use the pending focus ring width; as the red fades and at rest the ring is the regular one', async () => {
-    const LONG_FLASH = {
-      '--tsr-comp-error-flash-duration': '10s',
-    } as CSSProperties
-    const view = (flash: number) => (
-      <Theme style={LONG_FLASH}>
+  test('IR6: focus stays on a pending button and stays visible — the focus ring is outside the arc with a gap of its width and uses the pending focus ring width; at rest the ring is the regular one', async () => {
+    const screen = await render(
+      <Theme>
         <IconButton aria-label="Load" pending>
           {icon}
         </IconButton>
         <Button data-label="Retry" pending>
           Retry
         </Button>
-        <IconButton aria-label="Failed" errorFlash={flash}>
-          {icon}
-        </IconButton>
         <Button data-label="Rest">Rest</Button>
-      </Theme>
+      </Theme>,
     )
-    const screen = await render(view(0))
-    await screen.rerender(view(1))
-    for (const label of ['Load', 'Retry', 'Failed']) {
+    for (const label of ['Load', 'Retry']) {
       await userEvent.tab()
       const el = byLabel(label)
       expect(document.activeElement, label).toBe(el)
@@ -418,52 +403,8 @@ describe('Pending arc', () => {
       `0px 0px 0px ${token(rest, '--tsr-comp-focus-ring-width', 'width')}`,
     )
     await screen.unmount()
-
-    // Угасание красного: кольцо снова обычное, пока контур ещё гаснет.
-    const FADE = {
-      '--tsr-comp-error-flash-duration': '300ms',
-      '--tsr-comp-error-flash-fade-duration': '3s',
-    } as CSSProperties
-    const fading = (flash: number) => (
-      <Theme style={FADE}>
-        <Button data-label="Fading" errorFlash={flash}>
-          Retry
-        </Button>
-        <IconButton
-          aria-label="Fading chip"
-          variant="overlay"
-          errorFlash={flash}
-        >
-          {icon}
-        </IconButton>
-      </Theme>
-    )
-    const second = await render(fading(0))
-    await second.rerender(fading(1))
-    for (const label of ['Fading', 'Fading chip']) {
-      const el = byLabel(label)
-      await userEvent.tab()
-      expect(document.activeElement, label).toBe(el)
-      await expect
-        .poll(() => el.getAttribute('data-error-flash'), {
-          timeout: 2000,
-          interval: 10,
-        })
-        .toBe('off')
-      const style = getComputedStyle(el)
-      expect(arcOf(el)?.dataset.phase, label).toBe('off')
-      expect(style.outlineStyle, label).toBe('none')
-      expect(
-        style.boxShadow.startsWith(ringOf(el)),
-        `${label}: ${style.boxShadow}`,
-      ).toBe(true)
-    }
   })
 })
-
-/** Обычное кольцо фокуса кита — первый слой `box-shadow`. */
-const ringOf = (el: Element) =>
-  `${token(el, '--tsr-comp-focus-ring')} 0px 0px 0px ${token(el, '--tsr-comp-focus-ring-width', 'width')}`
 
 describe('Pending arc: dimmed label', () => {
   test('IR31: the label and icon of a pending IconButton, ToolbarButton and Button take the disabled color; after pending they return to the rest color', async () => {
@@ -488,10 +429,10 @@ describe('Pending arc: dimmed label', () => {
 })
 
 describe('Pending arc: failure', () => {
-  test('IR7: a failure stops the arc and within the fill duration with the easing-out curve fades it while the track turns smoothly from its tone to full red along the whole contour; the red contour holds and fades out — on IconButton, ToolbarButton and Button; the label and icon do not turn red and take the rest color within the fill duration', async () => {
-    const view = (pending: boolean, flash: number) => (
+  test('FB1: a failure on IconButton, ToolbarButton and Button stops the arc and fades it with the track within --tsr-comp-pending-stop-duration; the contour does not turn red; the failure mark shows in the frame the arc starts to fade', async () => {
+    const view = (pending: boolean, failure?: string) => (
       <Theme>
-        <IconButton aria-label="Icon" pending={pending} errorFlash={flash}>
+        <IconButton aria-label="Icon" pending={pending} failure={failure}>
           {icon}
         </IconButton>
         <Toolbar.Root>
@@ -499,338 +440,130 @@ describe('Pending arc: failure', () => {
             label="Toolbar"
             icon={icon}
             pending={pending}
-            errorFlash={flash}
+            failure={failure}
           />
         </Toolbar.Root>
-        <Button data-label="Text" pending={pending} errorFlash={flash}>
+        <Button data-label="Text" pending={pending} failure={failure}>
           Retry
         </Button>
       </Theme>
     )
     const labels = ['Icon', 'Toolbar', 'Text']
-    // По умолчанию удержание и угасание контура — ритм вспышки итога (ADR 0134); тема,
-    // меняющая ритм вспышки, меняет и контур.
-    const probe = document.createElement('div')
-    probe.className = 'data-grid-theme'
-    document.body.appendChild(probe)
-    const rhythm = () => {
-      const style = getComputedStyle(probe)
-      const value = (name: string) => style.getPropertyValue(name).trim()
-      return {
-        hold: value('--tsr-comp-error-flash-duration'),
-        fade: value('--tsr-comp-error-flash-fade-duration'),
-        flashHold: value('--tsr-comp-flash-duration'),
-        flashFade: value('--tsr-comp-flash-fade-duration'),
-      }
+    const mark = (label: string) =>
+      byLabel(label).querySelector<HTMLElement>('[data-failure-indicator]')
+    const screen = await render(view(true))
+    for (const label of labels) {
+      expect(arcOf(byLabel(label))!.dataset.phase, label).toBe('pending')
     }
-    expect(rhythm()).toEqual({
-      hold: '300ms',
-      fade: '500ms',
-      flashHold: '300ms',
-      flashFade: '500ms',
-    })
-    probe.style.setProperty('--tsr-comp-flash-duration', '450ms')
-    probe.style.setProperty('--tsr-comp-flash-fade-duration', '650ms')
-    expect(rhythm()).toMatchObject({ hold: '450ms', fade: '650ms' })
-    probe.remove()
-    const screen = await render(view(true, 0))
-    await new Promise(resolve => setTimeout(resolve, 200))
-    // Цвет покоя: занятая кнопка приглушена (IR31), в отказе — снова цвет покоя.
-    const color = labels.map(l => token(byLabel(l), '--tsr-comp-button-color'))
-    const times = labels.map(l =>
-      Number(animationOf(byLabel(l), 'pendingRun')!.currentTime),
-    )
-    const start = performance.now()
-    await screen.rerender(view(false, 1))
-    labels.forEach((label, i) => {
+    await screen.rerender(view(false, 'Failed: offline'))
+    for (const label of labels) {
       const el = byLabel(label)
-      expect(arcOf(el)!.dataset.phase, label).toBe('error')
-      // Та же анимация на паузе — дуга встала там, где была; оттенок — тоже.
-      const run = animationOf(el, 'pendingRun')!
-      expect(run.playState, label).toBe('paused')
-      expect(Number(run.currentTime), label).toBeGreaterThanOrEqual(times[i]!)
-      expect(animationOf(el, 'spinnerTones')!.playState, label).toBe('paused')
-      // Подпись возвращается к цвету покоя в такт заливке.
-      const style = getComputedStyle(el)
-      for (const duration of style.transitionDuration.split(', ')) {
-        expect(duration, label).toBe(
-          token(
-            el,
-            '--tsr-comp-error-flash-fill-duration',
-            'transition-duration',
-          ),
-        )
-      }
-      // Одна кривая на все переходы: значение — только повторы кривой заливки.
-      const easing = token(
-        el,
-        '--tsr-comp-motion-easing-out',
-        'transition-timing-function',
-      )
+      const arc = arcOf(el)!
+      // Кадр конца ожидания: дуга встала и гаснет, отметка уже показана.
+      expect(arc.dataset.phase, label).toBe('stopping')
+      expect(mark(label)!.dataset.shown, label).toBe('true')
       expect(
-        style.transitionTimingFunction.split(easing).join(''),
+        arc
+          .getAnimations()
+          .filter(a => a instanceof CSSAnimation)
+          .every(a => a.playState === 'paused'),
         label,
-      ).toMatch(/^(, )*$/)
-    })
-    // Кадры отказа: дорожка из своего оттенка краснеет с быстрым стартом, хвост гаснет.
-    const red = toRgba(token(byLabel('Icon'), '--tsr-comp-error-flash-color'))
-    const fillMs =
-      parseFloat(
-        token(
-          byLabel('Icon'),
-          '--tsr-comp-error-flash-fill-duration',
-          'transition-duration',
-        ),
-      ) * 1000
-    const easingOut = token(
-      byLabel('Icon'),
-      '--tsr-comp-motion-easing-out',
-      'transition-timing-function',
-    )
-    const redness = (rgba: number[]) =>
-      Math.hypot(...rgba.slice(0, 3).map((c, j) => c - red[j]!))
-    for (const label of labels) {
-      const el = byLabel(label)
-      const turn = animationOf(el, 'trackFail')!
-      const fade = tailFadeOf(el)!
-      expect(turn.effect!.getComputedTiming().duration, label).toBe(fillMs)
-      expect(keyframeEasingOf(turn), label).toBe(easingOut)
-      expect(fade.transitionProperty, label).toBe('opacity')
-      expect(fade.effect!.getComputedTiming().duration, label).toBe(fillMs)
-      expect(fade.effect!.getComputedTiming().easing, label).toBe(easingOut)
-      turn.pause()
-      fade.pause()
-      const at = (share: number) => {
-        turn.currentTime = fillMs * share
-        fade.currentTime = fillMs * share
-        return {
-          track: strokeOf(trackOf(el)),
-          tail: opacityOf(arcOf(el)!.querySelector('g')!),
-        }
-      }
-      const [begin, tenth, half, end] = [0, 0.1, 0.5, 1].map(at)
-      // Начало — бледная дорожка своего оттенка, хвост в полную силу.
-      expect(begin!.track[3], label).toBeCloseTo(0.15, 1)
-      expect(redness(begin!.track), label).toBeGreaterThan(100)
-      expect(begin!.tail, label).toBe(1)
-      // Быстрый старт: к десятой доле времени — больше пятой доли пути (плавный старт
-      // `motion-easing` проходит к этому моменту около 3 %).
-      expect(tenth!.track[3], label).toBeGreaterThan(0.15 + 0.85 * 0.2)
-      expect(tenth!.tail, label).toBeLessThan(0.8)
-      expect(half!.track[3], label).toBeGreaterThan(tenth!.track[3]!)
-      expect(half!.track[3], label).toBeLessThan(1)
-      expect(half!.tail, label).toBeLessThan(tenth!.tail)
-      expect(half!.tail, label).toBeGreaterThan(0)
-      // Конец — весь контур красным в полную силу, хвоста нет.
-      // Перетекание идёт в oklab — конец сверяем с допуском округления.
-      expect(redness(end!.track), label).toBeLessThan(2)
-      expect(end!.track[3], label).toBe(1)
-      expect(end!.tail, label).toBe(0)
-      expect(getComputedStyle(trackOf(el)).strokeDasharray, label).toBe('none')
-      turn.play()
-      fade.play()
+      ).toBe(true)
+      const style = getComputedStyle(arc)
+      // Угасание идёт переходом непрозрачности к нулю.
+      const fade = arc
+        .getAnimations()
+        .find(
+          a => a instanceof CSSTransition && a.transitionProperty === 'opacity',
+        ) as CSSTransition
+      const keyframes = (fade.effect as KeyframeEffect).getKeyframes()
+      expect(keyframes.at(-1)!.opacity, label).toBe('0')
+      expect(style.transitionDuration, label).toBe(
+        token(el, '--tsr-comp-pending-stop-duration', 'transition-duration'),
+      )
+      expect(style.transitionTimingFunction, label).toBe(
+        token(el, '--tsr-comp-motion-easing-out', 'transition-timing-function'),
+      )
+      // Контур не краснеет: дорожка — бледный оттенок дуги, а не цвет ошибки.
+      const red = toRgba(token(el, '--tsr-comp-error-flash-color'))
+      const [r, g, b, a] = strokeOf(trackOf(el))
+      expect(
+        a! < 1 || Math.hypot(r! - red[0]!, g! - red[1]!, b! - red[2]!) > 40,
+        label,
+      ).toBe(true)
+      expect(getComputedStyle(el).borderColor).not.toBe(
+        token(el, '--tsr-comp-error-flash-color'),
+      )
     }
-    for (const [i, label] of labels.entries()) {
-      await expect
-        .poll(() => getComputedStyle(byLabel(label)).color, { timeout: 1000 })
-        .toBe(color[i])
-    }
-    for (const label of labels) {
-      await expect
-        .poll(() => redness(strokeOf(trackOf(byLabel(label)))) < 2, {
-          timeout: fillMs + 300,
-        })
-        .toBe(true)
-    }
-    expect(performance.now() - start).toBeLessThan(fillMs + 300)
-    // Держится удержание и гаснет плавно за длительность угасания с замедлением.
-    await expect
-      .poll(() => arcOf(byLabel('Icon'))?.dataset.phase, {
-        timeout: 2000,
-        interval: 10,
-      })
-      .toBe('off')
-    expect(performance.now() - start).toBeGreaterThanOrEqual(780)
-    const fade = getComputedStyle(arcOf(byLabel('Icon'))!)
-    expect(fade.transitionProperty).toBe('opacity')
-    expect(fade.transitionDuration).toBe(
-      token(
-        byLabel('Icon'),
-        '--tsr-comp-error-flash-fade-duration',
-        'transition-duration',
-      ),
-    )
-    expect(fade.transitionTimingFunction).toBe(
-      token(
-        byLabel('Icon'),
-        '--tsr-comp-motion-easing-out',
-        'transition-timing-function',
-      ),
-    )
-    await new Promise(resolve => setTimeout(resolve, 150))
-    expect(
-      parseFloat(getComputedStyle(arcOf(byLabel('Icon'))!).opacity),
-    ).toBeGreaterThan(0.05)
     for (const label of labels) {
       await expect
         .poll(() => arcOf(byLabel(label)), { timeout: 2000 })
         .toBeNull()
-      expect(getComputedStyle(byLabel(label)).color).toBe(
-        color[labels.indexOf(label)],
-      )
+      expect(getComputedStyle(mark(label)!).opacity, label).toBe('1')
     }
   })
 
-  test('IR8: a failure without pending shows the contour red from transparent with the same transition, without an arc', async () => {
+  test('FB2: a failure without pending shows the failure mark at once, without a contour and without an arc', async () => {
     const screen = await render(
       <Theme>
-        <IconButton aria-label="Load" errorFlash={0}>
-          {icon}
-        </IconButton>
+        <IconButton aria-label="Load">{icon}</IconButton>
       </Theme>,
     )
     await frame()
     await screen.rerender(
       <Theme>
-        <IconButton aria-label="Load" errorFlash={1}>
+        <IconButton aria-label="Load" failure="Failed: offline">
           {icon}
         </IconButton>
       </Theme>,
     )
     const el = byLabel('Load')
-    expect(arcOf(el)!.dataset.phase).toBe('error')
-    expect(arcOf(el)!.hasAttribute('data-from-pending')).toBe(false)
-    // Дуги нет с первого кадра — хвост не проявляется и не гаснет.
-    expect(opacityOf(arcOf(el)!.querySelector('g')!)).toBe(0)
-    expect(tailFadeOf(el)).toBeUndefined()
-    // Начало — на паузе: быстрый старт за время рендера уходит далеко от нуля.
-    const turn = animationOf(el, 'trackFail')!
-    const fillMs = Number(turn.effect!.getComputedTiming().duration)
-    expect(fillMs).toBe(
-      parseFloat(
-        token(
-          el,
-          '--tsr-comp-error-flash-fill-duration',
-          'transition-duration',
-        ),
-      ) * 1000,
-    )
-    expect(keyframeEasingOf(turn)).toBe(
-      token(el, '--tsr-comp-motion-easing-out', 'transition-timing-function'),
-    )
-    turn.pause()
-    turn.currentTime = 0
-    expect(strokeOf(trackOf(el))[3]).toBe(0)
-    turn.currentTime = fillMs / 2
-    const half = strokeOf(trackOf(el))[3]!
-    expect(half).toBeGreaterThan(0)
-    expect(half).toBeLessThan(1)
-    turn.play()
-    const red = toRgba(token(el, '--tsr-comp-error-flash-color'))
-    await expect
-      .poll(() => {
-        const [r, g, b, a] = strokeOf(trackOf(el))
-        return (
-          a === 1 && Math.hypot(r! - red[0]!, g! - red[1]!, b! - red[2]!) < 2
-        )
-      })
-      .toBe(true)
+    expect(arcOf(el)).toBeNull()
+    const dot = el.querySelector<HTMLElement>('[data-failure-indicator]')!
+    expect(dot.dataset.shown).toBe('true')
+    expect(parseFloat(getComputedStyle(dot).transitionDelay)).toBe(0)
+    const ring = getComputedStyle(el)
+    expect(ring.outlineStyle).toBe('none')
+    await frame()
+    expect(arcOf(el)).toBeNull()
   })
 
-  test('IR9: a kit button with `failure` shows the error dot in its top right corner once the red contour is gone, not while pending, holding or fading the red contour', async () => {
-    const SLOW_FADE = {
-      '--tsr-comp-error-flash-fade-duration': '1s',
-    } as CSSProperties
-    const view = (pending: boolean, flash: number) => (
-      <Theme style={SLOW_FADE}>
-        <IconButton
-          aria-label="Load"
-          pending={pending}
-          errorFlash={flash}
-          failure="Failed: offline"
-        >
-          {icon}
-        </IconButton>
-      </Theme>
-    )
-    const screen = await render(view(true, 0))
-    const dot = () =>
-      byLabel('Load').querySelector<HTMLElement>('[data-failure-indicator]')!
-    expect(dot().dataset.shown).toBe('false')
-    expect(getComputedStyle(dot()).opacity).toBe('0')
-    await screen.rerender(view(false, 1))
-    expect(byLabel('Load').getAttribute('data-error-flash')).toBe('on')
-    // Пока красный контур есть — держится и гаснет, — отметки нет.
-    let sawFade = false
-    while (arcOf(byLabel('Load'))) {
-      sawFade ||= byLabel('Load').getAttribute('data-error-flash') === 'off'
-      expect(dot().dataset.shown).toBe('false')
-      expect(getComputedStyle(dot()).opacity).toBe('0')
-      await new Promise(resolve => setTimeout(resolve, 10))
-    }
-    expect(sawFade).toBe(true)
-    // Контур погас — отметка проступает.
-    expect(dot().dataset.shown).toBe('true')
-    await expect.poll(() => getComputedStyle(dot()).opacity).toBe('1')
-    const box = byLabel('Load').getBoundingClientRect()
-    const mark = dot().getBoundingClientRect()
-    expect(mark.left).toBeGreaterThan(box.left + box.width / 2)
-    expect(mark.bottom).toBeLessThan(box.top + box.height / 2)
-    expect(mark.right).toBeLessThanOrEqual(box.right)
-    expect(mark.top).toBeGreaterThanOrEqual(box.top)
-  })
-
-  test('IR32: the outline border of Button and the page size trigger leaves while pending and while the red contour holds, and comes back as the red contour starts to fade, not after it', async () => {
-    const SLOW = {
-      '--tsr-comp-error-flash-duration': '300ms',
-      '--tsr-comp-error-flash-fade-duration': '3s',
-    } as CSSProperties
-    const view = (pending: boolean, flash: number) => (
-      <Theme style={SLOW}>
-        <Button data-label="Text" pending={pending} errorFlash={flash}>
+  test('IR32: the outline border of Button and the page size trigger leaves while pending and comes back as the arc fades after a failure', async () => {
+    const view = (pending: boolean, failure?: string) => (
+      <Theme>
+        <Button data-label="Text" pending={pending} failure={failure}>
           Retry
         </Button>
         <SizeTrigger
           data-label="Size"
           className={paginationStyles.trigger}
           pending={pending}
-          errorFlash={flash}
+          failure={failure}
         >
           25
         </SizeTrigger>
       </Theme>
     )
     const labels = ['Text', 'Size']
-    const screen = await render(view(false, 0))
+    const screen = await render(view(false))
     const rest = labels.map(l => getComputedStyle(byLabel(l)).borderTopColor)
     for (const value of rest) expect(value).not.toBe('rgba(0, 0, 0, 0)')
-    const hidden = async (label: string) =>
-      expect
+    await screen.rerender(view(true))
+    for (const label of labels) {
+      await expect
         .poll(() => getComputedStyle(byLabel(label)).borderTopColor, {
           timeout: 1000,
         })
         .toBe('rgba(0, 0, 0, 0)')
-    await screen.rerender(view(true, 0))
-    for (const label of labels) await hidden(label)
-    await screen.rerender(view(false, 1))
-    for (const label of labels) {
-      expect(byLabel(label).getAttribute('data-error-flash')).toBe('on')
-      await hidden(label)
     }
-    await expect
-      .poll(() => byLabel('Text').getAttribute('data-error-flash'), {
-        timeout: 2000,
-        interval: 10,
-      })
-      .toBe('off')
-    // Красный ещё гаснет (3 с), а рамка уже вернулась.
+    await screen.rerender(view(false, 'Failed: offline'))
     for (const [i, label] of labels.entries()) {
+      expect(arcOf(byLabel(label))?.dataset.phase, label).toBe('stopping')
       await expect
         .poll(() => getComputedStyle(byLabel(label)).borderTopColor, {
           timeout: 1000,
         })
         .toBe(rest[i])
-      expect(arcOf(byLabel(label))?.dataset.phase, label).toBe('off')
     }
   })
 
@@ -868,16 +601,16 @@ describe('Pending arc: failure', () => {
     }
   })
 
-  test('IR11: with reduced motion the arc with its tail and the track are visible and still; a failure is the whole red contour at once, holds for the same duration and drops without a transition', async () => {
+  test('IR11: with reduced motion the arc with its tail and the track are visible and still; a failure drops the arc without a transition and shows the failure mark at once', async () => {
     await reducedMotion(true)
-    const view = (pending: boolean, flash: number) => (
+    const view = (pending: boolean, failure?: string) => (
       <Theme>
-        <IconButton aria-label="Load" pending={pending} errorFlash={flash}>
+        <IconButton aria-label="Load" pending={pending} failure={failure}>
           {icon}
         </IconButton>
       </Theme>
     )
-    const screen = await render(view(true, 0))
+    const screen = await render(view(true))
     const el = byLabel('Load')
     await frame()
     expect(getComputedStyle(arcOf(el)!).opacity).toBe('1')
@@ -896,25 +629,16 @@ describe('Pending arc: failure', () => {
     const first = toRgba(token(el, '--tsr-comp-pending-spinner-1'))
     expect(strokeOf(headOf(el))).toEqual(first)
     expect(strokeOf(trackOf(el))[3]).toBeCloseTo(0.15, 1)
-    await screen.rerender(view(false, 1))
-    const start = performance.now()
-    await frame()
-    await frame()
-    const red = toRgba(token(el, '--tsr-comp-error-flash-color'))
-    const [r, g, b, a] = strokeOf(trackOf(el))
-    expect(a).toBe(1)
-    expect(Math.hypot(r! - red[0]!, g! - red[1]!, b! - red[2]!)).toBeLessThan(2)
-    expect(opacityOf(arcOf(el)!.querySelector('g')!)).toBe(0)
-    for (const part of getComputedStyle(arcOf(el)!).transitionDuration.split(
-      ',',
-    )) {
-      expect(part.trim()).toBe('0s')
+    await screen.rerender(view(false, 'Failed: offline'))
+    const dot = el.querySelector<HTMLElement>('[data-failure-indicator]')!
+    expect(dot.dataset.shown).toBe('true')
+    if (arcOf(el)) {
+      for (const part of getComputedStyle(arcOf(el)!).transitionDuration.split(
+        ',',
+      )) {
+        expect(part.trim()).toBe('0s')
+      }
     }
-    await new Promise(resolve => setTimeout(resolve, 250))
-    expect(el.getAttribute('data-error-flash')).toBe('on')
-    await expect.poll(() => arcOf(el), { timeout: 2000 }).toBeNull()
-    // Удержание 800 мс, угасания нет — дуга снята вскоре после удержания.
-    expect(performance.now() - start).toBeGreaterThanOrEqual(780)
-    expect(performance.now() - start).toBeLessThan(1100)
+    await expect.poll(() => arcOf(el), { timeout: 500 }).toBeNull()
   })
 })

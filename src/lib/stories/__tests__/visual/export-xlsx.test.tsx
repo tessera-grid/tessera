@@ -10,7 +10,8 @@ import {
   type ExportFormat,
   type ExportOptions,
 } from '../../../plugins/dataExport'
-import { humanClick } from '../helpers'
+import { failureShownOn, humanClick } from '../helpers'
+import { tableLabels } from '../labels'
 
 // Экспорт в Excel (ADR 0073): асинхронный формат в кнопке (XL7) и выгрузка `.xlsx`
 // настоящим кликом (XL9). Генератор и содержимое файла — модульные XL1–XL6, XL8, XL12;
@@ -95,7 +96,7 @@ const deferredFormat = () => {
 }
 
 describe('dataExport — Excel', () => {
-  test('XL7: serialize с Promise — кнопка ждёт до скачивания; отказ логируется, кнопка вспыхивает, onExported не вызван', async () => {
+  test('XL7: serialize с Promise — кнопка ждёт до скачивания; отказ логируется, на кнопке отметка отказа, onExported не вызван', async () => {
     const downloads = captureDownloads()
     const onExported = vi.fn()
     const ok = deferredFormat()
@@ -117,16 +118,18 @@ describe('dataExport — Excel', () => {
 
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const failing = deferredFormat()
-    const flashBefore = () => button()!.getAttribute('data-error-flash')
     await renderGrid({ ...DIRECT, formats: [failing.format], onExported })
-    const initialFlash = flashBefore()
+    expect(failureShownOn(button())).toBe(false)
     await humanClick(button()!)
     await expect.poll(() => button()!.getAttribute('aria-busy')).toBe('true')
     failing.control.reject(new Error('sheet broke'))
     await expect.poll(() => error.mock.calls.length).toBeGreaterThan(0)
     expect(String(error.mock.calls[0]![0])).toContain('sheet broke')
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
-    await expect.poll(flashBefore).not.toBe(initialFlash)
+    await expect.poll(() => failureShownOn(button())).toBe(true)
+    expect(button()).toHaveAccessibleDescription(
+      tableLabels.actionFailedRetry('sheet broke'),
+    )
     expect(downloads).toHaveLength(1)
     expect(onExported).toHaveBeenCalledTimes(1)
   })
@@ -155,5 +158,39 @@ describe('dataExport — Excel', () => {
     const bytes = new Uint8Array(await downloads[0]!.blob.arrayBuffer())
     // Подпись zip-архива: локальный заголовок `PK\x03\x04`.
     expect([...bytes.slice(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04])
+  })
+})
+
+describe('dataExport — итог только на кнопке (ADR 0136)', () => {
+  test('FB6: выгрузка с промисом — ожидание и отметка отказа только на кнопке; при успехе ни кнопка, ни таблица не вспыхивают', async () => {
+    const flashes = () =>
+      document.querySelectorAll(
+        '[data-flash], [data-column-flash], [class*="linear-progress"][data-error-flash]',
+      ).length
+    captureDownloads()
+    const ok = deferredFormat()
+    const success = await renderGrid({ ...DIRECT, formats: [ok.format] })
+    await humanClick(button()!)
+    await expect.poll(() => button()!.getAttribute('aria-busy')).toBe('true')
+    ok.control.resolve('done')
+    await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
+    await new Promise(resolve => setTimeout(resolve, 200))
+    expect(flashes(), 'успех').toBe(0)
+    expect(failureShownOn(button())).toBe(false)
+    await success.unmount()
+
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failing = deferredFormat()
+    await renderGrid({ ...DIRECT, formats: [failing.format] })
+    await humanClick(button()!)
+    failing.control.reject(new Error('sheet broke'))
+    await expect.poll(() => failureShownOn(button())).toBe(true)
+    expect(flashes(), 'отказ').toBe(0)
+    expect(
+      document.querySelectorAll('[data-failure-indicator][data-shown="true"]')
+        .length,
+      'отметка только на кнопке',
+    ).toBe(1)
+    error.mockRestore()
   })
 })

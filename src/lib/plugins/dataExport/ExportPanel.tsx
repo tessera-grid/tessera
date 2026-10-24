@@ -43,8 +43,8 @@ export interface ExportPanelProps {
   busy: boolean
   /** Клиентская выгрузка асинхронным форматом: блик и блокировка кнопки. */
   pending: boolean
-  /** Число отказов асинхронного формата — ключ вспышки кнопки. */
-  failures: number
+  /** Текст отметки отказа выгрузки (ADR 0136). */
+  failure?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onRun: (settings: ExportSettings, isServer: boolean) => void
@@ -151,7 +151,7 @@ export const ExportPanel = ({
   axes,
   busy,
   pending,
-  failures,
+  failure,
   open,
   onOpenChange,
   onRun,
@@ -200,7 +200,7 @@ export const ExportPanel = ({
         label={labels.export}
         icon={<DownloadIcon width={16} height={16} />}
         pending={pending}
-        errorFlash={failures}
+        failure={failure}
         aria-busy={busy || undefined}
         data-testid="export-button"
         render={<Popover.Trigger />}

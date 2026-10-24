@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import axe from 'axe-core'
 import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
@@ -8,6 +9,7 @@ import {
   bodyRows,
   getScroller,
   headCells,
+  failureShownOn,
   humanClick,
   scrollToEnd,
 } from '../helpers'
@@ -21,6 +23,10 @@ import {
 } from './a11y-helpers'
 import { pinFirstColumn } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { cellEditing } from '../../../plugins'
+import type { CellEditingState } from '../../../plugins/cellEditing/types'
 
 // Асинхронный контракт бизнес-колбэков (ADR 0041, AS2–AS3, AS5–AS6, AS11, AS13, AS15):
 // сохранение с промисом отделяет ячейку в ожидание, правка других ячеек не ждёт
@@ -345,8 +351,7 @@ describe('Асинхронный контракт бизнес-колбэков'
     await userEvent.keyboard('{Enter}')
     await expect.poll(() => server.settle.length).toBe(2)
     server.settle[1].reject(new Error('Server down'))
-    // Отметка проступает после вспышки отказа.
-    await expect.poll(() => failureShown(1), { timeout: 5000 }).toBe(true)
+    await expect.poll(() => failureShown(1)).toBe(true)
     expect(ageCell(0).querySelector('[aria-busy="true"]')).not.toBeNull()
     await inBothThemes(async () => {
       expect((await run()).violations).toEqual([])
@@ -654,12 +659,7 @@ describe('Асинхронная правка: значение и вспышк�
   })
 
   test('CF10: ячейки в ожидании, в «ошибке» и со вспышкой проходят axe; текст над вспышкой держит 4.5:1 в обеих темах', async () => {
-    // Контур отказа кнопки по умолчанию держится столько же, сколько вспышка: отметка
-    // проступает после него.
-    restore = themeTokens({
-      '--tsr-comp-flash-duration': '60000ms',
-      '--tsr-comp-error-flash-duration': '300ms',
-    })
+    restore = themeTokens({ '--tsr-comp-flash-duration': '60000ms' })
     const server = controlledServer()
     await editableGrid({ onCellEdit: server.onCellEdit })
     await waitForGrid()
@@ -670,8 +670,7 @@ describe('Асинхронная правка: значение и вспышк�
     server.settle[1].reject(new Error('Server down'))
     server.settle[2].resolve()
     await expect.poll(() => savedAt(2)).toBe(true)
-    // Отметка проступает после вспышки отказа.
-    await expect.poll(() => failureShown(1), { timeout: 5000 }).toBe(true)
+    await expect.poll(() => failureShown(1)).toBe(true)
     expect(editButtonOf(0)!.getAttribute('aria-busy')).toBe('true')
 
     const over = (top: number[], bottom: number[]) => [
@@ -709,8 +708,7 @@ describe('Ожидание и отказ сохранения на кнопке 
     restore = () => {}
   })
 
-  test('IR16: правка ячейки — пока сохранение ждёт, кнопка правки на месте и в ожидании; отказ — заполнение и отметка на ней, нажатие открывает правку с черновиком; ячейка показывает только значение', async () => {
-    restore = themeTokens({ '--tsr-comp-error-flash-duration': '300ms' })
+  test('IR16: правка ячейки — пока сохранение ждёт, кнопка правки на месте и в ожидании; отказ — дуга встаёт и отметка на ней, нажатие открывает правку с черновиком; ячейка показывает только значение', async () => {
     const wrapperOf = (index: number) =>
       ageCell(index).querySelector<HTMLElement>('.cell__button')!
     /** Кнопка видна и встала: проявление закончено. */
@@ -761,14 +759,11 @@ describe('Ожидание и отказ сохранения на кнопке 
       expect(onlyValue(0)).toBe(true)
 
       server.settle[0].reject(new Error('Server down'))
-      await expect
-        .poll(() => editButtonOf(0)!.getAttribute('data-error-flash'))
-        .toBe('on')
-      expect(
-        editButtonOf(0)!.querySelector<HTMLElement>('[data-pending-arc]')!
-          .dataset.phase,
-      ).toBe('error')
       await expect.poll(() => failureShown(0)).toBe(true)
+      expect(
+        editButtonOf(0)!.querySelector<HTMLElement>('[data-pending-arc]')
+          ?.dataset.phase ?? 'stopping',
+      ).toBe('stopping')
       const described = editButtonOf(0)!
         .getAttribute('aria-describedby')!
         .split(' ')[0]!
@@ -787,5 +782,86 @@ describe('Ожидание и отказ сохранения на кнопке 
       await userEvent.keyboard('{Escape}')
       await screen.unmount()
     }
+  })
+})
+
+describe('Носитель правки — кнопка правки при любом запуске (ADR 0127)', () => {
+  test('IR17: правка с клавиатуры (F2, Enter) и по editing приложения — ожидание и отметка отказа на той же кнопке правки', async () => {
+    const pendingOn = (index: number) =>
+      editButtonOf(index)?.getAttribute('aria-busy') === 'true'
+    // Клавиатура: F2 на ячейке открывает правку, Enter сохраняет.
+    const server = controlledServer()
+    const screen = await editableGrid({
+      onCellEdit: server.onCellEdit,
+      enableKeyboardNavigation: true,
+    })
+    await waitForGrid()
+    for (const [index, key] of [
+      [0, 'F2'],
+      [1, 'Enter'],
+    ] as const) {
+      await userEvent.click(ageCell(index))
+      await userEvent.keyboard(`{${key}}`)
+      await expect
+        .poll(() => ageCell(index).querySelector('input'))
+        .not.toBeNull()
+      await userEvent.keyboard('{Control>}a{/Control}5{Enter}')
+      await expect.poll(() => pendingOn(index), { message: key }).toBe(true)
+      server.settle.at(-1)!.reject(new Error('Server down'))
+      await expect.poll(() => failureShown(index), { message: key }).toBe(true)
+    }
+    await screen.unmount()
+
+    // Приложение открыло правку своим состоянием editing.
+    const appServer = controlledServer()
+    const rows = [
+      { id: 'a', name: 'Ann', age: 30 },
+      { id: 'b', name: 'Bob', age: 40 },
+    ]
+    const AppEditing = () => {
+      const [editing, setEditing] = useState<CellEditingState>({
+        active: {
+          cell: { rowId: 'a', columnId: 'age' },
+          draft: '31',
+          original: 30,
+        },
+        submitted: {},
+      })
+      const table = useCreateTable({
+        columns: [
+          { id: 'name', accessorKey: 'name', header: 'Name' },
+          { id: 'age', accessorKey: 'age', header: 'Age' },
+        ] as never,
+        data: rows,
+        getRowId: (row: { id: string }) => row.id,
+        plugins: [
+          cellEditing({
+            canEditCell: allow,
+            editing,
+            onEditingChange: setEditing,
+            onCellEdit: appServer.onCellEdit,
+          }),
+        ],
+      })
+      return (
+        <div style={{ height: 300, width: 500 }}>
+          <DataGrid table={table as never} />
+        </div>
+      )
+    }
+    await render(<AppEditing />)
+    const cell = () =>
+      document.querySelector<HTMLElement>(
+        '.data-grid__body-row[data-row-id="a"] .data-grid__body-cell[data-column-id="age"]',
+      )!
+    const input = () => cell().querySelector<HTMLInputElement>('input')
+    await expect.poll(input).not.toBeNull()
+    input()!.focus()
+    await userEvent.keyboard('{Enter}')
+    const button = () =>
+      cell().querySelector<HTMLElement>('.cell__button button')
+    await expect.poll(() => button()?.getAttribute('aria-busy')).toBe('true')
+    appServer.settle.at(-1)!.reject(new Error('Server down'))
+    await expect.poll(() => failureShownOn(button())).toBe(true)
   })
 })

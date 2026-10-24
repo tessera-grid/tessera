@@ -22,6 +22,7 @@ import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
 import type { RowMoveFailed } from './rowDraggingFeature'
 import { flashOutcome } from '../../core/flashes/flashFeature'
+import { withoutFailure } from '../../core/failedAttempts'
 import type { RowDraggingHooks } from './types'
 
 type Updater<T> = (prev: T) => T
@@ -214,7 +215,10 @@ const reject = (
     })
   }
   flashOutcome(table, { row: rowId }, 'reverted')
-  table.setRowMoveFailed?.(prev => ({ ...prev, [rowId]: entry.attempt }))
+  table.setRowMoveFailed?.(prev => ({
+    ...prev,
+    [rowId]: { attempt: entry.attempt, error: reason },
+  }))
   const labels = announcerLabels(table) ?? DEFAULT_LABELS
   const error = rejectionText(reason) ?? labels.moveRowFailed
   announceLabel(table, all => all.announceMoveFailed(error))
@@ -235,6 +239,8 @@ export const commitRowMove = (
 ) => {
   const t = table as MoveTable
   const { rowId, lazy } = commit
+  // Новый перенос строки — повтор: отметка прошлого отказа снимается (IR13).
+  t.setRowMoveFailed?.(prev => withoutFailure(prev, rowId))
   if (!lazy) {
     if (hasLazyMoves(readRowMoves(table))) {
       writeDataMove(t, {

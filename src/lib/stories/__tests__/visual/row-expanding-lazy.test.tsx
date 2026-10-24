@@ -7,6 +7,7 @@ import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 import { composed } from '../stories'
 import {
   getScroller,
+  failureShownOn,
   humanClick,
   pendingArcOf,
   revealCellButtons,
@@ -27,7 +28,7 @@ import { tableLabels } from '../labels'
 // Грид — история RowExpanding с данными без `subRows`; `hasChildren` читает
 // `childCount`, `loadChildren` отдаёт ответы, которыми управляет тест. Состояние
 // читается из контракта DOM: `data-row-id`, `data-expanded`, `aria-busy`,
-// `aria-expanded` тоггла, `data-error-flash` и live-область грида.
+// `aria-expanded` тоггла, отметка отказа на нём и live-область грида.
 
 interface Person {
   id: string
@@ -152,20 +153,18 @@ describe('Row expanding: lazy children', () => {
     await expect.poll(() => toggleOf('lazy')).not.toBeNull()
   })
 
-  test('RE24: a failure without a saved answer collapses the row, flashes the toggle and announces the error text', async () => {
+  test('RE24: a failure without a saved answer collapses the row, marks the toggle with the failure and announces the error text', async () => {
     await renderLazy(() => Promise.reject(new Error('Server down')))
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)
-    await expect
-      .poll(() => toggleOf('lazy')!.getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(toggleOf('lazy'))).toBe(true)
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('false')
     await expect
       .poll(liveText)
       .toContain(tableLabels.announceExpandFailed('Server down'))
   })
 
-  test('RE25: a failure with a saved answer keeps the row expanded with the old children; flash and announcement are the same', async () => {
+  test('RE25: a failure with a saved answer keeps the row expanded with the old children; the failure mark and announcement are the same', async () => {
     const load = vi
       .fn<Loader>()
       .mockReturnValueOnce(kids('lazy', 2))
@@ -176,9 +175,7 @@ describe('Row expanding: lazy children', () => {
     await waitRow('lazy-c1')
     await humanClick(toggleOf('lazy')!)
     await humanClick(toggleOf('lazy')!)
-    await expect
-      .poll(() => toggleOf('lazy')!.getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(toggleOf('lazy'))).toBe(true)
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('true')
     expect(rowOf('lazy-c1')).not.toBeNull()
     await expect
@@ -314,7 +311,7 @@ describe('Row expanding: lazy children', () => {
     expect(checkbox('lazy')!.getAttribute('aria-checked')).toBe('true')
   })
 
-  test('RE37: a rejected onExpandRow promise without loadChildren gives the same flash and announcement', async () => {
+  test('RE37: a rejected onExpandRow promise without loadChildren gives the same failure mark and announcement', async () => {
     const tree = [{ ...person('p'), subRows: [person('p-c0')] }, person('q')]
     await render(
       <composed.RowExpandingPlayground
@@ -326,9 +323,7 @@ describe('Row expanding: lazy children', () => {
     )
     await waitRow('p')
     await humanClick(toggleOf('p')!)
-    await expect
-      .poll(() => toggleOf('p')!.getAttribute('data-error-flash'))
-      .toBe('on')
+    await expect.poll(() => failureShownOn(toggleOf('p'))).toBe(true)
     expect(rowOf('p')!.getAttribute('data-expanded')).toBe('false')
     await expect
       .poll(liveText)

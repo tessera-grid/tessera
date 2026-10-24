@@ -30,64 +30,64 @@ const frames = (count: number) =>
     step(count)
   })
 
-// Вспышка короткая: дуга отказа уходит за несколько кадров.
+// Остановка дуги короткая: дуга уходит за несколько кадров.
 const SHORT = {
-  '--tsr-comp-error-flash-duration': '30ms',
-  '--tsr-comp-error-flash-fade-duration': '30ms',
+  '--tsr-comp-pending-stop-duration': '30ms',
 } as CSSProperties
 
 describe('Дуга кнопки и нажатие', () => {
-  test('BS18: смена фазы посреди нажатия клик не теряет — во всех движках; дуга ожидания и отказа появляется и уходит, не отнимая нажатие', async () => {
+  test('BS18: смена фазы посреди нажатия клик не теряет — во всех движках; дуга ожидания и её остановка при отказе появляются и уходят, не отнимая нажатие', async () => {
     let clicks = 0
-    const view = (errorFlash: number) => (
+    // Ожидание снаружи (`aria-busy`, ADR 0116): дуга есть, нажатия не глушатся.
+    const view = (busy: boolean, failure?: string) => (
       <div className="data-grid-theme" style={{ padding: 20, ...SHORT }}>
         <div>
           <IconButton
             aria-label="Load"
             onClick={() => clicks++}
-            errorFlash={errorFlash}
+            aria-busy={busy || undefined}
+            failure={failure}
           >
             <SvgIcon width={20} height={20} />
           </IconButton>
         </div>
       </div>
     )
-    const screen = await render(view(0))
+    const screen = await render(view(false))
     const center = () => {
       const box = button().getBoundingClientRect()
       return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
     }
 
-    // Дуга отказа появляется между нажатием и отпусканием, без кадра между ними —
-    // как под нагрузкой.
+    // Дуга появляется между нажатием и отпусканием, без кадра между ними — как под
+    // нагрузкой; затем отказ останавливает её.
     const presses = 10
     for (let i = 1; i <= presses; i++) {
       await mouse.realMouseDown(center())
-      await screen.rerender(view(i))
+      await screen.rerender(view(true))
       expect(pendingArcOf(button()), `нажатие ${i}`).not.toBeNull()
       await mouse.realMouseUp()
+      await screen.rerender(view(false, `Failed ${i}`))
       // Дуга уходит: следующее нажатие начинается без неё.
       await expect
         .poll(() => pendingArcOf(button()), { timeout: 2000 })
         .toBeNull()
+      await screen.rerender(view(false))
       await frames(2)
     }
     expect(clicks).toBe(presses)
 
-    // Дуга уходит посреди нажатия: нажатие во время угасания, отпускание — после.
+    // Дуга уходит посреди нажатия: нажатие во время остановки, отпускание — после.
     for (let i = presses + 1; i <= presses * 2; i++) {
-      await screen.rerender(view(i))
-      await expect
-        .poll(() => button().getAttribute('data-error-flash'), {
-          timeout: 2000,
-          interval: 5,
-        })
-        .toBe('off')
+      await screen.rerender(view(true))
+      await screen.rerender(view(false, `Failed ${i}`))
+      expect(pendingArcOf(button())?.dataset.phase).toBe('stopping')
       await mouse.realMouseDown(center())
       await expect
         .poll(() => pendingArcOf(button()), { timeout: 2000, interval: 5 })
         .toBeNull()
       await mouse.realMouseUp()
+      await screen.rerender(view(false))
       await frames(2)
     }
     expect(clicks).toBe(presses * 2)

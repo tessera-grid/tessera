@@ -3,7 +3,11 @@
  * данных, и пустой ответ удаляются, ожидание ушедшей строки снимается (её поздний ответ
  * не применится); ответы оставшихся строк живут по id.
  */
-import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
+import {
+  clearExpandFailed,
+  readLoadedChildren,
+  setLoadedAnswer,
+} from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 
 interface ReconcileTable {
@@ -52,4 +56,6 @@ export const reconcileLoadedChildren = (table: unknown) => {
   if (gone.length > 0) {
     t.setRowExpandPending?.(prev => without(prev, gone))
   }
+  // Отметка отказа строки, ушедшей из данных, снимается (IR14).
+  clearExpandFailed(table, id => !!rowsById[id])
 }

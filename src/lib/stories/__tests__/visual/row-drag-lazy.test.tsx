@@ -15,7 +15,12 @@ import {
 } from '../../../plugins'
 import type { RowDragEnd } from '../../../plugins'
 import type { Row } from '../../../types'
-import { arcHeadOf, pendingArcOf, settleRowMotion } from '../helpers'
+import {
+  arcHeadOf,
+  failureShownOn,
+  pendingArcOf,
+  settleRowMotion,
+} from '../helpers'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 import {
   HANDLE,
@@ -455,7 +460,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     }
   })
 
-  test('LT6: отказ ленивого переноса — строка возвращается, ручка вспыхивает, отказ объявлен', async () => {
+  test('LT6: отказ ленивого переноса — строка возвращается, на ручке отметка отказа, отказ объявлен', async () => {
     const screen = await renderTree({ asyncMove: true })
     try {
       await expand('node-0', 'node-0-2')
@@ -465,9 +470,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         .poll(() => order().slice(0, 2))
         .toEqual(['node-0', 'node-0-0'])
       expect(depthOf(rowById('node-0-0')!)).toBe(1)
-      await expect
-        .poll(() => handleOf('node-0-0').getAttribute('data-error-flash'))
-        .toBe('on')
+      await expect.poll(() => failureShownOn(handleOf('node-0-0'))).toBe(true)
       await expect
         .poll(announced)
         .toContain(ENGLISH_LABELS.announceMoveFailed('Server said no'))
@@ -501,9 +504,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         'group-0-1',
       ])
       expect(harness.onRowOrderChange).toHaveBeenCalledTimes(4)
-      await expect
-        .poll(() => handleOf('group-0-0').getAttribute('data-error-flash'))
-        .toBe('on')
+      await expect.poll(() => failureShownOn(handleOf('group-0-0'))).toBe(true)
     } finally {
       await screen.unmount()
     }
@@ -695,7 +696,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     }
   })
 
-  test('LT15: ручка строки — квадратная кнопка кита, колонка 40px; в ожидании и при вспышке ошибки иконка видна без наведения, в покое — только при наведении', async () => {
+  test('LT15: ручка строки — квадратная кнопка кита, колонка 40px; в ожидании и с отметкой отказа иконка видна без наведения, в покое — только при наведении', async () => {
     const screen = await renderTree({ asyncMove: true })
     /** Значение токена темы в px — тем же расчётом, что у кнопки. */
     const tokenPx = (token: string) => {
@@ -753,24 +754,15 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       expect(iconOpacity('row-2'), 'ожидание').toBe(1)
 
       await settleMoves(false, new Error('no'))
-      await expect
-        .poll(() => handleOf('row-2').getAttribute('data-error-flash'))
-        .toBe('on')
-      expect(iconOpacity('row-2'), 'вспышка').toBe(1)
-      await expect
-        .poll(() => handleOf('row-2').hasAttribute('data-error-flash'), {
-          timeout: 4000,
-        })
-        .toBe(false)
-      await expect
-        .poll(() => iconOpacity('row-2'), { message: 'после вспышки' })
-        .toBe(0)
+      await expect.poll(() => failureShownOn(handleOf('row-2'))).toBe(true)
+      await sleep(400)
+      expect(iconOpacity('row-2'), 'отметка').toBe(1)
     } finally {
       await screen.unmount()
     }
   })
 
-  test('LT13: axe с контрастом в обеих темах во время ожидания и после отказа; высокая контрастность — свет ожидания ручки Highlight, ошибка — Mark', async () => {
+  test('LT13: axe с контрастом в обеих темах во время ожидания и после отказа; высокая контрастность — свет ожидания ручки Highlight', async () => {
     const screen = await renderTree({ asyncMove: true })
     const sys = (color: string) => {
       const probe = document.createElement('span')
@@ -796,10 +788,6 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         )
         expect(result.violations).toEqual([])
       })
-    // Красный контур держится 300 мс — меньше, чем идут откат строки и смена режима.
-    document
-      .querySelector<HTMLElement>('.data-grid-theme')!
-      .style.setProperty('--tsr-comp-error-flash-duration', '10s')
     try {
       await expand('node-0', 'node-0-2')
       await dropAfter('node-0-0', 'row-0', 0)
@@ -815,17 +803,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         await pointer.forcedColors(false)
       }
       await settleMoves(false, new Error('no'))
-      await expect
-        .poll(() => handleOf('node-0-0').getAttribute('data-error-flash'))
-        .toBe('on')
-      if (server.browser !== 'webkit') {
-        await pointer.forcedColors(true)
-        const error = getComputedStyle(handleOf('node-0-0')).getPropertyValue(
-          '--tsr-comp-error-flash-color',
-        )
-        expect(toRgba(error.trim())).toEqual(sys('Mark'))
-        await pointer.forcedColors(false)
-      }
+      await expect.poll(() => failureShownOn(handleOf('node-0-0'))).toBe(true)
       await checkAxe()
     } finally {
       await pointer.forcedColors(false)

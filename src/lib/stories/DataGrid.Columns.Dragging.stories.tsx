@@ -86,6 +86,8 @@ const afterRows =
   }
 
 const HANDLE = '.drag__handler--column'
+/** Отметка отказа на ручке (ADR 0136). */
+const FAILURE = '[data-failure-indicator]'
 const COLUMN_CLOUD = '.data-grid-head__cell--overlay'
 
 /** Колонки шапки слева направо, как их видит человек. */
@@ -332,15 +334,6 @@ const answerColumnSaves = (ok: boolean) => {
  * Держит вспышку отказа на время шага (ADR 0130, DG6): матрица контраста и снимок
  * застают сам отказ, а не угасание красного контура.
  */
-const holdErrorFlash = (canvas: HTMLElement, hold: boolean) => {
-  const theme = canvas
-    .querySelector('.data-grid__container')!
-    .closest<HTMLElement>('.data-grid-theme')!
-  if (hold)
-    theme.style.setProperty('--tsr-comp-error-flash-duration', '600000ms')
-  else theme.style.removeProperty('--tsr-comp-error-flash-duration')
-}
-
 const busyHandle = (root: ParentNode, id: string) =>
   root
     .querySelector(`${HEAD}[data-column-id="${id}"] ${HANDLE}`)
@@ -508,10 +501,9 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
     })
     await step(COLUMN_SERVER[3]!.title, async () => {
       const before = headOrder(canvas)
-      holdErrorFlash(canvas, true)
       await guideNext(canvas)
       await until(() =>
-        expect(handle('lastName')).toHaveAttribute('data-error-flash', 'on'),
+        expect(handle('lastName').querySelector(FAILURE)).not.toBeNull(),
       )
       await waitFor(() => expect(headOrder(canvas)).toEqual(before), slow)
       await expect(head('lastName')).toHaveAttribute(
@@ -521,14 +513,13 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       await releaseFocus()
     })
     await step(COLUMN_SERVER[4]!.title, async () => {
-      holdErrorFlash(canvas, false)
       await guideNext(canvas)
       await until(() =>
         expect(head('age')).toHaveAttribute('data-column-flash', 'reverted'),
       )
       await expect(movedRight(canvas, 'age')).toBe(true)
       await waitFor(
-        () => expect(handle('age')).not.toHaveAttribute('data-error-flash'),
+        () => expect(handle('age').querySelector(FAILURE)).not.toBeNull(),
         slow,
       )
       await releaseFocus()

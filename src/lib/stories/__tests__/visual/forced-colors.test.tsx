@@ -633,21 +633,21 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('HC6: дуга ожидания кнопки — цветом Highlight; отказ — контур цветом Mark (ADR 0127)', async () => {
+  test('FB7: forced-colors — дуга ожидания кнопки цветом Highlight; отметка отказа видна цветом Mark; заливки Mark у кнопки в отказе нет', async () => {
     const Button = ({
       pending,
-      flash,
+      failure,
     }: {
       pending: boolean
-      flash: number
+      failure?: string
     }) => (
       <div className="data-grid-theme" style={{ padding: 20 }}>
-        <IconButton aria-label="Load" pending={pending} errorFlash={flash}>
+        <IconButton aria-label="Load" pending={pending} failure={failure}>
           <SvgIcon width={20} height={20} />
         </IconButton>
       </div>
     )
-    const screen = await render(<Button pending flash={0} />)
+    const screen = await render(<Button pending />)
     const button = () => document.querySelector('button')!
     const arc = () => pendingArcOf(button())!
     const highlight = toRgba(sys('Highlight'))
@@ -661,10 +661,17 @@ describe('Высокая контрастность (ADR 0087)', () => {
     // Дорожки нет: бледный `Highlight` — не системный цвет.
     expect(toRgba(style(arcTrackOf(arc())).stroke)[3]).toBe(0)
     await frame()
-    await screen.rerender(<Button pending={false} flash={1} />)
-    expect(button().getAttribute('data-error-flash')).toBe('on')
-    // Отказ — сразу весь контур `Mark`, без перетекания из смеси.
-    expect(toRgba(style(arcTrackOf(arc())).stroke)).toEqual(toRgba(sys('Mark')))
+    await screen.rerender(<Button pending={false} failure="Failed: offline" />)
+    const mark = button().querySelector<HTMLElement>(
+      '[data-failure-indicator]',
+    )!
+    expect(mark.dataset.shown).toBe('true')
+    const markRgb = toRgba(sys('Mark'))
+    expect(toRgba(style(mark).backgroundColor)).toEqual(markRgb)
+    // У кнопки нет ни заливки, ни контура Mark — сигнал момента на цели.
+    expect(toRgba(style(button()).backgroundColor)).not.toEqual(markRgb)
+    await expect.poll(() => pendingArcOf(button())).toBeNull()
+    await screen.unmount()
   })
 
   test('HC8: линии дерева видны цветом GrayText', async () => {

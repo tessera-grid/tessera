@@ -75,11 +75,12 @@
   бледная дорожка (оттенок дуги силой `--tsr-comp-pending-track-strength`) и бежит дуга с
   хвостом толщиной `--tsr-comp-pending-ring-width` и длиной `--tsr-comp-pending-arc`
   процентов периметра; круг — 0,5 `--tsr-comp-pending-glow-duration`, цвет перетекает
-  `--tsr-comp-pending-spinner-1…4`. Отказ `errorFlash` — дуга встаёт и за
-  `--tsr-comp-error-flash-fill-duration` гаснет, а дорожка краснеет
-  (`--tsr-comp-error-flash-color`); красный контур держится `-duration` и гаснет за
-  `-fade-duration` — по умолчанию ритм вспышки итога, `--tsr-comp-flash-duration` и
-  `--tsr-comp-flash-fade-duration`; с `failure`, когда он погас, остаётся точка отказа. Дуга — SVG-слой
+  `--tsr-comp-pending-spinner-1…4`. Отказ (`failure`, ADR
+  [0136](../decisions/0136-outcome-on-target-not-button.md)) — дуга встаёт и вместе с
+  дорожкой гаснет за `--tsr-comp-pending-stop-duration`, контур не краснеет; точка
+  отказа появляется сразу на месте бабла (`--tsr-comp-indicator-inset`), в высокой
+  контрастности — `Mark`. Токены `--tsr-comp-error-flash-*` — только у красного света
+  под шапкой (`LinearProgress`). Дуга — SVG-слой
   `PendingArc` последним ребёнком кнопки (дорожка — первый `rect`, хвост — `g` из восьми
   отрезков), радиус — из её `border-radius`; `--tsr-ring-border` — рамка кнопки, от
   которой отсчитан внешний край. У спиннера пункта меню — та же дорожка и дуга

@@ -109,10 +109,7 @@
 }
 
 /* Своя тень не перебивает кольцо фокуса: кольцо — поверх тени (UB11). */
-.iconButton[data-variant='overlay']:focus-visible:not(
-    [aria-busy='true'],
-    [data-error-flash='on']
-  ) {
+.iconButton[data-variant='overlay']:focus-visible:not([aria-busy='true']) {
   box-shadow:
     0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring),
     var(--tsr-comp-shadow-action);

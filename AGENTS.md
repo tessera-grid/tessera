@@ -788,7 +788,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       и `storyScenarios` (SN7–SN8 — у каждого сценария таблицы «Сценарии»
       ADR своя история с `parameters.scenario`, один к одному; SN11–SN13 — `play`
       истории сценария только в тестах каталога, мета без `play`, три сборки историй:
-      `*.dev` — ни в одной, `*.vr` — не в публичной); панель гайда — `guide-panel` (SN14–SN15, SN17, SN21–SN26 —
+      `*.dev` — ни в одной, `*.vr` — не в публичной)); панель гайда — `guide-panel` (SN14–SN15, SN17, SN21–SN26 —
       свёрнута по умолчанию и плавное раскрытие, заливка полоски и затем шаг, откат «Назад», переход к шагу нажатием, шаги одной высоты, воспроизведение,
       уменьшенное движение, значок не обрезан, конфетти следуют за значком; SN33 — шаг назад через действие возвращает таблицу в состояние шага; SN34 — линия прогресса свёрнутой панели; SN35 — нажатие на панель не забирает фокус у таблицы) и `play` песочницы
       `Tessera/Common/Guide panel` (SN16 — последний шаг выполняется при переходе, SN18 — лента шагов, SN19 — узкая
@@ -951,15 +951,23 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `tooltip-pass-through` (TP1–TP2 —
       подсказка без обрезки пропускает указатель насквозь, W8 сужен,
       [ADR 0100](docs/decisions/0100-pass-through-tooltips.md)); `button-states` (BS1, BS2,
-      BS8, BS13, BS19 — занятость `pending`, вспышка `errorFlash`, угасание дуги),
+      BS13, BS19 — занятость `pending`, отметка отказа, угасание и остановка дуги),
       `ring-press` (BS18 — смена фазы дуги посреди нажатия не теряет клик, ещё и в
       `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md));
-      `pending-arc` (IR1–IR11, IR31–IR32 — дуга по контуру кнопки, её длина и круг, рамка
-      и тень, занятость без наведения, кольцо фокуса снаружи, красное заполнение и
-      угасание, отметка `failure` и её текст, уменьшенное движение, приглушённая подпись
-      занятой кнопки, рамка с началом угасания), `play` истории
-      «UI/IconButton — Async action» (IR12); помощник `pendingArcOf` из
-      `__tests__/helpers.tsx` ([ADR 0127](docs/decisions/0127-initiator-pending-and-failure.md));
+      `pending-arc` (IR1–IR6, IR10–IR11, IR31–IR32 — дуга по контуру кнопки, её длина и
+      круг, рамка и тень, занятость без наведения, кольцо фокуса снаружи, текст отметки
+      `failure`, уменьшенное движение, приглушённая подпись занятой кнопки, рамка после
+      остановки дуги; FB1–FB2 — отказ: дуга встаёт и гаснет, отметка сразу, без контура),
+      `play` истории «UI/IconButton — Async action» (IR12); отметки у носителей —
+      `failure-marks` (IR13, IR19–IR20 — снятие повтором и успехом, текст у каждого
+      носителя, виртуализация, сортировка, страница), IR14 — модульный в
+      `serverActions.dom`, IR17 — в `async-callbacks`, IR18 — в `menu-actions-async`;
+      итог на цели, а не на кнопке — FB4 в `column-drag-async`, FB5 в `server-actions`,
+      FB6 в `export-xlsx`, FB7 в `forced-colors`, FB8–FB9 в `active-state`, модульные FB3
+      (`derivedButtons`) и FB10 (`buttonFailureStyles`); помощники `pendingArcOf` и
+      `failureShownOn` из `__tests__/helpers.tsx`
+      ([ADR 0127](docs/decisions/0127-initiator-pending-and-failure.md),
+      [ADR 0136](docs/decisions/0136-outcome-on-target-not-button.md));
       `button` (BN1–BN6, BN9–BN11 — кнопка с подписью `Button`: токены, `outline` и `ghost`,
       семейство F5, ожидание, высокая контрастность, axe, встроенные кнопки, размер и вес
       подписи, отступ при иконке), модульные

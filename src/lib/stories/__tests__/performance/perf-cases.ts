@@ -169,7 +169,6 @@ export const actionStatusSeed = (rows: number): TesseraFeatureEntry => {
             : {
                 failed: true,
                 error: new Error('Server down'),
-                flash: 1,
                 action,
                 menu: true,
               }

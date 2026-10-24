@@ -29,7 +29,16 @@ export const humanClick = (element: Element) =>
 export const pendingArcOf = (button: Element) =>
   button.querySelector<SVGSVGElement>(':scope > svg[data-pending-arc]')
 
-/** Дорожка дуги — весь контур; при отказе она краснеет. */
+/**
+ * Отметка отказа на кнопке видна (ADR 0127, ADR 0136): точка показана, ожидание кончилось.
+ * Кнопка без отметки — `false`.
+ */
+export const failureShownOn = (button: Element | null | undefined) =>
+  button
+    ?.querySelector<HTMLElement>('[data-failure-indicator]')
+    ?.getAttribute('data-shown') === 'true'
+
+/** Дорожка дуги — весь контур. */
 export const arcTrackOf = (arc: SVGSVGElement) =>
   arc.querySelector<SVGRectElement>(':scope > rect')!
 

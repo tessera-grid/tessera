@@ -13,7 +13,6 @@ import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
 import { useStateWhileOpen } from './useStateWhileOpen'
-import { useMergedFlash } from './useKebabState'
 import {
   pendingAttributes,
   serverActionReason,
@@ -45,7 +44,7 @@ export const ActionPanel = ({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
   useStateWhileOpen(context.table, visible)
-  // Серверное действие из панели (фильтр колонки, ADR 0116, §3): свет и вспышка отказа.
+  // Серверное действие из панели (фильтр колонки, ADR 0116, §3): свет и отметка отказа.
   const server = useServerActionMarks(
     context.table,
     cause =>
@@ -53,7 +52,6 @@ export const ActionPanel = ({
       !cause.menu &&
       !!cause.columns?.includes(context.column?.id),
   )
-  const errorFlash = useMergedFlash(loading?.errorFlash, server.flash)
   // Отказ остаётся отметкой, пока его не снимет успех или закрытие плашки; в ожидании —
   // свет, а не отметка (ADR 0116, SA18, SA20).
   const failure = server.pending ? undefined : server.failure
@@ -75,12 +73,11 @@ export const ActionPanel = ({
           label={label}
           aria-label={ariaLabel}
           {...panelButtonProps(loading)}
-          errorFlash={errorFlash}
           {...pendingAttributes(server.pending)}
           aria-describedby={failure ? reasonId : undefined}
         >
           {action.icon(context)}
-          <ErrorDot shown={!!failure} delayed />
+          <ErrorDot shown={!!failure} />
         </IconButton>
       }
     />

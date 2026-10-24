@@ -40,3 +40,15 @@
   height: 6px;
   box-shadow: none;
 }
+
+/*
+ * Высокая контрастность (ADR 0136, FB7): отметка отказа — системный `Mark`. Цвет темы
+ * режим перекрашивает в `Canvas` — на кнопке `Canvas` точку не видно.
+ */
+@media (forced-colors: active) {
+  .error {
+    forced-color-adjust: none;
+    background-color: Mark;
+    color: MarkText;
+  }
+}
