@@ -2,9 +2,9 @@ import { Meta, StoryObj } from '@storybook/react'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { makeData } from './__mocks__/data'
+import { vrStates } from './__mocks__/catalog'
 import { expect } from 'storybook/test'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   guideNext,
   orderedRows,
@@ -12,7 +12,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /** Группировка строк (ADR 0016); группировка от приложения без кнопок (ADR 0120). */
 const meta = {
@@ -35,6 +35,10 @@ export const RowGroupingPlayground: StoryObj<StoryProps> = {
     // настоящих строках, а не на захардкоженных.
     dataOverride: rowGroupingData,
     enableRowGrouping: true,
+    // Строки сгруппированы по полу и раскрыты: строки-группы со сводкой и записи под ними.
+    initialGrouping: ['gender'],
+    enableRowExpanding: true,
+    initialExpanded: true,
     // Немного колонок, целиком в горизонтальном вьюпорте: тесты адресуют шапку
     // groupable-колонки (gender) — она не должна прятаться за виртуализацией.
     columnCount: 6,
@@ -43,7 +47,10 @@ export const RowGroupingPlayground: StoryObj<StoryProps> = {
     height: '460',
     maxHeight: '460',
   },
-  parameters: showControls(['enableRowGrouping']),
+  parameters: {
+    ...vrStates('body.groups'),
+    ...showControls(['enableRowGrouping', 'enableRowExpanding']),
+  },
 }
 
 // --- ADR 0120, S4 --------------------------------------------------------------------
@@ -55,17 +62,17 @@ const isGroupRow = (id: string) => id.startsWith('gender:')
 const BY_APPLICATION: readonly GuideStoryStep[] = [
   {
     title: 'Строки без группировки',
-    hint: 'Плагин rowGroupingModel без rowGrouping: в заголовках нет кнопок группировки.',
+    hint: 'Группировкой управляет приложение, кнопок группировки в заголовках нет. Строки идут списком.',
     props: () => ({ enableRowGroupingModel: true }),
   },
   {
     title: 'Приложение группирует по полу',
-    hint: 'Приложение задаёт срез grouping аргументом модели — строки собраны в группы, группы свёрнуты.',
+    hint: 'Приложение сгруппировало строки по полу. Таблица показывает свёрнутые группы.',
     props: () => ({ rowGroupingModelGrouping: ['gender'] }),
   },
   {
-    title: 'И раскрывает группы',
-    hint: 'Раскрытием владеет модель дерева: приложение задаёт ей expanded: true — видны строки групп, кнопок по-прежнему нет.',
+    title: 'Приложение раскрывает группы',
+    hint: 'Приложение раскрыло все группы. Таблица показывает строки внутри групп, кнопок группировки по-прежнему нет.',
     props: () => ({
       enableRowExpandingModel: true,
       rowExpandingModelExpanded: true,
@@ -78,20 +85,22 @@ export const GroupingByApplication: StoryObj<StoryProps> = {
   name: 'By application',
   parameters: {
     scenario: '0120/S4',
-    ...showControls(['enableRowGroupingModel', 'enableRowExpandingModel']),
-  },
-  args: {
-    dataOverride: rowGroupingData,
-    columnCount: 6,
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Группировка от приложения"
       steps={BY_APPLICATION}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          dataOverride: rowGroupingData,
+          columnCount: 6,
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -114,6 +123,7 @@ export const GroupingByApplication: StoryObj<StoryProps> = {
         expect(ids.some(isGroupRow)).toBe(true)
         expect(ids.some(id => !isGroupRow(id))).toBe(true)
       })
+      expect(canvas.querySelector('.column-group__button')).toBeNull()
     })
     await settle()
   },

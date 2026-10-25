@@ -1,24 +1,36 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { expect } from 'storybook/test'
+
+import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrModes, vrStates } from './__mocks__/catalog'
+import { pressCell, untilDone } from './__mocks__/cellGestures'
 import { makeData } from './__mocks__/data'
-import { pressCell } from './__mocks__/cellGestures'
-import { expect, waitFor, userEvent } from 'storybook/test'
 import {
   bodyRow,
+  byTestId,
   guideNext,
+  orderedRows,
   pollUntil,
-  releaseFocus,
   settle,
   stepDone,
+  until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
-/** Выбор строк (ADR 0014): флажки, пакетный тулбар, дочерние строки; выбор щелчком без флажков (ADR 0120). */
+/**
+ * Выбор строк (ADR 0014): `Playground` — выбранные строки в покое; S1 — выбор всех
+ * строк и смена страницы, S2 — родитель вместе с детьми; выбор щелчком без флажков —
+ * S5 ADR 0120.
+ */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -27,85 +39,31 @@ const meta = {
 
 export default meta
 
-// Детерминированное дерево для истории SubRow Selection (генератор, а не
-// захардкоженные данные) — 4 родителя × 3 ребёнка, наглядный каскад выбора.
-const subRowSelectionTree = makeData({
-  shape: 'tree',
-  count: 4,
-  depth: 2,
-  breadth: 3,
-})
+/** Две строки выбраны — один раз, как только появились строки. */
+const selectionSeed: TesseraFeatureEntry = {
+  id: 'selectionSeed',
+  setup: table => {
+    const t = table as unknown as {
+      getCoreRowModel: () => { rows: unknown[] }
+      getRow: (id: string) => { toggleSelected: (value: boolean) => void }
+    }
+    let frame = 0
+    const apply = () => {
+      if (t.getCoreRowModel().rows.length === 0) {
+        frame = requestAnimationFrame(apply)
+        return
+      }
+      t.getRow('item-id-1').toggleSelected(true)
+      t.getRow('item-id-2').toggleSelected(true)
+    }
+    apply()
+    return () => cancelAnimationFrame(frame)
+  },
+}
 
+/** Выбранные строки в покое (ADR 0093, VR4): две строки отмечены флажками. */
 export const RowSelectionPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
-  parameters: showControls([
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-  ]),
-  args: {
-    enableRowSelection: true,
-    // Небольшой набор, целиком помещающийся в вьюпорт: требования «выбрать все
-    // на странице» (RS8–RS10, RS12) сверяются со всеми отрисованными строками,
-    // поэтому вертикальная виртуализация не должна прятать часть строк.
-    dataCount: 10,
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
-  },
-}
-
-export const BatchRowSelection: StoryObj<StoryProps> = {
-  name: 'Batch toolbar',
-  parameters: showControls([
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-    'enablePagination',
-    'paginationInitialPageSize',
-    'paginationPageSizes',
-    'paginationRevertOnReject',
-    'showBatchToolbar',
-    'isAllRowsSelected',
-  ]),
-  args: {
-    // Пакетный выбор «все строки» (BatchToolbar) поверх пагинации плагином: выбор
-    // живёт по id и переживает смену страницы.
-    enableRowSelection: true,
-    showBatchToolbar: true,
-    isAllRowsSelected: false,
-    enablePagination: true,
-    paginationInitialPageSize: 5,
-    dataCount: 50,
-  },
-}
-
-export const SubRowSelection: StoryObj<StoryProps> = {
-  name: 'Sub-rows',
-  args: {
-    // Реальное дерево из генератора (раскрыто), чтобы каскад выбора
-    // родитель↔дети был нагляден — не на захардкоженных 5 строках.
-    dataOverride: subRowSelectionTree,
-    initialExpanded: true,
-
-    enableRowSelection: true,
-    rowSelectionSubRows: true,
-    enableRowExpanding: true,
-  },
-  parameters: showControls([
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-    'enableRowExpanding',
-    'rowExpandingMaxDepth',
-    'rowExpandingColumn',
-    'enableTreeLines',
-  ]),
-}
-
-/** Выбранные строки (ADR 0093, VR4): две строки отмечены флажками. */
-export const RowSelectionStateSelected: StoryObj<StoryProps> = {
-  name: 'State: selected rows',
   tags: ['vr-modes'],
   parameters: {
     ...vrModes(vrStates('body.selection')),
@@ -117,29 +75,230 @@ export const RowSelectionStateSelected: StoryObj<StoryProps> = {
   },
   args: {
     enableRowSelection: true,
+    extraPlugins: [selectionSeed],
+    // Строки целиком в окне: «выбрать все на странице» сверяется со всеми строками.
     dataCount: 10,
-    containerHeight: '460',
-    height: '360',
-    maxHeight: '360',
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
   },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    for (const row of ['item-id-1', 'item-id-2']) {
-      await userEvent.click(
-        bodyRow(canvasElement, row).querySelector<HTMLElement>(
-          '[role="checkbox"]',
-        )!,
-      )
-    }
-    const checked = () =>
-      expect(
-        bodyRow(canvasElement, 'item-id-2').querySelector('[role="checkbox"]'),
-      ).toHaveAttribute('aria-checked', 'true')
-    await waitFor(checked)
-    // Выбор без кольца фокуса нажатого флажка.
-    await releaseFocus()
-    checked()
-    await settle()
+}
+
+const checkboxOf = (row: Element | null | undefined) =>
+  row?.querySelector<HTMLElement>('[role="checkbox"]') ?? null
+const selected = (row: Element | null | undefined) =>
+  row?.getAttribute('data-selected') === 'true'
+const headCheckbox = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[role="columnheader"] [role="checkbox"]')
+
+// --- S1 ------------------------------------------------------------------------------
+
+const PAGE = 5
+const ROWS = 50
+
+const pageSelected = (root: HTMLElement) => {
+  const rows = orderedRows(root)
+  return rows.length === PAGE && rows.every(selected)
+}
+const rangeText = (root: HTMLElement) =>
+  root.querySelector('[data-testid="pagination-range"]')?.textContent ?? ''
+const batchButton = () =>
+  byTestId('batch-toolbar')?.querySelector<HTMLButtonElement>('button') ?? null
+const allSelected = () => !!batchButton()?.textContent?.includes(String(ROWS))
+
+/** Пользователь отмечает флажок в заголовке, пока строки страницы не выбраны. */
+const selectPage = (root: HTMLElement) => {
+  if (!pageSelected(root)) headCheckbox(root)?.click()
+}
+/** Пользователь выбирает все строки кнопкой приложения. */
+const selectAll = (root: HTMLElement) => {
+  if (!pageSelected(root)) selectPage(root)
+  else if (!allSelected()) batchButton()?.click()
+}
+
+const ALL_ROWS: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки не выбраны',
+    hint: 'Таблица разбита на страницы, ни одна строка не выбрана.',
+    // Приложение хранит признак «выбраны все» и обновляет его по кнопке.
+    props: ({ app }) => ({
+      updateArgs: change => app.update(prev => ({ ...prev, ...change })),
+    }),
+  },
+  {
+    title: 'Пользователь выбрал строки на странице',
+    hint: 'Пользователь отметил флажок в заголовке. Выбраны строки текущей страницы, приложение предлагает выбрать все строки.',
+    states: ['body.selection'],
+    enter: untilDone(pageSelected, selectPage),
+  },
+  {
+    title: 'Пользователь выбрал все строки',
+    hint: 'Выбраны все строки таблицы, приложение показывает их число.',
+    states: ['body.selection'],
+    enter: untilDone(root => pageSelected(root) && allSelected(), selectAll),
+  },
+  {
+    title: 'Пользователь перешёл на другую страницу',
+    hint: 'Строки следующей страницы тоже выбраны.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => {
+        if (pageSelected(root) && allSelected()) return true
+        selectAll(root)
+        return false
+      }, signal)
+      await pollUntil(() => {
+        if (rangeText(root).startsWith('6–')) return true
+        root
+          .querySelector<HTMLElement>(
+            '[data-testid="pagination"] [data-page-action="next"]',
+          )
+          ?.click()
+        return false
+      }, signal)
+      await pollUntil(() => pageSelected(root), signal)
+    }),
+  },
+]
+
+/** S1: пользователь выбирает все строки и переходит между страницами. */
+export const BatchRowSelection: StoryObj<StoryProps> = {
+  name: 'Select all rows',
+  parameters: {
+    scenario: '0014/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Выбор всех строк"
+      steps={ALL_ROWS}
+      args={guideArgs(
+        {
+          enableRowSelection: true,
+          showBatchToolbar: true,
+          isAllRowsSelected: false,
+          enablePagination: true,
+          paginationInitialPageSize: PAGE,
+          dataCount: ROWS,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ALL_ROWS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(orderedRows(canvas).some(selected)).toBe(false)
+    })
+    await step(ALL_ROWS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pageSelected(canvas)).toBe(true))
+      await expect(batchButton()).not.toBeNull()
+      await expect(allSelected()).toBe(false)
+    })
+    await step(ALL_ROWS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(allSelected()).toBe(true))
+      await expect(pageSelected(canvas)).toBe(true)
+    })
+    await step(ALL_ROWS[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(rangeText(canvas)).toMatch(/^6–/)
+      await expect(pageSelected(canvas)).toBe(true)
+      await settle()
+    })
+  },
+}
+
+// --- S2 ------------------------------------------------------------------------------
+
+const subRowTree = makeData({ shape: 'tree', count: 4, depth: 2, breadth: 3 })
+const PARENT = (subRowTree[0] as { id: string }).id
+const CHILDREN = [0, 1, 2].map(i => `${PARENT}-${i}`)
+const UNSELECTED = CHILDREN[1]!
+
+const familySelected = (root: HTMLElement) =>
+  [PARENT, ...CHILDREN].every(id => selected(bodyRow(root, id)))
+const partial = (root: HTMLElement) =>
+  checkboxOf(bodyRow(root, PARENT))?.getAttribute('aria-checked') === 'mixed'
+
+/** Пользователь отмечает флажок родителя, пока он и дети не выбраны. */
+const selectParent = (root: HTMLElement) => {
+  if (!selected(bodyRow(root, PARENT)))
+    checkboxOf(bodyRow(root, PARENT))?.click()
+}
+
+const SUB_ROWS: readonly GuideStoryStep[] = [
+  {
+    title: 'Дерево раскрыто',
+    hint: 'Строки сгруппированы по родителям, ничего не выбрано.',
+  },
+  {
+    title: 'Пользователь выбрал родителя',
+    hint: 'Вместе с родителем выбраны все его дети.',
+    states: ['body.selection'],
+    enter: untilDone(familySelected, selectParent),
+  },
+  {
+    title: 'Пользователь снял выбор одного ребёнка',
+    hint: 'Родитель отмечен частично, остальные дети выбраны.',
+    states: ['body.selection'],
+    enter: untilDone(partial, root => {
+      if (!selected(bodyRow(root, UNSELECTED)) && !partial(root))
+        selectParent(root)
+      else if (selected(bodyRow(root, UNSELECTED)))
+        checkboxOf(bodyRow(root, UNSELECTED))?.click()
+    }),
+  },
+]
+
+/** S2: пользователь выбирает родителя вместе с детьми. */
+export const SubRowSelection: StoryObj<StoryProps> = {
+  name: 'Parent with children',
+  parameters: {
+    scenario: '0014/S2',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Выбор родителя"
+      steps={SUB_ROWS}
+      args={guideArgs(
+        {
+          dataOverride: subRowTree,
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          initialExpanded: true,
+          enableRowSelection: true,
+          rowSelectionSubRows: true,
+          enableRowExpanding: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SUB_ROWS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(bodyRow(canvas, CHILDREN[0]!)).toBeTruthy())
+      await expect(orderedRows(canvas).some(selected)).toBe(false)
+    })
+    await step(SUB_ROWS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(familySelected(canvas)).toBe(true))
+    })
+    await step(SUB_ROWS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(partial(canvas)).toBe(true))
+      await expect(selected(bodyRow(canvas, UNSELECTED))).toBe(false)
+      for (const id of CHILDREN.filter(id => id !== UNSELECTED))
+        await expect(selected(bodyRow(canvas, id))).toBe(true)
+      await settle()
+    })
   },
 }
 
@@ -166,7 +325,7 @@ const clickRow = (id: string) =>
 const ROW_CLICK: readonly GuideStoryStep[] = [
   {
     title: 'Выбора нет',
-    hint: 'Плагин rowSelectionModel без rowSelection: колонки флажков нет. Приложение выбирает строку, которую щёлкнул пользователь, — по колбэку onActiveCellChange клавиатурной навигации — и хранит выбор срезом rowSelection.',
+    hint: 'Выбором управляет приложение: колонки флажков у таблицы нет, приложение выбирает строку, по которой щёлкнул пользователь. Пока ни одна строка не выбрана.',
     // Приложение: выбор строки по щелчку, срез выбора — у него до нового открытия грида.
     props: ({ app }) => ({
       enableRowSelectionModel: true,
@@ -180,13 +339,13 @@ const ROW_CLICK: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Щёлкните строку',
-    hint: 'Щёлкнутая строка залита выбором и объявлена выбранной (aria-selected).',
+    title: 'Пользователь выбрал строку',
+    hint: 'Пользователь щёлкнул по строке, и приложение отметило её выбранной. Таблица показывает строку выбранной.',
     enter: clickRow(FIRST_CLICKED),
   },
   {
-    title: 'Щёлкните другую строку',
-    hint: 'Выбор переходит на неё: приложение заменяет срез.',
+    title: 'Пользователь выбрал другую строку',
+    hint: 'Пользователь щёлкнул по другой строке. Выбор перешёл на неё, прежняя строка больше не выбрана.',
     enter: clickRow(SECOND_CLICKED),
   },
 ]
@@ -196,19 +355,21 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
   name: 'By row click',
   parameters: {
     scenario: '0120/S5',
-    ...showControls(['enableRowSelectionModel', 'rowSelectionModelSubRows']),
-  },
-  args: {
-    dataOverride: rowClickData,
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Выбор щелчком по строке"
       steps={ROW_CLICK}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          dataOverride: rowClickData,
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -217,7 +378,9 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
     await step(ROW_CLICK[0].title, async () => {
       await waitForRows(canvas)
       expect(canvas.querySelector('[role="columnheader"] input')).toBeNull()
-      expect(rowSelected(canvas, FIRST_CLICKED)).toBe(false)
+      expect(
+        canvas.querySelector('.data-grid__body-row[data-selected="true"]'),
+      ).toBeNull()
     })
     await step(ROW_CLICK[1].title, async () => {
       await guideNext(canvas)
@@ -229,6 +392,7 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
     await step(ROW_CLICK[2].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
+      expect(rowSelected(canvas, SECOND_CLICKED)).toBe(true)
       expect(rowSelected(canvas, FIRST_CLICKED)).toBe(false)
     })
     await settle()

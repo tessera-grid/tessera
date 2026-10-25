@@ -73,7 +73,12 @@ const toggleLabel = (name: string): MenuAction => ({
   },
 })
 
-const sections = (): MenuAction[] => {
+/** «Сервер» меток: `labelsDown` — загрузка падает; без него падает только первая. */
+export interface NestedDemoServer {
+  labelsDown?: () => boolean
+}
+
+const sections = (server?: NestedDemoServer): MenuAction[] => {
   let labelsFailed = false
   const person = (name: string): MenuAction => ({
     id: `assign:${name}`,
@@ -148,7 +153,7 @@ const sections = (): MenuAction[] => {
         closeOnSelect: false,
         items: async signal => {
           await wait(NESTED_DEMO_DELAY_MS, signal)
-          if (!labelsFailed) {
+          if (server?.labelsDown ? server.labelsDown() : !labelsFailed) {
             labelsFailed = true
             throw new Error('Label service is down')
           }
@@ -186,8 +191,13 @@ const sections = (): MenuAction[] => {
   ]
 }
 
-export const nestedRowActionsDemo: RowAction[] = sections().map(
-  (action, order) => ({ ...action, slot: 'actionRowSlot', order }),
-)
+export const nestedRowActions = (server?: NestedDemoServer): RowAction[] =>
+  sections(server).map((action, order) => ({
+    ...action,
+    slot: 'actionRowSlot',
+    order,
+  }))
+
+export const nestedRowActionsDemo = nestedRowActions()
 
 export const nestedContextActionsDemo: MenuAction[] = sections()

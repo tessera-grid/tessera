@@ -17,6 +17,7 @@ import * as filteringStories from './DataGrid.Filtering.stories'
 import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
 import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
 import * as pluginApiStories from './DataGrid.PluginApi.stories'
+import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
 import * as rowsDraggingStories from './DataGrid.Rows.Dragging.stories'
@@ -32,15 +33,8 @@ import columnsHeaderGroupsMeta, {
 import * as columnsHeaderGroupsStories from './DataGrid.Columns.HeaderGroups.stories'
 import * as columnsHeaderMenuStories from './DataGrid.Columns.HeaderMenu.stories'
 import * as columnsPinningStories from './DataGrid.Columns.Pinning.stories'
-import columnsSortingMeta, {
-  SortingStateSorted,
-  SortingStateTooltip,
-} from './DataGrid.Columns.Sorting.stories'
 import * as columnsVisibilityStories from './DataGrid.Columns.Visibility.stories'
 import * as coreLongTextStories from './DataGrid.Core.LongText.stories'
-import columnsVisibilityMeta, {
-  VisibilityStatePanel,
-} from './DataGrid.Columns.Visibility.stories'
 import coreFooterMeta, {
   FooterPlayground,
 } from './DataGrid.Core.Footer.stories'
@@ -58,36 +52,22 @@ import refreshMeta, {
   RefreshPlayground,
 } from './DataGrid.DataLoading.Refresh.stories'
 import coreStubsMeta, { StubsPlayground } from './DataGrid.Core.Stubs.stories'
-import dataMeta, { Grouped } from './DataGrid.Data.stories'
-import exportMeta, { ExportStatePanel } from './DataGrid.Export.stories'
-import filteringMeta, {
-  FilteringStateText,
-  FilteringStateDate,
-  FilteringStateOptions,
-} from './DataGrid.Filtering.stories'
 import panelsPaginationMeta, {
   PaginationPlayground,
 } from './DataGrid.Panels.Pagination.stories'
 import panelsStatusBarMeta, {
   StatusBarPlayground,
-  PanelsNarrowStatusBar,
 } from './DataGrid.Panels.StatusBar.stories'
+import * as panelsStatusBarStories from './DataGrid.Panels.StatusBar.stories'
 import panelsToolbarMeta, {
-  ToolbarAllButtons,
+  ToolbarPlayground,
 } from './DataGrid.Panels.Toolbar.stories'
-import rowsActionsMeta, {
-  ActionsStateSection,
-} from './DataGrid.Rows.Actions.stories'
+import * as rowsActionsStories from './DataGrid.Rows.Actions.stories'
 import * as rowsExpandingStories from './DataGrid.Rows.Expanding.stories'
-import rowsExpandingMeta, {
-  RowExpandingTreeLines,
-} from './DataGrid.Rows.Expanding.stories'
-import rowsHighlightMeta, {
-  HighlightStateLit,
-} from './DataGrid.Rows.Highlight.stories'
-import rowsSelectionMeta, {
-  RowSelectionStateSelected,
-} from './DataGrid.Rows.Selection.stories'
+import * as rowsBackToTopStories from './DataGrid.Rows.BackToTop.stories'
+import * as rowsHighlightStories from './DataGrid.Rows.Highlight.stories'
+import * as rowsMotionStories from './DataGrid.Rows.Motion.stories'
+import * as rowsScrollToRowStories from './DataGrid.Rows.ScrollToRow.stories'
 
 /**
  * Высокая контрастность (ADR 0087): каждое состояние каталога — близнец своей истории со
@@ -163,21 +143,193 @@ export const HighContrastHeaderGroupsPlayground = {
   tags: ['!test'],
 }
 
-export const HighContrastSortingStateSorted = {
-  ...twin(columnsSortingMeta, SortingStateSorted),
-  name: 'Columns/Sorting — State: sorted',
+export const HighContrastColumnMultiSortingStep1 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnMultiSorting,
+    1,
+  ),
+  name: 'Columns/Sorting — Multi-sort, шаг 1',
   tags: ['!test'],
 }
 
-export const HighContrastSortingStateTooltip = {
-  ...twin(columnsSortingMeta, SortingStateTooltip),
-  name: 'Columns/Sorting — State: tooltip',
+export const HighContrastColumnMultiSortingStep2 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnMultiSorting,
+    2,
+  ),
+  name: 'Columns/Sorting — Multi-sort, шаг 2',
   tags: ['!test'],
 }
 
-export const HighContrastVisibilityStatePanel = {
-  ...twin(columnsVisibilityMeta, VisibilityStatePanel),
-  name: 'Columns/Visibility — State: columns panel',
+export const HighContrastColumnMultiSortingStep3 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnMultiSorting,
+    3,
+  ),
+  name: 'Columns/Sorting — Multi-sort, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnMultiSortingStep4 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnMultiSorting,
+    4,
+  ),
+  name: 'Columns/Sorting — Multi-sort, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnSortingOptionLabelsStep1 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnSortingOptionLabels,
+    1,
+  ),
+  name: 'Columns/Sorting — Option labels, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnSortingOptionLabelsStep2 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnSortingOptionLabels,
+    2,
+  ),
+  name: 'Columns/Sorting — Option labels, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnSortingOptionLabelsStep3 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.ColumnSortingOptionLabels,
+    3,
+  ),
+  name: 'Columns/Sorting — Option labels, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnVisibilityWithHeaderMenuStep1 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
+    1,
+  ),
+  name: 'Columns/Visibility — With header menu, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnVisibilityWithHeaderMenuStep2 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
+    2,
+  ),
+  name: 'Columns/Visibility — With header menu, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnVisibilityWithHeaderMenuStep3 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
+    3,
+  ),
+  name: 'Columns/Visibility — With header menu, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnVisibilityWithHeaderMenuStep4 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
+    4,
+  ),
+  name: 'Columns/Visibility — With header menu, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollUnknownTotalStep1 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollUnknownTotal,
+    1,
+  ),
+  name: 'Data loading/Infinite scroll — Unknown total, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollUnknownTotalStep2 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollUnknownTotal,
+    2,
+  ),
+  name: 'Data loading/Infinite scroll — Unknown total, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollUnknownTotalStep3 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollUnknownTotal,
+    3,
+  ),
+  name: 'Data loading/Infinite scroll — Unknown total, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollErrorsStep1 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollErrors,
+    1,
+  ),
+  name: 'Data loading/Infinite scroll — Errors, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollErrorsStep2 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollErrors,
+    2,
+  ),
+  name: 'Data loading/Infinite scroll — Errors, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollErrorsStep3 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollErrors,
+    3,
+  ),
+  name: 'Data loading/Infinite scroll — Errors, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollServerQueryStep1 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollServerQuery,
+    1,
+  ),
+  name: 'Data loading/Infinite scroll — Server sort & filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollServerQueryStep2 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollServerQuery,
+    2,
+  ),
+  name: 'Data loading/Infinite scroll — Server sort & filter, шаг 2',
   tags: ['!test'],
 }
 
@@ -217,33 +369,246 @@ export const HighContrastStubsPlayground = {
   tags: ['!test'],
 }
 
-export const HighContrastGrouped = {
-  ...twin(dataMeta, Grouped),
-  name: 'Data & scale — Grouped & aggregated',
+export const HighContrastRowGroupingPlayground = {
+  ...twin(
+    rowsGroupingStories.default,
+    rowsGroupingStories.RowGroupingPlayground,
+  ),
+  name: 'Rows/Grouping — Playground',
   tags: ['!test'],
 }
 
-export const HighContrastExportStatePanel = {
-  ...twin(exportMeta, ExportStatePanel),
-  name: 'Export — State: export panel',
+export const HighContrastFilteringTextStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringText, 1),
+  name: 'Filtering — Text filter, шаг 1',
   tags: ['!test'],
 }
 
-export const HighContrastFilteringStateText = {
-  ...twin(filteringMeta, FilteringStateText),
-  name: 'Filtering — State: text filter',
+export const HighContrastFilteringTextStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringText, 2),
+  name: 'Filtering — Text filter, шаг 2',
   tags: ['!test'],
 }
 
-export const HighContrastFilteringStateDate = {
-  ...twin(filteringMeta, FilteringStateDate),
-  name: 'Filtering — State: date filter',
+export const HighContrastFilteringTextStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringText, 3),
+  name: 'Filtering — Text filter, шаг 3',
   tags: ['!test'],
 }
 
-export const HighContrastFilteringStateOptions = {
-  ...twin(filteringMeta, FilteringStateOptions),
-  name: 'Filtering — State: options filter',
+export const HighContrastFilteringEmptyStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringEmpty, 1),
+  name: 'Filtering — Empty result, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringEmptyStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringEmpty, 2),
+  name: 'Filtering — Empty result, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServer, 1),
+  name: 'Filtering — Server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServer, 2),
+  name: 'Filtering — Server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServer, 3),
+  name: 'Filtering — Server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServer, 4),
+  name: 'Filtering — Server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringTreeStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringTree, 1),
+  name: 'Filtering — Tree, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringTreeStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringTree, 2),
+  name: 'Filtering — Tree, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastQuickSearchNoColumnsStep1 = {
+  ...twinStep(filteringStories, filteringStories.QuickSearchNoColumns, 1),
+  name: 'Filtering — Quick search, no searchable columns, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastQuickSearchNoColumnsStep2 = {
+  ...twinStep(filteringStories, filteringStories.QuickSearchNoColumns, 2),
+  name: 'Filtering — Quick search, no searchable columns, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringDatesStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringDates, 1),
+  name: 'Filtering — Dates, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringDatesStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringDates, 2),
+  name: 'Filtering — Dates, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringDatesStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringDates, 3),
+  name: 'Filtering — Dates, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringDatesStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringDates, 4),
+  name: 'Filtering — Dates, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringDatesStep5 = {
+  ...twinStep(filteringStories, filteringStories.FilteringDates, 5),
+  name: 'Filtering — Dates, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringOptionsStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringOptions, 1),
+  name: 'Filtering — Select & multiselect, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringOptionsStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringOptions, 2),
+  name: 'Filtering — Select & multiselect, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringOptionsStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringOptions, 3),
+  name: 'Filtering — Select & multiselect, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringOptionsStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringOptions, 4),
+  name: 'Filtering — Select & multiselect, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringLookupServerStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 1),
+  name: 'Filtering — Lookup (server), шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringLookupServerStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 2),
+  name: 'Filtering — Lookup (server), шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringLookupServerStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 3),
+  name: 'Filtering — Lookup (server), шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringLookupServerStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 4),
+  name: 'Filtering — Lookup (server), шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExportDirectStep1 = {
+  ...twinStep(exportStories, exportStories.ExportDirect, 1),
+  name: 'Export — Direct click, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportDirectStep2 = {
+  ...twinStep(exportStories, exportStories.ExportDirect, 2),
+  name: 'Export — Direct click, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportPresetsStep1 = {
+  ...twinStep(exportStories, exportStories.ExportPresets, 1),
+  name: 'Export — Settings and quick sets, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportPresetsStep2 = {
+  ...twinStep(exportStories, exportStories.ExportPresets, 2),
+  name: 'Export — Settings and quick sets, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportPresetsStep3 = {
+  ...twinStep(exportStories, exportStories.ExportPresets, 3),
+  name: 'Export — Settings and quick sets, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExportPresetsStep4 = {
+  ...twinStep(exportStories, exportStories.ExportPresets, 4),
+  name: 'Export — Settings and quick sets, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerStep1 = {
+  ...twinStep(exportStories, exportStories.ExportServer, 1),
+  name: 'Export — Server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerStep2 = {
+  ...twinStep(exportStories, exportStories.ExportServer, 2),
+  name: 'Export — Server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerStep3 = {
+  ...twinStep(exportStories, exportStories.ExportServer, 3),
+  name: 'Export — Server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerStep4 = {
+  ...twinStep(exportStories, exportStories.ExportServer, 4),
+  name: 'Export — Server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExportExcelStep1 = {
+  ...twinStep(exportStories, exportStories.ExportExcel, 1),
+  name: 'Export — Excel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportExcelStep2 = {
+  ...twinStep(exportStories, exportStories.ExportExcel, 2),
+  name: 'Export — Excel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportExcelStep3 = {
+  ...twinStep(exportStories, exportStories.ExportExcel, 3),
+  name: 'Export — Excel, шаг 3',
   tags: ['!test'],
 }
 
@@ -259,39 +624,345 @@ export const HighContrastStatusBarPlayground = {
   tags: ['!test'],
 }
 
-export const HighContrastPanelsNarrowStatusBar = {
-  ...twin(panelsStatusBarMeta, PanelsNarrowStatusBar),
-  name: 'Panels/Status bar — Narrow',
+export const HighContrastToolbarPlayground = {
+  ...twin(panelsToolbarMeta, ToolbarPlayground),
+  name: 'Panels/Toolbar — Playground',
   tags: ['!test'],
 }
 
-export const HighContrastToolbarAllButtons = {
-  ...twin(panelsToolbarMeta, ToolbarAllButtons),
-  name: 'Panels/Toolbar — All buttons',
+export const HighContrastRowActionMenuStep1 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionMenu, 1),
+  name: 'Rows/Actions — Action menu, шаг 1',
   tags: ['!test'],
 }
 
-export const HighContrastActionsStateSection = {
-  ...twin(rowsActionsMeta, ActionsStateSection),
-  name: 'Rows/Actions — State: nested section',
+export const HighContrastRowActionMenuStep2 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionMenu, 2),
+  name: 'Rows/Actions — Action menu, шаг 2',
   tags: ['!test'],
 }
 
-export const HighContrastRowExpandingTreeLines = {
-  ...twin(rowsExpandingMeta, RowExpandingTreeLines),
-  name: 'Rows/Expanding — Tree lines',
+export const HighContrastRowActionMenuStep3 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionMenu, 3),
+  name: 'Rows/Actions — Action menu, шаг 3',
   tags: ['!test'],
 }
 
-export const HighContrastHighlightStateLit = {
-  ...twin(rowsHighlightMeta, HighlightStateLit),
-  name: 'Rows/Highlight — State: highlights',
+export const HighContrastRowActionsNestedStep1 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 1),
+  name: 'Rows/Actions — Nested sections, шаг 1',
   tags: ['!test'],
 }
 
-export const HighContrastRowSelectionStateSelected = {
-  ...twin(rowsSelectionMeta, RowSelectionStateSelected),
-  name: 'Rows/Selection — State: selected rows',
+export const HighContrastRowActionsNestedStep2 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 2),
+  name: 'Rows/Actions — Nested sections, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsNestedStep3 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 3),
+  name: 'Rows/Actions — Nested sections, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsNestedStep4 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 4),
+  name: 'Rows/Actions — Nested sections, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsNestedStep5 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 5),
+  name: 'Rows/Actions — Nested sections, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastRowHighlightPlayground = {
+  ...twin(
+    rowsHighlightStories.default,
+    rowsHighlightStories.RowHighlightPlayground,
+  ),
+  name: 'Rows/Highlight — Playground',
+  tags: ['!test'],
+}
+
+export const HighContrastRowSelectionPlayground = {
+  ...twin(
+    rowsSelectionStories.default,
+    rowsSelectionStories.RowSelectionPlayground,
+  ),
+  name: 'Rows/Selection — Playground',
+  tags: ['!test'],
+}
+
+export const HighContrastBackToTopReturnStep1 = {
+  ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopReturn, 1),
+  name: 'Rows/Back to top — Return to top, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastBackToTopReturnStep2 = {
+  ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopReturn, 2),
+  name: 'Rows/Back to top — Return to top, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastBackToTopReturnStep3 = {
+  ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopReturn, 3),
+  name: 'Rows/Back to top — Return to top, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastBackToTopWideStep1 = {
+  ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopWide, 1),
+  name: 'Rows/Back to top — Wide table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastBackToTopWideStep2 = {
+  ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopWide, 2),
+  name: 'Rows/Back to top — Wide table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastBackToTopWideStep3 = {
+  ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopWide, 3),
+  name: 'Rows/Back to top — Wide table, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingConfirmedStep1 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingConfirmed, 1),
+  name: 'Rows/Expanding — Expand confirmed by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingConfirmedStep2 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingConfirmed, 2),
+  name: 'Rows/Expanding — Expand confirmed by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingConfirmedStep3 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingConfirmed, 3),
+  name: 'Rows/Expanding — Expand confirmed by the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyChildrenStep1 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyChildren,
+    1,
+  ),
+  name: 'Rows/Expanding — Lazy children (server), шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyChildrenStep2 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyChildren,
+    2,
+  ),
+  name: 'Rows/Expanding — Lazy children (server), шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyChildrenStep3 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyChildren,
+    3,
+  ),
+  name: 'Rows/Expanding — Lazy children (server), шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyChildrenStep4 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyChildren,
+    4,
+  ),
+  name: 'Rows/Expanding — Lazy children (server), шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyChildrenStep5 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyChildren,
+    5,
+  ),
+  name: 'Rows/Expanding — Lazy children (server), шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightDeleteConfirmationStep1 = {
+  ...twinStep(
+    rowsHighlightStories,
+    rowsHighlightStories.HighlightDeleteConfirmation,
+    1,
+  ),
+  name: 'Rows/Highlight — Delete confirmation, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightDeleteConfirmationStep2 = {
+  ...twinStep(
+    rowsHighlightStories,
+    rowsHighlightStories.HighlightDeleteConfirmation,
+    2,
+  ),
+  name: 'Rows/Highlight — Delete confirmation, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightDeleteConfirmationStep3 = {
+  ...twinStep(
+    rowsHighlightStories,
+    rowsHighlightStories.HighlightDeleteConfirmation,
+    3,
+  ),
+  name: 'Rows/Highlight — Delete confirmation, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightDeleteConfirmationStep4 = {
+  ...twinStep(
+    rowsHighlightStories,
+    rowsHighlightStories.HighlightDeleteConfirmation,
+    4,
+  ),
+  name: 'Rows/Highlight — Delete confirmation, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightMarksStep1 = {
+  ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 1),
+  name: 'Rows/Highlight — Search, cell and column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightMarksStep2 = {
+  ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 2),
+  name: 'Rows/Highlight — Search, cell and column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightMarksStep3 = {
+  ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 3),
+  name: 'Rows/Highlight — Search, cell and column, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionTreeStep1 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 1),
+  name: 'Rows/Motion — Tree, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionTreeStep2 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 2),
+  name: 'Rows/Motion — Tree, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionTreeStep3 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 3),
+  name: 'Rows/Motion — Tree, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionSearchStep1 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 1),
+  name: 'Rows/Motion — Sort and search, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionSearchStep2 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 2),
+  name: 'Rows/Motion — Sort and search, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionSearchStep3 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 3),
+  name: 'Rows/Motion — Sort and search, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastScrollToRowShowStep1 = {
+  ...twinStep(
+    rowsScrollToRowStories,
+    rowsScrollToRowStories.ScrollToRowShow,
+    1,
+  ),
+  name: 'Rows/Scroll to row — Show a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastScrollToRowShowStep2 = {
+  ...twinStep(
+    rowsScrollToRowStories,
+    rowsScrollToRowStories.ScrollToRowShow,
+    2,
+  ),
+  name: 'Rows/Scroll to row — Show a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastScrollToRowShowStep3 = {
+  ...twinStep(
+    rowsScrollToRowStories,
+    rowsScrollToRowStories.ScrollToRowShow,
+    3,
+  ),
+  name: 'Rows/Scroll to row — Show a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastBatchRowSelectionStep1 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 1),
+  name: 'Rows/Selection — Select all rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastBatchRowSelectionStep2 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 2),
+  name: 'Rows/Selection — Select all rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastBatchRowSelectionStep3 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 3),
+  name: 'Rows/Selection — Select all rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastBatchRowSelectionStep4 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 4),
+  name: 'Rows/Selection — Select all rows, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastSubRowSelectionStep1 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 1),
+  name: 'Rows/Selection — Parent with children, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSubRowSelectionStep2 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 2),
+  name: 'Rows/Selection — Parent with children, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSubRowSelectionStep3 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 3),
+  name: 'Rows/Selection — Parent with children, шаг 3',
   tags: ['!test'],
 }
 
@@ -683,6 +1354,30 @@ export const HighContrastThemingGridButtonSizeStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastThemeSourcesStep1 = {
+  ...twinStep(themingStories, themingStories.ThemeSources, 1),
+  name: 'Theming — Theme sources, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastThemeSourcesStep2 = {
+  ...twinStep(themingStories, themingStories.ThemeSources, 2),
+  name: 'Theming — Theme sources, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastThemeSourcesStep3 = {
+  ...twinStep(themingStories, themingStories.ThemeSources, 3),
+  name: 'Theming — Theme sources, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastThemeSourcesStep4 = {
+  ...twinStep(themingStories, themingStories.ThemeSources, 4),
+  name: 'Theming — Theme sources, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastSkeletonDataArrivesStep1 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 1),
   name: 'Data loading/Skeleton — Data arrives, шаг 1',
@@ -809,6 +1504,18 @@ export const HighContrastStubsNoDataStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastStubsCustomStep1 = {
+  ...twinStep(coreStubsStories, coreStubsStories.StubsCustom, 1),
+  name: 'Core/Stubs — Custom stubs, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastStubsCustomStep2 = {
+  ...twinStep(coreStubsStories, coreStubsStories.StubsCustom, 2),
+  name: 'Core/Stubs — Custom stubs, шаг 2',
+  tags: ['!test'],
+}
+
 export const HighContrastStubsPluginReasonStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsPluginReason, 1),
   name: 'Core/Stubs — Plugin reason, шаг 1',
@@ -911,6 +1618,84 @@ export const HighContrastPaginationOwnPagerStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastPaginationServerStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServer,
+    1,
+  ),
+  name: 'Panels/Pagination — Server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServer,
+    2,
+  ),
+  name: 'Panels/Pagination — Server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServer,
+    3,
+  ),
+  name: 'Panels/Pagination — Server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastSelectedCountStep1 = {
+  ...twinStep(panelsStatusBarStories, panelsStatusBarStories.SelectedCount, 1),
+  name: 'Panels/Status bar — Selected count, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSelectedCountStep2 = {
+  ...twinStep(panelsStatusBarStories, panelsStatusBarStories.SelectedCount, 2),
+  name: 'Panels/Status bar — Selected count, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSelectedCountStep3 = {
+  ...twinStep(panelsStatusBarStories, panelsStatusBarStories.SelectedCount, 3),
+  name: 'Panels/Status bar — Selected count, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPanelsNarrowStatusBarStep1 = {
+  ...twinStep(
+    panelsStatusBarStories,
+    panelsStatusBarStories.PanelsNarrowStatusBar,
+    1,
+  ),
+  name: 'Panels/Status bar — Narrow, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPanelsNarrowStatusBarStep2 = {
+  ...twinStep(
+    panelsStatusBarStories,
+    panelsStatusBarStories.PanelsNarrowStatusBar,
+    2,
+  ),
+  name: 'Panels/Status bar — Narrow, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPanelsNarrowStatusBarStep3 = {
+  ...twinStep(
+    panelsStatusBarStories,
+    panelsStatusBarStories.PanelsNarrowStatusBar,
+    3,
+  ),
+  name: 'Panels/Status bar — Narrow, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastToolbarInitialLoadingStep1 = {
   ...twinStep(
     panelsToolbarStories,
@@ -988,6 +1773,48 @@ export const HighContrastToolbarColumnsArriveStep3 = {
     3,
   ),
   name: 'Panels/Toolbar — Columns arrive, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiReactiveArgsStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 1),
+  name: 'Plugin API — Reactive arguments, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiReactiveArgsStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 2),
+  name: 'Plugin API — Reactive arguments, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiReactiveArgsStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 3),
+  name: 'Plugin API — Reactive arguments, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiReactiveArgsStep4 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 4),
+  name: 'Plugin API — Reactive arguments, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastSessionCallbacksStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 1),
+  name: 'Plugin API — Drag & resize callbacks, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSessionCallbacksStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 2),
+  name: 'Plugin API — Drag & resize callbacks, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSessionCallbacksStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 3),
+  name: 'Plugin API — Drag & resize callbacks, шаг 3',
   tags: ['!test'],
 }
 
@@ -1156,6 +1983,12 @@ export const HighContrastRowDraggingMoveStep3 = {
 export const HighContrastRowDraggingMoveStep4 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 4),
   name: 'Rows/Dragging — Move, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraggingMoveStep5 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 5),
+  name: 'Rows/Dragging — Move, шаг 5',
   tags: ['!test'],
 }
 

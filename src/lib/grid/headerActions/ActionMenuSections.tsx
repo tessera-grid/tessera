@@ -49,9 +49,18 @@ export const ActionMenuSections = ({
       wrap.style.height = `${current.offsetHeight}px`
     }
     fit()
-    const observer = new ResizeObserver(fit)
+    // Размер окна — в следующем кадре: без перехода смена размера внутри обработчика
+    // наблюдателя даёт ошибку «ResizeObserver loop».
+    let frame = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(fit)
+    })
     observer.observe(current)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    }
   }, [levelKey, levelRef])
 
   // Фокус после смены уровня: вход — первый пункт, возврат — пункт, из которого вошли.

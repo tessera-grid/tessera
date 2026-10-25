@@ -1,8 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Star } from 'lucide-react'
-import { useArgs } from 'storybook/preview-api'
-import { expect, userEvent } from 'storybook/test'
+import { expect } from 'storybook/test'
 import type {
   CellComponentProps,
   ToolbarComponentProps,
@@ -14,34 +13,46 @@ import {
 } from '../../lib/core/definePlugin'
 import { CellButton } from '../../lib/grid/Actions/CellButton'
 import { Button } from '../../lib/ui/Button'
-import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import { makeData } from './__mocks__/data'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import {
-  SessionCallbacksDemo,
-  canEditDemoCell,
-  type ServerFailMode,
-} from './demos/sessionDemos'
+import { canEditDemoCell, type ServerFailMode } from './demos/sessionDemos'
 import { argsUpdater } from './__mocks__/catalog'
-import { clickByMouse } from './__mocks__/cellGestures'
+import { clickByMouse, untilDone } from './__mocks__/cellGestures'
 import {
+  bodyRow,
+  cancelDrag,
   consoleText,
   guideNext,
   pollUntil,
   rowAt,
   settle,
+  sleep,
   stepDone,
   until,
-  updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { OVERLAY, dragRowOnto, rowIdOrder } from './rowDragging.dnd'
+import {
+  HANDLE,
+  OVERLAY,
+  beginDrag,
+  dragRowOnto,
+  rowIdOrder,
+} from './rowDragging.dnd'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 
-/** API плагинов: аргументы на лету (ADR 0039), колбэки сессий перетаскивания и ширины (ADR 0040). */
+/**
+ * API плагинов: `Playground` — аргументы фабрик на лету; S1 ADR 0039 — аргумент меняется
+ * на той же таблице, S4 ADR 0040 — колбэки перетаскивания, S1–S2 ADR 0125 — канал действий.
+ */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -116,9 +127,7 @@ export const PluginApiPlayground: StoryObj<SessionsArgs> = {
       options: ['default', 'small', 'hidden'],
     },
   },
-  // Дымовой сценарий (ADR 0042, DS5): глубже maxDepth раскрытие скрыто, а не стёрто.
   parameters: {
-    requirements: ['DS5'],
     ...showControls(
       [
         'enableColumnSorting',
@@ -142,27 +151,6 @@ export const PluginApiPlayground: StoryObj<SessionsArgs> = {
       { dataCount: 'данные подаёт демо' },
     ),
   },
-  play: async ({ canvasElement, globals, id }) => {
-    // Дымовой сценарий — только в тестах каталога: Playground открывается в покое (SN29).
-    if (globals.catalog !== true) return
-    await waitForRows(canvasElement)
-    const expanded = (index: number) =>
-      rowAt(canvasElement, index).getAttribute('data-expanded')
-    for (const index of [0, 1]) {
-      await userEvent.click(
-        rowAt(canvasElement, index).querySelector('.row-expand-button')!,
-      )
-      await until(() => expect(expanded(index)).toBe('true'))
-    }
-
-    await updateArgs(id, { rowExpandingMaxDepth: 1 })
-    await until(() => expect(expanded(1)).toBeNull())
-    expect(expanded(0)).toBe('true')
-
-    await updateArgs(id, { rowExpandingMaxDepth: 3 })
-    await until(() => expect(expanded(1)).toBe('true'))
-  },
-  // Без хуков Storybook: `play` меняет аргументы, и в каталоге историю перерисовывает React.
   render: function Render(
     { multiSortMax, allowEditing, pageSizesPreset = 'default', ...args },
     { id },
@@ -181,45 +169,197 @@ export const PluginApiPlayground: StoryObj<SessionsArgs> = {
   },
 }
 
-export const SessionCallbacks: StoryObj<SessionsArgs> = {
-  name: 'Drag & resize callbacks',
-  args: {
-    ...GRID,
-    dataCount: 30,
-    // Колбэки успеха и отмены (ADR 0040): бросок — onRowDragEnd/onColumnDragEnd,
-    // Escape или бросок мимо — *Cancel с cancel; Escape во время ресайза
-    // возвращает ширину и зовёт onColumnResizeCancel. Выключите плагин посреди
-    // действия — отмена с revoke.
-    enableRowDragging: true,
-    enableColumnDragging: true,
-    enableColumnSizing: true,
+// --- ADR 0039 S1 ---------------------------------------------------------------------
+
+const ROOT = 'node-0'
+const CHILD = 'node-0-0'
+
+const isExpanded = (root: HTMLElement, id: string) =>
+  bodyRow(root, id)?.getAttribute('data-expanded') === 'true'
+/** Пользователь нажимает переключатель раскрытия строки. */
+const expandRow = (root: HTMLElement, id: string) =>
+  bodyRow(root, id)?.querySelector<HTMLElement>('.row-expand-button')?.click()
+
+const REACTIVE: readonly GuideStoryStep[] = [
+  {
+    title: 'Дерево свёрнуто',
+    hint: 'Строки показаны верхним уровнем, глубина раскрытия — три уровня.',
+    props: () => ({ rowExpandingMaxDepth: 3 }),
   },
-  // Дымовой сценарий (ADR 0042, DS3): бросок строки мышью пишет onRowDragEnd в журнал.
+  {
+    title: 'Пользователь раскрыл строку и её дочернюю',
+    hint: 'Под строкой видны дочерние строки, а под первой дочерней — её собственные.',
+    // Новое открытие таблицы на шаге — с тем же раскрытием.
+    props: () => ({ initialExpanded: { [ROOT]: true, [CHILD]: true } }),
+    enter: untilDone(
+      root => isExpanded(root, ROOT) && isExpanded(root, CHILD),
+      root => expandRow(root, isExpanded(root, ROOT) ? CHILD : ROOT),
+    ),
+  },
+  {
+    title: 'Приложение уменьшило глубину',
+    hint: 'Приложение разрешило раскрывать только один уровень. Раскрытие дочерней строки скрыто, но таблица его помнит.',
+    props: () => ({ rowExpandingMaxDepth: 1 }),
+  },
+  {
+    title: 'Приложение вернуло глубину',
+    hint: 'Глубина снова три уровня: дочерняя строка раскрыта, как была, раскрывать её заново не нужно.',
+    props: () => ({ rowExpandingMaxDepth: 3 }),
+  },
+]
+
+/** ADR 0039, S1: аргумент плагина меняется на той же таблице — состояние не стирается. */
+export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
+  name: 'Reactive arguments',
   parameters: {
-    requirements: ['DS3'],
-    ...showControls([
-      'enableColumnSizing',
-      'enableColumnDragging',
-      'columnDraggingRevertOnReject',
-      'enableRowDragging',
-      'rowDraggingExpandDelay',
-      'rowDraggingRevertOnReject',
-    ]),
-  },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    const [dropped] = rowIdOrder(canvasElement)
-    await dragRowOnto(rowAt(canvasElement, 0), rowAt(canvasElement, 3))
-    await until(() => expect(consoleText()).toContain('onRowDragEnd'))
-    expect(consoleText()).toContain(`rowId="${dropped}"`)
-    // Облако долетело — история в покое.
-    await until(() => expect(canvasElement.querySelector(OVERLAY)).toBeNull())
+    scenario: '0039/S1',
+    requirements: ['DS5'],
+    ...guideControls(),
   },
   render: function Render(args) {
-    const [, updateArgs] = useArgs()
+    const [data] = useState(makeReactiveTree)
     return (
-      <SessionCallbacksDemo {...normalizeArgs(args)} updateArgs={updateArgs} />
+      <GuideStory
+        title="Аргументы плагина на лету"
+        steps={REACTIVE}
+        args={guideArgs(
+          { ...GRID, dataOverride: data, enableRowExpanding: true },
+          args,
+        )}
+      />
     )
+  },
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(REACTIVE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(isExpanded(canvas, ROOT)).toBe(false)
+    })
+    await step(REACTIVE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(isExpanded(canvas, ROOT) && isExpanded(canvas, CHILD)).toBe(
+          true,
+        ),
+      )
+    })
+    await step(REACTIVE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(isExpanded(canvas, CHILD)).toBe(false))
+      await expect(isExpanded(canvas, ROOT)).toBe(true)
+    })
+    await step(REACTIVE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(isExpanded(canvas, CHILD)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0040 S4 ---------------------------------------------------------------------
+
+const DRAGGED = 'item-id-0'
+const movedAway = (root: HTMLElement) =>
+  rowIdOrder(root)[0] !== DRAGGED && !root.querySelector(OVERLAY)
+
+/** После конца перетаскивания dnd-kit ещё 50 мс глотает клики: шаг ждёт, чтобы кнопки гайда нажимались. */
+const clicksBack = async (signal: AbortSignal) => {
+  await sleep(120)
+  signal.throwIfAborted()
+}
+
+/** Пользователь перетаскивает первую строку на место четвёртой. */
+const moveFirstRow = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!rowAt(root, 3), signal)
+  if (rowIdOrder(root)[0] === DRAGGED)
+    await dragRowOnto(rowAt(root, 0), rowAt(root, 3))
+  await pollUntil(() => movedAway(root), signal)
+  await clicksBack(signal)
+}
+
+/** Колбэки приложения: журнал консоли записывает каждый вызов. */
+const accept = () => {}
+const SESSION_CALLBACKS = {
+  onRowDragEnd: accept,
+  onRowDragCancel: accept,
+  onColumnDragEnd: accept,
+  onColumnDragCancel: accept,
+  onColumnResizeEnd: accept,
+  onColumnResizeCancel: accept,
+}
+
+const CALLBACKS: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица с перетаскиванием',
+    hint: 'Строки и колонки переставляются перетаскиванием, ширина колонок меняется протяжкой. Итог каждого действия приложение получает в колбэке, журнал — в консоли под таблицей.',
+    props: () => SESSION_CALLBACKS,
+  },
+  {
+    title: 'Пользователь перетащил строку',
+    hint: 'Строка встала на новое место, приложение получило её и новое место.',
+    enter: stepAction((root, { signal }) => moveFirstRow(root, signal)),
+  },
+  {
+    title: 'Пользователь отменил перетаскивание',
+    hint: 'Пользователь взял строку и нажал Escape. Строка осталась на месте, приложение получило отмену с причиной.',
+    enter: stepAction(async (root, { signal }) => {
+      await moveFirstRow(root, signal)
+      const order = rowIdOrder(root).join()
+      await beginDrag(rowAt(root, 0).querySelector<HTMLElement>(HANDLE)!)
+      await pollUntil(() => !!root.querySelector(OVERLAY), signal)
+      cancelDrag()
+      await pollUntil(
+        () => !root.querySelector(OVERLAY) && rowIdOrder(root).join() === order,
+        signal,
+      )
+      await clicksBack(signal)
+    }),
+  },
+]
+
+/** ADR 0040, S4: итоги перетаскивания приходят приложению колбэками успеха и отмены. */
+export const SessionCallbacks: StoryObj<SessionsArgs> = {
+  name: 'Drag & resize callbacks',
+  parameters: {
+    scenario: '0040/S4',
+    requirements: ['DS3'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Колбэки перетаскивания"
+      steps={CALLBACKS}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataCount: 30,
+          enableRowDragging: true,
+          enableColumnDragging: true,
+          enableColumnSizing: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CALLBACKS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(rowAt(canvas, 0).querySelector(HANDLE)).not.toBeNull()
+    })
+    await step(CALLBACKS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(consoleText()).toContain('onRowDragEnd')
+      await expect(consoleText()).toContain(`rowId:"${DRAGGED}"`)
+    })
+    await step(CALLBACKS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(consoleText()).toContain('onRowDragCancel'))
+      await expect(consoleText()).toMatch(/onRowDragCancel[^\n]*cancel/)
+      await settle()
+    })
   },
 }
 

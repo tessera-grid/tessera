@@ -1,5 +1,5 @@
 /**
- * Клиентские сценарии и истории (ADR 0117, §5–§8; SN7–SN8, SN11–SN13, SN29): у каждого сценария таблицы
+ * Клиентские сценарии и истории (ADR 0117, §5–§8; SN7–SN8, SN11–SN13, SN29, SN37): у каждого сценария таблицы
  * «Сценарии» принятого ADR — ровно одна история, и история ссылается на свой сценарий
  * через `parameters.scenario: '<ADR>/S<n>'`.
  * Запуск: npx vitest run --config vitest.node.config.ts storyScenarios
@@ -276,4 +276,54 @@ describe('проигрывание сценариев (ADR 0117, §6–§8)', ()
       readFileSync(join(root, 'scripts', 'storybook-public.mjs'), 'utf8'),
     ).toMatch(/STORYBOOK_TARGET: 'public'/)
   })
+})
+
+/** Вне раздела не по сценарию — витрина с причиной или ещё не переведённая история (SN37). */
+const NOT_SCENARIO: Record<string, string> = {
+  Palette:
+    'витрина ролей цветовых токенов в двух темах для автора темы — не сценарий и не вид таблицы (решение пользователя 2026-10-25)',
+  RowDraggingTreeLines: 'файл в работе по ADR 0137 — перевод после её коммита',
+}
+
+/** Файл фичи: не песочницы `Tessera/Common`, не `UI/*`, не снимки и не dev-истории. */
+const featureFile = (path: string, title: string | undefined) =>
+  !/\.(dev|vr)\.stories\.tsx$/.test(path) &&
+  !!title &&
+  !title.startsWith('Tessera/Common') &&
+  !title.startsWith('Tessera/UI/')
+
+describe('форма раздела (ADR 0117, §5)', () => {
+  it(
+    'SN37: каждая история файла вне Tessera/Common и UI — Playground или история сценария; иная — только в базе с причиной, устаревшая запись роняет страж',
+    async () => {
+      const seen = new Map<string, 'playground' | 'scenario' | 'other'>()
+      for (const [path, load] of Object.entries(rawModules)) {
+        const { default: meta, ...exports } = (await load()) as RawModule & {
+          default?: { title?: string }
+        }
+        if (!featureFile(path, meta?.title)) continue
+        for (const [name, story] of Object.entries(exports)) {
+          seen.set(
+            name,
+            story.parameters?.scenario
+              ? 'scenario'
+              : story.name === 'Playground'
+                ? 'playground'
+                : 'other',
+          )
+        }
+      }
+      expect(seen.size).toBeGreaterThan(0)
+      const wrong = [
+        ...[...seen]
+          .filter(([name, kind]) => kind === 'other' && !(name in NOT_SCENARIO))
+          .map(([name]) => `${name}: не Playground и не сценарий`),
+        ...Object.entries(NOT_SCENARIO)
+          .filter(([name, reason]) => seen.get(name) !== 'other' || !reason)
+          .map(([name]) => `${name}: запись базы устарела`),
+      ]
+      expect(wrong).toEqual([])
+    },
+    TIMEOUT,
+  )
 })

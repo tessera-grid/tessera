@@ -1,21 +1,17 @@
 import { Meta, StoryObj } from '@storybook/react'
-import { useState } from 'react'
 import { expect } from 'storybook/test'
 
 import { definePlugin, readPluginHooks } from '../core/definePlugin'
 import { Button } from '../ui/Button'
 import { Stub } from '../ui/Stub'
-import { StoryComponent } from './DataGridStory'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import { byTestId, guideNext, settle, until } from './__mocks__/catalogPlay'
 import { storyLabels } from './__mocks__/storyLabels'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
-import { WithConsole } from './demos/StoryConsole'
-import { type ConsoleLog, createConsoleLog } from './demos/consoleLog'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import type { ConsoleLog } from './demos/consoleLog'
 
 /**
  * Заглушки пустой таблицы (ADR 0123): реестр причин — нет данных, нет колонок, все
@@ -121,14 +117,13 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
   name: 'No columns',
   parameters: {
     scenario: '0123/S1',
-    ...showControls(PANEL_CONTROLS),
+    ...guideControls(),
   },
-  args: { ...FIXED_HEIGHT, ...PANELS },
   render: args => (
     <GuideStory
       title="Данные без колонок"
       steps={NO_COLUMNS}
-      args={normalizeArgs(args)}
+      args={guideArgs({ ...FIXED_HEIGHT, ...PANELS }, args)}
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
@@ -225,14 +220,13 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
   name: 'All columns hidden',
   parameters: {
     scenario: '0123/S2',
-    ...showControls(['enableColumnVisibility']),
+    ...guideControls(),
   },
-  args: { ...FIXED_HEIGHT, enableColumnVisibility: true },
   render: args => (
     <GuideStory
       title="Все колонки скрыты"
       steps={COLUMNS_HIDDEN}
-      args={normalizeArgs(args)}
+      args={guideArgs({ ...FIXED_HEIGHT, enableColumnVisibility: true }, args)}
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
@@ -294,16 +288,13 @@ export const StubsNoData: StoryObj<StoryProps> = {
   name: 'No data',
   parameters: {
     scenario: '0123/S3',
-    ...showControls([], {
-      dataCount: 'Строк нет: сценарий — про пустой ответ',
-    }),
+    ...guideControls(),
   },
-  args: FIXED_HEIGHT,
   render: args => (
     <GuideStory
       title="Пустой ответ"
       steps={NO_DATA}
-      args={normalizeArgs(args)}
+      args={guideArgs(FIXED_HEIGHT, args)}
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
@@ -360,37 +351,58 @@ const ordersStub = (log: ConsoleLog) => (
   />
 )
 
+const OWN_STUB: readonly GuideStoryStep[] = [
+  {
+    title: 'Данные загружаются',
+    hint: 'Данных еще нет, в теле таблицы отображаются скелеты.',
+    props: ({ log }) => ({
+      loading: 'initial',
+      dataOverride: [],
+      stubs: { noData: ordersStub(log) },
+    }),
+  },
+  {
+    title: 'Данные на сервере отсутствуют',
+    hint: 'Приложение заменило заглушку таблицы своей. В теле таблицы отображается заглушка приложения с его текстом и действием.',
+    props: () => ({ loading: false }),
+  },
+]
+
 /** S4: приложение показывает свою заглушку пустого ответа — пропом `stubs`. */
 export const StubsCustom: StoryObj<StoryProps> = {
   name: 'Custom stubs',
   parameters: {
     scenario: '0123/S4',
-    ...showControls([], {
-      dataCount: 'Строк нет: сценарий — про свою заглушку',
-    }),
+    ...guideControls(),
   },
-  args: FIXED_HEIGHT,
-  render: function Render(args) {
-    const [consoleLog] = useState(createConsoleLog)
-    return (
-      <WithConsole log={consoleLog} args={args}>
-        <StoryComponent
-          {...normalizeArgs(args)}
-          dataOverride={[]}
-          stubs={{ noData: ordersStub(consoleLog) }}
-        />
-      </WithConsole>
-    )
-  },
-  play: async ({ args, globals }) => {
+  render: args => (
+    <GuideStory
+      title="Своя заглушка"
+      steps={OWN_STUB}
+      args={guideArgs(FIXED_HEIGHT, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await waitTestId('own-no-data')
-    await expect(byTestId('no-data-stub')).not.toHaveTextContent(
-      storyLabels(args.locale).noData,
-    )
-    await expect(byTestId('own-no-data-action')).toHaveTextContent(
-      'Create order',
-    )
+    await step(OWN_STUB[0]!.title, async () => {
+      await until(() =>
+        expect(
+          canvas.querySelector('.data-grid__body-row--skeleton'),
+        ).not.toBeNull(),
+      )
+      await expect(byTestId('own-no-data')).toBeNull()
+    })
+    await step(OWN_STUB[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitTestId('own-no-data')
+      await expect(byTestId('no-data-stub')).not.toHaveTextContent(
+        storyLabels(args.locale).noData,
+      )
+      await expect(byTestId('own-no-data-action')).toHaveTextContent(
+        'Create order',
+      )
+    })
+    await settle()
   },
 }
 
@@ -413,14 +425,16 @@ export const StubsPluginReason: StoryObj<StoryProps> = {
   name: 'Plugin reason',
   parameters: {
     scenario: '0123/S5',
-    ...showControls([]),
+    ...guideControls(),
   },
-  args: { ...FIXED_HEIGHT, extraPlugins: [offline({ offline: false })] },
   render: args => (
     <GuideStory
       title="Своя причина плагина"
       steps={PLUGIN_REASON}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        { ...FIXED_HEIGHT, extraPlugins: [offline({ offline: false })] },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

@@ -24,7 +24,7 @@ import { ToolbarButton } from '@/lib/ui/ToolbarButton'
 import { SvgIcon } from '@/lib/ui/icons'
 import { arcHeadOf, arcTrackOf, pendingArcOf, renderGrid } from '../helpers'
 import { submittedCellsSeed } from '../performance/perf-cases'
-import { composed } from '../stories'
+import { composed, treeLinesArgs } from '../stories'
 import { contrast, toRgba } from './a11y-helpers'
 import { tableLabels } from '../labels'
 
@@ -675,7 +675,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
   })
 
   test('HC8: линии дерева видны цветом GrayText', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     const cell = () =>
       [...document.querySelectorAll<HTMLElement>('[data-tree-depth]')].find(
         el => {

@@ -1,7 +1,13 @@
 // Истории DataGrid как фикстуры тестов: все группы в одном объекте (по имени экспорта).
 import { composeStories } from '@storybook/react-vite'
+import { makeData } from '../__mocks__/data'
+import {
+  optionFilteringColumns,
+  optionFilteringData,
+} from '../__mocks__/filteringData'
 
 import * as accessibility from '../DataGrid.Accessibility.stories'
+import * as screenReaders from '../ScreenReaders.dev.stories'
 import * as cellsContextMenu from '../DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditing from '../DataGrid.Cells.Editing.stories'
 import * as cellsKeyboard from '../DataGrid.Cells.Keyboard.stories'
@@ -38,6 +44,7 @@ import * as rowsSelection from '../DataGrid.Rows.Selection.stories'
 
 export const composed = {
   ...composeStories(accessibility),
+  ...composeStories(screenReaders),
   ...composeStories(cellsContextMenu),
   ...composeStories(cellsEditing),
   ...composeStories(cellsKeyboard),
@@ -72,3 +79,73 @@ export const composed = {
   ...composeStories(rowsHighlight),
   ...composeStories(rowsSelection),
 }
+
+/** Колонки с вариантами: статус из списка, менеджер из справочника (ADR 0063). */
+export const optionLabelsArgs = {
+  columnsOverride: optionFilteringColumns,
+  dataOverride: optionFilteringData,
+}
+
+/** Группировка без начального состояния `Playground`: строки списком, раскрытия нет. */
+export const plainGroupingArgs = {
+  initialGrouping: undefined,
+  enableRowExpanding: undefined,
+  initialExpanded: undefined,
+}
+
+/** Счётчик выбранных строк и пейджер в нижней панели (ADR 0038, RS19–RS22). */
+export const selectedCountArgs = {
+  enableRowSelection: true,
+  rowSelectionSelectedCount: true,
+  enablePagination: true,
+  dataCount: 1000,
+  extraPlugins: [],
+}
+
+/** Колонка действий с меню строки — фикстура тестов меню (ADR 0024, 0025). */
+export const rowMenuArgs = {
+  enableRowActions: true,
+  enableRowActionMenu: true,
+  dataCount: 30,
+  containerHeight: '400',
+  height: '300',
+  maxHeight: '300',
+} as const
+
+/** Действия строки с ответом «сервера» (ADR 0078). */
+export const rowAsyncArgs = { ...rowMenuArgs, actionsDemo: 'async' } as const
+
+/** Действия строки с вложенными разделами, ещё и в контекстном меню (ADR 0079). */
+export const rowNestedArgs = {
+  ...rowMenuArgs,
+  actionsDemo: 'nested',
+  enableContextMenu: true,
+} as const
+
+/** Дерево в 4 уровня, раскрытое целиком, с линиями (ADR 0058, 0102). */
+export const treeLinesArgs = {
+  dataOverride: makeData({ shape: 'tree', count: 6, depth: 4, breadth: 2 }),
+  enableRowExpanding: true,
+  rowExpandingMaxDepth: 4,
+  enableTreeLines: true,
+  initialExpanded: true,
+  containerHeight: '640',
+  height: '540',
+  maxHeight: '540',
+} as const
+
+/** Раскрытие и выбор на плоских данных: раскрывать нечего (ADR 0050). */
+export const flatExpandingArgs = {
+  dataOverride: makeData({ shape: 'flat', count: 12 }),
+  enableRowExpanding: true,
+  enableRowSelection: true,
+} as const
+
+/** Дерево 4 × 3, раскрытое, с выбором детей вместе с родителем (ADR 0014). */
+export const subRowSelectionArgs = {
+  dataOverride: makeData({ shape: 'tree', count: 4, depth: 2, breadth: 3 }),
+  initialExpanded: true,
+  enableRowSelection: true,
+  rowSelectionSubRows: true,
+  enableRowExpanding: true,
+} as const

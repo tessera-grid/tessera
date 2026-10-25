@@ -25,8 +25,7 @@ import {
   rowActions,
 } from '../../../plugins'
 import { failureShownOn, humanClick, pendingArcOf } from '../helpers'
-import { composed } from '../stories'
-import { RowActionsAsync } from '../../DataGrid.Rows.Actions.stories'
+import { composed, rowAsyncArgs } from '../stories'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -954,23 +953,22 @@ describe('Свет во время прокрутки', () => {
 })
 
 describe('Демо-истории', () => {
-  test('MI24: «Rows/Actions — Async actions» — ожидание, отказ и причина видны в интерфейсе', async () => {
+  test('MI24: асинхронный набор действий в «Rows/Actions — Playground» — ожидание, отказ и причина видны в интерфейсе', async () => {
     // Storybook отбрасывает аргументы со скрытым условием контрола — composeStories нет:
-    // свои аргументы истории должны пройти этот фильтр.
-    for (const [story, own] of [
-      [composed.RowActionsAsync, RowActionsAsync.args],
-    ] as const) {
-      const args = story.args as Record<string, unknown>
-      const argTypes = story.argTypes as Record<string, never>
-      for (const key of Object.keys(own ?? {})) {
-        expect(
-          includeConditionalArg(argTypes[key] ?? {}, args, {}),
-          `${story.storyName}: ${key}`,
-        ).toBe(true)
-      }
+    // набор, выбранный в Controls, должен пройти этот фильтр.
+    const story = composed.RowActionsPlayground
+    const args = { ...story.args, ...rowAsyncArgs } as Record<string, unknown>
+    const argTypes = story.argTypes as Record<string, never>
+    for (const key of Object.keys(rowAsyncArgs)) {
+      expect(
+        includeConditionalArg(argTypes[key] ?? {}, args, {}),
+        `${story.storyName}: ${key}`,
+      ).toBe(true)
     }
 
-    const view = await render(<composed.RowActionsAsync />)
+    const view = await render(
+      <composed.RowActionsPlayground {...rowAsyncArgs} />,
+    )
     await waitForGrid()
     const kebabOf = (row: HTMLElement) =>
       row.querySelector<HTMLElement>(`[aria-label^="${tableLabels.rowMenu}"]`)

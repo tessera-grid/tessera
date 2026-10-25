@@ -3,7 +3,7 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, onTestFinished, test, vi } from 'vitest'
 
-import { composed } from '../stories'
+import { composed, selectedCountArgs, subRowSelectionArgs } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { rowState } from '../helpers'
@@ -15,8 +15,8 @@ import { tableLabels } from '../labels'
 // name points straight at the requirement it guards (see the naming rule in
 // docs/decisions/0009-test-coverage-visual-and-performance.md).
 // Tests drive the `RowSelectionPlayground` story (flat rows, whole page visible) for the
-// per-row and select-all-on-page mechanics, and the `SubRowSelection` story (a
-// deterministic tree) for the sub-row cascade. State is read from the DOM/ARIA
+// per-row and select-all-on-page mechanics, and the same story with
+// `subRowSelectionArgs` (a deterministic tree) for the sub-row cascade. State is read from the DOM/ARIA
 // contract (checkbox `data-checked`/`data-indeterminate`, row `data-selected`),
 // not from mock literals.
 
@@ -49,7 +49,7 @@ const iconOf = (cb: Element) => cb.querySelector<SVGElement>('svg')
 type RowSelectionArgs = Partial<
   Parameters<typeof composed.RowSelectionPlayground>[0]
 >
-type SubRowArgs = Partial<Parameters<typeof composed.SubRowSelection>[0]>
+type SubRowArgs = Partial<Parameters<typeof composed.RowSelectionPlayground>[0]>
 
 /** Body rows in visual (top-to-bottom) order — real rows only (skip padding). */
 const rowsTopDown = (container: HTMLElement) =>
@@ -79,16 +79,19 @@ const isRowSelected = (row: HTMLElement) =>
 /** Render the RowSelection story and wait until its rows are on screen. */
 async function renderRowSelection(args: RowSelectionArgs = {}) {
   const { container } = await render(
-    <composed.RowSelectionPlayground {...args} />,
+    // Without the Playground seed: tests start with nothing selected.
+    <composed.RowSelectionPlayground extraPlugins={[]} {...args} />,
   )
   await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(3)
   return container
 }
 
-/** Render the SubRowSelection (tree) story, sized so every node is visible. */
+/** Render the sub-row tree, sized so every node is visible. */
 async function renderSubRowSelection(args: SubRowArgs = {}) {
   const { container } = await render(
-    <composed.SubRowSelection
+    <composed.RowSelectionPlayground
+      {...subRowSelectionArgs}
+      extraPlugins={[]}
       containerHeight={760}
       height={660}
       maxHeight={660}
@@ -390,7 +393,8 @@ const pageNext = () =>
 describe('Row Selection — selected count', () => {
   test('RS19: with selectedCount the left side of the status bar shows selectedRows(count); without the option there is no slot', async () => {
     const plain = await render(
-      <composed.SelectedCount
+      <composed.StatusBarPlayground
+        {...selectedCountArgs}
         {...COUNT_GRID}
         rowSelectionSelectedCount={false}
       />,
@@ -402,7 +406,7 @@ describe('Row Selection — selected count', () => {
     await plain.unmount()
 
     const { container } = await render(
-      <composed.SelectedCount {...COUNT_GRID} />,
+      <composed.StatusBarPlayground {...selectedCountArgs} {...COUNT_GRID} />,
     )
     await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
@@ -429,7 +433,7 @@ describe('Row Selection — selected count', () => {
     await page.viewport(1000, height)
     onTestFinished(() => page.viewport(width, height))
     const { container } = await render(
-      <composed.SelectedCount {...COUNT_GRID} />,
+      <composed.StatusBarPlayground {...selectedCountArgs} {...COUNT_GRID} />,
     )
     await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
     expect(counter()!.textContent).toBe('')
@@ -449,7 +453,7 @@ describe('Row Selection — selected count', () => {
 
   test('RS22: the status bar with the counter and pagination passes axe; the counter is not a live region', async () => {
     const { container } = await render(
-      <composed.SelectedCount {...COUNT_GRID} />,
+      <composed.StatusBarPlayground {...selectedCountArgs} {...COUNT_GRID} />,
     )
     await expect.poll(() => rowsTopDown(container).length).toBeGreaterThan(0)
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)

@@ -1,5 +1,6 @@
 /**
- * `play` истории сценария не делает за шаг его событие (ADR 0117, SN36): событие —
+ * `play` истории сценария не делает за шаг его событие (ADR 0117, SN36), история сценария
+ * рисует гайд (SN38), `play` у `Playground` событий не делает (SN39). Событие —
  * действие шага гайда, которое видит и человек; `play` нажимает кнопки панели и
  * проверяет. Разбор статический: `play` и функции своего файла, которые он вызывает.
  * Запуск: npx vitest run --config vitest.node.config.ts guidePlay
@@ -144,19 +145,59 @@ const actionsOf = (play: ts.Node, declarations: Declarations) => {
   return [...found].sort()
 }
 
-const storyModules = import.meta.glob<
-  Record<string, { parameters?: { scenario?: string } }>
->('../stories/*.stories.tsx')
+/** Рисует ли `render` — сам или функциями файла, до которых доходит, — `GuideStory`. */
+const rendersGuide = (render: ts.Node, declarations: Declarations) => {
+  const seen = new Set<ts.Node>()
+  const scan = (root: ts.Node): boolean => {
+    if (seen.has(root)) return false
+    seen.add(root)
+    let found = false
+    const visit = (node: ts.Node) => {
+      if (found) return
+      if (
+        (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+        ts.isIdentifier(node.tagName) &&
+        node.tagName.text === 'GuideStory'
+      ) {
+        found = true
+        return
+      }
+      if (ts.isIdentifier(node)) {
+        const declaration = declarations.get(node.text)
+        if (isFunction(declaration) && scan(declaration)) {
+          found = true
+          return
+        }
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(root)
+    return found
+  }
+  return scan(render)
+}
 
-/** `<файл> <экспорт>` → события шага в его `play`. */
-const violations = async () => {
-  const wrong = new Map<string, string[]>()
+type StoryExport = { name?: string; parameters?: { scenario?: string } }
+
+const storyModules = import.meta.glob<Record<string, StoryExport>>(
+  '../stories/*.stories.tsx',
+)
+
+/** Какие истории разбирает страж: сценарии (SN36, SN38) или `Playground` (SN39). */
+type Pick = (story: StoryExport) => boolean
+const isScenario: Pick = story => !!story.parameters?.scenario
+const isPlayground: Pick = story => story.name === 'Playground'
+
+/** Объявления файла и выбранные истории в нём. */
+const sourcesOf = async (pick: Pick) => {
+  const files: { file: string; declarations: Declarations; names: string[] }[] =
+    []
   for (const [path, load] of Object.entries(storyModules)) {
     const { default: _meta, ...exports } = await load()
-    const scenarios = Object.entries(exports)
-      .filter(([, story]) => story.parameters?.scenario)
+    const names = Object.entries(exports)
+      .filter(([, story]) => pick(story))
       .map(([name]) => name)
-    if (!scenarios.length) continue
+    if (!names.length) continue
     const file = basename(path)
     const source = ts.createSourceFile(
       file,
@@ -165,8 +206,16 @@ const violations = async () => {
       true,
       ts.ScriptKind.TSX,
     )
-    const declarations = declarationsOf(source)
-    for (const name of scenarios) {
+    files.push({ file, declarations: declarationsOf(source), names })
+  }
+  return files
+}
+
+/** `<файл> <экспорт>` → события в `play` выбранных историй. */
+const violations = async (pick: Pick) => {
+  const wrong = new Map<string, string[]>()
+  for (const { file, declarations, names } of await sourcesOf(pick)) {
+    for (const name of names) {
       const story = declarations.get(name)
       let play = story && propertyOf(story, 'play')
       if (play && ts.isIdentifier(play))
@@ -208,11 +257,68 @@ describe('play истории сценария (ADR 0117)', () => {
       ),
     ).toEqual(['dragHold()'])
 
-    const found = await violations()
+    const found = await violations(isScenario)
     const fresh = [...found]
       .filter(([story]) => !(story in BASELINE))
       .map(([story, actions]) => `${story}: ${actions.join(', ')}`)
     const stale = Object.keys(BASELINE).filter(story => !found.has(story))
+    expect({ fresh, stale }).toEqual({ fresh: [], stale: [] })
+  }, 60_000)
+})
+
+/**
+ * `Playground`, чей `play` ещё делает событие (ADR 0117, SN39): список только
+ * сокращается — переведённая история уходит из него, иначе страж падает.
+ */
+const PLAYGROUND_BASELINE: Record<string, string> = {
+  'DataGrid.Rows.Dragging.stories.tsx RowDraggingPlayground':
+    'файл в работе по ADR 0137 — перевод после её коммита',
+}
+
+describe('форма раздела (ADR 0117)', () => {
+  it('SN38: история сценария проигрывает гайд — её render, сам или через функции своего файла, рисует GuideStory', async () => {
+    // Гайд за функцией файла страж видит; история без гайда — нарушитель.
+    const probe = ts.createSourceFile(
+      'probe.tsx',
+      `
+        const guided = (steps: unknown[]) => () => <GuideStory steps={steps} />
+        export const WithGuide = { render: guided([]) }
+        export const WithoutGuide = { render: () => <StoryComponent /> }
+        `,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    )
+    const probeDeclarations = declarationsOf(probe)
+    const renders = (name: string) =>
+      rendersGuide(
+        propertyOf(probeDeclarations.get(name)!, 'render')!,
+        probeDeclarations,
+      )
+    expect([renders('WithGuide'), renders('WithoutGuide')]).toEqual([
+      true,
+      false,
+    ])
+
+    const wrong: string[] = []
+    for (const { file, declarations, names } of await sourcesOf(isScenario)) {
+      for (const name of names) {
+        const render = propertyOf(declarations.get(name)!, 'render')
+        if (!render || !rendersGuide(render, declarations))
+          wrong.push(`${file} ${name}`)
+      }
+    }
+    expect(wrong).toEqual([])
+  }, 60_000)
+
+  it('SN39: play у Playground не делает событий — ни сам, ни помощниками своего файла (перечень SN36); нарушитель вне базы и запись базы, которая больше не нарушает, роняют страж', async () => {
+    const found = await violations(isPlayground)
+    const fresh = [...found]
+      .filter(([story]) => !(story in PLAYGROUND_BASELINE))
+      .map(([story, actions]) => `${story}: ${actions.join(', ')}`)
+    const stale = Object.keys(PLAYGROUND_BASELINE).filter(
+      story => !found.has(story),
+    )
     expect({ fresh, stale }).toEqual({ fresh: [], stale: [] })
   }, 60_000)
 })

@@ -12,6 +12,7 @@ import {
   humanClick,
   revealCellButtons,
 } from '../helpers'
+import { plainGroupingArgs } from '../stories'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -300,6 +301,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   test('W10: с иерархией строк грид — treegrid, строки несут aria-level/setsize/posinset', async () => {
     const screen = await render(
       <Stories.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}
@@ -350,6 +352,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     // Без клавиатурной навигации — таблица без атрибутов уровня.
     await render(
       <Stories.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableRowExpanding
         initialGrouping={['gender']}
       />,
@@ -496,6 +499,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
   test('W16: фокус на строке treegrid — ←/→ раскрывают, сворачивают и ведут к ячейке и родителю', async () => {
     await render(
       <Stories.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}

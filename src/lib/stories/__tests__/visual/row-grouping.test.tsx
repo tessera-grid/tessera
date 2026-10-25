@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { composed } from '../stories'
+import { composed, plainGroupingArgs } from '../stories'
 
 // Each Row Grouping requirement is its own named test, prefixed with its spec ID
 // (RG1–RG11 from the requirements table in docs/decisions/0016-row-grouping.md).
@@ -34,7 +34,7 @@ type StoryArgs = Partial<Parameters<typeof composed.RowGroupingPlayground>[0]>
 /** Render the RowGrouping story and wait until its header cells are on screen. */
 async function renderRowGrouping(args: StoryArgs = {}) {
   const { container } = await render(
-    <composed.RowGroupingPlayground {...args} />,
+    <composed.RowGroupingPlayground {...plainGroupingArgs} {...args} />,
   )
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)

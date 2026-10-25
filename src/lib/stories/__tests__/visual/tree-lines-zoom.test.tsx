@@ -2,7 +2,7 @@ import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
-import { composed } from '../stories'
+import { composed, treeLinesArgs } from '../stories'
 import {
   TREE,
   box,
@@ -31,7 +31,7 @@ describe('Tree lines under fractional zoom', () => {
     for (const zoom of ZOOMS) {
       const screen = await render(
         <div style={{ zoom }}>
-          <composed.RowExpandingTreeLines />
+          <composed.RowExpandingPlayground {...treeLinesArgs} />
         </div>,
       )
       await expect.poll(() => rowEl(TREE.falkland)).not.toBeNull()

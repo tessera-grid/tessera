@@ -18,7 +18,7 @@ import {
 import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
 import { humanClick, renderGrid, rowState } from '../helpers'
-import { composed } from '../stories'
+import { composed, treeLinesArgs } from '../stories'
 import {
   contrast,
   effectiveBg,
@@ -234,7 +234,9 @@ describe('Повышенный контраст (ADR 0088)', () => {
     )
     await screen.unmount()
 
-    const tree = await render(<composed.RowExpandingTreeLines />)
+    const tree = await render(
+      <composed.RowExpandingPlayground {...treeLinesArgs} />,
+    )
     await expect.poll(treeCell).toBeTruthy()
     await changes(
       '--tsr-sys-tint-guide',
@@ -263,7 +265,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
 
   test('MC2: в режиме линии дерева, скелет, выключенный Switch и ползунок прокрутки не ниже 3:1 к фону', async () => {
     const tree = await render(
-      <composed.RowExpandingTreeLines contrast="more" />,
+      <composed.RowExpandingPlayground {...treeLinesArgs} contrast="more" />,
     )
     await expect.poll(treeCell).toBeTruthy()
     await inBothThemes(async () => {

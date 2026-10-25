@@ -29,31 +29,6 @@ const panelRow = { display: 'flex', gap: 8, alignItems: 'center' } as const
 /** Отказ демо-«сервера»: `always` — каждый запрос отклоняется. */
 export type ServerFailMode = 'never' | 'always'
 
-// --- 3. Колбэки перетаскивания и ресайза (ADR 0040) ---------------------------
-
-export const SessionCallbacksDemo = (args: StoryProps) => {
-  const [consoleLog] = useState(createConsoleLog)
-  const log = consoleLog.log
-  const logged =
-    (name: string) =>
-    (payload: object): void =>
-      log(name, describeEvent({ ...payload }))
-  const [callbacks] = useState(() => ({
-    onRowDragEnd: logged('onRowDragEnd'),
-    onRowDragCancel: logged('onRowDragCancel'),
-    onColumnDragEnd: logged('onColumnDragEnd'),
-    onColumnDragCancel: logged('onColumnDragCancel'),
-    onColumnResizeEnd: logged('onColumnResizeEnd'),
-    onColumnResizeCancel: logged('onColumnResizeCancel'),
-  }))
-
-  return (
-    <WithConsole log={consoleLog} args={args}>
-      <StoryComponent {...args} {...callbacks} />
-    </WithConsole>
-  )
-}
-
 // --- 4. Ленивое раскрытие (ADR 0041) ------------------------------------------
 
 export interface RowExpandingLazyDemoProps extends StoryProps {
@@ -123,110 +98,12 @@ export const RowExpandingLazyDemo = ({
   )
 }
 
-// --- 5. Ленивые дети (ADR 0054) -----------------------------------------------
-
-type DemoNode = DemoRow & { childCount?: number; subRows?: DemoNode[] }
-
-/** Узел, который сервер «опустошил»: помечен детьми, а ответ — пустой. */
-const EMPTY_NODE_ID = 'node-3'
-
-export interface RowExpandingLazyChildrenDemoProps extends StoryProps {
-  /** Задержка ответа `loadChildren`, мс. */
-  loadDelayMs?: number
-  /** `always` — каждая загрузка падает. */
-  loadFailMode?: ServerFailMode
-}
-
-export const RowExpandingLazyChildrenDemo = ({
-  loadDelayMs = 900,
-  loadFailMode = 'never',
-  ...args
-}: RowExpandingLazyChildrenDemoProps) => {
-  const [consoleLog] = useState(createConsoleLog)
-  const log = consoleLog.log
-  // «Сервер»: полное дерево; клиенту уходят узлы без детей, но с `childCount`.
-  const [server] = useState(() => {
-    const children = new Map<string, DemoNode[]>()
-    const strip = (nodes: DemoNode[]): DemoNode[] =>
-      nodes.map(({ subRows, ...node }) => {
-        if (subRows) {
-          children.set(node.id, subRows)
-        }
-        return { ...node, childCount: subRows?.length ?? 0 }
-      })
-    const tree = makeData({
-      shape: 'tree',
-      count: 12,
-      depth: 3,
-      breadth: 3,
-    }) as DemoNode[]
-    return { roots: strip(tree), children, strip }
-  })
-  const failNext = useRef(false)
-  const settings = useLatest({ loadDelayMs, loadFailMode })
-
-  const hasChildren = useCallback(
-    (row: Row<any, any>) => ((row.original as DemoNode).childCount ?? 0) > 0,
-    [],
-  )
-  const loadChildren = useCallback(
-    (row: Row<any, any>) => {
-      log('loadChildren', describeEvent({ rowId: row.id }))
-      return new Promise<DemoNode[]>((resolve, reject) => {
-        window.setTimeout(() => {
-          if (settings.current.loadFailMode === 'always' || failNext.current) {
-            failNext.current = false
-            log('server', `children of ${row.id} failed to load`)
-            reject(new Error('Server unavailable'))
-            return
-          }
-          const rows =
-            row.id === EMPTY_NODE_ID
-              ? []
-              : server.strip(server.children.get(row.id) ?? [])
-          log('server', `children of ${row.id}: ${rows.length}`)
-          resolve(rows)
-        }, settings.current.loadDelayMs)
-      })
-    },
-    [log, server, settings],
-  )
-
-  return (
-    <WithConsole
-      log={consoleLog}
-      args={args}
-      actions={
-        <>
-          <div style={panelRow}>
-            <button
-              type="button"
-              onClick={() => {
-                failNext.current = true
-                log('server', 'the next load will fail')
-              }}
-            >
-              Fail next load
-            </button>
-          </div>
-        </>
-      }
-    >
-      <StoryComponent
-        {...args}
-        dataOverride={server.roots}
-        rowExpandingHasChildren={hasChildren}
-        rowExpandingLoadChildren={loadChildren}
-      />
-    </WithConsole>
-  )
-}
-
 // --- Перенос в ленивом дереве (ADR 0112) ---------------------------------------
 // Сервер хранит дерево; клиенту уходят корни и дети по запросу. Перенос сохраняется
 // с задержкой, «Reject next move» и `moveFailMode` — отказ и откат строки.
 
 const ROOT = ''
+type DemoNode = DemoRow & { childCount?: number; subRows?: DemoNode[] }
 
 export interface RowDraggingLazyTreeDemoProps extends StoryProps {
   /** Задержка ответа `loadChildren`, мс. */

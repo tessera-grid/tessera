@@ -7,7 +7,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { rowExpandingModel } from '../../../plugins'
 import { Stories } from '../helpers'
-import { composed } from '../stories'
+import { composed, plainGroupingArgs } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 // Модель дерева `rowExpandingModel`, интерфейс `rowExpanding` и линии `treeLines` (ADR 0119).
@@ -208,6 +208,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
   test('TD7: rowGrouping с rowExpandingModel без rowExpanding — группы раскрыты по expanded, колонки переключателя нет', async () => {
     const screen = await render(
       <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableRowExpanding={false}
         enableRowExpandingModel
         initialGrouping={['gender']}
@@ -221,6 +222,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
 
     await screen.rerender(
       <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableRowExpanding={false}
         enableRowExpandingModel
         initialGrouping={['gender']}
@@ -276,6 +278,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
 
     await render(
       <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableRowExpanding={false}
         enableRowExpandingModel
         enableTreeLines

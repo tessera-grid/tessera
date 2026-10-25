@@ -24,6 +24,7 @@ import {
   composed,
 } from './column-pinning-helpers'
 import { openPopup } from '../../__mocks__/catalogPlay'
+import { rowNestedArgs } from '../stories'
 import { tableLabels } from '../labels'
 
 // CP20–CP27, CP29, CP34, CP37: закрепление справа, колонка действий, виртуализация.
@@ -334,7 +335,8 @@ describe('Column Pinning — right side', () => {
     await page.viewport(900, 720)
     onTestFinished(() => page.viewport(viewport.width, viewport.height))
     const screen = await render(
-      <composed.RowActionsNested
+      <composed.RowActionsPlayground
+        {...rowNestedArgs}
         dataCount={20}
         containerHeight="460"
         height="360"

@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { humanClick } from '../helpers'
-import { composed } from '../stories'
+import { composed, optionLabelsArgs } from '../stories'
 import { STATUS_OPTIONS } from '../../__mocks__/filteringData'
 
 // Сортировка колонок с вариантами по подписи (ADR 0063, OS8–OS9): настоящий клик по
@@ -10,13 +10,11 @@ import { STATUS_OPTIONS } from '../../__mocks__/filteringData'
 
 const collator = new Intl.Collator()
 
-type StoryArgs = Partial<
-  Parameters<typeof composed.ColumnSortingOptionLabels>[0]
->
+type StoryArgs = Partial<Parameters<typeof composed.ColumnSortingPlayground>[0]>
 
 const renderStory = async (args: StoryArgs = {}) => {
   const { container } = await render(
-    <composed.ColumnSortingOptionLabels {...args} />,
+    <composed.ColumnSortingPlayground {...optionLabelsArgs} {...args} />,
   )
   await expect
     .poll(() => container.querySelectorAll('.data-grid__body-row').length)

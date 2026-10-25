@@ -3,11 +3,20 @@ import { expect } from 'storybook/test'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { guideNext, settle, until } from './__mocks__/catalogPlay'
-import { expandAllType } from './__mocks__/utils/argTypes'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import {
+  guideNext,
+  pollUntil,
+  settle,
+  stepDone,
+  until,
+} from './__mocks__/catalogPlay'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /**
  * Дерево (ADR 0119): модель `rowExpandingModel` показывает подстроки по `expanded` приложения,
@@ -28,22 +37,26 @@ const FIXED_HEIGHT = {
   maxHeight: '500',
 } as const
 
-/**
- * `expandAll` без переключателя: условие меты прячет контрол без `rowExpanding`, а
- * аргумент под ложным условием до истории не доходит; снимает его только `null`.
- */
-const EXPAND_ALL_CONTROL = {
-  expandAll: { ...expandAllType, if: null as unknown as undefined },
-}
-
 // Мок: у `item-id-0` двое детей, у первого — свой ребёнок.
 const ROOT = 'item-id-0'
+const CHILD = 'item-id-0-0'
 const GRANDCHILD = 'item-id-0-0-0'
 
 const rowOf = (canvas: HTMLElement, id: string) =>
   canvas.querySelector<HTMLElement>(`.data-grid__body-row[data-row-id="${id}"]`)
 const expandColumn = (canvas: HTMLElement) =>
   canvas.querySelector('.data-grid__head-cell[data-column-id*="rowExpanding"]')
+/** Левый край текста первой ячейки строки: отступ уровня его сдвигает. */
+const textLeft = (row: HTMLElement) => {
+  const walker = document.createTreeWalker(
+    row.querySelector('[role="gridcell"], [role="cell"]')!,
+    NodeFilter.SHOW_TEXT,
+    { acceptNode: node => (node.textContent?.trim() ? 1 : 2) },
+  )
+  const range = document.createRange()
+  range.selectNodeContents(walker.nextNode()!)
+  return range.getBoundingClientRect().left
+}
 const lines = (canvas: HTMLElement) =>
   canvas.querySelectorAll('[data-tree-depth]').length
 
@@ -70,18 +83,18 @@ export const TreeDataPlayground: StoryObj<StoryProps> = {
 
 const READ_ONLY = [
   {
-    title: 'Данные — дерево',
-    hint: 'Плагин rowExpandingModel: подстроки видны по состоянию expanded приложения. Пока оно пустое — одни корни.',
+    title: 'Корни дерева',
+    hint: 'Таблица получила иерархические данные, раскрытием управляет приложение. Пока ничего не раскрыто, видны только строки верхнего уровня.',
     props: () => ({ expandAll: false }),
   },
   {
     title: 'Приложение раскрывает всё',
-    hint: 'expanded: true — видны все уровни с отступом. Переключателя нет: раскрытие задаёт приложение, а не пользователь.',
+    hint: 'Приложение раскрыло все уровни. Таблица показывает подстроки с отступом по глубине. Кнопок раскрытия нет: раскрытие задаёт приложение, а не пользователь.',
     props: () => ({ expandAll: true }),
   },
   {
-    title: 'Линии дерева',
-    hint: 'Плагин treeLines — ветки видны линиями: поворот к подстроке, продолжение к сестре, отросток у строки с подстроками.',
+    title: 'Приложение включает линии дерева',
+    hint: 'Ветки связаны линиями: поворот к подстроке, продолжение к следующей строке того же уровня, отросток у строки с подстроками.',
     props: () => ({ enableTreeLines: true }),
   },
 ] as const satisfies readonly GuideStoryStep[]
@@ -94,25 +107,20 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
   name: 'Read only',
   parameters: {
     scenario: '0119/S1',
-    ...showControls([
-      'dataNesting',
-      'enableRowExpandingModel',
-      'enableTreeLines',
-      'expandAll',
-      'enableKeyboardNavigation',
-    ]),
+    ...guideControls(),
   },
-  args: {
-    ...FIXED_HEIGHT,
-    dataNesting: 'nested',
-    enableRowExpandingModel: true,
-  },
-  argTypes: EXPAND_ALL_CONTROL,
   render: args => (
     <GuideStory
       title="Дерево без переключателя"
       steps={READ_ONLY}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          ...FIXED_HEIGHT,
+          dataNesting: 'nested',
+          enableRowExpandingModel: true,
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -125,6 +133,12 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
     await step(READ_ONLY[1].title, async () => {
       await guideNext(canvas)
       await until(() => expect(rowOf(canvas, GRANDCHILD)).not.toBeNull())
+      await expect(textLeft(rowOf(canvas, GRANDCHILD)!)).toBeGreaterThan(
+        textLeft(rowOf(canvas, CHILD)!),
+      )
+      await expect(textLeft(rowOf(canvas, CHILD)!)).toBeGreaterThan(
+        textLeft(rowOf(canvas, ROOT)!),
+      )
       await expect(expandColumn(canvas)).toBeNull()
       await expect(lines(canvas)).toBe(0)
     })
@@ -138,58 +152,81 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
 
 // --- S2 ------------------------------------------------------------------------------
 
-/** Нажимает переключатель строки, как пользователь. */
-const toggleRoot = (root: HTMLElement) =>
-  rowOf(root, ROOT)
-    ?.querySelector<HTMLButtonElement>(
-      '[data-column-id*="rowExpanding"] button',
-    )
-    ?.click()
+const toggleOf = (root: HTMLElement, id: string) =>
+  rowOf(root, id)?.querySelector<HTMLButtonElement>(
+    '[data-column-id*="rowExpanding"] button',
+  )
+
+/** Пользователь нажимает переключатель строки `id`, пока она не станет `expanded`. */
+const expandRow = async (
+  root: HTMLElement,
+  id: string,
+  expanded: boolean,
+  signal: AbortSignal,
+) => {
+  await pollUntil(() => !!toggleOf(root, id), signal)
+  if (
+    (toggleOf(root, id)!.getAttribute('aria-expanded') === 'true') !==
+    expanded
+  )
+    toggleOf(root, id)!.click()
+  await pollUntil(
+    () =>
+      (toggleOf(root, id)?.getAttribute('aria-expanded') === 'true') ===
+      expanded,
+    signal,
+  )
+}
 
 const WITH_TOGGLE = [
   {
     title: 'Дерево с переключателем',
-    hint: 'Плагин rowExpanding — колонка с кнопками раскрытия у строк с подстроками; treeLines рисует линии у раскрытых веток.',
+    hint: 'Ветки раскрывает сам пользователь: у строк с подстроками есть кнопка раскрытия. Пока ветки свёрнуты, линий нет.',
   },
   {
     title: 'Пользователь раскрывает ветку',
-    hint: 'Нажата кнопка первой строки: подстроки встают под ней, линии связывают их с родителем.',
-    enter: toggleRoot,
+    states: ['body.treeLines'],
+    hint: 'Пользователь нажал кнопку раскрытия первой строки. Подстроки встают под ней, линии связывают их с родителем.',
+    enter: stepAction(async (root, { signal }) => {
+      await expandRow(root, ROOT, true, signal)
+      await expandRow(root, CHILD, false, signal)
+    }),
   },
   {
-    title: 'Пользователь сворачивает ветку',
-    hint: 'Повторное нажатие сворачивает ветку: подстроки и их линии уходят, отросток у строки пропадает.',
-    enter: toggleRoot,
+    title: 'Пользователь раскрывает вложенную ветку',
+    states: ['body.treeLines'],
+    hint: 'Пользователь раскрыл подстроку первой строки. Под ней встаёт следующий уровень, линии продолжаются вглубь.',
+    enter: stepAction(async (root, { signal }) => {
+      await expandRow(root, ROOT, true, signal)
+      await expandRow(root, CHILD, true, signal)
+    }),
   },
 ] as const satisfies readonly GuideStoryStep[]
 
 /**
- * S2: дерево с переключателем и линиями — пользователь раскрывает и сворачивает ветки,
- * линии следуют. `rowExpandingMaxDepth` ограничивает раскрываемую глубину.
+ * S2: дерево с переключателем и линиями — пользователь раскрывает ветку и вложенную
+ * ветку, линии следуют. Раскрываются два уровня (`rowExpandingMaxDepth: 2`).
  */
 export const TreeDataWithToggle: StoryObj<StoryProps> = {
   name: 'With toggle',
   parameters: {
     scenario: '0119/S2',
-    ...showControls([
-      'dataNesting',
-      'enableRowExpanding',
-      'rowExpandingMaxDepth',
-      'enableTreeLines',
-      'enableKeyboardNavigation',
-    ]),
-  },
-  args: {
-    ...FIXED_HEIGHT,
-    dataNesting: 'nested',
-    enableRowExpanding: true,
-    enableTreeLines: true,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Дерево с переключателем"
       steps={WITH_TOGGLE}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          ...FIXED_HEIGHT,
+          dataNesting: 'nested',
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 2,
+          enableTreeLines: true,
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -200,11 +237,18 @@ export const TreeDataWithToggle: StoryObj<StoryProps> = {
     })
     await step(WITH_TOGGLE[1].title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(lines(canvas)).toBeGreaterThan(0))
+      await expect(rowOf(canvas, CHILD)).not.toBeNull()
+      await expect(rowOf(canvas, GRANDCHILD)).toBeNull()
     })
     await step(WITH_TOGGLE[2].title, async () => {
       await guideNext(canvas)
-      await until(() => expect(lines(canvas)).toBe(0))
+      await stepDone(canvas)
+      await until(() => expect(rowOf(canvas, GRANDCHILD)).not.toBeNull())
+      await expect(
+        rowOf(canvas, GRANDCHILD)!.querySelector('[data-tree-depth]'),
+      ).not.toBeNull()
     })
     await settle()
   },

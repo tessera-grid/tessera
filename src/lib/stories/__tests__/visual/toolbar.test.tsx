@@ -21,6 +21,18 @@ const GRID = {
   dataCount: 60,
 }
 
+/** Тулбар демо-кнопок: встроенные кнопки истории выключены. */
+const DEMO = {
+  ...GRID,
+  columnsOverride: undefined,
+  dataOverride: undefined,
+  enableQuickSearch: false,
+  enableColumnFiltering: false,
+  enableColumnVisibility: false,
+  enableDataExport: false,
+  extraPlugins: toolbarDemoPlugins,
+}
+
 const toolbar = () => document.querySelector<HTMLElement>('[role="toolbar"]')
 const toolbarButtons = () => [
   ...toolbar()!.querySelectorAll<HTMLButtonElement>('button'),
@@ -48,7 +60,7 @@ const mount = async (node: ReactElement) => {
   return result
 }
 
-const renderToolbar = () => mount(<Stories.ToolbarPlayground {...GRID} />)
+const renderToolbar = () => mount(<Stories.ToolbarPlayground {...DEMO} />)
 
 describe('Grid frame', () => {
   test('TB1: the grid has a rounded frame from --tsr-comp-frame-* tokens; width 0 removes it', async () => {
@@ -86,7 +98,9 @@ describe('Toolbar', () => {
   })
 
   test('TB4: with enableToolbar: true the toolbar renders without buttons and keeps the same height', async () => {
-    const empty = await mount(<Stories.WithEmptyToolbar {...GRID} />)
+    const empty = await mount(
+      <Stories.ToolbarPlayground {...DEMO} extraPlugins={[]} enableToolbar />,
+    )
     expect(toolbar()).not.toBeNull()
     expect(toolbarButtons()).toHaveLength(0)
     const emptyHeight = rect(toolbar()!).height
@@ -121,7 +135,7 @@ describe('Toolbar', () => {
     expect(read(head(), 'border-top-width')).toBe('0px')
     await flat.unmount()
 
-    await mount(<Stories.ToolbarPlayground {...GRID} headerNesting="nested" />)
+    await mount(<Stories.ToolbarPlayground {...DEMO} headerNesting="nested" />)
     expect(head().dataset.layout).toBe('grid')
     expect(read(head(), 'border-top-width')).toBe('0px')
   })
@@ -150,7 +164,7 @@ describe('Toolbar', () => {
 
     await mount(
       <Stories.ToolbarPlayground
-        {...GRID}
+        {...DEMO}
         extraPlugins={[toolbarDemoPlugins[0]]}
       />,
     )
@@ -200,7 +214,7 @@ describe('Toolbar', () => {
     const withoutToolbar = offsetFromHead()
     await plain.unmount()
 
-    await mount(<Stories.ToolbarPlayground {...GRID} loading="refresh" />)
+    await mount(<Stories.ToolbarPlayground {...DEMO} loading="refresh" />)
     // Индикатор — после задержки показа (ADR 0094, GL5).
     await expect
       .poll(() => document.querySelector('[role="progressbar"]'))

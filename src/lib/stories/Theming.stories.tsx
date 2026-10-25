@@ -1002,133 +1002,118 @@ export const Palette: StoryObj<ThemingArgs> = {
   parameters: { controls: { disable: true } },
 }
 
-// ============================================================================
-// Источники темы (ADR 0090): `colorMode` по умолчанию следует `.dark` предка,
-// проп навязывает тёмную, `.dark` на контейнере, светлая под тёмным контейнером.
-// Тумблер «Палитра приложения» снимает роли shadcn — грид остаётся на своих.
-// ============================================================================
+// --- ADR 0090 S1 ---------------------------------------------------------------------
 
-const SOURCE_PALETTE_OFF = Object.fromEntries(
-  [
-    '--foreground',
-    '--background',
-    '--card',
-    '--muted',
-    '--primary',
-    '--primary-foreground',
-    '--border',
-    '--ring',
-  ].map(name => [name, 'initial']),
-) as CSSProperties
+const THEME_WRAPPER = '.data-grid-theme[class*="theme-wrapper"]'
+const wrapperOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(THEME_WRAPPER)
+/** Тема, в которой таблица нарисована сейчас. */
+const schemeOf = (root: ParentNode) => {
+  const wrapper = wrapperOf(root)
+  return wrapper ? getComputedStyle(wrapper).colorScheme : ''
+}
 
-const SourceGrid = memo(
-  ({ colorMode }: { colorMode?: 'auto' | 'light' | 'dark' }) => {
-    const columns = useColumns(4)
-    const { data } = useData({ count: 8, showStub: false })
-    const table = useCreateTable({
-      columns: columns as never,
-      data,
-      plugins: [rowSelection(), columnSorting()],
-    })
-    return (
-      <DataGrid
-        table={table as never}
-        height={260}
-        maxHeight={260}
-        colorMode={colorMode}
-      />
-    )
-  },
-)
+/** Контейнер приложения с темой: его фон из палитры приложения виден вокруг таблицы. */
+const SOURCE_CONTAINER = 'theming-source-container'
+const SOURCE_CONTAINER_CSS = `.${SOURCE_CONTAINER} {
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--background);
+}`
 
-SourceGrid.displayName = 'SourceGrid'
+/**
+ * Контейнер таблицы в тёмной теме приложения на время шага: класс `.dark` у предка,
+ * при уходе с шага — снят.
+ */
+const darkContainer = (root: HTMLElement) => {
+  let container: HTMLElement | null = null
+  let frame = 0
+  const apply = () => {
+    container = wrapperOf(root)?.parentElement ?? null
+    if (container) container.classList.add('dark', SOURCE_CONTAINER)
+    else frame = requestAnimationFrame(apply)
+  }
+  apply()
+  return () => {
+    cancelAnimationFrame(frame)
+    container?.classList.remove('dark', SOURCE_CONTAINER)
+  }
+}
 
-const SOURCES: {
-  id: string
-  title: string
-  dark: boolean
-  colorMode?: 'light' | 'dark'
-}[] = [
-  { id: 'auto', title: 'colorMode="auto" — по странице', dark: false },
+const SOURCES: readonly GuideStoryStep[] = [
   {
-    id: 'prop-dark',
-    title: 'colorMode="dark"',
-    dark: false,
-    colorMode: 'dark',
+    title: 'Тема по странице',
+    hint: 'Таблица не задаёт себе тему, а следует теме страницы.',
+    props: () => ({ colorMode: 'auto' }),
   },
-  { id: 'container-dark', title: '.dark на контейнере', dark: true },
   {
-    id: 'light-in-dark',
-    title: 'colorMode="light" в тёмном контейнере',
-    dark: true,
-    colorMode: 'light',
+    title: 'Приложение затемнило контейнер',
+    hint: 'У контейнера таблицы тёмная тема. Таблица следует ближайшему предку и становится тёмной, цвета берёт из тёмной палитры приложения.',
+    enter: darkContainer,
+  },
+  {
+    title: 'Таблице задана светлая тема',
+    hint: 'Приложение задало таблице светлую тему внутри тёмного контейнера. Таблица светлая на своих светлых значениях, тёмный предок на неё не действует.',
+    props: () => ({ colorMode: 'light' }),
+    enter: darkContainer,
+  },
+  {
+    title: 'Таблице задана тёмная тема',
+    hint: 'Контейнер снова светлый, а приложение задало таблице тёмную тему. Таблица тёмная на светлой странице.',
+    props: () => ({ colorMode: 'dark' }),
   },
 ]
 
-const ThemeSourcesBoard = ({ appPalette }: { appPalette: boolean }) => (
-  <div
-    style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-      gap: 16,
-      padding: 16,
-      ...(appPalette ? {} : SOURCE_PALETTE_OFF),
-    }}
-  >
-    {SOURCES.map(({ id, title, dark, colorMode }) => (
-      <section
-        key={id}
-        className={dark ? 'dark' : undefined}
-        data-testid={`source-${id}`}
-        style={{
-          padding: 12,
-          borderRadius: 8,
-          background: 'var(--background, #fff)',
-          color: 'var(--foreground, #171717)',
-        }}
-      >
-        <h3 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 500 }}>
-          {title}
-        </h3>
-        <SourceGrid colorMode={colorMode} />
-      </section>
-    ))}
-  </div>
-)
-
-export const ThemeSources: StoryObj<{ appPalette: boolean }> = {
+/** ADR 0090, S1: таблица берёт тему со страницы, с предка или из своего пропа. */
+export const ThemeSources: StoryObj<ThemingArgs> = {
   name: 'Theme sources',
-  render: args => <ThemeSourcesBoard appPalette={args.appPalette} />,
-  args: { appPalette: true },
-  argTypes: {
-    appPalette: {
-      name: 'Палитра приложения',
-      description:
-        'Роли shadcn приложения; выключено — таблица на своих значениях.',
-      control: { type: 'boolean' },
-    },
+  args: { locale: 'en' },
+  parameters: {
+    scenario: '0090/S1',
+    requirements: ['TM12'],
+    ...guideControls(),
   },
-  // Дымовой тест (ADR 0090, TM12): у каждого источника — своя схема; `auto` следует
-  // теме страницы.
-  parameters: { controls: { include: ['appPalette'] }, requirements: ['TM12'] },
-  play: async ({ canvasElement, globals }) => {
-    const sources = () => [
-      ...canvasElement.querySelectorAll<HTMLElement>(
-        '[data-testid^="source-"]',
-      ),
-    ]
-    await until(() => expect(sources()).toHaveLength(4))
-    const schemes = sources().map(source => [
-      source.dataset.testid,
-      getComputedStyle(
-        source.querySelector('.data-grid-theme[class*="theme-wrapper"]')!,
-      ).colorScheme,
-    ])
-    expect(Object.fromEntries(schemes)).toEqual({
-      'source-auto': globals.theme === 'dark' ? 'dark' : 'light',
-      'source-prop-dark': 'dark',
-      'source-container-dark': 'dark',
-      'source-light-in-dark': 'light',
+  render: storyArgs => (
+    <>
+      <style>{SOURCE_CONTAINER_CSS}</style>
+      <GuideStory
+        title="Источник темы"
+        steps={SOURCES}
+        args={guideArgs(
+          {
+            enableRowSelection: true,
+            enableColumnSorting: true,
+            columnCount: 5,
+            dataCount: 20,
+            containerHeight: '460',
+            height: '360',
+            maxHeight: '360',
+          },
+          storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+        )}
+      />
+    </>
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const page = globals.theme === 'dark' ? 'dark' : 'light'
+    await step(SOURCES[0]!.title, async () => {
+      await until(() => expect(schemeOf(canvas)).toBe(page))
+    })
+    await step(SOURCES[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(schemeOf(canvas)).toBe('dark'))
+      expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark')
+    })
+    await step(SOURCES[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(schemeOf(canvas)).toBe('light'))
+      expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark')
+    })
+    await step(SOURCES[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(schemeOf(canvas)).toBe('dark'))
+      expect(wrapperOf(canvas)!.parentElement!.classList).not.toContain('dark')
     })
     await settle()
   },

@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent } from 'storybook/test'
+import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
   guideNext,
   openMenuBy,
-  openPopup,
   orderedRows,
   rowKebab,
   settle,
@@ -77,9 +76,7 @@ export const LongTextPlayground: StoryObj<StoryProps> = {
     maxHeight: '460',
     containerWidth: 560,
   },
-  // Дымовой тест (ADR 0083, TX13): меню строки не шире 320px, длинный пункт переносится.
   parameters: {
-    requirements: ['TX13'],
     ...showControls([
       'enableOverflowTooltip',
       'enableToolbar',
@@ -87,6 +84,7 @@ export const LongTextPlayground: StoryObj<StoryProps> = {
       'enableRowSelection',
       'rowSelectionSelectedCount',
       'enableRowActions',
+      'actionsDemo',
       'enableRowActionMenu',
       'enableQuickSearch',
       'enableColumnFiltering',
@@ -102,20 +100,6 @@ export const LongTextPlayground: StoryObj<StoryProps> = {
       <WithConsole log={consoleLog} args={args}>
         <StoryComponent {...normalizeArgs(args)} />
       </WithConsole>
-    )
-  },
-  play: async ({ canvasElement, globals }) => {
-    if (globals.catalog !== true) return
-    await waitForRows(canvasElement)
-    const row = () => orderedRows(canvasElement)[0]!
-    await userEvent.hover(row().querySelector('[data-column-id="account"]')!)
-    const menu = await openPopup(() => rowMenuOf(canvasElement), 'menu')
-    expect(menu.getBoundingClientRect().width).toBeLessThanOrEqual(320.5)
-    const label = [
-      ...menu.querySelectorAll<HTMLElement>('[class*="itemLabel"]'),
-    ].find(el => el.textContent === LONG_ITEM)!
-    expect(label.getBoundingClientRect().height).toBeGreaterThan(
-      lineHeight(label) * 1.5,
     )
   },
 }
@@ -246,6 +230,7 @@ export const LongTextMenus: StoryObj<StoryProps> = {
   name: 'Menus and panels',
   parameters: {
     scenario: '0083/S1',
+    requirements: ['TX13'],
     ...guideControls(),
   },
   render: args => (
@@ -268,6 +253,12 @@ export const LongTextMenus: StoryObj<StoryProps> = {
       const menu = document.querySelector<HTMLElement>('[role="menu"]')!
       await expect(menu.getBoundingClientRect().width).toBeLessThanOrEqual(
         320.5,
+      )
+      const label = [
+        ...menu.querySelectorAll<HTMLElement>('[class*="itemLabel"]'),
+      ].find(el => el.textContent === LONG_ITEM)!
+      await expect(label.getBoundingClientRect().height).toBeGreaterThan(
+        lineHeight(label) * 1.5,
       )
       await settle()
     })

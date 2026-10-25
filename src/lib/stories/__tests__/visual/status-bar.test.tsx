@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { Stories, getScroller } from '../helpers'
-import { composed } from '../stories'
+import { composed, selectedCountArgs } from '../stories'
 import { tableLabels } from '../labels'
 
 // Нижняя панель грида (ADR 0038, SB1–SB4, SB6, SB15). Каждый тест — одно требование,
@@ -133,7 +133,9 @@ describe('Status bar', () => {
   })
 
   test('SB15: the selected count and the pagination share one text size — --tsr-comp-status-bar-font-size, the cell size by default', async () => {
-    const { container } = await render(<composed.SelectedCount {...GRID} />)
+    const { container } = await render(
+      <composed.StatusBarPlayground {...selectedCountArgs} {...GRID} />,
+    )
     const checkbox = () =>
       container.querySelector<HTMLElement>(
         '[data-row-id] input[type="checkbox"], [data-row-id] [role="checkbox"]',

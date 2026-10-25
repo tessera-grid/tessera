@@ -3,22 +3,21 @@ import { expect } from 'storybook/test'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { vrStates } from './__mocks__/catalog'
 import {
-  expectPopupInCanvas,
   guideNext,
-  openPopup,
+  headCell,
   settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { untilDone } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /**
- * Видимость колонок (ADR 0035, ADR 0133): меню «Колонки» с флажком всех колонок,
- * вместе с меню заголовка; S1 — показать и скрыть все колонки.
+ * Видимость колонок (ADR 0035, ADR 0133): `Playground` — кнопка списка колонок; S1 ADR 0133 —
+ * все колонки одним флажком, S2 — дерево вложенной шапки; S1 ADR 0035 — скрытие из меню колонки.
  */
 const meta = {
   ...dataGridMeta,
@@ -42,57 +41,6 @@ export const ColumnVisibilityPlayground: StoryObj<StoryProps> = {
     // headerNesting: nested — меню покажет группы вложенной шапки.
     enableColumnVisibility: true,
     enableRowSelection: true,
-  },
-}
-
-export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
-  name: 'With header menu',
-  parameters: showControls([
-    'enableColumnPinning',
-    'columnPinningLeafPinning',
-    'enableColumnVisibility',
-    'enableHeaderActionMenu',
-    'headerActionMenuMode',
-    'headerActionMenuThreshold',
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-  ]),
-  args: {
-    // Всё вместе: кнопка «Колонки» в тулбаре и «Скрыть колонку» в кебабе заголовка.
-    // Пин — обычное действие, остаётся кнопкой; «Скрыть колонку» (`placement:
-    // 'menu'`) — только в кебабе. Кебаб считается в пороге (3) одной кнопкой:
-    // включите enableColumnSorting — пин + сортировка + кебаб = 3, всё уйдёт в кебаб.
-    // headerNesting: nested — у групп в кебабе появится «Скрыть группу».
-    enableColumnVisibility: true,
-    enableHeaderActionMenu: true,
-    enableColumnPinning: true,
-    enableRowSelection: true,
-  },
-}
-
-/** Открытое меню «Колонки» (ADR 0093, VR6). */
-export const VisibilityStatePanel: StoryObj<StoryProps> = {
-  name: 'State: columns panel',
-  parameters: {
-    ...vrStates('overlay.columns'),
-    ...showControls(['enableColumnVisibility']),
-  },
-  args: {
-    enableColumnVisibility: true,
-    dataCount: 20,
-    containerHeight: '460',
-    height: '360',
-    maxHeight: '360',
-  },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    const panel = await openPopup(() =>
-      canvasElement.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-button"]',
-      ),
-    )
-    expectPopupInCanvas(canvasElement, panel)
   },
 }
 
@@ -173,6 +121,7 @@ const TOGGLE_ALL: readonly GuideStoryStep[] = [
   {
     title: 'Меню видимости колонок',
     hint: 'Над списком колонок — флажок всех колонок, колонки под ним сдвинуты на уровень. Внизу — сколько колонок выбрано.',
+    states: ['overlay.columns'],
     enter: inColumnsMenu(),
   },
   {
@@ -249,6 +198,124 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toHaveLength(5))
       await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0035 S1 ---------------------------------------------------------------------
+
+const HIDDEN = 'lastName'
+const hideItem = () =>
+  document.querySelector<HTMLElement>(
+    '[role="menu"] [data-action-id="columnVisibility.hide"]',
+  )
+const kebabOf = (root: HTMLElement) =>
+  headCell(root, HIDDEN)?.querySelector<HTMLElement>('[data-action-menu]') ??
+  null
+
+/** Пользователь открывает меню колонки кнопкой в её заголовке. */
+const openColumnMenu = (root: HTMLElement) => {
+  if (!hideItem()) kebabOf(root)?.click()
+}
+/** Пользователь скрывает колонку пунктом её меню. */
+const hideFromMenu = (root: HTMLElement) => {
+  if (!headCell(root, HIDDEN)) return
+  if (hideItem()) hideItem()!.click()
+  else openColumnMenu(root)
+}
+
+const HEADER_MENU: readonly GuideStoryStep[] = [
+  {
+    title: 'Меню колонок в заголовках',
+    hint: 'У заголовка — кнопка меню колонки, над таблицей — кнопка списка колонок.',
+  },
+  {
+    title: 'Пользователь открыл меню колонки',
+    hint: 'В меню — действие «скрыть колонку».',
+    states: ['overlay.menu'],
+    enter: untilDone(() => !!hideItem(), openColumnMenu),
+  },
+  {
+    title: 'Пользователь скрыл колонку',
+    hint: 'Колонка ушла из таблицы, соседние сдвинулись на её место.',
+    enter: untilDone(root => !headCell(root, HIDDEN), hideFromMenu),
+  },
+  {
+    title: 'Пользователь вернул колонку',
+    hint: 'В списке колонок над таблицей пользователь снова отметил скрытую колонку — она вернулась на своё место.',
+    // Сначала колонку скрывают (шаг открыт нажатием на него), затем возвращают списком.
+    enter: (root: HTMLElement) => {
+      let hidden = false
+      const run = () => {
+        if (!hidden) {
+          if (!headCell(root, HIDDEN)) hidden = true
+          else hideFromMenu(root)
+        } else if (headCell(root, HIDDEN)) return
+        else if (!menuOf()?.hasAttribute('data-open'))
+          root
+            .querySelector<HTMLElement>(
+              '[data-testid="column-visibility-button"]',
+            )
+            ?.click()
+        else if (checkedOf(columnBoxOf(HIDDEN)) !== 'true')
+          columnBoxOf(HIDDEN)?.click()
+        setTimeout(run, 150)
+      }
+      setTimeout(run, 0)
+    },
+  },
+]
+
+/** ADR 0035, S1: пользователь скрывает колонку из её меню и возвращает списком колонок. */
+export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
+  name: 'With header menu',
+  parameters: {
+    scenario: '0035/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Скрытие колонки из её меню"
+      steps={HEADER_MENU}
+      args={guideArgs(
+        {
+          enableColumnVisibility: true,
+          enableHeaderActionMenu: true,
+          enableColumnPinning: true,
+          columnCount: 5,
+          dataCount: 20,
+          containerHeight: '460',
+          height: '360',
+          maxHeight: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let initial: string[] = []
+    await step(HEADER_MENU[0]!.title, async () => {
+      await waitForRows(canvas)
+      initial = headIdsOf(canvas)
+      await expect(initial).toContain(HIDDEN)
+      await until(() => expect(kebabOf(canvas)).not.toBeNull())
+    })
+    await step(HEADER_MENU[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(hideItem()).not.toBeNull())
+      await settle()
+    })
+    await step(HEADER_MENU[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(headIdsOf(canvas)).toEqual(initial.filter(id => id !== HIDDEN)),
+      )
+    })
+    await step(HEADER_MENU[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(headIdsOf(canvas)).toEqual(initial))
       await settle()
     })
   },

@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
-import { expect, spyOn, userEvent } from 'storybook/test'
+import { expect, spyOn } from 'storybook/test'
 
 import { exportFormats } from '../plugins/dataExport'
 import type { ToolbarComponentProps } from '../core/createSlots/types'
@@ -7,31 +7,28 @@ import { Button } from '../ui/Button/Button'
 
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { ExportServerDemo } from './demos/exportDemos'
-import { vrStates } from './__mocks__/catalog'
+import { makeData } from './__mocks__/data'
 import {
   byTestId,
   consoleText,
-  expectPopupInCanvas,
   guideNext,
-  openPopup,
   orderedRows,
   pollUntil,
   settle,
+  sleep,
   stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим; своя кнопка приложения (ADR 0120). */
-
-interface ExportArgs extends StoryProps {
-  serverDelayMs?: number
-  serverFailMode?: 'never' | 'always'
-}
 
 const meta = {
   ...dataGridMeta,
@@ -65,239 +62,464 @@ export const ExportPlayground: StoryObj<StoryProps> = {
   },
 }
 
-export const ExportDirect: StoryObj<StoryProps> = {
-  name: 'Direct click',
-  parameters: showControls([
-    'enableDataExport',
-    'dataExportAllow',
-    'dataExportFilename',
-  ]),
-  args: {
-    ...GRID,
-    dataCount: 50,
-    // Разработчик оставил одну допустимую комбинацию (`allow.columns: ['visible']`,
-    // строки — только «все данные»): панели нет, клик сразу скачивает CSV.
-    dataExportAllow: { columns: ['visible'] },
-  },
+// --- Действия шагов ------------------------------------------------------------------
+
+const exportPanel = () => byTestId('export-panel')
+const exportButton = () => byTestId('export-button')
+
+/** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
+const repeat = async (
+  done: () => boolean,
+  act: () => void,
+  signal: AbortSignal,
+) => {
+  for (let tries = 0; !done(); tries += 1) {
+    if (tries > 60) throw new Error(`Шаг гайда не дождался: ${done}`)
+    act()
+    await sleep(200)
+    signal.throwIfAborted()
+  }
 }
 
-export const ExportPresets: StoryObj<StoryProps> = {
-  name: 'Settings and quick sets',
-  parameters: showControls([
-    'enableColumnSorting',
-    'columnSortingRemoval',
-    'columnSortingMultiSort',
-    'columnSortingServer',
-    'columnSortingRevertOnReject',
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-    'enablePagination',
-    'paginationInitialPageSize',
-    'paginationPageSizes',
-    'paginationRevertOnReject',
-    'enableDataExport',
-    'dataExportAllow',
-    'dataExportFilename',
-  ]),
-  args: {
-    ...GRID,
-    dataCount: 200,
-    // Оси «Строки» появляются по активным плагинам: «С учётом сортировки», «Текущая
-    // страница», «Выбранные строки» (недоступны, пока ничего не выбрано). Быстрые наборы
-    // сверху панели заполняют оси, но не выгружают; выбор запоминается до перезагрузки.
-    enableColumnSorting: true,
-    enablePagination: true,
-    paginationInitialPageSize: 25,
-    enableRowSelection: true,
-    dataExportPresets: [
-      { id: 'everything', label: 'Everything', rows: 'all', columns: 'all' },
-      {
-        id: 'selection',
-        label: 'Selection',
-        rows: 'selected',
-        columns: 'visible',
-      },
-    ],
-  },
-}
-
-export const ExportExcel: StoryObj<StoryProps> = {
-  name: 'Excel',
-  args: {
-    ...GRID,
-    dataCount: 200,
-    // Формат Excel подключён рядом с CSV (`exportFormats.xlsx()`): числа и даты в
-    // файле — типизированные ячейки, шапка закреплена, ширины — как в гриде. Закрепите
-    // колонку слева — в Excel она тоже закреплена. Генератор грузится при первой
-    // выгрузке в Excel.
-    enableColumnPinning: true,
-    enableColumnSizing: true,
-    dataExportFormats: [exportFormats.csv(), exportFormats.xlsx()],
-  },
-  // Сценарий истории (ADR 0073, XL13): выгрузка в Excel скачивает export.xlsx с данными.
-  parameters: {
-    requirements: ['XL13'],
-    ...showControls([
-      'enableColumnPinning',
-      'columnPinningLeafPinning',
-      'enableColumnSizing',
-      'enableDataExport',
-      'dataExportAllow',
-      'dataExportFilename',
-    ]),
-  },
-  play: async ({ canvasElement }) => {
-    const download = interceptDownload()
-    try {
-      await waitForRows(canvasElement)
-      await openExport(canvasElement)
-      const xlsx = () =>
-        document.querySelector<HTMLElement>(
-          '[data-testid="export-axis-format"] [role="radio"][data-value="xlsx"]',
-        )!
-      await userEvent.click(xlsx())
-      await until(() => expect(xlsx()).toHaveAttribute('aria-checked', 'true'))
-      await userEvent.click(byTestId('export-run')!)
-
-      await until(() => expect(download.names).toEqual(['export.xlsx']))
-      const bytes = new Uint8Array(await download.blobs[0]!.arrayBuffer())
-      expect([...bytes.slice(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04])
-      const firstCell = orderedRows(canvasElement)[0]!
-        .querySelector('.data-grid__body-cell')!
-        .textContent!.trim()
-      expect(await zipEntryText(bytes, 'xl/worksheets/sheet1.xml')).toContain(
-        `<t xml:space="preserve">${firstCell}</t>`,
-      )
-      await settle()
-    } finally {
-      download.restore()
-    }
-  },
-}
-
-export const ExportServer: StoryObj<ExportArgs> = {
-  name: 'Server',
-  args: {
-    ...GRID,
-    // Страница из 1000 строк: «Текущая страница» скачивает клиент (onExported),
-    // остальные значения строк уходят в onExport с ожиданием — кнопка занята,
-    // «Выгрузить» с серверным значением заблокирована; «Выбранные строки» отдают
-    // rowIds. Режим отказа — ошибка в консоли, кнопка освобождается.
-    enableColumnSorting: true,
-    enablePagination: true,
-    paginationInitialPageSize: 25,
-    enableRowSelection: true,
-    serverDelayMs: 2000,
-    serverFailMode: 'never',
-  },
-  argTypes: {
-    serverDelayMs: { control: { type: 'range', min: 0, max: 5000, step: 250 } },
-    serverFailMode: { control: 'inline-radio', options: ['never', 'always'] },
-  },
-  render: args => <ExportServerDemo {...normalizeArgs(args)} />,
-  // Дымовой сценарий (ADR 0044, EX34): «Все строки» уходят в onExport, кнопка занята до
-  // ответа; «Текущая страница» скачивается и пишет onExported.
-  parameters: {
-    requirements: ['EX34'],
-    ...showControls(
-      [
-        'enableColumnSorting',
-        'columnSortingRemoval',
-        'columnSortingMultiSort',
-        'columnSortingServer',
-        'columnSortingRevertOnReject',
-        'enableRowSelection',
-        'rowSelectionSubRows',
-        'rowSelectionSelectedCount',
-        'enablePagination',
-        'paginationInitialPageSize',
-        'paginationPageSizes',
-        'paginationRevertOnReject',
-        'enableDataExport',
-        'dataExportAllow',
-        'dataExportFilename',
-        'serverDelayMs',
-        'serverFailMode',
-      ],
-      { dataCount: 'данные подаёт демо' },
-    ),
-  },
-  play: async ({ canvasElement }) => {
-    const download = interceptDownload()
-    try {
-      await waitForRows(canvasElement)
-      await openExport(canvasElement)
-      await userEvent.click(byTestId('export-run')!)
-      await until(() =>
-        expect(exportButton()).toHaveAttribute('aria-busy', 'true'),
-      )
-      expect(consoleText()).toContain('onExport')
-      expect(consoleText()).toContain('rows="all"')
-      expect(download.names).toEqual([])
-
-      await until(() => expect(exportButton()).not.toHaveAttribute('aria-busy'))
-      expect(consoleText()).toContain('export "all" ready')
-
-      await openExport(canvasElement)
-      const page = () =>
-        document.querySelector<HTMLElement>(
-          '[data-testid="export-axis-rows"] [role="radio"][data-value="page"]',
-        )!
-      await userEvent.click(page())
-      await until(() => expect(page()).toHaveAttribute('aria-checked', 'true'))
-      await userEvent.click(byTestId('export-run')!)
-      await until(() => expect(download.names).toHaveLength(1))
-      expect(consoleText()).toContain('onExported')
-      expect(consoleText()).toContain('rows="page"')
-      expect(consoleText()).toContain('rowCount=25')
-      await settle()
-    } finally {
-      download.restore()
-    }
-  },
-}
-
-/** Открытая панель экспорта (ADR 0093, VR6). */
-export const ExportStatePanel: StoryObj<StoryProps> = {
-  name: 'State: export panel',
-  parameters: {
-    ...vrStates('overlay.export'),
-    ...showControls([
-      'enableDataExport',
-      'dataExportAllow',
-      'dataExportFilename',
-    ]),
-  },
-  args: { ...GRID, dataCount: 20 },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    const panel = await openPopup(() =>
-      canvasElement.querySelector<HTMLElement>('[data-testid="export-button"]'),
-    )
-    expectPopupInCanvas(canvasElement, panel)
-    // Клик `play` браузер не считает указателем и показал бы кольцо фокуса первого пункта;
-    // фокус — на панели, как после открытия мышью.
-    panel.focus()
-    await until(() => expect(document.activeElement).toBe(panel))
-    expect(panel.querySelector(':focus-visible')).toBeNull()
-  },
-}
-
-function exportButton() {
-  return byTestId('export-button')
-}
-
-async function openExport(canvas: HTMLElement) {
-  await openPopup(() =>
-    canvas.querySelector<HTMLElement>('[data-testid="export-button"]'),
+/** Пользователь открывает настройки выгрузки. */
+const openExportPanel = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!root.querySelector('.data-grid__body-row'), signal)
+  await repeat(
+    () => !!exportPanel(),
+    () => exportButton()?.click(),
+    signal,
   )
 }
 
-/**
- * Перехват скачивания: файл не уходит в загрузки ни в живом Storybook, ни в тестах — его
- * имя и содержимое остаются `play`.
- */
+const axisValue = (axis: string, value: string) =>
+  document.querySelector<HTMLElement>(
+    `[data-testid="export-axis-${axis}"] [role="radio"][data-value="${value}"]`,
+  )
+const axisChecked = (axis: string, value: string) =>
+  axisValue(axis, value)?.getAttribute('aria-checked') === 'true'
+/** Пользователь выбирает значение оси панели. */
+const chooseAxis = (axis: string, value: string, signal: AbortSignal) =>
+  repeat(
+    () => axisChecked(axis, value),
+    () => axisValue(axis, value)?.click(),
+    signal,
+  )
+
+/** Выгрузки, которые таблица скачала сама (`onExported`). */
+const exported: string[] = []
+const onExported = (request: {
+  settings: { rows: string }
+  format: { id: string }
+}) => {
+  exported.push(`${request.settings.rows}.${request.format.id}`)
+}
+
+/** Пользователь нажимает «выгрузить» в панели и ждёт файла. */
+const runExport = async (signal: AbortSignal) => {
+  const before = exported.length
+  await repeat(
+    () => exported.length > before || !exportPanel(),
+    () => byTestId('export-run')?.click(),
+    signal,
+  )
+  await pollUntil(() => exported.length > before, signal)
+}
+
+// --- ADR 0044 S1 ---------------------------------------------------------------------
+
+const DIRECT: readonly GuideStoryStep[] = [
+  {
+    title: 'Одна комбинация выгрузки',
+    hint: 'Приложение разрешило выгружать только видимые колонки всех строк, поэтому настроек нет.',
+  },
+  {
+    title: 'Пользователь выгрузил таблицу',
+    hint: 'Пользователь нажал кнопку выгрузки, файл скачался сразу, без панели.',
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!exportButton(), signal)
+      const before = exported.length
+      exportButton()!.click()
+      await pollUntil(() => exported.length > before, signal)
+    }),
+  },
+]
+
+/** ADR 0044, S1: выгрузка одним нажатием — одна допустимая комбинация, панели нет. */
+export const ExportDirect: StoryObj<StoryProps> = {
+  name: 'Direct click',
+  parameters: { scenario: '0044/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выгрузка одним нажатием"
+      steps={DIRECT}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataCount: 50,
+          dataExportAllow: { columns: ['visible'] },
+          onExported,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const download = interceptDownload()
+    try {
+      await step(DIRECT[0]!.title, async () => {
+        await waitForRows(canvas)
+        await until(() => expect(exportButton()).not.toBeNull())
+      })
+      await step(DIRECT[1]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(download.names).toEqual(['export.csv'])
+        await expect(exportPanel()).toBeNull()
+      })
+    } finally {
+      download.restore()
+    }
+    await settle()
+  },
+}
+
+// --- ADR 0044 S2 ---------------------------------------------------------------------
+
+const PRESET = 'everything'
+
+const PRESETS: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица с сортировкой, страницами и выбором',
+    hint: 'Набор строк для выгрузки зависит от включённых функций.',
+  },
+  {
+    title: 'Пользователь открыл настройки выгрузки',
+    hint: 'Панель предлагает строки и колонки: с учётом сортировки, текущую страницу, выбранные строки. Выбранные строки недоступны, пока ничего не выбрано. Сверху — быстрые наборы.',
+    states: ['overlay.export'],
+    enter: stepAction((root, { signal }) => openExportPanel(root, signal)),
+  },
+  {
+    title: 'Пользователь выбрал быстрый набор',
+    hint: 'Набор заполнил строки и колонки, выгрузка ещё не началась.',
+    states: ['overlay.export'],
+    enter: stepAction(async (root, { signal }) => {
+      await openExportPanel(root, signal)
+      await repeat(
+        () => axisChecked('rows', 'all') && axisChecked('columns', 'all'),
+        () => byTestId(`export-preset-${PRESET}`)?.click(),
+        signal,
+      )
+    }),
+  },
+  {
+    title: 'Пользователь выгрузил',
+    hint: 'Скачался файл с выбранными строками и колонками.',
+    enter: stepAction(async (root, { signal }) => {
+      await openExportPanel(root, signal)
+      await repeat(
+        () => axisChecked('rows', 'all') && axisChecked('columns', 'all'),
+        () => byTestId(`export-preset-${PRESET}`)?.click(),
+        signal,
+      )
+      await runExport(signal)
+    }),
+  },
+]
+
+/** ADR 0044, S2: выгрузка с настройками — оси по включённым функциям и быстрые наборы. */
+export const ExportPresets: StoryObj<StoryProps> = {
+  name: 'Settings and quick sets',
+  parameters: { scenario: '0044/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Настройки выгрузки"
+      steps={PRESETS}
+      args={guideArgs(
+        {
+          ...GRID,
+          // Ниже обычного: панель настроек встаёт под кнопкой, а не над таблицей.
+          containerHeight: '420',
+          height: '320',
+          maxHeight: '320',
+          dataCount: 200,
+          enableColumnSorting: true,
+          enablePagination: true,
+          paginationInitialPageSize: 25,
+          enableRowSelection: true,
+          dataExportPresets: [
+            { id: PRESET, label: 'Everything', rows: 'all', columns: 'all' },
+            {
+              id: 'selection',
+              label: 'Selection',
+              rows: 'selected',
+              columns: 'visible',
+            },
+          ],
+          onExported,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const download = interceptDownload()
+    try {
+      await step(PRESETS[0]!.title, async () => {
+        await waitForRows(canvas)
+      })
+      await step(PRESETS[1]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        for (const value of ['view', 'page', 'selected'])
+          await expect(axisValue('rows', value)).not.toBeNull()
+        await expect(axisValue('rows', 'selected')).toHaveAttribute(
+          'aria-disabled',
+          'true',
+        )
+        await expect(byTestId(`export-preset-${PRESET}`)).not.toBeNull()
+        await settle()
+      })
+      await step(PRESETS[2]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(download.names).toEqual([])
+        await settle()
+      })
+      await step(PRESETS[3]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(download.names).toEqual(['export.csv'])
+      })
+    } finally {
+      download.restore()
+    }
+    await settle()
+  },
+}
+
+// --- ADR 0044 S3 ---------------------------------------------------------------------
+
+/** «Сервер» выгрузки: держит ответ, пока шаг ожидания на виду. */
+const exportServer = (() => {
+  let held = true
+  const waiting = new Set<() => void>()
+  return {
+    hold: () => {
+      held = true
+    },
+    release: () => {
+      held = false
+      waiting.forEach(resolve => resolve())
+      waiting.clear()
+    },
+    onExport: () =>
+      new Promise<void>(resolve => {
+        if (held) waiting.add(resolve)
+        else resolve()
+      }),
+  }
+})()
+
+const exportBusy = () => exportButton()?.getAttribute('aria-busy') === 'true'
+
+/** Пользователь выгружает все строки: запрос уходит серверу. */
+const exportAll = async (root: HTMLElement, signal: AbortSignal) => {
+  if (exportBusy()) return
+  await openExportPanel(root, signal)
+  await chooseAxis('rows', 'all', signal)
+  await repeat(
+    () => exportBusy(),
+    () => byTestId('export-run')?.click(),
+    signal,
+  )
+}
+
+const SERVER: readonly GuideStoryStep[] = [
+  {
+    title: 'Выгрузка на сервере',
+    hint: 'Всё, кроме текущей страницы, собирает сервер приложения.',
+  },
+  {
+    title: 'Пользователь выгружает все строки',
+    hint: 'Запрос ушёл серверу, кнопка выгрузки показывает ожидание.',
+    enter: stepAction(async (root, { signal }) => {
+      exportServer.hold()
+      await exportAll(root, signal)
+    }),
+  },
+  {
+    title: 'Сервер собрал файл',
+    hint: 'Ожидание погасло, приложение отдало файл.',
+    enter: stepAction(async (root, { signal }) => {
+      exportServer.hold()
+      await exportAll(root, signal)
+      exportServer.release()
+      await pollUntil(() => !exportBusy(), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выгрузил текущую страницу',
+    hint: 'Страницу таблица собрала сама и сразу скачала файл.',
+    enter: stepAction(async (root, { signal }) => {
+      exportServer.release()
+      await pollUntil(() => !exportBusy(), signal)
+      await openExportPanel(root, signal)
+      await chooseAxis('rows', 'page', signal)
+      await runExport(signal)
+    }),
+  },
+]
+
+const serverPage = makeData({ shape: 'flat', count: 25 })
+
+/** ADR 0044, S3: выгрузку собирает сервер — ожидание на кнопке, страница скачивается сразу. */
+export const ExportServer: StoryObj<StoryProps> = {
+  name: 'Server',
+  parameters: {
+    scenario: '0044/S3',
+    requirements: ['EX34'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Выгрузка на сервере"
+      steps={SERVER}
+      args={guideArgs(
+        {
+          ...GRID,
+          enableColumnSorting: true,
+          enablePagination: true,
+          paginationInitialPageSize: 25,
+          enableRowSelection: true,
+          dataOverride: serverPage,
+          paginationServer: true,
+          paginationRowCount: 1000,
+          dataExportServer: true,
+          onExport: exportServer.onExport,
+          onExported,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const download = interceptDownload()
+    try {
+      await step(SERVER[0]!.title, async () => {
+        await waitForRows(canvas)
+      })
+      await step(SERVER[1]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportBusy()).toBe(true)
+        await expect(consoleText()).toContain('onExport')
+        await expect(download.names).toEqual([])
+      })
+      await step(SERVER[2]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportBusy()).toBe(false)
+        await expect(download.names).toEqual([])
+      })
+      await step(SERVER[3]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(download.names).toEqual(['export.csv'])
+        await expect(consoleText()).toContain('onExported')
+      })
+    } finally {
+      download.restore()
+    }
+    await settle()
+  },
+}
+
+// --- ADR 0073 S1 ---------------------------------------------------------------------
+
+const EXCEL: readonly GuideStoryStep[] = [
+  {
+    title: 'Два формата',
+    hint: 'Рядом с CSV подключён формат Excel.',
+  },
+  {
+    title: 'Пользователь выбрал Excel',
+    hint: 'В настройках выгрузки выбран формат Excel.',
+    states: ['overlay.export'],
+    enter: stepAction(async (root, { signal }) => {
+      await openExportPanel(root, signal)
+      await chooseAxis('format', 'xlsx', signal)
+    }),
+  },
+  {
+    title: 'Пользователь выгрузил',
+    hint: 'Скачался файл Excel с данными таблицы.',
+    enter: stepAction(async (root, { signal }) => {
+      await openExportPanel(root, signal)
+      await chooseAxis('format', 'xlsx', signal)
+      await runExport(signal)
+    }),
+  },
+]
+
+/** ADR 0073, S1: выгрузка в Excel — формат рядом с CSV, файл с данными таблицы. */
+export const ExportExcel: StoryObj<StoryProps> = {
+  name: 'Excel',
+  parameters: {
+    scenario: '0073/S1',
+    requirements: ['XL13'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Выгрузка в Excel"
+      steps={EXCEL}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataCount: 200,
+          dataExportFormats: [exportFormats.csv(), exportFormats.xlsx()],
+          onExported,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const download = interceptDownload()
+    try {
+      await step(EXCEL[0]!.title, async () => {
+        await waitForRows(canvas)
+      })
+      await step(EXCEL[1]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(axisChecked('format', 'xlsx')).toBe(true)
+        await settle()
+      })
+      await step(EXCEL[2]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(download.names).toEqual(['export.xlsx'])
+        const bytes = new Uint8Array(await download.blobs[0]!.arrayBuffer())
+        expect([...bytes.slice(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04])
+        const firstCell = orderedRows(canvas)[0]!
+          .querySelector('.data-grid__body-cell')!
+          .textContent!.trim()
+        expect(await zipEntryText(bytes, 'xl/worksheets/sheet1.xml')).toContain(
+          `<t xml:space="preserve">${firstCell}</t>`,
+        )
+      })
+    } finally {
+      download.restore()
+    }
+    await settle()
+  },
+}
+
 // --- ADR 0120, S6 --------------------------------------------------------------------
 
 /** Своя кнопка приложения: выгрузка методом модели `table.exportData`. */
@@ -323,15 +545,17 @@ const OWN_EXPORT_BUTTON = [
 
 const ownExportButton = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="own-export"]')
+const skeletonRow = (root: ParentNode) =>
+  root.querySelector('.data-grid__body-row--skeleton')
 
 const OWN_BUTTON: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопки «Экспорт» нет',
-    hint: 'Плагин dataExportModel без dataExport: в тулбаре только своя кнопка приложения «Выгрузить всё».',
+    title: 'Своя кнопка выгрузки',
+    hint: 'Выгрузкой управляет приложение. В тулбаре нет кнопки выгрузки таблицы, есть только кнопка приложения.',
   },
   {
-    title: 'Приложение выгружает',
-    hint: "Своя кнопка зовёт table.exportData({ rows: 'all' }) — грид собирает CSV и скачивает файл export.csv.",
+    title: 'Приложение выгружает данные',
+    hint: 'Пользователь нажал кнопку приложения, и приложение попросило таблицу выгрузить все строки. Таблица собрала файл и скачала его.',
     // Пользователь нажимает кнопку приложения: одно нажатие — один файл.
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!ownExportButton(root), signal)
@@ -345,21 +569,23 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
   name: 'Own button',
   parameters: {
     scenario: '0120/S6',
-    ...showControls(['enableDataExportModel']),
-  },
-  args: {
-    columnCount: 6,
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
-    enableDataExportModel: true,
-    extraPlugins: OWN_EXPORT_BUTTON,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Выгрузка своей кнопкой"
       steps={OWN_BUTTON}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          columnCount: 6,
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          enableDataExportModel: true,
+          extraPlugins: OWN_EXPORT_BUTTON,
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -390,13 +616,13 @@ const serverExports: string[] = []
 
 const SERVER_BEFORE_DATA: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица открыта, данные загружаются',
-    hint: 'Выгрузка серверная: данные у сервера, поэтому «Экспорт» доступен и до их прихода.',
+    title: 'Данные загружаются',
+    hint: 'Данные ещё не пришли, а выгрузку собирает сервер. Тело таблицы в состоянии загрузки, кнопка выгрузки уже доступна.',
     props: () => ({ loading: 'initial', dataOverride: [] }),
   },
   {
     title: 'Пользователь выгружает до прихода данных',
-    hint: 'Клик по «Экспорту» уходит в onExport — файл собирает сервер.',
+    hint: 'Пользователь нажал кнопку выгрузки. Запрос ушёл приложению, файл соберёт сервер; таблица продолжает ждать данных.',
     enter: root =>
       root.querySelector<HTMLElement>('[data-testid="export-button"]')?.click(),
   },
@@ -407,22 +633,24 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
   name: 'Server, initial loading',
   parameters: {
     scenario: '0122/S4',
-    ...showControls(['enableDataExport', 'dataExportAllow']),
-  },
-  args: {
-    ...GRID,
-    dataExportServer: true,
-    // Одна комбинация: клик выгружает сразу, без панели.
-    dataExportAllow: { rows: ['all'], columns: ['visible'] },
-    onExport: request => {
-      serverExports.push(request.settings.rows)
-    },
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Серверная выгрузка до прихода данных"
       steps={SERVER_BEFORE_DATA}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataExportServer: true,
+          // Одна комбинация: клик выгружает сразу, без панели.
+          dataExportAllow: { rows: ['all'], columns: ['visible'] },
+          onExport: request => {
+            serverExports.push(request.settings.rows)
+          },
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -431,10 +659,12 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
     await step(SERVER_BEFORE_DATA[0]!.title, async () => {
       await until(() => expect(exportButton()).not.toBeNull())
       expect(byTestId('export-skeleton')).toBeNull()
+      expect(skeletonRow(canvas)).not.toBeNull()
     })
     await step(SERVER_BEFORE_DATA[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(serverExports).toEqual(['all']))
+      expect(skeletonRow(canvas)).not.toBeNull()
     })
     await settle()
   },

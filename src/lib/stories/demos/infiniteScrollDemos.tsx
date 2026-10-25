@@ -1,6 +1,6 @@
 /**
- * Демо ленты (ADR 0081): у края грид зовёт `onLoadMore`, «сервер» с задержкой
- * отвечает блоком, история дописывает его в конец `data`. Режимы — известный и
+ * Лента (ADR 0081): у края грид зовёт `onLoadMore`, «сервер» с задержкой
+ * отвечает блоком, история дописывает его в конец `data`. Режимы `Playground` — известный и
  * неизвестный итог, сбои с повтором, серверные сортировка, фильтры и поиск.
  */
 import { useRef, useState } from 'react'
@@ -24,7 +24,6 @@ import {
   filteringColumns,
   makeFilteringData,
 } from '../__mocks__/filteringData'
-import { DemoButton, DemoItem, DemoNote, DemoPanel } from './DemoPanel'
 
 export interface InfiniteScrollDemoProps extends StoryProps {
   /** Время ответа «сервера», мс. */
@@ -41,12 +40,12 @@ export interface InfiniteScrollDemoProps extends StoryProps {
   serverQuery?: boolean
 }
 
-const SERVER_TOTAL = 1000
-const SERVER_DATA = makeFilteringData(SERVER_TOTAL)
+export const SERVER_TOTAL = 1000
+export const SERVER_DATA = makeFilteringData(SERVER_TOTAL)
 
 type Filters = { id: string; value: unknown }[]
 
-interface Query {
+export interface Query {
   sort?: { id: string; desc: boolean }
   filters: Filters
   search: string
@@ -59,7 +58,7 @@ const compareValues = (a: unknown, b: unknown) =>
     : Number(a) - Number(b)
 
 /** «Сервер»: весь набор под условием выборки. */
-const select = ({ sort, filters, search, columnIds }: Query) => {
+export const select = ({ sort, filters, search, columnIds }: Query) => {
   const needle = normalizeSearch(search)
   const rows = SERVER_DATA.filter(
     row =>
@@ -91,13 +90,13 @@ const select = ({ sort, filters, search, columnIds }: Query) => {
   })
 }
 
-const INITIAL_QUERY: Query = { filters: [], search: '', columnIds: [] }
+export const INITIAL_QUERY: Query = { filters: [], search: '', columnIds: [] }
 
 export const InfiniteScrollDemo = ({
   serverDelayMs = 700,
   blockSize = 50,
   knownTotal = true,
-  failFirstAttempt: initialFailures = false,
+  failFirstAttempt: failures = false,
   failureReason = 'Server error: 503 Service Unavailable',
   serverQuery = false,
   ...args
@@ -105,8 +104,6 @@ export const InfiniteScrollDemo = ({
   const [rows, setRows] = useState(() => SERVER_DATA.slice(0, blockSize))
   const [total, setTotal] = useState(SERVER_TOTAL)
   const [loading, setLoading] = useState(false)
-  const [failures, setFailures] = useState(initialFailures)
-  const [requests, setRequests] = useState(0)
   const [failed] = useState(() => new Set<number>())
   const query = useRef<Query>(INITIAL_QUERY)
   const reloadSeq = useRef(0)
@@ -114,7 +111,6 @@ export const InfiniteScrollDemo = ({
   // Аргументы-функции плагинов ядро держит стабильными (ADR 0039): useCallback не нужен.
   const onLoadMore = ({ signal, loaded }: InfiniteScrollLoadContext) =>
     new Promise<void>((resolve, reject) => {
-      setRequests(count => count + 1)
       window.setTimeout(() => {
         if (signal.aborted) {
           resolve()
@@ -167,70 +163,31 @@ export const InfiniteScrollDemo = ({
     reload()
   }
 
-  const restart = () => {
-    query.current = { ...query.current }
-    reload()
-  }
-
   const hasMore = rows.length < total
 
   return (
-    <div>
-      <DemoPanel
-        status={
-          <DemoNote>
-            Загружено {rows.length} из {total} · запросов {requests}
-          </DemoNote>
-        }
-      >
-        <DemoItem
-          title="Прокрутка"
-          hint="Прокрутите вниз: за экран до конца загруженных строк грид просит следующий блок, пока он в пути — внизу скелет-строки."
-        />
-        <DemoItem
-          title="Сбой загрузки"
-          hint="Первая попытка каждого блока падает: внизу строка ошибки, «Retry» повторяет запрос."
-        >
-          <DemoButton pressed={failures} onClick={() => setFailures(on => !on)}>
-            {failures ? 'Выключить сбои' : 'Включить сбои'}
-          </DemoButton>
-        </DemoItem>
-        {serverQuery && (
-          <DemoItem
-            title="Сортировка, фильтры и поиск"
-            hint="Новое условие выборки возвращает тело в начало и отменяет блок в пути; первую порцию заново грузит приложение."
-          />
-        )}
-        <DemoItem
-          title="Начать заново"
-          hint="Оставить только первый блок строк."
-        >
-          <DemoButton onClick={restart}>Сбросить</DemoButton>
-        </DemoItem>
-      </DemoPanel>
-      <StoryComponent
-        {...args}
-        columnsOverride={filteringColumns}
-        dataOverride={rows}
-        loading={loading ? 'refresh' : false}
-        enableInfiniteScroll
-        onLoadMore={onLoadMore}
-        infiniteScrollHasMore={hasMore}
-        infiniteScrollRowCount={knownTotal ? total : undefined}
-        infiniteScrollLoadedCount={args.infiniteScrollLoadedCount ?? true}
-        {...(serverQuery && {
-          enableColumnSorting: true,
-          columnSortingServer: true,
-          columnSortingMultiSort: false,
-          onToggleColumnSort,
-          enableColumnFiltering: true,
-          enableQuickSearch: true,
-          columnFilteringServer: true,
-          onFilterChange,
-          quickSearchServer: true,
-          onSearchChange,
-        })}
-      />
-    </div>
+    <StoryComponent
+      {...args}
+      columnsOverride={filteringColumns}
+      dataOverride={rows}
+      loading={loading ? 'refresh' : false}
+      enableInfiniteScroll
+      onLoadMore={onLoadMore}
+      infiniteScrollHasMore={hasMore}
+      infiniteScrollRowCount={knownTotal ? total : undefined}
+      infiniteScrollLoadedCount={args.infiniteScrollLoadedCount ?? true}
+      {...(serverQuery && {
+        enableColumnSorting: true,
+        columnSortingServer: true,
+        columnSortingMultiSort: false,
+        onToggleColumnSort,
+        enableColumnFiltering: true,
+        enableQuickSearch: true,
+        columnFilteringServer: true,
+        onFilterChange,
+        quickSearchServer: true,
+        onSearchChange,
+      })}
+    />
   )
 }

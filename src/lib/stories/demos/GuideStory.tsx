@@ -14,17 +14,19 @@ import { getData } from '../__mocks__/data'
 import { normalizeArgs } from '../__mocks__/utils/normalizeArgs'
 import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
 import { StoryConsole } from './StoryConsole'
-import { createConsoleLog } from './consoleLog'
+import { type ConsoleLog, createConsoleLog } from './consoleLog'
 import { useArgsActions } from './useArgsActions'
 
 /**
  * Что знает шаг: аргументы истории, ответ «сервера» — строки мока по ним — и
- * приложение: колбэк грида меняет через него пропсы до нового открытия грида.
+ * приложение: колбэк грида меняет через него пропсы до нового открытия грида; `log` —
+ * консоль истории, куда пишут свои элементы приложения.
  */
 export interface GuideContext {
   args: StoryProps
   rows: NonNullable<StoryProps['dataOverride']>
   app: GuideApp
+  log: ConsoleLog
 }
 
 export interface GuideStoryStep extends GuideStep {
@@ -153,7 +155,7 @@ export const GuideStory = ({
           : { mount: mountRef.current, props }
       }),
   }))
-  const context: GuideContext = { args, rows, app }
+  const context: GuideContext = { args, rows, app, log: consoleLog }
   const props = steps
     .slice(0, guide.step + 1)
     .reduce<Partial<StoryProps>>(

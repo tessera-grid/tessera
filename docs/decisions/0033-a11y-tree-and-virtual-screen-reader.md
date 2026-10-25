@@ -2,6 +2,8 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-26
+- **Изменён:** 2026-10-25 — стенды ручной проверки — в `Tessera/Common/Screen readers`
+  (`*.dev.stories.tsx`, только в `npm run storybook`).
 - **Связано:**
   - [ADR 0020](0020-accessibility.md), [ADR 0031](0031-wcag-keyboard.md),
     [ADR 0032](0032-wcag-aa-remainder.md) — что грид обязан отдавать
@@ -41,7 +43,7 @@ CORE-AAM / WAI-ARIA и слушает фокус и live-области. Тес�
 входе в грид, сортировке, выборе, правке с ошибкой, перестановке.
 
 Ручной проход по настоящим скринридерам — по гайду
-[docs/testing/screen-readers.md](../testing/screen-readers.md) (истории «Accessibility — …»).
+[docs/testing/screen-readers.md](../testing/screen-readers.md) (стенды «Screen readers — …»).
 
 Эмулятор — приближение: реальные скринридеры различаются (режим фокуса и чтения,
 озвучивание контекста строки). Он не заменяет ручную проверку, а ловит регрессии

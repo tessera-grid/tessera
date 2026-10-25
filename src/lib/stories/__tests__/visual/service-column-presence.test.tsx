@@ -7,6 +7,7 @@ import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding/rowExpandingC
 import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection/rowSelectionColumn'
 import { makeData } from '../../__mocks__/data'
 import { Stories } from '../helpers'
+import { flatExpandingArgs } from '../stories'
 
 // Показ служебных колонок по условию (ADR 0050): SC3–SC5, SC7, RE14–RE16, RA3.
 // SC1–SC2, SC6, SC8–SC9 — модульные (`src/lib/__tests__/servicePresence.dom.test.tsx`).
@@ -42,7 +43,8 @@ const mount = async (node: React.ReactElement) => {
 describe('Service column presence', () => {
   test('SC3: a hidden service column is absent from head and body, aria-colcount drops and aria-colindex stays contiguous', async () => {
     const always = await mount(
-      <Stories.RowExpandingFlatData
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
         dataOverride={flat}
         rowExpandingColumn="always"
       />,
@@ -51,7 +53,12 @@ describe('Service column presence', () => {
     const withColumn = Number(gridRoot().getAttribute('aria-colcount'))
     await always.unmount()
 
-    await mount(<Stories.RowExpandingFlatData dataOverride={flat} />)
+    await mount(
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        dataOverride={flat}
+      />,
+    )
     expect(hasColumn(COLUMN_EXPANDING_ID)).toBe(false)
     expect(Number(gridRoot().getAttribute('aria-colcount'))).toBe(
       withColumn - 1,
@@ -64,7 +71,8 @@ describe('Service column presence', () => {
 
   test('SC4: keyboard navigation does not enter a hidden service column', async () => {
     await mount(
-      <Stories.RowExpandingFlatData
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
         dataOverride={flat}
         enableKeyboardNavigation
       />,
@@ -83,7 +91,11 @@ describe('Service column presence', () => {
   test('SC5: the column appearing and disappearing with new data keeps expansion, selection and column widths', async () => {
     const args = { enableColumnSizing: true }
     const view = await mount(
-      <Stories.RowExpandingFlatData {...args} dataOverride={tree} />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        {...args}
+        dataOverride={tree}
+      />,
     )
     const width = () =>
       document
@@ -107,14 +119,22 @@ describe('Service column presence', () => {
     const resized = width()
 
     await view.rerender(
-      <Stories.RowExpandingFlatData {...args} dataOverride={flat} />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        {...args}
+        dataOverride={flat}
+      />,
     )
     await expect.poll(() => hasColumn(COLUMN_EXPANDING_ID)).toBe(false)
     expect(checkbox('row-0').getAttribute('aria-checked')).toBe('true')
     expect(width()).toBe(resized)
 
     await view.rerender(
-      <Stories.RowExpandingFlatData {...args} dataOverride={tree} />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        {...args}
+        dataOverride={tree}
+      />,
     )
     await expect.poll(() => hasColumn(COLUMN_EXPANDING_ID)).toBe(true)
     expect(rowById('node-0-0')).not.toBeNull()
@@ -125,7 +145,11 @@ describe('Service column presence', () => {
   test('SC7: an appearing leading service column joins the pinned block; a hidden one takes no part in sticky offsets', async () => {
     const args = { enableColumnPinning: true, enableRowSelection: false }
     const view = await mount(
-      <Stories.RowExpandingFlatData {...args} dataOverride={flat} />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        {...args}
+        dataOverride={flat}
+      />,
     )
     const country = () =>
       document.querySelector<HTMLElement>(
@@ -142,7 +166,11 @@ describe('Service column presence', () => {
     expect(getComputedStyle(country()).left).toBe('0px')
 
     await view.rerender(
-      <Stories.RowExpandingFlatData {...args} dataOverride={tree} />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        {...args}
+        dataOverride={tree}
+      />,
     )
     const expand = () =>
       document.querySelector<HTMLElement>(
@@ -158,10 +186,18 @@ describe('Service column presence', () => {
 
   test('RE14: rowExpanding — no expandable rows in the data means no column; one expandable row brings it', async () => {
     const view = await mount(
-      <Stories.RowExpandingFlatData dataOverride={flat} />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        dataOverride={flat}
+      />,
     )
     expect(hasColumn(COLUMN_EXPANDING_ID)).toBe(false)
-    await view.rerender(<Stories.RowExpandingFlatData dataOverride={tree} />)
+    await view.rerender(
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        dataOverride={tree}
+      />,
+    )
     await expect.poll(() => hasColumn(COLUMN_EXPANDING_ID)).toBe(true)
     expect(
       document.querySelectorAll(`${BODY_ROW} .row-expand-button`).length,
@@ -170,7 +206,11 @@ describe('Service column presence', () => {
 
   test('RE15: rowExpanding — a search that hides every expandable row keeps the column', async () => {
     await mount(
-      <Stories.RowExpandingFlatData dataOverride={tree} enableQuickSearch />,
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
+        dataOverride={tree}
+        enableQuickSearch
+      />,
     )
     expect(hasColumn(COLUMN_EXPANDING_ID)).toBe(true)
     const search = () =>
@@ -189,7 +229,8 @@ describe('Service column presence', () => {
 
   test('RE16: rowExpanding — with the rowGrouping plugin the column is there for flat data and expands groups', async () => {
     await mount(
-      <Stories.RowExpandingFlatData
+      <Stories.RowExpandingPlayground
+        {...flatExpandingArgs}
         dataOverride={flat}
         enableRowGrouping
         initialGrouping={['gender']}
@@ -209,11 +250,11 @@ describe('Service column presence', () => {
   })
 
   test('RA3: rowActions — no actions means no column; once an action is added the column is there', async () => {
-    const view = await mount(<Stories.RowActionsWithoutActions />)
-    expect(hasColumn(ROW_ACTIONS_COLUMN_ID)).toBe(false)
-    await view.rerender(
-      <Stories.RowActionsWithoutActions actionsDemo="basic" />,
+    const view = await mount(
+      <Stories.RowActionsPlayground actionsDemo="none" />,
     )
+    expect(hasColumn(ROW_ACTIONS_COLUMN_ID)).toBe(false)
+    await view.rerender(<Stories.RowActionsPlayground actionsDemo="basic" />)
     await expect.poll(() => hasColumn(ROW_ACTIONS_COLUMN_ID)).toBe(true)
   })
 })

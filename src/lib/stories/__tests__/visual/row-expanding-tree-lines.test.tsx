@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-react'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 
 import { getScroller, humanClick, rowState, scrollToEnd } from '../helpers'
-import { composed } from '../stories'
+import { composed, treeLinesArgs, plainGroupingArgs } from '../stories'
 import { makeData } from '../../__mocks__/data'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { pinFirstColumn } from './column-pinning-helpers'
@@ -58,7 +58,7 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('TL1: a child joins its parent line with a rounded turn — vertical under the parent text from the row top to its middle, an arc of the radius token, a horizontal to the child text', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await waitTree()
     await showRow(TREE.falkland)
     const g = treeGeometry()
@@ -104,7 +104,7 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('TL2: a non-last child continues its parent line down without gaps through the row border; the last child ends it with the turn', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await waitTree()
     await showRow(TREE.portugal)
     const g = treeGeometry()
@@ -124,7 +124,7 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('TL3: an ancestor line runs through a row only while that ancestor has more siblings below', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await waitTree()
     const g = treeGeometry()
     const below = (id: string, level: number) => {
@@ -154,7 +154,7 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('TL4: an expanded row with visible children draws a stub from below its text to the bottom edge', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await waitTree()
     await showRow(TREE.root)
     const g = treeGeometry()
@@ -197,7 +197,8 @@ describe('Row expanding: tree lines', () => {
     delete data[0].subRows[1].subRows
     const [withKids, leaf] = ['node-0-0', 'node-0-1']
     await render(
-      <composed.RowExpandingTreeLines
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
         enableColumnSorting
         dataOverride={data}
       />,
@@ -240,7 +241,7 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('TL6: by default 1.5px lines of a 12% neutral in both themes, overlaps no darker than the line, a 22px step — a 10px turn and a 12px gap before the text; the theme overrides color, width, radius, step, inset and gap', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await waitTree()
     await showRow(TREE.portugal)
     let g = treeGeometry()
@@ -302,7 +303,12 @@ describe('Row expanding: tree lines', () => {
   })
 
   test('RE53: without the option there are no lines and the indent is unchanged', async () => {
-    await render(<composed.RowExpandingTreeLines enableTreeLines={false} />)
+    await render(
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
+        enableTreeLines={false}
+      />,
+    )
     await waitTree()
     await showRow(TREE.zimbabwe)
     const cell = indentOf(TREE.zimbabwe)
@@ -321,6 +327,7 @@ describe('Row expanding: tree lines', () => {
   test('RE55: grouped rows and their children get lines by depth', async () => {
     await render(
       <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableRowExpanding
         enableTreeLines
         initialGrouping={['gender']}
@@ -342,7 +349,8 @@ describe('Row expanding: tree lines', () => {
 
   test('RE56: lines stay in the indent cell — fixed on a pinned column under horizontal scroll, and after virtualization, sorting and a page change', async () => {
     const screen = await render(
-      <composed.RowExpandingTreeLines
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
         enableColumnPinning
         enableColumnSorting
         columnCount={30}
@@ -407,7 +415,8 @@ describe('Row expanding: tree lines', () => {
 
     // Смена страницы.
     await render(
-      <composed.RowExpandingTreeLines
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
         enablePagination
         // Пагинация по корням: 6 корней — три страницы по два.
         paginationInitialPageSize={2}
@@ -428,7 +437,8 @@ describe('Row expanding: tree lines', () => {
     // Шаг один и тот же: сравнивается раскладка, а не шаг отступа.
     restore = themeTokens({ '--tsr-comp-row-nesting-indent': '20px' })
     const plain = await render(
-      <composed.RowExpandingTreeLines
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
         enableTreeLines={false}
         enableRowSelection
         rowSelectionSubRows
@@ -443,7 +453,11 @@ describe('Row expanding: tree lines', () => {
     await plain.unmount()
 
     await render(
-      <composed.RowExpandingTreeLines enableRowSelection rowSelectionSubRows />,
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
+        enableRowSelection
+        rowSelectionSubRows
+      />,
     )
     await waitTree()
     await showRow(TREE.falkland)
@@ -476,7 +490,10 @@ describe('Row expanding: tree lines', () => {
   test('RE58: a tree with lines passes axe in table and treegrid roles in both themes', async () => {
     for (const keyboard of [false, true]) {
       const screen = await render(
-        <composed.RowExpandingTreeLines enableKeyboardNavigation={keyboard} />,
+        <composed.RowExpandingPlayground
+          {...treeLinesArgs}
+          enableKeyboardNavigation={keyboard}
+        />,
       )
       await waitTree()
       const grid = document.querySelector<HTMLElement>(
@@ -499,7 +516,7 @@ describe('Row expanding: tree lines', () => {
 
   test('RE62: the theme step token changes the indent and the line step — a turn on every new step', async () => {
     restore = themeTokens({ '--tsr-comp-row-nesting-indent': '24px' })
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await waitTree()
     await showRow(TREE.falkland)
     expect(getComputedStyle(indentOf(TREE.zimbabwe)).paddingLeft).toBe('48px')

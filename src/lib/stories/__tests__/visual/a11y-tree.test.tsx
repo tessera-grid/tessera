@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { Stories, bodyRows, renderGrid } from '../helpers'
+import { plainGroupingArgs } from '../stories'
 import { waitForGrid } from './core-helpers'
 
 // Уровень 1 (ADR 0033): снимки дерева доступности Chromium через CDP — то, что
@@ -45,6 +46,7 @@ describe('Дерево доступности (AX)', () => {
   test('AX2: treegrid с раскрытой группой — level и expanded у строк', async () => {
     await render(
       <Stories.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}

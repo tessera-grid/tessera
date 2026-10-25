@@ -373,6 +373,11 @@ export const rowActionsColumnType = radioControl(
   ['auto', 'always'],
   'auto',
 )
+export const actionsDemoType = radioControl(
+  'Набор действий строки: basic — правка, копия, удаление; async — с ответом сервера; nested — с разделами; none — без действий',
+  ['basic', 'async', 'nested', 'none'],
+  'basic',
+)
 export const enableRowActionMenuType = booleanControl(
   'Схлопывать действия строки в кебаб-меню (плагин `rowActionMenu`, нужен enableRowActions)',
 )

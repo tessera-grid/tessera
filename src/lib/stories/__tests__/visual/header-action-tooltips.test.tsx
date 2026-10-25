@@ -6,7 +6,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnFiltering } from '../../../plugins'
 import { humanClick, renderGrid, revealCellButtons } from '../helpers'
-import { composed } from '../stories'
+import { composed, rowMenuArgs } from '../stories'
 import { headCellById, renderColumnPinning } from './column-pinning-helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
@@ -93,7 +93,7 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     await expect.poll(tooltipShown(tableLabels.headerMenu)).toBe(true)
     await (await header).unmount()
 
-    await render(<composed.RowActionMenu />)
+    await render(<composed.RowActionsPlayground {...rowMenuArgs} />)
     const actionCell = () =>
       document.querySelector<HTMLElement>(
         '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]',
@@ -111,7 +111,7 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
 
 describe('Тултип кебаба после меню', () => {
   test('AM35: после Escape с клавиатуры тултип кебаба есть; после выбора пункта мышью фокус возвращается на кебаб без тултипа, указатель ушёл — тултипа нет', async () => {
-    await render(<composed.RowActionMenu />)
+    await render(<composed.RowActionsPlayground {...rowMenuArgs} />)
     await waitForGrid()
     const row = document.querySelectorAll<HTMLElement>(
       '.data-grid__body-row',

@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
-import { composed } from '../stories'
+import { composed, plainGroupingArgs } from '../stories'
 import { PINNING_NESTED, SHALLOW_LEAVES } from './header-fixtures'
 import { tableLabels } from '../labels'
 import { ColumnDraggingGrid } from './columns-fixtures'
@@ -329,6 +329,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
   test('KB7: групповая строка rowGrouping раскрывается и сворачивается с клавиатуры', async () => {
     await render(
       <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}
@@ -373,10 +374,19 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
         `${BODY_ROW}[data-index='2'] ${BODY_CELL}[data-column-id='age']`,
       )!
     await expect.poll(cell).toBeTruthy()
+    const grid = () => document.querySelector<HTMLElement>('[role="grid"]')!
+    // После грида история рисует свою консоль: Tab ведёт к следующему элементу
+    // страницы после грида, какой бы он ни был.
+    const leftForward = () =>
+      !grid().contains(active()) &&
+      !!(
+        grid().compareDocumentPosition(active()) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      )
     const leaveGrid = async (from: HTMLElement) => {
       await expect.poll(() => active()).toBe(from)
       await press('{Tab}')
-      await expect.poll(() => active().id).toBe('after-grid')
+      await expect.poll(leftForward).toBe(true)
     }
 
     // Редактор cellEditing: Escape — на ячейку.

@@ -18,6 +18,12 @@ import * as sortStories from '../../UI.SortButton.stories'
 import * as toolbarStories from '../../UI.ToolbarButton.stories'
 import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
+import { ColumnsPanel, ExportPanel, FilterOptionsPanel } from '../panelFixtures'
+
+/** История или фикстура панели: компонент и `play`, который доводит его до состояния. */
+type Fixture = ((props: Record<string, never>) => ReactNode) & {
+  play?: (context: never) => unknown
+}
 
 // Единая система кнопок (ADR 0098, UB1–UB4, UB7, UB11): общие токены `Button` и
 // `IconButton`, формы и состояния баз, тултип в базе, кнопки грида и плагинов в
@@ -424,17 +430,16 @@ describe('Button system (ADR 0098)', () => {
         .poll(() => document.querySelector('[data-testid="load-error-retry"]'))
         .toBeTruthy()
     // Кнопки грида и плагинов в историях каталога.
-    const grids = [
-      'ToolbarAllButtons',
-      'PaginationPlayground',
-      'HeaderMenuPlayground',
-      'LoadErrorPlayground',
-      'FilteringStateOptions',
-      'VisibilityStatePanel',
-      'ExportStatePanel',
-    ] as const
-    for (const key of grids) {
-      const Story = composed[key]
+    const grids = {
+      ToolbarPlayground: composed.ToolbarPlayground,
+      PaginationPlayground: composed.PaginationPlayground,
+      HeaderMenuPlayground: composed.HeaderMenuPlayground,
+      LoadErrorPlayground: composed.LoadErrorPlayground,
+      FilterOptionsPanel,
+      ColumnsPanel,
+      ExportPanel,
+    } as Record<string, Fixture>
+    for (const [key, Story] of Object.entries(grids)) {
       const screen = await render(<Story />)
       await Story.play?.({ canvasElement: screen.container } as never)
       // У Playground ошибки загрузки нет `play`: ждём кнопку повтора сообщения.

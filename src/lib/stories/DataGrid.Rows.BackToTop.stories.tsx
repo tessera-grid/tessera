@@ -1,33 +1,29 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { expect } from 'storybook/test'
+
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  InfiniteScrollDemo,
-  type InfiniteScrollDemoProps,
-} from './demos/infiniteScrollDemos'
-import { expect, userEvent } from 'storybook/test'
-import { byTestId, settle, until, waitForRows } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-
-/** Прокрутка на два экрана показывает кнопку, нажатие возвращает в начало. */
-const backToTop = async (canvas: HTMLElement) => {
-  await waitForRows(canvas)
-  const scroller = canvas.querySelector<HTMLElement>('.data-grid__container')!
-  const button = () => byTestId('back-to-top')
-  scroller.scrollTo({
-    top: scroller.clientHeight * 2 + 200,
-    behavior: 'instant',
-  })
-  await until(() => expect(button()).toBeVisible())
-  await userEvent.click(button()!)
-  await until(() => expect(scroller.scrollTop).toBe(0))
-  await settle()
-}
+  byTestId,
+  guideNext,
+  pollUntil,
+  settle,
+  stepDone,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /**
- * Кнопка «наверх» (ADR 0082): справа в нижней панели, видна после прокрутки на два
- * экрана. Панель сама не вызывает — выключите пагинацию, и кнопки не станет.
+ * Кнопки «наверх» и «к первой колонке» (ADR 0082, ADR 0105): в нижней панели, видны
+ * после прокрутки на два экрана. `Playground` — панель от статусбара, пагинации или
+ * ленты; S1 — возврат в начало, S1 ADR 0105 — возврат к первой колонке.
  */
 const meta = {
   ...dataGridMeta,
@@ -37,10 +33,16 @@ const meta = {
 
 export default meta
 
-/**
- * Кнопка живёт в нижней панели: её даёт `enableStatusBar`, пагинация или лента.
- * Прокрутите вниз или вправо на два экрана — кнопка вернёт к краю.
- */
+const GRID = {
+  containerHeight: '600',
+  height: '480',
+  maxHeight: '480',
+  enableBackToTop: true,
+  enableStatusBar: true,
+  dataCount: 1000,
+} satisfies Partial<StoryProps>
+
+/** Кнопка живёт в нижней панели: её даёт `enableStatusBar`, пагинация или лента. */
 export const BackToTopPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   parameters: showControls([
@@ -52,131 +54,180 @@ export const BackToTopPlayground: StoryObj<StoryProps> = {
     'enablePagination',
     'paginationInitialPageSize',
   ]),
-  args: {
-    containerHeight: '600',
-    height: '480',
-    maxHeight: '480',
-    enableBackToTop: true,
-    enableStatusBar: true,
-    dataCount: 1000,
-    columnCount: 30,
-  },
+  args: { ...GRID, columnCount: 30 },
 }
 
-export const BackToTopPagination: StoryObj<StoryProps> = {
-  name: 'Pagination',
-  parameters: showControls([
-    'enablePagination',
-    'paginationInitialPageSize',
-    'paginationPageSizes',
-    'paginationRevertOnReject',
-    'enableBackToTop',
-    'backToTopThreshold',
-    'backToTopHorizontalThreshold',
-    'backToTopAxes',
-  ]),
-  // Страница по 100 строк: прокрутите вниз — кнопка вернёт в начало страницы.
-  // Включите enableKeyboardNavigation — активная ячейка перейдёт в первую строку.
-  args: {
-    containerHeight: '600',
-    height: '480',
-    maxHeight: '480',
-    enableBackToTop: true,
-    enablePagination: true,
-    paginationInitialPageSize: 100,
-    dataCount: 1000,
-  },
-  play: ({ canvasElement }) => backToTop(canvasElement),
+const scrollerOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__container')!
+const shown = (id: string) => {
+  const button = byTestId(id)
+  return !!button && button.checkVisibility({ visibilityProperty: true })
+}
+/** Кнопка погасла: скрыта или, пока на ней фокус, выключена (BT8). */
+const inactive = (id: string) =>
+  !shown(id) || byTestId(id)?.getAttribute('aria-disabled') === 'true'
+const inStatusBar = (id: string) =>
+  !!byTestId(id)?.closest('[data-testid="data-grid-status-bar"]')
+
+/** Пользователь прокручивает таблицу по оси, пока не появится кнопка `button`. */
+const scrollAway = async (
+  root: HTMLElement,
+  axis: 'top' | 'left',
+  button: string,
+  signal: AbortSignal,
+) => {
+  await pollUntil(() => !!root.querySelector('.data-grid__body-row'), signal)
+  const scroller = scrollerOf(root)
+  const size = axis === 'top' ? scroller.clientHeight : scroller.clientWidth
+  if (!shown(button))
+    scroller.scrollTo({ [axis]: size * 2 + 200, behavior: 'instant' })
+  await pollUntil(() => shown(button), signal)
 }
 
-export const BackToTopInfiniteScroll: StoryObj<InfiniteScrollDemoProps> = {
-  name: 'Infinite scroll',
-  // Лента со счётчиком загруженных строк: кнопка встаёт в его панель.
-  args: {
-    containerHeight: '600',
-    height: '480',
-    maxHeight: '480',
-    serverDelayMs: 300,
-    blockSize: 100,
-    enableBackToTop: true,
+/** Пользователь нажимает кнопку возврата, пока прокрутка по оси не станет нулевой. */
+const returnBy = async (
+  root: HTMLElement,
+  axis: 'top' | 'left',
+  button: string,
+  signal: AbortSignal,
+) => {
+  await scrollAway(root, axis, button, signal)
+  byTestId(button)!.click()
+  const scroller = scrollerOf(root)
+  await pollUntil(
+    () => (axis === 'top' ? scroller.scrollTop : scroller.scrollLeft) === 0,
+    signal,
+  )
+}
+
+// --- ADR 0082 S1 ---------------------------------------------------------------------
+
+const TOP = 'back-to-top'
+
+const RETURN: readonly GuideStoryStep[] = [
+  {
+    title: 'Начало таблицы',
+    hint: 'Таблица открыта в начале. Кнопки возврата нет: возвращаться некуда.',
   },
-  argTypes: {
-    serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
-    blockSize: { control: { type: 'range', min: 5, max: 200, step: 5 } },
-  },
-  render: args => <InfiniteScrollDemo {...normalizeArgs(args)} />,
-  // Дымовой тест ленты (ADR 0082, BT15): кнопка после прокрутки возвращает в начало.
-  parameters: {
-    requirements: ['BT15'],
-    ...showControls(
-      [
-        'enableBackToTop',
-        'backToTopThreshold',
-        'backToTopHorizontalThreshold',
-        'backToTopAxes',
-        'serverDelayMs',
-        'blockSize',
-      ],
-      {
-        dataCount: 'данные подаёт демо',
-        columnCount: 'колонки задаёт демо',
-      },
+  {
+    title: 'Пользователь пролистал вниз',
+    hint: 'Пользователь прокрутил таблицу больше чем на два экрана. В нижней панели появилась кнопка возврата в начало.',
+    enter: stepAction((root, { signal }) =>
+      scrollAway(root, 'top', TOP, signal),
     ),
   },
-  play: async ({ canvasElement }) => {
-    await until(() =>
-      expect(byTestId('loaded-rows-count')).toHaveTextContent(
-        'Loaded 100 of 1,000',
-      ),
-    )
-    await backToTop(canvasElement)
+  {
+    title: 'Пользователь вернулся в начало',
+    hint: 'Пользователь нажал кнопку возврата. Таблица прокрутилась к первой строке, кнопка возврата больше не активна.',
+    enter: stepAction((root, { signal }) => returnBy(root, 'top', TOP, signal)),
+  },
+]
+
+/** ADR 0082, S1: пользователь пролистал далеко вниз и вернулся в начало. */
+export const BackToTopReturn: StoryObj<StoryProps> = {
+  name: 'Return to top',
+  parameters: {
+    scenario: '0082/S1',
+    requirements: ['BT15'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Возврат в начало"
+      steps={RETURN}
+      args={guideArgs({ ...GRID, columnCount: 8 }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(RETURN[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(scrollerOf(canvas).scrollTop).toBe(0)
+      await until(() => expect(shown(TOP)).toBe(false))
+    })
+    await step(RETURN[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(
+        scrollerOf(canvas).clientHeight * 2,
+      )
+      await expect(shown(TOP)).toBe(true)
+      await expect(inStatusBar(TOP)).toBe(true)
+    })
+    await step(RETURN[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(scrollerOf(canvas).scrollTop).toBe(0)
+      await until(() => expect(inactive(TOP)).toBe(true))
+      await settle()
+    })
   },
 }
 
+// --- ADR 0105 S1 ---------------------------------------------------------------------
+
+const START = 'back-to-start'
+
+const WIDE: readonly GuideStoryStep[] = [
+  {
+    title: 'Широкая таблица',
+    hint: 'Колонок больше, чем помещается на экране. Кнопок возврата нет.',
+  },
+  {
+    title: 'Пользователь пролистал вправо',
+    hint: 'Пользователь прокрутил таблицу вправо больше чем на два экрана. В нижней панели появилась кнопка возврата к первой колонке.',
+    enter: stepAction((root, { signal }) =>
+      scrollAway(root, 'left', START, signal),
+    ),
+  },
+  {
+    title: 'Пользователь вернулся к первой колонке',
+    hint: 'Пользователь нажал кнопку. Таблица прокрутилась к первой колонке, вертикальная прокрутка не изменилась, кнопка возврата больше не активна.',
+    enter: stepAction((root, { signal }) =>
+      returnBy(root, 'left', START, signal),
+    ),
+  },
+]
+
+/** ADR 0105, S1: пользователь пролистал широкую таблицу вправо и вернулся к первой колонке. */
 export const BackToTopWide: StoryObj<StoryProps> = {
   name: 'Wide table',
-  // Широкая таблица (ADR 0105): прокрутите вправо — кнопка «к первой колонке» слева от
-  // «наверх» вернёт к первой колонке, не трогая вертикаль. Одна ось — аргумент
-  // backToTopAxes.
-  args: {
-    containerHeight: '600',
-    height: '480',
-    maxHeight: '480',
-    enableBackToTop: true,
-    enablePagination: true,
-    paginationInitialPageSize: 100,
-    dataCount: 1000,
-    columnCount: 40,
-  },
-  // Дымовой сценарий (ADR 0105, BT24): обе кнопки возвращают к краю.
   parameters: {
+    scenario: '0105/S1',
     requirements: ['BT24'],
-    ...showControls([
-      'enablePagination',
-      'paginationInitialPageSize',
-      'paginationPageSizes',
-      'paginationRevertOnReject',
-      'enableBackToTop',
-      'backToTopThreshold',
-      'backToTopHorizontalThreshold',
-      'backToTopAxes',
-    ]),
+    ...guideControls(),
   },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    const scroller = canvasElement.querySelector<HTMLElement>(
-      '.data-grid__container',
-    )!
-    const start = () => byTestId('back-to-start')
-    scroller.scrollTo({
-      left: scroller.clientWidth * 2 + 200,
-      behavior: 'instant',
+  render: args => (
+    <GuideStory
+      title="Возврат к первой колонке"
+      steps={WIDE}
+      args={guideArgs({ ...GRID, columnCount: 40 }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(WIDE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(scrollerOf(canvas).scrollWidth).toBeGreaterThan(
+        scrollerOf(canvas).clientWidth * 3,
+      )
+      await expect(shown(START)).toBe(false)
+      await expect(shown(TOP)).toBe(false)
     })
-    await until(() => expect(start()).toBeVisible())
-    const top = scroller.scrollTop
-    await userEvent.click(start()!)
-    await until(() => expect(scroller.scrollLeft).toBe(0))
-    expect(scroller.scrollTop).toBe(top)
-    await backToTop(canvasElement)
+    await step(WIDE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(shown(START)).toBe(true)
+      await expect(inStatusBar(START)).toBe(true)
+    })
+    await step(WIDE[2]!.title, async () => {
+      const top = scrollerOf(canvas).scrollTop
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(scrollerOf(canvas).scrollLeft).toBe(0)
+      await expect(scrollerOf(canvas).scrollTop).toBe(top)
+      await until(() => expect(inactive(START)).toBe(true))
+      await settle()
+    })
   },
 }

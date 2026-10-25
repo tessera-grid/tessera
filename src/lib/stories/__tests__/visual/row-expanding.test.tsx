@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 
 import axe from 'axe-core'
 
-import { composed } from '../stories'
+import { composed, treeLinesArgs, plainGroupingArgs } from '../stories'
 import { settleRowMotion } from '../helpers'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { waitForBodyText } from './column-pinning-helpers'
@@ -436,7 +436,10 @@ describe('Row Expanding — nesting step', () => {
         .map(cell => parseFloat(getComputedStyle(cell).paddingLeft))
         .filter(value => value > 0)
     const tree = await render(
-      <composed.RowExpandingTreeLines enableTreeLines={false} />,
+      <composed.RowExpandingPlayground
+        {...treeLinesArgs}
+        enableTreeLines={false}
+      />,
     )
     await expect.poll(() => paddings().includes(48)).toBe(true)
     expect(new Set(paddings())).toEqual(new Set([16, 32, 48]))
@@ -444,6 +447,7 @@ describe('Row Expanding — nesting step', () => {
 
     await render(
       <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableRowExpanding
         initialGrouping={['gender']}
         initialExpanded={true}

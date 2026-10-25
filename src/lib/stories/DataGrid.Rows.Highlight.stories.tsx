@@ -1,28 +1,38 @@
-import type { TesseraFeatureEntry } from '../core/features'
 import { Meta, StoryObj } from '@storybook/react'
+import { useSyncExternalStore } from 'react'
+import { expect } from 'storybook/test'
 
+import { Trash2 } from 'lucide-react'
+
+import type { TesseraFeatureEntry } from '../core/features'
+import type { RowAction } from '../core/headerActions'
+import type {
+  HighlightHandle,
+  HighlightOptions,
+  HighlightTarget,
+} from '../core/highlights/highlightFeature'
+import { ToolbarButton } from '../ui/ToolbarButton'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
-import { HighlightDemo } from './demos/highlightDemos'
-import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
 import { vrStates } from './__mocks__/catalog'
 import {
   bodyRow,
+  byTestId,
+  guideNext,
   headCell,
-  orderedRows,
   settle,
-  sleep,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import { untilDone } from './__mocks__/cellGestures'
+import { getData } from './__mocks__/data'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /**
- * Публичная подсветка (ADR 0080): «Delete» в строке подсвечивает её красным, пока
- * удаление не подтверждено; поиск отмечает совпадения; кнопки — вспышка ячейки и
- * подсветка колонки. Включите выбор строк, закрепление или выделение ячеек в Controls,
- * чтобы увидеть подсветку поверх этих состояний.
+ * Публичная подсветка (ADR 0080): `Playground` — подсвеченные строка, ячейка и колонка;
+ * S1 — строки ждут подтверждения удаления, S2 — приложение отмечает найденное, ячейку
+ * и колонку.
  */
 const meta = {
   ...dataGridMeta,
@@ -32,130 +42,20 @@ const meta = {
 
 export default meta
 
-export const RowHighlightPlayground: StoryObj<StoryProps> = {
-  name: 'Playground',
-  args: {
-    enableRowActions: true,
-    // Действия строки — только «Delete» демо-плагина.
-    actionsDemo: 'none',
-    enableFooter: true,
-    containerHeight: '460',
-    height: '360',
-    maxHeight: '360',
-  },
-  render: function Render(args) {
-    return <HighlightDemo {...normalizeArgs(args)} />
-  },
-  // Дымовой тест (ADR 0080, HL21): удаление с подсветкой до подтверждения, поиск,
-  // вспышка ячейки и подсветка колонки.
-  parameters: {
-    requirements: ['HL21'],
-    ...showControls(
-      [
-        'enableFooter',
-        'enableRowActions',
-        'rowActionsWidth',
-        'rowActionsCollapsedWidth',
-        'rowActionsColumn',
-      ],
-      { dataCount: 'данные подаёт демо' },
-    ),
-  },
-  play: async ({ canvasElement, globals }) => {
-    if (globals.catalog !== true) return
-    await waitForRows(canvasElement)
-    const row = (id: string) => bodyRow(canvasElement, id)
-    const remove = async (id: string) => {
-      await userEvent.hover(row(id))
-      await userEvent.click(
-        row(id).querySelector<HTMLElement>('button[aria-label="Удалить"]')!,
-      )
-    }
-    const [first, , second] = orderedRows(canvasElement).map(
-      r => r.dataset.rowId!,
-    )
-    const gridTop = () =>
-      canvasElement
-        .querySelector('.data-grid__container')!
-        .getBoundingClientRect().top
-    const top = gridTop()
-
-    await remove(first!)
-    await until(() =>
-      expect(row(first!)).toHaveAttribute('data-highlight', 'danger'),
-    )
-    // Подтверждение — в строке заголовка демо: таблица не сдвигается.
-    expect(gridTop()).toBe(top)
-    // Подсветка держится, пока удаление не подтверждено, — дольше затухания.
-    await sleep(800)
-    expect(row(first!)).toHaveAttribute('data-highlight', 'danger')
-    expect(row(first!)).not.toHaveAttribute('data-highlight-out')
-
-    // Вторая строка встаёт в ту же очередь, повторное нажатие первой — не дубль.
-    await remove(second!)
-    await remove(first!)
-    const confirm = () =>
-      screen.getByRole('group', { name: 'Подтверждение удаления' })
-    await until(() => expect(confirm()).toHaveTextContent('Удалить 2 строки?'))
-    expect(row(second!)).toHaveAttribute('data-highlight', 'danger')
-    await userEvent.click(
-      within(confirm()).getByRole('button', { name: 'Отмена' }),
-    )
-    const faded = (id: string) =>
-      row(id).hasAttribute('data-highlight-out') ||
-      !row(id).hasAttribute('data-highlight')
-    await until(() => expect(faded(first!) && faded(second!)).toBe(true))
-
-    await remove(first!)
-    await userEvent.click(
-      within(confirm()).getByRole('button', { name: 'Удалить' }),
-    )
-    await until(() => expect(row(first!)).toBeNull())
-
-    // Остальные шаги — в свёрнутом аккордеоне «Демо».
-    await userEvent.click(screen.getByRole('button', { name: /Демо/ }))
-    await userEvent.type(
-      screen.getByRole('textbox', { name: 'Поиск по имени и стране' }),
-      'a',
-    )
-    await until(() =>
-      expect(
-        canvasElement.querySelectorAll(
-          '.data-grid__body-cell[data-highlight="warning"]',
-        ).length,
-      ).toBeGreaterThan(0),
-    )
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Подсветить ячейку' }),
-    )
-    await until(() =>
-      expect(
-        canvasElement.querySelectorAll(
-          '.data-grid__body-cell[data-highlight="success"]',
-        ),
-      ).toHaveLength(1),
-    )
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Подсветить колонку' }),
-    )
-    await until(() =>
-      expect(headCell(canvasElement, 'total')).toHaveAttribute(
-        'data-column-highlight',
-        'success',
-      ),
-    )
-    await settle()
-  },
+interface HighlightApi {
+  highlight: (
+    target: HighlightTarget,
+    options?: HighlightOptions,
+  ) => HighlightHandle
+  clearHighlights: (key?: string) => void
+  getCoreRowModel: () => { rows: unknown[] }
 }
 
 /** Подсветки строки, ячейки и колонки — один раз, как только появились строки. */
-const highlightsDemo: TesseraFeatureEntry = {
-  id: 'highlightsDemo',
+const highlightsSeed: TesseraFeatureEntry = {
+  id: 'highlightsSeed',
   setup: table => {
-    const t = table as {
-      getCoreRowModel: () => { rows: unknown[] }
-      highlight: (target: object, options?: object) => unknown
-    }
+    const t = table as unknown as HighlightApi
     let frame = 0
     const apply = () => {
       if (t.getCoreRowModel().rows.length === 0) {
@@ -164,10 +64,7 @@ const highlightsDemo: TesseraFeatureEntry = {
       }
       t.highlight({ row: 'item-id-1' }, { tone: 'info' })
       t.highlight({ row: 'item-id-3' }, { tone: 'danger' })
-      t.highlight(
-        { cell: { row: 'item-id-5', column: 'firstName' } },
-        { tone: 'success' },
-      )
+      t.highlight({ cell: ['item-id-5', 'firstName'] }, { tone: 'success' })
       t.highlight({ column: 'age' }, { tone: 'warning' })
     }
     apply()
@@ -175,22 +72,373 @@ const highlightsDemo: TesseraFeatureEntry = {
   },
 }
 
-/** Подсвеченные строка, ячейка и колонка (ADR 0093, VR4). */
-export const HighlightStateLit: StoryObj<StoryProps> = {
-  name: 'State: highlights',
-  parameters: { ...vrStates('body.highlight'), ...showControls([]) },
+/**
+ * Подсвеченные строка, ячейка и колонка в покое (ADR 0093, VR4). Включите выбор строк,
+ * закрепление или выделение ячеек — подсветка поверх этих состояний.
+ */
+export const RowHighlightPlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  parameters: {
+    ...vrStates('body.highlight'),
+    ...showControls([
+      'enableFooter',
+      'enableRowSelection',
+      'enableColumnPinning',
+      'enableCellSelection',
+    ]),
+  },
   args: {
-    extraPlugins: [highlightsDemo],
+    extraPlugins: [highlightsSeed],
     dataCount: 12,
     containerHeight: '460',
     height: '360',
     maxHeight: '360',
   },
-  play: async ({ canvasElement }) => {
-    await waitForRows(canvasElement)
-    await waitFor(() =>
-      expect(canvasElement.querySelector('[data-highlight]')).not.toBeNull(),
+}
+
+const GRID = {
+  containerHeight: '460',
+  height: '360',
+  maxHeight: '360',
+} satisfies Partial<StoryProps>
+
+// --- S1 ------------------------------------------------------------------------------
+
+/** Строки приложения, ожидающие подтверждения удаления: решение одно на всех. */
+const deletion = (() => {
+  const pending = new Map<string, (ok: boolean) => void>()
+  const listeners = new Set<() => void>()
+  const notify = () => listeners.forEach(listener => listener())
+  return {
+    count: () => pending.size,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    ask: (id: string) =>
+      new Promise<boolean>(resolve => {
+        pending.set(id, resolve)
+        notify()
+      }),
+    has: (id: string) => pending.has(id),
+    decide: (ok: boolean) => {
+      pending.forEach(resolve => resolve(ok))
+      pending.clear()
+      notify()
+    },
+  }
+})()
+
+const deleteRow: RowAction = {
+  id: 'deleteRow',
+  slot: 'actionRowSlot',
+  order: 0,
+  icon: () => <Trash2 width={16} height={16} />,
+  label: () => 'Delete',
+  onSelect: ctx => {
+    if (deletion.has(ctx.row.id)) return
+    const table = ctx.table as unknown as HighlightApi
+    // Строка подсвечена, пока решение не принято.
+    table.highlight(
+      { row: ctx.row.id },
+      { tone: 'danger', until: deletion.ask(ctx.row.id) },
     )
-    await settle()
+  },
+}
+
+/**
+ * Кнопка приложения в тулбаре: вопрос об удалении отмеченных строк. Видна всегда —
+ * её появление не сдвигает таблицу; без отмеченных строк выключена.
+ */
+const ConfirmDelete = () => {
+  const count = useSyncExternalStore(deletion.subscribe, deletion.count)
+  return (
+    <ToolbarButton
+      label={
+        count === 0
+          ? 'Delete marked rows'
+          : `Delete ${count} ${count === 1 ? 'row' : 'rows'}`
+      }
+      icon={<Trash2 size={18} />}
+      disabled={count === 0}
+      data-testid="confirm-delete"
+      onClick={() => deletion.decide(true)}
+    />
+  )
+}
+
+const deletionPlugin: TesseraFeatureEntry = {
+  id: 'deletionGuide',
+  slotActions: [deleteRow],
+  slots: [
+    {
+      id: 'confirmDelete',
+      slot: 'toolbarSlot',
+      group: 'data',
+      order: 0,
+      component: ConfirmDelete,
+    },
+  ],
+}
+
+const deleteRows = getData(20)
+const FIRST = deleteRows[1]!.id
+const SECOND = deleteRows[3]!.id
+
+const danger = (root: HTMLElement, id: string) =>
+  bodyRow(root, id)?.getAttribute('data-highlight') === 'danger'
+const deleteButton = (root: HTMLElement, id: string) =>
+  bodyRow(root, id)?.querySelector<HTMLElement>(
+    '[data-column-id="actionColumn__rowActions"] button',
+  )
+/** Пользователь нажимает удаление у строк, ещё не подсвеченных. */
+const markForDeletion = (root: HTMLElement, ids: string[]) =>
+  ids
+    .filter(id => !danger(root, id))
+    .forEach(id => deleteButton(root, id)?.click())
+
+const DELETE: readonly GuideStoryStep[] = [
+  {
+    title: 'Действие удаления',
+    hint: 'У строк есть действие удаления. Удаление приложение подтверждает отдельно.',
+  },
+  {
+    title: 'Пользователь удаляет строку',
+    hint: 'Пользователь нажал удаление. Строка подсвечена тоном опасности, приложение спрашивает подтверждение.',
+    states: ['body.highlight'],
+    enter: untilDone(
+      root => danger(root, FIRST),
+      root => markForDeletion(root, [FIRST]),
+    ),
+  },
+  {
+    title: 'Пользователь удаляет ещё одну строку',
+    hint: 'Обе строки подсвечены, приложение спрашивает об удалении двух строк.',
+    states: ['body.highlight'],
+    enter: untilDone(
+      root => danger(root, FIRST) && danger(root, SECOND),
+      root => markForDeletion(root, [FIRST, SECOND]),
+    ),
+  },
+  {
+    title: 'Пользователь подтвердил удаление',
+    hint: 'Строки ушли из таблицы, подсветки больше нет.',
+    enter: untilDone<{
+      update: (change: () => Partial<StoryProps>) => void
+    }>(
+      root => !bodyRow(root, FIRST) && !bodyRow(root, SECOND),
+      (root, app) => {
+        if (!danger(root, FIRST) || !danger(root, SECOND)) {
+          markForDeletion(root, [FIRST, SECOND])
+          return
+        }
+        byTestId('confirm-delete')?.click()
+        app.update(() => ({
+          dataOverride: deleteRows.filter(
+            row => row.id !== FIRST && row.id !== SECOND,
+          ),
+        }))
+      },
+    ),
+  },
+]
+
+/** S1: приложение подсвечивает строки, ожидающие подтверждения удаления. */
+export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
+  name: 'Delete confirmation',
+  parameters: {
+    scenario: '0080/S1',
+    requirements: ['HL21'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Подсветка до подтверждения"
+      steps={DELETE}
+      args={guideArgs(
+        {
+          ...GRID,
+          enableRowActions: true,
+          actionsDemo: 'none',
+          extraPlugins: [deletionPlugin],
+          dataOverride: deleteRows,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    // Тело относительно тулбара: панель гайда над таблицей меняет высоту от шага к шагу.
+    const top = () =>
+      canvas.querySelector('.data-grid__container')!.getBoundingClientRect()
+        .top - byTestId('data-grid-toolbar')!.getBoundingClientRect().top
+    let gridTop = 0
+    await step(DELETE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(deleteButton(canvas, FIRST)).toBeTruthy())
+      await until(() => {
+        const button = byTestId('confirm-delete') as HTMLButtonElement | null
+        expect(
+          !!button?.disabled ||
+            button?.getAttribute('aria-disabled') === 'true',
+        ).toBe(true)
+      })
+      gridTop = top()
+    })
+    await step(DELETE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(danger(canvas, FIRST)).toBe(true))
+      await until(() =>
+        expect(byTestId('confirm-delete')).toHaveAccessibleName('Delete 1 row'),
+      )
+      await expect(top()).toBe(gridTop)
+    })
+    await step(DELETE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(danger(canvas, SECOND)).toBe(true))
+      await expect(danger(canvas, FIRST)).toBe(true)
+      await expect(byTestId('confirm-delete')).toHaveAccessibleName(
+        'Delete 2 rows',
+      )
+    })
+    await step(DELETE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(bodyRow(canvas, FIRST)).toBeFalsy())
+      await expect(bodyRow(canvas, SECOND)).toBeFalsy()
+      await until(() =>
+        expect(canvas.querySelector('[data-highlight="danger"]')).toBeNull(),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- S2 ------------------------------------------------------------------------------
+
+let marksTable: HighlightApi | null = null
+
+/** Отдаёт таблицу шагам: подсветку ставит приложение. */
+const marksHost: TesseraFeatureEntry = {
+  id: 'highlightMarksHost',
+  setup: table => {
+    marksTable = table as unknown as HighlightApi
+    return () => {
+      marksTable = null
+    }
+  },
+}
+
+const markRows = getData(30)
+const QUERY = 'ar'
+const SEARCH_COLUMNS = ['firstName', 'lastName', 'country'] as const
+const MARKED_ROW = markRows[2]!.id
+
+const searchMarks = () => {
+  marksTable?.clearHighlights('search')
+  for (const row of markRows)
+    for (const column of SEARCH_COLUMNS)
+      if (String(row[column]).toLowerCase().includes(QUERY))
+        marksTable?.highlight(
+          { cell: [row.id, column] },
+          { key: 'search', tone: 'warning' },
+        )
+}
+const cellMark = () =>
+  marksTable?.highlight(
+    { cell: [MARKED_ROW, 'age'] },
+    { key: 'cell', tone: 'success' },
+  )
+const columnMark = () =>
+  marksTable?.highlight({ column: 'total' }, { key: 'column', tone: 'success' })
+
+/** Приложение ставит подсветки шага, как только таблица готова. */
+const applyMarks =
+  (...marks: (() => unknown)[]) =>
+  (root: HTMLElement) => {
+    let tries = 0
+    const run = () => {
+      if (marksTable && root.querySelector('.data-grid__body-row')) {
+        marks.forEach(mark => mark())
+        return
+      }
+      if (++tries < 80) setTimeout(run, 50)
+    }
+    setTimeout(run, 0)
+  }
+
+const searchCells = (root: HTMLElement) =>
+  root.querySelectorAll('.data-grid__body-cell[data-highlight="warning"]')
+const markedCell = (root: HTMLElement) =>
+  bodyRow(root, MARKED_ROW)?.querySelector(
+    '.data-grid__body-cell[data-column-id="age"][data-highlight="success"]',
+  )
+
+const MARKS: readonly GuideStoryStep[] = [
+  {
+    title: 'Пользователь ищет',
+    hint: 'Пользователь ввёл запрос в поиске приложения. Ячейки с совпадениями подсвечены.',
+    states: ['body.highlight'],
+    enter: applyMarks(searchMarks),
+  },
+  {
+    title: 'Приложение отметило ячейку',
+    hint: 'Приложение подсветило ячейку с результатом действия.',
+    states: ['body.highlight'],
+    enter: applyMarks(searchMarks, cellMark),
+  },
+  {
+    title: 'Приложение отметило колонку',
+    hint: 'Приложение подсветило всю колонку итогов.',
+    states: ['body.highlight'],
+    enter: applyMarks(searchMarks, cellMark, columnMark),
+  },
+]
+
+/** S2: приложение отмечает найденное, ячейку и колонку. */
+export const HighlightMarks: StoryObj<StoryProps> = {
+  name: 'Search, cell and column',
+  parameters: {
+    scenario: '0080/S2',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Отметки приложения"
+      steps={MARKS}
+      args={guideArgs(
+        {
+          ...GRID,
+          enableFooter: true,
+          extraPlugins: [marksHost],
+          dataOverride: markRows,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(MARKS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(searchCells(canvas).length).toBeGreaterThan(0))
+      await expect(markedCell(canvas)).toBeFalsy()
+    })
+    await step(MARKS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(markedCell(canvas)).toBeTruthy())
+      await expect(searchCells(canvas).length).toBeGreaterThan(0)
+    })
+    await step(MARKS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(headCell(canvas, 'total')).toHaveAttribute(
+          'data-column-highlight',
+          'success',
+        ),
+      )
+      await expect(markedCell(canvas)).toBeTruthy()
+      await settle()
+    })
   },
 }

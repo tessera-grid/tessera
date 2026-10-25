@@ -92,8 +92,6 @@ const WITHOUT_CONTROL: Record<string, string> = {
   rowSelectionModelRowSelection: 'выбор у приложения — своя история',
   rowSelectionModelInitialRowSelection: 'выбор у приложения — своя история',
   onConflict: 'режим конфликта правки задаёт история',
-  actionsDemo:
-    'набор демо-действий задаёт история — у каждого набора своя история',
 }
 
 /** Аргументы историй вне плагинов (не подчиняются правилу `<фабрика><Опция>`). */
@@ -237,29 +235,6 @@ interface RawStory {
   }
 }
 
-/**
- * Файлы, чьи истории сценариев ещё показывают контролы (SN28): переводятся позже.
- * Список только сокращается — переведённый файл из него убирается.
- */
-const GUIDE_CONTROLS_LATER: Record<string, string> = {
-  'Console.dev.stories.tsx': 'песочницы обвязки консоли — переводятся позже',
-  'DataGrid.Columns.Sorting.stories.tsx':
-    'истории сценариев с контролами — позже',
-  'DataGrid.Core.Stubs.stories.tsx': 'истории сценариев с контролами — позже',
-  'DataGrid.Export.stories.tsx': 'истории сценариев с контролами — позже',
-  'DataGrid.Filtering.stories.tsx': 'истории сценариев с контролами — позже',
-  'DataGrid.Panels.Pagination.stories.tsx':
-    'истории сценариев с контролами — позже',
-  'DataGrid.Panels.Toolbar.stories.tsx':
-    'истории сценариев с контролами — позже',
-  'DataGrid.Rows.Grouping.stories.tsx':
-    'истории сценариев с контролами — позже',
-  'DataGrid.Rows.Selection.stories.tsx':
-    'истории сценариев с контролами — позже',
-  'DataGrid.Rows.TreeData.stories.tsx':
-    'истории сценариев с контролами — позже',
-}
-
 /** Витрины `UI.*` без своего примитива: контролы во всех историях (SN30). */
 const UI_SHOWCASES: Record<string, string> = {
   'UI.LoadingAnimations.stories.tsx':
@@ -278,6 +253,7 @@ const titleOf = (meta: unknown) => (meta as { title?: string })?.title ?? ''
 
 interface StoryEntry {
   id: string
+  title: string
   story: RawStory
   argTypes: Record<string, ArgType>
 }
@@ -300,6 +276,7 @@ const sharedMetaStories = async (): Promise<StoryEntry[]> => {
       if (story.tags?.includes('!test')) continue
       entries.push({
         id: `${path.replace('../stories/', '')} ${name}`,
+        title: titleOf(meta),
         story,
         argTypes: { ...metaTypes, ...story.argTypes },
       })
@@ -426,13 +403,21 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
   )
 
   it(
-    'SN28: история сценария с гайдом не показывает контролов — базовые скрыты с причиной, своего списка и args нет, вкладка Controls скрыта; у файла есть Playground с контролами; список переводимых позже только сокращается',
+    'SN28: история сценария с гайдом не показывает контролов — базовые скрыты с причиной, своего списка и args нет, вкладка Controls скрыта; у файла есть Playground с контролами; песочницы Tessera/Common правило не касается',
     async () => {
       const stories = await sharedMetaStories()
       const fileOf = (entry: StoryEntry) => entry.id.split(' ')[0]!
+      // Песочницы обвязки `Tessera/Common` — не разделы фич: Playground у них нет (SN31).
       const scenarios = stories.filter(
-        entry => entry.story.parameters?.scenario,
+        entry =>
+          entry.story.parameters?.scenario && !entry.title.startsWith(COMMON),
       )
+      expect(
+        stories.some(
+          entry =>
+            entry.story.parameters?.scenario && entry.title.startsWith(COMMON),
+        ),
+      ).toBe(true)
       const problems = (entry: StoryEntry) => {
         const hidden = hiddenBase(entry)
         return [
@@ -455,21 +440,14 @@ describe('контролы историй DataGrid (ADR 0117)', () => {
             entry.story.name === 'Playground' &&
             shown(entry).length > 0,
         )
-        const found = [
+        return [
           ...scenarios
             .filter(entry => fileOf(entry) === file)
             .flatMap(problems),
           ...(sandbox ? [] : [`${file}: нет Playground с контролами`]),
         ]
-        if (!(file in GUIDE_CONTROLS_LATER)) return found
-        return found.length === 0
-          ? [`${file}: переведён — уберите из списка позже`]
-          : []
       })
-      const unknown = Object.keys(GUIDE_CONTROLS_LATER)
-        .filter(file => !files.has(file))
-        .map(file => `${file}: в списке позже, но историй сценариев нет`)
-      expect([...wrong, ...unknown]).toEqual([])
+      expect(wrong).toEqual([])
     },
     STORIES_TIMEOUT,
   )

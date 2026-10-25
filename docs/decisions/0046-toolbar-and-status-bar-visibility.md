@@ -2,6 +2,7 @@
 
 - **Статус:** Принято (реализовано 2026-10-03; решения — по итогам прожарки 2026-10-03)
 - **Дата:** 2026-10-03
+- **Изменён:** 2026-10-25 — PB12 доказывает гайд «Panels/Pagination — Own pager» (S2 [ADR 0120](0120-model-and-interface-plugins.md)): история «Panels/Status bar — Off (own pager)» удалена как дубль.
 - **Связано:**
   - [ADR 0035](0035-toolbar-and-column-visibility.md) — тулбар, `toolbarSlot`, флаг
     `enableToolbar`; здесь меняется условие показа (TB3–TB4) и условие инертности
@@ -127,7 +128,7 @@
 | PB9  | При `enableToolbar: false` `quickSearch` активен в `diagnose`, а программная смена `globalFilter` фильтрует строки                                  | unit   |
 | PB10 | При `enableStatusBar: false` пагинация делит строки на страницы без переключателя, `setPageIndex` и `setPageSize` меняют видимые строки             | visual |
 | PB11 | При `enableStatusBar: false` счётчик выбранных строк и «показано N из M» не рисуются, а `rowSelection` и `columnFiltering` активны в `diagnose`     | visual |
-| PB12 | Демо-история «Panels/Status bar — Off (own pager)»: нижней панели нет, кнопки своего пейджера листают страницы                                      | visual |
+| PB12 | История «Panels/Pagination — Own pager»: нижней панели нет, приложение листает страницы и меняет их размер, таблица показывает нужную страницу      | visual |
 
 ## План внедрения
 

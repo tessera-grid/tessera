@@ -1,7 +1,7 @@
 import axe from 'axe-core'
 import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, onTestFinished, test } from 'vitest'
 
 import { definePlugin } from '../../../core/definePlugin'
 import type {
@@ -20,7 +20,7 @@ import {
   rowActions,
 } from '../../../plugins'
 import { humanClick } from '../helpers'
-import { composed } from '../stories'
+import { composed, rowNestedArgs } from '../stories'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -654,6 +654,34 @@ describe('Асинхронный раздел', () => {
       .poll(() => rowKebab()!.getAttribute('aria-label'))
       .toBe(tableLabels.rowMenu)
   })
+
+  test('NM26: при уменьшенном движении скелет, отказ и пункты асинхронного раздела меняют размер окна без ошибки «ResizeObserver loop»', async () => {
+    const loops: string[] = []
+    const onError = (event: ErrorEvent) => {
+      if (event.message.includes('ResizeObserver loop'))
+        loops.push(event.message)
+    }
+    window.addEventListener('error', onError)
+    onTestFinished(() => window.removeEventListener('error', onError))
+    await reducedMotion(true)
+    const probe = await renderGrid()
+    await openRowMenu()
+    await enter('Move to')
+    await settle()
+    probe.lastLoad().answer.reject(new Error('Folder service is down'))
+    const failed = () =>
+      menu()?.querySelector<HTMLElement>('[data-section-failed]')
+    await expect.poll(failed).not.toBeNull()
+    await settle()
+    await humanClick(failed()!)
+    probe.lastLoad().answer.resolve(probe.remote)
+    await expect.poll(() => item('Inbox')).toBeTruthy()
+    await settle()
+    await settle()
+    expect(loops).toEqual([])
+    expect(wrap()!.getBoundingClientRect().width).toBe(level()!.offsetWidth)
+    await closeMenu()
+  })
 })
 
 describe('Где работает, доступность', () => {
@@ -769,8 +797,8 @@ describe('Где работает, доступность', () => {
 })
 
 describe('Демо-история', () => {
-  test('NM19: «Rows/Actions — Nested sections» — статус со значением, третий уровень, асинхронный раздел с отказом и повтором', async () => {
-    await render(<composed.RowActionsNested />)
+  test('NM19: набор действий с разделами в «Rows/Actions — Playground» — статус со значением, третий уровень, асинхронный раздел с отказом и повтором', async () => {
+    await render(<composed.RowActionsPlayground {...rowNestedArgs} />)
     await waitForGrid()
     const first = rowsTopDown()[0]!
     const kebab = () =>

@@ -341,10 +341,7 @@ let walked = 0
 const known = baseline as Record<string, string>
 
 /** Истории сценариев без гайда — с причиной; их вид проверяет каталог. */
-const WITHOUT_GUIDE: Record<string, string> = {
-  'DataGrid/Core/Stubs/StubsCustom':
-    'своя заглушка в покое, без шагов — решение пользователя 2026-10-23',
-}
+const WITHOUT_GUIDE: Record<string, string> = {}
 const OWN_KEYS = /^CX1[23] /
 
 describe('Шаги гайдов в матрице контраста (ADR 0089, §7)', () => {

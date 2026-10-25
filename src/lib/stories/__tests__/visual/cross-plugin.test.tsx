@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 import { humanClick } from '../helpers'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
-import { composed } from '../stories'
+import { composed, plainGroupingArgs } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import {
   HANDLE,
@@ -468,7 +468,10 @@ describe('Cross-plugin — columnDragging × columnSorting', () => {
 describe('Cross-plugin — rowSelection × rowGrouping', () => {
   test('X6: row selection is inert only under ACTIVE grouping, not when the plugin is merely enabled', async () => {
     const { container } = await render(
-      <composed.RowGroupingPlayground enableRowSelection />,
+      <composed.RowGroupingPlayground
+        {...plainGroupingArgs}
+        enableRowSelection
+      />,
     )
     await expect
       .poll(() => container.querySelectorAll(BODY_ROW).length)

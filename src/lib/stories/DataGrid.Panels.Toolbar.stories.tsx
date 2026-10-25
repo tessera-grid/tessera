@@ -1,18 +1,16 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
-import { toolbarDemoPlugins } from './toolbarDemo'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { filteringColumns, filteringData } from './__mocks__/filteringData'
 import { vrStates } from './__mocks__/catalog'
 import { byTestId, guideNext, settle, until } from './__mocks__/catalogPlay'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep } from './demos/GuideStory'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /**
- * Тулбар (ADR 0035, ADR 0051): кнопки плагинов, все кнопки, пустой тулбар; до прихода
+ * Тулбар (ADR 0035, ADR 0051): `Playground` — все встроенные кнопки; до прихода
  * данных — сценарии S1–S3 ADR 0122.
  */
 const meta = {
@@ -25,26 +23,10 @@ export default meta
 
 export const ToolbarPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
-  parameters: showControls([
-    'enableToolbar',
-    'enableColumnVisibility',
-    'enableQuickSearch',
-    'enableColumnFiltering',
-    'enableDataExport',
-  ]),
-  args: {
-    // Демо-кнопки в двух подгруппах (`view` и `data`): видны порядок, разделитель
-    // и состояния F4 — активное (Settings) и disabled (Export). Тулбар вызывают
-    // сами кнопки — флаг не нужен (ADR 0046).
-    extraPlugins: toolbarDemoPlugins,
-  },
-}
-
-export const ToolbarAllButtons: StoryObj<StoryProps> = {
-  name: 'All buttons',
   parameters: {
     ...vrStates('panel.toolbar'),
     ...showControls([
+      'enableToolbar',
       'enableColumnVisibility',
       'enableQuickSearch',
       'quickSearchDebounceMs',
@@ -59,9 +41,8 @@ export const ToolbarAllButtons: StoryObj<StoryProps> = {
     ]),
   },
   args: {
-    // Все встроенные кнопки разом (ADR 0051): слева поиск и «Фильтры», справа
-    // «Колонки», затем «Экспорт». Порядок задают группы search → view → data, а не
-    // порядок плагинов. Сузьте окно — поле поиска сжимается, стороны не наезжают.
+    // Все встроенные кнопки (ADR 0051): слева поиск и «Фильтры», справа «Колонки», затем
+    // «Экспорт». Выключите все кнопки и включите enableToolbar — останется пустой тулбар.
     columnsOverride: filteringColumns,
     dataOverride: filteringData,
     enableQuickSearch: true,
@@ -71,15 +52,6 @@ export const ToolbarAllButtons: StoryObj<StoryProps> = {
     // Грид в окне матрицы контраста (ADR 0089, CX16).
     height: '460',
     maxHeight: '460',
-  },
-}
-
-export const WithEmptyToolbar: StoryObj<StoryProps> = {
-  name: 'Empty',
-  parameters: showControls(['enableToolbar']),
-  args: {
-    // Пустой тулбар держит только явный enableToolbar: true (ADR 0046).
-    enableToolbar: true,
   },
 }
 
@@ -101,24 +73,17 @@ const TOOLBAR_ARGS = {
   enableDataExport: true,
 } satisfies Partial<StoryProps>
 
-const TOOLBAR_CONTROLS = [
-  'enableQuickSearch',
-  'enableColumnFiltering',
-  'enableColumnVisibility',
-  'enableDataExport',
-]
-
 /** Грид открыт, данных ещё нет. */
 const OPENED: GuideStoryStep = {
-  title: 'Таблица открыта, данные загружаются',
-  hint: 'Поиск, «Фильтры» и «Колонки» работают: их результат — запрос, а не строки. Клиентскому «Экспорту» выгружать нечего — на его месте скелет.',
+  title: 'Данные загружаются',
+  hint: 'Данные ещё не пришли. Поиск, фильтры и выбор колонок уже работают, их результат станет запросом к данным. Выгружать пока нечего, поэтому на месте кнопки выгрузки — состояние загрузки.',
   props: () => ({ loading: 'initial', dataOverride: [] }),
 }
 
 /** Ответ сервера: данные и конец загрузки приходят одним обновлением. */
 const ANSWERED: GuideStoryStep = {
-  title: 'Данные получены',
-  hint: '«Экспорт» встаёт на место скелета, соседи в тулбаре не сдвигаются.',
+  title: 'Данные загружены',
+  hint: 'Данные пришли. Кнопка выгрузки встаёт на место состояния загрузки, остальные кнопки тулбара не сдвигаются.',
   props: ({ rows }) => ({ loading: false, dataOverride: rows }),
 }
 
@@ -141,6 +106,8 @@ const expectSameBox = async (
     await expect(Math.abs(actual[key] - expected[key])).toBeLessThanOrEqual(0.5)
   }
 }
+const skeletonRow = (canvas: HTMLElement) =>
+  canvas.querySelector('.data-grid__body-row--skeleton')
 const waitTestId = (id: string) =>
   until(() => expect(byTestId(id)).not.toBeNull())
 
@@ -153,34 +120,40 @@ export const ToolbarInitialLoading: StoryObj<StoryProps> = {
   name: 'Initial loading',
   parameters: {
     scenario: '0122/S1',
-    ...showControls(TOOLBAR_CONTROLS),
+    ...guideControls(),
   },
-  args: TOOLBAR_ARGS,
   render: args => (
     <GuideStory
       title="Тулбар до прихода данных"
       steps={INITIAL_LOADING}
-      args={normalizeArgs(args)}
+      args={guideArgs(TOOLBAR_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     let skeleton = rect(canvas)
+    let columns = rect(canvas)
+    let filters = rect(canvas)
     await step(INITIAL_LOADING[0]!.title, async () => {
       await waitTestId('export-skeleton')
       await waitTestId('quick-search')
       await expect(byTestId('export-button')).toBeNull()
       await expect(byTestId('column-visibility-button')).not.toBeNull()
+      await expect(byTestId('filter-summary-button')).not.toBeNull()
       await expect(
         byTestId('quick-search')!.getAttribute('aria-disabled'),
       ).not.toBe('true')
       skeleton = rect(byTestId('export-skeleton')!)
+      columns = rect(byTestId('column-visibility-button')!)
+      filters = rect(byTestId('filter-summary-button')!)
     })
     await step(INITIAL_LOADING[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('export-button')
       await expectSameBox(rect(byTestId('export-button')!), skeleton)
+      await expectSameBox(rect(byTestId('column-visibility-button')!), columns)
+      await expectSameBox(rect(byTestId('filter-summary-button')!), filters)
     })
     await settle()
   },
@@ -212,16 +185,16 @@ const matches = (row: Record<string, unknown>) =>
 const SEARCH_BEFORE_DATA: readonly GuideStoryStep[] = [
   {
     ...OPENED,
-    hint: 'Поиск серверный: грид не ищет сам, запрос уходит приложению.',
+    hint: 'Данные ещё не пришли, а поиск идёт на сервере. Поле поиска уже доступно, тело таблицы в состоянии загрузки.',
   },
   {
     title: `Пользователь ищет «${QUERY}» до прихода данных`,
-    hint: 'onSearchChange вызывается сразу; приложение заменяет первый запрос запросом с поиском.',
+    hint: 'Пользователь ввёл запрос, не дожидаясь данных. Запрос сразу ушёл приложению, тело таблицы по-прежнему ждёт ответа.',
     enter: typeSearch(QUERY),
   },
   {
     title: 'Сервер ответил по запросу',
-    hint: 'Приходят только строки, найденные сервером.',
+    hint: 'Сервер вернул строки по запросу пользователя. Таблица показывает только найденные строки.',
     props: ({ rows }) => ({
       loading: false,
       dataOverride: rows.filter(matches),
@@ -234,23 +207,25 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
   name: 'Search before data (server)',
   parameters: {
     scenario: '0122/S2',
-    ...showControls(['enableQuickSearch', 'quickSearchDebounceMs']),
-  },
-  args: {
-    ...FIXED_HEIGHT,
-    columnCount: 6,
-    dataCount: 40,
-    enableQuickSearch: true,
-    quickSearchServer: true,
-    onSearchChange: search => {
-      searchRequests.push(search)
-    },
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Серверный поиск до прихода данных"
       steps={SEARCH_BEFORE_DATA}
-      args={normalizeArgs(args)}
+      args={guideArgs(
+        {
+          ...FIXED_HEIGHT,
+          columnCount: 6,
+          dataCount: 40,
+          enableQuickSearch: true,
+          quickSearchServer: true,
+          onSearchChange: search => {
+            searchRequests.push(search)
+          },
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -260,11 +235,13 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
     await step(SEARCH_BEFORE_DATA[0]!.title, async () => {
       await waitTestId('quick-search')
       await expect(dataRows()).toHaveLength(0)
+      await expect(skeletonRow(canvas)).not.toBeNull()
     })
     await step(SEARCH_BEFORE_DATA[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(searchRequests.at(-1)).toBe(QUERY))
       await expect(dataRows()).toHaveLength(0)
+      await expect(skeletonRow(canvas)).not.toBeNull()
     })
     await step(SEARCH_BEFORE_DATA[2]!.title, async () => {
       await guideNext(canvas)
@@ -281,8 +258,8 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
 
 const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки придут с сервера',
-    hint: 'columns: [] — поиску и «Колонкам» опереться не на что: на их месте скелеты, как и у «Экспорта».',
+    title: 'Ожидание списка колонок от сервера',
+    hint: 'Структура таблицы ещё неизвестна. Поле поиска, выбор колонок, кнопка выгрузки и тело таблицы в состоянии загрузки.',
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -290,8 +267,8 @@ const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Колонки пришли, данные ещё в пути',
-    hint: 'Поле поиска и «Колонки» встают на место скелетов; «Экспорт» ждёт данных.',
+    title: 'Колонки загружены',
+    hint: 'Сервер вернул список колонок, данные ещё не пришли. Поле поиска и выбор колонок встают на место состояния загрузки, кнопка выгрузки ждёт данных.',
     props: () => ({ columnsOverride: undefined }),
   },
   ANSWERED,
@@ -302,14 +279,13 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
   name: 'Columns arrive',
   parameters: {
     scenario: '0122/S3',
-    ...showControls(TOOLBAR_CONTROLS),
+    ...guideControls(),
   },
-  args: TOOLBAR_ARGS,
   render: args => (
     <GuideStory
       title="Колонки приходят с сервера"
       steps={COLUMNS_ARRIVE}
-      args={normalizeArgs(args)}
+      args={guideArgs(TOOLBAR_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -320,6 +296,7 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
       await waitTestId('quick-search-skeleton')
       await waitTestId('column-visibility-skeleton')
       await waitTestId('export-skeleton')
+      await expect(skeletonRow(canvas)).not.toBeNull()
       field = rect(byTestId('quick-search-skeleton')!)
       columns = rect(byTestId('column-visibility-skeleton')!)
     })

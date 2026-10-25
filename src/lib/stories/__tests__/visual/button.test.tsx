@@ -10,7 +10,19 @@ import { IconButton } from '@/lib/ui/IconButton'
 import { failureShownOn, pendingArcOf } from '../helpers'
 import { SvgIcon } from '@/lib/ui/icons'
 import { composed } from '../stories'
+import { ColumnsPanel } from '../panelFixtures'
+import {
+  ExportPanel,
+  FilterDatePanel,
+  FilterOptionsPanel,
+  FilterTextPanel,
+} from '../panelFixtures'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+
+/** История или фикстура панели: компонент и `play`, который доводит его до состояния. */
+type Fixture = ((props: Record<string, never>) => ReactNode) & {
+  play?: (context: never) => unknown
+}
 
 // Кнопка с подписью `Button` (ADR 0097, BN1–BN6, BN9–BN11): размер и форма из токенов,
 // варианты `outline` и `ghost`, контракт семейства F5, ожидание и вспышка, высокая
@@ -311,10 +323,7 @@ describe('Button (ADR 0097)', () => {
     onTestFinished(() => page.viewport(viewport.width, viewport.height))
     const q = (selector: string) =>
       document.querySelector<HTMLElement>(selector)
-    const run = async (
-      Story: (typeof composed)[keyof typeof composed],
-      check: () => Promise<void> | void,
-    ) => {
+    const run = async (Story: Fixture, check: () => Promise<void> | void) => {
       const screen = await render(<Story />)
       await Story.play?.({ canvasElement: screen.container } as never)
       await check()
@@ -334,20 +343,20 @@ describe('Button (ADR 0097)', () => {
     }
 
     // Панели фильтра: текст, дата, варианты.
-    await run(composed.FilteringStateText, () =>
+    await run(FilterTextPanel, () =>
       expectKit(q('[data-testid="filter-reset"]'), 'ghost'),
     )
-    await run(composed.FilteringStateDate, () =>
+    await run(FilterDatePanel, () =>
       expectKit(q('[data-testid="filter-reset"]'), 'ghost'),
     )
-    await run(composed.FilteringStateOptions, () => {
+    await run(FilterOptionsPanel, () => {
       expectKit(q('[data-testid="filter-reset"]'), 'ghost')
       expectKit(q('[data-testid="filter-select-all"]'), 'ghost')
       expectKit(q('[data-testid="filter-clear-selection"]'), 'ghost')
     })
 
     // Сводка фильтров и заглушка «нет строк»: фильтр из панели, сводка, затем пусто.
-    await run(composed.FilteringStateText, async () => {
+    await run(FilterTextPanel, async () => {
       const field = q('[data-testid="filter-value"]')!
       await userEvent.type(field, 'zzz')
       await userEvent.keyboard('{Escape}')
@@ -364,14 +373,14 @@ describe('Button (ADR 0097)', () => {
     })
 
     // Меню «Колонки» и панель экспорта.
-    await run(composed.VisibilityStatePanel, () => {
+    await run(ColumnsPanel, () => {
       const footer = [
         ...document.querySelectorAll<HTMLElement>('button'),
       ].filter(button => /Reset/.test(button.textContent ?? ''))
       expect(footer).toHaveLength(1)
       for (const button of footer) expectKit(button, 'ghost')
     })
-    await run(composed.ExportStatePanel, () =>
+    await run(ExportPanel, () =>
       expectKit(q('[data-testid="export-run"]'), 'ghost'),
     )
 
@@ -427,10 +436,7 @@ describe('Button (ADR 0097)', () => {
 
     // Встроенные кнопки: заглушка (шрифт 14px), плашка и поповер (13px) — одна подпись.
     const sizes: string[] = []
-    const run = async (
-      Story: (typeof composed)[keyof typeof composed],
-      selector: string,
-    ) => {
+    const run = async (Story: Fixture, selector: string) => {
       const story = await render(<Story />)
       await Story.play?.({ canvasElement: story.container } as never)
       const el = document.querySelector<HTMLElement>(selector)
@@ -452,7 +458,7 @@ describe('Button (ADR 0097)', () => {
       sizes.push(`${style(el).fontSize} ${style(el).fontWeight}`)
       await story.unmount()
     }
-    await run(composed.FilteringStateText, '[data-testid="filter-reset"]')
+    await run(FilterTextPanel, '[data-testid="filter-reset"]')
     expect(sizes).toEqual(['13px 500', '13px 500', '13px 500'])
   })
 

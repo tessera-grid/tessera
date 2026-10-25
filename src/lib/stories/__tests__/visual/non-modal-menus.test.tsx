@@ -15,7 +15,7 @@ import {
   rowSelection,
 } from '../../../plugins'
 import { humanClick } from '../helpers'
-import { composed } from '../stories'
+import { composed, rowAsyncArgs } from '../stories'
 import { rowsTopDown, waitForGrid } from './core-helpers'
 import { columnHandle, handleCell, renderHandleGrid } from './lazy-helpers'
 import { tableLabels } from '../labels'
@@ -256,7 +256,7 @@ describe('Немодальные меню', () => {
   })
 
   test('MM3: меню, открытое нажатием на кебаб закреплённой справа колонки, остаётся открытым после отпускания кнопки', async () => {
-    await render(<composed.RowActionsAsync />)
+    await render(<composed.RowActionsPlayground {...rowAsyncArgs} />)
     await waitForGrid()
     const first = rowsTopDown()[0]!
     const kebab = () =>

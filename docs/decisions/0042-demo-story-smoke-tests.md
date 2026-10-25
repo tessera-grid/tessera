@@ -3,6 +3,9 @@
 - **Статус:** Принято (реализовано); с [ADR 0093](0093-visual-state-catalog.md) дымовые
   тесты — `play` своих историй, отдельных файлов тестов нет (VR13).
 - **Дата:** 2026-09-30
+- **Изменён:** 2026-10-25 — DS3 и DS5 доказывают гайды «Plugin API — Drag & resize callbacks» (S4 [ADR 0040](0040-action-sessions.md)) и «Plugin API — Reactive arguments» (S1 [ADR 0039](0039-reactive-plugin-arguments.md)).
+- **Изменён:** 2026-10-25 — DS6 доказывает гайд «Panels/Pagination — Server» (S1 [ADR 0038](0038-pagination-and-status-bar.md)).
+- **Изменён:** 2026-10-25 — DS4 проверяет `play` гайда «Rows/Expanding — Expand confirmed by the server» (ADR 0117; решение пользователя).
 - **Связано:** [ADR 0009](0009-test-coverage-visual-and-performance.md) — покрытие
   тестами; [ADR 0039](0039-reactive-plugin-arguments.md),
   [ADR 0040](0040-action-sessions.md), [ADR 0041](0041-async-business-callbacks.md) —
@@ -32,11 +35,11 @@
 
 ## Требования
 
-| ID  | Требование                                                                                                                                                          | Вид    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| DS1 | Гайд «Cells/Editing — Server save»: правка кнопкой и `Enter` — ячейка ждёт, затем показывает новое значение; в журнале `onCellEdit`                                 | visual |
-| DS2 | Гайд «Cells/Editing — Draft survives»: изменение значения извне во время правки не закрывает редактор; `onCellEdit` в журнале с `original` и `current`              | visual |
-| DS3 | «Plugin API — Drag & resize callbacks»: бросок строки мышью — `onRowDragEnd` в журнале                                                                              | visual |
-| DS4 | «Rows/Expanding — Lazy load (async)»: раскрытие ждёт подгрузки (`aria-busy`), затем строка раскрыта; в журнале `onExpandRow` и `loaded`                             | visual |
-| DS5 | «Plugin API — Playground»: `maxDepth` ниже раскрытого уровня прячет раскрытие, возврат значения — возвращает                                                        | visual |
-| DS6 | «Panels/Pagination — Server»: следующая страница и сортировка приходят с «сервера», итог — из `paginationRowCount`; в журнале `onPageChange` и `onToggleColumnSort` | visual |
+| ID  | Требование                                                                                                                                                               | Вид    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| DS1 | Гайд «Cells/Editing — Server save»: правка кнопкой и `Enter` — ячейка ждёт, затем показывает новое значение; в журнале `onCellEdit`                                      | visual |
+| DS2 | Гайд «Cells/Editing — Draft survives»: изменение значения извне во время правки не закрывает редактор; `onCellEdit` в журнале с `original` и `current`                   | visual |
+| DS3 | Гайд «Plugin API — Drag & resize callbacks»: бросок строки мышью — `onRowDragEnd` в журнале, отмена Escape — `onRowDragCancel` с причиной                                | visual |
+| DS4 | Гайд «Rows/Expanding — Expand confirmed by the server»: раскрытие ждёт ответа (`aria-busy`), затем строка раскрыта; в консоли — колбэк `onExpandRow`                     | visual |
+| DS5 | Гайд «Plugin API — Reactive arguments»: `maxDepth` ниже раскрытого уровня прячет раскрытие, возврат значения — возвращает                                                | visual |
+| DS6 | Гайд «Panels/Pagination — Server»: следующая страница и сортировка приходят с «сервера», итог — из `paginationRowCount`; в журнале `onPageChange` и `onToggleColumnSort` | visual |

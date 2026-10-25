@@ -1,7 +1,7 @@
-import { ru } from '@daypicker/react/locale/ru'
 import { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent } from 'storybook/test'
+import { expect } from 'storybook/test'
 
+import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
@@ -9,52 +9,49 @@ import {
   dateFilteringData,
   filteringColumns,
   filteringData,
-  makeFilteringData,
+  loadManagers,
   optionFilteringColumns,
   optionFilteringData,
 } from './__mocks__/filteringData'
-import { StoryComponent } from './DataGridStory'
-import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import {
-  FilteringLookupServerDemo,
-  FilteringServerDemo,
-} from './demos/filteringDemos'
-import { argsUpdater, vrStates } from './__mocks__/catalog'
 import {
   byTestId,
   consoleText,
-  expectPopupInCanvas,
-  firstRowText,
   guideNext,
   headCell,
-  openPopup,
+  orderedRows,
   pollUntil,
   settle,
+  sleep,
   stepDone,
   until,
-  updateArgs,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { labelPattern, storyLabels } from './__mocks__/storyLabels'
-import { showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
-
-interface FilteringServerArgs extends StoryProps {
-  serverDelayMs?: number
-}
-
-interface FilteringDatesArgs extends StoryProps {
-  /** Пояс фильтра; `'browser'` — без `timeZone`, пояс браузера. */
-  timeZone?: string
-  dateLocale?: 'en-US' | 'ru'
-}
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  GuideStory,
+  type GuideApp,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
+import { type ConsoleLog, describeEvent } from './demos/consoleLog'
+import {
+  OPTION_SERVER_DATA,
+  OPTION_TOTAL,
+  SERVER_DATA,
+  SERVER_TOTAL,
+  type ServerFilters,
+  queryFiltering,
+  queryOptions,
+} from './demos/filteringDemos'
 
 /**
  * Фильтрация (ADR 0045, ADR 0047, ADR 0048): фильтры колонок по типам — текст, число,
- * булево, дата, варианты (select, multiselect, справочник); быстрый поиск; сочетания с деревом, пагинацией, выбором, экспортом; пустой
- * результат; сервер; поиск без колонок для поиска; фильтры и поиск из формы приложения (ADR 0120).
+ * булево, дата, варианты; быстрый поиск. `Playground` — фильтры в покое и функции рядом;
+ * гайды — текст, пустой результат, сервер, дерево, поиск без колонок, даты, варианты,
+ * справочник; фильтры и поиск из формы приложения — ADR 0120.
  */
-
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -75,6 +72,10 @@ const GRID = {
   quickSearchFilteredCount: true,
 }
 
+/**
+ * Фильтры колонок по типам, поиск и сводка фильтров; пагинация, выбор строк и выгрузка —
+ * контролами: смена фильтра возвращает на первую страницу, выгрузка учитывает фильтры.
+ */
 export const FilteringPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   parameters: showControls([
@@ -85,16 +86,488 @@ export const FilteringPlayground: StoryObj<StoryProps> = {
     'columnFilteringDebounceMs',
     'columnFilteringFilteredCount',
     'columnFilteringTimeZone',
+    'enablePagination',
+    'paginationInitialPageSize',
+    'enableRowSelection',
+    'rowSelectionSelectedCount',
+    'enableDataExport',
   ]),
-  args: {
-    ...GRID,
-    // Воронка в заголовке открывает панель: «Name» и «City» — текст, «Age» — число
-    // (с «между»), «VIP» — булево с «Пусто». У «Visits» фильтра нет. Слева в тулбаре
-    // поиск и сразу за ним сводка «Фильтры» со сбросом (ADR 0051); иконка «i» у поиска
-    // называет колонки, по которым он идёт (ADR 0053); внизу — «Показано N из M».
-    // Включите enableHeaderActionMenu — фильтр уйдёт пунктом в кебаб.
+  args: GRID,
+}
+
+// --- Действия шагов ------------------------------------------------------------------
+
+const panel = () => byTestId('filter-panel')
+const escape = () =>
+  document.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+  )
+
+/** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
+const repeat = async (
+  done: () => boolean,
+  act: () => void,
+  signal: AbortSignal,
+) => {
+  for (let tries = 0; !done(); tries += 1) {
+    if (tries > 60) throw new Error(`Шаг гайда не дождался: ${done}`)
+    act()
+    await sleep(200)
+    signal.throwIfAborted()
+  }
+}
+
+/** Пользователь закрывает открытую панель. */
+const closePanel = (signal: AbortSignal) =>
+  repeat(() => !panel(), escape, signal)
+
+/** Пользователь открывает панель фильтра колонки нажатием на её кнопку. */
+const openPanel = async (
+  root: HTMLElement,
+  column: string,
+  signal: AbortSignal,
+) => {
+  await closePanel(signal)
+  await repeat(
+    () => !!panel(),
+    () =>
+      headCell(root, column)
+        ?.querySelector<HTMLElement>('.column-filter__button')
+        ?.click(),
+    signal,
+  )
+}
+
+/** Ввод в поле — как набор пользователя: React слышит событие `input`. */
+const type = (field: HTMLElement | null, text: string) => {
+  const input = field as HTMLInputElement | null
+  if (!input || input.value === text) return
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!.call(input, text)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const cellsOf = (root: ParentNode, column: string) =>
+  orderedRows(root as HTMLElement).map(
+    row =>
+      row.querySelector(`[data-column-id="${column}"]`)?.textContent?.trim() ??
+      '',
+  )
+const allMatch = (root: ParentNode, column: string, needle: string) => {
+  const cells = cellsOf(root, column)
+  return (
+    cells.length > 0 &&
+    cells.every(cell => cell.toLowerCase().includes(needle.toLowerCase()))
+  )
+}
+/** Кнопка фильтра колонки отмечена как включённая. */
+const filterActive = (root: HTMLElement, column: string) =>
+  !!headCell(root, column)?.querySelector(
+    '.column-filter__button[data-active="true"]',
+  )
+const filteredCount = () => byTestId('filtered-rows-count')?.textContent ?? ''
+const busy = (root: HTMLElement) =>
+  root.querySelector('.data-grid__container')?.getAttribute('aria-busy') ===
+  'true'
+const optionOf = (value: string) =>
+  document.querySelector<HTMLElement>(
+    `[data-testid="filter-panel"] [data-option-index][data-value="${value}"]`,
+  )
+const optionChecked = (value: string) =>
+  optionOf(value)
+    ?.querySelector('[role="checkbox"]')
+    ?.getAttribute('aria-checked') === 'true'
+/** Пользователь отмечает вариант, пока он не отмечен. */
+const checkOption = (value: string, signal: AbortSignal) =>
+  repeat(
+    () => optionChecked(value),
+    () =>
+      optionOf(value)?.querySelector<HTMLElement>('[role="checkbox"]')?.click(),
+    signal,
+  )
+/** Выбранное условие панели — значение скрытого поля списка условий. */
+const operatorValue = () =>
+  panel()?.querySelector<HTMLInputElement>('input[aria-hidden="true"]')?.value
+/** Пользователь выбирает условие панели: открывает список и нажимает пункт. */
+const chooseOperator = (operator: string, signal: AbortSignal) =>
+  repeat(
+    () =>
+      operatorValue() === operator &&
+      byTestId('filter-operator')?.getAttribute('aria-expanded') === 'false',
+    () => {
+      const trigger = byTestId('filter-operator')
+      if (trigger?.getAttribute('aria-expanded') !== 'true') trigger?.click()
+      else
+        document
+          .querySelector<HTMLElement>(`[data-operator="${operator}"]`)
+          ?.click()
+    },
+    signal,
+  )
+/** Описание поля поиска — колонки, по которым он идёт (ADR 0053). */
+const searchHint = () => {
+  const describedBy = byTestId('quick-search')?.getAttribute('aria-describedby')
+  return (
+    (describedBy && document.getElementById(describedBy)?.textContent) ?? ''
+  )
+}
+
+// --- ADR 0045 S1 ---------------------------------------------------------------------
+
+const NAME = 'Bob'
+
+/** Пользователь фильтрует колонку имён по тексту и закрывает панель. */
+const filterByName = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!allMatch(root, 'name', NAME)) {
+    await openPanel(root, 'name', signal)
+    type(byTestId('filter-value'), NAME)
+    await pollUntil(() => allMatch(root, 'name', NAME) && !busy(root), signal)
+  }
+  await closePanel(signal)
+}
+
+const TEXT: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица без фильтров',
+    hint: 'У колонок есть кнопки фильтра в заголовках, показаны все строки.',
+  },
+  {
+    title: 'Пользователь открыл фильтр колонки',
+    hint: 'Панель фильтра предлагает условие и значение.',
+    states: ['overlay.filterText'],
+    enter: stepAction((root, { signal }) => openPanel(root, 'name', signal)),
+  },
+  {
+    title: 'Пользователь задал значение',
+    hint: 'Таблица показывает только подходящие строки, нижняя панель называет число показанных из общего. Кнопка фильтра отмечена как включённая.',
+    states: ['head.activeIndicator'],
+    enter: stepAction((root, { signal }) => filterByName(root, signal)),
+  },
+]
+
+/** ADR 0045, S1: пользователь фильтрует колонку по тексту. */
+export const FilteringText: StoryObj<StoryProps> = {
+  name: 'Text filter',
+  parameters: { scenario: '0045/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Фильтр по тексту"
+      steps={TEXT}
+      args={guideArgs(GRID, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(TEXT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(
+        headCell(canvas, 'name')?.querySelector('.column-filter__button'),
+      ).not.toBeNull()
+      await expect(byTestId('filtered-rows-count')).toBeNull()
+    })
+    await step(TEXT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(byTestId('filter-operator')).not.toBeNull()
+      await expect(byTestId('filter-value')).not.toBeNull()
+      await settle()
+    })
+    await step(TEXT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const shown = filteringData.filter(row => row.name.includes(NAME)).length
+      await expect(allMatch(canvas, 'name', NAME)).toBe(true)
+      await expect(filteredCount()).toBe(
+        labels.filteredRows(shown, filteringData.length),
+      )
+      await expect(filterActive(canvas, 'name')).toBe(true)
+      await settle()
+    })
   },
 }
+
+// --- ADR 0045 S2 ---------------------------------------------------------------------
+
+/** Пользователь вводит запрос в поле поиска. */
+const search = async (
+  root: HTMLElement,
+  text: string,
+  done: () => boolean,
+  signal: AbortSignal,
+) => {
+  await pollUntil(() => !!byTestId('quick-search'), signal)
+  type(byTestId('quick-search'), text)
+  await pollUntil(done, signal)
+}
+
+const EMPTY: readonly GuideStoryStep[] = [
+  {
+    title: 'Пользователь ищет',
+    hint: 'Пользователь ввёл запрос в поле поиска. Таблица показывает только строки с совпадениями.',
+    enter: stepAction((root, { signal }) =>
+      search(root, NAME, () => allMatch(root, 'name', NAME), signal),
+    ),
+  },
+  {
+    title: 'Ничего не найдено',
+    hint: 'Запрос не совпал ни с одной строкой. На месте строк — заглушка с возможностью сбросить фильтры и поиск, заголовки колонок остаются.',
+    enter: stepAction((root, { signal }) =>
+      search(root, 'zzz', () => !!byTestId('filter-stub'), signal),
+    ),
+  },
+]
+
+/** ADR 0045, S2: пользователь ищет и ничего не находит. */
+export const FilteringEmpty: StoryObj<StoryProps> = {
+  name: 'Empty result',
+  parameters: { scenario: '0045/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Ничего не найдено"
+      steps={EMPTY}
+      args={guideArgs(GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EMPTY[0]!.title, async () => {
+      await waitForRows(canvas)
+      await stepDone(canvas)
+      await expect(allMatch(canvas, 'name', NAME)).toBe(true)
+    })
+    await step(EMPTY[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(orderedRows(canvas)).toHaveLength(0)
+      await expect(byTestId('filter-stub-reset')).not.toBeNull()
+      await expect(headCell(canvas, 'name')).not.toBeNull()
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0045 S3 ---------------------------------------------------------------------
+
+const SERVER_DELAY_MS = 600
+const SEARCH = 'paris'
+
+/** Запрос, который приложение отправило «серверу» последним. */
+const request = {
+  filters: [] as ServerFilters,
+  search: '',
+  columnIds: [] as string[],
+  seq: 0,
+  table: undefined as unknown,
+}
+
+/** «Сервер» отвечает с задержкой; пока отвечает — таблица обновляет данные. */
+const refetch = (app: GuideApp, log: ConsoleLog) => {
+  const seq = ++request.seq
+  app.update(props => ({ ...props, loading: 'refresh' }))
+  setTimeout(() => {
+    if (seq !== request.seq) return
+    const rows = queryFiltering(
+      request.filters,
+      request.search,
+      request.columnIds,
+    )
+    log.log('server', `${rows.length} of ${SERVER_TOTAL} rows`)
+    app.update(props => ({
+      ...props,
+      loading: false,
+      dataOverride: rows,
+      columnFilteringFilteredRowCount: rows.length,
+    }))
+  }, SERVER_DELAY_MS)
+}
+
+/** Новое открытие таблицы — новый запрос: прежний ответ ему не принадлежит. */
+const serverReset: TesseraFeatureEntry = {
+  id: 'filteringServerReset',
+  setup: table => {
+    // `setup` повторяется при смене аргументов плагинов, а обёртка таблицы новая на каждом
+    // рендере: новое открытие узнаётся по хранилищу состояния.
+    const store = (table as { store: unknown }).store
+    if (request.table === store) return
+    request.table = store
+    request.filters = []
+    request.search = ''
+    request.columnIds = []
+    request.seq += 1
+  },
+}
+
+const serverAnswered = (root: HTMLElement) => !busy(root)
+
+/** Пользователь скрывает колонку возраста в меню колонок. */
+const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
+  const ageBox = () =>
+    document.querySelector<HTMLElement>(
+      '[data-testid="column-visibility-menu"] [data-column-id="age"] [role="checkbox"]',
+    )
+  if (!headCell(root, 'age')) return
+  await repeat(
+    () => !!ageBox(),
+    () =>
+      root
+        .querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
+        ?.click(),
+    signal,
+  )
+  await repeat(
+    () => !headCell(root, 'age'),
+    () => ageBox()?.click(),
+    signal,
+  )
+  await repeat(
+    () => !document.querySelector('[data-testid="column-visibility-menu"]'),
+    escape,
+    signal,
+  )
+}
+
+const SERVER: readonly GuideStoryStep[] = [
+  {
+    title: 'Фильтрует сервер',
+    hint: 'Таблица не фильтрует сама: условия уходят приложению, оно перезапрашивает данные у сервера.',
+    props: ({ app, log }) => ({
+      onFilterChange: (filters: ServerFilters) => {
+        request.filters = filters
+        refetch(app, log)
+      },
+      onSearchChange: (
+        text: string,
+        { columnIds }: { columnIds: string[] },
+      ) => {
+        request.search = text
+        request.columnIds = columnIds
+        refetch(app, log)
+      },
+    }),
+  },
+  {
+    title: 'Пользователь отфильтровал по имени',
+    hint: 'Запрос ушёл серверу, пока он отвечает, таблица в состоянии обновления данных. Пришли строки с этим именем, нижняя панель называет число из ответа сервера.',
+    states: ['body.refreshing'],
+    enter: stepAction(async (root, { signal }) => {
+      await filterByName(root, signal)
+      await pollUntil(() => serverAnswered(root), signal)
+    }),
+  },
+  {
+    title: 'Пользователь добавил поиск',
+    hint: 'Поиск ушёл серверу вместе со списком колонок, по которым он идёт. Пришли строки, подходящие под оба условия.',
+    enter: stepAction(async (root, { signal }) => {
+      await filterByName(root, signal)
+      await search(
+        root,
+        SEARCH,
+        () =>
+          allMatch(root, 'city', SEARCH) &&
+          allMatch(root, 'name', NAME) &&
+          serverAnswered(root),
+        signal,
+      )
+    }),
+  },
+  {
+    title: 'Пользователь скрыл колонку',
+    hint: 'Колонка ушла и из поиска: приложение повторило запрос с новым списком колонок, подсказка поля поиска его называет.',
+    enter: stepAction(async (root, { signal }) => {
+      await filterByName(root, signal)
+      await search(
+        root,
+        SEARCH,
+        () => allMatch(root, 'city', SEARCH) && serverAnswered(root),
+        signal,
+      )
+      await hideAge(root, signal)
+      await pollUntil(
+        () => !request.columnIds.includes('age') && serverAnswered(root),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0045, S3: фильтры и поиск идут на сервер. */
+export const FilteringServer: StoryObj<StoryProps> = {
+  name: 'Server',
+  parameters: {
+    scenario: '0045/S3',
+    requirements: ['FL37', 'QS9'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Фильтры на сервере"
+      steps={SERVER}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataOverride: SERVER_DATA,
+          enableColumnVisibility: true,
+          columnFilteringServer: true,
+          quickSearchServer: true,
+          columnFilteringFilteredRowCount: SERVER_TOTAL,
+          columnFilteringTotalRowCount: SERVER_TOTAL,
+          extraPlugins: [serverReset],
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const count = (searched: string, columnIds: string[]) =>
+      queryFiltering(
+        [{ id: 'name', value: { operator: 'contains', value: NAME } }],
+        searched,
+        columnIds,
+      ).length
+    await step(SERVER[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(orderedRows(canvas).length).toBeGreaterThan(0)
+    })
+    await step(SERVER[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(consoleText()).toContain('onFilterChange')
+      await expect(allMatch(canvas, 'name', NAME)).toBe(true)
+      await expect(filteredCount()).toBe(
+        labels.filteredRows(count('', []), SERVER_TOTAL),
+      )
+    })
+    await step(SERVER[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const columns = ['name', 'city', 'age', 'visits']
+      await expect(consoleText()).toContain('onSearchChange')
+      await expect(filteredCount()).toBe(
+        labels.filteredRows(count(SEARCH, columns), SERVER_TOTAL),
+      )
+      await expect(searchHint()).toBe(
+        labels.searchColumnsHint(['Name', 'City', 'Age', 'Visits']),
+      )
+    })
+    await step(SERVER[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(searchHint()).toBe(
+        labels.searchColumnsHint(['Name', 'City', 'Visits']),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0045 S4 ---------------------------------------------------------------------
+
+const CITY = 'Rome'
 
 const TREE = [
   {
@@ -156,539 +629,576 @@ const TREE = [
   },
 ]
 
+const TREE_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Дерево раскрыто',
+    hint: 'Строки сгруппированы по регионам и странам.',
+  },
+  {
+    title: 'Пользователь отфильтровал город',
+    hint: 'Остались строки с этим городом и их предки. Ветки без совпадений скрыты целиком.',
+    enter: stepAction(async (root, { signal }) => {
+      if (!treeFiltered(root)) {
+        await openPanel(root, 'city', signal)
+        type(byTestId('filter-value'), CITY)
+        await pollUntil(() => treeFiltered(root), signal)
+      }
+      await closePanel(signal)
+    }),
+  },
+]
+
+const treeIds = (root: HTMLElement) =>
+  orderedRows(root).map(row => row.dataset.rowId)
+const treeFiltered = (root: HTMLElement) =>
+  treeIds(root).join() === 'item-id-0,item-id-4,item-id-5'
+
+/** ADR 0045, S4: пользователь фильтрует дерево — предки найденных строк остаются. */
 export const FilteringTree: StoryObj<StoryProps> = {
   name: 'Tree',
-  parameters: showControls([
-    'enableRowExpanding',
-    'rowExpandingMaxDepth',
-    'rowExpandingColumn',
-    'enableTreeLines',
-    'enableQuickSearch',
-    'quickSearchDebounceMs',
-    'quickSearchFilteredCount',
-    'enableColumnFiltering',
-    'columnFilteringDebounceMs',
-    'columnFilteringFilteredCount',
-    'columnFilteringTimeZone',
-  ]),
-  args: {
-    ...GRID,
-    dataOverride: TREE,
-    enableRowExpanding: true,
-    rowExpandingMaxDepth: 5,
-    initialExpanded: true,
-    // Фильтр «City» = «Rome»: родители Europe и Italy остаются видимыми, потому что
-    // подходит их потомок; France отсеяна целиком.
+  parameters: { scenario: '0045/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Фильтр дерева"
+      steps={TREE_STEPS}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataOverride: TREE,
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 5,
+          initialExpanded: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(TREE_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(treeIds(canvas)).toContain('item-id-1'))
+    })
+    await step(TREE_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(treeFiltered(canvas)).toBe(true)
+      await settle()
+    })
   },
 }
 
-export const FilteringCombined: StoryObj<StoryProps> = {
-  name: 'With pagination, selection and export',
-  parameters: showControls([
-    'enableRowSelection',
-    'rowSelectionSubRows',
-    'rowSelectionSelectedCount',
-    'enableRowDragging',
-    'rowDraggingExpandDelay',
-    'rowDraggingRevertOnReject',
-    'enableQuickSearch',
-    'quickSearchDebounceMs',
-    'quickSearchFilteredCount',
-    'enableColumnFiltering',
-    'columnFilteringDebounceMs',
-    'columnFilteringFilteredCount',
-    'columnFilteringTimeZone',
-    'enablePagination',
-    'paginationInitialPageSize',
-    'paginationPageSizes',
-    'paginationRevertOnReject',
-    'enableDataExport',
-    'dataExportAllow',
-    'dataExportFilename',
-  ]),
-  args: {
-    ...GRID,
-    dataOverride: makeFilteringData(200),
-    enablePagination: true,
-    paginationInitialPageSize: 25,
-    enableRowSelection: true,
-    rowSelectionSelectedCount: true,
-    enableDataExport: true,
-    enableRowDragging: true,
-    // Смена фильтра возвращает на первую страницу. Выберите строки и сузьте фильтр —
-    // счётчик внизу назовёт скрытые фильтром. Ручки перетаскивания исчезают, пока
-    // фильтр активен. Экспорт «С учётом фильтров» выгружает отфильтрованное.
-  },
-}
+// --- ADR 0053 S1 ---------------------------------------------------------------------
 
+const searchDisabled = () =>
+  byTestId('quick-search')?.getAttribute('aria-disabled') === 'true' ||
+  !!(byTestId('quick-search') as HTMLInputElement | null)?.disabled
+
+const NO_COLUMNS: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица с поиском',
+    hint: 'Поиск идёт по колонкам с текстом.',
+  },
+  {
+    title: 'Приложение убрало колонки из поиска',
+    hint: 'Ни одна колонка не участвует в поиске: поле поиска недоступно, причина — в его подсказке. Фильтры колонок при этом работают.',
+    props: () => ({
+      columnsOverride: [
+        { ...filteringColumns[0], enableGlobalFilter: false },
+        filteringColumns[3],
+      ],
+    }),
+  },
+]
+
+/** ADR 0053, S1: искать негде — поле поиска недоступно, фильтры работают. */
 export const QuickSearchNoColumns: StoryObj<StoryProps> = {
   name: 'Quick search — no searchable columns',
-  parameters: showControls([
-    'enableQuickSearch',
-    'quickSearchDebounceMs',
-    'quickSearchFilteredCount',
-    'enableColumnFiltering',
-    'columnFilteringDebounceMs',
-    'columnFilteringFilteredCount',
-    'columnFilteringTimeZone',
-  ]),
-  args: {
-    ...GRID,
-    // Искать негде (ADR 0053): «VIP» — булево, у «Name» поиск снят
-    // (`enableGlobalFilter: false`). Поле недоступно, причина — в его описании и в
-    // тултипе иконки; фильтры колонок при этом работают.
-    columnsOverride: [
-      { ...filteringColumns[0], enableGlobalFilter: false },
-      filteringColumns[3],
-    ],
+  parameters: { scenario: '0053/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Искать негде"
+      steps={NO_COLUMNS}
+      args={guideArgs(GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(NO_COLUMNS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(byTestId('quick-search')).not.toBeNull())
+      await expect(searchDisabled()).toBe(false)
+    })
+    await step(NO_COLUMNS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(searchDisabled()).toBe(true))
+      await expect(searchHint()).not.toBe('')
+      await expect(
+        headCell(canvas, 'name')?.querySelector('.column-filter__button'),
+      ).not.toBeNull()
+      await settle()
+    })
   },
 }
 
-export const FilteringEmpty: StoryObj<StoryProps> = {
-  name: 'Empty result',
-  parameters: showControls([
-    'enableQuickSearch',
-    'quickSearchDebounceMs',
-    'quickSearchFilteredCount',
-    'enableColumnFiltering',
-    'columnFilteringDebounceMs',
-    'columnFilteringFilteredCount',
-    'columnFilteringTimeZone',
-  ]),
-  args: {
-    ...GRID,
-    // Наберите в поиске «zzz»: над пустым телом — «No rows match the filters» и сброс
-    // фильтров и поиска; шапка с воронками остаётся. Свою заглушку задаёт filterStub.
-  },
-}
+// --- ADR 0047 S1 ---------------------------------------------------------------------
 
-export const FilteringServer: StoryObj<FilteringServerArgs> = {
-  name: 'Server',
-  args: {
-    ...GRID,
-    serverDelayMs: 600,
-    enableColumnVisibility: true,
-    // Грид не фильтрует сам: фильтры и поиск уходят в onFilterChange / onSearchChange
-    // (журнал справа), «сервер» отвечает с задержкой, пока идёт загрузка — полоса
-    // прогресса. «Показано N из M» — из ответа сервера. Поиск передаёт колонки
-    // (`columnIds` в журнале, ADR 0053): скройте колонку в меню «Колонки» — запрос
-    // уйдёт повторно с новым набором.
-  },
-  argTypes: {
-    serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
-  },
-  render: args => <FilteringServerDemo {...normalizeArgs(args)} />,
-  // Дымовой сценарий (ADR 0045, FL37; ADR 0053, QS9): фильтр и поиск уходят колбэками
-  // после дебаунса, данные перезапрашиваются, «показано N из M» — из ответа; скрытие
-  // колонки повторяет поиск с новым набором колонок.
-  parameters: {
-    requirements: ['FL37', 'QS9'],
-    ...showControls([
-      'enableColumnVisibility',
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-      'serverDelayMs',
-    ]),
-  },
-  play: async ({ args, canvasElement }) => {
-    const labels = storyLabels(args.locale)
-    const firstName = () => firstRowText(canvasElement, 'name')
-    await openFilter(canvasElement, 'name')
-    await userEvent.type(byTestId('filter-value')!, 'bob')
-    await closeFilter()
+const DATES = {
+  ...GRID,
+  columnsOverride: dateFilteringColumns,
+  dataOverride: dateFilteringData,
+  columnFilteringTimeZone: 'UTC',
+} satisfies Partial<StoryProps>
 
-    await until(() => expect(consoleText()).toContain('onFilterChange'))
-    expect(consoleText()).toContain('"value":"bob"')
-    await until(() => expect(consoleText()).toContain('server'))
-    await until(() => expect(firstName()).toBe('Bob 1'))
-    expect(filteredCount()).toBe(labels.filteredRows(29, 200))
+const calendar = () => byTestId('filter-calendar')
 
-    await userEvent.type(byTestId('quick-search')!, 'paris')
-    await until(() => expect(consoleText()).toContain('onSearchChange'))
-    expect(consoleText()).toContain('search="paris"')
-    // Bob — каждая 7-я строка, Paris — каждая 5-я: оба — каждая 35-я.
-    await until(() => expect(filteredCount()).toBe(labels.filteredRows(6, 200)))
-    expect(firstName()).toBe('Bob 15')
-    expect(consoleText()).toContain('columnIds="name,city,age,visits"')
-    expect(searchHint()).toBe(
-      labels.searchColumnsHint(['Name', 'City', 'Age', 'Visits']),
-    )
-
-    // Скрытая колонка уходит из поиска: запрос повторяется с новым набором.
-    await openPopup(() => byTestId('column-visibility-button'))
-    await userEvent.click(
-      document.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-menu"] [data-column-id="age"] [role="checkbox"]',
-      )!,
-    )
-    await userEvent.keyboard('{Escape}')
-    await until(() =>
-      expect(consoleText()).toContain('columnIds="name,city,visits"'),
-    )
-    expect(searchHint()).toBe(
-      labels.searchColumnsHint(['Name', 'City', 'Visits']),
-    )
-    await settle()
-  },
-}
-
-export const FilteringDates: StoryObj<FilteringDatesArgs> = {
-  name: 'Dates',
-  args: {
-    ...GRID,
-    columnsOverride: dateFilteringColumns,
-    dataOverride: dateFilteringData,
-    timeZone: 'UTC',
-    dateLocale: 'en-US',
-    // «Birth date» — календарный день, «Created» — момент со временем. В панели —
-    // условия, пресеты («Period») и календарь. Смените timeZone при фильтре «On
-    // Mar 15, 2026» по «Created»: строки у границы суток уходят в соседний день.
-    // dateLocale переводит календарь и даты в сводке.
-  },
-  argTypes: {
-    timeZone: {
-      control: { type: 'select' },
-      options: [
-        'browser',
-        'UTC',
-        'Europe/London',
-        'Europe/Moscow',
-        'America/New_York',
-        'Asia/Tokyo',
-      ],
-    },
-    dateLocale: { control: { type: 'inline-radio' }, options: ['en-US', 'ru'] },
-  },
-  // Дымовой сценарий (ADR 0047, DF21): дни date и datetime, условие и смена timeZone
-  // меняют выборку и «показано N из M».
-  parameters: {
-    requirements: ['DF21'],
-    ...showControls([
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-      'timeZone',
-      'dateLocale',
-    ]),
-  },
-  play: async ({ args, canvasElement, id }) => {
-    const labels = storyLabels(args.locale)
-    const calendar = async (column: string) => {
-      await openFilter(canvasElement, column)
-      await until(() => expect(byTestId('filter-calendar')).not.toBeNull())
-    }
-    const selects = () =>
-      byTestId('filter-calendar')!.querySelectorAll<HTMLSelectElement>('select')
-    const pickDay = async (year: string, day: string) => {
-      await userEvent.selectOptions(selects()[1]!, year)
+/** Пользователь выбирает в календаре год, месяц март и день. */
+const pickDay = async (year: string, day: string, signal: AbortSignal) => {
+  await pollUntil(() => !!calendar()?.querySelector('select'), signal)
+  const change = (select: HTMLSelectElement, value: string) => {
+    if (select.value === value) return
+    Object.getOwnPropertyDescriptor(
+      HTMLSelectElement.prototype,
+      'value',
+    )!.set!.call(select, value)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+  const selects = () =>
+    calendar()!.querySelectorAll<HTMLSelectElement>('select')
+  // Календарь перерисовывается и после смены условия — выбор повторяется, пока не виден день.
+  await repeat(
+    () => !!document.querySelector(`[data-day="${day}"] button`),
+    () => {
+      change(selects()[1]!, year)
       // Месяцы — номера с нуля: март.
-      await userEvent.selectOptions(selects()[0]!, '2')
-      await userEvent.click(
-        document.querySelector(`[data-day="${day}"] button`)!,
-      )
-    }
+      change(selects()[0]!, '2')
+    },
+    signal,
+  )
+  document.querySelector<HTMLElement>(`[data-day="${day}"] button`)!.click()
+}
 
-    // datetime: 15 марта по UTC — все 20 строк этого дня.
-    await calendar('createdAt')
-    await pickDay('2026', '2026-03-15')
-    await until(() => expect(filteredCount()).toBe(labels.filteredRows(20, 60)))
-    await closeFilter()
+const createdFiltered = (root: HTMLElement) =>
+  !!byTestId('filtered-rows-count') && filterActive(root, 'createdAt')
+const birthFiltered = (root: HTMLElement) => filterActive(root, 'birthDate')
 
-    // В Токио строки после 15:00 UTC уходят на 16-е.
-    await updateArgs(id, { timeZone: 'Asia/Tokyo' })
-    await until(() => expect(filteredCount()).toBe(labels.filteredRows(14, 60)))
+/** Пользователь выбирает день создания и закрывает панель. */
+const filterCreated = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!createdFiltered(root)) {
+    await openPanel(root, 'createdAt', signal)
+    await pickDay('2026', '2026-03-15', signal)
+    await pollUntil(() => createdFiltered(root), signal)
+  }
+  await closePanel(signal)
+}
 
-    // date: «до 1 марта 1980» вдобавок к фильтру дат создания.
-    await calendar('birthDate')
-    await userEvent.click(
-      document.querySelector<HTMLElement>(
-        '[data-testid="filter-panel"] [data-testid="filter-operator"]',
-      )!,
-    )
-    const before = () =>
-      document.querySelector<HTMLElement>('[data-operator="before"]')
-    await until(() => expect(before()).not.toBeNull())
-    await userEvent.click(before()!)
-    await pickDay('1980', '1980-03-01')
-    await until(() =>
-      expect(filteredCount()).toMatch(
-        labelPattern(args.locale, n => labels.filteredRows(n, 60), '[1-9]'),
-      ),
-    )
-    await closeFilter()
-    await settle()
+const DATE_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонки с датами',
+    hint: 'В таблице есть колонка с датой рождения и колонка с моментом создания со временем.',
   },
-  // Без хуков Storybook: `play` меняет пояс, и в каталоге историю перерисовывает React.
-  render: function Render({ timeZone, dateLocale, ...args }, { id }) {
-    return (
-      <StoryComponent
-        {...normalizeArgs(args)}
-        updateArgs={argsUpdater(id)}
-        columnFilteringTimeZone={timeZone === 'browser' ? undefined : timeZone}
-        columnFilteringDateLocale={dateLocale === 'ru' ? ru : undefined}
-      />
-    )
+  {
+    title: 'Пользователь открыл фильтр даты',
+    hint: 'Панель предлагает условие и календарь для выбора дня.',
+    states: ['overlay.filterDate'],
+    enter: stepAction(async (root, { signal }) => {
+      await openPanel(root, 'createdAt', signal)
+      await pollUntil(() => !!calendar(), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал день',
+    hint: 'Остались строки, созданные в этот день по часовому поясу таблицы.',
+    enter: stepAction((root, { signal }) => filterCreated(root, signal)),
+  },
+  {
+    title: 'Приложение сменило часовой пояс',
+    hint: 'Тот же день в другом поясе — другие строки: часть ушла в соседний день.',
+    props: () => ({ columnFilteringTimeZone: 'Asia/Tokyo' }),
+    enter: stepAction((root, { signal }) => filterCreated(root, signal)),
+  },
+  {
+    title: 'Пользователь добавил условие на дату рождения',
+    hint: 'Оба фильтра действуют вместе, нижняя панель называет число оставшихся строк.',
+    enter: stepAction(async (root, { signal }) => {
+      await filterCreated(root, signal)
+      if (!birthFiltered(root)) {
+        await openPanel(root, 'birthDate', signal)
+        await chooseOperator('before', signal)
+        await pickDay('1980', '1980-03-01', signal)
+        await pollUntil(() => birthFiltered(root), signal)
+      }
+      await closePanel(signal)
+    }),
+  },
+]
+
+/** ADR 0047, S1: пользователь фильтрует по датам — день, часовой пояс, второе условие. */
+export const FilteringDates: StoryObj<StoryProps> = {
+  name: 'Dates',
+  parameters: {
+    scenario: '0047/S1',
+    requirements: ['DF21'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Фильтр по датам"
+      steps={DATE_STEPS}
+      args={guideArgs(DATES, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const total = dateFilteringData.length
+    await step(DATE_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(headCell(canvas, 'birthDate')).not.toBeNull()
+      await expect(headCell(canvas, 'createdAt')).not.toBeNull()
+    })
+    await step(DATE_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(calendar()).not.toBeNull()
+      await expect(byTestId('filter-operator')).not.toBeNull()
+      await settle()
+    })
+    await step(DATE_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filteredCount()).toBe(labels.filteredRows(20, total))
+    })
+    await step(DATE_STEPS[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(filteredCount()).toBe(labels.filteredRows(14, total)),
+      )
+    })
+    await step(DATE_STEPS[4]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filteredCount()).toMatch(
+        labelPattern(args.locale, n => labels.filteredRows(n, total), '[1-9]'),
+      )
+      await expect(createdFiltered(canvas) && birthFiltered(canvas)).toBe(true)
+      await settle()
+    })
   },
 }
 
+// --- ADR 0048 S1 ---------------------------------------------------------------------
+
+const OPTIONS = {
+  ...GRID,
+  columnsOverride: optionFilteringColumns,
+  dataOverride: optionFilteringData,
+} satisfies Partial<StoryProps>
+
+const statusFiltered = (root: HTMLElement) =>
+  cellsOf(root, 'status').length > 0 && filterActive(root, 'status')
+
+/** Пользователь отмечает статус и закрывает панель. */
+const filterStatus = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!statusFiltered(root)) {
+    await openPanel(root, 'status', signal)
+    await pollUntil(() => !!byTestId('filter-options'), signal)
+    await checkOption('won', signal)
+    await pollUntil(() => statusFiltered(root), signal)
+  }
+  await closePanel(signal)
+}
+
+const OPTION_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонки с вариантами',
+    hint: 'Статус, метки и город принимают значения из списка.',
+  },
+  {
+    title: 'Пользователь открыл фильтр статуса',
+    hint: 'Панель — список вариантов с числом строк у каждого.',
+    states: ['overlay.filterOptions'],
+    enter: stepAction(async (root, { signal }) => {
+      await openPanel(root, 'status', signal)
+      await pollUntil(() => !!byTestId('filter-options'), signal)
+    }),
+  },
+  {
+    title: 'Пользователь отметил вариант',
+    hint: 'Остались строки с этим статусом.',
+    enter: stepAction((root, { signal }) => filterStatus(root, signal)),
+  },
+  {
+    title: 'Пользователь потребовал обе метки',
+    hint: 'Условие меток — все отмеченные сразу. Остались строки с обеими метками, числа у вариантов учитывают фильтр статуса.',
+    states: ['overlay.filterOptions'],
+    enter: stepAction(async (root, { signal }) => {
+      await filterStatus(root, signal)
+      await openPanel(root, 'tags', signal)
+      await pollUntil(() => !!byTestId('filter-options'), signal)
+      await chooseOperator('allOf', signal)
+      await checkOption('vip', signal)
+      await checkOption('churn-risk', signal)
+    }),
+  },
+]
+
+/** ADR 0048, S1: пользователь отмечает варианты — счётчики учитывают другие фильтры. */
 export const FilteringOptions: StoryObj<StoryProps> = {
   name: 'Select & multiselect',
-  args: {
-    ...GRID,
-    columnsOverride: optionFilteringColumns,
-    dataOverride: optionFilteringData,
-    // «Status» — select, «Tags» — multiselect («содержит все»), «City» — варианты из
-    // данных, «Manager» — справочник: поиск в панели идёт через loadOptions. У
-    // вариантов — счётчики строк с учётом остальных фильтров. Ячейки показывают
-    // подписи, поиск и экспорт — тоже.
-  },
-  // Дымовой сценарий (ADR 0048, SF23): галочки, «содержит все» и фасетные счётчики
-  // меняют выборку и «показано N из M».
   parameters: {
+    scenario: '0048/S1',
     requirements: ['SF23'],
-    ...showControls([
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-    ]),
+    ...guideControls(),
   },
-  play: async ({ args, canvasElement }) => {
+  render: args => (
+    <GuideStory
+      title="Фильтр вариантов"
+      steps={OPTION_STEPS}
+      args={guideArgs(OPTIONS, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await waitForRows(canvasElement)
-    expect(firstRowText(canvasElement, 'status')).toBe('Lead')
-
-    await openOptions(canvasElement, 'status')
-    await userEvent.click(checkboxOf('won'))
-    await until(() =>
-      expect(filteredCount()).toMatch(
-        labelPattern(args.locale, n => labels.filteredRows(n, 60)),
-      ),
-    )
-    const afterStatus = filteredCount()
-    await closeFilter()
-
-    await openOptions(canvasElement, 'tags')
-    const vip = Number(
-      optionOf('vip')!.querySelector('[data-testid="filter-option-count"]')!
-        .textContent,
-    )
-    expect(vip).toBeGreaterThan(0)
-    expect(vip).toBeLessThan(30)
-    await userEvent.click(
-      document.querySelector<HTMLElement>(
-        '[data-testid="filter-panel"] [data-testid="filter-operator"]',
-      )!,
-    )
-    const allOf = () =>
-      document.querySelector<HTMLElement>('[data-operator="allOf"]')
-    await until(() => expect(allOf()).not.toBeNull())
-    await userEvent.click(allOf()!)
-    await userEvent.click(checkboxOf('vip'))
-    await userEvent.click(checkboxOf('partner'))
-    await until(() => expect(filteredCount()).not.toBe(afterStatus))
-    expect(filteredCount()).toMatch(
-      labelPattern(args.locale, n => labels.filteredRows(n, 60)),
-    )
-    await settle()
+    const total = optionFilteringData.length
+    const count = (value: string) =>
+      Number(
+        optionOf(value)?.querySelector('[data-testid="filter-option-count"]')
+          ?.textContent ?? NaN,
+      )
+    await step(OPTION_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(cellsOf(canvas, 'status').length).toBeGreaterThan(0)
+    })
+    await step(OPTION_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(count('won')).toBeGreaterThan(0)
+      await settle()
+    })
+    await step(OPTION_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(new Set(cellsOf(canvas, 'status')).size).toBe(1)
+      await expect(filteredCount()).toMatch(
+        labelPattern(args.locale, n => labels.filteredRows(n, total)),
+      )
+    })
+    await step(OPTION_STEPS[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const both = optionFilteringData.filter(
+        row =>
+          row.status === 'won' &&
+          ['vip', 'churn-risk'].every(tag =>
+            (row.tags as string[]).includes(tag),
+          ),
+      ).length
+      await expect(both).toBeGreaterThan(0)
+      await until(() =>
+        expect(filteredCount()).toBe(labels.filteredRows(both, total)),
+      )
+      await expect(count('vip')).toBeLessThan(
+        optionFilteringData.filter(row =>
+          (row.tags as string[]).includes('vip'),
+        ).length,
+      )
+      await settle()
+    })
   },
 }
 
-export const FilteringLookupServer: StoryObj<FilteringServerArgs> = {
-  name: 'Lookup (server)',
-  args: {
-    ...GRID,
-    serverDelayMs: 400,
-    // Справочник менеджеров на «сервере»: поиск в панели «Manager» пишет вызовы
-    // loadOptions в журнал, прошлый запрос отменяется. Выбор уходит в onFilterChange,
-    // сводка «Фильтры» называет менеджеров по имени.
-  },
-  argTypes: {
-    serverDelayMs: { control: { type: 'range', min: 0, max: 3000, step: 100 } },
-  },
-  render: args => <FilteringLookupServerDemo {...normalizeArgs(args)} />,
-  // Дымовой сценарий (ADR 0048, SF24): поиск в панели зовёт loadOptions, выбор уходит в
-  // onFilterChange, сводка показывает подписи.
-  parameters: {
-    requirements: ['SF24'],
-    ...showControls([
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-      'serverDelayMs',
-    ]),
-  },
-  play: async ({ args, canvasElement }) => {
-    const labels = storyLabels(args.locale)
-    await openOptions(canvasElement, 'managerId')
-    await until(() => expect(consoleText()).toContain('loadOptions'))
-    await userEvent.type(byTestId('filter-options-search')!, 'alice')
-    await until(() => expect(consoleText()).toContain('search="alice"'))
-    // Справочник сузился до найденных: в списке только Alice.
-    const names = () =>
-      [
-        ...document.querySelectorAll(
-          '[data-testid="filter-panel"] [data-option-index]',
-        ),
-      ].map(item => item.textContent ?? '')
-    await until(() =>
-      expect(
-        names().length > 0 && names().every(name => name.startsWith('Alice')),
-      ).toBe(true),
-    )
-    await userEvent.click(checkboxOf('m0'))
-    await until(() => expect(consoleText()).toContain('onFilterChange'))
-    expect(consoleText()).toContain('"value":["m0"]')
-    await until(() => expect(consoleText()).toMatch(/server\s+\d+ of 200 rows/))
-    await closeFilter()
+// --- ADR 0048 S2 ---------------------------------------------------------------------
 
-    await until(() => expect(byTestId('filter-summary-button')).not.toBeNull())
-    await userEvent.click(byTestId('filter-summary-button')!)
-    await until(() =>
-      expect(byTestId('filter-summary')).toHaveTextContent(
-        `${labels.filterAnyOf}: Alice Moss`,
+const LOOKUP_DELAY_MS = 400
+const MANAGER = 'm0'
+
+/** Колонки со справочником менеджеров на «сервере»: одни на журнал истории. */
+const lookupColumns = new WeakMap<ConsoleLog, unknown[]>()
+const lookupColumnsOf = (log: ConsoleLog) => {
+  if (!lookupColumns.has(log))
+    lookupColumns.set(
+      log,
+      optionFilteringColumns.map(column =>
+        column.id === 'managerId'
+          ? {
+              ...column,
+              filter: {
+                type: 'lookup',
+                loadOptions: (
+                  text: string,
+                  context: { signal: AbortSignal },
+                ) => {
+                  log.log('loadOptions', describeEvent({ search: text }))
+                  return loadManagers(text, context, LOOKUP_DELAY_MS)
+                },
+              },
+            }
+          : column,
       ),
     )
-    await settle()
-  },
+  return lookupColumns.get(log)!
 }
 
-/** Открывает панель фильтра колонки: наведение раскрывает кнопку и грузит модуль. */
-async function openFilter(canvas: HTMLElement, column: string) {
-  await waitForRows(canvas)
-  const head = headCell(canvas, column)
-  await userEvent.hover(head)
-  const panel = await openPopup(() =>
-    headCell(canvas, column).querySelector<HTMLElement>(
-      '.column-filter__button',
+let lookupSeq = 0
+const optionNames = () =>
+  [
+    ...document.querySelectorAll(
+      '[data-testid="filter-panel"] [data-option-index]',
     ),
-  )
-  expectPopupInCanvas(canvas, panel)
-}
+  ].map(item => item.textContent ?? '')
+const managerFiltered = (root: HTMLElement) =>
+  filterActive(root, 'managerId') && !busy(root)
 
-/** Открывает панель фильтра вариантов и ждёт список. */
-async function openOptions(canvas: HTMLElement, column: string) {
-  await openFilter(canvas, column)
-  await until(() => expect(byTestId('filter-options')).not.toBeNull())
-}
-
-async function closeFilter() {
-  await userEvent.keyboard('{Escape}')
-  await until(() => expect(byTestId('filter-panel')).toBeNull())
-}
-
-function filteredCount() {
-  return byTestId('filtered-rows-count')?.textContent ?? null
-}
-
-/** Описание поля поиска — колонки, по которым он идёт (ADR 0053). */
-function searchHint() {
-  const describedBy = byTestId('quick-search')?.getAttribute('aria-describedby')
-  return (
-    (describedBy && document.getElementById(describedBy)?.textContent) ?? ''
+/** Пользователь ищет менеджера в панели. */
+const searchManager = async (root: HTMLElement, signal: AbortSignal) => {
+  await openPanel(root, 'managerId', signal)
+  await pollUntil(() => !!byTestId('filter-options-search'), signal)
+  type(byTestId('filter-options-search'), 'alice')
+  await pollUntil(
+    () =>
+      optionNames().length > 0 &&
+      optionNames().every(name => name.startsWith('Alice')),
+    signal,
   )
 }
 
-function optionOf(value: string) {
-  return document.querySelector<HTMLElement>(
-    `[data-testid="filter-panel"] [data-option-index][data-value="${value}"]`,
-  )
+/** Пользователь выбирает менеджера, сервер отвечает. */
+const filterManager = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!managerFiltered(root)) {
+    await searchManager(root, signal)
+    await checkOption(MANAGER, signal)
+    await closePanel(signal)
+    await pollUntil(() => managerFiltered(root), signal)
+  }
+  await closePanel(signal)
 }
 
-function checkboxOf(value: string) {
-  return optionOf(value)!.querySelector<HTMLElement>('[role="checkbox"]')!
-}
-
-/** Открытая панель текстового фильтра (ADR 0093, VR6). */
-export const FilteringStateText: StoryObj<StoryProps> = {
-  name: 'State: text filter',
-  parameters: {
-    ...vrStates('overlay.filterText'),
-    ...showControls([
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-    ]),
+const LOOKUP: readonly GuideStoryStep[] = [
+  {
+    title: 'Справочник менеджеров на сервере',
+    hint: 'Вариантов слишком много, панель загружает их с сервера.',
+    props: ({ app, log }) => ({
+      columnsOverride: lookupColumnsOf(log) as StoryProps['columnsOverride'],
+      onFilterChange: (filters: ServerFilters) => {
+        const seq = ++lookupSeq
+        app.update(props => ({ ...props, loading: 'refresh' }))
+        setTimeout(() => {
+          if (seq !== lookupSeq) return
+          const rows = queryOptions(filters)
+          log.log('server', `${rows.length} of ${OPTION_TOTAL} rows`)
+          app.update(props => ({
+            ...props,
+            loading: false,
+            dataOverride: rows,
+            columnFilteringFilteredRowCount: rows.length,
+          }))
+        }, LOOKUP_DELAY_MS)
+      },
+    }),
   },
-  args: GRID,
-  play: ({ canvasElement }) => openFilter(canvasElement, 'name'),
-}
-
-/** Открытая панель фильтра даты с календарём (ADR 0093, VR6). */
-export const FilteringStateDate: StoryObj<FilteringDatesArgs> = {
-  ...FilteringDates,
-  name: 'State: date filter',
-  parameters: {
-    ...vrStates('overlay.filterDate'),
-    ...showControls([
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-      'timeZone',
-      'dateLocale',
-    ]),
+  {
+    title: 'Пользователь ищет менеджера',
+    hint: 'Поиск в панели ушёл серверу, список сузился до найденных.',
+    states: ['overlay.filterOptions'],
+    enter: stepAction((root, { signal }) => searchManager(root, signal)),
   },
-  play: ({ canvasElement }) => openFilter(canvasElement, 'createdAt'),
-}
-
-/** Открытая панель фильтра вариантов (ADR 0093, VR6). */
-export const FilteringStateOptions: StoryObj<StoryProps> = {
-  ...FilteringOptions,
-  name: 'State: options filter',
-  parameters: {
-    ...vrStates('overlay.filterOptions'),
-    ...showControls([
-      'enableQuickSearch',
-      'quickSearchDebounceMs',
-      'quickSearchFilteredCount',
-      'enableColumnFiltering',
-      'columnFilteringDebounceMs',
-      'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
-    ]),
+  {
+    title: 'Пользователь выбрал менеджера',
+    hint: 'Фильтр ушёл приложению, сервер вернул строки этого менеджера.',
+    enter: stepAction((root, { signal }) => filterManager(root, signal)),
   },
-  play: ({ canvasElement }) => openFilter(canvasElement, 'status'),
+  {
+    title: 'Пользователь открыл сводку фильтров',
+    hint: 'Менеджер в сводке назван по имени, а не по коду.',
+    enter: stepAction(async (root, { signal }) => {
+      await filterManager(root, signal)
+      await repeat(
+        () => !!byTestId('filter-summary'),
+        () => byTestId('filter-summary-button')?.click(),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0048, S2: справочник на сервере — поиск в панели, выбор, сводка по имени. */
+export const FilteringLookupServer: StoryObj<StoryProps> = {
+  name: 'Lookup (server)',
+  parameters: {
+    scenario: '0048/S2',
+    requirements: ['SF24'],
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Справочник на сервере"
+      steps={LOOKUP}
+      args={guideArgs(
+        {
+          ...OPTIONS,
+          // Ниже обычного: панель со списком встаёт под заголовком, а не над таблицей.
+          containerHeight: '420',
+          height: '320',
+          maxHeight: '320',
+          dataOverride: OPTION_SERVER_DATA,
+          enableQuickSearch: false,
+          columnFilteringServer: true,
+          columnFilteringFilteredRowCount: OPTION_TOTAL,
+          columnFilteringTotalRowCount: OPTION_TOTAL,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(LOOKUP[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(headCell(canvas, 'managerId')).not.toBeNull()
+    })
+    await step(LOOKUP[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(consoleText()).toContain('loadOptions')
+      await expect(consoleText()).toContain('search="alice"')
+      await settle()
+    })
+    await step(LOOKUP[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(consoleText()).toContain('onFilterChange'))
+      await expect(consoleText()).toMatch(/\d+ of 200 rows/)
+    })
+    await step(LOOKUP[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(byTestId('filter-summary')).toHaveTextContent(
+        `${labels.filterAnyOf}: Alice Moss`,
+      )
+      await settle()
+    })
+  },
 }
 
-// --- ADR 0120, S3 --------------------------------------------------------------------
+/** Таблица гайдов S3 и S8: свои колонки и данные в области фиксированной высоты. */
+const FILTERING_GUIDE = {
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
+  columnsOverride: filteringColumns,
+  dataOverride: filteringData,
+} satisfies Partial<StoryProps>
 
 const searchedCity = filteringData[0]!.city as string
-
-const cellsOf = (root: ParentNode, column: string) =>
-  [
-    ...root.querySelectorAll<HTMLElement>(
-      `.data-grid__body-row [data-column-id="${column}"]`,
-    ),
-  ].map(cell => cell.textContent?.trim() ?? '')
 
 const EXTERNAL_FORM: readonly GuideStoryStep[] = [
   {
     title: 'Все строки',
-    hint: 'Плагины columnFilteringModel и quickSearchModel без интерфейса: в заголовках нет кнопок фильтра, в тулбаре нет поля поиска.',
+    hint: 'Фильтрами и поиском управляет форма приложения над таблицей. В заголовках нет кнопок фильтра, в тулбаре нет поля поиска.',
     props: () => ({
       enableColumnFilteringModel: true,
       enableQuickSearchModel: true,
@@ -696,12 +1206,12 @@ const EXTERNAL_FORM: readonly GuideStoryStep[] = [
   },
   {
     title: `Приложение ищет «${searchedCity}»`,
-    hint: 'Поле поиска приложения задаёт срез globalFilter аргументом модели — остались строки с этим городом.',
+    hint: 'Пользователь ввёл город в поле поиска приложения. Таблица показывает только строки с этим городом.',
     props: () => ({ quickSearchModelGlobalFilter: searchedCity }),
   },
   {
-    title: 'И фильтрует возраст старше 30',
-    hint: 'Форма приложения задаёт фильтр колонки срезом columnFilters — условия поиска и фильтра объединяются через И.',
+    title: 'Приложение фильтрует возраст старше 30',
+    hint: 'Пользователь задал в форме приложения возраст старше 30. Таблица показывает строки, которые подходят и под поиск, и под фильтр.',
     props: () => ({
       columnFilteringModelColumnFilters: [
         { id: 'age', value: { operator: 'greaterThan', value: 30 } },
@@ -715,24 +1225,13 @@ export const FilteringExternalForm: StoryObj<StoryProps> = {
   name: 'External form',
   parameters: {
     scenario: '0120/S3',
-    ...showControls([
-      'enableColumnFilteringModel',
-      'columnFilteringModelTimeZone',
-      'enableQuickSearchModel',
-    ]),
-  },
-  args: {
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
-    columnsOverride: filteringColumns,
-    dataOverride: filteringData,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Фильтры и поиск из формы приложения"
       steps={EXTERNAL_FORM}
-      args={normalizeArgs(args)}
+      args={guideArgs(FILTERING_GUIDE, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -783,7 +1282,7 @@ const rangeText = (root: ParentNode) =>
 const SAVED_VIEW_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Вид по умолчанию',
-    hint: 'Сортировка, фильтры колонок и страницы с интерфейсом: строки в порядке данных, первая страница.',
+    hint: 'Таблица открыта без сохранённого вида. Строки идут в порядке данных, без фильтров, на первой странице.',
     props: () => ({
       enableColumnSorting: true,
       enableColumnFiltering: true,
@@ -792,13 +1291,13 @@ const SAVED_VIEW_STEPS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Открыта сохранённая ссылка',
-    hint: 'Приложение читает вид из адреса и передаёт его начальными срезами плагинов — initialSorting, initialColumnFilters, initialPagination: по убыванию возраста, старше 30, вторая страница.',
+    hint: 'Пользователь открыл ссылку с сохранённым видом, и приложение прочитало его из адреса страницы. Таблица открылась с сортировкой по убыванию возраста, с возрастом старше 30, на второй странице.',
     props: () => SAVED_VIEW,
     remount: true,
   },
   {
     title: 'Пользователь листает дальше',
-    hint: 'Дальше видом владеет грид: кнопка «следующая страница» пейджера работает, как обычно.',
+    hint: 'Пользователь перешёл на следующую страницу пейджером таблицы. Дальше видом управляет таблица: сортировка и фильтр сохраняются, видна третья страница.',
     // Со второй страницы сохранённого вида — на третью.
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => /^(6|11)–/.test(rangeText(root)), signal)
@@ -819,24 +1318,13 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
   name: 'Saved view',
   parameters: {
     scenario: '0120/S8',
-    ...showControls([
-      'enableColumnSorting',
-      'enableColumnFiltering',
-      'enablePagination',
-    ]),
-  },
-  args: {
-    containerHeight: '560',
-    height: '460',
-    maxHeight: '460',
-    columnsOverride: filteringColumns,
-    dataOverride: filteringData,
+    ...guideControls(),
   },
   render: args => (
     <GuideStory
       title="Вид из адреса страницы"
       steps={SAVED_VIEW_STEPS}
-      args={normalizeArgs(args)}
+      args={guideArgs(FILTERING_GUIDE, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -846,6 +1334,9 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
     await step(SAVED_VIEW_STEPS[0].title, async () => {
       await waitForRows(canvas)
       await until(() => expect(rangeText(canvas)).toMatch(/^1–/))
+      expect(ages()).toEqual(
+        filteringData.slice(0, ages().length).map(row => Number(row.age)),
+      )
     })
     await step(SAVED_VIEW_STEPS[1].title, async () => {
       await guideNext(canvas)
@@ -860,6 +1351,11 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(rangeText(canvas)).toMatch(/^11–15 /)
+      const shown = ages()
+      expect(shown.every(age => age > 30)).toBe(true)
+      expect(shown.every((age, i) => i === 0 || shown[i - 1]! >= age)).toBe(
+        true,
+      )
     })
     await settle()
   },

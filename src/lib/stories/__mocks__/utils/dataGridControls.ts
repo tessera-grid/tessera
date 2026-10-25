@@ -110,6 +110,7 @@ import {
   rowActionMenuThresholdType,
   rowActionsCollapsedWidthType,
   rowActionsColumnType,
+  actionsDemoType,
   rowActionsWidthType,
   rowExpandingColumnType,
   rowExpandingMaxDepthType,
@@ -274,6 +275,7 @@ export const dataGridArgTypes = {
         rowActionsWidth: rowActionsWidthType,
         rowActionsCollapsedWidth: rowActionsCollapsedWidthType,
         rowActionsColumn: rowActionsColumnType,
+        actionsDemo: actionsDemoType,
       }),
       enableRowActionMenu: enableRowActionMenuType,
       ...when('enableRowActionMenu', {
@@ -483,6 +485,7 @@ export const dataGridDefaultArgs = {
   rowActionsWidth: DEFAULT_ROW_ACTIONS_OPTIONS.width,
   rowActionsCollapsedWidth: DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth,
   rowActionsColumn: 'auto',
+  actionsDemo: 'basic',
   enableRowActionMenu: false,
   rowActionMenuMode: DEFAULT_ROW_ACTION_MENU.mode,
   rowActionMenuThreshold: DEFAULT_ROW_ACTION_MENU.threshold,

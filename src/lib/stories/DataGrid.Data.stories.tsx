@@ -7,12 +7,11 @@ import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { StoryComponent } from './DataGridStory'
 import { makeData } from './__mocks__/data'
 import { columnCountType } from './__mocks__/utils/argTypes'
-import { vrStates } from './__mocks__/catalog'
 
 /**
  * Истории про форму данных.
  *
- * Три несвязанных сценария разведены явно:
+ * Три формы данных переключаются аргументом `dataShape`:
  * - `flat`    — плоский список строк (объём, faker);
  * - `tree`    — вложенные `subRows` с рабочими тоггл-раскрытиями и отступами;
  * - `grouped` — реальная группировка+агрегация TanStack поверх flat, применена
@@ -180,50 +179,4 @@ export const Playground: StoryObj<DataArgs> = {
   },
 
   name: 'Playground',
-}
-
-/** Плоский список на объёме — базовый кейс, чувствителен к count. */
-export const Flat: StoryObj<DataArgs> = {
-  name: 'Flat (volume)',
-  args: {
-    dataShape: 'flat',
-    count: 200,
-  },
-}
-
-/** Дерево с рабочими тогглами и отступами по глубине (32px/уровень). */
-export const Tree: StoryObj<DataArgs> = {
-  name: 'Tree (nested)',
-  args: {
-    dataShape: 'tree',
-    count: 5,
-    depth: 3,
-    breadth: 3,
-  },
-}
-
-/** Дерево на объёме — виртуализация вложенных строк (свёрнуто, чтобы виден масштаб). */
-export const TreeAtScale: StoryObj<DataArgs> = {
-  name: 'Tree at scale',
-  args: {
-    dataShape: 'tree',
-    count: 60,
-    depth: 3,
-    breadth: 4,
-    expandAll: false,
-  },
-}
-
-/**
- * Группировка+агрегация применена по умолчанию: строки-группы со сводкой,
- * числовые колонки (Visits/Total) показывают сумму, тоггл проваливает в записи.
- */
-export const Grouped: StoryObj<DataArgs> = {
-  name: 'Grouped & aggregated',
-  parameters: vrStates('body.groups'),
-  args: {
-    dataShape: 'grouped',
-    count: 60,
-    groupBy: 'gender',
-  },
 }

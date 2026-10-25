@@ -4,7 +4,7 @@ import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
-import * as expandingStories from '../../DataGrid.Rows.Expanding.stories'
+import { RowExpandingLazyDemo } from '../../demos/sessionDemos'
 import * as consoleStories from '../../Console.dev.stories'
 import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
 import { StoryComponent } from '../../DataGridStory'
@@ -23,7 +23,16 @@ import { AXE_OPTIONS } from './a11y-helpers'
 
 const { ConsoleGuideEvents } = composeStories(consoleStories)
 const { SkeletonDataArrives } = composeStories(skeletonStories)
-const { RowExpandingLazy } = composeStories(expandingStories)
+/** Демо с кнопкой в заголовке консоли: ленивое раскрытие (ADR 0041). */
+const RowExpandingLazy = () => (
+  <RowExpandingLazyDemo
+    {...normalizeArgs({
+      ...dataGridMeta.args,
+      enableRowExpanding: true,
+      rowExpandingMaxDepth: 2,
+    } as StoryProps)}
+  />
+)
 
 const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>

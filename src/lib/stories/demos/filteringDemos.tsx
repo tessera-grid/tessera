@@ -1,10 +1,8 @@
 /**
- * Демо фильтрации (ADR 0045): серверный режим с журналом колбэков. Грид не фильтрует
- * сам — фильтры и поиск уходят в `onFilterChange` / `onSearchChange`, «сервер» с
- * задержкой отвечает отфильтрованным набором и числами для «показано N из M».
+ * «Сервер» фильтрации для гайдов (ADR 0045, ADR 0048): грид не фильтрует сам — фильтры и
+ * поиск уходят в `onFilterChange` / `onSearchChange`, «сервер» отвечает отфильтрованным
+ * набором теми же условиями, что у клиентского режима.
  */
-import { useCallback, useMemo, useRef, useState } from 'react'
-
 import type { ColumnFilterValue } from '../../plugins'
 import {
   filterTypeOf,
@@ -14,52 +12,49 @@ import {
   matchesSearch,
   normalizeSearch,
 } from '../../plugins/quickSearchModel/search'
-import { StoryComponent } from '../DataGridStory'
-import type { StoryProps } from '../DataGridStory.types'
 import {
   type FilteringItem,
   filteringColumns,
-  loadManagers,
   makeFilteringData,
   makeOptionFilteringData,
   type OptionFilteringItem,
   optionFilteringColumns,
 } from '../__mocks__/filteringData'
-import { WithConsole } from './StoryConsole'
-import { createConsoleLog, describeEvent } from './consoleLog'
 
-export interface FilteringServerDemoProps extends StoryProps {
-  /** Время ответа «сервера», мс. */
-  serverDelayMs?: number
-}
+export type ServerFilters = { id: string; value: unknown }[]
 
-const TOTAL_ROWS = 200
-const SERVER_DATA = makeFilteringData(TOTAL_ROWS)
+export const SERVER_TOTAL = 200
+export const SERVER_DATA = makeFilteringData(SERVER_TOTAL)
 
-type Filters = { id: string; value: unknown }[]
+const matches = (
+  columns: readonly { id?: string }[],
+  row: object,
+  filters: ServerFilters,
+) =>
+  filters.every(({ id, value }) => {
+    const def = columns.find(column => column.id === id) as
+      { filter?: Parameters<typeof filterTypeOf>[0] } | undefined
+    const type = filterTypeOf(def?.filter)
+    return (
+      !type ||
+      matchesColumnFilter(
+        type,
+        (row as Record<string, unknown>)[id],
+        value as ColumnFilterValue,
+      )
+    )
+  })
 
-/** «Сервер»: те же условия, что у клиентского режима; поиск — по колонкам грида (ADR 0053). */
-const query = (
-  filters: Filters,
+/** Ответ «сервера»: фильтры колонок и поиск по колонкам грида (ADR 0053). */
+export const queryFiltering = (
+  filters: ServerFilters,
   search: string,
   columnIds: string[],
 ): FilteringItem[] => {
   const needle = normalizeSearch(search)
   return SERVER_DATA.filter(
     row =>
-      filters.every(({ id, value }) => {
-        const def = filteringColumns.find(column => column.id === id) as
-          { filter?: Parameters<typeof filterTypeOf>[0] } | undefined
-        const type = filterTypeOf(def?.filter)
-        return (
-          !type ||
-          matchesColumnFilter(
-            type,
-            row[id as keyof FilteringItem],
-            value as ColumnFilterValue,
-          )
-        )
-      }) &&
+      matches(filteringColumns, row, filters) &&
       (needle === '' ||
         columnIds.some(id =>
           matchesSearch(row[id as keyof FilteringItem], needle),
@@ -67,164 +62,11 @@ const query = (
   )
 }
 
-export const FilteringServerDemo = ({
-  serverDelayMs = 600,
-  ...args
-}: FilteringServerDemoProps) => {
-  const [consoleLog] = useState(createConsoleLog)
-  const log = consoleLog.log
-  const [rows, setRows] = useState(SERVER_DATA)
-  const [loading, setLoading] = useState(false)
-  const request = useRef({
-    filters: [] as Filters,
-    search: '',
-    columnIds: [] as string[],
-    seq: 0,
-  })
+export const OPTION_TOTAL = 200
+export const OPTION_SERVER_DATA = makeOptionFilteringData(OPTION_TOTAL)
 
-  const refetch = useCallback(() => {
-    const seq = ++request.current.seq
-    setLoading(true)
-    window.setTimeout(() => {
-      if (seq !== request.current.seq) return
-      const { filters, search, columnIds } = request.current
-      const result = query(filters, search, columnIds)
-      log('server', `${result.length} of ${TOTAL_ROWS} rows`)
-      setRows(result)
-      setLoading(false)
-    }, serverDelayMs)
-  }, [log, serverDelayMs])
-
-  const onFilterChange = useCallback(
-    (filters: Filters) => {
-      log('onFilterChange', describeEvent({ filters: JSON.stringify(filters) }))
-      request.current.filters = filters
-      refetch()
-    },
-    [log, refetch],
-  )
-  const onSearchChange = useCallback(
-    (search: string, { columnIds }: { columnIds: string[] }) => {
-      log(
-        'onSearchChange',
-        describeEvent({ search, columnIds: columnIds.join(',') }),
-      )
-      request.current.search = search
-      request.current.columnIds = columnIds
-      refetch()
-    },
-    [log, refetch],
-  )
-
-  return (
-    <WithConsole log={consoleLog} args={args}>
-      <StoryComponent
-        {...args}
-        columnsOverride={filteringColumns}
-        dataOverride={rows}
-        loading={loading ? 'refresh' : false}
-        enableColumnFiltering
-        enableQuickSearch
-        columnFilteringServer
-        columnFilteringFilteredCount
-        onFilterChange={onFilterChange}
-        columnFilteringFilteredRowCount={rows.length}
-        columnFilteringTotalRowCount={TOTAL_ROWS}
-        quickSearchServer
-        onSearchChange={onSearchChange}
-      />
-    </WithConsole>
-  )
-}
-
-const OPTION_TOTAL = 200
-const OPTION_SERVER_DATA = makeOptionFilteringData(OPTION_TOTAL)
-
-/** «Сервер» фильтра вариантов: те же условия, что у клиентского режима. */
-const queryOptions = (filters: Filters): OptionFilteringItem[] =>
+/** Ответ «сервера» фильтра вариантов. */
+export const queryOptions = (filters: ServerFilters): OptionFilteringItem[] =>
   OPTION_SERVER_DATA.filter(row =>
-    filters.every(({ id, value }) => {
-      const def = optionFilteringColumns.find(column => column.id === id) as
-        { filter?: Parameters<typeof filterTypeOf>[0] } | undefined
-      const type = filterTypeOf(def?.filter)
-      return (
-        !type ||
-        matchesColumnFilter(
-          type,
-          row[id as keyof OptionFilteringItem],
-          value as ColumnFilterValue,
-        )
-      )
-    }),
+    matches(optionFilteringColumns, row, filters),
   )
-
-/**
- * Демо справочника (ADR 0048, §5): поиск в панели «Manager» зовёт `loadOptions` с
- * задержкой (журнал), фильтры уходят в `onFilterChange`, «сервер» отвечает строками.
- */
-export const FilteringLookupServerDemo = ({
-  serverDelayMs = 400,
-  ...args
-}: FilteringServerDemoProps) => {
-  const [consoleLog] = useState(createConsoleLog)
-  const log = consoleLog.log
-  const [rows, setRows] = useState(OPTION_SERVER_DATA)
-  const [loading, setLoading] = useState(false)
-  const seq = useRef(0)
-
-  const columns = useMemo(
-    () =>
-      optionFilteringColumns.map(column =>
-        column.id === 'managerId'
-          ? {
-              ...column,
-              filter: {
-                type: 'lookup',
-                loadOptions: (
-                  search: string,
-                  context: { signal: AbortSignal },
-                ) => {
-                  log('loadOptions', describeEvent({ search }))
-                  return loadManagers(search, context, serverDelayMs)
-                },
-              },
-            }
-          : column,
-      ),
-    [log, serverDelayMs],
-  )
-
-  const onFilterChange = useCallback(
-    (filters: Filters) => {
-      log('onFilterChange', describeEvent({ filters: JSON.stringify(filters) }))
-      const current = ++seq.current
-      setLoading(true)
-      window.setTimeout(() => {
-        if (current !== seq.current) return
-        const result = queryOptions(filters)
-        log('server', `${result.length} of ${OPTION_TOTAL} rows`)
-        setRows(result)
-        setLoading(false)
-      }, serverDelayMs)
-    },
-    [log, serverDelayMs],
-  )
-
-  return (
-    <WithConsole log={consoleLog} args={args}>
-      <StoryComponent
-        {...args}
-        columnsOverride={columns as never}
-        dataOverride={rows}
-        loading={loading ? 'refresh' : false}
-        enableColumnFiltering
-        enableQuickSearch={false}
-        columnFilteringServer
-        columnFilteringFilteredCount
-        onFilterChange={onFilterChange}
-        columnFilteringFilteredRowCount={rows.length}
-        columnFilteringTotalRowCount={OPTION_TOTAL}
-      />
-    </WithConsole>
-  )
-}

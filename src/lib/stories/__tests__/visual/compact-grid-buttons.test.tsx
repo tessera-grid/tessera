@@ -16,7 +16,7 @@ import {
   SEL,
 } from '../helpers'
 import { tableLabels } from '../labels'
-import { composed } from '../stories'
+import { composed, treeLinesArgs } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import {
@@ -472,7 +472,7 @@ describe('Вместимость, служебные колонки и сост�
   })
 
   test('GZ10: с тогглом 28px в колонке 36px линии дерева на прежних местах — под началом текста родителя, тоггл — по центру колонки', async () => {
-    await render(<composed.RowExpandingTreeLines />)
+    await render(<composed.RowExpandingPlayground {...treeLinesArgs} />)
     await expect.poll(() => rowEl(TREE.zimbabwe)).not.toBeNull()
     await showRow(TREE.falkland)
     const g = treeGeometry()

@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 
 import { humanClick, renderGrid, revealCellButtons } from '../helpers'
 import { composed } from '../stories'
+import { FilterDatePanel } from '../panelFixtures'
 import { waitForGrid } from './core-helpers'
 
 // Кольцо фокуса после перехода с мыши на клавиатуру (ADR 0084, CB5). Firefox не даёт
@@ -37,7 +38,7 @@ describe('Кольцо фокуса — после мыши', () => {
       .toBe('solid')
     await cleanup()
 
-    await render(<composed.FilteringDates timeZone="UTC" />)
+    await render(<FilterDatePanel />)
     await waitForGrid()
     const head = document.querySelector<HTMLElement>(
       '.data-grid__head-cell[data-column-id="createdAt"]',

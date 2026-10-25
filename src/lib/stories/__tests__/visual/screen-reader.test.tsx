@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { Stories, bodyRows, renderGrid } from '../helpers'
+import { plainGroupingArgs } from '../stories'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
 
@@ -153,6 +154,7 @@ describe('Эмулятор скринридера (SR)', () => {
   test('SR7: фокус на строке treegrid озвучивает раскрытие, уровень и позицию', async () => {
     await render(
       <Stories.RowGroupingPlayground
+        {...plainGroupingArgs}
         enableKeyboardNavigation
         enableRowExpanding
         initialGrouping={['gender']}

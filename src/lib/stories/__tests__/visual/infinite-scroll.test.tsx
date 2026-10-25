@@ -21,7 +21,6 @@ import {
 } from '../../../plugins'
 import { getSkeletonBarWidth } from '../../../core/skeletonOptions'
 import { humanClick } from '../helpers'
-import { composed } from '../stories'
 import {
   AXE_OPTIONS,
   backgroundOf,
@@ -31,7 +30,7 @@ import {
 } from './a11y-helpers'
 import { tableLabels } from '../labels'
 
-// Бесконечная прокрутка — лента (ADR 0081; IS1–IS4, IS7, IS9–IS15, IS18): ответы
+// Бесконечная прокрутка — лента (ADR 0081; IS1–IS4, IS7, IS9–IS15): ответы
 // «сервера» держит тест — промис каждого вызова `onLoadMore` в очереди `calls`.
 // Модульные IS5, IS6, IS8 — в `infiniteScroll`, перф IS16 — в `interaction`, IS17 —
 // в `scroll`.
@@ -710,26 +709,7 @@ describe('Лента: итог и доступность', () => {
   }
 })
 
-describe('Лента: демо-истории', () => {
-  test('IS18: «Default» — у края блок дописывается, счётчик растёт; «Errors» — строка ошибки, «Retry» догружает', async () => {
-    const basic = await render(
-      <composed.InfiniteScrollPlayground serverDelayMs={50} />,
-    )
-    const count = () =>
-      document.querySelector('[data-testid="loaded-rows-count"]')?.textContent
-    await expect.poll(count).toBe(tableLabels.loadedRowsOf(50, 1000))
-    await scrollToEnd()
-    await expect.poll(count).toBe(tableLabels.loadedRowsOf(100, 1000))
-    await basic.unmount()
-
-    await render(<composed.InfiniteScrollErrors serverDelayMs={50} />)
-    await expect.poll(count).toBe(tableLabels.loadedRowsOf(50, 1000))
-    await scrollToEnd()
-    await expect.poll(errorRow).not.toBeNull()
-    await humanClick(retryButton()!)
-    await expect.poll(count).toBe(tableLabels.loadedRowsOf(100, 1000))
-  })
-
+describe('Лента: хвост скелетов', () => {
   test('IS19: хвост — строки скелета по раскладке колонок: вид ячейки по skeletonCell, длина полоски по колонке, высота строки грида, без волны', async () => {
     await mount({
       columns: [

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 
 import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
-import { composed } from '../stories'
+import { composed, rowMenuArgs } from '../stories'
 
 // Плагин rowActions: служебная колонка действий строки. Здесь — только
 // требования `RA<n>`, НЕ покрытые общими наборами (авто-пин/подложка — CP14/23/24,
@@ -62,7 +62,10 @@ describe('Row actions — служебная колонка действий', (
 
     // Инлайн (rowActionMenu выключен) → полная ширина `width`.
     const inline = await render(
-      <composed.RowActionMenu enableRowActionMenu={false} />,
+      <composed.RowActionsPlayground
+        {...rowMenuArgs}
+        enableRowActionMenu={false}
+      />,
     )
     await expect
       .poll(() => inline.container.querySelector(`${BODY_CELL}${BY_ACTIONS}`))
@@ -73,7 +76,7 @@ describe('Row actions — служебная колонка действий', (
 
     // Схлопнуто в кебаб (rowActionMenu включён) → суженная `collapsedWidth`.
     const collapsed = await render(
-      <composed.RowActionMenu enableRowActionMenu />,
+      <composed.RowActionsPlayground {...rowMenuArgs} enableRowActionMenu />,
     )
     await expect
       .poll(() =>

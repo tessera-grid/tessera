@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import { Stories, bodyRows, headCells, humanClick } from '../helpers'
+import { selectedCountArgs } from '../stories'
 import {
   HANDLE,
   beginDrag,
@@ -67,7 +68,8 @@ describe('Аргументы фабрик на лету', () => {
   test('RX17: selectedCount на лету показывает и прячет счётчик, а вместе с ним панель, если он был в ней один', async () => {
     const args = { ...GRID, enableRowSelection: true }
     const screen = await render(
-      <Stories.SelectedCount
+      <Stories.StatusBarPlayground
+        {...selectedCountArgs}
         {...args}
         enablePagination={false}
         rowSelectionSelectedCount={false}
@@ -77,7 +79,8 @@ describe('Аргументы фабрик на лету', () => {
     expect(statusBar()).toBeNull()
 
     await screen.rerender(
-      <Stories.SelectedCount
+      <Stories.StatusBarPlayground
+        {...selectedCountArgs}
         {...args}
         enablePagination={false}
         rowSelectionSelectedCount
@@ -87,7 +90,8 @@ describe('Аргументы фабрик на лету', () => {
     expect(statusBar()).not.toBeNull()
 
     await screen.rerender(
-      <Stories.SelectedCount
+      <Stories.StatusBarPlayground
+        {...selectedCountArgs}
         {...args}
         enablePagination={false}
         rowSelectionSelectedCount={false}

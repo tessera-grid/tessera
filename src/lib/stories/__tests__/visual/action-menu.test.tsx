@@ -10,7 +10,7 @@ import {
   renderColumnPinning,
   revealPin,
 } from './column-pinning-helpers'
-import { composed } from '../stories'
+import { composed, rowMenuArgs } from '../stories'
 import { tableLabels } from '../labels'
 
 // Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
@@ -50,7 +50,9 @@ async function renderHeaderMenu(args: Record<string, unknown> = {}) {
 }
 
 async function renderRowMenu(args: Record<string, unknown> = {}) {
-  const view = await render(<composed.RowActionMenu {...args} />)
+  const view = await render(
+    <composed.RowActionsPlayground {...rowMenuArgs} {...args} />,
+  )
   await expect
     .poll(() => view.container.querySelector(ACTION_CELL))
     .not.toBeNull()
@@ -348,7 +350,12 @@ describe('Action menu — row', () => {
     const collapsed = cellWidth()
 
     // Тот же инстанс, выключаем меню → инлайн-кнопки → колонка шире.
-    view.rerender(<composed.RowActionMenu enableRowActionMenu={false} />)
+    view.rerender(
+      <composed.RowActionsPlayground
+        {...rowMenuArgs}
+        enableRowActionMenu={false}
+      />,
+    )
     await expect.poll(() => cellWidth()).toBeGreaterThan(collapsed)
   })
 
