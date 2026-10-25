@@ -75,6 +75,7 @@ export {
   type ServerRowModelHooks,
   type ServerRowsRequest,
   type ServerRowsResponse,
+  type RefreshRowsOptions,
 } from './serverRowModel'
 export {
   columnFiltering,

@@ -110,6 +110,15 @@ export class BlockStore<TData, TRow, TQuery> {
       : undefined
   }
 
+  /** Заменить загруженную строку по индексу; незагруженная — без изменений. */
+  replaceRow(index: number, row: TRow) {
+    const block = this.blocks.get(Math.floor(index / this.size))
+    if (block?.status !== 'loaded') return
+    const rows = [...block.rows]
+    rows[index % this.size] = row
+    block.rows = rows
+  }
+
   indexOf(id: string): number {
     return this.indexById.get(id) ?? -1
   }

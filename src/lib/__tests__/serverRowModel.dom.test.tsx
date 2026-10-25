@@ -1,14 +1,15 @@
 // @vitest-environment happy-dom
 /**
- * Серверная модель строк на таблице (ADR 0138, этап 2; SD9, SD37–SD38): закреплённые
- * блоки и живой `maxBlocks`, инертность без загрузчика, канал действий.
+ * Серверная модель строк на таблице (ADR 0138; SD9, SD22–SD23, SD37–SD38): закреплённые
+ * блоки и живой `maxBlocks`, перезапрос окна и замена строки, инертность без загрузчика,
+ * канал действий.
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowModel
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { setPluginState } from '../core/definePlugin'
+import { pluginStateKey, setPluginState } from '../core/definePlugin'
 import type { DebugAction } from '../core/debugActions'
 import type { RowSource } from '../core/rowSource'
 import { useCreateTable } from '../core/useCreateTable'
@@ -250,5 +251,77 @@ describe('серверная модель строк на таблице (ADR 01
     show(0, 9)
     await answer()
     expect(warnings().some(text => text.includes('getRowId'))).toBe(true)
+  })
+  it('SD22: refreshRows() перезапрашивает блоки окна, строки остаются до ответа; { purge: true } — со скелетом; прочие блоки кэша сброшены', async () => {
+    act(() => root.render(<Grid maxBlocks={10} />))
+    const answerAll = async (from: number) => {
+      for (const call of calls.slice(from)) await answer(call)
+    }
+    const startsFrom = (from: number) =>
+      calls
+        .slice(from)
+        .map(call => call.request.start)
+        .sort((a, b) => a - b)
+    show(100, 109)
+    await answerAll(0)
+    show(0, 19)
+    await answerAll(1)
+    expect(loaded(100)).toBe(true)
+    const shownRow = source().at(0)
+
+    // Без purge: запрошено окно, строки на экране — прежние, пока ответа нет.
+    let before = calls.length
+    act(() => table.refreshRows())
+    expect(startsFrom(before)).toEqual([0, 10])
+    expect(source().at(0)).toBe(shownRow)
+    expect(source().refreshing!()).toBe(true)
+    await answerAll(before)
+    expect(source().refreshing!()).toBe(false)
+    expect(loaded(0)).toBe(true)
+    expect(source().at(0)).not.toBe(shownRow)
+    // Блок вне окна ушёл вместе с прежним кэшем.
+    expect(loaded(100)).toBe(false)
+
+    // purge: сразу скелет, окно запрошено заново.
+    show(100, 109)
+    await answerAll(calls.length - 1)
+    show(0, 19)
+    before = calls.length
+    act(() => table.refreshRows({ purge: true }))
+    expect(loaded(0)).toBe(false)
+    expect(loaded(100)).toBe(false)
+    expect(startsFrom(before)).toEqual([0, 10])
+    await answerAll(before)
+    expect(loaded(0)).toBe(true)
+  })
+
+  it('SD23: setRowData(id, updater) меняет строку в кэше и перерисовывает только её; незагруженная строка — вызов игнорируется', async () => {
+    act(() => root.render(<Grid />))
+    show(0, 9)
+    await answer()
+    const version = () =>
+      table.atoms[pluginStateKey('serverRowModel')].get() as number
+    const nameAt = (index: number) =>
+      (source().at(index) as unknown as { original: Item }).original.name
+    const neighbour = source().at(1)
+
+    let seen = version()
+    act(() =>
+      table.setRowData('r0', (row: Item) => ({ ...row, name: 'Changed' })),
+    )
+    expect(nameAt(0)).toBe('Changed')
+    expect(source().byId('r0')).toBe(source().at(0))
+    // Соседняя строка — тот же объект: её строка тела не перерисуется.
+    expect(source().at(1)).toBe(neighbour)
+    expect(version()).toBeGreaterThan(seen)
+
+    act(() => table.setRowData('r1', { id: 'r1', name: 'Value' }))
+    expect(nameAt(1)).toBe('Value')
+
+    // Строка не загружена: ни данных, ни перерисовки.
+    seen = version()
+    act(() => table.setRowData('r500', { id: 'r500', name: 'Never' }))
+    expect(source().at(500)).toBeUndefined()
+    expect(version()).toBe(seen)
   })
 })

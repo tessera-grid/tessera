@@ -11,6 +11,7 @@ import {
   type ServerSource,
   serverSourceOf,
 } from './source'
+import { serverRowModelFeature } from './serverRowModelFeature'
 import type { ServerRowModelHooks } from './types'
 
 export interface ServerRowModelOptions {
@@ -49,6 +50,8 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
       .getRows
       ? undefined
       : 'noGetRows',
+  // `table.refreshRows` и `table.setRowData` (§7).
+  features: { serverRowModelFeature },
   hooks: o => ({ getRows: o.getRows }),
   state: () => 0,
   // Отключённый плагин отдаёт нейтральные значения: v9 сливает опции с прежними.
