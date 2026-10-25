@@ -41,7 +41,7 @@ import {
  * Серверная модель строк (ADR 0138): `Playground` — триста тысяч строк с «сервера» в покое,
  * объём, итог, отказы и размер блока — контролами; S1 — прыжок в середину, S2 — отказ
  * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки, S5 — открыть на записи,
- * S6 — выбрать всё, кроме нескольких строк, и выгрузить.
+ * S6 — выбрать всё, кроме нескольких строк, и выгрузить; S7 — вложенные строки с сервера.
  */
 const meta = {
   ...dataGridMeta,
@@ -140,6 +140,8 @@ const server = {
   held: [] as (() => void)[],
   failed: new Set<number>(),
   starts: [] as number[],
+  /** Строки, чьих вложенных строк просили. */
+  parents: [] as string[],
 }
 
 /** Отдать ответы, которые «сервер» держал. */
@@ -163,6 +165,7 @@ const serverReset: TesseraFeatureEntry = {
     server.hold = false
     release()
     server.starts = []
+    server.parents = []
   },
 }
 
@@ -972,6 +975,155 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
         globalFilter: '',
       })
       await expect(exportButton(canvas)).toHaveAttribute('aria-busy', 'true')
+    })
+  },
+}
+
+// --- ADR 0138 S7 ---------------------------------------------------------------------
+
+const TREE_TOTAL = 1000
+const TREE_BLOCK = 50
+const TREE_CHILDREN = 4
+const TREE_PARENT = 'item-id-1'
+
+const toggleOf = (root: HTMLElement, id: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${id}"] .row-expand-button`,
+  )
+const childShown = (root: HTMLElement) =>
+  !!root.querySelector(`.data-grid__body-row[data-row-id="${TREE_PARENT}.0"]`)
+const childRequests = () => server.parents.filter(id => id === TREE_PARENT)
+
+/** Пользователь раскрыл строку, «сервер» держит ответ с вложенными строками. */
+const expandParent = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!toggleOf(root, TREE_PARENT), signal)
+  server.hold = true
+  if (toggleOf(root, TREE_PARENT)!.getAttribute('aria-expanded') !== 'true') {
+    toggleOf(root, TREE_PARENT)!.click()
+  }
+  await pollUntil(
+    () => server.held.length > 0 && skeletonRows(root) > 0,
+    signal,
+  )
+}
+
+const treeProps: GuideStoryStep['props'] = () => ({
+  columnsOverride: filteringColumns,
+  dataOverride: [],
+  enableServerRowModel: true,
+  serverRowModelBlockSize: TREE_BLOCK,
+  serverRowModelRowCount: TREE_TOTAL,
+  enableRowExpanding: true,
+  rowExpandingHasChildren: (row: { depth: number }) => row.depth === 0,
+  serverRowModelGetRows: ({
+    start,
+    end,
+    parentId,
+    signal,
+  }: ServerRowsRequest) =>
+    new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
+      server.starts.push(start)
+      if (parentId) server.parents.push(parentId)
+      const answer = () => {
+        if (signal.aborted) return
+        if (!parentId) {
+          resolve(serverAnswer({ start, end }, TREE_TOTAL, true))
+          return
+        }
+        // Вложенные строки — свои записи «сервера» с id родителя в начале.
+        const first = TREE_TOTAL + Number(parentId.split('-').at(-1)) * 100
+        resolve({
+          rows: Array.from(
+            { length: Math.max(0, Math.min(end, TREE_CHILDREN) - start) },
+            (_, k) => ({
+              ...filteringItemAt(first + start + k),
+              id: `${parentId}.${start + k}`,
+            }),
+          ),
+          rowCount: TREE_CHILDREN,
+        })
+      }
+      if (server.hold && parentId) server.held.push(answer)
+      else setTimeout(answer, SERVER_DELAY_MS)
+    }),
+  extraPlugins: [serverReset],
+})
+
+const LAZY_CHILDREN: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки со вложенными записями',
+    hint: 'Сервер отдаёт верхний уровень списка блоками. У строк со вложенными записями — кнопка раскрытия; самих вложенных строк таблица ещё не загружала.',
+    props: treeProps,
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!toggleOf(root, TREE_PARENT), signal)
+    }),
+  },
+  {
+    title: 'Пользователь раскрыл строку',
+    hint: 'Таблица попросила у сервера вложенные строки только этой строки. Пока ответ в пути, под ней — блок строк-скелетов.',
+    states: ['body.skeleton'],
+    enter: stepAction(async (root, { signal }) => {
+      if (childShown(root) || server.held.length > 0) return
+      await expandParent(root, signal)
+    }),
+  },
+  {
+    title: 'Сервер ответил',
+    hint: 'Вложенные строки встали под родителем с отступом уровня. Их столько, сколько сообщил сервер, — строки ниже подтянулись вплотную.',
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length === 0 && !childShown(root)) {
+        await expandParent(root, signal)
+      }
+      server.hold = false
+      release()
+      await pollUntil(
+        () => childShown(root) && skeletonRows(root) === 0,
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0138, S7: пользователь раскрывает строку, вложенные строки приходят с сервера. */
+export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
+  name: 'Lazy children',
+  parameters: { scenario: '0138/S7', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вложенные строки с сервера"
+      steps={LAZY_CHILDREN}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(LAZY_CHILDREN[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(childRequests()).toEqual([])
+    })
+    await step(LAZY_CHILDREN[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(childRequests()).toHaveLength(1)
+      await expect(skeletonRows(canvas)).toBeGreaterThan(0)
+      await expect(childShown(canvas)).toBe(false)
+    })
+    await step(LAZY_CHILDREN[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const rows = bodyRows(canvas)
+      const parent = rows.findIndex(row => row.dataset.rowId === TREE_PARENT)
+      await expect(
+        rows
+          .slice(parent + 1, parent + 1 + TREE_CHILDREN)
+          .map(row => row.dataset.rowId),
+      ).toEqual(
+        Array.from({ length: TREE_CHILDREN }, (_, k) => `${TREE_PARENT}.${k}`),
+      )
+      await expect(rows[parent + 1 + TREE_CHILDREN]?.dataset.rowId).toBe(
+        'item-id-2',
+      )
+      await settle()
     })
   },
 }

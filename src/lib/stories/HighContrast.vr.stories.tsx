@@ -534,6 +534,36 @@ export const HighContrastServerRowModelSelectAllExceptStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelLazyChildrenStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelLazyChildren,
+    1,
+  ),
+  name: 'Data loading/Server row model — Lazy children, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelLazyChildrenStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelLazyChildren,
+    2,
+  ),
+  name: 'Data loading/Server row model — Lazy children, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelLazyChildrenStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelLazyChildren,
+    3,
+  ),
+  name: 'Data loading/Server row model — Lazy children, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',
