@@ -2,7 +2,11 @@ import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
 import type { TesseraFeatureEntry } from '../core/features'
-import type { ServerRowsRequest, ServerRowsResponse } from '../plugins'
+import type {
+  ExportRequest,
+  ServerRowsRequest,
+  ServerRowsResponse,
+} from '../plugins'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
@@ -17,6 +21,7 @@ import {
   filteringColumns,
   filteringItemAt,
 } from './__mocks__/filteringData'
+import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -35,7 +40,8 @@ import {
 /**
  * Серверная модель строк (ADR 0138): `Playground` — триста тысяч строк с «сервера» в покое,
  * объём, итог, отказы и размер блока — контролами; S1 — прыжок в середину, S2 — отказ
- * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки, S5 — открыть на записи.
+ * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки, S5 — открыть на записи,
+ * S6 — выбрать всё, кроме нескольких строк, и выгрузить.
  */
 const meta = {
   ...dataGridMeta,
@@ -792,6 +798,180 @@ export const ServerRowModelOpenAtRecord: StoryObj<StoryProps> = {
       ).toBeLessThan(row.height)
       await expect(recordHighlighted(canvas)).toBe(true)
       await settle()
+    })
+  },
+}
+
+// --- ADR 0138 S6 ---------------------------------------------------------------------
+
+const SELECT_TOTAL = 10_000
+const SELECT_BLOCK = 50
+/** Строки, с которых пользователь снимает выбор. */
+const UNCHECKED = [1, 3]
+
+/** Запрос серверной выгрузки и его завершение — у «сервера» гайда. */
+const selectExport = {
+  request: undefined as ExportRequest | undefined,
+  finish: undefined as (() => void) | undefined,
+}
+
+const exportReset: TesseraFeatureEntry = {
+  id: 'serverRowModelExportReset',
+  setup: () => {
+    selectExport.request = undefined
+    selectExport.finish?.()
+    selectExport.finish = undefined
+  },
+}
+
+const rowCheckbox = (root: HTMLElement, index: number) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-index="${index}"] .row-select-checkbox`,
+  )
+const headCheckbox = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('.data-grid__head-cell .row-select-checkbox')
+const isChecked = (element: Element | null) =>
+  !!element?.hasAttribute('data-checked')
+const exportButton = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="export-button"]')
+const selectedCount = (root: HTMLElement) =>
+  root
+    .querySelector('[data-testid="selected-rows-count"]')
+    ?.textContent?.trim() ?? ''
+
+/** Пользователь выбирает весь список флажком в шапке. */
+const selectAll = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!rowCheckbox(root, 0), signal)
+  if (!isChecked(rowCheckbox(root, 0))) headCheckbox(root)!.click()
+  await pollUntil(() => isChecked(rowCheckbox(root, 0)), signal)
+}
+
+/** Пользователь снимает флажки нескольких строк. */
+const uncheckSome = async (root: HTMLElement, signal: AbortSignal) => {
+  await selectAll(root, signal)
+  for (const index of UNCHECKED) {
+    if (isChecked(rowCheckbox(root, index))) rowCheckbox(root, index)!.click()
+    await pollUntil(() => !isChecked(rowCheckbox(root, index)), signal)
+  }
+}
+
+const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
+  {
+    title: 'Список с флажками',
+    hint: 'Сервер отдаёт строки блоками, у каждой строки — флажок выбора. Пока ничего не выбрано.',
+    props: ({ app, ...context }) => ({
+      ...serverProps({
+        total: SELECT_TOTAL,
+        knownTotal: true,
+        blockSize: SELECT_BLOCK,
+      })!({ app, ...context }),
+      enableRowSelection: true,
+      rowSelectionSelectedCount: true,
+      enableDataExport: true,
+      dataExportServer: true,
+      // Одна комбинация: кнопка выгружает выбранное сразу, без панели.
+      dataExportAllow: { rows: ['selected'], columns: ['visible'] },
+      onExport: (request: ExportRequest) =>
+        new Promise<void>(resolve => {
+          selectExport.request = request
+          selectExport.finish = resolve
+        }),
+      extraPlugins: [serverReset, exportReset],
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!rowCheckbox(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал всё',
+    hint: 'Флажок в шапке выбрал весь список — десять тысяч строк, хотя загружена лишь малая их часть. Нижняя панель считает весь итог, новых запросов к серверу нет.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectAll(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь снял две строки',
+    hint: 'Снятые строки стали исключениями: остальные по-прежнему выбраны, флажок в шапке показывает частичный выбор, счётчик уменьшился на две.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await uncheckSome(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь выгрузил выбранное',
+    hint: 'Файл собирает сервер: приложение получило запрос «все строки, кроме двух снятых» вместе с текущей выборкой. Пока сервер готовит файл, кнопка выгрузки ждёт.',
+    enter: stepAction(async (root, { signal }) => {
+      await uncheckSome(root, signal)
+      await pollUntil(() => !!exportButton(root), signal)
+      if (!selectExport.request) exportButton(root)!.click()
+      await pollUntil(
+        () =>
+          !!selectExport.request &&
+          exportButton(root)!.getAttribute('aria-busy') === 'true',
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0138, S6: пользователь выбирает всё, кроме нескольких строк, и выгружает выбранное. */
+export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
+  name: 'Select all except',
+  parameters: { scenario: '0138/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбрать всё, кроме"
+      steps={SELECT_ALL_EXCEPT}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(SELECT_ALL_EXCEPT[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isChecked(rowCheckbox(canvas, 0))).toBe(false)
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(SELECT_ALL_EXCEPT[1]!.title, async () => {
+      const before = server.starts.length
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(isChecked(headCheckbox(canvas))).toBe(true)
+      await expect(isChecked(rowCheckbox(canvas, 2))).toBe(true)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(labels.selectedRows(SELECT_TOTAL)),
+      )
+      await expect(server.starts.length).toBe(before)
+    })
+    await step(SELECT_ALL_EXCEPT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(headCheckbox(canvas)).toHaveAttribute('data-indeterminate')
+      for (const index of UNCHECKED) {
+        await expect(isChecked(rowCheckbox(canvas, index))).toBe(false)
+      }
+      await expect(isChecked(rowCheckbox(canvas, 2))).toBe(true)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          labels.selectedRows(SELECT_TOTAL - UNCHECKED.length),
+        ),
+      )
+    })
+    await step(SELECT_ALL_EXCEPT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(selectExport.request?.selection).toEqual({
+        all: true,
+        except: UNCHECKED.map(index => `item-id-${index}`),
+      })
+      await expect(selectExport.request?.query).toEqual({
+        sorting: [],
+        columnFilters: [],
+        globalFilter: '',
+      })
+      await expect(exportButton(canvas)).toHaveAttribute('aria-busy', 'true')
     })
   },
 }

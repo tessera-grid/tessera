@@ -494,6 +494,46 @@ export const HighContrastServerRowModelOpenAtRecordStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelSelectAllExceptStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSelectAllExcept,
+    1,
+  ),
+  name: 'Data loading/Server row model — Select all except, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSelectAllExceptStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSelectAllExcept,
+    2,
+  ),
+  name: 'Data loading/Server row model — Select all except, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSelectAllExceptStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSelectAllExcept,
+    3,
+  ),
+  name: 'Data loading/Server row model — Select all except, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSelectAllExceptStep4 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSelectAllExcept,
+    4,
+  ),
+  name: 'Data loading/Server row model — Select all except, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',
