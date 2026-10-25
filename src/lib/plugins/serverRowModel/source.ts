@@ -5,10 +5,11 @@
  */
 import { constructRow } from '@tanstack/react-table'
 
+import { announceLabel } from '../../core/announcer'
 import { reportAction, reportOutcome } from '../../core/debugActions'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
-import type { RowSource, RowWindow } from '../../core/rowSource'
+import type { RowLoadError, RowSource, RowWindow } from '../../core/rowSource'
 import { BlockStore } from './blockStore'
 import type { ServerRowModelHooks, ServerRowsRequest } from './types'
 
@@ -116,16 +117,52 @@ const createServerSource = (table: unknown): ServerSource => {
     idOf: row => row.id,
     // Срез плагина — счётчик изменений: корень грида перерисовывается по нему.
     onChange: () => setPluginState(table, SERVER_ROW_MODEL, ++version),
+    // Отказ блока среди загруженных строк объявляется; без них — заглушка ошибки сама.
+    onFailure: (_, reason) => {
+      if (!store.hasLoaded()) return
+      announceLabel(table, labels =>
+        reason ? `${labels.rowsLoadFailed}. ${reason}` : labels.rowsLoadFailed,
+      )
+    },
   })
+  // Отказ списка — тот же объект, пока данные хранилища не менялись.
+  let listError: { version: number; value: RowLoadError | undefined } = {
+    version: -1,
+    value: undefined,
+  }
   return {
     store,
-    count: () => store.count(),
+    // Отказ списка целиком — строк для тела нет: заглушка встаёт вместо него.
+    count: () => (store.failedEmpty() ? 0 : store.count()),
     at: index => store.rowAt(index),
     byId: id => store.rowById(id),
     indexOf: id => store.indexOf(id),
     observe: ({ first, last, fast }: RowWindow) => {
       store.setPinned(pinnedOf(t, id => store.indexOf(id)))
       store.setWindow(first, last, fast)
+    },
+    // Без загруженных строк отказ показывает заглушка (`loadError`), а не строки ошибки.
+    failures: () =>
+      store.hasLoaded()
+        ? store.failures().map(({ index, start, end, reason }) => ({
+            start,
+            end,
+            reason,
+            retry: () => store.retry(index),
+          }))
+        : [],
+    loadError: () => {
+      if (listError.version !== version) {
+        const [first] = store.hasLoaded() ? [] : store.failures()
+        listError = {
+          version,
+          value: first && {
+            reason: first.reason,
+            retry: () => store.retryAll(),
+          },
+        }
+      }
+      return listError.value
     },
   }
 }

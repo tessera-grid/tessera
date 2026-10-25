@@ -9,10 +9,13 @@ import clsx from 'clsx'
 
 import type { Column, Row, Table } from '../types'
 import type { CellSlot } from '../core/createSlots'
-import type { RowSource } from '../core/rowSource'
+import { isKeyboardNavigationEnabled } from '../core/keyboardNavigation'
+import { useLocalization } from '../core/localization'
+import type { RowFailure, RowSource } from '../core/rowSource'
 import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
+import { LoadMoreError } from './LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
 import { SkeletonRows } from './SkeletonBody'
 import { getTreeAria } from './treeAria'
@@ -58,6 +61,8 @@ export interface DropPreview {
   acceptable: boolean
 }
 
+const NO_FAILURES: readonly RowFailure[] = []
+
 /** Позиция строки `index` после переноса `from` → `to` (как `arrayMove`). */
 const positionAfterMove = (index: number, from: number, to: number) => {
   if (index === from) return to
@@ -98,6 +103,10 @@ export const Body = ({
     [treeLines, rows],
   )
   const drop = enableRowDragging ? dropPreview : null
+  const labels = useLocalization()
+  const failures = rowSource.failures?.() ?? NO_FAILURES
+  const failedAt = (index: number) =>
+    failures.some(failure => index >= failure.start && index < failure.end)
   const first = virtualRows[0]?.index ?? 0
   const last = virtualRows[virtualRows.length - 1]?.index ?? -1
   // Линии окна «как после броска» (ADR 0108, §4), и на недопустимом месте (ADR 0137, §4).
@@ -148,6 +157,8 @@ export const Body = ({
       >
         {virtualRows.map(virtualRow => {
           const row = rowSource.at(virtualRow.index)
+          // Строка отказавшего блока — под его строкой ошибки (ADR 0138, §11).
+          if (!row && failedAt(virtualRow.index)) return null
           // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
           if (!row) {
             return (
@@ -196,6 +207,31 @@ export const Body = ({
           )
         })}
       </RowMotion>
+      {failures
+        .filter(failure => failure.end > first && failure.start <= last)
+        .map(failure => (
+          <div
+            key={`failed-${failure.start}`}
+            role="presentation"
+            className={styles.failed}
+            style={{
+              top: `calc(var(--tsr-comp-row-height) * ${failure.start})`,
+              height: `calc(var(--tsr-comp-row-height) * ${failure.end - failure.start})`,
+            }}
+          >
+            <LoadMoreError
+              className={styles.failedRow}
+              title={labels.rowsLoadFailed}
+              reason={failure.reason}
+              retryLabel={labels.loadMoreRetry}
+              onRetry={() => failure.retry()}
+              ariaRowIndex={ariaRowIndexBase + failure.start + 1}
+              colSpan={leafColumns.length}
+              navigable={isKeyboardNavigationEnabled(table)}
+              testId="rows-load-error"
+            />
+          </div>
+        ))}
     </div>
   )
 }

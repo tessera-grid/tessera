@@ -171,6 +171,7 @@
   "loadedRowsOf": "Загружено {count} из {total}",
   "loadMoreFailed": "Не удалось загрузить ещё строки",
   "loadMoreRetry": "Повторить",
+  "rowsLoadFailed": "Не удалось загрузить эти строки",
   "loadErrorTitle": "Не удалось обновить данные",
   "loadFailedTitle": "Не удалось загрузить данные",
   "loadRetry": "Повторить",

@@ -20,6 +20,26 @@ export interface RowSource<TRow = unknown> {
   rows?: () => readonly TRow[]
   /** Окно строк тела с запасом и быстрая прокрутка (ADR 0008): источник грузит по ним. */
   observe?: (window: RowWindow) => void
+  /** Отказавшие участки списка: на их месте тело рисует строку ошибки с повтором. */
+  failures?: () => readonly RowFailure[]
+  /**
+   * Отказ, когда не загружено ничего: вместо тела — заглушка ошибки (ADR 0096). Тот же
+   * объект, пока отказ тот же.
+   */
+  loadError?: () => RowLoadError | undefined
+}
+
+/** Отказ загрузки строк `[start, end)` (ADR 0138, §11). */
+export interface RowFailure {
+  start: number
+  end: number
+  reason?: string
+  retry: () => void
+}
+
+export interface RowLoadError {
+  reason?: string
+  retry: () => void
 }
 
 /** Смонтированные строки тела `[first, last]` и быстрая прокрутка. */

@@ -1,0 +1,58 @@
+.error-row {
+  box-sizing: border-box;
+  display: flex;
+  height: var(--tsr-comp-load-more-height);
+  background-color: var(--tsr-comp-row-bg);
+  border-top: 1px solid var(--tsr-comp-cell-divider-color);
+}
+
+/* Ширина видимой области и прилипание к её левому краю: блок по центру экрана и при горизонтальной прокрутке. */
+.error-cell {
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  width: var(--tsr-load-more-viewport, 100%);
+  max-width: 100%;
+  padding: var(--tsr-comp-cell-content-padding);
+  font-size: var(--tsr-comp-cell-font-size);
+  text-align: center;
+}
+
+.error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--tsr-ref-space-1) * 2);
+  text-align: start;
+}
+
+.error-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--tsr-comp-load-more-icon-color);
+}
+
+.error-title {
+  color: var(--tsr-comp-load-more-title-color);
+  font-weight: 500;
+}
+
+.error-text {
+  min-width: 0;
+}
+
+/* Причина — не больше двух строк, полный текст в тултипе (ADR 0083, TX10). */
+.error-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+  color: var(--tsr-comp-load-more-reason-color);
+}

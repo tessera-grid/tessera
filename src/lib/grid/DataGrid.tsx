@@ -311,14 +311,22 @@ export const DataGrid = ({
     () => failed && { message: serverActionReason(failed, labels) },
     [failed, labels],
   )
+  // Отказ источника, когда не загружено ничего (серверная модель, ADR 0138, §11).
+  const listError = appFailed ? undefined : rowSource.loadError?.()
+  const sourceError = useMemo(
+    () => listError && { message: listError.reason },
+    [listError],
+  )
   // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
   const loadError = useLoadError({
     table,
-    error: appFailed ? appError : actionError,
-    onRetry: appFailed ? (table.options as any).onRetry : failed?.retry,
+    error: appFailed ? appError : (sourceError ?? actionError),
+    onRetry: appFailed
+      ? (table.options as any).onRetry
+      : (listError?.retry ?? failed?.retry),
     loading: initialLoading || refreshLoading,
     // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
-    hasRows: rowCount > 0 || (!appFailed && !!failed),
+    hasRows: !listError && (rowCount > 0 || (!appFailed && !!failed)),
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк

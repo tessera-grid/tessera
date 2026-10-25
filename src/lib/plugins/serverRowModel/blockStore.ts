@@ -38,6 +38,16 @@ export interface BlockStoreOptions<TData, TRow, TQuery> {
   idOf: (row: TRow) => string
   /** Видимое состояние изменилось: строки, статус блока, итог. */
   onChange: () => void
+  /** Блок отказал (не отменён): объявление отказа. */
+  onFailure?: (blockIndex: number, reason?: string) => void
+}
+
+/** Отказавший блок: строки `[start, end)` и причина. */
+export interface BlockFailure {
+  index: number
+  start: number
+  end: number
+  reason?: string
 }
 
 type Block<TRow> =
@@ -59,6 +69,7 @@ export class BlockStore<TData, TRow, TQuery> {
   /** Конец списка найден по короткому блоку (итог неизвестен). */
   private ended = false
   private maxBlocks: number
+  private suspended = false
 
   constructor(
     private readonly options: BlockStoreOptions<TData, TRow, TQuery>,
@@ -149,6 +160,45 @@ export class BlockStore<TData, TRow, TQuery> {
     this.evict()
   }
 
+  /** Отказавшие блоки по порядку; ссылка на массив новая на каждое изменение. */
+  failures(): BlockFailure[] {
+    const result: BlockFailure[] = []
+    for (const [index, block] of this.blocks) {
+      if (block.status !== 'error') continue
+      const start = index * this.size
+      result.push({
+        index,
+        start,
+        end: Math.min(start + this.size, this.count()),
+        reason: block.reason,
+      })
+    }
+    return result.sort((a, b) => a.index - b.index)
+  }
+
+  /** Загружен ли хоть один блок. */
+  /** Не загружено ничего, а блок отказал: отказ списка целиком. */
+  failedEmpty(): boolean {
+    let failed = false
+    for (const block of this.blocks.values()) {
+      if (block.status === 'loaded') return false
+      if (block.status === 'error') failed = true
+    }
+    return failed
+  }
+
+  hasLoaded(): boolean {
+    for (const block of this.blocks.values()) {
+      if (block.status === 'loaded') return true
+    }
+    return false
+  }
+
+  /** Повторить все отказавшие блоки. */
+  retryAll() {
+    for (const { index } of this.failures()) this.retry(index)
+  }
+
   /** Повторить отказавший блок. */
   retry(blockIndex: number) {
     if (this.blocks.get(blockIndex)?.status !== 'error') return
@@ -171,19 +221,25 @@ export class BlockStore<TData, TRow, TQuery> {
   }
 
   /**
-   * Отменить запросы в пути и очередь, загруженное сохранить: размонтирование или смена
-   * аргументов плагина. `resume` запрашивает окно заново.
+   * Размонтирование или смена аргументов плагина: запросы в пути отменяются, загруженное
+   * остаётся. Отмена — после текущей задачи: смена аргументов и повтор эффектов StrictMode
+   * сразу зовут `resume`, и запрос живёт.
    */
   suspend() {
-    for (const [index, block] of this.blocks) {
-      if (block.status === 'pending') block.abort.abort()
-      if (block.status === 'pending' || block.status === 'queued') {
-        this.blocks.delete(index)
+    this.suspended = true
+    queueMicrotask(() => {
+      if (!this.suspended) return
+      for (const [index, block] of this.blocks) {
+        if (block.status === 'pending') block.abort.abort()
+        if (block.status === 'pending' || block.status === 'queued') {
+          this.blocks.delete(index)
+        }
       }
-    }
+    })
   }
 
   resume() {
+    this.suspended = false
     if (this.window) this.setWindow(this.window.first, this.window.last)
   }
 
@@ -241,11 +297,10 @@ export class BlockStore<TData, TRow, TQuery> {
     const current = () => this.blocks.get(blockIndex) === block
     const fail = (reason: unknown) => {
       if (!current() || abort.signal.aborted) return
-      this.blocks.set(blockIndex, {
-        status: 'error',
-        reason: rejectionText(reason),
-      })
+      const text = rejectionText(reason)
+      this.blocks.set(blockIndex, { status: 'error', reason: text })
       this.options.onChange()
+      this.options.onFailure?.(blockIndex, text)
       this.pump()
     }
     let result: ReturnType<BlockStoreOptions<TData, TRow, TQuery>['getRows']>

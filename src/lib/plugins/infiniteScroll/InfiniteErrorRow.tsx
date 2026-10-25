@@ -4,12 +4,9 @@
  */
 import { sourceOf } from '../../core/debugActions'
 import {
-  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
-  useEffect,
   useRef,
-  useState,
 } from 'react'
 
 import type { BodyEndComponentProps } from '../../core/createSlots'
@@ -20,14 +17,10 @@ import {
 } from '../../core/keyboardNavigation'
 import { useLocalization } from '../../core/localization'
 import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
-import { Button } from '../../ui/Button'
-import { useIcons } from '../../ui/icons'
-import { Tooltip } from '../../ui/Tooltip'
+import { LoadMoreError } from '../../grid/LoadMoreError'
 import { loaderOf } from './loader'
 import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollState } from './types'
-
-import styles from './InfiniteTail.module.css'
 
 type InfiniteErrorRowProps = BodyEndComponentProps & {
   state: [InfiniteScrollState, (next: InfiniteScrollState) => void]
@@ -88,23 +81,8 @@ export const InfiniteErrorRow = ({
   state: [value],
 }: InfiniteErrorRowProps) => {
   const labels = useLocalization()
-  const { loadMoreFailed: FailedIcon, retry: RetryIcon } = useIcons()
   const rowRef = useRef<HTMLDivElement>(null)
   const failed = value.status === 'error'
-
-  // Блок ошибки — по центру видимой ширины области прокрутки, а не всей таблицы.
-  const [viewportWidth, setViewportWidth] = useState<number>()
-  useEffect(() => {
-    const scroller = rowRef.current?.closest<HTMLElement>(
-      '.data-grid__container',
-    )
-    if (!failed || !scroller) return
-    const observer = new ResizeObserver(() =>
-      setViewportWidth(scroller.clientWidth),
-    )
-    observer.observe(scroller)
-    return () => observer.disconnect()
-  }, [failed])
 
   // Под незакреплённым футером строка встаёт за нижним краем: у края — доводим в вид.
   useIsomorphicLayoutEffect(() => {
@@ -155,52 +133,18 @@ export const InfiniteErrorRow = ({
 
   return (
     <div ref={rowRef} role="rowgroup">
-      <div
-        role="row"
-        aria-rowindex={nextAriaRowIndex}
-        className={styles['error-row']}
-        data-testid="infinite-scroll-error"
-      >
-        <div
-          role={navigable ? 'gridcell' : 'cell'}
-          aria-colspan={leafColumns.length || undefined}
-          className={styles['error-cell']}
-          style={
-            viewportWidth
-              ? ({
-                  '--tsr-load-more-viewport': `${viewportWidth}px`,
-                } as CSSProperties)
-              : undefined
-          }
-        >
-          <div className={styles['error-message']}>
-            <FailedIcon
-              className={styles['error-icon']}
-              width={18}
-              height={18}
-              aria-hidden="true"
-            />
-            <div className={styles['error-text']}>
-              <div className={styles['error-title']}>
-                {labels.loadMoreFailed}
-              </div>
-              {value.reason && (
-                <Tooltip title={value.reason} overflowOnly>
-                  <div className={styles['error-reason']}>{value.reason}</div>
-                </Tooltip>
-              )}
-            </div>
-          </div>
-          <Button
-            onClick={retry}
-            onKeyDown={onRetryKeyDown}
-            icon={<RetryIcon width={16} height={16} aria-hidden="true" />}
-            {...{ [NAV_BODY_END_ATTR]: '' }}
-          >
-            {labels.loadMoreRetry}
-          </Button>
-        </div>
-      </div>
+      <LoadMoreError
+        title={labels.loadMoreFailed}
+        reason={value.reason}
+        retryLabel={labels.loadMoreRetry}
+        onRetry={retry}
+        onRetryKeyDown={onRetryKeyDown}
+        retryProps={{ [NAV_BODY_END_ATTR]: '' }}
+        ariaRowIndex={nextAriaRowIndex}
+        colSpan={leafColumns.length}
+        navigable={navigable}
+        testId="infinite-scroll-error"
+      />
     </div>
   )
 }

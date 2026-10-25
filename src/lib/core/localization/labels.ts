@@ -271,6 +271,8 @@ export interface TableLabels {
   /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
   loadMoreFailed: string
   loadMoreRetry: string
+  /** Строка ошибки отказавшего блока серверной модели строк (ADR 0138) */
+  rowsLoadFailed: string
   /**
    * Ошибка загрузки данных (ADR 0096): заголовок плашки обновления и заглушки первой
    * загрузки, кнопки повтора и закрытия, объявления (`reason` — причина, если есть)
@@ -497,6 +499,7 @@ export const DEFAULT_LABELS = {
   loadedRowsOf: 'Loaded {count} of {total}',
   loadMoreFailed: "Couldn't load more rows",
   loadMoreRetry: 'Retry',
+  rowsLoadFailed: "Couldn't load these rows",
   loadErrorTitle: "Couldn't refresh the data",
   loadFailedTitle: "Couldn't load the data",
   loadRetry: 'Retry',
