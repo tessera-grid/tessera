@@ -16,15 +16,18 @@ export interface FilteringItem {
 const NAMES = ['Alice', 'Bob', 'Carol', 'Dave', 'Erin', 'Frank', 'Grace']
 const CITIES = ['Paris', 'Berlin', 'Rome', 'Oslo', 'Lima']
 
+/** Строка набора по номеру: тот же вид при любом объёме (серверные истории, ADR 0138). */
+export const filteringItemAt = (i: number): FilteringItem => ({
+  id: `item-id-${i}`,
+  name: `${NAMES[i % NAMES.length]} ${i}`,
+  city: CITIES[i % CITIES.length],
+  age: i % 11 === 10 ? null : 18 + ((i * 7) % 50),
+  vip: i % 9 === 8 ? null : i % 3 === 0,
+  visits: i % 20,
+})
+
 export const makeFilteringData = (count = 60): FilteringItem[] =>
-  Array.from({ length: count }, (_, i) => ({
-    id: `item-id-${i}`,
-    name: `${NAMES[i % NAMES.length]} ${i}`,
-    city: CITIES[i % CITIES.length],
-    age: i % 11 === 10 ? null : 18 + ((i * 7) % 50),
-    vip: i % 9 === 8 ? null : i % 3 === 0,
-    visits: i % 20,
-  }))
+  Array.from({ length: count }, (_, i) => filteringItemAt(i))
 
 export const filteringData = makeFilteringData()
 

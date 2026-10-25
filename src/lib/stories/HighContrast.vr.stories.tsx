@@ -18,6 +18,7 @@ import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
 import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
 import * as pluginApiStories from './DataGrid.PluginApi.stories'
 import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
+import * as serverRowModelStories from './DataGrid.DataLoading.ServerRowModel.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
 import * as rowsDraggingStories from './DataGrid.Rows.Dragging.stories'
@@ -330,6 +331,106 @@ export const HighContrastInfiniteScrollServerQueryStep2 = {
     2,
   ),
   name: 'Data loading/Infinite scroll — Server sort & filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelJumpStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelJump,
+    1,
+  ),
+  name: 'Data loading/Server row model — Jump to the middle, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelJumpStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelJump,
+    2,
+  ),
+  name: 'Data loading/Server row model — Jump to the middle, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelJumpStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelJump,
+    3,
+  ),
+  name: 'Data loading/Server row model — Jump to the middle, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelBlockErrorStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelBlockError,
+    1,
+  ),
+  name: 'Data loading/Server row model — Block error, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelBlockErrorStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelBlockError,
+    2,
+  ),
+  name: 'Data loading/Server row model — Block error, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelBlockErrorStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelBlockError,
+    3,
+  ),
+  name: 'Data loading/Server row model — Block error, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelUnknownTotalStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelUnknownTotal,
+    1,
+  ),
+  name: 'Data loading/Server row model — Unknown total, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelUnknownTotalStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelUnknownTotal,
+    2,
+  ),
+  name: 'Data loading/Server row model — Unknown total, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelUnknownTotalStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelUnknownTotal,
+    3,
+  ),
+  name: 'Data loading/Server row model — Unknown total, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelUnknownTotalStep4 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelUnknownTotal,
+    4,
+  ),
+  name: 'Data loading/Server row model — Unknown total, шаг 4',
   tags: ['!test'],
 }
 
