@@ -9,6 +9,11 @@ export interface RowSource<TRow = unknown> {
   count: () => number
   /** Строка по индексу в списке; `undefined` — нет или ещё не загружена. */
   at: (index: number) => TRow | undefined
+  /**
+   * Ключ строки виртуализатора — её индекс, а не id: виртуализатор спрашивает ключи всех строк
+   * на каждой смене их числа, а замер высоты остаётся за местом в списке (ADR 0138, §14).
+   */
+  keyByIndex?: boolean
   /** Строка данных по id, в том числе не показанная в списке (свёрнутая, на другой странице). */
   byId: (id: string) => TRow | undefined
   /** Индекс строки в списке; `-1` — её нет в списке. */
@@ -38,6 +43,15 @@ export interface RowSource<TRow = unknown> {
   refreshing?: () => boolean
   /** Итог для `aria-rowcount`, `-1` — неизвестен; главнее опции `getTotalRowCount`. */
   total?: () => number
+  /**
+   * `aria-*` дерева строки по индексу: уровень, место среди соседей и их число — для
+   * строк, которых нет в массиве `rows` (серверная модель, ADR 0138, §14).
+   */
+  treeAria?: (
+    index: number,
+  ) => { level: number; posInSet: number; setSize: number } | undefined
+  /** Строк верхнего уровня: «Выбрать всё» в дереве — их итог. */
+  rootCount?: () => number
 }
 
 /** Отказ загрузки строк `[start, end)` (ADR 0138, §11). */

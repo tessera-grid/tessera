@@ -40,7 +40,8 @@ export const countHiddenSelectedRows = (
 /** Строк в списке для «всё, кроме»: итог, а пока он неизвестен — строк в списке. */
 const listTotalOf = (table: unknown) => {
   const source = (table as { getRowSource: () => RowSource }).getRowSource()
-  const total = source.total?.() ?? source.count()
+  // В дереве серверной модели «Выбрать всё» — итог корней (ADR 0138, §14).
+  const total = source.rootCount?.() ?? source.total?.() ?? source.count()
   return total < 0 ? source.count() : total
 }
 

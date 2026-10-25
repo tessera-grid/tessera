@@ -17,6 +17,7 @@ import {
   columnSortingModel,
   keyboardNavigation,
   quickSearchModel,
+  rowExpanding,
   rowSelection,
   serverRowModel,
   type ServerRowsRequest,
@@ -1232,5 +1233,275 @@ describe('Серверная модель строк (ADR 0138)', () => {
     } finally {
       await screen.unmount()
     }
+  })
+  describe('ленивые дети (этап 5)', () => {
+    const CHILDREN = 5
+    const hasChildren = (row: { depth: number }) => row.depth === 0
+    /** Ответ «сервера» дерева: у корня — пять детей `<родитель>.<номер>`. */
+    const treeAnswer = ({
+      start,
+      end,
+      parentId,
+    }: ServerRowsRequest): ServerRowsResponse<Item> =>
+      parentId
+        ? {
+            rows: Array.from(
+              { length: Math.max(0, Math.min(end, CHILDREN) - start) },
+              (_, i) => ({
+                id: `${parentId}.${start + i}`,
+                name: `K${start + i}`,
+                city: `C${(start + i) % 7}`,
+              }),
+            ),
+            rowCount: CHILDREN,
+          }
+        : { rows: rowsOf(start, end) }
+    const rowOf = (id: string) => q(`.data-grid__body-row[data-row-id="${id}"]`)
+    const toggleOf = (id: string) =>
+      rowOf(id)?.querySelector<HTMLElement>('.row-expand-button') ?? null
+    /** Отступ содержимого первой пользовательской колонки строки. */
+    const indentOf = (id: string) =>
+      Number.parseFloat(
+        getComputedStyle(
+          rowOf(id)!.querySelector<HTMLElement>(
+            '.data-grid__body-cell[data-column-id="name"]',
+          )!,
+        ).paddingLeft,
+      )
+    const bodyRows = (rows: number) =>
+      expect
+        .poll(() => body().getBoundingClientRect().height)
+        .toBeCloseTo(rows * rowHeight(), -1)
+
+    test('SD35: ленивые дети — у раскрытой строки своё хранилище блоков, getRows получает parentId и выборку, до ответа под строкой один блок скелетов; отказ и вытеснение блока детей — как у корней', async () => {
+      let refuse = true
+      // Первый запрос детей строки 1 ждёт ответа из теста.
+      let hold = true
+      const { calls, getRows } = server(request =>
+        !request.parentId
+          ? treeAnswer(request)
+          : request.parentId === 'r3' && refuse
+            ? new Error('down')
+            : request.parentId === 'r1' && hold
+              ? undefined
+              : treeAnswer(request),
+      )
+      const sorting = [{ id: 'name', desc: false }]
+      const branch = (id: string) =>
+        calls.filter(call => call.request.parentId === id)
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          maxBlocks={3}
+          plugins={[
+            rowExpanding({ hasChildren }),
+            columnSortingModel({ initialSorting: sorting } as never),
+          ]}
+        />,
+      )
+      try {
+        await expect.poll(() => toggleOf('r1')).not.toBeNull()
+        await humanClick(toggleOf('r1')!)
+        await expect.poll(() => branch('r1').length).toBe(1)
+        expect(branch('r1')[0]!.request).toMatchObject({
+          start: 0,
+          end: BLOCK,
+          parentId: 'r1',
+          sorting,
+        })
+        // До ответа — один блок скелетов под родителем, тело выросло на блок.
+        await bodyRows(1000 + BLOCK)
+        await expect.poll(() => pendingRow(2)).not.toBeNull()
+        expect(rowAt(2)).toBeNull()
+
+        // Ответ: пять детей за родителем, тело — на итог ветки.
+        hold = false
+        branch('r1')[0]!.settle(treeAnswer(branch('r1')[0]!.request))
+        await expect.poll(() => rowAt(2)?.dataset.rowId).toBe('r1.0')
+        expect(rowAt(2 + CHILDREN)?.dataset.rowId).toBe('r2')
+        await bodyRows(1000 + CHILDREN)
+
+        // Отказ блока детей — строка ошибки ветки, повтор перезапрашивает только её.
+        await humanClick(toggleOf('r3')!)
+        await expect.poll(errorRow).not.toBeNull()
+        expect(errorRow()!.textContent).toContain('down')
+        const first = 4 + CHILDREN
+        expect(rowOf('r3.0')).toBeNull()
+        refuse = false
+        const before = calls.length
+        await userEvent.click(errorRow()!.querySelector('button')!)
+        await expect.poll(() => rowAt(first)?.dataset.rowId).toBe('r3.0')
+        expect(calls.slice(before).map(call => call.request.parentId)).toEqual([
+          'r3',
+        ])
+        expect(errorRow()).toBeNull()
+
+        // Вытеснение: вдали три блока корней, блоки веток уходят; назад — запрос заново.
+        await scrollToIndex(500)
+        await expect.poll(() => rowAt(500)?.dataset.rowId).toBeDefined()
+        await scrollToIndex(0)
+        await expect.poll(() => branch('r1').length).toBe(2)
+        await expect.poll(() => rowAt(2)?.dataset.rowId).toBe('r1.0')
+      } finally {
+        await screen.unmount()
+      }
+    })
+
+    test('SD40: раскрытие в SSRM — кнопкой и клавишами, как в клиентском дереве; дети с отступом по уровню; expanded: true ветки не раскрывает, dev-warn', async () => {
+      const { getRows } = server(treeAnswer)
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[rowExpanding({ hasChildren }), keyboardNavigation()]}
+        />,
+      )
+      try {
+        // Кнопка колонки раскрытия.
+        await expect.poll(() => toggleOf('r1')).not.toBeNull()
+        await humanClick(toggleOf('r1')!)
+        await expect.poll(() => rowOf('r1.0')).not.toBeNull()
+        expect(rowOf('r1')!.getAttribute('aria-expanded')).toBe('true')
+        // Отступ — шаг уровня, как у клиентского дерева (RE61).
+        expect(indentOf('r1.0') - indentOf('r1')).toBe(16)
+
+        // Клавиша: Enter на ячейке раскрытия сворачивает и раскрывает.
+        await humanClick(
+          rowOf('r1')!.querySelector<HTMLElement>('[data-column-id="name"]')!,
+        )
+        await press('{ArrowLeft}')
+        await expect
+          .poll(() => document.activeElement?.contains(toggleOf('r1')))
+          .toBe(true)
+        await press('{Enter}')
+        await expect.poll(() => rowOf('r1.0')).toBeNull()
+        await press('{Enter}')
+        await expect.poll(() => rowOf('r1.0')).not.toBeNull()
+      } finally {
+        await screen.unmount()
+      }
+
+      // «Раскрыть всё» ветки не раскрывает и предупреждает.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const all = server(treeAnswer)
+      const second = await render(
+        <Grid
+          getRows={all.getRows}
+          rowCount={1000}
+          plugins={[
+            rowExpanding({ hasChildren, initialExpanded: true } as never),
+          ]}
+        />,
+      )
+      try {
+        await expect.poll(() => toggleOf('r1')).not.toBeNull()
+        await nextFrame()
+        expect(all.calls.some(call => call.request.parentId)).toBe(false)
+        expect(rowOf('r1')!.dataset.expanded).toBe('false')
+        expect(
+          warn.mock.calls.some(call =>
+            call.some(
+              part =>
+                String(part).includes('expanded: true') &&
+                String(part).includes('serverRowModel'),
+            ),
+          ),
+        ).toBe(true)
+      } finally {
+        warn.mockRestore()
+        await second.unmount()
+      }
+    })
+
+    test('SD43: в роли treegrid aria-level, aria-posinset и aria-setsize строк и незагруженных строк ветки — из источника; axe в роли treegrid', async () => {
+      // Дети ждут ответа из теста.
+      const { calls, getRows } = server(request =>
+        request.parentId ? undefined : treeAnswer(request),
+      )
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[rowExpanding({ hasChildren }), keyboardNavigation()]}
+        />,
+      )
+      const aria = (row: Element | null) =>
+        row && [
+          row.getAttribute('aria-level'),
+          row.getAttribute('aria-posinset'),
+          row.getAttribute('aria-setsize'),
+        ]
+      try {
+        await expect.poll(() => toggleOf('r1')).not.toBeNull()
+        expect(q('[role="treegrid"]')).not.toBeNull()
+        expect(aria(rowOf('r1'))).toEqual(['1', '2', '1000'])
+        await humanClick(toggleOf('r1')!)
+        // Незагруженная строка ветки: уровень и место из источника, до ответа — блок.
+        await expect
+          .poll(() => aria(pendingRow(3)))
+          .toEqual(['2', '2', `${BLOCK}`])
+        const children = calls.find(call => call.request.parentId === 'r1')!
+        children.settle(treeAnswer(children.request))
+        await expect
+          .poll(() => aria(rowOf('r1.1')))
+          .toEqual(['2', '2', `${CHILDREN}`])
+        expect(aria(rowOf('r2'))).toEqual(['1', '3', '1000'])
+
+        // axe — с незагруженной веткой в окне.
+        await humanClick(toggleOf('r2')!)
+        await expect.poll(() => pendingRow(4 + CHILDREN)).not.toBeNull()
+        const { violations } = await axe.run(q('.data-grid-theme')!, {
+          ...AXE_OPTIONS,
+          rules: {
+            ...AXE_OPTIONS.rules,
+            'color-contrast': { enabled: true },
+          },
+        })
+        expect(violations).toEqual([])
+      } finally {
+        await screen.unmount()
+      }
+    })
+
+    test('SD45: выбор в дереве SSRM — флажки только у корней; «Выбрать всё» — итог корней', async () => {
+      const { getRows } = server(treeAnswer)
+      const changes: unknown[] = []
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[
+            rowExpanding({ hasChildren }),
+            // Выбор вложенных включён — в SSRM их флажков всё равно нет.
+            rowSelection({
+              subRows: true,
+              selectedCount: true,
+              onRowSelectionChange: next => changes.push(next),
+            }),
+          ]}
+        />,
+      )
+      const checkbox = (id: string) =>
+        rowOf(id)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+      const count = () =>
+        q('[data-testid="selected-rows-count"]')?.textContent?.trim() ?? ''
+      try {
+        await expect.poll(() => toggleOf('r1')).not.toBeNull()
+        await humanClick(toggleOf('r1')!)
+        await expect.poll(() => rowOf('r1.0')).not.toBeNull()
+        expect(checkbox('r1')).not.toBeNull()
+        expect(checkbox('r1.0')).toBeNull()
+
+        await userEvent.click(q('.data-grid__head-cell .row-select-checkbox')!)
+        await expect
+          .poll(() => changes.at(-1))
+          .toEqual({ all: true, except: [] })
+        await expect.poll(count).toBe(tableLabels.selectedRows(1000))
+        expect(rowOf('r1.0')!.getAttribute('data-selected')).toBe('false')
+      } finally {
+        await screen.unmount()
+      }
+    })
   })
 })

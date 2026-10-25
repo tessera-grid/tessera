@@ -8,6 +8,8 @@ export interface ServerRowsRequest {
   columnFilters: ColumnFiltersState
   globalFilter: string
   signal: AbortSignal
+  /** Строка, чьих детей просят (ленивые дети, ADR 0138, §14); у корней — нет. */
+  parentId?: string
 }
 
 export interface ServerRowsResponse<TData = unknown> {

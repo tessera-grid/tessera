@@ -27,6 +27,8 @@ interface PendingRowProps {
   virtualColumns: VirtualItem[]
   isVirtualColumns: boolean
   ariaRowIndexBase: number
+  /** Место незагруженной строки в дереве (treegrid, ADR 0138, §14). */
+  tree?: { level: number; posInSet: number; setSize: number }
 }
 
 /** Ячейка навигации незагруженной строки: колонка — та, где стоит активная ячейка. */
@@ -70,10 +72,14 @@ export const PendingRow = ({
   virtualColumns,
   isVirtualColumns,
   ariaRowIndexBase,
+  tree,
 }: PendingRowProps) => (
   <div
     role="row"
     aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
+    aria-level={tree?.level}
+    aria-posinset={tree?.posInSet}
+    aria-setsize={tree?.setSize}
     aria-busy="true"
     className={styles.pending}
     style={{ top: virtualRow.start }}

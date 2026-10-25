@@ -16,7 +16,11 @@ import {
   isAllSelection,
   type RowSelectionValue,
 } from '../../core/rowSelectionAll'
-import { warnPluginInert } from '../../core/pluginDiagnostics'
+import {
+  serverRowModelReason,
+  warnPluginInert,
+} from '../../core/pluginDiagnostics'
+import type { RowSource } from '../../core/rowSource'
 import { isGroupingActive } from './selectionHelpers'
 
 export interface RowSelectionModelOptions {
@@ -38,6 +42,12 @@ export interface RowSelectionModelOptions {
 /** Фичи модели выбора; интерфейс несёт те же — по ним выводится тип среза. */
 export const rowSelectionModelFeatures = { rowSelectionFeature }
 
+/** Строка — корень: в дереве серверной модели выбираются только корни (ADR 0138, §14). */
+const rootRow = (table: unknown) => (id: string) =>
+  ((table as { getRowSource?: () => RowSource<{ depth: number }> })
+    .getRowSource?.()
+    .byId(id)?.depth ?? 0) === 0
+
 /**
  * Выбор недоступен при АКТИВНОЙ группировке: сгруппированная модель производна,
  * выбором владеет группировка. Функциональный `enableRowSelection` согласует и
@@ -51,6 +61,10 @@ const enableRowSelection = (row: Row<any, any>): boolean => {
   return false
 }
 
+/** В дереве серверной модели вложенные строки не выбираются: флажки только у корней. */
+const enableSubRowSelection = (row: Row<any, any>) =>
+  !serverRowModelReason(row.table)
+
 const NO_SELECTION: RowSelectionState = {}
 
 export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
@@ -61,20 +75,22 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
   // меняется (ADR 0039) — включили снова, выбор вернулся. «Всё, кроме» TanStack видит
   // объектом, где выбрана каждая строка вне исключений (ADR 0138, §9).
   narrow: o => ({
-    rowSelection: (value?: RowSelectionValue) => {
+    rowSelection: (value: RowSelectionValue | undefined, table: unknown) => {
       if (o.enabled === false) {
         return value && (isAllSelection(value) || Object.keys(value).length)
           ? NO_SELECTION
           : value
       }
-      return isAllSelection(value) ? effectiveSelectionOf(value) : value
+      return isAllSelection(value)
+        ? effectiveSelectionOf(value, table ? rootRow(table) : undefined)
+        : value
     },
   }),
   options: o => ({
     // При disabled — жёстко false (иначе present-but-disabled фича активна:
     // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).
     enableRowSelection: o.enabled === false ? false : enableRowSelection,
-    enableSubRowSelection: o.subRows ?? false,
+    enableSubRowSelection: o.subRows ? enableSubRowSelection : false,
     // Клик по флажку не выделяет диапазон: выбор диапазоном — не жест грида.
     enableRowRangeSelection: false,
   }),

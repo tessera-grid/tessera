@@ -26,6 +26,8 @@ export interface BlockStoreOptions<TData, TRow, TQuery> {
   blockSize: number
   maxBlocks: number
   maxConcurrent?: number
+  /** Общие часы обращений: у хранилищ одного дерева — одни (ADR 0138, §14). */
+  clock?: () => number
   /** Итог до первого ответа. */
   rowCount?: number
   getRows: (
@@ -73,6 +75,8 @@ export class BlockStore<TData, TRow, TQuery> {
   private pinned: number[] = []
   /** Порядок обращений к блокам: больше — нужен позже. */
   private clock = 0
+  /** Общие часы обращений дерева: блоки разных хранилищ сравниваются по ним. */
+  private readonly tick: () => number
   private total: number | undefined
   /** Конец списка найден по короткому блоку (итог неизвестен). */
   private ended = false
@@ -84,6 +88,7 @@ export class BlockStore<TData, TRow, TQuery> {
   ) {
     this.total = options.rowCount
     this.maxBlocks = options.maxBlocks
+    this.tick = options.clock ?? (() => ++this.clock)
   }
 
   /** Строк в списке: итог, а без него — загруженное и один блок впереди. */
@@ -161,7 +166,7 @@ export class BlockStore<TData, TRow, TQuery> {
     }
     for (const index of needed) {
       const block = this.blocks.get(index)
-      if (block?.status === 'loaded') block.used = ++this.clock
+      if (block?.status === 'loaded') block.used = this.tick()
     }
     if (!fast) {
       for (const index of needed) {
@@ -387,7 +392,7 @@ export class BlockStore<TData, TRow, TQuery> {
   private applyBlock(blockIndex: number, response: BlockResponse<TData>) {
     const start = blockIndex * this.size
     const rows = this.options.toRows(response.rows, start)
-    this.blocks.set(blockIndex, { status: 'loaded', rows, used: ++this.clock })
+    this.blocks.set(blockIndex, { status: 'loaded', rows, used: this.tick() })
     rows.forEach((row, offset) =>
       this.indexById.set(this.options.idOf(row), start + offset),
     )
@@ -404,6 +409,32 @@ export class BlockStore<TData, TRow, TQuery> {
   }
 
   /** Вытеснить давно не нужные блоки сверх `maxBlocks`, кроме окна и закреплённых. */
+  /**
+   * Загруженные блоки для общего вытеснения дерева (ADR 0138, §14): `kept` — блок окна
+   * или закреплённой строки, его не вытеснять.
+   */
+  loadedBlocks(): { index: number; used: number; kept: boolean }[] {
+    const kept = new Set([
+      ...this.neededBlocks(),
+      ...this.pinned.map(index => this.blockOf(index)),
+    ])
+    const result: { index: number; used: number; kept: boolean }[] = []
+    for (const [index, block] of this.blocks) {
+      if (block.status === 'loaded') {
+        result.push({ index, used: block.used, kept: kept.has(index) })
+      }
+    }
+    return result
+  }
+
+  /** Вытеснить загруженный блок по решению дерева. */
+  dropBlock(blockIndex: number) {
+    const block = this.blocks.get(blockIndex)
+    if (block?.status !== 'loaded') return
+    for (const row of block.rows) this.indexById.delete(this.options.idOf(row))
+    this.blocks.delete(blockIndex)
+  }
+
   private evict() {
     const loaded = [...this.blocks].filter(
       (entry): entry is [number, Block<TRow> & { status: 'loaded' }] =>

@@ -13,7 +13,7 @@ import { logWarn } from '../../core/logger'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
 import type { RowLoadError, RowSource, RowWindow } from '../../core/rowSource'
-import { BlockStore } from './blockStore'
+import { BlockTree } from './tree'
 import type { ServerRowModelHooks, ServerRowsRequest } from './types'
 import type { Updater } from '../../types'
 
@@ -42,9 +42,37 @@ interface ServerTable {
 
 interface SourceRow {
   id: string
+  index: number
+  depth: number
+  parentId?: string
+  original: unknown
 }
 
-type Store = BlockStore<unknown, SourceRow, Query>
+type Store = BlockTree<unknown, SourceRow, Query>
+
+const expandedSets = new WeakMap<object, ReadonlySet<string>>()
+
+/**
+ * Раскрытые строки по срезу `expanded`; один набор на значение среза. «Раскрыть всё»
+ * (`true`) ветки не раскрывает (ADR 0138, §14).
+ */
+const expandedSetOf = (
+  t: ServerTable,
+  none: ReadonlySet<string>,
+): ReadonlySet<string> => {
+  const value = t.atoms.expanded?.get()
+  if (typeof value !== 'object' || value === null) return none
+  let set = expandedSets.get(value)
+  if (!set) {
+    set = new Set(
+      Object.entries(value as Record<string, boolean>)
+        .filter(([, open]) => open)
+        .map(([id]) => id),
+    )
+    expandedSets.set(value, set)
+  }
+  return set
+}
 
 export interface ServerSource extends RowSource<SourceRow> {
   /** Хранилище строк на экране. */
@@ -115,6 +143,7 @@ const createServerSource = (table: unknown): ServerSource => {
   // Срез плагина — счётчик изменений: корень грида перерисовывается по нему.
   const changed = () => setPluginState(table, SERVER_ROW_MODEL, ++version)
   let maxBlocks = t.options.serverRowModelMaxBlocks ?? DEFAULT_MAX_BLOCKS
+  const notExpanded: ReadonlySet<string> = new Set()
   let suspended = false
   let lastWindow: RowWindow | null = null
   /** Отказ выборки, которую сменило не серверное действие: повтор — плашкой. */
@@ -125,7 +154,13 @@ const createServerSource = (table: unknown): ServerSource => {
    */
   let early: Generation['waiters'] = []
 
-  const buildRows = (data: unknown[], start: number) =>
+  /** Строки блока ветки `parentId` глубины `depth`; `start` — индекс в ветке. */
+  const buildRows = (
+    data: unknown[],
+    start: number,
+    depth = 0,
+    parentId?: string,
+  ) =>
     data.map((original, offset) => {
       const id = t.getRowId(original, start + offset)
       // Id по индексу после перезапроса бессмысленны: строке нужен свой (SD13). TanStack
@@ -142,13 +177,15 @@ const createServerSource = (table: unknown): ServerSource => {
         id,
         original as never,
         start + offset,
-        0,
+        depth,
+        undefined,
+        parentId,
       ) as unknown as SourceRow
     })
 
   const createGeneration = (query: Query): Generation => {
     const generation = { query, waiters: [] } as unknown as Generation
-    generation.store = new BlockStore<unknown, SourceRow, Query>({
+    generation.store = new BlockTree<unknown, SourceRow, Query>({
       blockSize: t.options.serverRowModelBlockSize ?? DEFAULT_BLOCK_SIZE,
       maxBlocks,
       rowCount: t.options.serverRowModelRowCount,
@@ -184,6 +221,7 @@ const createServerSource = (table: unknown): ServerSource => {
       },
       toRows: buildRows,
       idOf: row => row.id,
+      expanded: () => expandedSetOf(t, notExpanded),
       onChange: () => {
         if (generation === shown) {
           settleShown()
@@ -191,7 +229,7 @@ const createServerSource = (table: unknown): ServerSource => {
         } else if (generation === next) settleNext()
       },
       // Отказ блока среди загруженных строк объявляется; без них — заглушка ошибки сама.
-      onFailure: (_, reason) => {
+      onFailure: reason => {
         if (generation !== shown || !shown.store.hasLoaded()) return
         announceLabel(table, labels =>
           reason
@@ -327,12 +365,13 @@ const createServerSource = (table: unknown): ServerSource => {
     let found = false
     for (const generation of next ? [shown, next] : [shown]) {
       const index = generation.store.indexOf(id)
-      const row = generation.store.rowAt(index) as
-        { original: unknown } | undefined
+      const row = generation.store.rowAt(index)
       if (!row) continue
       const [updated] = buildRows(
         [functionalUpdate(updater, row.original)],
-        index,
+        row.index,
+        row.depth,
+        row.parentId,
       )
       generation.store.replaceRow(index, updated!)
       found = true
@@ -352,6 +391,7 @@ const createServerSource = (table: unknown): ServerSource => {
     // Отказ списка целиком — строк для тела нет: заглушка встаёт вместо него.
     count: () => (shown.store.failedEmpty() ? 0 : shown.store.count()),
     at: index => shown.store.rowAt(index),
+    keyByIndex: true,
     byId: id => shown.store.rowById(id),
     indexOf: id => shown.store.indexOf(id),
     observe: window => {
@@ -392,15 +432,11 @@ const createServerSource = (table: unknown): ServerSource => {
     refresh: options => refresh(!!options?.purge),
     setRowData,
     // Без загруженных строк отказ показывает заглушка (`loadError`), а не строки ошибки.
-    failures: () =>
-      shown.store.hasLoaded()
-        ? shown.store.failures().map(({ index, start, end, reason }) => ({
-            start,
-            end,
-            reason,
-            retry: () => shown.store.retry(index),
-          }))
-        : [],
+    failures: () => (shown.store.hasLoaded() ? shown.store.failures() : []),
+    // Строки дерева (ADR 0138, §14): уровень, место среди соседей и их число.
+    treeAria: index => shown.store.ariaAt(index),
+    // «Выбрать всё» в дереве — итог корней (§14).
+    rootCount: () => shown.store.rootCount(),
     loadError: () => {
       if (queryError) return queryError
       if (listError.version !== version) {

@@ -4,7 +4,7 @@
  * раскрывает.
  */
 import { definePlugin } from '../../core/definePlugin'
-import { neverInert } from '../../core/pluginDiagnostics'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 
 export interface TreeLinesOptions {
   /** `false` — плагин отключён. */
@@ -13,6 +13,7 @@ export interface TreeLinesOptions {
 
 export const treeLines = definePlugin<TreeLinesOptions>()({
   id: 'treeLines',
-  diagnose: neverInert,
+  // Проекция линий строится по массиву всех строк — в SSRM его нет (ADR 0138, §14).
+  diagnose: serverRowModelReason,
   options: o => ({ enableTreeLines: o.enabled !== false }),
 })

@@ -59,6 +59,7 @@ import {
 import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { serverRowModel } from '../../../plugins/serverRowModel'
+import { rowExpanding } from '../../../plugins/rowExpanding'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -3097,6 +3098,128 @@ describe('Отзывчивость взаимодействий — сервер
         })
       await record('SD32-base', 'итог 1000', base, false)
       await record('SD32', 'итог 1 000 000', large, true)
+      expect(
+        large.longestMs,
+        `longest=${large.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Ленивые дети в SSRM (ADR 0138, SD46): раскрытие ветки со 100 детьми при 1 000 000 корней —
+// в бюджете отклика. Пересчёт размеров виртуализатора растёт с числом строк, поэтому база
+// при 1000 корней только в дашборде, гейт — бюджет.
+interface ServerTreeCall {
+  start: number
+  end: number
+  parentId?: string
+  resolve: (response: { rows: FeedRow[]; rowCount?: number }) => void
+}
+let treeCalls: ServerTreeCall[] = []
+const BRANCH = 100
+const ServerTreeGrid = ({ total }: { total: number }) => {
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: NO_FEED,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        rowCount: total,
+        blockSize: BRANCH,
+        getRows: ({ start, end, parentId }) =>
+          new Promise<{ rows: FeedRow[]; rowCount?: number }>(resolve => {
+            treeCalls.push({ start, end, parentId, resolve })
+          }),
+      }),
+      rowExpanding({ hasChildren: row => row.depth === 0 }),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — ленивые дети серверной модели строк', () => {
+  test(
+    'SD46: раскрытие ветки со 100 детьми при 1 000 000 корней — в бюджете отклика 100 мс',
+    async () => {
+      const measure = async (large: boolean) => {
+        treeCalls = []
+        await render(<ServerTreeGrid total={large ? 1_000_000 : 1000} />)
+        await expect.poll(() => treeCalls.length).toBeGreaterThanOrEqual(1)
+        const roots = treeCalls[0]!
+        roots.resolve({ rows: feedRows(roots.start, roots.end - roots.start) })
+        const rowOf = (id: string) =>
+          document.querySelector<HTMLElement>(
+            `.data-grid__body-row[data-row-id="${id}"]`,
+          )
+        const toggleOf = (id: string) =>
+          rowOf(id)!.querySelector<HTMLElement>('.row-expand-button')!
+        await expect.poll(() => rowOf('f1')).not.toBeNull()
+        const parents = ['f0', 'f1']
+        let expanded = 0
+        const result = await measureInteractionWork(
+          async () => {
+            const id = parents[expanded++]!
+            const asked = treeCalls.length
+            toggleOf(id).click()
+            await expect.poll(() => treeCalls.length).toBe(asked + 1)
+            const call = treeCalls.at(-1)!
+            call.resolve({
+              rows: feedRows(0, BRANCH).map((row, k) => ({
+                ...row,
+                id: `${id}.${k}`,
+              })),
+              rowCount: BRANCH,
+            })
+            await expect.poll(() => rowOf(`${id}.0`)).not.toBeNull()
+          },
+          {
+            // Ветка строки 0 свёрнута — строка 1 снова в окне.
+            afterWarmup: async () => {
+              expect(treeCalls.at(-1)!.parentId).toBe('f0')
+              toggleOf('f0').click()
+              await expect.poll(() => rowOf('f0.0')).toBeNull()
+            },
+          },
+        )
+        expect(treeCalls.at(-1)!.parentId).toBe('f1')
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const large = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = INTERACTION_BUDGET_MS
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: gated ? '1 000 000×3' : '1000×3',
+          plugins: 'serverRowModel, rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('SD46-base', '1000 корней', base, false)
+      await record('SD46', '1 000 000 корней', large, true)
       expect(
         large.longestMs,
         `longest=${large.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,

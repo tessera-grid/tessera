@@ -27,11 +27,12 @@ import {
   paginationModel,
   quickSearchModel,
   rowDragging,
-  rowExpanding,
   rowGrouping,
+  rowExpanding,
   rowGroupingModel,
   rowSelection,
   serverRowModel,
+  treeLines,
   type ServerRowsRequest,
   type ServerRowsResponse,
 } from '../plugins'
@@ -115,14 +116,19 @@ const show = (first: number, last: number) =>
   act(() => source().observe!({ first, last, fast: false }))
 
 /** Ответить на последний запрос строками его диапазона. */
-const answer = async (call = calls.at(-1)!) => {
-  const { start, end } = call.request
+/** Ответить строками диапазона; `count` — итог ветки или списка, если он известен. */
+const answer = async (call = calls.at(-1)!, count?: number) => {
+  const { start, end, parentId } = call.request
+  const last = count === undefined ? end : Math.min(end, count)
+  // Дети строки — `<родитель>.<номер>`.
+  const prefix = parentId ? `${parentId}.` : 'r'
   await act(async () => {
     call.resolve({
-      rows: Array.from({ length: end - start }, (_, i) => ({
-        id: `r${start + i}`,
+      rows: Array.from({ length: Math.max(0, last - start) }, (_, i) => ({
+        id: `${prefix}${start + i}`,
         name: `N${start + i}`,
       })),
+      ...(count === undefined ? {} : { rowCount: count }),
     })
   })
 }
@@ -342,13 +348,12 @@ describe('серверная модель строк на таблице (ADR 01
     expect(source().at(500)).toBeUndefined()
     expect(version()).toBe(seen)
   })
-  it("SD26: pagination, paginationModel, infiniteScroll, rowDragging, rowGrouping, rowGroupingModel и до этапа 5 rowExpanding инертны с причиной 'serverRowModel' и dev-warn", () => {
+  it("SD26: pagination, paginationModel, infiniteScroll, rowDragging, rowGrouping и rowGroupingModel инертны с причиной 'serverRowModel' и dev-warn", () => {
     const extra = [
       pagination(),
       infiniteScroll({ onLoadMore: () => {} }),
       rowDragging(),
       rowGrouping(),
-      rowExpanding(),
     ]
     const ids = [
       'pagination',
@@ -357,7 +362,6 @@ describe('серверная модель строк на таблице (ADR 01
       'rowDragging',
       'rowGrouping',
       'rowGroupingModel',
-      'rowExpanding',
     ]
     const reasons = () =>
       Object.fromEntries(
@@ -531,5 +535,147 @@ describe('серверная модель строк на таблице (ADR 01
         text => text.includes('dataExport') && text.includes('serverRowModel'),
       ),
     ).toBe(true)
+  })
+  describe('ленивые дети (этап 5)', () => {
+    const tree = (maxBlocks: number, more: unknown[] = []) =>
+      act(() =>
+        root.render(
+          <Grid
+            maxBlocks={maxBlocks}
+            extra={[
+              rowExpanding({ hasChildren: row => row.depth === 0 }),
+              ...more,
+            ]}
+          />,
+        ),
+      )
+    /**
+     * Раскрыть или свернуть ветки и прочесть число строк, как тело на перерисовке; дерево
+     * перекладывает окно микрозадачей.
+     */
+    const expand = async (expanded: Record<string, boolean>) => {
+      act(() => table.setExpanded(expanded))
+      source().count()
+      await act(async () => {})
+    }
+    const branchCalls = (parentId: string) =>
+      calls.filter(call => call.request.parentId === parentId)
+
+    it('SD36: свёрнутая строка отдаёт блоки детей вытеснению первыми, раньше блоков на экране; повторное раскрытие запрашивает только недостающие', async () => {
+      tree(3)
+      show(0, 9)
+      await answer()
+      await expand({ r1: true })
+      await answer(branchCalls('r1')[0], 5)
+      expect(source().at(2)?.id).toBe('r1.0')
+
+      // Свернули и раскрыли без нехватки места — блок ветки в кэше, запроса нет.
+      await expand({})
+      await expand({ r1: true })
+      expect(branchCalls('r1')).toHaveLength(1)
+      expect(source().at(2)?.id).toBe('r1.0')
+
+      // В окне только дети — блок ветки свежее блока корней; дальше — блок корней 100.
+      show(3, 5)
+      show(105, 114)
+      await answer()
+      // Свернули: окну нужен ещё блок корней, четвёртый при пределе в три. Уходит блок
+      // свёрнутой ветки, хотя давний блок корней старше.
+      await expand({})
+      await answer()
+      expect(source().at(110)?.id).toBe('r110')
+      expect(loaded(0)).toBe(true)
+      show(0, 9)
+      await expand({ r1: true })
+      expect(branchCalls('r1')).toHaveLength(2)
+      expect(
+        calls.filter(
+          call => !call.request.parentId && call.request.start === 0,
+        ),
+      ).toHaveLength(1)
+    })
+
+    it('SD41: предел maxBlocks — общий для корней и всех веток', async () => {
+      tree(2)
+      show(0, 9)
+      await answer()
+      await expand({ r1: true })
+      await answer(branchCalls('r1')[0], 5)
+      // Блок корней и блок ветки — ровно предел.
+      expect(loaded(0)).toBe(true)
+      expect(source().at(2)?.id).toBe('r1.0')
+      // Корень 100 стоит после пяти детей строки 1: третий блок вытесняет давний блок корней.
+      show(105, 114)
+      await answer()
+      expect(source().at(105)?.id).toBe('r100')
+      expect(loaded(0)).toBe(false)
+      expect(source().at(2)?.id).toBe('r1.0')
+    })
+
+    it('SD42: смена сортировки, фильтра или поиска сбрасывает корни и ветки, срез expanded сохраняется; дети раскрытых строк запрашиваются заново, когда ветка в окне', async () => {
+      tree(10, [
+        columnSortingModel(),
+        columnFilteringModel(),
+        quickSearchModel(),
+      ])
+      show(0, 9)
+      await answer()
+      await expand({ r1: true })
+      await answer(branchCalls('r1')[0], 5)
+
+      const requery = async (
+        change: () => void,
+        matches: (request: ServerRowsRequest) => boolean,
+      ) => {
+        const before = calls.length
+        act(change)
+        act(() => source().sync!())
+        show(0, 9)
+        const rootCall = calls
+          .slice(before)
+          .find(call => !call.request.parentId)!
+        expect(matches(rootCall.request)).toBe(true)
+        await answer(rootCall)
+        await act(async () => {})
+        // Ветка запрошена заново под новой выборкой, раскрытие на месте.
+        const childCall = calls
+          .slice(before)
+          .find(call => call.request.parentId === 'r1')!
+        expect(matches(childCall.request)).toBe(true)
+        expect(table.atoms.expanded.get()).toEqual({ r1: true })
+        await answer(childCall, 3)
+        expect(source().at(2)?.id).toBe('r1.0')
+        expect(source().at(5)?.id).toBe('r2')
+      }
+      await requery(
+        () => table.setSorting([{ id: 'name', desc: true }]),
+        request => request.sorting.length === 1,
+      )
+      await requery(
+        () =>
+          table.setColumnFilters([
+            { id: 'name', value: { operator: 'contains', value: 'N' } },
+          ]),
+        request => request.columnFilters.length === 1,
+      )
+      await requery(
+        () => table.setGlobalFilter('N'),
+        request => request.globalFilter === 'N',
+      )
+    })
+
+    it("SD44: treeLines инертен в SSRM с причиной 'serverRowModel' и dev-warn", () => {
+      tree(10, [treeLines()])
+      expect(table.getPluginDiagnostics()).toContainEqual({
+        id: 'treeLines',
+        status: 'inert',
+        reason: 'serverRowModel',
+      })
+      expect(
+        warnings().some(
+          text => text.includes('treeLines') && text.includes('serverRowModel'),
+        ),
+      ).toBe(true)
+    })
   })
 })

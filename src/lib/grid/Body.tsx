@@ -94,9 +94,20 @@ export const Body = ({
 }: TableBodyProps) => {
   const bodyRef = useRef<HTMLDivElement>(null)
   const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
+  // Серверная модель строк считает `aria-*` дерева сама: массива строк у неё нет
+  // (ADR 0138, §14).
+  const sourceAria = rowSource.treeAria
   const treeAria = useMemo(
-    () => (treeRows ? getTreeAria(rows) : undefined),
-    [treeRows, rows],
+    () =>
+      !treeRows
+        ? undefined
+        : sourceAria
+          ? {
+              setSize: (index: number) => sourceAria(index)?.setSize ?? 1,
+              posInSet: (index: number) => sourceAria(index)?.posInSet ?? 1,
+            }
+          : getTreeAria(rows),
+    [treeRows, rows, sourceAria],
   )
   const treeLinesIndex = useMemo(
     () => (treeLines ? getTreeLines(rows) : undefined),
@@ -175,6 +186,7 @@ export const Body = ({
           if (!row) {
             return (
               <PendingRow
+                tree={treeRows ? sourceAria?.(virtualRow.index) : undefined}
                 key={`pending-${virtualRow.index}`}
                 table={table}
                 layout={layout}

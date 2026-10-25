@@ -21,23 +21,34 @@ export const isAllSelection = (value: unknown): value is RowSelectionAll =>
   (value as { all?: unknown }).all === true &&
   Array.isArray((value as { except?: unknown }).except)
 
-const effective = new WeakMap<RowSelectionAll, RowSelectionState>()
+const effective = new WeakMap<
+  RowSelectionAll,
+  { proxy: RowSelectionState; eligible: { test?: (id: string) => boolean } }
+>()
 const sourceOf = new WeakMap<object, RowSelectionAll>()
 
 /**
  * Эффективное значение «всё, кроме» для TanStack: строка выбрана, если её нет в
- * исключениях. Ключей у объекта нет — перечислить весь итог нельзя; один объект на
- * значение среза.
+ * исключениях и она выбираема (`eligible`: в дереве SSRM — только корни, ADR 0138, §14).
+ * Ключей у объекта нет — перечислить весь итог нельзя; один объект на значение среза.
  */
 export const effectiveSelectionOf = (
   value: RowSelectionAll,
+  eligible?: (id: string) => boolean,
 ): RowSelectionState => {
-  let proxy = effective.get(value)
-  if (!proxy) {
+  const cached = effective.get(value)
+  if (cached) {
+    if (eligible) cached.eligible.test = eligible
+    return cached.proxy
+  }
+  {
     const except = new Set(value.except)
+    const holder: { test?: (id: string) => boolean } = { test: eligible }
     const selected = (key: string | symbol) =>
-      typeof key === 'string' && !except.has(key)
-    proxy = new Proxy({} as RowSelectionState, {
+      typeof key === 'string' &&
+      !except.has(key) &&
+      (holder.test?.(key) ?? true)
+    const proxy = new Proxy({} as RowSelectionState, {
       get: (_, key) => (selected(key) ? true : undefined),
       has: (_, key) => selected(key),
       getOwnPropertyDescriptor: (_, key) =>
@@ -51,10 +62,10 @@ export const effectiveSelectionOf = (
           : undefined,
       ownKeys: () => [],
     })
-    effective.set(value, proxy)
+    effective.set(value, { proxy, eligible: holder })
     sourceOf.set(proxy, value)
+    return proxy
   }
-  return proxy
 }
 
 /** Сохранённое «всё, кроме» за эффективным значением среза; иначе `undefined`. */
