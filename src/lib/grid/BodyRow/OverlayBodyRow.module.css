@@ -16,6 +16,20 @@
   background-color: var(--tsr-comp-draggable-cell-bg);
 }
 
+/* Место, куда бросить нельзя: облако в тоне ошибки (ADR 0137). */
+:global(.data-grid__container[data-row-drop-invalid]) .body__row--overlay {
+  background-color: var(--tsr-comp-row-drop-invalid-overlay-bg);
+}
+
+/* Высокая контрастность (ADR 0087): текст на `Mark` — `MarkText`; без
+ * `forced-color-adjust: none` Chromium кладёт под него подложку Canvas. */
+@media (forced-colors: active) {
+  :global(.data-grid__container[data-row-drop-invalid]) .body__row--overlay * {
+    forced-color-adjust: none;
+    color: MarkText;
+  }
+}
+
 .bubble {
   position: absolute;
   top: 0;

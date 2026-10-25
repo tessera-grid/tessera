@@ -1,13 +1,13 @@
 import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { getTreeLines } from '../../../grid/treeBranches'
 import { composed } from '../stories'
 import { settleRowMotion } from '../helpers'
-import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
-import { tokenColor, tokenPx } from './tree-lines-helpers'
+import { AXE_OPTIONS, contrast, inBothThemes, toRgba } from './a11y-helpers'
+import { snapshot, tokenColor, tokenPx } from './tree-lines-helpers'
 import {
   BODY_ROW,
   type Point,
@@ -17,6 +17,7 @@ import {
   SKELETON,
   TITLE,
   USER_CONTENT,
+  cloud,
   cloudText,
   container,
   depthOf,
@@ -55,10 +56,19 @@ const linesOf = (row: HTMLElement) =>
     .sort()
     .join(' ')
 
-const renderTree = async () => {
-  const screen = await render(<composed.RowDraggingTreeLines />)
+const renderTree = async (props: Record<string, unknown> = {}) => {
+  const screen = await render(<composed.RowDraggingTreeLines {...props} />)
   await expect.poll(() => rowById('node-0-0')).not.toBeNull()
   return screen
+}
+
+/**
+ * Группа с детьми между детьми другой группы — место без допустимого уровня (ADR 0137):
+ * уровень места только 1, строке с детьми — только 0.
+ */
+const holdInvalid = async (depth = 1) => {
+  const dragged = await dragOver('node-1', 'node-0-0', depth)
+  await settleSlotAfter('node-0-0', dragged.at)
 }
 
 /** Линии строки по ветке и отростку — как их рисует ячейка отступа (ADR 0102). */
@@ -212,25 +222,162 @@ describe('Превью броска строки (ADR 0108)', () => {
     }
   })
 
-  test('PV3: недопустимое место — полоски в тоне ошибки, линий дерева у слота нет', async () => {
+  test('DI1: недопустимое место — облако залито тоном ошибки, отличным от фона облака в обеих темах, текст на нём не ниже 4.5:1; на допустимом месте фон облака прежний', async () => {
+    const background = () => getComputedStyle(cloud()!).backgroundColor
+    let screen = await renderTree()
+    try {
+      await dragOver('node-0-1', 'node-1-0', 1)
+      expect(container().hasAttribute('data-row-drop-invalid')).toBe(false)
+      expect(background()).toBe(
+        tokenColor('--tsr-comp-draggable-cell-bg', cloud()!),
+      )
+      await release()
+      await screen.unmount()
+      // Бросок поменял данные истории — недопустимое место на свежем гриде.
+      screen = await renderTree()
+      // Группа с детьми вглубь не вкладывается (ADR 0006).
+      await holdInvalid()
+      await expect
+        .poll(() => container().hasAttribute('data-row-drop-invalid'))
+        .toBe(true)
+      await inBothThemes(async () => {
+        const fill = background()
+        expect(fill).toBe(
+          tokenColor('--tsr-comp-row-drop-invalid-overlay-bg', cloud()!),
+        )
+        expect(fill).not.toBe(
+          tokenColor('--tsr-comp-draggable-cell-bg', cloud()!),
+        )
+        const text = getComputedStyle(
+          document.querySelector(CLOUD_TITLE)!,
+        ).color
+        expect(contrast(toRgba(text), toRgba(fill))).toBeGreaterThanOrEqual(4.5)
+      })
+    } finally {
+      await release()
+      await screen.unmount()
+    }
+  })
+
+  test('DI2: слот на недопустимом месте — обычные полоски скелета', async () => {
     const screen = await renderTree()
-    // Группа с детьми вглубь не вкладывается (ADR 0006).
-    await dragOver('node-1', 'node-2-0', 1)
+    await holdInvalid()
     try {
       await expect
         .poll(() => container().hasAttribute('data-row-drop-invalid'))
         .toBe(true)
-      const row = slot()!
-      const stripe = row.querySelector<HTMLElement>(SKELETON)!
+      const stripe = slot()!.querySelector<HTMLElement>(SKELETON)!
       expect(getComputedStyle(stripe).backgroundColor).toBe(
-        tokenColor('--tsr-comp-row-drop-invalid-skeleton-bg', row),
-      )
-      expect(getComputedStyle(stripe).backgroundColor).not.toBe(
         tokenColor('--tsr-comp-skeleton-bg', container()),
       )
-      expect(linesOf(row)).toBe('')
     } finally {
       await release()
+      await screen.unmount()
+    }
+  })
+
+  test('DI4: на недопустимом месте отступ слота и линии всех строк окна — как после броска на это место и уровень; родитель не подсвечен; после отпускания линии окна — линии модели', async () => {
+    const screen = await renderTree()
+    const lines = () =>
+      new Map(rowsInOrder().map(row => [row.dataset.rowId!, linesOf(row)]))
+    const before = lines()
+    // Группа с детьми среди детей другой группы: уровень места — только 1.
+    await holdInvalid()
+    try {
+      await expect
+        .poll(() => container().hasAttribute('data-row-drop-invalid'))
+        .toBe(true)
+      await settleRowMotion()
+      expect(depthOf(slot()!)).toBe(1)
+      expect(linesOf(slot()!)).not.toBe('')
+      await expect.poll(linesMatchOrder).toEqual([])
+      expect(
+        document.querySelectorAll(`${BODY_ROW}[data-row-drop-parent]`),
+      ).toHaveLength(0)
+      await release()
+      await expect.poll(lines).toEqual(before)
+    } finally {
+      await pointer.realMouseUp()
+      await screen.unmount()
+    }
+  })
+
+  test('DI5: на месте с допустимым уровнем группа с детьми, утащенная вправо под последнего ребёнка группы, остаётся на уровне 0; облако без тона ошибки; отпускание кладёт её на уровень 0', async () => {
+    const screen = await renderTree()
+    try {
+      // Группа сворачивается на старте сессии — дети `node-1` поднимаются в окно.
+      const { at } = await dragOver('node-0', 'node-0-0', 1)
+      const last = rowById('node-1-2')!.getBoundingClientRect()
+      const below = { x: at.x, y: last.top + last.height / 2 + 6 }
+      await pointer.realMouseMove(at, below, 6)
+      await settleSlotAfter('node-1-2', below)
+      expect(container().hasAttribute('data-row-drop-invalid')).toBe(false)
+      expect(depthOf(slot()!)).toBe(0)
+      expect(getComputedStyle(cloud()!).backgroundColor).toBe(
+        tokenColor('--tsr-comp-draggable-cell-bg', cloud()!),
+      )
+      await release()
+      const order = rowsInOrder().map(row => row.dataset.rowId)
+      expect(order.indexOf('node-0')).toBe(order.indexOf('node-1-2') + 1)
+      expect(depthOf(rowById('node-0')!)).toBe(0)
+    } finally {
+      await pointer.realMouseUp()
+      await screen.unmount()
+    }
+  })
+
+  test('DI6: на месте без допустимого уровня облако в тоне ошибки, уровень слота — уровень указателя в пределах места; отпускание не меняет данных и не вызывает onRowDragEnd и onRowOrderChange', async () => {
+    const onRowDragEnd = vi.fn()
+    const onRowOrderChange = vi.fn()
+    const screen = await renderTree({ onRowDragEnd, onRowOrderChange })
+    const order = () => rowsInOrder().map(row => row.dataset.rowId)
+    const before = order()
+    try {
+      // Указатель на уровне 0, место требует уровня 1.
+      await holdInvalid(0)
+      await expect
+        .poll(() => container().hasAttribute('data-row-drop-invalid'))
+        .toBe(true)
+      expect(depthOf(slot()!)).toBe(1)
+      expect(getComputedStyle(cloud()!).backgroundColor).toBe(
+        tokenColor('--tsr-comp-row-drop-invalid-overlay-bg', cloud()!),
+      )
+      await release()
+      await expect.poll(order).toEqual(before)
+      expect(onRowDragEnd).not.toHaveBeenCalled()
+      expect(onRowOrderChange).not.toHaveBeenCalled()
+    } finally {
+      await pointer.realMouseUp()
+      await screen.unmount()
+    }
+  })
+
+  test('DI9: перетаскивание группы при раскрытом всём дереве сворачивает на время сессии только её; остальные группы раскрыты во время сессии и после отмены и броска', async () => {
+    const screen = await renderTree()
+    const expanded = (id: string) =>
+      rowById(id)?.getAttribute('data-expanded') ?? null
+    try {
+      await holdInvalid()
+      expect(expanded('node-0'), 'во время сессии').toBe('true')
+      expect(rowById('node-0-0'), 'во время сессии').not.toBeNull()
+      expect(expanded('node-2'), 'во время сессии').toBe('true')
+      expect(rowById('node-1-0'), 'тащат саму группу').toBeNull()
+      // Отпускание на недопустимом месте — отмена.
+      await release()
+      for (const id of ['node-0', 'node-1', 'node-2'])
+        expect(expanded(id), `после отмены: ${id}`).toBe('true')
+
+      const { at } = await dragOver('node-0', 'node-0-0', 0)
+      const last = rowById('node-1-2')!.getBoundingClientRect()
+      const below = { x: at.x, y: last.top + last.height / 2 + 6 }
+      await pointer.realMouseMove(at, below, 6)
+      await settleSlotAfter('node-1-2', below)
+      await release()
+      for (const id of ['node-0', 'node-1', 'node-2'])
+        expect(expanded(id), `после броска: ${id}`).toBe('true')
+      expect(rowById('node-0-0'), 'после броска').not.toBeNull()
+    } finally {
+      await pointer.realMouseUp()
       await screen.unmount()
     }
   })
@@ -275,7 +422,7 @@ describe('Превью броска строки (ADR 0108)', () => {
     await screen.unmount()
   })
 
-  test('PV8: высокая контрастность — полоски слота GrayText, недопустимое место — Mark; axe с контрастом в обеих темах во время перетаскивания', async () => {
+  test('DI3: высокая контрастность — облако на недопустимом месте Mark с текстом MarkText, полоски слота GrayText на любом месте; axe с контрастом в обеих темах во время перетаскивания', async () => {
     const sys = (name: string) => {
       const probe = document.createElement('span')
       probe.style.color = name
@@ -302,27 +449,52 @@ describe('Превью броска строки (ADR 0108)', () => {
       })
     let screen: Awaited<ReturnType<typeof renderTree>> | undefined
     /** Каждое перетаскивание — на свежем гриде: бросок меняет данные истории. */
-    const dragFresh = async (id: string, overId: string, depth: number) => {
+    const fresh = async (hold: () => Promise<unknown>) => {
       await screen?.unmount()
       screen = await renderTree()
-      await dragOver(id, overId, depth)
+      await hold()
     }
+    const valid = () => fresh(() => dragOver('node-0-1', 'node-1-0', 1))
+    const invalid = () => fresh(holdInvalid)
     const stripe = () =>
       getComputedStyle(slot()!.querySelector(SKELETON)!).backgroundColor
     try {
-      await dragFresh('node-0-1', 'node-1-0', 1)
+      await valid()
       await axeDuring()
       await release()
-      await dragFresh('node-1', 'node-2-0', 1)
+      await invalid()
       await axeDuring()
       await release()
       if (server.browser !== 'webkit') {
         await pointer.forcedColors(true)
-        await dragFresh('node-0-1', 'node-1-0', 1)
+        await valid()
         expect(stripe()).toBe(sys('GrayText'))
+        expect(getComputedStyle(cloud()!).backgroundColor).not.toBe(sys('Mark'))
         await release()
-        await dragFresh('node-1', 'node-2-0', 1)
-        expect(stripe()).toBe(sys('Mark'))
+        await invalid()
+        await expect
+          .poll(() => container().hasAttribute('data-row-drop-invalid'))
+          .toBe(true)
+        expect(stripe()).toBe(sys('GrayText'))
+        expect(getComputedStyle(cloud()!).backgroundColor).toBe(sys('Mark'))
+        const title = document.querySelector(CLOUD_TITLE)!
+        expect(getComputedStyle(title).color).toBe(sys('MarkText'))
+        // Подложка Canvas под текстом закрыла бы заливку Mark целиком (ADR 0087, HC14).
+        const shot = await snapshot()
+        const range = document.createRange()
+        range.selectNodeContents(title)
+        const box = range.getBoundingClientRect()
+        const mark = toRgba(sys('Mark'))
+        let hits = 0
+        let total = 0
+        for (let x = box.left + 1; x < box.right - 1; x++) {
+          for (let y = box.top + 2; y < box.bottom - 2; y += 2) {
+            total++
+            if (shot.rgb(x, y).every((c, i) => Math.abs(c - mark[i]!) < 40))
+              hits++
+          }
+        }
+        expect(hits / total).toBeGreaterThan(0.25)
         await release()
       }
     } finally {

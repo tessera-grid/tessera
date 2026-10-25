@@ -25,6 +25,12 @@ import { captureInertWarnings } from './inertWarnings'
 import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
 import { reorderRows } from '../plugins/rowDragging/reorderRows'
 import { canNestRow } from '../plugins/rowDragging/moveRow'
+import {
+  getAllowedDepth,
+  getMaxDepth,
+  getMinDepth,
+  getValidDepth,
+} from '../plugins/rowDragging/draggingHelpers'
 import { rowExpanding } from '../plugins/rowExpanding'
 import { rowExpandingModel } from '../plugins/rowExpandingModel'
 
@@ -406,5 +412,161 @@ describe('rowDragging — дерево без переключателя (ADR 01
     expect(canNest(off), 'свёрнутая, rowExpanding выключен').toBe(false)
 
     expect(canNest(tree(rowExpanding())), 'свёрнутая, rowExpanding').toBe(true)
+  })
+})
+
+describe('rowDragging — допустимые уровни места (ADR 0137)', () => {
+  type Node = { id: string; children?: Node[]; expanded?: boolean }
+  type FakeRow = {
+    id: string
+    index: number
+    depth: number
+    parentId?: string
+    subRows: FakeRow[]
+    getCanExpand: () => boolean
+    getIsExpanded: () => boolean
+    getIsLastSubRow: () => boolean
+    getParentRow: () => FakeRow | undefined
+  }
+
+  /** Показанные строки дерева; перетаскиваемая группа на время сессии свёрнута. */
+  const flatten = (nodes: Node[], collapsed: string) => {
+    const out: FakeRow[] = []
+    const walk = (list: Node[], parent: FakeRow | undefined, depth: number) =>
+      list.forEach((node, index) => {
+        const open = !!node.expanded && node.id !== collapsed
+        const row: FakeRow = {
+          id: node.id,
+          index,
+          depth,
+          parentId: parent?.id,
+          subRows: [],
+          getCanExpand: () => !!node.children?.length,
+          getIsExpanded: () => open,
+          getIsLastSubRow: () => !!parent && index === list.length - 1,
+          getParentRow: () => parent,
+        }
+        out.push(row)
+        if (node.children) {
+          // Дети свёрнутой группы — в `subRows`, но не среди показанных строк.
+          const at = out.length
+          walk(node.children, row, depth + 1)
+          row.subRows = out.slice(at).filter(sub => sub.parentId === row.id)
+          if (!open) out.length = at
+        }
+      })
+    walk(nodes, undefined, 0)
+    return out
+  }
+
+  const TREE: Node[] = [
+    { id: 'a' },
+    {
+      id: 'g1',
+      expanded: true,
+      children: [{ id: 'c1' }, { id: 'c2' }, { id: 'c3' }],
+    },
+    {
+      id: 'g2',
+      expanded: true,
+      children: [{ id: 'd1', expanded: true, children: [{ id: 'd1x' }] }],
+    },
+    { id: 'b' },
+    { id: 'g3', children: [{ id: 'e1' }] },
+  ]
+
+  /** Слот строки `activeId` над индексом `over` при уровне указателя `level`. */
+  const hold = (activeId: string, over: number, level: number) => {
+    const rows = flatten(TREE, activeId)
+    const from = rows.findIndex(row => row.id === activeId)
+    let state = { ...DEFAULT_ROW_DRAG_OVERLAY_STATE, activeId }
+    const table = {
+      options: { rowDragExpandDelay: 0 },
+      getRowModel: () => ({
+        rows,
+        rowsById: Object.fromEntries(rows.map(row => [row.id, row])),
+      }),
+      getVisibleLeafColumns: () => [],
+      getKeyboardActions: () => [{ expands: true }],
+      atoms: { rowDragging: { get: () => state } },
+      setRowDragging: (updater: (prev: typeof state) => typeof state) => {
+        state = updater(state)
+      },
+    }
+    getRowDraggingEvents(table as never, {
+      levelAt: () => level,
+    }).onRowDragMove!({
+      active: {
+        id: activeId,
+        data: { current: { virtualIndex: from, row: rows[from] } },
+      },
+      over: {
+        id: rows[over]!.id,
+        data: { current: { virtualIndex: over, row: rows[over] } },
+      },
+      delta: { x: 0, y: 0 },
+    } as never)
+    return { rows, from, state }
+  }
+
+  it('DI7: допустимые уровни места — в пределах места, у строки с детьми только 0; выбор — ближайший к уровню указателя, при равенстве меньший; паритет с прежней проверкой места на каждом уровне каждого места', () => {
+    expect(getAllowedDepth(1, 0, 2, depth => depth !== 1)).toBe(0)
+    expect(getAllowedDepth(2, 0, 2, depth => depth === 0)).toBe(0)
+    expect(getAllowedDepth(1, 1, 1, depth => depth === 0)).toBeUndefined()
+
+    const ids = flatten(TREE, '').map(row => row.id)
+    let invalid = 0
+    let clamped = 0
+    for (const activeId of ids) {
+      const { rows, from } = hold(activeId, 0, 0)
+      for (let over = 0; over < rows.length; over++) {
+        const active = rows[from]!
+        const target = from < over ? rows[over] : rows[over - 1]
+        const min = getMinDepth(
+          active as never,
+          target as never,
+          rows[over]!.id,
+        )
+        const max = getMaxDepth(target as never, {
+          getKeyboardActions: () => [{ expands: true }],
+        })
+        // Прежняя проверка места: строка с детьми — только на уровне 0.
+        const before = (depth: number) => !active.getCanExpand() || depth === 0
+        for (let level = -1; level <= 3; level++) {
+          const valid = getValidDepth(level, min, max)
+          const range: number[] = []
+          for (let d = Math.min(min, valid); d <= Math.max(max, valid); d++)
+            range.push(d)
+          const nearest = range
+            .filter(before)
+            .sort(
+              (x, y) => Math.abs(x - valid) - Math.abs(y - valid) || x - y,
+            )[0]
+          const { state } = hold(activeId, over, level)
+          const label = `${activeId} над ${rows[over]!.id}, уровень ${level}`
+          if (before(valid)) {
+            expect(state, label).toMatchObject({
+              depth: valid,
+              acceptable: true,
+            })
+          } else if (nearest === undefined) {
+            invalid++
+            expect(state, label).toMatchObject({
+              depth: valid,
+              acceptable: false,
+            })
+          } else {
+            clamped++
+            expect(state, label).toMatchObject({
+              depth: nearest,
+              acceptable: true,
+            })
+          }
+        }
+      }
+    }
+    // Оба случая запрета встречаются на дереве.
+    expect(invalid).toBeGreaterThan(0)
+    expect(clamped).toBeGreaterThan(0)
   })
 })

@@ -128,7 +128,7 @@ const treeData = [
 /**
  * Перетаскивание по дереву с линиями (ADR 0108): слот — скелет строки на уровне броска,
  * линии окна — как после броска. Сдвиньте указатель вправо или влево — уровень слота
- * меняется; на недопустимом уровне полоски красные.
+ * меняется; на недопустимом уровне облако строки в тоне ошибки.
  */
 export const RowDraggingTreeLines: StoryObj<StoryProps> = {
   name: 'Tree lines',
@@ -298,7 +298,7 @@ const holdRowAtLevel = async (
   const lift = shieldHeldDrag()
   onLeave(lift)
   onLeave(cancelDrag)
-  // Строку берут на месте: взятая группа сворачивает дерево, цель меряется после.
+  // Строку берут на месте: взятая группа сворачивается, цель меряется после.
   const held = await dragHold(handle, { x: from.x, y: from.y + 8 }, 4, signal)
   await pollUntil(() => !!document.querySelector(CLOUD_TITLE), signal)
   await layoutStill(rowOf(root, overId)!)
@@ -337,8 +337,15 @@ const ROW_MOVE: readonly GuideStoryStep[] = [
     ),
   },
   {
+    title: 'Группа не вкладывается',
+    hint: 'Ведите группу с детьми вправо под последнюю строку другой группы: дерево не глубже двух уровней, поэтому слот остаётся на верхнем уровне. Бросок положит группу туда, где стоит слот.',
+    enter: stepAction((root, run) =>
+      holdRowAtLevel(root, 'node-0', 'node-1-1', 1, run),
+    ),
+  },
+  {
     title: 'Недопустимое место',
-    hint: 'Ведите группу с детьми внутрь другой группы: дерево не глубже двух уровней. Полоски слота красные, бросок здесь не сработает.',
+    hint: 'Ведите группу с детьми между строками другой группы: здесь есть место только на уровне детей, а группу внутрь не вкладывают. Строка под указателем в тоне ошибки — бросок здесь не сработает; слот показывает, куда она встала бы.',
     states: ['drag.rowInvalid'],
     enter: stepAction((root, run) =>
       holdRowAtLevel(root, 'node-0', 'node-1', 1, run),
@@ -375,7 +382,7 @@ const ROW_MOVE_ARGS = {
   maxHeight: '540',
 } satisfies Partial<StoryProps>
 
-/** S1: строку берут за ручку и переносят в группу; недопустимое место и бросок. */
+/** S1: строку берут за ручку и переносят в группу; группа не вкладывается, недопустимое место и бросок. */
 export const RowDraggingMove: StoryObj<StoryProps> = {
   name: 'Move',
   parameters: {
@@ -418,9 +425,20 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
     await step(ROW_MOVE[2].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await until(() => expect(invalid()).toBe(true))
+      // Слот группы — на верхнем уровне, хотя указатель на уровне детей.
+      await until(() =>
+        expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-1')),
+      )
+      expect(invalid()).toBe(false)
     })
     await step(ROW_MOVE[3].title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(invalid()).toBe(true))
+      // Слот — на уровне детей: там, куда строка встала бы.
+      expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-1-0'))
+    })
+    await step(ROW_MOVE[4].title, async () => {
       // Вспышка держится на время снимка (ADR 0130, DG6): токен — до броска шага.
       canvas
         .querySelector<HTMLElement>('.data-grid-theme')!

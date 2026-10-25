@@ -135,6 +135,10 @@
   [0109](../decisions/0109-drop-into-collapsed-groups.md)):
   `--tsr-comp-row-drop-parent-bg` (10 % `--tsr-sys-accent`) — заливка строки слоем
   подсветки строки; в высокой контрастности — контур `Highlight`.
+- **Недопустимое место броска строки** (ADR
+  [0137](../decisions/0137-invalid-drop-on-row-cloud.md)):
+  `--tsr-comp-row-drop-invalid-overlay-bg` (15 % `--tsr-sys-danger` в фон облака) —
+  заливка облака строки; в высокой контрастности — `Mark` с текстом `MarkText`.
 - **Линии дерева** (ADR [0058](../decisions/0058-tree-lines.md),
   [0102](../decisions/0102-curved-tree-lines.md)): ветки со скруглёнными поворотами —
   декоративные элементы-рамки в ячейке отступа с `data-tree-depth`.

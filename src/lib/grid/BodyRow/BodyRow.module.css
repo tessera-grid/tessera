@@ -65,12 +65,6 @@
   }
 }
 
-/* Место, куда бросить нельзя: полоски слота в тоне ошибки (ADR 0108, §3). */
-:global(.data-grid__container[data-row-drop-invalid])
-  .body__row[data-row-draggable='true'] {
-  --tsr-comp-skeleton-bg: var(--tsr-comp-row-drop-invalid-skeleton-bg);
-}
-
 /*
  * Видимость hidden-кнопок строки — единый контракт в
  * grid/cellControls/buttonVisibility.css.

@@ -16,6 +16,7 @@ import {
 } from '../../core/cancelInteraction'
 import {
   getDepthFromOffsetLeft,
+  getAllowedDepth,
   getDragSourceParams,
   getMaxDepth,
   getMinDepth,
@@ -130,16 +131,21 @@ export const getRowDraggingEvents = (
     ) => void
   }
 
+  /** Все группы раскрыты — записью, чтобы сменить одну (ADR 0137, §6). */
+  const allExpanded = () =>
+    Object.fromEntries(
+      table
+        .getCoreRowModel()
+        .flatRows.filter(row => row.getCanExpand())
+        .map(row => [row.id, true]),
+    )
+
   /** Свернуть/развернуть группу до и после перетаскивания. */
   const expandGroup = (groupId: UniqueIdentifier, expanded: boolean) => {
-    onExpandedChange?.((prev: any) =>
-      prev === true
-        ? { [groupId]: expanded }
-        : {
-            ...prev,
-            [groupId]: expanded,
-          },
-    )
+    onExpandedChange?.((prev: any) => ({
+      ...(prev === true ? allExpanded() : prev),
+      [groupId]: expanded,
+    }))
   }
 
   /** Непустая перетаскиваемая группа временно сворачивается. */
@@ -259,16 +265,12 @@ export const getRowDraggingEvents = (
     from: number,
     to: number,
     depth: number,
-  ) => {
+  ) =>
     // Без rowExpanding ленивых родителей нет.
-    if (!(activeRow as ExpandableRow).getIsLazyParent) return false
-    const lazy =
-      isLazyParent(activeRow.getParentRow()) ||
-      isLazyParent(rows[findDropParent(rows, { from, to, depth }, 0)])
-    if (!lazy || canMoveInLazyTree(table)) return false
-    warnLazyTree(table)
-    return true
-  }
+    !!(activeRow as ExpandableRow).getIsLazyParent &&
+    !canMoveInLazyTree(table) &&
+    (isLazyParent(activeRow.getParentRow()) ||
+      isLazyParent(rows[findDropParent(rows, { from, to, depth }, 0)]))
 
   // Шаг уровня читается из темы на старте перетаскивания, а не в рендере (RE64):
   // обработчики, пересозданные посреди перетаскивания, читают его при первом событии.
@@ -360,15 +362,20 @@ export const getRowDraggingEvents = (
         ? targetItem!.depth
         : getMaxDepth(targetItem, table)
       const validDepth = getValidDepth(currentDepth, minDepth, maxDepth)
+      const blocked = (depth: number) =>
+        lazyBlocked(activeRow, activeVirtualIndex, overVirtualIndex, depth)
+      if (blocked(validDepth)) warnLazyTree(table)
       // Строка с детьми в группу не вкладывается; ленивый перенос — только с колбэком.
-      const acceptable =
-        ((activeRow.getCanExpand?.() ?? false) ? validDepth === 0 : true) &&
-        !lazyBlocked(
-          activeRow,
-          activeVirtualIndex,
-          overVirtualIndex,
-          validDepth,
-        )
+      // Есть допустимый уровень — слот на нём, нет — место недопустимо (ADR 0137, §3).
+      const withChildren = activeRow.getCanExpand?.() ?? false
+      const allowedDepth = getAllowedDepth(
+        validDepth,
+        minDepth,
+        maxDepth,
+        depth => (!withChildren || depth === 0) && !blocked(depth),
+      )
+      const acceptable = allowedDepth !== undefined
+      const depth = allowedDepth ?? validDepth
 
       // Слот вкладывают в свёрнутую группу — пауза раскрывает её (ADR 0109, §1).
       const delay =
@@ -379,7 +386,7 @@ export const getRowDraggingEvents = (
         delay > 0 &&
         targetItem &&
         targetItem.id !== activeRow.id &&
-        validDepth === targetItem.depth + 1 &&
+        depth === targetItem.depth + 1 &&
         (targetItem.getCanExpand?.() ?? false) &&
         !targetItem.getIsExpanded() &&
         // Не раскрылась (отказ загрузки) — не повторять в этой сессии.
@@ -391,12 +398,12 @@ export const getRowDraggingEvents = (
 
       onRowDraggingChange?.(prev => ({
         ...prev,
-        offsetLeft: getOffsetLeftFromDepth(validDepth, getLevelStep()),
+        offsetLeft: getOffsetLeftFromDepth(depth, getLevelStep()),
         acceptable,
         fromIndex: activeVirtualIndex,
         overIndex: overVirtualIndex,
         overId: String(over.id),
-        depth: validDepth,
+        depth,
       }))
     },
     onRowDragEnd: ({ active, over }) => {

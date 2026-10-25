@@ -93,10 +93,10 @@ export const Body = ({
   const drop = enableRowDragging ? dropPreview : null
   const first = virtualRows[0]?.index ?? 0
   const last = virtualRows[virtualRows.length - 1]?.index ?? -1
-  // Линии окна «как после броска» (ADR 0108, §4); на недопустимом месте — прежние.
+  // Линии окна «как после броска» (ADR 0108, §4), и на недопустимом месте (ADR 0137, §4).
   const projected = useMemo(
     () =>
-      treeLinesIndex && drop?.acceptable
+      treeLinesIndex && drop
         ? projectTreeLines(
             rows,
             treeLinesIndex,

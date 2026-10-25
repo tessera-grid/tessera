@@ -601,7 +601,9 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       const calls = harness.onRowDragEnd.mock.calls.length
       const { at } = await dragOver('node-1', 'node-0-2', 1)
       await settleSlotAfter('node-0-2', at)
-      expect(container().hasAttribute('data-row-drop-invalid')).toBe(true)
+      // Строка с детьми в группу не вкладывается: слот — на корне, на своём месте (ADR 0137).
+      expect(container().hasAttribute('data-row-drop-invalid')).toBe(false)
+      expect(depthOf(slot()!)).toBe(0)
       await release()
       expect(harness.onRowDragEnd).toHaveBeenCalledTimes(calls)
     } finally {

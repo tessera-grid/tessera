@@ -463,11 +463,11 @@
   --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-cell-pinned-left-bg);
   --tsr-comp-cell-pinned-border-color: var(--tsr-sys-border);
 
-  /* DnD строк: полоски слота на месте, куда бросить нельзя (ADR 0108). */
-  --tsr-comp-row-drop-invalid-skeleton-bg: color-mix(
+  /* DnD строк: облако на месте, куда бросить нельзя (ADR 0137). */
+  --tsr-comp-row-drop-invalid-overlay-bg: color-mix(
     in oklch,
-    var(--tsr-sys-danger) 40%,
-    transparent
+    var(--tsr-sys-danger) 15%,
+    var(--tsr-comp-draggable-cell-bg)
   );
   /* Будущий родитель слота (ADR 0109). */
   --tsr-comp-row-drop-parent-bg: color-mix(
@@ -1027,7 +1027,7 @@
     --tsr-comp-load-error-glow: Mark;
     --tsr-comp-tree-line-color: GrayText;
     --tsr-comp-skeleton-bg: GrayText;
-    --tsr-comp-row-drop-invalid-skeleton-bg: Mark;
+    --tsr-comp-row-drop-invalid-overlay-bg: Mark;
     --tsr-comp-row-drop-parent-bg: transparent;
     --tsr-comp-checkbox-checked-bg: Highlight;
     --tsr-comp-checkbox-check-color: HighlightText;

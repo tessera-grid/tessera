@@ -82,6 +82,29 @@ export const getValidDepth = (
 }
 
 /**
+ * Уровень слота (ADR 0137, §3): ближайший к `depth` допустимый уровень места
+ * `minDepth…maxDepth`, при равенстве — меньший; `undefined` — допустимых уровней нет.
+ */
+export const getAllowedDepth = (
+  depth: number,
+  minDepth: number,
+  maxDepth: number,
+  allowed: (depth: number) => boolean,
+) => {
+  // `getValidDepth` при пределах наоборот отдаёт один из них — он тоже кандидат.
+  const low = Math.min(minDepth, depth)
+  const high = Math.max(maxDepth, depth)
+  for (let distance = 0; distance <= high - low; distance++) {
+    for (const candidate of [depth - distance, depth + distance]) {
+      if (candidate >= low && candidate <= high && allowed(candidate)) {
+        return candidate
+      }
+    }
+  }
+  return undefined
+}
+
+/**
  * @see BodyRow
  */
 export const getDragSourceParams = (source: Active | Over) => {

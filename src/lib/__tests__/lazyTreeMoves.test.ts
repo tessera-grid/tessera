@@ -140,76 +140,90 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
 
   describe('без onRowDragEnd', () => {
     const warnings = captureInertWarnings()
+    const lazyWarnings = () =>
+      warnings().filter(text => text.includes('onRowDragEnd'))
 
-    it('LT9: без onRowDragEnd место в ленивом дереве недопустимо и ленивые дети не тянутся; в dev — предупреждение rowDragging:lazyTree', () => {
-      const lazyParent = { getIsLazyParent: () => true }
-      const dataParent = { getIsLazyParent: () => false }
+    const row = (id: string, index: number, extra = {}) => ({
+      id,
+      index,
+      depth: 0,
+      subRows: [] as unknown[],
+      getCanExpand: () => false,
+      getIsExpanded: () => false,
+      getIsLastSubRow: () => false,
+      getParentRow: (): unknown => undefined,
+      getIsLazyParent: () => false,
+      ...extra,
+    })
+    type FakeRow = ReturnType<typeof row>
+
+    /** Сессия перетаскивания строки `active` над строками `rows` с хуками `hooks`. */
+    const lazyDrag = (rows: FakeRow[], active: FakeRow) => {
       let hooks: Record<string, unknown> = {}
+      let state = { ...DEFAULT_ROW_DRAG_OVERLAY_STATE, activeId: active.id }
       const table = {
         options: { enableRowDragging: true, rowDragExpandDelay: 0 },
         getHeaderGroups: () => [],
         // Переключатель rowExpanding есть: свёрнутая ленивая группа принимает детей (ADR 0109, §5).
         getKeyboardActions: () => [{ expands: true }],
-        atoms: {} as Record<string, unknown>,
         getHooks: () => ({ rowDragging: hooks }),
+        getRowModel: () => ({
+          rows,
+          rowsById: Object.fromEntries(rows.map(r => [r.id, r])),
+        }),
+        getVisibleLeafColumns: () => [],
+        atoms: { rowDragging: { get: () => state } },
+        setRowDragging: (updater: (prev: typeof state) => typeof state) => {
+          state = updater(state)
+        },
       }
-      const child = (parent: object) => ({
+      const from = rows.indexOf(active)
+      const hold = (over: number, level: number) => {
+        getRowDraggingEvents(table as never, {
+          levelAt: () => level,
+        }).onRowDragMove!({
+          active: {
+            id: active.id,
+            data: { current: { virtualIndex: from, row: active } },
+          },
+          over: {
+            id: rows[over]!.id,
+            data: { current: { virtualIndex: over, row: rows[over] } },
+          },
+          delta: { x: 0, y: 0 },
+        } as never)
+        return state
+      }
+      return {
         table,
-        getParentRow: () => parent,
-      })
-      // Слот под ленивой группой на уровне её детей.
-      const row = (id: string, index: number, extra = {}) => ({
-        id,
-        index,
-        depth: 0,
-        subRows: [] as unknown[],
-        getCanExpand: () => false,
-        getIsExpanded: () => false,
-        getIsLastSubRow: () => false,
-        getParentRow: () => undefined,
-        getIsLazyParent: () => false,
-        ...extra,
-      })
-      const active = row('r', 1)
+        hold,
+        setHooks: (next: Record<string, unknown>) => (hooks = next),
+      }
+    }
+
+    /** Свёрнутая ленивая группа и строка под ней: слот на уровне её детей или корня. */
+    const underLazyGroup = () => {
       const group = row('g', 0, {
         getCanExpand: () => true,
         getIsLazyParent: () => true,
       })
-      let state = { ...DEFAULT_ROW_DRAG_OVERLAY_STATE, activeId: 'r' }
-      Object.assign(table, {
-        getRowModel: () => ({
-          rows: [group, active],
-          rowsById: { r: active, g: group },
-        }),
-        getVisibleLeafColumns: () => [],
-        setRowDragging: (updater: (prev: typeof state) => typeof state) => {
-          state = updater(state)
-        },
+      const active = row('r', 1)
+      return lazyDrag([group, active], active)
+    }
+
+    it('LT9: без onRowDragEnd уровень в ленивую группу недопустим и ленивые дети не тянутся; в dev — предупреждение rowDragging:lazyTree', () => {
+      const { table, hold, setHooks } = underLazyGroup()
+      const child = (parent: object) => ({
+        table,
+        getParentRow: () => parent,
       })
-      table.atoms.rowDragging = { get: () => state }
-      const hold = () =>
-        getRowDraggingEvents(table as never, {
-          levelAt: () => 1,
-        }).onRowDragMove!({
-          active: {
-            id: 'r',
-            data: { current: { virtualIndex: 1, row: active } },
-          },
-          over: {
-            id: 'r',
-            data: { current: { virtualIndex: 1, row: active } },
-          },
-          delta: { x: 0, y: 0 },
-        } as never)
-      const lazyWarnings = () =>
-        warnings().filter(text => text.includes('onRowDragEnd'))
-      hold()
-      expect(state.depth).toBe(1)
-      expect(state.acceptable, 'без колбэка').toBe(false)
+      expect(hold(1, 1), 'без колбэка').toMatchObject({ depth: 0 })
       expect(lazyWarnings(), 'бросок').toHaveLength(1)
 
       // Предупреждение печатается один раз — сброс, чтобы увидеть его от ручки.
       __resetLogger()
+      const lazyParent = { getIsLazyParent: () => true }
+      const dataParent = { getIsLazyParent: () => false }
       expect(canDragRow(child(lazyParent) as never), 'ленивый ребёнок').toBe(
         false,
       )
@@ -218,10 +232,43 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
         true,
       )
 
-      hooks = { onRowDragEnd: () => {} }
+      setHooks({ onRowDragEnd: () => {} })
       expect(canDragRow(child(lazyParent) as never), 'с колбэком').toBe(true)
-      hold()
-      expect(state.acceptable, 'с колбэком').toBe(true)
+      expect(hold(1, 1), 'с колбэком').toMatchObject({
+        depth: 1,
+        acceptable: true,
+      })
+    })
+
+    it('DI8: ленивое дерево без onRowDragEnd — уровень в ленивую группу недопустим, слот уходит на допустимый уровень, если он есть, иначе место недопустимо; предупреждение — когда уровень указателя запрещён ленивым родителем, и тогда, когда слот ушёл на другой уровень', () => {
+      // Есть уровень корня: слот уходит на него, предупреждение — всё равно.
+      const under = underLazyGroup()
+      expect(under.hold(1, 1)).toMatchObject({ depth: 0, acceptable: true })
+      expect(lazyWarnings(), 'слот ушёл на корень').toHaveLength(1)
+      // Уровень указателя — корень: ленивый родитель не задет, нового предупреждения нет.
+      __resetLogger()
+      expect(under.hold(1, 0)).toMatchObject({ depth: 0, acceptable: true })
+      expect(lazyWarnings(), 'уровень корня').toHaveLength(1)
+
+      // Между детьми раскрытой ленивой группы уровень места — только 1.
+      __resetLogger()
+      const group = row('g', 0, {
+        getCanExpand: () => true,
+        getIsExpanded: () => true,
+        getIsLazyParent: () => true,
+      })
+      const first = row('c1', 0, { depth: 1, getParentRow: () => group })
+      const second = row('c2', 1, { depth: 1, getParentRow: () => group })
+      group.subRows = [first, second]
+      const active = row('r', 1)
+      const inside = lazyDrag([group, first, second, active], active)
+      expect(inside.hold(2, 0)).toMatchObject({ depth: 1, acceptable: false })
+      expect(lazyWarnings(), 'место недопустимо').toHaveLength(2)
+      inside.setHooks({ onRowDragEnd: () => {} })
+      expect(inside.hold(2, 0), 'с колбэком').toMatchObject({
+        depth: 1,
+        acceptable: true,
+      })
     })
   })
 

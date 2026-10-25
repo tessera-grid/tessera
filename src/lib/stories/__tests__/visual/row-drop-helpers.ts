@@ -53,6 +53,9 @@ export const TITLE = '.data-grid__cell-wrapper-title'
 export const USER_CONTENT =
   '.data-grid__body-cell:not([data-actions-column-cell="true"]) > .data-grid__cell-wrapper-content'
 export const CLOUD_TITLE = `.data-grid-body__row ${TITLE}`
+/** Облако строки под указателем — его заливка. */
+export const cloud = () =>
+  document.querySelector<HTMLElement>('.data-grid-body__row > :first-child')
 
 /** Начало содержимого строки глубины 0 — от него считаются уровни броска. */
 export const levelZeroOf = (row: HTMLElement) => {

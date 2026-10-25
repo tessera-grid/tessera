@@ -126,15 +126,17 @@ describe('Theming matrix — DnD overlays & edges', () => {
     })
   })
 
-  // TT-38: слот на недопустимом месте — полоски скелета в тоне ошибки (ADR 0108).
-  test('TT-38 invalid drop skeleton token is defined and differs from the skeleton in both themes', () => {
+  // TT-38: облако на недопустимом месте — в тоне ошибки (ADR 0137).
+  test('TT-38 invalid drop overlay token is defined and differs from the overlay background in both themes', () => {
     for (const dark of [false, true]) {
       const invalid = resolveColor(
-        '--tsr-comp-row-drop-invalid-skeleton-bg',
+        '--tsr-comp-row-drop-invalid-overlay-bg',
         dark,
       )
       expect(invalid).not.toBe('rgba(0, 0, 0, 0)')
-      expect(invalid).not.toBe(resolveColor('--tsr-comp-skeleton-bg', dark))
+      expect(invalid).not.toBe(
+        resolveColor('--tsr-comp-draggable-cell-bg', dark),
+      )
     }
   })
 
