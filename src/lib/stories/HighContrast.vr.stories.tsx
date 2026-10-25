@@ -434,6 +434,36 @@ export const HighContrastServerRowModelUnknownTotalStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelSortingStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSorting,
+    1,
+  ),
+  name: 'Data loading/Server row model — Sorting, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSortingStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSorting,
+    2,
+  ),
+  name: 'Data loading/Server row model — Sorting, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSortingStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSorting,
+    3,
+  ),
+  name: 'Data loading/Server row model — Sorting, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',

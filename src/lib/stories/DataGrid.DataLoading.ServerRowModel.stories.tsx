@@ -12,7 +12,11 @@ import {
   stepDone,
   until,
 } from './__mocks__/catalogPlay'
-import { type FilteringItem, filteringColumns } from './__mocks__/filteringData'
+import {
+  type FilteringItem,
+  filteringColumns,
+  filteringItemAt,
+} from './__mocks__/filteringData'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -31,7 +35,7 @@ import {
 /**
  * Серверная модель строк (ADR 0138): `Playground` — триста тысяч строк с «сервера» в покое,
  * объём, итог, отказы и размер блока — контролами; S1 — прыжок в середину, S2 — отказ
- * блока и повтор, S3 — итог неизвестен.
+ * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки.
  */
 const meta = {
   ...dataGridMeta,
@@ -162,6 +166,30 @@ type ServerMode = {
   blockSize: number
   /** Начало блока, чья первая попытка падает. */
   failBlock?: number
+  /** Сортировку по колонке считает «сервер». */
+  sortable?: boolean
+}
+
+/** Весь набор «сервера» в порядке сортировки; один расчёт на порядок. */
+const sortedSets = new Map<string, FilteringItem[]>()
+const sortedSet = (sorting: ServerRowsRequest['sorting'], total: number) => {
+  const key = `${total}:${JSON.stringify(sorting)}`
+  let set = sortedSets.get(key)
+  if (!set) {
+    set = Array.from({ length: total }, (_, i) => filteringItemAt(i))
+    const [sort] = sorting
+    if (sort) {
+      const id = sort.id as keyof FilteringItem
+      set.sort((a, b) => {
+        const order = String(a[id]).localeCompare(String(b[id]), undefined, {
+          numeric: true,
+        })
+        return sort.desc ? -order : order
+      })
+    }
+    sortedSets.set(key, set)
+  }
+  return set
 }
 
 const serverProps =
@@ -170,6 +198,7 @@ const serverProps =
     knownTotal,
     blockSize,
     failBlock,
+    sortable,
   }: ServerMode): GuideStoryStep['props'] =>
   () => ({
     columnsOverride: filteringColumns,
@@ -177,7 +206,16 @@ const serverProps =
     enableServerRowModel: true,
     serverRowModelBlockSize: blockSize,
     serverRowModelRowCount: knownTotal ? total : undefined,
-    serverRowModelGetRows: ({ start, end, signal }: ServerRowsRequest) =>
+    ...(sortable && {
+      enableColumnSorting: true,
+      columnSortingMultiSort: false,
+    }),
+    serverRowModelGetRows: ({
+      start,
+      end,
+      sorting,
+      signal,
+    }: ServerRowsRequest) =>
       new Promise<ServerRowsResponse<FilteringItem>>((resolve, reject) => {
         server.starts.push(start)
         const answer = () => {
@@ -185,6 +223,13 @@ const serverProps =
           if (start === failBlock && !server.failed.has(start)) {
             server.failed.add(start)
             return reject(new Error(SERVER_FAILURE))
+          }
+          if (sortable) {
+            resolve({
+              rows: sortedSet(sorting, total).slice(start, end),
+              rowCount: total,
+            })
+            return
           }
           resolve(serverAnswer({ start, end }, total, knownTotal))
         }
@@ -485,6 +530,129 @@ export const ServerRowModelUnknownTotal: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(hasRow(canvas, UNKNOWN_TOTAL - 1)).toBe(true)
       await expect(skeletonRows(canvas)).toBe(0)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0138 S4 ---------------------------------------------------------------------
+
+const SORT_TOTAL = 10_000
+const SORT_BLOCK = 50
+const SORT_FROM = 500
+
+const sortButton = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>(
+    '.data-grid__head-cell[data-column-id="name"] .column-sort__button',
+  )
+const refreshing = (root: HTMLElement) =>
+  !!root.querySelector('.data-grid-theme[data-refreshing]')
+const firstRowId = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('.data-grid__body-row[data-index="0"]')
+    ?.dataset.rowId
+const sortedFirst = () =>
+  sortedSet([{ id: 'name', desc: true }], SORT_TOTAL)[0]!.id
+
+/** Пользователь ушёл далеко от начала списка. */
+const browse = async (root: HTMLElement, signal: AbortSignal) => {
+  if (hasRow(root, SORT_FROM)) return
+  await pollUntil(() => hasRow(root, 0), signal)
+  const el = scroller(root)!
+  const rowHeight = bodyRows(root)[0]!.getBoundingClientRect().height
+  el.scrollTop = SORT_FROM * rowHeight
+  await pollUntil(() => hasRow(root, SORT_FROM), signal)
+}
+
+/** Пользователь отсортировал по имени; «сервер» держит ответ. */
+const sortByName = async (root: HTMLElement, signal: AbortSignal) => {
+  await browse(root, signal)
+  // Кнопки шапки — из ленивого модуля (ADR 0061).
+  await pollUntil(() => !!sortButton(root), signal)
+  server.hold = true
+  sortButton(root)!.click()
+  await pollUntil(
+    () =>
+      server.held.length > 0 &&
+      scroller(root)!.scrollTop === 0 &&
+      refreshing(root),
+    signal,
+  )
+}
+
+const SORTING: readonly GuideStoryStep[] = [
+  {
+    title: 'Пользователь листает список',
+    hint: 'Пользователь прокрутил список далеко от начала. Таблица показывает строки, которые сервер прислал для этого места.',
+    props: serverProps({
+      total: SORT_TOTAL,
+      knownTotal: true,
+      blockSize: SORT_BLOCK,
+      sortable: true,
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      if (refreshing(root) || firstRowId(root) === sortedFirst()) return
+      await browse(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь отсортировал по имени',
+    hint: 'Новый порядок знает только сервер, поэтому таблица попросила у него начало списка в этом порядке и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных, а кнопка сортировки ждёт.',
+    states: ['body.refreshing'],
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length > 0) return
+      await sortByName(root, signal)
+    }),
+  },
+  {
+    title: 'Сервер ответил',
+    hint: 'Строки встали в новом порядке с начала списка, обновление закончилось, кнопка сортировки показывает направление.',
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length === 0 && firstRowId(root) !== sortedFirst()) {
+        await sortByName(root, signal)
+      }
+      server.hold = false
+      release()
+      await pollUntil(
+        () => firstRowId(root) === sortedFirst() && !refreshing(root),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0138, S4: смена сортировки — прежние строки под обновлением, новый порядок с начала. */
+export const ServerRowModelSorting: StoryObj<StoryProps> = {
+  name: 'Sorting',
+  parameters: { scenario: '0138/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Смена сортировки"
+      steps={SORTING}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SORTING[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(hasRow(canvas, SORT_FROM)).toBe(true)
+    })
+    await step(SORTING[1]!.title, async () => {
+      const before = server.starts.length
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(scroller(canvas)!.scrollTop).toBe(0)
+      await expect(refreshing(canvas)).toBe(true)
+      await expect(sortButton(canvas)).toHaveAttribute('aria-busy', 'true')
+      await expect(firstRowId(canvas)).toBe('item-id-0')
+      await expect(server.starts.slice(before)).toContain(0)
+    })
+    await step(SORTING[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(firstRowId(canvas)).toBe(sortedFirst())
+      await expect(refreshing(canvas)).toBe(false)
+      await expect(sortButton(canvas)).not.toHaveAttribute('aria-busy')
       await settle()
     })
   },
