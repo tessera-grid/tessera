@@ -404,6 +404,33 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     ).toEqual([])
   })
 
+  test('CX5: поповеры — пункт в покое, под указателем и выбранный, тултип — каждое состояние overlay проверено шагом гайда во всех сочетаниях', () => {
+    const popups = all.audits.filter(audit =>
+      audit.states.some(state => state.startsWith('overlay.')),
+    )
+    const covered = new Set(popups.flatMap(audit => audit.states))
+    expect(
+      CATALOG_STATES.overlay
+        .map(state => `overlay.${state}`)
+        .filter(state => !covered.has(state)),
+    ).toEqual([])
+    for (const audit of popups) {
+      for (const combo of COMBOS) {
+        expect(
+          audit.checked[comboLabel(combo)],
+          `${audit.story} › ${audit.step} | ${comboLabel(combo)}`,
+        ).toBeGreaterThan(0)
+      }
+    }
+    const labels = popups.map(audit => `${audit.story} › ${audit.step}`)
+    expect(
+      all.findings
+        .filter(f => labels.some(label => f.key.includes(label)))
+        .filter(f => !(f.key in known))
+        .map(f => `${f.key} — ${f.ratio.toFixed(2)}:1 < ${f.need}:1`),
+    ).toEqual([])
+  })
+
   /** Сочетания шага без состояний каталога — явно, не из STEP_COMBOS. */
   const STEP_LABELS = [
     'stories/dark/standard',

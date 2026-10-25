@@ -175,10 +175,6 @@
     color: MarkText;
   }
 
-  .body__row::after {
-    content: none;
-  }
-
   /*
    * Наведение и будущий родитель слота (ADR 0109, §4) — рамкой на слое строки поверх
    * ячеек: контур самой строки перекрыли бы ячейки и их разделители.
@@ -187,10 +183,11 @@
     .body__row:hover::after,
   .body__row[data-row-drop-parent]::after {
     content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
     border: 2px solid Highlight;
-    background-color: transparent;
-    opacity: 1;
-    transition: none;
   }
 
   .body__row[data-selected='true']:hover::after {

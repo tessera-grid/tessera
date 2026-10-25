@@ -309,7 +309,7 @@ describe('Движение колонок (ADR 0115)', () => {
     }
   })
 
-  test('CN3: откат после отказа сервера — колонка едет назад, подсветка danger едет вместе с ней', async () => {
+  test('CN3: откат после отказа сервера — колонка едет назад, вспышка reverted едет вместе с ней', async () => {
     let reject: (reason: unknown) => void = () => {}
     const screen = await mount({
       onColumnDragEnd: () =>
@@ -328,7 +328,7 @@ describe('Движение колонок (ADR 0115)', () => {
       const frames = await sampleFrames(
         () => ({
           lefts: columnLefts('c1'),
-          tone: headOf('c1')!.getAttribute('data-column-highlight'),
+          tone: headOf('c1')!.getAttribute('data-column-flash'),
         }),
         () => reject(new Error('no')),
       )
@@ -345,7 +345,8 @@ describe('Движение колонок (ADR 0115)', () => {
       const gliding = frames.filter(
         frame => frame.lefts[0] > home[0] + 1 && frame.lefts[0] < moved[0] - 1,
       )
-      expect(gliding.every(frame => frame.tone === 'danger')).toBe(true)
+      expect(gliding.length).toBeGreaterThan(0)
+      expect(gliding.every(frame => frame.tone === 'reverted')).toBe(true)
       expect(columnLefts('c1')[0]).toBeCloseTo(home[0], 0)
     } finally {
       await screen.unmount()

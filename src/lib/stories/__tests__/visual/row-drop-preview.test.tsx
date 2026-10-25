@@ -107,13 +107,18 @@ const linesMatchOrder = () => {
 describe('Превью броска строки (ADR 0108)', () => {
   test('PV4: с линиями дерева линии всех строк окна перед отпусканием — те же, что после броска: перенос через ветки, смена уровня на месте, с последнего места ветки', async () => {
     const cases: [id: string, overId: string, depth: number][] = [
-      ['node-0-0', 'node-1-1', 1],
+      ['node-0-0', 'node-1-2', 1],
       ['node-1-2', 'node-1-2', 0],
       ['node-0-2', 'node-0-0', 1],
       ['row-0', 'node-1-0', 1],
     ]
     for (const [id, overId, depth] of cases) {
-      const screen = await renderTree()
+      // Тело во все строки: цели — выше нижней зоны автопрокрутки (20 % высоты тела).
+      const screen = await renderTree({
+        containerHeight: '1100',
+        height: '1000',
+        maxHeight: '1000',
+      })
       const before = new Map(
         rowsInOrder().map(row => [row.dataset.rowId!, linesOf(row)]),
       )
@@ -133,6 +138,8 @@ describe('Превью броска строки (ADR 0108)', () => {
         })
         .toBe(true)
       expect(container().hasAttribute('data-row-drop-invalid'), id).toBe(false)
+      // Место броска вне зоны автопрокрутки: иначе тело едет и слот уходит после снимка.
+      expect(container().scrollTop, `${id}: тело не прокручено`).toBe(0)
       const preview = new Map(
         rowsInOrder().map(row => [row.dataset.rowId!, linesOf(row)]),
       )
@@ -957,6 +964,8 @@ describe('Бросок в свёрнутые группы (ADR 0109)', () => {
         probe.remove()
         // Рамка — на слое строки поверх ячеек: контур самой строки они перекрыли бы.
         const style = getComputedStyle(rowById('node-1')!, '::after')
+        // Слой растянут по строке: в потоке рамка свернулась бы в точку.
+        expect(style.position).toBe('absolute')
         expect(style.borderTopStyle).toBe('solid')
         expect(style.borderTopColor).toBe(highlight)
       }

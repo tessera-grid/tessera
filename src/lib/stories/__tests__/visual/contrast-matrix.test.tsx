@@ -31,12 +31,12 @@ import {
 // 4,5:1 (крупный — 3:1), в повышенном контрасте 7:1 (4,5:1); иконки и границы контролов —
 // 3:1. Нарушения, которым нужно решение по дизайну, — в `contrast-baseline.json` с
 // причиной; база только сокращается. В `forced-colors` (§6, CX9–CX11) фон — по пикселям
-// снимка: подложку и снятые слои браузер в стилях не отражает. Шаги гайдов (§7) и VR14 —
-// набор `contrast-guides`.
+// снимка: подложку и снятые слои браузер в стилях не отражает. Шаги гайдов (§7), поповеры
+// (CX5 — они только шаги гайдов) и VR14 — набор `contrast-guides`.
 
 // --- Каталог ------------------------------------------------------------------------
 
-type Requirement = 'CX1' | 'CX2' | 'CX3' | 'CX4' | 'CX5'
+type Requirement = 'CX1' | 'CX2' | 'CX3' | 'CX4'
 
 /** Наложения поверх тела — CX2, остальное тело — CX1. */
 const OVERLAID = ['highlight', 'cellRange', 'pending', 'error']
@@ -45,7 +45,10 @@ const requirementOf = (state: string): Requirement => {
   const [area, name] = state.split('.') as [string, string]
   if (area === 'head') return 'CX3'
   if (area === 'panel') return 'CX4'
-  if (area === 'overlay') return 'CX5'
+  // Поповер — состояние посреди сценария: только шаг гайда (ADR 0117), CX5 — contrast-guides.
+  if (area === 'overlay') {
+    throw new Error(`${state}: поповеры — шаги гайдов, а не истории-состояния`)
+  }
   return OVERLAID.includes(name) ? 'CX2' : 'CX1'
 }
 
@@ -72,7 +75,6 @@ const findings: Record<Requirement | 'CX10', Finding[]> = {
   CX2: [],
   CX3: [],
   CX4: [],
-  CX5: [],
   CX10: [],
 }
 const axeProblems: string[] = []
@@ -107,7 +109,7 @@ const auditedFor = (requirement: Requirement, combos = BASE_COMBOS) => {
 
 describe('Матрица контраста (ADR 0089) по каталогу (ADR 0093)', () => {
   // Один проход: история рисуется и доводится до состояния один раз, затем все
-  // сочетания — пороги CX1–CX5 и axe CX7.
+  // сочетания — пороги CX1–CX4 и axe CX7.
   beforeAll(async () => {
     // Снимок `forced-colors` видит только окно; больше окна раннер ужал бы фрейм, и
     // рамки в 1px размазались бы по соседним пикселям.
@@ -155,12 +157,10 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
         findings[bucket].push(...result.findings)
         // axe считает по стилям и не видит слоёв браузера в `forced-colors` (§6).
         if (forced) continue
-        // Под открытым поповером текст грида перекрыт — axe его не считает; тот же
-        // грид без поповера проверяют истории тела и шапки.
         const axeResult = await runAxe(
           `CX7 ${story}`,
           combo,
-          requirement === 'CX5' ? popups : roots,
+          roots,
           dim !== undefined,
         )
         for (const { key, summary } of axeResult.violations) {
@@ -193,11 +193,6 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
   test('CX4: панели — тулбар, быстрый поиск, пагинация, счётчик выбранного', () => {
     auditedFor('CX4')
     expectClean(findings.CX4)
-  })
-
-  test('CX5: поповеры — пункт в покое, под указателем и выбранный, тултип', () => {
-    auditedFor('CX5')
-    expectClean(findings.CX5)
   })
 
   test('CX6: матрица идёт на двух палитрах — запасной и палитре историй', async () => {
