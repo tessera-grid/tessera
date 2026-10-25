@@ -6,6 +6,7 @@
 import type { HeaderAction } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 
 import '../../grid/cellControls/buttonVisibility.css'
 
@@ -24,7 +25,9 @@ export const groupHeaderAction: HeaderAction = {
   id: 'rowGrouping',
   slot: 'rightHeaderSlot',
   order: 2,
-  visible: ({ column }) => column.getCanGroup(),
+  // Группировка на сервере — вне объёма серверной модели строк (ADR 0138, §13).
+  visible: ({ column, table }) =>
+    column.getCanGroup() && !serverRowModelReason(table),
   icon: ctx => <GroupActionIcon grouped={isGrouped(ctx)} />,
   label: (ctx, labels) => (isGrouped(ctx) ? labels.ungroup : labels.group),
   active: isGrouped,

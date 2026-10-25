@@ -19,6 +19,7 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { type LoggerHost, logWarn } from '../../core/logger'
 import {
   type PluginInertReason,
+  serverRowModelReason,
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
 import type { RowMoves } from '../../core/rowMoves'
@@ -115,6 +116,8 @@ export const warnLazyTree = (table: unknown) =>
 export const rowDraggingInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
+  const server = serverRowModelReason(table)
+  if (server) return server
   const t = table as DraggableTable
   if ((t.atoms.grouping?.get() ?? []).length > 0) {
     return 'grouping'

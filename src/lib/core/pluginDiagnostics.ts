@@ -18,6 +18,7 @@ export type PluginInertReason =
   | 'noActions'
   | 'noRowCount'
   | 'noGetRows'
+  | 'serverRowModel'
   | 'addedAfterMount'
   | 'removedAfterMount'
   | (string & {})
@@ -29,6 +30,18 @@ export type PluginDiagnostic =
 
 /** Проверка плагина: причина инертности или `undefined`, если плагин работает. */
 export type PluginDiagnose = (table: unknown) => PluginInertReason | undefined
+
+/**
+ * Строки ведёт серверная модель (ADR 0138, §13): клиентские страницы, лента, перестановка,
+ * группировка и дерево в этом режиме ничего не делают.
+ */
+export const serverRowModelReason = (
+  table: unknown,
+): PluginInertReason | undefined =>
+  typeof (table as { options?: { getRowSource?: unknown } }).options
+    ?.getRowSource === 'function'
+    ? 'serverRowModel'
+    : undefined
 
 /** `diagnose` плагина, у которого нет условий инертности (ADR 0036, PQ1). */
 export const neverInert: PluginDiagnose = () => undefined

@@ -382,6 +382,13 @@ const createServerSource = (table: unknown): ServerSource => {
         })
       }),
     refreshing: () => next !== null,
+    // Отказ списка — строк нет; итог неизвестен, пока не пришёл короткий блок (§5).
+    total: () =>
+      shown.store.failedEmpty()
+        ? 0
+        : shown.store.isTotalKnown()
+          ? shown.store.count()
+          : -1,
     refresh: options => refresh(!!options?.purge),
     setRowData,
     // Без загруженных строк отказ показывает заглушка (`loadError`), а не строки ошибки.

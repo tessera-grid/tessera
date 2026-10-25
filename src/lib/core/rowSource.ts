@@ -36,6 +36,8 @@ export interface RowSource<TRow = unknown> {
   whenLoaded?: () => PromiseLike<void>
   /** Окно новой выборки ещё идёт: прежние строки под свечением обновления (ADR 0094). */
   refreshing?: () => boolean
+  /** Итог для `aria-rowcount`, `-1` — неизвестен; главнее опции `getTotalRowCount`. */
+  total?: () => number
 }
 
 /** Отказ загрузки строк `[start, end)` (ADR 0138, §11). */

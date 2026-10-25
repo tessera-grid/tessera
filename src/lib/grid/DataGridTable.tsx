@@ -114,8 +114,10 @@ export const DataGridTable = ({
     bodyEndSlot,
     tableEndSlot,
   } = table.getRenderSlots() ?? {}
-  // Плагин, у которого строк больше, чем в data, задаёт итог сам (ADR 0081).
-  const totalRowCount = options.getTotalRowCount?.(table) as number | undefined
+  // Плагин, у которого строк больше, чем в data, задаёт итог сам (ADR 0081); источник
+  // строк серверной модели знает его лучше опций плагинов (ADR 0138, §8).
+  const totalRowCount = (rowSource.total?.() ??
+    options.getTotalRowCount?.(table)) as number | undefined
   const ariaRowCount =
     totalRowCount === -1
       ? -1

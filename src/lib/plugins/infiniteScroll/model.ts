@@ -4,7 +4,10 @@
  */
 import { pluginStateKey } from '../../core/definePlugin'
 import { logWarn } from '../../core/logger'
-import type { PluginDiagnose } from '../../core/pluginDiagnostics'
+import {
+  type PluginDiagnose,
+  serverRowModelReason,
+} from '../../core/pluginDiagnostics'
 import type { InfiniteScrollState } from './types'
 
 export const INFINITE_SCROLL = 'infiniteScroll'
@@ -21,7 +24,8 @@ const paginationActive = (table: unknown) =>
   (table as ScrollTable).options.paginateExpandedRows === false
 
 export const infiniteScrollInertReason: PluginDiagnose = table =>
-  paginationActive(table) ? 'pagination' : undefined
+  serverRowModelReason(table) ??
+  (paginationActive(table) ? 'pagination' : undefined)
 
 export const readInfiniteScrollState = (
   state: Record<string, unknown>,

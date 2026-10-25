@@ -19,7 +19,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
-import { neverInert } from '../../core/pluginDiagnostics'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowExpandingModel } from '../rowExpandingModel/registry'
 import { createIdleAwareGroupedRowModel } from './groupedRowModel'
 
@@ -58,7 +58,8 @@ const NO_GROUPING: string[] = []
 
 export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
   id: 'rowGroupingModel',
-  diagnose: neverInert,
+  // Группировка и дерево на сервере — вне объёма и этап 5 (ADR 0138, §13).
+  diagnose: serverRowModelReason,
   // Группы раскрывает модель дерева; её срез `expanded` — её аргумент (MP10).
   model: { plugin: rowExpandingModel, keys: [] },
   features: rowGroupingModelFeatures,

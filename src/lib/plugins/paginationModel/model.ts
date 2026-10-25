@@ -4,7 +4,10 @@
  */
 import type { PaginationState } from '@tanstack/react-table'
 
-import type { PluginDiagnose } from '../../core/pluginDiagnostics'
+import {
+  type PluginDiagnose,
+  serverRowModelReason,
+} from '../../core/pluginDiagnostics'
 
 interface Atom<T> {
   get: () => T
@@ -39,9 +42,12 @@ export interface PaginationTable {
 export const paginationInertReason: PluginDiagnose = table => {
   const { manualPagination, rowCount, pageCount } = (table as PaginationTable)
     .options
-  return manualPagination && rowCount === undefined && pageCount === undefined
-    ? 'noRowCount'
-    : undefined
+  return (
+    serverRowModelReason(table) ??
+    (manualPagination && rowCount === undefined && pageCount === undefined
+      ? 'noRowCount'
+      : undefined)
+  )
 }
 
 /**

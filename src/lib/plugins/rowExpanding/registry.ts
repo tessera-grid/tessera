@@ -12,7 +12,10 @@ import type {
   ServiceColumnMode,
   ServicePresence,
 } from '../../core/servicePresence'
-import { neverInert, warnPluginInert } from '../../core/pluginDiagnostics'
+import {
+  serverRowModelReason,
+  warnPluginInert,
+} from '../../core/pluginDiagnostics'
 import { toggleExpandedKeyboardAction } from './keyboardActions'
 import {
   createIncrementalExpandedRowModel,
@@ -78,6 +81,8 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
   context,
   o,
 ) => {
+  // Серверная модель строк: раскрытия нет до этапа 5 (ADR 0138, §13).
+  if (typeof context.options.getRowSource === 'function') return false
   if (context.options.enableGrouping === true) return true
   if ((o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH) < 1) return false
   // Скелет первой загрузки: данных ещё нет, включённое раскрытие держит колонку (SL25).
@@ -94,7 +99,8 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
 
 export const rowExpanding = definePlugin<RowExpandingOptions>()({
   id: 'rowExpanding',
-  diagnose: neverInert,
+  // Группировка и дерево на сервере — вне объёма и этап 5 (ADR 0138, §13).
+  diagnose: serverRowModelReason,
   // Модель дерева — своя запись; срез `expanded` — её аргумент (ADR 0120).
   model: {
     plugin: rowExpandingModel,

@@ -15,7 +15,14 @@ import type { RowSource } from '../core/rowSource'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
+  infiniteScroll,
   keyboardNavigation,
+  pagination,
+  paginationModel,
+  rowDragging,
+  rowExpanding,
+  rowGrouping,
+  rowGroupingModel,
   serverRowModel,
   type ServerRowsRequest,
   type ServerRowsResponse,
@@ -54,11 +61,13 @@ const Grid = ({
   loader = true,
   onDebugAction,
   rowId = (row: Item) => row.id,
+  extra = [],
 }: {
   maxBlocks?: number
   loader?: boolean
   onDebugAction?: (report: DebugAction) => void
   rowId?: (row: Item) => string
+  extra?: readonly unknown[]
 }) => {
   table = useCreateTable({
     columns: COLUMNS as never,
@@ -74,6 +83,7 @@ const Grid = ({
       }),
       keyboardNavigation(),
       cellEditing(),
+      ...extra,
     ] as never,
   })
   return null
@@ -323,5 +333,56 @@ describe('серверная модель строк на таблице (ADR 01
     act(() => table.setRowData('r500', { id: 'r500', name: 'Never' }))
     expect(source().at(500)).toBeUndefined()
     expect(version()).toBe(seen)
+  })
+  it("SD26: pagination, paginationModel, infiniteScroll, rowDragging, rowGrouping, rowGroupingModel и до этапа 5 rowExpanding инертны с причиной 'serverRowModel' и dev-warn", () => {
+    const extra = [
+      pagination(),
+      infiniteScroll({ onLoadMore: () => {} }),
+      rowDragging(),
+      rowGrouping(),
+      rowExpanding(),
+    ]
+    const ids = [
+      'pagination',
+      'paginationModel',
+      'infiniteScroll',
+      'rowDragging',
+      'rowGrouping',
+      'rowGroupingModel',
+      'rowExpanding',
+    ]
+    const reasons = () =>
+      Object.fromEntries(
+        (
+          table.getPluginDiagnostics() as {
+            id: string
+            status: string
+            reason?: string
+          }[]
+        )
+          .filter(diagnostic => ids.includes(diagnostic.id))
+          .map(diagnostic => [diagnostic.id, diagnostic.reason]),
+      )
+    // Модели без интерфейса — своим набором: интерфейс подключает модель сам.
+    const models = [paginationModel(), rowGroupingModel()]
+    act(() => root.render(<Grid extra={models} />))
+    const fromModels = reasons()
+    act(() => root.unmount())
+    root = createRoot(document.createElement('div'))
+    act(() => root.render(<Grid extra={extra} />))
+    expect({ ...fromModels, ...reasons() }).toEqual(
+      Object.fromEntries(ids.map(id => [id, 'serverRowModel'])),
+    )
+    for (const id of ids) {
+      expect(
+        warnings().some(
+          text => text.includes(id) && text.includes('serverRowModel'),
+        ),
+      ).toBe(true)
+    }
+
+    // Без загрузчика строки ведёт клиент — этой причины нет.
+    act(() => root.render(<Grid loader={false} extra={extra} />))
+    expect(Object.values(reasons())).not.toContain('serverRowModel')
   })
 })
