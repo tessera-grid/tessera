@@ -34,7 +34,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Columns/Header menu',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

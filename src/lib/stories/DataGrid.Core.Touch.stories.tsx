@@ -18,7 +18,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Core/Touch',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

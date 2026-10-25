@@ -23,7 +23,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Columns/Visibility',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

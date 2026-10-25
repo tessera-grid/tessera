@@ -17,7 +17,6 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
  */
 const meta = {
   title: 'Tessera/UI/ExpandButton',
-  tags: ['done'],
   component: ExpandButton,
   argTypes: DERIVED_BUTTON_ARG_TYPES,
   args: { ...DERIVED_BUTTON_ARGS, expanded: false },

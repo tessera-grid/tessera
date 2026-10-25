@@ -27,7 +27,6 @@ const NEXT: Record<string, Operation> = {
  */
 const meta = {
   title: 'Tessera/UI/SortButton',
-  tags: ['done'],
   component: SortButton,
   argTypes: {
     ...DERIVED_BUTTON_ARG_TYPES,

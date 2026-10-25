@@ -222,7 +222,6 @@ const MenuSpinnerDemo = ({ slowdown }: LoadingAnimationsProps) => (
 
 const meta = {
   title: 'Tessera/UI/Loading animations',
-  tags: ['done'],
   component: SideBySideDemo,
   args: { slowdown: 1 },
   argTypes: {

@@ -81,7 +81,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/Common/High contrast',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

@@ -39,7 +39,6 @@ const IconButtonDemo = ({
 
 const meta = {
   title: 'Tessera/UI/IconButton',
-  tags: ['done'],
   component: IconButtonDemo,
   argTypes: {
     variant: { control: 'inline-radio', options: ['ghost', 'overlay'] },

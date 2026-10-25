@@ -8,7 +8,6 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 /** Переключатель на Base UI в теме грида (ADR 0017): включён, выключен, недоступен. */
 const meta = {
   title: 'Tessera/UI/Switch',
-  tags: ['done'],
   component: Switch,
   args: { 'aria-label': 'Dense rows', checked: false, disabled: false },
   render: function Render(args) {

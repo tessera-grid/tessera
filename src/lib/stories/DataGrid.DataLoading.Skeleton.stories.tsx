@@ -24,7 +24,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Data loading/Skeleton',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

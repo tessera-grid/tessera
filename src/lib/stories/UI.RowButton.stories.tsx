@@ -36,7 +36,6 @@ const RowButtonDemo = (
 
 const meta = {
   title: 'Tessera/UI/RowButton',
-  tags: ['done'],
   component: RowButtonDemo,
   argTypes: { ...DERIVED_BUTTON_ARG_TYPES, ...ACTIVE_ARG_TYPES },
   args: {

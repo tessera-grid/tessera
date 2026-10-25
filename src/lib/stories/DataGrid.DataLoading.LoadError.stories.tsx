@@ -20,7 +20,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Data loading/Load error',
-  tags: ['done'],
   argTypes: {
     ...dataGridMeta.argTypes,
     loadError: { control: false },

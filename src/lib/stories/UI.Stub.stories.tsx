@@ -20,7 +20,6 @@ interface StubStoryArgs {
 
 const meta = {
   title: 'Tessera/UI/Stub',
-  tags: ['done'],
   args: {
     title: 'No data',
     description: '',

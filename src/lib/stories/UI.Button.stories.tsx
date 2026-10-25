@@ -61,7 +61,6 @@ const inBothVariants: Pick<Story, 'render' | 'argTypes'> = {
 
 const meta = {
   title: 'Tessera/UI/Button',
-  tags: ['done'],
   component: ButtonDemo,
   argTypes: {
     variant: { control: 'inline-radio', options: ['outline', 'ghost'] },

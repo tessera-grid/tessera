@@ -11,7 +11,6 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
  */
 const meta = {
   title: 'Tessera/UI/Segments',
-  tags: ['done'],
   component: Segments,
   args: {
     value: 'csv',

@@ -30,7 +30,6 @@ const CellButtonDemo = (
 
 const meta = {
   title: 'Tessera/UI/CellButton',
-  tags: ['done'],
   component: CellButtonDemo,
   argTypes: { ...DERIVED_BUTTON_ARG_TYPES, ...ACTIVE_ARG_TYPES },
   args: {

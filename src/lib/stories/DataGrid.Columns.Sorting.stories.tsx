@@ -30,7 +30,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Columns/Sorting',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

@@ -35,7 +35,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Core/Long text',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

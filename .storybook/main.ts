@@ -21,7 +21,6 @@ const config: StorybookConfig = {
     '@storybook/addon-vitest',
     '@storybook/addon-a11y',
     'storybook-addon-pseudo-states',
-    'storybook-addon-tag-badges',
   ],
   // Порядок дерева: песочница всех фич, ядро, фичи, служебные разделы; внутри раздела —
   // порядок экспортов файла. Storybook 11 сортирует индекс отсюда, а не из preview.

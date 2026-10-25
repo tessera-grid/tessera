@@ -29,7 +29,6 @@ const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
   title: 'Tessera/DataGrid/Columns/Resizing',
-  tags: ['done'],
 } satisfies Meta<StoryProps>
 
 export default meta

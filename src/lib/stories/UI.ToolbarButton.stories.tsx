@@ -32,7 +32,6 @@ const ToolbarButtonDemo = (
 
 const meta = {
   title: 'Tessera/UI/ToolbarButton',
-  tags: ['done'],
   component: ToolbarButtonDemo,
   argTypes: { ...DERIVED_BUTTON_ARG_TYPES, ...ACTIVE_ARG_TYPES },
   args: { ...DERIVED_BUTTON_ARGS, label: 'Columns', active: false, count: 0 },

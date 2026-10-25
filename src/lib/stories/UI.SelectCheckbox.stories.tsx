@@ -8,7 +8,6 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 /** Чекбокс выбора строки (ADR 0014): выбран, частично (дети выбраны не все), недоступен. */
 const meta = {
   title: 'Tessera/UI/SelectCheckbox',
-  tags: ['done'],
   component: SelectCheckbox,
   args: {
     selected: false,

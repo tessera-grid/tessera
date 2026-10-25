@@ -18,7 +18,6 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
  */
 const meta = {
   title: 'Tessera/UI/PinButton',
-  tags: ['done'],
   component: PinButton,
   argTypes: DERIVED_BUTTON_ARG_TYPES,
   args: { ...DERIVED_BUTTON_ARGS, pinned: false, revealOnHover: true },

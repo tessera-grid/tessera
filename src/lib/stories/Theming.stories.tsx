@@ -800,7 +800,6 @@ const colorArgTypes = (
 const meta = {
   title: 'Tessera/Theming',
   component: ThemingDemo,
-  tags: ['done'],
   args: {
     loading: 'off',
     loadError: false,

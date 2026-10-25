@@ -68,7 +68,6 @@ const ResizeHandlerDemo = ({ disabled }: ResizeHandlerDemoProps) => {
 
 const meta = {
   title: 'Tessera/UI/ResizeHandler',
-  tags: ['done'],
   component: ResizeHandlerDemo,
   args: { disabled: false },
 } satisfies Meta<typeof ResizeHandlerDemo>
