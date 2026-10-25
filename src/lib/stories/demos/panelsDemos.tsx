@@ -20,20 +20,25 @@ const compareValues = (a: unknown, b: unknown) => {
     : Number(a) - Number(b)
 }
 
-/** Ответ «сервера»: страница `pageIndex` по `pageSize` строк в порядке `sort`. */
-export const queryPage = (
-  pageIndex: number,
-  pageSize: number,
-  sort: ServerSort,
-) => {
-  const rows = sort
-    ? [...SERVER_DATA].sort((a, b) => {
+/** Строки в порядке `sort`; без сортировки — те же строки. */
+export const sortRows = (rows: FilteringItem[], sort: ServerSort) =>
+  sort
+    ? [...rows].sort((a, b) => {
         const order = compareValues(
           a[sort.id as keyof FilteringItem],
           b[sort.id as keyof FilteringItem],
         )
         return sort.desc ? -order : order
       })
-    : SERVER_DATA
-  return rows.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)
-}
+    : rows
+
+/** Ответ «сервера»: страница `pageIndex` по `pageSize` строк в порядке `sort`. */
+export const queryPage = (
+  pageIndex: number,
+  pageSize: number,
+  sort: ServerSort,
+) =>
+  sortRows(SERVER_DATA, sort).slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize,
+  )

@@ -39,6 +39,7 @@ import coreFooterMeta, {
   FooterPlayground,
 } from './DataGrid.Core.Footer.stories'
 import * as coreLoadErrorStories from './DataGrid.DataLoading.LoadError.stories'
+import * as dataLoadingServerActionsStories from './DataGrid.DataLoading.ServerActions.stories'
 import coreSkeletonMeta, {
   SkeletonPlayground,
 } from './DataGrid.DataLoading.Skeleton.stories'
@@ -2341,6 +2342,66 @@ export const HighContrastLoadErrorFirstLoadStep2 = {
 export const HighContrastLoadErrorFirstLoadStep3 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorFirstLoad, 3),
   name: 'Data loading/Load error — First load error, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep1 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    1,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep2 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    2,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep3 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    3,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep4 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    4,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep5 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    5,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep6 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    6,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 6',
   tags: ['!test'],
 }
 

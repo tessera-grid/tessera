@@ -868,7 +868,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       страницы с её размером, черновик полей, плашка с повтором, вспышка и объявление,
       клавиатура, поиск свечением и плашкой, отметка отказа кнопки фильтра и её снятие),
       модульный `serverActions.dom` (SA1–SA3, SA10 — промис, `signal`, замена ожидающего
-      действия, `revertOnReject`); SA14–SA17 — этап 3
+      действия, `revertOnReject`); SA14–SA15 — лента, axe и высокая контрастность — в
+      `server-actions`, SA16 — в `work-counters`, `play` истории «Data loading/Server
+      actions — Refused by the server» (SA17)
       ([ADR 0116](docs/decisions/0116-async-server-actions.md)); плашка — примитив кита
       `Alert`: `alert` (LE18), история `UI/Alert` (LE19) ([ADR 0096](docs/decisions/0096-load-error.md)).
     - _Счётчики работы:_ `work-counters` (PF2–PF11, PF23–PF25 — коммиты React, отрисованные

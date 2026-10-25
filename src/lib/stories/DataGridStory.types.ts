@@ -9,6 +9,7 @@ import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { useColumns } from './__mocks__/columns'
 import type { Nesting } from './__mocks__/data'
+import type { ColumnSortingHooks } from '../../lib/plugins/columnSorting'
 import type { ColumnVisibilityHooks } from '../../lib/plugins/columnVisibility'
 import type { PaginationHooks } from '../../lib/plugins/pagination'
 import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
@@ -117,10 +118,7 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
    * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении сортировки.
    * В обычных историях не задаётся.
    */
-  onToggleColumnSort?: (
-    id: string,
-    sortDirection: 'asc' | 'desc' | false,
-  ) => void
+  onToggleColumnSort?: ColumnSortingHooks['onToggleColumnSort']
 
   /**
    * Проброс hooks выбора строк (`rowSelection.onSelectRow` /

@@ -6,6 +6,7 @@ import { revealedHandleWidth } from '../helpers'
 import type { DebugAction, OnDebugAction } from '../../../core/debugActions'
 import { definePlugin } from '../../../core/definePlugin'
 import type { HeaderAction } from '../../../core/headerActions'
+import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { ActionsZone } from '../../../grid/headerActions/ActionsZone'
 import { BodyCell } from '../../../grid/BodyCell'
 import { BodyRow, BodyRowCells } from '../../../grid/BodyRow'
@@ -13,7 +14,8 @@ import { DraggableBodyRow } from '../../../grid/DraggableBodyRow'
 import { HeadCellView } from '../../../grid/HeadCell'
 import { HeadSelectionComponent } from '../../../plugins/rowSelection/HeadSelectionComponent'
 import { RowSelectionComponent } from '../../../plugins/rowSelection/RowSelectionComponent'
-import { headerActionMenu } from '../../../plugins'
+import { columnSorting, headerActionMenu } from '../../../plugins'
+import { LinearProgress } from '../../../ui/LinearProgress'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
 import { getData } from '../../__mocks__/data'
 import type { FeatureToggles } from '../../__mocks__/utils/argsToPlugins'
@@ -474,6 +476,45 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     expect(renders(work, ActionsZone), describeWork(work)).toBe(0)
     expect(renders(work, ColumnDraggingComponent), describeWork(work)).toBe(0)
     expect(renders(work, HeadCellView), describeWork(work)).toBe(0)
+  })
+
+  test('SA16: вход в ожидание серверного действия и выход из него перерисовывают причину и свечение, но не строки тела', async () => {
+    let answer!: () => void
+    const { measure } = await mountGrid({}, getData(300), [
+      columnSorting({
+        server: true,
+        onToggleColumnSort: () =>
+          new Promise<void>(resolve => (answer = resolve)),
+      }),
+    ])
+    const button = document.querySelector<HTMLElement>(
+      '.data-grid__head-cell [aria-label^="Sort"]',
+    )!
+    const glowing = () => !!document.querySelector('[data-refreshing]')
+    const expectCauseAndGlowOnly = (work: Work) => {
+      expect(renders(work, ActionButton), describeWork(work)).toBeGreaterThan(0)
+      expect(renders(work, LinearProgress), describeWork(work)).toBeGreaterThan(
+        0,
+      )
+      expect(
+        renders(work, BodyRow, DraggableBodyRow, BodyRowCells, BodyCell),
+        describeWork(work),
+      ).toBe(0)
+    }
+    // Свечение — после задержки `refreshOptions`: замер ждёт его появления и ухода.
+    const entry = await measure(async () => {
+      await userEvent.click(button)
+      await expect.poll(glowing).toBe(true)
+    })
+    expect(button).toHaveAttribute('aria-busy', 'true')
+    expectCauseAndGlowOnly(entry)
+
+    const exit = await measure(async () => {
+      answer()
+      await expect.poll(glowing).toBe(false)
+    })
+    expect(button).not.toHaveAttribute('aria-busy')
+    expectCauseAndGlowOnly(exit)
   })
 
   test('AL26: слушатель канала действий не добавляет гриду работы — коммиты, отрисовки и пересборки моделей при сортировке те же, что без него', async () => {

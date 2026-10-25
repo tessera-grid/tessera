@@ -1,7 +1,8 @@
 import { useState } from 'react'
 
 import type { SortingState } from '@tanstack/react-table'
-import { userEvent } from 'vitest/browser'
+import axe from 'axe-core'
+import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
@@ -10,15 +11,24 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { columnFiltering } from '../../../plugins/columnFiltering'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { headerActionMenu } from '../../../plugins/headerActionMenu'
+import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { keyboardNavigation } from '../../../plugins/keyboardNavigation'
 import { pagination } from '../../../plugins/pagination'
 import { quickSearch } from '../../../plugins/quickSearch'
-import { failureShownOn, humanClick, revealCellButtons } from '../helpers'
+import {
+  arcHeadOf,
+  failureShownOn,
+  humanClick,
+  pendingArcOf,
+  revealCellButtons,
+} from '../helpers'
 import { tableLabels } from '../labels'
+import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 
 // Серверные действия (ADR 0116): ожидание у причины и свечение, отказ — откат, плашка с
 // повтором и вспышка — настоящими событиями браузера. SA1–SA3, SA10 — модульные
-// (`src/lib/__tests__/serverActions.dom.test.tsx`).
+// (`src/lib/__tests__/serverActions.dom.test.tsx`), SA16 — в `work-counters`, SA17 —
+// `play` истории «Data loading/Server actions — Refused by the server».
 
 interface Deferred {
   promise: Promise<void>
@@ -69,11 +79,14 @@ interface Options {
   loadError?: unknown
   onRetry?: () => void
   refreshOptions?: { delayMs?: number; minDurationMs?: number }
+  /** Лента (ADR 0081) вместо пагинации: `onLoadMore` — вызов `load`. */
+  feed?: boolean
 }
 
 interface Call {
   kind: string
   args: unknown[]
+  signal: AbortSignal
   answer: Deferred
 }
 
@@ -88,7 +101,8 @@ let harness: Harness
 const answer =
   (kind: string) =>
   (...args: unknown[]) => {
-    const call = { kind, args: args.slice(0, -1), answer: deferred() }
+    const { signal } = args.at(-1) as { signal: AbortSignal }
+    const call = { kind, args: args.slice(0, -1), signal, answer: deferred() }
     harness.calls.push(call)
     return call.answer.promise
   }
@@ -118,12 +132,14 @@ const Grid = () => {
             }
           : {}),
       }),
-      pagination({
-        server: options.paginationServer,
-        rowCount: options.paginationServer ? 1000 : undefined,
-        initialPageSize: options.pageSize,
-        onPageChange: answer('page'),
-      }),
+      options.feed
+        ? infiniteScroll({ onLoadMore: answer('load'), hasMore: true })
+        : pagination({
+            server: options.paginationServer,
+            rowCount: options.paginationServer ? 1000 : undefined,
+            initialPageSize: options.pageSize,
+            onPageChange: answer('page'),
+          }),
       ...(options.search
         ? [quickSearch({ server: true, onSearchChange: answer('search') })]
         : []),
@@ -602,6 +618,145 @@ describe('серверные действия (ADR 0116)', () => {
     lastCall().answer.reject(SERVER_ERROR)
     await expect.poll(range).toBe('1–25 of 1,000')
     expect(document.activeElement).toBe(pageButton('next'))
+  })
+})
+
+const fx = commands as unknown as {
+  forcedColors: (active: boolean) => Promise<void>
+}
+
+/** Системный цвет палитры, как его отдаёт браузер. */
+const sys = (name: string) => {
+  const probe = document.createElement('span')
+  probe.style.color = name
+  document.body.append(probe)
+  const value = getComputedStyle(probe).color
+  probe.remove()
+  return value
+}
+
+describe('серверные действия: сочетания и доступность (ADR 0116)', () => {
+  test('SA14: с лентой промис сортировки, фильтра и поиска ведёт себя так же — свет у причины, свечение, откат сортировки и черновик полей при отказе; загрузку ленты отменяет прежний механизм', async () => {
+    await mount({
+      sortingServer: true,
+      feed: true,
+      pageSize: 0,
+      filter: true,
+      search: true,
+    })
+    /** Прокрутить к краю ленты — уходит загрузка блока. */
+    const loadMore = async () => {
+      scroller().scrollTop = scroller().scrollHeight
+      await expect.poll(() => lastCall()?.kind).toBe('load')
+      return lastCall()
+    }
+    /** Загрузку ленты отменяет смена условия выборки (IS7): signal и тело в начале. */
+    const cancelled = async (load: Call) => {
+      await expect.poll(() => load.signal.aborted).toBe(true)
+      await expect.poll(() => scroller().scrollTop).toBe(0)
+    }
+
+    let load = await loadMore()
+    await userEvent.click(sortButton()!)
+    await expect.poll(() => lastCall().kind).toBe('sort')
+    await cancelled(load)
+    await expect.poll(() => lit(sortButton())).toBe(true)
+    await expect.poll(glowing).toBe(true)
+    lastCall().answer.reject(SERVER_ERROR)
+    await expect.poll(ariaSort).toBe('none')
+    await expect.poll(banner).not.toBeNull()
+    await expect.poll(glowing).toBe(false)
+
+    // Успех повтора из плашки — ожидание гаснет, ошибка снята.
+    await userEvent.click(retryButton())
+    await expect.poll(ariaSort).toBe('descending')
+    lastCall().answer.resolve()
+    await expect.poll(banner).toBeNull()
+    await expect.poll(() => busy(sortButton())).toBe(false)
+
+    load = await loadMore()
+    await filterBy('x')
+    await cancelled(load)
+    await expect.poll(() => lit(filterButton())).toBe(true)
+    await expect.poll(glowing).toBe(true)
+    lastCall().answer.reject(SERVER_ERROR)
+    await expect.poll(() => errorDot().getAttribute('data-shown')).toBe('true')
+    expect(
+      document.querySelector<HTMLInputElement>('[data-testid="filter-value"]')!
+        .value,
+    ).toBe('x')
+    await userEvent.keyboard('{Escape}')
+
+    load = await loadMore()
+    await userEvent.type(searchInput(), 'Row')
+    await expect.poll(() => lastCall().kind).toBe('search')
+    await cancelled(load)
+    await expect.poll(glowing).toBe(true)
+    lastCall().answer.reject(SERVER_ERROR)
+    await expect.poll(banner).not.toBeNull()
+    await expect.poll(glowing).toBe(false)
+    expect(searchInput().value).toBe('Row')
+  })
+
+  test('SA15: во время ожидания и после отказа — axe с color-contrast в обеих темах; в высокой контрастности свет — Highlight', async () => {
+    const options = {
+      ...AXE_OPTIONS,
+      rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+    }
+    const theme = () => document.querySelector<HTMLElement>('.data-grid-theme')!
+    // Закрытая панель фильтра уходит из DOM вместе с ловушками фокуса Base UI.
+    const panelGone = () =>
+      !document.querySelector(
+        '[data-testid="filter-value"], [data-base-ui-focus-guard]',
+      )
+    const clean = () =>
+      inBothThemes(async () => {
+        expect((await axe.run(theme(), options)).violations).toEqual([])
+      })
+    const view = await mount({
+      sortingServer: true,
+      paginationServer: true,
+      pageSize: 25,
+      filter: true,
+    })
+    await userEvent.click(sortButton()!)
+    await expect.poll(() => lit(sortButton())).toBe(true)
+    await expect.poll(glowing).toBe(true)
+    await clean()
+
+    lastCall().answer.reject(new Error('Sorting is unavailable'))
+    await expect.poll(() => failureShownOn(sortButton())).toBe(true)
+    await expect.poll(banner).not.toBeNull()
+    await filterBy('x')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(panelGone).toBe(true)
+    await expect.poll(() => lit(filterButton())).toBe(true)
+    await clean()
+
+    lastCall().answer.reject(SERVER_ERROR)
+    await expect.poll(() => errorDot().getAttribute('data-shown')).toBe('true')
+    await clean()
+    await view.unmount()
+
+    // WebKit цвета в forced-colors не подменяет (ADR 0087).
+    if (server.browser === 'webkit') return
+    await fx.forcedColors(true)
+    try {
+      await mount({ sortingServer: true, pageSize: 25 })
+      await userEvent.click(sortButton()!)
+      await expect.poll(() => lit(sortButton())).toBe(true)
+      const highlight = toRgba(sys('Highlight'))
+      const arc = await vi.waitFor(() => pendingArcOf(sortButton()!)!)
+      expect(toRgba(getComputedStyle(arcHeadOf(arc)).stroke)).toEqual(highlight)
+      await expect.poll(glowing).toBe(true)
+      const line = document.querySelector<HTMLElement>(
+        '.data-grid__loader-line',
+      )!
+      expect(getComputedStyle(line).display).toBe('block')
+      expect(toRgba(getComputedStyle(line).backgroundColor)).toEqual(highlight)
+    } finally {
+      await fx.forcedColors(false)
+    }
   })
 })
 
