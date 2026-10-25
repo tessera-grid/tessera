@@ -7,6 +7,9 @@ import { describe, expect, test, vi } from 'vitest'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { keyboardNavigation, type ActiveCell } from '../../../plugins'
+import { StoryComponent } from '../../DataGridStory'
+import type { StoryProps } from '../../DataGridStory.types'
+import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
 import { composed } from '../stories'
 import { getScroller, humanClick } from '../helpers'
 import { cssVar, nextFrame } from './core-helpers'
@@ -100,12 +103,17 @@ async function focusBodyCell(rowIndex: number, position: number) {
   return cell
 }
 
-/** Грид между двумя внешними кнопками — чтобы наблюдать уход фокуса по Tab. */
-async function renderWithNeighbours(args: StoryArgs = {}) {
+/**
+ * Грид между двумя внешними кнопками — чтобы наблюдать уход фокуса по Tab. Грид истории
+ * без её консоли: кнопки консоли стояли бы между гридом и соседом.
+ */
+async function renderWithNeighbours() {
   const screen = await render(
     <>
       <button id="before-grid">before</button>
-      <composed.KeyboardPlayground {...args} />
+      <StoryComponent
+        {...normalizeArgs(composed.KeyboardPlayground.args as StoryProps)}
+      />
       <button id="after-grid">after</button>
     </>,
   )
