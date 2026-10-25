@@ -8,10 +8,18 @@ import * as editingStories from '../../DataGrid.Cells.Editing.stories'
 import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
 import * as visibilityStories from '../../DataGrid.Columns.Visibility.stories'
 import * as stories from '../../GuidePanel.dev.stories'
+import {
+  type GuideStoryStep,
+  GuideStory,
+  guideArgs,
+  stepAction,
+} from '../../demos/GuideStory'
+import { centerOf, dragHold, pollUntil } from '../../__mocks__/catalogPlay'
+import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35) — с движением: каталог
-// гоняет истории с уменьшенным движением, и порядок конфетти и сдвига виден только здесь.
-// SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN44) — с
+// движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
+// виден только здесь. SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
 const { GuidePanelCollapsed, GuidePanelManySteps, GuidePanelPlayground } =
   composeStories(stories)
@@ -19,8 +27,21 @@ const { SkeletonDataArrives } = composeStories(skeletonStories)
 const { ColumnVisibilityToggleAll } = composeStories(visibilityStories)
 const { EditingSession } = composeStories(editingStories)
 
+interface Point {
+  x: number
+  y: number
+}
+
 const motion = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
+}
+const pointer = commands as unknown as {
+  realWheel: (
+    at: Point,
+    deltaY: number,
+    ticks: number,
+    intervalMs: number,
+  ) => Promise<void>
 }
 
 const byId = (id: string) =>
@@ -765,6 +786,320 @@ describe('панель сценария (ADR 0117)', () => {
       expect(share()).toBeCloseTo(0.5, 2)
     } finally {
       await motion.reducedMotion(false)
+    }
+  })
+})
+
+// Стенд вмешательства (SN40–SN43): шаг 1 — действие нажимает ячейку и клавишу, когда
+// появились строки (не `stepAction`: его ввод гасит щит SN43), шаг 2 — без действия,
+// шаг 3 — действие идёт, пока тест его не отпустит.
+const run = { enters: 0, pending: false, release: false }
+const INPUT_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица открыта',
+    hint: 'Действие шага нажимает ячейку и клавишу.',
+    enter: root => {
+      run.enters++
+      run.pending = true
+      const timer = setInterval(() => {
+        const cell = root.querySelector<HTMLElement>('.data-grid__body-cell')
+        if (!cell) return
+        clearInterval(timer)
+        cell.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+        cell.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+        )
+        cell.click()
+        run.pending = false
+      }, 16)
+      return () => clearInterval(timer)
+    },
+  },
+  { title: 'Без действия', hint: 'Шаг только показывает таблицу.' },
+  {
+    title: 'Действие идёт',
+    hint: 'Действие ждёт, пока тест его отпустит.',
+    enter: stepAction(async (_root, step) => {
+      await pollUntil(() => run.release, step.signal, 60_000)
+    }),
+  },
+]
+
+const InputGuide = () => (
+  <GuideStory
+    title="Ввод человека"
+    steps={INPUT_STEPS}
+    args={guideArgs(
+      { dataCount: 200, height: 320, enableColumnVisibility: true },
+      { colorMode: 'light', locale: 'en' },
+    )}
+  />
+)
+
+const guideRoot = () =>
+  document.querySelector<HTMLElement>('[data-guide-root]')!
+const scroller = () =>
+  document.querySelector<HTMLElement>('.data-grid__container')!
+const changed = () => document.querySelector('[data-testid="guide-changed"]')
+const bodyCell = () =>
+  document.querySelector<HTMLElement>(
+    `${ROW}[data-index="1"] .data-grid__body-cell`,
+  )!
+const visibilityButton = () =>
+  document.querySelector<HTMLElement>(
+    '[data-testid="column-visibility-button"]',
+  )!
+const visibilityMenu = () =>
+  document.querySelector<HTMLElement>(
+    '[data-testid="column-visibility-menu"][data-open]',
+  )
+const wheelTable = (deltaY: number) =>
+  pointer.realWheel(centerOf(scroller()), deltaY, 3, 30)
+const stepText = () => byId('guide-toggle').textContent ?? ''
+/** Таблица открылась, и действие первого шага нажало ячейку и клавишу. */
+const opened = async () => {
+  await expect
+    .poll(() => document.querySelectorAll(ROW).length)
+    .toBeGreaterThan(0)
+  await expect.poll(() => run.pending).toBe(false)
+}
+const expandGuide = async () => {
+  byId('guide-toggle').click()
+  // Раскрытие — переходом высоты: кнопки на своих местах после него.
+  await sleep(600)
+}
+
+describe('ввод человека посреди гайда (ADR 0117)', () => {
+  test('SN40: настоящий ввод в таблицу, её поповер и клавиша ставят пометку «Таблица изменена» с «Вернуть шаг» и в свёрнутой панели; наведение, Tab, колесо без прокрутки, панель и ввод действия шага — нет', async () => {
+    run.release = false
+    const screen = await render(<InputGuide />)
+    try {
+      await opened()
+      // Действие шага уже нажало ячейку и клавишу — синтетически.
+      await userEvent.hover(bodyCell())
+      await humanClick(byId('guide-toggle'))
+      await humanClick(byId('guide-toggle'))
+      visibilityButton().focus()
+      await userEvent.keyboard('{Tab}')
+      await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+      // Колесо вверх у верхнего края таблицу не прокручивает.
+      await wheelTable(-120)
+      await sleep(300)
+      expect(scroller().scrollTop).toBe(0)
+      expect(changed()).toBeNull()
+
+      // Колесо, прокрутившее таблицу: пометка в свёрнутой панели.
+      expect(byId('guide-toggle').getAttribute('aria-expanded')).toBe('false')
+      await wheelTable(200)
+      await expect.poll(changed).not.toBeNull()
+      expect(scroller().scrollTop).toBeGreaterThan(0)
+      expect(changed()!.textContent).toBe('Таблица изменена')
+      expect(byId('guide-restore').textContent).toContain('Вернуть шаг')
+      expect(byId('guide-restore').closest('[inert]')).toBeNull()
+      await humanClick(byId('guide-restore'))
+      await expect.poll(changed).toBeNull()
+      await opened()
+
+      // Меню, открытое не человеком, пометки не ставит; нажатие в нём (портал) — ставит.
+      await expect
+        .poll(() => {
+          if (!visibilityMenu()) visibilityButton().click()
+          return !!visibilityMenu()
+        })
+        .toBe(true)
+      expect(changed()).toBeNull()
+      await userEvent.click(
+        visibilityMenu()!.querySelector<HTMLElement>(
+          '[data-column-id] [role="checkbox"]',
+        )!,
+      )
+      await expect.poll(changed).not.toBeNull()
+      await humanClick(byId('guide-restore'))
+      await expect.poll(changed).toBeNull()
+      await opened()
+
+      // Клавиша в таблице.
+      visibilityButton().focus()
+      await userEvent.keyboard('{ArrowDown}')
+      await expect.poll(changed).not.toBeNull()
+      await humanClick(byId('guide-restore'))
+      await expect.poll(changed).toBeNull()
+      await opened()
+
+      // Нажатие в таблице.
+      await userEvent.click(bodyCell())
+      await expect.poll(changed).not.toBeNull()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN41: после пометки «Далее», «Назад», нажатие на шаг и «Вернуть шаг» открывают таблицу заново и выполняют действие шага; переход и «Сначала» снимают пометку', async () => {
+    run.release = false
+    const screen = await render(<InputGuide />)
+    try {
+      await opened()
+      await expandGuide()
+      const scrollTable = async () => {
+        await wheelTable(200)
+        await expect.poll(changed).not.toBeNull()
+        expect(scroller().scrollTop).toBeGreaterThan(0)
+      }
+      const fresh = async () => {
+        await expect.poll(() => scroller()?.scrollTop).toBe(0)
+        expect(changed()).toBeNull()
+      }
+
+      // «Далее» на шаг без действия: таблица заново, а не прокрученная.
+      await scrollTable()
+      button('guide-next').click()
+      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await fresh()
+
+      // «Назад» — заново и с действием целевого шага.
+      await scrollTable()
+      const enters = run.enters
+      button('guide-back').click()
+      await expect.poll(stepText).toContain('шаг 1 из 3')
+      await fresh()
+      await expect.poll(() => run.enters).toBeGreaterThan(enters)
+      await opened()
+
+      // «Вернуть шаг» — заново, с действием текущего шага.
+      await scrollTable()
+      const restoring = run.enters
+      byId('guide-restore').click()
+      await fresh()
+      await expect.poll(() => run.enters).toBeGreaterThan(restoring)
+      await opened()
+
+      // Нажатие на шаг.
+      await scrollTable()
+      document.querySelector<HTMLElement>('[data-step-button="1"]')!.click()
+      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await fresh()
+
+      // «Сначала».
+      await scrollTable()
+      byId('guide-restart').click()
+      await expect.poll(stepText).toContain('шаг 1 из 3')
+      await fresh()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN42: пометка во время воспроизведения ставит его на паузу — заливка замирает, шаг не меняется; «Воспроизвести» продолжает, и переход открывает таблицу заново', async () => {
+    run.release = false
+    const screen = await render(<InputGuide />)
+    try {
+      await opened()
+      const share = () => {
+        const bar = byId('guide-progress')
+        return (
+          bar.getBoundingClientRect().width /
+          bar.parentElement!.getBoundingClientRect().width
+        )
+      }
+      byId('guide-play').click()
+      await expect.poll(share, { interval: 5 }).toBeGreaterThan(0.1)
+      await wheelTable(200)
+      await expect.poll(changed).not.toBeNull()
+      expect(byId('guide-play').textContent).toContain('Воспроизвести')
+      await sleep(100)
+      const paused = share()
+      await sleep(2000)
+      expect(stepText()).toContain('шаг 1 из 3')
+      expect(share()).toBeCloseTo(paused, 2)
+
+      byId('guide-play').click()
+      await expect.poll(stepText, { timeout: 5000 }).toContain('шаг 2 из 3')
+      byId('guide-play').click()
+      await expect.poll(() => scroller()?.scrollTop).toBe(0)
+      expect(changed()).toBeNull()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN43: пока действие шага идёт, нажатие, колесо и клавиша в таблице до неё не доходят и пометки не ставят; когда дошло — доходят', async () => {
+    run.release = false
+    const screen = await render(<InputGuide />)
+    try {
+      await opened()
+      await expandGuide()
+      document.querySelector<HTMLElement>('[data-step-button="2"]')!.click()
+      await expect
+        .poll(() => guideRoot().getAttribute('data-step-action'))
+        .toBe('running')
+
+      await wheelTable(200)
+      await userEvent.click(visibilityButton())
+      visibilityButton().focus()
+      await userEvent.keyboard('{Enter}')
+      await sleep(500)
+      expect(scroller().scrollTop).toBe(0)
+      expect(visibilityMenu()).toBeNull()
+      expect(changed()).toBeNull()
+
+      run.release = true
+      await expect
+        .poll(() => guideRoot().getAttribute('data-step-action'))
+        .toBe('done:2')
+      await wheelTable(200)
+      await expect.poll(changed).not.toBeNull()
+      expect(scroller().scrollTop).toBeGreaterThan(0)
+    } finally {
+      run.release = true
+      await screen.unmount()
+    }
+  })
+
+  test('SN44: удержание перетаскивания действием шага прокручивает страницу к ручке — таблица за краем окна бросок не сдвигает', async () => {
+    const args = guideArgs(
+      { dataCount: 30, height: 400, enableRowDragging: true },
+      { colorMode: 'light', locale: 'en' },
+    )
+    const steps: readonly GuideStoryStep[] = [{ title: 'Строки', hint: '' }]
+    const rowAt = (index: number) =>
+      document.querySelector<HTMLElement>(`${ROW}[data-index="${index}"]`)!
+    /** Строку 0 держат над строкой 3 и бросают; порядок строк после броска. */
+    const drop = async () => {
+      const screen = await render(
+        <GuideStory title="Бросок" steps={steps} args={args} />,
+      )
+      try {
+        await expect
+          .poll(() => document.querySelectorAll(HANDLE).length)
+          .toBeGreaterThan(3)
+        const handle = rowAt(0).querySelector<HTMLElement>(HANDLE)!
+        const held = await dragHold(handle, {
+          x: centerOf(handle).x,
+          y: centerOf(rowAt(3)).y,
+        })
+        const box = handle.getBoundingClientRect()
+        const inView = box.top >= 0 && box.bottom <= window.innerHeight
+        held.release()
+        await sleep(600)
+        return { order: rowIdOrder(document.body), inView }
+      } finally {
+        await screen.unmount()
+      }
+    }
+    const plain = await drop()
+    expect(plain.order.indexOf('item-id-0')).toBeGreaterThan(0)
+
+    const spacer = document.createElement('div')
+    spacer.style.height = '3000px'
+    document.body.prepend(spacer)
+    try {
+      window.scrollTo(0, 0)
+      const scrolled = await drop()
+      expect(scrolled.inView).toBe(true)
+      expect(scrolled.order).toEqual(plain.order)
+    } finally {
+      spacer.remove()
+      window.scrollTo(0, 0)
     }
   })
 })

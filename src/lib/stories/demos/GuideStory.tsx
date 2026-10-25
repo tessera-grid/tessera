@@ -3,7 +3,13 @@
  * грида — накопительно, от первого шага до текущего — и может выполнить действие при
  * входе в него (прокрутку). «Сначала» перемонтирует грид, как новое открытие.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type SyntheticEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
 import { StoryComponent } from '../DataGridStory'
@@ -104,6 +110,22 @@ const OPEN_POPUP = '[role="menu"][data-open], [role="dialog"][data-open]'
 const isGuideToggle = (target: EventTarget) =>
   target instanceof Element && !!target.closest('[data-testid="guide-toggle"]')
 
+/** Клавиши, которые таблицу не меняют: вход по Tab и одиночные модификаторы. */
+const PASSIVE_KEYS = new Set(['Tab', 'Shift', 'Control', 'Alt', 'Meta'])
+
+/** Ввод человека, который до таблицы не доходит, пока идёт действие шага (SN43). */
+const SHIELDED = [
+  'pointerdown',
+  'mousedown',
+  'click',
+  'touchstart',
+  'wheel',
+  'keydown',
+]
+
+/** Прокрутка таблицы позже стольких мс после колеса — не от него, мс. */
+const WHEEL_SCROLL_MS = 150
+
 /** Шаги смонтированных гайдов по их корню — их признаки читает матрица контраста. */
 export const guideSteps = new WeakMap<Element, readonly GuideStoryStep[]>()
 
@@ -166,16 +188,69 @@ export const GuideStory = ({
   const mounts = steps
     .slice(0, guide.step + 1)
     .filter(step => step.remount).length
-  // Шаг назад через действие: грид открывается заново с пропсами целевого шага (SN33).
-  const [shown, setShown] = useState({ step: guide.step, rewinds: 0 })
-  if (shown.step !== guide.step) {
+  // Грид открывается заново с пропсами целевого шага: шаг назад через действие (SN33) и
+  // любой переход после того, как человек изменил таблицу (`changed`, SN40–SN41).
+  const [shown, setShown] = useState({
+    step: guide.step,
+    run: guide.run,
+    rewinds: 0,
+    changed: false,
+  })
+  if (shown.step !== guide.step || shown.run !== guide.run) {
     const undone = steps.slice(guide.step + 1, shown.step + 1)
+    const fresh = shown.changed || undone.some(step => step.enter)
     setShown({
       step: guide.step,
-      rewinds: shown.rewinds + (undone.some(step => step.enter) ? 1 : 0),
+      run: guide.run,
+      rewinds: shown.rewinds + (fresh ? 1 : 0),
+      changed: false,
     })
   }
+  const markChanged = () =>
+    setShown(prev => (prev.changed ? prev : { ...prev, changed: true }))
+  const restore = () =>
+    setShown(prev => ({ ...prev, rewinds: prev.rewinds + 1, changed: false }))
   const root = useRef<HTMLDivElement>(null)
+  const table = useRef<HTMLDivElement>(null)
+  const running = () => root.current?.dataset.stepAction === 'running'
+  // Ввод человека в таблицу, её меню и поповеры (порталы — по дереву React). Пока идёт
+  // действие шага, ввод в саму таблицу гасит щит ниже — он пометки не ставит.
+  const onInput = (event: SyntheticEvent) => {
+    if (!event.nativeEvent.isTrusted) return
+    if (running() && table.current?.contains(event.target as Node)) return
+    markChanged()
+  }
+  const wheelAt = useRef(-Infinity)
+  useEffect(() => {
+    const area = table.current
+    const guideRoot = root.current
+    if (!area || !guideRoot) return
+    // Щит — на корне гайда: у обёртки таблицы (`display: contents`) нет бокса, и
+    // Chromium прокручивает колесом мимо её слушателя.
+    const shield = (event: Event) => {
+      if (!event.isTrusted || guideRoot.dataset.stepAction !== 'running') return
+      if (!area.contains(event.target as Node)) return
+      if (event instanceof KeyboardEvent && event.key === 'Tab') return
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    // Колесо меняет таблицу, только если прокрутило её: иначе оно листает страницу.
+    const scrolled = () => {
+      if (performance.now() - wheelAt.current < WHEEL_SCROLL_MS)
+        setShown(prev => (prev.changed ? prev : { ...prev, changed: true }))
+    }
+    for (const type of SHIELDED)
+      guideRoot.addEventListener(type, shield, {
+        capture: true,
+        passive: false,
+      })
+    area.addEventListener('scroll', scrolled, true)
+    return () => {
+      for (const type of SHIELDED)
+        guideRoot.removeEventListener(type, shield, { capture: true })
+      area.removeEventListener('scroll', scrolled, true)
+    }
+  }, [])
   const mount = `${guide.run}-${mounts}-${shown.rewinds}`
   const live = appProps?.mount === mount ? appProps.props : undefined
   useIsomorphicLayoutEffect(() => {
@@ -232,14 +307,31 @@ export const GuideStory = ({
         onNext={guide.next}
         onRestart={guide.restart}
         onJump={guide.jump}
+        changed={shown.changed}
+        onRestore={restore}
       />
-      <StoryComponent
-        key={mount}
-        {...args}
-        {...props}
-        {...live}
-        consoleLog={consoleLog}
-      />
+      <div
+        ref={table}
+        style={{ display: 'contents' }}
+        onPointerDownCapture={onInput}
+        onTouchStartCapture={onInput}
+        onKeyDownCapture={event => {
+          if (!PASSIVE_KEYS.has(event.key)) onInput(event)
+        }}
+        onWheelCapture={event => {
+          if (!event.nativeEvent.isTrusted) return
+          if (running() && table.current?.contains(event.target as Node)) return
+          wheelAt.current = performance.now()
+        }}
+      >
+        <StoryComponent
+          key={mount}
+          {...args}
+          {...props}
+          {...live}
+          consoleLog={consoleLog}
+        />
+      </div>
       <StoryConsole log={consoleLog} />
     </div>
   )

@@ -7,7 +7,7 @@
  */
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
-import { Check as CheckIcon, Pause, Play } from 'lucide-react'
+import { Check as CheckIcon, Pause, Play, Undo2 } from 'lucide-react'
 
 import '../../core/themeVariables/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
@@ -266,6 +266,8 @@ export const GuidePanel = ({
   onNext,
   onRestart,
   onJump,
+  changed = false,
+  onRestore,
   defaultExpanded = false,
 }: {
   title: string
@@ -277,6 +279,10 @@ export const GuidePanel = ({
   onRestart: () => void
   /** Сразу к шагу. */
   onJump: (index: number) => void
+  /** Человек изменил таблицу: следующий шаг откроет её заново (SN40–SN41). */
+  changed?: boolean
+  /** Открыть таблицу текущего шага заново. */
+  onRestore?: () => void
   defaultExpanded?: boolean
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded)
@@ -410,6 +416,18 @@ export const GuidePanel = ({
     }
   }, [move, nextRef, backRef, lastRef, expandedRef])
   const advanceRef = useLatest(advance)
+  // Человек изменил таблицу — воспроизведение встаёт, как от «Паузы» (SN42).
+  const [seenChange, setSeenChange] = useState(changed)
+  if (seenChange !== changed) {
+    setSeenChange(changed)
+    if (changed) setAutoplay(false)
+  }
+  const timedRef = useLatest(move?.timed)
+  useIsomorphicLayoutEffect(() => {
+    if (!changed || !timedRef.current) return
+    fill.current?.pause()
+    progressFill.current?.pause()
+  }, [changed, timedRef])
   // Воспроизведение: полоска к следующему шагу заливается всё время шага — и в свёрнутой
   // панели: по ней идёт линия прогресса (SN34); последний шаг выполняется сразу.
   useEffect(() => {
@@ -647,6 +665,31 @@ export const GuidePanel = ({
               {!expanded && !finished && steps[step]?.title}
             </span>
           </div>
+          {changed && (
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                flex: 'none',
+              }}
+            >
+              <span
+                data-testid="guide-changed"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
+                Таблица изменена
+              </span>
+              <Button
+                variant="ghost"
+                data-testid="guide-restore"
+                onClick={onRestore}
+                icon={<Undo2 aria-hidden="true" />}
+              >
+                Вернуть шаг
+              </Button>
+            </div>
+          )}
           <Button
             data-testid="guide-play"
             aria-pressed={playing}

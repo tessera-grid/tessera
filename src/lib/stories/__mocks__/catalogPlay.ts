@@ -147,14 +147,32 @@ export const centerOf = (el: Element): Point => {
  * для `PointerSensor` dnd-kit, без Playwright. Нажатие — на ручку, движение и отпускание
  * — на документ: ручка строки, ушедшей в слот, перемонтируется, и события на её прежний
  * узел никуда не дошли бы. `signal` — уход с шага гайда: движение обрывается.
+ * Ручка или точка `target` за краем окна — страница сперва прокручивается так, что путь
+ * между ними по центру окна, `target` — вместе с ней (SN44): указатель за краем включил
+ * бы автопрокрутку страницы dnd-kit.
  */
 export const dragHold = async (
   handle: HTMLElement,
-  to: Point,
+  target: Point,
   steps = 12,
   signal?: AbortSignal,
 ) => {
+  const before = centerOf(handle)
+  const outside = (value: number, size: number) => value < 0 || value > size
+  if (
+    outside(before.y, window.innerHeight) ||
+    outside(target.y, window.innerHeight) ||
+    outside(before.x, window.innerWidth) ||
+    outside(target.x, window.innerWidth)
+  ) {
+    window.scrollBy({
+      top: (before.y + target.y - window.innerHeight) / 2,
+      left: (before.x + target.x - window.innerWidth) / 2,
+      behavior: 'instant',
+    })
+  }
   let at = centerOf(handle)
+  const to = { x: target.x + at.x - before.x, y: target.y + at.y - before.y }
   const fire = (type: string, point: Point) =>
     (type === 'pointerdown' ? handle : handle.ownerDocument).dispatchEvent(
       new PointerEvent(type, {
