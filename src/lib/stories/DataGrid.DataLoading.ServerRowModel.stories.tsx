@@ -35,7 +35,7 @@ import {
 /**
  * Серверная модель строк (ADR 0138): `Playground` — триста тысяч строк с «сервера» в покое,
  * объём, итог, отказы и размер блока — контролами; S1 — прыжок в середину, S2 — отказ
- * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки.
+ * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки, S5 — открыть на записи.
  */
 const meta = {
   ...dataGridMeta,
@@ -653,6 +653,144 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
       await expect(firstRowId(canvas)).toBe(sortedFirst())
       await expect(refreshing(canvas)).toBe(false)
       await expect(sortButton(canvas)).not.toHaveAttribute('aria-busy')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0138 S5 ---------------------------------------------------------------------
+
+const RECORD_TOTAL = 300_000
+const RECORD_BLOCK = 100
+/** Место записи из ссылки: его сообщает сервер. */
+const RECORD_INDEX = 214_321
+const RECORD_ID = `item-id-${RECORD_INDEX}`
+
+interface RecordApi {
+  scrollToRow: (
+    rowId: string,
+    options?: { index?: number; align?: 'center' },
+  ) => Promise<boolean>
+  highlight: (target: { row: string }) => unknown
+}
+
+/** Таблица для шагов: строку открывает приложение. */
+const record = {
+  table: null as RecordApi | null,
+  opening: null as Promise<boolean> | null,
+}
+
+const recordHost: TesseraFeatureEntry = {
+  id: 'serverRowModelRecordHost',
+  setup: table => {
+    record.table = table as unknown as RecordApi
+    record.opening = null
+    return () => {
+      record.table = null
+    }
+  },
+}
+
+const recordRow = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${RECORD_ID}"]`,
+  )
+const recordHighlighted = (root: HTMLElement) =>
+  recordRow(root)?.hasAttribute('data-highlight') === true
+
+/** Приложение просит таблицу открыть запись; «сервер» держит её блок. */
+const openRecord = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!record.table && hasRow(root, 0), signal)
+  server.hold = true
+  record.opening = record.table!.scrollToRow(RECORD_ID, {
+    index: RECORD_INDEX,
+    align: 'center',
+  })
+  await pollUntil(
+    () => server.held.length > 0 && skeletonRows(root) > 0,
+    signal,
+  )
+}
+
+const OPEN_AT_RECORD: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица открыта в начале',
+    hint: 'Пользователь пришёл по ссылке на запись далеко в списке. Сервер сообщил приложению, на каком месте списка она стоит, а таблица пока открыта в начале.',
+    props: ({ app, ...context }) => ({
+      ...serverProps({
+        total: RECORD_TOTAL,
+        knownTotal: true,
+        blockSize: RECORD_BLOCK,
+      })!({ app, ...context }),
+      extraPlugins: [serverReset, recordHost],
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => hasRow(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Приложение открыло место записи',
+    hint: 'Приложение попросило таблицу показать запись на этом месте. Таблица перешла туда сразу, а пока строки в пути, на их месте — скелеты.',
+    states: ['body.skeleton'],
+    enter: stepAction(async (root, { signal }) => {
+      if (record.opening) return
+      await openRecord(root, signal)
+    }),
+  },
+  {
+    title: 'Запись пришла',
+    hint: 'Сервер прислал строки этого места. Запись стоит посередине таблицы, и приложение подсветило её.',
+    states: ['body.highlight'],
+    enter: stepAction(async (root, { signal }) => {
+      if (!record.opening) await openRecord(root, signal)
+      server.hold = false
+      release()
+      const shown = await record.opening!
+      signal.throwIfAborted()
+      if (shown) record.table?.highlight({ row: RECORD_ID })
+      await pollUntil(() => recordHighlighted(root), signal)
+    }),
+  },
+]
+
+/** ADR 0138, S5: приложение открывает список на записи по ссылке. */
+export const ServerRowModelOpenAtRecord: StoryObj<StoryProps> = {
+  name: 'Open at record',
+  parameters: { scenario: '0138/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Открыть на записи"
+      steps={OPEN_AT_RECORD}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(OPEN_AT_RECORD[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(scroller(canvas)!.scrollTop).toBe(0)
+      await expect(recordRow(canvas)).toBeNull()
+    })
+    await step(OPEN_AT_RECORD[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(scroller(canvas)!.scrollTop).toBeGreaterThan(0)
+      await expect(skeletonRows(canvas)).toBeGreaterThan(0)
+      await expect(recordRow(canvas)).toBeNull()
+    })
+    await step(OPEN_AT_RECORD[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const row = recordRow(canvas)!.getBoundingClientRect()
+      const area = scroller(canvas)!.getBoundingClientRect()
+      const head = canvas
+        .querySelector('.data-grid__head')!
+        .getBoundingClientRect()
+      // Посередине области строк — между шапкой и низом области прокрутки.
+      await expect(
+        Math.abs((row.top + row.bottom) / 2 - (head.bottom + area.bottom) / 2),
+      ).toBeLessThan(row.height)
+      await expect(recordHighlighted(canvas)).toBe(true)
       await settle()
     })
   },

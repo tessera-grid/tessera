@@ -464,6 +464,36 @@ export const HighContrastServerRowModelSortingStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelOpenAtRecordStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelOpenAtRecord,
+    1,
+  ),
+  name: 'Data loading/Server row model — Open at record, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelOpenAtRecordStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelOpenAtRecord,
+    2,
+  ),
+  name: 'Data loading/Server row model — Open at record, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelOpenAtRecordStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelOpenAtRecord,
+    3,
+  ),
+  name: 'Data loading/Server row model — Open at record, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',
