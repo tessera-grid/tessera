@@ -4,10 +4,13 @@
  * — подписи (ADR 0048, §4).
  */
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
+import { rowSelectionValueOf } from '../../core/rowSelectionAll'
 import type {
   ExportColumn,
   ExportData,
+  ExportRequest,
   ExportRows,
   ExportValueContext,
 } from './types'
@@ -131,6 +134,27 @@ export const exportRowsOf = (
 }
 
 /** Id выбранных строк из среза `rowSelection` — по всем страницам, в том числе не загруженным. */
+/**
+ * Серверная модель строк (ADR 0138, §10): серверу нужна выборка и срез выбора, строк у
+ * грида нет. Без неё — пусто.
+ */
+export const serverRowsRequestOf = (
+  table: unknown,
+): Pick<ExportRequest, 'query' | 'selection'> => {
+  if (!serverRowModelReason(table)) return {}
+  const state = (
+    table as { store: { get: () => Record<string, unknown> } }
+  ).store.get()
+  return {
+    query: {
+      sorting: (state.sorting ?? []) as unknown[],
+      columnFilters: (state.columnFilters ?? []) as unknown[],
+      globalFilter: (state.globalFilter ?? '') as string,
+    },
+    selection: rowSelectionValueOf(table),
+  }
+}
+
 export const selectedRowIdsOf = (table: unknown): string[] => {
   const selection = (
     table as {

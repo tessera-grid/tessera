@@ -7,7 +7,13 @@
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { useSlice } from '../../core/reactivity'
+import {
+  rowSelectionValueOf,
+  setAllRowsSelected,
+  tableAllSelection,
+} from '../../core/rowSelectionAll'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import {
   getCanSomeRowsSelect,
@@ -29,6 +35,36 @@ export const HeadSelectionComponent = ({
   }
 
   const { isAllRowsSelected = false, onSelectAllRowsOnPage } = hooks
+
+  // Серверная модель строк: «Выбрать всё» — весь итог без загрузки, снятые флажки —
+  // исключения (ADR 0138, §9).
+  if (serverRowModelReason(table)) {
+    const all = tableAllSelection(table)
+    const allSelected = !!all && all.except.length === 0
+    const handleSelectAll = (event: unknown) => {
+      reportAction(table, {
+        plugin: 'rowSelection',
+        action: 'toggleAllRows',
+        detail: { selected: !allSelected },
+        source: sourceOf(event),
+      })
+      setAllRowsSelected(table, !allSelected)
+      onSelectAllRowsOnPage?.(!allSelected)
+    }
+    return (
+      <SelectCheckbox
+        selected={allSelected}
+        indeterminate={
+          all
+            ? !allSelected
+            : Object.values(rowSelectionValueOf(table)).some(Boolean)
+        }
+        onClick={handleSelectAll}
+        disabled={isAllRowsSelected}
+        label={labels.selectAll}
+      />
+    )
+  }
 
   const selected = table.getIsAllPageRowsSelected()
   const indeterminate =

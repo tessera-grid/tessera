@@ -7,6 +7,10 @@ export {
   rowSelectionModel,
   type RowSelectionModelOptions,
 } from './rowSelectionModel'
+export type {
+  RowSelectionAll,
+  RowSelectionValue,
+} from '../core/rowSelectionAll'
 export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
 export {
   rowExpandingModel,

@@ -4,6 +4,10 @@
  */
 import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
+import {
+  setAllSelectionRow,
+  tableAllSelection,
+} from '../../core/rowSelectionAll'
 import type { Row } from '../../types'
 import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
@@ -25,7 +29,12 @@ export const toggleRowSelection = (
   hooks: Partial<RowSelectionHooks>,
   event: unknown,
 ): void => {
-  row.getToggleSelectedHandler()(event)
+  // «Всё, кроме» (ADR 0138, §9): снятый флажок — исключение, поставленный — без него.
+  if (tableAllSelection(row.table)) {
+    setAllSelectionRow(row.table, row.id, !row.getIsSelected())
+  } else {
+    row.getToggleSelectedHandler()(event)
+  }
   hooks.onSelectRow?.(row, !row.getIsSelected())
 }
 

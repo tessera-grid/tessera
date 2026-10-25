@@ -25,6 +25,7 @@ import {
 import { BodyRow } from '../../../grid/BodyRow'
 import { setColumnFilterByUser, setSearchByUser } from '../../../core/filtering'
 import { humanClick, revealCellButtons } from '../helpers'
+import { tableLabels } from '../labels'
 import { measureWork, renders } from '../work.helpers'
 import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
 
@@ -1171,6 +1172,64 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expectInert('cellSelectionModel')
     } finally {
       warn.mockRestore()
+      await screen.unmount()
+    }
+  })
+  test('SD28: «Выбрать всё» выбирает весь итог без загрузки; снятые флажки — исключения; флажки строк живые; счётчик rowCount − исключения; срез { all, except } в onRowSelectionChange', async () => {
+    const { calls, getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    const changes: unknown[] = []
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        plugins={[
+          rowSelection({
+            selectedCount: true,
+            onRowSelectionChange: next => changes.push(next),
+          }),
+        ]}
+      />,
+    )
+    const checkbox = (index: number) =>
+      rowAt(index)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+    const head = () => q('.data-grid__head-cell .row-select-checkbox')!
+    const checked = (element: Element | null) =>
+      !!element?.hasAttribute('data-checked')
+    const count = () =>
+      q('[data-testid="selected-rows-count"]')?.textContent?.trim() ?? ''
+    try {
+      await expect.poll(() => checkbox(0)).not.toBeNull()
+      const requested = calls.length
+
+      // Весь итог выбран, новых запросов нет.
+      await userEvent.click(head())
+      await expect.poll(() => changes.at(-1)).toEqual({ all: true, except: [] })
+      await expect.poll(() => checked(checkbox(0))).toBe(true)
+      expect(checked(head())).toBe(true)
+      expect(calls.length).toBe(requested)
+      await expect.poll(count).toBe(tableLabels.selectedRows(1000))
+
+      // Строки блока, пришедшего позже, — тоже выбраны.
+      await scrollToIndex(500)
+      await expect.poll(() => checked(checkbox(500))).toBe(true)
+
+      // Снятый флажок — исключение; соседние остаются выбранными.
+      await userEvent.click(checkbox(501)!)
+      await expect
+        .poll(() => changes.at(-1))
+        .toEqual({ all: true, except: ['r501'] })
+      expect(checked(checkbox(501))).toBe(false)
+      expect(checked(checkbox(500))).toBe(true)
+      expect(head().hasAttribute('data-indeterminate')).toBe(true)
+      await expect.poll(count).toBe(tableLabels.selectedRows(999))
+
+      // Флажок снова поставлен — исключения нет.
+      await userEvent.click(checkbox(501)!)
+      await expect.poll(() => changes.at(-1)).toEqual({ all: true, except: [] })
+      expect(checked(checkbox(501))).toBe(true)
+    } finally {
       await screen.unmount()
     }
   })

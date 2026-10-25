@@ -6,8 +6,11 @@
 import type { RowSelectionState } from '@tanstack/react-table'
 
 import type { StatusBarComponentProps } from '../../core/createSlots'
+import { pluginStateKey } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
-import { useTableState } from '../../core/reactivity'
+import type { RowSource } from '../../core/rowSource'
+import { allSelectionOf } from '../../core/rowSelectionAll'
+import { useSlice, useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
@@ -34,13 +37,27 @@ export const countHiddenSelectedRows = (
   return selected.filter(id => id in rowsById && !visible.has(id)).length
 }
 
+/** Строк в списке для «всё, кроме»: итог, а пока он неизвестен — строк в списке. */
+const listTotalOf = (table: unknown) => {
+  const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  const total = source.total?.() ?? source.count()
+  return total < 0 ? source.count() : total
+}
+
 export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
-  const selection = useTableState(
-    table,
-    state => state.rowSelection as RowSelectionState | undefined,
-  )
+  // Атом среза: в нём эффективное значение, и для «всё, кроме» (ADR 0138, §9).
+  const selection = useSlice(table, 'rowSelection') as
+    RowSelectionState | undefined
   useTableState(table, state => [state.columnFilters, state.globalFilter])
+  // Итог серверной модели строк меняется с приходом блоков (ADR 0138, §9).
+  useTableState(
+    table,
+    state =>
+      (state as unknown as Record<string, unknown>)[
+        pluginStateKey('serverRowModel')
+      ],
+  )
   if (isSkeletonShown(table)) {
     return (
       <span data-testid="selected-rows-count">
@@ -49,8 +66,12 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
     )
   }
 
-  const count = countSelectedRows(selection)
-  const hidden = count > 0 ? countHiddenSelectedRows(table, selection) : 0
+  const all = allSelectionOf(selection)
+  const count = all
+    ? Math.max(0, listTotalOf(table) - all.except.length)
+    : countSelectedRows(selection)
+  const hidden =
+    !all && count > 0 ? countHiddenSelectedRows(table, selection) : 0
 
   // Пустой счётчик держит место слота: панель не теряет строку (RS21, SB14).
   if (count === 0) return <span data-testid="selected-rows-count" />

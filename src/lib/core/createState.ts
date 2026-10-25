@@ -12,6 +12,8 @@
  */
 import { useMemo, useState } from 'react'
 
+import type { RowSelectionValue } from './rowSelectionAll'
+
 import {
   type ColumnOrderState,
   type ColumnPinningState,
@@ -166,10 +168,12 @@ export const useSortingState = (initial: SortingState = EMPTY_SORTING) => {
   return { sorting, onSortingChange }
 }
 
+/** Выбранные `id` или «всё, кроме» серверной модели строк (ADR 0138, §9). */
 export const useRowSelectionState = (
-  initial: RowSelectionState = EMPTY_SELECTION,
+  initial: RowSelectionValue = EMPTY_SELECTION,
 ) => {
-  const [rowSelection, onRowSelectionChange] = useControlledSlice(initial)
+  const [rowSelection, onRowSelectionChange] =
+    useControlledSlice<RowSelectionValue>(initial)
   return { rowSelection, onRowSelectionChange }
 }
 

@@ -3,7 +3,12 @@
  * активным плагинам, какие разрешены `allow`, начальные значения, место выполнения.
  */
 import { logError, logWarn } from '../../core/logger'
-import type { PluginDiagnostic } from '../../core/pluginDiagnostics'
+import {
+  type PluginDiagnostic,
+  type PluginInertReason,
+  serverRowModelReason,
+} from '../../core/pluginDiagnostics'
+import { tableAllSelection } from '../../core/rowSelectionAll'
 import { selectedRowIdsOf } from './exportData'
 import type {
   ExportAllow,
@@ -53,6 +58,8 @@ export interface ResolvedExportOptions {
 export interface Choice<T> {
   value: T
   disabled: boolean
+  /** Почему значение недоступно не по `allow` (серверная модель строк, ADR 0138, §10). */
+  reason?: PluginInertReason
 }
 
 export interface ExportAxes {
@@ -98,7 +105,10 @@ export const resolveAxes = (table: unknown): ExportAxes | undefined => {
     .filter(([id]) => active.has(id))
     .map(([, feature]) => feature)
     .filter((feature, index, all) => all.indexOf(feature) === index)
-  const noSelection = selectedRowIdsOf(table).length === 0
+  const noSelection =
+    !tableAllSelection(table) && selectedRowIdsOf(table).length === 0
+  // Строк у грида нет — их выгружает только сервер (ADR 0138, §10).
+  const serverRows = config.server ? undefined : serverRowModelReason(table)
 
   const present = (rows: ExportRows) =>
     rows === 'view'
@@ -107,7 +117,9 @@ export const resolveAxes = (table: unknown): ExportAxes | undefined => {
 
   return {
     rows: ROWS_ORDER.filter(present).map(rows =>
-      choice(rows, config.allow?.rows, rows === 'selected' && noSelection),
+      serverRows
+        ? { value: rows, disabled: true, reason: serverRows }
+        : choice(rows, config.allow?.rows, rows === 'selected' && noSelection),
     ),
     columns: COLUMNS_ORDER.map(columns =>
       choice(columns, config.allow?.columns),

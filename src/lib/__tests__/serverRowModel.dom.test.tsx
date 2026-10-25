@@ -12,17 +12,25 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { pluginStateKey, setPluginState } from '../core/definePlugin'
 import type { DebugAction } from '../core/debugActions'
 import type { RowSource } from '../core/rowSource'
+import { rowSelectionValueOf } from '../core/rowSelectionAll'
+import { resolveAxes } from '../plugins/dataExportModel/settings'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
+  columnFilteringModel,
+  columnSortingModel,
+  dataExport,
+  type ExportRequest,
   infiniteScroll,
   keyboardNavigation,
   pagination,
   paginationModel,
+  quickSearchModel,
   rowDragging,
   rowExpanding,
   rowGrouping,
   rowGroupingModel,
+  rowSelection,
   serverRowModel,
   type ServerRowsRequest,
   type ServerRowsResponse,
@@ -384,5 +392,144 @@ describe('серверная модель строк на таблице (ADR 01
     // Без загрузчика строки ведёт клиент — этой причины нет.
     act(() => root.render(<Grid loader={false} extra={extra} />))
     expect(Object.values(reasons())).not.toContain('serverRowModel')
+  })
+  it('SD29: выбор переживает смену окна, вытеснение блоков и смену сортировки, фильтра и поиска', async () => {
+    const extra = [
+      rowSelection(),
+      columnSortingModel(),
+      columnFilteringModel(),
+      quickSearchModel(),
+    ]
+    act(() => root.render(<Grid extra={extra} />))
+    const selectedAt = (index: number) =>
+      (
+        source().at(index) as unknown as { getIsSelected: () => boolean }
+      ).getIsSelected()
+    /** Окно в начале списка, его блок пришёл. */
+    const atStart = async () => {
+      show(0, 9)
+      const call = calls.at(-1)!
+      if (call.request.start === 0 && !answered.has(call)) await answer(call)
+    }
+    const answered = new Set<Call>()
+    const answerAll = async () => {
+      for (const call of calls) {
+        if (answered.has(call) || call.request.signal.aborted) continue
+        answered.add(call)
+        await answer(call)
+      }
+    }
+    /** Окно уходит далеко и возвращается: блок начала вытеснен (предел — два блока). */
+    const evictAndReturn = async () => {
+      for (const start of [100, 200, 300]) {
+        show(start, start + 9)
+        await answerAll()
+      }
+      expect(loaded(1)).toBe(false)
+      show(0, 9)
+      await answerAll()
+    }
+    /** Новая выборка: окно начала приходит заново. */
+    const requery = async (change: () => void) => {
+      act(change)
+      act(() => source().sync!())
+      show(0, 9)
+      await answerAll()
+    }
+
+    for (const selection of [
+      { r1: true },
+      { all: true as const, except: ['r2'] },
+    ]) {
+      await atStart()
+      await answerAll()
+      act(() => table.setRowSelection(() => selection))
+      // Строка 1 выбрана, строка 2 — нет (в «всё, кроме» она исключение).
+      const check = () => {
+        expect(rowSelectionValueOf(table)).toEqual(selection)
+        expect(selectedAt(1)).toBe(true)
+        expect(selectedAt(2)).toBe(false)
+      }
+      check()
+      await evictAndReturn()
+      check()
+      await requery(() => table.setSorting([{ id: 'name', desc: true }]))
+      check()
+      await requery(() =>
+        table.setColumnFilters([
+          { id: 'name', value: { operator: 'contains', value: 'N' } },
+        ]),
+      )
+      check()
+      await requery(() => table.setGlobalFilter('N'))
+      check()
+    }
+  })
+
+  it('SD30: выгрузка в SSRM — серверная, onExport получает состояние запроса и выбора; без server: true — dev-warn, значения all, view, selected недоступны с причиной', async () => {
+    const exports: ExportRequest[] = []
+    act(() =>
+      root.render(
+        <Grid
+          extra={[
+            rowSelection(),
+            columnSortingModel(),
+            dataExport({
+              server: true,
+              onExport: request => {
+                exports.push(request)
+              },
+            }),
+          ]}
+        />,
+      ),
+    )
+    show(0, 9)
+    await answer()
+    act(() => table.setSorting([{ id: 'name', desc: true }]))
+    act(() => table.setRowSelection(() => ({ all: true, except: ['r3'] })))
+    await act(() => table.exportData({ rows: 'selected' }))
+    expect(exports).toHaveLength(1)
+    expect(exports[0]!.query).toEqual({
+      sorting: [{ id: 'name', desc: true }],
+      columnFilters: [],
+      globalFilter: '',
+    })
+    expect(exports[0]!.selection).toEqual({ all: true, except: ['r3'] })
+
+    // Без серверной выгрузки строк у грида нет: значения строк недоступны с причиной.
+    act(() => root.unmount())
+    root = createRoot(document.createElement('div'))
+    act(() =>
+      root.render(
+        <Grid
+          extra={[
+            rowSelection(),
+            columnSortingModel(),
+            columnFilteringModel(),
+            dataExport(),
+          ]}
+        />,
+      ),
+    )
+    const rows = resolveAxes(table)!.rows
+    expect(rows.map(choice => choice.value)).toEqual([
+      'all',
+      'view',
+      'selected',
+    ])
+    for (const choice of rows) {
+      expect(choice).toMatchObject({ disabled: true, reason: 'serverRowModel' })
+    }
+    expect(table.getPluginDiagnostics()).toContainEqual({
+      id: 'dataExport',
+      status: 'inert',
+      reason: 'serverRowModel',
+    })
+    expect(
+      warnings().some(
+        text => text.includes('dataExport') && text.includes('serverRowModel'),
+      ),
+    ).toBe(true)
   })
 })

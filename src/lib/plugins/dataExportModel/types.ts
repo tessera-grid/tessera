@@ -1,3 +1,5 @@
+import type { RowSelectionValue } from '../../core/rowSelectionAll'
+
 /** Значения оси «Строки» (ADR 0044, §2). */
 export type ExportRows = 'all' | 'view' | 'page' | 'selected'
 
@@ -75,6 +77,16 @@ export interface ExportRequest {
   columns: ExportColumn[]
   /** Только `rows: 'selected'` в серверном `onExport`: id всех выбранных строк. */
   rowIds?: string[]
+  /**
+   * Только серверная модель строк, в серверном `onExport` (ADR 0138, §10): выборка, под
+   * которую выгружать, и срез выбора — выбранные `id` или «всё, кроме».
+   */
+  query?: {
+    sorting: unknown[]
+    columnFilters: unknown[]
+    globalFilter: string
+  }
+  selection?: RowSelectionValue
   /** Только в `onExported`. */
   rowCount?: number
   /** Только в `onExported`: имя файла без расширения. */

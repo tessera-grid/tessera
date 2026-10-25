@@ -12,6 +12,7 @@ import {
   exportColumnsOf,
   headerOf,
   selectedRowIdsOf,
+  serverRowsRequestOf,
 } from './exportData'
 import { exportConfigOf, settingsFromArg, whereOf } from './settings'
 import type {
@@ -99,6 +100,7 @@ export const runExport = (
         ...(settings.rows === 'selected'
           ? { rowIds: selectedRowIdsOf(table) }
           : {}),
+        ...serverRowsRequestOf(table),
       },
       outcome,
     )

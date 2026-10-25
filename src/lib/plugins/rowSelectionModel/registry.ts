@@ -11,6 +11,11 @@ import {
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import {
+  effectiveSelectionOf,
+  isAllSelection,
+  type RowSelectionValue,
+} from '../../core/rowSelectionAll'
 import { warnPluginInert } from '../../core/pluginDiagnostics'
 import { isGroupingActive } from './selectionHelpers'
 
@@ -19,12 +24,15 @@ export interface RowSelectionModelOptions {
   enabled?: boolean
   /** Разрешить выбор дочерних строк (каскад на поддерево). */
   subRows?: boolean
-  /** Выбранные строки по `id`: задаёт приложение; без него срез хранит грид. */
-  rowSelection?: RowSelectionState
+  /**
+   * Выбранные строки по `id` или «всё, кроме» `{ all: true, except }` серверной модели
+   * строк (ADR 0138, §9): задаёт приложение; без него срез хранит грид.
+   */
+  rowSelection?: RowSelectionValue
   /** Новое значение среза после каждого изменения изнутри грида. */
-  onRowSelectionChange?: (next: RowSelectionState) => void
+  onRowSelectionChange?: (next: RowSelectionValue) => void
   /** Начальное значение среза, которым владеет грид. */
-  initialRowSelection?: RowSelectionState
+  initialRowSelection?: RowSelectionValue
 }
 
 /** Фичи модели выбора; интерфейс несёт те же — по ним выводится тип среза. */
@@ -50,14 +58,18 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
   features: rowSelectionModelFeatures,
   slices: ['rowSelection'],
   // Выключенная модель не показывает выбор: эффективный срез пуст, сохранённый не
-  // меняется (ADR 0039) — включили снова, выбор вернулся.
-  narrow: o =>
-    o.enabled === false
-      ? {
-          rowSelection: (value?: RowSelectionState) =>
-            value && Object.keys(value).length ? NO_SELECTION : value,
-        }
-      : undefined,
+  // меняется (ADR 0039) — включили снова, выбор вернулся. «Всё, кроме» TanStack видит
+  // объектом, где выбрана каждая строка вне исключений (ADR 0138, §9).
+  narrow: o => ({
+    rowSelection: (value?: RowSelectionValue) => {
+      if (o.enabled === false) {
+        return value && (isAllSelection(value) || Object.keys(value).length)
+          ? NO_SELECTION
+          : value
+      }
+      return isAllSelection(value) ? effectiveSelectionOf(value) : value
+    },
+  }),
   options: o => ({
     // При disabled — жёстко false (иначе present-but-disabled фича активна:
     // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).

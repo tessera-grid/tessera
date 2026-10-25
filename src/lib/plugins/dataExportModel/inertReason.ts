@@ -1,4 +1,7 @@
-import type { PluginInertReason } from '../../core/pluginDiagnostics'
+import {
+  type PluginInertReason,
+  serverRowModelReason,
+} from '../../core/pluginDiagnostics'
 import type { ExportRows } from './types'
 import type { ResolvedExportOptions } from './settings'
 
@@ -19,6 +22,11 @@ export const exportInertReason = (
 ): PluginInertReason | undefined => {
   const { options, getHooks } = table as ExportTable
   const config = options.exportOptions
+  // Серверная модель строк: выгрузка — только серверная (ADR 0138, §10).
+  if (!config?.server) {
+    const server = serverRowModelReason(table)
+    if (server) return server
+  }
   const hooks = getHooks?.call(table)?.dataExportModel as
     { onExport?: unknown } | undefined
   const runsOnServer =

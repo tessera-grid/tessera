@@ -2,9 +2,14 @@ import { useCallback, useMemo } from 'react'
 
 import { RowSelectionState } from '@tanstack/react-table'
 
+import {
+  isAllSelection,
+  type RowSelectionValue,
+} from '../../core/rowSelectionAll'
+
 export interface UseAllRowsSelectParams {
   data: Record<string, any>[]
-  rowSelection: RowSelectionState
+  rowSelection: RowSelectionValue
 }
 
 export const useAllRowsSelect = ({
@@ -23,6 +28,9 @@ export const useAllRowsSelect = ({
 
   return {
     getSelectedData,
-    selectedDataCount: Object.values(rowSelection).filter(Boolean).length,
+    // «Всё, кроме» серверной модели строк: все строки данных без исключений.
+    selectedDataCount: isAllSelection(rowSelection)
+      ? dataIds.length - rowSelection.except.length
+      : Object.values(rowSelection).filter(Boolean).length,
   }
 }
