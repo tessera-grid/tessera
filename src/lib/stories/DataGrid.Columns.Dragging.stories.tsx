@@ -12,14 +12,21 @@ import {
   dragHold,
   guideNext,
   headCell,
+  pollUntil,
   releaseFocus,
   settle,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -161,7 +168,7 @@ const dropHeldAtStart = async () => {
  * Берёт вторую колонку за ручку и держит у начала первой: место считается от левой
  * десятой ячейки-цели, а прокрутка в нуле — автопрокрутке ехать некуда (ADR 0130, §4).
  */
-const holdSecondColumn = async (root: HTMLElement) => {
+const holdSecondColumn = async (root: HTMLElement, signal?: AbortSignal) => {
   const container = root.querySelector('.data-grid__container')!
   container.scrollIntoView({ block: 'nearest' })
   const id = headOrder(root)[1]!
@@ -177,7 +184,7 @@ const holdSecondColumn = async (root: HTMLElement) => {
     x: cellLeft(headOrder(root)[0]!) + (grip.x - cellLeft(id)),
     y: grip.y,
   }
-  const held = await dragHold(handle, target)
+  const held = await dragHold(handle, target, undefined, signal)
   return { held, target }
 }
 
@@ -226,9 +233,15 @@ const COLUMN_MOVE: readonly GuideStoryStep[] = [
     hint: 'Пользователь взял вторую колонку за ручку и ведёт её к началу таблицы. Заголовок колонки следует за указателем, а на месте вставки колонки расступаются.',
     // Ручка видна и в облаке заголовка: наведение шапки в forced-colors контура не даёт.
     states: ['drag.columnHandle', 'drag.column'],
-    enter: afterRows(async root => {
+    // Шаг готов, когда колонка удержана и нажатие её отпускает: клик посреди движения
+    // проглотило бы перетаскивание (`stepDone` в `play`).
+    enter: stepAction(async (root, step) => {
       dropHeldColumn()
-      heldColumn = await holdSecondColumn(root)
+      await pollUntil(
+        () => !!root.querySelector('.data-grid__body-row'),
+        step.signal,
+      )
+      heldColumn = await holdSecondColumn(root, step.signal)
       releaseOnPress()
     }),
   },
@@ -293,6 +306,7 @@ export const ColumnDraggingMove: StoryObj<StoryProps> = {
     })
     await step(COLUMN_MOVE[1]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() =>
         expect(document.querySelector(COLUMN_CLOUD)).not.toBeNull(),
       )
