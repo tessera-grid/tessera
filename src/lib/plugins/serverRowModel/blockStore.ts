@@ -50,11 +50,19 @@ export interface BlockFailure {
   reason?: string
 }
 
+/** `auto` — запрос автоповтора отказавшего блока (ADR 0138, §11). */
 type Block<TRow> =
-  | { status: 'queued' }
-  | { status: 'pending'; abort: AbortController }
+  | { status: 'queued'; auto?: boolean }
+  | { status: 'pending'; abort: AbortController; auto?: boolean }
   | { status: 'loaded'; rows: TRow[]; used: number }
-  | { status: 'error'; reason?: string }
+  | {
+      status: 'error'
+      reason?: string
+      /** Блок уходил из окна после отказа. */
+      away?: boolean
+      /** Отказал сам автоповтор: дальше — только кнопкой. */
+      retried?: boolean
+    }
 
 const MAX_CONCURRENT = 2
 
@@ -138,6 +146,8 @@ export class BlockStore<TData, TRow, TQuery> {
         this.blocks.delete(index)
       } else if (block.status === 'queued') {
         this.blocks.delete(index)
+      } else if (block.status === 'error') {
+        block.away = true
       }
     }
     for (const index of needed) {
@@ -146,8 +156,11 @@ export class BlockStore<TData, TRow, TQuery> {
     }
     if (!fast) {
       for (const index of needed) {
-        if (!this.blocks.has(index))
-          this.blocks.set(index, { status: 'queued' })
+        const block = this.blocks.get(index)
+        if (!block) this.blocks.set(index, { status: 'queued' })
+        // Отказавший блок вернулся в окно: один автоповтор.
+        else if (block.status === 'error' && block.away && !block.retried)
+          this.blocks.set(index, { status: 'queued', auto: true })
       }
     }
     // Окно и закрепления сменились: блоки сверх предела, ставшие ненужными, уходят.
@@ -296,14 +309,20 @@ export class BlockStore<TData, TRow, TQuery> {
 
   private request(blockIndex: number) {
     const abort = new AbortController()
-    const block: Block<TRow> = { status: 'pending', abort }
+    const queued = this.blocks.get(blockIndex)
+    const auto = queued?.status === 'queued' && queued.auto
+    const block: Block<TRow> = { status: 'pending', abort, auto }
     this.blocks.set(blockIndex, block)
     const start = blockIndex * this.size
     const current = () => this.blocks.get(blockIndex) === block
     const fail = (reason: unknown) => {
       if (!current() || abort.signal.aborted) return
       const text = rejectionText(reason)
-      this.blocks.set(blockIndex, { status: 'error', reason: text })
+      this.blocks.set(blockIndex, {
+        status: 'error',
+        reason: text,
+        retried: auto,
+      })
       this.options.onChange()
       this.options.onFailure?.(blockIndex, text)
       this.pump()

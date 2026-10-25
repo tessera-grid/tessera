@@ -1,6 +1,6 @@
 /**
- * Хранилище блоков серверной модели строк (ADR 0138, этап 2; SD7–SD8): очередь запросов
- * и отмена блоков, ушедших из окна.
+ * Хранилище блоков серверной модели строк (ADR 0138, этап 2; SD7–SD8, SD39): очередь
+ * запросов, отмена блоков, ушедших из окна, и автоповтор отказавшего блока.
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowModel
  */
 import { describe, expect, it } from 'vitest'
@@ -106,5 +106,47 @@ describe('Хранилище блоков (ADR 0138)', () => {
     store.setWindow(0, 9)
     expect(calls.at(-1)!.request.start).toBe(0)
     expect(calls.at(-1)!.request.signal.aborted).toBe(false)
+  })
+
+  it('SD39: отказавший блок, ушедший из окна и вернувшийся в него, запрашивается сам один раз, не во время быстрой прокрутки; отказ автоповтора — строка ошибки, дальше повтор только кнопкой', async () => {
+    const { store, calls, answer } = setup()
+    const fail = async (call: Call) => {
+      call.reject(new Error('down'))
+      await Promise.resolve()
+      await Promise.resolve()
+    }
+    const requestsOf = (start: number) =>
+      calls.filter(call => call.request.start === start).length
+    store.setWindow(0, 9)
+    await fail(calls[0]!)
+    expect(store.statusOf(0)).toBe('error')
+
+    // В окне без ухода — блок не повторяется.
+    store.setWindow(0, 9)
+    expect(requestsOf(0)).toBe(1)
+
+    // Ушёл и вернулся быстрой прокруткой — ещё не повторяется.
+    store.setWindow(500, 509)
+    store.setWindow(0, 9, true)
+    expect(requestsOf(0)).toBe(1)
+    expect(store.statusOf(0)).toBe('error')
+
+    // Прокрутка успокоилась — один автоповтор.
+    store.setWindow(0, 9)
+    expect(requestsOf(0)).toBe(2)
+    await fail(calls.at(-1)!)
+    expect(store.statusOf(0)).toBe('error')
+    expect(store.failures().map(failure => failure.start)).toEqual([0])
+
+    // Автоповтор отказал: уход и возврат больше не повторяют.
+    store.setWindow(500, 509)
+    store.setWindow(0, 9)
+    expect(requestsOf(0)).toBe(2)
+
+    // Кнопка повтора — по-прежнему.
+    store.retry(0)
+    expect(requestsOf(0)).toBe(3)
+    await answer(calls.at(-1)!)
+    expect(store.statusOf(0)).toBe('loaded')
   })
 })
