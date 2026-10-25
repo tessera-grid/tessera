@@ -427,12 +427,13 @@ export class BlockStore<TData, TRow, TQuery> {
     return result
   }
 
-  /** Вытеснить загруженный блок по решению дерева. */
-  dropBlock(blockIndex: number) {
+  /** Вытеснить загруженный блок по решению дерева; его строки. */
+  dropBlock(blockIndex: number): readonly TRow[] {
     const block = this.blocks.get(blockIndex)
-    if (block?.status !== 'loaded') return
+    if (block?.status !== 'loaded') return []
     for (const row of block.rows) this.indexById.delete(this.options.idOf(row))
     this.blocks.delete(blockIndex)
+    return block.rows
   }
 
   private evict() {

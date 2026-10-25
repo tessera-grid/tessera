@@ -72,7 +72,10 @@ export class BlockTree<TData, TRow, TQuery> {
     string | undefined,
     TreeNode<TData, TRow, TQuery>
   >()
-  /** Место строки в её ветке: известно с прихода блока, переживает вытеснение. */
+  /**
+   * Место строки в её ветке: с прихода блока до его вытеснения; у раскрытой строки — и после,
+   * чтобы её ветка оставалась на месте.
+   */
   private readonly positions = new Map<string, Position>()
   private clock = 0
   private version = 0
@@ -348,9 +351,13 @@ export class BlockTree<TData, TRow, TQuery> {
     candidates.sort(
       (a, b) => Number(b.closed) - Number(a.closed) || a.used - b.used,
     )
+    const expanded = this.options.expanded()
     for (const candidate of candidates) {
       if (excess <= 0) break
-      candidate.node.store.dropBlock(candidate.index)
+      for (const row of candidate.node.store.dropBlock(candidate.index)) {
+        const id = this.options.idOf(row)
+        if (!expanded.has(id)) this.positions.delete(id)
+      }
       excess--
     }
     this.version++

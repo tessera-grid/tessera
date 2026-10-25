@@ -1,6 +1,7 @@
 /**
- * Хранилище блоков серверной модели строк (ADR 0138, этап 2; SD7–SD8, SD39): очередь
- * запросов, отмена блоков, ушедших из окна, и автоповтор отказавшего блока.
+ * Хранилище блоков серверной модели строк (ADR 0138; SD7–SD8, SD39, SD47): очередь
+ * запросов, отмена блоков, ушедших из окна, автоповтор отказавшего блока и словарь мест
+ * строк дерева.
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowModel
  */
 import { describe, expect, it } from 'vitest'
@@ -10,6 +11,7 @@ import {
   type BlockResponse,
   BlockStore,
 } from '../plugins/serverRowModel/blockStore'
+import { BlockTree } from '../plugins/serverRowModel/tree'
 
 interface Item {
   id: string
@@ -148,5 +150,50 @@ describe('Хранилище блоков (ADR 0138)', () => {
     expect(requestsOf(0)).toBe(3)
     await answer(calls.at(-1)!)
     expect(store.statusOf(0)).toBe('loaded')
+  })
+})
+
+describe('Дерево хранилищ (ADR 0138)', () => {
+  it('SD47: место строки в её ветке дерево помнит только для строк загруженных блоков и раскрытых строк: вытесненный блок уносит записи своих строк, раскрытая строка свою сохраняет, и её ветка остаётся на месте', async () => {
+    const expanded = new Set(['r1'])
+    const tree = new BlockTree<Item, Item, string>({
+      blockSize: BLOCK,
+      maxBlocks: 2,
+      rowCount: 1000,
+      query: () => 'q',
+      // Корни — `r<номер>`, у раскрытой строки пять детей `<родитель>.<номер>`.
+      getRows: ({ start, end, parentId }) => ({
+        rows: Array.from(
+          { length: Math.min(end, parentId ? 5 : end) - start },
+          (_, i) => ({
+            id: parentId ? `${parentId}.${start + i}` : `r${start + i}`,
+          }),
+        ),
+        ...(parentId ? { rowCount: 5 } : {}),
+      }),
+      toRows: data => data,
+      idOf: row => row.id,
+      expanded: () => expanded,
+      onChange: () => {},
+    })
+    const settle = () => new Promise(resolve => setTimeout(resolve, 0))
+    const positions = () =>
+      (tree as unknown as { positions: Map<string, unknown> }).positions.size
+
+    tree.setWindow(0, 9)
+    await settle()
+    tree.count()
+    await settle()
+    expect(tree.rowAt(2)?.id).toBe('r1.0')
+
+    // Долгая прокрутка: записей не больше, чем строк в двух блоках, и раскрытой строки.
+    for (let first = 105; first < 1000; first += 50) {
+      tree.setWindow(first, first + 9)
+      await settle()
+      expect(positions()).toBeLessThanOrEqual(2 * BLOCK + 1)
+    }
+    // Блок строки 1 вытеснен, её ветка — на месте.
+    expect(tree.rowAt(1)).toBeUndefined()
+    expect(tree.count()).toBe(1005)
   })
 })
