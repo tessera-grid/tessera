@@ -31,6 +31,18 @@
   height: var(--tsr-comp-row-height);
 }
 
+/* Ячейка навигации незагруженной строки — поверх скелета во всю строку. */
+.pendingCell {
+  position: absolute;
+  inset: 0;
+  outline: none;
+
+  &[data-kn-active='true']:focus-visible {
+    outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
+    outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
+  }
+}
+
 /*
  * Отказавший блок серверной модели (ADR 0138, §11): место блока пустое, строка ошибки
  * прилипает к верху его видимой части — под шапкой.

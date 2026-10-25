@@ -1,6 +1,7 @@
+import axe from 'axe-core'
 import { render } from 'vitest-browser-react'
 import { userEvent } from 'vitest/browser'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
 import type { TesseraFeatureEntry } from '../../../core/features'
@@ -18,6 +19,7 @@ import {
   type ServerRowsResponse,
 } from '../../../plugins'
 import { humanClick } from '../helpers'
+import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
 
 // Серверная модель строк на гриде (ADR 0138, этап 2): высота на весь итог, скелеты
 // незагруженных строк, блоки по окну прокрутки, неизвестный итог, отказы блока и списка.
@@ -78,11 +80,13 @@ const Grid = ({
   rowCount,
   plugins = [],
   state,
+  colorMode,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
   plugins?: readonly TesseraFeatureEntry[]
   state?: Record<string, unknown>
+  colorMode?: 'light' | 'dark'
 }) => {
   const table = useCreateTable({
     columns: COLUMNS as never,
@@ -96,7 +100,7 @@ const Grid = ({
   })
   return (
     <div style={{ width: 600, height: 420 }}>
-      <DataGrid table={table as never} />
+      <DataGrid table={table as never} colorMode={colorMode} />
     </div>
   )
 }
@@ -127,6 +131,24 @@ const rowAt = (index: number) =>
   q(`.data-grid__body-row[data-index="${index}"]`)
 const errorRow = () => q('[data-testid="rows-load-error"]')
 const liveRegion = () => q('[role="status"][aria-live="polite"]')!
+const pendingRow = (index: number) =>
+  q(`[data-pending-row][data-index="${index}"]`)
+const press = (keys: string) => userEvent.keyboard(keys)
+/** Строка, в которой фокус: индекс в списке. */
+const focusedIndex = () =>
+  Number(
+    (document.activeElement as HTMLElement | null)?.closest<HTMLElement>(
+      '[data-index]',
+    )?.dataset.index ?? -1,
+  )
+/** Нажать на ячейку строки `index` (строка в окне) и дождаться фокуса. */
+const focusRow = async (index: number) => {
+  await expect.poll(() => rowAt(index)?.dataset.rowId).toBe(`r${index}`)
+  const cell = rowAt(index)!.querySelector<HTMLElement>('[data-kn-cell]')!
+  await humanClick(cell)
+  await expect.poll(() => document.activeElement).toBe(cell)
+  return cell
+}
 /** Прокрутить тело к строке `index` и дождаться, пока быстрая прокрутка уляжется. */
 const scrollToIndex = async (index: number) => {
   scroller().scrollTop = index * rowHeight()
@@ -404,6 +426,234 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expect(shown[0]).toBeGreaterThan(BLOCK * 3)
     } finally {
       await screen.unmount()
+    }
+  })
+
+  test('SD14: активная ячейка на незагруженной строке — фокус стоит, строка aria-busy, блок приходит без сдвига фокуса; с enableKeyboardNavigation вкл и выкл', async () => {
+    const { calls, getRows } = server(({ start, end }) =>
+      start === 0 ? { rows: rowsOf(start, end) } : undefined,
+    )
+    let screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        plugins={[keyboardNavigation()]}
+      />,
+    )
+    try {
+      await scrollToIndex(90)
+      const cell = await focusRow(98)
+      const column = cell.dataset.columnId
+      await press('{ArrowDown}{ArrowDown}{ArrowDown}')
+      await expect.poll(focusedIndex).toBe(101)
+      const row = pendingRow(101)!
+      expect(row.contains(document.activeElement)).toBe(true)
+      expect(row.getAttribute('aria-busy')).toBe('true')
+      expect(row.getAttribute('role')).toBe('row')
+
+      // Блок пришёл — фокус в той же строке и колонке, уже на настоящей ячейке.
+      await expect
+        .poll(() => calls.some(call => call.request.start === BLOCK))
+        .toBe(true)
+      calls
+        .find(call => call.request.start === BLOCK)!
+        .settle({ rows: rowsOf(BLOCK, 2 * BLOCK) })
+      await expect.poll(() => rowAt(101)?.dataset.rowId).toBe('r101')
+      await expect
+        .poll(() => rowAt(101)!.contains(document.activeElement))
+        .toBe(true)
+      expect((document.activeElement as HTMLElement).dataset.columnId).toBe(
+        column,
+      )
+    } finally {
+      await screen.unmount()
+    }
+
+    // Без клавиатурной навигации: строка-заглушка не фокусируется и фокус не трогает.
+    const off = server(({ start, end }) =>
+      start === 0 ? { rows: rowsOf(start, end) } : undefined,
+    )
+    screen = await render(<Grid getRows={off.getRows} rowCount={1000} />)
+    try {
+      await scrollToIndex(90)
+      await expect.poll(() => pendingRow(101)).not.toBeNull()
+      const cell = pendingRow(101)!.querySelector('[role="cell"]')!
+      expect(cell.hasAttribute('tabindex')).toBe(false)
+      const focused = document.activeElement
+      off.calls
+        .find(call => call.request.start === BLOCK)!
+        .settle({ rows: rowsOf(BLOCK, 2 * BLOCK) })
+      await expect.poll(() => rowAt(101)?.dataset.rowId).toBe('r101')
+      expect(document.activeElement).toBe(focused)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SD15: Ctrl+End, Ctrl+Home, PageDown и PageUp двигают по всему итогу и загружают нужный блок', async () => {
+    const { getRows, starts } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        plugins={[keyboardNavigation()]}
+      />,
+    )
+    try {
+      await focusRow(0)
+      await press('{Control>}{End}{/Control}')
+      await expect.poll(focusedIndex).toBe(999)
+      await expect.poll(() => rowAt(999)?.dataset.rowId).toBe('r999')
+      expect(starts()).toContain(900)
+      await expect
+        .poll(() => rowAt(999)!.contains(document.activeElement))
+        .toBe(true)
+
+      // Ctrl+Home — в первую ячейку шапки (KN5); ↓ оттуда — первая строка списка.
+      await press('{Control>}{Home}{/Control}')
+      await expect
+        .poll(() => document.activeElement?.getAttribute('role'))
+        .toBe('columnheader')
+      await press('{ArrowDown}')
+      await expect.poll(focusedIndex).toBe(0)
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+
+      // PageDown от конца первого блока уводит во второй — он приходит, фокус на строке.
+      await scrollToIndex(90)
+      await focusRow(97)
+      await press('{PageDown}')
+      await expect.poll(focusedIndex).toBeGreaterThan(BLOCK)
+      const down = focusedIndex()
+      await expect.poll(() => rowAt(down)?.dataset.rowId).toBe(`r${down}`)
+      expect(starts()).toContain(BLOCK)
+      await press('{PageUp}')
+      await expect.poll(focusedIndex).toBeLessThan(down)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SD16: aria-rowcount — итог с шапкой или -1; незагруженные строки — role="row" со сквозным aria-rowindex и aria-busy; в ролях table и grid', async () => {
+    for (const plugins of [[], [keyboardNavigation()]]) {
+      const role = plugins.length ? 'grid' : 'table'
+      const { getRows } = server(({ start, end }) =>
+        start === 0 ? { rows: rowsOf(start, end) } : undefined,
+      )
+      const screen = await render(
+        <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,
+      )
+      try {
+        const root = q(`[role="${role}"]`)!
+        await expect.poll(shownIndexes).toContain(0)
+        expect(root.getAttribute('aria-rowcount')).toBe('1001')
+        await scrollToIndex(BLOCK + 10)
+        await expect.poll(() => pendingRow(BLOCK + 10)).not.toBeNull()
+        const rows = [
+          ...document.querySelectorAll<HTMLElement>('[data-pending-row]'),
+        ].sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+        for (const row of rows) {
+          expect(row.getAttribute('role')).toBe('row')
+          expect(row.getAttribute('aria-busy')).toBe('true')
+          expect(row.getAttribute('aria-rowindex')).toBe(
+            String(Number(row.dataset.index) + 2),
+          )
+          expect(row.closest('[aria-hidden="true"]')).toBeNull()
+        }
+      } finally {
+        await screen.unmount()
+      }
+    }
+
+    // Итог неизвестен — -1, пока короткий блок не закончил список.
+    const LAST = 140
+    const { getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, Math.min(end, LAST)),
+    }))
+    const screen = await render(<Grid getRows={getRows} />)
+    try {
+      await expect.poll(shownIndexes).toContain(0)
+      expect(q('[role="table"]')!.getAttribute('aria-rowcount')).toBe('-1')
+      await scrollToIndex(LAST)
+      await expect
+        .poll(() => q('[role="table"]')!.getAttribute('aria-rowcount'))
+        .toBe(String(LAST + 1))
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SD17: axe и color-contrast скелета, строки ошибки и ожидания в обеих темах', async () => {
+    for (const colorMode of ['light', 'dark'] as const) {
+      const { getRows } = server(({ start, end }) =>
+        start === 0
+          ? { rows: rowsOf(start, end) }
+          : start === BLOCK
+            ? new Error('down')
+            : undefined,
+      )
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[keyboardNavigation()]}
+          colorMode={colorMode}
+        />,
+      )
+      try {
+        await expect.poll(shownIndexes).toContain(0)
+        // В окне — строки с данными, строка ошибки блока и строки-заглушки.
+        await scrollToIndex(2 * BLOCK - 4)
+        await expect.poll(errorRow).not.toBeNull()
+        await expect.poll(() => pendingRow(2 * BLOCK + 1)).not.toBeNull()
+        const { violations } = await axe.run(q('.data-grid-theme')!, {
+          ...AXE_OPTIONS,
+          rules: {
+            ...AXE_OPTIONS.rules,
+            'color-contrast': { enabled: true },
+          },
+        })
+        expect(violations, colorMode).toEqual([])
+        // Под липкой строкой ошибки axe фон не определяет (incomplete) — меряем сами.
+        for (const text of errorRow()!.querySelectorAll<HTMLElement>(
+          '[class*="error-title"], [class*="error-reason"], button',
+        )) {
+          const ratio = contrast(
+            toRgba(getComputedStyle(text).color),
+            effectiveBg(text),
+          )
+          expect(
+            ratio,
+            `${colorMode}: ${text.textContent}`,
+          ).toBeGreaterThanOrEqual(4.5)
+        }
+      } finally {
+        await screen.unmount()
+      }
+    }
+  })
+
+  test('SD18: список выше предела высоты браузера — dev-warn с советом о пагинации', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { getRows } = server(() => undefined)
+      let screen = await render(<Grid getRows={getRows} rowCount={1000} />)
+      await expect.poll(skeletonRows).not.toEqual([])
+      expect(
+        warn.mock.calls.some(call => String(call[0]).includes('pagination')),
+      ).toBe(false)
+      await screen.unmount()
+
+      screen = await render(<Grid getRows={getRows} rowCount={10_000_000} />)
+      await expect
+        .poll(() =>
+          warn.mock.calls.some(call => String(call[0]).includes('pagination')),
+        )
+        .toBe(true)
+      await screen.unmount()
+    } finally {
+      warn.mockRestore()
     }
   })
 })

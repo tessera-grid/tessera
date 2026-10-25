@@ -27,6 +27,14 @@ export interface ServerRowModelOptions {
 }
 
 /** Источник таблицы; у клиентского (плагин выключен или инертен) хранилища нет. */
+/** Итог для `aria-rowcount`: строк в списке или `-1`, если итог неизвестен. */
+const totalRowCountOf = (table: unknown) => {
+  const { store } = sourceOfTable(table)
+  if (!store) return undefined
+  if (store.failedEmpty()) return 0
+  return store.isTotalKnown() ? store.count() : -1
+}
+
 const sourceOfTable = (table: unknown) =>
   (
     table as { getRowSource: () => RowSource }
@@ -52,6 +60,8 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
       serverRowModelBlockSize: o.blockSize ?? DEFAULT_BLOCK_SIZE,
       serverRowModelMaxBlocks: o.maxBlocks ?? DEFAULT_MAX_BLOCKS,
       serverRowModelRowCount: enabled ? o.rowCount : undefined,
+      // `aria-rowcount` — итог или `-1`, пока он неизвестен (ADR 0138, §8).
+      getTotalRowCount: enabled && o.getRows ? totalRowCountOf : undefined,
     }
   },
   // Кэш переживает смену аргументов: cleanup лишь отменяет запросы в пути.

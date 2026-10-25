@@ -17,7 +17,7 @@ import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
 import { LoadMoreError } from './LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
-import { SkeletonRows } from './SkeletonBody'
+import { PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
 import { getTreeLines, projectTreeLines } from './treeBranches'
 
@@ -162,21 +162,16 @@ export const Body = ({
           // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
           if (!row) {
             return (
-              <div
+              <PendingRow
                 key={`pending-${virtualRow.index}`}
-                className={styles.pending}
-                style={{ top: virtualRow.start }}
-              >
-                <SkeletonRows
-                  table={table}
-                  layout={layout}
-                  leafColumns={leafColumns}
-                  virtualColumns={virtualColumns}
-                  isVirtualColumns={isVirtualColumns}
-                  rowCount={1}
-                  firstRowIndex={virtualRow.index}
-                />
-              </div>
+                table={table}
+                layout={layout}
+                virtualRow={virtualRow}
+                leafColumns={leafColumns}
+                virtualColumns={virtualColumns}
+                isVirtualColumns={isVirtualColumns}
+                ariaRowIndexBase={ariaRowIndexBase}
+              />
             )
           }
           const isActive = drop?.activeId === row.id

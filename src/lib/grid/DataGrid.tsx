@@ -17,6 +17,7 @@ import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useRowSourceWindow } from '../core/rowSourceWindow'
+import { useScrollHeightWarning } from '../core/scrollHeightLimit'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { trackInputModality } from '../core/inputModality'
@@ -188,6 +189,7 @@ export const DataGrid = ({
   // Ключ перечитывания токенов: тема и появление корня (без строк — ветка заглушки).
   const themeKey = `${colorMode}|${className}|${rowCount > 0}`
   const heights = useRowHeights(table, wrapperRef, themeKey)
+  useScrollHeightWarning(table, rowCount, heights.row)
   useControlColumnSizes(table, wrapperRef, themeKey)
 
   // Авто-прокрутка при drag-выделении ячеек у края/за пределами таблицы (инертно

@@ -79,6 +79,11 @@ export class BlockStore<TData, TRow, TQuery> {
   }
 
   /** Строк в списке: итог, а без него — загруженное и один блок впереди. */
+  /** Итог известен: задан, пришёл в ответе или найден коротким блоком. */
+  isTotalKnown(): boolean {
+    return this.total !== undefined || this.ended
+  }
+
   count(): number {
     if (this.total !== undefined) return this.total
     let end = 0

@@ -52,15 +52,17 @@ const Grid = ({
   maxBlocks = 2,
   loader = true,
   onDebugAction,
+  rowId = (row: Item) => row.id,
 }: {
   maxBlocks?: number
   loader?: boolean
   onDebugAction?: (report: DebugAction) => void
+  rowId?: (row: Item) => string
 }) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data: NO_DATA,
-    getRowId: (row: Item) => row.id,
+    getRowId: rowId,
     onDebugAction: onDebugAction as never,
     plugins: [
       serverRowModel({
@@ -72,6 +74,17 @@ const Grid = ({
       keyboardNavigation(),
       cellEditing(),
     ] as never,
+  })
+  return null
+}
+
+/** SD13, типы: строка без строкового `id` и без `getRowId` — ошибка компиляции. */
+export const NoRowIdGrid = () => {
+  // @ts-expect-error — getRowId обязателен, когда у строки нет строкового id.
+  useCreateTable({
+    columns: COLUMNS as never,
+    data: [] as { name: string }[],
+    plugins: [serverRowModel({ getRows })] as never,
   })
   return null
 }
@@ -219,5 +232,23 @@ describe('серверная модель строк на таблице (ADR 01
       source: 'auto',
       cause: requestOf(500).id,
     })
+  })
+
+  it('SD13: без getRowId — ошибка типа и dev-warn; строки блоков получают id из getRowId', async () => {
+    act(() => root.render(<Grid rowId={row => `x-${row.name}`} />))
+    show(0, 9)
+    await answer()
+    expect(source().at(0)?.id).toBe('x-N0')
+    expect(source().indexOf('x-N3')).toBe(3)
+    expect(warnings().some(text => text.includes('getRowId'))).toBe(false)
+
+    // Строка без строкового id (данные без getRowId вне проверки типов) — предупреждение.
+    act(() => root.unmount())
+    root = createRoot(document.createElement('div'))
+    calls = []
+    act(() => root.render(<Grid rowId={() => undefined as never} />))
+    show(0, 9)
+    await answer()
+    expect(warnings().some(text => text.includes('getRowId'))).toBe(true)
   })
 })

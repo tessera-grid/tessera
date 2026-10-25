@@ -7,6 +7,7 @@ import { constructRow } from '@tanstack/react-table'
 
 import { announceLabel } from '../../core/announcer'
 import { reportAction, reportOutcome } from '../../core/debugActions'
+import { logWarn } from '../../core/logger'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
 import type { RowLoadError, RowSource, RowWindow } from '../../core/rowSource'
@@ -25,6 +26,7 @@ type Query = Pick<
 
 interface ServerTable {
   options: {
+    getRowId?: (original: unknown, index: number) => unknown
     serverRowModelBlockSize?: number
     serverRowModelMaxBlocks?: number
     serverRowModelRowCount?: number
@@ -104,16 +106,27 @@ const createServerSource = (table: unknown): ServerSource => {
       return result
     },
     toRows: (data, start) =>
-      data.map(
-        (original, offset) =>
-          constructRow(
+      data.map((original, offset) => {
+        const id = t.getRowId(original, start + offset)
+        // Id по индексу после перезапроса бессмысленны: строке нужен свой (SD13). TanStack
+        // сам подставляет индекс, поэтому смотрим ответ `getRowId` приложения.
+        if (
+          typeof t.options.getRowId?.(original, start + offset) !== 'string'
+        ) {
+          logWarn(
             table as never,
-            t.getRowId(original, start + offset),
-            original as never,
-            start + offset,
-            0,
-          ) as unknown as SourceRow,
-      ),
+            'serverRowModel: a row has no string id — pass getRowId to useCreateTable',
+            'serverRowModel:noRowId',
+          )
+        }
+        return constructRow(
+          table as never,
+          id,
+          original as never,
+          start + offset,
+          0,
+        ) as unknown as SourceRow
+      }),
     idOf: row => row.id,
     // Срез плагина — счётчик изменений: корень грида перерисовывается по нему.
     onChange: () => setPluginState(table, SERVER_ROW_MODEL, ++version),
