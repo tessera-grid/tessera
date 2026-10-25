@@ -70,6 +70,13 @@ export {
 } from './infiniteScroll'
 export { backToTop, type BackToTopOptions } from './backToTop'
 export {
+  serverRowModel,
+  type ServerRowModelOptions,
+  type ServerRowModelHooks,
+  type ServerRowsRequest,
+  type ServerRowsResponse,
+} from './serverRowModel'
+export {
   columnFiltering,
   type ColumnFilteringOptions,
   type BooleanFilter,

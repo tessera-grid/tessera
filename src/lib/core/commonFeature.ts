@@ -62,7 +62,9 @@ export const commonFeature: TableFeature = {
 
     assignTableAPIs('commonFeature', table, {
       table_getHooks: { fn: () => options().hooks },
-      table_getRowSource: { fn: () => rowSource },
+      table_getRowSource: {
+        fn: () => options().getRowSource?.(table) ?? rowSource,
+      },
       table_getRenderSlots: { fn: () => options().slots },
       table_getSlotActions: { fn: () => options().slotActions },
       table_getContextMenuActions: { fn: () => options().contextMenuActions },

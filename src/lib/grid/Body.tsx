@@ -7,20 +7,25 @@ import { memo, useMemo, useRef } from 'react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import clsx from 'clsx'
 
-import type { Column, Row } from '../types'
+import type { Column, Row, Table } from '../types'
 import type { CellSlot } from '../core/createSlots'
+import type { RowSource } from '../core/rowSource'
 import { BodyRow } from './BodyRow'
 import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
 import { RowMotion } from './rowMotion/RowMotion'
+import { SkeletonRows } from './SkeletonBody'
 import { getTreeAria } from './treeAria'
 import { getTreeLines, projectTreeLines } from './treeBranches'
 
 import styles from '../grid/Body/Body.module.css'
 
 interface TableBodyProps {
+  table: Table<any, any>
   layout: 'grid' | 'flex'
+  /** Весь список, если он загружен целиком: дерево, линии, движение и место броска. */
   rows: Row<any, any>[]
+  rowSource: RowSource<Row<any, any>>
   virtualRows: VirtualItem[]
   virtualColumns: VirtualItem[]
   leafColumns: Column<any, any, unknown>[]
@@ -62,8 +67,10 @@ const positionAfterMove = (index: number, from: number, to: number) => {
 }
 
 export const Body = ({
+  table,
   layout,
   rows,
+  rowSource,
   virtualRows,
   virtualColumns,
   leafColumns,
@@ -140,7 +147,27 @@ export const Body = ({
         bodyRef={bodyRef}
       >
         {virtualRows.map(virtualRow => {
-          const row = rows[virtualRow.index]
+          const row = rowSource.at(virtualRow.index)
+          // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
+          if (!row) {
+            return (
+              <div
+                key={`pending-${virtualRow.index}`}
+                className={styles.pending}
+                style={{ top: virtualRow.start }}
+              >
+                <SkeletonRows
+                  table={table}
+                  layout={layout}
+                  leafColumns={leafColumns}
+                  virtualColumns={virtualColumns}
+                  isVirtualColumns={isVirtualColumns}
+                  rowCount={1}
+                  firstRowIndex={virtualRow.index}
+                />
+              </div>
+            )
+          }
           const isActive = drop?.activeId === row.id
           const lines = linesOf(virtualRow.index, isActive)
           return (

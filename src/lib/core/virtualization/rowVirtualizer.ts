@@ -41,7 +41,11 @@ export const useRowVirtualizer = ({
 
   const getEstimateSize = useCallback(() => rowHeight, [rowHeight])
 
-  const getItemKey = useCallback((index: number) => rows.at(index)!.id, [rows])
+  // Незагруженная строка серверной модели (ADR 0138) — по индексу.
+  const getItemKey = useCallback(
+    (index: number) => rows.at(index)?.id ?? index,
+    [rows],
+  )
 
   const activeRowIndex = useActiveCellIndex(table, 'rowIndex')
 

@@ -17,6 +17,7 @@ import {
   dataExportModel,
   headerActionMenu,
   infiniteScroll,
+  serverRowModel,
   pagination,
   paginationModel,
   quickSearch,
@@ -82,6 +83,7 @@ const FACTORIES = {
   pagination,
   paginationModel,
   infiniteScroll,
+  serverRowModel,
   backToTop,
 }
 
@@ -225,6 +227,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     pagination(argsOf(o, 'pagination')),
     paginationModel(argsOf(o, 'paginationModel')),
     infiniteScroll(argsOf(o, 'infiniteScroll')),
+    serverRowModel(argsOf(o, 'serverRowModel')),
     backToTop(argsOf(o, 'backToTop')),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.

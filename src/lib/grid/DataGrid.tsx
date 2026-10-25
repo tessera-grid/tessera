@@ -16,6 +16,7 @@ import {
 import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
+import { useRowSourceWindow } from '../core/rowSourceWindow'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { trackInputModality } from '../core/inputModality'
@@ -52,7 +53,7 @@ import {
   type ServerActionStatus,
 } from '../core/serverActions'
 import { useLoadingDisplay } from './useLoadingDisplay'
-import type { Column, Table } from '../types'
+import type { Column, Row, Table } from '../types'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
@@ -86,6 +87,8 @@ import '../core/themeVariables/theme.css'
 import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
 
 // Base UI Toolbar — около 6.5 KB gzip; грузим, только когда тулбар показывается.
+const NO_ROWS: Row<any, any>[] = []
+
 const Toolbar = lazy(() =>
   import('./Toolbar/Toolbar').then(module => ({ default: module.Toolbar })),
 )
@@ -140,9 +143,11 @@ export const DataGrid = ({
   const headerGroups = table.getHeaderGroups()
   const leafColumns: Column<any, any, unknown>[] = table.getVisibleLeafColumns()
 
-  // Массив строк — для дерева, линий, движения и места броска в теле; число строк — у источника.
-  const { rows } = table.getRowModel()
-  const rowCount = table.getRowSource().count()
+  // Массив строк — для дерева, линий, движения и места броска в теле, если список загружен
+  // целиком; строки тела и их число — у источника (ADR 0138).
+  const rowSource = table.getRowSource()
+  const rows = (rowSource.rows?.() ?? NO_ROWS) as Row<any, any>[]
+  const rowCount = rowSource.count()
 
   const isResizingColumns: false | string =
     state.columnResizing?.isResizingColumn ?? false
@@ -285,6 +290,7 @@ export const DataGrid = ({
       )
     },
   })
+  useRowSourceWindow(rowSource, rowVirtualizer, fastScrollStore)
 
   const virtualPaddingStyles = useColumnVirtualizerScroll({
     table,
@@ -536,6 +542,7 @@ export const DataGrid = ({
                         headStyles={headStyles}
                         headerGroups={headerGroups}
                         rows={rows}
+                        rowSource={rowSource}
                         leafColumns={leafColumns}
                         virtualRows={virtualRows}
                         virtualColumns={virtualColumns}

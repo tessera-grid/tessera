@@ -168,6 +168,7 @@ const THROUGH_SOURCE = [
   'core/skeletonOptions.ts',
   'plugins/backToTop/model.ts',
   'grid/FooterCell.tsx',
+  'grid/DataGrid.tsx',
   'core/useTableEffects.ts',
   'core/commonFeature.ts',
 ]
@@ -211,8 +212,6 @@ const MODEL_READERS: Record<string, string> = {
     'путь до строки в дереве и страница по корню (ADR 0104); незагруженные строки SSRM — этап 3',
   'core/servicePresence.ts':
     'есть ли подстроки в данных — показ служебной колонки (ADR 0050)',
-  'grid/DataGrid.tsx':
-    'массив строк для aria дерева, линий, движения строк и места броска в теле',
   'grid/DndBodyWrapper.tsx':
     'перетаскивание строк клиентского режима; в SSRM плагин инертен (SD26)',
   'plugins/rowDragging/getRowDraggingEvents.ts':

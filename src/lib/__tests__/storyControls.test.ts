@@ -35,6 +35,7 @@ const WITHOUT_CONTROL: Record<string, string> = {
   paginationModelPagination: 'страница у приложения — своя история',
   paginationModelInitialPagination: 'страница у приложения — своя история',
   columnFilteringServer: 'без имитации сервера ломает показ — своя история',
+  serverRowModelRowCount: 'итог задаёт мок-сервер истории вместе с загрузчиком',
   columnFilteringFilteredRowCount: 'только вместе с columnFilteringServer',
   columnFilteringTotalRowCount: 'только вместе с columnFilteringServer',
   columnFilteringDateLocale: 'локаль календаря — объект с функциями',

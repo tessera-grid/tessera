@@ -23,6 +23,14 @@
   opacity: var(--tsr-comp-loader-dim-opacity);
 }
 
+/* Незагруженная строка серверной модели (ADR 0138, §5): скелет на месте строки. */
+.pending {
+  position: absolute;
+  z-index: 1;
+  width: 100%;
+  height: var(--tsr-comp-row-height);
+}
+
 /* Призраки уходящих строк (ADR 0107): под строками, вне ввода и доступности. */
 .ghosts {
   position: absolute;

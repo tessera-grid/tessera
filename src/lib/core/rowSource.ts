@@ -13,6 +13,20 @@ export interface RowSource<TRow = unknown> {
   byId: (id: string) => TRow | undefined
   /** Индекс строки в списке; `-1` — её нет в списке. */
   indexOf: (id: string) => number
+  /**
+   * Весь список массивом, если он загружен целиком (клиентский режим). Без него дерево,
+   * линии, движение строк и место броска в теле не считаются.
+   */
+  rows?: () => readonly TRow[]
+  /** Окно строк тела с запасом и быстрая прокрутка (ADR 0008): источник грузит по ним. */
+  observe?: (window: RowWindow) => void
+}
+
+/** Смонтированные строки тела `[first, last]` и быстрая прокрутка. */
+export interface RowWindow {
+  first: number
+  last: number
+  fast: boolean
 }
 
 type ById = { rowsById: Record<string, { id: string } | undefined> }
@@ -34,6 +48,7 @@ export const createClientRowSource = (table: unknown): RowSource => {
       t.getPrePaginatedRowModel().rowsById[id] ??
       t.getCoreRowModel().rowsById[id],
     indexOf: id => t.getRowModel().rows.findIndex(row => row.id === id),
+    rows: () => t.getRowModel().rows,
   }
 }
 

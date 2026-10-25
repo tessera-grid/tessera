@@ -17,6 +17,7 @@ export type PluginInertReason =
   | 'noStatusBar'
   | 'noActions'
   | 'noRowCount'
+  | 'noGetRows'
   | 'addedAfterMount'
   | 'removedAfterMount'
   | (string & {})

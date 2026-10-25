@@ -472,6 +472,19 @@ export const infiniteScrollThresholdType = numberControl(
 export const infiniteScrollLoadedCountType = booleanControl(
   'Счётчик загруженных строк в нижней панели (`loadedCount`)',
 )
+export const enableServerRowModelType = booleanControl(
+  'Серверная модель строк: строки блоками с сервера по окну прокрутки, кэш у таблицы (плагин `serverRowModel`); загрузчик задаёт история',
+)
+export const serverRowModelBlockSizeType = numberControl(
+  'Строк в блоке (`blockSize`)',
+  { min: 10, max: 500, step: 10 },
+  '100',
+)
+export const serverRowModelMaxBlocksType = numberControl(
+  'Сколько блоков держать в кэше (`maxBlocks`)',
+  { min: 1, max: 200, step: 1 },
+  '100',
+)
 export const enableBackToTopType = booleanControl(
   'Кнопки «наверх» и «к первой колонке» в нижней панели: видны после прокрутки на два экрана, встают только в уже показанную панель (плагин `backToTop`)',
 )

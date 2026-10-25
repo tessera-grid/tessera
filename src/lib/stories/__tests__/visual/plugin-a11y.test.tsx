@@ -2,6 +2,7 @@ import axe from 'axe-core'
 import { describe, expect, test } from 'vitest'
 
 import { builtinPluginEntries } from '../../../__tests__/builtinPlugins'
+import { getData } from '../../__mocks__/data'
 import { filteringColumns, filteringData } from '../../__mocks__/filteringData'
 import type { FeatureToggles } from '../../__mocks__/utils/argsToPlugins'
 import { renderGrid } from '../helpers'
@@ -68,6 +69,15 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
     infiniteScrollHasMore: true,
     infiniteScrollRowCount: 1000,
     infiniteScrollLoadedCount: true,
+  },
+  serverRowModel: {
+    enableServerRowModel: true,
+    serverRowModelBlockSize: 20,
+    // Мок-сервер: строки окна из тех же данных, что у историй; остальное — скелеты.
+    serverRowModelGetRows: ({ start, end }) => ({
+      rows: getData(end).slice(start, end),
+      rowCount: 50,
+    }),
   },
   quickSearch: { enableQuickSearch: true, enableToolbar: true },
   columnFiltering: {

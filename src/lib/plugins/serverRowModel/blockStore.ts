@@ -134,6 +134,8 @@ export class BlockStore<TData, TRow, TQuery> {
           this.blocks.set(index, { status: 'queued' })
       }
     }
+    // Окно и закрепления сменились: блоки сверх предела, ставшие ненужными, уходят.
+    this.evict()
     this.pump()
   }
 
@@ -168,14 +170,21 @@ export class BlockStore<TData, TRow, TQuery> {
     if (this.window) this.setWindow(this.window.first, this.window.last)
   }
 
-  /** Отменить всё: размонтирование. */
-  dispose() {
-    for (const block of this.blocks.values()) {
+  /**
+   * Отменить запросы в пути и очередь, загруженное сохранить: размонтирование или смена
+   * аргументов плагина. `resume` запрашивает окно заново.
+   */
+  suspend() {
+    for (const [index, block] of this.blocks) {
       if (block.status === 'pending') block.abort.abort()
+      if (block.status === 'pending' || block.status === 'queued') {
+        this.blocks.delete(index)
+      }
     }
-    this.blocks.clear()
-    this.indexById.clear()
-    this.window = null
+  }
+
+  resume() {
+    if (this.window) this.setWindow(this.window.first, this.window.last)
   }
 
   private get size() {

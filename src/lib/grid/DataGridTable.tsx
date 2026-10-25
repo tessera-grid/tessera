@@ -10,6 +10,7 @@ import {
 import { getDisplayColumns } from '../core/displayColumns'
 import { getFooterPosition } from '../core/footer'
 import { getRowWindow } from '../core/pagination'
+import type { RowSource } from '../core/rowSource'
 import { RenderSlot } from '../core/renderSlots'
 import { useTableState } from '../core/reactivity'
 import type { Column, HeaderGroup, Row, Table } from '../types'
@@ -32,6 +33,8 @@ interface DataGridTableProps {
   headStyles?: CSSProperties
   headerGroups: HeaderGroup<any, any>[]
   rows: Row<any, any>[]
+  /** Строки тела по индексу (ADR 0138); `rows` — весь список, если он загружен целиком. */
+  rowSource: RowSource<Row<any, any>>
   leafColumns: Column<any, any, unknown>[]
   virtualRows: VirtualItem[]
   virtualColumns: VirtualItem[]
@@ -59,6 +62,7 @@ export const DataGridTable = ({
   headStyles,
   headerGroups,
   rows,
+  rowSource,
   leafColumns,
   virtualRows,
   virtualColumns,
@@ -151,7 +155,8 @@ export const DataGridTable = ({
     leafColumns,
     virtualColumns,
     isVirtualColumns,
-    nextAriaRowIndex: headerGroups.length + rowWindow.offset + rows.length + 1,
+    nextAriaRowIndex:
+      headerGroups.length + rowWindow.offset + rowSource.count() + 1,
   }
   // Конец таблицы — до закреплённого футера и после незакреплённого, заглушка — всегда
   // перед футером (ADR 0118, §3).
@@ -232,7 +237,9 @@ export const DataGridTable = ({
             <MemoizedBody
               dropPreview={dropPreview}
               layout={layout}
+              table={table}
               rows={rows}
+              rowSource={rowSource}
               virtualRows={virtualRows}
               virtualColumns={virtualColumns}
               leafColumns={leafColumns}
@@ -249,7 +256,9 @@ export const DataGridTable = ({
               isResizingColumns={isResizingColumns}
               isVirtualColumns={isVirtualColumns}
               enableRowDragging={enableRowDragging}
-              rowAnimation={options.enableRowAnimation !== false}
+              rowAnimation={
+                options.enableRowAnimation !== false && !!rowSource.rows
+              }
             />
           </BodyDndBoundary>
         )}
