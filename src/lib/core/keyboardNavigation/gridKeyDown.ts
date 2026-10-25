@@ -173,7 +173,7 @@ export const handleGridKeyDown = (
       trackingOf(t).follow = {
         rowId:
           active.rowIndex >= 0
-            ? t.getRowModel().rows[active.rowIndex]?.id
+            ? t.getRowSource().at(active.rowIndex)?.id
             : undefined,
         columnId: getDisplayColumns(t).ids[active.columnIndex],
       }
@@ -211,7 +211,7 @@ export const handleGridKeyDown = (
   // Строка за последней строкой тела (ошибка догрузки, ADR 0081) — в порядке экрана:
   // `↓` с последней строки, а под незакреплённым футером — с футера; над закреплённым
   // футером в неё же ведёт `↑` с футера (ADR 0118, §3).
-  const lastBodyRow = t.getRowModel().rows.length - 1
+  const lastBodyRow = t.getRowSource().count() - 1
   const inlineFooter = isFooterInline(t)
   if (
     !modified &&

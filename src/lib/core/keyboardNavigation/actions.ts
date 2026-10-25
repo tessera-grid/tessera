@@ -62,7 +62,7 @@ export const resolveActionTarget = (
     const header = getHeaderOwner(t, active.rowIndex, active.columnIndex)
     return header ? { scope: 'header', ctx: header.getContext() } : null
   }
-  const cell = t.getRowModel().rows[active.rowIndex]?.getVisibleCells()[
+  const cell = t.getRowSource().at(active.rowIndex)?.getVisibleCells()[
     active.columnIndex
   ] as { getContext?: () => unknown } | undefined
   return cell?.getContext ? { scope: 'cell', ctx: cell.getContext() } : null
@@ -77,7 +77,7 @@ const toggleRowExpansion = (
   rowIndex: number,
   event: ReactKeyboardEvent<HTMLElement>,
 ): boolean => {
-  const row = t.getRowModel().rows[rowIndex]
+  const row = t.getRowSource().at(rowIndex)
   const actions = (t.getKeyboardActions?.() ?? []).filter(
     action => action.scope === 'cell' && action.expands,
   )
@@ -104,10 +104,10 @@ export const resolveRowFocusKey = (
   active: ActiveCell,
   event: ReactKeyboardEvent<HTMLElement>,
 ): ActiveCell | 'handled' | null => {
-  const rows = t.getRowModel().rows
-  const row = rows[active.rowIndex]
+  const rows = t.getRowSource()
+  const row = rows.at(active.rowIndex)
   const atRow = (rowIndex: number): ActiveCell => ({
-    rowIndex: Math.min(Math.max(rowIndex, 0), rows.length - 1),
+    rowIndex: Math.min(Math.max(rowIndex, 0), rows.count() - 1),
     columnIndex: ROW_FOCUS_COLUMN,
   })
   switch (event.key) {
@@ -128,7 +128,8 @@ export const resolveRowFocusKey = (
       ) {
         return 'handled'
       }
-      const parent = rows.findIndex(r => r.id === row?.parentId)
+      const parent =
+        row?.parentId === undefined ? -1 : rows.indexOf(row.parentId)
       return parent === -1 ? 'handled' : atRow(parent)
     }
     case 'ArrowUp':
@@ -138,7 +139,7 @@ export const resolveRowFocusKey = (
     case 'Home':
       return atRow(0)
     case 'End':
-      return atRow(rows.length - 1)
+      return atRow(rows.count() - 1)
     default:
       return null
   }

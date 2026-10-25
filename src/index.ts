@@ -37,6 +37,9 @@ export type {
   ScrollToRowOptions,
 } from './lib/core/scrollToRow/scrollToRowFeature'
 
+// Источник строк тела (ADR 0138): `table.getRowSource()`.
+export type { RowSource } from './lib/core/rowSource'
+
 // Реактивность: подписки на состояние идут через атомы TanStack Store.
 export { useSlice, useTableState } from './lib/core/reactivity'
 

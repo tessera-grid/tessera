@@ -14,6 +14,7 @@ import {
   getCenterViewport,
 } from '../keyboardNavigation/geometry'
 import type { Row, RowData, TableFeature, TableFeatures } from '../../types'
+import type { RowSource } from '../rowSource'
 import { type ScrollTarget, scrollGridTo } from '../scrollGridTo'
 import { type ScrollViewport, viewportOf } from './viewport'
 
@@ -59,7 +60,7 @@ type AnyRow = Row<any, any>
 interface ScrollTable {
   store: { state: { pagination?: { pageIndex: number; pageSize: number } } }
   options: { manualPagination?: boolean; paginateExpandedRows?: boolean }
-  getRowModel: () => { rows: AnyRow[] }
+  getRowSource: () => RowSource<AnyRow>
   getPreExpandedRowModel: () => { rows: AnyRow[] }
   setPageIndex?: (index: number) => void
   setExpanded?: (
@@ -123,7 +124,7 @@ const settle = async (
 }
 
 const indexOf = (table: ScrollTable, rowId: string) =>
-  table.getRowModel().rows.findIndex(row => row.id === rowId)
+  table.getRowSource().indexOf(rowId)
 
 /** Путь от корня до строки в модели до раскрытия: отфильтрованной там нет. */
 const pathTo = (table: ScrollTable, rowId: string): AnyRow[] | undefined => {

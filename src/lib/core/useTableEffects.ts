@@ -15,6 +15,7 @@ import type { ModelArgsMismatch } from './pluginModels'
 import { foreignSliceMessage } from './coreState'
 import { pruneFlashes, readFlashes } from './flashes/flashFeature'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
+import { rowSourceOf } from './rowSource'
 import { abortServerActions } from './serverActions'
 import {
   type PluginDiagnostic,
@@ -101,8 +102,6 @@ export const useTableEffects = (
   useIsomorphicLayoutEffect(() => {
     const t = table as {
       options: { data?: unknown; columns?: unknown }
-      getCoreRowModel: () => { rowsById: Record<string, unknown> }
-      getGroupedRowModel?: () => { rowsById: Record<string, unknown> }
       getAllFlatColumns: () => { id: string }[]
     }
     const { data, columns } = t.options
@@ -115,10 +114,9 @@ export const useTableEffects = (
     if (!highlighted && !flashed) {
       return
     }
-    const core = t.getCoreRowModel().rowsById
-    const grouped = t.getGroupedRowModel?.().rowsById
+    const rows = rowSourceOf(table)
     const columnIds = new Set(t.getAllFlatColumns().map(column => column.id))
-    const hasRow = (id: string) => id in core || (!!grouped && id in grouped)
+    const hasRow = (id: string) => rows.byId(id) !== undefined
     const hasColumn = (id: string) => columnIds.has(id)
     if (highlighted) {
       pruneHighlights(table, hasRow, hasColumn)

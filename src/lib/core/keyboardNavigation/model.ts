@@ -6,6 +6,7 @@ import { type DebugActionSource, reportAction } from '../debugActions'
 import { pluginStateKey } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
 import type { KeyboardAction } from '../keyboardActions'
+import type { RowSource } from '../rowSource'
 
 export const KEYBOARD_NAVIGATION = 'keyboardNavigation'
 
@@ -82,7 +83,7 @@ interface NavCellRange {
 export interface NavTable {
   options: Record<string, unknown>
   store: { get: () => Record<string, unknown> }
-  getRowModel: () => { rows: NavRow[] }
+  getRowSource: () => RowSource<NavRow>
   getVisibleLeafColumns: () => NavColumn[]
   getStartVisibleLeafColumns?: () => NavColumn[]
   getCenterVisibleLeafColumns?: () => NavColumn[]
@@ -143,11 +144,11 @@ const clampActive = (
  * последней строки тела (ADR 0032, W14).
  */
 export const getNavRowCount = (t: NavTable) =>
-  t.getRowModel().rows.length + (t.options.enableFooter ? 1 : 0)
+  t.getRowSource().count() + (t.options.enableFooter ? 1 : 0)
 
 /** Индекс строки навигации — футер (за последней строкой тела). */
 export const isFooterRowIndex = (table: unknown, rowIndex: number) =>
-  rowIndex >= (table as NavTable).getRowModel().rows.length
+  rowIndex >= (table as NavTable).getRowSource().count()
 
 export const resolveActive = (t: NavTable, state: Record<string, unknown>) => {
   const raw = state[pluginStateKey(KEYBOARD_NAVIGATION)] as

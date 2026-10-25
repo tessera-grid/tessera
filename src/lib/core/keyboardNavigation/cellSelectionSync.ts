@@ -25,7 +25,7 @@ export const collapseSelectionTo = (t: NavTable, active: ActiveCell) => {
     return
   }
   const row =
-    active.rowIndex >= 0 ? t.getRowModel().rows[active.rowIndex] : undefined
+    active.rowIndex >= 0 ? t.getRowSource().at(active.rowIndex) : undefined
   const columnId = getDisplayColumns(t).ids[active.columnIndex]
   const cell = row?.getVisibleCells()[active.columnIndex]
   if (!row || !columnId || !(cell?.getCanSelect?.() ?? true)) {
@@ -37,15 +37,18 @@ export const collapseSelectionTo = (t: NavTable, active: ActiveCell) => {
 
 /** Сдвинуть фокус активного диапазона до края таблицы в направлении `direction`. */
 const extendSelectionToEdge = (t: NavTable, direction: Direction) => {
-  const rows = t.getRowModel().rows
+  const rows = t.getRowSource()
   // Как у стоковой фичи: колонка вне выбора только по column-level opt-out.
   const columnIds = getDisplayColumns(t).ids.filter(
     id => t.getColumn?.(id)?.columnDef.enableCellSelection !== false,
   )
   const vertical = direction === 'up' || direction === 'down'
-  const ids = vertical ? rows.map(row => row.id) : columnIds
-  const target =
-    direction === 'up' || direction === 'left' ? ids[0] : ids.at(-1)
+  const toStart = direction === 'up' || direction === 'left'
+  const target = vertical
+    ? rows.at(toStart ? 0 : rows.count() - 1)?.id
+    : toStart
+      ? columnIds[0]
+      : columnIds.at(-1)
   if (target === undefined) {
     return
   }
@@ -77,7 +80,7 @@ export const extendSelectionFrom = (
   ) {
     return false
   }
-  const row = t.getRowModel().rows[active.rowIndex]
+  const row = t.getRowSource().at(active.rowIndex)
   const columnId = getDisplayColumns(t).ids[active.columnIndex]
   const focused = t.getFocusedCell?.()
   if (

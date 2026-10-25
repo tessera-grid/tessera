@@ -46,7 +46,7 @@ export const applyFollow = (t: NavTable) => {
   const rowIndex =
     follow.rowId === undefined
       ? active.rowIndex
-      : t.getRowModel().rows.findIndex(row => row.id === follow.rowId)
+      : t.getRowSource().indexOf(follow.rowId)
   const columnIndex =
     follow.columnId === undefined
       ? undefined

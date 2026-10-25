@@ -887,6 +887,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       всех движках), `footer-row` (CB7 — строка футера — свой бокс, не
       `display: contents`); CB5–CB6 идут и в `test:browsers`
       ([ADR 0084](docs/decisions/0084-cross-browser-support.md)).
+    - _Источник строк:_ модульный `rowSource` (SD1 — `count`, `at`, `byId`, `indexOf`
+      клиентского источника совпадают с моделью TanStack; SD2 — страж: модели строк
+      читают только модули его списка с причиной, список только сокращается)
+      ([ADR 0138](docs/decisions/0138-server-side-row-model.md), этап 1).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,

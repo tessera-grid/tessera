@@ -42,7 +42,7 @@ export const InfiniteTail = ({
   const inert = !!infiniteScrollInertReason(table)
   const hasMore = !!options.infiniteScrollHasMore
   const loaded = table.getCoreRowModel().rows.length
-  const bodyRows = table.getRowModel().rows.length
+  const bodyRows = table.getRowSource().count()
   const [loader] = useState(() => new InfiniteLoader())
   const sentinelRef = useRef<HTMLDivElement>(null)
 

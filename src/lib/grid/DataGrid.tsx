@@ -140,7 +140,9 @@ export const DataGrid = ({
   const headerGroups = table.getHeaderGroups()
   const leafColumns: Column<any, any, unknown>[] = table.getVisibleLeafColumns()
 
+  // Массив строк — для дерева, линий, движения и места броска в теле; число строк — у источника.
   const { rows } = table.getRowModel()
+  const rowCount = table.getRowSource().count()
 
   const isResizingColumns: false | string =
     state.columnResizing?.isResizingColumn ?? false
@@ -179,7 +181,7 @@ export const DataGrid = ({
   const wrapperRef = useRef<HTMLDivElement>(null)
   const getScrollElement = useCallback(() => scrollableNodeRef.current, [])
   // Ключ перечитывания токенов: тема и появление корня (без строк — ветка заглушки).
-  const themeKey = `${colorMode}|${className}|${rows.length > 0}`
+  const themeKey = `${colorMode}|${className}|${rowCount > 0}`
   const heights = useRowHeights(table, wrapperRef, themeKey)
   useControlColumnSizes(table, wrapperRef, themeKey)
 
@@ -201,7 +203,7 @@ export const DataGrid = ({
   const guardAfterRef = keyboardNavigation?.guardAfterRef
 
   // Смена страницы: тело к началу, активная ячейка — на первую строку (ADR 0038).
-  usePageChange(table, state.pagination, rows.length, getScrollElement)
+  usePageChange(table, state.pagination, rowCount, getScrollElement)
 
   const columnSizes = useCalculateColumnSizes({ table })
 
@@ -310,7 +312,7 @@ export const DataGrid = ({
     onRetry: appFailed ? (table.options as any).onRetry : failed?.retry,
     loading: initialLoading || refreshLoading,
     // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
-    hasRows: rows.length > 0 || (!appFailed && !!failed),
+    hasRows: rowCount > 0 || (!appFailed && !!failed),
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк
@@ -321,7 +323,7 @@ export const DataGrid = ({
   // главнее любой. `grid` встаёт вместо таблицы, `body` — под шапкой.
   const stubContext: StubContext = {
     table,
-    rowCount: rows.length,
+    rowCount,
     loadError: {
       shown: loadError.stubShown,
       error: (table.options as any).loadError,
@@ -412,7 +414,7 @@ export const DataGrid = ({
         labels={labels}
         loading={showLinearProgress || showSkeleton}
         failed={loadError.present}
-        rowCount={rows.length}
+        rowCount={rowCount}
         stubTitle={stubTitle}
         themeNode={scrollableNodeRef}
       />

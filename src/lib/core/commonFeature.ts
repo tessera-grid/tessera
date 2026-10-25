@@ -28,6 +28,7 @@ import {
   createPluginErrorRegistry,
   resolvePluginDiagnostics,
 } from './pluginDiagnostics'
+import { createClientRowSource, rowSourceOf } from './rowSource'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
@@ -57,9 +58,11 @@ export const commonFeature: TableFeature = {
   constructTableAPIs: table => {
     const options = () => table.options as unknown as CommonOptions
     const pluginErrors = createPluginErrorRegistry(table)
+    const rowSource = createClientRowSource(table)
 
     assignTableAPIs('commonFeature', table, {
       table_getHooks: { fn: () => options().hooks },
+      table_getRowSource: { fn: () => rowSource },
       table_getRenderSlots: { fn: () => options().slots },
       table_getSlotActions: { fn: () => options().slotActions },
       table_getContextMenuActions: { fn: () => options().contextMenuActions },
@@ -140,16 +143,14 @@ export const commonFeature: TableFeature = {
   assignRowPrototype: (prototype, table) => {
     assignPrototypeAPIs('commonFeature', prototype, table, {
       row_getIsFirstRow: {
-        fn: (row: {
-          id: string
-          table: { getRowModel: () => { rows: { id: string }[] } }
-        }) => row.table.getRowModel().rows[0]?.id === row.id,
+        fn: (row: { id: string; table: unknown }) =>
+          rowSourceOf<{ id: string }>(row.table).at(0)?.id === row.id,
       },
       row_getIsLastRow: {
-        fn: (row: {
-          id: string
-          table: { getRowModel: () => { rows: { id: string }[] } }
-        }) => row.table.getRowModel().rows.at(-1)?.id === row.id,
+        fn: (row: { id: string; table: unknown }) => {
+          const source = rowSourceOf<{ id: string }>(row.table)
+          return source.at(source.count() - 1)?.id === row.id
+        },
       },
       row_getIsLastSubRow: {
         fn: (row: {

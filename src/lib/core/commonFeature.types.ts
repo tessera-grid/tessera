@@ -10,9 +10,11 @@
 import type { ColumnOptionsDef } from './columnOptions'
 import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
+import type { RowSource } from './rowSource'
 import type {
   ColumnSizingState,
   OnChangeFn,
+  Row,
   RowData,
   TableFeature,
   TableFeatures,
@@ -104,7 +106,12 @@ export interface CommonOptions {
 }
 
 // --- Публичные API по объектам таблицы ---------------------------------------
-export interface CommonTableAPI {
+export interface CommonTableAPI<
+  TFeatures extends TableFeatures = TableFeatures,
+  TData extends RowData = RowData,
+> {
+  /** Строки тела по индексу и по id (ADR 0138, §2). */
+  getRowSource: () => RowSource<Row<TFeatures, TData>>
   getHooks: () => CommonHooks | undefined
   getRenderSlots: () => RenderSlotsV9 | undefined
   getSlotActions: () => SlotActionsV9 | undefined
@@ -177,7 +184,7 @@ declare module '@tanstack/react-table' {
     in out TFeatures extends TableFeatures,
     in out TData extends RowData,
   > {
-    commonFeature: CommonTableAPI
+    commonFeature: CommonTableAPI<TFeatures, TData>
   }
   interface Column_FeatureMap<
     in out TFeatures extends TableFeatures,

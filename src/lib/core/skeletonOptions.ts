@@ -1,4 +1,5 @@
 import { hasLoadError } from './loadError'
+import { rowSourceOf } from './rowSource'
 
 export interface SkeletonOptions {
   /**
@@ -136,12 +137,11 @@ export const getSkeletonTreeRows = (count: number): SkeletonTreeRow[] => {
  * Отказ без строк главнее — вместо скелета заглушка ошибки (ADR 0096, LE9).
  */
 export const isSkeletonShown = (table: unknown): boolean => {
-  const { options, getRowModel } = table as {
+  const { options } = table as {
     options: { loading?: unknown; loadError?: unknown }
-    getRowModel: () => { rows: unknown[] }
   }
   if (options.loading !== 'initial') return false
-  return !(hasLoadError(options.loadError) && getRowModel().rows.length === 0)
+  return !(hasLoadError(options.loadError) && rowSourceOf(table).count() === 0)
 }
 
 /**

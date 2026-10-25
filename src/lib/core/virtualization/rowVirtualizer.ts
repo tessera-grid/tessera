@@ -31,25 +31,17 @@ export const useRowVirtualizer = ({
     state => (state as any).rowDragging?.activeId ?? null,
   )
 
-  const { rows } = table.getRowModel()
-
-  const rowsRef = useRef(rows)
-  rowsRef.current = rows
+  const rows = table.getRowSource()
 
   const rowDraggingIndex = useMemo(() => {
-    const index = rowsRef.current.findIndex(
-      (row: any) => row.id === rowDraggingActiveId,
-    )
+    const index = rows.indexOf(rowDraggingActiveId)
 
     return index === -1 ? undefined : index
-  }, [rowDraggingActiveId])
+  }, [rows, rowDraggingActiveId])
 
   const getEstimateSize = useCallback(() => rowHeight, [rowHeight])
 
-  const getItemKey = useCallback(
-    (index: number) => rowsRef.current[index].id,
-    [],
-  )
+  const getItemKey = useCallback((index: number) => rows.at(index)!.id, [rows])
 
   const activeRowIndex = useActiveCellIndex(table, 'rowIndex')
 
@@ -59,7 +51,7 @@ export const useRowVirtualizer = ({
   })
 
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
-    count: rowsRef.current.length,
+    count: rows.count(),
     estimateSize: getEstimateSize,
     getScrollElement,
     measureElement: rowMeasureElement,

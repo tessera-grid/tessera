@@ -14,6 +14,9 @@
   - [ADR 0012](0012-column-sorting.md), [ADR 0038](0038-pagination-and-status-bar.md),
     [ADR 0045](0045-filtering.md) §10 — серверный режим: промис и `signal`; у
     `columnSorting` и `pagination` опция `revertOnReject`.
+- **Изменено:** [ADR 0138](0138-server-side-row-model.md) (2026-10-25) — единый загрузчик
+  `getRows` — плагин `serverRowModel`; в его режиме ожидание серверного действия ведёт
+  перезапрос грида, промис колбэков не ждётся.
 - **Изменено:** [ADR 0136](0136-outcome-on-target-not-button.md) (2026-10-24) — SA12 и SA18: вспышки на кнопке-причине нет — отметка отказа сразу; итог на таблице — красный свет и плашка, как прежде.
 - **Связано:**
   - [ADR 0001](0001-spec-driven-development.md) — требования ниже внедряются этапами

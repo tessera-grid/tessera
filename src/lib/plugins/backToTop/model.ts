@@ -9,6 +9,7 @@ import {
   isKeyboardNavigationEnabled,
 } from '../../core/keyboardNavigation/model'
 import type { PluginDiagnose } from '../../core/pluginDiagnostics'
+import type { RowSource } from '../../core/rowSource'
 import { scrollGridTo } from '../../core/scrollGridTo'
 
 export const BACK_TO_TOP = 'backToTop'
@@ -79,7 +80,7 @@ export const findGridScroller = (element: Element | null) =>
 
 interface JumpTable {
   store: { get: () => Record<string, unknown> }
-  getRowModel: () => { rows: unknown[] }
+  getRowSource: () => RowSource
 }
 
 /**
@@ -99,7 +100,7 @@ export const scrollToTop = (table: unknown, scroller: HTMLElement) => {
   if (
     !active ||
     active.rowIndex <= 0 ||
-    active.rowIndex >= t.getRowModel().rows.length
+    active.rowIndex >= t.getRowSource().count()
   ) {
     return
   }

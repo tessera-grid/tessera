@@ -4,6 +4,7 @@
  * — подписи (ADR 0048, §4).
  */
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
+import { rowSourceOf } from '../../core/rowSource'
 import type {
   ExportColumn,
   ExportData,
@@ -109,8 +110,10 @@ export const exportRowsOf = (
     walk(source.getCoreRowModel().rows, push)
   } else if (scope === 'page') {
     // Строки страницы уже плоские (раскрытые дети — отдельные строки): без обхода.
-    for (const row of source.getRowModel().rows) {
-      if (!row.getIsGrouped?.()) push(row)
+    const rows = rowSourceOf<ExportRow>(table)
+    for (let index = 0; index < rows.count(); index++) {
+      const row = rows.at(index)
+      if (row && !row.getIsGrouped?.()) push(row)
     }
   } else {
     walk(viewRows(source), row => {

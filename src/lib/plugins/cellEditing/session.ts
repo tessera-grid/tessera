@@ -14,6 +14,7 @@ import {
   reportOutcome,
   sourceOf,
 } from '../../core/debugActions'
+import type { RowSource } from '../../core/rowSource'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
   pluginStateKey,
@@ -296,7 +297,7 @@ export const commitEditSession = (
   }
   const { rowId, columnId } = cell
   const { original } = session!
-  const row = (table as ReconcileTable).getCoreRowModel().rowsById[rowId]
+  const row = (table as ReconcileTable).getRowSource().byId(rowId)
   const now = row ? row.getValue(columnId) : original
   const changed = !Object.is(now, original)
   if (changed && hooks.onConflict === 'block') {
@@ -341,7 +342,7 @@ export const commitEditSession = (
 }
 
 interface ReconcileTable extends SessionTable {
-  getCoreRowModel: () => { rowsById: Record<string, ReconcileRow | undefined> }
+  getRowSource: () => RowSource<ReconcileRow>
   getAllLeafColumns: () => { id: string; columnDef?: { header?: unknown } }[]
 }
 
@@ -353,7 +354,7 @@ interface ReconcileRow extends SessionRow {
 }
 
 const hasCell = (table: ReconcileTable, { rowId, columnId }: Cell) =>
-  !!table.getCoreRowModel().rowsById[rowId] &&
+  !!table.getRowSource().byId(rowId) &&
   table.getAllLeafColumns().some(column => column.id === columnId)
 
 /**
@@ -432,8 +433,9 @@ export const reconcileEditSession = (
     return
   }
   const cell = t
-    .getCoreRowModel()
-    .rowsById[rowId]!.getAllCells()
+    .getRowSource()
+    .byId(rowId)!
+    .getAllCells()
     .find(item => item.column.id === columnId)
   if (
     cell &&

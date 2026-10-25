@@ -33,7 +33,7 @@ export const FooterCell = ({
   // Футер — строка навигации сразу после последней строки тела.
   const nav = useKeyboardNavigationCell(
     table,
-    table.getRowModel().rows.length,
+    table.getRowSource().count(),
     header.column.id,
     !header.isPlaceholder,
   )
