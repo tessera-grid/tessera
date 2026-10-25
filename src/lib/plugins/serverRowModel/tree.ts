@@ -329,7 +329,10 @@ export class BlockTree<TData, TRow, TQuery> {
     this.evict()
   }
 
-  /** Общий предел: первыми — блоки свёрнутых веток, затем давно не нужные. */
+  /**
+   * Общий предел: первыми — блоки свёрнутых веток, затем давно не нужные. Свёрнутая ветка без
+   * блоков уходит целиком.
+   */
   private evict() {
     const open = this.openNodes()
     let total = 0
@@ -347,7 +350,10 @@ export class BlockTree<TData, TRow, TQuery> {
       }
     }
     let excess = total - this.maxBlocks
-    if (excess <= 0) return
+    if (excess <= 0) {
+      this.prune(open)
+      return
+    }
     candidates.sort(
       (a, b) => Number(b.closed) - Number(a.closed) || a.used - b.used,
     )
@@ -361,6 +367,16 @@ export class BlockTree<TData, TRow, TQuery> {
       excess--
     }
     this.version++
+    this.prune(open)
+  }
+
+  private prune(open: Set<TreeNode<TData, TRow, TQuery>>) {
+    for (const [id, node] of this.nodes) {
+      if (node === this.root || open.has(node)) continue
+      if (node.store.loadedBlocks().length > 0) continue
+      node.store.dispose()
+      this.nodes.delete(id)
+    }
   }
 
   failures(): TreeFailure[] {

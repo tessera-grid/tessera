@@ -1,7 +1,7 @@
 /**
- * Хранилище блоков серверной модели строк (ADR 0138; SD7–SD8, SD39, SD47): очередь
- * запросов, отмена блоков, ушедших из окна, автоповтор отказавшего блока и словарь мест
- * строк дерева.
+ * Хранилище блоков серверной модели строк (ADR 0138; SD7–SD8, SD39, SD47–SD48): очередь
+ * запросов, отмена блоков, ушедших из окна, автоповтор отказавшего блока, словарь мест
+ * строк дерева и хранилища свёрнутых веток.
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowModel
  */
 import { describe, expect, it } from 'vitest'
@@ -195,5 +195,76 @@ describe('Дерево хранилищ (ADR 0138)', () => {
     // Блок строки 1 вытеснен, её ветка — на месте.
     expect(tree.rowAt(1)).toBeUndefined()
     expect(tree.count()).toBe(1005)
+  })
+
+  it('SD48: хранилище ветки свёрнутой строки без загруженных блоков уходит; повторное раскрытие запрашивает детей заново', async () => {
+    let expanded: ReadonlySet<string> = new Set(['r1'])
+    const asked: string[] = []
+    const signals: Record<string, AbortSignal> = {}
+    const tree = new BlockTree<Item, Item, string>({
+      blockSize: BLOCK,
+      maxBlocks: 2,
+      rowCount: 1000,
+      query: () => 'q',
+      // Дети строки 2 ждут ответа без конца; остальные приходят сразу.
+      getRows: ({ start, end, parentId, signal }) => {
+        if (parentId) asked.push(parentId)
+        if (parentId === 'r2') {
+          signals.r2 = signal
+          return new Promise<BlockResponse<Item>>(() => {})
+        }
+        return {
+          rows: Array.from(
+            { length: Math.min(end, parentId ? 5 : end) - start },
+            (_, i) => ({
+              id: parentId ? `${parentId}.${start + i}` : `r${start + i}`,
+            }),
+          ),
+          ...(parentId ? { rowCount: 5 } : {}),
+        }
+      },
+      toRows: data => data,
+      idOf: row => row.id,
+      expanded: () => expanded,
+      onChange: () => {},
+    })
+    const settle = () => new Promise(resolve => setTimeout(resolve, 0))
+    const branches = () =>
+      (tree as unknown as { nodes: Map<unknown, unknown> }).nodes.size - 1
+    /** Сменить раскрытые строки; тело читает число строк и сообщает окно. */
+    const setExpanded = async (ids: string[]) => {
+      expanded = new Set(ids)
+      tree.count()
+      await settle()
+    }
+
+    tree.setWindow(0, 9)
+    await settle()
+    tree.count()
+    await settle()
+    expect(tree.rowAt(2)?.id).toBe('r1.0')
+
+    // Свёрнутая ветка с блоком в кэше живёт, без блока — уходит.
+    await setExpanded([])
+    expect(branches()).toBe(1)
+    for (const first of [100, 200]) {
+      tree.setWindow(first, first + 9)
+      await settle()
+    }
+    expect(branches()).toBe(0)
+
+    // Свёрнута до ответа — уходит сразу; запрос отменён уходом из окна (SD8).
+    tree.setWindow(0, 9)
+    await settle()
+    await setExpanded(['r2'])
+    expect(asked).toEqual(['r1', 'r2'])
+    await setExpanded([])
+    expect(branches()).toBe(0)
+    expect(signals.r2!.aborted).toBe(true)
+
+    // Повторное раскрытие запрашивает детей заново.
+    await setExpanded(['r1'])
+    expect(asked).toEqual(['r1', 'r2', 'r1'])
+    expect(tree.rowAt(2)?.id).toBe('r1.0')
   })
 })

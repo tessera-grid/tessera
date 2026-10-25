@@ -14,6 +14,10 @@ import {
   columnFilteringModel,
   columnPinning,
   columnSorting,
+  infiniteScroll,
+  pagination,
+  rowDragging,
+  rowGrouping,
   columnSortingModel,
   keyboardNavigation,
   quickSearchModel,
@@ -1503,5 +1507,55 @@ describe('Серверная модель строк (ADR 0138)', () => {
         await screen.unmount()
       }
     })
+  })
+
+  test('SD49: в SSRM пейджер, хвост скелет-строк ленты, ручки перетаскивания строк и кнопка группировки в шапке не показаны — и в конце списка', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    /** Ничего от инертных плагинов на экране. */
+    const expectNothing = () => {
+      expect.soft(q('nav[data-testid="pagination"]'), 'пейджер').toBeNull()
+      expect
+        .soft(q('[data-testid="infinite-scroll-tail"]'), 'хвост ленты')
+        .toBeNull()
+      expect.soft(q('.drag__handler--column'), 'ручка строки').toBeNull()
+      expect
+        .soft(q('[data-row-draggable="true"]'), 'перетаскиваемая строка')
+        .toBeNull()
+      expect.soft(q('.column-group__button'), 'кнопка группировки').toBeNull()
+    }
+    // Пагинация — своим гридом: при ней лента инертна и без серверной модели.
+    for (const plugins of [
+      [
+        columnSorting(),
+        // Загрузка ленты не кончается: у живой ленты в конце стоял бы хвост скелетов.
+        infiniteScroll({
+          hasMore: true,
+          onLoadMore: () => new Promise<void>(() => {}),
+        }),
+        rowDragging(),
+        rowGrouping(),
+      ],
+      [columnSorting(), pagination()],
+    ]) {
+      const screen = await render(
+        <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,
+      )
+      try {
+        await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+        // Кнопки шапки — из ленивого модуля: пришла кнопка сортировки, пришла бы и группировки.
+        await expect.poll(sortButton).not.toBeNull()
+        expectNothing()
+        // Конец списка: лента показала бы здесь хвост.
+        await scrollToIndex(999)
+        await expect.poll(() => rowAt(999)?.dataset.rowId).toBe('r999')
+        expectNothing()
+      } finally {
+        await screen.unmount()
+      }
+    }
+    warn.mockRestore()
   })
 })
