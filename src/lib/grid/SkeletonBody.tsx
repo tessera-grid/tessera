@@ -247,6 +247,7 @@ interface SkeletonRowsBlockProps {
   treeLines?: boolean
   /** Квадраты раскрытия вразброс по номеру строки (плоский скелет, SL25). */
   scatterToggles?: boolean
+  rowClassName?: string
 }
 
 /** Блок строк скелета высотой в `rowCount` строк темы. */
@@ -262,6 +263,7 @@ const SkeletonRowsBlock = ({
   tree,
   treeLines,
   scatterToggles,
+  rowClassName = 'data-grid__body-row--skeleton',
 }: SkeletonRowsBlockProps) => (
   <div
     className={clsx(className, bodyStyles.body)}
@@ -271,10 +273,7 @@ const SkeletonRowsBlock = ({
     {Array.from({ length: cells ? rowCount : 0 }, (_, rowIndex) => (
       <div
         key={rowIndex}
-        className={clsx(
-          'data-grid__body-row--skeleton',
-          bodyRowStyles.body__row,
-        )}
+        className={clsx(rowClassName, bodyRowStyles.body__row)}
         data-row-odd={(firstRowIndex + rowIndex) % 2 !== 0}
         data-layout={layout}
         style={{
@@ -322,6 +321,8 @@ export interface SkeletonRowsProps {
   className?: string
   /** `false` — хвост вне области прокрутки: только его высота, как у тела вне окна. */
   cells?: boolean
+  /** Пустые рамки строк без полосок: строки отказавшего блока (ADR 0138, §11). */
+  empty?: boolean
 }
 
 /**
@@ -339,6 +340,7 @@ export const SkeletonRows = memo(
     firstRowIndex,
     className,
     cells = true,
+    empty = false,
   }: SkeletonRowsProps) => (
     <div
       aria-hidden="true"
@@ -353,7 +355,7 @@ export const SkeletonRows = memo(
           leafColumns,
           virtualColumns,
           isVirtualColumns,
-          () => true,
+          () => !empty,
           false,
         )}
         cellsVirtual={isVirtualColumns}
@@ -362,6 +364,9 @@ export const SkeletonRows = memo(
         firstRowIndex={firstRowIndex}
         className={className}
         cells={cells}
+        rowClassName={
+          empty ? 'data-grid__body-row--empty' : 'data-grid__body-row--skeleton'
+        }
       />
     </div>
   ),

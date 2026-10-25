@@ -332,7 +332,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
     }
   })
 
-  test('SD11: отказ блока — строка ошибки с причиной у верха видимой части блока, повтор перезапрашивает только его; плашки нет; отказ объявлен', async () => {
+  test('SD11: отказ блока — строка ошибки с причиной у верха видимой части блока, под ней строки блока — пустые рамки строк без полосок скелета, повтор перезапрашивает только его; плашки нет; отказ объявлен', async () => {
     let refuse = true
     const { calls, getRows, starts } = server(({ start, end }) =>
       start === BLOCK && refuse
@@ -351,8 +351,19 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expect(
         Math.abs(errorRow()!.getBoundingClientRect().top - head.bottom),
       ).toBeLessThan(2)
-      // Строк блока под ней нет — ни данных, ни скелетов.
+      // Строки блока под ней — пустые рамки: ячейки колонок без полосок скелета,
+      // скрытые от вспомогательных технологий; ни данных, ни скелетов.
       expect(rowAt(BLOCK + 20)).toBeNull()
+      const frame = q(`[data-failed-row][data-index="${BLOCK + 20}"]`)!
+      expect(frame).not.toBeNull()
+      expect(
+        [...frame.querySelectorAll<HTMLElement>('[data-column-id]')].map(
+          cell => cell.dataset.columnId,
+        ),
+      ).toEqual(['name', 'city'])
+      expect(frame.querySelectorAll('span')).toHaveLength(0)
+      expect(frame.querySelector('[aria-hidden="true"]')).not.toBeNull()
+      expect(frame.getBoundingClientRect().height).toBe(rowHeight())
       expect(q('[data-testid="load-error-banner"]')).toBeNull()
       await expect.poll(() => liveRegion().textContent).toContain('down')
 

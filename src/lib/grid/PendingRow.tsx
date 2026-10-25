@@ -96,3 +96,34 @@ export const PendingRow = ({
     />
   </div>
 )
+
+/**
+ * Строка отказавшего блока (ADR 0138, §11): пустая рамка строки под строкой ошибки —
+ * без полосок скелета, скрыта от вспомогательных технологий.
+ */
+export const FailedRow = ({
+  table,
+  layout,
+  virtualRow,
+  leafColumns,
+  virtualColumns,
+  isVirtualColumns,
+}: Omit<PendingRowProps, 'ariaRowIndexBase'>) => (
+  <div
+    className={styles.pending}
+    style={{ top: virtualRow.start }}
+    data-index={virtualRow.index}
+    data-failed-row=""
+  >
+    <SkeletonRows
+      table={table}
+      layout={layout}
+      leafColumns={leafColumns}
+      virtualColumns={virtualColumns}
+      isVirtualColumns={isVirtualColumns}
+      rowCount={1}
+      firstRowIndex={virtualRow.index}
+      empty
+    />
+  </div>
+)

@@ -17,7 +17,7 @@ import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
 import { LoadMoreError } from './LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
-import { PendingRow } from './PendingRow'
+import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
 import { getTreeLines, projectTreeLines } from './treeBranches'
 
@@ -157,8 +157,20 @@ export const Body = ({
       >
         {virtualRows.map(virtualRow => {
           const row = rowSource.at(virtualRow.index)
-          // Строка отказавшего блока — под его строкой ошибки (ADR 0138, §11).
-          if (!row && failedAt(virtualRow.index)) return null
+          // Строка отказавшего блока — пустая рамка под его строкой ошибки (ADR 0138, §11).
+          if (!row && failedAt(virtualRow.index)) {
+            return (
+              <FailedRow
+                key={`failed-${virtualRow.index}`}
+                table={table}
+                layout={layout}
+                virtualRow={virtualRow}
+                leafColumns={leafColumns}
+                virtualColumns={virtualColumns}
+                isVirtualColumns={isVirtualColumns}
+              />
+            )
+          }
           // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
           if (!row) {
             return (
