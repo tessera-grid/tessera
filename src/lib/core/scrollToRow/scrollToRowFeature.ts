@@ -29,7 +29,17 @@ export interface ScrollToRowOptions {
   columnId?: string
   /** Раскрыть свёрнутых предков строки. */
   expandParents?: boolean
+  /**
+   * Индекс строки в списке, если она ещё не загружена (серверная модель строк, ADR 0138,
+   * §12): прокрутка к нему, затем строка с этим id должна там оказаться.
+   */
+  index?: number
 }
+
+export type ScrollToRowIndexOptions = Omit<
+  ScrollToRowOptions,
+  'expandParents' | 'index'
+>
 
 interface ScrollToRowTableAPI {
   /**
@@ -38,6 +48,14 @@ interface ScrollToRowTableAPI {
    * `expandParents`, грид не смонтирован) или вызов перебит новым.
    */
   scrollToRow: (rowId: string, options?: ScrollToRowOptions) => Promise<boolean>
+  /**
+   * Прокрутить грид к строке по индексу в списке и дождаться её загрузки (ADR 0138,
+   * §12). `false` — индекса нет в списке, блок строки отказал или вызов перебит.
+   */
+  scrollToRowIndex: (
+    index: number,
+    options?: ScrollToRowIndexOptions,
+  ) => Promise<boolean>
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -466,6 +484,82 @@ export const revealColumn = async (
   return shown && alive()
 }
 
+/**
+ * Строка по индексу пришла (ADR 0138, §12): клиентская — сразу, серверная — когда
+ * придёт её блок; `undefined` — блок отказал, грид ушёл или вызов перебит.
+ */
+const loadedRow = async (
+  table: ScrollTable,
+  index: number,
+  scroller: HTMLElement,
+  alive: () => boolean,
+) => {
+  const source = table.getRowSource()
+  for (;;) {
+    if (!alive() || !scroller.isConnected) return undefined
+    const row = source.at(index)
+    if (row) return row
+    const failed =
+      source.loadError?.() !== undefined ||
+      (source.failures?.() ?? []).some(
+        failure => index >= failure.start && index < failure.end,
+      )
+    if (failed) return undefined
+    await frame()
+  }
+}
+
+/** Прыжок по индексу, загрузка строки и доводка по ней; `rowId` — ждём именно её. */
+const toIndex = async (
+  table: ScrollTable,
+  viewport: ScrollViewport,
+  scroller: HTMLElement,
+  index: number,
+  alive: () => boolean,
+  target: Pick<Target, 'align' | 'behavior' | 'columnId' | 'rowId'>,
+) => {
+  if (index < 0 || index >= table.getRowSource().count()) return false
+  await place(
+    table,
+    viewport,
+    scroller,
+    { index, align: target.align, behavior: target.behavior },
+    alive,
+  )
+  const row = await loadedRow(table, index, scroller, alive)
+  if (!row || (target.rowId !== undefined && row.id !== target.rowId)) {
+    return false
+  }
+  const placed = await place(
+    table,
+    viewport,
+    scroller,
+    { ...target, rowId: row.id, index, behavior: 'instant' },
+    alive,
+  )
+  return placed && alive()
+}
+
+export const scrollToRowIndex = async (
+  tableArg: unknown,
+  index: number,
+  options: ScrollToRowIndexOptions = {},
+): Promise<boolean> => {
+  const table = tableArg as ScrollTable
+  const alive = startCall(table)
+  const { align = 'auto', behavior = 'instant', columnId } = options
+  const viewport = viewportOf(table)
+  const scroller = viewport?.getScrollElement()
+  if (!viewport || !scroller) return false
+  const column = columnId === undefined ? undefined : table.getColumn(columnId)
+  if (columnId !== undefined && !column?.getIsVisible()) return false
+  return toIndex(table, viewport, scroller, index, alive, {
+    align,
+    behavior,
+    columnId: column?.getIsPinned() ? undefined : columnId,
+  })
+}
+
 export const scrollToRow = async (
   tableArg: unknown,
   rowId: string,
@@ -485,6 +579,16 @@ export const scrollToRow = async (
   if (!viewport || !scroller) return false
   const column = columnId === undefined ? undefined : table.getColumn(columnId)
   if (columnId !== undefined && !column?.getIsVisible()) return false
+
+  // Строка не загружена (серверная модель строк): прокрутка по подсказке индекса.
+  if (indexOf(table, rowId) === -1 && options.index !== undefined) {
+    return toIndex(table, viewport, scroller, options.index, alive, {
+      align,
+      behavior,
+      columnId: column?.getIsPinned() ? undefined : columnId,
+      rowId,
+    })
+  }
 
   if (indexOf(table, rowId) === -1) {
     const path = pathTo(table, rowId)
@@ -550,6 +654,29 @@ export const scrollToRowFeature: TableFeature = {
               reportAction(table, {
                 plugin: 'core',
                 action: found ? 'scrollToRowResolved' : 'scrollToRowRejected',
+                source: 'auto',
+                cause: id,
+              }),
+            )
+          }
+          return done
+        },
+      },
+      table_scrollToRowIndex: {
+        fn: (index: number, options?: ScrollToRowIndexOptions) => {
+          const id = reportAction(table, {
+            plugin: 'core',
+            action: 'scrollToRowIndex',
+            detail: { index },
+          })
+          const done = scrollToRowIndex(table, index, options)
+          if (id !== undefined) {
+            void done.then(found =>
+              reportAction(table, {
+                plugin: 'core',
+                action: found
+                  ? 'scrollToRowIndexResolved'
+                  : 'scrollToRowIndexRejected',
                 source: 'auto',
                 cause: id,
               }),

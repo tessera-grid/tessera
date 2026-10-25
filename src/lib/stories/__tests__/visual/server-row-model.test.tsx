@@ -8,6 +8,7 @@ import type { TesseraFeatureEntry } from '../../../core/features'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
+  cellEditing,
   columnFilteringModel,
   columnPinning,
   columnSorting,
@@ -21,7 +22,7 @@ import {
 } from '../../../plugins'
 import { BodyRow } from '../../../grid/BodyRow'
 import { setColumnFilterByUser, setSearchByUser } from '../../../core/filtering'
-import { humanClick } from '../helpers'
+import { humanClick, revealCellButtons } from '../helpers'
 import { measureWork, renders } from '../work.helpers'
 import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
 
@@ -64,6 +65,14 @@ interface QueryTable {
   setColumnFilters: (filters: { id: string; value: unknown }[]) => void
   setGlobalFilter: (value: string) => void
   store: { get: () => Record<string, unknown> }
+  scrollToRowIndex: (
+    index: number,
+    options?: { align?: 'auto' | 'start' | 'center' | 'end' },
+  ) => Promise<boolean>
+  scrollToRow: (
+    id: string,
+    options?: { index?: number; align?: 'auto' | 'start' | 'center' | 'end' },
+  ) => Promise<boolean>
 }
 
 /** Строки выборки: префикс id — по ней (сортировка по возрастанию и убыванию, фильтр, поиск). */
@@ -116,6 +125,7 @@ const Grid = ({
   state,
   colorMode,
   onTable,
+  maxBlocks,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
@@ -123,6 +133,7 @@ const Grid = ({
   state?: Record<string, unknown>
   colorMode?: 'light' | 'dark'
   onTable?: (table: QueryTable) => void
+  maxBlocks?: number
 }) => {
   const table = useCreateTable({
     columns: COLUMNS as never,
@@ -132,7 +143,7 @@ const Grid = ({
     // Свечение обновления сразу, без задержки показа (ADR 0094).
     refreshOptions: { delayMs: 0, minDurationMs: 0 },
     plugins: [
-      serverRowModel({ getRows, rowCount, blockSize: BLOCK }),
+      serverRowModel({ getRows, rowCount, blockSize: BLOCK, maxBlocks }),
       ...plugins,
     ] as never,
   })
@@ -911,6 +922,165 @@ describe('Серверная модель строк (ADR 0138)', () => {
       await expect.poll(() => banner()?.textContent ?? '').toContain('down')
       expect(tableRef.current!.store.get().globalFilter).toBe('N')
       expect(rowAt(0)?.dataset.rowId).toBe(`${second}0`)
+    } finally {
+      await screen.unmount()
+    }
+  })
+  test('SD24: правка ячейки — успех onCellEdit пишет значение в кэш; блок строки в правке не вытесняется', async () => {
+    const { calls, getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    let save: (() => void) | undefined
+    let synchronous = false
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        maxBlocks={1}
+        plugins={[
+          cellEditing({
+            // Приложение данные не трогает: значение в ячейку пишет кэш.
+            onCellEdit: () =>
+              synchronous
+                ? undefined
+                : new Promise<void>(resolve => {
+                    save = resolve
+                  }),
+          }),
+        ]}
+      />,
+    )
+    const nameCell = () =>
+      q('.data-grid__body-row[data-index="0"] [data-column-id="name"]')
+    try {
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+      await revealCellButtons(nameCell()!)
+      await humanClick(
+        nameCell()!.querySelector<HTMLElement>('.cell__button button')!,
+      )
+      const input = await vi.waitFor(() => {
+        const found = nameCell()?.querySelector<HTMLInputElement>('input')
+        if (!found) throw new Error('editor not open')
+        return found
+      })
+      await userEvent.fill(input, 'Edited')
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(() => save).toBeDefined()
+
+      // Сохранение в пути: строка уходит из окна, её блок остаётся в кэше сверх предела.
+      const before = calls.length
+      await scrollToIndex(500)
+      await expect.poll(() => rowAt(500)?.dataset.rowId).toBe('r500')
+      await scrollToIndex(0)
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+      expect(calls.slice(before).map(call => call.request.start)).not.toContain(
+        0,
+      )
+
+      // Пока сохранение в пути, ячейка показывает черновик (ADR 0057): значение из кэша
+      // сверяется после итога.
+      expect(nameCell()!.querySelector('[aria-busy="true"]')).not.toBeNull()
+      save!()
+      await expect
+        .poll(() => nameCell()!.querySelector('[aria-busy="true"]'))
+        .toBeNull()
+      expect(nameCell()?.textContent?.trim()).toBe('Edited')
+
+      // Успех без промиса — то же: значение из кэша сразу.
+      synchronous = true
+      await revealCellButtons(nameCell()!)
+      await humanClick(
+        nameCell()!.querySelector<HTMLElement>('.cell__button button')!,
+      )
+      const again = await vi.waitFor(() => {
+        const found = nameCell()?.querySelector<HTMLInputElement>('input')
+        if (!found) throw new Error('editor not open')
+        return found
+      })
+      await userEvent.fill(again, 'Synced')
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(() => nameCell()?.textContent?.trim()).toBe('Synced')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SD25: scrollToRowIndex загружает блок и прокручивает к строке; scrollToRow(id, { index }) прокручивает по подсказке и даёт false, если строка с этим id там не оказалась', async () => {
+    const { calls, getRows } = server(({ start, end }) =>
+      start === 0 ? { rows: rowsOf(start, end) } : undefined,
+    )
+    const tableRef: { current?: QueryTable } = {}
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={10_000}
+        onTable={table => (tableRef.current = table)}
+      />,
+    )
+    /** Ответить на запрос блока `start`, как только он придёт. */
+    const reply = async (start: number, answer?: Answer) => {
+      await expect
+        .poll(() =>
+          calls.some(
+            call =>
+              call.request.start === start && !call.request.signal.aborted,
+          ),
+        )
+        .toBe(true)
+      calls
+        .filter(
+          call => call.request.start === start && !call.request.signal.aborted,
+        )
+        .forEach(call =>
+          call.settle(answer ?? { rows: rowsOf(start, start + BLOCK) }),
+        )
+    }
+    const atTop = (index: number) => {
+      const row = rowAt(index)
+      const head = q('.data-grid__head')!.getBoundingClientRect()
+      return (
+        !!row && Math.abs(row.getBoundingClientRect().top - head.bottom) < 2
+      )
+    }
+    try {
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+
+      // Индекс: прыжок, ожидание блока, строка у верха окна.
+      let settled = false
+      const byIndex = tableRef.current!.scrollToRowIndex(5050, {
+        align: 'start',
+      })
+      void byIndex.then(() => (settled = true))
+      await expect
+        .poll(() => calls.some(call => call.request.start === 5000))
+        .toBe(true)
+      await nextFrame()
+      expect(settled).toBe(false)
+      await reply(5000)
+      expect(await byIndex).toBe(true)
+      expect(atTop(5050)).toBe(true)
+
+      // Подсказка индекса: строка с этим id там — `true`.
+      const hinted = tableRef.current!.scrollToRow('r7050', {
+        index: 7050,
+        align: 'start',
+      })
+      await reply(7000)
+      expect(await hinted).toBe(true)
+      expect(atTop(7050)).toBe(true)
+
+      // По подсказке пришла другая строка — `false`.
+      const wrong = tableRef.current!.scrollToRow('elsewhere', {
+        index: 8050,
+        align: 'start',
+      })
+      await reply(8000)
+      expect(await wrong).toBe(false)
+
+      // Блок отказал — `false`.
+      const failed = tableRef.current!.scrollToRowIndex(9050)
+      await reply(9000, new Error('down'))
+      expect(await failed).toBe(false)
     } finally {
       await screen.unmount()
     }

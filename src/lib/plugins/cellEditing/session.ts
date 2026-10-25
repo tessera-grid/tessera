@@ -242,6 +242,27 @@ export const cancelEditSession = (
 // спутать с поздним итогом прежнего.
 let lastAttempt = 0
 
+/**
+ * Серверная модель строк: данных у приложения нет — сохранённое значение пишется в кэш
+ * строк (ADR 0138, §7). Без неё метода `setRowData` нет, данные обновляет приложение.
+ */
+const writeSaved = (
+  table: unknown,
+  rowId: string,
+  columnId: string,
+  value: unknown,
+) => {
+  const t = table as {
+    setRowData?: (id: string, updater: (row: unknown) => unknown) => void
+    getColumn?: (
+      id: string,
+    ) => { columnDef: { accessorKey?: unknown } } | undefined
+  }
+  const key = t.getColumn?.(columnId)?.columnDef.accessorKey
+  if (!t.setRowData || typeof key !== 'string') return
+  t.setRowData(rowId, row => ({ ...(row as object), [key]: value }))
+}
+
 const settleSubmitted = (
   table: unknown,
   key: string,
@@ -255,6 +276,7 @@ const settleSubmitted = (
   }
   const submitted = { ...state.submitted }
   if (outcome.ok) {
+    writeSaved(table, entry.rowId, entry.columnId, entry.draft)
     delete submitted[key]
     writeEditingState(table, { ...state, submitted })
     flashOutcome(table, { cell: [entry.rowId, entry.columnId] }, 'accepted')
@@ -315,6 +337,7 @@ export const commitEditSession = (
   })
   reportOutcome(table, { plugin: ID, action: 'save' }, result)
   if (!isThenable(result)) {
+    writeSaved(table, rowId, columnId, value)
     endEditSession(table)
     return
   }

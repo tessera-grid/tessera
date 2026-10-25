@@ -60,7 +60,10 @@ export interface ServerSource extends RowSource<SourceRow> {
 
 const sources = new WeakMap<object, ServerSource>()
 
-/** Строки, чьи блоки держатся: активная ячейка и строка в правке. */
+/**
+ * Строки, чьи блоки держатся: активная ячейка, строка в правке и строки, чьё сохранение в
+ * пути, — его итог пишется в кэш (§7).
+ */
 const pinnedOf = (t: ServerTable, indexOf: (id: string) => number) => {
   const pinned: number[] = []
   const active = t.atoms[pluginStateKey('keyboardNavigation')]?.get() as
@@ -69,10 +72,21 @@ const pinnedOf = (t: ServerTable, indexOf: (id: string) => number) => {
     pinned.push(active.rowIndex)
   }
   const editing = t.atoms[pluginStateKey('cellEditing')]?.get() as
-    { active?: { cell: { rowId: string } } | null } | undefined
-  const editedRow = editing?.active?.cell.rowId
-  const edited = editedRow === undefined ? -1 : indexOf(editedRow)
-  if (edited >= 0) pinned.push(edited)
+    | {
+        active?: { cell: { rowId: string } } | null
+        submitted?: Record<string, { rowId: string; status: string }>
+      }
+    | undefined
+  const rowIds = [
+    editing?.active?.cell.rowId,
+    ...Object.values(editing?.submitted ?? {})
+      .filter(entry => entry.status === 'pending')
+      .map(entry => entry.rowId),
+  ]
+  for (const rowId of rowIds) {
+    const index = rowId === undefined ? -1 : indexOf(rowId)
+    if (index >= 0) pinned.push(index)
+  }
   return pinned
 }
 
