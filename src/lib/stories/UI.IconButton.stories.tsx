@@ -116,7 +116,7 @@ export const IconButtonOverlay: Story = {
 
 /**
  * Все варианты, формы (`circle`, `square`) и состояния в единственном размере кита —
- * база для производных кнопок.
+ * база для производных кнопок. Включённая — с точкой и с числом `count` в бабле.
  * Ожидание и вспышку ошибки по нажатию показывает история «Async action».
  */
 export const IconButtonVariants: Story = {
@@ -128,7 +128,7 @@ export const IconButtonVariants: Story = {
     return (
       <UiCanvas>
         <VariantGrid
-          columns={['Rest', 'Active', 'Pending', 'Disabled']}
+          columns={['Rest', 'Active', 'Active · count', 'Pending', 'Disabled']}
           rows={(
             [
               ['ghost', 'circle', 'default', 'Ghost · circle'],
@@ -138,22 +138,23 @@ export const IconButtonVariants: Story = {
             ] as const
           ).map(([variant, shape, size, label]) => ({
             label,
-            cells: (['rest', 'active', 'pending', 'disabled'] as const).map(
-              state => (
-                <IconButton
-                  key={state}
-                  variant={variant}
-                  shape={shape}
-                  size={size}
-                  active={state === 'active'}
-                  pending={state === 'pending'}
-                  disabled={state === 'disabled'}
-                  label={`${variant} ${shape} ${size} ${state}`}
-                >
-                  {icon}
-                </IconButton>
-              ),
-            ),
+            cells: (
+              ['rest', 'active', 'count', 'pending', 'disabled'] as const
+            ).map(state => (
+              <IconButton
+                key={state}
+                variant={variant}
+                shape={shape}
+                size={size}
+                active={state === 'active' || state === 'count'}
+                count={state === 'count' ? 3 : undefined}
+                pending={state === 'pending'}
+                disabled={state === 'disabled'}
+                label={`${variant} ${shape} ${size} ${state === 'count' ? 'active, 3' : state}`}
+              >
+                {icon}
+              </IconButton>
+            )),
           }))}
         />
       </UiCanvas>

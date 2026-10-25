@@ -487,10 +487,10 @@ describe('Место бабла (ADR 0136)', () => {
     const [x, y] = tokenOf('--tsr-comp-indicator-count-offset')
       .split(/\s+/)
       .map(parseFloat)
-    expect([x, y]).toEqual([55, -45])
+    expect([x, y]).toEqual([38, -38])
     const [right, up] = shift()
-    expect(right).toBeCloseTo(0.55, 1)
-    expect(up).toBeCloseTo(0.45, 1)
+    expect(right).toBeCloseTo(0.38, 1)
+    expect(up).toBeCloseTo(0.38, 1)
     // Тема меняет сдвиг токеном.
     kit().style.setProperty('--tsr-comp-indicator-count-offset', '20% -10%')
     const [right2, up2] = shift()
