@@ -236,6 +236,7 @@ export interface PerfRecord {
     | 'models'
     | 'disabled'
     | 'infiniteScroll'
+    | 'serverRowModel'
     | 'backToTop'
     | 'loading'
     | 'footer'

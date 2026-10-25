@@ -18,7 +18,9 @@ import {
   type ServerRowsRequest,
   type ServerRowsResponse,
 } from '../../../plugins'
+import { BodyRow } from '../../../grid/BodyRow'
 import { humanClick } from '../helpers'
+import { measureWork, renders } from '../work.helpers'
 import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
 
 // Серверная модель строк на гриде (ADR 0138, этап 2): высота на весь итог, скелеты
@@ -654,6 +656,41 @@ describe('Серверная модель строк (ADR 0138)', () => {
       await screen.unmount()
     } finally {
       warn.mockRestore()
+    }
+  })
+
+  test('SD19: приход блока строит строки только этого блока и не перерисовывает строки других блоков', async () => {
+    const { calls, getRows } = server(({ start, end }) =>
+      start === 0 ? { rows: rowsOf(start, end) } : undefined,
+    )
+    const screen = await render(<Grid getRows={getRows} rowCount={1000} />)
+    try {
+      // Окно на стыке: внизу блока 0 строки с данными, ниже — скелеты блока 1.
+      await scrollToIndex(BLOCK - 5)
+      await expect
+        .poll(() => rowAt(BLOCK - 1)?.dataset.rowId)
+        .toBe(`r${BLOCK - 1}`)
+      await expect
+        .poll(() => calls.some(call => call.request.start === BLOCK))
+        .toBe(true)
+      const kept = [
+        ...document.querySelectorAll<HTMLElement>(
+          '.data-grid__body-row[data-row-id]',
+        ),
+      ]
+      const work = await measureWork(scroller(), () =>
+        calls
+          .find(call => call.request.start === BLOCK)!
+          .settle({ rows: rowsOf(BLOCK, 2 * BLOCK) }),
+      )
+      await expect.poll(() => rowAt(BLOCK)?.dataset.rowId).toBe(`r${BLOCK}`)
+      const arrived = shownIndexes().filter(index => index >= BLOCK).length
+      // Перерисованы только пришедшие строки; строки блока 0 — те же узлы.
+      expect(arrived).toBeGreaterThan(0)
+      expect(renders(work, BodyRow)).toBe(arrived)
+      for (const row of kept) expect(row.isConnected).toBe(true)
+    } finally {
+      await screen.unmount()
     }
   })
 })

@@ -35,7 +35,7 @@ import {
   outcomeFlashSeed,
   INLINE_HEADER_ACTIONS,
 } from './perf-cases'
-import { makeData } from '../../__mocks__/data'
+import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid } from './hosts'
 import type { TesseraFeatureEntry } from '../../../core/features'
@@ -1661,6 +1661,89 @@ describe('Производительность прокрутки — включ
         expect(
           active[axis].p95Ms,
           `${axis} p95=${active[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Серверная модель строк (ADR 0138, SD31): 1 000 000 строк × 1000 колонок, блоки приходят
+// по окну прокрутки сразу (синхронный ответ) — против тех же 1000×1000 на клиенте.
+const SD31_COST = { ratio: 1.3, plusMs: 4 }
+describe('Производительность прокрутки — серверная модель строк', () => {
+  test(
+    'SD31: спокойная прокрутка 1 000 000 × 1000 с загруженным окном не дороже 1000×1000 на клиенте',
+    async () => {
+      const pool = getData(LARGE.dataCount)
+      const getRows = ({ start, end }: { start: number; end: number }) => ({
+        rows: Array.from({ length: end - start }, (_, k) => ({
+          ...pool[(start + k) % pool.length],
+          id: `ssrm-${start + k}`,
+        })),
+      })
+      const measure = async (server: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          ...(server && {
+            enableServerRowModel: true,
+            serverRowModelRowCount: 1_000_000,
+            serverRowModelGetRows: getRows,
+          }),
+        })
+        await expect
+          .poll(() =>
+            document.querySelector('.data-grid__body-row[data-row-id]'),
+          )
+          .not.toBeNull()
+        if (server) {
+          expect(
+            document
+              .querySelector('.data-grid__body-row[data-row-id]')!
+              .getAttribute('data-row-id'),
+          ).toMatch(/^ssrm-/)
+        }
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const server = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, SD31_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: gated ? '1 000 000×1000' : '1000×1000',
+          plugins: gated ? 'serverRowModel' : 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('SD31-base', '1000×1000 на клиенте', base, false)
+      await record('SD31', 'серверная модель строк', server, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          server[axis].p95Ms,
+          `${axis} p95=${server[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

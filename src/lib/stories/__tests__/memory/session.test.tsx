@@ -18,6 +18,7 @@ import {
   warmUpDocument,
   type GridProps,
 } from '../memory.helpers'
+import { serverRowModel } from '../../../plugins'
 import { rightClick } from '../visual/lazy-helpers'
 import { tableLabels } from '../labels'
 
@@ -274,4 +275,50 @@ describe('Утечки в долгой сессии', () => {
       mounted.unmount()
     }
   }, 180_000)
+})
+
+// Серверная модель строк (ADR 0138, SD33): прокрутка по 100 000 строк с вытеснением —
+// кэш держит три блока, остальные уходят и приходят заново.
+const SERVER_POOL = getData(100)
+const serverPlugins = [
+  serverRowModel({
+    rowCount: 100_000,
+    // Крупные блоки: удержание вытесненного блока заметно выше шума кучи.
+    blockSize: 500,
+    maxBlocks: 3,
+    getRows: ({ start, end }) => ({
+      rows: Array.from({ length: end - start }, (_, k) => ({
+        ...SERVER_POOL[(start + k) % SERVER_POOL.length],
+        id: `s${start + k}`,
+      })),
+    }),
+  }),
+]
+
+describe('Утечки серверной модели строк', () => {
+  test('SD33: долгая прокрутка с вытеснением блоков — после прогрева прирост узлов, обработчиков и кучи после сборки мусора за 2N циклов не больше прироста за N плюс шум', async () => {
+    const mounted = mount(<Grid plugins={serverPlugins} />)
+    await settled(mounted.container)
+    const element = scroller(mounted.container)
+    const loaded = () =>
+      mounted.container.querySelector('.data-grid__body-row[data-row-id]') !==
+        null && !element.hasAttribute('data-fast-scrolling')
+    const cycle = async () => {
+      for (const fraction of [0.2, 0.6, 0.9, 0.4, 0]) {
+        element.scrollTop =
+          (element.scrollHeight - element.clientHeight) * fraction
+        await frames(2)
+        await waitFor(loaded)
+      }
+    }
+    try {
+      expectFlat(await measureSlope(cycle, { warmup: 2, cycles: 4 }), [
+        'nodes',
+        'jsEventListeners',
+        'heap',
+      ])
+    } finally {
+      mounted.unmount()
+    }
+  }, 240_000)
 })

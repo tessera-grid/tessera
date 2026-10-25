@@ -58,6 +58,7 @@ import {
 } from '../../../plugins/rowExpanding/lazyChildrenFeature'
 import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
+import { serverRowModel } from '../../../plugins/serverRowModel'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -2998,5 +2999,109 @@ describe('Отзывчивость — движение колонок', () => {
       }
     },
     PERF_TIMEOUT * 4,
+  )
+})
+
+// Серверная модель строк (ADR 0138, SD32): приход блока из 10 строк при итоге 1 000 000
+// против того же прихода при итоге 1000 — работа прихода не растёт с итогом.
+interface ServerCall {
+  start: number
+  end: number
+  resolve: (response: { rows: FeedRow[] }) => void
+}
+let serverCalls: ServerCall[] = []
+const SSRM_BLOCK = 10
+const ServerGrid = ({ total }: { total: number }) => {
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: NO_FEED,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        rowCount: total,
+        blockSize: SSRM_BLOCK,
+        getRows: ({ start, end }) =>
+          new Promise<{ rows: FeedRow[] }>(resolve => {
+            serverCalls.push({ start, end, resolve })
+          }),
+      }),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+const NO_FEED: FeedRow[] = []
+
+describe('Отзывчивость взаимодействий — серверная модель строк', () => {
+  test(
+    'SD32: приход блока при итоге 1 000 000 не дороже того же прихода при итоге 1000',
+    async () => {
+      const measure = async (large: boolean) => {
+        serverCalls = []
+        await render(<ServerGrid total={large ? 1_000_000 : 1000} />)
+        // В окне — несколько блоков: прогрев и замер принимают по одному.
+        await expect.poll(() => serverCalls.length).toBeGreaterThanOrEqual(2)
+        /** Первая строка блока с началом `start` — с данными. */
+        const arrived = (start: number) =>
+          document.querySelector(
+            `.data-grid__body-row[data-index="${start}"][data-row-id]`,
+          ) !== null
+        let answered = 0
+        const result = await measureInteractionWork(
+          async () => {
+            const call = serverCalls[answered++]!
+            call.resolve({ rows: feedRows(call.start, call.end - call.start) })
+            await expect.poll(() => arrived(call.start)).toBe(true)
+          },
+          {
+            afterWarmup: () => {
+              expect(arrived(0)).toBe(true)
+              expect(arrived(SSRM_BLOCK)).toBe(false)
+            },
+          },
+        )
+        expect(arrived(SSRM_BLOCK)).toBe(true)
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const large = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: gated ? '1 000 000×3' : '1000×3',
+          plugins: 'serverRowModel',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('SD32-base', 'итог 1000', base, false)
+      await record('SD32', 'итог 1 000 000', large, true)
+      expect(
+        large.longestMs,
+        `longest=${large.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })
