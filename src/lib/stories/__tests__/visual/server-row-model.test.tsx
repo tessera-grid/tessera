@@ -1,6 +1,6 @@
 import axe from 'axe-core'
 import { render } from 'vitest-browser-react'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { describe, expect, test, vi } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
@@ -9,6 +9,8 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellEditing,
+  cellSelection,
+  cellSelectionModel,
   columnFilteringModel,
   columnPinning,
   columnSorting,
@@ -65,6 +67,7 @@ interface QueryTable {
   setColumnFilters: (filters: { id: string; value: unknown }[]) => void
   setGlobalFilter: (value: string) => void
   store: { get: () => Record<string, unknown> }
+  getPluginDiagnostics: () => unknown[]
   scrollToRowIndex: (
     index: number,
     options?: { align?: 'auto' | 'start' | 'center' | 'end' },
@@ -184,6 +187,11 @@ const liveRegion = () => q('[role="status"][aria-live="polite"]')!
 const pendingRow = (index: number) =>
   q(`[data-pending-row][data-index="${index}"]`)
 const press = (keys: string) => userEvent.keyboard(keys)
+/** Настоящая мышь Playwright. */
+const pointer = commands as unknown as {
+  realDragHold: (from: object, to: object, steps?: number) => Promise<void>
+  realMouseUp: () => Promise<void>
+}
 const glowing = () => !!q('[data-refreshing]')
 const sortButton = () =>
   q('.data-grid__head-cell[data-column-id="name"] .column-sort__button')
@@ -1082,6 +1090,87 @@ describe('Серверная модель строк (ADR 0138)', () => {
       await reply(9000, new Error('down'))
       expect(await failed).toBe(false)
     } finally {
+      await screen.unmount()
+    }
+  })
+  test("SD27: cellSelection и cellSelectionModel инертны с причиной 'serverRowModel' и dev-warn: выделение диапазона жестом не встаёт, копирование ничего не пишет", async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    const changed = vi.fn()
+    const tableRef: { current?: QueryTable } = {}
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        onTable={table => (tableRef.current = table)}
+        plugins={[cellSelection({ onCellSelectionChange: changed })]}
+      />,
+    )
+    const cellOf = (index: number, column: string) =>
+      q(
+        `.data-grid__body-row[data-index="${index}"] [data-column-id="${column}"]`,
+      )!
+    try {
+      await expect.poll(() => rowAt(3)?.dataset.rowId).toBe('r3')
+      /** Причина и предупреждение плагина таблицы на экране. */
+      const expectInert = (id: string) => {
+        expect(tableRef.current!.getPluginDiagnostics()).toContainEqual({
+          id,
+          status: 'inert',
+          reason: 'serverRowModel',
+        })
+        expect(
+          warn.mock.calls.some(call =>
+            call.some(
+              part =>
+                String(part).includes(id) &&
+                String(part).includes('serverRowModel'),
+            ),
+          ),
+        ).toBe(true)
+      }
+      expectInert('cellSelection')
+
+      // Настоящая мышь: протяжка по двум колонкам и четырём строкам.
+      const from = cellOf(0, 'name').getBoundingClientRect()
+      const to = cellOf(3, 'city').getBoundingClientRect()
+      await pointer.realDragHold(
+        { x: from.left + 10, y: from.top + from.height / 2 },
+        { x: to.left + 10, y: to.top + to.height / 2 },
+      )
+      await pointer.realMouseUp()
+      await nextFrame()
+      expect(changed).not.toHaveBeenCalled()
+      expect(
+        document.querySelectorAll('[data-cell-selected="true"]'),
+      ).toHaveLength(0)
+
+      // Копирование: грид событие не перехватывает и в буфер не пишет.
+      const copy = new ClipboardEvent('copy', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: new DataTransfer(),
+      })
+      cellOf(1, 'name').dispatchEvent(copy)
+      expect(copy.defaultPrevented).toBe(false)
+      expect(copy.clipboardData!.getData('text/plain')).toBe('')
+
+      // Модель без интерфейса — тоже инертна.
+      await screen.rerender(<></>)
+      await screen.rerender(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          onTable={table => (tableRef.current = table)}
+          plugins={[cellSelectionModel()]}
+        />,
+      )
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+      expectInert('cellSelectionModel')
+    } finally {
+      warn.mockRestore()
       await screen.unmount()
     }
   })

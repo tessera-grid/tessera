@@ -10,6 +10,7 @@
  * не изменилось. Без фичи selector возвращает `null` (стабилен → ноль ре-рендеров).
  */
 import { reportAction } from './debugActions'
+import { isCellSelectionInteractive } from './pluginDiagnostics'
 import { useTableState } from './reactivity'
 
 /** Результат `useCellSelection` — данные для DOM ячейки; `null` без плагина. */
@@ -139,7 +140,7 @@ export const useCellSelection = (
   // Обработчики стоковой фичи создаются заново на вызов — не реактивны, дёшевы,
   // BodyCell ре-рендерится редко (memo + гранулярная подписка выше). Без плагина
   // интерфейса мышь выделение не меняет: модель только показывает срез (ADR 0120).
-  const interactive = table.options.cellSelectionInteraction === true
+  const interactive = isCellSelectionInteractive(table)
   return {
     ...membership,
     onMouseDown: interactive ? reportedStart(table, c) : IGNORE,

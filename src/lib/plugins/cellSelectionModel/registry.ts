@@ -10,7 +10,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
-import { neverInert } from '../../core/pluginDiagnostics'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 
 /** Ячейка для предиката выбираемости — подмножество ячейки TanStack v9. */
 export interface CellSelectionPredicateCell {
@@ -48,7 +48,8 @@ export const cellSelectionModel = definePlugin<CellSelectionModelOptions>()({
   id: 'cellSelectionModel',
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canSelectCell'],
-  diagnose: neverInert,
+  // Выделение в серверной модели строк — отдельный ADR (ADR 0138, §8).
+  diagnose: serverRowModelReason,
   features: cellSelectionModelFeatures,
   slices: ['cellSelection'],
   options: o => {

@@ -8,7 +8,7 @@
  * Сервисной колонки нет: выделение — свойство самих ячеек тела.
  */
 import { definePlugin } from '../../core/definePlugin'
-import { neverInert } from '../../core/pluginDiagnostics'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import {
   cellSelectionModel,
   cellSelectionModelFeatures,
@@ -19,7 +19,8 @@ import type { CellSelectionOptions } from './types'
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 export const cellSelection = definePlugin<CellSelectionOptions>()({
   id: 'cellSelection',
-  diagnose: neverInert,
+  // Выделение в серверной модели строк — отдельный ADR (ADR 0138, §8).
+  diagnose: serverRowModelReason,
   model: {
     plugin: cellSelectionModel,
     keys: [

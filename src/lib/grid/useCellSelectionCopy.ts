@@ -2,6 +2,7 @@ import { type ClipboardEvent as ReactClipboardEvent, useCallback } from 'react'
 
 import { announceLabel } from '../core/announcer'
 import { reportAction } from '../core/debugActions'
+import { isCellSelectionInteractive } from '../core/pluginDiagnostics'
 import {
   cellRangesToHtml,
   cellRangesToTsv,
@@ -25,8 +26,7 @@ export const useCellSelectionCopy = (table: Table<any, any>) => {
       // Копирует только плагин интерфейса: модель выделение лишь показывает (ADR 0120).
       if (
         typeof getRanges !== 'function' ||
-        (table.options as { cellSelectionInteraction?: boolean })
-          .cellSelectionInteraction !== true
+        !isCellSelectionInteractive(table)
       ) {
         return
       }

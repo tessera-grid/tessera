@@ -1,5 +1,6 @@
 /** Синхронизация активной ячейки с выделением плагина cellSelection. */
 import { getDisplayColumns } from '../displayColumns'
+import { isCellSelectionInteractive } from '../pluginDiagnostics'
 import {
   type ActiveCell,
   type Direction,
@@ -13,8 +14,7 @@ import type { NavigationKeyEvent } from './resolveKey'
 const isCellSelectionActive = (t: NavTable) =>
   typeof t.setFocusedCell === 'function' &&
   t.options.enableCellSelection !== false &&
-  (t.options as { cellSelectionInteraction?: boolean })
-    .cellSelectionInteraction === true
+  isCellSelectionInteractive(t)
 
 /**
  * Схлопнуть выделение в активную ячейку тела; на невыбираемой ячейке (служебная
