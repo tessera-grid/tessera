@@ -10,6 +10,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   columnFilteringModel,
   columnPinning,
+  columnSorting,
   columnSortingModel,
   keyboardNavigation,
   quickSearchModel,
@@ -19,6 +20,7 @@ import {
   type ServerRowsResponse,
 } from '../../../plugins'
 import { BodyRow } from '../../../grid/BodyRow'
+import { setColumnFilterByUser, setSearchByUser } from '../../../core/filtering'
 import { humanClick } from '../helpers'
 import { measureWork, renders } from '../work.helpers'
 import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
@@ -53,7 +55,37 @@ interface Call {
   request: ServerRowsRequest
   fast: boolean
   settle: (answer: Answer) => void
+  /** Тест уже ответил на запрос. */
+  done?: boolean
 }
+
+/** Таблица стенда: смена выборки из теста. */
+interface QueryTable {
+  setColumnFilters: (filters: { id: string; value: unknown }[]) => void
+  setGlobalFilter: (value: string) => void
+  store: { get: () => Record<string, unknown> }
+}
+
+/** Строки выборки: префикс id — по ней (сортировка по возрастанию и убыванию, фильтр, поиск). */
+/** Условие фильтра колонки города. */
+const CITY_FILTER = { operator: 'contains', value: 'C1' }
+
+const tagOf = ({ sorting, columnFilters, globalFilter }: ServerRowsRequest) =>
+  globalFilter
+    ? 'g'
+    : columnFilters.length > 0
+      ? 'f'
+      : sorting[0]?.desc
+        ? 'd'
+        : sorting.length > 0
+          ? 's'
+          : 'r'
+const queryRows = (request: ServerRowsRequest): ServerRowsResponse<Item> => ({
+  rows: Array.from({ length: request.end - request.start }, (_, k) => ({
+    ...itemAt(request.start + k),
+    id: `${tagOf(request)}${request.start + k}`,
+  })),
+})
 
 /**
  * «Сервер» по команде теста: `reply` решает, ответить сразу (ответ или ошибка) или ждать
@@ -83,23 +115,28 @@ const Grid = ({
   plugins = [],
   state,
   colorMode,
+  onTable,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
   plugins?: readonly TesseraFeatureEntry[]
   state?: Record<string, unknown>
   colorMode?: 'light' | 'dark'
+  onTable?: (table: QueryTable) => void
 }) => {
   const table = useCreateTable({
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     state: state as never,
+    // Свечение обновления сразу, без задержки показа (ADR 0094).
+    refreshOptions: { delayMs: 0, minDurationMs: 0 },
     plugins: [
       serverRowModel({ getRows, rowCount, blockSize: BLOCK }),
       ...plugins,
     ] as never,
   })
+  onTable?.(table as unknown as QueryTable)
   return (
     <div style={{ width: 600, height: 420 }}>
       <DataGrid table={table as never} colorMode={colorMode} />
@@ -136,6 +173,18 @@ const liveRegion = () => q('[role="status"][aria-live="polite"]')!
 const pendingRow = (index: number) =>
   q(`[data-pending-row][data-index="${index}"]`)
 const press = (keys: string) => userEvent.keyboard(keys)
+const glowing = () => !!q('[data-refreshing]')
+const sortButton = () =>
+  q('.data-grid__head-cell[data-column-id="name"] .column-sort__button')
+const ariaSort = () =>
+  q(
+    '.data-grid__head-cell[data-column-id="name"][aria-colindex]',
+  )!.getAttribute('aria-sort')
+const banner = () => q('[data-testid="load-error-banner"]')
+const retryButton = () => q('[data-testid="load-error-retry"]')!
+const lit = (element: Element | null) =>
+  element?.getAttribute('aria-busy') === 'true' &&
+  element.hasAttribute('data-pending')
 /** Строка, в которой фокус: индекс в списке. */
 const focusedIndex = () =>
   Number(
@@ -700,6 +749,168 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expect(arrived).toBeGreaterThan(0)
       expect(renders(work, BodyRow)).toBe(arrived)
       for (const row of kept) expect(row.isConnected).toBe(true)
+    } finally {
+      await screen.unmount()
+    }
+  })
+  test('SD20: смена сортировки, фильтра или поиска — кэш сброшен, тело в начале, signal запросов прерван, прежние строки под свечением обновления до прихода окна', async () => {
+    let hold = false
+    const { calls, getRows } = server(request =>
+      hold ? undefined : queryRows(request),
+    )
+    const tableRef: { current?: QueryTable } = {}
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        onTable={table => (tableRef.current = table)}
+        plugins={[
+          columnSorting({ multiSort: false }),
+          columnFilteringModel(),
+          quickSearchModel(),
+        ]}
+      />,
+    )
+    const pendingOf = (match: (request: ServerRowsRequest) => boolean) =>
+      calls.filter(call => match(call.request) && !call.request.signal.aborted)
+    /** Новая выборка: тело в начале, прежние строки под свечением, её окно в пути. */
+    const changed = async (
+      match: (request: ServerRowsRequest) => boolean,
+      before: string,
+    ) => {
+      await expect.poll(() => scroller().scrollTop).toBe(0)
+      await expect
+        .poll(() => pendingOf(match).some(call => call.request.start === 0))
+        .toBe(true)
+      await expect.poll(glowing).toBe(true)
+      expect(rowAt(0)?.dataset.rowId).toBe(`${before}0`)
+      hold = false
+      const window = pendingOf(match)
+      for (const call of window) call.settle(queryRows(call.request))
+      const after = tagOf(window[0]!.request)
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe(`${after}0`)
+      await expect.poll(glowing).toBe(false)
+      return after
+    }
+    try {
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+      await scrollToIndex(500)
+      await expect.poll(() => rowAt(500)?.dataset.rowId).toBe('r500')
+      // Блоки у строки 800 в пути, когда выборка сменилась.
+      hold = true
+      await scrollToIndex(800)
+      await expect
+        .poll(() => pendingOf(request => request.start >= 800).length)
+        .toBeGreaterThan(0)
+      const inFlight = pendingOf(request => request.start >= 800)
+
+      await userEvent.click(sortButton()!)
+      const sorted = await changed(request => request.sorting.length > 0, 'r')
+      for (const call of inFlight) {
+        expect(call.request.signal.aborted).toBe(true)
+      }
+      // Кэш прежней выборки сброшен: строка 500 приходит заново под сортировкой.
+      await scrollToIndex(500)
+      await expect.poll(() => rowAt(500)?.dataset.rowId).toBe(`${sorted}500`)
+
+      hold = true
+      tableRef.current!.setColumnFilters([{ id: 'city', value: CITY_FILTER }])
+      await changed(request => request.columnFilters.length > 0, sorted)
+
+      hold = true
+      tableRef.current!.setGlobalFilter('N')
+      await changed(request => request.globalFilter === 'N', 'f')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SD21: перезапрос после смены сортировки, фильтра или поиска — серверное действие ADR 0116: свет у причины, отказ откатывает сортировку, оставляет черновик полей и показывает плашку с повтором', async () => {
+    let refuse = false
+    const { calls, getRows } = server(request =>
+      request.sorting.length === 0 &&
+      request.columnFilters.length === 0 &&
+      request.globalFilter === ''
+        ? queryRows(request)
+        : undefined,
+    )
+    const tableRef: { current?: QueryTable } = {}
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        onTable={table => (tableRef.current = table)}
+        plugins={[
+          columnSorting({
+            multiSort: false,
+            // Колбэк в этом режиме — уведомление: его промис не ждётся.
+            onToggleColumnSort: () => new Promise(() => {}),
+          }),
+          columnFilteringModel(),
+          quickSearchModel(),
+        ]}
+      />,
+    )
+    // Ответы на прежнюю выборку стенд даёт сам; в пути — запросы новой.
+    const held = () =>
+      calls.filter(
+        call =>
+          tagOf(call.request) !== 'r' &&
+          !call.done &&
+          !call.request.signal.aborted,
+      )
+    /** Ответить на окно в пути; префикс строк его выборки. */
+    const answerHeld = async () => {
+      await expect.poll(() => held().length).toBeGreaterThan(0)
+      const window = held()
+      for (const call of window) {
+        call.done = true
+        call.settle(refuse ? new Error('down') : queryRows(call.request))
+      }
+      return tagOf(window[0]!.request)
+    }
+    try {
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+
+      // Свет у причины, пока окно новой выборки в пути; приход гасит его.
+      await userEvent.click(sortButton()!)
+      await expect.poll(() => lit(sortButton())).toBe(true)
+      const first = await answerHeld()
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe(`${first}0`)
+      await expect.poll(() => lit(sortButton())).toBe(false)
+      const confirmed = ariaSort()
+
+      // Отказ: сортировка — к подтверждённой, на экране прежние строки, плашка с причиной.
+      refuse = true
+      await userEvent.click(sortButton()!)
+      await answerHeld()
+      await expect.poll(() => banner()?.textContent ?? '').toContain('down')
+      expect(ariaSort()).toBe(confirmed)
+      expect(rowAt(0)?.dataset.rowId).toBe(`${first}0`)
+
+      // Повтор плашки повторяет действие.
+      refuse = false
+      await userEvent.click(retryButton())
+      const second = await answerHeld()
+      expect(second).not.toBe(first)
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe(`${second}0`)
+      expect(ariaSort()).not.toBe(confirmed)
+      await expect.poll(banner).toBeNull()
+
+      // Отказ фильтра и поиска: черновик остаётся в состоянии, строки — прежние.
+      refuse = true
+      setColumnFilterByUser(tableRef.current, 'city', CITY_FILTER)
+      await answerHeld()
+      await expect.poll(() => banner()?.textContent ?? '').toContain('down')
+      expect(tableRef.current!.store.get().columnFilters).toEqual([
+        { id: 'city', value: CITY_FILTER },
+      ])
+      expect(rowAt(0)?.dataset.rowId).toBe(`${second}0`)
+      setSearchByUser(tableRef.current, 'N')
+      await answerHeld()
+      await expect.poll(() => banner()?.textContent ?? '').toContain('down')
+      expect(tableRef.current!.store.get().globalFilter).toBe('N')
+      expect(rowAt(0)?.dataset.rowId).toBe(`${second}0`)
     } finally {
       await screen.unmount()
     }

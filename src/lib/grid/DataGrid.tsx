@@ -292,7 +292,7 @@ export const DataGrid = ({
       )
     },
   })
-  useRowSourceWindow(rowSource, rowVirtualizer, fastScrollStore)
+  useRowSourceWindow(table, rowSource, rowVirtualizer, fastScrollStore)
 
   const virtualPaddingStyles = useColumnVirtualizerScroll({
     table,
@@ -303,8 +303,12 @@ export const DataGrid = ({
   const loading = (table.options as any).loading as
     'initial' | 'refresh' | false | undefined
   const initialLoading = loading === 'initial'
-  // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3).
-  const refreshLoading = loading === 'refresh' || serverAction.pending
+  // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3); окно
+  // новой выборки серверной модели строк — тоже (ADR 0138, §6).
+  const refreshLoading =
+    loading === 'refresh' ||
+    !!serverAction.pending ||
+    !!rowSource.refreshing?.()
   // Отказ серверного действия — та же плашка; ошибка приложения главнее (ADR 0116, §5).
   const appError = (table.options as any).loadError
   const appFailed = hasLoadError(appError)

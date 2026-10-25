@@ -225,6 +225,31 @@ export class BlockStore<TData, TRow, TQuery> {
     this.pump()
   }
 
+  /**
+   * Строки окна под этим хранилищем: все пришли, ещё идут или блок окна отказал. Без окна
+   * — идут.
+   */
+  windowState(): 'loading' | 'loaded' | { failed: string | undefined } {
+    if (!this.window) return 'loading'
+    let loading = false
+    for (const index of this.neededBlocks()) {
+      const block = this.blocks.get(index)
+      if (block?.status === 'error') return { failed: block.reason }
+      if (block?.status !== 'loaded') loading = true
+    }
+    return loading ? 'loading' : 'loaded'
+  }
+
+  /** Хранилище больше не нужно: запросы в пути отменены, кэш пуст, без уведомлений. */
+  dispose() {
+    for (const block of this.blocks.values()) {
+      if (block.status === 'pending') block.abort.abort()
+    }
+    this.blocks.clear()
+    this.indexById.clear()
+    this.window = null
+  }
+
   /** Сбросить кэш и отменить запросы: новое состояние выборки или обновление. */
   reset(rowCount = this.options.rowCount) {
     for (const block of this.blocks.values()) {

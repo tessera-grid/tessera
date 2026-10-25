@@ -5,6 +5,7 @@
  * цепочки ожидания. Общий модуль четырёх плагинов — вне их папок (IV3).
  */
 import { reportAction } from '../debugActions'
+import type { RowSource } from '../rowSource'
 import { isThenable, rejectionText } from '../thenable'
 import {
   readServerAction,
@@ -80,7 +81,15 @@ let lastAttempt = 0
 
 let neverAborted: AbortSignal | undefined
 
-const isServer = ({ options }: ServerTable, kind: ServerActionKind) => {
+/** Серверная модель строк: выборку ведёт её источник (ADR 0138, §6). */
+const sourceLoad = (table: unknown, kind: ServerActionKind) =>
+  kind === 'pagination'
+    ? undefined
+    : (table as { getRowSource?: () => RowSource }).getRowSource?.().whenLoaded
+
+const isServer = (t: ServerTable, kind: ServerActionKind) => {
+  if (sourceLoad(t, kind)) return true
+  const { options } = t
   switch (kind) {
     case 'sorting':
       return !!options.manualSorting
@@ -230,6 +239,9 @@ export const runServerAction = (
     writeServerAction(table, ({ failed }) => (failed ? { failed } : {}))
     throw error
   }
+  // Серверная модель строк: ждём окно новой выборки, колбэк приложения — уведомление.
+  const load = sourceLoad(table, kind)
+  if (load) result = load()
   if (!isThenable(result)) {
     settleIdle(table)
     return

@@ -66,10 +66,10 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
   },
   // Кэш переживает смену аргументов: cleanup лишь отменяет запросы в пути.
   setup: o => table => {
-    const { store } = sourceOfTable(table)
-    if (!store) return
-    store.setMaxBlocks(o.maxBlocks ?? DEFAULT_MAX_BLOCKS)
-    store.resume()
-    return () => store.suspend()
+    const source = sourceOfTable(table)
+    if (!source.store) return
+    source.setMaxBlocks?.(o.maxBlocks ?? DEFAULT_MAX_BLOCKS)
+    source.resume?.()
+    return () => source.suspend?.()
   },
 })
