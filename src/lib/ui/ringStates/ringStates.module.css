@@ -73,8 +73,9 @@
   stroke: var(--tsr-spinner-tone);
   stroke-opacity: calc(1 / var(--_i));
   stroke-linecap: butt;
-  stroke-dasharray: var(--_d) calc(100 - var(--_d));
-  stroke-dashoffset: calc(var(--_shift) - var(--tsr-pending-run));
+  /* В единицах: `calc()` от чисел Firefox в штрихе не принимает. Доли — `pathLength` 100. */
+  stroke-dasharray: calc(var(--_d) * 1px) calc((100 - var(--_d)) * 1px);
+  stroke-dashoffset: calc((var(--_shift) - var(--tsr-pending-run)) * 1px);
 }
 
 .arcTail > rect:first-child {
