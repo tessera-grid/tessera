@@ -11,7 +11,8 @@ import { testCommands } from './vitest.commands.ts'
 // Кольцо фокуса после мыши: Firefox не даёт :focus-visible фокусу от скрипта (CB5).
 // Раскрытие кнопок ячейки без возможностей только Chromium (CB6). Смена кольца кнопки
 // посреди нажатия: Firefox терял клик (BS18). Линии дерева при дробном масштабе: Firefox и
-// WebKit схлопывали линию в 1px (TL7).
+// WebKit схлопывали линию в 1px (TL7). Пределы высоты и липкой шапки: у Firefox свои, выше
+// предела он даёт телу высоту 0 (ADR 0141, BH1–BH6).
 // Запуск: npm run test:browsers
 export default defineConfig({
   ...base,
@@ -19,6 +20,7 @@ export default defineConfig({
     name: 'engines',
     include: [
       'src/lib/stories/__tests__/visual/action-sessions.test.tsx',
+      'src/lib/stories/__tests__/visual/browser-limits.test.tsx',
       'src/lib/stories/__tests__/visual/keyboard-entry.test.tsx',
       'src/lib/stories/__tests__/visual/focus-modality.test.tsx',
       'src/lib/stories/__tests__/visual/reveal-engines.test.tsx',

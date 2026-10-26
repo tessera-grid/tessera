@@ -723,29 +723,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
     }
   })
 
-  test('SD18: список выше предела высоты браузера — dev-warn с советом о пагинации', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      const { getRows } = server(() => undefined)
-      let screen = await render(<Grid getRows={getRows} rowCount={1000} />)
-      await expect.poll(skeletonRows).not.toEqual([])
-      expect(
-        warn.mock.calls.some(call => String(call[0]).includes('pagination')),
-      ).toBe(false)
-      await screen.unmount()
-
-      screen = await render(<Grid getRows={getRows} rowCount={10_000_000} />)
-      await expect
-        .poll(() =>
-          warn.mock.calls.some(call => String(call[0]).includes('pagination')),
-        )
-        .toBe(true)
-      await screen.unmount()
-    } finally {
-      warn.mockRestore()
-    }
-  })
-
   test('SD20: смена сортировки, фильтра или поиска — кэш сброшен, тело в начале, signal запросов прерван, прежние строки под свечением обновления до прихода окна', async () => {
     let hold = false
     const { calls, getRows } = server(request =>

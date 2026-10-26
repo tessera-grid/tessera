@@ -21,6 +21,10 @@ import {
   SMALL,
 } from './perf-cases'
 import { renderPluginsGrid } from './hosts'
+import {
+  __resetScrollLimits,
+  measureStickyScrollLimit,
+} from '../../../core/scrollHeightLimit'
 import { RU_LABELS } from '../../__mocks__/localization.ru'
 import {
   columnFiltering,
@@ -365,6 +369,77 @@ describe('Производительность первой отрисовки �
       expect(
         russian.longestMs,
         `русский словарь longest=${russian.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Пределы браузера (ADR 0141, BH7): монтирование серверной модели на 1 000 000 строк с
+// замером пределов высоты и липкости против того же монтирования с уже измеренными.
+describe('Производительность первой отрисовки — пределы браузера', () => {
+  test(
+    'BH7: монтирование 1 000 000 строк с замером обоих пределов не дороже монтирования с измеренными пределами',
+    async () => {
+      const getRows = ({ start, end }: { start: number; end: number }) => ({
+        rows: Array.from({ length: end - start }, (_, k) => ({
+          id: `bh-${start + k}`,
+        })),
+      })
+      const measure = async (cold: boolean) => {
+        const result = await measureRenderWork(
+          () => {
+            if (cold) __resetScrollLimits()
+            // В перф-сборке предупреждения не печатаются: замер липкости режима
+            // разработки — здесь же, в задаче монтирования.
+            measureStickyScrollLimit()
+            renderGrid({
+              ...SMALL,
+              ...NO_PLUGINS,
+              enableServerRowModel: true,
+              serverRowModelRowCount: 1_000_000,
+              serverRowModelGetRows: getRows,
+            })
+          },
+          () => !!document.querySelector('.data-grid__body-row[data-row-id]'),
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const cold = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'render',
+          size: '1 000 000×30',
+          plugins: 'serverRowModel',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('BH7-base', 'пределы уже измерены', base, false)
+      await record('BH7', 'замер пределов высоты и липкости', cold, true)
+
+      expect(
+        cold.longestMs,
+        `с замером ${cold.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

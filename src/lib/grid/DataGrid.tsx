@@ -17,7 +17,10 @@ import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useRowSourceWindow } from '../core/rowSourceWindow'
-import { useScrollHeightWarning } from '../core/scrollHeightLimit'
+import {
+  clampBodyHeight,
+  useScrollHeightWarning,
+} from '../core/scrollHeightLimit'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { trackInputModality } from '../core/inputModality'
@@ -189,7 +192,6 @@ export const DataGrid = ({
   // Ключ перечитывания токенов: тема и появление корня (без строк — ветка заглушки).
   const themeKey = `${colorMode}|${className}|${rowCount > 0}`
   const heights = useRowHeights(table, wrapperRef, themeKey)
-  useScrollHeightWarning(table, rowCount, heights.row)
   useControlColumnSizes(table, wrapperRef, themeKey)
 
   // Авто-прокрутка при drag-выделении ячеек у края/за пределами таблицы (инертно
@@ -216,6 +218,10 @@ export const DataGrid = ({
 
   const headerGroupsDepth = headerGroups.length
   const hasNestedGroups = headerGroupsDepth > 1
+  const headHeight = headerGroupsDepth * heights.head + headerGroupsDepth
+  // Над телом шапка, под ним — не больше строки футера.
+  const aroundBody = headHeight + heights.row
+  useScrollHeightWarning(table, rowCount, heights.row, aroundBody)
 
   const labels = useMemo(
     () => resolveLabels(localization, locale),
@@ -413,8 +419,8 @@ export const DataGrid = ({
   // переданный потребителем style. Дефолты токенов темы объявлены в theme.css.
   const wrapperStyles = {
     ...({
-      '--tsr-comp-head-height': `${headerGroupsDepth * heights.head + headerGroupsDepth}px`,
-      '--tsr-comp-body-height': `${bodyHeight}px`,
+      '--tsr-comp-head-height': `${headHeight}px`,
+      '--tsr-comp-body-height': `${clampBodyHeight(bodyHeight, heights.row, aroundBody)}px`,
     } as CSSProperties),
     ...heights.vars,
     ...containerStyles,
