@@ -224,11 +224,15 @@ const offsetFor = (
       : Math.round(value)
 }
 
-/** Отрезок на месте: целиком в окне у своего края, у центра — с точностью до пикселя. */
+/**
+ * Отрезок на месте: целиком в окне у своего края, у центра — с точностью до пикселя. У края
+ * допуск — два пикселя: при дробном масштабе Firefox держит прокрутку на сетке шире пикселя,
+ * и ровно к краю не встать.
+ */
 const isPlaced = (span: Span, area: Span, align: ScrollAlign) => {
   const delta = deltaFor(span, area, align)
-  if (align === 'start') return delta >= 0 && delta < 1
-  if (align === 'end') return delta <= 0 && delta > -1
+  if (align === 'start') return delta >= 0 && delta < 2
+  if (align === 'end') return delta <= 0 && delta > -2
   if (align === 'center') return Math.abs(delta) < 1
   return delta === 0
 }
