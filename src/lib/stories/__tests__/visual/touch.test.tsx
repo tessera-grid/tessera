@@ -371,6 +371,8 @@ describe('Касания (ADR 0086)', () => {
     scroller().scrollLeft = 0
     await wait(100)
     const rows = rowOrder()
+    // Ручки строк возвращаются, когда перенос колонки завершён: на React 18 — позже.
+    await expect.poll(() => rowAt(1).querySelector(HANDLE)).not.toBeNull()
     const rowHandle = rowAt(1).querySelector<HTMLElement>(HANDLE)!
     const start = center(rowHandle)
     await drag(start, { x: start.x, y: start.y + rowAt(1).offsetHeight * 2.6 })

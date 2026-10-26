@@ -310,16 +310,19 @@ export const EditingServer: StoryObj<StoryProps> = {
     await step(EDIT_SERVER_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(true))
-      expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
+      // Ожидание и значение — разные срезы: React 18 коммитит их по одному.
+      await until(() => expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE))
     })
     await step(EDIT_SERVER_STEPS[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(false))
-      expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
+      await until(() => expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE))
       expect(consoleText()).toContain('onCellEdit')
-      expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
-        'data-flash',
-        'accepted',
+      await until(() =>
+        expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
+          'data-flash',
+          'accepted',
+        ),
       )
       // Значок кнопки возвращается из приглушённого цвета ожидания переходом.
       await settle()

@@ -160,7 +160,7 @@ const dropHeldAtStart = async () => {
   heldColumn = null
   if (!hold) return
   await hold.held.moveTo(hold.target, 1)
-  hold.held.release()
+  await hold.held.release()
 }
 
 /**

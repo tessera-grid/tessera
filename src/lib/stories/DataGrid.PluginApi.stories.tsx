@@ -642,8 +642,13 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
         ?.getAttribute('data-flash')
     // Ожидание кончилось: значок возвращается к цвету покоя коротким переходом (IR31).
     const button = (index: number) => favoriteOf(canvas, index)!
-    const iconAtRest = (index: number) =>
-      Promise.all(
+    const iconAtRest = async (index: number) => {
+      // Снятие ожидания React 18 коммитит отдельно: переход цвета ещё не начался.
+      await until(() => {
+        expect(button(index)).not.toHaveAttribute('aria-busy', 'true')
+        expect(button(index)).not.toHaveAttribute('data-pending-leaving')
+      })
+      await Promise.all(
         button(index)
           .getAnimations({ subtree: true })
           .filter(
@@ -653,6 +658,7 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
           )
           .map(animation => animation.finished.catch(() => {})),
       )
+    }
     await step(OUTCOME_FLASH[0].title, async () => {
       await waitForRows(canvas)
       await until(() => expect(favoriteOf(canvas, 0)).not.toBeNull())
@@ -669,8 +675,13 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(flashOf(1)).toBe('reverted'))
       await iconAtRest(1)
-      expect(button(1).closest('[data-button-active]')).toBeNull()
-      expect(button(1).getAttribute('aria-describedby')).toBeTruthy()
+      // Отметка отказа и её описание — разные срезы: React 18 коммитит их по одному.
+      await until(() =>
+        expect(button(1).closest('[data-button-active]')).toBeNull(),
+      )
+      await until(() =>
+        expect(button(1).getAttribute('aria-describedby')).toBeTruthy(),
+      )
     })
     await settle()
   },

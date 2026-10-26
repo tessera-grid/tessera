@@ -34,7 +34,9 @@ import {
   highlightSeed,
   outcomeFlashSeed,
   INLINE_HEADER_ACTIONS,
+  inlineHeaderActions,
 } from './perf-cases'
+import { makeColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid } from './hosts'
@@ -489,7 +491,8 @@ describe('Производительность прокрутки — индик
         const screen = renderGrid({
           ...LARGE,
           ...ALL_PLUGINS,
-          ...INLINE_HEADER_ACTIONS,
+          // Колонки под все кнопки: иначе сортировка уходит в кебаб, а у него номера нет.
+          ...inlineHeaderActions(makeColumns(LARGE.columnCount)),
           extraPlugins: sorted ? [sortAllColumnsSeed()] : [],
         })
         await waitForGrid()

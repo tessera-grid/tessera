@@ -207,8 +207,14 @@ export const dragHold = async (
     moveTo,
     /** Где сейчас указатель. */
     point: () => at,
-    /** Отпускает там, где держит: бросок. */
-    release: () => fire('pointerup', at),
+    /**
+     * Отпускает там, где держит: бросок. Промис — когда dnd-kit перестал глотать клики:
+     * нажатие сразу после броска он проглотил бы.
+     */
+    release: async () => {
+      fire('pointerup', at)
+      await new Promise(resolve => setTimeout(resolve, DRAG_CLICK_RELEASE))
+    },
     /** Escape: перетаскивание отменяется, строка или колонка остаётся на месте. */
     cancel: cancelDrag,
   }
