@@ -746,40 +746,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
     }
   })
 
-  test('SD19: приход блока строит строки только этого блока и не перерисовывает строки других блоков', async () => {
-    const { calls, getRows } = server(({ start, end }) =>
-      start === 0 ? { rows: rowsOf(start, end) } : undefined,
-    )
-    const screen = await render(<Grid getRows={getRows} rowCount={1000} />)
-    try {
-      // Окно на стыке: внизу блока 0 строки с данными, ниже — скелеты блока 1.
-      await scrollToIndex(BLOCK - 5)
-      await expect
-        .poll(() => rowAt(BLOCK - 1)?.dataset.rowId)
-        .toBe(`r${BLOCK - 1}`)
-      await expect
-        .poll(() => calls.some(call => call.request.start === BLOCK))
-        .toBe(true)
-      const kept = [
-        ...document.querySelectorAll<HTMLElement>(
-          '.data-grid__body-row[data-row-id]',
-        ),
-      ]
-      const work = await measureWork(scroller(), () =>
-        calls
-          .find(call => call.request.start === BLOCK)!
-          .settle({ rows: rowsOf(BLOCK, 2 * BLOCK) }),
-      )
-      await expect.poll(() => rowAt(BLOCK)?.dataset.rowId).toBe(`r${BLOCK}`)
-      const arrived = shownIndexes().filter(index => index >= BLOCK).length
-      // Перерисованы только пришедшие строки; строки блока 0 — те же узлы.
-      expect(arrived).toBeGreaterThan(0)
-      expect(renders(work, BodyRow)).toBe(arrived)
-      for (const row of kept) expect(row.isConnected).toBe(true)
-    } finally {
-      await screen.unmount()
-    }
-  })
   test('SD20: смена сортировки, фильтра или поиска — кэш сброшен, тело в начале, signal запросов прерван, прежние строки под свечением обновления до прихода окна', async () => {
     let hold = false
     const { calls, getRows } = server(request =>

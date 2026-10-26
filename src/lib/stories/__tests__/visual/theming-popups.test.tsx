@@ -142,8 +142,14 @@ const POPOVERS: Popover[] = [
     name: 'context menu',
     open: async () => {
       const cell = query('.data-grid__body-cell[data-column-id="name"]')[0]
-      const rect = cell.getBoundingClientRect()
-      pointer = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      // Точка — из самого события: движки округляют координаты нажатия по-своему.
+      const record = (event: MouseEvent) => {
+        pointer = { x: event.clientX, y: event.clientY }
+      }
+      document.addEventListener('contextmenu', record, {
+        capture: true,
+        once: true,
+      })
       await userEvent.click(cell, { button: 'right' })
       await expect
         .poll(() => query('[role="menuitem"]').length)

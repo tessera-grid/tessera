@@ -14,7 +14,11 @@ import { DraggableBodyRow } from '../../../grid/DraggableBodyRow'
 import { HeadCellView } from '../../../grid/HeadCell'
 import { HeadSelectionComponent } from '../../../plugins/rowSelection/HeadSelectionComponent'
 import { RowSelectionComponent } from '../../../plugins/rowSelection/RowSelectionComponent'
-import { columnSorting, headerActionMenu } from '../../../plugins'
+import {
+  columnSorting,
+  headerActionMenu,
+  serverRowModel,
+} from '../../../plugins'
 import { LinearProgress } from '../../../ui/LinearProgress'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
 import { getData } from '../../__mocks__/data'
@@ -544,5 +548,60 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     expect(listened.commits, describeWork(listened)).toBe(base.commits)
     expect(listened.rendered, describeWork(listened)).toBe(base.rendered)
     expect(listened.builds).toEqual(base.builds)
+  })
+
+  test('SD19: приход блока строит строки только этого блока и не перерисовывает строки других блоков', async () => {
+    const all = getData(1000)
+    const BLOCK = 100
+    const held: { start: number; answer: () => void }[] = []
+    const { grid, measure } = await mountGrid(
+      {},
+      [],
+      [
+        serverRowModel({
+          rowCount: all.length,
+          blockSize: BLOCK,
+          // Первый блок — сразу, остальные ждут ответа из теста.
+          getRows: ({ start, end }) =>
+            start === 0
+              ? { rows: all.slice(start, end) }
+              : new Promise(resolve => {
+                  held.push({
+                    start,
+                    answer: () => resolve({ rows: all.slice(start, end) }),
+                  })
+                }),
+        }),
+      ],
+    )
+    const rowAt = (index: number) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-index="${index}"]`,
+      )
+    await expect.poll(() => rowAt(0)?.dataset.rowId).toBe(all[0]!.id)
+    // Окно на стыке: внизу блока 0 строки с данными, ниже — скелеты блока 1.
+    grid.scrollTop = (BLOCK - 5) * rowAt(0)!.getBoundingClientRect().height
+    await expect
+      .poll(() => rowAt(BLOCK - 1)?.dataset.rowId)
+      .toBe(all[BLOCK - 1]!.id)
+    await expect.poll(() => held.some(call => call.start === BLOCK)).toBe(true)
+    const kept = [
+      ...document.querySelectorAll<HTMLElement>(
+        '.data-grid__body-row[data-row-id]',
+      ),
+    ]
+    const work = await measure(() =>
+      held.find(call => call.start === BLOCK)!.answer(),
+    )
+    await expect.poll(() => rowAt(BLOCK)?.dataset.rowId).toBe(all[BLOCK]!.id)
+    const arrived = [
+      ...document.querySelectorAll<HTMLElement>(
+        '.data-grid__body-row[data-row-id]',
+      ),
+    ].filter(row => Number(row.dataset.index) >= BLOCK).length
+    // Перерисованы только пришедшие строки; строки блока 0 — те же узлы.
+    expect(arrived).toBeGreaterThan(0)
+    expect(renders(work, BodyRow), describeWork(work)).toBe(arrived)
+    for (const row of kept) expect(row.isConnected).toBe(true)
   })
 })

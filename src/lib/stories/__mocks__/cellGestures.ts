@@ -96,14 +96,14 @@ export const rightClickCell = (cell: HTMLElement) => {
 /** Копирование с клавиатуры: событие `copy` от ячейки; что положено в буфер — в ответе. */
 export const copyFrom = (cell: HTMLElement) => {
   const clipboardData = new DataTransfer()
-  cell.dispatchEvent(
-    new ClipboardEvent('copy', {
-      bubbles: true,
-      cancelable: true,
-      clipboardData,
-    }),
-  )
-  return clipboardData
+  const event = new ClipboardEvent('copy', {
+    bubbles: true,
+    cancelable: true,
+    clipboardData,
+  })
+  cell.dispatchEvent(event)
+  // Firefox отдаёт обработчикам свой буфер события, а не переданный.
+  return event.clipboardData ?? clipboardData
 }
 
 /** Открытое меню таблицы. */

@@ -75,6 +75,9 @@ export const cloudText = () =>
  * Взять строку за ручку и держать над строкой `overId`, выровняв текст облака по
  * отступу уровня `depth` (ADR 0108, §2). Возвращает точку указателя и начало уровней.
  */
+/** Запас за порогом уровня, px: меньше шага уровня, больше округления движков. */
+const LEVEL_MARGIN = 2
+
 export const dragOver = async (id: string, overId: string, depth: number) => {
   const row = rowById(id)!
   await userEvent.hover(row)
@@ -92,7 +95,11 @@ export const dragOver = async (id: string, overId: string, depth: number) => {
   await pointer.realDragHold(from, to)
   await expect.poll(() => document.querySelector(CLOUD_TITLE)).not.toBeNull()
   const step = tokenPx('--tsr-comp-row-nesting-indent')
-  const aligned = { x: to.x + levelZero + depth * step - cloudText(), y: to.y }
+  // Чуть за порогом уровня: Firefox и WebKit округляют координаты указателя на пиксель вниз.
+  const aligned = {
+    x: to.x + levelZero + depth * step - cloudText() + LEVEL_MARGIN,
+    y: to.y,
+  }
   await pointer.realMouseMove(to, aligned, 4)
   for (let i = 0; i < 4; i++) await nextFrame()
   return { at: aligned, levelZero, step }

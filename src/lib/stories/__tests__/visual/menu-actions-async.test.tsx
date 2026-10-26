@@ -603,6 +603,8 @@ describe('Долгое действие', () => {
     expect(isDisabled(item('Export'))).toBe(false)
     await humanClick(item('Export')!)
     await expect.poll(() => probe.runs.length).toBe(2)
+    // Выбор пункта закрывает меню: следующее открывается после него.
+    await expect.poll(() => items().length).toBe(0)
 
     await runFromMenu('Remove', 'r2')
     expect(probe.runs.map(run => `${run.id}@${run.target}`)).toEqual([
