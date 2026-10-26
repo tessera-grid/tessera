@@ -674,7 +674,8 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
 const RECORD_TOTAL = 300_000
 const RECORD_BLOCK = 100
 /** Место записи из ссылки: его сообщает сервер. */
-const RECORD_INDEX = 214_321
+// В пределах липкой шапки Firefox (~8,9 млн px прокрутки, «Известные проблемы» roadmap).
+const RECORD_INDEX = 114_321
 const RECORD_ID = `item-id-${RECORD_INDEX}`
 
 interface RecordApi {

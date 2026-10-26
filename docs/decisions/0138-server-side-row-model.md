@@ -393,7 +393,8 @@ interface RowSource<TRow> {
   виртуализатора на весь список: работа растёт с итогом, около 50 мс на миллион строк
   под ×4 CPU (§14, «Известные проблемы» roadmap).
 - **−** Предел высоты: при строках 40px Firefox ограничивает список примерно 440 000
-  строк, Chrome — 800 000.
+  строк, Chrome — 800 000. Липкую шапку Firefox держит только до прокрутки около 8,9 млн px
+  (около 223 000 строк по 40px): глубже она уезжает вверх («Известные проблемы» roadmap).
 - **Публичный API:** плагин `serverRowModel` и его типы (`ServerRowsRequest`,
   `ServerRowsResponse`); метод `getRowSource` и тип `RowSource`;
   `refreshRows`, `setRowData`, `scrollToRowIndex`; опция `index` у `scrollToRow`; срез
