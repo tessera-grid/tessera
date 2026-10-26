@@ -286,61 +286,69 @@ const StoryGrid = memo(
           }
         : {}),
     }
-    // Колбэки, переданные гриду, — с записью в консоль истории (ADR 0124, CL2).
-    const pluginArgs = loggedCallbacks(consoleLog, {
-      ...sliceArgs,
-      ...Object.fromEntries(
-        Object.entries(options).filter(([, value]) => value !== undefined),
-      ),
-    }) as FeatureToggles
-    const storyPlugins = [...argsToPlugins(pluginArgs), ...(extraPlugins ?? [])]
-    const demoHooks = {
-      rowSelection: {
-        onSelectRow: onSelectRow ?? ((): null => null),
-        onSelectAllRowsOnPage: onSelectAllRowsOnPage ?? ((): null => null),
-        isAllRowsSelected,
-      },
-      ...(onTogglePin ? { columnPinning: { onTogglePin } } : {}),
-      ...(onToggleColumnSort ? { columnSorting: { onToggleColumnSort } } : {}),
-      ...(onExpandRow ? { rowExpanding: { onExpandRow } } : {}),
-      ...(onToggleColumnVisibility
-        ? { columnVisibility: { onToggleColumnVisibility } }
-        : {}),
-      ...(onPageChange ? { pagination: { onPageChange } } : {}),
-      // Предикат аргументом плагина (тесты) — без демо-хуков: слайс хуков записи
-      // заменил бы слайс плагина целиком.
-      ...(options.enableCellEditing && !options.cellEditingCanEditCell
+    // Бизнес-колбэки демо — аргументами фабрик (ADR 0027): слайс хуков плагина остаётся его,
+    // заданные историей аргументы главнее. В консоли истории — под своими именами.
+    const demo = loggedCallbacks(consoleLog, {
+      onSelectRow: onSelectRow ?? ((): null => null),
+      onSelectAllRowsOnPage: onSelectAllRowsOnPage ?? ((): null => null),
+      onTogglePin,
+      onToggleColumnSort,
+      onExpandRow,
+      onToggleColumnVisibility,
+      onPageChange,
+    })
+    // Предикат правки аргументом истории (тесты) — без демо правки.
+    const editingDemo =
+      options.enableCellEditing && !options.cellEditingCanEditCell
+    const demoArgs = {
+      rowSelectionOnSelectRow: demo.onSelectRow,
+      rowSelectionOnSelectAllRowsOnPage: demo.onSelectAllRowsOnPage,
+      rowSelectionIsAllRowsSelected: isAllRowsSelected,
+      columnPinningOnTogglePin: demo.onTogglePin,
+      columnSortingOnToggleColumnSort: demo.onToggleColumnSort,
+      rowExpandingOnExpandRow: demo.onExpandRow,
+      columnVisibilityOnToggleColumnVisibility: demo.onToggleColumnVisibility,
+      paginationOnPageChange: demo.onPageChange,
+      ...(editingDemo
         ? {
-            cellEditing: {
-              canEditCell: (ctx: CellComponentProps) =>
-                CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
-              validate: validateCellEdit,
-              onEditCancel: options.onEditCancel,
-              onConflict: options.onConflict,
-              // Сохранение истории — промисом: значение пишется в данные после ответа.
-              onCellEdit: (commit: CellEditCommit) => {
-                const { rowId, columnId, value } = commit
-                const write = () =>
-                  setData(prev =>
-                    prev.map(row =>
-                      row.id === rowId ? { ...row, [columnId]: value } : row,
-                    ),
-                  )
-                // Ответ приложения — сохранённая строка (ADR 0139) — проходит насквозь.
-                const saved = options.onCellEdit?.(commit)
-                if (!isThenable(saved)) {
-                  write()
-                  return saved
-                }
-                return saved.then(answer => {
-                  write()
-                  return answer
-                })
-              },
-            },
+            cellEditingCanEditCell: (ctx: CellComponentProps) =>
+              CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
+            cellEditingValidate: validateCellEdit,
           }
         : {}),
     }
+    // Сохранение истории — промисом: значение пишется в данные после ответа. Ответ
+    // приложения — сохранённая строка (ADR 0139) — проходит насквозь.
+    const demoCellEdit = (commit: CellEditCommit) => {
+      const { rowId, columnId, value } = commit
+      const write = () =>
+        setData(prev =>
+          prev.map(row =>
+            row.id === rowId ? { ...row, [columnId]: value } : row,
+          ),
+        )
+      const saved = options.onCellEdit?.(commit)
+      if (!isThenable(saved)) {
+        write()
+        return saved
+      }
+      return saved.then(answer => {
+        write()
+        return answer
+      })
+    }
+    // Колбэки, переданные гриду, — с записью в консоль истории (ADR 0124, CL2).
+    const pluginArgs = {
+      ...loggedCallbacks(consoleLog, {
+        ...sliceArgs,
+        ...demoArgs,
+        ...Object.fromEntries(
+          Object.entries(options).filter(([, value]) => value !== undefined),
+        ),
+        ...(editingDemo ? { onCellEdit: demoCellEdit } : {}),
+      }),
+    } as FeatureToggles
+    const storyPlugins = [...argsToPlugins(pluginArgs), ...(extraPlugins ?? [])]
 
     // Канал действий грида — в консоль истории (ADR 0125, ADR 0124 CL15).
     // Слушатель истории или теста (`onDebugAction` аргументом) — рядом с консолью.
@@ -415,21 +423,7 @@ const StoryGrid = memo(
       // Фичи-плагины (включая rowActions) композируются из тумблеров через
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.
-      plugins: [
-        ...storyPlugins,
-        {
-          id: 'demoHooks',
-          // Пустой slot — запись не несёт фич, только hook-слайс (сохраняет вывод
-          // типа набора фич при слиянии слотов).
-          features: {},
-          hooks: Object.fromEntries(
-            Object.entries(demoHooks).map(([scope, hooks]) => [
-              scope,
-              loggedCallbacks(consoleLog, hooks),
-            ]),
-          ),
-        },
-      ],
+      plugins: storyPlugins,
     })
 
     useTableConsole(consoleLog, table, {

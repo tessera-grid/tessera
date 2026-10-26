@@ -95,8 +95,8 @@ type OptionsOf<F extends FactoryName> = NonNullable<Parameters<Factories[F]>[0]>
 type Callback = `on${string}`
 
 /**
- * Колбэки фабрик, которые наблюдают истории и тесты. Остальные бизнес-хуки демо
- * кладёт в hook-слайс записи `demoHooks` (StoryComponent).
+ * Колбэки фабрик, которые наблюдают истории и тесты, — аргументами под своими именами.
+ * Остальные бизнес-хуки демо передаёт аргументами `<фабрика><Колбэк>` (StoryComponent).
  */
 const CALLBACKS = {
   rowDragging: ['onRowDragEnd', 'onRowDragCancel', 'onRowOrderChange'],
