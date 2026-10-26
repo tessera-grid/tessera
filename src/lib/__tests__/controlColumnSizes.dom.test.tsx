@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Ширина колонок контролов по кнопке грида из темы (ADR 0135, GZ15): запись в
- * авто-слайс размеров — только при своей теме и только при смене записи.
+ * Ширина колонок контролов по кнопке грида из темы (ADR 0135, GZ15, GZ17): запись в
+ * авто-слайс размеров — только при своей теме и только при смене записи; проба кнопки —
+ * только при смене колонок контролов и темы.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, useRef } from 'react'
@@ -90,5 +91,32 @@ describe('Ширина колонок контролов из темы (ADR 0135
       other: 120,
     })
     act(() => root.unmount())
+  })
+
+  it('GZ17: размер кнопки грида меряется только при смене состава колонок контролов и ключа темы, а не на каждой перерисовке грида', () => {
+    const probe = vi.spyOn(window, 'getComputedStyle')
+    try {
+      const table = {
+        getAllLeafColumns: () => columns,
+        setColumnAutoSizing: vi.fn(),
+      }
+      const root = mount()
+      act(() => root.render(<Host table={table} size="32px" themeKey="a" />))
+      expect(probe).toHaveBeenCalledTimes(1)
+
+      // Перерисовки грида: обёртка таблицы новая на каждой, тема и колонки прежние.
+      for (let i = 0; i < 3; i++) {
+        act(() =>
+          root.render(<Host table={{ ...table }} size="32px" themeKey="a" />),
+        )
+      }
+      expect(probe).toHaveBeenCalledTimes(1)
+
+      act(() => root.render(<Host table={table} size="28px" themeKey="b" />))
+      expect(probe).toHaveBeenCalledTimes(2)
+      act(() => root.unmount())
+    } finally {
+      probe.mockRestore()
+    }
   })
 })

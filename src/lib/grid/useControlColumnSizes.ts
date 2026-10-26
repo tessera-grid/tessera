@@ -66,6 +66,8 @@ export const useControlColumnSizes = (
       if (width !== undefined) for (const id of ids) sizing[id] = width
       return sizing
     })
+    // Обёртка таблицы новая на каждой перерисовке, а проба форсирует пересчёт стилей —
+    // только по составу колонок и ключу темы.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- по составу колонок и ключу темы
-  }, [t, wrapperRef, idsKey, remeasureKey])
+  }, [wrapperRef, idsKey, remeasureKey])
 }
