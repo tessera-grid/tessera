@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useRef } from 'react'
 
 import { type VirtualItem, useVirtualizer } from '@tanstack/react-virtual'
 
@@ -6,6 +6,7 @@ import type { Column, Table } from '../../types'
 import { getDisplayColumns } from '../displayColumns'
 import { useTableState } from '../reactivity'
 import { useColumnRangeExtractor } from './columnRangeExtractor'
+import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 
 export interface ColumnVirtualizerParams {
   table: Table<any, any>
@@ -77,7 +78,7 @@ export const useColumnVirtualizer = ({
   // estimateSize не входит в мемо-зависимости react-virtual: при смене порядка
   // отображения (закрепление/перестановка) кэш размеров надо сбросить явно.
   const orderMountedRef = useRef(false)
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!orderMountedRef.current) {
       orderMountedRef.current = true
 
@@ -89,7 +90,8 @@ export const useColumnVirtualizer = ({
 
   const mountedRef = useRef(false)
 
-  useEffect(() => {
+  // До отрисовки кадра: иначе кадр с новой шириной колонки и прежними соседями.
+  useIsomorphicLayoutEffect(() => {
     if (!mountedRef.current) {
       mountedRef.current = true
 
