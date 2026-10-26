@@ -594,6 +594,46 @@ export const HighContrastServerRowModelEditCellStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelMillionRowsStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelMillionRows,
+    1,
+  ),
+  name: 'Data loading/Server row model — Million rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelMillionRowsStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelMillionRows,
+    2,
+  ),
+  name: 'Data loading/Server row model — Million rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelMillionRowsStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelMillionRows,
+    3,
+  ),
+  name: 'Data loading/Server row model — Million rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelMillionRowsStep4 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelMillionRows,
+    4,
+  ),
+  name: 'Data loading/Server row model — Million rows, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',

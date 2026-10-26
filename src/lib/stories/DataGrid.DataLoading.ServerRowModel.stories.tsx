@@ -2,6 +2,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
 import type { TesseraFeatureEntry } from '../core/features'
+import { scrollLayer } from '../core/scrollStretch'
 import type {
   ExportRequest,
   ServerRowsRequest,
@@ -43,7 +44,8 @@ import {
  * объём, итог, отказы и размер блока — контролами; S1 — прыжок в середину, S2 — отказ
  * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки, S5 — открыть на записи,
  * S6 — выбрать всё, кроме нескольких строк, и выгрузить; S7 — вложенные строки с сервера;
- * ADR 0139, S1 — правка ячейки, сервер возвращает сохранённую строку.
+ * ADR 0139, S1 — правка ячейки, сервер возвращает сохранённую строку; ADR 0142, S1 —
+ * миллион строк: ползунком в конец, колесом и клавишами.
  */
 const meta = {
   ...dataGridMeta,
@@ -674,7 +676,6 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
 const RECORD_TOTAL = 300_000
 const RECORD_BLOCK = 100
 /** Место записи из ссылки: его сообщает сервер. */
-// В пределах липкой шапки Firefox (~8,9 млн px прокрутки, «Известные проблемы» roadmap).
 const RECORD_INDEX = 114_321
 const RECORD_ID = `item-id-${RECORD_INDEX}`
 
@@ -1249,6 +1250,174 @@ export const ServerRowModelEditCell: StoryObj<StoryProps> = {
     await step(EDIT_CELL[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(ageText(canvas)).toBe(SAVED_AGE))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0142 S1 ---------------------------------------------------------------------
+
+const MILLION = 1_000_000
+const MILLION_LAST = MILLION - 1
+const WHEEL_NOTCH = 100
+const WHEEL_NOTCHES = 3
+
+const layerOf = (root: HTMLElement) => scrollLayer(scroller(root)!)
+const atEnd = (root: HTMLElement) =>
+  layerOf(root).top() >= layerOf(root).maxTop() - 1
+/** Верх строки относительно области прокрутки. */
+const rowTop = (root: HTMLElement, index: number) => {
+  const row = root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="item-id-${index}"]`,
+  )
+  return row
+    ? row.getBoundingClientRect().top -
+        scroller(root)!.getBoundingClientRect().top
+    : undefined
+}
+const lastRowCell = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="item-id-${MILLION_LAST}"] [data-kn-cell]`,
+  )
+const activeRowIndex = (root: HTMLElement) =>
+  Number(
+    root
+      .querySelector<HTMLElement>('[data-kn-cell][data-kn-active="true"]')
+      ?.closest<HTMLElement>('.data-grid__body-row')?.dataset.index,
+  )
+
+/** Пользователь протянул ползунок в самый низ. */
+const dragToEnd = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => hasRow(root, 0), signal)
+  scrollTo(root, 1)
+  await pollUntil(() => atEnd(root) && hasRow(root, MILLION_LAST), signal)
+}
+
+/** Ввод пользователя — после кадра: действие шага стартует внутри эффекта React. */
+const nextFrame = () => new Promise(requestAnimationFrame)
+
+/** Нажатие клавиши на элементе с фокусом — как ввод пользователя. */
+const press = (
+  target: HTMLElement,
+  key: string,
+  init: KeyboardEventInit = {},
+) =>
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    }),
+  )
+
+/** Пользователь крутит колесо вверх: щелчки мыши подряд. */
+const wheelUp = async (root: HTMLElement, signal: AbortSignal) => {
+  await nextFrame()
+  const target = layerOf(root).maxTop() - WHEEL_NOTCH * WHEEL_NOTCHES
+  for (let notch = 0; notch < WHEEL_NOTCHES; notch++) {
+    scroller(root)!.dispatchEvent(
+      new WheelEvent('wheel', {
+        deltaY: -WHEEL_NOTCH,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+  }
+  await pollUntil(() => Math.abs(layerOf(root).top() - target) < 1, signal)
+}
+
+const MILLION_ROWS: readonly GuideStoryStep[] = [
+  {
+    title: 'Миллион строк',
+    hint: 'Сервер сообщил, что строк миллион — это выше, чем браузер умеет прокручивать. Таблица сжала полосу прокрутки: ползунок по-прежнему отмеряет весь список, видны первые строки.',
+    props: ({ app, ...context }) => ({
+      ...serverProps({
+        total: MILLION,
+        knownTotal: true,
+        blockSize: JUMP_BLOCK,
+      })!({ app, ...context }),
+      enableKeyboardNavigation: true,
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => hasRow(root, 0), signal)
+      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+      await pollUntil(() => hasRow(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Пользователь протянул ползунок в конец',
+    hint: 'Таблица запросила у сервера последние строки и показала их: внизу — миллионная строка. Шапка осталась у верха таблицы.',
+    enter: stepAction(async (root, { signal }) => {
+      await dragToEnd(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь прокрутил колесом вверх',
+    hint: 'Три щелчка колеса плавно сдвинули строки ровно настолько, насколько и в коротком списке: сжатая полоса прокрутки на шаг колеса не влияет.',
+    enter: stepAction(async (root, { signal }) => {
+      if (!atEnd(root)) await dragToEnd(root, signal)
+      await wheelUp(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь перешёл к началу клавишами',
+    hint: 'Пользователь выбрал ячейку последней строки, нажал Ctrl+Home и стрелку вниз. Активная ячейка перешла в первую строку, и таблица вернулась к началу списка: клавиши проходят его целиком.',
+    enter: stepAction(async (root, { signal }) => {
+      if (!hasRow(root, MILLION_LAST)) await dragToEnd(root, signal)
+      await nextFrame()
+      const cell = lastRowCell(root)!
+      cell.focus({ preventScroll: true })
+      press(cell, 'Home', { ctrlKey: true })
+      await nextFrame()
+      // Ctrl+Home ведёт в шапку, стрелка вниз — в первую строку (ADR 0021).
+      press(document.activeElement as HTMLElement, 'ArrowDown')
+      await pollUntil(
+        () => activeRowIndex(root) === 0 && layerOf(root).top() === 0,
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0142, S1: миллион строк — ползунком в конец, затем колесом и клавишами. */
+export const ServerRowModelMillionRows: StoryObj<StoryProps> = {
+  name: 'Million rows',
+  parameters: { scenario: '0142/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Миллион строк"
+      steps={MILLION_ROWS}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(MILLION_ROWS[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(hasRow(canvas, 0)).toBe(true)
+    })
+    await step(MILLION_ROWS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(hasRow(canvas, MILLION_LAST)).toBe(true)
+    })
+    await step(MILLION_ROWS[2]!.title, async () => {
+      const watched = MILLION_LAST - 2
+      const before = rowTop(canvas, watched)!
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(rowTop(canvas, watched)! - before).toBeCloseTo(
+          WHEEL_NOTCH * WHEEL_NOTCHES,
+          0,
+        ),
+      )
+    })
+    await step(MILLION_ROWS[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(activeRowIndex(canvas)).toBe(0)
       await settle()
     })
   },
