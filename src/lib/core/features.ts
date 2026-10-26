@@ -212,6 +212,56 @@ export const findDuplicatePluginIds = (
   return [...duplicates]
 }
 
+/** Перезапись опции или хука чужим плагином: `from` задал, `to` перезаписал. */
+export interface PluginOverwrite {
+  kind: 'option' | 'hook'
+  key: string
+  from: string
+  to: string
+}
+
+/**
+ * Перезаписи опций таблицы и хуков записями с другим `id` (ADR 0140). Значение — по-прежнему
+ * от последней записи; дубль `id` предупреждает DP5.
+ */
+export const findPluginOverwrites = (
+  plugins: readonly TesseraFeatureEntry[],
+): PluginOverwrite[] => {
+  const overwrites: PluginOverwrite[] = []
+  const owners = {
+    option: new Map<string, string>(),
+    hook: new Map<string, string>(),
+  }
+  const values = {
+    option: new Map<string, unknown>(),
+    hook: new Map<string, unknown>(),
+  }
+  const check = (
+    kind: PluginOverwrite['kind'],
+    source: object | undefined,
+    id: string,
+  ) => {
+    for (const [key, value] of Object.entries(source ?? {})) {
+      const from = owners[kind].get(key)
+      // Одинаковое значение — не перезапись: общий режим данных фильтров и поиска.
+      if (
+        from !== undefined &&
+        from !== id &&
+        !Object.is(values[kind].get(key), value)
+      ) {
+        overwrites.push({ kind, key, from, to: id })
+      }
+      owners[kind].set(key, id)
+      values[kind].set(key, value)
+    }
+  }
+  for (const entry of expandIncludedModels(plugins).entries) {
+    check('option', entry.options, entry.id)
+    if (isActive(entry)) check('hook', entry.hooks, entry.id)
+  }
+  return overwrites
+}
+
 /**
  * Чистая свёртка активных записей в опции таблицы. Порядок фолда = порядок
  * записей, как в императивной регистрации. Используется и `useCreateTable`, и

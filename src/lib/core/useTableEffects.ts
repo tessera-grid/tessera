@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef } from 'react'
 
 import {
   findDuplicatePluginIds,
+  findPluginOverwrites,
   type FoldedEntryConfig,
   type TesseraFeatureEntry,
 } from './features'
@@ -171,6 +172,22 @@ export const useTableEffects = (
       `dup-plugin-id:${duplicateIds.join(',')}`,
     )
   }, [duplicateIds, host])
+
+  // Дев-варн: опцию или хуки плагина перезаписал другой плагин (ADR 0140).
+  const overwrites = findPluginOverwrites(plugins)
+  const overwritesKey = overwrites
+    .map(({ kind, key, from, to }) => `${kind}:${key}:${from}:${to}`)
+    .join('|')
+  useEffect(() => {
+    for (const { kind, key, from, to } of overwrites) {
+      logWarn(
+        host,
+        `plugin ${kind} "${key}" set by "${from}" is overwritten by "${to}" — the last plugin in plugins wins`,
+        `overwrite:${kind}:${key}:${from}:${to}`,
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу перезаписей
+  }, [overwritesKey, host])
 
   // Дев-варн: срез плагина передан в state/handlers ядра (ADR 0120, MP7).
   const foreignKey = foreignSlices.join(',')
