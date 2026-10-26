@@ -173,8 +173,13 @@ export const useTableEffects = (
     )
   }, [duplicateIds, host])
 
-  // Дев-варн: опцию или хуки плагина перезаписал другой плагин (ADR 0140).
-  const overwrites = findPluginOverwrites(plugins)
+  // Дев-варн: опцию или хуки плагина перезаписал другой плагин (ADR 0140). Считается по
+  // значению аргументов фабрик, а не на каждой перерисовке.
+  const overwrites = useMemo(
+    () => findPluginOverwrites(plugins),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
+    [argsSignature],
+  )
   const overwritesKey = overwrites
     .map(({ kind, key, from, to }) => `${kind}:${key}:${from}:${to}`)
     .join('|')
