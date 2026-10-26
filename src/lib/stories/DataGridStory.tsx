@@ -326,9 +326,16 @@ const StoryGrid = memo(
                       row.id === rowId ? { ...row, [columnId]: value } : row,
                     ),
                   )
+                // Ответ приложения — сохранённая строка (ADR 0139) — проходит насквозь.
                 const saved = options.onCellEdit?.(commit)
-                if (!isThenable(saved)) return write()
-                return saved.then(write)
+                if (!isThenable(saved)) {
+                  write()
+                  return saved
+                }
+                return saved.then(answer => {
+                  write()
+                  return answer
+                })
               },
             },
           }

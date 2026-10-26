@@ -906,7 +906,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
     - _Итог правки в кэше:_ модульный `cellEditWrite.dom` (EW1–EW6 — сохранённая строка из
       ответа `onCellEdit`, разбор `parseValue`/`dataType` и вывод по значению ячейки, путь
       `accessorKey` вглубь, отказ записи с советом, клиентский режим без записи), визуальный EW7 —
-      в `server-row-model`
+      в `server-row-model`, `play` истории «Data loading/Server row model — Edit a cell» (S1)
       ([ADR 0139](docs/decisions/0139-saved-row-and-column-data-type.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
