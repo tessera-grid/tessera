@@ -57,11 +57,12 @@ describe('rowSelection', () => {
 
   it('foldEntries даёт опции выбора и сервисную колонку', () => {
     const { folded } = makeTable({ subRows: true })
-    expect(folded.options).toMatchObject({
-      enableSubRowSelection: true,
-      enableRowRangeSelection: false,
-    })
+    expect(folded.options).toMatchObject({ enableRowRangeSelection: false })
     expect(typeof (folded.options as any).enableRowSelection).toBe('function')
+    // Выбор вложенных — функция: в серверной модели строк выбираются только корни.
+    expect(typeof (folded.options as any).enableSubRowSelection).toBe(
+      'function',
+    )
     expect(folded.serviceColumns.map(c => c.id)).toContain(COLUMN_SELECTION_ID)
   })
 

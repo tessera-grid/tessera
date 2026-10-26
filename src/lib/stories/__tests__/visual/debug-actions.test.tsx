@@ -36,7 +36,13 @@ import {
   rowDragging,
 } from '../../../plugins'
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding'
-import { Stories, humanClick, renderGrid, settleRowMotion } from '../helpers'
+import {
+  Stories,
+  humanClick,
+  renderGrid,
+  revealCellButtons,
+  settleRowMotion,
+} from '../helpers'
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
 import { ColumnDraggingGrid } from './columns-fixtures'
@@ -288,7 +294,11 @@ describe('канал действий (ADR 0125)', () => {
     )
     await expect.poll(() => rowEl('r1')).not.toBeNull()
     // Кнопка шапки — сортировка: в коде columnSorting вызова канала нет.
-    await userEvent.hover(probeHead())
+    // Кнопка проявляется анимацией: клик посреди проявления уходит мимо.
+    await expect
+      .poll(() => probeHead().querySelector('.column-sort__button'))
+      .not.toBeNull()
+    await revealCellButtons(probeHead())
     await humanClick(probeHead().querySelector('.column-sort__button')!)
     await expect
       .poll(() => lastOf('columnSorting', 'columnSorting'))

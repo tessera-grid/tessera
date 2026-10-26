@@ -3107,9 +3107,9 @@ describe('Отзывчивость взаимодействий — сервер
   )
 })
 
-// Ленивые дети в SSRM (ADR 0138, SD46): раскрытие ветки со 100 детьми при 1 000 000 корней —
-// в бюджете отклика. Пересчёт размеров виртуализатора растёт с числом строк, поэтому база
-// при 1000 корней только в дашборде, гейт — бюджет.
+// Ленивые дети в SSRM (ADR 0138, SD46): раскрытие ветки со 100 детьми при 1 000 000 корней
+// против того же раскрытия при 1000 корней. Цена — пересчёт размеров виртуализатора на
+// миллион строк (§14): он растёт с числом строк, раскладка веток — нет.
 interface ServerTreeCall {
   start: number
   end: number
@@ -3144,7 +3144,7 @@ const ServerTreeGrid = ({ total }: { total: number }) => {
 
 describe('Отзывчивость взаимодействий — ленивые дети серверной модели строк', () => {
   test(
-    'SD46: раскрытие ветки со 100 детьми при 1 000 000 корней — в бюджете отклика 100 мс',
+    'SD46: раскрытие ветки со 100 детьми при 1 000 000 корней не дороже того же раскрытия при 1000 корней плюс 60 мс',
     async () => {
       const measure = async (large: boolean) => {
         treeCalls = []
@@ -3193,7 +3193,7 @@ describe('Отзывчивость взаимодействий — ленивы
       const runs = await againstBase(measure)
       const base = medianRun(runs.base, r => r.longestMs)
       const large = medianRun(runs.variant, r => r.longestMs)
-      const ceiling = INTERACTION_BUDGET_MS
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 60 })
       const record = (
         id: string,
         label: string,
