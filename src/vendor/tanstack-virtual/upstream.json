@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/TanStack/virtual",
+  "license": "MIT",
+  "packages": {
+    "virtual-core": {
+      "name": "@tanstack/virtual-core",
+      "version": "3.19.8",
+      "tag": "@tanstack/virtual-core@3.19.8",
+      "commit": "9b33a6d8b2b3ae2d492cc7605e8b97aaffed6367"
+    },
+    "react-virtual": {
+      "name": "@tanstack/react-virtual",
+      "version": "3.14.23",
+      "tag": "@tanstack/react-virtual@3.14.23",
+      "commit": "f73c8d35cef72af458bc99f6d302c6988f93d0d7"
+    }
+  },
+  "files": {
+    "LICENSE": "a405ee70c632bb938acb7ac5f210e814409b3760ea9d2329d8ed8ffcfd11a0e7",
+    "react-virtual/index.tsx": "c08d1cf7be0d7b390927be5a2331e2ee19f5fff2f2677ef4208cb4eed19ff7e8",
+    "virtual-core/index.ts": "4beaea070d10a63e4fd1892e72e481ea4c96b3f4142528573d53f18577c3ced0",
+    "virtual-core/ios-gesture.ts": "cf1e341d798e179cc449e9d1e2e6c17095a8eb9bec1f5054e85c4cfadd4642dc",
+    "virtual-core/lazy-measurements.ts": "24308cea11906958506bc1dcdb3859f61d2e562024db7ee8690adce2f030d453",
+    "virtual-core/scroll-classifier.ts": "8d4431fc643b40fb81905d156eeb7cdc5dd8e0a2827d7a644d63ee7b9ddc8281",
+    "virtual-core/utils.ts": "e779d61893863314e1864a4cc3863eb3981a7c288cecd8c6d9f4f77d7c057f91"
+  }
+}

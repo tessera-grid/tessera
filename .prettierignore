@@ -5,3 +5,4 @@ storybook-public
 coverage
 package-lock.json
 .claude
+src/vendor

@@ -13,6 +13,8 @@ export default tseslint.config(
       'storybook-public',
       'coverage',
       '.claude',
+      // Исходники upstream с патчем (ADR 0143): свой стиль, правки — только патчем.
+      'src/vendor',
     ],
   },
   js.configs.recommended,
