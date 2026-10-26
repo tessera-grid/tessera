@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
 
-import { type VirtualItem, useVirtualizer } from '@tanstack/react-virtual'
+import {
+  type VirtualItem,
+  useVirtualizer,
+} from '../../../vendor/tanstack-virtual/react-virtual'
 
 import type { Table } from '../../types'
 import { useActiveCellIndex } from '../keyboardNavigation'
@@ -39,6 +42,7 @@ export const useRowVirtualizer = ({
   const rows = table.getRowSource()
 
   const rowDraggingIndex = useMemo(() => {
+    if (rowDraggingActiveId === null) return undefined
     const index = rows.indexOf(rowDraggingActiveId)
 
     return index === -1 ? undefined : index
@@ -47,11 +51,15 @@ export const useRowVirtualizer = ({
   const getEstimateSize = useCallback(() => rowHeight, [rowHeight])
 
   // Серверная модель строк — по индексу (ADR 0138, §14); незагруженная строка — тоже.
-  const getItemKey = useCallback(
-    (index: number) =>
-      rows.keyByIndex ? index : (rows.at(index)?.id ?? index),
-    [rows],
-  )
+  // Виртуализатор сверяет ключи начала списка на каждой смене строк (ADR 0143): массив
+  // строк — один раз, а не модель на каждый индекс.
+  const getItemKey = useMemo(() => {
+    if (rows.keyByIndex) return (index: number) => index
+    const list = rows.rows?.()
+    return list
+      ? (index: number) => list[index]?.id ?? index
+      : (index: number) => rows.at(index)?.id ?? index
+  }, [rows])
 
   const activeRowIndex = useActiveCellIndex(table, 'rowIndex')
 

@@ -2,7 +2,7 @@ import { type CSSProperties, type ReactNode, useRef } from 'react'
 import { serverRowModelReason } from '../core/pluginDiagnostics'
 
 import clsx from 'clsx'
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 
 import {
   isTreeGrid,

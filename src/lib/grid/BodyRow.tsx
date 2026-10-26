@@ -4,7 +4,7 @@
 // не быть в наборе.
 import { memo, useMemo } from 'react'
 
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
 import type { Cell, Column, Row } from '../types'

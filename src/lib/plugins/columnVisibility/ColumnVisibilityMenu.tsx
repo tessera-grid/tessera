@@ -7,7 +7,7 @@
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { type RefObject, useRef, useState } from 'react'
 
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import { useLocalization } from '../../core/localization'
 import { TreeLines } from '../../grid/TreeLinesLayer'

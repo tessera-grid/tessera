@@ -18,7 +18,8 @@
     "**/*.css"
   ],
   "files": [
-    "dist"
+    "dist",
+    "THIRD_PARTY_LICENSES.txt"
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -108,7 +109,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-store": "^0.11.1",
-    "@tanstack/react-virtual": "^3.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.28.0"

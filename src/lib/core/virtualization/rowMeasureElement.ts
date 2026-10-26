@@ -1,4 +1,4 @@
-import type { Virtualizer } from '@tanstack/react-virtual'
+import type { Virtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
 export const rowMeasureElement = (
   element: HTMLDivElement,

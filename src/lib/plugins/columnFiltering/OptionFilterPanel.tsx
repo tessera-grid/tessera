@@ -16,7 +16,7 @@ import {
 } from 'react'
 
 import { Checkbox } from '@base-ui/react/checkbox'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
 import {

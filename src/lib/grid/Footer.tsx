@@ -2,7 +2,7 @@
 // column-виртуализации, что Head/Body. Мемоизация активна только при ресайзе.
 import { memo } from 'react'
 
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
 import type { FooterPosition } from '../core/footer'

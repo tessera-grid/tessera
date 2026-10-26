@@ -4,7 +4,7 @@
  * клавиатурной навигации может стоять на ней: ячейка во всю строку берёт фокус в колонке
  * активной ячейки, пришедший блок отдаёт его настоящей ячейке.
  */
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 
 import { getDisplayColumns } from '../core/displayColumns'
 import {

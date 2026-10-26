@@ -1,7 +1,7 @@
 // HeadRow: строка заголовка (заголовки группы → HeadCell/DraggableHeadCell). При
 // enableColumnDragging рисуется DraggableHeadCell (useSortable под DndContext
 // хедера), иначе обычная HeadCell.
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import {
   SortableContext,
   horizontalListSortingStrategy,

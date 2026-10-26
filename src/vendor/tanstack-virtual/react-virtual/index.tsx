@@ -8,14 +8,14 @@ import {
   observeWindowOffset,
   observeWindowRect,
   windowScroll,
-} from '@tanstack/virtual-core'
+} from '../virtual-core'
 import type {
   PartialKeys,
   VirtualItem,
   VirtualizerOptions,
-} from '@tanstack/virtual-core'
+} from '../virtual-core'
 
-export * from '@tanstack/virtual-core'
+export * from '../virtual-core'
 
 const useIsomorphicLayoutEffect =
   typeof document !== 'undefined' ? React.useLayoutEffect : React.useEffect

@@ -1,7 +1,7 @@
 // Окно прокрутки смонтированного грида (ADR 0104, §4): контейнер и виртуализаторы строк
 // и колонок. Таблица о гриде не знает — `DataGrid` регистрирует окно на хранилище
 // таблицы и снимает при размонтировании.
-import type { Virtualizer } from '@tanstack/react-virtual'
+import type { Virtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 

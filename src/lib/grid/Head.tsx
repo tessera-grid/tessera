@@ -2,7 +2,7 @@
 // пропсом. DnD-обвязка (enableColumnDragging→DraggableHeadCell) внутри HeadRow.
 import { type CSSProperties, memo } from 'react'
 
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
 import type { HeaderGroup } from '../types'

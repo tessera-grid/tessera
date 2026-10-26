@@ -6,7 +6,7 @@
  */
 import { Component, createRef, type ReactNode, type RefObject } from 'react'
 
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import { planRowMotion, type RowMotionPlan } from './planRowMotion'
 import { rowMotionTiming } from './rowMotionTiming'

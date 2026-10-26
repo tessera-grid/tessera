@@ -4,7 +4,7 @@
 // иначе обычная BodyRow.
 import { memo, useMemo, useRef } from 'react'
 
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
 import type { Column, Row, Table } from '../types'

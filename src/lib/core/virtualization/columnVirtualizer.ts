@@ -1,6 +1,9 @@
 import { useCallback, useRef } from 'react'
 
-import { type VirtualItem, useVirtualizer } from '@tanstack/react-virtual'
+import {
+  type VirtualItem,
+  useVirtualizer,
+} from '../../../vendor/tanstack-virtual/react-virtual'
 
 import type { Column, Table } from '../../types'
 import { getDisplayColumns } from '../displayColumns'

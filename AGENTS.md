@@ -920,6 +920,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       модульный `scrollStretch` (XS10 — страж прямого `scrollTop`), перф XS11 — в `scroll`,
       `play` истории «Data loading/Server row model — Million rows» (S1); слой координат —
       `core/scrollStretch.ts` ([ADR 0142](docs/decisions/0142-scroll-stretching.md)).
+    - _Форк TanStack Virtual:_ модульный `vendorVirtual` (VF1–VF4 — импорт только из вендора,
+      вендор равен upstream с `tessera.patch`, уведомление MIT в пакете, пересчёт позиций от
+      первого изменённого ключа с паритетом полного), перф — IS16
+      ([ADR 0143](docs/decisions/0143-tanstack-virtual-fork.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,
@@ -1145,7 +1149,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
 - **Примечание про линт:** конфиг запускает полный набор `react-hooks@7` (правила React
   Compiler). Узкие исключения — в `eslint.config.js` с причиной: `refs` в
   `useCreateTable`/`effectiveState` (сборка ядра в рендере, ADR 0039; переделка — в roadmap),
-  `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр). Ref на последнее
+  `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр), `refs` в
+  `columnVirtualizer`/`OptionFilterPanel` (`useVirtualizer` из вендора компилятор не узнаёт как
+  несовместимую библиотеку, ADR 0143; переделка — в roadmap). Ref на последнее
   значение — `core/useLatest`, а не запись `ref.current` в рендере; запись в чужой ref —
   `ui/assignRef`. Предупреждения `incompatible-library` (хуки TanStack) ожидаемы.
 - **UI-изменения:** корректность UI гарантируют visual-тесты, а не ручной осмотр в браузере.
@@ -1433,8 +1439,11 @@ UI-кит `src/lib/ui`, а не собирается по месту в плаг
   раскладка и тема грида — **CSS Modules** поверх `--tsr-comp-*`, выведенных из токенов
   shadcn. Не добавляйте сторонние UI-kit'ы и не вводите CSS-in-JS: стилизация — только
   Tailwind и CSS Modules, тема — только переопределяемые CSS-переменные.
-- **Компонуйте upstream, никогда не форкайте.** TanStack Table/Virtual и dnd-kit — это
+- **Компонуйте upstream, никогда не форкайте.** TanStack Table и dnd-kit — это
   зависимости, а не вендоренный код. Расширяйте через фичи (`tableFeatures()`)/плагины, а не патчами.
+  Единственное исключение — TanStack Virtual: исходники с одним патчем в
+  `src/vendor/tanstack-virtual/` ([ADR 0143](docs/decisions/0143-tanstack-virtual-fork.md)); вендор
+  правится только через `tessera.patch`, обновляется по его `README.md` и с одобрения автора.
 - **Сохраняйте контракты переопределения:** иконки через `icons` (IconsContext), подписи
   через `localization` (LocalizationProvider), тема через `colorMode` + переопределяемые
   CSS-переменные. Не хардкодьте то, что они делают переопределяемым.

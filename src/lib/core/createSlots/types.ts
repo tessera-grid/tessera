@@ -3,7 +3,7 @@
  * `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь рендера —
  * рендер идёт через нативный `FlexRender` (см. `component`).
  */
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import type {
   CellContext,

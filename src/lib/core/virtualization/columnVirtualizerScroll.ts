@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-import type { VirtualItem } from '@tanstack/react-virtual'
+import type { VirtualItem } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import type { Table } from '../../types'
 

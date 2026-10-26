@@ -90,6 +90,18 @@ export default tseslint.config(
       'react-hooks/refs': 'off',
     },
   },
+  // `useVirtualizer` из вендора (ADR 0143) компилятор не узнаёт как несовместимую
+  // библиотеку и разбирает компонент: чтения ref в рендере здесь прежде скрывало это.
+  // Переделка без них — отдельная задача (roadmap).
+  {
+    files: [
+      'src/lib/core/virtualization/columnVirtualizer.ts',
+      'src/lib/plugins/columnFiltering/OptionFilterPanel.tsx',
+    ],
+    rules: {
+      'react-hooks/refs': 'off',
+    },
+  },
   // Тестовые хосты отдают тесту экземпляр таблицы и сеттеры через переменные модуля —
   // это канал наблюдения, а не состояние компонента.
   {

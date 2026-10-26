@@ -484,6 +484,12 @@ export class Virtualizer<
   private _singleLaneMeasurements: {
     flat: Float64Array
     items: Array<Key | VirtualItem>
+    // Tessera (ADR 0143): layout inputs of this build, to reuse its prefix.
+    paddingStart: number
+    scrollMargin: number
+    gap: number
+    estimateSize: (index: number) => number
+    itemSizeCacheVersion: number
   } | null = null
   itemSizeCache = new Map<Key, number>()
   private itemSizeCacheVersion = 0
@@ -1652,7 +1658,33 @@ export class Virtualizer<
       }
 
       // During lanes settling, ignore pendingMin to prevent repositioning
-      const min = this.lanesSettling ? 0 : (this.pendingMin ?? 0)
+      let min = this.lanesSettling ? 0 : (this.pendingMin ?? 0)
+
+      // Tessera (ADR 0143): when only `count` or `getItemKey` changed, the
+      // previous single-lane build stays valid up to the first index whose key
+      // differs — rebuild from there instead of from 0 (append, insert, remove).
+      const previous = this._singleLaneMeasurements
+      if (
+        lanes === 1 &&
+        !this.lanesSettling &&
+        this.pendingMin === null &&
+        previous !== null &&
+        previous.itemSizeCacheVersion === _itemSizeCacheVersion &&
+        previous.paddingStart === paddingStart &&
+        previous.scrollMargin === scrollMargin &&
+        previous.gap === gap &&
+        previous.estimateSize === this.options.estimateSize
+      ) {
+        const limit = Math.min(previous.items.length, count)
+        let same = 0
+        while (
+          same < limit &&
+          getItemKey(same) === getMeasurementKey(previous.items[same]!)
+        ) {
+          same++
+        }
+        min = same
+      }
       this.pendingMin = null
 
       // ✅ End settling period when cache is fully built
@@ -1679,7 +1711,9 @@ export class Virtualizer<
         const items: Array<Key | VirtualItem> =
           min === 0
             ? new Array(count)
-            : this._singleLaneMeasurements!.items.slice()
+            : this._singleLaneMeasurements!.items.slice(0, count)
+        // Tessera (ADR 0143): a grown list reuses a shorter prefix.
+        items.length = count
 
         let runningStart: number
         if (min === 0) {
@@ -1703,7 +1737,15 @@ export class Virtualizer<
           runningStart += size + gap
         }
 
-        this._singleLaneMeasurements = { flat, items }
+        this._singleLaneMeasurements = {
+          flat,
+          items,
+          paddingStart,
+          scrollMargin,
+          gap,
+          estimateSize: this.options.estimateSize,
+          itemSizeCacheVersion: _itemSizeCacheVersion,
+        }
         const view = createLazyMeasurementsView(items, flat)
         this.measurementsCache = view
         return view

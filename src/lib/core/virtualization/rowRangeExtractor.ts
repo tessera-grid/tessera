@@ -1,6 +1,9 @@
 import { useCallback } from 'react'
 
-import { type Range, defaultRangeExtractor } from '@tanstack/react-virtual'
+import {
+  type Range,
+  defaultRangeExtractor,
+} from '../../../vendor/tanstack-virtual/react-virtual'
 
 export interface UseRowRangeExtractorParams {
   rowDraggingIndex?: number
