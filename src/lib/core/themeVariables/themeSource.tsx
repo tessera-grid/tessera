@@ -137,6 +137,15 @@ export const ThemeScope = ({
     return () => observer.disconnect()
   }, [rootRef])
 
+  // Светлую тему порталу даёт коммит React, а он под нагрузкой (Firefox) приходит
+  // позже кадров гашения от наблюдателя: гасим ещё раз в кадре коммита.
+  const committedDark = useRef(dark)
+  useIsomorphicLayoutEffect(() => {
+    if (committedDark.current === dark) return
+    committedDark.current = dark
+    suppressThemeTransitions()
+  }, [dark])
+
   useEffect(() => {
     const node = rootRef.current
     if (!node || !shouldLog(host, 'warn')) return

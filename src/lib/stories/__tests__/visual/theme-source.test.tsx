@@ -28,7 +28,7 @@ import {
 } from './a11y-helpers'
 import { tableLabels } from '../labels'
 
-// Источник темы и её смена (ADR 0090, TM1–TM10, TM12): проп `colorMode`, `.dark` у
+// Источник темы и её смена (ADR 0090, TM1–TM10, TM12–TM13): проп `colorMode`, `.dark` у
 // предка, переходы при смене, порталы, `color-scheme` и предупреждение о смеси палитр.
 // Перф TM11 — `performance/theme-source`.
 
@@ -414,6 +414,45 @@ describe('Источник темы и её смена (ADR 0090)', () => {
     } finally {
       warn.mockRestore()
     }
+  })
+
+  test('TM13: открытое меню перекрашивается в одном кадре при снятии .dark у предка и тогда, когда перерисовка темы порталов приходит позже кадров гашения', async () => {
+    document.documentElement.classList.add('dark')
+    const screen = await mount()
+    const menu = await openMenu()
+    const item = menu.querySelector<HTMLElement>('[role="menuitem"]')!
+    const shot = () =>
+      [menu, item]
+        .map(el => `${style(el).backgroundColor} | ${style(el).color}`)
+        .join(' / ')
+    const before = shot()
+    const frames: string[] = []
+    // Перерисовку React ведёт задача планировщика через MessagePort: откладываем её.
+    const post = MessagePort.prototype.postMessage
+    MessagePort.prototype.postMessage = function (
+      this: MessagePort,
+      ...args: unknown[]
+    ) {
+      setTimeout(
+        () => (post as (...a: unknown[]) => void).apply(this, args),
+        120,
+      )
+    }
+    try {
+      document.documentElement.classList.remove('dark')
+      for (const start = performance.now(); performance.now() - start < 300;) {
+        await frame()
+        frames.push(shot())
+      }
+    } finally {
+      MessagePort.prototype.postMessage = post
+    }
+    await settle()
+    const after = shot()
+    expect(after).not.toEqual(before)
+    expect(frames.filter(f => f !== before && f !== after)).toEqual([])
+    await closeMenu()
+    await screen.unmount()
   })
 
   test('TM10: axe color-contrast без нарушений при каждом colorMode на светлой и тёмной странице', async () => {

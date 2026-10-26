@@ -569,10 +569,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `effectiveBg` из `a11y-helpers` — до холста страницы, в `forced-colors` — пиксели; окно
       набора 900×720, снимок с масштабом не 1 роняет набор
       ([ADR 0089](docs/decisions/0089-contrast-matrix.md)).
-    - _Источник и смена темы:_ `theme-source` (TM1–TM10, TM12 — смена темы пропом и
+    - _Источник и смена темы:_ `theme-source` (TM1–TM10, TM12–TM13 — смена темы пропом и
       `.dark` у предка в одном кадре, плавное наведение, `colorMode` `auto`/`dark`/`light`,
       порталы и `color-scheme` по фактической теме, предупреждение о смеси палитр, axe,
-      гайд «Theming/Theme sources» — `play`), перф TM11 — `performance/theme-source`
+      гайд «Theming/Theme sources» — `play`; TM13 — меню перекрашивается в одном кадре и при поздней перерисовке темы порталов), перф TM11 — `performance/theme-source`
       ([ADR 0090](docs/decisions/0090-theme-source-and-switching.md)).
     - _Локализация словарём:_ модульный `localization` (LC1–LC4 — строка или функция,
       подстановки `{имя}`, формы слова по `Intl.PluralRules` и `_zero`, числа и списки по
