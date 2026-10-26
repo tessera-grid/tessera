@@ -98,9 +98,10 @@ export interface CellEditingHooks {
   canEditCell: (ctx: CellComponentProps) => boolean
   /**
    * Коммит нового значения ячейки. Промис — сохранение с ожиданием: ячейка ждёт
-   * его итога, не блокируя правку других (ADR 0041).
+   * его итога, не блокируя правку других (ADR 0041). Сохранённая строка в ответе —
+   * сразу или промисом — ложится в кэш серверной модели строк (ADR 0139).
    */
-  onCellEdit: (commit: CellEditCommit) => void | Promise<unknown>
+  onCellEdit: (commit: CellEditCommit) => object | void | Promise<unknown>
   /** Правка завершилась без сохранения: Escape, запрет на лету (ADR 0040). */
   onEditCancel?: (end: CellEditCancel) => void
   /**

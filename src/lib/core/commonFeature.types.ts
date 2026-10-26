@@ -8,6 +8,7 @@
  * используем прямой merge интерфейса (эскейп).
  */
 import type { ColumnOptionsDef } from './columnOptions'
+import type { ColumnDataType } from './columnDataType'
 import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
 import type { RowSource } from './rowSource'
@@ -137,7 +138,11 @@ export interface CommonColumnAPI {
 }
 
 /** Кастомные поля columnDef Tessera; `options` / `getOptionLabel` — ADR 0048. */
-export interface CommonColumnDef extends ColumnOptionsDef {
+export interface CommonColumnDef<TData = any> extends ColumnOptionsDef {
+  /** Тип значения колонки: разбор ввода правки (ADR 0139). Без поля — по значению ячейки. */
+  dataType?: ColumnDataType
+  /** Свой разбор текста редактора, главнее `dataType` (ADR 0139). */
+  parseValue?: (text: string, row: TData) => unknown
   /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
   serviceLabel?: 'expandColumn' | 'reorderColumn' | 'rowActionsColumn'
   /**
@@ -199,7 +204,7 @@ declare module '@tanstack/react-table' {
     in out TData extends RowData,
     in out TValue,
   > {
-    commonFeature: CommonColumnDef
+    commonFeature: CommonColumnDef<TData>
   }
   interface Header_FeatureMap {
     commonFeature: CommonHeaderAPI

@@ -15,6 +15,13 @@ import {
   sourceOf,
 } from '../../core/debugActions'
 import type { RowSource } from '../../core/rowSource'
+import {
+  type ColumnDataType,
+  inferDataType,
+  parseByDataType,
+  setAtPath,
+} from '../../core/columnDataType'
+import { logWarn } from '../../core/logger'
 import { isThenable, rejectionText } from '../../core/thenable'
 import {
   pluginStateKey,
@@ -242,32 +249,83 @@ export const cancelEditSession = (
 // спутать с поздним итогом прежнего.
 let lastAttempt = 0
 
+interface SavedTable {
+  setRowData?: (id: string, updater: (row: unknown) => unknown) => void
+  getColumn?: (id: string) =>
+    | {
+        columnDef: {
+          accessorKey?: unknown
+          dataType?: ColumnDataType
+          parseValue?: (text: string, row: unknown) => unknown
+        }
+      }
+    | undefined
+  getRowSource: () => RowSource<{
+    original: unknown
+    getValue: (columnId: string) => unknown
+  }>
+  options: { getRowId?: (row: unknown, index: number) => string }
+}
+
+/** Ответ `onCellEdit` — сохранённая строка: объект с тем же id (ADR 0139, §1). */
+const isSavedRow = (t: SavedTable, rowId: string, answer: unknown) => {
+  if (typeof answer !== 'object' || answer === null) return false
+  const id = t.options.getRowId
+    ? t.options.getRowId(answer, 0)
+    : (answer as { id?: unknown }).id
+  return id === rowId
+}
+
+const warnNotWritten = (table: unknown) =>
+  logWarn(
+    table as never,
+    'cellEditing: the saved value is not written to the server row cache — return the saved row from onCellEdit or set dataType/parseValue on the column',
+    'cellEditing:notWritten',
+  )
+
 /**
- * Серверная модель строк: данных у приложения нет — сохранённое значение пишется в кэш
- * строк (ADR 0138, §7). Без неё метода `setRowData` нет, данные обновляет приложение.
+ * Серверная модель строк: данных у приложения нет — итог правки пишется в кэш строк
+ * (ADR 0139): строка из ответа `onCellEdit`, без неё — текст редактора, разобранный по
+ * типу колонки. Без серверной модели метода `setRowData` нет, данные обновляет приложение.
  */
 const writeSaved = (
   table: unknown,
   rowId: string,
   columnId: string,
-  value: unknown,
+  text: string,
+  answer: unknown,
 ) => {
-  const t = table as {
-    setRowData?: (id: string, updater: (row: unknown) => unknown) => void
-    getColumn?: (
-      id: string,
-    ) => { columnDef: { accessorKey?: unknown } } | undefined
+  const t = table as SavedTable
+  if (!t.setRowData) return
+  if (isSavedRow(t, rowId, answer)) {
+    t.setRowData(rowId, () => answer)
+    return
   }
-  const key = t.getColumn?.(columnId)?.columnDef.accessorKey
-  if (!t.setRowData || typeof key !== 'string') return
-  t.setRowData(rowId, row => ({ ...(row as object), [key]: value }))
+  const def = t.getColumn?.(columnId)?.columnDef
+  const key = def?.accessorKey
+  const row = t.getRowSource().byId(rowId)
+  if (typeof key !== 'string' || !row) {
+    warnNotWritten(table)
+    return
+  }
+  const parsed = def!.parseValue
+    ? { value: def!.parseValue(text, row.original) }
+    : parseByDataType(
+        text,
+        def!.dataType ?? inferDataType(row.getValue(columnId)),
+      )
+  if (!parsed) {
+    warnNotWritten(table)
+    return
+  }
+  t.setRowData(rowId, data => setAtPath(data, key, parsed.value))
 }
 
 const settleSubmitted = (
   table: unknown,
   key: string,
   attempt: number,
-  outcome: { ok: true } | { ok: false; reason: unknown },
+  outcome: { ok: true; answer: unknown } | { ok: false; reason: unknown },
 ) => {
   const state = readEditingState(table)
   const entry = state.submitted[key]
@@ -276,7 +334,7 @@ const settleSubmitted = (
   }
   const submitted = { ...state.submitted }
   if (outcome.ok) {
-    writeSaved(table, entry.rowId, entry.columnId, entry.draft)
+    writeSaved(table, entry.rowId, entry.columnId, entry.draft, outcome.answer)
     delete submitted[key]
     writeEditingState(table, { ...state, submitted })
     flashOutcome(table, { cell: [entry.rowId, entry.columnId] }, 'accepted')
@@ -337,7 +395,7 @@ export const commitEditSession = (
   })
   reportOutcome(table, { plugin: ID, action: 'save' }, result)
   if (!isThenable(result)) {
-    writeSaved(table, rowId, columnId, value)
+    writeSaved(table, rowId, columnId, value, result)
     endEditSession(table)
     return
   }
@@ -359,7 +417,7 @@ export const commitEditSession = (
     },
   })
   result.then(
-    () => settleSubmitted(table, key, attempt, { ok: true }),
+    answer => settleSubmitted(table, key, attempt, { ok: true, answer }),
     reason => settleSubmitted(table, key, attempt, { ok: false, reason }),
   )
 }

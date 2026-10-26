@@ -135,6 +135,7 @@ const Grid = ({
   colorMode,
   onTable,
   maxBlocks,
+  columns = COLUMNS,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
@@ -143,9 +144,10 @@ const Grid = ({
   colorMode?: 'light' | 'dark'
   onTable?: (table: QueryTable) => void
   maxBlocks?: number
+  columns?: readonly object[]
 }) => {
   const table = useCreateTable({
-    columns: COLUMNS as never,
+    columns: columns as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     state: state as never,
@@ -1557,5 +1559,61 @@ describe('Серверная модель строк (ADR 0138)', () => {
       }
     }
     warn.mockRestore()
+  })
+
+  test('EW7: правка числа в серверной модели настоящими событиями: ячейка показывает значение из ответа сервера и вспыхивает «принято»', async () => {
+    const priced = (index: number) => ({ ...itemAt(index), price: 10 + index })
+    const { getRows } = server(({ start, end }) => ({
+      rows: Array.from({ length: end - start }, (_, k) => priced(start + k)),
+    }))
+    let save: ((row: object) => void) | undefined
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        columns={[
+          ...COLUMNS,
+          { id: 'price', accessorKey: 'price', header: 'Price' },
+        ]}
+        plugins={[
+          cellEditing({
+            // Сервер округляет цену до сотых и отдаёт сохранённую строку.
+            onCellEdit: () =>
+              new Promise<object>(resolve => {
+                save = resolve
+              }),
+          }),
+        ]}
+      />,
+    )
+    const priceCell = () =>
+      q<HTMLElement>(
+        '.data-grid__body-row[data-index="0"] [data-column-id="price"]',
+      )
+    try {
+      await expect.poll(() => priceCell()?.textContent?.trim()).toBe('10')
+      await revealCellButtons(priceCell()!)
+      await humanClick(
+        priceCell()!.querySelector<HTMLElement>('.cell__button button')!,
+      )
+      const input = await vi.waitFor(() => {
+        const found = priceCell()?.querySelector<HTMLInputElement>('input')
+        if (!found) throw new Error('editor not open')
+        return found
+      })
+      await userEvent.fill(input, '12.345')
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(() => save).toBeDefined()
+      save!({ ...priced(0), price: 12.35 })
+      await expect
+        .poll(() => priceCell()!.querySelector('[aria-busy="true"]'))
+        .toBeNull()
+      expect(priceCell()!.textContent?.trim()).toBe('12.35')
+      await expect
+        .poll(() => priceCell()!.getAttribute('data-flash'))
+        .toBe('accepted')
+    } finally {
+      await screen.unmount()
+    }
   })
 })
