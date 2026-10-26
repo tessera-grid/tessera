@@ -17,6 +17,7 @@
  */
 import { useEffect } from 'react'
 
+import { scrollLayer } from './scrollStretch'
 import { useLatest } from './useLatest'
 
 interface AutoScrollTable {
@@ -123,7 +124,7 @@ export const useCellSelectionAutoScroll = (
       if (dx === 0 && dy === 0) {
         return
       }
-      scroller.scrollBy(dx, dy)
+      scrollLayer(scroller).scrollBy(dy, dx)
 
       // Расширяем активный диапазон к ячейке под курсором, клампнутым в контейнер
       // (за краем курсора нет ячейки — берём крайнюю видимую в ту сторону).

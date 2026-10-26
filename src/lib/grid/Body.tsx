@@ -234,7 +234,10 @@ export const Body = ({
             role="presentation"
             className={styles.failed}
             style={{
-              top: `calc(var(--tsr-comp-row-height) * ${failure.start})`,
+              // От отрисованной строки: в растянутой области место — не индекс × высота.
+              top:
+                virtualRows[0].start +
+                (failure.start - virtualRows[0].index) * virtualRows[0].size,
               height: `calc(var(--tsr-comp-row-height) * ${failure.end - failure.start})`,
             }}
           >

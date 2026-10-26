@@ -38,6 +38,7 @@ import {
 import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid } from './hosts'
+import { scrollLayer } from '../../../core/scrollStretch'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { CellButton } from '../../../grid/Actions/CellButton'
 import {
@@ -1746,6 +1747,87 @@ describe('Производительность прокрутки — серве
           `${axis} p95=${server[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Растяжка высоты (ADR 0142, XS11): спокойная прокрутка колесом 1 000 000 строк в растянутой
+// области против той же прокрутки 150 000 строк без растяжки (тело 7,5 млн px).
+const XS11_COST = { ratio: 1.3, plusMs: 4 }
+describe('Производительность прокрутки — растяжка высоты', () => {
+  test(
+    'XS11: спокойная прокрутка колесом 1 000 000 строк в растянутом режиме не дороже той же прокрутки 150 000 строк без растяжки',
+    async () => {
+      const pool = getData(SMALL.dataCount)
+      const getRows = ({ start, end }: { start: number; end: number }) => ({
+        rows: Array.from({ length: end - start }, (_, k) => ({
+          ...pool[(start + k) % pool.length],
+          id: `xs-${start + k}`,
+        })),
+      })
+      const measure = async (stretched: boolean) => {
+        const screen = renderGrid({
+          ...SMALL,
+          ...NO_PLUGINS,
+          enableServerRowModel: true,
+          serverRowModelRowCount: stretched ? 1_000_000 : 150_000,
+          serverRowModelGetRows: getRows,
+        })
+        await expect
+          .poll(() =>
+            document.querySelector('.data-grid__body-row[data-row-id]'),
+          )
+          .not.toBeNull()
+        const scroller = document.querySelector<HTMLElement>(
+          '.data-grid__container',
+        )!
+        expect(scrollLayer(scroller).stretched).toBe(stretched)
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: stretched,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const stretched = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, XS11_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: gated ? '1 000 000×30' : '150 000×30',
+          plugins: 'serverRowModel',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y',
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('XS11-base', 'без растяжки, ползунком', base, false)
+      await record('XS11', 'растянутая область, колесом', stretched, true)
+
+      expect(
+        stretched.p95Ms,
+        `p95=${stretched.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
   )

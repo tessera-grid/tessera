@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
+import { scrollLayer } from '../../core/scrollStretch'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import styles from './BackToTop.module.css'
@@ -74,7 +75,7 @@ const EdgeButton = ({
     if (!enabled || !scroller) {
       return
     }
-    return watchThreshold(scroller, threshold, setPast, axis)
+    return watchThreshold(scrollLayer(scroller).area, threshold, setPast, axis)
   }, [enabled, threshold, axis])
 
   if (!enabled) {

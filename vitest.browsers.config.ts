@@ -12,7 +12,8 @@ import { testCommands } from './vitest.commands.ts'
 // Раскрытие кнопок ячейки без возможностей только Chromium (CB6). Смена кольца кнопки
 // посреди нажатия: Firefox терял клик (BS18). Линии дерева при дробном масштабе: Firefox и
 // WebKit схлопывали линию в 1px (TL7). Пределы высоты и липкой шапки: у Firefox свои, выше
-// предела он даёт телу высоту 0 (ADR 0141, BH1–BH6).
+// предела он даёт телу высоту 0 (ADR 0141, BH1–BH3); растяжка, колесо и шапка на глубине —
+// у каждого движка свои (ADR 0142).
 // Запуск: npm run test:browsers
 export default defineConfig({
   ...base,
@@ -24,6 +25,7 @@ export default defineConfig({
       'src/lib/stories/__tests__/visual/keyboard-entry.test.tsx',
       'src/lib/stories/__tests__/visual/focus-modality.test.tsx',
       'src/lib/stories/__tests__/visual/reveal-engines.test.tsx',
+      'src/lib/stories/__tests__/visual/scroll-stretch.test.tsx',
       'src/lib/stories/__tests__/visual/ring-press.test.tsx',
       'src/lib/stories/__tests__/visual/tree-lines-zoom.test.tsx',
     ],

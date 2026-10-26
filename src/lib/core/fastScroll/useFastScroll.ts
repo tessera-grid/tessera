@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { useLatest } from '../useLatest'
+import { scrollLayer } from '../scrollStretch'
 import {
   type FastScrollDetectorOptions,
   attachFastScrollDetector,
@@ -58,8 +59,9 @@ export const useFastScroll = ({
   }))
 
   const listen = (element: HTMLDivElement) => {
+    // Скорость — по виртуальной позиции слоя растяжки (ADR 0142, XS7).
     const detach = attachFastScrollDetector(
-      element,
+      scrollLayer(element).area,
       value => {
         const prev = stateRef.current
         stateRef.current = {

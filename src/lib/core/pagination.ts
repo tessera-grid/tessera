@@ -12,6 +12,7 @@ import { useEffect, useRef } from 'react'
 import type { PaginationState } from '@tanstack/react-table'
 
 import { setPluginState, pluginStateKey } from './definePlugin'
+import { scrollLayer } from './scrollStretch'
 import {
   type ActiveCell,
   KEYBOARD_NAVIGATION,
@@ -95,7 +96,8 @@ export const usePageChange = (
       return
     }
 
-    getScrollElement()?.scrollTo({ top: 0 })
+    const scroller = getScrollElement()
+    if (scroller) scrollLayer(scroller).scrollTo({ top: 0 })
 
     const t = table as PageChangeTable
     // Диапазон выделения — внутри страницы; на новой странице его углов нет.

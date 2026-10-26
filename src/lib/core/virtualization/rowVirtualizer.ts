@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
 
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { type VirtualItem, useVirtualizer } from '@tanstack/react-virtual'
 
 import type { Table } from '../../types'
 import { useActiveCellIndex } from '../keyboardNavigation'
@@ -9,8 +9,13 @@ import { ESTIMATE_SIZE } from './measureRows'
 import { rowMeasureElement } from './rowMeasureElement'
 import { useRowRangeExtractor } from './rowRangeExtractor'
 import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
+import { scrollLayer } from '../scrollStretch'
 
 const ROWS_OVERSCAN = 5
+/** Строка растянутой области на экране — по объекту строки виртуализатора. */
+const shifted = new WeakMap<VirtualItem, VirtualItem>()
+/** Строка дальше стольких экранов от видимой области стоит на этом расстоянии. */
+const FAR_SCREENS = 4
 
 export interface RowVirtualizerParams {
   table: Table<any, any>
@@ -63,6 +68,18 @@ export const useRowVirtualizer = ({
     getItemKey,
     overscan: ROWS_OVERSCAN,
     rangeExtractor,
+    // Позиция — виртуальная, из слоя растяжки (ADR 0142).
+    observeElementOffset: (instance, onOffset) =>
+      instance.scrollElement
+        ? scrollLayer(instance.scrollElement).subscribe(onOffset)
+        : undefined,
+    scrollToFn: (offset, { adjustments = 0, behavior }, instance) => {
+      if (!instance.scrollElement) return
+      scrollLayer(instance.scrollElement).scrollTo(
+        { top: offset + adjustments },
+        behavior === 'smooth' ? 'smooth' : 'instant',
+      )
+    },
   })
 
   // Новая высота: замеры строк прежней высоты больше не верны.
@@ -74,8 +91,46 @@ export const useRowVirtualizer = ({
     }
   }, [rowHeight, virtualizer])
 
+  // Строки на экране — от фактической прокрутки: в растянутой области их виртуальное
+  // начало минус база сдвига слоя, остаток слой ставит сам. Строки далеко за экраном
+  // (активная, перетаскиваемая) — не дальше нескольких экранов: место за пределом
+  // браузера он обрезает или обнуляет.
+  const items = virtualizer.getVirtualItems()
+  const scroller = getScrollElement()
+  const layer = scroller ? scrollLayer(scroller) : undefined
+  const subscribeBase = useCallback(
+    (listener: () => void) => layer?.onBase(listener) ?? (() => {}),
+    [layer],
+  )
+  const base = useSyncExternalStore(
+    subscribeBase,
+    () => layer?.rowShift() ?? 0,
+    () => 0,
+  )
+  const virtualRows =
+    !scroller || !layer?.stretched
+      ? items
+      : items.map(item => {
+          const near = layer.top() - base
+          const reach = scroller.clientHeight * FAR_SCREENS
+          const start = Math.min(
+            Math.max(item.start - base, near - reach),
+            near + reach,
+          )
+          // Тот же объект, пока место строки прежнее: строки мемоизированы по нему.
+          const known = shifted.get(item)
+          if (known?.start === start) return known
+          const row = { ...item, start, end: start + item.size }
+          shifted.set(item, row)
+          return row
+        })
+  // Новые строки получают остаток сдвига до кадра.
+  useIsomorphicLayoutEffect(() => {
+    layer?.commitBase(base)
+  })
+
   return {
-    virtualRows: virtualizer.getVirtualItems(),
+    virtualRows,
     bodyHeight: virtualizer.getTotalSize(),
     measureElement: virtualizer.measureElement,
     virtualizer,

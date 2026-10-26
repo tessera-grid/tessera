@@ -42,6 +42,8 @@ interface ScrollSample {
 export interface ScrollSource {
   scrollTop: number
   scrollLeft: number
+  /** Элемент, чью прокрутку помечают программной, если источник — не он сам. */
+  owner?: object
   addEventListener: (
     type: 'scroll',
     listener: () => void,
@@ -155,10 +157,11 @@ export const attachFastScrollDetector = (
     }, IDLE_DELAY)
   }
 
+  const marked = element.owner ?? element
   const handleScroll = () => {
     const now = performance.now()
-    if (isProgrammatic(element, now)) {
-      programmatic.set(element, now)
+    if (isProgrammatic(marked, now)) {
+      programmatic.set(marked, now)
       lastTop = element.scrollTop
       lastLeft = element.scrollLeft
       lastEventAt = now

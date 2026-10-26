@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
-
-import { logWarn, shouldLog, type LoggerHost } from './logger'
-
-/** Ниже этого тело заведомо помещается и держит липкую шапку в любом браузере — мерить незачем. */
+/**
+ * Выше этого тело растягивается (ADR 0142): ниже координаты точны во всех движках, а у
+ * самого предела Chromium ставит строки с ошибкой в пиксели. Ниже — и мерить незачем.
+ */
 const SAFE_HEIGHT = 8_000_000
 
 /** Атрибут пробника замера: значение — вид замера, `height` или `sticky`. */
@@ -88,54 +87,24 @@ export const measureStickyScrollLimit = (): number => {
 }
 
 /**
- * Сколько целых строк тела помещается в предел высоты вместе с шапкой и футером над и под
- * ним (`reserved`): Firefox режет всё, что дальше предела от начала области прокрутки.
+ * Наибольшая высота тела (ADR 0142, XS1): меньшее из 8 млн px и пределов высоты и
+ * липкости за вычетом шапки и футера над и под ним (`reserved`) — Firefox режет всё, что
+ * дальше предела от начала области прокрутки, и не держит шапку глубже предела липкости.
  */
-const reachableRows = (rowHeight: number, reserved: number) =>
-  Math.floor((measureScrollHeightLimit() - reserved) / rowHeight)
+export const stretchBorder = (reserved: number) =>
+  Math.floor(
+    Math.min(
+      SAFE_HEIGHT,
+      measureScrollHeightLimit(),
+      measureStickyScrollLimit(),
+    ) - reserved,
+  )
 
-/** Тело не выше предела браузера: выше Firefox даёт ему высоту 0 и список схлопывается (BH4). */
-export const clampBodyHeight = (
-  height: number,
-  rowHeight: number,
-  reserved: number,
-): number =>
-  height <= SAFE_HEIGHT || rowHeight <= 0 || typeof document === 'undefined'
+/** Тело не выше границы: выше — растянутая область (ADR 0142). */
+export const clampBodyHeight = (height: number, reserved: number): number =>
+  height <= SAFE_HEIGHT || typeof document === 'undefined'
     ? height
-    : Math.min(height, reachableRows(rowHeight, reserved) * rowHeight)
-
-/**
- * Список выше пределов браузера (BH5, BH6): dev-warn, что шапка перестаёт прилипать и что
- * строки за пределом высоты недоступны, с советом о пагинации.
- */
-export const useScrollHeightWarning = (
-  table: unknown,
-  rowCount: number,
-  rowHeight: number,
-  reserved: number,
-) => {
-  const height = rowCount * rowHeight
-  useEffect(() => {
-    const host = table as LoggerHost
-    if (height <= SAFE_HEIGHT || !shouldLog(host, 'warn')) return
-    const sticky = measureStickyScrollLimit()
-    if (height > sticky) {
-      logWarn(
-        host,
-        `the header stops sticking after row ${Math.floor(sticky / rowHeight)} of ${rowCount}: the browser keeps it sticky for ${Math.round(sticky)}px of scroll — use pagination`,
-        'stickyHeaderLimit',
-      )
-    }
-    const reachable = reachableRows(rowHeight, reserved)
-    if (rowCount > reachable) {
-      logWarn(
-        host,
-        `rows after ${reachable} of ${rowCount} are out of reach: the browser caps the list at ${Math.round(measureScrollHeightLimit())}px — use pagination`,
-        'scrollHeightLimit',
-      )
-    }
-  }, [table, height, rowCount, rowHeight, reserved])
-}
+    : Math.min(height, stretchBorder(reserved))
 
 /** Сброс замеров между тестами. */
 export const __resetScrollLimits = (): void => {

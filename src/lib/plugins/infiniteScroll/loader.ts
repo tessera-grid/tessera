@@ -5,6 +5,7 @@
  */
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { announceLabel } from '../../core/announcer'
+import { scrollLayer } from '../../core/scrollStretch'
 import { IDLE, shouldLoadMore, tailRowCount } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
@@ -48,7 +49,7 @@ const domGeometry = (sentinel: HTMLElement | null): EdgeGeometry | null => {
       scroller.getBoundingClientRect().bottom,
     rowHeight: rowHeightOf(scroller),
     viewportHeight: scroller.clientHeight,
-    scrollTop: scroller.scrollTop,
+    scrollTop: scrollLayer(scroller).top(),
   }
 }
 
@@ -245,7 +246,8 @@ export class InfiniteLoader {
   }
 
   scrollToTop() {
-    this.sentinel?.closest<HTMLElement>(SCROLLER_SELECTOR)?.scrollTo({ top: 0 })
+    const scroller = this.sentinel?.closest<HTMLElement>(SCROLLER_SELECTOR)
+    if (scroller) scrollLayer(scroller).scrollTo({ top: 0 })
   }
 
   /** Подписка на прокрутку области грида; возвращает отписку. */
@@ -260,9 +262,10 @@ export class InfiniteLoader {
         this.check()
       })
     }
-    scroller.addEventListener('scroll', onScroll, { passive: true })
+    const { area } = scrollLayer(scroller)
+    area.addEventListener('scroll', onScroll)
     return () => {
-      scroller.removeEventListener('scroll', onScroll)
+      area.removeEventListener('scroll', onScroll)
       cancelAnimationFrame(frame)
     }
   }

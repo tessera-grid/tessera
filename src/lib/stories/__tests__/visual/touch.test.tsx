@@ -10,6 +10,7 @@ import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { pinViaPopover } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
+import { scrollLayer } from '../../../core/scrollStretch'
 
 // Касания (ADR 0086, TU1–TU12, TU14): проект `touch` в `npm test` — Chromium без
 // наведения и с грубым указателем — и проект `mobile` в `test:engines` (iPhone, Pixel).
@@ -699,5 +700,69 @@ describe('Ручка колонки на касаниях (ADR 0114)', () => {
       )
     await expect.poll(pinned).not.toBeNull()
     expect(pinned()!.querySelector(HANDLE)).toBeNull()
+  })
+})
+
+// Растяжка высоты (ADR 0142, XS9): касание прокручивает растянутую область нативно.
+describe('Касания в растянутой области', () => {
+  test('XS9: касание — нативная прокрутка; после остановки строки на своих местах под шапкой', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
+    const getRows = ({ start, end }: { start: number; end: number }) => ({
+      rows: Array.from({ length: end - start }, (_, k) => ({
+        id: `xs-${start + k}`,
+      })),
+    })
+    await renderGrid({
+      columnCount: 5,
+      dataCount: 0,
+      enableServerRowModel: true,
+      serverRowModelRowCount: 1_000_000,
+      serverRowModelGetRows: getRows,
+    })
+    await expect
+      .poll(() => document.querySelector(`${BODY_ROW}[data-row-id]`))
+      .not.toBeNull()
+    const layer = scrollLayer(scroller())
+    expect(layer.stretched).toBe(true)
+    scroller().scrollTop =
+      (scroller().scrollHeight - scroller().clientHeight) / 2
+    await expect
+      .poll(() => document.querySelectorAll(`${BODY_ROW}[data-row-id]`).length)
+      .toBeGreaterThan(3)
+    const before = layer.top()
+    const from = center(scroller())
+    await touch.realSwipe(from, { x: from.x, y: from.y - 200 })
+    let last = -1
+    await expect
+      .poll(async () => {
+        const now = layer.top()
+        const still = now === last
+        last = now
+        await wait(150)
+        return still
+      })
+      .toBe(true)
+    expect(layer.top()).toBeGreaterThan(before)
+    // Строки — на месте виртуальной позиции: верх строки = шапка + её начало − позиция.
+    const head = document
+      .querySelector<HTMLElement>('.data-grid__head')!
+      .getBoundingClientRect()
+    const area = scroller().getBoundingClientRect()
+    const rows = [
+      ...document.querySelectorAll<HTMLElement>(`${BODY_ROW}[data-row-id]`),
+    ].filter(row => {
+      const box = row.getBoundingClientRect()
+      return box.bottom > head.bottom && box.top < area.bottom
+    })
+    expect(rows.length).toBeGreaterThan(3)
+    expect(head.top - area.top).toBe(0)
+    for (const row of rows) {
+      const box = row.getBoundingClientRect()
+      const expected =
+        head.height + Number(row.dataset.index) * box.height - layer.top()
+      expect(Math.abs(box.top - area.top - expected)).toBeLessThanOrEqual(1)
+    }
   })
 })

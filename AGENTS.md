@@ -909,10 +909,17 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `accessorKey` вглубь, отказ записи с советом, клиентский режим без записи), визуальный EW7 —
       в `server-row-model`, `play` истории «Data loading/Server row model — Edit a cell» (S1)
       ([ADR 0139](docs/decisions/0139-saved-row-and-column-data-type.md)).
-    - _Пределы браузера:_ `browser-limits` (BH1–BH6 — замер предела высоты элемента и
-      липкой шапки, замер раз на документ и только для высокого тела, обрезка тела, два
-      предупреждения с номером строки; ещё и в `test:browsers` — у Firefox свои пределы),
-      перф BH7 — в `first-render` ([ADR 0141](docs/decisions/0141-browser-scroll-limits.md)).
+    - _Пределы браузера:_ `browser-limits` (BH1–BH3 — замер предела высоты элемента и
+      липкой шапки, раз на документ и только для тела выше 8 млн px; ещё и в
+      `test:browsers` — у Firefox свои пределы), перф BH7 — в `first-render`
+      ([ADR 0141](docs/decisions/0141-browser-scroll-limits.md)).
+    - _Растяжка высоты:_ `scroll-stretch` (XS1–XS8, XS12 — растянутая область выше 8 млн px,
+      ползунок на долю итога, колесо 1:1, клавиши, `scrollToRow` и «наверх», автопрокрутка
+      перетаскивания и выделения, быстрая прокрутка по виртуальной позиции, шапка на
+      глубине, плавный щелчок колеса; ещё и в `test:browsers`), `touch` (XS9 — касание),
+      модульный `scrollStretch` (XS10 — страж прямого `scrollTop`), перф XS11 — в `scroll`,
+      `play` истории «Data loading/Server row model — Million rows» (S1); слой координат —
+      `core/scrollStretch.ts` ([ADR 0142](docs/decisions/0142-scroll-stretching.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,

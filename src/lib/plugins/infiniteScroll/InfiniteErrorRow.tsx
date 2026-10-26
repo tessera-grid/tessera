@@ -11,6 +11,7 @@ import {
 
 import type { BodyEndComponentProps } from '../../core/createSlots'
 import { isFooterInline } from '../../core/footer'
+import { scrollLayer } from '../../core/scrollStretch'
 import {
   NAV_BODY_END_ATTR,
   isKeyboardNavigationEnabled,
@@ -96,10 +97,7 @@ export const InfiniteErrorRow = ({
       scroller.clientHeight
     const overflow = row.getBoundingClientRect().bottom - bottom
     if (overflow > 0) {
-      scroller.scrollTo({
-        top: scroller.scrollTop + overflow,
-        behavior: 'instant',
-      })
+      scrollLayer(scroller).scrollBy(overflow)
     }
   }, [failed, table])
 

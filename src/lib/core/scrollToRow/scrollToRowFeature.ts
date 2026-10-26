@@ -16,6 +16,7 @@ import {
 import type { Row, RowData, TableFeature, TableFeatures } from '../../types'
 import type { RowSource } from '../rowSource'
 import { type ScrollTarget, scrollGridTo } from '../scrollGridTo'
+import { scrollLayer } from '../scrollStretch'
 import { type ScrollViewport, viewportOf } from './viewport'
 
 export type ScrollAlign = 'auto' | 'start' | 'center' | 'end'
@@ -124,13 +125,14 @@ const settle = async (
   alive: () => boolean,
   smooth = false,
 ) => {
-  let last = `${scroller.scrollTop}:${scroller.scrollLeft}`
+  const layer = scrollLayer(scroller)
+  let last = `${layer.top()}:${scroller.scrollLeft}`
   let stable = 0
   let moved = !smooth
   for (let i = 0; i < WAIT_FRAMES; i++) {
     await frame()
     if (!alive()) return
-    const now = `${scroller.scrollTop}:${scroller.scrollLeft}`
+    const now = `${layer.top()}:${scroller.scrollLeft}`
     if (now === last) stable++
     else {
       stable = 0
@@ -267,7 +269,8 @@ const plannedRow = (
   const body = scroller.querySelector<HTMLElement>(BODY_SELECTOR)
   const item = viewport.rows.measurementsCache[index]
   if (!body || !item) return undefined
-  const top = body.getBoundingClientRect().top
+  // Тело на экране — физическое; строка в растянутой области — со сдвигом слоя.
+  const top = body.getBoundingClientRect().top - scrollLayer(scroller).shift()
   return { start: top + item.start, end: top + item.end }
 }
 
@@ -348,7 +351,7 @@ const place = async (
     )
     if (row) {
       plan.top = offsetFor(
-        scroller.scrollTop,
+        scrollLayer(scroller).top(),
         row,
         bodyArea(scroller),
         target.align,
@@ -389,7 +392,7 @@ const place = async (
         scroller,
         {
           top: offsetFor(
-            scroller.scrollTop,
+            scrollLayer(scroller).top(),
             planned,
             bodyArea(scroller),
             target.align,
@@ -424,13 +427,13 @@ const place = async (
     const cellPlaced =
       !cellSpan || isPlaced(cellSpan, centerArea(cell!, scroller), 'auto')
     if (rowPlaced && cellPlaced) return true
-    const before = [scroller.scrollTop, scroller.scrollLeft]
+    const before = [scrollLayer(scroller).top(), scroller.scrollLeft]
     scrollGridTo(
       scroller,
       {
         top: rowSpan
           ? offsetFor(
-              scroller.scrollTop,
+              scrollLayer(scroller).top(),
               rowSpan,
               bodyArea(scroller),
               target.align,
@@ -449,7 +452,10 @@ const place = async (
     )
     await settle(scroller, alive, target.behavior === 'smooth')
     // Прокрутка упёрлась в край (последняя строка к верху окна) — ближе не встать.
-    if (scroller.scrollTop === before[0] && scroller.scrollLeft === before[1]) {
+    if (
+      scrollLayer(scroller).top() === before[0] &&
+      scroller.scrollLeft === before[1]
+    ) {
       return true
     }
   }

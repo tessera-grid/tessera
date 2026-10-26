@@ -1,4 +1,5 @@
 /** Геометрия: видимая область тела и довод активной ячейки в вид. */
+import { scrollLayer } from '../scrollStretch'
 import {
   BODY_ROW_SELECTOR,
   FALLBACK_ROW_HEIGHT,
@@ -47,6 +48,31 @@ export const getCenterViewport = (cell: HTMLElement, scroller: HTMLElement) => {
 }
 
 /**
+ * Место строки ячейки на экране. Строку далеко за экраном растянутая область ставит не
+ * дальше нескольких экранов (ADR 0142): её место — от видимой строки и разницы индексов,
+ * высота строк одна (ADR 0077).
+ */
+/** Строка тела с индексом — загруженная или скелет незагруженной. */
+const INDEXED_ROW = '[role="row"][data-index]'
+
+const rowSpanOf = (cell: HTMLElement, scroller: HTMLElement, rect: DOMRect) => {
+  const row = cell.closest<HTMLElement>(INDEXED_ROW)
+  if (!row || !scrollLayer(scroller).stretched) return rect
+  const view = scroller.getBoundingClientRect()
+  const reference = [
+    ...scroller.querySelectorAll<HTMLElement>(INDEXED_ROW),
+  ].find(candidate => {
+    const box = candidate.getBoundingClientRect()
+    return box.bottom > view.top && box.top < view.bottom
+  })
+  if (!reference || reference === row) return rect
+  const base = reference.getBoundingClientRect()
+  const offset =
+    (Number(row.dataset.index) - Number(reference.dataset.index)) * base.height
+  return { top: base.top + offset, bottom: base.bottom + offset }
+}
+
+/**
  * Довести ячейку в видимую область с учётом sticky-шапки/футера и закреплённых
  * колонок (виртуализатор о них не знает). Ячейки заголовка — только по горизонтали,
  * закреплённые — только по вертикали.
@@ -59,10 +85,11 @@ export const ensureCellVisible = (
   const rect = cell.getBoundingClientRect()
   if (!isSticky) {
     const { top, bottom } = getBodyViewport(scroller)
-    if (rect.top < top) {
-      scroller.scrollTop -= top - rect.top
-    } else if (rect.bottom > bottom) {
-      scroller.scrollTop += rect.bottom - bottom
+    const span = rowSpanOf(cell, scroller, rect)
+    if (span.top < top) {
+      scrollLayer(scroller).scrollBy(span.top - top)
+    } else if (span.bottom > bottom) {
+      scrollLayer(scroller).scrollBy(span.bottom - bottom)
     }
   }
   const pinned = cell.getAttribute('data-cell-pinned')

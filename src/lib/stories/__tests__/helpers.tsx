@@ -214,6 +214,7 @@ export async function measureScrollWork(
     warmupFrames = 20,
     velocity,
     fast = velocity === undefined,
+    wheel = false,
   }: {
     frames?: number
     stepPx?: number
@@ -221,6 +222,8 @@ export async function measureScrollWork(
     velocity?: number
     /** Ожидается быстрая прокрутка (скелеты), иначе — содержимое ячеек. */
     fast?: boolean
+    /** Вертикаль — колесом: растянутую область прокручивает слой (ADR 0142, XS11). */
+    wheel?: boolean
   } = {},
 ): Promise<ScrollWorkResult> {
   const scroller = getScroller()
@@ -230,8 +233,18 @@ export async function measureScrollWork(
       ? scroller.scrollHeight - scroller.clientHeight
       : scroller.scrollWidth - scroller.clientWidth
 
+  let wheeled = 0
   const setPos = (pos: number) => {
-    if (axis === 'y') scroller.scrollTop = pos
+    if (axis === 'y' && wheel) {
+      scroller.dispatchEvent(
+        new WheelEvent('wheel', {
+          deltaY: pos - wheeled,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+      wheeled = pos
+    } else if (axis === 'y') scroller.scrollTop = pos
     else scroller.scrollLeft = pos
   }
 
@@ -256,6 +269,7 @@ export async function measureScrollWork(
 
   scroller.scrollTop = 0
   scroller.scrollLeft = 0
+  wheeled = 0
   await nextFrame()
   await nextFrame()
   if (!fast) {

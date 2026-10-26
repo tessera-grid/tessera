@@ -17,10 +17,8 @@ import clsx from 'clsx'
 
 import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useRowSourceWindow } from '../core/rowSourceWindow'
-import {
-  clampBodyHeight,
-  useScrollHeightWarning,
-} from '../core/scrollHeightLimit'
+import { clampBodyHeight } from '../core/scrollHeightLimit'
+import { scrollLayer, useScrollStretch } from '../core/scrollStretch'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
 import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
 import { trackInputModality } from '../core/inputModality'
@@ -221,7 +219,6 @@ export const DataGrid = ({
   const headHeight = headerGroupsDepth * heights.head + headerGroupsDepth
   // Над телом шапка, под ним — не больше строки футера.
   const aroundBody = headHeight + heights.row
-  useScrollHeightWarning(table, rowCount, heights.row, aroundBody)
 
   const labels = useMemo(
     () => resolveLabels(localization, locale),
@@ -278,6 +275,9 @@ export const DataGrid = ({
     getScrollElement,
     rowHeight: heights.row,
   })
+  // Тело выше границы браузера — растянутая область (ADR 0142).
+  const shownBodyHeight = clampBodyHeight(bodyHeight, aroundBody)
+  useScrollStretch(getScrollElement, bodyHeight - shownBodyHeight)
   // Окно прокрутки для `table.scrollToRow` (ADR 0104).
   useScrollViewport(table, {
     getScrollElement,
@@ -286,6 +286,12 @@ export const DataGrid = ({
   })
 
   const dragPointerY = useDragPointerY(rowDragging?.activeId != null)
+  // Автопрокрутка перетаскивания строки в растянутой области — 1:1 (ADR 0142, XS6).
+  useIsomorphicLayoutEffect(() => {
+    const scroller = getScrollElement()
+    if (scroller)
+      scrollLayer(scroller).followDrag(rowDragging?.activeId != null)
+  }, [getScrollElement, rowDragging?.activeId])
   const fastScrollStore = useFastScroll({
     getScrollElement,
     forceFast: () => {
@@ -420,7 +426,7 @@ export const DataGrid = ({
   const wrapperStyles = {
     ...({
       '--tsr-comp-head-height': `${headHeight}px`,
-      '--tsr-comp-body-height': `${clampBodyHeight(bodyHeight, heights.row, aroundBody)}px`,
+      '--tsr-comp-body-height': `${shownBodyHeight}px`,
     } as CSSProperties),
     ...heights.vars,
     ...containerStyles,
