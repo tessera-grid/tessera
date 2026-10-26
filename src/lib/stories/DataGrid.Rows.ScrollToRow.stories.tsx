@@ -2,11 +2,8 @@ import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
 import type { TesseraFeatureEntry } from '../core/features'
-import type {
-  HighlightHandle,
-  HighlightOptions,
-  HighlightTarget,
-} from '../core/highlights/highlightFeature'
+import type { FlashOutcome } from '../core/flashes/flashFeature'
+import type { HighlightTarget } from '../core/highlights/highlightFeature'
 import type { ScrollToRowOptions } from '../core/scrollToRow/scrollToRowFeature'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
@@ -65,10 +62,7 @@ export const ScrollToRowPlayground: StoryObj<StoryProps> = {
 
 interface ScrollApi {
   scrollToRow: (rowId: string, options?: ScrollToRowOptions) => Promise<boolean>
-  highlight: (
-    target: HighlightTarget,
-    options?: HighlightOptions,
-  ) => HighlightHandle
+  flashOutcome: (target: HighlightTarget, outcome: FlashOutcome) => void
 }
 
 let scrollTable: ScrollApi | null = null
@@ -89,7 +83,7 @@ const FAR = 'item-id-250'
 const DEEP = 'item-id-90-0-0'
 const DEEP_PARENTS = ['item-id-90', 'item-id-90-0']
 
-/** Приложение просит таблицу показать строку и коротко её подсвечивает. */
+/** Приложение просит таблицу показать строку и отмечает её вспышкой «появилось». */
 const showRow = (id: string) =>
   stepAction(async (root, { signal }) => {
     while (!scrollTable || !root.querySelector('.data-grid__body-row')) {
@@ -101,12 +95,11 @@ const showRow = (id: string) =>
       expandParents: true,
     })
     signal.throwIfAborted()
-    if (shown)
-      scrollTable.highlight({ row: id }, { tone: 'info', duration: 3000 })
+    if (shown) scrollTable.flashOutcome({ row: id }, 'arrived')
   })
 
-const highlighted = (root: HTMLElement, id: string) =>
-  bodyRow(root, id)?.getAttribute('data-highlight') === 'info'
+const flashed = (root: HTMLElement, id: string) =>
+  bodyRow(root, id)?.getAttribute('data-flash') === 'arrived'
 
 const SCROLL: readonly GuideStoryStep[] = [
   {
@@ -115,15 +108,15 @@ const SCROLL: readonly GuideStoryStep[] = [
   },
   {
     title: 'Приложение показало строку',
-    hint: 'Приложение попросило таблицу показать строку. Таблица прокрутилась к ней, строка коротко подсвечена.',
-    states: ['body.highlight'],
+    hint: 'Приложение попросило таблицу показать строку. Таблица прокрутилась к ней, строка коротко вспыхнула.',
     enter: showRow(FAR),
+    immediate: true,
   },
   {
     title: 'Строка внутри свёрнутой ветки',
-    hint: 'Приложение попросило показать строку из свёрнутой ветки. Таблица раскрыла её родителей и прокрутилась к ней.',
-    states: ['body.highlight'],
+    hint: 'Приложение попросило показать строку из свёрнутой ветки. Таблица раскрыла её родителей и прокрутилась к ней, строка коротко вспыхнула.',
     enter: showRow(DEEP),
+    immediate: true,
   },
 ]
 
@@ -156,12 +149,12 @@ export const ScrollToRowShow: StoryObj<StoryProps> = {
     await step(SCROLL[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await until(() => expect(highlighted(canvas, FAR)).toBe(true))
+      await until(() => expect(flashed(canvas, FAR)).toBe(true))
     })
     await step(SCROLL[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await until(() => expect(highlighted(canvas, DEEP)).toBe(true))
+      await until(() => expect(flashed(canvas, DEEP)).toBe(true))
       for (const parent of DEEP_PARENTS)
         await expect(expanded(parent)).toBe(true)
       await settle()

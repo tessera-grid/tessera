@@ -641,13 +641,6 @@ React 18, StrictMode, SSR и пакет глазами потребителя з
   защищены (`overflow: clip`, ADR 0107), футер — нет. Подробнее —
   [rendering.md](architecture/rendering.md#футер-колонок).
 
-- **Гайд «Rows/Scroll to row» подсвечивает строку невидимо** — он зовёт
-  `highlight(…, { tone: 'info' })`, а встроенных тонов подсветки три: `danger`,
-  `warning`, `success` ([ADR 0080](decisions/0080-highlight-api.md)). Атрибут
-  `data-highlight` ставится, токена `--tsr-comp-highlight-info-bg` нет — заливка
-  прозрачная. Найдено 2026-10-26 на гайде S5 ADR 0138 (там тон по умолчанию). Путь —
-  тон в гайде или встроенный `info` в ADR 0080; вживую гайд не открывался.
-
 - **Правка ячейки в кэше серверной модели — значение редактора как есть** — при успехе
   `onCellEdit` в SSRM значение пишется в кэш `table.setRowData` по `accessorKey`
   ([ADR 0138](decisions/0138-server-side-row-model.md), §7, SD24): строкой редактора

@@ -51,11 +51,18 @@ interface HighlightApi {
   getCoreRowModel: () => { rows: unknown[] }
 }
 
+/** Свой тон приложения: имя тона и токен его заливки в CSS приложения (ADR 0080, §4). */
+const APP_TONE_CSS =
+  '.data-grid-theme { --tsr-comp-highlight-info-bg: color-mix(in srgb, var(--tsr-comp-loader-bar) 20%, transparent); }'
+
 /** Подсветки строки, ячейки и колонки — один раз, как только появились строки. */
 const highlightsSeed: TesseraFeatureEntry = {
   id: 'highlightsSeed',
   setup: table => {
     const t = table as unknown as HighlightApi
+    const appCss = document.createElement('style')
+    appCss.textContent = APP_TONE_CSS
+    document.head.append(appCss)
     let frame = 0
     const apply = () => {
       if (t.getCoreRowModel().rows.length === 0) {
@@ -68,13 +75,17 @@ const highlightsSeed: TesseraFeatureEntry = {
       t.highlight({ column: 'age' }, { tone: 'warning' })
     }
     apply()
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      appCss.remove()
+    }
   },
 }
 
 /**
- * Подсвеченные строка, ячейка и колонка в покое (ADR 0093, VR4). Включите выбор строк,
- * закрепление или выделение ячеек — подсветка поверх этих состояний.
+ * Подсвеченные строка, ячейка и колонка в покое (ADR 0093, VR4); вторая строка — свой тон
+ * приложения `info` с токеном заливки. Включите выбор строк, закрепление или выделение
+ * ячеек — подсветка поверх этих состояний.
  */
 export const RowHighlightPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
