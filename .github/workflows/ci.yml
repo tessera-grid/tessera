@@ -26,6 +26,16 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Кэши prettier, eslint и tsc: проверяются только изменённые файлы. Ключ по sha —
+      # кэш сохраняется на каждом прогоне, восстанавливается последний с теми же конфигами.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/prettier
+            node_modules/.cache/eslint
+            node_modules/.cache/tsc
+          key: static-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.js', 'tsconfig.json', '.prettierrc.json', '.prettierignore') }}-${{ github.sha }}
+          restore-keys: static-${{ runner.os }}-${{ hashFiles('package-lock.json', 'eslint.config.js', 'tsconfig.json', '.prettierrc.json', '.prettierignore') }}-
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
