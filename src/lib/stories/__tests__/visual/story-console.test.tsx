@@ -12,6 +12,7 @@ import type { StoryProps } from '../../DataGridStory.types'
 import { dataGridMeta } from '../../dataGridMeta'
 import { WithConsole } from '../../demos/StoryConsole'
 import { type ConsoleLog, createConsoleLog } from '../../demos/consoleLog'
+import { settle } from '../../__mocks__/catalogPlay'
 import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
 import { humanClick } from '../helpers'
 import { waitForQuietDocument } from '../memory.helpers'
@@ -270,6 +271,8 @@ describe('консоль историй (ADR 0124)', () => {
     await userEvent.hover(sortButton())
     await humanClick(sortButton())
     toggle().click()
+    // Раскрытие сдвигает «Фильтры» между нажатием и отпусканием — клик уходит мимо.
+    await settle()
     const kinds = () =>
       new Set(
         [...list().querySelectorAll<HTMLElement>('[data-console-kind]')].map(
