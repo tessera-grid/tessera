@@ -22,8 +22,9 @@ const FRAME_SPAN = 16
 
 // Пауза между событиями жеста дольше STALL_GAP — главный поток стоял: следующие события
 // несут путь, накопленный за паузу (пачка приходит не сразу и может перемежаться
-// спокойными событиями), и в скорость не входят — не меньше STALL_GAP, затем до события
-// со скоростью ниже порога входа, но не дольше окна скорости.
+// спокойными событиями), и их путь отсчитывается от последнего события до паузы
+// (ADR 0147) — не меньше STALL_GAP, затем до события со скоростью ниже порога входа,
+// но не дольше окна скорости.
 const STALL_GAP = 100
 
 // Таймер простоя, опоздавший больше чем на STALL_GAP, сработал после паузы главного
@@ -31,10 +32,11 @@ const STALL_GAP = 100
 
 interface ScrollSample {
   time: number
-  /** Время предыдущего события жеста: путь сэмпла пройден с этого момента. */
+  /**
+   * С какого момента пройден путь сэмпла: предыдущее событие жеста, а у догоняющего
+   * события после паузы — последнее событие до паузы.
+   */
   since: number
-  /** Догоняющее событие после паузы главного потока — в скорость не входит. */
-  catchUp: boolean
   deltaX: number
   deltaY: number
 }
@@ -53,22 +55,23 @@ export interface ScrollSource {
 }
 
 /**
- * Скорость по осям, px/s: путь событий окна / время от события перед первым из них.
- * Догоняющие события после паузы главного потока не считаются (FS1).
+ * Скорость по осям, px/s: путь событий окна / время от самого раннего `since` до
+ * последнего события. Путь за паузу главного потока делится на всю паузу (FS1).
  */
-const velocityOf = (all: readonly ScrollSample[]) => {
-  const samples = all.filter(sample => !sample.catchUp)
+const velocityOf = (samples: readonly ScrollSample[]) => {
   if (samples.length === 0) {
     return { x: 0, y: 0 }
   }
   const last = samples[samples.length - 1]!
-  const span = Math.max(last.time - samples[0]!.since, FRAME_SPAN)
+  let from = last.since
   let x = 0
   let y = 0
   for (const sample of samples) {
+    from = Math.min(from, sample.since)
     x += sample.deltaX
     y += sample.deltaY
   }
+  const span = Math.max(last.time - from, FRAME_SPAN)
   return { x: (x / span) * 1000, y: (y / span) * 1000 }
 }
 
@@ -116,6 +119,8 @@ export const attachFastScrollDetector = (
   let lastEventAt: number | undefined
   /** Начало догоняющей пачки после паузы; `undefined` — пачки нет. */
   let catchUpFrom: number | undefined
+  /** Последнее событие до паузы: от него отсчитывается путь пачки. */
+  let catchUpSince = 0
   let idleTimer: ReturnType<typeof setTimeout> | undefined
   let exitTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -174,6 +179,7 @@ export const attachFastScrollDetector = (
     const deltaY = Math.abs(element.scrollTop - lastTop)
     if (now - since > STALL_GAP) {
       catchUpFrom = now
+      catchUpSince = since
     } else if (catchUpFrom !== undefined) {
       const span = Math.max(now - since, FRAME_SPAN) / 1000
       const calm =
@@ -186,8 +192,7 @@ export const attachFastScrollDetector = (
     }
     samples.push({
       time: now,
-      since,
-      catchUp: catchUpFrom !== undefined,
+      since: catchUpFrom === undefined ? since : catchUpSince,
       deltaX,
       deltaY,
     })

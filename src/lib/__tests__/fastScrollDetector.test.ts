@@ -1,5 +1,5 @@
 /**
- * Детектор быстрой прокрутки (ADR 0008; FS1–FS5): скорость по жесту, вход и выход с
+ * Детектор быстрой прокрутки (ADR 0008, ADR 0147; FS1–FS5, FS12–FS13): скорость по жесту, вход и выход с
  * гистерезисом, минимальное время в режиме, выход по простою.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
@@ -18,6 +18,8 @@ import {
 } from '../core/fastScroll/fastScrollDetector'
 
 const FRAME = 16
+/** Кадр тяжёлого грида под ×4 CPU — дольше `STALL_GAP` (P8). */
+const HEAVY_FRAME = 150
 
 /** Элемент прокрутки: `scrollTo` сдвигает позицию и шлёт событие `scroll`. */
 const scroller = () => {
@@ -67,7 +69,7 @@ afterEach(() => {
 })
 
 describe('Детектор быстрой прокрутки (ADR 0008)', () => {
-  it('FS1: после паузы главного потока при медленной прокрутке режим не включается — сдвиг за паузу в скорость не входит', () => {
+  it('FS1: после паузы главного потока при медленной прокрутке режим не включается — сдвиг за паузу делится на всё время от последнего события до паузы', () => {
     const { changes, frame } = setup()
     // 1000 px/s по Y: 16 px за кадр.
     for (let i = 0; i < 10; i++) frame(0, 16)
@@ -85,6 +87,29 @@ describe('Детектор быстрой прокрутки (ADR 0008)', () => 
     frame(0, 156, 0)
     for (let i = 0; i < 20; i++) frame(0, 16)
     expect(changes).toEqual([])
+  })
+
+  it('FS12: когда каждый кадр дольше STALL_GAP, прокрутка выше порога входа включает режим и после медленного начала жеста', () => {
+    const { changes, frame } = setup()
+    // Тяжёлый грид: событие раз в 150 мс. Начало жеста — 200 px/s, затем 2500 px/s.
+    for (let i = 0; i < 6; i++) frame(0, 30, HEAVY_FRAME)
+    expect(changes).toEqual([])
+    for (let i = 0; i < 3; i++) frame(0, 375, HEAVY_FRAME)
+    expect(changes).toEqual([true])
+  })
+
+  it('FS13: когда каждый кадр дольше STALL_GAP, режим держится, пока скорость жеста выше порога выхода, и выключается, когда она падает до порога выхода', () => {
+    const { changes, frame } = setup()
+    for (let i = 0; i < 3; i++) frame(0, 30, HEAVY_FRAME)
+    // 2500 px/s — режим включился.
+    for (let i = 0; i < 2; i++) frame(0, 375, HEAVY_FRAME)
+    expect(changes).toEqual([true])
+    // 1000 px/s целую секунду — между порогами выхода и входа: режим не гаснет.
+    for (let i = 0; i < 7; i++) frame(0, 150, HEAVY_FRAME)
+    expect(changes).toEqual([true])
+    // 200 px/s — ниже порога выхода 500 px/s: режим выключается.
+    for (let i = 0; i < 4; i++) frame(0, 30, HEAVY_FRAME)
+    expect(changes).toEqual([true, false])
   })
 
   it('FS2: рывок выше порога входа включает режим с первого события рывка', () => {
