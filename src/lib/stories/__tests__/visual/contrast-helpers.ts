@@ -139,19 +139,40 @@ export interface Measure {
   control: ControlRatio
 }
 
+/** Сколько снимок ждёт, пока узел можно снять, мс. */
+const SNAPSHOT_TIMEOUT = 10_000
+
+let snapshotIds = 0
+
 /**
  * Снимок окна или узла `element` (`origin` — его левый верхний угол в окне): цвет пикселя
- * по координатам окна.
+ * по координатам окна. Узел раннер ищет по `data-testid`: селектор узла по месту
+ * (`body > div:nth-child(N)`) сдвигает сосед, ушедший до того, как раннер его разрешил.
+ * Без своего предела снимок ждал бы весь тайм-аут задачи — в хуке обхода час (CX17–CX18).
  */
 export const snapshot = async (
   element?: Element,
   origin = { left: 0, top: 0 },
+  { timeout = SNAPSHOT_TIMEOUT } = {},
 ): Promise<Shot> => {
-  const shot = (await page.screenshot({
-    base64: true,
-    save: false,
-    ...(element && { element }),
-  })) as unknown as string | { base64: string }
+  const testId = element && `snapshot-${++snapshotIds}`
+  if (testId) element!.setAttribute('data-testid', testId)
+  let shot: string | { base64: string }
+  try {
+    shot = (await page.screenshot({
+      base64: true,
+      save: false,
+      timeout,
+      ...(testId && { element: page.getByTestId(testId) }),
+    })) as unknown as string | { base64: string }
+  } catch (error) {
+    throw new Error(
+      `снимок области не снят за ${timeout} мс: ${(error as Error).message}`,
+      { cause: error },
+    )
+  } finally {
+    if (testId) element!.removeAttribute('data-testid')
+  }
   const image = new Image()
   image.src = `data:image/png;base64,${typeof shot === 'string' ? shot : shot.base64}`
   await image.decode()

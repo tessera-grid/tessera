@@ -23,6 +23,7 @@ import {
   pseudoChange,
   resetCombo,
   runAxe,
+  snapshot,
   style,
   styleMeasure,
 } from './contrast-helpers'
@@ -340,6 +341,13 @@ let walked = 0
 
 const known = baseline as Record<string, string>
 
+/**
+ * WebKit не подменяет цвета в forced-colors (§6): его находки в сочетаниях режима — не
+ * проверка (CX5, CX10, CX15).
+ */
+const forcing = server.browser !== 'webkit'
+const checked = (key: string) => forcing || !key.includes('/forced-')
+
 /** Истории сценариев без гайда — с причиной; их вид проверяет каталог. */
 const WITHOUT_GUIDE: Record<string, string> = {}
 const OWN_KEYS = /^CX1[23] /
@@ -390,12 +398,10 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       ...all.findings.map(f => f.key),
       ...all.axeViolations.map(v => v.key),
     ])
-    // WebKit не подменяет цвета в forced-colors: его находки в режиме — не проверка (CX10).
-    const forcing = server.browser !== 'webkit'
     expect(
       all.findings
         .filter(f => !(f.key in known))
-        .filter(f => forcing || !f.key.includes('/forced-'))
+        .filter(f => checked(f.key))
         .map(f => `${f.key} — ${f.ratio.toFixed(2)}:1 < ${f.need}:1`),
     ).toEqual([])
     // База шагов только сокращается, как CX8.
@@ -427,6 +433,7 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       all.findings
         .filter(f => labels.some(label => f.key.includes(label)))
         .filter(f => !(f.key in known))
+        .filter(f => checked(f.key))
         .map(f => `${f.key} — ${f.ratio.toFixed(2)}:1 < ${f.need}:1`),
     ).toEqual([])
   })
@@ -495,7 +502,8 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     expect(hidden.pseudo).toHaveLength(2)
     const custom = await walk('cx14-custom')
     expect(custom.pseudo).toHaveLength(2)
-  })
+    // Три стенда со снимками до и после в сочетаниях режима: в WebKit ~9 с без нагрузки.
+  }, 60_000)
 
   test('CX15: шаг с immediate проверен сразу, без доведения переходов, во всех своих сочетаниях', async () => {
     // Вспышка: текст светлеет и за 4 с темнеет до чёрного — доведённый переход её прячет.
@@ -519,12 +527,16 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     expect(short.guard).toEqual([])
     const flagged = new Set(
       short.findings
-        .filter(f => f.key.includes('Вспышка'))
+        .filter(f => f.key.includes('Вспышка') && checked(f.key))
         .map(f => f.key.split(' | ')[1]),
     )
-    expect([...flagged].sort()).toEqual(STEP_COMBOS.map(comboLabel).sort())
+    expect([...flagged].sort()).toEqual(
+      STEP_COMBOS.map(comboLabel).filter(checked).sort(),
+    )
     const settled = await walk(false)
-    expect(settled.findings.filter(f => f.key.includes('Вспышка'))).toEqual([])
+    expect(
+      settled.findings.filter(f => f.key.includes('Вспышка') && checked(f.key)),
+    ).toEqual([])
   })
 
   test('CX16: снимок forced-colors — только когда документ в окне; гайд выше окна роняет проверку с причиной', async () => {
@@ -566,4 +578,54 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     )
     expect(registry.filter(state => !covered.has(state))).toEqual([])
   })
+})
+
+describe('Снимок области (ADR 0089, §6)', () => {
+  // Окно матрицы (§6): снимок без сжатия.
+  beforeAll(() => page.viewport(900, 720))
+
+  /** Квадрат 40×40 с углом в (10, 10) окна. */
+  const square = (color: string) => {
+    const el = document.createElement('div')
+    Object.assign(el.style, {
+      position: 'fixed',
+      left: '10px',
+      top: '10px',
+      width: '40px',
+      height: '40px',
+      background: color,
+    })
+    document.body.append(el)
+    return el
+  }
+
+  test('CX17: снимок находит свою область, когда соседний узел страницы ушёл между запросом снимка и снимком', async () => {
+    const neighbour = document.createElement('div')
+    document.body.append(neighbour)
+    const target = square('rgb(255, 0, 0)')
+    const pending = snapshot(target, { left: 10, top: 10 })
+    // Снимок уже запрошен, раннер узел ещё не нашёл.
+    setTimeout(() => neighbour.remove())
+    try {
+      const shot = await pending
+      expect(shot(30, 30)).toEqual([255, 0, 0, 1])
+    } finally {
+      neighbour.remove()
+      target.remove()
+    }
+  })
+
+  test('CX18: область, которую нельзя снять, роняет снимок за его предел с сообщением, а не держит обход до тайм-аута хука', async () => {
+    const hidden = square('rgb(0, 0, 255)')
+    hidden.style.visibility = 'hidden'
+    const started = performance.now()
+    try {
+      await expect(
+        snapshot(hidden, { left: 10, top: 10 }, { timeout: 1000 }),
+      ).rejects.toThrow(/снимок области не снят за 1000 мс/)
+      expect(performance.now() - started).toBeLessThan(5000)
+    } finally {
+      hidden.remove()
+    }
+  }, 30_000)
 })
