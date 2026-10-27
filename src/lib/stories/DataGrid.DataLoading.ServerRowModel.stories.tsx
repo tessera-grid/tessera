@@ -1390,8 +1390,9 @@ const MILLION_ROWS: readonly GuideStoryStep[] = [
       await nextFrame()
       // Ctrl+Home ведёт в шапку, стрелка вниз — в первую строку (ADR 0021).
       press(document.activeElement as HTMLElement, 'ArrowDown')
+      // Координаты Firefox в растянутой области — с точностью до пикселя (ADR 0142).
       await pollUntil(
-        () => activeRowIndex(root) === 0 && layerOf(root).top() === 0,
+        () => activeRowIndex(root) === 0 && layerOf(root).top() < 1,
         signal,
       )
     }),

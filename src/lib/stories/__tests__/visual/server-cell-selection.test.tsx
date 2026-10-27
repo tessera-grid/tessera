@@ -165,17 +165,18 @@ const scrollToIndex = async (index: number) => {
     })
     .toBe(false)
 }
-/** Событие `copy` от ячейки, как Ctrl+C: что грид положил в буфер события. */
+/**
+ * Событие `copy` от ячейки, как Ctrl+C: что грид положил в буфер события.
+ * Firefox кладёт в событие свою копию `DataTransfer` — читается она.
+ */
 const copyFrom = (element: Element) => {
-  const clipboardData = new DataTransfer()
-  element.dispatchEvent(
-    new ClipboardEvent('copy', {
-      bubbles: true,
-      cancelable: true,
-      clipboardData,
-    }),
-  )
-  return clipboardData
+  const event = new ClipboardEvent('copy', {
+    bubbles: true,
+    cancelable: true,
+    clipboardData: new DataTransfer(),
+  })
+  element.dispatchEvent(event)
+  return event.clipboardData!
 }
 /** Асинхронный буфер: окно теста писать в буфер не вправе, запись подменяется. */
 const stubClipboard = (fail = false) => {

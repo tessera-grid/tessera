@@ -129,8 +129,9 @@ describe('консоль историй (ADR 0124)', () => {
     const closing = await sample(() => toggle().click())
     const between = (heights: number[]) =>
       heights.filter(value => value > collapsed + 2 && value < open - 2).length
-    expect(between(opening)).toBeGreaterThan(3)
-    expect(between(closing)).toBeGreaterThan(3)
+    // Скачок — ни одной промежуточной высоты; под нагрузкой движка кадров перехода мало.
+    expect(between(opening)).toBeGreaterThanOrEqual(2)
+    expect(between(closing)).toBeGreaterThanOrEqual(2)
     expect(closing.at(-1)).toBe(collapsed)
     expect(list().closest('[inert]')).not.toBeNull()
     await guide.unmount()

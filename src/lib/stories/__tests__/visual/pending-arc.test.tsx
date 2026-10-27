@@ -557,8 +557,11 @@ describe('Pending arc: failure', () => {
         .toBe('rgba(0, 0, 0, 0)')
     }
     await screen.rerender(view(false, 'Failed: offline'))
+    // Фазы — сразу у обеих: пока ждём рамку первой, дуга второй успевает погаснуть.
+    expect(labels.map(label => arcOf(byLabel(label))?.dataset.phase)).toEqual(
+      labels.map(() => 'stopping'),
+    )
     for (const [i, label] of labels.entries()) {
-      expect(arcOf(byLabel(label))?.dataset.phase, label).toBe('stopping')
       await expect
         .poll(() => getComputedStyle(byLabel(label)).borderTopColor, {
           timeout: 1000,

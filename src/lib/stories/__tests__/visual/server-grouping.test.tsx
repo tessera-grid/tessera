@@ -291,7 +291,10 @@ describe('Серверная группировка (ADR 0144)', () => {
       await clickGroup()
       await expect.poll(glowing).toBe(true)
       expect(lit(groupButton())).toBe(true)
-      const request = calls.at(-1)!.request
+      // Прежняя выборка ещё догружает окно: её запросы могут прийти после запроса новой.
+      const request = calls
+        .filter(call => call.request.grouping.length > 0)
+        .at(-1)!.request
       expect(request).toMatchObject({ start: 0, grouping: ['city'] })
       // Новая выборка — с начала списка; до ответа на экране начало прежнего.
       await expect.poll(() => scroller().scrollTop).toBe(0)
