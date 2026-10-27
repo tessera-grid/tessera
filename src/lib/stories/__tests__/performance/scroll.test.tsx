@@ -1714,7 +1714,11 @@ describe('Производительность прокрутки — серве
               .getAttribute('data-row-id'),
           ).toMatch(/^ssrm-/)
         }
-        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        // Миллион строк — растянутая область: колесо идёт 1:1, ползунок — на долю итога.
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          wheel: server,
+        })
         const x = await measureScrollWork('x', CONTENT_SCROLL.x)
         ;(await screen).unmount()
         return { y, x }
