@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Плагины модели и интерфейса (ADR 0120, этап 1; MP4, MP5, MP8, MP9, MP16, MP17): модель —
+ * Плагины модели и интерфейса (ADR 0120, этап 1; MP4, MP5, MP8, MP9, MP16–MP18): модель —
  * своя запись, явная модель главнее включённой, срез — аргументами плагина.
  * Запуск: npx vitest run --project unit pluginModels
  */
@@ -19,6 +19,10 @@ import {
 import { foldEntries, type TesseraFeatureEntry } from '../core/features'
 import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
+import {
+  expandIncludedModels,
+  modelArgsMismatchMessage,
+} from '../core/pluginModels'
 import {
   type UseCreateTableParams,
   useCreateTable,
@@ -527,5 +531,43 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
 
     render(() => [rowExpandingModel(), rowExpanding()])
     expect(ids()).toEqual(['rowExpandingModel', 'rowExpanding'])
+  })
+
+  it('MP18: модель несут несколько интерфейсов — действуют аргументы модели того, кто их задал, при любом порядке; разные аргументы у двух — аргументы первого и предупреждение', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    for (const plugins of [
+      () => [rowGrouping(), rowExpanding({ initialExpanded: true })],
+      () => [rowExpanding({ initialExpanded: true }), rowGrouping()],
+      () => [
+        rowExpandingModel({ enabled: false }),
+        rowGrouping(),
+        rowExpanding({ initialExpanded: true }),
+      ],
+    ]) {
+      render(plugins)
+      expect(rows()).toEqual(DEPTH_1)
+      act(() => root!.unmount())
+      root = undefined
+    }
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('аргументы модели'),
+    )
+
+    const model = (args: Record<string, unknown>): TesseraFeatureEntry => ({
+      id: 'treeModel',
+      args,
+    })
+    const { entries, mismatches } = expandIncludedModels([
+      { id: 'first', model: model({ depth: 1 }) },
+      { id: 'second', model: model({ depth: 2 }) },
+    ])
+    expect(entries.map(entry => [entry.id, entry.args])).toEqual([
+      ['treeModel', { depth: 1 }],
+      ['first', undefined],
+      ['second', undefined],
+    ])
+    expect(mismatches.map(modelArgsMismatchMessage)).toEqual([
+      'аргументы модели у second не действуют: treeModel уже включил first со своими аргументами; задайте их у одного интерфейса или явной treeModel',
+    ])
   })
 })

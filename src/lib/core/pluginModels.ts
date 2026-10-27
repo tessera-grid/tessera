@@ -7,11 +7,24 @@ import type { TesseraFeatureEntry } from './features'
 import type { NarrowMap, NarrowState } from './effectiveState'
 import { argsKeyOf } from './pluginArgs'
 
-/** Аргументы модели у интерфейса расходятся с явной моделью (MP5). */
+/**
+ * Аргументы модели у интерфейса не действуют: расходятся с явной моделью (MP5) или с
+ * аргументами интерфейса `over`, который включил модель раньше (MP18).
+ */
 export interface ModelArgsMismatch {
   modelId: string
   includedBy: string
+  over?: string
 }
+
+export const modelArgsMismatchMessage = ({
+  modelId,
+  includedBy,
+  over,
+}: ModelArgsMismatch): string =>
+  over === undefined
+    ? `аргументы модели у ${includedBy} не действуют: в наборе есть явная ${modelId} — её аргументы главнее; задайте их у ${modelId}`
+    : `аргументы модели у ${includedBy} не действуют: ${modelId} уже включил ${over} со своими аргументами; задайте их у одного интерфейса или явной ${modelId}`
 
 const modelArgsKey = (entry: TesseraFeatureEntry): string | undefined => {
   const { enabled: _enabled, ...args } = (entry.args ?? {}) as Record<
@@ -26,7 +39,8 @@ const modelArgsKey = (entry: TesseraFeatureEntry): string | undefined => {
 /**
  * Набор с раскрытыми моделями: включённая модель встаёт перед первым интерфейсом,
  * который её несёт, с пометкой `includedBy`. Её несут несколько интерфейсов —
- * действует включённая из включённого. Включённая явная модель вытесняет включённые;
+ * действует включённая из включённого, с аргументами модели того, кто их задал.
+ * Включённая явная модель вытесняет включённые;
  * выключенная явная рядом с включённым интерфейсом уступает модели интерфейса: модель
  * включена, если включена хоть одна несущая её запись.
  */
@@ -41,7 +55,30 @@ export const expandIncludedModels = (
   const included = new Map<string, number>()
   const mismatches: ModelArgsMismatch[] = []
   // Выключенная явная модель → модель включённого интерфейса на её месте.
-  const takeover = new Map<string, TesseraFeatureEntry>()
+  const takeover = new Map<
+    string,
+    { entry: TesseraFeatureEntry; includedBy: string }
+  >()
+
+  // Модель уже включил `currentBy`: заменяет ли её запись интерфейса `includedBy` —
+  // включённая выключенную, с аргументами модели — без них (MP18).
+  const replaces = (
+    current: TesseraFeatureEntry,
+    currentBy: string,
+    model: TesseraFeatureEntry,
+    includedBy: string,
+  ): boolean => {
+    if (model.enabled === false) return false
+    if (current.enabled === false) return true
+    const args = modelArgsKey(model)
+    if (args === undefined) return false
+    const currentArgs = modelArgsKey(current)
+    if (currentArgs === undefined) return true
+    if (args !== currentArgs) {
+      mismatches.push({ modelId: model.id, includedBy, over: currentBy })
+    }
+    return false
+  }
 
   const include = (model: TesseraFeatureEntry, includedBy: string) => {
     const own = explicit.get(model.id)
@@ -51,8 +88,15 @@ export const expandIncludedModels = (
         if (args !== undefined && args !== modelArgsKey(own)) {
           mismatches.push({ modelId: model.id, includedBy })
         }
-      } else if (model.enabled !== false && !takeover.has(model.id)) {
-        takeover.set(model.id, model)
+        return
+      }
+      const current = takeover.get(model.id)
+      if (
+        model.enabled !== false &&
+        (!current ||
+          replaces(current.entry, current.includedBy, model, includedBy))
+      ) {
+        takeover.set(model.id, { entry: model, includedBy })
         if (model.model) {
           include(model.model, model.id)
         }
@@ -61,7 +105,8 @@ export const expandIncludedModels = (
     }
     const at = included.get(model.id)
     if (at !== undefined) {
-      if (entries[at]!.enabled === false && model.enabled !== false) {
+      const current = entries[at]!
+      if (replaces(current, current.includedBy!, model, includedBy)) {
         entries[at] = { ...model, includedBy }
       }
       return
@@ -83,7 +128,7 @@ export const expandIncludedModels = (
     entries: takeover.size
       ? entries.map(entry =>
           !entry.includedBy && takeover.has(entry.id)
-            ? takeover.get(entry.id)!
+            ? takeover.get(entry.id)!.entry
             : entry,
         )
       : entries,
