@@ -1,0 +1,318 @@
+From b05bb757be21aadb7524da142a91992b8040e1f5 Mon Sep 17 00:00:00 2001
+From: MasterVitte <mentorvitte@gmail.com>
+Date: Tue, 27 Oct 2026 12:45:00 +0300
+Subject: [PATCH] perf(virtual-core): rebuild measurements from the first
+ changed key
+
+When only `count` or `getItemKey` changes, a single-lane list keeps the
+previous build up to the first index whose key differs and rebuilds from
+there, instead of from index 0. Appending a page to a long list or
+inserting into its middle no longer re-estimates the unchanged prefix.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../measurements-from-first-changed-key.md    |   5 +
+ packages/virtual-core/src/index.ts            |  48 ++++++-
+ packages/virtual-core/tests/bench.bench.ts    |  58 ++++++++
+ .../tests/incremental-measurements.test.ts    | 131 ++++++++++++++++++
+ 4 files changed, 239 insertions(+), 3 deletions(-)
+ create mode 100644 .changeset/measurements-from-first-changed-key.md
+ create mode 100644 packages/virtual-core/tests/incremental-measurements.test.ts
+
+diff --git a/.changeset/measurements-from-first-changed-key.md b/.changeset/measurements-from-first-changed-key.md
+new file mode 100644
+index 0000000..da62234
+--- /dev/null
++++ b/.changeset/measurements-from-first-changed-key.md
+@@ -0,0 +1,5 @@
++---
++'@tanstack/virtual-core': patch
++---
++
++perf(virtual-core): when only `count` or `getItemKey` changes, rebuild single-lane measurements from the first index whose key changed instead of from 0
+diff --git a/packages/virtual-core/src/index.ts b/packages/virtual-core/src/index.ts
+index 83386f3..51f8e0c 100644
+--- a/packages/virtual-core/src/index.ts
++++ b/packages/virtual-core/src/index.ts
+@@ -484,6 +484,12 @@ export class Virtualizer<
+   private _singleLaneMeasurements: {
+     flat: Float64Array
+     items: Array<Key | VirtualItem>
++    // Layout inputs of this build, so a later build can reuse its prefix.
++    paddingStart: number
++    scrollMargin: number
++    gap: number
++    estimateSize: (index: number) => number
++    itemSizeCacheVersion: number
+   } | null = null
+   itemSizeCache = new Map<Key, number>()
+   private itemSizeCacheVersion = 0
+@@ -1652,7 +1658,33 @@ export class Virtualizer<
+       }
+ 
+       // During lanes settling, ignore pendingMin to prevent repositioning
+-      const min = this.lanesSettling ? 0 : (this.pendingMin ?? 0)
++      let min = this.lanesSettling ? 0 : (this.pendingMin ?? 0)
++
++      // When only `count` or `getItemKey` changed, the previous single-lane
++      // build stays valid up to the first index whose key differs: rebuild from
++      // there instead of from 0 (append, insert, remove).
++      const previous = this._singleLaneMeasurements
++      if (
++        lanes === 1 &&
++        !this.lanesSettling &&
++        this.pendingMin === null &&
++        previous !== null &&
++        previous.itemSizeCacheVersion === _itemSizeCacheVersion &&
++        previous.paddingStart === paddingStart &&
++        previous.scrollMargin === scrollMargin &&
++        previous.gap === gap &&
++        previous.estimateSize === this.options.estimateSize
++      ) {
++        const limit = Math.min(previous.items.length, count)
++        let same = 0
++        while (
++          same < limit &&
++          getItemKey(same) === getMeasurementKey(previous.items[same]!)
++        ) {
++          same++
++        }
++        min = same
++      }
+       this.pendingMin = null
+ 
+       // ✅ End settling period when cache is fully built
+@@ -1679,7 +1711,9 @@ export class Virtualizer<
+         const items: Array<Key | VirtualItem> =
+           min === 0
+             ? new Array(count)
+-            : this._singleLaneMeasurements!.items.slice()
++            : this._singleLaneMeasurements!.items.slice(0, count)
++        // A grown list reuses a shorter prefix.
++        items.length = count
+ 
+         let runningStart: number
+         if (min === 0) {
+@@ -1703,7 +1737,15 @@ export class Virtualizer<
+           runningStart += size + gap
+         }
+ 
+-        this._singleLaneMeasurements = { flat, items }
++        this._singleLaneMeasurements = {
++          flat,
++          items,
++          paddingStart,
++          scrollMargin,
++          gap,
++          estimateSize: this.options.estimateSize,
++          itemSizeCacheVersion: _itemSizeCacheVersion,
++        }
+         const view = createLazyMeasurementsView(items, flat)
+         this.measurementsCache = view
+         return view
+diff --git a/packages/virtual-core/tests/bench.bench.ts b/packages/virtual-core/tests/bench.bench.ts
+index 30ca300..46ffedb 100644
+--- a/packages/virtual-core/tests/bench.bench.ts
++++ b/packages/virtual-core/tests/bench.bench.ts
+@@ -314,3 +314,61 @@ describe('Multi-lane rebuild storm: measure mode, 50× getMeasurements', () => {
+     })
+   }
+ })
++
++// ─── Count / key change: 100 items added to a long list ─────────────────────
++
++describe('Count change: getMeasurements after 100 items are added or removed', () => {
++  for (const n of [100000]) {
++    for (const at of ['end', 'middle'] as const) {
++      for (const sizes of [
++        'estimated',
++        'measured',
++        'costly estimate',
++      ] as const) {
++        const keys = Array.from({ length: n }, (_, i) => `r${i}`)
++        const added = Array.from({ length: 100 }, (_, i) => `new${i}`)
++        const pos = at === 'end' ? n : n / 2
++        const grown = [...keys.slice(0, pos), ...added, ...keys.slice(pos)]
++        const heights = Array.from({ length: n + 100 }, (_, i) => 20 + (i % 7))
++        const base = {
++          estimateSize:
++            sizes === 'costly estimate'
++              ? (i: number) => {
++                  let h = 0
++                  for (let k = 0; k < 20; k++)
++                    h += heights[(i + k) % heights.length]!
++                  return h / 20
++                }
++              : () => 30,
++          getScrollElement: () => null,
++          scrollToFn: () => {},
++          observeElementRect: () => {},
++          observeElementOffset: () => {},
++        }
++        const v = new Virtualizer({
++          ...base,
++          count: n,
++          getItemKey: (i: number) => keys[i]!,
++        })
++        ;(v as any).getMeasurements()
++        if (sizes === 'measured') {
++          for (let i = 0; i < n; i++) v.itemSizeCache.set(keys[i]!, heights[i]!)
++          for (const k of added) v.itemSizeCache.set(k, 25)
++          v.resizeItem(0, heights[0]! + 1)
++          ;(v as any).getMeasurements()
++        }
++        let big = false
++        bench(`n=${n}, at ${at}, ${sizes}`, () => {
++          big = !big
++          const list = big ? grown : keys
++          v.setOptions({
++            ...base,
++            count: list.length,
++            getItemKey: (i: number) => list[i]!,
++          })
++          ;(v as any).getMeasurements()
++        })
++      }
++    }
++  }
++})
+diff --git a/packages/virtual-core/tests/incremental-measurements.test.ts b/packages/virtual-core/tests/incremental-measurements.test.ts
+new file mode 100644
+index 0000000..a1baf2c
+--- /dev/null
++++ b/packages/virtual-core/tests/incremental-measurements.test.ts
+@@ -0,0 +1,131 @@
++import { describe, expect, test } from 'vitest'
++import { Virtualizer } from '../src/index'
++import type { VirtualItem, VirtualizerOptions } from '../src/index'
++
++// getMeasurements rebuilds a single-lane list from the first index whose key
++// changed when only `count` or `getItemKey` changed. These tests pin the result
++// to a full rebuild and check that the unchanged prefix is not re-estimated.
++
++type Options = VirtualizerOptions<any, any>
++type Key = VirtualItem['key']
++
++const SIZE = 30
++const ids = (from: number, n: number): Array<Key> =>
++  Array.from({ length: n }, (_, i) => `r${from + i}`)
++const BASE = ids(0, 1000)
++
++const layout = (v: Virtualizer<any, any>) => {
++  v.getTotalSize()
++  return Array.from({ length: v.options.count }, (_, i) => {
++    const item = v.measurementsCache[i]!
++    return [item.key, item.start, item.size, item.end]
++  })
++}
++
++const create = (keys: Array<Key>, measured: Record<string, number>) => {
++  const calls: Array<number> = []
++  const options: Options = {
++    count: keys.length,
++    getScrollElement: () => null,
++    estimateSize: (index) => {
++      calls.push(index)
++      return SIZE
++    },
++    getItemKey: (index) => keys[index]!,
++    scrollToFn: () => {},
++    observeElementRect: () => {},
++    observeElementOffset: () => {},
++  }
++  const v = new Virtualizer(options)
++  v.getTotalSize()
++  for (const [key, size] of Object.entries(measured)) {
++    const index = keys.indexOf(key)
++    if (index !== -1) v.resizeItem(index, size)
++  }
++  v.getTotalSize()
++  calls.length = 0
++  return { v, options, calls }
++}
++
++// Changes the keys of an existing virtualizer and compares it with a fresh one
++// that has the same measured sizes.
++const change = (
++  keys: Array<Key>,
++  next: Array<Key>,
++  measured: Record<string, number> = {},
++) => {
++  const { v, options, calls } = create(keys, measured)
++  v.setOptions({
++    ...options,
++    count: next.length,
++    getItemKey: (index) => next[index]!,
++  })
++  const updated = layout(v)
++  const fresh = create(next, measured)
++  return { updated, full: layout(fresh.v), estimated: calls }
++}
++
++describe('getMeasurements after count or getItemKey changes', () => {
++  const measured = { r100: 55, r450: 12, r900: 70 }
++  const swapped = [...BASE]
++  ;[swapped[10], swapped[900]] = [swapped[900]!, swapped[10]!]
++
++  test.each([
++    { name: 'append', next: [...BASE, ...ids(1000, 100)], from: 1000 },
++    {
++      name: 'insert in the middle',
++      next: [...BASE.slice(0, 400), ...ids(5000, 5), ...BASE.slice(400)],
++      from: 400,
++    },
++    {
++      name: 'remove from the middle',
++      next: [...BASE.slice(0, 400), ...BASE.slice(403)],
++      from: 400,
++    },
++    { name: 'truncate', next: BASE.slice(0, 600), from: 600 },
++    { name: 'swap two items', next: swapped, from: 10 },
++  ])('$name matches a full rebuild', ({ next, from }) => {
++    const { updated, full, estimated } = change(BASE, next, measured)
++    expect(updated).toEqual(full)
++    expect(estimated.filter((index) => index < from)).toEqual([])
++  })
++
++  test('index keys: growing the list estimates only the new items', () => {
++    const byIndex = Array.from({ length: 1000 }, (_, i) => i)
++    const grown = Array.from({ length: 1100 }, (_, i) => i)
++    const { updated, full, estimated } = change(byIndex, grown)
++    expect(updated).toEqual(full)
++    expect(Math.min(...estimated)).toBe(1000)
++  })
++
++  test('a new estimateSize rebuilds from the start', () => {
++    const { v, options } = create(BASE, {})
++    const calls: Array<number> = []
++    v.setOptions({
++      ...options,
++      count: BASE.length + 10,
++      getItemKey: (index) => [...BASE, ...ids(1000, 10)][index]!,
++      estimateSize: (index) => {
++        calls.push(index)
++        return SIZE * 2
++      },
++    })
++    v.getTotalSize()
++    expect(calls[0]).toBe(0)
++    expect(v.getTotalSize()).toBe((BASE.length + 10) * SIZE * 2)
++  })
++
++  test('a new gap rebuilds from the start', () => {
++    const { v, options } = create(BASE, {})
++    const keys = [...BASE, 'extra']
++    v.setOptions({
++      ...options,
++      count: keys.length,
++      gap: 4,
++      getItemKey: (index) => keys[index]!,
++    })
++    const fresh = create(keys, {})
++    fresh.v.setOptions({ ...fresh.options, gap: 4 })
++    expect(layout(v)).toEqual(layout(fresh.v))
++  })
++})
+-- 
+2.45.1.windows.1
+
