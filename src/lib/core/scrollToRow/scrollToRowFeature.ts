@@ -332,7 +332,8 @@ interface Target {
 /**
  * Один прыжок по замерам — строки на новом месте монтируются до входа в быструю
  * прокрутку и приходят с содержимым (BT6). Затем проверка по DOM: при строках разной
- * высоты оценка промахивается, довод повторяется.
+ * высоты оценка промахивается, довод повторяется. Плавно — только первый ход: хвост
+ * плавной прокрутки Firefox ползёт долями пикселя и сходит за остановку.
  */
 const place = async (
   table: ScrollTable,
@@ -342,6 +343,7 @@ const place = async (
   alive: () => boolean,
 ) => {
   const plan: ScrollTarget = {}
+  let behavior = target.behavior
   if (target.index !== undefined) {
     const row = withInlineFooter(
       plannedRow(viewport, scroller, target.index),
@@ -370,8 +372,9 @@ const place = async (
     }
   }
   if (plan.top !== undefined || plan.left !== undefined) {
-    scrollGridTo(scroller, plan, target.behavior)
-    await settle(scroller, alive, target.behavior === 'smooth')
+    scrollGridTo(scroller, plan, behavior)
+    await settle(scroller, alive, behavior === 'smooth')
+    behavior = 'instant'
   }
 
   for (let attempt = 0; attempt < 5 && alive(); attempt++) {
@@ -448,9 +451,10 @@ const place = async (
             )
           : undefined,
       },
-      target.behavior,
+      behavior,
     )
-    await settle(scroller, alive, target.behavior === 'smooth')
+    await settle(scroller, alive, behavior === 'smooth')
+    behavior = 'instant'
     // Прокрутка упёрлась в край (последняя строка к верху окна) — ближе не встать.
     if (
       scrollLayer(scroller).top() === before[0] &&
