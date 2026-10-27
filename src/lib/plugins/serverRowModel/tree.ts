@@ -4,6 +4,7 @@
  * окно тела раскладывается по хранилищам. Предел `maxBlocks` — общий: первыми уходят
  * блоки свёрнутых веток, затем давно не нужные.
  */
+import { timeSlicer } from '../../core/timeSlice'
 import { BlockStore, type BlockResponse } from './blockStore'
 
 export interface TreeRequest<TQuery> {
@@ -39,6 +40,14 @@ export interface BlockTreeOptions<TData, TRow, TQuery> {
   onChange: () => void
   /** Отказ блока (не отмена): объявление отказа. */
   onFailure?: (reason?: string) => void
+  /** Раскладка списка сменилась: смены в индексах прежней раскладки (ADR 0146, §6). */
+  onLayoutChange?: (changes: ListChange[]) => void
+}
+
+/** Смена списка: в месте `at` вставлено `delta` строк, при `delta < 0` — удалено. */
+export interface ListChange {
+  at: number
+  delta: number
 }
 
 interface TreeNode<TData, TRow, TQuery> {
@@ -68,6 +77,9 @@ export interface TreeFailure {
   reason?: string
   retry: () => void
 }
+
+/** Запросов догрузки диапазона в пути одновременно (ADR 0146, §4). */
+const LOAD_RANGE_CONCURRENCY = 4
 
 export class BlockTree<TData, TRow, TQuery> {
   private readonly nodes = new Map<
@@ -176,6 +188,10 @@ export class BlockTree<TData, TRow, TQuery> {
       return { node, children, count, size }
     }
     const layout = build(this.root)
+    if (this.cache && this.options.onLayoutChange) {
+      const changes = layoutChanges(this.cache.layout, layout)
+      if (changes.length) this.options.onLayoutChange(changes)
+    }
     // Раскрыли или свернули строку: ветке нужно своё окно, хотя окно тела то же.
     if (this.cache && this.cache.expanded !== expanded) this.scheduleWindow()
     this.cache = { version: this.version, expanded, layout }
@@ -458,4 +474,124 @@ export class BlockTree<TData, TRow, TQuery> {
   retry(blockIndex: number) {
     this.root.store.retry(blockIndex)
   }
+
+  /**
+   * Строки `[first, last]` сквозного списка (ADR 0146, §4): загруженные — из хранилищ,
+   * прочие — запросом блоками своей ветки мимо кэша; `undefined` — места нет в списке.
+   */
+  async loadRange(
+    first: number,
+    last: number,
+    signal: AbortSignal,
+  ): Promise<(TRow | undefined)[]> {
+    const layout = this.layout()
+    const rows: (TRow | undefined)[] = new Array(last - first + 1)
+    const missing = new Map<
+      TreeNode<TData, TRow, TQuery>,
+      Map<number, { local: number; at: number }[]>
+    >()
+    const size = this.options.blockSize
+    const slice = timeSlicer()
+    for (let index = first; index <= last; index++) {
+      if ((index - first) % 256 === 255) await slice()
+      const place = this.resolve(index, layout)
+      if (!place) continue
+      const row = place.node.store.rowAt(place.local)
+      if (row) {
+        rows[index - first] = row
+        continue
+      }
+      const blocks = missing.get(place.node) ?? new Map()
+      missing.set(place.node, blocks)
+      const block = Math.floor(place.local / size)
+      const places = blocks.get(block) ?? []
+      blocks.set(block, places)
+      places.push({ local: place.local, at: index - first })
+    }
+    const tasks: (() => Promise<void>)[] = []
+    for (const [node, blocks] of missing) {
+      for (const [block, places] of blocks) {
+        const start = block * size
+        tasks.push(async () => {
+          const response = await this.options.getRows({
+            start,
+            end: start + size,
+            query: this.options.query(),
+            signal,
+            ...(node.parentId === undefined ? {} : { parentId: node.parentId }),
+          })
+          signal.throwIfAborted()
+          const loaded = this.options.toRows(
+            response.rows,
+            start,
+            node.depth,
+            node.parentId,
+          )
+          for (const { local, at } of places) rows[at] = loaded[local - start]
+          await slice()
+        })
+      }
+    }
+    // Не больше нескольких запросов сразу: блоков бывает сотня.
+    const next = async (): Promise<void> => {
+      const task = tasks.shift()
+      if (!task) return
+      await task()
+      await next()
+    }
+    await Promise.all(Array.from({ length: LOAD_RANGE_CONCURRENCY }, next))
+    return rows
+  }
+}
+
+/**
+ * Смены сквозного списка от раскладки `before` к `after` — в индексах `before`: ветка
+ * раскрыта или свёрнута, строк ветки пришло больше или меньше.
+ */
+const layoutChanges = <TData, TRow, TQuery>(
+  before: Layout<TData, TRow, TQuery>,
+  after: Layout<TData, TRow, TQuery>,
+): ListChange[] => {
+  const changes: ListChange[] = []
+  const walk = (
+    old: Layout<TData, TRow, TQuery>,
+    next: Layout<TData, TRow, TQuery>,
+    base: number,
+  ) => {
+    const kept = new Map(
+      next.children.map(child => [child.layout.node.parentId, child]),
+    )
+    const was = new Map(
+      old.children.map(child => [child.layout.node.parentId, child]),
+    )
+    let sizes = 0
+    for (const child of old.children) {
+      const start = base + child.local + 1 + sizes
+      const same = kept.get(child.layout.node.parentId)
+      if (same && same.local === child.local) {
+        walk(child.layout, same.layout, start)
+      } else {
+        changes.push({ at: start, delta: -child.layout.size })
+      }
+      sizes += child.layout.size
+    }
+    for (const child of next.children) {
+      const same = was.get(child.layout.node.parentId)
+      if (same && same.local === child.local) continue
+      let before = 0
+      for (const sibling of old.children) {
+        if (sibling.local < child.local) before += sibling.layout.size
+      }
+      changes.push({
+        at: base + child.local + 1 + before,
+        delta: child.layout.size,
+      })
+    }
+    if (next.count !== old.count) {
+      const delta = next.count - old.count
+      changes.push({ at: base + old.size + Math.min(delta, 0), delta })
+    }
+  }
+  walk(before, after, 0)
+  return changes
 }

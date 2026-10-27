@@ -345,6 +345,11 @@ export const DataGrid = ({
     loading: initialLoading || refreshLoading,
     // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
     hasRows: !listError && (rowCount > 0 || (!appFailed && !!failed)),
+    // Отказ копирования — не обновления данных: свой заголовок (ADR 0146, §4).
+    title:
+      !appFailed && !listError && failed?.kind === 'copy'
+        ? labels.serverActionFailedCopy
+        : undefined,
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк
@@ -487,6 +492,7 @@ export const DataGrid = ({
                   <LoadErrorBanner
                     shown={loadError.bannerShown}
                     reason={loadError.reason}
+                    title={loadError.title}
                     retry={retryLoadFromBanner}
                     onDismiss={dismissLoadError}
                   />

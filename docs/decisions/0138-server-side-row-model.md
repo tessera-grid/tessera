@@ -234,11 +234,8 @@ interface RowSource<TRow> {
   её, и фокус берёт настоящая ячейка той же позиции — тем же путём, что фокус,
   потерянный вместе с размонтированной строкой. `Ctrl+Home` ведёт в шапку (KN5), как без
   серверной модели.
-- Выделение и копирование диапазона ячеек (ADR 0029) в SSRM нет: `cellSelection` и
-  `cellSelectionModel` инертны (§13). Выделение TanStack ищет строки диапазона в
-  `rowsById` клиентских моделей и `getRowsInDisplayOrder()`, а в SSRM они пусты —
-  встроиться без форка нельзя. Своё выделение по индексам источника и копирование с
-  отказом при незагруженных строках — отдельный ADR.
+- Выделение и копирование диапазона ячеек (ADR 0029) в SSRM — по индексам строк, с догрузкой
+  незагруженных строк при копировании ([ADR 0146](0146-cell-selection-in-ssrm.md)).
 
 ### 9. Выбор строк
 
@@ -300,18 +297,18 @@ interface RowSource<TRow> {
 
 ### 13. Совместимость с плагинами
 
-| Плагин                                | В режиме SSRM                                                                      |
-| ------------------------------------- | ---------------------------------------------------------------------------------- |
-| `pagination`, `paginationModel`       | инертен, причина `'serverRowModel'`, dev-warn                                      |
-| `infiniteScroll`                      | инертен, причина `'serverRowModel'`, dev-warn                                      |
-| `rowDragging`                         | инертен, причина `'serverRowModel'`, dev-warn                                      |
-| `rowGrouping`                         | группирует сервер ([ADR 0144](0144-server-side-grouping.md))                       |
-| `rowGroupingModel`                    | инертен, причина `'serverRowModel'`, dev-warn (ADR 0144)                           |
-| `rowExpanding`                        | ленивые дети (§14), с этапа 5; `expanded: true` ветки не раскрывает                |
-| `treeLines`                           | инертен, причина `'serverRowModel'`, dev-warn (§14)                                |
-| `cellEditing`                         | работает (§7)                                                                      |
-| `cellSelection`, `cellSelectionModel` | инертен, причина `'serverRowModel'`, dev-warn (своё выделение — отдельный ADR, §8) |
-| `keyboardNavigation`                  | работает (§8)                                                                      |
+| Плагин                                | В режиме SSRM                                                       |
+| ------------------------------------- | ------------------------------------------------------------------- |
+| `pagination`, `paginationModel`       | инертен, причина `'serverRowModel'`, dev-warn                       |
+| `infiniteScroll`                      | инертен, причина `'serverRowModel'`, dev-warn                       |
+| `rowDragging`                         | инертен, причина `'serverRowModel'`, dev-warn                       |
+| `rowGrouping`                         | группирует сервер ([ADR 0144](0144-server-side-grouping.md))        |
+| `rowGroupingModel`                    | инертен, причина `'serverRowModel'`, dev-warn (ADR 0144)            |
+| `rowExpanding`                        | ленивые дети (§14), с этапа 5; `expanded: true` ветки не раскрывает |
+| `treeLines`                           | инертен, причина `'serverRowModel'`, dev-warn (§14)                 |
+| `cellEditing`                         | работает (§7)                                                       |
+| `cellSelection`, `cellSelectionModel` | работает по индексам строк (ADR 0146)                               |
+| `keyboardNavigation`                  | работает (§8)                                                       |
 
 ### 14. Ленивые дети (этап 5)
 
@@ -360,7 +357,7 @@ interface RowSource<TRow> {
 - TTL, опрос, push-подписки — приложение вызывает `refreshRows` и `setRowData`.
 - Двунаправленная лента без итога (чаты, курсорный API) — вне объёма.
 - SSRM вместе с пагинацией, перетаскивание строк в SSRM — вне объёма.
-- Выделение и копирование диапазона ячеек в SSRM — отдельный ADR (§8).
+- Выделение и копирование диапазона ячеек в SSRM — [ADR 0146](0146-cell-selection-in-ssrm.md).
 - Замена клиентских моделей ADR 0064, 0067–0072 своим движком — отдельная задача.
 
 ## Отвергнутые альтернативы
@@ -453,7 +450,7 @@ except }`); колбэк, объявленный как `OnChangeFn<RowSelection
 | SD24     | Правка ячейки: успех `onCellEdit` обновляет кэш (запись — ADR 0139); блок строки в правке не вытесняется                                                                                                                                                                                    | визуальный                                           |
 | SD25     | `scrollToRowIndex` загружает блок и прокручивает к строке; `scrollToRow(id, { index })` прокручивает по подсказке и даёт `false`, если строка с этим id там не оказалась                                                                                                                    | визуальный                                           |
 | SD26     | `pagination`, `paginationModel`, `infiniteScroll`, `rowDragging` и `rowGroupingModel` инертны с причиной `'serverRowModel'` и dev-warn                                                                                                                                                      | модульный                                            |
-| SD27     | `cellSelection` и `cellSelectionModel` инертны с причиной `'serverRowModel'` и dev-warn: выделение диапазона жестом не встаёт, копирование ничего не пишет                                                                                                                                  | визуальный                                           |
+| ~~SD27~~ | Снято [ADR 0146](0146-cell-selection-in-ssrm.md): выделение и копирование в SSRM работают по индексам (XC1)                                                                                                                                                                                 | —                                                    |
 | SD28     | «Выбрать всё» выбирает весь итог без загрузки; снятые флажки — исключения; флажки строк живые; счётчик `rowCount − исключения`; срез `{ all: true, except }` в `onRowSelectionChange`                                                                                                       | визуальный                                           |
 | SD29     | Выбор переживает смену окна, вытеснение блоков и смену сортировки, фильтра и поиска                                                                                                                                                                                                         | модульный                                            |
 | SD30     | Выгрузка в SSRM — серверная, `onExport` получает состояние запроса и выбора; без `server: true` — dev-warn, значения `all`, `view`, `selected` недоступны с причиной                                                                                                                        | модульный                                            |

@@ -8,7 +8,7 @@
  * Сервисной колонки нет: выделение — свойство самих ячеек тела.
  */
 import { definePlugin } from '../../core/definePlugin'
-import { serverRowModelReason } from '../../core/pluginDiagnostics'
+import { neverInert } from '../../core/pluginDiagnostics'
 import {
   cellSelectionModel,
   cellSelectionModelFeatures,
@@ -16,11 +16,13 @@ import {
 import { copyContextAction } from './contextActions'
 import type { CellSelectionOptions } from './types'
 
+/** Предел строк выделения для буфера (ADR 0146, §5). */
+const DEFAULT_MAX_COPY_ROWS = 10_000
+
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 export const cellSelection = definePlugin<CellSelectionOptions>()({
   id: 'cellSelection',
-  // Выделение в серверной модели строк — отдельный ADR (ADR 0138, §8).
-  diagnose: serverRowModelReason,
+  diagnose: neverInert,
   model: {
     plugin: cellSelectionModel,
     keys: [
@@ -40,6 +42,7 @@ export const cellSelection = definePlugin<CellSelectionOptions>()({
       enableCellRangeSelection: off ? false : (o.rangeSelection ?? true),
       enableCellSelectionDrag: off ? false : (o.dragSelection ?? true),
       enableMultiCellRangeSelection: off ? false : (o.multiRange ?? true),
+      cellSelectionMaxCopyRows: o.maxCopyRows ?? DEFAULT_MAX_COPY_ROWS,
     }
   },
   // Вклад в контекстное меню (ADR 0030): «Копировать». Показывается только при

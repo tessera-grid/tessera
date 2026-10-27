@@ -13,6 +13,8 @@ interface LoadErrorInput {
   loading: boolean
   /** В теле есть строки: ошибка обновления, иначе — первой загрузки. */
   hasRows: boolean
+  /** Заголовок плашки и объявления, если отказало не обновление (копирование, ADR 0146). */
+  title?: string
 }
 
 /**
@@ -26,6 +28,7 @@ export const useLoadError = ({
   onRetry,
   loading,
   hasRows,
+  title,
 }: LoadErrorInput) => {
   const present = hasLoadError(error)
   const [tracked, setTracked] = useState({ error, key: present ? 1 : 0 })
@@ -85,21 +88,26 @@ export const useLoadError = ({
     }
     announced.current = key
     announceLabel(table, labels =>
-      hasRows
+      title
         ? reason
-          ? labels.announceLoadErrorReason(reason)
-          : labels.announceLoadError
-        : reason
-          ? labels.announceLoadFailedReason(reason)
-          : labels.announceLoadFailed,
+          ? `${title}. ${reason}`
+          : title
+        : hasRows
+          ? reason
+            ? labels.announceLoadErrorReason(reason)
+            : labels.announceLoadError
+          : reason
+            ? labels.announceLoadFailedReason(reason)
+            : labels.announceLoadFailed,
     )
-  }, [table, present, key, hasRows, reason])
+  }, [table, present, key, hasRows, reason, title])
 
   return {
     present,
     /** Ключ вспышки красного света: есть только у ошибки обновления. */
     flashKey: present && hasRows ? key : undefined,
     reason,
+    title,
     bannerShown: present && hasRows && !Object.is(dismissed, error) && !retried,
     stubShown: present && !hasRows,
     dismiss: () => setDismissed(error),

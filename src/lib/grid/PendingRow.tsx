@@ -4,6 +4,8 @@
  * клавиатурной навигации может стоять на ней: ячейка во всю строку берёт фокус в колонке
  * активной ячейки, пришедший блок отдаёт его настоящей ячейке.
  */
+import { type CSSProperties, useMemo } from 'react'
+
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 
 import { getDisplayColumns } from '../core/displayColumns'
@@ -15,7 +17,7 @@ import { resolveActive, type NavTable } from '../core/keyboardNavigation/model'
 import { useLocalization } from '../core/localization'
 import { useTableState } from '../core/reactivity'
 import type { Column, Table } from '../types'
-import { SkeletonRows } from './SkeletonBody'
+import { type SkeletonCellExtra, SkeletonRows } from './SkeletonBody'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -29,6 +31,80 @@ interface PendingRowProps {
   ariaRowIndexBase: number
   /** Место незагруженной строки в дереве (treegrid, ADR 0138, §14). */
   tree?: { level: number; posInSet: number; setSize: number }
+}
+
+interface SelectionBounds {
+  minRowIndex: number
+  maxRowIndex: number
+  minColumnIndex: number
+  maxColumnIndex: number
+}
+
+interface SelectionTable {
+  getCellSelectionBounds?: () => SelectionBounds[]
+  getCellSelectionColumnIndexes?: () => Record<string, number>
+}
+
+const within = (bounds: SelectionBounds[], row: number, column: number) =>
+  bounds.some(
+    b =>
+      row >= b.minRowIndex &&
+      row <= b.maxRowIndex &&
+      column >= b.minColumnIndex &&
+      column <= b.maxColumnIndex,
+  )
+
+/**
+ * Выделенные колонки незагруженной строки с кромками диапазона (ADR 0146, §3): строка
+ * `id:сверху справа снизу слева` на колонку — стабильна для подписки.
+ */
+const selectionOf = (table: unknown, row: number): string => {
+  const t = table as SelectionTable
+  const bounds = t.getCellSelectionBounds?.()
+  if (!bounds?.length) return ''
+  const parts: string[] = []
+  for (const [id, column] of Object.entries(
+    t.getCellSelectionColumnIndexes?.() ?? {},
+  )) {
+    if (!within(bounds, row, column)) continue
+    const edges = [
+      !within(bounds, row - 1, column),
+      !within(bounds, row, column + 1),
+      !within(bounds, row + 1, column),
+      !within(bounds, row, column - 1),
+    ]
+    parts.push(`${id}:${edges.map(Number).join('')}`)
+  }
+  return parts.join('|')
+}
+
+const edgeColor = (on: string) =>
+  on === '1' ? 'var(--tsr-comp-cell-selected-border-color)' : 'transparent'
+
+/** Атрибуты выделения ячеек скелета — как у ячеек тела (BodyCell). */
+const selectionExtra = (
+  selection: string,
+): ((columnId: string) => SkeletonCellExtra | undefined) | undefined => {
+  if (!selection) return undefined
+  const byColumn = new Map(
+    selection.split('|').map(part => {
+      const at = part.lastIndexOf(':')
+      return [part.slice(0, at), part.slice(at + 1)] as const
+    }),
+  )
+  return columnId => {
+    const edges = byColumn.get(columnId)
+    if (!edges) return undefined
+    return {
+      attrs: { 'data-cell-selected': 'true' },
+      style: {
+        '--tsr-sel-edge-top': edgeColor(edges[0]!),
+        '--tsr-sel-edge-right': edgeColor(edges[1]!),
+        '--tsr-sel-edge-bottom': edgeColor(edges[2]!),
+        '--tsr-sel-edge-left': edgeColor(edges[3]!),
+      } as CSSProperties,
+    }
+  }
 }
 
 /** Ячейка навигации незагруженной строки: колонка — та, где стоит активная ячейка. */
@@ -73,35 +149,43 @@ export const PendingRow = ({
   isVirtualColumns,
   ariaRowIndexBase,
   tree,
-}: PendingRowProps) => (
-  <div
-    role="row"
-    aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
-    aria-level={tree?.level}
-    aria-posinset={tree?.posInSet}
-    aria-setsize={tree?.setSize}
-    aria-busy="true"
-    className={styles.pending}
-    style={{ top: virtualRow.start }}
-    data-index={virtualRow.index}
-    data-pending-row=""
-  >
-    <SkeletonRows
-      table={table}
-      layout={layout}
-      leafColumns={leafColumns}
-      virtualColumns={virtualColumns}
-      isVirtualColumns={isVirtualColumns}
-      rowCount={1}
-      firstRowIndex={virtualRow.index}
-    />
-    <PendingCell
-      table={table}
-      rowIndex={virtualRow.index}
-      colSpan={leafColumns.length}
-    />
-  </div>
-)
+}: PendingRowProps) => {
+  // Выделение по индексам заливает и незагруженную строку (ADR 0146, §3).
+  const selection = useTableState(table, () =>
+    selectionOf(table, virtualRow.index),
+  ) as string
+  const cellExtra = useMemo(() => selectionExtra(selection), [selection])
+  return (
+    <div
+      role="row"
+      aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
+      aria-level={tree?.level}
+      aria-posinset={tree?.posInSet}
+      aria-setsize={tree?.setSize}
+      aria-busy="true"
+      className={styles.pending}
+      style={{ top: virtualRow.start }}
+      data-index={virtualRow.index}
+      data-pending-row=""
+    >
+      <SkeletonRows
+        table={table}
+        layout={layout}
+        leafColumns={leafColumns}
+        virtualColumns={virtualColumns}
+        isVirtualColumns={isVirtualColumns}
+        rowCount={1}
+        firstRowIndex={virtualRow.index}
+        cellExtra={cellExtra}
+      />
+      <PendingCell
+        table={table}
+        rowIndex={virtualRow.index}
+        colSpan={leafColumns.length}
+      />
+    </div>
+  )
+}
 
 /**
  * Строка отказавшего блока (ADR 0138, §11): пустая рамка строки под строкой ошибки —

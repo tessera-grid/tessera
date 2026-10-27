@@ -1,44 +1,12 @@
 /**
- * Вклад cellSelection в контекстное меню (ADR 0030): пункт «Копировать». Читает
- * выделение из stock-фичи (`getSelectedCellRangesData`), сериализует ядровым
- * clipboard-модулем и пишет в буфер через async Clipboard API (клик по пункту —
- * пользовательский жест, запись разрешена). TSV + HTML-таблица; фолбэк — writeText.
+ * Вклад cellSelection в контекстное меню (ADR 0030): пункт «Копировать» — тот же путь,
+ * что Ctrl+C (ADR 0146): клик по пункту — жест пользователя, запись в буфер разрешена;
+ * незагруженные строки серверной модели догружаются.
  */
 import { Copy } from 'lucide-react'
 
-import { announceLabel } from '../../core/announcer'
-import {
-  cellRangesToHtml,
-  cellRangesToTsv,
-  countCells,
-  hasSelectedCells,
-} from '../../core/clipboard'
+import { copyCellSelection } from '../../core/cellSelectionCopy'
 import type { ContextMenuAction } from '../../core/headerActions'
-
-const writeClipboard = async (tsv: string, html: string): Promise<void> => {
-  try {
-    if (
-      navigator.clipboard &&
-      typeof (window as { ClipboardItem?: unknown }).ClipboardItem ===
-        'function'
-    ) {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/plain': new Blob([tsv], { type: 'text/plain' }),
-          'text/html': new Blob([html], { type: 'text/html' }),
-        }),
-      ])
-      return
-    }
-  } catch {
-    // Богатая запись недоступна — падаем на текстовый фолбэк ниже.
-  }
-  try {
-    await navigator.clipboard?.writeText(tsv)
-  } catch {
-    // Буфер недоступен (нет прав/insecure context) — тихо выходим.
-  }
-}
 
 export const copyContextAction: ContextMenuAction = {
   id: 'cellSelection:copy',
@@ -50,14 +18,6 @@ export const copyContextAction: ContextMenuAction = {
   // меню там уступает нативному (ADR 0030, CM10).
   visible: ctx => ctx.selection.isInSelection,
   onSelect: ctx => {
-    const table = ctx.table as {
-      getSelectedCellRangesData?: () => unknown[][][]
-    }
-    const regions = table.getSelectedCellRangesData?.() ?? []
-    if (!hasSelectedCells(regions)) {
-      return
-    }
-    void writeClipboard(cellRangesToTsv(regions), cellRangesToHtml(regions))
-    announceLabel(ctx.table, l => l.announceCopy(countCells(regions)))
+    copyCellSelection(ctx.table, { source: 'pointer' })
   },
 }

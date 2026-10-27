@@ -1,14 +1,7 @@
 import { type ClipboardEvent as ReactClipboardEvent, useCallback } from 'react'
 
-import { announceLabel } from '../core/announcer'
-import { reportAction } from '../core/debugActions'
+import { copyCellSelection } from '../core/cellSelectionCopy'
 import { isCellSelectionInteractive } from '../core/pluginDiagnostics'
-import {
-  cellRangesToHtml,
-  cellRangesToTsv,
-  countCells,
-  hasSelectedCells,
-} from '../core/clipboard'
 import type { Table } from '../types'
 
 /**
@@ -16,6 +9,7 @@ import type { Table } from '../types'
  * getSelectedCellRangesData есть только когда зарегистрирована stock-фича
  * (ядро плагин не импортит — читаем duck-typed, ADR 0029). Нативное copy-событие
  * всплывает от сфокусированной ячейки; текстовое выделение пользователя не трогаем.
+ * Незагруженные строки серверной модели догружаются, буфер пишется позже (ADR 0146).
  */
 export const useCellSelectionCopy = (table: Table<any, any>) => {
   const getRanges = (table as any).getSelectedCellRangesData as
@@ -38,20 +32,13 @@ export const useCellSelectionCopy = (table: Table<any, any>) => {
       ) {
         return
       }
-      const regions = getRanges()
-      if (!hasSelectedCells(regions)) {
-        return
-      }
-      reportAction(table, {
-        plugin: 'cellSelection',
-        action: 'copy',
-        detail: () => ({ cells: countCells(regions) }),
+      const result = copyCellSelection(table, {
+        clipboardData: event.clipboardData,
         source: 'keyboard',
       })
-      event.preventDefault()
-      event.clipboardData.setData('text/plain', cellRangesToTsv(regions))
-      event.clipboardData.setData('text/html', cellRangesToHtml(regions))
-      announceLabel(table, l => l.announceCopy(countCells(regions)))
+      if (result === 'copied') {
+        event.preventDefault()
+      }
     },
     [getRanges, table],
   )

@@ -61,6 +61,27 @@ export interface RowSource<TRow = unknown> {
   totals?: () => Record<string, unknown> | undefined
   /** Строк данных в выборке при серверной группировке (ADR 0144, §5). */
   leafCount?: () => number | undefined
+  /** Номер выборки: растёт с новой сортировкой, фильтрами, поиском и сбросом кэша. */
+  epoch?: () => number
+  /** Номер раскладки списка: растёт с каждой сменой строк по индексам. */
+  version?: () => number
+  /**
+   * Смены списка после раскладки `version`, каждая — в индексах раскладки перед ней;
+   * `undefined` — журнал её не помнит (ADR 0146, §6).
+   */
+  changesSince?: (version: number) => readonly RowListChange[][] | undefined
+  /** Строки `[first, last]`: загруженные — сразу, прочие — запросом мимо кэша окна. */
+  loadRange?: (
+    first: number,
+    last: number,
+    signal: AbortSignal,
+  ) => Promise<readonly (TRow | undefined)[]>
+}
+
+/** Смена списка: в месте `at` вставлено `delta` строк, при `delta < 0` — удалено. */
+export interface RowListChange {
+  at: number
+  delta: number
 }
 
 /** Отказ загрузки строк `[start, end)` (ADR 0138, §11). */

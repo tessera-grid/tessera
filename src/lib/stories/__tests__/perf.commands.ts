@@ -239,6 +239,8 @@ export interface PerfRecord {
     | 'serverRowModel'
     | 'serverRowModel, rowExpanding'
     | 'serverRowModel, rowGrouping, rowExpanding'
+    | 'cellSelection'
+    | 'serverRowModel, cellSelection'
     | 'backToTop'
     | 'loading'
     | 'footer'

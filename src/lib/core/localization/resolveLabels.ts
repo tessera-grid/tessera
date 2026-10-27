@@ -45,6 +45,8 @@ export const LABEL_PARAMS = {
   announceSortDescending: ['column'],
   announceSelection: ['count'],
   announceCopy: ['count'],
+  announceCopyLoading: ['count'],
+  copyTooManyRows: ['count', 'max'],
   announceLoaded: ['count'],
   pageRange: ['from', 'to', 'total'],
   pageAnnouncement: ['page', 'pages'],

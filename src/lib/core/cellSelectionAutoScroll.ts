@@ -31,6 +31,10 @@ interface AutoScrollTable {
     focusRowId: string
     focusColumnId: string
   }) => void
+  setCellSelection?: (
+    updater: (old: { focusColumnId?: string }[]) => object[],
+  ) => void
+  getRowSource?: () => { keyByIndex?: boolean }
 }
 
 /** Ширина краевой зоны (px) и максимальная скорость прокрутки (px/кадр). */
@@ -38,6 +42,8 @@ const EDGE = 48
 const MAX_SPEED = 22
 
 const CELL = '.data-grid__body-cell[data-column-id]'
+/** Строка тела под курсором, в том числе незагруженная строка серверной модели. */
+const ROW = '.data-grid__body-row[data-index], [data-pending-row]'
 
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
@@ -45,6 +51,39 @@ const clamp = (v: number, min: number, max: number) =>
 /** Скорость пропорциональна заходу в краевую зону, за краем — потолок. */
 const speed = (penetration: number) =>
   clamp(penetration / EDGE, 0, 1) * MAX_SPEED
+
+/**
+ * Серверная модель строк (ADR 0146, §3): фокус диапазона — место строки под курсором, и
+ * незагруженной тоже; колонка — под курсором, над незагруженной строкой — прежняя.
+ */
+const extendByIndex = (
+  t: AutoScrollTable,
+  r: DOMRect,
+  pointer: { x: number; y: number },
+) => {
+  const target = document.elementFromPoint(
+    clamp(pointer.x, r.left + 1, r.right - 1),
+    clamp(pointer.y, r.top + 1, r.bottom - 1),
+  )
+  const index = Number(target?.closest?.(ROW)?.getAttribute('data-index'))
+  if (!Number.isInteger(index)) {
+    return
+  }
+  const columnId =
+    target?.closest?.(CELL)?.getAttribute('data-column-id') ?? undefined
+  t.setCellSelection?.(old =>
+    old.length
+      ? [
+          ...old.slice(0, -1),
+          {
+            ...old.at(-1),
+            focusRowIndex: index,
+            focusColumnId: columnId ?? old.at(-1)!.focusColumnId,
+          },
+        ]
+      : old,
+  )
+}
 
 export const useCellSelectionAutoScroll = (
   table: unknown,
@@ -128,6 +167,10 @@ export const useCellSelectionAutoScroll = (
 
       // Расширяем активный диапазон к ячейке под курсором, клампнутым в контейнер
       // (за краем курсора нет ячейки — берём крайнюю видимую в ту сторону).
+      if (t.getRowSource?.().keyByIndex) {
+        extendByIndex(t, r, pointer)
+        return
+      }
       const anchor = t.getFocusedCell?.()
       if (!anchor) {
         return

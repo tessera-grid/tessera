@@ -9,6 +9,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useLazyOpening } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
+import type { RowSource } from '../../core/rowSource'
 import {
   clearSeenActionErrors,
   markActionErrorsSeen,
@@ -43,14 +44,14 @@ interface OpenState {
 /** Duck-typed поверхность таблицы (ядро плагин не импортит). */
 interface ContextMenuTable {
   getContextMenuActions?: () => ContextMenuAction[] | undefined
-  getRow?: (id: string) => {
+  getRowSource: () => RowSource<{
     getAllCells?: () => {
       column: { id: string }
       getContext: () => ContextMenuContext
       getIsSelected?: () => boolean
       getCanSelect?: () => boolean
     }[]
-  }
+  }>
   setFocusedCell?: (rowId: string, columnId: string) => void
   getSelectedCellCount?: () => number
 }
@@ -69,8 +70,10 @@ const buildContext = (
   rowId: string,
   columnId: string,
 ): ContextMenuContext | null => {
+  // Строка — из источника строк: в серверной модели её нет в моделях TanStack (ADR 0146).
   const cell = t
-    .getRow?.(rowId)
+    .getRowSource()
+    .byId(rowId)
     ?.getAllCells?.()
     .find(c => c.column.id === columnId)
   if (!cell) {

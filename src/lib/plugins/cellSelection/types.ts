@@ -21,4 +21,6 @@ export interface CellSelectionOptions extends Omit<
   multiRange?: boolean
   /** Сужает выбор; сервисные колонки (действия) не выбираются при любом предикате. */
   canSelectCell?: (cell: CellSelectionPredicateCell) => boolean
+  /** Больше строк выделения копирование не кладёт в буфер. По умолчанию 10 000. */
+  maxCopyRows?: number
 }

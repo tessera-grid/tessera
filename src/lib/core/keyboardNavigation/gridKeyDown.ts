@@ -21,6 +21,7 @@ import {
 } from './actions'
 import {
   collapseSelectionTo,
+  extendSelectionByKey,
   extendSelectionFrom,
   isSelectAllKey,
   selectAllCellsIn,
@@ -196,6 +197,11 @@ export const handleGridKeyDown = (
     if (selectAllCellsIn(t)) {
       event.preventDefault()
     }
+    return
+  }
+
+  if (extendSelectionByKey(t, active, event, getPageRows(getScrollElement()))) {
+    event.preventDefault()
     return
   }
 

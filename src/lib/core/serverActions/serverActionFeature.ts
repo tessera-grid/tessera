@@ -12,8 +12,9 @@ import {
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 /** Срез, который меняет серверное действие. */
+/** `copy` — копирование выделения с догрузкой строк (ADR 0146): только отказ, без отката. */
 export type ServerActionKind =
-  'sorting' | 'filtering' | 'search' | 'pagination' | 'grouping'
+  'sorting' | 'filtering' | 'search' | 'pagination' | 'grouping' | 'copy'
 
 /** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
 export interface ServerActionCause {

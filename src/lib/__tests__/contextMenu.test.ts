@@ -138,7 +138,20 @@ describe('cellSelection — пункт «Копировать» (CM4)', () => {
 
     const ctx = {
       ...ctxWith({ count: 4, isMultiple: true }),
+      // Пункт идёт путём Ctrl+C (ADR 0146): прямоугольники выделения и источник строк.
       table: {
+        store: {},
+        options: {},
+        atoms: {},
+        getRowSource: () => ({ keyByIndex: false }),
+        getCellSelectionBounds: () => [
+          {
+            minRowIndex: 0,
+            maxRowIndex: 1,
+            minColumnIndex: 0,
+            maxColumnIndex: 1,
+          },
+        ],
         getSelectedCellRangesData: () => [
           [
             ['a', 'b'],

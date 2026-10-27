@@ -2001,3 +2001,99 @@ describe('Производительность прокрутки — серве
     PERF_TIMEOUT * 2,
   )
 })
+
+// Выделение в серверной модели строк (ADR 0146, XC14): спокойная прокрутка колесом
+// 1 000 000 строк с колонкой, выделенной целиком, против той же прокрутки без выделения.
+const XC14_COST = { ratio: 1.3, plusMs: 4 }
+describe('Производительность прокрутки — выделение в серверной модели строк', () => {
+  test(
+    'XC14: колонка, выделенная целиком на 1 000 000 строк, прокручивается не дороже той же прокрутки без выделения',
+    async () => {
+      const pool = getData(SMALL.dataCount)
+      const first = makeColumns(SMALL.columnCount)[0] as {
+        id?: string
+        accessorKey?: string
+      }
+      const columnId = first.id ?? first.accessorKey!
+      const getRows = ({ start, end }: { start: number; end: number }) => ({
+        rows: Array.from({ length: end - start }, (_, k) => ({
+          ...pool[(start + k) % pool.length],
+          id: `xc-${start + k}`,
+        })),
+      })
+      const measure = async (selected: boolean) => {
+        const screen = renderGrid({
+          ...SMALL,
+          ...NO_PLUGINS,
+          enableServerRowModel: true,
+          serverRowModelRowCount: 1_000_000,
+          serverRowModelGetRows: getRows,
+          enableCellSelection: true,
+          cellSelectionInitialCellSelection: selected
+            ? [
+                {
+                  anchorRowIndex: 0,
+                  focusRowIndex: 999_999,
+                  anchorColumnId: columnId,
+                  focusColumnId: columnId,
+                },
+              ]
+            : [],
+        })
+        await expect
+          .poll(() =>
+            document.querySelector('.data-grid__body-row[data-row-id]'),
+          )
+          .not.toBeNull()
+        // Вариант мерит выделенную колонку, база — ту же без выделения.
+        expect(
+          document.querySelectorAll('[data-cell-selected="true"]').length > 0,
+        ).toBe(selected)
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: true,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const selected = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, XC14_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1 000 000×30',
+          plugins: 'serverRowModel, cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y',
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('XC14-base', 'без выделения', base, false)
+      await record('XC14', 'колонка выделена целиком', selected, true)
+      expect(
+        selected.p95Ms,
+        `p95=${selected.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

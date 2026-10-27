@@ -413,6 +413,11 @@ export const cellSelectionMultiRangeType = booleanControl(
   'Несколько диапазонов с Ctrl/Cmd (`multiRange`)',
   true,
 )
+export const cellSelectionMaxCopyRowsType = numberControl(
+  'Больше строк выделения копирование не кладёт в буфер (`maxCopyRows`)',
+  { min: 1, max: 1_000_000, step: 1 },
+  '10000',
+)
 export const enableContextMenuType = booleanControl(
   'Контекстное меню по правому клику (плагин `contextMenu`)',
 )

@@ -754,6 +754,126 @@ export const HighContrastServerRowModelGroupingRefusedStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRangeSelectionStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRangeSelection,
+    1,
+  ),
+  name: 'Data loading/Server row model — Select a range, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRangeSelectionStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRangeSelection,
+    2,
+  ),
+  name: 'Data loading/Server row model — Select a range, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRangeSelectionStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRangeSelection,
+    3,
+  ),
+  name: 'Data loading/Server row model — Select a range, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRangeSelectionStep4 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRangeSelection,
+    4,
+  ),
+  name: 'Data loading/Server row model — Select a range, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyLoadsRowsStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyLoadsRows,
+    1,
+  ),
+  name: 'Data loading/Server row model — Copy loads the rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyLoadsRowsStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyLoadsRows,
+    2,
+  ),
+  name: 'Data loading/Server row model — Copy loads the rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyLoadsRowsStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyLoadsRows,
+    3,
+  ),
+  name: 'Data loading/Server row model — Copy loads the rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyOverLimitStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyOverLimit,
+    1,
+  ),
+  name: 'Data loading/Server row model — Copy over the limit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyOverLimitStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyOverLimit,
+    2,
+  ),
+  name: 'Data loading/Server row model — Copy over the limit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyRefusedStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyRefused,
+    1,
+  ),
+  name: 'Data loading/Server row model — Copy refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyRefusedStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyRefused,
+    2,
+  ),
+  name: 'Data loading/Server row model — Copy refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyRefusedStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerCopyRefused,
+    3,
+  ),
+  name: 'Data loading/Server row model — Copy refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',

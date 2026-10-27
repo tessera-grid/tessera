@@ -323,6 +323,13 @@ export interface SkeletonRowsProps {
   cells?: boolean
   /** Пустые рамки строк без полосок: строки отказавшего блока (ADR 0138, §11). */
   empty?: boolean
+  /** Атрибуты и стиль ячейки колонки: выделение незагруженной строки (ADR 0146, §3). */
+  cellExtra?: (columnId: string) => SkeletonCellExtra | undefined
+}
+
+export interface SkeletonCellExtra {
+  attrs: Record<string, unknown>
+  style: CSSProperties
 }
 
 /**
@@ -341,35 +348,54 @@ export const SkeletonRows = memo(
     className,
     cells = true,
     empty = false,
-  }: SkeletonRowsProps) => (
-    <div
-      aria-hidden="true"
-      {...inertProp(true)}
-      style={{ display: 'contents' }}
-    >
-      <SkeletonRowsBlock
-        layout={layout}
-        columns={getSkeletonColumns(
-          table,
-          layout,
-          leafColumns,
-          virtualColumns,
-          isVirtualColumns,
-          () => !empty,
-          false,
-        )}
-        cellsVirtual={isVirtualColumns}
-        filler={bodyFillerOf(leafColumns, isVirtualColumns)}
-        rowCount={rowCount}
-        firstRowIndex={firstRowIndex}
-        className={className}
-        cells={cells}
-        rowClassName={
-          empty ? 'data-grid__body-row--empty' : 'data-grid__body-row--skeleton'
-        }
-      />
-    </div>
-  ),
+    cellExtra,
+  }: SkeletonRowsProps) => {
+    const columns = getSkeletonColumns(
+      table,
+      layout,
+      leafColumns,
+      virtualColumns,
+      isVirtualColumns,
+      () => !empty,
+      false,
+    )
+    return (
+      <div
+        aria-hidden="true"
+        {...inertProp(true)}
+        style={{ display: 'contents' }}
+      >
+        <SkeletonRowsBlock
+          layout={layout}
+          columns={
+            cellExtra
+              ? columns.map(column => {
+                  const extra = cellExtra(column.id)
+                  return extra
+                    ? {
+                        ...column,
+                        attrs: { ...column.attrs, ...extra.attrs },
+                        style: { ...column.style, ...extra.style },
+                      }
+                    : column
+                })
+              : columns
+          }
+          cellsVirtual={isVirtualColumns}
+          filler={bodyFillerOf(leafColumns, isVirtualColumns)}
+          rowCount={rowCount}
+          firstRowIndex={firstRowIndex}
+          className={className}
+          cells={cells}
+          rowClassName={
+            empty
+              ? 'data-grid__body-row--empty'
+              : 'data-grid__body-row--skeleton'
+          }
+        />
+      </div>
+    )
+  },
 )
 SkeletonRows.displayName = 'SkeletonRows'
 

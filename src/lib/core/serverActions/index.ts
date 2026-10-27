@@ -230,6 +230,7 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   search: 'quickSearch',
   pagination: 'pagination',
   grouping: 'rowGrouping',
+  copy: 'cellSelection',
 }
 
 export const runServerAction = (

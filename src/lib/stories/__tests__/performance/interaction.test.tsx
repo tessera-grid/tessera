@@ -60,6 +60,7 @@ import {
 import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { serverRowModel } from '../../../plugins/serverRowModel'
+import { cellSelection } from '../../../plugins/cellSelection'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
 import { columnSorting } from '../../../plugins/columnSorting'
@@ -3436,6 +3437,143 @@ describe('Отзывчивость взаимодействий — сервер
       expect(
         grouped.longestMs,
         `longest=${grouped.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Копирование в серверной модели строк (ADR 0146, XC15): сборка буфера 10 000 строк × 10
+// колонок с догрузкой строк (мгновенный ответ) против той же копии в клиентском режиме.
+const XC15_ROWS = 10_000
+const XC15_COLUMNS = Array.from({ length: 10 }, (_, k) => ({
+  id: `c${k}`,
+  accessorKey: `c${k}`,
+  header: `C${k}`,
+}))
+type CopyRow = Record<string, string> & { id: string }
+let copyPool: CopyRow[] | undefined
+const copyRowsOf = () =>
+  (copyPool ??= Array.from({ length: XC15_ROWS }, (_, i) => {
+    const row: CopyRow = { id: `x${i}` }
+    for (let k = 0; k < 10; k++) row[`c${k}`] = `v${i}-${k}`
+    return row
+  }))
+const NO_COPY_ROWS: CopyRow[] = []
+let copyTable: { selectAllCells: () => void } | undefined
+const CopyGrid = ({ server }: { server: boolean }) => {
+  const table = useCreateTable({
+    columns: XC15_COLUMNS as never,
+    data: server ? NO_COPY_ROWS : copyRowsOf(),
+    getRowId: (row: CopyRow) => row.id,
+    plugins: [
+      ...(server
+        ? [
+            serverRowModel({
+              rowCount: XC15_ROWS,
+              getRows: ({ start, end }) => ({
+                rows: copyRowsOf().slice(start, end),
+              }),
+            }),
+          ]
+        : []),
+      cellSelection(),
+    ] as never,
+  })
+  copyTable = table as never
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+const XC15_COST = { ratio: 1.3, plusMs: 40 }
+
+describe('Отзывчивость взаимодействий — копирование в серверной модели строк', () => {
+  test(
+    'XC15: сборка буфера 10 000 строк × 10 колонок в SSRM не дороже той же копии в клиентском режиме',
+    async () => {
+      const clipboard = navigator.clipboard
+      const measure = async (server: boolean) => {
+        let written: string[] = []
+        // Окно теста писать в буфер не вправе: запись подменена, текст сохраняется.
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: {
+            write: async (items: ClipboardItem[]) => {
+              for (const item of items) {
+                written.push(await (await item.getType('text/plain')).text())
+              }
+            },
+            writeText: async (text: string) => {
+              written.push(text)
+            },
+          },
+        })
+        try {
+          await render(<CopyGrid server={server} />)
+          await waitForGrid()
+          copyTable!.selectAllCells()
+          const result = await measureInteractionWork(async () => {
+            written = []
+            const clipboardData = new DataTransfer()
+            document
+              .querySelector('.data-grid__body-cell[data-column-id="c0"]')!
+              .dispatchEvent(
+                new ClipboardEvent('copy', {
+                  bubbles: true,
+                  cancelable: true,
+                  clipboardData,
+                }),
+              )
+            const sync = clipboardData.getData('text/plain')
+            if (sync) written.push(sync)
+            await expect.poll(() => written.length).toBe(1)
+          })
+          // Замер копировал всё выделение.
+          expect(written[0]!.split('\n')).toHaveLength(XC15_ROWS)
+          await cleanup()
+          return result
+        } finally {
+          Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: clipboard,
+          })
+        }
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const server = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, XC15_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '10 000×10',
+          plugins: gated ? 'serverRowModel, cellSelection' : 'cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('XC15-base', 'клиентский режим', base, false)
+      await record('XC15', 'серверная модель, догрузка строк', server, true)
+      expect(
+        server.longestMs,
+        `longest=${server.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

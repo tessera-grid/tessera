@@ -218,6 +218,12 @@ export interface TableLabels {
   announceSelection: (count: number) => string
   /** Объявление копирования выделения (`cells` — число ячеек) */
   announceCopy: (cells: number) => string
+  /** Объявление ожидания копирования: догружаются строки выделения (ADR 0146) */
+  announceCopyLoading: (rows: number) => string
+  /** Отказ копирования: строк выделения больше предела `maxCopyRows` (ADR 0146) */
+  copyTooManyRows: (rows: number, max: number) => string
+  /** Отказ копирования: браузер не дал записать в буфер обмена (ADR 0146) */
+  copyClipboardDenied: string
   /** Объявление окончания загрузки (`rows` — число строк) */
   announceLoaded: (rows: number) => string
   /** Заголовок заглушки и объявление пустого результата (ADR 0123) */
@@ -293,6 +299,7 @@ export interface TableLabels {
   serverActionFailedSearch: string
   serverActionFailedPagination: string
   serverActionFailedGrouping: string
+  serverActionFailedCopy: string
   /** Кнопка «наверх» в нижней панели (ADR 0082): тултип и доступное имя */
   backToTop: string
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
@@ -473,6 +480,10 @@ export const DEFAULT_LABELS = {
   announceSelection_one: '{count} row selected',
   announceCopy: 'Copied {count} cells',
   announceCopy_one: 'Copied {count} cell',
+  announceCopyLoading: 'Copying: loading {count} rows',
+  announceCopyLoading_one: 'Copying: loading {count} row',
+  copyTooManyRows: 'The limit is {max} rows. Use export',
+  copyClipboardDenied: "The browser didn't allow writing to the clipboard",
   announceLoaded: 'Loaded {count} rows',
   announceLoaded_one: 'Loaded {count} row',
   noData: 'No data',
@@ -515,6 +526,7 @@ export const DEFAULT_LABELS = {
   serverActionFailedSearch: "Search wasn't applied",
   serverActionFailedPagination: "The page didn't change",
   serverActionFailedGrouping: "Grouping wasn't applied",
+  serverActionFailedCopy: "The cells weren't copied",
   announceLoadError: "Couldn't refresh the data",
   announceLoadErrorReason: "Couldn't refresh the data: {reason}",
   announceLoadFailed: "Couldn't load the data",

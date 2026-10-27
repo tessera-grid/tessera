@@ -73,10 +73,13 @@ interface NavRow {
 type NavColumn = { id: string }
 
 interface NavCellRange {
-  anchorRowId: string
+  anchorRowId?: string
   anchorColumnId: string
-  focusRowId: string
+  focusRowId?: string
   focusColumnId: string
+  /** В серверной модели строк диапазон — индексы строк (ADR 0146). */
+  anchorRowIndex?: number
+  focusRowIndex?: number
 }
 
 /** Duck-typed поверхность таблицы, которую читает шов. */

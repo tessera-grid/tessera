@@ -26,6 +26,7 @@ import {
   backToTopThresholdType,
   cellSelectionDragSelectionType,
   cellSelectionMultiRangeType,
+  cellSelectionMaxCopyRowsType,
   cellSelectionRangeSelectionType,
   columnCountType,
   columnFilteringDebounceMsType,
@@ -296,6 +297,7 @@ export const dataGridArgTypes = {
       cellSelectionRangeSelection: cellSelectionRangeSelectionType,
       cellSelectionDragSelection: cellSelectionDragSelectionType,
       cellSelectionMultiRange: cellSelectionMultiRangeType,
+      cellSelectionMaxCopyRows: cellSelectionMaxCopyRowsType,
     }),
     enableContextMenu: enableContextMenuType,
     enableKeyboardNavigation: enableKeyboardNavigationType,
@@ -504,6 +506,7 @@ export const dataGridDefaultArgs = {
   cellSelectionRangeSelection: true,
   cellSelectionDragSelection: true,
   cellSelectionMultiRange: true,
+  cellSelectionMaxCopyRows: 10_000,
   enableContextMenu: false,
   enableKeyboardNavigation: false,
 

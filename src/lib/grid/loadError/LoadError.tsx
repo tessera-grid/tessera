@@ -44,6 +44,8 @@ interface LoadErrorBannerProps {
   /** Плашка видна; уход — плавный, с последней причиной. */
   shown: boolean
   reason?: string
+  /** Заголовок отказа не обновления (копирование, ADR 0146); иначе — общий. */
+  title?: string
   /** Повтор: плашка уходит, дальше видно свечение повтора. */
   retry?: (event?: unknown) => void
   onDismiss: () => void
@@ -53,6 +55,7 @@ interface LoadErrorBannerProps {
 export const LoadErrorBanner = ({
   shown,
   reason,
+  title,
   retry,
   onDismiss,
 }: LoadErrorBannerProps) => {
@@ -63,7 +66,7 @@ export const LoadErrorBanner = ({
       shown={shown}
       className={clsx('data-grid__load-error', styles.banner)}
       icon={<FailedIcon width={16} height={16} />}
-      title={labels.loadErrorTitle}
+      title={title ?? labels.loadErrorTitle}
       description={reason}
       action={retry && <RetryButton onRetry={retry} pending={false} />}
       dismiss={{ label: labels.loadErrorDismiss, onClick: onDismiss }}

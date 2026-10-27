@@ -44,13 +44,12 @@ export const serverRowModelReason = (
     : undefined
 
 /**
- * Жесты, клавиши и копирование выделения ячеек — только с плагином интерфейса (ADR 0120)
- * и не в серверной модели строк: выделение TanStack ищет строки в клиентских моделях
- * (ADR 0138, §8).
+ * Жесты, клавиши и копирование выделения ячеек — только с плагином интерфейса (ADR 0120);
+ * в серверной модели строк — по индексам (ADR 0146).
  */
 export const isCellSelectionInteractive = (table: unknown) =>
   (table as { options?: { cellSelectionInteraction?: boolean } }).options
-    ?.cellSelectionInteraction === true && !serverRowModelReason(table)
+    ?.cellSelectionInteraction === true
 
 /** `diagnose` плагина, у которого нет условий инертности (ADR 0036, PQ1). */
 export const neverInert: PluginDiagnose = () => undefined

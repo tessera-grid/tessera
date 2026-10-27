@@ -14,6 +14,7 @@ import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
 import {
   GROUP_ROW_PREFIX,
+  type RowListChange,
   type RowLoadError,
   type RowSource,
   type RowWindow,
@@ -32,6 +33,8 @@ export const SERVER_ROW_MODEL = 'serverRowModel'
 
 export const DEFAULT_BLOCK_SIZE = 100
 export const DEFAULT_MAX_BLOCKS = 100
+/** Сколько смен раскладки помнит журнал списка. */
+const JOURNAL_SIZE = 64
 
 type Query = Pick<
   ServerRowsRequest,
@@ -183,6 +186,11 @@ const createServerSource = (table: unknown): ServerSource => {
    * приходит рендером, а действие ждёт сразу.
    */
   let early: Generation['waiters'] = []
+  /** Новая выборка или сброс кэша (ADR 0146, §6). */
+  let epoch = 0
+  /** Смены раскладки списка на экране: место и число строк. */
+  let layoutVersion = 0
+  const journal: { version: number; changes: RowListChange[] }[] = []
 
   /** Строка-группа уровня `depth`: id из пути значений групп (ADR 0144, §2). */
   const buildGroupRow = (
@@ -322,6 +330,11 @@ const createServerSource = (table: unknown): ServerSource => {
           changed()
         } else if (generation === next) settleNext()
       },
+      onLayoutChange: changes => {
+        if (generation !== shown) return
+        journal.push({ version: ++layoutVersion, changes })
+        if (journal.length > JOURNAL_SIZE) journal.shift()
+      },
       // Отказ блока среди загруженных строк объявляется; без них — заглушка ошибки сама.
       onFailure: reason => {
         if (generation !== shown || !shown.store.hasLoaded()) return
@@ -399,6 +412,7 @@ const createServerSource = (table: unknown): ServerSource => {
 
   /** Окно выборки грузится рядом с прежним; `top` — с начала списка. */
   const startNext = (query: Query, top: boolean) => {
+    if (top) epoch++
     const waiters = dropNext()
     queryError = undefined
     next = createGeneration(query)
@@ -443,6 +457,7 @@ const createServerSource = (table: unknown): ServerSource => {
       startNext(query, false)
       return
     }
+    epoch++
     const waiters = dropNext()
     queryError = undefined
     shown.store.dispose()
@@ -535,6 +550,20 @@ const createServerSource = (table: unknown): ServerSource => {
     groupChildCount,
     totals: () => shown.totals,
     leafCount: () => shown.leafCount,
+    epoch: () => epoch,
+    version: () => {
+      // Раскладка считается лениво: смены пишутся при её пересчёте.
+      shown.store.count()
+      return layoutVersion
+    },
+    changesSince: since => {
+      shown.store.count()
+      if (since === layoutVersion) return []
+      const at = journal.findIndex(entry => entry.version === since + 1)
+      return at === -1 ? undefined : journal.slice(at).map(e => e.changes)
+    },
+    loadRange: (first, last, signal) =>
+      shown.store.loadRange(first, last, signal),
     loadError: () => {
       if (queryError) return queryError
       if (listError.version !== version) {

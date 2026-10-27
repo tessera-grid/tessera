@@ -1,0 +1,614 @@
+/**
+ * Выделение ячеек по индексам строк (ADR 0146, §1–§2). У источника с ключами по индексу
+ * (серверная модель строк) методы фичи TanStack работают по индексам источника: строки
+ * могут быть не загружены, их id неизвестны. Иначе — стоковые методы.
+ */
+import { logWarn } from '../../core/logger'
+import {
+  type RowListChange,
+  type RowSource,
+  rowSourceOf,
+} from '../../core/rowSource'
+import type { TableFeature } from '../../types'
+import {
+  applyBoundsOperations,
+  type BoundsOperation,
+  isWithinBounds,
+  type SelectionBounds,
+} from './selectionGeometry'
+
+/** Диапазон выделения: в серверной модели — индексы строк, иначе — id строк. */
+export interface CellSelectionRange {
+  anchorRowId?: string
+  focusRowId?: string
+  anchorRowIndex?: number
+  focusRowIndex?: number
+  anchorColumnId: string
+  focusColumnId: string
+  /** Как диапазон меняет выделение диапазонов до него; по умолчанию `include`. */
+  operation?: 'include' | 'exclude'
+}
+
+export type CellSelectionState = CellSelectionRange[]
+
+type Direction = 'up' | 'down' | 'left' | 'right'
+
+interface Row {
+  id: string
+  getAllCellsByColumnId: () => Record<string, Cell | undefined>
+}
+
+interface Column {
+  id: string
+  columnDef: { enableCellSelection?: unknown }
+}
+
+interface Cell {
+  id: string
+  row: Row
+  column: Column
+  getCanSelect: () => boolean
+  getValue: () => unknown
+}
+
+interface SelectionTable {
+  atoms: { cellSelection?: { get: () => CellSelectionState | undefined } }
+  options: {
+    enableCellSelection?: unknown
+    enableCellRangeSelection?: boolean
+    enableMultiCellRangeSelection?: boolean
+    enableCellSelectionDrag?: boolean
+    isCellRangeSelectionEvent?: (event: unknown) => boolean
+    isMultiCellRangeSelectionEvent?: (event: unknown) => boolean
+  }
+  setCellSelection: (
+    updater: (old: CellSelectionState) => CellSelectionState,
+  ) => void
+  getCellSelectionColumnIndexes: () => Record<string, number>
+  getColumn: (id: string) => Column | undefined
+  _isSelectingCells?: boolean
+}
+
+type Method = (...args: never[]) => unknown
+
+export const isIndexSelection = (table: unknown): boolean =>
+  rowSourceOf(table).keyByIndex === true
+
+const hasIndexes = (range: CellSelectionRange) =>
+  typeof range.anchorRowIndex === 'number' &&
+  typeof range.focusRowIndex === 'number'
+
+const rangesOf = (t: SelectionTable): CellSelectionState =>
+  t.atoms.cellSelection?.get() ?? []
+
+const columnOrder = new WeakMap<Record<string, number>, string[]>()
+
+/** Колонки выделения в порядке экрана — из стокового словаря «id → место». */
+const columnIdsOf = (t: SelectionTable): string[] => {
+  const indexes = t.getCellSelectionColumnIndexes()
+  let ids = columnOrder.get(indexes)
+  if (!ids) {
+    ids = []
+    for (const [id, index] of Object.entries(indexes)) ids[index] = id
+    columnOrder.set(indexes, ids)
+  }
+  return ids
+}
+
+/** Колонки, где ячейки выбираемы по настройке колонки (как у стоковой фичи). */
+const selectableColumnIds = (t: SelectionTable): string[] =>
+  t.options.enableCellSelection === false
+    ? []
+    : columnIdsOf(t).filter(
+        id => t.getColumn(id)?.columnDef.enableCellSelection !== false,
+      )
+
+const rowIndexes = new WeakMap<object, { key: string; index: number }>()
+
+/** Место строки в списке; кэш до смены выборки или раскладки. */
+const rowIndexOf = (source: RowSource, row: Row): number => {
+  const key = `${source.epoch?.() ?? 0}:${source.version?.() ?? 0}`
+  const known = rowIndexes.get(row)
+  if (known?.key === key) return known.index
+  const index = source.indexOf(row.id)
+  rowIndexes.set(row, { key, index })
+  return index
+}
+
+/** Выделение по индексам одной таблицы: прямоугольники — один раз на смену входов. */
+const createIndexSelection = (t: SelectionTable) => {
+  const source = () => rowSourceOf<Row>(t)
+  let cache:
+    | {
+        ranges: CellSelectionState
+        columns: Record<string, number>
+        count: number
+        bounds: SelectionBounds[]
+      }
+    | undefined
+  let warned = false
+
+  const bounds = (): SelectionBounds[] => {
+    const ranges = rangesOf(t)
+    const columns = t.getCellSelectionColumnIndexes()
+    const count = source().count()
+    if (
+      cache?.ranges === ranges &&
+      cache.columns === columns &&
+      cache.count === count
+    ) {
+      return cache.bounds
+    }
+    const operations: BoundsOperation[] = []
+    for (const range of ranges) {
+      if (!hasIndexes(range)) {
+        if (!warned) {
+          warned = true
+          logWarn(
+            t as never,
+            'cellSelection: with serverRowModel a range needs anchorRowIndex and focusRowIndex — it is ignored',
+            'cellSelection:rowIndex',
+          )
+        }
+        continue
+      }
+      const anchorColumn = columns[range.anchorColumnId] ?? -1
+      const focusColumn = columns[range.focusColumnId] ?? -1
+      const top = Math.min(range.anchorRowIndex!, range.focusRowIndex!)
+      const bottom = Math.min(
+        Math.max(range.anchorRowIndex!, range.focusRowIndex!),
+        count - 1,
+      )
+      if (anchorColumn < 0 || focusColumn < 0 || top < 0 || top > bottom) {
+        continue
+      }
+      operations.push({
+        minRowIndex: top,
+        maxRowIndex: bottom,
+        minColumnIndex: Math.min(anchorColumn, focusColumn),
+        maxColumnIndex: Math.max(anchorColumn, focusColumn),
+        operation: range.operation ?? 'include',
+      })
+    }
+    cache = {
+      ranges,
+      columns,
+      count,
+      bounds: applyBoundsOperations(operations),
+    }
+    return cache.bounds
+  }
+
+  const select = (range: CellSelectionRange, mode = 'replace') =>
+    t.setCellSelection(old => {
+      const next: CellSelectionRange = {
+        anchorRowIndex: range.anchorRowIndex,
+        focusRowIndex: range.focusRowIndex,
+        anchorColumnId: range.anchorColumnId,
+        focusColumnId: range.focusColumnId,
+        ...(mode === 'exclude' ? { operation: 'exclude' as const } : {}),
+      }
+      return mode === 'replace' ? [next] : [...old, next]
+    })
+
+  const indexOfId = (rowId: string | undefined) =>
+    rowId === undefined ? -1 : source().indexOf(rowId)
+
+  const single = (rowIndex: number, columnId: string) =>
+    select({
+      anchorRowIndex: rowIndex,
+      focusRowIndex: rowIndex,
+      anchorColumnId: columnId,
+      focusColumnId: columnId,
+    })
+
+  /** Шаг от `[rowIndex, columnId]`: невыбираемые колонки перешагиваются. */
+  const step = (rowIndex: number, columnId: string, direction: Direction) => {
+    const columns = columnIdsOf(t)
+    const selectable = new Set(selectableColumnIds(t))
+    const count = source().count()
+    if (!count || !selectable.size) return null
+    const rowDelta = direction === 'up' ? -1 : direction === 'down' ? 1 : 0
+    const columnDelta =
+      direction === 'left' ? -1 : direction === 'right' ? 1 : 0
+    const nextRow = rowIndex + rowDelta
+    if (nextRow < 0 || nextRow >= count) return null
+    let column = columns.indexOf(columnId)
+    if (column < 0) return null
+    if (columnDelta) {
+      do column += columnDelta
+      while (
+        column >= 0 &&
+        column < columns.length &&
+        !selectable.has(columns[column]!)
+      )
+    }
+    const landing = columns[column]
+    if (landing === undefined || !selectable.has(landing)) return null
+    return { rowIndex: nextRow, columnId: landing }
+  }
+
+  const activeRange = () => rangesOf(t).at(-1)
+
+  const table: Record<string, Method> = {
+    getCellSelectionBounds: () => bounds(),
+    setFocusedCell: ((rowId: string, columnId: string) => {
+      const rowIndex = indexOfId(rowId)
+      if (rowIndex >= 0) single(rowIndex, columnId)
+    }) as Method,
+    selectCellRange: ((
+      range: CellSelectionRange,
+      opts?: { mode?: string; additive?: boolean },
+    ) => {
+      const anchorRowIndex =
+        range.anchorRowIndex ?? indexOfId(range.anchorRowId)
+      const focusRowIndex = range.focusRowIndex ?? indexOfId(range.focusRowId)
+      if (anchorRowIndex < 0 || focusRowIndex < 0) return
+      select(
+        { ...range, anchorRowIndex, focusRowIndex },
+        opts?.mode ?? (opts?.additive ? 'include' : 'replace'),
+      )
+    }) as Method,
+    selectAllCells: () => {
+      const count = source().count()
+      const columns = selectableColumnIds(t)
+      if (!count || !columns.length) return
+      select({
+        anchorRowIndex: 0,
+        focusRowIndex: count - 1,
+        anchorColumnId: columns[0]!,
+        focusColumnId: columns.at(-1)!,
+      })
+    },
+    getFocusedCell: () => {
+      const active = activeRange()
+      if (!active || !hasIndexes(active)) return undefined
+      return source().at(active.anchorRowIndex!)?.getAllCellsByColumnId()[
+        active.anchorColumnId
+      ]
+    },
+    moveCellSelection: ((direction: Direction) => {
+      const active = activeRange()
+      if (!active || !hasIndexes(active)) {
+        const columns = selectableColumnIds(t)
+        if (source().count() && columns.length) single(0, columns[0]!)
+        return
+      }
+      const next = step(
+        active.anchorRowIndex!,
+        active.anchorColumnId,
+        direction,
+      )
+      if (next) single(next.rowIndex, next.columnId)
+    }) as Method,
+    extendCellSelection: ((direction: Direction) => {
+      const active = activeRange()
+      if (!active || !hasIndexes(active)) {
+        ;(table.moveCellSelection as (d: Direction) => void)(direction)
+        return
+      }
+      const next = step(active.focusRowIndex!, active.focusColumnId, direction)
+      if (!next) return
+      t.setCellSelection(old =>
+        old.length
+          ? [
+              ...old.slice(0, -1),
+              {
+                ...old.at(-1)!,
+                focusRowIndex: next.rowIndex,
+                focusColumnId: next.columnId,
+              },
+            ]
+          : old,
+      )
+    }) as Method,
+    // Значения загруженных строк; у незагруженных — `undefined` по ширине региона.
+    getSelectedCellRangesData: () => {
+      const columns = columnIdsOf(t)
+      return bounds().map(bound => {
+        const grid: unknown[][] = []
+        for (let r = bound.minRowIndex; r <= bound.maxRowIndex; r++) {
+          const cells = source().at(r)?.getAllCellsByColumnId()
+          const values: unknown[] = []
+          for (let c = bound.minColumnIndex; c <= bound.maxColumnIndex; c++) {
+            const cell = cells?.[columns[c]!]
+            if (cells && (!cell || !cell.getCanSelect())) continue
+            values.push(cell?.getValue())
+          }
+          grid.push(values)
+        }
+        return grid
+      })
+    },
+    getSelectedCellCount: () => {
+      const columns = columnIdsOf(t)
+      let count = 0
+      for (const bound of bounds()) {
+        let width = 0
+        for (let c = bound.minColumnIndex; c <= bound.maxColumnIndex; c++) {
+          const column = t.getColumn(columns[c]!)
+          if (column?.columnDef.enableCellSelection !== false) width++
+        }
+        count += (bound.maxRowIndex - bound.minRowIndex + 1) * width
+      }
+      return count
+    },
+    // Id известны только у загруженных строк.
+    getCellSelectionRowIds: () => {
+      const ids: string[] = []
+      for (const bound of bounds()) {
+        for (let r = bound.minRowIndex; r <= bound.maxRowIndex; r++) {
+          const row = source().at(r)
+          if (row && !ids.includes(row.id)) ids.push(row.id)
+        }
+      }
+      return ids
+    },
+    getSelectedCellIds: () => {
+      const columns = columnIdsOf(t)
+      const ids: string[] = []
+      for (const bound of bounds()) {
+        for (let r = bound.minRowIndex; r <= bound.maxRowIndex; r++) {
+          const cells = source().at(r)?.getAllCellsByColumnId()
+          if (!cells) continue
+          for (let c = bound.minColumnIndex; c <= bound.maxColumnIndex; c++) {
+            const cell = cells[columns[c]!]
+            if (cell?.getCanSelect()) ids.push(cell.id)
+          }
+        }
+      }
+      return ids
+    },
+  }
+
+  /** Место ячейки: `null` — ячейка невыбираема или её строки нет в списке. */
+  const positionOf = (cell: Cell) => {
+    if (!cell.getCanSelect()) return null
+    const rowIndex = rowIndexOf(source(), cell.row)
+    const columnIndex = t.getCellSelectionColumnIndexes()[cell.column.id] ?? -1
+    return rowIndex < 0 || columnIndex < 0 ? null : { rowIndex, columnIndex }
+  }
+
+  const isFocused = (cell: Cell) => {
+    const active = activeRange()
+    return (
+      !!active &&
+      hasIndexes(active) &&
+      active.anchorColumnId === cell.column.id &&
+      active.anchorRowIndex === rowIndexOf(source(), cell.row)
+    )
+  }
+
+  const cell: Record<string, (cell: Cell, ...args: never[]) => unknown> = {
+    getIsSelected: c => {
+      const at = positionOf(c)
+      return !!at && isWithinBounds(bounds(), at.rowIndex, at.columnIndex)
+    },
+    getIsFocused: c => isFocused(c),
+    getTabIndex: c => (isFocused(c) ? 0 : -1),
+    getSelectionEdges: c => {
+      const at = positionOf(c)
+      const b = bounds()
+      if (!at || !isWithinBounds(b, at.rowIndex, at.columnIndex)) {
+        return { top: false, right: false, bottom: false, left: false }
+      }
+      const { rowIndex: r, columnIndex: k } = at
+      return {
+        top: !isWithinBounds(b, r - 1, k),
+        right: !isWithinBounds(b, r, k + 1),
+        bottom: !isWithinBounds(b, r + 1, k),
+        left: !isWithinBounds(b, r, k - 1),
+      }
+    },
+    // Как у стоковой фичи: Shift — фокус диапазона сюда, Ctrl/Cmd — ещё диапазон или
+    // исключение выделенного, протяжка — до отпускания кнопки.
+    getSelectionStartHandler: (c, contextDocument?: Document) => {
+      const canSelect = c.getCanSelect()
+      return (event: unknown) => {
+        if (!canSelect) return
+        const { options } = t
+        const doc =
+          contextDocument ?? (typeof document === 'undefined' ? null : document)
+        const range =
+          options.enableCellRangeSelection !== false &&
+          (options.isCellRangeSelectionEvent?.(event) ?? false)
+        const multi =
+          options.enableMultiCellRangeSelection !== false &&
+          (options.isMultiCellRangeSelectionEvent?.(event) ?? false)
+        if (
+          options.enableCellSelectionDrag !== false &&
+          options.enableCellRangeSelection !== false &&
+          doc
+        ) {
+          t._isSelectingCells = true
+          const up = () => {
+            doc.removeEventListener('mouseup', up)
+            t._isSelectingCells = false
+          }
+          doc.addEventListener('mouseup', up)
+        }
+        const rowIndex = rowIndexOf(source(), c.row)
+        if (rowIndex < 0) return
+        const columnId = c.column.id
+        const exclude = multi && (cell.getIsSelected!(c) as boolean)
+        t.setCellSelection(old => {
+          const active = old.at(-1)
+          if (range && active && hasIndexes(active)) {
+            return [
+              ...old.slice(0, -1),
+              { ...active, focusRowIndex: rowIndex, focusColumnId: columnId },
+            ]
+          }
+          const next: CellSelectionRange = {
+            anchorRowIndex: rowIndex,
+            focusRowIndex: rowIndex,
+            anchorColumnId: columnId,
+            focusColumnId: columnId,
+            ...(exclude ? { operation: 'exclude' as const } : {}),
+          }
+          return multi ? [...old, next] : [next]
+        })
+      }
+    },
+    getSelectionExtendHandler: c => {
+      const canSelect = c.getCanSelect()
+      return () => {
+        if (!canSelect || !t._isSelectingCells) return
+        const active = activeRange()
+        const rowIndex = rowIndexOf(source(), c.row)
+        if (!active || !hasIndexes(active) || rowIndex < 0) return
+        if (
+          active.focusRowIndex === rowIndex &&
+          active.focusColumnId === c.column.id
+        ) {
+          return
+        }
+        t.setCellSelection(old =>
+          old.length
+            ? [
+                ...old.slice(0, -1),
+                {
+                  ...old.at(-1)!,
+                  focusRowIndex: rowIndex,
+                  focusColumnId: c.column.id,
+                },
+              ]
+            : old,
+        )
+      }
+    },
+  }
+
+  return { table, cell }
+}
+
+const engines = new WeakMap<object, ReturnType<typeof createIndexSelection>>()
+
+const engineOf = (table: unknown) => {
+  let engine = engines.get(table as object)
+  if (!engine) {
+    engine = createIndexSelection(table as SelectionTable)
+    engines.set(table as object, engine)
+  }
+  return engine
+}
+
+/**
+ * Фича поверх `cellSelectionFeature`: при ключах строк по индексу её методы таблицы и
+ * ячейки — по индексам источника. Стоит в наборе после стоковой фичи.
+ */
+export const indexCellSelectionFeature: TableFeature = {
+  constructTableAPIs: table => {
+    const t = table as unknown as Record<string, Method>
+    for (const name of Object.keys(engineOf(table).table)) {
+      const stock = t[name]
+      t[name] = ((...args: never[]) =>
+        isIndexSelection(table)
+          ? engineOf(table).table[name]!(...args)
+          : stock?.(...args)) as Method
+    }
+  },
+  assignCellPrototype: (prototype, table) => {
+    const p = prototype as Record<string, Method>
+    for (const name of Object.keys(engineOf(table).cell)) {
+      const stock = p[name]
+      p[name] = function (this: Cell, ...args: never[]) {
+        return isIndexSelection(table)
+          ? engineOf(table).cell[name]!(this, ...args)
+          : stock?.apply(this, args)
+      } as Method
+    }
+  },
+}
+
+/** Смена списка `change` под диапазоном: выше — сдвиг, ниже — без изменений, внутри — `null`. */
+const shiftRange = (
+  range: CellSelectionRange,
+  { at, delta }: RowListChange,
+): CellSelectionRange | null => {
+  if (!hasIndexes(range)) return range
+  const top = Math.min(range.anchorRowIndex!, range.focusRowIndex!)
+  const bottom = Math.max(range.anchorRowIndex!, range.focusRowIndex!)
+  // Вставка — перед строкой `at`, удаление — строки `[at, at - delta)`.
+  const end = delta >= 0 ? at : at - delta
+  if (at > bottom) return range
+  if (end > top) return null
+  return {
+    ...range,
+    anchorRowIndex: range.anchorRowIndex! + delta,
+    focusRowIndex: range.focusRowIndex! + delta,
+  }
+}
+
+/** Диапазоны после пачек смен списка; `null` — смена прошла внутри диапазона. */
+const followChanges = (
+  ranges: CellSelectionState,
+  batches: readonly (readonly RowListChange[])[],
+): CellSelectionState | null => {
+  let current = ranges
+  for (const batch of batches) {
+    // Смены пачки — в индексах до неё: с конца списка места выше не сдвигаются.
+    const changes = [...batch].sort((a, b) => b.at - a.at)
+    const next: CellSelectionState = []
+    for (const range of current) {
+      let moved: CellSelectionRange | null = range
+      for (const change of changes) {
+        moved = shiftRange(moved, change)
+        if (!moved) return null
+      }
+      next.push(moved)
+    }
+    current = next
+  }
+  return current
+}
+
+interface FollowTable {
+  store: {
+    get: () => Record<string, unknown>
+    subscribe: (listener: () => void) => { unsubscribe: () => void }
+  }
+  setCellSelection: (
+    updater: (old: CellSelectionState) => CellSelectionState,
+  ) => void
+}
+
+/** Срезы выборки: их смена — новая выборка строк (ADR 0146, §6). */
+const QUERY_SLICES = ['sorting', 'columnFilters', 'globalFilter', 'grouping']
+
+/**
+ * Выделение по индексам следует за списком (ADR 0146, §6): новая выборка сбрасывает его,
+ * смена строк выше диапазона сдвигает, внутри — сбрасывает.
+ */
+export const followRowList = (table: unknown) => {
+  const t = table as FollowTable
+  let seen: { epoch: number; version: number; query: unknown[] } | undefined
+  const check = () => {
+    if (!isIndexSelection(table)) {
+      seen = undefined
+      return
+    }
+    const source = rowSourceOf(table)
+    const state = t.store.get()
+    const query = QUERY_SLICES.map(key => state[key])
+    const epoch = source.epoch?.() ?? 0
+    const version = source.version?.() ?? 0
+    const before = seen
+    seen = { epoch, version, query }
+    const ranges = (state.cellSelection ?? []) as CellSelectionState
+    if (!before || !ranges.length) return
+    if (
+      before.epoch !== epoch ||
+      query.some((value, index) => value !== before.query[index])
+    ) {
+      t.setCellSelection(() => [])
+      return
+    }
+    if (before.version === version) return
+    const batches = source.changesSince?.(before.version)
+    const next = batches ? followChanges(ranges, batches) : null
+    if (next !== ranges) t.setCellSelection(() => next ?? [])
+  }
+  const subscription = t.store.subscribe(check)
+  return () => subscription.unsubscribe()
+}
