@@ -3,6 +3,9 @@
  * Клиентский режим — модель строк TanStack; серверная модель строк подставит свой.
  */
 
+/** Префикс id строки-группы серверной группировки: за ним — JSON пути групп (ADR 0144). */
+export const GROUP_ROW_PREFIX = 'group:'
+
 /** Строки тела: по индексу в списке и по id. */
 export interface RowSource<TRow = unknown> {
   /** Строк в списке, в том числе ещё не загруженных. */
@@ -52,6 +55,12 @@ export interface RowSource<TRow = unknown> {
   ) => { level: number; posInSet: number; setSize: number } | undefined
   /** Строк верхнего уровня: «Выбрать всё» в дереве — их итог. */
   rootCount?: () => number
+  /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
+  groupChildCount?(row: TRow): number | undefined
+  /** Итоги колонок выборки — из ответа сервера (ADR 0144, §4). */
+  totals?: () => Record<string, unknown> | undefined
+  /** Строк данных в выборке при серверной группировке (ADR 0144, §5). */
+  leafCount?: () => number | undefined
 }
 
 /** Отказ загрузки строк `[start, end)` (ADR 0138, §11). */

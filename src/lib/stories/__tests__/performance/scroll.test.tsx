@@ -43,6 +43,8 @@ import { renderPluginsGrid } from './hosts'
 import { scrollLayer } from '../../../core/scrollStretch'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { CellButton } from '../../../grid/Actions/CellButton'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellSelectionModel,
   columnFilteringModel,
@@ -53,6 +55,10 @@ import {
   rowExpandingModel,
   rowGroupingModel,
   rowSelectionModel,
+  rowExpanding,
+  rowGrouping,
+  serverRowModel,
+  type ServerRowsRequest,
 } from '../../../plugins'
 
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
@@ -1830,6 +1836,162 @@ describe('Производительность прокрутки — растя
       expect(
         stretched.p95Ms,
         `p95=${stretched.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Серверная группировка (ADR 0144, GS13): раскрытый сгруппированный список из 1 000 000
+// строк — десять групп по сто тысяч — против плоского списка той же длины. Ответы
+// «сервера» синхронные: меряется прокрутка, а не ожидание блоков.
+const GS13_COST = { ratio: 1.15, plusMs: 0 }
+const GS13_GROUPS = 10
+const GS13_GROUP_SIZE = 100_000
+interface GroupedRow {
+  id: string
+  name: string
+  city: string
+  amount: number
+  count?: number
+}
+const GROUPED_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name', size: 200 },
+  { id: 'city', accessorKey: 'city', header: 'City', size: 160 },
+  {
+    id: 'amount',
+    accessorKey: 'amount',
+    header: 'Amount',
+    size: 120,
+    aggregationFn: 'sum',
+  },
+]
+const GS13_EXPANDED = Object.fromEntries(
+  Array.from({ length: GS13_GROUPS }, (_, g) => [
+    `group:${JSON.stringify([`g${g}`])}`,
+    true,
+  ]),
+)
+const groupedRowsOf = ({
+  start,
+  end,
+  grouping,
+  groupKeys,
+}: ServerRowsRequest) => {
+  if (grouping.length > groupKeys.length) {
+    return {
+      rows: Array.from(
+        { length: Math.max(0, Math.min(end, GS13_GROUPS) - start) },
+        (_, k): GroupedRow => ({
+          id: '',
+          name: '',
+          city: `g${start + k}`,
+          amount: 0,
+          count: GS13_GROUP_SIZE,
+        }),
+      ),
+      rowCount: GS13_GROUPS,
+    }
+  }
+  const city = (groupKeys[0] as string | undefined) ?? 'flat'
+  return {
+    rows: Array.from({ length: end - start }, (_, k): GroupedRow => ({
+      id: `${city}-${start + k}`,
+      name: `Name ${start + k}`,
+      city,
+      amount: (start + k) % 10,
+    })),
+  }
+}
+const GroupedServerGrid = ({ grouped }: { grouped: boolean }) => {
+  const table = useCreateTable({
+    columns: GROUPED_COLUMNS as never,
+    data: NO_GROUPED_ROWS,
+    getRowId: (row: GroupedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        getRows: groupedRowsOf,
+        rowCount: grouped ? undefined : GS13_GROUPS * (GS13_GROUP_SIZE + 1),
+        getGroupChildCount: (row: GroupedRow) => row.count,
+      }),
+      // Модель дерева задаёт первый несущий её интерфейс (ADR 0120): раскрытие — первым.
+      rowExpanding({ initialExpanded: grouped ? GS13_EXPANDED : {} }),
+      rowGrouping({ initialGrouping: grouped ? ['city'] : [] }),
+    ] as never,
+  })
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+const NO_GROUPED_ROWS: GroupedRow[] = []
+
+describe('Производительность прокрутки — серверная группировка', () => {
+  test(
+    'GS13: прокрутка раскрытого сгруппированного списка из 1 000 000 строк не дороже плоского списка той же длины больше чем на 15 %',
+    async () => {
+      const measure = async (grouped: boolean) => {
+        const screen = render(<GroupedServerGrid grouped={grouped} />)
+        await expect
+          .poll(() =>
+            document.querySelector(
+              grouped
+                ? '.data-grid__body-row[data-row-id="g0-0"]'
+                : '.data-grid__body-row[data-row-id="flat-0"]',
+            ),
+          )
+          .not.toBeNull()
+        const rows = Number(
+          document
+            .querySelector('[aria-rowcount]')
+            ?.getAttribute('aria-rowcount'),
+        )
+        expect(rows - 1).toBe(GS13_GROUPS * (GS13_GROUP_SIZE + 1))
+        // Миллион строк — растянутая область (ADR 0142): прокрутка колесом, 1:1.
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: true,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const grouped = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, GS13_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1 000 010×3',
+          plugins: 'serverRowModel, rowGrouping, rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y' as const,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('GS13-base', 'плоский список', base, false)
+      await record('GS13', 'раскрытые группы', grouped, true)
+      expect(
+        grouped.p95Ms,
+        `p95=${grouped.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

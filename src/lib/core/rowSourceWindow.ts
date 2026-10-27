@@ -19,8 +19,8 @@ const sameConditions = (a: readonly unknown[], b: readonly unknown[]) =>
 /**
  * Окно строк тела и быстрая прокрутка — источнику с `observe` (ADR 0138, §4). Окно —
  * видимые строки с запасом виртуализатора, без закреплённых далёких строк (активной,
- * перетаскиваемой): иначе оно растянулось бы на весь список. Смена сортировки, фильтров
- * или поиска начинает список заново — тело в начале (§6).
+ * перетаскиваемой): иначе оно растянулось бы на весь список. Смена сортировки, фильтров,
+ * поиска или группировки (ADR 0144) начинает список заново — тело в начале (§6).
  */
 export const useRowSourceWindow = (
   table: unknown,
@@ -37,6 +37,7 @@ export const useRowSourceWindow = (
     s.sorting,
     s.columnFilters,
     s.globalFilter,
+    (s as { grouping?: unknown }).grouping,
   ]) as readonly unknown[]
   const previousConditions = useRef(conditions)
   useIsomorphicLayoutEffect(() => {

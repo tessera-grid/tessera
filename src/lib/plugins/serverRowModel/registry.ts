@@ -25,6 +25,8 @@ export interface ServerRowModelOptions {
   blockSize?: number
   /** Сколько блоков держать в кэше; давно не нужные сверх него вытесняются. */
   maxBlocks?: number
+  /** Строк в группе — из строки-группы ответа (ADR 0144); читается живо. */
+  getGroupChildCount?: ServerRowModelHooks['getGroupChildCount']
 }
 
 /** Источник таблицы; у клиентского (плагин выключен или инертен) хранилища нет. */
@@ -44,7 +46,10 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
       : 'noGetRows',
   // `table.refreshRows` и `table.setRowData` (§7).
   features: { serverRowModelFeature },
-  hooks: o => ({ getRows: o.getRows }),
+  hooks: o => ({
+    getRows: o.getRows,
+    getGroupChildCount: o.getGroupChildCount,
+  }),
   state: () => 0,
   // Отключённый плагин отдаёт нейтральные значения: v9 сливает опции с прежними.
   options: o => {

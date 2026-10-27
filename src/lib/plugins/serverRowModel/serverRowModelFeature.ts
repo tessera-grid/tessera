@@ -17,6 +17,8 @@ interface ServerRowModelTableAPI<TData> {
   refreshRows: (options?: RefreshRowsOptions) => void
   /** Заменить данные загруженной строки; незагруженная — вызов игнорируется. */
   setRowData: (id: string, updater: Updater<TData>) => void
+  /** Итог колонки выборки из ответа сервера (ADR 0144, §4); без него — `undefined`. */
+  getColumnTotal: (columnId: string) => unknown
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -43,6 +45,9 @@ export const serverRowModelFeature: TableFeature = {
       table_refreshRows: {
         fn: (options?: RefreshRowsOptions) =>
           serverSource(table).refresh?.(options),
+      },
+      table_getColumnTotal: {
+        fn: (columnId: string) => serverSource(table).totals?.()?.[columnId],
       },
       table_setRowData: {
         fn: (id: string, updater: Updater<unknown>) =>

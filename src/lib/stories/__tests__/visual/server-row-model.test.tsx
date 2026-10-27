@@ -1454,7 +1454,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
     })
   })
 
-  test('SD49: в SSRM пейджер, хвост скелет-строк ленты, ручки перетаскивания строк и кнопка группировки в шапке не показаны — и в конце списка', async () => {
+  test('SD49: в SSRM пейджер, хвост скелет-строк ленты и ручки перетаскивания строк не показаны — и в конце списка', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { getRows } = server(({ start, end }) => ({
       rows: rowsOf(start, end),
@@ -1469,7 +1469,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expect
         .soft(q('[data-row-draggable="true"]'), 'перетаскиваемая строка')
         .toBeNull()
-      expect.soft(q('.column-group__button'), 'кнопка группировки').toBeNull()
     }
     // Пагинация — своим гридом: при ней лента инертна и без серверной модели.
     for (const plugins of [
@@ -1481,7 +1480,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
           onLoadMore: () => new Promise<void>(() => {}),
         }),
         rowDragging(),
-        rowGrouping(),
       ],
       [columnSorting(), pagination()],
     ]) {
@@ -1490,7 +1488,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       )
       try {
         await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
-        // Кнопки шапки — из ленивого модуля: пришла кнопка сортировки, пришла бы и группировки.
+        // Кнопки шапки — из ленивого модуля: дождаться их прихода.
         await expect.poll(sortButton).not.toBeNull()
         expectNothing()
         // Конец списка: лента показала бы здесь хвост.

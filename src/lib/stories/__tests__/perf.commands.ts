@@ -238,6 +238,7 @@ export interface PerfRecord {
     | 'infiniteScroll'
     | 'serverRowModel'
     | 'serverRowModel, rowExpanding'
+    | 'serverRowModel, rowGrouping, rowExpanding'
     | 'backToTop'
     | 'loading'
     | 'footer'

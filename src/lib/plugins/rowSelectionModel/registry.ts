@@ -20,8 +20,8 @@ import {
   serverRowModelReason,
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
-import type { RowSource } from '../../core/rowSource'
-import { isGroupingActive } from './selectionHelpers'
+import { GROUP_ROW_PREFIX, type RowSource } from '../../core/rowSource'
+import { groupingLength, isGroupingActive } from './selectionHelpers'
 
 export interface RowSelectionModelOptions {
   /** `false` — плагин отключён. */
@@ -42,11 +42,16 @@ export interface RowSelectionModelOptions {
 /** Фичи модели выбора; интерфейс несёт те же — по ним выводится тип среза. */
 export const rowSelectionModelFeatures = { rowSelectionFeature }
 
-/** Строка — корень: в дереве серверной модели выбираются только корни (ADR 0138, §14). */
+/**
+ * Строка, которую выбирает «всё, кроме»: в дереве серверной модели — корень (ADR 0138, §14),
+ * при серверной группировке — строка данных, а не группа (ADR 0144, §5).
+ */
 const rootRow = (table: unknown) => (id: string) =>
-  ((table as { getRowSource?: () => RowSource<{ depth: number }> })
-    .getRowSource?.()
-    .byId(id)?.depth ?? 0) === 0
+  groupingLength(table) > 0
+    ? !id.startsWith(GROUP_ROW_PREFIX)
+    : ((table as { getRowSource?: () => RowSource<{ depth: number }> })
+        .getRowSource?.()
+        .byId(id)?.depth ?? 0) === 0
 
 /**
  * Выбор недоступен при АКТИВНОЙ группировке: сгруппированная модель производна,

@@ -7,6 +7,7 @@ import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
 import { rowSelectionValueOf } from '../../core/rowSelectionAll'
+import { serverAggregationsOf } from '../../core/serverAggregations'
 import type {
   ExportColumn,
   ExportData,
@@ -150,6 +151,8 @@ export const serverRowsRequestOf = (
       sorting: (state.sorting ?? []) as unknown[],
       columnFilters: (state.columnFilters ?? []) as unknown[],
       globalFilter: (state.globalFilter ?? '') as string,
+      grouping: (state.grouping ?? []) as string[],
+      aggregations: serverAggregationsOf(table),
     },
     selection: rowSelectionValueOf(table),
   }

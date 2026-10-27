@@ -14,6 +14,8 @@ import {
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
 import { useTableState } from '../core/reactivity'
+import { useLocalization } from '../core/localization'
+import { rowSourceOf } from '../core/rowSource'
 import {
   cellHighlightKey,
   columnHighlightKey,
@@ -161,6 +163,13 @@ export const BodyCell = memo(
     // Клавиатурная навигация (плагин keyboardNavigation): при наличии владеет
     // roving tabindex ячейки; `null` без плагина.
     const nav = useKeyboardNavigationCell(table, rowIndex, cell.column.id)
+    const labels = useLocalization()
+    // Число строк группы серверной группировки (ADR 0144, §2) — рядом с её значением.
+    const groupCount = (
+      cell as { getIsGrouped?: () => boolean }
+    ).getIsGrouped?.()
+      ? rowSourceOf(table).groupChildCount?.(cell.row)
+      : undefined
     const edgeColor = (on: boolean) =>
       on ? 'var(--tsr-comp-cell-selected-border-color)' : 'transparent'
     const selectionStyle = (
@@ -204,10 +213,17 @@ export const BodyCell = memo(
       return isActionsColumn ? (
         content
       ) : (
-        <CellWrapperTitle>{content}</CellWrapperTitle>
+        <CellWrapperTitle>
+          {content}
+          {groupCount !== undefined && (
+            <span data-group-count=""> {labels.groupRowCount(groupCount)}</span>
+          )}
+        </CellWrapperTitle>
       )
     }, [
       cell,
+      groupCount,
+      labels,
       isActionsColumn,
       isRowActionsColumn,
       actionRowSlot,

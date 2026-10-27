@@ -27,7 +27,6 @@ import {
   paginationModel,
   quickSearchModel,
   rowDragging,
-  rowGrouping,
   rowExpanding,
   rowGroupingModel,
   rowSelection,
@@ -348,19 +347,17 @@ describe('серверная модель строк на таблице (ADR 01
     expect(source().at(500)).toBeUndefined()
     expect(version()).toBe(seen)
   })
-  it("SD26: pagination, paginationModel, infiniteScroll, rowDragging, rowGrouping и rowGroupingModel инертны с причиной 'serverRowModel' и dev-warn", () => {
+  it("SD26: pagination, paginationModel, infiniteScroll, rowDragging и rowGroupingModel инертны с причиной 'serverRowModel' и dev-warn", () => {
     const extra = [
       pagination(),
       infiniteScroll({ onLoadMore: () => {} }),
       rowDragging(),
-      rowGrouping(),
     ]
     const ids = [
       'pagination',
       'paginationModel',
       'infiniteScroll',
       'rowDragging',
-      'rowGrouping',
       'rowGroupingModel',
     ]
     const reasons = () =>
@@ -498,6 +495,8 @@ describe('серверная модель строк на таблице (ADR 01
       sorting: [{ id: 'name', desc: true }],
       columnFilters: [],
       globalFilter: '',
+      grouping: [],
+      aggregations: {},
     })
     expect(exports[0]!.selection).toEqual({ all: true, except: ['r3'] })
 

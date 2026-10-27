@@ -634,6 +634,126 @@ export const HighContrastServerRowModelMillionRowsStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelGroupByStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelGroupBy,
+    1,
+  ),
+  name: 'Data loading/Server row model — Group by a column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelGroupByStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelGroupBy,
+    2,
+  ),
+  name: 'Data loading/Server row model — Group by a column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelGroupByStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelGroupBy,
+    3,
+  ),
+  name: 'Data loading/Server row model — Group by a column, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelExpandGroupStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelExpandGroup,
+    1,
+  ),
+  name: 'Data loading/Server row model — Expand a group, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelExpandGroupStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelExpandGroup,
+    2,
+  ),
+  name: 'Data loading/Server row model — Expand a group, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelExpandGroupStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelExpandGroup,
+    3,
+  ),
+  name: 'Data loading/Server row model — Expand a group, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelTotalsStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelTotals,
+    1,
+  ),
+  name: 'Data loading/Server row model — Totals in the footer, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelTotalsStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelTotals,
+    2,
+  ),
+  name: 'Data loading/Server row model — Totals in the footer, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelTotalsStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelTotals,
+    3,
+  ),
+  name: 'Data loading/Server row model — Totals in the footer, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelGroupingRefusedStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelGroupingRefused,
+    1,
+  ),
+  name: 'Data loading/Server row model — Grouping refused, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelGroupingRefusedStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelGroupingRefused,
+    2,
+  ),
+  name: 'Data loading/Server row model — Grouping refused, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelGroupingRefusedStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelGroupingRefused,
+    3,
+  ),
+  name: 'Data loading/Server row model — Grouping refused, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterPlayground = {
   ...twin(coreFooterMeta, FooterPlayground),
   name: 'Core/Footer — Playground',

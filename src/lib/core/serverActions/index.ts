@@ -39,6 +39,7 @@ export type ServerActionResult = void | PromiseLike<unknown>
 
 interface Snapshot {
   sorting?: unknown
+  grouping?: unknown
   pagination?: { pageIndex: number; pageSize: number }
 }
 
@@ -70,8 +71,11 @@ interface ServerTable {
       }
     }
     pagination?: { get: () => Snapshot['pagination'] }
+    grouping?: { get: () => unknown }
   }
   setSorting?: (sorting: never) => void
+  setGrouping?: (grouping: never) => void
+  resetExpanded?: (defaultState?: boolean) => void
   setPagination?: (pagination: never) => void
 }
 
@@ -99,11 +103,15 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
       return !!options.columnFilteringServer
     case 'search':
       return !!options.quickSearchServer
+    // Группирует сервер только в серверной модели строк (ADR 0144).
+    case 'grouping':
+      return false
   }
 }
 
 const snapshotOf = ({ atoms }: ServerTable): Snapshot => ({
   sorting: atoms.sorting?.get(),
+  grouping: atoms.grouping?.get(),
   pagination: atoms.pagination?.get(),
 })
 
@@ -111,6 +119,21 @@ const samePage = (a: Snapshot['pagination'], b: Snapshot['pagination']) =>
   a?.pageIndex === b?.pageIndex && a?.pageSize === b?.pageSize
 
 type Sorting = readonly { id: string; desc: boolean }[]
+
+const sameGrouping = (a: unknown, b: unknown) =>
+  JSON.stringify(a ?? []) === JSON.stringify(b ?? [])
+
+/** Срез группировки к снимку: id групп другой группировки не совпадают — раскрытие сброшено. */
+const setGroupingTo = (t: ServerTable, grouping: unknown) => {
+  if (
+    grouping === undefined ||
+    sameGrouping(t.atoms.grouping?.get(), grouping)
+  ) {
+    return
+  }
+  t.setGrouping?.(grouping as never)
+  t.resetExpanded?.(true)
+}
 
 const sameSorting = (a: unknown, b: unknown) => {
   const x = (a ?? []) as Sorting
@@ -133,8 +156,12 @@ const cancelPageRestore = (store: object) => {
 }
 
 /** Откат к состоянию до цепочки; колбэки действий он не зовёт (как PG6). */
-const revert = (t: ServerTable, { sorting, pagination }: Snapshot) => {
+const revert = (
+  t: ServerTable,
+  { sorting, grouping, pagination }: Snapshot,
+) => {
   const { atoms, store } = t
+  setGroupingTo(t, grouping)
   const restorePage = () => {
     if (
       t.options.paginationRevertOnReject !== false &&
@@ -168,7 +195,11 @@ const revert = (t: ServerTable, { sorting, pagination }: Snapshot) => {
 }
 
 /** Вернуть сортировку и страницу к снимку — повтор отказавшего действия. */
-const restore = (t: ServerTable, { sorting, pagination }: Snapshot) => {
+const restore = (
+  t: ServerTable,
+  { sorting, grouping, pagination }: Snapshot,
+) => {
+  setGroupingTo(t, grouping)
   if (sorting !== undefined && !sameSorting(t.atoms.sorting?.get(), sorting)) {
     t.setSorting?.(sorting as never)
   }
@@ -198,6 +229,7 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   filtering: 'columnFiltering',
   search: 'quickSearch',
   pagination: 'pagination',
+  grouping: 'rowGrouping',
 }
 
 export const runServerAction = (

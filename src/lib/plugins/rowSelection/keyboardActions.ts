@@ -9,7 +9,10 @@ import {
   tableAllSelection,
 } from '../../core/rowSelectionAll'
 import type { Row } from '../../types'
-import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
+import {
+  isGroupingActive,
+  isSelectableInList,
+} from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
 /** Может ли строка переключаться сейчас (те же гейты, что у чекбокса строки). */
@@ -19,7 +22,7 @@ export const getCanToggleRow = (
   hooks: Partial<RowSelectionHooks>,
 ): boolean =>
   !isGroupingActive(table) &&
-  !(row.depth > 0 && !row.getCanSelectSubRows()) &&
+  isSelectableInList(row) &&
   row.getCanSelect() &&
   !hooks.isAllRowsSelected
 

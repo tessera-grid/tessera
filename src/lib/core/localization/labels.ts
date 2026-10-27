@@ -268,6 +268,8 @@ export interface TableLabels {
   selectedRowsShort: (count: number) => string
   selectedRowsHiddenShort: (count: number) => string
   filteredRowsShort: (shown: number, total: number) => string
+  /** Число строк группы рядом с её значением (серверная группировка, ADR 0144) */
+  groupRowCount: (count: number) => string
   /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
   loadMoreFailed: string
   loadMoreRetry: string
@@ -290,6 +292,7 @@ export interface TableLabels {
   serverActionFailedFiltering: string
   serverActionFailedSearch: string
   serverActionFailedPagination: string
+  serverActionFailedGrouping: string
   /** Кнопка «наверх» в нижней панели (ADR 0082): тултип и доступное имя */
   backToTop: string
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
@@ -298,6 +301,9 @@ export interface TableLabels {
   announceMoreLoaded: (count: number) => string
   /** Счётчик выбранных строк в нижней панели (`rowSelection({ selectedCount })`) */
   selectedRows: (count: number) => string
+  /** «Выбрано всё, кроме k», когда строк данных в выборке не знает сервер (ADR 0144, §5) */
+  selectedAllExcept: (count: number) => string
+  selectedAllExceptShort: (count: number) => string
   /** Добавка к счётчику выбранных: выбранные строки, скрытые фильтром (ADR 0045) */
   selectedRowsHidden: (count: number) => string
   /** Поле быстрого поиска в тулбаре (`quickSearch`): плейсхолдер и доступное имя */
@@ -508,6 +514,7 @@ export const DEFAULT_LABELS = {
   serverActionFailedFiltering: "Filters weren't applied",
   serverActionFailedSearch: "Search wasn't applied",
   serverActionFailedPagination: "The page didn't change",
+  serverActionFailedGrouping: "Grouping wasn't applied",
   announceLoadError: "Couldn't refresh the data",
   announceLoadErrorReason: "Couldn't refresh the data: {reason}",
   announceLoadFailed: "Couldn't load the data",
@@ -522,8 +529,13 @@ export const DEFAULT_LABELS = {
   loadedRowsShort: '{count}',
   loadedRowsOfShort: '{count} / {total}',
   selectedRowsShort: '{count} selected',
+  selectedAllExcept: 'All selected except {count}',
+  selectedAllExcept_zero: 'All selected',
+  selectedAllExceptShort: 'All except {count}',
+  selectedAllExceptShort_zero: 'All',
   selectedRowsHiddenShort: '{count} hidden',
   filteredRowsShort: '{shown} / {total}',
+  groupRowCount: '({count})',
   search: 'Search',
   clearSearch: 'Clear search',
   searchColumnsHint: 'Search in columns: {columns}',

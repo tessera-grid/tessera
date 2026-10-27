@@ -10,12 +10,22 @@ export interface ServerRowsRequest {
   signal: AbortSignal
   /** Строка, чьих детей просят (ленивые дети, ADR 0138, §14); у корней — нет. */
   parentId?: string
+  /** Колонки группировки по уровням (ADR 0144); без группировки — пусто. */
+  grouping: string[]
+  /** Значения групп от корня до уровня запроса; у корня — пусто. */
+  groupKeys: unknown[]
+  /** Колонка → имя её `aggregationFn` (`sum`, `count`, `mean`…); только строковые. */
+  aggregations: Record<string, string>
 }
 
 export interface ServerRowsResponse<TData = unknown> {
   rows: TData[]
   /** Итог, если сервер его знает. */
   rowCount?: number
+  /** Итоги колонок по всей выборке (ADR 0144, §4); читаются из ответа корня. */
+  totals?: Record<string, unknown>
+  /** Строк данных во всей выборке при группировке: корень тогда — группы. */
+  leafCount?: number
 }
 
 export interface ServerRowModelHooks<TData = any> {
@@ -23,4 +33,6 @@ export interface ServerRowModelHooks<TData = any> {
   getRows?: (
     request: ServerRowsRequest,
   ) => PromiseLike<ServerRowsResponse<TData>> | ServerRowsResponse<TData>
+  /** Строк в группе — из строки-группы ответа (ADR 0144, §2); читается живо. */
+  getGroupChildCount?: (row: TData) => number | undefined
 }

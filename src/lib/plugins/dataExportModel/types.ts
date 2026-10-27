@@ -85,6 +85,10 @@ export interface ExportRequest {
     sorting: unknown[]
     columnFilters: unknown[]
     globalFilter: string
+    /** Колонки группировки по уровням (ADR 0144); без группировки — пусто. */
+    grouping: string[]
+    /** Колонка → имя её `aggregationFn`; только явные строковые. */
+    aggregations: Record<string, string>
   }
   selection?: RowSelectionValue
   /** Только в `onExported`. */

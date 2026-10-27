@@ -7,6 +7,7 @@ import type { HeaderAction } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
+import { runServerAction } from '../../core/serverActions'
 
 import '../../grid/cellControls/buttonVisibility.css'
 
@@ -21,25 +22,42 @@ const GroupActionIcon = ({ grouped = false }: { grouped?: boolean }) => {
 const isGrouped = ({ column }: HeaderComponentProps): boolean =>
   column.getIsGrouped()
 
+/**
+ * Смена группировки. В серверной модели строк — серверное действие (ADR 0144, §3): id групп
+ * другой группировки не совпадают, раскрытие сброшено.
+ */
+const toggleGrouping = (
+  { column, table }: HeaderComponentProps,
+  menu = false,
+) =>
+  runServerAction(
+    table,
+    'grouping',
+    () => {
+      column.toggleGrouping()
+      if (serverRowModelReason(table)) table.resetExpanded(true)
+    },
+    () => undefined,
+    { control: 'rowGrouping', columns: [column.id], ...(menu ? { menu } : {}) },
+  )
+
 export const groupHeaderAction: HeaderAction = {
   id: 'rowGrouping',
   slot: 'rightHeaderSlot',
   order: 2,
-  // Группировка на сервере — вне объёма серверной модели строк (ADR 0138, §13).
-  visible: ({ column, table }) =>
-    column.getCanGroup() && !serverRowModelReason(table),
+  visible: ({ column }) => column.getCanGroup(),
   icon: ctx => <GroupActionIcon grouped={isGrouped(ctx)} />,
   label: (ctx, labels) => (isGrouped(ctx) ? labels.ungroup : labels.group),
   active: isGrouped,
   className: () => 'column-group__button',
-  onSelect: ({ column }) => column.toggleGrouping(),
+  onSelect: ctx => toggleGrouping(ctx),
   // Строка меню — на базовой иконке: включённое там показывает галочка.
   menuItems: (ctx, labels) => [
     {
       id: 'rowGrouping',
       label: isGrouped(ctx) ? labels.ungroup : labels.group,
       icon: <GroupActionIcon />,
-      onSelect: () => ctx.column.toggleGrouping(),
+      onSelect: () => toggleGrouping(ctx, true),
       active: isGrouped(ctx),
     },
   ],

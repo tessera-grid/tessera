@@ -12,9 +12,20 @@ import { reportAction, reportOutcome } from '../../core/debugActions'
 import { logWarn } from '../../core/logger'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
-import type { RowLoadError, RowSource, RowWindow } from '../../core/rowSource'
+import {
+  GROUP_ROW_PREFIX,
+  type RowLoadError,
+  type RowSource,
+  type RowWindow,
+} from '../../core/rowSource'
+import { serverAggregationsOf } from '../../core/serverAggregations'
+import { isThenable } from '../../core/thenable'
 import { BlockTree } from './tree'
-import type { ServerRowModelHooks, ServerRowsRequest } from './types'
+import type {
+  ServerRowModelHooks,
+  ServerRowsRequest,
+  ServerRowsResponse,
+} from './types'
 import type { Updater } from '../../types'
 
 export const SERVER_ROW_MODEL = 'serverRowModel'
@@ -24,8 +35,19 @@ export const DEFAULT_MAX_BLOCKS = 100
 
 type Query = Pick<
   ServerRowsRequest,
-  'sorting' | 'columnFilters' | 'globalFilter'
+  'sorting' | 'columnFilters' | 'globalFilter' | 'grouping' | 'aggregations'
 >
+
+/** Путь значений групп по id строки-группы; у прочих строк — пусто. */
+const groupKeysOf = (id: string | undefined): unknown[] =>
+  id?.startsWith(GROUP_ROW_PREFIX)
+    ? (JSON.parse(id.slice(GROUP_ROW_PREFIX.length)) as unknown[])
+    : []
+
+interface ServerColumn {
+  id: string
+  accessorFn?: (original: unknown, index: number) => unknown
+}
 
 interface ServerTable {
   options: {
@@ -38,6 +60,7 @@ interface ServerTable {
   store: { get: () => Record<string, unknown> }
   getRowId: (original: unknown, index: number) => string
   getHooks: () => unknown
+  getColumn?: (id: string) => ServerColumn | undefined
 }
 
 interface SourceRow {
@@ -46,6 +69,8 @@ interface SourceRow {
   depth: number
   parentId?: string
   original: unknown
+  groupingColumnId?: string
+  groupingValue?: unknown
 }
 
 type Store = BlockTree<unknown, SourceRow, Query>
@@ -124,6 +149,8 @@ const queryOf = (t: ServerTable): Query => {
     sorting: (state.sorting ?? []) as Query['sorting'],
     columnFilters: (state.columnFilters ?? []) as Query['columnFilters'],
     globalFilter: (state.globalFilter ?? '') as string,
+    grouping: (state.grouping ?? []) as string[],
+    aggregations: serverAggregationsOf(t),
   }
 }
 
@@ -134,6 +161,9 @@ const sameQuery = (a: Query, b: Query) =>
 interface Generation {
   store: Store
   query: Query
+  /** Итоги и строки данных выборки — из ответа корня (ADR 0144, §4–§5). */
+  totals?: Record<string, unknown>
+  leafCount?: number
   waiters: { resolve: () => void; reject: (error: Error) => void }[]
 }
 
@@ -154,14 +184,52 @@ const createServerSource = (table: unknown): ServerSource => {
    */
   let early: Generation['waiters'] = []
 
+  /** Строка-группа уровня `depth`: id из пути значений групп (ADR 0144, §2). */
+  const buildGroupRow = (
+    original: unknown,
+    index: number,
+    depth: number,
+    parentId: string | undefined,
+    columnId: string,
+  ) => {
+    const column = t.getColumn?.(columnId)
+    const value = column?.accessorFn
+      ? column.accessorFn(original, index)
+      : (original as Record<string, unknown> | null)?.[columnId]
+    const id =
+      GROUP_ROW_PREFIX + JSON.stringify([...groupKeysOf(parentId), value])
+    const row = constructRow(
+      table as never,
+      id,
+      original as never,
+      index,
+      depth,
+      undefined,
+      parentId,
+    ) as unknown as SourceRow
+    row.groupingColumnId = columnId
+    row.groupingValue = value
+    return row
+  }
+
   /** Строки блока ветки `parentId` глубины `depth`; `start` — индекс в ветке. */
   const buildRows = (
     data: unknown[],
     start: number,
     depth = 0,
     parentId?: string,
+    grouping: readonly string[] = [],
   ) =>
     data.map((original, offset) => {
+      if (depth < grouping.length) {
+        return buildGroupRow(
+          original,
+          start + offset,
+          depth,
+          parentId,
+          grouping[depth]!,
+        )
+      }
       const id = t.getRowId(original, start + offset)
       // Id по индексу после перезапроса бессмысленны: строке нужен свой (SD13). TanStack
       // сам подставляет индекс, поэтому смотрим ответ `getRowId` приложения.
@@ -182,6 +250,15 @@ const createServerSource = (table: unknown): ServerSource => {
         parentId,
       ) as unknown as SourceRow
     })
+
+  /** Строк в группе — из её строки ответа; у строк данных — нет. */
+  const groupChildCount = (row: SourceRow | undefined) =>
+    row?.groupingColumnId === undefined
+      ? undefined
+      : readPluginHooks<ServerRowModelHooks>(
+          t as never,
+          SERVER_ROW_MODEL,
+        ).getGroupChildCount?.(row.original)
 
   const createGeneration = (query: Query): Generation => {
     const generation = { query, waiters: [] } as unknown as Generation
@@ -213,15 +290,32 @@ const createServerSource = (table: unknown): ServerSource => {
             }),
           { once: true },
         )
-        const result = getRows?.({ ...range, ...rowsQuery, signal }) ?? {
+        const result = getRows?.({
+          ...range,
+          ...rowsQuery,
+          groupKeys: groupKeysOf(range.parentId),
+          signal,
+        }) ?? {
           rows: [],
         }
         reportOutcome(table, { ...report, cause }, result)
+        // Итоги выборки — из ответа корня, раньше перерисовки по его приходу.
+        const capture = (response: ServerRowsResponse | undefined) => {
+          if (!response || range.parentId !== undefined) return
+          if (response.totals !== undefined) generation.totals = response.totals
+          if (response.leafCount !== undefined) {
+            generation.leafCount = response.leafCount
+          }
+        }
+        if (isThenable(result)) result.then(capture, () => {})
+        else capture(result)
         return result
       },
-      toRows: buildRows,
+      toRows: (data, start, depth, parentId) =>
+        buildRows(data, start, depth, parentId, query.grouping),
       idOf: row => row.id,
       expanded: () => expandedSetOf(t, notExpanded),
+      childCount: id => groupChildCount(generation.store.rowById(id)),
       onChange: () => {
         if (generation === shown) {
           settleShown()
@@ -372,6 +466,7 @@ const createServerSource = (table: unknown): ServerSource => {
         row.index,
         row.depth,
         row.parentId,
+        generation.query.grouping,
       )
       generation.store.replaceRow(index, updated!)
       found = true
@@ -437,6 +532,9 @@ const createServerSource = (table: unknown): ServerSource => {
     treeAria: index => shown.store.ariaAt(index),
     // «Выбрать всё» в дереве — итог корней (§14).
     rootCount: () => shown.store.rootCount(),
+    groupChildCount,
+    totals: () => shown.totals,
+    leafCount: () => shown.leafCount,
     loadError: () => {
       if (queryError) return queryError
       if (listError.version !== version) {

@@ -60,6 +60,7 @@ import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { serverRowModel } from '../../../plugins/serverRowModel'
 import { rowExpanding } from '../../../plugins/rowExpanding'
+import { rowGrouping } from '../../../plugins/rowGrouping'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -3223,6 +3224,147 @@ describe('Отзывчивость взаимодействий — ленивы
       expect(
         large.longestMs,
         `longest=${large.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Серверная группировка (ADR 0144, GS12): раскрытие группы со 100 строками при 100 000 групп
+// против раскрытия ленивой ветки со 100 детьми при 100 000 корней (как SD46).
+const GS12_ROOTS = 100_000
+interface GroupCall extends ServerTreeCall {
+  groupKeys: unknown[]
+}
+let groupCalls: GroupCall[] = []
+const ServerGroupedGrid = () => {
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: NO_FEED,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        blockSize: BRANCH,
+        getGroupChildCount: () => BRANCH,
+        getRows: ({ start, end, parentId, groupKeys }) =>
+          new Promise<{ rows: FeedRow[]; rowCount?: number }>(resolve => {
+            groupCalls.push({ start, end, parentId, groupKeys, resolve })
+          }),
+      }),
+      rowGrouping({ initialGrouping: ['a'] }),
+      rowExpanding(),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — серверная группировка', () => {
+  test(
+    'GS12: раскрытие группы при 100 000 групп не дороже раскрытия ветки при 100 000 корней больше чем на 15 % (или 20 мс)',
+    async () => {
+      const rowOf = (id: string) =>
+        document.querySelector<HTMLElement>(
+          `.data-grid__body-row[data-row-id='${id}']`,
+        )
+      const toggleOf = (id: string) =>
+        rowOf(id)!.querySelector<HTMLElement>('.row-expand-button')!
+      const measure = async (grouped: boolean) => {
+        treeCalls = []
+        groupCalls = []
+        const calls = () => (grouped ? groupCalls : treeCalls)
+        await render(
+          grouped ? (
+            <ServerGroupedGrid />
+          ) : (
+            <ServerTreeGrid total={GS12_ROOTS} />
+          ),
+        )
+        await expect.poll(() => calls().length).toBeGreaterThanOrEqual(1)
+        const roots = calls()[0]!
+        const rows = feedRows(roots.start, roots.end - roots.start)
+        roots.resolve({
+          rows: grouped ? rows.map(row => ({ ...row, id: '' })) : rows,
+          rowCount: GS12_ROOTS,
+        })
+        const parents = grouped
+          ? [
+              `group:${JSON.stringify([rows[0]!.a])}`,
+              `group:${JSON.stringify([rows[1]!.a])}`,
+            ]
+          : ['f0', 'f1']
+        await expect.poll(() => rowOf(parents[1]!)).not.toBeNull()
+        let expanded = 0
+        const result = await measureInteractionWork(
+          async () => {
+            const id = parents[expanded++]!
+            const asked = calls().length
+            toggleOf(id).click()
+            await expect.poll(() => calls().length).toBe(asked + 1)
+            const call = calls().at(-1)!
+            call.resolve({
+              rows: feedRows(0, BRANCH).map((row, k) => ({
+                ...row,
+                id: `${id}.${k}`,
+              })),
+              rowCount: BRANCH,
+            })
+            await expect.poll(() => rowOf(`${id}.0`)).not.toBeNull()
+          },
+          {
+            // Ветка первой строки свёрнута — вторая снова в окне.
+            afterWarmup: async () => {
+              expect(calls().at(-1)!.parentId).toBe(parents[0])
+              toggleOf(parents[0]!).click()
+              await expect.poll(() => rowOf(`${parents[0]}.0`)).toBeNull()
+            },
+          },
+        )
+        expect(calls().at(-1)!.parentId).toBe(parents[1])
+        if (grouped) {
+          expect(groupCalls.at(-1)!.groupKeys).toEqual([rows[1]!.a])
+        }
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const grouped = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.15, plusMs: 20 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×3',
+          plugins: gated
+            ? 'serverRowModel, rowGrouping, rowExpanding'
+            : 'serverRowModel, rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('GS12-base', 'ветка при 100 000 корней', base, false)
+      await record('GS12', 'группа при 100 000 групп', grouped, true)
+      expect(
+        grouped.longestMs,
+        `longest=${grouped.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

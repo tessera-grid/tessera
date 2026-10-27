@@ -4,7 +4,7 @@
  * `rowGroupingModel`, плагин её включает и передаёт ей срез.
  */
 import { definePlugin } from '../../core/definePlugin'
-import { serverRowModelReason } from '../../core/pluginDiagnostics'
+import { neverInert } from '../../core/pluginDiagnostics'
 import {
   rowGroupingModel,
   rowGroupingModelFeatures,
@@ -22,8 +22,8 @@ export interface RowGroupingOptions extends Omit<
 
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
   id: 'rowGrouping',
-  // Группировка и дерево на сервере — вне объёма и этап 5 (ADR 0138, §13).
-  diagnose: serverRowModelReason,
+  // В серверной модели строк группирует сервер (ADR 0144); клиентская модель там инертна.
+  diagnose: neverInert,
   model: {
     plugin: rowGroupingModel,
     keys: ['grouping', 'onGroupingChange', 'initialGrouping'],

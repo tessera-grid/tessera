@@ -9,7 +9,10 @@ import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import { toggleRowSelection } from './keyboardActions'
-import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
+import {
+  isGroupingActive,
+  isSelectableInList,
+} from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
 export const RowSelectionComponent = ({
@@ -34,7 +37,7 @@ export const RowSelectionComponent = ({
     return null
   }
 
-  if (row.depth > 0 && !row.getCanSelectSubRows()) {
+  if (!isSelectableInList(row)) {
     return null
   }
 

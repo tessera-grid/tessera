@@ -9,6 +9,7 @@ import {
   NAV_CELL_ATTR,
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
+import { rowSourceOf } from '../core/rowSource'
 import type { Header } from '../types'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
@@ -43,6 +44,9 @@ export const FooterCell = ({
   const highlighted = highlightRender([
     { layer: 'column', state: columnHighlight, describe: false },
   ])
+  // Итог колонки серверной выборки (ADR 0144, §4): без своего `footer` — его значение.
+  const total = rowSourceOf(table).totals?.()?.[header.column.id]
+  const { footer } = header.column.columnDef
   const flashed = flashRender([
     { layer: 'column', entry: useColumnFlash(table, header.column.id) },
   ])
@@ -88,7 +92,11 @@ export const FooterCell = ({
         <CellWrapperTitle>
           {header.isPlaceholder
             ? null
-            : flexRender(header.column.columnDef.footer, header.getContext())}
+            : footer !== undefined
+              ? flexRender(footer, header.getContext())
+              : total === undefined || total === null
+                ? null
+                : String(total)}
         </CellWrapperTitle>
       </CellWrapperContent>
     </div>

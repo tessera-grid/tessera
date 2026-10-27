@@ -12,7 +12,8 @@ import {
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 /** Срез, который меняет серверное действие. */
-export type ServerActionKind = 'sorting' | 'filtering' | 'search' | 'pagination'
+export type ServerActionKind =
+  'sorting' | 'filtering' | 'search' | 'pagination' | 'grouping'
 
 /** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
 export interface ServerActionCause {

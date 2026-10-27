@@ -14,6 +14,7 @@ import { useSlice, useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
+import { groupingLength } from '../rowSelectionModel/selectionHelpers'
 
 /** Выбранные `id` среза, а не строки модели: выбор на других страницах тоже считается. */
 export const countSelectedRows = (selection: RowSelectionState | undefined) =>
@@ -37,9 +38,13 @@ export const countHiddenSelectedRows = (
   return selected.filter(id => id in rowsById && !visible.has(id)).length
 }
 
-/** Строк в списке для «всё, кроме»: итог, а пока он неизвестен — строк в списке. */
+/**
+ * Строк в списке для «всё, кроме»: итог, а пока он неизвестен — строк в списке. При
+ * серверной группировке — строки данных выборки из ответа; без них — `undefined` (ADR 0144).
+ */
 const listTotalOf = (table: unknown) => {
   const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  if (source.leafCount && groupingLength(table) > 0) return source.leafCount()
   // В дереве серверной модели «Выбрать всё» — итог корней (ADR 0138, §14).
   const total = source.rootCount?.() ?? source.total?.() ?? source.count()
   return total < 0 ? source.count() : total
@@ -68,9 +73,20 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   }
 
   const all = allSelectionOf(selection)
-  const count = all
-    ? Math.max(0, listTotalOf(table) - all.except.length)
-    : countSelectedRows(selection)
+  const total = all ? listTotalOf(table) : undefined
+  if (all && total === undefined) {
+    return (
+      <StatusBarCount
+        data-testid="selected-rows-count"
+        full={labels.selectedAllExcept(all.except.length)}
+        short={labels.selectedAllExceptShort(all.except.length)}
+      />
+    )
+  }
+  const count =
+    all && total !== undefined
+      ? Math.max(0, total - all.except.length)
+      : countSelectedRows(selection)
   const hidden =
     !all && count > 0 ? countHiddenSelectedRows(table, selection) : 0
 

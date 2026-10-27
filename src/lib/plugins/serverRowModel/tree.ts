@@ -34,6 +34,8 @@ export interface BlockTreeOptions<TData, TRow, TQuery> {
   idOf: (row: TRow) => string
   /** Раскрытые строки: срез `expanded` в виде набора `id`. */
   expanded: () => ReadonlySet<string>
+  /** Итог ветки раскрытой строки до первого ответа — число строк группы (ADR 0144). */
+  childCount?: (id: string) => number | undefined
   onChange: () => void
   /** Отказ блока (не отмена): объявление отказа. */
   onFailure?: (reason?: string) => void
@@ -161,7 +163,9 @@ export class BlockTree<TData, TRow, TQuery> {
         const position = this.positions.get(id)
         if (!position || position.parent !== node.parentId) continue
         if (position.local >= count) continue
-        const child = this.nodes.get(id) ?? this.createNode(id, node.depth + 1)
+        const child =
+          this.nodes.get(id) ??
+          this.createNode(id, node.depth + 1, this.options.childCount?.(id))
         children.push({ local: position.local, layout: build(child) })
       }
       children.sort((a, b) => a.local - b.local)
