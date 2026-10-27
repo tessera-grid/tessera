@@ -1,6 +1,7 @@
 /**
- * Форк TanStack Virtual (ADR 0143, VF1–VF4): импорт только из вендора, вендор равен
- * upstream с патчем, уведомление MIT в пакете, пересчёт позиций от первого изменённого ключа.
+ * Форк TanStack Virtual (ADR 0143, VF1–VF4; ADR 0145, HV1–HV2): импорт только из вендора, вендор равен
+ * upstream с патчем, уведомление MIT в пакете, пересчёт позиций от первого изменённого ключа
+ * и подсказка места изменения.
  * Запуск: npx vitest run --config vitest.node.config.ts vendorVirtual
  */
 import { execFileSync } from 'node:child_process'
@@ -17,7 +18,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   type VirtualItem,
@@ -201,5 +202,103 @@ describe('Форк TanStack Virtual (ADR 0143)', () => {
     const { updated, full, estimated } = change(byIndex, grown)
     expect(updated).toEqual(full)
     expect(Math.min(...estimated)).toBe(1000)
+  })
+})
+
+/**
+ * Смена ключей с подсказкой `hint` против нового виртуализатора: ключи, которые спросил
+ * виртуализатор, и размеры, которые он оценил, — на смене.
+ */
+const hinted = (keys: Key[], next: Key[], hint: number | undefined) => {
+  let current = keys
+  let given: number | undefined
+  const asked: number[] = []
+  const { v, options, calls } = setup(keys)
+  const getItemKey = (index: number) => {
+    asked.push(index)
+    return current[index]!
+  }
+  v.setOptions({ ...options, getItemKey, getFirstChangedIndex: () => given })
+  v.getTotalSize()
+  asked.length = 0
+  calls.length = 0
+  current = next
+  given = hint
+  v.setOptions({
+    ...options,
+    count: next.length,
+    getItemKey: index => getItemKey(index),
+    getFirstChangedIndex: () => given,
+  })
+  const updated = layout(v)
+  given = undefined
+  return {
+    updated,
+    full: layout(setup(next).v),
+    estimated: [...calls],
+    asked: [...asked],
+  }
+}
+
+const INSERTED = [...BASE.slice(0, 400), ...ids(5000, 5), ...BASE.slice(400)]
+
+describe('Подсказка места изменения (ADR 0145)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it('HV1: подсказка — пересчёт с неё без сверки ключей, паритет с полным пересчётом и без оценки начала; больше прежней сборки — урезается; undefined — сверка ключей', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const appended = [...BASE, ...ids(1000, 100)]
+    for (const [next, hint, from] of [
+      [appended, 1000, 1000],
+      [INSERTED, 400, 400],
+      [appended, 10, 10],
+      [appended, 5000, 1000],
+    ] as const) {
+      const { updated, full, estimated, asked } = hinted(BASE, [...next], hint)
+      expect(updated, `${hint}`).toEqual(full)
+      expect(Math.min(...estimated), `${hint}`).toBe(from)
+      expect(Math.min(...asked), `${hint}`).toBe(from)
+    }
+    const { updated, full, asked } = hinted(BASE, appended, undefined)
+    expect(updated).toEqual(full)
+    expect(asked.filter(index => index < 1000)).toHaveLength(1000)
+  })
+
+  it('HV2: в dev подсказка дальше изменённого ключа — позиции по сверке и одно предупреждение на виртуализатор; верная — без предупреждения; в prod сверки нет', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const right = hinted(BASE, INSERTED, 400)
+    expect(right.updated).toEqual(right.full)
+    expect(warn).not.toHaveBeenCalled()
+
+    let current = BASE
+    let given: number | undefined
+    const { v, options } = setup(BASE)
+    v.setOptions({
+      ...options,
+      getItemKey: index => current[index]!,
+      getFirstChangedIndex: () => given,
+    })
+    v.getTotalSize()
+    for (const next of [INSERTED, BASE]) {
+      current = next
+      given = 900
+      v.setOptions({
+        ...options,
+        count: next.length,
+        getItemKey: index => current[index]!,
+        getFirstChangedIndex: () => given,
+      })
+      expect(layout(v)).toEqual(layout(setup(next).v))
+    }
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('keys differ from index 400')
+
+    vi.stubEnv('NODE_ENV', 'production')
+    const wrong = hinted(BASE, INSERTED, 900)
+    expect(Math.min(...wrong.asked)).toBe(900)
+    expect(wrong.updated).not.toEqual(wrong.full)
   })
 })

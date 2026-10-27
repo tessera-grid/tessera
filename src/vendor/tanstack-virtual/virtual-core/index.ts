@@ -375,6 +375,9 @@ export interface VirtualizerOptions<
   scrollPaddingEnd?: number
   initialOffset?: number | (() => number)
   getItemKey?: (index: number) => Key
+  // Tessera (ADR 0145): first index whose key may differ from the previous
+  // build; called on every rebuild, `undefined` falls back to comparing keys.
+  getFirstChangedIndex?: () => number | undefined
   rangeExtractor?: (range: Range) => Array<number>
   scrollMargin?: number
   gap?: number
@@ -493,6 +496,8 @@ export class Virtualizer<
   } | null = null
   itemSizeCache = new Map<Key, number>()
   private itemSizeCacheVersion = 0
+  // Tessera (ADR 0145): a wrong first-changed hint is reported once.
+  private warnedFirstChangedIndex = false
   private laneAssignments = new Map<number, number>() // index → lane cache
   // Earliest index dirtied since last getMeasurements() rebuild, or null.
   private pendingMin: number | null = null
@@ -1657,6 +1662,9 @@ export class Virtualizer<
         })
       }
 
+      // Tessera (ADR 0145): asked on every rebuild so the caller tracks builds.
+      const hint = this.options.getFirstChangedIndex?.()
+
       // During lanes settling, ignore pendingMin to prevent repositioning
       let min = this.lanesSettling ? 0 : (this.pendingMin ?? 0)
 
@@ -1676,14 +1684,35 @@ export class Virtualizer<
         previous.estimateSize === this.options.estimateSize
       ) {
         const limit = Math.min(previous.items.length, count)
-        let same = 0
-        while (
-          same < limit &&
-          getItemKey(same) === getMeasurementKey(previous.items[same]!)
-        ) {
-          same++
+        const firstChangedKey = () => {
+          let same = 0
+          while (
+            same < limit &&
+            getItemKey(same) === getMeasurementKey(previous.items[same]!)
+          ) {
+            same++
+          }
+          return same
         }
-        min = same
+        // Tessera (ADR 0145): a hint skips the key comparison; in development
+        // it is checked against it and never trusted past a changed key.
+        if (hint === undefined) {
+          min = firstChangedKey()
+        } else {
+          min = Math.min(Math.max(hint, 0), limit)
+          if (process.env.NODE_ENV !== 'production') {
+            const same = firstChangedKey()
+            if (min > same) {
+              if (!this.warnedFirstChangedIndex) {
+                this.warnedFirstChangedIndex = true
+                console.warn(
+                  `getFirstChangedIndex returned ${hint}, but keys differ from index ${same}: positions are rebuilt from ${same}`,
+                )
+              }
+              min = same
+            }
+          }
+        }
       }
       this.pendingMin = null
 

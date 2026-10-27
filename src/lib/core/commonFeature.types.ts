@@ -104,6 +104,8 @@ export interface CommonOptions {
   getBodyBusy?: (state: Record<string, unknown>) => boolean
   /** В `data` загружена только часть строк сервера (лента, ADR 0081). */
   partialData?: boolean
+  /** Новая `data` только дописывает строки в конец прежней (лента, ADR 0145). */
+  appendOnlyData?: boolean
   /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
 }

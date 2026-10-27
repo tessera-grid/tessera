@@ -50,6 +50,7 @@ import { createTesseraSortedRowModel } from '../../../plugins/columnSortingModel
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
 import { createIncrementalExpandedRowModel } from '../../../core/expandedRowModel'
+import { rowChangeHints } from '../../../core/rowChanges'
 import { createSearchAwareFilteredRowModel } from '../../../core/filteredRowModel'
 import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGroupingModel/groupedRowModel'
 import {
@@ -2197,37 +2198,37 @@ const FeedGrid = ({ initial }: { initial: FeedRow[] }) => {
   )
 }
 
+/** Дописать 100 строк к 100 000 в ленте или подменить `data` той же длины. */
+const measureFeed = async (append: boolean) => {
+  const initial = feedRows(0, 100_000)
+  await render(<FeedGrid initial={initial} />)
+  await waitForGrid()
+  const result = await measureInteractionWork(
+    async () => {
+      setFeedRows(prev =>
+        append ? prev.concat(feedRows(prev.length, 100)) : prev.slice(),
+      )
+    },
+    {
+      afterWarmup: () =>
+        expect
+          .poll(
+            () => document.querySelectorAll('.data-grid__body-row').length > 0,
+          )
+          .toBe(true),
+    },
+  )
+  // Прогрев и замер — по действию: дописано дважды по 100 строк.
+  await expect.poll(() => feedLength).toBe(append ? 100_200 : 100_000)
+  await cleanup()
+  return result
+}
+
 describe('Отзывчивость взаимодействий — лента', () => {
   test(
     'IS16: дописать блок из 100 строк к 100 000 не хуже подмены data той же длины',
     async () => {
-      const measure = async (append: boolean) => {
-        const initial = feedRows(0, 100_000)
-        await render(<FeedGrid initial={initial} />)
-        await waitForGrid()
-        const result = await measureInteractionWork(
-          async () => {
-            setFeedRows(prev =>
-              append ? prev.concat(feedRows(prev.length, 100)) : prev.slice(),
-            )
-          },
-          {
-            afterWarmup: () =>
-              expect
-                .poll(
-                  () =>
-                    document.querySelectorAll('.data-grid__body-row').length >
-                    0,
-                )
-                .toBe(true),
-          },
-        )
-        // Прогрев и замер — по действию: дописано дважды по 100 строк.
-        await expect.poll(() => feedLength).toBe(append ? 100_200 : 100_000)
-        await cleanup()
-        return result
-      }
-      const runs = await againstBase(measure)
+      const runs = await againstBase(measureFeed)
       const base = medianRun(runs.base, r => r.longestMs)
       const fed = medianRun(runs.variant, r => r.longestMs)
       const ceiling = ceilingOver(base.longestMs, { ratio: 1.15, plusMs: 40 })
@@ -3143,55 +3144,57 @@ const ServerTreeGrid = ({ total }: { total: number }) => {
   )
 }
 
+/** Раскрытие ветки со 100 детьми при 1 000 000 корней или при 1000. */
+const measureServerBranch = async (large: boolean) => {
+  treeCalls = []
+  await render(<ServerTreeGrid total={large ? 1_000_000 : 1000} />)
+  await expect.poll(() => treeCalls.length).toBeGreaterThanOrEqual(1)
+  const roots = treeCalls[0]!
+  roots.resolve({ rows: feedRows(roots.start, roots.end - roots.start) })
+  const rowOf = (id: string) =>
+    document.querySelector<HTMLElement>(
+      `.data-grid__body-row[data-row-id="${id}"]`,
+    )
+  const toggleOf = (id: string) =>
+    rowOf(id)!.querySelector<HTMLElement>('.row-expand-button')!
+  await expect.poll(() => rowOf('f1')).not.toBeNull()
+  const parents = ['f0', 'f1']
+  let expanded = 0
+  const result = await measureInteractionWork(
+    async () => {
+      const id = parents[expanded++]!
+      const asked = treeCalls.length
+      toggleOf(id).click()
+      await expect.poll(() => treeCalls.length).toBe(asked + 1)
+      const call = treeCalls.at(-1)!
+      call.resolve({
+        rows: feedRows(0, BRANCH).map((row, k) => ({
+          ...row,
+          id: `${id}.${k}`,
+        })),
+        rowCount: BRANCH,
+      })
+      await expect.poll(() => rowOf(`${id}.0`)).not.toBeNull()
+    },
+    {
+      // Ветка строки 0 свёрнута — строка 1 снова в окне.
+      afterWarmup: async () => {
+        expect(treeCalls.at(-1)!.parentId).toBe('f0')
+        toggleOf('f0').click()
+        await expect.poll(() => rowOf('f0.0')).toBeNull()
+      },
+    },
+  )
+  expect(treeCalls.at(-1)!.parentId).toBe('f1')
+  await cleanup()
+  return result
+}
+
 describe('Отзывчивость взаимодействий — ленивые дети серверной модели строк', () => {
   test(
     'SD46: раскрытие ветки со 100 детьми при 1 000 000 корней не дороже того же раскрытия при 1000 корней плюс 60 мс',
     async () => {
-      const measure = async (large: boolean) => {
-        treeCalls = []
-        await render(<ServerTreeGrid total={large ? 1_000_000 : 1000} />)
-        await expect.poll(() => treeCalls.length).toBeGreaterThanOrEqual(1)
-        const roots = treeCalls[0]!
-        roots.resolve({ rows: feedRows(roots.start, roots.end - roots.start) })
-        const rowOf = (id: string) =>
-          document.querySelector<HTMLElement>(
-            `.data-grid__body-row[data-row-id="${id}"]`,
-          )
-        const toggleOf = (id: string) =>
-          rowOf(id)!.querySelector<HTMLElement>('.row-expand-button')!
-        await expect.poll(() => rowOf('f1')).not.toBeNull()
-        const parents = ['f0', 'f1']
-        let expanded = 0
-        const result = await measureInteractionWork(
-          async () => {
-            const id = parents[expanded++]!
-            const asked = treeCalls.length
-            toggleOf(id).click()
-            await expect.poll(() => treeCalls.length).toBe(asked + 1)
-            const call = treeCalls.at(-1)!
-            call.resolve({
-              rows: feedRows(0, BRANCH).map((row, k) => ({
-                ...row,
-                id: `${id}.${k}`,
-              })),
-              rowCount: BRANCH,
-            })
-            await expect.poll(() => rowOf(`${id}.0`)).not.toBeNull()
-          },
-          {
-            // Ветка строки 0 свёрнута — строка 1 снова в окне.
-            afterWarmup: async () => {
-              expect(treeCalls.at(-1)!.parentId).toBe('f0')
-              toggleOf('f0').click()
-              await expect.poll(() => rowOf('f0.0')).toBeNull()
-            },
-          },
-        )
-        expect(treeCalls.at(-1)!.parentId).toBe('f1')
-        await cleanup()
-        return result
-      }
-      const runs = await againstBase(measure)
+      const runs = await againstBase(measureServerBranch)
       const base = medianRun(runs.base, r => r.longestMs)
       const large = medianRun(runs.variant, r => r.longestMs)
       const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 60 })
@@ -3227,6 +3230,74 @@ describe('Отзывчивость взаимодействий — ленивы
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// Подсказка виртуализатору (ADR 0145, HV8): раскрытие ветки при 1 000 000 корней в SSRM и
+// дописывание 100 строк к 100 000 в ленте — с подсказкой против сверки ключей.
+const HV8_CASES = [
+  {
+    id: 'HV8-ssrm',
+    label: 'раскрытие ветки при 1 000 000 корней',
+    size: '1 000 000×3',
+    plugins: 'serverRowModel, rowExpanding',
+    measure: () => measureServerBranch(true),
+  },
+  {
+    id: 'HV8-feed',
+    label: 'дописать 100 строк к 100 000',
+    size: '100 000×3',
+    plugins: 'infiniteScroll',
+    measure: () => measureFeed(true),
+  },
+] as const
+/** С подсказкой — не меньше чем на 5 % дешевле сверки (замер 2026-10-27: 17–20 %). */
+const HV8_GAIN = 0.95
+describe('Отзывчивость взаимодействий — подсказка виртуализатору', () => {
+  test(
+    'HV8: раскрытие ветки при 1 000 000 корней в SSRM и дописывание 100 строк к 100 000 в ленте с подсказкой не меньше чем на 5 % дешевле, чем со сверкой ключей',
+    async () => {
+      const results: string[] = []
+      for (const { id, label, size, plugins, measure } of HV8_CASES) {
+        const runs = await againstBase(async (hinted: boolean) => {
+          rowChangeHints.enabled = hinted
+          try {
+            return await measure()
+          } finally {
+            rowChangeHints.enabled = true
+          }
+        })
+        const base = medianRun(runs.base, r => r.longestMs)
+        const hinted = medianRun(runs.variant, r => r.longestMs)
+        const ceiling = base.longestMs * HV8_GAIN
+        const record = (suffix: string, r: typeof base, gated: boolean) =>
+          recordPerf({
+            id: `${id}${suffix}`,
+            label: `${label}, ${gated ? 'подсказка' : 'сверка ключей'}`,
+            operation: 'interaction',
+            size,
+            plugins,
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load',
+                metric: 'longest',
+                valueMs: r.longestMs,
+                targetMs: INTERACTION_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...r,
+              },
+            ],
+          })
+        await record('-base', base, false)
+        await record('', hinted, true)
+        results.push(
+          `${id}: подсказка ${hinted.longestMs.toFixed(1)}ms, сверка ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+        )
+        expect(hinted.longestMs, results.at(-1)).toBeLessThanOrEqual(ceiling)
+      }
+    },
+    PERF_TIMEOUT * 4,
   )
 })
 

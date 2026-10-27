@@ -52,6 +52,7 @@ export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
         : undefined,
       getBodyBusy: enabled ? isLoadingMore : undefined,
       partialData: enabled,
+      appendOnlyData: enabled,
     }
   },
   slots: o => [

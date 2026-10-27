@@ -13,6 +13,7 @@ import { rowMeasureElement } from './rowMeasureElement'
 import { useRowRangeExtractor } from './rowRangeExtractor'
 import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 import { scrollLayer } from '../scrollStretch'
+import { firstChangedIndex, type RowBuild, rowBuildOf } from '../rowChanges'
 
 const ROWS_OVERSCAN = 5
 /** Строка растянутой области на экране — по объекту строки виртуализатора. */
@@ -53,13 +54,28 @@ export const useRowVirtualizer = ({
   // Серверная модель строк — по индексу (ADR 0138, §14); незагруженная строка — тоже.
   // Виртуализатор сверяет ключи начала списка на каждой смене строк (ADR 0143): массив
   // строк — один раз, а не модель на каждый индекс.
-  const getItemKey = useMemo(() => {
-    if (rows.keyByIndex) return (index: number) => index
+  const { getItemKey, list } = useMemo(() => {
+    if (rows.keyByIndex) {
+      return { getItemKey: (index: number) => index, list: undefined }
+    }
     const list = rows.rows?.()
-    return list
-      ? (index: number) => list[index]?.id ?? index
-      : (index: number) => rows.at(index)?.id ?? index
+    return {
+      getItemKey: list
+        ? (index: number) => list[index]?.id ?? index
+        : (index: number) => rows.at(index)?.id ?? index,
+      list,
+    }
   }, [rows])
+
+  // Место первого изменения строк с прошлой сборки позиций (ADR 0145): виртуализатор
+  // спрашивает его на каждой сборке.
+  const built = useRef<RowBuild | undefined>(undefined)
+  const getFirstChangedIndex = useCallback(() => {
+    const next = rowBuildOf(table, list)
+    const previous = built.current
+    built.current = next
+    return previous ? firstChangedIndex(table, previous, next) : undefined
+  }, [table, list])
 
   const activeRowIndex = useActiveCellIndex(table, 'rowIndex')
 
@@ -74,6 +90,7 @@ export const useRowVirtualizer = ({
     getScrollElement,
     measureElement: rowMeasureElement,
     getItemKey,
+    getFirstChangedIndex,
     overscan: ROWS_OVERSCAN,
     rangeExtractor,
     // Позиция — виртуальная, из слоя растяжки (ADR 0142).

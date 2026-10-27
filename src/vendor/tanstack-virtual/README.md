@@ -14,6 +14,9 @@ Tessera ([ADR 0143](../../../docs/decisions/0143-tanstack-virtual-fork.md)). Э�
 - **Пересчёт позиций от места изменения** (`virtual-core/index.ts`, `getMeasurements`): на
   смене `count` или `getItemKey` при прежних отступах, `estimateSize` и кэше размеров
   пересчёт начинается с первого изменённого ключа.
+- **Подсказка места изменения** (`virtual-core/index.ts`, опция `getFirstChangedIndex`,
+  [ADR 0145](../../../docs/decisions/0145-first-changed-row-hint.md)): индекс вместо сверки
+  ключей; в разработке сверяется с ней, неверная подсказка — одно предупреждение.
 - **Импорт ядра** (`react-virtual/index.tsx`): `../virtual-core` вместо `@tanstack/virtual-core`.
 
 ## Обновление версии

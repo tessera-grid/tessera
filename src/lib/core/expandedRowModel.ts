@@ -8,6 +8,7 @@ import { createExpandedRowModel } from '@tanstack/react-table'
 
 import type { RowData, Table, TableFeatures } from '../types'
 import type { NarrowState } from './effectiveState'
+import { recordRowChange } from './rowChanges'
 
 interface ExpandRow {
   id: string
@@ -195,6 +196,17 @@ export const createIncrementalExpandedRowModel =
           }
         }
       }
+      // Первая строка, чей id отличается от прежней, — подсказка виртуализатору (ADR 0145).
+      const before = prev.output.rows
+      const end = Math.min(
+        starts[affected[affected.length - 1]! + 1]!,
+        before.length,
+      )
+      let from = prev.starts[affected[0]!]!
+      while (from < end && rows[from]!.id === before[from]!.id) {
+        from++
+      }
+      recordRowChange(rows, before, from)
       return {
         input,
         expanded,
