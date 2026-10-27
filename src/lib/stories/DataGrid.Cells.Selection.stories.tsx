@@ -130,7 +130,7 @@ const RANGE: readonly GuideStoryStep[] = [
     states: ['body.cellRange'],
     enter: root => {
       const copied = { done: false }
-      untilDone(
+      return untilDone(
         () => copied.done,
         () => {
           if (selectedCells(root) !== BOTH_CELLS) selectBothRanges(root)

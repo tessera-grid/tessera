@@ -6,6 +6,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  afterRows,
   type HeldDrag,
   type Point,
   centerOf,
@@ -81,16 +82,6 @@ const HEAD = '.data-grid__head-cell[data-column-id]'
 
 const rect = (element: Element) => element.getBoundingClientRect()
 
-/** Действие шага — после отрисовки строк: ждёт таймером, а не кадрами. */
-const afterRows =
-  (action: (root: HTMLElement) => void) => (root: HTMLElement) => {
-    const run = () =>
-      root.querySelector('.data-grid__body-row')
-        ? action(root)
-        : setTimeout(run, 50)
-    setTimeout(run, 0)
-  }
-
 const HANDLE = '.drag__handler--column'
 /** Отметка отказа на ручке (ADR 0136). */
 const FAILURE = '[data-failure-indicator]'
@@ -101,13 +92,6 @@ const headOrder = (canvas: ParentNode) =>
   [...canvas.querySelectorAll<HTMLElement>(HEAD)]
     .sort((a, b) => rect(a).left - rect(b).left)
     .map(cell => cell.dataset.columnId)
-
-/**
- * Номер запуска действия шага: новый запуск останавливает прежний. В StrictMode эффект
- * выполняется дважды, и два цикла нажимали бы одну ручку — второе нажатие отменяет
- * открытие ленивого меню.
- */
-let stepRun = 0
 
 const handleOf = (root: ParentNode, id: string) =>
   root.querySelector<HTMLElement>(`${HEAD}[data-column-id="${id}"] ${HANDLE}`)
@@ -392,12 +376,11 @@ const serverStep =
     waiting?: string
     refused?: string
   }) =>
-  (root: HTMLElement) => {
+  (root: HTMLElement, signal: AbortSignal) => {
     let tries = 0
-    const run_ = ++stepRun
     // Одно действие за такт: пока ждёт перенос, другие колонки не переставить.
     const run = () => {
-      if (run_ !== stepRun || ++tries > 80) return
+      if (signal.aborted || ++tries > 80) return
       const later = () => setTimeout(run, 150)
       const unsaved = saved.find(id => !movedRight(root, id))
       if (unsaved) {
@@ -558,17 +541,17 @@ interface NestedMove {
  * Довести до шага, как пользователь без перетаскивания: меню ручки колонки или группы,
  * в нём — перенос (WCAG 2.5.7). Уже выполненные переносы не повторяются.
  */
-const nestedStep = (moves: NestedMove[]) => (root: HTMLElement) => {
-  let tries = 0
-  const run_ = ++stepRun
-  const run = () => {
-    const next = moves.find(move => !move.done(root))
-    if (run_ !== stepRun || !next || ++tries > 60) return
-    moveByMenu(root, next.id, next.item)
-    setTimeout(run, 150)
+const nestedStep =
+  (moves: NestedMove[]) => (root: HTMLElement, signal: AbortSignal) => {
+    let tries = 0
+    const run = () => {
+      const next = moves.find(move => !move.done(root))
+      if (signal.aborted || !next || ++tries > 60) return
+      moveByMenu(root, next.id, next.item)
+      setTimeout(run, 150)
+    }
+    setTimeout(run, 0)
   }
-  setTimeout(run, 0)
-}
 
 const LEAF_SWAPPED: NestedMove = {
   id: 'lastName',

@@ -8,6 +8,7 @@ import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import { filteringColumns, filteringData } from './__mocks__/filteringData'
 import {
+  afterRows,
   guideNext,
   headKebab,
   settle,
@@ -98,16 +99,6 @@ const marked = (button: HTMLElement | null) => {
   return !!dot && getComputedStyle(dot).opacity === '1'
 }
 
-/** Действие шага — после отрисовки строк: ждёт таймером, а не кадрами. */
-const afterRows =
-  (action: (root: HTMLElement) => void) => (root: HTMLElement) => {
-    const run = () =>
-      root.querySelector('.data-grid__body-row')
-        ? action(root)
-        : setTimeout(run, 50)
-    setTimeout(run, 0)
-  }
-
 // --- ADR 0024 S1 ---------------------------------------------------------------------
 
 const MENU_COLUMN = 'country'
@@ -115,9 +106,10 @@ const MENU_COLUMN = 'country'
 /** Открыть меню колонки нажатием на его кнопку; `then` — когда меню открыто. */
 const inColumnMenu =
   (then: (menu: HTMLElement, root: HTMLElement) => boolean = () => true) =>
-  (root: HTMLElement) => {
+  (root: HTMLElement, signal: AbortSignal) => {
     let tries = 0
     const run = () => {
+      if (signal.aborted) return
       const menu = openMenu()
       if (menu?.hasAttribute('data-open')) {
         if (then(menu, root) || ++tries > 20) return
@@ -434,10 +426,10 @@ const inIndexMenu =
     done: (root: HTMLElement) => boolean = root => expandedMenuOf(root, column),
     act: (menu: HTMLElement) => void = () => {},
   ) =>
-  (root: HTMLElement) => {
+  (root: HTMLElement, signal: AbortSignal) => {
     let tries = 0
     const run = () => {
-      if (done(root) || ++tries > 80) return
+      if (signal.aborted || done(root) || ++tries > 80) return
       const menu = document.querySelector<HTMLElement>('[role="menu"]')
       if (menu?.hasAttribute('data-open')) {
         if (expandedMenuOf(root, column)) act(menu)
@@ -462,52 +454,56 @@ const ASYNC_ACTIONS: readonly GuideStoryStep[] = [
     title: 'Проверка доступности',
     hint: 'Приложение добавило в меню колонки своё действие, доступность которого решает сервер. Пользователь открыл меню: пока сервер не ответил, пункт заблокирован и показывает ожидание.',
     states: ['overlay.menu'],
-    enter: afterRows(root => {
+    enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.hold()
       INDEX_SERVER.runs.release()
-      inIndexMenu('country')(root)
+      inIndexMenu('country')(root, signal)
     }),
   },
   {
     title: 'Действие уже выполнено',
     hint: 'Сервер ответил, что для этой колонки действие уже выполнено. Пункт заблокирован и отмечен как выполненный, причина — в подсказке пункта.',
     states: ['overlay.menu'],
-    enter: afterRows(root => {
+    enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.release()
-      inIndexMenu('country')(root)
+      inIndexMenu('country')(root, signal)
     }),
   },
   {
     title: 'Действие запрещено',
     hint: 'Пользователь открыл меню другой колонки. Сервер запретил для неё действие: пункт заблокирован со значком запрета, причина — в подсказке пункта.',
     states: ['overlay.menu'],
-    enter: afterRows(root => {
+    enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.release()
-      inIndexMenu('total')(root)
+      inIndexMenu('total')(root, signal)
     }),
   },
   {
     title: 'Действие выполняется',
     hint: 'Пользователь выбрал действие в колонке, где оно доступно. Меню закрылось, а кнопка меню колонки показывает ожидание, пока сервер выполняет действие.',
     states: ['head.kebab'],
-    enter: afterRows(root => {
+    enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.release()
       INDEX_SERVER.runs.hold()
-      inIndexMenu('lastName', root => busy(root, 'lastName'), runIndex)(root)
+      inIndexMenu(
+        'lastName',
+        root => busy(root, 'lastName'),
+        runIndex,
+      )(root, signal)
     }),
   },
   {
     title: 'Сервер отказал',
     hint: 'Сервер не выполнил действие. На кнопке меню колонки появляется отметка ошибки, она видна без наведения; подсказка кнопки называет невыполненное действие.',
     states: ['head.kebab'],
-    enter: afterRows(root => {
+    enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.release()
       INDEX_SERVER.runs.release()
       inIndexMenu(
         'lastName',
         root => busy(root, 'lastName') || failed(root, 'lastName'),
         runIndex,
-      )(root)
+      )(root, signal)
     }),
   },
 ]

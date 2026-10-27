@@ -363,14 +363,40 @@ export const rowKebab = (row: ParentNode | undefined) =>
   row?.querySelector<HTMLElement>('[data-action-menu="row"]') ?? null
 
 /**
+ * Действие шага гайда — после отрисовки строк: ждёт таймером, а не кадрами (в фоновой
+ * вкладке кадры стоят). Уход с шага прерывает его — `signal`: иначе цикл прошлого шага
+ * спорит за таблицу с циклом нового.
+ */
+export const afterRows =
+  (action: (root: HTMLElement, signal: AbortSignal) => void) =>
+  (root: HTMLElement) => {
+    const controller = new AbortController()
+    const run = () => {
+      if (controller.signal.aborted) return
+      if (root.querySelector('.data-grid__body-row')) {
+        action(root, controller.signal)
+      } else setTimeout(run, 50)
+    }
+    setTimeout(run, 0)
+    return () => controller.abort()
+  }
+
+/**
  * Действие шага гайда: открыть меню нажатием на его кнопку. Нажатие повторяется, пока
  * меню не откроется, — кнопка готова не сразу после появления строк; таймером, а не
  * кадрами: в фоновой вкладке кадры стоят.
  */
-export const openMenuBy = (button: () => HTMLElement | null | undefined) => {
+export const openMenuBy = (
+  button: () => HTMLElement | null | undefined,
+  signal?: AbortSignal,
+) => {
   let tries = 0
   const run = () => {
-    if (document.querySelector('[role="menu"][data-open]') || ++tries > 40)
+    if (
+      signal?.aborted ||
+      document.querySelector('[role="menu"][data-open]') ||
+      ++tries > 40
+    )
       return
     if (!document.querySelector('[role="menu"]')) button()?.click()
     setTimeout(run, 100)

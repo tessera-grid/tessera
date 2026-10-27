@@ -5,6 +5,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  afterRows,
   guideNext,
   openMenuBy,
   orderedRows,
@@ -103,16 +104,6 @@ export const LongTextPlayground: StoryObj<StoryProps> = {
   },
 }
 
-/** Выполнить действие шага, когда появятся строки: ждёт таймером, а не кадрами. */
-const afterRows =
-  (action: (root: HTMLElement) => void) => (root: HTMLElement) => {
-    const run = () =>
-      root.querySelector('.data-grid__body-row')
-        ? action(root)
-        : setTimeout(run, 50)
-    setTimeout(run, 0)
-  }
-
 // --- ADR 0075 S1 ---------------------------------------------------------------------
 
 // Колонка в середине: подсказка над ячейкой целиком над таблицей, не за её краем.
@@ -204,7 +195,9 @@ const MENUS: readonly GuideStoryStep[] = [
     title: 'Меню строки',
     hint: 'Длинный пункт меню переносится на несколько строк, а само меню не становится шире заданного предела.',
     states: ['overlay.menu'],
-    enter: afterRows(root => openMenuBy(() => rowMenuOf(root))),
+    enter: afterRows((root, signal) =>
+      openMenuBy(() => rowMenuOf(root), signal),
+    ),
   },
   {
     title: 'Узкая таблица',

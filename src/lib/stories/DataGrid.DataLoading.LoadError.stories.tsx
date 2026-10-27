@@ -107,10 +107,12 @@ export const LoadErrorPlayground: StoryObj<LoadErrorPlaygroundArgs> = {
 
 /**
  * Нажать кнопку повтора, как пользователь, когда она появилась. Ждёт таймером, а не
- * кадрами: в фоновой вкладке кадров нет.
+ * кадрами: в фоновой вкладке кадров нет. Уход с шага ожидание прерывает.
  */
 const pressRetry = (root: HTMLElement) => {
+  let left = false
   const run = () => {
+    if (left) return
     const button = root.querySelector<HTMLElement>(
       '[data-testid="load-error-retry"]',
     )
@@ -118,6 +120,9 @@ const pressRetry = (root: HTMLElement) => {
     else setTimeout(run, 50)
   }
   setTimeout(run, 0)
+  return () => {
+    left = true
+  }
 }
 
 /** Таблица сценариев: «сервер» обвязки отвечает на повтор. */

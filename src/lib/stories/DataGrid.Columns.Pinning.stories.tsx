@@ -4,7 +4,13 @@ import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
-import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
+import {
+  afterRows,
+  guideNext,
+  settle,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
@@ -80,16 +86,6 @@ const escape = () =>
     new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
   )
 
-/** Действие шага — после отрисовки строк: ждёт таймером, а не кадрами. */
-const afterRows =
-  (action: (root: HTMLElement) => void) => (root: HTMLElement) => {
-    const run = () =>
-      root.querySelector('.data-grid__body-row')
-        ? action(root)
-        : setTimeout(run, 50)
-    setTimeout(run, 0)
-  }
-
 /**
  * Довести таблицу до закреплений шага, как пользователь: кнопка закрепления колонки,
  * в её меню — сторона. Колонки уже на нужной стороне не трогаются, так что шаг приходит к
@@ -97,9 +93,10 @@ const afterRows =
  */
 const pinAll =
   (pins: [string, Side][], then: (root: HTMLElement) => void = () => {}) =>
-  (root: HTMLElement) => {
+  (root: HTMLElement, signal: AbortSignal) => {
     let tries = 0
     const run = () => {
+      if (signal.aborted) return
       const left = pins.find(
         ([id, side]) => pinnedSide(root, id) !== PINNED[side],
       )
@@ -138,11 +135,15 @@ const PIN_COLUMNS: readonly GuideStoryStep[] = [
     title: 'Выбор стороны',
     hint: 'Пользователь нажал кнопку закрепления колонки, которую можно закрепить с обеих сторон. Открылось меню: закрепить слева или справа.',
     states: ['overlay.menu'],
-    enter: afterRows(root => {
+    enter: afterRows((root, signal) => {
       let tries = 0
       const run = () => {
         const button = pinButtonOf(root, LEFT)
-        if (button?.getAttribute('aria-expanded') === 'true' || ++tries > 40)
+        if (
+          signal.aborted ||
+          button?.getAttribute('aria-expanded') === 'true' ||
+          ++tries > 40
+        )
           return
         if (!document.querySelector('[role="menu"]')) button?.click()
         setTimeout(run, 100)

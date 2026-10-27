@@ -120,8 +120,8 @@ let latestRun = 0
 
 /**
  * Довести таблицу до состояния шага: пока `done` не выполнено, делать следующий шаг
- * `act`. Таймером, а не кадрами: в фоновой вкладке кадры стоят. Новый запуск
- * останавливает прежний — два цикла одного шага мешали бы друг другу.
+ * `act`. Таймером, а не кадрами: в фоновой вкладке кадры стоят. Новый запуск и уход с
+ * шага (возвращённая отмена) останавливают прежний — два цикла мешали бы друг другу.
  */
 export const untilDone =
   <TApp>(
@@ -131,10 +131,14 @@ export const untilDone =
   (root: HTMLElement, app: TApp) => {
     const runId = ++latestRun
     let tries = 0
+    let left = false
     const run = () => {
-      if (runId !== latestRun || done(root) || ++tries > 80) return
+      if (left || runId !== latestRun || done(root) || ++tries > 80) return
       act(root, app)
       setTimeout(run, 100)
     }
     setTimeout(run, 0)
+    return () => {
+      left = true
+    }
   }

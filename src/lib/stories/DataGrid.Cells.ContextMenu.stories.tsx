@@ -121,7 +121,7 @@ const MENU: readonly GuideStoryStep[] = [
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
-      untilDone(
+      return untilDone(
         root => still(at(root, TARGET)) && menuAt(at(root, TARGET)),
         root => openAt(at(root, TARGET)),
       )(root, undefined)
@@ -132,7 +132,7 @@ const MENU: readonly GuideStoryStep[] = [
     hint: 'Пользователь выбрал копирование. Меню закрылось, значение ячейки попало в буфер, в консоли запись о копировании.',
     enter: root => {
       const chosen = { done: false }
-      untilDone(
+      return untilDone(
         () => chosen.done && !openMenu(),
         () => {
           const item = openMenu()?.querySelector<HTMLElement>(COPY)
@@ -150,7 +150,7 @@ const MENU: readonly GuideStoryStep[] = [
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
-      untilDone(
+      return untilDone(
         root =>
           selectedCells(root) === RANGE_CELLS &&
           still(at(root, INSIDE)) &&
@@ -171,7 +171,7 @@ const MENU: readonly GuideStoryStep[] = [
     states: ['body.cellRange'],
     enter: root => {
       const chosen = { done: false }
-      untilDone(
+      return untilDone(
         () => chosen.done && !openMenu(),
         root => {
           const item = openMenu()?.querySelector<HTMLElement>(COPY)

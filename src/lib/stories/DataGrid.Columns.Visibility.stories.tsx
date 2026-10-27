@@ -246,7 +246,9 @@ const HEADER_MENU: readonly GuideStoryStep[] = [
     // Сначала колонку скрывают (шаг открыт нажатием на него), затем возвращают списком.
     enter: (root: HTMLElement) => {
       let hidden = false
+      let left = false
       const run = () => {
+        if (left) return
         if (!hidden) {
           if (!headCell(root, HIDDEN)) hidden = true
           else hideFromMenu(root)
@@ -262,6 +264,9 @@ const HEADER_MENU: readonly GuideStoryStep[] = [
         setTimeout(run, 150)
       }
       setTimeout(run, 0)
+      return () => {
+        left = true
+      }
     },
   },
 ]

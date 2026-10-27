@@ -363,12 +363,14 @@ const cellMark = () =>
 const columnMark = () =>
   marksTable?.highlight({ column: 'total' }, { key: 'column', tone: 'success' })
 
-/** Приложение ставит подсветки шага, как только таблица готова. */
+/** Приложение ставит подсветки шага, как только таблица готова; уход с шага — отмена. */
 const applyMarks =
   (...marks: (() => unknown)[]) =>
   (root: HTMLElement) => {
     let tries = 0
+    let left = false
     const run = () => {
+      if (left) return
       if (marksTable && root.querySelector('.data-grid__body-row')) {
         marks.forEach(mark => mark())
         return
@@ -376,6 +378,9 @@ const applyMarks =
       if (++tries < 80) setTimeout(run, 50)
     }
     setTimeout(run, 0)
+    return () => {
+      left = true
+    }
   }
 
 const searchCells = (root: HTMLElement) =>

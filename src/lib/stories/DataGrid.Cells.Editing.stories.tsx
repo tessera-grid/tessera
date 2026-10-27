@@ -531,7 +531,7 @@ const EDIT_SESSION: readonly GuideStoryStep[] = [
     states: ['body.editing'],
     enter: (root, app) => {
       const changed = { done: false }
-      untilDone(
+      return untilDone(
         () => changed.done && hasDraft(root, SESSION_ROW, DRAFT_AGE),
         () => draftThenChange(root, app, changed),
       )(root, app)
@@ -542,7 +542,7 @@ const EDIT_SESSION: readonly GuideStoryStep[] = [
     hint: 'Пользователь нажал Enter. В ячейке его значение, а в консоли видны и исходное, и изменённое извне.',
     enter: (root, app) => {
       const changed = { done: false }
-      untilDone(
+      return untilDone(
         () =>
           !inputOf(root, SESSION_ROW) &&
           ageText(root, SESSION_ROW) === DRAFT_AGE,
@@ -621,7 +621,7 @@ const EDIT_CONFLICT: readonly GuideStoryStep[] = [
     states: ['body.editing'],
     enter: (root, app) => {
       const changed = { done: false }
-      untilDone(
+      return untilDone(
         () => changed.done && hasDraft(root, SESSION_ROW, DRAFT_AGE),
         () => draftThenChange(root, app, changed),
       )(root, app)
@@ -632,7 +632,7 @@ const EDIT_CONFLICT: readonly GuideStoryStep[] = [
     hint: 'Пользователь нажал Enter. Правка закрылась без сохранения, в ячейке значение, пришедшее извне. Причина отмены видна в консоли.',
     enter: (root, app) => {
       const changed = { done: false }
-      untilDone(
+      return untilDone(
         () =>
           !inputOf(root, SESSION_ROW) &&
           ageText(root, SESSION_ROW) === externalAge(),

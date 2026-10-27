@@ -7,6 +7,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  afterRows,
   guideNext,
   headCell,
   headKebab,
@@ -65,16 +66,6 @@ const HEAD = '.data-grid__head-cell[data-column-id]'
 
 const rect = (element: Element) => element.getBoundingClientRect()
 
-/** Действие шага — после отрисовки строк: ждёт таймером, а не кадрами. */
-const afterRows =
-  (action: (root: HTMLElement) => void) => (root: HTMLElement) => {
-    const run = () =>
-      root.querySelector('.data-grid__body-row')
-        ? action(root)
-        : setTimeout(run, 50)
-    setTimeout(run, 0)
-  }
-
 interface SizingApi {
   setColumnSizing: (sizing: Record<string, number>) => void
 }
@@ -94,9 +85,10 @@ const columnSizingHost = definePlugin<{ enabled?: boolean }>()({
 
 /** Ширина колонок шага: таблица отдаёт её, когда готова. */
 const withWidths = (sizing: Record<string, number>) =>
-  afterRows(() => {
+  afterRows((_, signal) => {
     let tries = 0
     const run = () => {
+      if (signal.aborted) return
       if (sizingApi) sizingApi.setColumnSizing(sizing)
       else if (++tries < 40) setTimeout(run, 50)
     }
