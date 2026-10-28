@@ -110,10 +110,11 @@ export interface RowWindow {
   fast: boolean
 }
 
-type ById = { rowsById: Record<string, { id: string } | undefined> }
+type ModelRow = { id: string; index: number }
+type ById = { rowsById: Record<string, ModelRow | undefined> }
 
 interface ModelTable {
-  getRowModel: () => { rows: { id: string }[] }
+  getRowModel: () => { rows: ModelRow[] } & ById
   getPrePaginatedRowModel: () => ById
   getCoreRowModel: () => ById
 }
@@ -128,7 +129,13 @@ export const createClientRowSource = (table: unknown): RowSource => {
     byId: id =>
       t.getPrePaginatedRowModel().rowsById[id] ??
       t.getCoreRowModel().rowsById[id],
-    indexOf: id => t.getRowModel().rows.findIndex(row => row.id === id),
+    indexOf: id => {
+      const { rows, rowsById } = t.getRowModel()
+      // Строка стоит на своём индексе (плоский список без сортировки) — без обхода списка.
+      const row = rowsById[id]
+      if (row && rows[row.index] === row) return row.index
+      return rows.findIndex(item => item.id === id)
+    },
     rows: () => t.getRowModel().rows,
   }
 }

@@ -594,8 +594,9 @@ export const scrollToRow = async (
   const column = columnId === undefined ? undefined : table.getColumn(columnId)
   if (columnId !== undefined && !column?.getIsVisible()) return false
 
+  let index = indexOf(table, rowId)
   // Строка не загружена (серверная модель строк): прокрутка по подсказке индекса.
-  if (indexOf(table, rowId) === -1 && options.index !== undefined) {
+  if (index === -1 && options.index !== undefined) {
     return toIndex(table, viewport, scroller, options.index, alive, {
       align,
       behavior,
@@ -604,7 +605,7 @@ export const scrollToRow = async (
     })
   }
 
-  if (indexOf(table, rowId) === -1) {
+  if (index === -1) {
     const path = pathTo(table, rowId)
     if (!path) return false
     const collapsed = path.slice(0, -1).filter(row => !row.getIsExpanded())
@@ -628,14 +629,12 @@ export const scrollToRow = async (
     }
     // Строка в модели и в виртуализаторе: грид перерисовался после смены состояния.
     const arrived = await until(() => {
-      const index = indexOf(table, rowId)
+      index = indexOf(table, rowId)
       return index !== -1 && viewport.rows.options.count > index
     }, alive)
     if (!arrived) return false
   }
 
-  const index = indexOf(table, rowId)
-  if (index === -1) return false
   const placed = await place(
     table,
     viewport,
