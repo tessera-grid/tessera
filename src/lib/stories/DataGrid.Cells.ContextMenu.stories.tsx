@@ -274,3 +274,131 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0078 S2 ---------------------------------------------------------------------
+
+/** Строка, где пересчёт демо-сервер отклоняет (каждая третья, ADR 0078). */
+const ASYNC_TARGET = { row: 'item-id-3', column: 'firstName' }
+const RECALCULATE = '[data-action-id$="asyncRecalculate"]'
+const recalculate = () =>
+  openMenu()?.querySelector<HTMLElement>(RECALCULATE) ?? null
+const recalculatePending = () => !!recalculate()?.hasAttribute('data-pending')
+const recalculateFailed = () =>
+  !!recalculate()?.querySelector('[data-action-failed]')
+/** Ход гайда: пересчёт запущен, меню после него открыто заново. */
+const run = { started: false, reopened: false }
+
+/** Пользователь выбирает пересчёт в открытом меню ячейки. */
+const startRecalculate = (root: HTMLElement) => {
+  const item = recalculate()
+  if (item) {
+    item.click()
+    run.started = true
+  } else openAt(at(root, ASYNC_TARGET))
+}
+
+const ASYNC_ITEMS: readonly GuideStoryStep[] = [
+  {
+    title: 'Меню с действием сервера',
+    hint: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь открыл меню правой кнопкой по ячейке.',
+    states: ['overlay.contextMenu'],
+    enter: root => {
+      run.started = false
+      run.reopened = false
+      const still = steady()
+      return untilDone(
+        root =>
+          still(at(root, ASYNC_TARGET)) &&
+          menuAt(at(root, ASYNC_TARGET)) &&
+          !!recalculate(),
+        root => openAt(at(root, ASYNC_TARGET)),
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Действие выполняется',
+    hint: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Пункт ждёт ответа и заблокирован.',
+    states: ['overlay.contextMenu'],
+    immediate: true,
+    enter: untilDone(
+      () => run.started && recalculatePending(),
+      root => {
+        if (!run.started) startRecalculate(root)
+        else if (!openMenu()) openAt(at(root, ASYNC_TARGET))
+      },
+    ),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер не выполнил пересчёт. Отказ объявлен, а при следующем открытии меню у пункта значок ошибки, его подсказка — причина.',
+    states: ['overlay.contextMenu'],
+    enter: root => {
+      run.reopened = false
+      const still = steady()
+      return untilDone(
+        root =>
+          run.reopened &&
+          recalculateFailed() &&
+          still(at(root, ASYNC_TARGET)) &&
+          menuAt(at(root, ASYNC_TARGET)),
+        root => {
+          if (!run.started) startRecalculate(root)
+          else if (openMenu() && recalculatePending()) return
+          else if (openMenu() && !run.reopened) closeMenu()
+          else if (!openMenu()) {
+            openAt(at(root, ASYNC_TARGET))
+            run.reopened = true
+          }
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0078, S2: действие контекстного меню ждёт сервер и отказывает. */
+export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
+  name: 'Async items',
+  parameters: { scenario: '0078/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Действие сервера в меню"
+      steps={ASYNC_ITEMS}
+      args={guideArgs(
+        {
+          enableContextMenu: true,
+          enableCellSelection: true,
+          actionsDemo: 'async',
+          columnCount: 8,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ASYNC_ITEMS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(recalculate()).not.toBeNull())
+      await settle()
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+    await step(ASYNC_ITEMS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(recalculatePending()).toBe(true))
+      expect(recalculate()).toHaveAttribute('aria-disabled', 'true')
+    })
+    await step(ASYNC_ITEMS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(recalculateFailed()).toBe(true))
+      const item = recalculate()!
+      const id = item.getAttribute('aria-describedby')
+      expect(id && document.getElementById(id)?.textContent).toBe(
+        'Formula service timed out',
+      )
+      await settle()
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+  },
+}

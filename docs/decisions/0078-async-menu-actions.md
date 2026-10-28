@@ -181,12 +181,13 @@ disabled?: (ctx, signal) => DisabledResult | Promise<DisabledResult>
 | №   | Сценарий                                                                                                         | Требования          | История                  |
 | --- | ---------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------ |
 | S1  | Действие приложения в меню колонки ждёт сервер: проверка доступности, уже выполнено, запрещено, ожидание и отказ | MI1, MI6, MI8, MI12 | `HeaderMenuAsyncActions` |
+| S2  | Действие приложения в контекстном меню ячейки выполняет сервер: ожидание и отказ в пункте при следующем открытии | MI17                | `ContextMenuAsyncItems`  |
 
 История — в `src/lib/stories/DataGrid.Columns.HeaderMenu.stories.tsx`
 (`Tessera/DataGrid/Columns/Header menu`); демо-действие колонки —
 `asyncHeaderActionsDemo` с «сервером», который гайд придерживает, пока шаг на виду.
-Меню строки и контекстное меню показывают истории «Rows/Actions — Async actions» и
-«Cells/Context menu — Async items».
+Контекстное меню — история «Cells/Context menu — Async items» (S2); меню строки —
+«Rows/Actions — Playground» с асинхронным набором действий (MI24).
 
 ## Границы
 

@@ -40,7 +40,7 @@ import {
 } from './demos/serverActionsDemos'
 
 /**
- * Серверные действия (ADR 0116): сортировка, страница и поиск уходят серверу, таблица
+ * Серверные действия (ADR 0116): сортировка, страница, фильтр и поиск уходят серверу, таблица
  * ждёт ответа и откатывает клики при отказе. `Playground` — «сервер» с задержкой, его
  * отказ включает `serverRefuses`; S1 — ожидание, ответ, отказ и повтор.
  */
@@ -59,12 +59,14 @@ const SERVER_MODE = {
   columnSortingMultiSort: false,
   paginationServer: true,
   paginationInitialPageSize: ACTION_SERVER_PAGE,
+  columnFilteringServer: true,
   quickSearchServer: true,
 } satisfies Partial<StoryProps>
 
 const SERVER_PLUGINS = {
   enableColumnSorting: true,
   enablePagination: true,
+  enableColumnFiltering: true,
   enableQuickSearch: true,
 } satisfies Partial<StoryProps>
 
@@ -113,7 +115,7 @@ const ServerActionsSandbox = ({
   )
 }
 
-/** Сортировка, страница и поиск на «сервере» с задержкой; отказ — аргументом. */
+/** Сортировка, страница, фильтр и поиск на «сервере» с задержкой; отказ — аргументом. */
 export const ServerActionsPlayground: StoryObj<ServerActionsPlaygroundArgs> = {
   name: 'Playground',
   parameters: showControls(
@@ -123,6 +125,7 @@ export const ServerActionsPlayground: StoryObj<ServerActionsPlaygroundArgs> = {
       'columnSortingRevertOnReject',
       'enablePagination',
       'paginationRevertOnReject',
+      'enableColumnFiltering',
       'enableQuickSearch',
     ],
     { columnCount: NOT_SERVER_ACTIONS, dataCount: NOT_SERVER_ACTIONS },
@@ -241,6 +244,37 @@ const searchRefused = () =>
   guide.lastReply.startsWith('refused') &&
   guide.lastReply.includes(`search "${SEARCH}"`)
 
+const FILTER = 'Alice 1'
+const filterButton = (root: HTMLElement) =>
+  headCell(root, 'name')?.querySelector<HTMLElement>('.column-filter__button')
+const filterPanel = () =>
+  document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
+const filterValue = () =>
+  document.querySelector<HTMLInputElement>('[data-testid="filter-value"]')
+const escape = () =>
+  document.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+  )
+/** Отметка отказа кнопки фильтра — точка ошибки (ADR 0116, SA18). */
+const filterFailed = (root: HTMLElement) =>
+  filterButton(root)
+    ?.querySelector('[data-error-indicator]')
+    ?.getAttribute('data-shown') === 'true'
+const refusedWith = (part: string) =>
+  guide.lastReply.startsWith('refused') && guide.lastReply.includes(part)
+
+/** Пользователь фильтрует колонку имён в её панели, «сервер» отказывает. */
+const refuseFilter = (root: HTMLElement, signal: AbortSignal) => {
+  guide.mode = 'refuse'
+  return pollUntil(() => {
+    if (refusedWith('filter name=') && banner(root) && !refreshing(root))
+      return filterFailed(root)
+    if (!filterPanel()) filterButton(root)?.click()
+    else type(filterValue(), FILTER)
+    return false
+  }, signal)
+}
+
 /** Пользователь ищет по имени, «сервер» отказывает. */
 const refuseSearch = async (root: HTMLElement, signal: AbortSignal) => {
   guide.mode = 'refuse'
@@ -349,6 +383,34 @@ const REFUSED: readonly GuideStoryStep[] = [
       }, signal)
     }),
   },
+  {
+    title: 'Фильтр не применился',
+    hint: 'Пользователь отфильтровал колонку по значению, сервер отказал. Условие осталось в панели фильтра, кнопка фильтра колонки отмечена отказом, под шапкой — сообщение с причиной и повтором.',
+    states: ['body.loadError', 'overlay.filterText'],
+    enter: stepAction((root, { signal }) => refuseFilter(root, signal)),
+  },
+  {
+    title: 'Страница не открылась',
+    hint: 'Пользователь открыл следующую страницу, сервер снова отказал. Таблица осталась на прежней странице, кнопка следующей страницы отмечена отказом, сообщение под шапкой называет причину.',
+    states: ['body.loadError'],
+    enter: stepAction(async (root, { signal }) => {
+      if (!refusedWith('filter name=') && !refusedWith('page 2'))
+        await refuseFilter(root, signal)
+      await pollUntil(() => {
+        if (!filterPanel()) return true
+        escape()
+        return false
+      }, signal)
+      guide.mode = 'refuse'
+      await pollUntil(() => {
+        if (refusedWith('page 2') && banner(root) && !refreshing(root))
+          return failed(pageButton(root, 'next')) && onFirstPage(root)
+        if (!waits(pageButton(root, 'next')) && !refusedWith('page 2'))
+          pageButton(root, 'next')?.click()
+        return false
+      }, signal)
+    }),
+  },
 ]
 
 /** ADR 0116, S1: сервер ждёт, отвечает, отказывает; пользователь повторяет запрос. */
@@ -439,6 +501,24 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
         true,
       )
       await expect(consoleText()).toContain(`search "${SEARCH}"`)
+      await settle()
+    })
+    await step(REFUSED[6]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      // Черновик: условие осталось в панели, кнопка фильтра отмечена отказом.
+      await expect(filterValue()!.value).toBe(FILTER)
+      await expect(filterFailed(canvas)).toBe(true)
+      await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
+      await expect(consoleText()).toContain('onFilterChange')
+      await settle()
+    })
+    await step(REFUSED[7]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(onFirstPage(canvas)).toBe(true)
+      await expect(failed(pageButton(canvas, 'next'))).toBe(true)
+      await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
       await settle()
     })
   },

@@ -155,6 +155,8 @@ const server = {
   starts: [] as number[],
   /** Строки, чьих вложенных строк просили. */
   parents: [] as string[],
+  /** Колонка, сортировку по которой «сервер» отклоняет. */
+  refuseSort: undefined as string | undefined,
 }
 
 /** Отдать ответы, которые «сервер» держал. */
@@ -179,6 +181,7 @@ const serverReset: TesseraFeatureEntry = {
     release()
     server.starts = []
     server.parents = []
+    server.refuseSort = undefined
   },
 }
 
@@ -252,6 +255,13 @@ const serverProps =
           if (start === failBlock && !server.failed.has(start)) {
             server.failed.add(start)
             return reject(new Error(SERVER_FAILURE))
+          }
+          if (
+            sortable &&
+            server.refuseSort !== undefined &&
+            sorting[0]?.id === server.refuseSort
+          ) {
+            return reject(new Error(SORT_REFUSAL))
           }
           if (sortable) {
             resolve({
@@ -581,6 +591,21 @@ const firstRowId = (root: HTMLElement) =>
     ?.dataset.rowId
 const sortedFirst = () =>
   sortedSet([{ id: 'name', desc: true }], SORT_TOTAL)[0]!.id
+const SORT_REFUSAL = 'The server could not sort the list'
+const citySortButton = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>(
+    '.data-grid__head-cell[data-column-id="city"] .column-sort__button',
+  )
+const nameSort = (root: HTMLElement) =>
+  root
+    .querySelector('.data-grid__head-cell[data-column-id="name"]')
+    ?.getAttribute('aria-sort')
+const sortBanner = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
+const sortFailed = (button: HTMLElement | null) =>
+  button
+    ?.querySelector('[data-failure-indicator]')
+    ?.getAttribute('data-shown') === 'true'
 
 /** Пользователь ушёл далеко от начала списка. */
 const browse = async (root: HTMLElement, signal: AbortSignal) => {
@@ -619,6 +644,7 @@ const SORTING: readonly GuideStoryStep[] = [
       sortable: true,
     }),
     enter: stepAction(async (root, { signal }) => {
+      server.refuseSort = undefined
       if (refreshing(root) || firstRowId(root) === sortedFirst()) return
       await browse(root, signal)
     }),
@@ -643,6 +669,33 @@ const SORTING: readonly GuideStoryStep[] = [
       release()
       await pollUntil(
         () => firstRowId(root) === sortedFirst() && !refreshing(root),
+        signal,
+      )
+    }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Пользователь отсортировал по другой колонке, сервер не прислал список в новом порядке. Таблица вернула прежний порядок и строки, кнопка сортировки отмечена отказом, под шапкой — сообщение с причиной и повтором.',
+    states: ['body.loadError'],
+    enter: stepAction(async (root, { signal }) => {
+      if (sortFailed(citySortButton(root))) return
+      if (firstRowId(root) !== sortedFirst()) {
+        if (server.held.length === 0) await sortByName(root, signal)
+        server.hold = false
+        release()
+        await pollUntil(
+          () => firstRowId(root) === sortedFirst() && !refreshing(root),
+          signal,
+        )
+      }
+      server.refuseSort = 'city'
+      citySortButton(root)?.click()
+      await pollUntil(
+        () =>
+          !!sortBanner(root) &&
+          !refreshing(root) &&
+          sortFailed(citySortButton(root)) &&
+          nameSort(root) === 'descending',
         signal,
       )
     }),
@@ -682,6 +735,15 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
       await expect(firstRowId(canvas)).toBe(sortedFirst())
       await expect(refreshing(canvas)).toBe(false)
       await expect(sortButton(canvas)).not.toHaveAttribute('aria-busy')
+      await settle()
+    })
+    await step(SORTING[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(sortBanner(canvas)).toHaveTextContent(SORT_REFUSAL)
+      await expect(sortFailed(citySortButton(canvas))).toBe(true)
+      await expect(nameSort(canvas)).toBe('descending')
+      await expect(firstRowId(canvas)).toBe(sortedFirst())
       await settle()
     })
   },

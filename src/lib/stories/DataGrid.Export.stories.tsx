@@ -301,28 +301,49 @@ export const ExportPresets: StoryObj<StoryProps> = {
 
 // --- ADR 0044 S3 ---------------------------------------------------------------------
 
-/** «Сервер» выгрузки: держит ответ, пока шаг ожидания на виду. */
+const EXPORT_REFUSAL = 'The export service is unavailable'
+
+/** «Сервер» выгрузки: держит ответ, пока шаг ожидания на виду; отказывает по команде шага. */
 const exportServer = (() => {
   let held = true
+  let refusing = false
   const waiting = new Set<() => void>()
   return {
     hold: () => {
       held = true
+      refusing = false
     },
     release: () => {
       held = false
+      refusing = false
       waiting.forEach(resolve => resolve())
       waiting.clear()
     },
+    refuse: () => {
+      held = false
+      refusing = true
+    },
     onExport: () =>
-      new Promise<void>(resolve => {
-        if (held) waiting.add(resolve)
-        else resolve()
-      }),
+      refusing
+        ? Promise.reject(new Error(EXPORT_REFUSAL))
+        : new Promise<void>(resolve => {
+            if (held) waiting.add(resolve)
+            else resolve()
+          }),
   }
 })()
 
 const exportBusy = () => exportButton()?.getAttribute('aria-busy') === 'true'
+const exportFailed = () =>
+  exportButton()
+    ?.querySelector('[data-failure-indicator]')
+    ?.getAttribute('data-shown') === 'true'
+const exportDescription = () =>
+  exportButton()
+    ?.getAttribute('aria-describedby')
+    ?.split(' ')
+    .map(id => document.getElementById(id)?.textContent)
+    .join(' ') ?? ''
 
 /** Пользователь выгружает все строки: запрос уходит серверу. */
 const exportAll = async (root: HTMLElement, signal: AbortSignal) => {
@@ -368,6 +389,22 @@ const SERVER: readonly GuideStoryStep[] = [
       await openExportPanel(root, signal)
       await chooseAxis('rows', 'page', signal)
       await runExport(signal)
+    }),
+  },
+  {
+    title: 'Сервер не собрал файл',
+    hint: 'Пользователь снова выгрузил все строки, но сервер отказал. Файла нет: кнопка выгрузки отмечена отказом, её подсказка — причина. Таблица не изменилась, поэтому сообщения под шапкой нет.',
+    enter: stepAction(async (root, { signal }) => {
+      if (exportFailed()) return
+      exportServer.refuse()
+      // Отказ приходит сразу: ожидание кнопки шаг не застаёт.
+      await openExportPanel(root, signal)
+      await chooseAxis('rows', 'all', signal)
+      await repeat(
+        () => exportFailed(),
+        () => byTestId('export-run')?.click(),
+        signal,
+      )
     }),
   },
 ]
@@ -429,6 +466,16 @@ export const ExportServer: StoryObj<StoryProps> = {
         await stepDone(canvas)
         await expect(download.names).toEqual(['export.csv'])
         await expect(consoleText()).toContain('onExported')
+      })
+      await step(SERVER[4]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportFailed()).toBe(true)
+        await expect(exportDescription()).toContain(EXPORT_REFUSAL)
+        await expect(download.names).toEqual(['export.csv'])
+        await expect(
+          canvas.querySelector('[data-testid="load-error-banner"]'),
+        ).toBeNull()
       })
     } finally {
       download.restore()

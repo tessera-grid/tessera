@@ -1,10 +1,10 @@
 /**
- * «Сервер» серверных действий (ADR 0116): сортировка, страница и поиск — один запрос.
+ * «Сервер» серверных действий (ADR 0116): сортировка, страница, фильтр и поиск — один запрос.
  * Ответ приходит промисом колбэка: через задержку, по команде (удержание) или отказом.
  */
 import type { ServerActionContext } from '../../core/serverActions'
 import type { FilteringItem } from '../__mocks__/filteringData'
-import { queryFiltering } from './filteringDemos'
+import { type ServerFilters, queryFiltering } from './filteringDemos'
 import { type ServerSort, sortRows } from './panelsDemos'
 
 export const ACTION_SERVER_PAGE = 25
@@ -16,6 +16,7 @@ export interface ActionServerQuery {
   pageSize: number
   search: string
   columnIds: string[]
+  filters: ServerFilters
 }
 
 export const initialActionQuery = (): ActionServerQuery => ({
@@ -24,12 +25,13 @@ export const initialActionQuery = (): ActionServerQuery => ({
   pageSize: ACTION_SERVER_PAGE,
   search: '',
   columnIds: [],
+  filters: [],
 })
 
 /** Ответ «сервера» на запрос: страница строк и число найденных. */
 export const queryActionServer = (query: ActionServerQuery) => {
   const found = sortRows(
-    queryFiltering([], query.search, query.columnIds),
+    queryFiltering(query.filters, query.search, query.columnIds),
     query.sort,
   )
   const from = query.pageIndex * query.pageSize
@@ -116,6 +118,8 @@ export const createActionServer = ({
         { columnIds }: { columnIds: string[] },
         context: ServerActionContext,
       ) => send({ search, columnIds }, context, sink),
+      onFilterChange: (filters: ServerFilters, context: ServerActionContext) =>
+        send({ filters }, context, sink),
     }),
     /** Ответить на задержанный запрос — по текущему режиму. */
     release: () => held?.(),
@@ -138,6 +142,8 @@ const describeQuery = (query: ActionServerQuery, total?: number) =>
         ? ''
         : ` of ${Math.max(1, Math.ceil(total / query.pageSize))}`),
     query.sort && `by ${query.sort.id} ${query.sort.desc ? 'desc' : 'asc'}`,
+    query.filters.length > 0 &&
+      `filter ${query.filters.map(({ id, value }) => `${id}=${JSON.stringify(value)}`).join(' ')}`,
     query.search && `search "${query.search}"`,
   ]
     .filter(Boolean)

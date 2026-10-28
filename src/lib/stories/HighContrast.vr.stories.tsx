@@ -465,6 +465,16 @@ export const HighContrastServerRowModelSortingStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowModelSortingStep4 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSorting,
+    4,
+  ),
+  name: 'Data loading/Server row model — Sorting, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelOpenAtRecordStep1 = {
   ...twinStep(
     serverRowModelStories,
@@ -1133,6 +1143,12 @@ export const HighContrastExportServerStep3 = {
 export const HighContrastExportServerStep4 = {
   ...twinStep(exportStories, exportStories.ExportServer, 4),
   name: 'Export — Server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerStep5 = {
+  ...twinStep(exportStories, exportStories.ExportServer, 5),
+  name: 'Export — Server, шаг 5',
   tags: ['!test'],
 }
 
@@ -2946,6 +2962,26 @@ export const HighContrastServerActionsRefusedStep6 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerActionsRefusedStep7 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    7,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 7',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsRefusedStep8 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsRefused,
+    8,
+  ),
+  name: 'Data loading/Server actions — Refused by the server, шаг 8',
+  tags: ['!test'],
+}
+
 export const HighContrastRefreshDataUpdateStep1 = {
   ...twinStep(
     dataLoadingRefreshStories,
@@ -3661,5 +3697,35 @@ export const HighContrastCellErrorsRefusalStep2 = {
 export const HighContrastCellErrorsRefusalStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 3),
   name: 'Cells/Errors — Refusal and data error, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuAsyncItemsStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuAsyncItems,
+    1,
+  ),
+  name: 'Cells/Context menu — Async items, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuAsyncItemsStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuAsyncItems,
+    2,
+  ),
+  name: 'Cells/Context menu — Async items, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuAsyncItemsStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuAsyncItems,
+    3,
+  ),
+  name: 'Cells/Context menu — Async items, шаг 3',
   tags: ['!test'],
 }
