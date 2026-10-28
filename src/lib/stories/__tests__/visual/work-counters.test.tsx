@@ -11,6 +11,9 @@ import { ActionsZone } from '../../../grid/headerActions/ActionsZone'
 import { BodyCell } from '../../../grid/BodyCell'
 import { BodyRow, BodyRowCells } from '../../../grid/BodyRow'
 import { DraggableBodyRow } from '../../../grid/DraggableBodyRow'
+import { ItemDraggableWrapper } from '../../../grid/dnd'
+import { FooterCell } from '../../../grid/FooterCell'
+import { Toolbar } from '../../../grid/Toolbar/Toolbar'
 import { HeadCellView } from '../../../grid/HeadCell'
 import { HeadSelectionComponent } from '../../../plugins/rowSelection/HeadSelectionComponent'
 import { RowSelectionComponent } from '../../../plugins/rowSelection/RowSelectionComponent'
@@ -21,6 +24,7 @@ import {
 } from '../../../plugins'
 import { LinearProgress } from '../../../ui/LinearProgress'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
+import { makeColumns } from '../../__mocks__/columns'
 import { getData } from '../../__mocks__/data'
 import type { FeatureToggles } from '../../__mocks__/utils/argsToPlugins'
 import { ALL_PLUGINS, Grid, waitForQuietDocument } from '../memory.helpers'
@@ -35,7 +39,8 @@ import { tableLabels } from '../labels'
 
 // Счётчики работы (ADR 0099, этап 2, PF2–PF11): работа ключевых действий считается —
 // коммиты React, отрисованные компоненты, узлы, раскладки, пересборки моделей строк.
-// Бюджеты — через окно виртуализации, а не числами под машину.
+// Бюджеты — через окно виртуализации, а не числами под машину. PS10–PS13 — сдвиг окна
+// при прокрутке (ADR 0149).
 
 const browser = commands as unknown as {
   reducedMotion: (reduce: boolean) => Promise<void>
@@ -64,6 +69,8 @@ const mountGrid = async (
   data = getData(300),
   plugins?: readonly unknown[],
   onDebugAction?: OnDebugAction,
+  columns?: unknown[],
+  footer?: boolean,
 ) => {
   const box: { table?: object } = {}
   const screen = await render(
@@ -72,6 +79,8 @@ const mountGrid = async (
       toggles={toggles}
       plugins={plugins}
       onDebugAction={onDebugAction}
+      columns={columns}
+      footer={footer}
       onTable={table => (box.table = table)}
     />,
   )
@@ -603,5 +612,113 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     expect(arrived).toBeGreaterThan(0)
     expect(renders(work, BodyRow), describeWork(work)).toBe(arrived)
     for (const row of kept) expect(row.isConnected).toBe(true)
+  })
+})
+
+// Цена плагинов при прокрутке (ADR 0149, этап 5, PS10–PS13): сдвиг окна строк или колонок
+// перерисовывает новое, а не всё, что на экране.
+describe('сдвиг окна при прокрутке (ADR 0149)', () => {
+  const WIDE = makeColumns(30)
+  /** Сдвиг по горизонтали на одну колонку: окно колонок сменилось, скелетов нет. */
+  const shiftColumns = async (grid: HTMLElement) => {
+    const before = grid.scrollLeft
+    const step = document
+      .querySelector(
+        '.data-grid__body-row .data-grid__body-cell[data-column-id="country"]',
+      )!
+      .getBoundingClientRect().width
+    grid.scrollLeft = before + step
+    await expect.poll(() => grid.scrollLeft).toBeGreaterThan(before)
+  }
+  const mountWide = async (toggles: FeatureToggles, footer = false) => {
+    const mounted = await mountGrid(
+      toggles,
+      getData(300),
+      undefined,
+      undefined,
+      WIDE,
+      footer,
+    )
+    // Первый сдвиг грузит модули и прогревает окно; меряется второй.
+    await shiftColumns(mounted.grid)
+    await waitForQuietDocument(500)
+    return mounted
+  }
+
+  test('PS10: сдвиг окна колонок перерисовывает у видимой строки только список её ячеек: компонент строки и её обёртки не перерисовываются — по счётчикам работы', async () => {
+    const { grid, measure } = await mountWide(ALL_PLUGINS)
+    const rows = windowSize().rows
+    const work = await measure(() => shiftColumns(grid))
+    expect(renders(work, BodyRowCells), describeWork(work)).toBeGreaterThan(0)
+    within(
+      work,
+      renders(work, BodyRowCells),
+      rows * work.commits,
+      'списки ячеек',
+    )
+    within(work, rowRenders(work), 0, 'строки')
+  })
+
+  test('PS11: обёртки перетаскивания строки перерисовываются только при смене своей строки, а не при сдвиге окна строк или колонок — по счётчикам работы', async () => {
+    const { grid, measure } = await mountGrid({ enableRowDragging: true })
+    const box = grid.getBoundingClientRect()
+    const at = { x: box.left + 200, y: box.top + 200 }
+    const rowHeight = document
+      .querySelector('.data-grid__body-row')!
+      .getBoundingClientRect().height
+    const wheel = async (rows: number) => {
+      await browser.realWheel(at, rowHeight, 1, 0)
+      await expect.poll(() => grid.scrollTop).toBe(rowHeight * rows)
+    }
+    await wheel(1)
+    await waitForQuietDocument(500)
+    // Окно строк сдвинулось на одну: перерисована только пришедшая строка.
+    const work = await measure(() => wheel(2))
+    within(work, renders(work, DraggableBodyRow), 1, 'строки')
+    within(
+      work,
+      renders(work, ItemDraggableWrapper),
+      1,
+      'обёртки перетаскивания',
+    )
+  })
+
+  test('PS12: сдвиг окна строк и колонок не перерисовывает тулбар', async () => {
+    const { grid, measure } = await mountWide(ALL_PLUGINS)
+    expect(
+      document.querySelector('[data-testid="data-grid-toolbar"]'),
+    ).not.toBeNull()
+    const columns = await measure(() => shiftColumns(grid))
+    within(columns, renders(columns, Toolbar), 0, 'тулбар при сдвиге колонок')
+    const box = grid.getBoundingClientRect()
+    const rowHeight = document
+      .querySelector('.data-grid__body-row')!
+      .getBoundingClientRect().height
+    const before = grid.scrollTop
+    const rows = await measure(async () => {
+      await browser.realWheel(
+        { x: box.left + 200, y: box.top + 200 },
+        rowHeight,
+        1,
+        0,
+      )
+      await expect.poll(() => grid.scrollTop).toBe(before + rowHeight)
+    })
+    within(rows, renders(rows, Toolbar), 0, 'тулбар при сдвиге строк')
+  })
+
+  test('PS13: при прокрутке ячейки футера перерисовываются только новые', async () => {
+    const { grid, measure } = await mountWide({}, true)
+    const footerIds = () =>
+      new Set(
+        [...document.querySelectorAll('.data-grid__footer-cell')].map(cell =>
+          cell.getAttribute('data-column-id'),
+        ),
+      )
+    const before = footerIds()
+    const work = await measure(() => shiftColumns(grid))
+    const added = [...footerIds()].filter(id => !before.has(id)).length
+    expect(added, describeWork(work)).toBeGreaterThan(0)
+    within(work, renders(work, FooterCell), added, 'ячейки футера')
   })
 })

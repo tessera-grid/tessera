@@ -4,7 +4,7 @@
  * (поле поиска, ADR 0045) — слева. Один tab-stop, стрелки
  * ходят по кнопкам (Base UI Toolbar).
  */
-import { Fragment, type KeyboardEvent } from 'react'
+import { Fragment, memo, type KeyboardEvent } from 'react'
 
 import { Toolbar as BaseToolbar } from '@base-ui/react/toolbar'
 
@@ -60,7 +60,9 @@ const ToolbarGroups = ({
     </Fragment>
   ))
 
-export const Toolbar = ({ table, label }: ToolbarProps) => {
+// Мемо: перерисовка грида сдвигом окна строк или колонок тулбар не трогает — его кнопки
+// подписаны на свои срезы сами (ADR 0149, PS12).
+export const Toolbar = memo(({ table, label }: ToolbarProps) => {
   const slots = (table.getRenderSlots as () => RenderSlots | undefined)()
   const { start, end } = resolveToolbarSides(slots?.toolbarSlot ?? [])
 
@@ -82,4 +84,6 @@ export const Toolbar = ({ table, label }: ToolbarProps) => {
       </div>
     </BaseToolbar.Root>
   )
-}
+})
+
+Toolbar.displayName = 'Toolbar'

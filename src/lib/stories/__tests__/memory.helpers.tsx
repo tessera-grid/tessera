@@ -75,6 +75,8 @@ export interface GridProps {
   colorMode?: 'auto' | 'light' | 'dark'
   /** Слушатель канала действий (ADR 0125). */
   onDebugAction?: OnDebugAction
+  /** Футер колонок (ADR 0118). */
+  footer?: boolean
 }
 
 const DEFAULT_DATA = getData(60, 'nested')
@@ -87,6 +89,7 @@ export const Grid = ({
   onTable,
   colorMode,
   onDebugAction,
+  footer,
 }: GridProps) => {
   const built = useMemo(() => argsToPlugins(toggles), [toggles])
   const plugins = pluginsProp ?? built
@@ -96,6 +99,7 @@ export const Grid = ({
     getRowId: (row: { id: string }) => row.id,
     plugins: plugins as never,
     onDebugAction,
+    enableFooter: footer,
   })
   useEffect(() => {
     onTable?.(table)

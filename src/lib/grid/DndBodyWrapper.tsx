@@ -89,6 +89,8 @@ const OverCommit = ({
   return null
 }
 
+const NO_SORTABLE_ROWS: string[] = []
+
 export interface DndBodyWrapperProps {
   table: Table<any, any>
   /** Окно виртуализатора строк: id для `SortableContext`. */
@@ -227,9 +229,14 @@ export const DndBodyWrapper = ({
     [draggableRow],
   )
 
+  // Вне перетаскивания список строк постоянный: сдвиг окна не перерисовывает строки через
+  // контекст dnd-kit (ADR 0149, PS11). Строки окна нужны только идущему перетаскиванию (D34).
   const items = useMemo(
-    () => getSortableRowIds(rows, virtualRows),
-    [rows, virtualRows],
+    () =>
+      activeId === null
+        ? NO_SORTABLE_ROWS
+        : getSortableRowIds(rows, virtualRows),
+    [activeId, rows, virtualRows],
   )
 
   const sensors = useSensors(

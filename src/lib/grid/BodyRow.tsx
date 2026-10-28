@@ -2,7 +2,7 @@
 // приходит пропсами virtualRow/virtualColumns. Реактивность через useTableState. Row-методы фич
 // (getIsSelected/getIsExpanded/getCanDrag) вызываются через ?. — плагина может
 // не быть в наборе.
-import { memo, useMemo } from 'react'
+import { memo, useContext, useMemo } from 'react'
 
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
@@ -24,6 +24,7 @@ import {
   useKeyboardNavigationRow,
 } from '../core/keyboardNavigation'
 import { BodyCell } from './BodyCell'
+import { ColumnWindowContext } from './columnWindow'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 import { needsRightFiller } from './layout'
@@ -35,7 +36,8 @@ export interface TableBodyRowProps {
   row: Row<any, any>
   visibleCells: Cell<any, any, unknown>[]
   virtualRow: VirtualItem
-  virtualColumns: VirtualItem[]
+  /** Окно колонок; в теле его даёт `ColumnWindowContext`, чтобы сдвиг не перерисовывал строку. */
+  virtualColumns?: VirtualItem[]
   leafColumns: Column<any, any, unknown>[]
   leftCellSlot?: CellSlot
   rightCellSlot?: CellSlot
@@ -104,7 +106,7 @@ export const BodyRowCells = ({
   row,
   virtualRow,
   visibleCells,
-  virtualColumns,
+  virtualColumns: virtualColumnsProp,
   leafColumns,
   leftCellSlot,
   rightCellSlot,
@@ -116,6 +118,8 @@ export const BodyRowCells = ({
   isVirtualColumns,
   isRowInteract,
 }: BodyRowCellsProps) => {
+  const virtualColumns =
+    useContext(ColumnWindowContext) ?? virtualColumnsProp ?? []
   if (isVirtualColumns) {
     const cellProps = (
       cell: Cell<any, any, unknown>,

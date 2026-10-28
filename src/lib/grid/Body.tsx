@@ -13,6 +13,7 @@ import { isKeyboardNavigationEnabled } from '../core/keyboardNavigation'
 import { useLocalization } from '../core/localization'
 import type { RowFailure, RowSource } from '../core/rowSource'
 import { BodyRow } from './BodyRow'
+import { ColumnWindowContext } from './columnWindow'
 import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
 import { LoadMoreError } from './LoadMoreError'
@@ -160,72 +161,73 @@ export const Body = ({
       role="rowgroup"
       data-layout={layout}
     >
-      <RowMotion
-        enabled={rowAnimation}
-        rows={rows}
-        virtualRows={virtualRows}
-        bodyRef={bodyRef}
-      >
-        {virtualRows.map(virtualRow => {
-          const row = rowSource.at(virtualRow.index)
-          // Строка отказавшего блока — пустая рамка под его строкой ошибки (ADR 0138, §11).
-          if (!row && failedAt(virtualRow.index)) {
+      <ColumnWindowContext.Provider value={virtualColumns}>
+        <RowMotion
+          enabled={rowAnimation}
+          rows={rows}
+          virtualRows={virtualRows}
+          bodyRef={bodyRef}
+        >
+          {virtualRows.map(virtualRow => {
+            const row = rowSource.at(virtualRow.index)
+            // Строка отказавшего блока — пустая рамка под его строкой ошибки (ADR 0138, §11).
+            if (!row && failedAt(virtualRow.index)) {
+              return (
+                <FailedRow
+                  key={`failed-${virtualRow.index}`}
+                  table={table}
+                  layout={layout}
+                  virtualRow={virtualRow}
+                  leafColumns={leafColumns}
+                  virtualColumns={virtualColumns}
+                  isVirtualColumns={isVirtualColumns}
+                />
+              )
+            }
+            // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
+            if (!row) {
+              return (
+                <PendingRow
+                  tree={treeRows ? sourceAria?.(virtualRow.index) : undefined}
+                  key={`pending-${virtualRow.index}`}
+                  table={table}
+                  layout={layout}
+                  virtualRow={virtualRow}
+                  leafColumns={leafColumns}
+                  virtualColumns={virtualColumns}
+                  isVirtualColumns={isVirtualColumns}
+                  ariaRowIndexBase={ariaRowIndexBase}
+                />
+              )
+            }
+            const isActive = drop?.activeId === row.id
+            const lines = linesOf(virtualRow.index, isActive)
             return (
-              <FailedRow
-                key={`failed-${virtualRow.index}`}
-                table={table}
+              <RowComponent
+                key={row.id}
                 layout={layout}
+                row={row}
                 virtualRow={virtualRow}
+                visibleCells={row.getVisibleCells()}
                 leafColumns={leafColumns}
-                virtualColumns={virtualColumns}
-                isVirtualColumns={isVirtualColumns}
-              />
-            )
-          }
-          // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
-          if (!row) {
-            return (
-              <PendingRow
-                tree={treeRows ? sourceAria?.(virtualRow.index) : undefined}
-                key={`pending-${virtualRow.index}`}
-                table={table}
-                layout={layout}
-                virtualRow={virtualRow}
-                leafColumns={leafColumns}
-                virtualColumns={virtualColumns}
-                isVirtualColumns={isVirtualColumns}
+                leftCellSlot={leftCellSlot}
+                rightCellSlot={rightCellSlot}
+                cellSlot={cellSlot}
+                actionRowSlot={actionRowSlot}
                 ariaRowIndexBase={ariaRowIndexBase}
+                selectableRows={selectableRows}
+                treeSetSize={treeAria?.setSize(virtualRow.index)}
+                treePosInSet={treeAria?.posInSet(virtualRow.index)}
+                treeBranch={lines.branch}
+                treeOpen={lines.open}
+                slotDepth={isActive ? drop.depth : undefined}
+                dropParent={virtualRow.index === dropParent || undefined}
+                isVirtualColumns={isVirtualColumns}
               />
             )
-          }
-          const isActive = drop?.activeId === row.id
-          const lines = linesOf(virtualRow.index, isActive)
-          return (
-            <RowComponent
-              key={row.id}
-              layout={layout}
-              row={row}
-              virtualRow={virtualRow}
-              visibleCells={row.getVisibleCells()}
-              virtualColumns={virtualColumns}
-              leafColumns={leafColumns}
-              leftCellSlot={leftCellSlot}
-              rightCellSlot={rightCellSlot}
-              cellSlot={cellSlot}
-              actionRowSlot={actionRowSlot}
-              ariaRowIndexBase={ariaRowIndexBase}
-              selectableRows={selectableRows}
-              treeSetSize={treeAria?.setSize(virtualRow.index)}
-              treePosInSet={treeAria?.posInSet(virtualRow.index)}
-              treeBranch={lines.branch}
-              treeOpen={lines.open}
-              slotDepth={isActive ? drop.depth : undefined}
-              dropParent={virtualRow.index === dropParent || undefined}
-              isVirtualColumns={isVirtualColumns}
-            />
-          )
-        })}
-      </RowMotion>
+          })}
+        </RowMotion>
+      </ColumnWindowContext.Provider>
       {failures
         .filter(failure => failure.end > first && failure.start <= last)
         .map(failure => (
