@@ -2229,7 +2229,8 @@ describe('Отзывчивость взаимодействий — лента',
   test(
     'IS16: дописать блок из 100 строк к 100 000 не хуже подмены data той же длины',
     async () => {
-      const runs = await againstBase(measureFeed)
+      // Самая длинная задача одного ответа на 100 000 строк шумит на ±40 мс: пять раундов.
+      const runs = await againstBase(measureFeed, 5)
       const base = medianRun(runs.base, r => r.longestMs)
       const fed = medianRun(runs.variant, r => r.longestMs)
       const ceiling = ceilingOver(base.longestMs, { ratio: 1.15, plusMs: 40 })
