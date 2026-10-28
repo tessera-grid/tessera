@@ -1063,7 +1063,10 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
     const steps: readonly GuideStoryStep[] = [{ title: 'Строки', hint: '' }]
     const rowAt = (index: number) =>
       document.querySelector<HTMLElement>(`${ROW}[data-index="${index}"]`)!
-    /** Строку 0 держат над строкой 3 и бросают; порядок строк после броска. */
+    /**
+     * Строку 0 держат у нижнего края строки 3 и бросают; порядок строк после броска.
+     * Не над центром: центр — граница «до» и «после», бросок на ней перескакивает.
+     */
     const drop = async () => {
       const screen = await render(
         <GuideStory title="Бросок" steps={steps} args={args} />,
@@ -1075,7 +1078,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
         const handle = rowAt(0).querySelector<HTMLElement>(HANDLE)!
         const held = await dragHold(handle, {
           x: centerOf(handle).x,
-          y: centerOf(rowAt(3)).y,
+          y: rowAt(3).getBoundingClientRect().bottom - 1,
         })
         const box = handle.getBoundingClientRect()
         const inView = box.top >= 0 && box.bottom <= window.innerHeight

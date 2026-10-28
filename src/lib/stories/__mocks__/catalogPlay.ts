@@ -149,7 +149,9 @@ export const centerOf = (el: Element): Point => {
  * узел никуда не дошли бы. `signal` — уход с шага гайда: движение обрывается.
  * Ручка или точка `target` за краем окна — страница сперва прокручивается так, что путь
  * между ними по центру окна, `target` — вместе с ней (SN44): указатель за краем включил
- * бы автопрокрутку страницы dnd-kit.
+ * бы автопрокрутку страницы dnd-kit. Пока указатель идёт к `target`, события настоящей
+ * мыши до dnd-kit не доходят (`shieldHeldDrag`): WebKit после прокрутки шлёт `mousemove`
+ * в точку курсора, и облако уходило к ней.
  */
 export const dragHold = async (
   handle: HTMLElement,
@@ -191,14 +193,19 @@ export const dragHold = async (
   /** Ведёт указатель к точке за `count` кадров, не отпуская. */
   const moveTo = async (target: Point, count = steps) => {
     const from = at
-    for (let i = 1; i <= count; i++) {
-      signal?.throwIfAborted()
-      at = {
-        x: from.x + ((target.x - from.x) * i) / count,
-        y: from.y + ((target.y - from.y) * i) / count,
+    const lift = shieldHeldDrag()
+    try {
+      for (let i = 1; i <= count; i++) {
+        signal?.throwIfAborted()
+        at = {
+          x: from.x + ((target.x - from.x) * i) / count,
+          y: from.y + ((target.y - from.y) * i) / count,
+        }
+        fire('pointermove', at)
+        await new Promise(resolve => requestAnimationFrame(resolve))
       }
-      fire('pointermove', at)
-      await new Promise(resolve => requestAnimationFrame(resolve))
+    } finally {
+      lift()
     }
   }
   fire('pointerdown', at)
