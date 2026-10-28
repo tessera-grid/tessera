@@ -176,6 +176,7 @@ export const ActionMenu = ({
           close={() => onMenuOpenChange(false)}
           onOpenPanel={openPanel}
           finalFocus={() => !panelTakesFocus.current && leave.returnFocus()}
+          popupRef={leave.popupRef}
         />
         {panelAction && (
           <Popover.Root

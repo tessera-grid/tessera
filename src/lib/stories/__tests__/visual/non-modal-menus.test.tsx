@@ -1,6 +1,6 @@
-import { commands, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 
 import { definePlugin } from '../../../core/definePlugin'
 import type { HeaderAction, RowAction } from '../../../core/headerActions'
@@ -8,6 +8,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   contextMenu,
+  dataExport,
   headerActionMenu,
   keyboardNavigation,
   rowActionMenu,
@@ -20,7 +21,7 @@ import { rowsTopDown, waitForGrid } from './core-helpers'
 import { columnHandle, handleCell, renderHandleGrid } from './lazy-helpers'
 import { tableLabels } from '../labels'
 
-// Немодальные меню грида (ADR 0085, MM1–MM5): без подложки и блокировки прокрутки,
+// Немодальные меню грида (ADR 0085, MM1–MM7): без подложки и блокировки прокрутки,
 // нажатие мимо закрывает меню и доходит до цели, прокрутка грида пользователем
 // закрывает меню. MM3 — последним: ошибка Firefox видна после предыдущего теста файла.
 
@@ -103,6 +104,49 @@ const mount = async ({ menus = true, keyboard = false } = {}) => {
   return screen
 }
 
+// Панель выгрузки и панель действия заголовка — для MM7.
+const donePanel: HeaderAction = {
+  ...leaf('done', 'Done'),
+  slot: 'rightHeaderSlot',
+  order: 0,
+  className: () => 'done__button',
+  panel: (_, { close }) => (
+    <button type="button" data-testid="done-panel-close" onClick={close}>
+      Done
+    </button>
+  ),
+}
+const popoverProbe = definePlugin()({
+  id: 'popoverProbe',
+  slotActions: [
+    { ...leaf('archive', 'Archive'), slot: 'actionRowSlot', order: 0 },
+    donePanel,
+  ] as (RowAction | HeaderAction)[],
+})
+const POPOVER_PLUGINS = [
+  popoverProbe(),
+  rowActions(),
+  rowActionMenu({ mode: 'always' }),
+  dataExport({ server: true, onExport: () => new Promise<void>(() => {}) }),
+]
+
+const PopoverGrid = () => {
+  const table = useCreateTable({
+    columns: COLUMNS as never,
+    data: DATA,
+    getRowId: (row: (typeof DATA)[number]) => row.id,
+    enableToolbar: true,
+    plugins: POPOVER_PLUGINS as never,
+  })
+  return (
+    <div style={{ width: 900, height: 700 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+const viewport = { width: innerWidth, height: innerHeight }
+
 const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
 const backdrop = () =>
   document.querySelector('[role="presentation"][data-base-ui-inert]')
@@ -132,6 +176,12 @@ const pageScrollLocked = () =>
   [document.documentElement, document.body].some(
     el => getComputedStyle(el).overflow === 'hidden',
   )
+
+let slowClose: HTMLStyleElement | undefined
+afterEach(() => {
+  slowClose?.remove()
+  slowClose = undefined
+})
 
 describe('Немодальные меню', () => {
   test('MM1: кебабы заголовка и строки, инлайн-меню, контекстное меню и меню ручек — без подложки и без блокировки прокрутки страницы', async () => {
@@ -254,6 +304,122 @@ describe('Немодальные меню', () => {
     await userEvent.keyboard('{Escape}')
     await menuClosed()
   })
+
+  test('MM6: меню, закрытое выбором пункта, не возвращает фокус на свой триггер, если до конца закрытия нажат другой триггер: второе меню остаётся открытым с фокусом — кебабы строки и заголовка, инлайн-меню', async () => {
+    // Закрытие длиннее нажатия: нажатие на другой триггер всегда приходится на него.
+    slowClose = document.createElement('style')
+    slowClose.textContent = `.data-grid-theme[role="menu"] { --tsr-comp-tooltip-transition: opacity 1s linear, transform 1s linear; }`
+    document.head.append(slowClose)
+    const menus = () => [...document.querySelectorAll('[role="menu"]')]
+    const pick = async (label: string) => {
+      const item = [
+        ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+      ].find(
+        each =>
+          (
+            each.querySelector('[class*="itemLabel"]') ?? each
+          ).textContent?.trim() === label,
+      )!
+      await humanClick(item)
+    }
+    const pressRowKebab = async () => {
+      await userEvent.hover(cell('r6'))
+      await expect.poll(() => rowKebab('r6')).not.toBeNull()
+      await humanClick(rowKebab('r6')!)
+    }
+    // Прежнее меню ещё закрывается; когда оно уходит, второе открыто и держит фокус.
+    const secondKeepsFocus = async () => {
+      expect(menus().length).toBe(2)
+      await expect.poll(() => menus().length, { timeout: 3000 }).toBe(1)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(menus().length).toBe(1)
+      expect(menu()!.hasAttribute('data-ending-style')).toBe(false)
+      expect(menu()!.contains(document.activeElement)).toBe(true)
+      await userEvent.keyboard('{Escape}')
+      await menuClosed()
+    }
+
+    const screen = await mount()
+    await openRowMenu('r1')
+    await pick('Archive')
+    await pressRowKebab()
+    await secondKeepsFocus()
+
+    await userEvent.hover(headCell('city'))
+    await humanClick(
+      headCell('city').querySelector<HTMLElement>(
+        `[aria-label^="${tableLabels.headerMenu}"]`,
+      )!,
+    )
+    await expect.poll(menu).not.toBeNull()
+    await pick('Freeze')
+    await pick('At start')
+    await pressRowKebab()
+    await secondKeepsFocus()
+    await screen.unmount()
+
+    await mount({ menus: false })
+    await userEvent.hover(headCell('city'))
+    await humanClick(
+      headCell('city').querySelector<HTMLElement>('[aria-label="Freeze"]')!,
+    )
+    await expect.poll(menu).not.toBeNull()
+    await pick('At start')
+    await userEvent.click(cell('r6'), { button: 'right' })
+    await secondKeepsFocus()
+  })
+
+  const byTestId = (id: string) =>
+    document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+  /** Поповер, его кнопка и своя кнопка поповера, которая его закрывает. */
+  const POPOVERS = {
+    export: {
+      open: () => byTestId('export-button'),
+      popup: () => byTestId('export-panel'),
+      close: () => humanClick(byTestId('export-run')!),
+    },
+    panel: {
+      open: () => headCell('name').querySelector<HTMLElement>('.done__button'),
+      popup: () => document.querySelector('[data-action-panel="done"]'),
+      close: () => humanClick(byTestId('done-panel-close')!),
+    },
+  }
+
+  test.each(['export', 'panel'] as const)(
+    'MM7: %s — поповер, закрытый своей кнопкой, не возвращает фокус на кнопку, открывшую его, если до конца закрытия нажат кебаб: меню кебаба держит фокус',
+    async name => {
+      const { open, popup, close } = POPOVERS[name]
+      await page.viewport(1280, 900)
+      await render(<PopoverGrid />)
+      await waitForGrid()
+      await userEvent.hover(headCell('name'))
+      // Кнопки тулбара и заголовка — из ленивых чанков: ждём настоящий триггер.
+      await expect
+        .poll(() => open()?.id.startsWith('base-ui') ?? false)
+        .toBe(true)
+      await humanClick(open()!)
+      await expect.poll(() => popup()?.hasAttribute('data-open')).toBe(true)
+      // Закрытие длиннее нажатия: нажатие на кебаб всегда приходится на него. Только
+      // после проявления: из прозрачного поповера закрыться нечему, он уходит сразу.
+      await expect.poll(() => getComputedStyle(popup()!).opacity).toBe('1')
+      // Закрытие длиннее нажатия: нажатие на кебаб всегда приходится на него.
+      slowClose = document.createElement('style')
+      slowClose.textContent = `.data-grid-theme:is([data-testid="export-panel"], [data-action-panel]) { --tsr-comp-tooltip-transition: opacity 3s linear, transform 3s linear; }`
+      document.head.append(slowClose)
+      await close()
+
+      await userEvent.hover(cell('r12'))
+      await expect.poll(() => rowKebab('r12')).not.toBeNull()
+      await humanClick(rowKebab('r12')!)
+      await expect.poll(menu).not.toBeNull()
+      expect(popup()).not.toBeNull()
+      await expect.poll(popup, { timeout: 6000 }).toBeNull()
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(menu()!.hasAttribute('data-ending-style')).toBe(false)
+      expect(menu()!.contains(document.activeElement)).toBe(true)
+      await page.viewport(viewport.width, viewport.height)
+    },
+  )
 
   test('MM3: меню, открытое нажатием на кебаб закреплённой справа колонки, остаётся открытым после отпускания кнопки', async () => {
     await render(<composed.RowActionsPlayground {...rowAsyncArgs} />)

@@ -118,12 +118,14 @@ export const ActionInlineMenu = ({
             sections={sections}
             close={() => onMenuOpenChange(false)}
             finalFocus={leave.returnFocus}
+            popupRef={leave.popupRef}
           />
         ) : (
           <ActionMenuPopup
             actions={[action]}
             context={context}
             finalFocus={leave.returnFocus}
+            popupRef={leave.popupRef}
           />
         )}
       </div>

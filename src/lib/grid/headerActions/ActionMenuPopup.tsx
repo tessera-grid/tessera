@@ -1,5 +1,7 @@
 // ActionMenuPopup: тело меню действий (Base UI portal + popup). Общая часть кебаба
 // (ActionMenu) и инлайн-поповера (ActionInlineMenu); пункты — ActionMenuItems.
+import type { Ref } from 'react'
+
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
@@ -28,6 +30,7 @@ interface ActionMenuPopupProps {
   sections?: MenuSections
   /** Куда вернуть фокус при закрытии (Base UI `finalFocus`). */
   finalFocus?: () => boolean
+  popupRef?: Ref<HTMLDivElement>
 }
 
 export const ActionMenuPopup = ({
@@ -38,6 +41,7 @@ export const ActionMenuPopup = ({
   onOpenPanel,
   sections,
   finalFocus,
+  popupRef,
 }: ActionMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
@@ -52,6 +56,7 @@ export const ActionMenuPopup = ({
         {...themeData}
       >
         <Menu.Popup
+          ref={popupRef}
           className={clsx(themeClass, styles.popup)}
           finalFocus={finalFocus}
           aria-label={

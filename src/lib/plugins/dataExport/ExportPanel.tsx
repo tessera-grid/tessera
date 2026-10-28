@@ -36,6 +36,7 @@ import type { ExportSettings } from '../dataExportModel/types'
 
 import styles from './ExportPanel.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { useFinalFocus } from '../../ui/Popup/finalFocus'
 
 export interface ExportPanelProps {
   table: Table<any, any>
@@ -162,6 +163,7 @@ export const ExportPanel = ({
   const icons = useIcons()
   const DownloadIcon = icons.download
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const { popupRef, finalFocus } = useFinalFocus(triggerRef)
   const config = exportConfigOf(table)!
   const [chosen, setChosen] = useState<Partial<ExportSettings>>({})
 
@@ -215,7 +217,8 @@ export const ExportPanel = ({
         >
           <Popover.Popup
             aria-label={labels.export}
-            finalFocus={triggerRef}
+            ref={popupRef}
+            finalFocus={finalFocus}
             className={clsx(themeClass, styles.popup)}
             data-testid="export-panel"
           >
