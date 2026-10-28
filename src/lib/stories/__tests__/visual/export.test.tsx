@@ -14,6 +14,7 @@ import {
 import { pagination } from '../../../plugins/pagination'
 import { rowSelection } from '../../../plugins/rowSelection'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { failureShownOn } from '../helpers'
 
 // Плагин dataExport (ADR 0044): кнопка тулбара, панель настроек, скачивание, серверный
 // режим. Оси, сбор данных и CSV (EX2–EX5, EX10–EX22, EX24, EX29–EX30) — модульные тесты
@@ -387,7 +388,7 @@ describe('dataExport — серверный режим', () => {
     expect(onExport).not.toHaveBeenCalled()
   })
 
-  test('EX28: while onExport is pending the button is aria-busy and server export is blocked; a rejection clears the busy state and is logged', async () => {
+  test('EX28: while onExport is pending the button is aria-busy and server export is blocked; a rejection clears the busy state and marks the button with the reason, without a console error', async () => {
     let finish!: () => void
     const onExport = vi.fn(
       () => new Promise<void>(resolve => (finish = resolve)),
@@ -411,15 +412,20 @@ describe('dataExport — серверный режим', () => {
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
     await pending.unmount()
 
-    // Отказ промиса снимает занятость и пишется в logError.
+    // Отказ промиса снимает занятость и отмечает кнопку причиной; в консоль не пишется.
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const rejected = vi.fn(() => Promise.reject(new Error('server down')))
     await serverGrid({ onExport: rejected })
     await openPanel()
     await runExport()
-    await expect.poll(() => error.mock.calls.length).toBeGreaterThan(0)
-    expect(String(error.mock.calls[0][0])).toContain('server down')
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
+    await expect.poll(() => failureShownOn(button())).toBe(true)
+    const reason = button()!.getAttribute('aria-describedby')!.split(' ')[0]!
+    expect(document.getElementById(reason)!.textContent).toContain(
+      'server down',
+    )
+    expect(error).not.toHaveBeenCalled()
+    error.mockRestore()
   })
 })
 

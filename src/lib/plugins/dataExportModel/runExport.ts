@@ -50,6 +50,11 @@ const invoke = (
   callback: ((request: ExportRequest) => void | Promise<void>) | undefined,
   request: ExportRequest,
   outcome?: ActionReport,
+  /**
+   * Отказ пробрасывается, а не логируется: отказ серверной выгрузки отмечает кнопку
+   * (ADR 0136, FB6), приложение знает о нём из своего промиса.
+   */
+  rethrow = false,
 ): Promise<void> | undefined => {
   const fail = (error: unknown) =>
     logError(
@@ -58,10 +63,13 @@ const invoke = (
     )
   try {
     const result = callback?.(request)
-    // Итог — по промису колбэка: отказ ниже логируется и не пробрасывается (ADR 0125).
+    // Итог — по промису колбэка (ADR 0125).
     if (outcome) reportOutcome(table, outcome, result)
     if (isThenable(result)) {
-      return Promise.resolve(result).then(undefined, fail)
+      return Promise.resolve(result).then(undefined, (error: unknown) => {
+        if (rethrow) throw error
+        fail(error)
+      })
     }
   } catch (error) {
     fail(error)
@@ -72,8 +80,8 @@ const invoke = (
 /**
  * Выполняет выгрузку с настройками. Возвращает промис, пока потребитель не завершил
  * серверный `onExport` (EX28) или асинхронный формат не собран (XL7); иначе
- * `undefined`. Отказ колбэка логируется и не пробрасывается; отказ формата —
- * логируется и отклоняет промис.
+ * `undefined`. Отказ `onExport` отклоняет промис, отказ формата логируется и отклоняет
+ * промис, отказ `onExported` — только логируется.
  */
 export const runExport = (
   table: unknown,
@@ -103,6 +111,7 @@ export const runExport = (
         ...serverRowsRequestOf(table),
       },
       outcome,
+      true,
     )
   }
 
