@@ -286,17 +286,26 @@ export async function measureScrollWork(
   let reached = 0
   // Выборка кадров со скелетами: каждый SAMPLE_EVERY-й кадр, пока прокрутка идёт.
   const samples: boolean[] = []
+  const start = performance.now()
+  let previous = start
+  let measured = 0
+  let longFrames = 0
   for (let i = 1; i <= frames; i++) {
     const next = advance()
     setPos(next)
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
+    const now = performance.now()
+    if (now - previous > LONG_FRAME_MS) longFrames++
+    previous = now
+    measured = i
     if (i % SAMPLE_EVERY === 0 && next < total) {
       samples.push(document.querySelector(SKELETON_CELL) !== null)
     }
     reached = next
     if (next >= total) break
   }
+  const frameMs = (previous - start) / measured
 
   const result = await perfCommands.perfTraceStop(id)
   // Замер мерит заявленное: прокрутка была, ячейки при скорости ниже порога —
@@ -313,10 +322,12 @@ export async function measureScrollWork(
       `measureScrollWork(${axis}): ${fast ? 'быстрая' : 'спокойная'} прокрутка, кадров со скелетами ${skeletal} из ${samples.length}`,
     )
   }
-  return result
+  return { ...result, frameMs, longFrames }
 }
 
 const SAMPLE_EVERY = 10
+/** Кадр длиннее двух кадров 60 Гц — пропуск (ADR 0149, PS8). */
+const LONG_FRAME_MS = 34
 
 /**
  * Работа главного потока в покое за `ms` миллисекунд — тем же трейсом, что прокрутка:

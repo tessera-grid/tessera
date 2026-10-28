@@ -709,8 +709,11 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       probe.remove()
       return value
     }
-    const iconOpacity = (id: string) =>
-      Number(getComputedStyle(handleOf(id).querySelector('svg')!).opacity)
+    // Значка вне строки под указателем нет совсем (ADR 0149, §4) — он не виден.
+    const iconOpacity = (id: string) => {
+      const icon = handleOf(id).querySelector('svg')
+      return icon ? Number(getComputedStyle(icon).opacity) : 0
+    }
     const away = async () => {
       const r = rowById('row-2')!.getBoundingClientRect()
       await pointer.realMouseMove(

@@ -14,6 +14,7 @@ import { useLocalization } from '../../core/localization'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { preloadable, usePreloaded } from '../../core/preloadable'
 import { IconButton } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import { useIcons } from '../../ui/icons'
 import {
   countActiveActions,
@@ -100,14 +101,18 @@ const KebabPlaceholder = ({
   const shown = open || loading.pending || activeCount > 0 || kebab.failed
   return variant === 'row' ? (
     <div className={clsx('row__button', !shown && 'row__button--hidden')}>
-      {trigger}
+      <HiddenButtonContext.Provider value={!shown}>
+        {trigger}
+      </HiddenButtonContext.Provider>
     </div>
   ) : (
     <div
       className="cell__button cell__button--hidden"
       data-button-active={shown}
     >
-      {trigger}
+      <HiddenButtonContext.Provider value={!shown}>
+        {trigger}
+      </HiddenButtonContext.Provider>
     </div>
   )
 }
@@ -161,7 +166,11 @@ const InlinePlaceholder = ({
       className={clsx(wrapperBase, !open && hiddenClass)}
       data-button-active={active || !!loading?.pending}
     >
-      {button}
+      <HiddenButtonContext.Provider
+        value={!open && !(active || !!loading?.pending)}
+      >
+        {button}
+      </HiddenButtonContext.Provider>
     </div>
   )
 }

@@ -12,6 +12,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import { useIcons } from '../../ui/icons'
 import { countActiveActions, type SlotAction } from '../../core/headerActions'
 import { ErrorDot, kebabActive } from './ErrorDot'
@@ -167,7 +168,9 @@ export const ActionMenu = ({
         }
         data-button-active={variant === 'row' ? undefined : shown}
       >
-        {trigger}
+        <HiddenButtonContext.Provider value={!shown}>
+          {trigger}
+        </HiddenButtonContext.Provider>
         <ActionMenuPopup
           actions={actions}
           context={context}

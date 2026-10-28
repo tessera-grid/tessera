@@ -1,7 +1,7 @@
 // BodyCell. Ячейка тела: пиннинг-стили/атрибуты (start/end) через
 // getCellPinningParams, skeleton при fast-scroll, слоты, контент через flexRender
 // от columnDef.cell.
-import { memo, useMemo, type CSSProperties } from 'react'
+import { memo, useContext, useMemo, type CSSProperties } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
@@ -37,6 +37,8 @@ import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getCellExpandingStyles, isIndentColumn } from './cellExpandingStyles'
 import { TreeLines } from './TreeLinesLayer'
 import { getColumnSizeVariable, getVirtualCellLeft } from './columnSizes'
+import { RowRevealContext } from './rowReveal'
+import { IconRevealContext } from '../ui/IconButton/iconReveal'
 
 import styles from '../grid/BodyCell/BodyCell.module.css'
 
@@ -149,6 +151,12 @@ export const BodyCell = memo(
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
     const isRowActionsColumn = cell.column.getIsRowActionsColumn()
+
+    const rowReveal = useContext(RowRevealContext)
+    const iconReveal = useMemo(
+      () => rowReveal?.of(cell.row.id) ?? null,
+      [rowReveal, cell.row.id],
+    )
 
     const isSuppressed = useFastScrollSuppressed()
     // Слот — скелет у колонок данных, служебные пустые (PV1); быстрая прокрутка — у всех
@@ -301,29 +309,31 @@ export const BodyCell = memo(
         data-cell-of-last-row={cell.row.getIsLastRow()}
       >
         {treeLayer && <TreeLines branch={treeBranch} open={!!treeOpen} />}
-        <CellWrapperContent
-          flex={getAlignContent({
-            isActionsColumn,
-            isRowActionsColumn: cell.column.getIsRowActionsColumn(),
-          })}
-          smallPadding={isActionsColumn}
-        >
-          {canRenderSlots && (
-            <RenderSlot slot={leftCellSlot} context={cell.getContext()} />
-          )}
-          {canRenderSlots ? (
-            <RenderCellSlot
-              slot={cellSlot}
-              context={cell.getContext()}
-              content={render}
-            />
-          ) : (
-            render
-          )}
-          {canRenderSlots && (
-            <RenderSlot slot={rightCellSlot} context={cell.getContext()} />
-          )}
-        </CellWrapperContent>
+        <IconRevealContext.Provider value={iconReveal}>
+          <CellWrapperContent
+            flex={getAlignContent({
+              isActionsColumn,
+              isRowActionsColumn: cell.column.getIsRowActionsColumn(),
+            })}
+            smallPadding={isActionsColumn}
+          >
+            {canRenderSlots && (
+              <RenderSlot slot={leftCellSlot} context={cell.getContext()} />
+            )}
+            {canRenderSlots ? (
+              <RenderCellSlot
+                slot={cellSlot}
+                context={cell.getContext()}
+                content={render}
+              />
+            ) : (
+              render
+            )}
+            {canRenderSlots && (
+              <RenderSlot slot={rightCellSlot} context={cell.getContext()} />
+            )}
+          </CellWrapperContent>
+        </IconRevealContext.Provider>
       </div>
     )
   },

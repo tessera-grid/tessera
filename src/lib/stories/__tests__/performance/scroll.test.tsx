@@ -184,6 +184,98 @@ describe('Производительность прокрутки — споко
   }
 })
 
+// Цена плагинов при спокойной прокрутке (ADR 0149, PS8): средний интервал кадра со всеми
+// плагинами против той же выборки без них. Интервал кадра, а не p95 задач: работу кадра,
+// разбитую на задачи, p95 задач не видит. По X дороже: новые колонки монтируют ячейки со
+// всеми плагинами (ADR 0149, «Известные проблемы»).
+const PS8_COST = { y: { ratio: 2, plusMs: 0 }, x: { ratio: 3, plusMs: 0 } }
+
+describe('Цена плагинов при спокойной прокрутке', () => {
+  test(
+    'PS8: спокойная прокрутка со всеми плагинами по среднему интервалу кадра не дороже прокрутки без плагинов вдвое по Y и втрое по X: P12 против P10 и P13 против P11',
+    async () => {
+      const failures: string[] = []
+      for (const [size, args] of [
+        ['30×500', SMALL],
+        ['1000×1000', LARGE],
+      ] as const) {
+        const measure = async (all: boolean) => {
+          const screen = all
+            ? renderGrid({ ...args, ...ALL_PLUGINS })
+            : renderPluginsGrid(args)
+          await waitForGrid()
+          const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+          const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+          ;(await screen).unmount()
+          return { y, x }
+        }
+        const runs = await againstBase(measure)
+        const frame = (run: { frameMs?: number }) => run.frameMs ?? 0
+        const median = (list: typeof runs.base) => ({
+          y: medianRun(
+            list.map(run => run.y),
+            frame,
+          ),
+          x: medianRun(
+            list.map(run => run.x),
+            frame,
+          ),
+        })
+        const base = median(runs.base)
+        const all = median(runs.variant)
+        const ceiling = {
+          y: ceilingOver(frame(base.y), PS8_COST.y),
+          x: ceilingOver(frame(base.x), PS8_COST.x),
+        }
+        const record = (
+          id: string,
+          label: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label,
+            operation: 'scroll',
+            size,
+            plugins: gated ? 'all' : 'none',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: (['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'frame' as const,
+              valueMs: frame(r[axis]),
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
+              ...r[axis],
+            })),
+          })
+        await record(
+          `PS8-base-${size}`,
+          `кадр спокойной прокрутки ${size} без плагинов`,
+          base,
+          false,
+        )
+        await record(
+          `PS8-${size}`,
+          `кадр спокойной прокрутки ${size} со всеми плагинами`,
+          all,
+          true,
+        )
+        for (const axis of ['y', 'x'] as const) {
+          if (frame(all[axis]) > ceiling[axis]) {
+            failures.push(
+              `${size} ${axis}: кадр ${frame(all[axis]).toFixed(1)} мс, без плагинов ${frame(base[axis]).toFixed(1)} мс, потолок ${ceiling[axis].toFixed(1)} мс`,
+            )
+          }
+        }
+      }
+      expect(failures).toEqual([])
+    },
+    PERF_TIMEOUT * 12,
+  )
+})
+
 // Цена фичи против базы того же теста (ADR 0099, §1а): во столько раз или на столько мс.
 const AS14_COST = { ratio: 3, plusMs: 4 }
 const CF12_COST = { ratio: 3, plusMs: 4 }

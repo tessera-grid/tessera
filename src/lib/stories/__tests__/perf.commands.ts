@@ -65,6 +65,13 @@ export interface ScrollWorkResult {
   p99Ms: number
   /** Вся работа главного потока за окно замера, мс: сумма задач (ADR 0121, WV8). */
   totalMs: number
+  /**
+   * Средний интервал кадра прокрутки по `requestAnimationFrame`, мс (ADR 0149, PS8): работу,
+   * разбитую на задачи, p95 задач не видит, интервал кадра — видит.
+   */
+  frameMs?: number
+  /** Кадров прокрутки длиннее двух кадров (34 мс): без vsync в headless — пропуски. */
+  longFrames?: number
 }
 
 interface Trace {
@@ -197,8 +204,11 @@ export interface PerfMetric {
   axis?: 'y' | 'x'
   /** Модель цели: RAIL Animation (кадр 16.7мс) или Load (интерактивность 1000мс). */
   kind: 'animation' | 'load'
-  /** Какая величина сверяется: p95 (прокрутка), longest (отрисовка) или tbt (пачка задач). */
-  metric: 'p95' | 'longest' | 'tbt'
+  /**
+   * Какая величина сверяется: p95 (прокрутка), longest (отрисовка), tbt (пачка задач) или
+   * frame — средний интервал кадра прокрутки (ADR 0149, PS8).
+   */
+  metric: 'p95' | 'longest' | 'tbt' | 'frame'
   /** Значение метрики, мс. */
   valueMs: number
   /** Цель RAIL/CWV, мс: в дашборде — «в цели» или «вне цели», без гейта (ADR 0099). */

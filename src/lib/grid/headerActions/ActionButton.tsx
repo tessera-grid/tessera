@@ -13,6 +13,7 @@ import {
   useServerActionMarks,
 } from '../../core/serverActions'
 import { IconButton } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import {
   actionErrorText,
   actionStatusKey,
@@ -108,7 +109,11 @@ export const ActionButton = ({
       className={wrapperClassName}
       data-button-active={active || !!entry?.pending || server.pending}
     >
-      {button}
+      <HiddenButtonContext.Provider
+        value={!(active || !!entry?.pending || server.pending)}
+      >
+        {button}
+      </HiddenButtonContext.Provider>
     </div>
   )
 }

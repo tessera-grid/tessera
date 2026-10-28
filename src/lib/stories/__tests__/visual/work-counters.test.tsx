@@ -23,6 +23,8 @@ import {
   serverRowModel,
 } from '../../../plugins'
 import { LinearProgress } from '../../../ui/LinearProgress'
+import { IconButton } from '../../../ui/IconButton'
+import { RevealedIcon } from '../../../ui/IconButton/iconReveal'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
 import { makeColumns } from '../../__mocks__/columns'
 import { getData } from '../../__mocks__/data'
@@ -340,22 +342,34 @@ describe('Счётчики работы', () => {
     ).toBe(0)
   })
 
-  test('PF11: наведение на строку и ячейку — ноль коммитов React', async () => {
+  test('PF11: наведение на другую ячейку той же строки — ноль коммитов React; на другую строку — перерисованы только значки скрытых кнопок двух строк', async () => {
     const { measure } = await mountGrid(ALL_PLUGINS)
-    const cell = (row: number, column: string) =>
+    const row = (index: number) =>
       document.querySelector<HTMLElement>(
-        `.data-grid__body-row[data-index="${row}"] .data-grid__body-cell[data-column-id="${column}"]`,
+        `.data-grid__body-row[data-index="${index}"]`,
+      )!
+    const cell = (index: number, column: string) =>
+      row(index).querySelector<HTMLElement>(
+        `.data-grid__body-cell[data-column-id="${column}"]`,
       )!
     // Первое наведение грузит модули по намерению (ADR 0061) — один раз на документ.
     await userEvent.hover(cell(1, 'country'))
     await userEvent.hover(cell(2, 'country'))
+    await userEvent.hover(cell(3, 'country'))
     await waitForQuietDocument(500)
-    const work = await measure(async () => {
-      await userEvent.hover(cell(3, 'country'))
-      await userEvent.hover(cell(3, 'firstName'))
-      await userEvent.hover(cell(4, 'firstName'))
-    })
-    expect(work.commits, describeWork(work)).toBe(0)
+    const sameRow = await measure(() => userEvent.hover(cell(3, 'firstName')))
+    expect(sameRow.commits, describeWork(sameRow)).toBe(0)
+
+    const buttons = row(3).querySelectorAll('.data-grid__icon-button').length
+    const otherRow = await measure(() => userEvent.hover(cell(4, 'firstName')))
+    expect(
+      renders(otherRow, RevealedIcon),
+      describeWork(otherRow),
+    ).toBeGreaterThan(0)
+    within(otherRow, renders(otherRow, RevealedIcon), buttons * 2, 'значки')
+    within(otherRow, renders(otherRow, IconButton), 0, 'кнопки')
+    within(otherRow, renders(otherRow, BodyCell), 0, 'ячейки')
+    within(otherRow, rowRenders(otherRow), 0, 'строки')
   })
 
   test('PF23: открытое меню кебаба перечитывает пункты при смене состояния, которая не меняет вид закрытой зоны', async () => {

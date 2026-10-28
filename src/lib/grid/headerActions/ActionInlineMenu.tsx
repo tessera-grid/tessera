@@ -8,6 +8,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { useLatest } from '../../core/useLatest'
@@ -109,7 +110,9 @@ export const ActionInlineMenu = ({
         className={clsx(wrapperBase, !visible && hiddenClass)}
         data-button-active={active}
       >
-        {button}
+        <HiddenButtonContext.Provider value={!visible && !active}>
+          {button}
+        </HiddenButtonContext.Provider>
         {section ? (
           <ActionMenuPopup
             actions={[action]}

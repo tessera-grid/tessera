@@ -7,6 +7,7 @@ import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import type { SlotAction } from '../../core/headerActions'
 import { ErrorDot } from './ErrorDot'
 import { ActionPanelPopup } from './ActionPanelPopup'
@@ -99,7 +100,11 @@ export const ActionPanel = ({
           active || visible || !!loading?.pending || server.pending
         }
       >
-        {button}
+        <HiddenButtonContext.Provider
+          value={!(active || visible || !!loading?.pending || server.pending)}
+        >
+          {button}
+        </HiddenButtonContext.Provider>
         {failure && (
           <span id={reasonId} className={gridStyles['visually-hidden']}>
             {serverActionReason(failure, labels)}

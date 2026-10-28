@@ -161,13 +161,15 @@ describe('Касания (ADR 0086)', () => {
       const [first, second] = [rowAt(1), rowAt(3)]
       const firstButtons = touchedButtons(first, column)
       const secondButtons = touchedButtons(second, column)
-      expect(firstButtons.length).toBeGreaterThan(1)
+      expect(firstButtons.length).toBeGreaterThan(0)
       expect(firstButtons.some(shown)).toBe(false)
 
       await tapCell(first, column)
       await expect
         .poll(() => touchedButtons(first, column).filter(b => !shown(b)).length)
         .toBe(0)
+      // Значок ручки строки монтируется касанием (ADR 0149, §4) — кнопок стало больше одной.
+      expect(touchedButtons(first, column).length).toBeGreaterThan(1)
       expect(secondButtons.some(shown)).toBe(false)
 
       await tapCell(second, column)

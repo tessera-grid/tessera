@@ -19,6 +19,7 @@ import {
   useFailure,
 } from '../buttonStates'
 import { useActiveNameCheck } from './useActiveNameCheck'
+import { RevealedIcon } from './iconReveal'
 
 import styles from './IconButton.module.css'
 
@@ -133,6 +134,16 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       rest['aria-expanded'] !== undefined ||
       rest['aria-checked'] !== undefined
     useActiveNameCheck(active, accessibleName, ownState)
+    const expanded =
+      rest['aria-expanded'] === true || rest['aria-expanded'] === 'true'
+    // Своё состояние кнопки видно и без наведения — значок при нём есть (ADR 0149, §4).
+    const ownStateShown =
+      !!active ||
+      !!pending ||
+      busy ||
+      failure !== undefined ||
+      states.active ||
+      !!states['data-pending-leaving']
 
     const button = (
       <BaseButton
@@ -158,7 +169,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           disabled && disabledClassName,
         )}
       >
-        {active && activeIcon !== undefined ? activeIcon : children}
+        <RevealedIcon always={ownStateShown} holding={expanded}>
+          {active && activeIcon !== undefined ? activeIcon : children}
+        </RevealedIcon>
         {active !== undefined && (
           <Bubble
             size={count ? 'sm' : 'dot'}

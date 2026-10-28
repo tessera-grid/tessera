@@ -895,6 +895,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       SD19 — приход блока серверной модели перерисовывает только его строки (ADR 0138),
       помощник `measureWork` (`__tests__/work.helpers.ts`)
       ([ADR 0099](docs/decisions/0099-perf-gates-and-ab-compare.md)).
+    - _Цена плагинов при прокрутке:_ `work-counters` (PS10–PS13 — сдвиг окна строк и колонок
+      перерисовывает новое, а не строки, тулбар и футер), `row-reveal` (PS4–PS6 — значок
+      скрытой кнопки только у строки под указателем, с фокусом, тронутой или с открытым
+      меню, плавное проявление, клавиатура), перф PS8 — в `scroll` (средний интервал кадра
+      со всеми плагинами против без них, `frameMs` у `measureScrollWork`)
+      ([ADR 0149](docs/decisions/0149-plugin-cost-on-scroll.md)).
     - _Кроссбраузерность:_ модульные `browserTargets` (CB1–CB2 — порог `browserslist` и
       цели сборки, проверка CSS), `engines` (CB3 — наборы и команды движков); `mobile`
       (CB4 — только `test:engines`, эмуляция iPhone и Pixel), `focus-modality` (CB5 —

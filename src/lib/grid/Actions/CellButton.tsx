@@ -8,6 +8,7 @@ import {
   type DerivedButtonProps,
   type RevealProps,
 } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 
 import '../cellControls/buttonVisibility.css'
 
@@ -30,9 +31,11 @@ export const CellButton = memo(
       className={clsx('cell__button', revealOnHover && 'cell__button--hidden')}
       data-button-active={active || undefined}
     >
-      <IconButton label={label} active={active} {...button}>
-        {icon}
-      </IconButton>
+      <HiddenButtonContext.Provider value={revealOnHover && !active}>
+        <IconButton label={label} active={active} {...button}>
+          {icon}
+        </IconButton>
+      </HiddenButtonContext.Provider>
     </div>
   ),
 )

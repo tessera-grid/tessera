@@ -95,6 +95,11 @@ describe('Row Dragging — requirements', () => {
 
   test('D3: the drag handle icon is 16×16', async () => {
     const container = await renderRowDragging()
+    // Значок ручки монтируется у строки под указателем (ADR 0149, §4).
+    await userEvent.hover(container.querySelector<HTMLElement>(USER_CELL)!)
+    await expect
+      .poll(() => container.querySelector(`${HANDLE} svg`))
+      .not.toBeNull()
     const svg = container.querySelector<HTMLElement>(`${HANDLE} svg`)!
     const style = getComputedStyle(svg)
     expect(style.width).toBe(`${DRAG_ICON_SIZE}px`)
@@ -122,8 +127,9 @@ describe('Row Dragging — requirements', () => {
 
   test('D6: the drag handle is hidden (opacity 0) until the row is hovered', async () => {
     const container = await renderRowDragging()
-    const icon = container.querySelector<HTMLElement>(`${HANDLE} svg`)!
-    expect(getComputedStyle(icon).opacity).toBe('0')
+    // Вне строки под указателем значка нет совсем (ADR 0149, §4), иначе он прозрачен.
+    const icon = container.querySelector<HTMLElement>(`${HANDLE} svg`)
+    expect(icon === null || getComputedStyle(icon).opacity === '0').toBe(true)
   })
 
   test('D7: the drag handle is revealed on row hover', async () => {
@@ -134,11 +140,16 @@ describe('Row Dragging — requirements', () => {
       r => r.getAttribute('data-index') === '0',
     )!
     const cell = row.querySelector<HTMLElement>(USER_CELL)!
-    const icon = row.querySelector<HTMLElement>(`${HANDLE} svg`)!
+    const icon = () => row.querySelector<HTMLElement>(`${HANDLE} svg`)
 
     // Trusted hover (real pointer) triggers the CSS `:hover` reveal on the row.
     await userEvent.hover(cell)
-    await expect.poll(() => getComputedStyle(icon).opacity).toBe('1')
+    await expect
+      .poll(() => {
+        const svg = icon()
+        return svg && getComputedStyle(svg).opacity
+      })
+      .toBe('1')
   })
 
   test('D8: dragging shows the "cloud" overlay', async () => {

@@ -14,6 +14,7 @@ import { useItemSortableContext } from './ItemSortableContext'
 import { DRAG_ACTIVATION_DISTANCE } from './parameters'
 import { useIcons } from '../../ui/icons'
 import { IconButton } from '../../ui/IconButton'
+import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 
 import styles from '../../grid/dnd/DragHandler.module.css'
 import '../../grid/cellControls/buttonVisibility.css'
@@ -170,7 +171,9 @@ export const DragHandler = ({
 
   return type === 'row' ? (
     <>
-      {button}
+      <HiddenButtonContext.Provider value>
+        {button}
+      </HiddenButtonContext.Provider>
       {handleMenu}
     </>
   ) : (
