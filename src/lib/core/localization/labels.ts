@@ -194,6 +194,8 @@ export interface TableLabels {
   editCellValue: (column: string) => string
   /** Текст отказа сохранения ячейки, если сервер не прислал свой (ADR 0041) */
   saveFailed: string
+  /** Доступное имя точки ошибки ячейки без кнопки правки (ADR 0150) */
+  cellError: string
   /** Объявление отказа сохранения ячейки (`column` — имя колонки) */
   announceSaveFailed: (column: string, error: string) => string
   /** Текст отказа загрузки детей строки, если сервер не прислал свой (ADR 0054) */
@@ -472,6 +474,7 @@ export const DEFAULT_LABELS = {
   resizeColumn: 'Resize column',
   editCellValue: 'Edit {column}',
   saveFailed: "Couldn't save",
+  cellError: 'Cell error',
   announceSaveFailed: '{column}: {error}',
   loadChildrenFailed: 'Unknown error',
   announceExpandFailed: "Couldn't load: {error}",

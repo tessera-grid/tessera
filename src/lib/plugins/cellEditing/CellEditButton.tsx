@@ -7,16 +7,18 @@
  * (ADR 0127, §6). Ячейка подписана только на своё состояние, а не на весь срез.
  */
 import { sourceOf } from '../../core/debugActions'
-import type { PluginCellProps } from '../../core/definePlugin'
+import { readPluginHooks, type PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { CellButton } from '../../grid/Actions/CellButton'
+import { CellInvalid } from '../../grid/cellControls/CellInvalid'
 import { useIcons } from '../../ui/icons'
 import {
   EDIT_SESSION_KEY,
   cellEditingViewOf,
   startEditSession,
 } from './session'
+import type { CellErrorsHooks } from '../cellErrors/types'
 import type { CellEditingHooks, CellEditingState } from './types'
 
 export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
@@ -39,18 +41,24 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
     return null
   }
 
-  const failed = view?.status === 'error'
+  // Отказ сохранения — первым; без него точка показывает ошибку `cellErrors` (ADR 0150, §3).
+  const failure =
+    view?.status === 'error'
+      ? labels.actionFailedRetry(view.error || labels.saveFailed)
+      : readPluginHooks<Partial<CellErrorsHooks>>(
+          table as never,
+          'cellErrors',
+        ).getCellError?.(props)
   return (
-    <CellButton
-      label={labels.editCell}
-      icon={<EditIcon width={16} height={16} />}
-      pending={view?.status === 'pending'}
-      failure={
-        failed
-          ? labels.actionFailedRetry(view.error || labels.saveFailed)
-          : undefined
-      }
-      onClick={event => startEditSession(table, row, column, sourceOf(event))}
-    />
+    <>
+      {failure !== undefined && <CellInvalid />}
+      <CellButton
+        label={labels.editCell}
+        icon={<EditIcon width={16} height={16} />}
+        pending={view?.status === 'pending'}
+        failure={failure}
+        onClick={event => startEditSession(table, row, column, sourceOf(event))}
+      />
+    </>
   )
 }

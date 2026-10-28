@@ -159,6 +159,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-variant={variant}
         data-shape={shape}
         data-size={size === 'compact' ? size : undefined}
+        data-bare={children == null || undefined}
         data-active={active || undefined}
         onClick={states.onClick}
         className={clsx(

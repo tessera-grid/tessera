@@ -1,6 +1,7 @@
 import {
   backToTop,
   cellEditing,
+  cellErrors,
   cellSelection,
   cellSelectionModel,
   contextMenu,
@@ -69,6 +70,7 @@ const FACTORIES = {
   headerActionMenu,
   rowActionMenu,
   cellEditing,
+  cellErrors,
   cellSelection,
   cellSelectionModel,
   contextMenu,
@@ -213,6 +215,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     headerActionMenu(argsOf(o, 'headerActionMenu')),
     rowActionMenu(argsOf(o, 'rowActionMenu')),
     cellEditing(argsOf(o, 'cellEditing')),
+    cellErrors(argsOf(o, 'cellErrors')),
     cellSelection(argsOf(o, 'cellSelection')),
     cellSelectionModel(argsOf(o, 'cellSelectionModel')),
     contextMenu(argsOf(o, 'contextMenu')),

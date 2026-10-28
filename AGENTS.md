@@ -943,6 +943,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       группы, «выбрать всё», счётчик, сброс при смене группировки с откатом, `Space`, axe и
       `forced-colors`, канал действий), перф GX12 — в `scroll`, истории «Data loading/Server
       row model» S1–S3 ([ADR 0148](docs/decisions/0148-group-selection-in-ssrm.md)).
+    - _Ошибка в ячейке:_ `cell-errors` (ER1–ER7 — точка у ячейки с ошибкой, одна или на кнопке
+      правки, тултип и описание, `aria-invalid` в трёх ролях, отказ сохранения первым, живая
+      функция и сортировка, страница, виртуализация, SSRM, контраст и `forced-colors`),
+      модульный `cellErrors.dom` (ER8 — подпись из словаря, ER10 — без `cellEditing`), перф ER9 —
+      в `scroll`, истории «Cells/Errors» S1–S3 ([ADR 0150](docs/decisions/0150-cell-errors.md)).
     - _Итог правки в кэше:_ модульный `cellEditWrite.dom` (EW1–EW6 — сохранённая строка из
       ответа `onCellEdit`, разбор `parseValue`/`dataType` и вывод по значению ячейки, путь
       `accessorKey` вглубь, отказ записи с советом, клиентский режим без записи), визуальный EW7 —

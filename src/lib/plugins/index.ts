@@ -26,6 +26,7 @@ export {
 } from './rowGroupingModel'
 export { rowActions, type RowActionsPluginOptions } from './rowActions'
 export { cellEditing, type CellEditingOptions } from './cellEditing'
+export { cellErrors, type CellErrorsOptions } from './cellErrors'
 export {
   cellSelection,
   type CellSelectionOptions,
@@ -146,6 +147,7 @@ export type {
   CellEditingState,
   SubmittedCell,
 } from './cellEditing/types'
+export type { CellErrorsHooks } from './cellErrors/types'
 export type { SessionCancelReason } from '../core/cancelInteraction'
 export type {
   ServerActionContext,

@@ -395,6 +395,9 @@ export const rowActionMenuThresholdType = numberControl(
 export const enableCellEditingType = booleanControl(
   'Правка ячеек Age, Visits, Gender: кнопка по наведению (плагин `cellEditing`)',
 )
+export const enableCellErrorsType = booleanControl(
+  'Ошибки ячеек: красная точка у Visits больше 15 (плагин `cellErrors`)',
+)
 export const enableCellSelectionType = booleanControl(
   'Выделение диапазона ячеек мышью и копирование Ctrl/Cmd+C (плагин `cellSelection`)',
 )

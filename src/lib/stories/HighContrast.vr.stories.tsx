@@ -27,6 +27,7 @@ import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
 import * as rowsTreeDataStories from './DataGrid.Rows.TreeData.stories'
 import * as cellsContextMenuStories from './DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditingStories from './DataGrid.Cells.Editing.stories'
+import * as cellsErrorsStories from './DataGrid.Cells.Errors.stories'
 import * as cellsKeyboardStories from './DataGrid.Cells.Keyboard.stories'
 import columnsHeaderGroupsMeta, {
   HeaderGroupsPlayground,
@@ -3618,5 +3619,47 @@ export const HighContrastServerGroupSelectCountStep3 = {
     3,
   ),
   name: 'Data loading/Server row model — Count without group sizes, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsFixValuesStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsFixValues, 1),
+  name: 'Cells/Errors — Fix invalid values, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsFixValuesStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsFixValues, 2),
+  name: 'Cells/Errors — Fix invalid values, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsReadOnlyStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsReadOnly, 1),
+  name: 'Cells/Errors — Read-only table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsReadOnlyStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsReadOnly, 2),
+  name: 'Cells/Errors — Read-only table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsRefusalStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 1),
+  name: 'Cells/Errors — Refusal and data error, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsRefusalStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 2),
+  name: 'Cells/Errors — Refusal and data error, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellErrorsRefusalStep3 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 3),
+  name: 'Cells/Errors — Refusal and data error, шаг 3',
   tags: ['!test'],
 }

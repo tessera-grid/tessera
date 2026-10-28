@@ -81,6 +81,12 @@
   transform: none;
 }
 
+/* Кнопка без значка: отметка отказа — по центру, она и есть весь вид кнопки (ADR 0150). */
+.iconButton[data-bare] [data-failure-indicator] {
+  inset: 0;
+  margin: auto;
+}
+
 .iconButton:focus-visible {
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }

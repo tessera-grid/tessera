@@ -41,6 +41,7 @@ import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid } from './hosts'
 import { scrollLayer } from '../../../core/scrollStretch'
+import type { CellComponentProps } from '../../../core/createSlots'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { CellButton } from '../../../grid/Actions/CellButton'
 import { useCreateTable } from '../../../core/useCreateTable'
@@ -1764,6 +1765,81 @@ describe('Производительность прокрутки — включ
         expect(
           active[axis].p95Ms,
           `${axis} p95=${active[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Ошибки ячеек (ADR 0150, ER9): вторая колонка каждой строки и третья — каждой чётной, 1500
+// ячеек с точкой: каждая новая строка окна приносит точки. Против той же выборки и того же
+// плагина без ошибок.
+const ER9_COST = { ratio: 1.3, plusMs: 4 }
+const someCellErrors = (ctx: CellComponentProps) =>
+  ctx.column.getIndex() === 1 ||
+  (ctx.column.getIndex() === 2 && ctx.row.index % 2 === 0)
+    ? 'Invalid value'
+    : undefined
+const noCellErrors = () => undefined
+
+describe('Производительность прокрутки — ошибки ячеек', () => {
+  test(
+    'ER9: спокойная прокрутка 1000×1000 с ошибками в 1500 ячейках не дороже той же выборки без них больше чем в 1,3 раза или на 4 мс',
+    async () => {
+      const measure = async (errors: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableCellErrors: true,
+          cellErrorsGetCellError: errors ? someCellErrors : noCellErrors,
+        })
+        await waitForGrid()
+        await expect
+          .poll(
+            () => document.querySelector('[data-failure-indicator]') !== null,
+          )
+          .toBe(errors)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const errors = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, ER9_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellErrors',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('ER9-base', 'ошибок нет', base, false)
+      await record('ER9', '1500 ячеек с ошибкой', errors, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          errors[axis].p95Ms,
+          `${axis} p95=${errors[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

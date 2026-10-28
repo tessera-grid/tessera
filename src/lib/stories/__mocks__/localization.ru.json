@@ -114,6 +114,7 @@
   "resizeColumn": "Изменить ширину колонки",
   "editCellValue": "Изменить «{column}»",
   "saveFailed": "Не удалось сохранить",
+  "cellError": "Ошибка в ячейке",
   "announceSaveFailed": "{column}: {error}",
   "loadChildrenFailed": "Неизвестная ошибка",
   "announceExpandFailed": "Не удалось загрузить: {error}",

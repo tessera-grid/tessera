@@ -52,6 +52,12 @@ const RETRY_ANSWER_MS = 800
 // изменение видно сразу в ячейке.
 const CELL_EDITABLE_COLUMNS = ['age', 'visits', 'gender']
 
+/** Демо ошибок ячеек (ADR 0150): визитов больше 15 — ошибка данных. */
+const demoCellError = (ctx: CellComponentProps) =>
+  ctx.column.id === 'visits' && Number(ctx.getValue()) > 15
+    ? 'More than 15 visits'
+    : undefined
+
 /**
  * Аргументы-договоры на время жизни (`server`, ADR 0039) таблица берёт при монтировании:
  * смена такого аргумента из Controls пересоздаёт грид, как велит договор.
@@ -300,6 +306,9 @@ const StoryGrid = memo(
     // Предикат правки аргументом истории (тесты) — без демо правки.
     const editingDemo =
       options.enableCellEditing && !options.cellEditingCanEditCell
+    // Функция ошибок аргументом истории (тесты) — без демо ошибок.
+    const errorsDemo =
+      options.enableCellErrors && !options.cellErrorsGetCellError
     const demoArgs = {
       rowSelectionOnSelectRow: demo.onSelectRow,
       rowSelectionOnSelectAllRowsOnPage: demo.onSelectAllRowsOnPage,
@@ -316,6 +325,7 @@ const StoryGrid = memo(
             cellEditingValidate: validateCellEdit,
           }
         : {}),
+      ...(errorsDemo ? { cellErrorsGetCellError: demoCellError } : {}),
     }
     // Сохранение истории — промисом: значение пишется в данные после ответа. Ответ
     // приложения — сохранённая строка (ADR 0139) — проходит насквозь.

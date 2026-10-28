@@ -53,6 +53,7 @@ import {
   enableAnnouncementsType,
   enableBackToTopType,
   enableCellEditingType,
+  enableCellErrorsType,
   enableCellSelectionModelType,
   enableCellSelectionType,
   enableColumnDraggingType,
@@ -291,6 +292,7 @@ export const dataGridArgTypes = {
   ),
   ...inCategory('Ячейки и клавиатура', {
     enableCellEditing: enableCellEditingType,
+    enableCellErrors: enableCellErrorsType,
     enableCellSelectionModel: enableCellSelectionModelType,
     enableCellSelection: enableCellSelectionType,
     ...when('enableCellSelection', {
@@ -501,6 +503,7 @@ export const dataGridDefaultArgs = {
   rowActionMenuThreshold: DEFAULT_ROW_ACTION_MENU.threshold,
 
   enableCellEditing: false,
+  enableCellErrors: false,
   enableCellSelection: false,
   enableCellSelectionModel: false,
   cellSelectionRangeSelection: true,
