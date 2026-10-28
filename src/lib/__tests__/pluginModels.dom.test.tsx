@@ -388,7 +388,7 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(rows()).toEqual(['a', 'b', 'c', 'c1'])
   })
 
-  it('MP9: без внешнего значения срез живёт внутри грида с начальным значением initial<Срез>, без него — пустым; сброс в undefined — тоже значение', () => {
+  it('MP9: без внешнего значения срез живёт внутри грида с начальным значением initial<Срез>, без него — пустым; сброс в undefined — тоже значение; монтирование срез не меняет и его колбэк не зовёт', () => {
     const onExpandedChange = vi.fn()
     render(() => [
       rowExpandingModel({ initialExpanded: { a: true }, onExpandedChange }),
@@ -406,6 +406,36 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(rows()).toEqual(['a', 'a1', 'a2', 'b', 'c'])
     act(() => root!.unmount())
     root = undefined
+
+    // Выбор строк — у модели и у интерфейса: монтирование начальный выбор не сбрасывает и
+    // колбэк среза не зовёт, ни у начального, ни у внешнего значения.
+    for (const plugin of [rowSelectionModel, rowSelection]) {
+      const onRowSelectionChange = vi.fn()
+      render(() => [
+        plugin({ initialRowSelection: { b: true }, onRowSelectionChange }),
+      ])
+      expect(table.getRow('b').getIsSelected()).toBe(true)
+      expect(onRowSelectionChange).not.toHaveBeenCalled()
+      act(() => table.getRow('c').toggleSelected(true))
+      expect(onRowSelectionChange).toHaveBeenLastCalledWith({
+        b: true,
+        c: true,
+      })
+      act(() => root!.unmount())
+      root = undefined
+
+      const onControlledChange = vi.fn()
+      render(() => [
+        plugin({
+          rowSelection: { b: true },
+          onRowSelectionChange: onControlledChange,
+        }),
+      ])
+      expect(table.getRow('b').getIsSelected()).toBe(true)
+      expect(onControlledChange).not.toHaveBeenCalled()
+      act(() => root!.unmount())
+      root = undefined
+    }
 
     // Сброс среза в `undefined` (значение «нет поиска») — тоже значение среза.
     const onGlobalFilterChange = vi.fn()
