@@ -311,6 +311,10 @@ describe('Серверная группировка (ADR 0144)', () => {
       await expect.poll(glowing).toBe(true)
       expect(lit(groupButton())).toBe(true)
       // Прежняя выборка ещё догружает окно: её запросы могут прийти после запроса новой.
+      // Запрос новой выборки уходит с окном — под нагрузкой позже свечения.
+      await expect
+        .poll(() => calls.some(call => call.request.grouping.length > 0))
+        .toBe(true)
       const request = calls
         .filter(call => call.request.grouping.length > 0)
         .at(-1)!.request

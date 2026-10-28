@@ -67,6 +67,8 @@ const luminance = (color: string) => {
 const ARGS = normalizeArgs({
   ...dataGridMeta.args,
   enableColumnSorting: true,
+  // Колбэк сортировки: нажатие сортировки пишет в журнал и запись вида «Колбэки».
+  onToggleColumnSort: (() => {}) as StoryProps['onToggleColumnSort'],
 } as StoryProps)
 
 /** Таблица истории наружу — для счёта пересборок моделей и смены среза из теста. */

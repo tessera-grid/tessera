@@ -35,6 +35,11 @@ export const Footer = ({
   }
 
   const { headers } = footerGroup
+  // Подпись футера читает строки и состояние таблицы: ячейка перерисовывается при их смене,
+  // а не при сдвиге окна колонок (ADR 0149, PS13).
+  const table = headers[0]?.getContext().table
+  const rows = table?.getRowSource().rows?.()
+  const state = table?.store.get()
 
   return (
     <div
@@ -69,7 +74,13 @@ export const Footer = ({
                 <VirtualCenterSpacer />
                 {[
                   ...startH.map(h => (
-                    <FooterCell key={h.id} layout={layout} header={h} />
+                    <FooterCell
+                      key={h.id}
+                      layout={layout}
+                      header={h}
+                      rows={rows}
+                      state={state}
+                    />
                   )),
                   ...centerH.map(({ header, start }) => (
                     <FooterCell
@@ -77,10 +88,18 @@ export const Footer = ({
                       layout={layout}
                       header={header}
                       absoluteLeft={start}
+                      rows={rows}
+                      state={state}
                     />
                   )),
                   ...endH.map(h => (
-                    <FooterCell key={h.id} layout={layout} header={h} />
+                    <FooterCell
+                      key={h.id}
+                      layout={layout}
+                      header={h}
+                      rows={rows}
+                      state={state}
+                    />
                   )),
                 ]}
               </>
@@ -89,7 +108,13 @@ export const Footer = ({
         ) : (
           <>
             {headers.map(header => (
-              <FooterCell key={header.id} layout={layout} header={header} />
+              <FooterCell
+                key={header.id}
+                layout={layout}
+                header={header}
+                rows={rows}
+                state={state}
+              />
             ))}
             {needsRightFiller(headers.at(-1)?.column) && (
               <RightFillerBodyColumn
