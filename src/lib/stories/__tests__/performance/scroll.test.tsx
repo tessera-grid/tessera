@@ -56,6 +56,7 @@ import {
   rowGroupingModel,
   rowSelectionModel,
   rowExpanding,
+  rowSelection,
   rowGrouping,
   serverRowModel,
   type ServerRowsRequest,
@@ -1996,6 +1997,150 @@ describe('Производительность прокрутки — серве
       expect(
         grouped.p95Ms,
         `p95=${grouped.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Выбор группы целиком (ADR 0148, GX12): спокойная прокрутка 1 000 000 строк в ста
+// раскрытых группах, каждая выбрана узлом с исключениями, против той же выборки, выбранной
+// целиком без узлов: заливка выбранных строк одна, разница — поиск узла по пути групп.
+const GX12_COST = { ratio: 1.15, plusMs: 2 }
+const GX12_GROUPS = 100
+const GX12_GROUP_SIZE = 10_000
+const GX12_EXPANDED = Object.fromEntries(
+  Array.from({ length: GX12_GROUPS }, (_, g) => [
+    `group:${JSON.stringify([`g${g}`])}`,
+    true,
+  ]),
+)
+const GX12_SELECTION = {
+  all: false,
+  except: [],
+  groups: Array.from({ length: GX12_GROUPS }, (_, g) => ({
+    keys: [`g${g}`],
+    all: true,
+    except: [`g${g}-1`, `g${g}-3`],
+  })),
+}
+const GX12_EVERYTHING = { all: true, except: [] }
+const selectionRowsOf = ({
+  start,
+  end,
+  grouping,
+  groupKeys,
+}: ServerRowsRequest) => {
+  if (grouping.length > groupKeys.length) {
+    return {
+      rows: Array.from(
+        { length: Math.max(0, Math.min(end, GX12_GROUPS) - start) },
+        (_, k): GroupedRow => ({
+          id: '',
+          name: '',
+          city: `g${start + k}`,
+          amount: 0,
+          count: GX12_GROUP_SIZE,
+        }),
+      ),
+      rowCount: GX12_GROUPS,
+    }
+  }
+  const city = groupKeys[0] as string
+  return {
+    rows: Array.from({ length: end - start }, (_, k): GroupedRow => ({
+      id: `${city}-${start + k}`,
+      name: `Name ${start + k}`,
+      city,
+      amount: (start + k) % 10,
+    })),
+  }
+}
+const GroupSelectionGrid = ({ selected }: { selected: boolean }) => {
+  const table = useCreateTable({
+    columns: GROUPED_COLUMNS as never,
+    data: NO_GROUPED_ROWS,
+    getRowId: (row: GroupedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        getRows: selectionRowsOf,
+        getGroupChildCount: (row: GroupedRow) => row.count,
+      }),
+      rowExpanding({ initialExpanded: GX12_EXPANDED }),
+      rowGrouping({ initialGrouping: ['city'] }),
+      rowSelection({
+        rowSelection: selected ? GX12_SELECTION : GX12_EVERYTHING,
+      }),
+    ] as never,
+  })
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Производительность прокрутки — выбор групп в серверной модели строк', () => {
+  test(
+    'GX12: прокрутка 1 000 000 строк при группировке со 100 выбранными группами не дороже той же выборки, выбранной целиком, больше чем на 15 % (+2 мс)',
+    async () => {
+      const measure = async (selected: boolean) => {
+        const screen = render(<GroupSelectionGrid selected={selected} />)
+        const first = () =>
+          document.querySelector('.data-grid__body-row[data-row-id="g0-0"]')
+        await expect.poll(first).not.toBeNull()
+        // Выбор и правда применён: строка группы выбрана, исключение узла — нет.
+        await expect
+          .poll(() => first()!.getAttribute('data-selected'))
+          .toBe('true')
+        expect(
+          document
+            .querySelector('.data-grid__body-row[data-row-id="g0-1"]')
+            ?.getAttribute('data-selected'),
+        ).toBe(String(!selected))
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: true,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const selected = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, GX12_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1 000 100×3',
+          plugins: 'serverRowModel, rowGrouping, rowExpanding, rowSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y' as const,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('GX12-base', 'выбрано всё без узлов', base, false)
+      await record('GX12', '100 выбранных групп', selected, true)
+      expect(
+        selected.p95Ms,
+        `p95=${selected.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

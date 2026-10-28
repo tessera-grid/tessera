@@ -6,6 +6,11 @@
  */
 import { reportAction } from '../debugActions'
 import type { RowSource } from '../rowSource'
+import {
+  rowSelectionValueOf,
+  setRowSelectionValue,
+  type RowSelectionValue,
+} from '../rowSelectionAll'
 import { isThenable, rejectionText } from '../thenable'
 import {
   readServerAction,
@@ -40,6 +45,8 @@ export type ServerActionResult = void | PromiseLike<unknown>
 interface Snapshot {
   sorting?: unknown
   grouping?: unknown
+  /** Выбор — откатывается вместе с группировкой, которая его сбросила (ADR 0148, §4). */
+  rowSelection?: RowSelectionValue
   pagination?: { pageIndex: number; pageSize: number }
 }
 
@@ -72,6 +79,7 @@ interface ServerTable {
     }
     pagination?: { get: () => Snapshot['pagination'] }
     grouping?: { get: () => unknown }
+    rowSelection?: { get: () => unknown }
   }
   setSorting?: (sorting: never) => void
   setGrouping?: (grouping: never) => void
@@ -109,10 +117,11 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
   }
 }
 
-const snapshotOf = ({ atoms }: ServerTable): Snapshot => ({
-  sorting: atoms.sorting?.get(),
-  grouping: atoms.grouping?.get(),
-  pagination: atoms.pagination?.get(),
+const snapshotOf = (t: ServerTable): Snapshot => ({
+  sorting: t.atoms.sorting?.get(),
+  grouping: t.atoms.grouping?.get(),
+  rowSelection: t.atoms.rowSelection ? rowSelectionValueOf(t) : undefined,
+  pagination: t.atoms.pagination?.get(),
 })
 
 const samePage = (a: Snapshot['pagination'], b: Snapshot['pagination']) =>
@@ -123,8 +132,14 @@ type Sorting = readonly { id: string; desc: boolean }[]
 const sameGrouping = (a: unknown, b: unknown) =>
   JSON.stringify(a ?? []) === JSON.stringify(b ?? [])
 
-/** Срез группировки к снимку: id групп другой группировки не совпадают — раскрытие сброшено. */
-const setGroupingTo = (t: ServerTable, grouping: unknown) => {
+/**
+ * Срез группировки к снимку: id групп другой группировки не совпадают — раскрытие сброшено,
+ * выбор — тот, что был при этой группировке (ADR 0148, §4).
+ */
+const setGroupingTo = (
+  t: ServerTable,
+  { grouping, rowSelection }: Snapshot,
+) => {
   if (
     grouping === undefined ||
     sameGrouping(t.atoms.grouping?.get(), grouping)
@@ -133,6 +148,7 @@ const setGroupingTo = (t: ServerTable, grouping: unknown) => {
   }
   t.setGrouping?.(grouping as never)
   t.resetExpanded?.(true)
+  if (rowSelection !== undefined) setRowSelectionValue(t, rowSelection)
 }
 
 const sameSorting = (a: unknown, b: unknown) => {
@@ -156,12 +172,10 @@ const cancelPageRestore = (store: object) => {
 }
 
 /** Откат к состоянию до цепочки; колбэки действий он не зовёт (как PG6). */
-const revert = (
-  t: ServerTable,
-  { sorting, grouping, pagination }: Snapshot,
-) => {
+const revert = (t: ServerTable, snapshot: Snapshot) => {
+  const { sorting, pagination } = snapshot
   const { atoms, store } = t
-  setGroupingTo(t, grouping)
+  setGroupingTo(t, snapshot)
   const restorePage = () => {
     if (
       t.options.paginationRevertOnReject !== false &&
@@ -195,11 +209,9 @@ const revert = (
 }
 
 /** Вернуть сортировку и страницу к снимку — повтор отказавшего действия. */
-const restore = (
-  t: ServerTable,
-  { sorting, grouping, pagination }: Snapshot,
-) => {
-  setGroupingTo(t, grouping)
+const restore = (t: ServerTable, snapshot: Snapshot) => {
+  const { sorting, pagination } = snapshot
+  setGroupingTo(t, snapshot)
   if (sorting !== undefined && !sameSorting(t.atoms.sorting?.get(), sorting)) {
     t.setSorting?.(sorting as never)
   }

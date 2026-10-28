@@ -1,6 +1,6 @@
 import axe from 'axe-core'
 import { render } from 'vitest-browser-react'
-import { userEvent } from 'vitest/browser'
+import { commands, server as browser, userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
@@ -22,11 +22,27 @@ import {
 } from '../../../plugins'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
-import { AXE_OPTIONS } from './a11y-helpers'
+import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 // Серверная группировка на гриде (ADR 0144, GS3–GS9): кнопка группировки серверным
 // действием, строки-группы с числом строк и агрегатами, ветки групп, вложенные уровни,
-// раскрытие при смене выборки, итог в футере, выбор строк данных.
+// раскрытие при смене выборки, итог в футере, выбор строк данных. Выбор группы целиком —
+// ADR 0148 (GX1–GX3, GX5–GX8, GX10–GX11, GX13); GX4, GX9, GX14 — модульный groupSelection.dom,
+// GX12 — перф в scroll.
+
+const fc = commands as unknown as {
+  forcedColors: (active: boolean) => Promise<void>
+}
+
+/** Системный цвет палитры, как его отдаёт браузер. */
+const systemColor = (name: string) => {
+  const probe = document.createElement('span')
+  probe.style.color = name
+  document.body.append(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  return color
+}
 
 interface Item {
   id: string
@@ -147,6 +163,7 @@ const Grid = ({
   onTable,
   onDebugAction,
   footer = false,
+  groupCounts = true,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   plugins?: readonly TesseraFeatureEntry[]
@@ -157,6 +174,8 @@ const Grid = ({
   onTable?: (table: GridTable) => void
   onDebugAction?: (action: DebugAction) => void
   footer?: boolean
+  /** Сервер присылает число строк групп. */
+  groupCounts?: boolean
 }) => {
   const table = useCreateTable({
     columns: columns as never,
@@ -171,7 +190,7 @@ const Grid = ({
         getRows,
         blockSize: BLOCK,
         maxBlocks,
-        getGroupChildCount: (row: Item) => row.count,
+        getGroupChildCount: groupCounts ? (row: Item) => row.count : undefined,
       }),
       rowGrouping({ initialGrouping: grouping }),
       rowExpanding(),
@@ -576,7 +595,7 @@ describe('Серверная группировка (ADR 0144)', () => {
     }
   })
 
-  test('GS9: флажки — только у строк данных; «выбрать всё, кроме» выбирает строки данных выборки, счётчик — из leafCount, без него — «все, кроме k»', async () => {
+  test('GS9: у строк данных — флажки; «выбрать всё, кроме» выбирает строки данных выборки, снятая строка — исключение в узле её группы; счётчик — из leafCount, без него — «все, кроме k»', async () => {
     for (const totals of [true, false]) {
       const { getRows } = server(request => answerOf(request, { totals }))
       const changes: unknown[] = []
@@ -599,7 +618,6 @@ describe('Серверная группировка (ADR 0144)', () => {
       try {
         await expandRow(groupId('C1'))
         await expect.poll(() => rowOf('r1')).not.toBeNull()
-        expect(checkbox(groupId('C1'))).toBeNull()
         expect(checkbox('r1')).not.toBeNull()
 
         await userEvent.click(q('.data-grid__head-cell .row-select-checkbox')!)
@@ -607,13 +625,14 @@ describe('Серверная группировка (ADR 0144)', () => {
           .poll(() => changes.at(-1))
           .toEqual({ all: true, except: [] })
         expect(rowOf('r1')!.getAttribute('data-selected')).toBe('true')
-        expect(rowOf(groupId('C1'))!.getAttribute('data-selected')).not.toBe(
-          'true',
-        )
         await userEvent.click(checkbox('r1')!)
         await expect
           .poll(() => changes.at(-1))
-          .toEqual({ all: true, except: ['r1'] })
+          .toEqual({
+            all: true,
+            except: [],
+            groups: [{ keys: ['C1'], all: true, except: ['r1'] }],
+          })
         await expect
           .poll(count)
           .toBe(
@@ -624,6 +643,392 @@ describe('Серверная группировка (ADR 0144)', () => {
       } finally {
         await screen.unmount()
       }
+    }
+  })
+})
+
+describe('Выбор группы целиком (ADR 0148)', () => {
+  const checkbox = (id: string) =>
+    rowOf(id)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+  const checked = (id: string) => checkbox(id)?.getAttribute('aria-checked')
+  const count = () =>
+    q('[data-testid="selected-rows-count"]')?.textContent?.trim() ?? ''
+  const headCheckbox = () => q('.data-grid__head-cell .row-select-checkbox')!
+
+  test('GX1: при серверной группировке и rowSelection у строки-группы есть флажок: нажатие выбирает группу целиком без загрузки её строк, повторное — снимает', async () => {
+    const { calls, getRows } = server(request => answerOf(request))
+    const changes: unknown[] = []
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        plugins={[
+          rowSelection({ onRowSelectionChange: next => changes.push(next) }),
+        ]}
+      />,
+    )
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      expect(checked(groupId('C1'))).toBe('false')
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect
+        .poll(() => changes.at(-1))
+        .toEqual({
+          all: false,
+          except: [],
+          groups: [{ keys: ['C1'], all: true, except: [] }],
+        })
+      expect(checked(groupId('C1'))).toBe('true')
+      // Строки группы не запрашивались: ветка свёрнута.
+      expect(calls.some(call => call.request.parentId === groupId('C1'))).toBe(
+        false,
+      )
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => changes.at(-1)).toEqual({})
+      expect(checked(groupId('C1'))).toBe('false')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX2: флажок группы в трёх состояниях: выбрано; частично — при исключениях, отдельно выбранных строках или выбранных подгруппах внутри; не выбрано', async () => {
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city', 'kind']}
+        plugins={[rowSelection()]}
+      />,
+    )
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      expect(checked(groupId('C1'))).toBe('false')
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+
+      // Снятая подгруппа — частично; выбранная снова — выбрано.
+      await expandRow(groupId('C1'))
+      await expect.poll(() => checkbox(groupId('C1', 'B'))).not.toBeNull()
+      expect(checked(groupId('C1', 'B'))).toBe('true')
+      await humanClick(checkbox(groupId('C1', 'B'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('mixed')
+      await humanClick(checkbox(groupId('C1', 'B'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+
+      // Исключение строки — частично и у подгруппы, и у группы.
+      await expandRow(groupId('C1', 'B'))
+      await expect.poll(() => checkbox('r1')).not.toBeNull()
+      await humanClick(checkbox('r1')!)
+      await expect.poll(() => checked(groupId('C1', 'B'))).toBe('mixed')
+      expect(checked(groupId('C1'))).toBe('mixed')
+
+      // Отдельно выбранная строка невыбранной группы и выбранная подгруппа — частично.
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('false')
+      await humanClick(checkbox('r1')!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('mixed')
+      await humanClick(checkbox('r1')!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('false')
+      await humanClick(checkbox(groupId('C1', 'A'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('mixed')
+      expect(checked(groupId('C1', 'A'))).toBe('true')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX3: строки и подгруппы выбранной группы выглядят выбранными, в том числе пришедшие позже; снятый флажок строки — исключение в узле группы', async () => {
+    const changes: unknown[] = []
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        plugins={[
+          rowSelection({ onRowSelectionChange: next => changes.push(next) }),
+        ]}
+      />,
+    )
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      await humanClick(checkbox(groupId('C1'))!)
+      // Строки ветки приходят после выбора группы.
+      await expandRow(groupId('C1'))
+      await expect.poll(() => rowOf('r1')).not.toBeNull()
+      expect(rowOf('r1')!.getAttribute('data-selected')).toBe('true')
+      expect(checked('r1')).toBe('true')
+      expect(rowOf(groupId('C1'))!.getAttribute('data-selected')).toBe('true')
+      await humanClick(checkbox('r1')!)
+      await expect
+        .poll(() => changes.at(-1))
+        .toEqual({
+          all: false,
+          except: [],
+          groups: [{ keys: ['C1'], all: true, except: ['r1'] }],
+        })
+      expect(rowOf('r1')!.getAttribute('data-selected')).toBe('false')
+      expect(rowOf('r8')!.getAttribute('data-selected')).toBe('true')
+      // Строка соседней группы не выбрана.
+      await expandRow(groupId('C0'))
+      await expect.poll(() => rowOf('r0')).not.toBeNull()
+      expect(rowOf('r0')!.getAttribute('data-selected')).toBe('false')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX5: «Выбрать всё» в шапке ставит all: true и сбрасывает узлы групп; снятие — пустой выбор', async () => {
+    const changes: unknown[] = []
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        plugins={[
+          rowSelection({ onRowSelectionChange: next => changes.push(next) }),
+        ]}
+      />,
+    )
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect
+        .poll(() => headCheckbox().getAttribute('aria-checked'))
+        .toBe('mixed')
+      await humanClick(headCheckbox())
+      await expect.poll(() => changes.at(-1)).toEqual({ all: true, except: [] })
+      expect(checked(groupId('C0'))).toBe('true')
+      await humanClick(headCheckbox())
+      await expect.poll(() => changes.at(-1)).toEqual({})
+      expect(checked(groupId('C1'))).toBe('false')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX6: счётчик — при известном числе строк всех выбранных групп сумма минус исключения; без него — «N строк и k групп»', async () => {
+    for (const groupCounts of [true, false]) {
+      const { getRows } = server(request => answerOf(request))
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          grouping={['city']}
+          groupCounts={groupCounts}
+          plugins={[rowSelection({ selectedCount: true })]}
+        />,
+      )
+      try {
+        await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+        await humanClick(checkbox(groupId('C1'))!)
+        await expandRow(groupId('C1'))
+        await expect.poll(() => rowOf('r1')).not.toBeNull()
+        await humanClick(checkbox('r1')!)
+        await expandRow(groupId('C0'))
+        await expect.poll(() => rowOf('r0')).not.toBeNull()
+        await humanClick(checkbox('r0')!)
+        await expect
+          .poll(count)
+          .toBe(
+            groupCounts
+              ? tableLabels.selectedRows(cityCount('C1') - 1 + 1)
+              : tableLabels.selectedRowsAndGroups(
+                  1,
+                  tableLabels.selectedGroupsCount(1),
+                ),
+          )
+      } finally {
+        await screen.unmount()
+      }
+    }
+  })
+
+  test('GX7: смена группировки сбрасывает выбор; отказ серверного действия смены группировки возвращает прежний выбор', async () => {
+    let refuse = false
+    const changes: unknown[] = []
+    const { getRows } = server(request =>
+      refuse && request.grouping.length === 0
+        ? new Error('Grouping change refused')
+        : answerOf(request),
+    )
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        plugins={[
+          rowSelection({ onRowSelectionChange: next => changes.push(next) }),
+        ]}
+      />,
+    )
+    const selected = {
+      all: false,
+      except: [],
+      groups: [{ keys: ['C1'], all: true, except: [] }],
+    }
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => changes.at(-1)).toEqual(selected)
+
+      // Отказ: группировка и выбор — прежние.
+      refuse = true
+      const before = changes.length
+      await clickGroup()
+      await expect.poll(banner).not.toBeNull()
+      // Сброс, затем откат.
+      expect(changes.slice(before, before + 1)).toEqual([{}])
+      await expect.poll(() => changes.at(-1)).toEqual(selected)
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+
+      // Успех: выбор сброшен.
+      refuse = false
+      await clickGroup()
+      await expect.poll(() => groupRows().length).toBe(0)
+      expect(changes.at(-1)).toEqual({})
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX8: сортировка, фильтр и поиск выбор групп не сбрасывают', async () => {
+    const changes: unknown[] = []
+    const { calls, getRows } = server(request => answerOf(request))
+    let table: GridTable | undefined
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        onTable={t => (table = t)}
+        plugins={[
+          columnSorting(),
+          quickSearchModel(),
+          rowSelection({ onRowSelectionChange: next => changes.push(next) }),
+        ]}
+      />,
+    )
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+      const after = changes.length
+
+      let was = calls.length
+      const sort = () =>
+        q('.data-grid__head-cell[data-column-id="name"] .column-sort__button')
+      await expect.poll(sort).not.toBeNull()
+      await revealCellButtons(
+        q('.data-grid__head-cell[data-column-id="name"]')!,
+      )
+      await humanClick(sort()!)
+      await expect.poll(() => calls.length).toBeGreaterThan(was)
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+
+      was = calls.length
+      setSearchByUser(table as never, 'N1')
+      await expect.poll(() => calls.length).toBeGreaterThan(was)
+      expect(calls.at(-1)!.request.globalFilter).toBe('N1')
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+      expect(changes).toHaveLength(after)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX10: с keyboardNavigation Space на строке-группе переключает её выбор; у строки-группы есть aria-selected', async () => {
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        plugins={[keyboardNavigation(), rowSelection()]}
+      />,
+    )
+    try {
+      await expect.poll(() => rowOf(groupId('C1'))).not.toBeNull()
+      expect(rowOf(groupId('C1'))!.getAttribute('aria-selected')).toBe('false')
+      await humanClick(cellOf(groupId('C1'), 'amount')!)
+      await press(' ')
+      await expect.poll(() => checked(groupId('C1'))).toBe('true')
+      expect(rowOf(groupId('C1'))!.getAttribute('aria-selected')).toBe('true')
+      await press(' ')
+      await expect.poll(() => checked(groupId('C1'))).toBe('false')
+      expect(rowOf(groupId('C1'))!.getAttribute('aria-selected')).toBe('false')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX11: axe с color-contrast для состояния «частично» в обеих темах; флажок группы в forced-colors', async () => {
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(
+      <Grid getRows={getRows} grouping={['city']} plugins={[rowSelection()]} />,
+    )
+    const options = {
+      ...AXE_OPTIONS,
+      rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+    }
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      await humanClick(checkbox(groupId('C1'))!)
+      await expandRow(groupId('C1'))
+      await expect.poll(() => rowOf('r1')).not.toBeNull()
+      await humanClick(checkbox('r1')!)
+      await expect.poll(() => checked(groupId('C1'))).toBe('mixed')
+      await inBothThemes(async () => {
+        expect(
+          (await axe.run(q('.data-grid-theme')!, options)).violations,
+        ).toEqual([])
+      })
+      if (browser.browser !== 'webkit') {
+        await fc.forcedColors(true)
+        try {
+          // Частичный флажок залит системным цветом выбора, как выбранный.
+          const style = getComputedStyle(checkbox(groupId('C1'))!)
+          expect(style.backgroundColor).toBe(systemColor('Highlight'))
+          expect(
+            (await axe.run(q('.data-grid-theme')!, options)).violations,
+          ).toEqual([])
+        } finally {
+          await fc.forcedColors(false)
+        }
+      }
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GX13: канал действий сообщает выбор и снятие группы с путём её ключей', async () => {
+    const actions: DebugAction[] = []
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        grouping={['city']}
+        onDebugAction={action => actions.push(action)}
+        plugins={[rowSelection()]}
+      />,
+    )
+    const toggles = () =>
+      actions.filter(
+        action =>
+          action.plugin === 'rowSelection' && action.action === 'toggleGroup',
+      )
+    try {
+      await expect.poll(() => checkbox(groupId('C1'))).not.toBeNull()
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => toggles().length).toBe(1)
+      expect(toggles()[0]).toMatchObject({
+        source: 'pointer',
+        detail: { keys: ['C1'], selected: true },
+      })
+      await humanClick(checkbox(groupId('C1'))!)
+      await expect.poll(() => toggles().length).toBe(2)
+      expect(toggles()[1]).toMatchObject({
+        detail: { keys: ['C1'], selected: false },
+      })
+    } finally {
+      await screen.unmount()
     }
   })
 })

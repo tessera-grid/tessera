@@ -30,7 +30,9 @@ export const useAllRowsSelect = ({
     getSelectedData,
     // «Всё, кроме» серверной модели строк: все строки данных без исключений.
     selectedDataCount: isAllSelection(rowSelection)
-      ? dataIds.length - rowSelection.except.length
+      ? rowSelection.all
+        ? dataIds.length - rowSelection.except.length
+        : rowSelection.except.length
       : Object.values(rowSelection).filter(Boolean).length,
   }
 }

@@ -29,8 +29,8 @@ export interface RowSelectionModelOptions {
   /** Разрешить выбор дочерних строк (каскад на поддерево). */
   subRows?: boolean
   /**
-   * Выбранные строки по `id` или «всё, кроме» `{ all: true, except }` серверной модели
-   * строк (ADR 0138, §9): задаёт приложение; без него срез хранит грид.
+   * Выбранные строки по `id` или «всё, кроме» `{ all, except, groups? }` серверной модели
+   * строк (ADR 0138, §9; ADR 0148): задаёт приложение; без него срез хранит грид.
    */
   rowSelection?: RowSelectionValue
   /** Новое значение среза после каждого изменения изнутри грида. */
@@ -52,6 +52,14 @@ const rootRow = (table: unknown) => (id: string) =>
     : ((table as { getRowSource?: () => RowSource<{ depth: number }> })
         .getRowSource?.()
         .byId(id)?.depth ?? 0) === 0
+
+/** Строка-группа строки данных при серверной группировке (ADR 0148); без неё — нет. */
+const rowGroupOf = (table: unknown) => (id: string) =>
+  groupingLength(table) > 0
+    ? (table as { getRowSource?: () => RowSource<{ parentId?: string }> })
+        .getRowSource?.()
+        .byId(id)?.parentId
+    : undefined
 
 /**
  * Выбор недоступен при АКТИВНОЙ группировке: сгруппированная модель производна,
@@ -86,8 +94,16 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
           ? NO_SELECTION
           : value
       }
+      // Узлам групп нужен путь строки из источника таблицы — без неё пересчёт после коммита.
+      if (isAllSelection(value) && value.groups?.length && !table) {
+        return undefined
+      }
       return isAllSelection(value)
-        ? effectiveSelectionOf(value, table ? rootRow(table) : undefined)
+        ? effectiveSelectionOf(
+            value,
+            table ? rootRow(table) : undefined,
+            table ? rowGroupOf(table) : undefined,
+          )
         : value
     },
   }),

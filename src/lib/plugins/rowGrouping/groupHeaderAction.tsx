@@ -7,6 +7,11 @@ import type { HeaderAction } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
+import {
+  isSelectionEmpty,
+  rowSelectionValueOf,
+  setRowSelectionValue,
+} from '../../core/rowSelectionAll'
 import { runServerAction } from '../../core/serverActions'
 
 import '../../grid/cellControls/buttonVisibility.css'
@@ -24,7 +29,8 @@ const isGrouped = ({ column }: HeaderComponentProps): boolean =>
 
 /**
  * Смена группировки. В серверной модели строк — серверное действие (ADR 0144, §3): id групп
- * другой группировки не совпадают, раскрытие сброшено.
+ * другой группировки не совпадают — раскрытие и выбор сброшены (ADR 0148, §4); отказ
+ * возвращает оба.
  */
 const toggleGrouping = (
   { column, table }: HeaderComponentProps,
@@ -35,7 +41,12 @@ const toggleGrouping = (
     'grouping',
     () => {
       column.toggleGrouping()
-      if (serverRowModelReason(table)) table.resetExpanded(true)
+      if (serverRowModelReason(table)) {
+        table.resetExpanded(true)
+        if (!isSelectionEmpty(rowSelectionValueOf(table))) {
+          setRowSelectionValue(table, {})
+        }
+      }
     },
     () => undefined,
     { control: 'rowGrouping', columns: [column.id], ...(menu ? { menu } : {}) },

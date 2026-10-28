@@ -14,6 +14,7 @@ import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
 import {
   GROUP_ROW_PREFIX,
+  groupKeysOf,
   type RowListChange,
   type RowLoadError,
   type RowSource,
@@ -40,12 +41,6 @@ type Query = Pick<
   ServerRowsRequest,
   'sorting' | 'columnFilters' | 'globalFilter' | 'grouping' | 'aggregations'
 >
-
-/** Путь значений групп по id строки-группы; у прочих строк — пусто. */
-const groupKeysOf = (id: string | undefined): unknown[] =>
-  id?.startsWith(GROUP_ROW_PREFIX)
-    ? (JSON.parse(id.slice(GROUP_ROW_PREFIX.length)) as unknown[])
-    : []
 
 interface ServerColumn {
   id: string

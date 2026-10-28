@@ -148,6 +148,8 @@ export interface TableLabels {
   selectRow: string
   /** Доступное имя чекбокса выбора всех строк */
   selectAll: string
+  /** Доступное имя флажка строки-группы: выбрать группу целиком (ADR 0148) */
+  selectGroup: string
   /** Доступное имя кебаб-кнопки меню действий заголовка (`aria-label`/тултип) */
   headerMenu: string
   /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
@@ -311,6 +313,13 @@ export interface TableLabels {
   /** «Выбрано всё, кроме k», когда строк данных в выборке не знает сервер (ADR 0144, §5) */
   selectedAllExcept: (count: number) => string
   selectedAllExceptShort: (count: number) => string
+  /**
+   * Выбраны группы без числа их строк (ADR 0148, §3): «12 строк и 2 группы»; `groups` —
+   * подпись `selectedGroupsCount`, при нуле строк — только она
+   */
+  selectedRowsAndGroups: (count: number, groups: string) => string
+  selectedRowsAndGroupsShort: (count: number, groups: string) => string
+  selectedGroupsCount: (count: number) => string
   /** Добавка к счётчику выбранных: выбранные строки, скрытые фильтром (ADR 0045) */
   selectedRowsHidden: (count: number) => string
   /** Поле быстрого поиска в тулбаре (`quickSearch`): плейсхолдер и доступное имя */
@@ -440,6 +449,7 @@ export const DEFAULT_LABELS = {
   hideGroup: 'Hide group',
   selectRow: 'Select row',
   selectAll: 'Select all rows',
+  selectGroup: 'Select group',
   headerMenu: 'Column options',
   rowMenu: 'Row options',
   withActiveCount: '{name}, {count} active',
@@ -545,6 +555,13 @@ export const DEFAULT_LABELS = {
   selectedAllExcept_zero: 'All selected',
   selectedAllExceptShort: 'All except {count}',
   selectedAllExceptShort_zero: 'All',
+  selectedRowsAndGroups: '{count} rows and {groups} selected',
+  selectedRowsAndGroups_one: '{count} row and {groups} selected',
+  selectedRowsAndGroups_zero: '{groups} selected',
+  selectedRowsAndGroupsShort: '{count} + {groups}',
+  selectedRowsAndGroupsShort_zero: '{groups}',
+  selectedGroupsCount: '{count} groups',
+  selectedGroupsCount_one: '{count} group',
   selectedRowsHiddenShort: '{count} hidden',
   filteredRowsShort: '{shown} / {total}',
   groupRowCount: '({count})',

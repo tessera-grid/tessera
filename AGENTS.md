@@ -931,6 +931,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       итог в футере, выбор строк данных), перф GS12 — в `interaction`, GS13 — в `scroll`,
       `play` историй «Data loading/Server row model» S1–S4
       ([ADR 0144](docs/decisions/0144-server-side-grouping.md)).
+    - _Выбор группы в SSRM:_ модульный `groupSelection.dom` (GX4, GX9, GX14 — форма среза и
+      нормализация, выгрузка, клиентская группировка инертна), визуальный `server-grouping`
+      (GX1–GX3, GX5–GX8, GX10–GX11, GX13 — флажок группы в трёх состояниях, строки выбранной
+      группы, «выбрать всё», счётчик, сброс при смене группировки с откатом, `Space`, axe и
+      `forced-colors`, канал действий), перф GX12 — в `scroll`, истории «Data loading/Server
+      row model» S1–S3 ([ADR 0148](docs/decisions/0148-group-selection-in-ssrm.md)).
     - _Итог правки в кэше:_ модульный `cellEditWrite.dom` (EW1–EW6 — сохранённая строка из
       ответа `onCellEdit`, разбор `parseValue`/`dataType` и вывод по значению ячейки, путь
       `accessorKey` вглубь, отказ записи с советом, клиентский режим без записи), визуальный EW7 —

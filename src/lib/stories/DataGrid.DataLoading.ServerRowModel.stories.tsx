@@ -1551,16 +1551,21 @@ const groupProps =
   ({
     grouping = [],
     search = false,
+    counts = true,
   }: {
     grouping?: string[]
     search?: boolean
+    /** Сервер присылает число строк групп. */
+    counts?: boolean
   }): GuideStoryStep['props'] =>
   () => ({
     columnsOverride: groupingColumns,
     dataOverride: [],
     enableServerRowModel: true,
     serverRowModelBlockSize: GROUP_BLOCK,
-    serverRowModelGetGroupChildCount: (row: GroupItem) => row.count,
+    serverRowModelGetGroupChildCount: counts
+      ? (row: GroupItem) => row.count
+      : undefined,
     enableRowGrouping: true,
     rowGroupingInitialGrouping: grouping,
     enableRowExpanding: true,
@@ -2380,6 +2385,323 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
       await until(() => expect(written).toHaveLength(1))
       await expect(written[0]!.text.split('\n')).toHaveLength(SMALL_TOTAL)
       await expect(consoleText()).toContain('copyResolved')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0148: выбор группы целиком ------------------------------------------------
+
+/** Группировка по городу с флажками выбора; `counts` — сервер присылает число строк групп. */
+const groupSelectProps =
+  ({ counts = true, exported = false } = {}): GuideStoryStep['props'] =>
+  context => ({
+    ...groupProps({ grouping: ['city'], counts })!(context),
+    enableFooter: false,
+    enableRowSelection: true,
+    rowSelectionSelectedCount: true,
+    ...(exported && {
+      enableDataExport: true,
+      dataExportServer: true,
+      // Одна комбинация: кнопка выгружает выбранное сразу, без панели.
+      dataExportAllow: { rows: ['selected'], columns: ['visible'] },
+      onExport: (request: ExportRequest) =>
+        new Promise<void>(resolve => {
+          selectExport.request = request
+          selectExport.finish = resolve
+        }),
+    }),
+    extraPlugins: [serverReset, exportReset],
+  })
+
+const groupCheckbox = (root: HTMLElement, city: string) =>
+  groupRowOf(root, city)?.querySelector<HTMLElement>('.row-select-checkbox') ??
+  null
+const isPartial = (element: Element | null) =>
+  !!element?.hasAttribute('data-indeterminate')
+/** Первая строка данных на экране — строка единственной раскрытой группы. */
+const firstDataRow = (root: HTMLElement) =>
+  bodyRows(root).find(
+    row =>
+      row.dataset.groupRow !== 'true' &&
+      !!row.dataset.rowId &&
+      !row.dataset.rowId.startsWith('group:'),
+  )
+const dataRowCheckbox = (root: HTMLElement) =>
+  firstDataRow(root)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+
+/** Пользователь отметил флажок города. */
+const selectCity = async (
+  root: HTMLElement,
+  signal: AbortSignal,
+  city = 'Paris',
+) => {
+  await pollUntil(() => !!groupCheckbox(root, city), signal)
+  if (!isChecked(groupCheckbox(root, city))) groupCheckbox(root, city)!.click()
+  await pollUntil(() => isChecked(groupCheckbox(root, city)), signal)
+}
+
+/** Пользователь раскрыл город и дождался его строк. */
+const openCity = async (
+  root: HTMLElement,
+  signal: AbortSignal,
+  city: string,
+) => {
+  await pollUntil(() => !!groupRowOf(root, city), signal)
+  const toggle = groupRowOf(root, city)!.querySelector<HTMLElement>(
+    '.row-expand-button',
+  )!
+  if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click()
+  await pollUntil(() => !!dataRowCheckbox(root), signal)
+}
+
+/** Пользователь снял флажок первой строки раскрытого города. */
+const uncheckFirstRow = async (root: HTMLElement, signal: AbortSignal) => {
+  await selectCity(root, signal)
+  await openCity(root, signal, 'Paris')
+  if (isChecked(dataRowCheckbox(root))) dataRowCheckbox(root)!.click()
+  await pollUntil(() => isPartial(groupCheckbox(root, 'Paris')), signal)
+}
+
+const GROUP_SELECTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Список сгруппирован по городу',
+    hint: 'Каждая строка — город с числом строк в нём. Самих строк городов таблица не загружала, у каждого города — свой флажок.',
+    props: groupSelectProps({ exported: true }),
+    enter: stepAction(async (root, { signal }) => {
+      groupServer.refuse = false
+      await pollUntil(() => !!groupCheckbox(root, 'Paris'), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал город',
+    hint: 'Флажок города выбрал все его строки, хотя ни одна не загружена: запросов к серверу не было. Нижняя панель считает строки города по числу, которое прислал сервер.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectCity(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь снял одну строку',
+    hint: 'Строки города пришли уже выбранными. Снятая строка стала исключением внутри города, поэтому флажок города показывает частичный выбор, а счётчик уменьшился на одну.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await uncheckFirstRow(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь выгрузил выбранное',
+    hint: 'Файл собирает сервер: приложение получило запрос «весь город, кроме одной строки» вместе с текущей выборкой. Пока сервер готовит файл, кнопка выгрузки ждёт.',
+    enter: stepAction(async (root, { signal }) => {
+      await uncheckFirstRow(root, signal)
+      await pollUntil(() => !!exportButton(root), signal)
+      if (!selectExport.request) exportButton(root)!.click()
+      await pollUntil(
+        () =>
+          !!selectExport.request &&
+          exportButton(root)!.getAttribute('aria-busy') === 'true',
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0148, S1: выбрать город целиком, снять одну строку и выгрузить выбранное. */
+export const ServerGroupSelection: StoryObj<StoryProps> = {
+  name: 'Select a group',
+  parameters: { scenario: '0148/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор группы целиком"
+      steps={GROUP_SELECTION}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const paris = parisItems().length
+    await step(GROUP_SELECTION[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false)
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(GROUP_SELECTION[1]!.title, async () => {
+      const parents = server.parents.length
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(true)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(labels.selectedRows(paris)),
+      )
+      await expect(server.parents.length).toBe(parents)
+    })
+    await step(GROUP_SELECTION[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(isPartial(groupCheckbox(canvas, 'Paris'))).toBe(true)
+      await expect(isChecked(dataRowCheckbox(canvas))).toBe(false)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(labels.selectedRows(paris - 1)),
+      )
+    })
+    await step(GROUP_SELECTION[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(selectExport.request?.selection).toEqual({
+        all: false,
+        except: [],
+        groups: [
+          {
+            keys: ['Paris'],
+            all: true,
+            except: [firstDataRow(canvas)!.dataset.rowId],
+          },
+        ],
+      })
+      await expect(selectExport.request?.query?.grouping).toEqual(['city'])
+      await expect(exportButton(canvas)).toHaveAttribute('aria-busy', 'true')
+    })
+  },
+}
+
+/** Пользователь снял группировку по городу и дождался ответа. */
+const ungroup = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!groupButton(root), signal)
+  if (groupRows(root).length > 0) groupButton(root)!.click()
+  await pollUntil(
+    () => groupRows(root).length === 0 && hasRow(root, 0) && !refreshing(root),
+    signal,
+  )
+}
+
+const GROUP_SELECT_RESET: readonly GuideStoryStep[] = [
+  {
+    title: 'Список сгруппирован по городу',
+    hint: 'Каждая строка — город с числом строк в нём и своим флажком. Пока ничего не выбрано.',
+    props: groupSelectProps(),
+    enter: stepAction(async (root, { signal }) => {
+      groupServer.refuse = false
+      await pollUntil(() => !!groupCheckbox(root, 'Paris'), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал город',
+    hint: 'Флажок города выбрал все его строки, а нижняя панель их посчитала.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectCity(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь убрал группировку',
+    hint: 'Без группировки городов в списке нет, и выбор, сделанный по городам, потерял смысл — таблица его сняла. Сервер прислал строки без групп, ни одна не выбрана.',
+    enter: stepAction(async (root, { signal }) => {
+      await ungroup(root, signal)
+    }),
+  },
+]
+
+/** ADR 0148, S2: смена группировки снимает выбор. */
+export const ServerGroupSelectReset: StoryObj<StoryProps> = {
+  name: 'Regrouping clears the selection',
+  parameters: { scenario: '0148/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор и смена группировки"
+      steps={GROUP_SELECT_RESET}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUP_SELECT_RESET[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false)
+    })
+    await step(GROUP_SELECT_RESET[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(true)
+      await until(() => expect(selectedCount(canvas)).not.toBe(''))
+    })
+    await step(GROUP_SELECT_RESET[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(groupRows(canvas)).toHaveLength(0)
+      await expect(isChecked(rowCheckbox(canvas, 0))).toBe(false)
+      await until(() => expect(selectedCount(canvas)).toBe(''))
+      await settle()
+    })
+  },
+}
+
+const GROUP_SELECT_COUNT: readonly GuideStoryStep[] = [
+  {
+    title: 'Сервер не знает размер групп',
+    hint: 'Каждая строка — город, но числа строк в городах сервер не прислал. Флажки у городов есть и так.',
+    props: groupSelectProps({ counts: false }),
+    enter: stepAction(async (root, { signal }) => {
+      groupServer.refuse = false
+      await pollUntil(() => !!groupCheckbox(root, 'Paris'), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал город',
+    hint: 'Сколько строк в городе, таблица не знает, поэтому нижняя панель считает выбранные города, а не строки.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectCity(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал строку другого города',
+    hint: 'Отдельно выбранная строка считается сама по себе: нижняя панель показывает и строки, и города.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectCity(root, signal)
+      await openCity(root, signal, 'Berlin')
+      if (!isChecked(dataRowCheckbox(root))) dataRowCheckbox(root)!.click()
+      await pollUntil(() => isPartial(groupCheckbox(root, 'Berlin')), signal)
+    }),
+  },
+]
+
+/** ADR 0148, S3: без числа строк групп счётчик называет строки и группы. */
+export const ServerGroupSelectCount: StoryObj<StoryProps> = {
+  name: 'Count without group sizes',
+  parameters: { scenario: '0148/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Счётчик без размера групп"
+      steps={GROUP_SELECT_COUNT}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(GROUP_SELECT_COUNT[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(GROUP_SELECT_COUNT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          labels.selectedRowsAndGroups(0, labels.selectedGroupsCount(1)),
+        ),
+      )
+    })
+    await step(GROUP_SELECT_COUNT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          labels.selectedRowsAndGroups(1, labels.selectedGroupsCount(1)),
+        ),
+      )
       await settle()
     })
   },

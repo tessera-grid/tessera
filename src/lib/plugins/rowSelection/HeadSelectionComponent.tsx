@@ -37,10 +37,12 @@ export const HeadSelectionComponent = ({
   const { isAllRowsSelected = false, onSelectAllRowsOnPage } = hooks
 
   // Серверная модель строк: «Выбрать всё» — весь итог без загрузки, снятые флажки —
-  // исключения (ADR 0138, §9).
+  // исключения (ADR 0138, §9); узлы групп оно сбрасывает (ADR 0148, §2).
   if (serverRowModelReason(table)) {
     const all = tableAllSelection(table)
-    const allSelected = !!all && all.except.length === 0
+    // Выбрано всё без исключений и узлов групп (ADR 0148, §2).
+    const allSelected =
+      !!all && all.all && all.except.length === 0 && !all.groups?.length
     const handleSelectAll = (event: unknown) => {
       reportAction(table, {
         plugin: 'rowSelection',

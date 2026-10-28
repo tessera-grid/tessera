@@ -6,6 +6,12 @@
 /** Префикс id строки-группы серверной группировки: за ним — JSON пути групп (ADR 0144). */
 export const GROUP_ROW_PREFIX = 'group:'
 
+/** Путь значений групп по id строки-группы; у прочих строк — пусто. */
+export const groupKeysOf = (id: string | undefined): unknown[] =>
+  id?.startsWith(GROUP_ROW_PREFIX)
+    ? (JSON.parse(id.slice(GROUP_ROW_PREFIX.length)) as unknown[])
+    : []
+
 /** Строки тела: по индексу в списке и по id. */
 export interface RowSource<TRow = unknown> {
   /** Строк в списке, в том числе ещё не загруженных. */

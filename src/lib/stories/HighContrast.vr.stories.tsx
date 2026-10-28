@@ -3520,3 +3520,103 @@ export const HighContrastContextMenuCellStep4 = {
   name: 'Cells/Context menu — Menu on a cell, шаг 4',
   tags: ['!test'],
 }
+
+export const HighContrastServerGroupSelectionStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelection,
+    1,
+  ),
+  name: 'Data loading/Server row model — Select a group, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectionStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelection,
+    2,
+  ),
+  name: 'Data loading/Server row model — Select a group, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectionStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelection,
+    3,
+  ),
+  name: 'Data loading/Server row model — Select a group, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectionStep4 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelection,
+    4,
+  ),
+  name: 'Data loading/Server row model — Select a group, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectResetStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelectReset,
+    1,
+  ),
+  name: 'Data loading/Server row model — Regrouping clears the selection, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectResetStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelectReset,
+    2,
+  ),
+  name: 'Data loading/Server row model — Regrouping clears the selection, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectResetStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelectReset,
+    3,
+  ),
+  name: 'Data loading/Server row model — Regrouping clears the selection, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectCountStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelectCount,
+    1,
+  ),
+  name: 'Data loading/Server row model — Count without group sizes, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectCountStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelectCount,
+    2,
+  ),
+  name: 'Data loading/Server row model — Count without group sizes, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupSelectCountStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerGroupSelectCount,
+    3,
+  ),
+  name: 'Data loading/Server row model — Count without group sizes, шаг 3',
+  tags: ['!test'],
+}

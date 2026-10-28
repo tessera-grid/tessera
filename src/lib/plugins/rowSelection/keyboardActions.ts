@@ -4,14 +4,22 @@
  */
 import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import {
+  groupSelectionOf,
+  isAllSelection,
+  rowSelectionValueOf,
   setAllSelectionRow,
+  setGroupSelected,
   tableAllSelection,
 } from '../../core/rowSelectionAll'
 import type { Row } from '../../types'
 import {
+  groupingLength,
+  groupKeysOfRow,
   isGroupingActive,
   isSelectableInList,
+  isServerGroupRow,
 } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
 
@@ -26,15 +34,44 @@ export const getCanToggleRow = (
   row.getCanSelect() &&
   !hooks.isAllRowsSelected
 
-/** Переключить выбор строки и уведомить `onSelectRow` (общий путь клика и клавиши). */
+/** Состояние флажка строки-группы по срезу (ADR 0148, §1). */
+export const groupSelectionOfRow = (row: Row<any, any>) => {
+  const value = rowSelectionValueOf(row.table)
+  return isAllSelection(value)
+    ? groupSelectionOf(value, groupKeysOfRow(row))
+    : 'none'
+}
+
+/**
+ * Переключить выбор строки и уведомить `onSelectRow` (общий путь клика и клавиши). Строка-
+ * группа серверной группировки выбирает группу целиком; `onSelectRow` по её строкам не
+ * зовётся (ADR 0148, «Границы»).
+ */
 export const toggleRowSelection = (
   row: Row<any, any>,
   hooks: Partial<RowSelectionHooks>,
   event: unknown,
 ): void => {
-  // «Всё, кроме» (ADR 0138, §9): снятый флажок — исключение, поставленный — без него.
-  if (tableAllSelection(row.table)) {
-    setAllSelectionRow(row.table, row.id, !row.getIsSelected())
+  if (isServerGroupRow(row)) {
+    setGroupSelected(
+      row.table,
+      groupKeysOfRow(row),
+      groupSelectionOfRow(row) !== 'all',
+    )
+    return
+  }
+  // «Всё, кроме» (ADR 0138, §9) и серверная группировка (ADR 0148): снятый флажок —
+  // исключение в узле группы строки, поставленный — без него.
+  if (
+    tableAllSelection(row.table) ||
+    (serverRowModelReason(row.table) && groupingLength(row.table) > 0)
+  ) {
+    setAllSelectionRow(
+      row.table,
+      row.id,
+      !row.getIsSelected(),
+      groupKeysOfRow(row),
+    )
   } else {
     row.getToggleSelectedHandler()(event)
   }

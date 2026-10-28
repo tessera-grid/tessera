@@ -8,8 +8,12 @@ import type { RowSelectionState } from '@tanstack/react-table'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { pluginStateKey } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
-import type { RowSource } from '../../core/rowSource'
-import { allSelectionOf } from '../../core/rowSelectionAll'
+import { GROUP_ROW_PREFIX, type RowSource } from '../../core/rowSource'
+import {
+  allSelectionOf,
+  countSelectionIn,
+  selectionPartsOf,
+} from '../../core/rowSelectionAll'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
@@ -50,6 +54,18 @@ const listTotalOf = (table: unknown) => {
   return total < 0 ? source.count() : total
 }
 
+/**
+ * Строк данных в группе пути `keys` (ADR 0148, §3): у корня — итог списка, у группы
+ * последнего уровня — её число строк от сервера; у групп выше — неизвестно.
+ */
+const groupSizeOf = (table: unknown) => (keys: readonly unknown[]) => {
+  if (keys.length === 0) return listTotalOf(table)
+  if (keys.length !== groupingLength(table)) return undefined
+  const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  const row = source.byId(GROUP_ROW_PREFIX + JSON.stringify(keys))
+  return row === undefined ? undefined : source.groupChildCount?.(row)
+}
+
 export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
   // Атом среза: в нём эффективное значение, и для «всё, кроме» (ADR 0138, §9).
@@ -73,20 +89,28 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   }
 
   const all = allSelectionOf(selection)
-  const total = all ? listTotalOf(table) : undefined
-  if (all && total === undefined) {
+  const exact = all ? countSelectionIn(all, groupSizeOf(table)) : undefined
+  // Размер нужной группы неизвестен: «все, кроме k» или «N строк и k групп» (ADR 0148, §3).
+  if (all && exact === undefined) {
+    const { rows, groups, excluded } = selectionPartsOf(all)
+    const groupsLabel = labels.selectedGroupsCount(groups)
     return (
       <StatusBarCount
         data-testid="selected-rows-count"
-        full={labels.selectedAllExcept(all.except.length)}
-        short={labels.selectedAllExceptShort(all.except.length)}
+        full={
+          all.all
+            ? labels.selectedAllExcept(excluded)
+            : labels.selectedRowsAndGroups(rows, groupsLabel)
+        }
+        short={
+          all.all
+            ? labels.selectedAllExceptShort(excluded)
+            : labels.selectedRowsAndGroupsShort(rows, groupsLabel)
+        }
       />
     )
   }
-  const count =
-    all && total !== undefined
-      ? Math.max(0, total - all.except.length)
-      : countSelectedRows(selection)
+  const count = exact ?? countSelectedRows(selection)
   const hidden =
     !all && count > 0 ? countHiddenSelectedRows(table, selection) : 0
 

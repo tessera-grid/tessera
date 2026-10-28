@@ -9,6 +9,7 @@ export {
 } from './rowSelectionModel'
 export type {
   RowSelectionAll,
+  RowSelectionGroup,
   RowSelectionValue,
 } from '../core/rowSelectionAll'
 export { rowExpanding, type RowExpandingOptions } from './rowExpanding'
