@@ -57,6 +57,21 @@ export interface PropInfo {
   /** Тип без `undefined`, строкой. */
   type: string
   isFunction: boolean
+  /** Функция может вернуть промис: среди вариантов результата есть `then`. */
+  returnsThenable: boolean
+  /** Тип, где свойство объявлено: интерфейс или псевдоним объектного типа. */
+  owner: string | undefined
+}
+
+const ownerOf = (prop: ts.Symbol) => {
+  let node: ts.Node | undefined = prop.declarations?.[0]?.parent
+  while (
+    node &&
+    !ts.isInterfaceDeclaration(node) &&
+    !ts.isTypeAliasDeclaration(node)
+  )
+    node = node.parent
+  return node?.name.text
 }
 
 const propsOfType = (type: ts.Type): PropInfo[] => {
@@ -66,10 +81,20 @@ const propsOfType = (type: ts.Type): PropInfo[] => {
     .map(prop => {
       const propType = checker.getNonNullableType(checker.getTypeOfSymbol(prop))
       const parts = propType.isUnion() ? propType.types : [propType]
+      const results = parts
+        .flatMap(part => part.getCallSignatures())
+        .map(signature => checker.getReturnTypeOfSignature(signature))
+        // ReactNode допускает промис (React 19) — это не асинхронный итог.
+        .filter(
+          result => !/ReactNode|Element/.test(checker.typeToString(result)),
+        )
+        .flatMap(result => (result.isUnion() ? result.types : [result]))
       return {
         name: prop.name,
         type: checker.typeToString(propType),
         isFunction: parts.some(part => part.getCallSignatures().length > 0),
+        returnsThenable: results.some(result => result.getProperty('then')),
+        owner: ownerOf(prop),
       }
     })
 }
@@ -88,3 +113,19 @@ export const firstParamProps = (file: string, name: string) => {
   const param = signature?.getParameters()[0]
   return param ? propsOfType(checker.getTypeOfSymbol(param)) : []
 }
+
+/** Экспортированные интерфейсы и псевдонимы объектных типов модуля. */
+export const exportedTypeNames = (file: string) =>
+  exportsOf(file)
+    .filter(symbol => {
+      const target =
+        symbol.flags & ts.SymbolFlags.Alias
+          ? typeProgram().checker.getAliasedSymbol(symbol)
+          : symbol
+      return (
+        (target.flags &
+          (ts.SymbolFlags.Interface | ts.SymbolFlags.TypeAlias)) !==
+        0
+      )
+    })
+    .map(symbol => symbol.name)
