@@ -488,7 +488,8 @@ except }`); колбэк, объявленный как `OnChangeFn<RowSelection
 | S7  | Пользователь раскрывает строку, дети приходят с сервера                                        | SD35, SD40 | `ServerRowModelLazyChildren`    |
 
 Истории — в `src/lib/stories/DataGrid.DataLoading.ServerRowModel.stories.tsx`
-(`Tessera/DataGrid/Data loading/Server row model`); первая — `ServerRowModelPlayground`:
+(`Tessera/DataGrid/Data loading/Server row model`); S6 — в подразделе «Selection», S7 — в
+«Lazy children» (ADR 0151); первая — `ServerRowModelPlayground`:
 мок-сервер с задержкой и аргументами итога, отказа и размера блока. Истории держат 300 000
 строк: миллион при высоте строки 50px — 50 млн px, выше предела высоты Chrome (33,5 млн px)
 и Firefox (17,9 млн px, §5); миллион строк растянут (ADR 0142), гайд — история «Million

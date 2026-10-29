@@ -928,21 +928,21 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `server-cell-selection` (XC2–XC5, XC7–XC8, XC12–XC13 — мышь и клавиши через незагруженные
       строки, автопрокрутка в растянутой области, синхронная копия, ожидание и отмена, отказы с
       плашкой, строки-группы и пункт меню, axe), перф XC14 — в `scroll`, XC15 — в `interaction`,
-      истории «Data loading/Server row model» S1–S4
+      истории «Data loading/Server row model/Cell selection» S1–S4
       ([ADR 0146](docs/decisions/0146-cell-selection-in-ssrm.md)).
     - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11 — поля запроса,
       строки-группы и ветки, запрос выгрузки, инертность клиентской модели и ленивых детей),
       визуальный `server-grouping` (GS3–GS9 — кнопка серверным действием с откатом, число строк
       и агрегаты группы, ветка группы, вложенные уровни и `aria-*`, раскрытие при смене выборки,
       итог в футере, выбор строк данных), перф GS12 — в `interaction`, GS13 — в `scroll`,
-      `play` историй «Data loading/Server row model» S1–S4
+      `play` историй «Data loading/Server row model/Grouping» S1–S4
       ([ADR 0144](docs/decisions/0144-server-side-grouping.md)).
     - _Выбор группы в SSRM:_ модульный `groupSelection.dom` (GX4, GX9, GX14 — форма среза и
       нормализация, выгрузка, клиентская группировка инертна), визуальный `server-grouping`
       (GX1–GX3, GX5–GX8, GX10–GX11, GX13 — флажок группы в трёх состояниях, строки выбранной
       группы, «выбрать всё», счётчик, сброс при смене группировки с откатом, `Space`, axe и
       `forced-colors`, канал действий), перф GX12 — в `scroll`, истории «Data loading/Server
-      row model» S1–S3 ([ADR 0148](docs/decisions/0148-group-selection-in-ssrm.md)).
+      row model/Selection» S1–S3 ([ADR 0148](docs/decisions/0148-group-selection-in-ssrm.md)).
     - _Ошибка в ячейке:_ `cell-errors` (ER1–ER7 — точка у ячейки с ошибкой, одна или на кнопке
       правки, тултип и описание, `aria-invalid` в трёх ролях, отказ сохранения первым, живая
       функция и сортировка, страница, виртуализация, SSRM, контраст и `forced-colors`),
@@ -951,7 +951,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
     - _Итог правки в кэше:_ модульный `cellEditWrite.dom` (EW1–EW6 — сохранённая строка из
       ответа `onCellEdit`, разбор `parseValue`/`dataType` и вывод по значению ячейки, путь
       `accessorKey` вглубь, отказ записи с советом, клиентский режим без записи), визуальный EW7 —
-      в `server-row-model`, `play` истории «Data loading/Server row model — Edit a cell» (S1)
+      в `server-row-model`, `play` истории «Data loading/Server row model/Editing — Edit a cell» (S1)
       ([ADR 0139](docs/decisions/0139-saved-row-and-column-data-type.md)).
     - _Пределы браузера:_ `browser-limits` (BH1–BH3 — замер предела высоты элемента и
       липкой шапки, раз на документ и только для тела выше 8 млн px; ещё и в

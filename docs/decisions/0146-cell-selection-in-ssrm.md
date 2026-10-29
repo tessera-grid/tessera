@@ -138,7 +138,7 @@
   `grid/useCellSelectionCopy.ts` и пункт меню через общий `core/cellSelectionCopy.ts`.
 - **Тесты:** модульные `indexCellSelection.dom` (XC1, XC6, XC9–XC11, XC16), визуальный
   `server-cell-selection` (XC2–XC5, XC7–XC8, XC12–XC13), перф XC14 — в `scroll`, XC15 — в
-  `interaction`. Истории S1–S4 — в «Data loading/Server row model».
+  `interaction`. Истории S1–S4 — в «Data loading/Server row model/Cell selection» (ADR 0151).
 - **Находки внедрения.**
   - Автосброс TanStack (`autoResetCellSelection`) снимал выделение на каждой новой `data`, хотя
     в SSRM клиентская модель строк не рисует: серверная модель его выключает, новую выборку

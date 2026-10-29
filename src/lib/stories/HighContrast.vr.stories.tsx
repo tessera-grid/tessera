@@ -19,6 +19,11 @@ import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
 import * as pluginApiStories from './DataGrid.PluginApi.stories'
 import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
 import * as serverRowModelStories from './DataGrid.DataLoading.ServerRowModel.stories'
+import * as serverGroupingStories from './DataGrid.DataLoading.ServerRowModel.Grouping.stories'
+import * as serverSelectionStories from './DataGrid.DataLoading.ServerRowModel.Selection.stories'
+import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowModel.CellSelection.stories'
+import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
+import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
 import * as rowsDraggingStories from './DataGrid.Rows.Dragging.stories'
@@ -507,101 +512,101 @@ export const HighContrastServerRowModelOpenAtRecordStep3 = {
 
 export const HighContrastServerRowModelSelectAllExceptStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelSelectAllExcept,
+    serverSelectionStories,
+    serverSelectionStories.ServerRowModelSelectAllExcept,
     1,
   ),
-  name: 'Data loading/Server row model — Select all except, шаг 1',
+  name: 'Data loading/Server row model/Selection — Select all except, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelSelectAllExceptStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelSelectAllExcept,
+    serverSelectionStories,
+    serverSelectionStories.ServerRowModelSelectAllExcept,
     2,
   ),
-  name: 'Data loading/Server row model — Select all except, шаг 2',
+  name: 'Data loading/Server row model/Selection — Select all except, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelSelectAllExceptStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelSelectAllExcept,
+    serverSelectionStories,
+    serverSelectionStories.ServerRowModelSelectAllExcept,
     3,
   ),
-  name: 'Data loading/Server row model — Select all except, шаг 3',
+  name: 'Data loading/Server row model/Selection — Select all except, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelSelectAllExceptStep4 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelSelectAllExcept,
+    serverSelectionStories,
+    serverSelectionStories.ServerRowModelSelectAllExcept,
     4,
   ),
-  name: 'Data loading/Server row model — Select all except, шаг 4',
+  name: 'Data loading/Server row model/Selection — Select all except, шаг 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelLazyChildrenStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelLazyChildren,
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerRowModelLazyChildren,
     1,
   ),
-  name: 'Data loading/Server row model — Lazy children, шаг 1',
+  name: 'Data loading/Server row model/Lazy children — Lazy children, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelLazyChildrenStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelLazyChildren,
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerRowModelLazyChildren,
     2,
   ),
-  name: 'Data loading/Server row model — Lazy children, шаг 2',
+  name: 'Data loading/Server row model/Lazy children — Lazy children, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelLazyChildrenStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelLazyChildren,
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerRowModelLazyChildren,
     3,
   ),
-  name: 'Data loading/Server row model — Lazy children, шаг 3',
+  name: 'Data loading/Server row model/Lazy children — Lazy children, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelEditCellStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelEditCell,
+    serverEditingStories,
+    serverEditingStories.ServerRowModelEditCell,
     1,
   ),
-  name: 'Data loading/Server row model — Edit a cell, шаг 1',
+  name: 'Data loading/Server row model/Editing — Edit a cell, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelEditCellStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelEditCell,
+    serverEditingStories,
+    serverEditingStories.ServerRowModelEditCell,
     2,
   ),
-  name: 'Data loading/Server row model — Edit a cell, шаг 2',
+  name: 'Data loading/Server row model/Editing — Edit a cell, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelEditCellStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelEditCell,
+    serverEditingStories,
+    serverEditingStories.ServerRowModelEditCell,
     3,
   ),
-  name: 'Data loading/Server row model — Edit a cell, шаг 3',
+  name: 'Data loading/Server row model/Editing — Edit a cell, шаг 3',
   tags: ['!test'],
 }
 
@@ -647,241 +652,241 @@ export const HighContrastServerRowModelMillionRowsStep4 = {
 
 export const HighContrastServerRowModelGroupByStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelGroupBy,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelGroupBy,
     1,
   ),
-  name: 'Data loading/Server row model — Group by a column, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Group by a column, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelGroupByStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelGroupBy,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelGroupBy,
     2,
   ),
-  name: 'Data loading/Server row model — Group by a column, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Group by a column, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelGroupByStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelGroupBy,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelGroupBy,
     3,
   ),
-  name: 'Data loading/Server row model — Group by a column, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Group by a column, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelExpandGroupStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelExpandGroup,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelExpandGroup,
     1,
   ),
-  name: 'Data loading/Server row model — Expand a group, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Expand a group, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelExpandGroupStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelExpandGroup,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelExpandGroup,
     2,
   ),
-  name: 'Data loading/Server row model — Expand a group, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Expand a group, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelExpandGroupStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelExpandGroup,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelExpandGroup,
     3,
   ),
-  name: 'Data loading/Server row model — Expand a group, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Expand a group, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelTotalsStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelTotals,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelTotals,
     1,
   ),
-  name: 'Data loading/Server row model — Totals in the footer, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Totals in the footer, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelTotalsStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelTotals,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelTotals,
     2,
   ),
-  name: 'Data loading/Server row model — Totals in the footer, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Totals in the footer, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelTotalsStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelTotals,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelTotals,
     3,
   ),
-  name: 'Data loading/Server row model — Totals in the footer, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Totals in the footer, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelGroupingRefusedStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelGroupingRefused,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelGroupingRefused,
     1,
   ),
-  name: 'Data loading/Server row model — Grouping refused, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Grouping refused, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelGroupingRefusedStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelGroupingRefused,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelGroupingRefused,
     2,
   ),
-  name: 'Data loading/Server row model — Grouping refused, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Grouping refused, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowModelGroupingRefusedStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRowModelGroupingRefused,
+    serverGroupingStories,
+    serverGroupingStories.ServerRowModelGroupingRefused,
     3,
   ),
-  name: 'Data loading/Server row model — Grouping refused, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Grouping refused, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRangeSelectionStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRangeSelection,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerRangeSelection,
     1,
   ),
-  name: 'Data loading/Server row model — Select a range, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRangeSelectionStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRangeSelection,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerRangeSelection,
     2,
   ),
-  name: 'Data loading/Server row model — Select a range, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRangeSelectionStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRangeSelection,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerRangeSelection,
     3,
   ),
-  name: 'Data loading/Server row model — Select a range, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRangeSelectionStep4 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerRangeSelection,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerRangeSelection,
     4,
   ),
-  name: 'Data loading/Server row model — Select a range, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyLoadsRowsStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyLoadsRows,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyLoadsRows,
     1,
   ),
-  name: 'Data loading/Server row model — Copy loads the rows, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyLoadsRowsStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyLoadsRows,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyLoadsRows,
     2,
   ),
-  name: 'Data loading/Server row model — Copy loads the rows, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyLoadsRowsStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyLoadsRows,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyLoadsRows,
     3,
   ),
-  name: 'Data loading/Server row model — Copy loads the rows, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyOverLimitStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyOverLimit,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyOverLimit,
     1,
   ),
-  name: 'Data loading/Server row model — Copy over the limit, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyOverLimitStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyOverLimit,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyOverLimit,
     2,
   ),
-  name: 'Data loading/Server row model — Copy over the limit, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyRefusedStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyRefused,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyRefused,
     1,
   ),
-  name: 'Data loading/Server row model — Copy refused by the server, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyRefusedStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyRefused,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyRefused,
     2,
   ),
-  name: 'Data loading/Server row model — Copy refused by the server, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerCopyRefusedStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerCopyRefused,
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyRefused,
     3,
   ),
-  name: 'Data loading/Server row model — Copy refused by the server, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 3',
   tags: ['!test'],
 }
 
@@ -3584,101 +3589,101 @@ export const HighContrastContextMenuCellStep4 = {
 
 export const HighContrastServerGroupSelectionStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelection,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelection,
     1,
   ),
-  name: 'Data loading/Server row model — Select a group, шаг 1',
+  name: 'Data loading/Server row model/Selection — Select a group, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectionStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelection,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelection,
     2,
   ),
-  name: 'Data loading/Server row model — Select a group, шаг 2',
+  name: 'Data loading/Server row model/Selection — Select a group, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectionStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelection,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelection,
     3,
   ),
-  name: 'Data loading/Server row model — Select a group, шаг 3',
+  name: 'Data loading/Server row model/Selection — Select a group, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectionStep4 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelection,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelection,
     4,
   ),
-  name: 'Data loading/Server row model — Select a group, шаг 4',
+  name: 'Data loading/Server row model/Selection — Select a group, шаг 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectResetStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelectReset,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelectReset,
     1,
   ),
-  name: 'Data loading/Server row model — Regrouping clears the selection, шаг 1',
+  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectResetStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelectReset,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelectReset,
     2,
   ),
-  name: 'Data loading/Server row model — Regrouping clears the selection, шаг 2',
+  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectResetStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelectReset,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelectReset,
     3,
   ),
-  name: 'Data loading/Server row model — Regrouping clears the selection, шаг 3',
+  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectCountStep1 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelectCount,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelectCount,
     1,
   ),
-  name: 'Data loading/Server row model — Count without group sizes, шаг 1',
+  name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectCountStep2 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelectCount,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelectCount,
     2,
   ),
-  name: 'Data loading/Server row model — Count without group sizes, шаг 2',
+  name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerGroupSelectCountStep3 = {
   ...twinStep(
-    serverRowModelStories,
-    serverRowModelStories.ServerGroupSelectCount,
+    serverSelectionStories,
+    serverSelectionStories.ServerGroupSelectCount,
     3,
   ),
-  name: 'Data loading/Server row model — Count without group sizes, шаг 3',
+  name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 3',
   tags: ['!test'],
 }
 
