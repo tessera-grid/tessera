@@ -4,7 +4,8 @@
  * собирает модель из прежней — пересобираются только изменённые поддеревья
  * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` —
  * полная сборка TanStack. Ожидающие переносы ленивого дерева (ADR 0112) — стадия на
- * входе: модель собирается из данных и ответов, где строка уже на новом месте.
+ * входе: модель собирается из данных и ответов, где строка уже на новом месте. Пока ответ
+ * строки в пути, у неё ребёнок-заглушка — скелет-строка (ADR 0155, §3).
  */
 import { constructRow, createCoreRowModel } from '@tanstack/react-table'
 
@@ -15,14 +16,29 @@ import {
   type RowMoves,
   rowIdOf,
 } from '../../core/rowMoves'
+import {
+  isLazyPlaceholder,
+  lazyPlaceholdersOf,
+} from '../../core/lazyPlaceholder'
 import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
 
 type GetSubRows<TData> = (row: TData, index: number) => TData[] | undefined
 
+type GetRowId<TData> = (
+  row: TData,
+  index: number,
+  parent?: { id: string },
+) => string
+
 interface SubRowsTable<TData> {
-  options: { data: unknown; getSubRows?: GetSubRows<TData> }
+  options: {
+    data: unknown
+    getSubRows?: GetSubRows<TData>
+    getRowId?: GetRowId<TData>
+  }
+  atoms: { rowExpandPending?: { get: () => Record<string, number> } }
   getRowId: (row: TData, index: number, parent?: ModelRow) => string
 }
 
@@ -60,6 +76,27 @@ export const createLazyCoreRowModel =
           result: { data: unknown; answers: LoadedChildren }
         }
       | undefined
+
+    let withPending:
+      | { loaded: LoadedChildren; pending: unknown; answers: LoadedChildren }
+      | undefined
+
+    /** Ответы и заглушки строк, чей ответ в пути и ещё не пришёл ни разу. */
+    const pendingAnswers = (loaded: LoadedChildren): LoadedChildren => {
+      const pending = t.atoms.rowExpandPending?.get()
+      if (!pending) return loaded
+      if (withPending?.loaded === loaded && withPending.pending === pending) {
+        return withPending.answers
+      }
+      let answers = loaded
+      for (const id of Object.keys(pending)) {
+        if (id in loaded) continue
+        if (answers === loaded) answers = { ...loaded }
+        ;(answers as Record<string, unknown>)[id] = lazyPlaceholdersOf(t, id)
+      }
+      withPending = { loaded, pending, answers }
+      return answers
+    }
 
     /** Данные и ответы с ожидающими переносами; без них — те же ссылки. */
     const withMoves = (data: unknown, answers: LoadedChildren) => {
@@ -105,16 +142,25 @@ export const createLazyCoreRowModel =
       if (Object.keys(answers).length === 0) {
         return build(own)
       }
+      const ownId = t.options.getRowId
       t.options.getSubRows = (row, index) => {
+        if (isLazyPlaceholder(row)) return undefined
         const subRows = own?.(row, index)
         return subRows?.length
           ? subRows
           : (answers[t.getRowId(row, index)] as TData[] | undefined)
       }
+      // У заглушки нет данных для `getRowId` приложения: id — от родителя.
+      t.options.getRowId = (row, index, parent) =>
+        isLazyPlaceholder(row)
+          ? `${parent?.id ?? ''}::loading`
+          : (ownId?.(row, index, parent) ??
+            (parent ? `${parent.id}.${index}` : String(index)))
       try {
         return build(own)
       } finally {
         t.options.getSubRows = own
+        t.options.getRowId = ownId
       }
     }
 
@@ -257,7 +303,7 @@ export const createLazyCoreRowModel =
     return () => {
       const { data, answers } = withMoves(
         t.options.data,
-        readLoadedChildren(table),
+        pendingAnswers(readLoadedChildren(table)),
       )
       const prev = last
       if (prev && prev.data === data) {

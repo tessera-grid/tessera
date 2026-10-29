@@ -5,6 +5,7 @@
  * прихода (ADR 0056; RE43–RE44, RE51). Склейка ответов (ADR 0066; RE65, RE67–RE72).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
+import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -80,8 +81,11 @@ const render = (props: HostProps) => {
 }
 
 const coreRow = (id: string) => captured.getCoreRowModel().rowsById[id]
+// Скелет-строка ожидания (ADR 0155, §3) — не ответ: дети ответа без неё.
 const childIds = (id: string) =>
-  (coreRow(id)?.subRows ?? []).map((row: { id: string }) => row.id)
+  (coreRow(id)?.subRows ?? [])
+    .filter((row: unknown) => !isPlaceholderRow(row))
+    .map((row: { id: string }) => row.id)
 const toggle = (id: string) =>
   act(() =>
     toggleRowExpanded(

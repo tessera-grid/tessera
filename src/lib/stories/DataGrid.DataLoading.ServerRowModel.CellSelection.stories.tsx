@@ -540,3 +540,110 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0153 S10 --------------------------------------------------------------------
+
+const pendingBanner = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-banner"]')
+
+/** Копирование ждёт строк дольше секунды: под шапкой — плашка ожидания. */
+const copyHinted = async (root: HTMLElement, signal: AbortSignal) => {
+  if (server.held.length === 0) await copyHeld(root, signal)
+  await pollUntil(() => !!pendingBanner(root), signal)
+}
+
+const CANCEL_COPY: readonly GuideStoryStep[] = [
+  {
+    title: 'Выделение шире загруженного',
+    hint: 'Пользователь выделил строки, которых ещё нет в браузере.',
+    states: ['body.cellRange'],
+    props: serverProps({
+      total: SMALL_TOTAL,
+      knownTotal: true,
+      blockSize: SELECTION_BLOCK,
+      selection: true,
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      server.hold = false
+      release()
+      await selectToEnd(root, signal)
+    }),
+  },
+  {
+    title: 'Копирование ждёт строк',
+    hint: 'Пользователь скопировал выделение, таблица догружает строки.',
+    states: ['body.cellRange'],
+    immediate: true,
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length > 0) return
+      await copyHeld(root, signal)
+    }),
+  },
+  {
+    title: 'Копирование идёт долго',
+    hint: 'Под шапкой появилась плашка о копировании с кнопкой отмены.',
+    states: ['body.cellRange'],
+    enter: stepAction((root, { signal }) => copyHinted(root, signal)),
+  },
+  {
+    title: 'Копирование отменено',
+    hint: 'Пользователь нажал Escape. Плашка ушла, буфер обмена не изменился, выделение на месте.',
+    states: ['body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      await copyHinted(root, signal)
+      press(bodyRows(root)[0]!, 'Escape')
+      await pollUntil(() => !pendingBanner(root), signal)
+      // Ответ, пришедший после отмены, в буфер не попадает.
+      server.hold = false
+      release()
+    }),
+  },
+]
+
+/** ADR 0153, S10: копирование ждёт строк — человек отменяет его Escape. */
+export const ServerCopyCancel: StoryObj<StoryProps> = {
+  name: 'Cancel copying',
+  parameters: { scenario: '0153/S10', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена копирования"
+      steps={CANCEL_COPY}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const written = clipboardWrites()
+    await step(CANCEL_COPY[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
+        true,
+      )
+    })
+    await step(CANCEL_COPY[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(server.held.length).toBeGreaterThan(0)
+      await expect(pendingBanner(canvas)).toBeNull()
+    })
+    await step(CANCEL_COPY[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(pendingBanner(canvas)).toHaveTextContent(labels.pendingCopy)
+      await settle()
+    })
+    await step(CANCEL_COPY[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await settle()
+      await expect(pendingBanner(canvas)).toBeNull()
+      await expect(banner(canvas)).toBeNull()
+      await expect(written).toEqual([])
+      await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
+        true,
+      )
+      await expect(consoleText()).toContain('cancel')
+    })
+  },
+}

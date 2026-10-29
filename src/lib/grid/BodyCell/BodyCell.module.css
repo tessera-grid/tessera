@@ -198,17 +198,17 @@
  * краю (overflow-clip-margin нет в Safari).
  */
 /*
- * Волна ожидания на цели действия меню (ADR 0152, §3): полоса общей волны (ADR 0121) по фону
+ * Волна ожидания на цели действия из контекстного меню (ADR 0152, §3; ADR 0155, §1): полоса общей волны (ADR 0121) по фону
  * ячейки, под текстом — слой ниже содержимого в изолированной ячейке. Едет анимацией WAAPI
  * (usePendingWave): путь в координатах содержимого, общий `startTime`; в покое — за левым
  * краем. Уменьшенное движение и большая цель — неподвижный слабый свет.
  */
-.body__cell[aria-busy='true'] {
+.body__cell[data-pending-wave] {
   isolation: isolate;
 }
 
 /* Подложка занятой ячейки: блик идёт поверх неё. */
-.body__cell[aria-busy='true']::after {
+.body__cell[data-pending-wave]::after {
   content: '';
   position: absolute;
   z-index: -2;
@@ -217,7 +217,7 @@
   background: var(--tsr-comp-pending-bg);
 }
 
-.body__cell[aria-busy='true']::before {
+.body__cell[data-pending-wave]::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -242,7 +242,7 @@
 }
 
 /* Без блика — одна подложка: уменьшенное движение или цель больше порога (usePendingWave). */
-:global([data-pending-wave-still]) .body__cell[aria-busy='true']::before {
+:global([data-pending-wave-still]) .body__cell[data-pending-wave]::before {
   display: none;
 }
 
@@ -343,15 +343,15 @@
   }
 
   /*
-   * Ожидание на цели действия меню (ADR 0152, §3): вместо волны — пунктирный контур на слое
+   * Ожидание на цели действия из контекстного меню (ADR 0152, §3): вместо волны — пунктирный контур на слое
    * полосы. `forced-color-adjust: none` — только у него: свойство наследуется, на ячейке оно
    * сняло бы подмену цветов и с текста.
    */
-  .body__cell[aria-busy='true']::after {
+  .body__cell[data-pending-wave]::after {
     display: none;
   }
 
-  .body__cell[aria-busy='true']::before {
+  .body__cell[data-pending-wave]::before {
     display: block;
     forced-color-adjust: none;
     inset: 0;

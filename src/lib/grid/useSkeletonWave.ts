@@ -277,7 +277,7 @@ export const useSkeletonWave = (
 export const PENDING_WAVE_ANIMATION = 'tsr-pending-wave'
 
 const PENDING_WAVE: FrameWave = {
-  selector: '.data-grid__body-cell[aria-busy="true"]',
+  selector: '.data-grid__body-cell[data-pending-wave]',
   pseudoElement: '::before',
   id: PENDING_WAVE_ANIMATION,
   durationToken: '--tsr-comp-pending-wave-duration',

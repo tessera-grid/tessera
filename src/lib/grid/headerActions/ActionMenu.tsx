@@ -123,9 +123,10 @@ export const ActionMenu = ({
           className={styles.trigger}
           label={kebab.title}
           aria-label={kebab.ariaLabel}
-          pending={opening.pending || kebab.running}
+          pending={opening.pending}
           failure={opening.failure}
-          {...pendingAttributes(server.pending)}
+          // Ждущие действия не глушат нажатия: меню открывается, ждущий пункт отменяет (ADR 0153, §3).
+          {...pendingAttributes(server.pending || kebab.running)}
           data-action-menu={variant}
           onPointerEnter={kebab.intent}
           onFocus={kebab.intent}

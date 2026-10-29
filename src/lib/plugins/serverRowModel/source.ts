@@ -497,6 +497,8 @@ const createServerSource = (table: unknown): ServerSource => {
     count: () => (shown.store.failedEmpty() ? 0 : shown.store.count()),
     at: index => shown.store.rowAt(index),
     keyByIndex: true,
+    branchLoading: id => shown.store.branchLoading(id),
+    cancelBranch: id => shown.store.cancelBranch(id),
     byId: id => shown.store.rowById(id),
     indexOf: id => shown.store.indexOf(id),
     observe: window => {

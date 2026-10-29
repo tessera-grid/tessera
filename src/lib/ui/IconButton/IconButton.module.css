@@ -91,6 +91,65 @@
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }
 
+/*
+ * Отмена ждущего действия (ADR 0153): взведённая кнопка при наведении и фокусе показывает
+ * «стоп» вместо значка — обычным цветом кнопки, не приглушённым ожиданием; на сенсорном
+ * экране наведения нет — «стоп» виден сразу.
+ */
+.cancelIcon {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--tsr-comp-button-color);
+  pointer-events: none;
+}
+
+.cancelIcon > svg {
+  width: var(--tsr-comp-button-icon-size, 16px);
+  height: var(--tsr-comp-button-icon-size, 16px);
+}
+
+/* Взведённая кнопка нажимается: курсор и фон наведения — как у доступной. */
+.iconButton[data-cancel-armed][aria-busy='true'] {
+  cursor: pointer;
+}
+
+.iconButton[data-cancel-armed]:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.iconButton[data-cancel-armed]:is(:hover, :focus-visible) > .cancelIcon {
+  display: flex;
+}
+
+.iconButton[data-cancel-armed]:is(:hover, :focus-visible)
+  > :not(
+    .cancelIcon,
+    [data-pending-arc],
+    [data-failure-indicator],
+    [data-active-indicator]
+  ) {
+  visibility: hidden;
+}
+
+@media (pointer: coarse) {
+  .iconButton[data-cancel-armed] > .cancelIcon {
+    display: flex;
+  }
+
+  .iconButton[data-cancel-armed]
+    > :not(
+      .cancelIcon,
+      [data-pending-arc],
+      [data-failure-indicator],
+      [data-active-indicator]
+    ) {
+    visibility: hidden;
+  }
+}
+
 /* Единый disabled кнопок: гаснут цветом (не только курсором). */
 .iconButton:is(:disabled, [data-disabled]) {
   color: var(--tsr-comp-control-disabled-color);
@@ -157,5 +216,12 @@
   .iconButton .indicator {
     background-color: Canvas;
     color: CanvasText;
+  }
+
+  /* Фона наведения в режиме нет: кнопку со «стопом» видно заливкой (ADR 0153). */
+  .iconButton[data-cancel-armed]:is(:hover, :focus-visible),
+  .iconButton[data-cancel-armed]:is(:hover, :focus-visible) > .cancelIcon {
+    background-color: Highlight;
+    color: HighlightText;
   }
 }

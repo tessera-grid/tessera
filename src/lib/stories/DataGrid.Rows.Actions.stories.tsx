@@ -399,7 +399,7 @@ const ASYNC_ACTION: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, кнопка меню строки показывает ожидание, а строка чуть темнеет и по ней проходит светлый блик.',
+    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, кнопка меню строки показывает ожидание.',
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => {
       archiveRefused = false
@@ -471,16 +471,14 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
       for (const cell of cells) {
         await expect(cell).toHaveAttribute('aria-busy', 'true')
       }
-      // Волна у каждой ячейки строки или неподвижный свет при уменьшенном движении.
-      await until(() =>
-        expect(
-          document.querySelector('[data-pending-wave-still]') !== null ||
-            document
-              .getAnimations()
-              .filter(animation => animation.id === PENDING_WAVE_ANIMATION)
-              .length === cells.length,
-        ).toBe(true),
-      )
+      // Инициатор виден — волны на строке нет, ожидание на кнопке (ADR 0155, §1).
+      await settle()
+      await expect(
+        document
+          .getAnimations()
+          .filter(animation => animation.id === PENDING_WAVE_ANIMATION).length,
+      ).toBe(0)
+      await expect(canvas.querySelector('[data-pending-wave]')).toBeNull()
     })
     await step(ASYNC_ACTION[2]!.title, async () => {
       const flash = watchFlash(
@@ -501,6 +499,169 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
         labels.actionsFailed('Archive'),
       )
       await settle()
+    })
+  },
+}
+
+// --- ADR 0153 S1 ---------------------------------------------------------------------
+
+const CANCEL_SERVER = createDemoServer()
+
+const cancelAction: RowAction = {
+  id: 'cancelArchive',
+  slot: 'actionRowSlot',
+  placement: 'menu',
+  icon: () => <Archive width={16} height={16} />,
+  label: () => 'Archive',
+  // Запрос учитывает `signal`: отмена прерывает его (ADR 0153, §1).
+  onSelect: (_ctx, _event, context) =>
+    CANCEL_SERVER.runs.answer(context?.signal),
+  target: ctx => ({ row: ctx.row.id }),
+}
+
+const cancelDemo: TesseraFeatureEntry = {
+  id: 'rowCancelGuide',
+  slotActions: [cancelAction],
+}
+
+const cancelItem = () => itemOf(cancelAction.id)
+const cancelItemPending = () => !!cancelItem()?.hasAttribute('data-pending')
+
+/**
+ * Архивирование ждёт ответа: запускается, если ещё не идёт. Меню, закрываясь, вернуло
+ * фокус кнопке меню с кольцом, как после клавиатуры; после мыши его нет — снимаем.
+ */
+const archiveHeld = async (root: HTMLElement, signal: AbortSignal) => {
+  CANCEL_SERVER.runs.hold()
+  await repeat(
+    () => kebabBusy(root) && !openMenu(),
+    () => {
+      if (kebabBusy(root)) return
+      if (!openMenu()) {
+        if (!document.querySelector('[role="menu"]')) kebabOf(root)?.click()
+      } else itemOf(cancelAction.id)?.click()
+    },
+    signal,
+  )
+  if (document.activeElement === kebabOf(root)) kebabOf(root)?.blur()
+}
+
+/** Меню строки открыто, ждущий пункт предлагает отмену. */
+const cancelItemShown = async (root: HTMLElement, signal: AbortSignal) => {
+  await archiveHeld(root, signal)
+  await repeat(
+    cancelItemPending,
+    () => {
+      if (!document.querySelector('[role="menu"]')) kebabOf(root)?.click()
+    },
+    signal,
+  )
+}
+
+const CANCEL_ACTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Долгое действие строки',
+    hint: 'Приложение добавило в меню строки действие, которое сервер выполняет долго. У каждой строки есть кнопка меню.',
+  },
+  {
+    title: 'Действие выполняется',
+    hint: 'Пользователь выбрал архивирование в меню строки. Пока сервер работает, кнопка меню показывает ожидание.',
+    states: ['body.pending'],
+    enter: stepAction((root, { signal }) => archiveHeld(root, signal)),
+  },
+  {
+    title: 'Пункт предлагает отмену',
+    hint: 'Пользователь снова открыл меню строки. Ждущий пункт доступен: подпись предлагает отменить архивирование, у правого края крутится спиннер.',
+    states: ['overlay.menu', 'body.pending'],
+    enter: stepAction((root, { signal }) => cancelItemShown(root, signal)),
+  },
+  {
+    title: 'Действие отменено',
+    hint: 'Пользователь выбрал этот пункт. Таблица прервала запрос: меню закрылось, ожидание снято, нет ни отметки ошибки, ни вспышки, строка такая же, как до действия.',
+    enter: stepAction(async (root, { signal }) => {
+      await cancelItemShown(root, signal)
+      cancelItem()!.click()
+      await pollUntil(() => !kebabBusy(root) && !openMenu(), signal)
+    }),
+  },
+]
+
+/** ADR 0153, S1: действие строки идёт долго — человек отменяет его в меню строки. */
+export const RowActionsCancel: StoryObj<StoryProps> = {
+  name: 'Cancel an action',
+  parameters: {
+    scenario: '0153/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Отмена действия строки"
+      steps={CANCEL_ACTION}
+      args={guideArgs(
+        {
+          enableRowActions: true,
+          enableRowActionMenu: true,
+          actionsDemo: 'none',
+          extraPlugins: [cancelDemo],
+          dataCount: 20,
+          containerHeight: '460',
+          height: '360',
+          maxHeight: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const rowCells = () =>
+      canvas.querySelectorAll<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${MENU_ROW}"] [data-column-id]`,
+      )
+    await step(CANCEL_ACTION[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(kebabOf(canvas)).not.toBeNull())
+      await expect(kebabBusy(canvas)).toBe(false)
+    })
+    await step(CANCEL_ACTION[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(kebabBusy(canvas)).toBe(true)
+      for (const cell of rowCells()) {
+        await expect(cell).toHaveAttribute('aria-busy', 'true')
+      }
+    })
+    await step(CANCEL_ACTION[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const item = cancelItem()!
+      await expect(item).not.toHaveAttribute('data-disabled')
+      await expect(item.textContent).toContain(labels.cancelAction('Archive'))
+      // У кебаба «стопа» нет: он открывает меню (ADR 0153, §2).
+      await expect(kebabOf(canvas)).not.toHaveAttribute('data-cancel-armed')
+    })
+    await step(CANCEL_ACTION[3]!.title, async () => {
+      const flash = watchFlash(
+        canvas,
+        `.data-grid__body-row[data-row-id="${MENU_ROW}"]`,
+        'reverted',
+      )
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(kebabBusy(canvas)).toBe(false)
+      await expect(kebabFailed(canvas)).toBe(false)
+      for (const cell of rowCells()) {
+        await expect(cell).not.toHaveAttribute('aria-busy')
+      }
+      await settle()
+      await expect(flash.seen()).toBe(false)
+      flash.stop()
+      await until(() =>
+        expect(
+          canvas.querySelector('[role="status"][aria-live]')?.textContent,
+        ).toBe(labels.announceActionCancelled('Archive')),
+      )
     })
   },
 }

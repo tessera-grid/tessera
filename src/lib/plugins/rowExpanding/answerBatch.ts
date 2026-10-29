@@ -3,6 +3,8 @@
  * кадра и применяются задачей сразу после него одной записью срезов — одна пересборка
  * модели на пачку.
  */
+import { batch } from '@tanstack/react-store'
+
 import { announceLabel } from '../../core/announcer'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
@@ -46,22 +48,28 @@ const apply = (table: BatchTable, answers: readonly Answer[]) => {
   if (current.length === 0) {
     return
   }
-  table.setRowExpandPending?.(prev => {
-    const next = { ...prev }
-    current.forEach(answer => delete next[answer.rowId])
-    return next
-  })
   const loaded = readLoadedChildren(table)
   const fresh = current.filter(answer => loaded[answer.rowId] === answer.saved)
+  // Дети до записи — по модели прошлого рендера: снятие ожидания убирает скелет-строку
+  // (ADR 0155), чтение после него пересобрало бы модель лишний раз.
+  const before = fresh.map(answer => new Set(childIds(table, answer.rowId)))
+  // Ожидание и ответ — одним уведомлением: модель собирается раз на пачку (ADR 0066).
+  batch(() => {
+    table.setRowExpandPending?.(prev => {
+      const next = { ...prev }
+      current.forEach(answer => delete next[answer.rowId])
+      return next
+    })
+    if (fresh.length === 0) return
+    setLoadedAnswer(table, prev => {
+      const next = { ...prev }
+      fresh.forEach(answer => (next[answer.rowId] = asRows(answer.rows)))
+      return next
+    })
+  })
   if (fresh.length === 0) {
     return
   }
-  const before = fresh.map(answer => new Set(childIds(table, answer.rowId)))
-  setLoadedAnswer(table, prev => {
-    const next = { ...prev }
-    fresh.forEach(answer => (next[answer.rowId] = asRows(answer.rows)))
-    return next
-  })
   let count = 0
   const arrived = fresh.flatMap((answer, i) => {
     const after = childIds(table, answer.rowId)

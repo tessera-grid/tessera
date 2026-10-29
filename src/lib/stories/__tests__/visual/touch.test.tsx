@@ -11,6 +11,9 @@ import { waitForGrid } from './core-helpers'
 import { pinViaPopover } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
 import { scrollLayer } from '../../../core/scrollStretch'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { columnSorting } from '../../../plugins/columnSorting'
 
 // Касания (ADR 0086, TU1–TU12, TU14): проект `touch` в `npm test` — Chromium без
 // наведения и с грубым указателем — и проект `mobile` в `test:engines` (iPhone, Pixel).
@@ -767,6 +770,54 @@ describe('Касания в растянутой области', () => {
       const expected =
         head.height + Number(row.dataset.index) * box.height - layer.top()
       expect(Math.abs(box.top - area.top - expected)).toBeLessThanOrEqual(1)
+    }
+  })
+})
+
+describe('«Стоп» на касаниях (ADR 0153)', () => {
+  test('CA7: сенсорный экран (pointer: coarse): у занятой кнопки «стоп» виден сразу', async () => {
+    const signals: AbortSignal[] = []
+    const SortGrid = () => {
+      const table = useCreateTable({
+        columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+        data: [{ id: '1', name: 'Bob' }],
+        plugins: [
+          columnSorting({
+            server: true,
+            onToggleColumnSort: (...args: unknown[]) => {
+              signals.push((args.at(-1) as { signal: AbortSignal }).signal)
+              return new Promise<void>(() => {})
+            },
+          }),
+        ],
+      })
+      return (
+        <div style={{ width: 400, height: 200 }}>
+          <DataGrid table={table as never} />
+        </div>
+      )
+    }
+    const screen = await render(<SortGrid />)
+    try {
+      await waitForGrid()
+      const button = () =>
+        document.querySelector<HTMLElement>(
+          `${HEAD_CELL}[data-column-id="name"] .column-sort__button`,
+        )!
+      expect(matchMedia('(pointer: coarse)').matches).toBe(true)
+      await touch.realTap(center(button()))
+      await expect.poll(() => signals.length).toBe(1)
+      await expect
+        .poll(() => button().hasAttribute('data-cancel-armed'))
+        .toBe(true)
+      const stop = button().querySelector<HTMLElement>('[data-cancel-icon]')!
+      expect(getComputedStyle(stop).display).toBe('flex')
+      expect(shown(stop)).toBe(true)
+
+      await touch.realTap(center(button()))
+      await expect.poll(() => signals[0]!.aborted).toBe(true)
+    } finally {
+      await screen.unmount()
     }
   })
 })

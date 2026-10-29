@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Star } from 'lucide-react'
+import { Archive, Star } from 'lucide-react'
 import { expect } from 'storybook/test'
 import type {
   CellComponentProps,
@@ -13,6 +13,8 @@ import {
 } from '../../lib/core/definePlugin'
 import { CellButton } from '../../lib/grid/Actions/CellButton'
 import { Button } from '../../lib/ui/Button'
+import type { RowAction } from '../../lib/core/headerActions'
+import { exportFormats } from '../../lib/plugins/dataExport'
 import {
   GuideStory,
   type GuideStoryStep,
@@ -759,5 +761,149 @@ export const PluginApiReportAction: StoryObj<StoryProps> = {
       expect(starButton(canvas)!.textContent).toBe('Star rows · #1')
     })
     await settle()
+  },
+}
+
+// --- ADR 0153 S5 ---------------------------------------------------------------------
+
+/** Запрос, который ждёт, пока его не отменят; учитывает `signal` (ADR 0153, §1). */
+const heldRequest = (signal?: AbortSignal) =>
+  new Promise<never>((_resolve, reject) => {
+    signal?.addEventListener('abort', () => reject(signal.reason), {
+      once: true,
+    })
+  })
+
+const CANCEL_ROW = 'item-id-1'
+
+const appArchive: RowAction = {
+  id: 'appArchive',
+  slot: 'actionRowSlot',
+  icon: () => <Archive width={16} height={16} />,
+  label: () => 'Archive',
+  onSelect: (_ctx, _event, context) => heldRequest(context?.signal),
+}
+
+/** Кнопка приложения в тулбаре: отменяет всё, чего ждёт таблица. */
+const CancelAllButton = ({ table }: ToolbarComponentProps) => (
+  <Button
+    variant="outline"
+    data-testid="cancel-all"
+    onClick={() => table.cancelPending()}
+  >
+    Cancel all
+  </Button>
+)
+
+const cancelAllDemo = {
+  id: 'cancelAllGuide',
+  slotActions: [appArchive],
+  slots: [{ id: 'cancelAll', slot: 'toolbarSlot', component: CancelAllButton }],
+} as NonNullable<StoryProps['extraPlugins']>[number]
+
+const archiveButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${CANCEL_ROW}"] .row__button button`,
+  )
+const exportButtonOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="export-button"]')
+const busyButton = (button: Element | null) =>
+  button?.getAttribute('aria-busy') === 'true'
+const failedButton = (button: Element | null) =>
+  button
+    ?.querySelector('[data-failure-indicator]')
+    ?.getAttribute('data-shown') === 'true'
+
+/** Действие строки и выгрузка ждут: пользователь нажал обе кнопки. */
+const bothHeld = (root: HTMLElement, signal: AbortSignal) =>
+  pollUntil(() => {
+    if (!busyButton(archiveButton(root))) archiveButton(root)?.click()
+    else if (!busyButton(exportButtonOf(root))) exportButtonOf(root)?.click()
+    else return true
+    return false
+  }, signal)
+
+const CANCEL_ALL: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопка приложения',
+    hint: 'Над таблицей есть своя кнопка приложения: она отменяет всё, чего таблица ждёт.',
+  },
+  {
+    title: 'Ждут два действия',
+    hint: 'Пользователь запустил действие строки и выгрузку, обе кнопки показывают ожидание.',
+    states: ['body.pending'],
+    enter: stepAction((root, { signal }) => bothHeld(root, signal)),
+  },
+  {
+    title: 'Всё отменено',
+    hint: 'Пользователь нажал кнопку приложения. Таблица тихо прервала оба запроса: ожидание снято, отметок ошибки нет.',
+    enter: stepAction(async (root, { signal }) => {
+      await bothHeld(root, signal)
+      root.querySelector<HTMLElement>('[data-testid="cancel-all"]')!.click()
+      await pollUntil(
+        () =>
+          !busyButton(archiveButton(root)) && !busyButton(exportButtonOf(root)),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0153, S5: приложение отменяет всё ожидающее своей кнопкой. */
+export const PluginApiCancelPending: StoryObj<StoryProps> = {
+  name: 'Cancel everything pending',
+  parameters: { scenario: '0153/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена всего ожидающего"
+      steps={CANCEL_ALL}
+      args={guideArgs(
+        {
+          enableRowActions: true,
+          actionsDemo: 'none',
+          enableDataExport: true,
+          dataExportFormats: [
+            {
+              ...exportFormats.xlsx(),
+              serialize: (_data, context) => heldRequest(context?.signal),
+            },
+          ],
+          dataExportAllow: { columns: ['visible'] },
+          extraPlugins: [cancelAllDemo],
+          dataCount: 20,
+          containerHeight: '460',
+          height: '360',
+          maxHeight: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CANCEL_ALL[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(
+          canvas.querySelector('[data-testid="cancel-all"]'),
+        ).not.toBeNull(),
+      )
+    })
+    await step(CANCEL_ALL[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(busyButton(archiveButton(canvas))).toBe(true)
+      await expect(busyButton(exportButtonOf(canvas))).toBe(true)
+    })
+    await step(CANCEL_ALL[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(busyButton(archiveButton(canvas))).toBe(false)
+      await expect(busyButton(exportButtonOf(canvas))).toBe(false)
+      await settle()
+      await expect(failedButton(archiveButton(canvas))).toBe(false)
+      await expect(failedButton(exportButtonOf(canvas))).toBe(false)
+      await expect(consoleText()).toContain('cancelPending')
+    })
   },
 }

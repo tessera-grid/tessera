@@ -26,6 +26,7 @@ import {
   ListFilter,
   Lock,
   Rows3,
+  Square,
   SquareCheck,
   Funnel,
   Search,
@@ -116,6 +117,8 @@ export interface TableIcons {
   saveFailed: IconComponent
   /** Пункт меню, чьё действие отклонено (ADR 0078) */
   actionFailed: IconComponent
+  /** «Стоп» занятой кнопки: нажатие отменяет её действие (ADR 0153) */
+  cancelAction: IconComponent
   /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
   loadMoreFailed: IconComponent
   retry: IconComponent
@@ -174,6 +177,7 @@ export const DEFAULT_ICONS: TableIcons = {
   nextMonth: ChevronRight,
   saveFailed: CircleAlert,
   actionFailed: CircleAlert,
+  cancelAction: Square,
   loadMoreFailed: CircleAlert,
   retry: RotateCw,
   emptyState: EmptyStateIllustration,

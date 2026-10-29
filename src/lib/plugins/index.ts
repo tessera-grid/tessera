@@ -114,6 +114,7 @@ export {
   type ExportColumn,
   type ExportColumnFilter,
   type ExportContent,
+  type ExportContext,
   type ExportColumns,
   type ExportData,
   type ExportFormat,

@@ -9,6 +9,7 @@ export type {
   ExportColumn,
   ExportColumnFilter,
   ExportContent,
+  ExportContext,
   ExportColumns,
   ExportData,
   ExportFormat,

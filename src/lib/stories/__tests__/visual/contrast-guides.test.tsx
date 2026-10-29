@@ -17,6 +17,7 @@ import {
   auditRoots,
   comboLabel,
   fitSnapshot,
+  frame,
   gridsAndPopups,
   loadStories,
   pixelMeasure,
@@ -132,6 +133,14 @@ const auditStep = async (
   if (step.pseudo) {
     for (const combo of combos.filter(c => c.mode === 'forced')) {
       await applyCombo(combo, { finish })
+      // Действие шага наводит указатель само (`pointAt`), и смена сочетания может
+      // повторить его: база — без наведения.
+      for (const el of document.querySelectorAll(
+        PSEUDO_CLASSES.map(c => `.${c}`).join(','),
+      )) {
+        el.classList.remove(...PSEUDO_CLASSES)
+      }
+      await frame()
       before.set(comboLabel(combo), await shoot(combo))
     }
     await applyPseudoStates(storyId, step.pseudo)

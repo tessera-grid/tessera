@@ -42,6 +42,8 @@ const DIRECT_SCROLL: Record<string, string> = {
     'сдвиг физического scrollTop — признак «прокрутка была», движение отменяется',
   'grid/contextMenu/ContextMenu.tsx':
     'смена физической прокрутки — ключ закрытия меню, виртуальная позиция не нужна',
+  'grid/useSkeletonWave.ts':
+    'фаза волны — в координатах DOM-содержимого рядом с getBoundingClientRect: нужна физическая прокрутка',
   'grid/ScrollingAttribute.ts':
     'сдвиг физического scrollTop — признак идущей прокрутки',
   'plugins/backToTop/model.ts':

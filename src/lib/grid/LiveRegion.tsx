@@ -5,6 +5,7 @@
 import { type RefObject, useEffect, useRef, useState } from 'react'
 
 import { announceLabel, registerAnnouncer } from '../core/announcer'
+import { takeLoadCancelled } from '../core/cancellation'
 import type { TableLabels } from '../core/localization'
 import { useTableState } from '../core/reactivity'
 
@@ -93,7 +94,15 @@ export const LiveRegion = ({
       ).filter(Boolean).length,
   ) as number
 
+  // Коммит после отмены (ADR 0153, §4): объявлена отмена, а не откат и конец загрузки.
+  // Эффект первым — эффекты ниже читают флаг.
+  const cancelled = useRef(false)
+  useEffect(() => {
+    cancelled.current = takeLoadCancelled(table)
+  })
+
   useOnChange(sorting, value => {
+    if (cancelled.current) return
     const [id, desc] = value.split(':')
     announceLabel(table, l =>
       !id
@@ -129,7 +138,8 @@ export const LiveRegion = ({
   )
   const loadingEnded = useRef(false)
   useOnChange(loading, (isLoading, wasLoading) => {
-    if (wasLoading && !isLoading && !failed) {
+    if (cancelled.current || isLoading) return
+    if (wasLoading && !failed) {
       loadingEnded.current = true
       announceLabel(table, l =>
         rowCount === 0 ? (stubTitle ?? l.noData) : l.announceLoaded(rowCount),
@@ -149,6 +159,7 @@ export const LiveRegion = ({
   useEffect(() => {
     filtersChanged.current = false
     loadingEnded.current = false
+    cancelled.current = false
   })
 
   return (

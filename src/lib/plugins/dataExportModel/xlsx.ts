@@ -25,5 +25,9 @@ export const xlsxFormat = (options: XlsxFormatOptions = {}): ExportFormat => ({
   label: 'Excel',
   extension: 'xlsx',
   mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  serialize: async data => (await loadBuilder()).buildXlsx(data, options),
+  serialize: async (data, context) => {
+    const builder = await loadBuilder()
+    context?.signal.throwIfAborted()
+    return builder.buildXlsx(data, options)
+  },
 })

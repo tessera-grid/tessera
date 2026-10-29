@@ -42,6 +42,11 @@ export interface ServerActionStatus {
     /** Повторить отказавшее действие с теми же аргументами. */
     retry: () => void
   }
+  /**
+   * Копирование ждёт догрузки строк (ADR 0146): плашка ожидания и Escape (ADR 0153, §5), без
+   * свечения обновления. Обновления среза без этого поля его не трогают.
+   */
+  copying?: { since: number }
 }
 
 interface ServerActionStateSlice {
@@ -113,7 +118,7 @@ export const serverActionFeature: TableFeature = {
 export const readServerAction = (table: unknown): ServerActionStatus =>
   (table as StatusTable | undefined)?.atoms?.serverAction?.get() ?? IDLE
 
-/** Обновить срез; без фичи — ничего. */
+/** Обновить срез; без фичи — ничего. Ожидание копирования меняет только тот, кто его назвал. */
 export const writeServerAction = (
   table: unknown,
   updater: (prev: ServerActionStatus) => ServerActionStatus,
@@ -122,4 +127,9 @@ export const writeServerAction = (
     table as
       | { setServerAction?: (updater: Updater<ServerActionStatus>) => void }
       | undefined
-  )?.setServerAction?.(updater)
+  )?.setServerAction?.(prev => {
+    const next = updater(prev)
+    return prev.copying && !('copying' in next)
+      ? { ...next, copying: prev.copying }
+      : next
+  })

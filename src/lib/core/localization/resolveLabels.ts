@@ -33,6 +33,8 @@ export const LABEL_PARAMS = {
   actionsFailed: ['names'],
   announceActionDone: ['name'],
   announceActionFailed: ['name', 'error'],
+  cancelAction: ['name'],
+  announceActionCancelled: ['name'],
   menuBack: ['section'],
   announceMenuSection: ['section'],
   editCellValue: ['column'],

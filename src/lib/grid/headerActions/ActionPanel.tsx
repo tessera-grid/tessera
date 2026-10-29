@@ -16,6 +16,7 @@ import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
 import { useStateWhileOpen } from './useStateWhileOpen'
 import {
   pendingAttributes,
+  serverCancelProps,
   serverActionReason,
   useServerActionMarks,
 } from '../../core/serverActions'
@@ -75,6 +76,9 @@ export const ActionPanel = ({
           aria-label={ariaLabel}
           {...panelButtonProps(loading)}
           {...pendingAttributes(server.pending)}
+          {...serverCancelProps(context.table, server.pending, () =>
+            labels.cancelAction(label),
+          )}
           aria-describedby={failure ? reasonId : undefined}
         >
           {action.icon(context)}

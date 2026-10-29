@@ -13,6 +13,7 @@ import {
   consoleText,
   guideNext,
   orderedRows,
+  pointAt,
   pollUntil,
   settle,
   sleep,
@@ -20,6 +21,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   GuideStory,
@@ -761,6 +763,127 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
       expect(skeletonRow(canvas)).not.toBeNull()
     })
     await settle()
+  },
+}
+
+// --- ADR 0153 S4 ---------------------------------------------------------------------
+
+/** Формат Excel гайда отмены: большой файл собирается, пока выгрузку не отменят. */
+const slowExcel = {
+  ...exportFormats.xlsx(),
+  serialize: (_data: unknown, context?: { signal: AbortSignal }) =>
+    new Promise<never>((_resolve, reject) => {
+      context?.signal.addEventListener(
+        'abort',
+        () => reject(context.signal.reason),
+        { once: true },
+      )
+    }),
+}
+
+const exportWaits = () => exportButton()?.getAttribute('aria-busy') === 'true'
+const exportArmed = () => !!exportButton()?.hasAttribute('data-cancel-armed')
+
+/** Выгрузка идёт: пользователь нажал кнопку, если ещё не нажал. */
+const exportHeld = (root: HTMLElement, signal: AbortSignal) =>
+  pollUntil(() => {
+    if (!root.querySelector('.data-grid__body-row')) return false
+    if (exportWaits()) return true
+    exportButton()?.click()
+    return false
+  }, signal)
+
+/** Занятая кнопка выгрузки готова к отмене. */
+const exportCancelArmed = async (root: HTMLElement, signal: AbortSignal) => {
+  await exportHeld(root, signal)
+  await pollUntil(exportArmed, signal)
+}
+
+const CANCEL_EXPORT: readonly GuideStoryStep[] = [
+  {
+    title: 'Выгрузка в Excel',
+    hint: 'Таблица выгружается в Excel, большой файл собирается долго.',
+  },
+  {
+    title: 'Файл собирается',
+    hint: 'Пользователь нажал выгрузку. Кнопка показывает ожидание по контуру.',
+    enter: stepAction((root, { signal }) => exportHeld(root, signal)),
+  },
+  {
+    title: 'Кнопка предлагает отмену',
+    hint: 'Пользователь навёл указатель на занятую кнопку. Внутри дуги появился знак остановки, подсказка предлагает отменить выгрузку.',
+    pseudo: { hover: '[data-testid="export-button"]' },
+    enter: stepAction(async (root, { signal, onLeave }) => {
+      await exportCancelArmed(root, signal)
+      onLeave(pointAt(exportButton()!))
+    }),
+  },
+  {
+    title: 'Выгрузка отменена',
+    hint: 'Пользователь нажал на кнопку. Сборка прервана, файл не скачан, отметки ошибки на кнопке нет.',
+    enter: stepAction(async (root, { signal }) => {
+      await exportCancelArmed(root, signal)
+      exportButton()!.click()
+      await pollUntil(() => !exportWaits(), signal)
+    }),
+  },
+]
+
+/** ADR 0153, S4: выгрузка Excel долгая — человек отменяет её кнопкой выгрузки. */
+export const ExportCancel: StoryObj<StoryProps> = {
+  name: 'Cancel an export',
+  parameters: { scenario: '0153/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена выгрузки"
+      steps={CANCEL_EXPORT}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataCount: 200,
+          dataExportFormats: [slowExcel],
+          dataExportAllow: { columns: ['visible'] },
+          onExported,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const download = interceptDownload()
+    try {
+      await step(CANCEL_EXPORT[0]!.title, async () => {
+        await waitForRows(canvas)
+        await until(() => expect(exportButton()).not.toBeNull())
+      })
+      await step(CANCEL_EXPORT[1]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportWaits()).toBe(true)
+        await expect(exportPanel()).toBeNull()
+      })
+      await step(CANCEL_EXPORT[2]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportArmed()).toBe(true)
+        await expect(exportButton()).toHaveAttribute(
+          'aria-label',
+          labels.cancelAction(labels.export),
+        )
+      })
+      await step(CANCEL_EXPORT[3]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportWaits()).toBe(false)
+        await expect(exportFailed()).toBe(false)
+        await settle()
+        await expect(download.names).toEqual([])
+      })
+    } finally {
+      download.restore()
+    }
   },
 }
 

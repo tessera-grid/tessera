@@ -1216,6 +1216,60 @@ describe('Серверная модель строк (ADR 0138)', () => {
       }
     })
 
+    test('PW4: ленивые дети в серверной модели — блок скелетов под строкой, на кнопке раскрытия дуга и «стоп» до первого ответа; отмена сворачивает строку и прерывает запрос блока', async () => {
+      const { calls, getRows } = server(request =>
+        request.parentId ? undefined : treeAnswer(request),
+      )
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[rowExpanding({ hasChildren })]}
+        />,
+      )
+      const branch = () => calls.filter(call => call.request.parentId === 'r1')
+      try {
+        await expect.poll(() => toggleOf('r1')).not.toBeNull()
+        await humanClick(toggleOf('r1')!)
+        await expect.poll(() => branch().length).toBe(1)
+
+        // До первого ответа: блок скелетов под строкой, дуга на кнопке, затем «стоп».
+        await expect.poll(() => pendingRow(2)).not.toBeNull()
+        await bodyRows(1000 + BLOCK)
+        expect(rowAt(2)).toBeNull()
+        await expect
+          .poll(() => toggleOf('r1')!.getAttribute('aria-busy'))
+          .toBe('true')
+        expect(
+          toggleOf('r1')!.querySelector('[data-pending-arc]'),
+        ).not.toBeNull()
+        await expect
+          .poll(() => toggleOf('r1')!.hasAttribute('data-cancel-armed'), {
+            timeout: 2000,
+          })
+          .toBe(true)
+        await userEvent.hover(toggleOf('r1')!)
+        const stop =
+          toggleOf('r1')!.querySelector<HTMLElement>('[data-cancel-icon]')!
+        await expect.poll(() => getComputedStyle(stop).display).toBe('flex')
+        expect(toggleOf('r1')!.getAttribute('aria-label')).toBe(
+          tableLabels.cancelAction(tableLabels.expandRow),
+        )
+
+        // Отмена: строка свёрнута, запрос блока прерван, скелетов нет.
+        await humanClick(toggleOf('r1')!)
+        await expect.poll(() => branch()[0]!.request.signal.aborted).toBe(true)
+        await expect
+          .poll(() => toggleOf('r1')!.getAttribute('aria-expanded'))
+          .toBe('false')
+        await expect.poll(() => pendingRow(2)).toBeNull()
+        expect(rowAt(2)?.dataset.rowId).toBe('r2')
+        expect(toggleOf('r1')!.getAttribute('aria-busy')).not.toBe('true')
+      } finally {
+        await screen.unmount()
+      }
+    })
+
     test('SD40: раскрытие в SSRM — кнопкой и клавишами, как в клиентском дереве; дети с отступом по уровню; expanded: true ветки не раскрывает, dev-warn', async () => {
       const { getRows } = server(treeAnswer)
       const screen = await render(

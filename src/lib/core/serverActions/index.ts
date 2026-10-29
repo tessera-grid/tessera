@@ -4,7 +4,16 @@
  * ожидание; отказ откатывает сортировку и страницу к состоянию до первого действия
  * цепочки ожидания. Общий модуль четырёх плагинов — вне их папок (IV3).
  */
+import { announceLabel } from '../announcer'
+import {
+  type CancelSource,
+  cancelSourceOf,
+  lateAnswer,
+  markLoadCancelled,
+  registerPending,
+} from '../cancellation'
 import { reportAction } from '../debugActions'
+import type { TableLabels } from '../localization'
 import type { RowSource } from '../rowSource'
 import {
   rowSelectionValueOf,
@@ -48,10 +57,17 @@ interface Snapshot {
   /** Выбор — откатывается вместе с группировкой, которая его сбросила (ADR 0148, §4). */
   rowSelection?: RowSelectionValue
   pagination?: { pageIndex: number; pageSize: number }
+  /** Фильтры и поиск — их возвращает только отмена (ADR 0153, §4): отказ держит черновик полей. */
+  columnFilters?: unknown
+  globalFilter?: unknown
 }
 
 interface Chain {
   controller: AbortController
+  /** Отмена человеком или приложением (ADR 0153). */
+  cancel: (source: CancelSource) => void
+  /** Снять с учёта реестра ждущих операций. */
+  unregister: () => void
   attempt: number
   /** Сортировка и страница до первого действия цепочки — цель отката. */
   confirmed: Snapshot
@@ -80,7 +96,11 @@ interface ServerTable {
     pagination?: { get: () => Snapshot['pagination'] }
     grouping?: { get: () => unknown }
     rowSelection?: { get: () => unknown }
+    columnFilters?: { get: () => unknown }
+    globalFilter?: { get: () => unknown }
   }
+  setColumnFilters?: (filters: never) => void
+  setGlobalFilter?: (value: never) => void
   setSorting?: (sorting: never) => void
   setGrouping?: (grouping: never) => void
   resetExpanded?: (defaultState?: boolean) => void
@@ -117,11 +137,17 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
   }
 }
 
+/** Срез действия считает сервер: серверный режим плагина или серверная модель строк. */
+export const isServerAction = (table: unknown, kind: ServerActionKind) =>
+  isServer(table as ServerTable, kind)
+
 const snapshotOf = (t: ServerTable): Snapshot => ({
   sorting: t.atoms.sorting?.get(),
   grouping: t.atoms.grouping?.get(),
   rowSelection: t.atoms.rowSelection ? rowSelectionValueOf(t) : undefined,
   pagination: t.atoms.pagination?.get(),
+  columnFilters: t.atoms.columnFilters?.get(),
+  globalFilter: t.atoms.globalFilter?.get(),
 })
 
 const samePage = (a: Snapshot['pagination'], b: Snapshot['pagination']) =>
@@ -171,14 +197,17 @@ const cancelPageRestore = (store: object) => {
   pageRestores.delete(store)
 }
 
-/** Откат к состоянию до цепочки; колбэки действий он не зовёт (как PG6). */
-const revert = (t: ServerTable, snapshot: Snapshot) => {
+/**
+ * Откат к состоянию до цепочки; колбэки действий он не зовёт (как PG6). Отмена (`force`)
+ * откатывает и при `revertOnReject: false`.
+ */
+const revert = (t: ServerTable, snapshot: Snapshot, force = false) => {
   const { sorting, pagination } = snapshot
   const { atoms, store } = t
   setGroupingTo(t, snapshot)
   const restorePage = () => {
     if (
-      t.options.paginationRevertOnReject !== false &&
+      (force || t.options.paginationRevertOnReject !== false) &&
       pagination !== undefined &&
       !samePage(atoms.pagination?.get(), pagination)
     ) {
@@ -187,7 +216,7 @@ const revert = (t: ServerTable, snapshot: Snapshot) => {
   }
   // Сортировка первой: при клиентской пагинации её смена сбрасывает страницу.
   if (
-    t.options.columnSortingRevertOnReject !== false &&
+    (force || t.options.columnSortingRevertOnReject !== false) &&
     sorting !== undefined &&
     atoms.sorting &&
     !sameSorting(atoms.sorting.get(), sorting)
@@ -207,6 +236,84 @@ const revert = (t: ServerTable, snapshot: Snapshot) => {
   }
   restorePage()
 }
+
+/** Фильтры и поиск — к снимку: поле поиска переносит прежний запрос из среза. */
+const restoreFilters = (
+  t: ServerTable,
+  { columnFilters, globalFilter }: Snapshot,
+) => {
+  if (
+    t.atoms.columnFilters &&
+    JSON.stringify(t.atoms.columnFilters.get() ?? []) !==
+      JSON.stringify(columnFilters ?? [])
+  ) {
+    t.setColumnFilters?.((columnFilters ?? []) as never)
+  }
+  if (t.atoms.globalFilter && t.atoms.globalFilter.get() !== globalFilter) {
+    t.setGlobalFilter?.(globalFilter as never)
+  }
+}
+
+/** Имя серверного действия — в объявлении отмены (ADR 0153, §8). */
+export const serverActionName = (
+  kind: ServerActionKind,
+  labels: TableLabels,
+): string => {
+  switch (kind) {
+    case 'sorting':
+      return labels.actionSorting
+    case 'filtering':
+      return labels.actionFiltering
+    case 'search':
+      return labels.actionSearch
+    case 'pagination':
+      return labels.actionPage
+    case 'grouping':
+      return labels.actionGrouping
+    case 'copy':
+      return labels.actionCopy
+  }
+}
+
+/** Заголовок плашки ожидания (ADR 0153, §5): «Идёт поиск…». */
+export const serverActionPendingTitle = (
+  kind: ServerActionKind,
+  labels: TableLabels,
+): string => {
+  switch (kind) {
+    case 'sorting':
+      return labels.pendingSorting
+    case 'filtering':
+      return labels.pendingFiltering
+    case 'search':
+      return labels.pendingSearch
+    case 'pagination':
+      return labels.pendingPage
+    case 'grouping':
+      return labels.pendingGrouping
+    case 'copy':
+      return labels.pendingCopy
+  }
+}
+
+/** Отменить ждущее серверное действие таблицы — «стоп» его кнопки (ADR 0153, §2). */
+export const cancelServerAction = (table: unknown, source: CancelSource) => {
+  chains.get((table as ServerTable).store)?.cancel(source)
+}
+
+/** «Стоп» кнопки, начавшей серверное действие: пока оно ждёт (ADR 0153, §2). */
+export const serverCancelProps = (
+  table: unknown,
+  pending: boolean,
+  cancelLabel: () => string,
+) =>
+  pending
+    ? {
+        onCancel: (event: unknown) =>
+          cancelServerAction(table, cancelSourceOf(event)),
+        cancelLabel: cancelLabel(),
+      }
+    : {}
 
 /** Вернуть сортировку и страницу к снимку — повтор отказавшего действия. */
 const restore = (t: ServerTable, snapshot: Snapshot) => {
@@ -263,6 +370,7 @@ export const runServerAction = (
   apply()
   const previous = chains.get(t.store)
   previous?.controller.abort()
+  previous?.unregister()
   chains.delete(t.store)
   const plugin = SERVER_ACTION_PLUGIN[kind]
   if (previous) {
@@ -298,15 +406,56 @@ export const runServerAction = (
     detail: { kind },
     source: 'auto',
   })
-  chains.set(t.store, { controller, attempt, confirmed, kind, request })
+  // Отмена тихая (ADR 0153, §4): срезы — к состоянию до цепочки, без отметки и плашки отказа.
+  let cancelled = false
+  const cancel = (source: CancelSource) => {
+    if (controller.signal.aborted) return
+    cancelled = true
+    controller.abort()
+    unregister()
+    chains.delete(t.store)
+    reportAction(table, {
+      plugin,
+      action: 'cancel',
+      detail: { action: kind },
+      source,
+      cause: request,
+    })
+    revert(t, confirmed, true)
+    restoreFilters(t, confirmed)
+    markLoadCancelled(table)
+    writeServerAction(table, () => ({}))
+    announceLabel(table, labels =>
+      labels.announceActionCancelled(serverActionName(kind, labels)),
+    )
+  }
+  const unregister = registerPending(table, {
+    kind: 'server',
+    id: kind,
+    cancel,
+  })
+  chains.set(t.store, {
+    controller,
+    cancel,
+    unregister,
+    attempt,
+    confirmed,
+    kind,
+    request,
+  })
   writeServerAction(table, status => ({
     ...status,
     pending: { kind, attempt, cause },
   }))
   const settle = (ok: boolean, error?: unknown) => {
+    if (cancelled) {
+      lateAnswer(table, error)
+      return
+    }
     if (controller.signal.aborted || chains.get(t.store)?.attempt !== attempt) {
       return
     }
+    unregister()
     chains.delete(t.store)
     if (ok) {
       reportAction(table, {
@@ -349,6 +498,7 @@ export const dismissServerActionError = (table: unknown) => {
 /** Размонтирование грида (по store таблицы): ожидающее действие прерывается. */
 export const abortServerActions = (store: object) => {
   chains.get(store)?.controller.abort()
+  chains.get(store)?.unregister()
   chains.delete(store)
   cancelPageRestore(store)
 }

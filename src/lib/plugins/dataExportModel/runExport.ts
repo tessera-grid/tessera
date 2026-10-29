@@ -2,7 +2,17 @@
  * Запуск выгрузки (ADR 0044, §5–§7): клиентская выгрузка собирает данные, сериализует
  * и скачивает; серверная отдаёт запрос потребителю.
  */
-import { type ActionReport, reportOutcome } from '../../core/debugActions'
+import { announceLabel } from '../../core/announcer'
+import {
+  type CancelSource,
+  lateAnswer,
+  registerPending,
+} from '../../core/cancellation'
+import {
+  type ActionReport,
+  reportAction,
+  reportOutcome,
+} from '../../core/debugActions'
 import { logError, logWarn } from '../../core/logger'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { isThenable } from '../../core/thenable'
@@ -17,6 +27,7 @@ import {
 import { exportConfigOf, settingsFromArg, whereOf } from './settings'
 import type {
   ExportContent,
+  ExportContext,
   ExportFormat,
   ExportHooks,
   ExportRequest,
@@ -47,7 +58,12 @@ const filenameOf = (
 
 const invoke = (
   table: unknown,
-  callback: ((request: ExportRequest) => void | Promise<void>) | undefined,
+  callback:
+    | ((
+        request: ExportRequest,
+        context?: ExportContext,
+      ) => void | Promise<void>)
+    | undefined,
   request: ExportRequest,
   outcome?: ActionReport,
   /**
@@ -55,6 +71,7 @@ const invoke = (
    * (ADR 0136, FB6), приложение знает о нём из своего промиса.
    */
   rethrow = false,
+  context?: ExportContext,
 ): Promise<void> | undefined => {
   const fail = (error: unknown) =>
     logError(
@@ -62,7 +79,7 @@ const invoke = (
       `dataExport: колбэк завершился ошибкой: ${error instanceof Error ? error.message : String(error)}`,
     )
   try {
-    const result = callback?.(request)
+    const result = context ? callback?.(request, context) : callback?.(request)
     // Итог — по промису колбэка (ADR 0125).
     if (outcome) reportOutcome(table, outcome, result)
     if (isThenable(result)) {
@@ -75,6 +92,56 @@ const invoke = (
     fail(error)
   }
   return undefined
+}
+
+/**
+ * Ожидание выгрузки — в реестре отмены (ADR 0153): отмена прерывает `signal` и снимает
+ * ожидание сразу, без отказа; ответ после отмены не скачивает файл.
+ */
+const cancellable = (
+  table: unknown,
+  format: ExportFormat,
+  outcome: ActionReport | undefined,
+  run: (context: ExportContext) => Promise<void> | undefined,
+): Promise<void> | undefined => {
+  const controller = new AbortController()
+  let cancelled: (() => void) | undefined
+  const stopped = new Promise<void>(resolve => (cancelled = resolve))
+  const pending = run({ signal: controller.signal })
+  if (!pending) return undefined
+  const cancel = (source: CancelSource) => {
+    if (controller.signal.aborted) return
+    controller.abort()
+    unregister()
+    reportAction(table, {
+      plugin: 'dataExport',
+      action: 'cancel',
+      detail: { action: format.id },
+      source,
+      cause: outcome?.cause,
+    })
+    announceLabel(table, labels =>
+      labels.announceActionCancelled(labels.export),
+    )
+    cancelled!()
+  }
+  const unregister = registerPending(table, {
+    kind: 'export',
+    id: format.id,
+    cancel,
+  })
+  const settled = pending.then(
+    () => {
+      if (controller.signal.aborted) return lateAnswer(table)
+      unregister()
+    },
+    (error: unknown) => {
+      if (controller.signal.aborted) return lateAnswer(table, error)
+      unregister()
+      throw error
+    },
+  )
+  return Promise.race([settled, stopped])
 }
 
 /**
@@ -98,20 +165,23 @@ export const runExport = (
       id: column.id,
       header: headerOf(column),
     }))
-    return invoke(
-      table,
-      hooks.onExport,
-      {
-        settings,
-        format,
-        columns,
-        ...(settings.rows === 'selected'
-          ? { rowIds: selectedRowIdsOf(table) }
-          : {}),
-        ...serverRowsRequestOf(table),
-      },
-      outcome,
-      true,
+    return cancellable(table, format, outcome, context =>
+      invoke(
+        table,
+        hooks.onExport,
+        {
+          settings,
+          format,
+          columns,
+          ...(settings.rows === 'selected'
+            ? { rowIds: selectedRowIdsOf(table) }
+            : {}),
+          ...serverRowsRequestOf(table),
+        },
+        outcome,
+        true,
+        context,
+      ),
     )
   }
 
@@ -131,13 +201,17 @@ export const runExport = (
       filename,
     })
   }
-  const content = format.serialize(data)
-  if (!isThenable(content)) return finish(content)
-  // Асинхронный формат (xlsx): кнопка ждёт; отказ отклоняет промис — его причина на
-  // отметке кнопки (ADR 0136, FB6).
-  const built = Promise.resolve(content).then(resolved => finish(resolved))
-  if (outcome) reportOutcome(table, outcome, built)
-  return built
+  return cancellable(table, format, outcome, context => {
+    const content = format.serialize(data, context)
+    if (!isThenable(content)) return finish(content)
+    // Асинхронный формат (xlsx): кнопка ждёт; отказ отклоняет промис — его причина на
+    // отметке кнопки (ADR 0136, FB6). После отмены файл не скачивается.
+    const built = Promise.resolve(content).then(resolved =>
+      context.signal.aborted ? undefined : finish(resolved),
+    )
+    if (outcome) reportOutcome(table, outcome, built)
+    return built
+  })
 }
 
 /** `table.exportData(arg?)` (EX30): тот же путь, что у «Выгрузить» в панели. */

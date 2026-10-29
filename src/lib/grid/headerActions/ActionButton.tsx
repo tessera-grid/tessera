@@ -4,12 +4,14 @@
  */
 import clsx from 'clsx'
 
+import { cancelSourceOf } from '../../core/cancellation'
 import { useLocalization } from '../../core/localization'
 import { logWarn } from '../../core/logger'
 import { useActionStatus } from './useActionStatus'
 import {
   pendingAttributes,
   serverActionReason,
+  serverCancelProps,
   useServerActionMarks,
 } from '../../core/serverActions'
 import { IconButton } from '../../ui/IconButton'
@@ -17,6 +19,7 @@ import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import {
   actionErrorText,
   actionStatusKey,
+  cancelMenuAction,
   readSyncDisabled,
   runMenuAction,
   type ActionStatus,
@@ -88,6 +91,14 @@ export const ActionButton = ({
         runMenuAction(action, context, event, { keepError: false })
       }
       pending={entry?.pending}
+      {...serverCancelProps(context.table, server.pending, () =>
+        labels.cancelAction(label),
+      )}
+      {...(entry?.pending && {
+        onCancel: event =>
+          cancelMenuAction(action, context, cancelSourceOf(event)),
+        cancelLabel: labels.cancelAction(label),
+      })}
       failure={failure}
       {...pendingAttributes(server.pending)}
       disabled={disabled}

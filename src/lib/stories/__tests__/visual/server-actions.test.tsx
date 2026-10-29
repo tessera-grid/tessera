@@ -235,7 +235,7 @@ const tooltipShows = (text: string) =>
     element => element.textContent?.trim() === text,
   )
 
-/** Открыть панель фильтра колонки name и ввести значение — уходит запрос. */
+/** Открыть панель фильтра колонки name, ввести значение и применить — уходит запрос. */
 const filterBy = async (text: string) => {
   if (!document.querySelector('[data-testid="filter-value"]')) {
     await revealCellButtons(headCell('name')!)
@@ -249,6 +249,10 @@ const filterBy = async (text: string) => {
     return input
   })
   await userEvent.type(value, text)
+  // На сервере условие уходит кнопкой «Применить» (ADR 0154).
+  await humanClick(
+    document.querySelector<HTMLElement>('[data-testid="filter-apply"]')!,
+  )
   await expect.poll(() => lastCall()?.kind).toBe('filter')
 }
 
@@ -282,6 +286,9 @@ describe('серверные действия (ADR 0116)', () => {
       return input
     })
     await userEvent.type(value, 'x')
+    await humanClick(
+      document.querySelector<HTMLElement>('[data-testid="filter-apply"]')!,
+    )
     await expect.poll(() => lit(filterButton())).toBe(true)
     expect(busy(sizeTrigger())).toBe(false)
     await view.unmount()
@@ -357,6 +364,10 @@ describe('серверные действия (ADR 0116)', () => {
     await expect.poll(() => errorDot().getAttribute('data-shown')).toBe('true')
     expect(value().value).toBe('x')
     await userEvent.type(value(), 'y')
+    // Правка уходит кнопкой «Применить» (ADR 0154).
+    await humanClick(
+      document.querySelector<HTMLElement>('[data-testid="filter-apply"]')!,
+    )
     await expect.poll(() => JSON.stringify(lastCall().args)).toContain('"xy"')
   })
 

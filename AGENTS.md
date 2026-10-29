@@ -989,6 +989,20 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `highlight`, TG10 — в `outcome-flash`, перф TG11 и TG18 — в `scroll`,
       история «Cells/Context menu — Refused on a selection» (S1)
       ([ADR 0152](docs/decisions/0152-menu-action-outcome-on-target.md)).
+    - _Отмена длительных операций:_ модульный `cancellation.dom` (CA1, CA8, CA9, CA11, CA12 —
+      `signal` в колбэках, ответ после отмены, `table.cancelPending`, подписи, канал действий),
+      визуальный `cancel` (CA2–CA5, CA10 — «стоп» занятой кнопки, ждущий пункт меню, тихая
+      отмена, плашка и Escape, контраст и `forced-colors`), CA6 — в `server-cell-selection`,
+      CA7 — в `touch`, истории S1–S10 ([ADR 0153](docs/decisions/0153-cancel-long-operations.md)).
+    - _«Применить» серверного фильтра:_ визуальный `filter-apply` (FD1–FD5, FD7–FD10 — кнопка
+      и Enter, ожидание, черновик после отмены и закрытия, вид кнопки фильтра, все панели,
+      клиентский режим, подпись и axe), модульный `filterDraft.dom` (FD6 — когда черновик
+      забывается), истории S1–S2
+      ([ADR 0154](docs/decisions/0154-server-filter-apply-and-draft.md)).
+    - _Ожидание на данных:_ визуальный `pending-on-data` (PW1–PW3 — волна только у контекстного
+      меню, цель `'table'` — свечение и плашка, строка-заглушка ленивых детей), PW4 — в
+      `server-row-model`, модульный `pendingOnData` (PW5 — правило в `rendering.md`), история
+      S1 ([ADR 0155](docs/decisions/0155-pending-on-data.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,

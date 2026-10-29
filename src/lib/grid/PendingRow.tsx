@@ -17,6 +17,7 @@ import { resolveActive, type NavTable } from '../core/keyboardNavigation/model'
 import { useLocalization } from '../core/localization'
 import { useTableState } from '../core/reactivity'
 import type { Column, Table } from '../types'
+import type { SkeletonTreeRow } from '../core/skeletonOptions'
 import { type SkeletonCellExtra, SkeletonRows } from './SkeletonBody'
 
 import styles from '../grid/Body/Body.module.css'
@@ -31,6 +32,9 @@ interface PendingRowProps {
   ariaRowIndexBase: number
   /** Место незагруженной строки в дереве (treegrid, ADR 0138, §14). */
   tree?: { level: number; posInSet: number; setSize: number }
+  /** Отступ и линии дерева скелета — у скелет-строки ленивых детей (ADR 0155, §3). */
+  skeletonTree?: SkeletonTreeRow
+  treeLines?: boolean
 }
 
 interface SelectionBounds {
@@ -149,6 +153,8 @@ export const PendingRow = ({
   isVirtualColumns,
   ariaRowIndexBase,
   tree,
+  skeletonTree,
+  treeLines,
 }: PendingRowProps) => {
   // Выделение по индексам заливает и незагруженную строку (ADR 0146, §3).
   const selection = useTableState(table, () =>
@@ -177,6 +183,8 @@ export const PendingRow = ({
         rowCount={1}
         firstRowIndex={virtualRow.index}
         cellExtra={cellExtra}
+        tree={skeletonTree && [skeletonTree]}
+        treeLines={treeLines}
       />
       <PendingCell
         table={table}

@@ -5,6 +5,7 @@
  * причиной. Отказ — плашка с повтором (ADR 0116); буфер тогда не меняется.
  */
 import { announceLabel, announcerLabels } from './announcer'
+import { type CancelSource, registerPending } from './cancellation'
 import {
   cellRangesToHtml,
   cellRangesToTsv,
@@ -223,6 +224,30 @@ export const copyCellSelection = (
   waiting.set(t.store, controller)
   const watch = t.atoms.cellSelection?.subscribe(() => controller.abort())
   announceLabel(table, l => l.announceCopyLoading(rows))
+  writeServerAction(table, status => ({
+    ...status,
+    copying: { since: performance.now() },
+  }))
+  // Отмена человеком или приложением (ADR 0153): тихо, буфер не меняется.
+  let cancelled = false
+  const unregister = registerPending(table, {
+    kind: 'copy',
+    id: 'copy',
+    cancel: (cancelSource: CancelSource) => {
+      if (controller.signal.aborted) return
+      cancelled = true
+      controller.abort()
+      finish()
+      reportAction(table, {
+        plugin: 'cellSelection',
+        action: 'cancel',
+        detail: { action: 'copy' },
+        source: cancelSource,
+        cause,
+      })
+      announceLabel(table, l => l.announceActionCancelled(l.actionCopy))
+    },
+  })
   const columnIds = columnIdsOf(t)
   const regions = Promise.all(
     bounds.map(async bound => {
@@ -236,7 +261,15 @@ export const copyCellSelection = (
   )
   const finish = () => {
     watch?.unsubscribe()
-    if (waiting.get(t.store) === controller) waiting.delete(t.store)
+    unregister()
+    const current = waiting.get(t.store)
+    if (current === controller) waiting.delete(t.store)
+    // Новое копирование уже ждёт — его ожидание не снимается.
+    else if (current) return
+    writeServerAction(table, ({ copying: _copying, ...status }) => ({
+      ...status,
+      copying: undefined,
+    }))
   }
   regions
     .then(async data => {
@@ -260,6 +293,7 @@ export const copyCellSelection = (
     })
     .catch((error: unknown) => {
       finish()
+      if (cancelled) return
       if (controller.signal.aborted) {
         reportAction(table, {
           plugin: 'cellSelection',

@@ -3804,3 +3804,411 @@ export const HighContrastContextMenuRefusedOnSelectionStep3 = {
   name: 'Cells/Context menu — Refused on a selection, шаг 3',
   tags: ['!test'],
 }
+
+export const HighContrastRowActionsCancelStep1 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 1),
+  name: 'Rows/Actions — Cancel an action, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsCancelStep2 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 2),
+  name: 'Rows/Actions — Cancel an action, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsCancelStep3 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 3),
+  name: 'Rows/Actions — Cancel an action, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsCancelStep4 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 4),
+  name: 'Rows/Actions — Cancel an action, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCancelFromMenuStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCancelFromMenu,
+    1,
+  ),
+  name: 'Cells/Context menu — Cancel from the menu, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCancelFromMenuStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCancelFromMenu,
+    2,
+  ),
+  name: 'Cells/Context menu — Cancel from the menu, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCancelFromMenuStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCancelFromMenu,
+    3,
+  ),
+  name: 'Cells/Context menu — Cancel from the menu, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCancelFromMenuStep4 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCancelFromMenu,
+    4,
+  ),
+  name: 'Cells/Context menu — Cancel from the menu, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSearchStep1 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSearch,
+    1,
+  ),
+  name: 'Data loading/Server actions — Cancel a search, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSearchStep2 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSearch,
+    2,
+  ),
+  name: 'Data loading/Server actions — Cancel a search, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSearchStep3 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSearch,
+    3,
+  ),
+  name: 'Data loading/Server actions — Cancel a search, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSearchStep4 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSearch,
+    4,
+  ),
+  name: 'Data loading/Server actions — Cancel a search, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSortStep1 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSort,
+    1,
+  ),
+  name: 'Data loading/Server actions — Cancel sorting, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSortStep2 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSort,
+    2,
+  ),
+  name: 'Data loading/Server actions — Cancel sorting, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSortStep3 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSort,
+    3,
+  ),
+  name: 'Data loading/Server actions — Cancel sorting, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerActionsCancelSortStep4 = {
+  ...twinStep(
+    dataLoadingServerActionsStories,
+    dataLoadingServerActionsStories.ServerActionsCancelSort,
+    4,
+  ),
+  name: 'Data loading/Server actions — Cancel sorting, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExportCancelStep1 = {
+  ...twinStep(exportStories, exportStories.ExportCancel, 1),
+  name: 'Export — Cancel an export, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportCancelStep2 = {
+  ...twinStep(exportStories, exportStories.ExportCancel, 2),
+  name: 'Export — Cancel an export, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportCancelStep3 = {
+  ...twinStep(exportStories, exportStories.ExportCancel, 3),
+  name: 'Export — Cancel an export, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExportCancelStep4 = {
+  ...twinStep(exportStories, exportStories.ExportCancel, 4),
+  name: 'Export — Cancel an export, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiCancelPendingStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiCancelPending, 1),
+  name: 'Plugin API — Cancel everything pending, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiCancelPendingStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiCancelPending, 2),
+  name: 'Plugin API — Cancel everything pending, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiCancelPendingStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiCancelPending, 3),
+  name: 'Plugin API — Cancel everything pending, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerCancelStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 1),
+  name: 'Filtering — Cancel a server filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerCancelStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 2),
+  name: 'Filtering — Cancel a server filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerCancelStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 3),
+  name: 'Filtering — Cancel a server filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerCancelStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 4),
+  name: 'Filtering — Cancel a server filter, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerCancelStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerCancel,
+    1,
+  ),
+  name: 'Panels/Pagination — Cancel a page change, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerCancelStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerCancel,
+    2,
+  ),
+  name: 'Panels/Pagination — Cancel a page change, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerCancelStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerCancel,
+    3,
+  ),
+  name: 'Panels/Pagination — Cancel a page change, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerCancelStep4 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerCancel,
+    4,
+  ),
+  name: 'Panels/Pagination — Cancel a page change, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingCancelStep1 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 1),
+  name: 'Rows/Expanding — Cancel loading children, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingCancelStep2 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 2),
+  name: 'Rows/Expanding — Cancel loading children, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingCancelStep3 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 3),
+  name: 'Rows/Expanding — Cancel loading children, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingCancelStep4 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 4),
+  name: 'Rows/Expanding — Cancel loading children, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyCancelStep1 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyCancel,
+    1,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyCancelStep2 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyCancel,
+    2,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyCancelStep3 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyCancel,
+    3,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyCancelStep4 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyCancel,
+    4,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerApplyStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerApply, 1),
+  name: 'Filtering — Apply a server filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerApplyStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerApply, 2),
+  name: 'Filtering — Apply a server filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerApplyStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerApply, 3),
+  name: 'Filtering — Apply a server filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerApplyStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerApply, 4),
+  name: 'Filtering — Apply a server filter, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerReapplyStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 1),
+  name: 'Filtering — Reapply after cancel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerReapplyStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 2),
+  name: 'Filtering — Reapply after cancel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerReapplyStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 3),
+  name: 'Filtering — Reapply after cancel, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerReapplyStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 4),
+  name: 'Filtering — Reapply after cancel, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerReapplyStep5 = {
+  ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 5),
+  name: 'Filtering — Reapply after cancel, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTable,
+    1,
+  ),
+  name: 'Cells/Context menu — Whole table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTable,
+    2,
+  ),
+  name: 'Cells/Context menu — Whole table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTable,
+    3,
+  ),
+  name: 'Cells/Context menu — Whole table, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableStep4 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTable,
+    4,
+  ),
+  name: 'Cells/Context menu — Whole table, шаг 4',
+  tags: ['!test'],
+}

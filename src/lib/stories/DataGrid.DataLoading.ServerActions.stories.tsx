@@ -13,6 +13,7 @@ import {
   guideNext,
   headCell,
   orderedRows,
+  pointAt,
   pollUntil,
   settle,
   stepDone,
@@ -21,6 +22,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { filteringColumns } from './__mocks__/filteringData'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   GuideStory,
@@ -270,7 +272,13 @@ const refuseFilter = (root: HTMLElement, signal: AbortSignal) => {
     if (refusedWith('filter name=') && banner(root) && !refreshing(root))
       return filterFailed(root)
     if (!filterPanel()) filterButton(root)?.click()
-    else type(filterValue(), FILTER)
+    else {
+      type(filterValue(), FILTER)
+      // На сервере условие уходит кнопкой «Применить» (ADR 0154).
+      document
+        .querySelector<HTMLElement>('[data-testid="filter-apply"]')
+        ?.click()
+    }
     return false
   }, signal)
 }
@@ -519,6 +527,264 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       await expect(onFirstPage(canvas)).toBe(true)
       await expect(failed(pageButton(canvas, 'next'))).toBe(true)
       await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0153 S3, S6 -----------------------------------------------------------------
+
+/** «Сервер» гайдов отмены: свой, чтобы отмена не путала запросы гайда отказа. */
+const cancelGuide = {
+  mode: 'answer' as ActionServerMode,
+  store: undefined as unknown,
+}
+
+const cancelServer = createActionServer({
+  delayMs: SERVER_DELAY_MS,
+  mode: () => cancelGuide.mode,
+})
+
+const cancelReset: TesseraFeatureEntry = {
+  id: 'serverActionsCancelReset',
+  setup: table => {
+    const store = (table as { store: unknown }).store
+    if (cancelGuide.store === store) return
+    cancelGuide.store = store
+    cancelServer.reset()
+  },
+}
+
+const SORT_BUTTON =
+  '.data-grid__head-cell[data-column-id="name"] .column-sort__button'
+const pendingBanner = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-banner"]')
+const pendingCancel = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
+const armed = (button: Element | null | undefined) =>
+  !!button?.hasAttribute('data-cancel-armed')
+
+/** Первый шаг гайдов отмены: «сервер» отвечает в данные приложения и консоль. */
+const cancelServerStep = (title: string, hint: string): GuideStoryStep => ({
+  title,
+  hint,
+  props: ({ app, log }) =>
+    cancelServer.callbacks({
+      answer: (rows, total) =>
+        app.update(props => ({
+          ...props,
+          dataOverride: rows,
+          paginationRowCount: total,
+        })),
+      log: text => log.log('server', text),
+    }),
+  enter: () => {
+    cancelGuide.mode = 'answer'
+  },
+})
+
+const cancelGuideArgs = {
+  ...SERVER_MODE,
+  ...SERVER_PLUGINS,
+  containerHeight: '560',
+  height: '460',
+  maxHeight: '460',
+  dataOverride: queryActionServer(initialActionQuery()).rows,
+  paginationRowCount: queryActionServer(initialActionQuery()).total,
+  extraPlugins: [cancelReset],
+} satisfies Partial<StoryProps>
+
+/** Поиск ждёт ответа: запрос уходит, если ещё не ушёл. */
+const searchHeld = (root: HTMLElement, signal: AbortSignal) => {
+  cancelGuide.mode = 'hold'
+  return pollUntil(() => {
+    type(searchField(root), SEARCH)
+    return cancelServer.holding() && refreshing(root)
+  }, signal)
+}
+
+const CANCEL_SEARCH: readonly GuideStoryStep[] = [
+  cancelServerStep(
+    'Поиск на сервере',
+    'Каждый запрос из поля поиска уходит на сервер, ответ приходит не сразу.',
+  ),
+  {
+    title: 'Поиск идёт',
+    hint: 'Пользователь ввёл запрос. Пока сервер ищет, под шапкой светится полоса обновления, прежние строки на месте.',
+    states: ['body.refreshing'],
+    immediate: true,
+    enter: stepAction((root, { signal }) => searchHeld(root, signal)),
+  },
+  {
+    title: 'Поиск идёт долго',
+    hint: 'Сервер не ответил за секунду. Под шапкой появилась плашка о поиске с кнопкой отмены.',
+    states: ['body.refreshing'],
+    enter: stepAction(async (root, { signal }) => {
+      await searchHeld(root, signal)
+      await pollUntil(() => !!pendingCancel(root), signal)
+    }),
+  },
+  {
+    title: 'Поиск отменён',
+    hint: 'Пользователь нажал отмену в плашке. Плашка и свечение ушли, в поле вернулся прежний запрос, строки те же.',
+    enter: stepAction(async (root, { signal }) => {
+      await searchHeld(root, signal)
+      await pollUntil(() => !!pendingCancel(root), signal)
+      pendingCancel(root)!.click()
+      await pollUntil(
+        () =>
+          !pendingBanner(root) &&
+          !refreshing(root) &&
+          searchField(root)?.value === '',
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0153, S3: серверный поиск идёт долго — человек отменяет его в плашке. */
+export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
+  name: 'Cancel a search',
+  parameters: { scenario: '0153/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена поиска"
+      steps={CANCEL_SEARCH}
+      args={guideArgs(cancelGuideArgs, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const first = queryActionServer(initialActionQuery())
+    await step(CANCEL_SEARCH[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
+    })
+    await step(CANCEL_SEARCH[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(refreshing(canvas)).toBe(true)
+      await expect(pendingBanner(canvas)).toBeNull()
+      await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
+    })
+    await step(CANCEL_SEARCH[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(pendingBanner(canvas)).toHaveTextContent(
+        labels.pendingSearch,
+      )
+      await expect(pendingCancel(canvas)).toHaveTextContent(labels.cancel)
+      await settle()
+    })
+    await step(CANCEL_SEARCH[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(searchField(canvas)!.value).toBe('')
+      await expect(banner(canvas)).toBeNull()
+      await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
+      await expect(consoleText()).toContain('cancelled')
+      await settle()
+    })
+  },
+}
+
+/** Сортировка по имени ждёт ответа: запрос уходит, если ещё не ушёл. */
+const sortHeld = (root: HTMLElement, signal: AbortSignal) => {
+  cancelGuide.mode = 'hold'
+  return pollUntil(() => {
+    if (waits(sortButton(root))) return refreshing(root)
+    if (ariaSort(root) === 'none') sortButton(root)?.click()
+    return false
+  }, signal)
+}
+
+/** Занятая кнопка сортировки готова к отмене. */
+const sortArmed = async (root: HTMLElement, signal: AbortSignal) => {
+  await sortHeld(root, signal)
+  await pollUntil(() => armed(sortButton(root)), signal)
+}
+
+const CANCEL_SORT: readonly GuideStoryStep[] = [
+  cancelServerStep(
+    'Сортировка на сервере',
+    'Сервер сортирует строки, ответ приходит не сразу.',
+  ),
+  {
+    title: 'Сортировка ждёт',
+    hint: 'Пользователь нажал кнопку сортировки колонки. Кнопка показывает ожидание, под шапкой светится полоса обновления.',
+    states: ['body.refreshing'],
+    immediate: true,
+    enter: stepAction((root, { signal }) => sortHeld(root, signal)),
+  },
+  {
+    title: 'Кнопка предлагает отмену',
+    hint: 'Пользователь навёл указатель на занятую кнопку. Появился знак остановки, подсказка предлагает отменить сортировку.',
+    states: ['body.refreshing'],
+    pseudo: { hover: SORT_BUTTON },
+    enter: stepAction(async (root, { signal, onLeave }) => {
+      await sortArmed(root, signal)
+      onLeave(pointAt(sortButton(root)!))
+    }),
+  },
+  {
+    title: 'Сортировка отменена',
+    hint: 'Пользователь нажал на кнопку. Колонка снова без сортировки, свечение ушло, плашки отказа нет.',
+    enter: stepAction(async (root, { signal }) => {
+      await sortArmed(root, signal)
+      sortButton(root)!.click()
+      await pollUntil(
+        () =>
+          ariaSort(root) === 'none' &&
+          !waits(sortButton(root)) &&
+          !refreshing(root),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0153, S6: серверная сортировка ждёт — человек отменяет её кнопкой сортировки. */
+export const ServerActionsCancelSort: StoryObj<StoryProps> = {
+  name: 'Cancel sorting',
+  parameters: { scenario: '0153/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена сортировки"
+      steps={CANCEL_SORT}
+      args={guideArgs(cancelGuideArgs, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const first = queryActionServer(initialActionQuery())
+    await step(CANCEL_SORT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(ariaSort(canvas)).toBe('none')
+    })
+    await step(CANCEL_SORT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(waits(sortButton(canvas))).toBe(true)
+      await expect(refreshing(canvas)).toBe(true)
+    })
+    await step(CANCEL_SORT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const button = sortButton(canvas)!
+      await expect(armed(button)).toBe(true)
+      await expect(
+        button.getAttribute('aria-label')!.startsWith(labels.cancelAction('')),
+      ).toBe(true)
+    })
+    await step(CANCEL_SORT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(ariaSort(canvas)).toBe('none')
+      await expect(banner(canvas)).toBeNull()
+      await expect(failed(sortButton(canvas))).toBe(false)
+      await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
       await settle()
     })
   },

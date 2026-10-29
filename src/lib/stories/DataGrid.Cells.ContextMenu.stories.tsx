@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowDownToLine } from 'lucide-react'
+import { ArrowDownToLine, Calculator } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
@@ -28,6 +28,7 @@ import {
   waitForRows,
   watchFlash,
 } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
@@ -342,7 +343,7 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Ячейка чуть темнеет и по ней проходит светлый блик — она занята, а пункт ждёт ответа и заблокирован.',
+    hint: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Ячейка чуть темнеет и по ней проходит светлый блик — она занята, а пункт ждёт ответа: его подпись предлагает отменить пересчёт.',
     states: ['overlay.contextMenu'],
     immediate: true,
     enter: untilDone(
@@ -422,7 +423,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       )}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(ASYNC_ITEMS[0]!.title, async () => {
       await waitForRows(canvas)
@@ -433,7 +434,11 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
     await step(ASYNC_ITEMS[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(recalculatePending()).toBe(true))
-      expect(recalculate()).toHaveAttribute('aria-disabled', 'true')
+      // Ждущий пункт доступен и предлагает отмену (ADR 0153, §3).
+      expect(recalculate()).not.toHaveAttribute('data-disabled')
+      expect(recalculate()!.textContent).toContain(
+        storyLabels(args.locale).cancelAction('Recalculate'),
+      )
       expect(busyCell(canvas)).toBe(true)
       await until(() => expect(pendingShown(1)).toBe(true))
     })
@@ -622,6 +627,372 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
       await until(() => expect(flash.most()).toBe(SELECTION_CELLS))
       flash.stop()
       expect(allBusy(canvas)).toBe(false)
+    })
+  },
+}
+
+// --- ADR 0153 S2 ---------------------------------------------------------------------
+
+const RECALC = '[data-action-id$="selectionRecalculate"]'
+
+/** «Сервер» гайда: придерживает ответ; запрос учитывает `signal` (ADR 0153, §1). */
+const RECALC_SERVER = createDemoServer()
+
+const recalcAction: ContextMenuAction = {
+  id: 'selectionRecalculate',
+  icon: () => <Calculator width={16} height={16} />,
+  label: () => 'Recalculate',
+  onSelect: (_ctx, _event, context) =>
+    RECALC_SERVER.runs.answer(context?.signal),
+}
+
+const recalcDemo: TesseraFeatureEntry = {
+  id: 'selectionRecalculateGuide',
+  contextMenuActions: [recalcAction],
+}
+
+const recalcItem = () => openMenu()?.querySelector<HTMLElement>(RECALC) ?? null
+const selectionIdle = (root: ParentNode) =>
+  selectionCells(root).length === SELECTION_CELLS &&
+  selectionCells(root).every(cell => !cell.hasAttribute('aria-busy'))
+
+/** Выделить 3 × 2 — по одному жесту за попытку. */
+const selectRange = (root: HTMLElement) => {
+  if (openMenu()) closeMenu()
+  else if (!isSelected(at(root, FROM))) pressCell(at(root, FROM))
+  else pressCell(at(root, TO), { shiftKey: true })
+}
+
+/** Пересчёт выделения ждёт ответа: запускается, если ещё не идёт. */
+const recalcPending = (root: HTMLElement) => {
+  if (allBusy(root)) {
+    if (openMenu()) closeMenu()
+  } else if (selectedCells(root) === SELECTION_CELLS && recalcItem()) {
+    recalcItem()!.click()
+  } else if (selectedCells(root) === SELECTION_CELLS) openAt(at(root, ON))
+  else selectRange(root)
+}
+
+/** Ждущий пункт в открытом меню выделения — после запуска пересчёта. */
+const cancelItemShown = (root: HTMLElement) => {
+  if (!allBusy(root)) recalcPending(root)
+  else openAt(at(root, ON))
+}
+
+const CANCEL_FROM_MENU: readonly GuideStoryStep[] = [
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь выделил несколько ячеек. В контекстном меню есть действие, которое сервер выполняет долго.',
+    enter: untilDone(
+      root => selectedCells(root) === SELECTION_CELLS && !openMenu(),
+      selectRange,
+    ),
+  },
+  {
+    title: 'Действие над выделением ждёт',
+    hint: 'Пользователь выбрал пересчёт. Меню закрылось, ячейки выделения под подложкой ожидания с бликом.',
+    states: ['body.menuPending'],
+    enter: root => {
+      RECALC_SERVER.runs.hold()
+      return untilDone(root => allBusy(root) && !openMenu(), recalcPending)(
+        root,
+        undefined,
+      )
+    },
+  },
+  {
+    title: 'Пункт предлагает отмену',
+    hint: 'Пользователь снова открыл меню на выделении. Ждущий пункт доступен: подпись предлагает отменить пересчёт, у правого края крутится спиннер.',
+    states: ['overlay.contextMenu', 'body.menuPending'],
+    enter: root => {
+      RECALC_SERVER.runs.hold()
+      const still = steady()
+      return untilDone(
+        root =>
+          allBusy(root) &&
+          still(at(root, ON)) &&
+          menuAt(at(root, ON)) &&
+          !!recalcItem()?.hasAttribute('data-pending'),
+        cancelItemShown,
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Действие отменено',
+    hint: 'Пользователь выбрал этот пункт. Меню закрылось, подложка и блик сняты, отметки ошибки нет.',
+    enter: root => {
+      RECALC_SERVER.runs.hold()
+      let cancelled = false
+      return untilDone(
+        root => cancelled && selectionIdle(root) && !openMenu(),
+        root => {
+          if (cancelled) {
+            if (openMenu()) closeMenu()
+          } else if (
+            allBusy(root) &&
+            recalcItem()?.hasAttribute('data-pending')
+          ) {
+            recalcItem()!.click()
+            cancelled = true
+          } else cancelItemShown(root)
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0153, S2: действие над выделением ждёт — человек отменяет его из контекстного меню. */
+export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
+  name: 'Cancel from the menu',
+  parameters: { scenario: '0153/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена действия из меню"
+      steps={CANCEL_FROM_MENU}
+      args={guideArgs(
+        {
+          enableContextMenu: true,
+          enableCellSelection: true,
+          actionsDemo: 'none',
+          extraPlugins: [recalcDemo],
+          columnCount: 8,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(CANCEL_FROM_MENU[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(SELECTION_CELLS))
+      expect(openMenu()).toBeNull()
+    })
+    await step(CANCEL_FROM_MENU[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(allBusy(canvas)).toBe(true))
+      await until(() => expect(openMenu()).toBeNull())
+    })
+    await step(CANCEL_FROM_MENU[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(recalcItem()?.hasAttribute('data-pending')).toBe(true),
+      )
+      const item = recalcItem()!
+      expect(item).not.toHaveAttribute('data-disabled')
+      expect(item.textContent).toContain(labels.cancelAction('Recalculate'))
+      await settle()
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+    await step(CANCEL_FROM_MENU[3]!.title, async () => {
+      const flash = watchFlash(canvas, '.data-grid__body-cell', 'reverted')
+      await guideNext(canvas)
+      await until(() => expect(selectionIdle(canvas)).toBe(true))
+      await until(() => expect(openMenu()).toBeNull())
+      await settle()
+      expect(flash.most()).toBe(0)
+      flash.stop()
+      expect(
+        canvas.querySelector(
+          '[data-flash], [data-error-indicator][data-shown="true"]',
+        ),
+      ).toBeNull()
+    })
+  },
+}
+
+// --- ADR 0155 S1 ---------------------------------------------------------------------
+
+const TABLE_ITEM = '[data-action-id$="tableRecalculate"]'
+const TABLE_CELL = { row: 'item-id-2', column: 'firstName' }
+const TABLE_REFUSAL = 'The server is busy, try again later'
+
+/** «Сервер» гайда: придерживает ответ, пока шаг ожидания на виду; отказывает по режиму. */
+const TABLE_SERVER = createDemoServer()
+const tableRun = {
+  refuse: true,
+  inFlight: false,
+  succeeded: false,
+  table: undefined as unknown,
+}
+
+const tableAction: ContextMenuAction = {
+  id: 'tableRecalculate',
+  icon: () => <Calculator width={16} height={16} />,
+  label: () => 'Recalculate table',
+  target: () => 'table',
+  onSelect: async (_ctx, _event, context) => {
+    tableRun.inFlight = true
+    try {
+      await TABLE_SERVER.runs.answer(context?.signal)
+      if (tableRun.refuse) throw new Error(TABLE_REFUSAL)
+      tableRun.succeeded = true
+    } finally {
+      tableRun.inFlight = false
+    }
+  },
+}
+
+/** Новая таблица гайда — новый «сервер»: шаг открывает таблицу заново. */
+const tableDemo: TesseraFeatureEntry = {
+  id: 'tableRecalculateGuide',
+  contextMenuActions: [tableAction],
+  setup: table => {
+    const store = (table as { store: unknown }).store
+    if (tableRun.table === store) return
+    TABLE_SERVER.runs.release()
+    Object.assign(tableRun, {
+      refuse: true,
+      inFlight: false,
+      succeeded: false,
+      table: store,
+    })
+  },
+}
+
+const tableItem = () =>
+  openMenu()?.querySelector<HTMLElement>(TABLE_ITEM) ?? null
+const refreshing = (root: ParentNode) =>
+  !!root.querySelector('.data-grid-theme[data-refreshing]')
+const banner = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
+const retryButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="load-error-retry"]')
+
+/** Запустить пересчёт из меню на ячейке — по одному жесту за попытку. */
+const startTableRun = (root: HTMLElement, refuse: boolean) => {
+  const item = tableItem()
+  if (item) {
+    tableRun.refuse = refuse
+    item.click()
+  } else openAt(at(root, TABLE_CELL))
+}
+
+/** Пересчёт ждёт ответа: запускается, если ещё не идёт. */
+const tableWaits = (root: HTMLElement) => {
+  if (tableRun.inFlight) {
+    if (openMenu()) closeMenu()
+  } else startTableRun(root, true)
+}
+
+/** Сервер отказал: ждущий пересчёт отпускается, иначе запускается заново. */
+const tableRefused = (root: HTMLElement) => {
+  if (banner(root)) return
+  if (tableRun.inFlight) TABLE_SERVER.runs.release()
+  else {
+    TABLE_SERVER.runs.hold()
+    startTableRun(root, true)
+  }
+}
+
+const WHOLE_TABLE: readonly GuideStoryStep[] = [
+  {
+    title: 'Действие над всей таблицей',
+    hint: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере.',
+    states: ['overlay.contextMenu'],
+    enter: root => {
+      const still = steady()
+      return untilDone(
+        root =>
+          still(at(root, TABLE_CELL)) &&
+          menuAt(at(root, TABLE_CELL)) &&
+          !!tableItem(),
+        root => openAt(at(root, TABLE_CELL)),
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Таблица ждёт',
+    hint: 'Пользователь выбрал пересчёт. Под шапкой светится полоса обновления, строки приглушены — меняется вся таблица.',
+    states: ['body.refreshing'],
+    enter: root => {
+      TABLE_SERVER.runs.hold()
+      return untilDone(
+        root => tableRun.inFlight && refreshing(root) && !openMenu(),
+        tableWaits,
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер не пересчитал таблицу. Под шапкой — сообщение с причиной и повтором.',
+    states: ['body.loadError'],
+    enter: untilDone(
+      root => !!banner(root) && !refreshing(root) && !openMenu(),
+      tableRefused,
+    ),
+  },
+  {
+    title: 'Повтор удался',
+    hint: 'Пользователь повторил действие из сообщения, сервер ответил. Свечение и сообщение ушли.',
+    enter: untilDone(
+      root =>
+        tableRun.succeeded && !banner(root) && !refreshing(root) && !openMenu(),
+      root => {
+        if (tableRun.succeeded || (tableRun.inFlight && !tableRun.refuse))
+          return
+        if (banner(root)) {
+          TABLE_SERVER.runs.release()
+          tableRun.refuse = false
+          retryButton(root)?.click()
+        } else tableRefused(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0155, S1: действие меню над всей таблицей — свечение под шапкой, отказ — плашка. */
+export const ContextMenuWholeTable: StoryObj<StoryProps> = {
+  name: 'Whole table',
+  parameters: { scenario: '0155/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Действие над всей таблицей"
+      steps={WHOLE_TABLE}
+      args={guideArgs(
+        {
+          enableContextMenu: true,
+          enableCellSelection: true,
+          actionsDemo: 'none',
+          extraPlugins: [tableDemo],
+          columnCount: 8,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(WHOLE_TABLE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(tableItem()).not.toBeNull())
+      await settle()
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+    await step(WHOLE_TABLE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(refreshing(canvas)).toBe(true))
+      expect(openMenu()).toBeNull()
+      expect(banner(canvas)).toBeNull()
+      expect(canvas.querySelector('[data-pending-wave]')).toBeNull()
+    })
+    await step(WHOLE_TABLE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(banner(canvas)).not.toBeNull())
+      await until(() => expect(refreshing(canvas)).toBe(false))
+      expect(banner(canvas)!.textContent).toContain(TABLE_REFUSAL)
+      expect(retryButton(canvas)).not.toBeNull()
+    })
+    await step(WHOLE_TABLE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(tableRun.succeeded).toBe(true))
+      await until(() => expect(banner(canvas)).toBeNull())
+      await until(() => expect(refreshing(canvas)).toBe(false))
     })
   },
 }

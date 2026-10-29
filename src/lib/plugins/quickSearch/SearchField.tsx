@@ -10,6 +10,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Toolbar } from '@base-ui/react/toolbar'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
+import { cancelPending, cancelSourceOf } from '../../core/cancellation'
 import { setSearchByUser } from '../../core/filtering'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
@@ -96,6 +97,17 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
         onChange={event => {
           setText(event.target.value)
           apply.schedule(event.target.value)
+        }}
+        // Escape отменяет ждущее серверное действие (ADR 0153, §5) вместо очистки поля:
+        // срез поиска вернётся к прежнему запросу, а с ним и поле.
+        onKeyDown={event => {
+          if (event.key !== 'Escape') return
+          if (
+            cancelPending(table, { kind: 'server' }, cancelSourceOf(event)) > 0
+          ) {
+            apply.cancel()
+            event.preventDefault()
+          }
         }}
         data-testid="quick-search"
       />

@@ -325,6 +325,9 @@ export interface SkeletonRowsProps {
   empty?: boolean
   /** Атрибуты и стиль ячейки колонки: выделение незагруженной строки (ADR 0146, §3). */
   cellExtra?: (columnId: string) => SkeletonCellExtra | undefined
+  /** Отступ и линии дерева строк — скелет-строка ленивых детей (ADR 0155, §3). */
+  tree?: SkeletonTreeRow[]
+  treeLines?: boolean
 }
 
 export interface SkeletonCellExtra {
@@ -349,6 +352,8 @@ export const SkeletonRows = memo(
     cells = true,
     empty = false,
     cellExtra,
+    tree,
+    treeLines,
   }: SkeletonRowsProps) => {
     const columns = getSkeletonColumns(
       table,
@@ -387,6 +392,8 @@ export const SkeletonRows = memo(
           firstRowIndex={firstRowIndex}
           className={className}
           cells={cells}
+          tree={tree}
+          treeLines={treeLines}
           rowClassName={
             empty
               ? 'data-grid__body-row--empty'

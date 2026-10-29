@@ -1,9 +1,11 @@
 /**
  * Панель фильтра колонки (ADR 0045, §3–§4): условие, значение, «Сбросить».
  * Ввод применяется через `debounceMs` после последнего нажатия, выбор условия и
- * булева значения — сразу. Нечисловой ввод в поле числа не применяется.
+ * булева значения — сразу. Нечисловой ввод в поле числа не применяется. В серверном
+ * режиме условие уходит кнопкой «Применить» и Enter, набранное хранится по колонке
+ * (ADR 0154).
  */
-import { type RefObject, Suspense, useId, useState } from 'react'
+import { type RefObject, Suspense, useId } from 'react'
 
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
@@ -25,7 +27,9 @@ import type {
 } from '../columnFilteringModel/types'
 
 import styles from './FilterPanel.module.css'
+import { FilterApply } from './FilterApply'
 import { FilterFailure } from './FilterFailure'
+import { useFilterDraft } from './filterDraft'
 
 export interface FilterColumn {
   id: string
@@ -160,9 +164,14 @@ const ConditionPanel = ({
 }: FilterPanelProps & { type: 'text' | 'number' }) => {
   const labels = useLocalization()
   const errorId = useId()
-  const [draft, setDraft] = useState(() =>
-    draftOf(type, column.getFilterValue() as ColumnFilterValue | undefined),
-  )
+  const filterDraft = useFilterDraft({
+    table,
+    columnId: column.id,
+    current: column.getFilterValue(),
+    draftOf: current => draftOf(type, current),
+    filterOf: next => filterOf(type, next),
+  })
+  const { draft, setDraft, server } = filterDraft
   const apply = useDebouncedCallback((next: Draft) => {
     const filter = filterOf(type, next)
     if (filter !== null) setColumnFilterByUser(table, column.id, filter)
@@ -171,6 +180,8 @@ const ConditionPanel = ({
   const update = (patch: Partial<Draft>, immediate = false) => {
     const next = { ...draft, ...patch }
     setDraft(next)
+    // На сервере условие уходит кнопкой «Применить» (ADR 0154).
+    if (server) return
     apply.schedule(next)
     if (immediate) apply.flush()
   }
@@ -179,6 +190,7 @@ const ConditionPanel = ({
     apply.cancel()
     setColumnFilterByUser(table, column.id, undefined)
     setDraft(draftOf(type, undefined))
+    filterDraft.forget()
   }
 
   const operators = type === 'text' ? TEXT_OPERATORS : NUMBER_OPERATORS
@@ -202,6 +214,13 @@ const ConditionPanel = ({
         aria-describedby={invalid ? errorId : undefined}
         value={draft[key]}
         onChange={event => update({ [key]: event.target.value })}
+        onKeyDown={event => {
+          // Enter отправляет условие, как «Применить» (ADR 0154).
+          if (server && event.key === 'Enter' && filterDraft.dirty) {
+            event.preventDefault()
+            filterDraft.commit()
+          }
+        }}
         data-testid={`filter-${key}`}
       />
     )
@@ -240,6 +259,7 @@ const ConditionPanel = ({
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
         </Button>
+        {server && <FilterApply {...filterDraft} />}
       </div>
     </div>
   )
@@ -273,10 +293,14 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
   const labelId = useId()
   const def = column.columnDef.filter
   const nullable = typeof def === 'object' && !!def.nullable
-  const choice = choiceOf(
-    column.getFilterValue() as ColumnFilterValue | undefined,
-  )
-  const [value, setValue] = useState(choice)
+  const filterDraft = useFilterDraft({
+    table,
+    columnId: column.id,
+    current: column.getFilterValue(),
+    draftOf: choiceOf,
+    filterOf: filterOfChoice,
+  })
+  const { draft: value, server } = filterDraft
   const choices: [BooleanChoice, string][] = [
     ['all', labels.filterAll],
     ['yes', labels.filterYes],
@@ -295,8 +319,10 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
         value={value}
         onValueChange={next => {
           const nextChoice = next as BooleanChoice
-          setValue(nextChoice)
-          setColumnFilterByUser(table, column.id, filterOfChoice(nextChoice))
+          filterDraft.setDraft(nextChoice)
+          if (!server) {
+            setColumnFilterByUser(table, column.id, filterOfChoice(nextChoice))
+          }
         }}
         aria-labelledby={labelId}
         className={styles.options}
@@ -320,7 +346,14 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
           </label>
         ))}
       </RadioGroup>
-      <FilterFailure table={table} columnId={column.id} footer />
+      {server ? (
+        <div className={styles.footer}>
+          <FilterFailure table={table} columnId={column.id} />
+          <FilterApply {...filterDraft} />
+        </div>
+      ) : (
+        <FilterFailure table={table} columnId={column.id} footer />
+      )}
     </div>
   )
 }

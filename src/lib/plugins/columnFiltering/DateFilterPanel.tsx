@@ -3,7 +3,7 @@
  * в поясе `timeZone`, поле времени у `datetime`. Выбор дня, диапазона, пресета и
  * условия применяется сразу, ввод времени — через `debounceMs`. Модуль ленивый.
  */
-import { type ComponentProps, useEffect, useId, useRef, useState } from 'react'
+import { type ComponentProps, useEffect, useId, useRef } from 'react'
 
 import {
   type DateRange,
@@ -34,6 +34,8 @@ import type {
 import panelStyles from './FilterPanel.module.css'
 import styles from './DateFilterPanel.module.css'
 import { FilterFailure } from './FilterFailure'
+import { FilterApply } from './FilterApply'
+import { useFilterDraft } from './filterDraft'
 
 const OPERATORS: DateFilterOperator[] = [
   'on',
@@ -244,9 +246,14 @@ export const DateFilterPanel = ({
   const timeZone = options.columnFilteringTimeZone
   const locale = options.columnFilteringDateLocale
   const timed = type === 'datetime'
-  const [draft, setDraft] = useState(() =>
-    draftOf(column.getFilterValue() as DateFilter | undefined),
-  )
+  const filterDraft = useFilterDraft({
+    table,
+    columnId: column.id,
+    current: column.getFilterValue(),
+    draftOf: current => draftOf(current as DateFilter | undefined),
+    filterOf: next => filterOf(next, timed) as ColumnFilterValue | undefined,
+  })
+  const { draft, setDraft, server } = filterDraft
 
   const apply = useDebouncedCallback((next: Draft) => {
     setColumnFilterByUser(table, column.id, filterOf(next, timed))
@@ -255,6 +262,8 @@ export const DateFilterPanel = ({
   const update = (patch: Partial<Draft>, immediate = true) => {
     const next = { ...draft, ...patch }
     setDraft(next)
+    // На сервере условие уходит кнопкой «Применить» (ADR 0154).
+    if (server) return
     apply.schedule(next)
     if (immediate) apply.flush()
   }
@@ -263,6 +272,7 @@ export const DateFilterPanel = ({
     apply.cancel()
     setColumnFilterByUser(table, column.id, undefined)
     setDraft(EMPTY_DRAFT)
+    filterDraft.forget()
   }
 
   // Модуль ленивый: к открытию поповера панели ещё нет, фокус ставится после загрузки.
@@ -304,6 +314,13 @@ export const DateFilterPanel = ({
       aria-label={label}
       value={draft[key]}
       onChange={event => update({ [key]: event.target.value }, false)}
+      onKeyDown={event => {
+        // Enter отправляет условие, как «Применить» (ADR 0154).
+        if (server && event.key === 'Enter' && filterDraft.dirty) {
+          event.preventDefault()
+          filterDraft.commit()
+        }
+      }}
       data-testid={testId}
     />
   )
@@ -393,6 +410,7 @@ export const DateFilterPanel = ({
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
         </Button>
+        {server && <FilterApply {...filterDraft} />}
       </div>
     </div>
   )

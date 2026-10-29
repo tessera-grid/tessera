@@ -20,6 +20,7 @@ import {
 } from '../buttonStates'
 import { useActiveNameCheck } from './useActiveNameCheck'
 import { RevealedIcon } from './iconReveal'
+import { useIcons } from '../icons/IconsContext'
 
 import styles from './IconButton.module.css'
 
@@ -115,6 +116,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       pending,
       failure,
       onClick,
+      onCancel,
+      cancelLabel,
       children,
       ...rest
     },
@@ -123,7 +126,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
     const states = useButtonStates(
       forwardedRef,
-      { pending, failed: failure !== undefined },
+      { pending, failed: failure !== undefined, onCancel },
       onClick,
       busy,
     )
@@ -145,13 +148,20 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       states.active ||
       !!states['data-pending-leaving']
 
+    const icons = useIcons()
+    const CancelIcon = icons.cancelAction
+    const name = states.armed ? (cancelLabel ?? label) : label
+    const ariaName = states.armed
+      ? (cancelLabel ?? accessibleName)
+      : accessibleName
+
     const button = (
       <BaseButton
         type="button"
-        aria-label={label}
         disabled={disabled}
         focusableWhenDisabled={focusableWhenDisabled || tooltipWhenDisabled}
         {...rest}
+        aria-label={ariaName}
         aria-describedby={described.describedBy}
         ref={states.ref}
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
@@ -161,7 +171,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-size={size === 'compact' ? size : undefined}
         data-bare={children == null || undefined}
         data-active={active || undefined}
+        data-cancel-armed={states.armed || undefined}
         onClick={states.onClick}
+        // Взведённый «стоп» отменяет, а не открывает меню, которое триггер открыл бы нажатием.
+        onMouseDown={states.armed ? undefined : rest.onMouseDown}
         className={clsx(
           'data-grid__icon-button',
           styles.iconButton,
@@ -195,6 +208,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
             shown={!states.active}
           />
         )}
+        {states.armed && (
+          <span className={styles.cancelIcon} aria-hidden data-cancel-icon="">
+            <CancelIcon />
+          </span>
+        )}
         {states.arc}
       </BaseButton>
     )
@@ -202,11 +220,14 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     // Без подписи тултипа нет — и обёртки тоже: кнопок в гриде много; отметка отказа без
     // подписи — только описание. Занятая кнопка тултип не показывает; с отметкой отказа
     // тултип — её текст.
-    return label ? (
+    return name ? (
       <Tooltip
-        title={failure ?? label}
+        title={states.armed ? name : (failure ?? name)}
         side={tooltipSide}
-        disabled={(!!disabled && !tooltipWhenDisabled) || pending || busy}
+        disabled={
+          !states.armed &&
+          ((!!disabled && !tooltipWhenDisabled) || pending || busy)
+        }
       >
         {button}
       </Tooltip>

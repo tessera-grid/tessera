@@ -12,13 +12,20 @@ import {
 
 import { assignRef } from '../assignRef'
 import { type ArcPhase, PendingArc } from './PendingArc'
-import { phaseLayerOf, longestTransition } from './useErrorFlash'
+import { longestTransition, parseDuration, phaseLayerOf } from './useErrorFlash'
 
 import styles from '../ringStates/ringStates.module.css'
 
 export interface ButtonStatesProps {
   /** Ждёт асинхронного действия: дуга по контуру, `aria-busy`, нажатия игнорируются. */
   pending?: boolean
+  /**
+   * Отмена ждущего действия (ADR 0153): через `--tsr-comp-cancel-arm-delay` после начала
+   * ожидания кнопка показывает «стоп» при наведении и фокусе, нажатие отменяет.
+   */
+  onCancel?: (event: MouseEvent<HTMLButtonElement>) => void
+  /** Имя и тултип кнопки со «стопом» — «Отменить: …». */
+  cancelLabel?: string
 }
 
 /**
@@ -67,21 +74,58 @@ const usePendingLeave = (ref: RefObject<HTMLElement | null>, lit: boolean) => {
 }
 
 /**
+ * Отмена взводится через `--tsr-comp-cancel-arm-delay` после начала ожидания: двойной клик
+ * не отменяет только что запущенное (ADR 0153, §2). Состояние выводится при рендере, как у
+ * угасания дуги.
+ */
+const useCancelArm = (ref: RefObject<HTMLElement | null>, active: boolean) => {
+  const [wasActive, setWasActive] = useState(active)
+  const [armed, setArmed] = useState(false)
+  if (active !== wasActive) {
+    setWasActive(active)
+    setArmed(false)
+  }
+
+  useEffect(() => {
+    const el = ref.current
+    if (!active || armed || !el) {
+      return
+    }
+    const delay = parseDuration(
+      getComputedStyle(el).getPropertyValue('--tsr-comp-cancel-arm-delay'),
+    )
+    const timer = setTimeout(() => setArmed(true), delay)
+    return () => clearTimeout(timer)
+  }, [ref, active, armed])
+
+  return active && armed
+}
+
+/**
  * Ожидание и отказ базовой кнопки (ADR 0127, ADR 0136): `failed` — у кнопки отметка
  * отказа, дуга при конце ожидания останавливается. `busy` — ожидание, которое отметили
  * снаружи `aria-busy` (серверное действие, ADR 0116): дуга есть, нажатия не глушатся.
  */
 export const useButtonStates = <T extends HTMLElement>(
   forwardedRef: ForwardedRef<T>,
-  { pending = false, failed = false }: ButtonStatesProps & { failed?: boolean },
+  {
+    pending = false,
+    failed = false,
+    onCancel,
+  }: ButtonStatesProps & { failed?: boolean },
   onClick: MouseEventHandler<T> | undefined,
   busy = false,
 ) => {
   const { own, ref } = useOwnRef(forwardedRef)
   const lit = pending || busy
   const leaving = usePendingLeave(own, lit)
+  const armed = useCancelArm(own, lit && !!onCancel)
 
   const handleClick = (event: MouseEvent<T>) => {
+    if (armed) {
+      onCancel!(event as unknown as MouseEvent<HTMLButtonElement>)
+      return
+    }
     if (pending) {
       event.preventDefault()
       return
@@ -107,5 +151,7 @@ export const useButtonStates = <T extends HTMLElement>(
     arc: phase && createElement(PendingArc, { phase }),
     /** Кнопка в ожидании: отметка отказа появится, когда ожидание кончится. */
     active: lit,
+    /** Отмена взведена: «стоп» при наведении и фокусе, нажатие отменяет. */
+    armed,
   }
 }

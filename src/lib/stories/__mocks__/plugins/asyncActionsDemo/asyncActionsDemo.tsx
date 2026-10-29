@@ -60,7 +60,8 @@ export const asyncRowActionsDemo: RowAction[] = [
     icon: () => <Archive width={16} height={16} />,
     label: () => 'Archive',
     disabled: availability('Already archived', "You can't archive this row"),
-    onSelect: () => wait(ASYNC_DEMO_DELAY_MS),
+    onSelect: (_ctx, _event, context) =>
+      wait(ASYNC_DEMO_DELAY_MS, context?.signal),
   },
   {
     id: 'asyncDelete',
@@ -69,8 +70,8 @@ export const asyncRowActionsDemo: RowAction[] = [
     icon: () => <Trash2 width={16} height={16} />,
     label: () => 'Delete',
     // Каждая 3-я строка заблокирована другим пользователем — удаление отклоняется.
-    onSelect: async ctx => {
-      await wait(ASYNC_DEMO_DELAY_MS)
+    onSelect: async (ctx, _event, context) => {
+      await wait(ASYNC_DEMO_DELAY_MS, context?.signal)
       if (indexOf(ctx) % 3 === 0) {
         throw new Error('Row is locked by another user')
       }
@@ -140,8 +141,8 @@ export const asyncHeaderActionsDemo = (
           return false
       }
     },
-    onSelect: async ctx => {
-      await server.runs.answer()
+    onSelect: async (ctx, _event, context) => {
+      await server.runs.answer(context?.signal)
       if (ctx.column.id === 'lastName') {
         throw new Error('Index build timed out')
       }
@@ -154,8 +155,8 @@ export const asyncContextActionsDemo: ContextMenuAction[] = [
     id: 'asyncRecalculate',
     icon: () => <RefreshCw width={16} height={16} />,
     label: () => 'Recalculate',
-    onSelect: async ctx => {
-      await wait(ASYNC_DEMO_DELAY_MS)
+    onSelect: async (ctx, _event, context) => {
+      await wait(ASYNC_DEMO_DELAY_MS, context?.signal)
       if (indexOf(ctx) % 3 === 0) throw new Error('Formula service timed out')
     },
   },

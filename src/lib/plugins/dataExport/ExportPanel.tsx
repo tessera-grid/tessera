@@ -21,6 +21,7 @@ import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
 import { type TableIcons, useIcons } from '../../ui/icons'
 import { Segments } from '../../ui/Segments'
+import type { ButtonStatesProps } from '../../ui/buttonStates'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { rowLabel } from './rowLabel'
 import {
@@ -49,6 +50,8 @@ export interface ExportPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onRun: (settings: ExportSettings, isServer: boolean) => void
+  /** «Стоп» кнопки, пока выгрузка ждёт (ADR 0153). */
+  cancel?: Pick<ButtonStatesProps, 'onCancel' | 'cancelLabel'>
 }
 
 interface GroupProps {
@@ -156,6 +159,7 @@ export const ExportPanel = ({
   open,
   onOpenChange,
   onRun,
+  cancel,
 }: ExportPanelProps) => {
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
@@ -204,6 +208,7 @@ export const ExportPanel = ({
         pending={pending}
         failure={failure}
         aria-busy={busy || undefined}
+        {...cancel}
         data-testid="export-button"
         render={<Popover.Trigger />}
       />

@@ -18,5 +18,7 @@ export interface RowExpandingHooks {
    */
   loadChildren?: (
     row: Row<any, any>,
+    /** `signal` прерывает отмена раскрытия (ADR 0153, §1). */
+    context?: { signal: AbortSignal },
   ) => readonly unknown[] | PromiseLike<readonly unknown[]>
 }

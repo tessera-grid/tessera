@@ -5,6 +5,7 @@
  * серверная выгрузка заблокирована; отказ формата — вспышка. До прихода данных
  * клиентская выгрузка — скелет кнопки, серверная доступна (ADR 0122).
  */
+import { cancelPending, cancelSourceOf } from '../../core/cancellation'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { Suspense, useRef, useState } from 'react'
 
@@ -88,6 +89,15 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
     }
   }
 
+  // «Стоп» занятой кнопки (ADR 0153, §2): отменяет идущую выгрузку.
+  const cancel = busy
+    ? {
+        onCancel: (event: unknown) =>
+          cancelPending(table, { kind: 'export' }, cancelSourceOf(event)),
+        cancelLabel: labels.cancelAction(labels.export),
+      }
+    : undefined
+
   if (!axes) return null
   // До данных выгружать нечего, кроме серверной выгрузки (ADR 0122, TF5).
   if (beforeData && !resolveSettings(axes)) {
@@ -112,10 +122,10 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
       <ToolbarButton
         label={labels.export}
         icon={icon}
-        disabled={busy && isServer}
         pending={busy === 'client'}
         failure={failure}
         aria-busy={!!busy || undefined}
+        {...cancel}
         data-testid="export-button"
         onClick={() => start(single, isServer)}
       />
@@ -144,6 +154,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
         open={popover.open}
         onOpenChange={popover.onOpenChange}
         onRun={start}
+        cancel={cancel}
       />
     </Suspense>
   )

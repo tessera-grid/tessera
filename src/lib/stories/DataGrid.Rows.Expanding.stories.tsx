@@ -8,6 +8,8 @@ import {
   bodyRow,
   consoleText,
   guideNext,
+  pointAt,
+  pollUntil,
   settle,
   stepDone,
   until,
@@ -15,8 +17,14 @@ import {
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import { makeData } from './__mocks__/data'
+import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /**
  * Раскрытие строк (ADR 0015): `Playground` — дерево, глубина и колонка раскрытия;
@@ -281,7 +289,7 @@ const LAZY_CHILDREN: readonly GuideStoryStep[] = [
   },
   {
     title: 'Дети загружаются',
-    hint: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание ответа сервера.',
+    hint: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание ответа сервера, под строкой — скелет будущих детей.',
     states: ['body.pending'],
     enter: untilDone(
       root => isPending(rowOf(root, CHILDREN.first)),
@@ -363,6 +371,14 @@ export const ExpandingLazyChildren: StoryObj<StoryProps> = {
         expect(isPending(rowOf(canvas, CHILDREN.first))).toBe(true),
       )
       await expect(hasChildRows(canvas)).toBe(false)
+      // Скелет будущих детей — сразу под строкой (ADR 0155, §3).
+      await until(() =>
+        expect(
+          canvas.querySelector(
+            `[data-pending-row][data-index="${Number(rowOf(canvas, CHILDREN.first)?.dataset.index) + 1}"]`,
+          ),
+        ).not.toBeNull(),
+      )
     })
     await step(LAZY_CHILDREN[2]!.title, async () => {
       await guideNext(canvas)
@@ -507,6 +523,142 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
         toggleOf(canvas)!.querySelector('[data-failure-indicator]'),
       ).not.toBeNull()
       await settle()
+    })
+  },
+}
+
+// --- ADR 0153 S9 ---------------------------------------------------------------------
+
+/** Дети с сервера, которые не приходят, пока раскрытие не отменят; запрос учитывает `signal`. */
+const heldChildren = (_row: Row<any, any>, context?: { signal: AbortSignal }) =>
+  new Promise<never>((_resolve, reject) => {
+    context?.signal.addEventListener(
+      'abort',
+      () => reject(context.signal.reason),
+      { once: true },
+    )
+  })
+
+const CANCEL_TOGGLE = `.data-grid__body-row[data-row-id="${CHILDREN.first}"] .row-expand-button`
+const cancelToggle = (root: HTMLElement) =>
+  toggleIn(rowOf(root, CHILDREN.first))
+const childrenWait = (root: HTMLElement) =>
+  cancelToggle(root)?.getAttribute('aria-busy') === 'true'
+const toggleArmed = (root: HTMLElement) =>
+  !!cancelToggle(root)?.hasAttribute('data-cancel-armed')
+const firstExpanded = (root: HTMLElement) =>
+  rowOf(root, CHILDREN.first)?.getAttribute('data-expanded') === 'true'
+
+/** Раскрытие первой строки ждёт детей: нажатие, если ещё не ждёт. */
+const expandHeld = (root: HTMLElement) => {
+  if (!childrenWait(root)) cancelToggle(root)?.click()
+}
+
+let toggleCancelled = false
+
+const CANCEL_EXPAND: readonly GuideStoryStep[] = [
+  {
+    title: 'Дети с сервера',
+    hint: 'Дети строки приходят с сервера при раскрытии.',
+  },
+  {
+    title: 'Дети грузятся',
+    hint: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание, под строкой — скелет будущих детей.',
+    states: ['body.pending'],
+    enter: untilDone(childrenWait, expandHeld),
+  },
+  {
+    title: 'Кнопка предлагает отмену',
+    hint: 'Пользователь навёл указатель на кнопку раскрытия. Появился знак остановки, подсказка предлагает отменить раскрытие.',
+    states: ['body.pending'],
+    pseudo: { hover: CANCEL_TOGGLE },
+    enter: stepAction(async (root, { signal, onLeave }) => {
+      await pollUntil(() => {
+        expandHeld(root)
+        return toggleArmed(root)
+      }, signal)
+      onLeave(pointAt(cancelToggle(root)!))
+    }),
+  },
+  {
+    title: 'Раскрытие отменено',
+    hint: 'Пользователь нажал на кнопку. Строка свернулась обратно, без вспышки и отметки ошибки.',
+    enter: (root: HTMLElement) => {
+      toggleCancelled = false
+      return untilDone(
+        root => toggleCancelled && !childrenWait(root) && !firstExpanded(root),
+        root => {
+          if (toggleCancelled) return
+          if (toggleArmed(root)) {
+            cancelToggle(root)!.click()
+            toggleCancelled = true
+          } else expandHeld(root)
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0153, S9: ленивые дети грузятся — человек отменяет раскрытие кнопкой раскрытия. */
+export const ExpandingCancel: StoryObj<StoryProps> = {
+  name: 'Cancel loading children',
+  parameters: { scenario: '0153/S9', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена раскрытия"
+      steps={CANCEL_EXPAND}
+      args={guideArgs(
+        {
+          ...GRID,
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 2,
+          dataOverride: CHILDREN.roots,
+          rowExpandingHasChildren: CHILDREN.hasChildren,
+          rowExpandingLoadChildren: heldChildren,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(CANCEL_EXPAND[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(cancelToggle(canvas)).not.toBeNull())
+      await expect(firstExpanded(canvas)).toBe(false)
+    })
+    await step(CANCEL_EXPAND[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(childrenWait(canvas)).toBe(true))
+      // Скелет будущих детей — сразу под строкой (ADR 0155, §3).
+      await until(() =>
+        expect(
+          canvas.querySelector(
+            `[data-pending-row][data-index="${Number(rowOf(canvas, CHILDREN.first)?.dataset.index) + 1}"]`,
+          ),
+        ).not.toBeNull(),
+      )
+    })
+    await step(CANCEL_EXPAND[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(toggleArmed(canvas)).toBe(true))
+      await expect(cancelToggle(canvas)).toHaveAttribute(
+        'aria-label',
+        labels.cancelAction(labels.expandRow),
+      )
+    })
+    await step(CANCEL_EXPAND[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(firstExpanded(canvas)).toBe(false))
+      await until(() => expect(childrenWait(canvas)).toBe(false))
+      await settle()
+      await expect(rowOf(canvas, CHILDREN.first)).not.toHaveAttribute(
+        'data-flash',
+      )
+      await expect(
+        cancelToggle(canvas)!.querySelector('[data-failure-indicator]'),
+      ).toBeNull()
     })
   },
 }

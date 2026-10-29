@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 import { useLocalization } from '../../core/localization'
 import {
   pendingAttributes,
+  serverCancelProps,
   serverActionReason,
   useServerActionMarks,
 } from '../../core/serverActions'
@@ -51,6 +52,9 @@ export const PageButton = ({
           : undefined
       }
       {...pendingAttributes(server.pending)}
+      {...serverCancelProps(table, server.pending, () =>
+        labels.cancelAction(label),
+      )}
       onClick={onClick}
     >
       {icon}

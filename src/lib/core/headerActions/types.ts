@@ -41,6 +41,8 @@ export interface MenuAction<TCtx = any> {
   onSelect: (
     ctx: TCtx,
     event?: MouseEvent<HTMLButtonElement>,
+    /** `signal` прерывается отменой действия человеком или приложением (ADR 0153). */
+    context?: { signal: AbortSignal },
   ) => void | Promise<unknown>
   /** Применимо ли действие в этом контексте (`false` убирает целиком). */
   visible?: (ctx: TCtx) => boolean
@@ -56,12 +58,13 @@ export interface MenuAction<TCtx = any> {
   /**
    * Цель итога (ADR 0152): отказ промиса `onSelect` вспыхивает на ней, пока он ждёт — её
    * ячейки несут `aria-busy`. `defaultTarget` — цель по умолчанию: у контекстного меню —
-   * ячейка или выделение, у кебабов и инлайн-кнопок — нет. `false` — без цели.
+   * ячейка или выделение, у кебабов и инлайн-кнопок — нет. `false` — без цели; `'table'` —
+   * действие меняет всю таблицу: свечение под шапкой, отказ — плашкой (ADR 0155, §2).
    */
   target?: (
     ctx: TCtx,
     defaultTarget: FlashTarget | readonly FlashTarget[] | undefined,
-  ) => FlashTarget | readonly FlashTarget[] | false
+  ) => FlashTarget | readonly FlashTarget[] | false | 'table'
   /** Текст отказа действия или проверки; без него — текст ошибки или подпись. */
   errorMessage?: (
     ctx: TCtx,

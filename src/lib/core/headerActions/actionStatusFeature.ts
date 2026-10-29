@@ -11,6 +11,9 @@ import {
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { FlashTarget } from '../highlights/highlightFeature'
+import { cancelPending, type CancelPendingFilter } from '../cancellation'
+import { reportAction } from '../debugActions'
+import type { TableLabels } from '../localization'
 import type { MenuAction } from './types'
 
 export interface ActionStatusEntry {
@@ -22,6 +25,16 @@ export interface ActionStatusEntry {
   pending?: boolean
   /** Цель действия: пока оно ждёт, её ячейки несут `aria-busy` (ADR 0152, §3). */
   target?: readonly FlashTarget[]
+  /** Инициатора не видно (контекстное меню): ожидание — волной на цели (ADR 0155, §1). */
+  wave?: boolean
+  /** Действие меняет всю таблицу: свечение под шапкой, отказ — плашкой (ADR 0155, §2). */
+  table?: boolean
+  /** Имя, причина отказа для плашки и повтор действия — у действия всей таблицы. */
+  name?: (labels: TableLabels) => string
+  reason?: (labels: TableLabels) => string
+  retry?: () => void
+  /** Плашку отказа закрыли; отметка на кебабе остаётся. */
+  dismissed?: boolean
   /** Отказ: отметка на кнопке, кебабе и иконка в пункте — до повтора или успеха. */
   failed?: boolean
   error?: unknown
@@ -39,6 +52,11 @@ interface ActionStatusOptions {
 }
 interface ActionStatusTableAPI {
   setActionStatus: (updater: Updater<ActionStatus>) => void
+  /**
+   * Отменить ждущие операции — все или по виду и id (ADR 0153, §7); итог тихий, как у
+   * отмены человеком.
+   */
+  cancelPending: (filter?: CancelPendingFilter) => void
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -90,6 +108,17 @@ export const actionStatusFeature: TableFeature = {
           }
           const atom = (table as unknown as StatusTable).atoms.actionStatus
           atom?.set(functionalUpdate(updater, atom.get()))
+        },
+      },
+      table_cancelPending: {
+        fn: (filter?: CancelPendingFilter) => {
+          reportAction(table, {
+            plugin: 'core',
+            action: 'cancelPending',
+            detail: filter,
+            source: 'api',
+          })
+          cancelPending(table, filter, 'api')
         },
       },
     })

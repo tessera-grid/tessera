@@ -31,6 +31,8 @@ export type {
   HighlightTone,
   RangeTarget,
 } from './lib/core/highlights/highlightFeature'
+// Отмена длительных операций (ADR 0153): `table.cancelPending`.
+export type { CancelPendingFilter, PendingKind } from './lib/core/cancellation'
 // Вспышка итога на цели асинхронного действия (ADR 0134): `table.flashOutcome`.
 export type { FlashOutcome } from './lib/core/flashes/flashFeature'
 // Прокрутка к строке (ADR 0104): `table.scrollToRow`.

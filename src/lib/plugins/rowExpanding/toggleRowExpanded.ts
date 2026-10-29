@@ -1,7 +1,13 @@
 import type { Row } from '../../types'
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { DEFAULT_LABELS } from '../../core/localization'
-import { reportOutcome } from '../../core/debugActions'
+import {
+  type CancelSource,
+  lateAnswer,
+  registerPending,
+} from '../../core/cancellation'
+import { reportAction, reportOutcome } from '../../core/debugActions'
+import { rowSourceOf } from '../../core/rowSource'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import { inOneCommit } from '../../core/oneCommit'
 import { isThenable, rejectionText } from '../../core/thenable'
@@ -42,6 +48,23 @@ const storeAnswer = (table: unknown, rowId: string, rows: unknown) =>
     [rowId]: Array.isArray(rows) ? rows : [],
   }))
 
+/**
+ * Отмена загрузки ветки серверной модели (ADR 0155, §3): запросы ветки прерваны, строка
+ * свёрнута тихо.
+ */
+export const cancelBranchLoad = (row: Row<any, any>, source: CancelSource) => {
+  const { table } = row as PendingRow
+  rowSourceOf(table).cancelBranch?.(row.id)
+  row.toggleExpanded(false)
+  reportAction(table, {
+    plugin: 'rowExpanding',
+    action: 'cancel',
+    detail: { action: 'loadChildren', rowId: row.id },
+    source,
+  })
+  announceLabel(table, all => all.announceActionCancelled(all.expandRow))
+}
+
 // Номер попытки сквозной: итог прежнего раскрытия не спутать с новым.
 let lastAttempt = 0
 
@@ -71,7 +94,10 @@ export const toggleRowExpanded = (
   }
   const { table } = pendingRow
   const lazy = !!hooks.loadChildren && isLazyRow(row, hooks.hasChildren)
-  const result = lazy ? hooks.loadChildren!(row) : notified
+  const controller = new AbortController()
+  const result = lazy
+    ? hooks.loadChildren!(row, { signal: controller.signal })
+    : notified
   // Итог загрузки детей или промиса `onExpandRow` — с причиной: нажатием этой задачи.
   reportOutcome(
     table,
@@ -88,7 +114,38 @@ export const toggleRowExpanded = (
   }
   const attempt = ++lastAttempt
   setPending(prev => ({ ...prev, [row.id]: attempt }))
+  const clearPending = () =>
+    setPending(prev => {
+      const next = { ...prev }
+      delete next[row.id]
+      return next
+    })
+  // Отмена тихая (ADR 0153, §4): строка без ответа сворачивается без вспышки и отметки.
+  const cancel = (source: CancelSource) => {
+    if (controller.signal.aborted) return
+    controller.abort()
+    unregister()
+    reportAction(table, {
+      plugin: 'rowExpanding',
+      action: 'cancel',
+      detail: { action: 'loadChildren', rowId: row.id },
+      source,
+    })
+    inOneCommit(() => {
+      clearPending()
+      if (!(row.id in readLoadedChildren(table))) row.toggleExpanded(false)
+    })
+    announceLabel(table, all => all.announceActionCancelled(all.expandRow))
+  }
+  const unregister = lazy
+    ? registerPending(table, { kind: 'children', id: row.id, cancel })
+    : () => {}
   const settle = (ok: boolean, value: unknown) => {
+    if (controller.signal.aborted) {
+      lateAnswer(table, ok ? undefined : value)
+      return
+    }
+    unregister()
     if (table.atoms.rowExpandPending?.get()[row.id] !== attempt) {
       return
     }
@@ -97,11 +154,7 @@ export const toggleRowExpanded = (
       enqueueAnswer(table, row.id, attempt, value)
       return
     }
-    setPending(prev => {
-      const next = { ...prev }
-      delete next[row.id]
-      return next
-    })
+    clearPending()
     if (ok) {
       return
     }

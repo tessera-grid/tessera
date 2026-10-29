@@ -12,6 +12,12 @@ import {
   targetContains,
 } from '../highlights/highlightFeature'
 import { selectionRangeTargets } from '../highlights/targetRanges'
+import {
+  type CancelSource,
+  lateAnswer,
+  markLoadCancelled,
+  registerPending,
+} from '../cancellation'
 import type { TableLabels } from '../localization'
 import { isThenable, rejectionText } from '../thenable'
 import {
@@ -81,15 +87,53 @@ export const defaultActionTarget = (
   return { cell: [row.id, column.id] }
 }
 
+const targetOf = (action: MenuAction, ctx: unknown) => {
+  const fallback = defaultActionTarget(ctx)
+  return action.target ? action.target(ctx, fallback) : fallback
+}
+
+const targetsOf = (
+  target: ReturnType<typeof targetOf>,
+): readonly FlashTarget[] => {
+  if (!target || target === 'table') return []
+  return Array.isArray(target) ? target : [target as FlashTarget]
+}
+
 /** Цель итога действия: своя `target` или цель по умолчанию; пусто — без цели. */
 export const actionTargets = (
   action: MenuAction,
   ctx: unknown,
-): readonly FlashTarget[] => {
-  const fallback = defaultActionTarget(ctx)
-  const target = action.target ? action.target(ctx, fallback) : fallback
-  if (!target) return []
-  return Array.isArray(target) ? target : [target as FlashTarget]
+): readonly FlashTarget[] => targetsOf(targetOf(action, ctx))
+
+/** Пункт открыт в контекстном меню: меню закрывается, инициатора не видно (ADR 0155, §1). */
+const fromContextMenu = (ctx: unknown) =>
+  !!(ctx as ContextMenuTargetContext).selection
+
+interface Running {
+  cancel: (source: CancelSource) => void
+}
+
+/** Ждущие действия меню по ключу «цель + действие»: их отмена (ADR 0153). */
+const running = new WeakMap<object, Map<string, Running>>()
+
+const runningOf = (table: unknown) => {
+  const store = (table as { store: object }).store
+  let map = running.get(store)
+  if (!map) {
+    map = new Map()
+    running.set(store, map)
+  }
+  return map
+}
+
+/** Отменить ждущее действие меню в цели (ADR 0153, §2–§3). */
+export const cancelMenuAction = (
+  action: { id: string },
+  ctx: unknown,
+  source: CancelSource,
+) => {
+  const table = tableOf(ctx)
+  runningOf(table).get(actionStatusKey(action, ctx))?.cancel(source)
 }
 
 /**
@@ -115,26 +159,73 @@ export const runMenuAction = (
     source: sourceOf(event),
   }
   const id = reportAction(table, report)
-  const result = action.onSelect(ctx, event)
+  const controller = new AbortController()
+  const result = action.onSelect(ctx, event, { signal: controller.signal })
   reportOutcome(table, { ...report, detail: undefined, cause: id }, result)
   // Вне грида (кнопка без таблицы) ожидать некому и объявлять негде.
   if (!isThenable(result) || !table) return
 
   const name = (labels: TableLabels) => action.label(ctx, labels)
   const menu = keepError
-  const targets = actionTargets(action, ctx)
+  const raw = targetOf(action, ctx)
+  const targets = targetsOf(raw)
   const target = targets.length > 0 ? targets : undefined
+  const whole = raw === 'table' || undefined
+  const wave = (!!target && fromContextMenu(ctx)) || undefined
   writeActionStatus(table, status => ({
     ...status,
-    [key]: { pending: true, action, menu, target },
+    [key]: { pending: true, action, menu, target, wave, table: whole },
   }))
+  // Отмена тихая (ADR 0153, §4): ожидание снято, ни отметки, ни вспышки.
+  const runs = runningOf(table)
+  const done = () => {
+    runs.delete(key)
+    unregister()
+  }
+  const cancel = (source: CancelSource) => {
+    if (controller.signal.aborted) return
+    controller.abort()
+    done()
+    if (whole) markLoadCancelled(table)
+    writeActionStatus(table, status => without(status, [key]))
+    reportAction(table, {
+      plugin: report.plugin,
+      action: 'cancel',
+      detail: { action: action.id },
+      source,
+      cause: id,
+    })
+    announceLabel(table, labels => labels.announceActionCancelled(name(labels)))
+  }
+  const unregister = registerPending(table, {
+    kind: 'menu',
+    id: action.id,
+    cancel,
+  })
+  runs.set(key, { cancel })
   Promise.resolve(result).then(
     () => {
+      if (controller.signal.aborted) return lateAnswer(table)
+      done()
       writeActionStatus(table, status => without(status, [key]))
       announceLabel(table, labels => labels.announceActionDone(name(labels)))
     },
     (error: unknown) => {
-      const entry: ActionStatusEntry = { failed: true, error, action, menu }
+      if (controller.signal.aborted) return lateAnswer(table, error)
+      done()
+      const entry: ActionStatusEntry = {
+        failed: true,
+        error,
+        action,
+        menu,
+        table: whole,
+        ...(whole && {
+          name,
+          reason: (labels: TableLabels) =>
+            actionErrorText(action, ctx, error, labels),
+          retry: () => runMenuAction(action, ctx, undefined, { keepError }),
+        }),
+      }
       writeActionStatus(table, status => ({ ...status, [key]: entry }))
       // Отказ — на цели в кадре, где кнопка-инициатор гасит дугу (ADR 0152, §2).
       if (target) flashOutcome(table, target, 'reverted')
@@ -148,35 +239,86 @@ export const runMenuAction = (
   )
 }
 
-const busyTargets = new WeakMap<ActionStatus, readonly FlashTarget[]>()
+interface BusyTarget {
+  target: FlashTarget
+  wave: boolean
+}
+
+const busyTargets = new WeakMap<ActionStatus, readonly BusyTarget[]>()
 
 /** Цели ждущих действий — один раз на объект среза. */
-const busyTargetsOf = (status: ActionStatus): readonly FlashTarget[] => {
+const busyTargetsOf = (status: ActionStatus): readonly BusyTarget[] => {
   let targets = busyTargets.get(status)
   if (!targets) {
     targets = Object.values(status).flatMap(entry =>
-      entry.pending && entry.target ? entry.target : [],
+      entry.pending && entry.target
+        ? entry.target.map(target => ({ target, wave: !!entry.wave }))
+        : [],
     )
     busyTargets.set(status, targets)
   }
   return targets
 }
 
-/** Есть ли ждущее действие меню с целью (ADR 0152, §3). */
-export const hasBusyTargets = (status: ActionStatus | undefined) =>
-  !!status && busyTargetsOf(status).length > 0
+/** Есть ли ждущее действие с волной на цели (ADR 0155, §1). */
+export const hasWaveTargets = (status: ActionStatus | undefined) =>
+  !!status && busyTargetsOf(status).some(busy => busy.wave)
 
-/** Ячейка — в цели ждущего действия меню (ADR 0152, §3). */
-export const isCellBusy = (
+/**
+ * Ожидание ячейки (ADR 0152, §3; ADR 0155, §1): `'wave'` — в цели действия из контекстного
+ * меню, `'busy'` — в цели действия с видимым инициатором.
+ */
+export const cellPendingOf = (
   table: unknown,
   status: ActionStatus | undefined,
   rowId: string,
   columnId: string,
-): boolean => {
-  if (!status) return false
-  const targets = busyTargetsOf(status)
-  return targets.some(target => targetContains(table, target, rowId, columnId))
+): 'wave' | 'busy' | undefined => {
+  if (!status) return undefined
+  let pending: 'wave' | 'busy' | undefined
+  for (const { target, wave } of busyTargetsOf(status)) {
+    if (!targetContains(table, target, rowId, columnId)) continue
+    if (wave) return 'wave'
+    pending = 'busy'
+  }
+  return pending
 }
+
+/** Ждёт ли действие всей таблицы (ADR 0155, §2). */
+export const tableActionPending = (status: ActionStatus | undefined) =>
+  !!status && Object.values(status).some(entry => entry.pending && entry.table)
+
+interface TableFailure {
+  key: string
+  entry: ActionStatusEntry
+}
+
+const tableFailures = new WeakMap<ActionStatus, TableFailure | null>()
+
+/** Отказ действия всей таблицы для плашки — пока её не закрыли; один объект на срез. */
+export const tableActionFailure = (status: ActionStatus | undefined) => {
+  if (!status) return undefined
+  let failure = tableFailures.get(status)
+  if (failure === undefined) {
+    failure = null
+    for (const [key, entry] of Object.entries(status)) {
+      if (entry.failed && entry.table && !entry.dismissed) {
+        failure = { key, entry }
+        break
+      }
+    }
+    tableFailures.set(status, failure)
+  }
+  return failure ?? undefined
+}
+
+/** Плашку отказа действия всей таблицы закрыли: отметка на кебабе остаётся. */
+export const dismissTableActionFailure = (table: unknown, key: string) =>
+  writeActionStatus(table, status =>
+    status[key]
+      ? { ...status, [key]: { ...status[key], dismissed: true } }
+      : status,
+  )
 
 /** Состояние кебаба: ждущие и неувиденные упавшие действия. */
 export interface KebabStatus {

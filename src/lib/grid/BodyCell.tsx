@@ -30,7 +30,7 @@ import {
   type Flashes,
   rangeFlashAt,
 } from '../core/flashes/flashFeature'
-import { isCellBusy } from '../core/headerActions/actionStatus'
+import { cellPendingOf } from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
@@ -120,14 +120,14 @@ export const BodyCell = memo(
             s.flashes?.[cellKey] ??
             rangeFlashAt(table, s.flashes, rowId, columnId),
           columnFlash: s.flashes?.[columnKey],
-          busy: isCellBusy(table, s.actionStatus, rowId, columnId),
+          busy: cellPendingOf(table, s.actionStatus, rowId, columnId),
         }
       }) as {
         cellHighlight?: HighlightTargetState
         columnHighlight?: HighlightTargetState
         cellFlash?: FlashEntry
         columnFlash?: FlashEntry
-        busy: boolean
+        busy?: 'wave' | 'busy'
       }
     const highlighted = highlightRender([
       { layer: 'cell', state: cellHighlight },
@@ -306,7 +306,8 @@ export const BodyCell = memo(
         data-cell-focused={cellSel?.isFocused || undefined}
         {...highlighted.attrs}
         {...flashed.attrs}
-        aria-busy={busy || undefined}
+        aria-busy={!!busy || undefined}
+        data-pending-wave={busy === 'wave' || undefined}
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}

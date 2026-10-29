@@ -85,7 +85,7 @@ export const getSkeletonBarWidth = (columnId: string): number =>
 
 /** Строка дерева скелета (ADR 0060, SL22). */
 export interface SkeletonTreeRow {
-  depth: 0 | 1
+  depth: number
   /** Ветка для линий дерева: у подстроки `'1'` — следом сестра, `'0'` — последняя. */
   branch: string
   /** Следом идут подстроки этой строки. */

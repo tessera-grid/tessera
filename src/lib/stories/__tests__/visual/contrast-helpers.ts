@@ -747,6 +747,16 @@ const runUnobscured = async (node: axe.NodeResult, rule: string) => {
 }
 
 /**
+ * Подсказка, пропускающая указатель насквозь (ADR 0100): лежит поверх грида, но
+ * `elementsFromPoint` её не видит, и axe считает её перекрытой; её текст считает аудит
+ * узлов.
+ */
+const passesPointer = (node: axe.NodeResult) => {
+  const el = document.querySelector(node.target.join(' '))
+  return !!el && getComputedStyle(el).pointerEvents === 'none'
+}
+
+/**
  * Узел под липким предком (шапка, футер, закреплённая колонка) при прокрученном теле:
  * `scrollIntoView` его не сдвигает, и axe считает его частично перекрытым, хотя он
  * виден целиком; его текст считает аудит узлов (CX1–CX5, CX12).
@@ -870,7 +880,12 @@ export const runAxe = async (
             obscured.push(node)
             continue
           }
-          if (reason === 'elmPartiallyObscured' && insideSticky(node)) continue
+          if (
+            reason === 'elmPartiallyObscured' &&
+            (insideSticky(node) || passesPointer(node))
+          ) {
+            continue
+          }
           outcome.problems.push(
             `${label} | ${comboLabel(combo)} | incomplete | ${nodeName(node)} | ${reason ?? 'без причины'}`,
           )

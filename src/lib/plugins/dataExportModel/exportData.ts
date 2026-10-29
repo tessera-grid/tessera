@@ -3,6 +3,7 @@
  * строки по охвату пресета, значения ячеек, а не их отрисовка; у колонок с вариантами
  * — подписи (ADR 0048, §4).
  */
+import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
@@ -89,6 +90,8 @@ export const headerOf = (column: ExportSourceColumn): string =>
 /** Данные в глубину по `subRows`; строки-группы пропускаются, их дети — нет. */
 const walk = (rows: ExportRow[], visit: (row: ExportRow) => void) => {
   for (const row of rows) {
+    // Скелет-строка ленивых детей — не данные (ADR 0155, §3).
+    if (isPlaceholderRow(row)) continue
     if (!row.getIsGrouped?.()) visit(row)
     if (row.subRows?.length) walk(row.subRows, visit)
   }
@@ -117,7 +120,7 @@ export const exportRowsOf = (
     const rows = rowSourceOf<ExportRow>(table)
     for (let index = 0; index < rows.count(); index++) {
       const row = rows.at(index)
-      if (row && !row.getIsGrouped?.()) push(row)
+      if (row && !row.getIsGrouped?.() && !isPlaceholderRow(row)) push(row)
     }
   } else {
     walk(viewRows(source), row => {

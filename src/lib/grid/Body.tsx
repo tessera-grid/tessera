@@ -18,6 +18,7 @@ import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
 import { LoadMoreError } from './LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
+import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
 import { getTreeLines, projectTreeLines } from './treeBranches'
@@ -197,6 +198,34 @@ export const Body = ({
                   virtualColumns={virtualColumns}
                   isVirtualColumns={isVirtualColumns}
                   ariaRowIndexBase={ariaRowIndexBase}
+                />
+              )
+            }
+            // Ленивые дети в пути (ADR 0155, §3): скелет-строка с отступом ребёнка.
+            if (isPlaceholderRow(row)) {
+              const placeholder = linesOf(virtualRow.index, false)
+              return (
+                <PendingRow
+                  key={row.id}
+                  table={table}
+                  layout={layout}
+                  virtualRow={virtualRow}
+                  leafColumns={leafColumns}
+                  virtualColumns={virtualColumns}
+                  isVirtualColumns={isVirtualColumns}
+                  ariaRowIndexBase={ariaRowIndexBase}
+                  tree={
+                    treeRows
+                      ? { level: row.depth + 1, posInSet: 1, setSize: 1 }
+                      : undefined
+                  }
+                  skeletonTree={{
+                    depth: row.depth,
+                    branch: placeholder.branch ?? '',
+                    open: false,
+                    parent: false,
+                  }}
+                  treeLines={!!treeLinesIndex}
                 />
               )
             }

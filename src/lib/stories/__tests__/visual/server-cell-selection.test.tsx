@@ -418,6 +418,70 @@ describe('Выделение ячеек в серверной модели ст�
     }
   })
 
+  test('CA6: копирование в SSRM в ожидании — та же плашка «Копирование…» и Escape', async () => {
+    stubClipboard()
+    const { getRows, calls } = server(request =>
+      request.start === 0 ? rowsAnswer(request) : undefined,
+    )
+    let table!: GridTable
+    const screen = await render(
+      <Grid getRows={getRows} onTable={t => (table = t)} />,
+    )
+    const banner = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="pending-action-banner"]',
+      )
+    const copyAll = async () => {
+      ;(
+        table as unknown as {
+          setCellSelection: (u: () => unknown[]) => void
+        }
+      ).setCellSelection(() => [
+        {
+          anchorRowIndex: 0,
+          focusRowIndex: 299,
+          anchorColumnId: 'name',
+          focusColumnId: 'city',
+        },
+      ])
+      await nextFrame()
+      const first = calls.length
+      copyFrom(cellAt(1, 'name')!)
+      await expect.poll(() => calls.length).toBeGreaterThan(first)
+      await expect
+        .poll(() => banner()?.textContent ?? '', { timeout: 3000 })
+        .toContain(tableLabels.pendingCopy)
+      expect(banner()!.textContent).toContain(tableLabels.cancel)
+      return calls.slice(first)
+    }
+    try {
+      await expect.poll(() => cellAt(1, 'name')).not.toBeNull()
+
+      // Escape в теле.
+      const escaped = await copyAll()
+      cellAt(1, 'name')!.focus()
+      await userEvent.keyboard('{Escape}')
+      await expect
+        .poll(() => escaped.every(c => c.request.signal.aborted))
+        .toBe(true)
+      await expect.poll(() => banner()).toBeNull()
+
+      // Кнопка «Отменить» плашки.
+      const cancelled = await copyAll()
+      await humanClick(
+        document.querySelector<HTMLElement>(
+          '[data-testid="pending-action-cancel"]',
+        )!,
+      )
+      await expect
+        .poll(() => cancelled.every(c => c.request.signal.aborted))
+        .toBe(true)
+      await expect.poll(() => banner()).toBeNull()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('XC17: копирование, ждущее строк, бросается, когда таблица уходит со страницы: новых блоков не запрашивает, буфер не пишет', async () => {
     const written = stubClipboard()
     const { getRows, calls } = server(request =>

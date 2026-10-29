@@ -428,6 +428,19 @@ export class BlockTree<TData, TRow, TQuery> {
     for (const node of this.nodes.values()) node.store.retryAll()
   }
 
+  /** Ветка раскрытой строки ждёт первого ответа (ADR 0155, §3). */
+  branchLoading(id: string): boolean {
+    const node = this.nodes.get(id)
+    return (
+      !!node && this.options.expanded().has(id) && node.store.awaitingFirst()
+    )
+  }
+
+  /** Отменить запросы ветки: человек отменил раскрытие. */
+  cancelBranch(id: string) {
+    this.nodes.get(id)?.store.cancelInFlight()
+  }
+
   /** Итог известен у корней и у каждой раскрытой ветки. */
   isTotalKnown(): boolean {
     return [...this.openNodes()].every(node => node.store.isTotalKnown())

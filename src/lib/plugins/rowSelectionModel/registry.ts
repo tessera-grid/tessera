@@ -4,6 +4,7 @@
  * `aria-selected` (в роли grid). Колонка флажков, Space, счётчик и колбэки пользователя —
  * у `rowSelection`, который включает эту модель.
  */
+import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import {
   type RowSelectionState,
   rowSelectionFeature,
@@ -67,6 +68,8 @@ const rowGroupOf = (table: unknown) => (id: string) =>
  * агрегаты (getIsAllPageRowsSelected и т.п.).
  */
 const enableRowSelection = (row: Row<any, any>): boolean => {
+  // Скелет-строка ленивых детей — не данные (ADR 0155, §3).
+  if (isPlaceholderRow(row)) return false
   if (!isGroupingActive(row.table)) {
     return true
   }

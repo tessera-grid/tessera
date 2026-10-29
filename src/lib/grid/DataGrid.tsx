@@ -5,6 +5,7 @@ import { reportAction } from '../core/debugActions'
 import {
   type CSSProperties,
   type FocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   lazy,
   Suspense,
   useCallback,
@@ -48,6 +49,10 @@ import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
 import { LoadErrorBanner } from './loadError/LoadError'
+import {
+  PendingActionBanner,
+  cancelServerPending,
+} from './loadError/PendingActionBanner'
 import { useLoadError } from './loadError/useLoadError'
 import { hasLoadError } from '../core/loadError'
 import { isSkeletonShown } from '../core/skeletonOptions'
@@ -79,7 +84,12 @@ import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
 import { usePendingWave, useSkeletonWave } from './useSkeletonWave'
-import { hasBusyTargets } from '../core/headerActions/actionStatus'
+import {
+  dismissTableActionFailure,
+  hasWaveTargets,
+  tableActionFailure,
+  tableActionPending,
+} from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { useRowHeights } from './useRowHeights'
 import { useControlColumnSizes } from './useControlColumnSizes'
@@ -327,9 +337,18 @@ export const DataGrid = ({
   const initialLoading = loading === 'initial'
   // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3); окно
   // новой выборки серверной модели строк — тоже (ADR 0138, §6).
+  // Действие меню над всей таблицей (ADR 0155, §2): свечение и плашка, как у серверного.
+  const tableAction = useTableState(table, s => {
+    const status = (s as { actionStatus?: ActionStatus }).actionStatus
+    return {
+      pending: tableActionPending(status),
+      failure: tableActionFailure(status),
+    }
+  })
   const refreshLoading =
     loading === 'refresh' ||
     !!serverAction.pending ||
+    tableAction.pending ||
     !!rowSource.refreshing?.()
   // Отказ серверного действия — та же плашка; ошибка приложения главнее (ADR 0116, §5).
   const appError = (table.options as any).loadError
@@ -338,6 +357,15 @@ export const DataGrid = ({
   const actionError = useMemo(
     () => failed && { message: serverActionReason(failed, labels) },
     [failed, labels],
+  )
+  const menuFailure = tableAction.failure
+  const menuError = useMemo(
+    () =>
+      menuFailure && {
+        message:
+          menuFailure.entry.reason?.(labels) ?? labels.actionFailedFallback,
+      },
+    [menuFailure, labels],
   )
   // Отказ источника, когда не загружено ничего (серверная модель, ADR 0138, §11).
   const listError = appFailed ? undefined : rowSource.loadError?.()
@@ -348,18 +376,22 @@ export const DataGrid = ({
   // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
   const loadError = useLoadError({
     table,
-    error: appFailed ? appError : (sourceError ?? actionError),
+    error: appFailed ? appError : (sourceError ?? actionError ?? menuError),
     onRetry: appFailed
       ? (table.options as any).onRetry
-      : (listError?.retry ?? failed?.retry),
+      : (listError?.retry ?? failed?.retry ?? menuFailure?.entry.retry),
     loading: initialLoading || refreshLoading,
     // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
-    hasRows: !listError && (rowCount > 0 || (!appFailed && !!failed)),
+    hasRows:
+      !listError &&
+      (rowCount > 0 || (!appFailed && (!!failed || !!menuFailure))),
     // Отказ копирования — не обновления данных: свой заголовок (ADR 0146, §4).
     title:
       !appFailed && !listError && failed?.kind === 'copy'
         ? labels.serverActionFailedCopy
-        : undefined,
+        : !appFailed && !listError && !failed && menuFailure?.entry.name
+          ? labels.actionsFailed(menuFailure.entry.name(labels))
+          : undefined,
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк
@@ -423,7 +455,18 @@ export const DataGrid = ({
     })
     loadError.dismiss()
     if (!appFailed) dismissServerActionError(table)
+    if (menuFailure) dismissTableActionFailure(table, menuFailure.key)
     focusBody()
+  }
+  // Escape в теле отменяет ждущее серверное действие (ADR 0153, §5); у поля правки и
+  // открытого меню Escape свой.
+  const cancelOnEscape = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return
+    const target = event.target as HTMLElement
+    if (target.closest('input, textarea, select, [contenteditable="true"]')) {
+      return
+    }
+    if (cancelServerPending(table, event) > 0) event.preventDefault()
   }
   const retryLoadFromBanner = loadError.retryFromBanner
     ? (event?: unknown) => {
@@ -434,9 +477,9 @@ export const DataGrid = ({
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !gridStub)
   useSkeletonWave(wrapperRef, showSkeleton && !gridStub)
-  // Волна ожидания на цели действия меню (ADR 0152, §3) — пока хоть одно такое ждёт.
+  // Волна ожидания на цели действия из контекстного меню (ADR 0155, §1) — пока хоть одно ждёт.
   const menuPending = useTableState(table, s =>
-    hasBusyTargets((s as { actionStatus?: ActionStatus }).actionStatus),
+    hasWaveTargets((s as { actionStatus?: ActionStatus }).actionStatus),
   )
   usePendingWave(wrapperRef, menuPending && !gridStub)
 
@@ -512,6 +555,12 @@ export const DataGrid = ({
                       retry={retryLoadFromBanner}
                       onDismiss={dismissLoadError}
                     />
+                    <PendingActionBanner
+                      table={table}
+                      themeRef={wrapperRef}
+                      blocked={loadError.bannerShown}
+                      onCancelled={focusBody}
+                    />
                     <ScrollingAttribute getScrollElement={getScrollElement} />
                     {enableOverflowTooltip && (
                       <OverflowTooltip getScrollElement={getScrollElement} />
@@ -562,6 +611,7 @@ export const DataGrid = ({
                         ref={scrollableNodeRef}
                         // Firefox держит прокручиваемую область в порядке Tab (KN32).
                         tabIndex={keyboardNavigation ? -1 : undefined}
+                        onKeyDown={cancelOnEscape}
                         onFocus={
                           keyboardNavigation ? releaseContainerFocus : undefined
                         }

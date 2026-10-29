@@ -43,12 +43,15 @@ import type {
   LoadOptions,
   OptionFilter,
   OptionFilterOperator,
+  ColumnFilterValue,
 } from '../columnFilteringModel/types'
 
 import panelStyles from './FilterPanel.module.css'
 import checkboxStyles from '../../ui/SelectCheckbox/SelectCheckbox.module.css'
 import styles from './OptionFilterPanel.module.css'
 import { FilterFailure } from './FilterFailure'
+import { FilterApply } from './FilterApply'
+import { useFilterDraft } from './filterDraft'
 
 const ROW_HEIGHT = 32
 const OVERSCAN = 8
@@ -162,9 +165,14 @@ export const OptionFilterPanel = ({
       ? ((column.columnDef as { header?: string }).header as string)
       : column.id
 
-  const [draft, setDraft] = useState(() =>
-    draftOf(column.getFilterValue() as OptionFilter | undefined),
-  )
+  const filterDraft = useFilterDraft({
+    table,
+    columnId: column.id,
+    current: column.getFilterValue(),
+    draftOf: current => draftOf(current as OptionFilter | undefined),
+    filterOf: next => filterOf(next) as ColumnFilterValue | undefined,
+  })
+  const { draft, setDraft, server } = filterDraft
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -178,7 +186,8 @@ export const OptionFilterPanel = ({
   const update = (patch: Partial<Draft>) => {
     const next = { ...draft, ...patch }
     setDraft(next)
-    setColumnFilterByUser(table, column.id, filterOf(next))
+    // На сервере условие уходит кнопкой «Применить» (ADR 0154).
+    if (!server) setColumnFilterByUser(table, column.id, filterOf(next))
   }
 
   const columnRef = column as unknown as Parameters<typeof filterOptionsOf>[1]
@@ -233,6 +242,7 @@ export const OptionFilterPanel = ({
     applySearch.cancel()
     setColumnFilterByUser(table, column.id, undefined)
     setDraft(draftOf(undefined))
+    filterDraft.forget()
   }
 
   const activeIndex = Math.min(active, Math.max(options.length - 1, 0))
@@ -432,6 +442,7 @@ export const OptionFilterPanel = ({
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
           {labels.filterReset}
         </Button>
+        {server && <FilterApply {...filterDraft} />}
       </div>
     </div>
   )

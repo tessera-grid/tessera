@@ -10,6 +10,7 @@ import { Check } from 'lucide-react'
 import clsx from 'clsx'
 
 import { actionOwnerOf, actionDetailOf } from '../../core/actionOwners'
+import { cancelSourceOf } from '../../core/cancellation'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useActionStatus } from './useActionStatus'
@@ -26,6 +27,7 @@ import {
   actionErrorText,
   actionStatusKey,
   blockOf,
+  cancelMenuAction,
   checkErrorText,
   menuGroups,
   preloadActionPanel,
@@ -105,8 +107,10 @@ const ActionMenuItem = ({
   // Замок без текста ничего не объясняет — запрет без причины только гасит пункт.
   const locked = block?.kind === 'forbidden' && !!block.reason
   // Одиночный пункт: доступность — итог сессии; разворот `menuItems` — свои признаки.
+  // Ждущий пункт доступен: его выбор отменяет действие (ADR 0153, §3).
   const disabled =
-    (action.menuItems ? !!item.disabled : availability.disabled) || running
+    !running && (action.menuItems ? !!item.disabled : availability.disabled)
+  const label = running ? labels.cancelAction(item.label) : item.label
   const errorText = failed
     ? actionErrorText(action, context, entry.error, labels)
     : checkFailed
@@ -128,7 +132,7 @@ const ActionMenuItem = ({
       aria-busy={pending || undefined}
       aria-describedby={description ? descriptionId : undefined}
       disabled={disabled}
-      label={item.label}
+      label={label}
       closeOnClick={closeOnClick}
       onClick={onClick}
       onPointerEnter={preload}
@@ -146,7 +150,7 @@ const ActionMenuItem = ({
       <span className={styles.itemIcon} aria-hidden>
         {item.icon}
       </span>
-      <span className={styles.itemLabel}>{item.label}</span>
+      <span className={styles.itemLabel}>{label}</span>
       {hint && (
         <span className={styles.itemHint} aria-hidden>
           {hint}
@@ -296,20 +300,23 @@ export const ActionMenuItems = ({
               section={section}
               onKeyDown={onKeyDown}
               onClick={
-                action.menuItems
-                  ? (event: MouseEvent<HTMLElement>) => {
-                      // Подпункт разворота (`menuItems`) — действие владельца с id пункта.
-                      reportAction((context as { table?: unknown }).table, {
-                        plugin: actionOwnerOf(action),
-                        action: `${action.id}:${item.id}`,
-                        detail: () => actionDetailOf(context),
-                        source: sourceOf(event),
-                      })
-                      item.onSelect()
-                    }
-                  : availability.checkFailed
-                    ? recheck
-                    : select
+                entry?.pending
+                  ? (event: MouseEvent<HTMLElement>) =>
+                      cancelMenuAction(action, context, cancelSourceOf(event))
+                  : action.menuItems
+                    ? (event: MouseEvent<HTMLElement>) => {
+                        // Подпункт разворота (`menuItems`) — действие владельца с id пункта.
+                        reportAction((context as { table?: unknown }).table, {
+                          plugin: actionOwnerOf(action),
+                          action: `${action.id}:${item.id}`,
+                          detail: () => actionDetailOf(context),
+                          source: sourceOf(event),
+                        })
+                        item.onSelect()
+                      }
+                    : availability.checkFailed
+                      ? recheck
+                      : select
               }
             />
           ))}

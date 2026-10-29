@@ -12,6 +12,7 @@ import {
   guideNext,
   headCell,
   orderedRows,
+  pointAt,
   pollUntil,
   settle,
   stepDone,
@@ -19,6 +20,7 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { filteringColumns } from './__mocks__/filteringData'
+import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { getData } from './__mocks__/data'
 import {
@@ -347,5 +349,145 @@ export const PaginationOwnPager: StoryObj<StoryProps> = {
       expect(statusBarOf(canvas)).toBeNull()
     })
     await settle()
+  },
+}
+
+// --- ADR 0153 S8 ---------------------------------------------------------------------
+
+const NEXT_PAGE = '[data-testid="pagination"] [data-page-action="next"]'
+const nextButton = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>(NEXT_PAGE)
+const pageWaits = (root: HTMLElement) =>
+  nextButton(root)?.getAttribute('aria-busy') === 'true'
+const pageArmed = (root: HTMLElement) =>
+  !!nextButton(root)?.hasAttribute('data-cancel-armed')
+
+/**
+ * «Сервер» гайда отмены перехода: страницу не присылает, пока его не отменят; запрос
+ * учитывает `signal` (ADR 0153, §1).
+ */
+const heldPage =
+  (log: ConsoleLog) =>
+  (pageIndex: number, _pageSize: number, { signal }: { signal: AbortSignal }) =>
+    new Promise<void>((_resolve, reject) => {
+      log.log('server', `page ${pageIndex + 1} requested`)
+      signal.addEventListener(
+        'abort',
+        () => {
+          log.log('server', 'cancelled')
+          reject(signal.reason)
+        },
+        { once: true },
+      )
+    })
+
+/** Переход на вторую страницу ждёт ответа сервера. */
+const pageHeld = (root: HTMLElement, signal: AbortSignal) =>
+  pollUntil(() => {
+    if (pageWaits(root)) return true
+    nextButton(root)?.click()
+    return false
+  }, signal)
+
+/** Занятая кнопка перехода готова к отмене. */
+const pageCancelArmed = async (root: HTMLElement, signal: AbortSignal) => {
+  await pageHeld(root, signal)
+  await pollUntil(() => pageArmed(root), signal)
+}
+
+const CANCEL_PAGE: readonly GuideStoryStep[] = [
+  {
+    title: 'Страницы на сервере',
+    hint: 'Каждая страница приходит с сервера.',
+    props: ({ log }) => ({
+      columnsOverride: filteringColumns,
+      dataOverride: queryPage(0, SERVER_PAGE, undefined),
+      onPageChange: heldPage(log),
+    }),
+  },
+  {
+    title: 'Страница грузится',
+    hint: 'Пользователь нажал переход на следующую страницу. Кнопка показывает ожидание.',
+    states: ['body.refreshing'],
+    enter: stepAction((root, { signal }) => pageHeld(root, signal)),
+  },
+  {
+    title: 'Кнопка предлагает отмену',
+    hint: 'Пользователь навёл указатель на кнопку. Появился знак остановки, подсказка предлагает отменить переход.',
+    states: ['body.refreshing'],
+    pseudo: { hover: NEXT_PAGE },
+    enter: stepAction(async (root, { signal, onLeave }) => {
+      await pageCancelArmed(root, signal)
+      onLeave(pointAt(nextButton(root)!))
+    }),
+  },
+  {
+    title: 'Переход отменён',
+    hint: 'Пользователь нажал на кнопку. Вернулась прежняя страница с её строками.',
+    enter: stepAction(async (root, { signal }) => {
+      await pageCancelArmed(root, signal)
+      nextButton(root)!.click()
+      await pollUntil(
+        () => !pageWaits(root) && rangeText().startsWith('1–'),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0153, S8: серверная страница грузится — человек отменяет переход. */
+export const PaginationServerCancel: StoryObj<StoryProps> = {
+  name: 'Cancel a page change',
+  parameters: { scenario: '0153/S8', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена перехода на страницу"
+      steps={CANCEL_PAGE}
+      args={guideArgs(
+        {
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          enablePagination: true,
+          paginationServer: true,
+          paginationRowCount: PAGE_SERVER_TOTAL,
+          paginationInitialPageSize: SERVER_PAGE,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const firstName = queryPage(0, SERVER_PAGE, undefined)[0]!.name
+    await step(CANCEL_PAGE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(rangeText().startsWith('1–')).toBe(true))
+    })
+    await step(CANCEL_PAGE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(pageWaits(canvas)).toBe(true)
+      await expect(firstRowText(canvas, 'name')).toBe(firstName)
+    })
+    await step(CANCEL_PAGE[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(pageArmed(canvas)).toBe(true)
+      await expect(nextButton(canvas)).toHaveAttribute(
+        'aria-label',
+        labels.cancelAction(labels.nextPage),
+      )
+    })
+    await step(CANCEL_PAGE[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(rangeText().startsWith('1–')).toBe(true)
+      await expect(firstRowText(canvas, 'name')).toBe(firstName)
+      await expect(byTestId('load-error-banner')).toBeNull()
+      await expect(consoleText()).toContain('cancelled')
+      await settle()
+    })
   },
 }

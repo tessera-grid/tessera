@@ -592,14 +592,15 @@ describe('Долгое действие', () => {
     expect(rowKebab('r1')!.getAttribute('aria-label')).toBe(tableLabels.rowMenu)
   })
 
-  test('MI9: пока действие ждёт, его пункт в этой строке заблокирован; другие пункты той же строки и то же действие в другой строке работают', async () => {
+  test('MI9: пока действие ждёт, его пункт в этой цели предлагает отмену (ADR 0153); другие пункты той же цели и то же действие в другой строке работают', async () => {
     const { probe } = await renderGrid()
     await runFromMenu('Remove')
 
     await openRowMenu()
-    expect(isDisabled(item('Remove'))).toBe(true)
-    expect(isPending(item('Remove'))).toBe(true)
-    expect(description(item('Remove'))).toBe(tableLabels.actionRunning)
+    const cancelRemove = item(tableLabels.cancelAction('Remove'))
+    expect(item('Remove')).toBeUndefined()
+    expect(isDisabled(cancelRemove)).toBe(false)
+    expect(isPending(cancelRemove)).toBe(true)
     expect(isDisabled(item('Export'))).toBe(false)
     await humanClick(item('Export')!)
     await expect.poll(() => probe.runs.length).toBe(2)
@@ -763,8 +764,10 @@ describe('Контекстное меню, виртуализация, инла�
     await humanClick(item('Recalculate')!)
     await expect.poll(() => items().length).toBe(0)
     await openContext()
-    expect(isPending(item('Recalculate'))).toBe(true)
-    expect(isDisabled(item('Recalculate'))).toBe(true)
+    // Ждущий пункт предлагает отмену (ADR 0153).
+    const cancelRecalculate = item(tableLabels.cancelAction('Recalculate'))
+    expect(isPending(cancelRecalculate)).toBe(true)
+    expect(isDisabled(cancelRecalculate)).toBe(false)
     await closeMenu()
 
     probe.lastRun('recalculate').done.reject(new Error('timeout'))
@@ -1044,18 +1047,20 @@ describe('Узкая колонка: действие в кебабе (ADR 0127,
       'действие ушло в кебаб',
     ).toBeNull()
 
-    const openKebab = async () => {
+    const openKebab = async (label = 'Recount') => {
       await userEvent.hover(headCell())
       await humanClick(kebab()!)
-      await expect.poll(() => item('Recount')).toBeTruthy()
+      await expect.poll(() => item(label)).toBeTruthy()
     }
     await openKebab()
     await humanClick(item('Recount')!)
     await expect.poll(() => items().length).toBe(0)
     await expect.poll(() => kebab()!.getAttribute('aria-busy')).toBe('true')
     expect(pendingArcOf(kebab()!)?.dataset.phase).toBe('pending')
-    await openKebab()
-    expect(item('Recount')!.closest('[data-pending]')).not.toBeNull()
+    // Ждущий пункт предлагает отмену (ADR 0153).
+    const cancelRecount = tableLabels.cancelAction('Recount')
+    await openKebab(cancelRecount)
+    expect(item(cancelRecount)!.closest('[data-pending]')).not.toBeNull()
     await closeMenu()
 
     runs.at(-1)!.reject(new Error('Busy'))

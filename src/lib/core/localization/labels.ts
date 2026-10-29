@@ -83,6 +83,8 @@ export interface TableLabels {
   filterTo: string
   /** Кнопка сброса фильтра колонки */
   filterReset: string
+  /** Кнопка панели фильтра в серверном режиме: отправить условие (ADR 0154) */
+  filterApply: string
   /** Ошибка поля числа: ввод не разбирается как число */
   filterInvalidNumber: string
   filterContains: string
@@ -178,6 +180,26 @@ export interface TableLabels {
   announceActionDone: (name: string) => string
   /** Объявление: действие меню отклонено (`error` — текст отказа) */
   announceActionFailed: (name: string, error: string) => string
+  /** Имя и тултип занятой кнопки и ждущего пункта меню: отмена действия (ADR 0153) */
+  cancelAction: (name: string) => string
+  /** Объявление: действие отменено */
+  announceActionCancelled: (name: string) => string
+  /** Кнопка отмены в плашке ожидания серверного действия */
+  cancel: string
+  /** Плашка ожидания серверного действия (ADR 0153, §5) */
+  pendingSorting: string
+  pendingFiltering: string
+  pendingSearch: string
+  pendingPage: string
+  pendingGrouping: string
+  pendingCopy: string
+  /** Имя серверного действия в объявлении отмены (ADR 0153, §8) */
+  actionSorting: string
+  actionFiltering: string
+  actionSearch: string
+  actionPage: string
+  actionGrouping: string
+  actionCopy: string
   /** Доступное имя строки «назад» раздела меню (ADR 0079) */
   menuBack: (section: string) => string
   /** Объявление: открыт раздел меню */
@@ -399,6 +421,7 @@ export const DEFAULT_LABELS = {
   filterFrom: 'From',
   filterTo: 'To',
   filterReset: 'Reset',
+  filterApply: 'Apply',
   filterInvalidNumber: 'Enter a number',
   filterContains: 'Contains',
   filterEquals: 'Equals',
@@ -466,6 +489,21 @@ export const DEFAULT_LABELS = {
   actionsFailed: 'Failed: {names}',
   announceActionDone: '{name}: done',
   announceActionFailed: '{name} failed: {error}',
+  cancelAction: 'Cancel: {name}',
+  announceActionCancelled: '{name}: cancelled',
+  cancel: 'Cancel',
+  pendingSorting: 'Sorting…',
+  pendingFiltering: 'Filtering…',
+  pendingSearch: 'Searching…',
+  pendingPage: 'Loading the page…',
+  pendingGrouping: 'Grouping…',
+  pendingCopy: 'Copying…',
+  actionSorting: 'Sorting',
+  actionFiltering: 'Filtering',
+  actionSearch: 'Search',
+  actionPage: 'Page loading',
+  actionGrouping: 'Grouping',
+  actionCopy: 'Copying',
   menuBack: 'Back, {section}',
   announceMenuSection: '{section} menu',
   sectionLoadFailed: "Couldn't load",

@@ -16,6 +16,7 @@ import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import {
   serverActionReason,
+  serverCancelProps,
   useServerActionMarks,
 } from '../../core/serverActions'
 import { isSkeletonShown } from '../../core/skeletonOptions'
@@ -153,6 +154,9 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
                 open={sizeSelect.open}
                 onOpenChange={sizeSelect.onOpenChange}
                 pending={sizeServer.pending}
+                {...serverCancelProps(table, sizeServer.pending, () =>
+                  labels.cancelAction(labels.rowsPerPage),
+                )}
                 failure={
                   sizeServer.failure && !sizeServer.pending
                     ? labels.actionFailedRetry(

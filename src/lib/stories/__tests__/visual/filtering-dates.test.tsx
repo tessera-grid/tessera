@@ -619,6 +619,9 @@ describe('Фильтр дат — сервер', () => {
     await waitForGrid()
     await openFilter('created')
     await humanClick(day('2026-03-15'))
+    // Дата запрос не шлёт — его шлёт «Применить» (ADR 0154).
+    expect(onFilterChange).not.toHaveBeenCalled()
+    await humanClick(byTestId('filter-apply')!)
     await expect.poll(() => onFilterChange.mock.calls.length).toBe(1)
     expect(onFilterChange).toHaveBeenLastCalledWith(
       [{ id: 'created', value: { operator: 'on', value: '2026-03-15' } }],
@@ -630,6 +633,7 @@ describe('Фильтр дат — сервер', () => {
     await humanClick(
       panel()!.querySelector<HTMLElement>('[data-value="last7Days"]')!,
     )
+    await humanClick(byTestId('filter-apply')!)
     await expect
       .poll(() => onFilterChange.mock.lastCall?.[0])
       .toEqual([

@@ -250,6 +250,10 @@
   --tsr-comp-pending-wave-limit: 60;
   /* Проход блика волны ожидания — чаще волны скелета. */
   --tsr-comp-pending-wave-duration: calc(var(--tsr-comp-motion-duration) * 10);
+  /* Отмена (ADR 0153): «стоп» занятой кнопки взводится не сразу — двойной клик не
+   * отменяет только что запущенное; плашка «Идёт …» — у серверного действия дольше этого. */
+  --tsr-comp-cancel-arm-delay: 500ms;
+  --tsr-comp-cancel-hint-delay: 1s;
   /* Движение строк (ADR 0107): переезд, проявление и уход при смене модели. */
   --tsr-comp-row-motion-duration: calc(var(--tsr-comp-motion-duration) * 5 / 3);
   --tsr-comp-button-cell-transition:

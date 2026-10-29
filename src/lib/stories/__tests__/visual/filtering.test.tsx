@@ -292,6 +292,11 @@ const filteredCount = () =>
 const applyTextFilter = async (columnId: string, text: string) => {
   await openFilter(columnId)
   await userEvent.type(field('value')!, text)
+  // На сервере условие уходит кнопкой «Применить» (ADR 0154).
+  const apply = panel()!.querySelector<HTMLElement>(
+    '[data-testid="filter-apply"]',
+  )
+  if (apply) await humanClick(apply)
   await userEvent.keyboard('{Escape}')
   await expect.poll(panel).toBeNull()
 }
@@ -908,7 +913,12 @@ describe('Фильтрация — пустой результат, сервер
 
     await openFilter('name')
     await userEvent.type(field('value')!, 'alice')
+    // Условие уходит кнопкой «Применить», не по вводу (ADR 0154).
+    await new Promise(resolve => setTimeout(resolve, 200))
     expect(onFilterChange).not.toHaveBeenCalled()
+    await humanClick(
+      panel()!.querySelector<HTMLElement>('[data-testid="filter-apply"]')!,
+    )
     await expect.poll(() => onFilterChange.mock.calls.length).toBe(1)
     expect(onFilterChange).toHaveBeenLastCalledWith(
       [{ id: 'name', value: { operator: 'contains', value: 'alice' } }],

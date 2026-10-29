@@ -151,6 +151,7 @@ export class BlockStore<TData, TRow, TQuery> {
    * время быстрой прокрутки новые не запрашиваются.
    */
   setWindow(first: number, last: number, fast = false) {
+    const awaiting = this.awaitingFirst()
     this.window = { first, last }
     const needed = new Set(this.neededBlocks())
     for (const [index, block] of this.blocks) {
@@ -180,6 +181,8 @@ export class BlockStore<TData, TRow, TQuery> {
     // Окно и закрепления сменились: блоки сверх предела, ставшие ненужными, уходят.
     this.evict()
     this.pump()
+    // Ветка начала или перестала ждать первого ответа: кнопка раскрытия это показывает.
+    if (this.awaitingFirst() !== awaiting) this.options.onChange()
   }
 
   /** Строки, чьи блоки не вытесняются: активная ячейка, правка. */
@@ -224,6 +227,26 @@ export class BlockStore<TData, TRow, TQuery> {
       if (block.status === 'loaded') return true
     }
     return false
+  }
+
+  /** Ничего не пришло, блок в пути или в очереди: ветка ждёт первого ответа (ADR 0155, §3). */
+  awaitingFirst(): boolean {
+    if (this.hasLoaded()) return false
+    for (const block of this.blocks.values()) {
+      if (block.status === 'pending' || block.status === 'queued') return true
+    }
+    return false
+  }
+
+  /** Отменить запросы в пути и в очереди: человек отменил раскрытие (ADR 0155, §3). */
+  cancelInFlight() {
+    for (const [index, block] of this.blocks) {
+      if (block.status === 'pending') block.abort.abort()
+      if (block.status === 'pending' || block.status === 'queued') {
+        this.blocks.delete(index)
+      }
+    }
+    this.options.onChange()
   }
 
   /** Повторить все отказавшие блоки. */

@@ -31,6 +31,11 @@ export interface ExportData {
 
 export type ExportContent = string | Uint8Array | Blob
 
+/** Контекст асинхронной выгрузки: `signal` прерывает отмена (ADR 0153, §1). */
+export interface ExportContext {
+  signal: AbortSignal
+}
+
 export interface ExportFormat {
   id: string
   /** Подпись формата. */
@@ -39,7 +44,10 @@ export interface ExportFormat {
   extension: string
   mimeType: string
   /** Промис — выгрузка ждёт его, кнопка показывает ожидание (ADR 0073, §2). */
-  serialize: (data: ExportData) => ExportContent | Promise<ExportContent>
+  serialize: (
+    data: ExportData,
+    context?: ExportContext,
+  ) => ExportContent | Promise<ExportContent>
 }
 
 /** Настройки выгрузки: по одному значению в каждой оси. */
@@ -99,7 +107,10 @@ export interface ExportRequest {
 
 export interface ExportHooks {
   /** Серверная выгрузка: её делает потребитель; промис держит кнопку занятой. */
-  onExport: (request: ExportRequest) => void | Promise<void>
+  onExport: (
+    request: ExportRequest,
+    context?: ExportContext,
+  ) => void | Promise<void>
   /** Файл скачан клиентом. */
   onExported: (request: ExportRequest) => void
 }

@@ -918,9 +918,11 @@ describe('Меню, которое не закрывается', () => {
     await enter('Labels')
     await settle()
     await humanClick(item('Later')!)
+    // Ждущий пункт предлагает отмену (ADR 0153).
+    const cancelLater = tableLabels.cancelAction('Later')
     await expect
-      .poll(() => item('Later')!.querySelector('[data-item-spinner]'))
-      .not.toBeNull()
+      .poll(() => item(cancelLater)?.querySelector('[data-item-spinner]'))
+      .toBeTruthy()
     expect(items().length).toBeGreaterThan(0)
 
     probe.runs.at(-1)!.reject(new Error('Label was not saved'))

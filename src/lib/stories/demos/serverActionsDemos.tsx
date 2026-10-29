@@ -83,14 +83,25 @@ export const createActionServer = ({
         sink.answer(rows, total)
         resolve()
       }
-      if (mode() === 'hold') {
-        held = reply
-        return
-      }
-      const timer = setTimeout(reply, delayMs)
-      signal.addEventListener('abort', () => clearTimeout(timer), {
-        once: true,
-      })
+      const holding = mode() === 'hold'
+      if (holding) held = reply
+      const timer = holding ? undefined : setTimeout(reply, delayMs)
+      // Прерванный запрос сервер бросает. Отменённый ещё и забывает: следующего запроса
+      // таблица не шлёт — `wanted` возвращается к последнему ответу.
+      signal.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer)
+          if (held === reply) held = undefined
+          queueMicrotask(() => {
+            if (wanted !== next) return
+            wanted = answered
+            sink.log(`cancelled ${describeQuery(next)}`)
+          })
+          reject(signal.reason)
+        },
+        { once: true },
+      )
     })
 
   return {

@@ -422,6 +422,43 @@ export const bodyCell = (canvas: HTMLElement, row: string, column: string) =>
   )!
 
 /**
+ * Указатель над кнопкой, как мышь пользователя, — действие шага гайда: тултип открывают
+ * события указателя, вид наведения — класс аддона псевдо-состояний (`:hover` скрипт не
+ * включит). Возвращает уход указателя.
+ */
+export const pointAt = (target: HTMLElement) => {
+  const box = target.getBoundingClientRect()
+  const at = {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    clientX: box.left + box.width / 2,
+    clientY: box.top + box.height / 2,
+    pointerType: 'mouse',
+    pointerId: 1,
+    isPrimary: true,
+  }
+  const enter = { ...at, relatedTarget: document.body }
+  target.classList.add('pseudo-hover')
+  target.dispatchEvent(new PointerEvent('pointerover', enter))
+  target.dispatchEvent(new MouseEvent('mouseover', enter))
+  target.dispatchEvent(new PointerEvent('pointermove', at))
+  target.dispatchEvent(new MouseEvent('mousemove', at))
+  return () => {
+    target.classList.remove('pseudo-hover')
+    const out = { ...at, relatedTarget: document.body }
+    target.dispatchEvent(new PointerEvent('pointerout', out))
+    target.dispatchEvent(new MouseEvent('mouseout', out))
+  }
+}
+
+/** Текст открытого тултипа. */
+export const tooltipText = () =>
+  [...document.querySelectorAll<HTMLElement>('[role="tooltip"], [data-side]')]
+    .map(el => el.textContent?.trim() ?? '')
+    .find(Boolean) ?? ''
+
+/**
  * Класс аддона псевдо-состояний для состояния из `parameters.catalogPseudo`. Не `pseudo`:
  * его аддон пишет в глобалы, и наведение переходит на строки следующих историй.
  */

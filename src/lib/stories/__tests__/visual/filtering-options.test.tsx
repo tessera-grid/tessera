@@ -601,6 +601,9 @@ describe('Фильтр вариантов — подписи и вид', () => {
     await openFilter('status')
     expect(countOf('won')).toBe('30')
     await humanClick(checkbox('won'))
+    // Отметка запрос не шлёт — его шлёт «Применить» (ADR 0154).
+    expect(onFilterChange).not.toHaveBeenCalled()
+    await humanClick(byTestId('filter-apply')!)
     await expect.poll(() => onFilterChange.mock.calls.length).toBe(1)
     expect(onFilterChange).toHaveBeenLastCalledWith(
       [{ id: 'status', value: { operator: 'anyOf', value: ['won'] } }],
