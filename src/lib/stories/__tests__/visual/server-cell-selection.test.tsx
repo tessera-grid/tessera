@@ -418,6 +418,41 @@ describe('Выделение ячеек в серверной модели ст�
     }
   })
 
+  test('XC17: копирование, ждущее строк, бросается, когда таблица уходит со страницы: новых блоков не запрашивает, буфер не пишет', async () => {
+    const written = stubClipboard()
+    const { getRows, calls } = server(request =>
+      request.start === 0 ? rowsAnswer(request) : undefined,
+    )
+    let table!: GridTable
+    const screen = await render(
+      <Grid getRows={getRows} onTable={t => (table = t)} />,
+    )
+    await expect.poll(() => cellAt(1, 'name')).not.toBeNull()
+    ;(
+      table as unknown as { setCellSelection: (u: () => unknown[]) => void }
+    ).setCellSelection(() => [
+      {
+        anchorRowIndex: 0,
+        focusRowIndex: 999,
+        anchorColumnId: 'name',
+        focusColumnId: 'city',
+      },
+    ])
+    await nextFrame()
+    const first = calls.length
+    copyFrom(cellAt(1, 'name')!)
+    await expect.poll(() => calls.length).toBeGreaterThan(first)
+    const inFlight = calls.slice(first)
+    // Девять блоков, а сразу уходят несколько: остальные ждут своей очереди.
+    expect(inFlight.length).toBeLessThan(9)
+
+    await screen.unmount()
+    for (const call of inFlight) call.settle(rowsAnswer(call.request))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(calls.length).toBe(first + inFlight.length)
+    expect(written).toEqual([])
+  })
+
   test('XC8: отказ getRows или Clipboard API — плашка с причиной и повтором, объявление, буфер не меняется', async () => {
     let fail = true
     const { getRows } = server(request =>

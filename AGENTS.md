@@ -927,7 +927,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       клиенте, сброс новой выборкой, сдвиг сменой списка, канал действий), визуальный
       `server-cell-selection` (XC2–XC5, XC7–XC8, XC12–XC13 — мышь и клавиши через незагруженные
       строки, автопрокрутка в растянутой области, синхронная копия, ожидание и отмена, отказы с
-      плашкой, строки-группы и пункт меню, axe), перф XC14 — в `scroll`, XC15 — в `interaction`,
+      плашкой, строки-группы и пункт меню, axe; XC17 — копирование бросается при уходе
+      таблицы), перф XC14 — в `scroll`, XC15 — в `interaction`,
       истории «Data loading/Server row model/Cell selection» S1–S4
       ([ADR 0146](docs/decisions/0146-cell-selection-in-ssrm.md)).
     - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11 — поля запроса,

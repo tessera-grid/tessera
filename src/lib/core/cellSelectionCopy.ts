@@ -58,6 +58,12 @@ interface CopyTable {
 const waiting = new WeakMap<object, AbortController>()
 let attempts = 0
 
+/** Таблица ушла со страницы: копирование, ждущее строк, бросается (ADR 0092, LK4). */
+export const abortCellSelectionCopy = (store: object) => {
+  waiting.get(store)?.abort()
+  waiting.delete(store)
+}
+
 /** Строк в выделении — объединение отрезков строк его прямоугольников. */
 export const selectedRowCount = (bounds: readonly Bounds[]): number => {
   const spans = bounds

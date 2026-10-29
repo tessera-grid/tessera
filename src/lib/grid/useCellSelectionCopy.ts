@@ -1,6 +1,13 @@
-import { type ClipboardEvent as ReactClipboardEvent, useCallback } from 'react'
+import {
+  type ClipboardEvent as ReactClipboardEvent,
+  useCallback,
+  useEffect,
+} from 'react'
 
-import { copyCellSelection } from '../core/cellSelectionCopy'
+import {
+  abortCellSelectionCopy,
+  copyCellSelection,
+} from '../core/cellSelectionCopy'
 import { isCellSelectionInteractive } from '../core/pluginDiagnostics'
 import type { Table } from '../types'
 
@@ -14,6 +21,9 @@ import type { Table } from '../types'
 export const useCellSelectionCopy = (table: Table<any, any>) => {
   const getRanges = (table as any).getSelectedCellRangesData as
     (() => unknown[][][]) | undefined
+  // Обёртка таблицы новая на каждом рендере, хранилище — одно на её жизнь.
+  const store = (table as unknown as { store: object }).store
+  useEffect(() => () => abortCellSelectionCopy(store), [store])
 
   return useCallback(
     (event: ReactClipboardEvent<HTMLDivElement>) => {
