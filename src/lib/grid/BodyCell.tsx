@@ -21,10 +21,17 @@ import {
   columnHighlightKey,
   type Highlights,
   type HighlightTargetState,
+  rangeHighlightAt,
 } from '../core/highlights/highlightFeature'
 import { highlightRender } from './highlight'
 import { flashRender } from './flash'
-import type { FlashEntry, Flashes } from '../core/flashes/flashFeature'
+import {
+  type FlashEntry,
+  type Flashes,
+  rangeFlashAt,
+} from '../core/flashes/flashFeature'
+import { isCellBusy } from '../core/headerActions/actionStatus'
+import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -87,30 +94,40 @@ export const BodyCell = memo(
     // зависят атрибуты/офсеты ячейки (пиннинг/размеры/порядок/видимость) — на смену
     // rowSelection/сортировки/раскрытия ячейка НЕ ре-рендерится (это лишняя работа;
     // контент-реактивность несут сам плагин-компонент ячейки и его useSelector).
-    // Подсветка своей ячейки и своей колонки (ADR 0080) — в той же подписке.
-    const cellKey = cellHighlightKey(cell.row.id, cell.column.id)
-    const columnKey = columnHighlightKey(cell.column.id)
-    const { cellHighlight, columnHighlight, cellFlash, columnFlash } =
+    // Подсветка своей ячейки, диапазона вокруг и своей колонки (ADR 0080, ADR 0152) и
+    // ожидание действия меню на ячейке — в той же подписке.
+    const rowId = cell.row.id
+    const columnId = cell.column.id
+    const cellKey = cellHighlightKey(rowId, columnId)
+    const columnKey = columnHighlightKey(columnId)
+    const { cellHighlight, columnHighlight, cellFlash, columnFlash, busy } =
       useTableState(table as never, (state: unknown) => {
         const s = state as Record<string, unknown> & {
           highlights?: Highlights
           flashes?: Flashes
+          actionStatus?: ActionStatus
         }
         return {
           columnPinning: s.columnPinning,
           columnSizing: s.columnSizing,
           columnOrder: s.columnOrder,
           columnVisibility: s.columnVisibility,
-          cellHighlight: s.highlights?.[cellKey],
+          cellHighlight:
+            s.highlights?.[cellKey] ??
+            rangeHighlightAt(table, s.highlights, rowId, columnId),
           columnHighlight: s.highlights?.[columnKey],
-          cellFlash: s.flashes?.[cellKey],
+          cellFlash:
+            s.flashes?.[cellKey] ??
+            rangeFlashAt(table, s.flashes, rowId, columnId),
           columnFlash: s.flashes?.[columnKey],
+          busy: isCellBusy(table, s.actionStatus, rowId, columnId),
         }
       }) as {
         cellHighlight?: HighlightTargetState
         columnHighlight?: HighlightTargetState
         cellFlash?: FlashEntry
         columnFlash?: FlashEntry
+        busy: boolean
       }
     const highlighted = highlightRender([
       { layer: 'cell', state: cellHighlight },
@@ -289,6 +306,7 @@ export const BodyCell = memo(
         data-cell-focused={cellSel?.isFocused || undefined}
         {...highlighted.attrs}
         {...flashed.attrs}
+        aria-busy={busy || undefined}
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}

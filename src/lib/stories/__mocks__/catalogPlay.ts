@@ -519,6 +519,37 @@ export const stepDone = (canvas: HTMLElement) =>
     { timeout: STEP_ACTION_TIMEOUT },
   )
 
+/**
+ * Вспышка итога короче шага: наблюдатель ставится до действия и запоминает, что цель
+ * `selector` вспыхнула итогом `outcome` (ADR 0134).
+ */
+export const watchFlash = (
+  root: ParentNode,
+  selector: string,
+  outcome: string,
+) => {
+  let most = 0
+  const check = () => {
+    const lit = [...root.querySelectorAll(selector)].filter(
+      el => el.getAttribute('data-flash') === outcome,
+    ).length
+    most = Math.max(most, lit)
+  }
+  const observer = new MutationObserver(check)
+  observer.observe(root as Node, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-flash'],
+  })
+  check()
+  return {
+    seen: () => most > 0,
+    /** Сколько целей вспыхнули разом — наибольшее за время наблюдения. */
+    most: () => most,
+    stop: () => observer.disconnect(),
+  }
+}
+
 /** Перетаскивание с паузой над группой и ответом «сервера» — дольше загрузки. */
 const STEP_ACTION_TIMEOUT = 15_000
 

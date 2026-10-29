@@ -362,6 +362,19 @@ const cellMark = () =>
   )
 const columnMark = () =>
   marksTable?.highlight({ column: 'total' }, { key: 'column', tone: 'success' })
+/** Прямоугольник 2 × 2 одной отметкой в начале таблицы (ADR 0152, §4). */
+const RANGE_ROWS = [markRows[0]!.id, markRows[1]!.id]
+const RANGE_COLUMNS = ['firstName', 'lastName'] as const
+const rangeMark = () =>
+  marksTable?.highlight(
+    {
+      range: {
+        rows: [RANGE_ROWS[0]!, RANGE_ROWS[1]!],
+        columns: [RANGE_COLUMNS[0], RANGE_COLUMNS[1]],
+      },
+    },
+    { key: 'range', tone: 'danger' },
+  )
 
 /** Приложение ставит подсветки шага, как только таблица готова; уход с шага — отмена. */
 const applyMarks =
@@ -409,6 +422,12 @@ const MARKS: readonly GuideStoryStep[] = [
     states: ['body.highlight'],
     enter: applyMarks(searchMarks, cellMark, columnMark),
   },
+  {
+    title: 'Приложение отметило диапазон',
+    hint: 'Приложение подсветило прямоугольник ячеек — две строки в двух колонках — одной отметкой.',
+    states: ['body.highlight'],
+    enter: applyMarks(searchMarks, cellMark, columnMark, rangeMark),
+  },
 ]
 
 /** S2: приложение отмечает найденное, ячейку и колонку. */
@@ -454,6 +473,30 @@ export const HighlightMarks: StoryObj<StoryProps> = {
         ),
       )
       await expect(markedCell(canvas)).toBeTruthy()
+      await settle()
+    })
+    await step(MARKS[3]!.title, async () => {
+      await guideNext(canvas)
+      const rangeCells = () =>
+        RANGE_ROWS.flatMap(row =>
+          RANGE_COLUMNS.map(column =>
+            bodyRow(canvas, row)?.querySelector(
+              `.data-grid__body-cell[data-column-id="${column}"]`,
+            ),
+          ),
+        )
+      await until(() =>
+        expect(
+          rangeCells().every(
+            cell => cell?.getAttribute('data-highlight') === 'danger',
+          ),
+        ).toBe(true),
+      )
+      await expect(
+        bodyRow(canvas, markRows[2]!.id)
+          ?.querySelector('.data-grid__body-cell[data-column-id="firstName"]')
+          ?.getAttribute('data-highlight'),
+      ).not.toBe('danger')
       await settle()
     })
   },

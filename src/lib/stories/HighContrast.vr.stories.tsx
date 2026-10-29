@@ -1445,6 +1445,12 @@ export const HighContrastHighlightMarksStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastHighlightMarksStep4 = {
+  ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 4),
+  name: 'Rows/Highlight — Search, cell and column, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastRowMotionTreeStep1 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 1),
   name: 'Rows/Motion — Tree, шаг 1',
@@ -3756,5 +3762,45 @@ export const HighContrastContextMenuAsyncItemsStep3 = {
     3,
   ),
   name: 'Cells/Context menu — Async items, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuAsyncItemsStep4 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuAsyncItems,
+    4,
+  ),
+  name: 'Cells/Context menu — Async items, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuRefusedOnSelectionStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuRefusedOnSelection,
+    1,
+  ),
+  name: 'Cells/Context menu — Refused on a selection, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuRefusedOnSelectionStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuRefusedOnSelection,
+    2,
+  ),
+  name: 'Cells/Context menu — Refused on a selection, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuRefusedOnSelectionStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuRefusedOnSelection,
+    3,
+  ),
+  name: 'Cells/Context menu — Refused on a selection, шаг 3',
   tags: ['!test'],
 }

@@ -14,13 +14,31 @@ import {
 import { announce, readGridToken } from '../announcer'
 import { logWarn } from '../logger'
 import { parseDuration } from '../../ui/buttonStates/useErrorFlash'
-import { revealColumn, scrollToRow } from '../scrollToRow/scrollToRowFeature'
+import {
+  revealColumn,
+  scrollToRow,
+  scrollToRowIndex,
+} from '../scrollToRow/scrollToRowFeature'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import {
+  isIndexRows,
+  rangeContains,
+  rangeEntriesAt,
+  rangeHighlightKey,
+  rangeOfKey,
+  type RangeTarget,
+} from './targetRanges'
+
+export type { RangeTarget } from './targetRanges'
 
 export type HighlightTarget =
   | { row: string }
   | { cell: readonly [rowId: string, columnId: string] }
   | { column: string }
+  | RangeTarget
+
+/** Цель вспышки и подсветки (ADR 0134, ADR 0152). */
+export type FlashTarget = HighlightTarget
 
 export type HighlightTone = 'danger' | 'warning' | 'success' | (string & {})
 
@@ -57,7 +75,7 @@ export interface HighlightTargetState {
   out?: HighlightEntry
 }
 
-/** Ключ цели: `r` — строка, `c` — ячейка, `k` — колонка. */
+/** Ключ цели: `r` — строка, `c` — ячейка, `k` — колонка, `g` — диапазон. */
 export type Highlights = Record<string, HighlightTargetState>
 
 interface HighlightStateSlice {
@@ -113,18 +131,70 @@ export const targetKey = (target: HighlightTarget): string =>
     ? rowHighlightKey(target.row)
     : 'cell' in target
       ? cellHighlightKey(target.cell[0], target.cell[1])
-      : columnHighlightKey(target.column)
+      : 'column' in target
+        ? columnHighlightKey(target.column)
+        : rangeHighlightKey(target)
 
-/** Строка и колонка, к которым относится ключ цели. */
-export const parseTargetKey = (
+/** Строки и колонки, к которым относится ключ цели; углы диапазона по индексам — без строк. */
+export const targetIdsOf = (
   key: string,
-): { rowId?: string; columnId?: string } => {
+): { rowIds: string[]; columnIds: string[] } => {
+  const range = rangeOfKey(key)
+  if (range) {
+    const { rows, columns } = range.range
+    return {
+      rowIds: isIndexRows(rows) ? [] : [...rows],
+      columnIds: [...columns],
+    }
+  }
   const [kind, a, b] = key.split(SEP)
   return kind === 'r'
-    ? { rowId: a }
+    ? { rowIds: [a!], columnIds: [] }
     : kind === 'c'
-      ? { rowId: a, columnId: b }
-      : { columnId: a }
+      ? { rowIds: [a!], columnIds: [b!] }
+      : { rowIds: [], columnIds: [a!] }
+}
+
+/** Ячейка входит в цель: своя строка, сама ячейка, своя колонка или диапазон вокруг. */
+export const targetContains = (
+  table: unknown,
+  target: HighlightTarget,
+  rowId: string,
+  columnId: string,
+): boolean =>
+  'row' in target
+    ? target.row === rowId
+    : 'cell' in target
+      ? target.cell[0] === rowId && target.cell[1] === columnId
+      : 'column' in target
+        ? target.column === columnId
+        : rangeContains(table, target, rowId, columnId)
+
+/** Подсветка диапазонов вокруг ячейки: видна поставленная последней. */
+export const rangeHighlightAt = (
+  table: unknown,
+  highlights: Highlights | undefined,
+  rowId: string,
+  columnId: string,
+): HighlightTargetState | undefined => {
+  let latest: HighlightTargetState | undefined
+  for (const state of rangeEntriesAt(table, highlights, rowId, columnId)) {
+    const id = visibleHighlight(state).entry?.id ?? 0
+    if (!latest || id > (visibleHighlight(latest).entry?.id ?? 0)) {
+      latest = state
+    }
+  }
+  return latest
+}
+
+/** Цель ушла из данных или колонок: ушёл хоть один её угол. */
+export const targetGone = (
+  key: string,
+  hasRow: (rowId: string) => boolean,
+  hasColumn: (columnId: string) => boolean,
+) => {
+  const { rowIds, columnIds } = targetIdsOf(key)
+  return rowIds.some(id => !hasRow(id)) || columnIds.some(id => !hasColumn(id))
 }
 
 const TONE = /^[a-z0-9-]+$/
@@ -287,13 +357,9 @@ export const pruneHighlights = (
   hasColumn: (columnId: string) => boolean,
 ) => {
   const highlights = readHighlights(table)
-  const gone = Object.keys(highlights).filter(key => {
-    const { rowId, columnId } = parseTargetKey(key)
-    return (
-      (rowId !== undefined && !hasRow(rowId)) ||
-      (columnId !== undefined && !hasColumn(columnId))
-    )
-  })
+  const gone = Object.keys(highlights).filter(key =>
+    targetGone(key, hasRow, hasColumn),
+  )
   if (gone.length > 0) {
     write(table, prev => dropTargets(prev, gone))
   }
@@ -301,13 +367,21 @@ export const pruneHighlights = (
 
 const NOOP: HighlightHandle = { clear: () => {} }
 
-/** Докрутка к цели подсветки: строка, ячейка — строка и колонка, колонка — горизонталь. */
-const revealTarget = (table: unknown, target: HighlightTarget) =>
-  'row' in target
-    ? scrollToRow(table, target.row)
-    : 'cell' in target
-      ? scrollToRow(table, target.cell[0], { columnId: target.cell[1] })
-      : revealColumn(table, target.column)
+/**
+ * Докрутка к цели подсветки: строка, ячейка — строка и колонка, колонка — горизонталь,
+ * диапазон — его первый угол.
+ */
+const revealTarget = (table: unknown, target: HighlightTarget) => {
+  if ('row' in target) return scrollToRow(table, target.row)
+  if ('cell' in target) {
+    return scrollToRow(table, target.cell[0], { columnId: target.cell[1] })
+  }
+  if ('column' in target) return revealColumn(table, target.column)
+  const { rows, columns } = target.range
+  return isIndexRows(rows)
+    ? scrollToRowIndex(table, rows.indexes[0], { columnId: columns[0] })
+    : scrollToRow(table, rows[0], { columnId: columns[0] })
+}
 
 export const highlight = (
   table: unknown,

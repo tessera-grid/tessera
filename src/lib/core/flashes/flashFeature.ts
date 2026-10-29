@@ -13,10 +13,11 @@ import {
 import { readGridToken } from '../announcer'
 import { reportAction } from '../debugActions'
 import {
-  type HighlightTarget,
-  parseTargetKey,
+  type FlashTarget,
+  targetGone,
   targetKey,
 } from '../highlights/highlightFeature'
+import { rangeEntriesAt } from '../highlights/targetRanges'
 import { parseDuration } from '../../ui/buttonStates/useErrorFlash'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
@@ -33,7 +34,7 @@ export interface FlashEntry {
   until: number
 }
 
-/** Ключ цели — как у подсветки: `r` — строка, `c` — ячейка, `k` — колонка. */
+/** Ключ цели — как у подсветки: `r` — строка, `c` — ячейка, `k` — колонка, `g` — диапазон. */
 export type Flashes = Record<string, FlashEntry>
 
 interface FlashStateSlice {
@@ -44,9 +45,9 @@ interface FlashOptionsSlice {
 }
 interface FlashTableAPI {
   setFlashes: (updater: Updater<Flashes>) => void
-  /** Вспышка итога на строке, ячейке или колонке (ADR 0134). */
+  /** Вспышка итога на строке, ячейке, колонке или диапазоне (ADR 0134, ADR 0152). */
   flashOutcome: (
-    target: HighlightTarget | readonly HighlightTarget[],
+    target: FlashTarget | readonly FlashTarget[],
     outcome: FlashOutcome,
   ) => void
 }
@@ -157,15 +158,13 @@ const sweep = (table: unknown) => {
 
 export const flashOutcome = (
   table: unknown,
-  target: HighlightTarget | readonly HighlightTarget[],
+  target: FlashTarget | readonly FlashTarget[],
   outcome: FlashOutcome,
 ) => {
   if (!OUTCOMES.includes(outcome)) {
     return
   }
-  const targets = (
-    Array.isArray(target) ? target : [target]
-  ) as HighlightTarget[]
+  const targets = (Array.isArray(target) ? target : [target]) as FlashTarget[]
   if (targets.length === 0) {
     return
   }
@@ -180,19 +179,29 @@ export const flashOutcome = (
   sweep(table)
 }
 
+/** Вспышка диапазонов вокруг ячейки: последняя по времени. */
+export const rangeFlashAt = (
+  table: unknown,
+  flashes: Flashes | undefined,
+  rowId: string,
+  columnId: string,
+): FlashEntry | undefined => {
+  let latest: FlashEntry | undefined
+  for (const entry of rangeEntriesAt(table, flashes, rowId, columnId)) {
+    if (!latest || entry.id > latest.id) latest = entry
+  }
+  return latest
+}
+
 /** Убрать вспышки целей, которых больше нет в данных или колонках. */
 export const pruneFlashes = (
   table: unknown,
   hasRow: (rowId: string) => boolean,
   hasColumn: (columnId: string) => boolean,
 ) => {
-  const gone = Object.keys(readFlashes(table)).filter(key => {
-    const { rowId, columnId } = parseTargetKey(key)
-    return (
-      (rowId !== undefined && !hasRow(rowId)) ||
-      (columnId !== undefined && !hasColumn(columnId))
-    )
-  })
+  const gone = Object.keys(readFlashes(table)).filter(key =>
+    targetGone(key, hasRow, hasColumn),
+  )
   if (gone.length === 0) {
     return
   }
@@ -224,7 +233,7 @@ export const flashFeature: TableFeature = {
       },
       table_flashOutcome: {
         fn: (
-          target: HighlightTarget | readonly HighlightTarget[],
+          target: FlashTarget | readonly FlashTarget[],
           outcome: FlashOutcome,
         ) => {
           reportAction(table, {

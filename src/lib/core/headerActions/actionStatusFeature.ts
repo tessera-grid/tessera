@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import type { FlashTarget } from '../highlights/highlightFeature'
 import type { MenuAction } from './types'
 
 export interface ActionStatusEntry {
@@ -19,6 +20,8 @@ export interface ActionStatusEntry {
   menu?: boolean
   /** Действие ждёт своего промиса. */
   pending?: boolean
+  /** Цель действия: пока оно ждёт, её ячейки несут `aria-busy` (ADR 0152, §3). */
+  target?: readonly FlashTarget[]
   /** Отказ: отметка на кнопке, кебабе и иконка в пункте — до повтора или успеха. */
   failed?: boolean
   error?: unknown

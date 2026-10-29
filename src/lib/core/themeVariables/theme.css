@@ -80,6 +80,12 @@
   --tsr-sys-info-violet: var(--tsr-ref-violet-500);
   /* Сила свечения загрузки: на тёмном фоне свет нужен плотнее. */
   --tsr-sys-glow-strength: 70%;
+  /* Блик: светлее поверхности — на светлой теме почти белый, на тёмной слабее. */
+  --tsr-sys-shine: color-mix(
+    in oklch,
+    var(--tsr-ref-neutral-0) 85%,
+    transparent
+  );
   /* Тоны подсветки (ADR 0080): внимание и подтверждение. */
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-500));
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
@@ -164,6 +170,11 @@
   --tsr-sys-info-indigo: var(--tsr-ref-indigo-400);
   --tsr-sys-info-violet: var(--tsr-ref-violet-400);
   --tsr-sys-glow-strength: 100%;
+  --tsr-sys-shine: color-mix(
+    in oklch,
+    var(--tsr-ref-neutral-0) 26%,
+    transparent
+  );
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-400));
   --tsr-sys-success: var(--success, var(--tsr-ref-green-400));
   --tsr-sys-elevated: color-mix(
@@ -235,6 +246,10 @@
   );
   --tsr-comp-skeleton-wave-width: 560px;
   --tsr-comp-skeleton-wave-tilt: 0.3;
+  /* Больше стольких ячеек в окне — у волны ожидания неподвижный свет (ADR 0152, §3). */
+  --tsr-comp-pending-wave-limit: 60;
+  /* Проход блика волны ожидания — чаще волны скелета. */
+  --tsr-comp-pending-wave-duration: calc(var(--tsr-comp-motion-duration) * 10);
   /* Движение строк (ADR 0107): переезд, проявление и уход при смене модели. */
   --tsr-comp-row-motion-duration: calc(var(--tsr-comp-motion-duration) * 5 / 3);
   --tsr-comp-button-cell-transition:
@@ -688,6 +703,10 @@
     var(--tsr-sys-fg) var(--tsr-sys-tint-fill),
     transparent
   );
+  /* Ожидание на цели действия меню (ADR 0152, §3): ячейка чуть темнеет, по ней идёт
+   * светлый блик, как по полоске скелета. */
+  --tsr-comp-pending-bg: color-mix(in oklch, var(--tsr-sys-fg) 8%, transparent);
+  --tsr-comp-pending-wave: var(--tsr-sys-shine);
   /* Размеры скелетов по роли (ADR 0060, SL20): полоска ячейки, текст панели,
    * строка меню, квадрат контрола служебной колонки. */
   --tsr-comp-skeleton-cell-height: 16px;
@@ -1011,6 +1030,12 @@
  */
 @media (forced-colors: active) {
   :where(.data-grid-theme) {
+    /*
+     * Фон строк и ячеек в режиме — системный цвет состояния: переход провёл бы его через
+     * несистемный цвет, который браузер подменит `Canvas`. Итог появляется сразу (ADR 0134, §4).
+     */
+    --tsr-comp-row-transition: outline-color var(--tsr-comp-motion-duration)
+      var(--tsr-comp-motion-easing-out);
     --tsr-comp-row-bg: Canvas;
     --tsr-comp-row-odd-bg: Canvas;
     --tsr-comp-row-hovered-bg: Canvas;

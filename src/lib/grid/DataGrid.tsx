@@ -78,7 +78,9 @@ import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
-import { useSkeletonWave } from './useSkeletonWave'
+import { usePendingWave, useSkeletonWave } from './useSkeletonWave'
+import { hasBusyTargets } from '../core/headerActions/actionStatus'
+import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { useRowHeights } from './useRowHeights'
 import { useControlColumnSizes } from './useControlColumnSizes'
 import { ScrollingAttribute } from './ScrollingAttribute'
@@ -432,6 +434,11 @@ export const DataGrid = ({
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !gridStub)
   useSkeletonWave(wrapperRef, showSkeleton && !gridStub)
+  // Волна ожидания на цели действия меню (ADR 0152, §3) — пока хоть одно такое ждёт.
+  const menuPending = useTableState(table, s =>
+    hasBusyTargets((s as { actionStatus?: ActionStatus }).actionStatus),
+  )
+  usePendingWave(wrapperRef, menuPending && !gridStub)
 
   const containerStyles = getTableHeight({ height, maxHeight })
   // Инлайн — только РАНТАЙМ-переменные (высоты шапки/тела, drag-офсеты) и

@@ -362,6 +362,81 @@ describe('Подсветка: цели', () => {
     }
   })
 
+  test('TG9: highlight и flashOutcome с диапазоном заливают все его ячейки в окне, закреплённые слева и справа — сплошной полосой; текст и кромки выделения не тонированы', async () => {
+    await mount({ pinned: true, cells: true })
+    const range = {
+      range: { rows: ['r1', 'r3'], columns: ['a', 'c'] },
+    } as unknown as HighlightTarget
+    const inside = ['r1', 'r2', 'r3'].flatMap(rowId =>
+      ['a', 'b', 'c'].map(columnId => cellEl(rowId, columnId)),
+    )
+    const outside = [cellEl('r0', 'b'), cellEl('r4', 'a'), cellEl('r4', 'c')]
+    const ink = () =>
+      cellEl('r2', 'b').querySelector<HTMLElement>('[data-ink]')!
+    const inkPoint = (): [number, number] => {
+      const rect = ink().getBoundingClientRect()
+      return [rect.left + rect.width / 2, rect.top + rect.height / 2]
+    }
+    // Выделение внутри диапазона: его кромка рисуется поверх заливки.
+    selectCell(cellEl('r2', 'b'))
+    selectCell(cellEl('r3', 'b'), true)
+    await expect
+      .poll(() => cellEl('r3', 'b').getAttribute('data-cell-selected'))
+      .toBe('true')
+    const before = await snapshot()
+
+    let handle!: { clear: () => void }
+    await act(() => {
+      handle = table.highlight(range, { tone: 'danger' })
+    })
+    const lit = await snapshot()
+    for (const el of inside) {
+      const id = `${el.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${el.dataset.columnId}`
+      expect(el.getAttribute('data-highlight'), id).toBe('danger')
+      expect(
+        distance(colorAt(lit, el), colorAt(before, el)),
+        id,
+      ).toBeGreaterThan(8)
+      // Выделенные ячейки — с тинтом выделения поверх: их тон не сверяется.
+      if (el.dataset.cellSelected) continue
+      expect(hueGap(hue(colorAt(lit, el)), TONE_HUE.danger), id).toBeLessThan(
+        25,
+      )
+    }
+    for (const el of outside) {
+      expect(el.hasAttribute('data-highlight')).toBe(false)
+      expect(colorAt(lit, el)).toEqual(colorAt(before, el))
+    }
+    expect(distance(lit(...inkPoint()), before(...inkPoint()))).toBeLessThan(3)
+    const edgeCell = cellEl('r3', 'b')
+    const edgeRect = edgeCell.getBoundingClientRect()
+    const edgePoint: [number, number] = [
+      edgeRect.left + 1,
+      edgeRect.top + edgeRect.height / 2,
+    ]
+    expect(distance(lit(...edgePoint), before(...edgePoint))).toBeLessThan(
+      distance(colorAt(lit, edgeCell), colorAt(before, edgeCell)) * 0.4,
+    )
+
+    await act(() => handle.clear())
+    ;(
+      table as unknown as Api & {
+        flashOutcome: (target: HighlightTarget, outcome: string) => void
+      }
+    ).flashOutcome(range, 'reverted')
+    await frame()
+    for (const el of inside) {
+      expect(el.getAttribute('data-flash')).toBe('reverted')
+      expect(getComputedStyle(el).getPropertyValue('--tsr-flash-cell')).toBe(
+        getComputedStyle(inside[0]!).getPropertyValue('--tsr-flash-cell'),
+      )
+    }
+    expect(
+      getComputedStyle(inside[0]!).getPropertyValue('--tsr-flash-cell').trim(),
+    ).not.toBe('')
+    for (const el of outside) expect(el.hasAttribute('data-flash')).toBe(false)
+  })
+
   test('HL2: highlight({ cell }) заливает одну ячейку, соседние — нет', async () => {
     await mount()
     const before = await snapshot()

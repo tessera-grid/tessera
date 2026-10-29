@@ -6,6 +6,12 @@
 import { actionDetailOf, actionOwnerOf } from '../actionOwners'
 import { announceLabel } from '../announcer'
 import { reportAction, reportOutcome, sourceOf } from '../debugActions'
+import { flashOutcome } from '../flashes/flashFeature'
+import {
+  type FlashTarget,
+  targetContains,
+} from '../highlights/highlightFeature'
+import { selectionRangeTargets } from '../highlights/targetRanges'
 import type { TableLabels } from '../localization'
 import { isThenable, rejectionText } from '../thenable'
 import {
@@ -53,6 +59,39 @@ export const actionErrorText = (
   rejectionText(error) ??
   labels.actionFailedFallback
 
+interface ContextMenuTargetContext {
+  row?: { id: string }
+  column?: { id: string }
+  selection?: { isInSelection: boolean; isMultiple: boolean }
+}
+
+/**
+ * Цель по умолчанию (ADR 0152, §1): у пункта контекстного меню — ячейка, где его открыли,
+ * а на выделении из нескольких ячеек — выделение целиком. У кебабов и инлайн-кнопок — нет.
+ */
+export const defaultActionTarget = (
+  ctx: unknown,
+): FlashTarget | readonly FlashTarget[] | undefined => {
+  const { row, column, selection } = ctx as ContextMenuTargetContext
+  if (!selection || !row || !column) return undefined
+  if (selection.isInSelection && selection.isMultiple) {
+    const ranges = selectionRangeTargets(tableOf(ctx))
+    if (ranges.length > 0) return ranges.length === 1 ? ranges[0] : ranges
+  }
+  return { cell: [row.id, column.id] }
+}
+
+/** Цель итога действия: своя `target` или цель по умолчанию; пусто — без цели. */
+export const actionTargets = (
+  action: MenuAction,
+  ctx: unknown,
+): readonly FlashTarget[] => {
+  const fallback = defaultActionTarget(ctx)
+  const target = action.target ? action.target(ctx, fallback) : fallback
+  if (!target) return []
+  return Array.isArray(target) ? target : [target as FlashTarget]
+}
+
 /**
  * Выбор действия. Промис от `onSelect` — ожидание в срезе до итога; отказ оставляет
  * отметку — на кебабе (`keepError`, меню) или на инлайн-кнопке (ADR 0136). Пока действие
@@ -83,9 +122,11 @@ export const runMenuAction = (
 
   const name = (labels: TableLabels) => action.label(ctx, labels)
   const menu = keepError
+  const targets = actionTargets(action, ctx)
+  const target = targets.length > 0 ? targets : undefined
   writeActionStatus(table, status => ({
     ...status,
-    [key]: { pending: true, action, menu },
+    [key]: { pending: true, action, menu, target },
   }))
   Promise.resolve(result).then(
     () => {
@@ -95,6 +136,8 @@ export const runMenuAction = (
     (error: unknown) => {
       const entry: ActionStatusEntry = { failed: true, error, action, menu }
       writeActionStatus(table, status => ({ ...status, [key]: entry }))
+      // Отказ — на цели в кадре, где кнопка-инициатор гасит дугу (ADR 0152, §2).
+      if (target) flashOutcome(table, target, 'reverted')
       announceLabel(table, labels =>
         labels.announceActionFailed(
           name(labels),
@@ -103,6 +146,36 @@ export const runMenuAction = (
       )
     },
   )
+}
+
+const busyTargets = new WeakMap<ActionStatus, readonly FlashTarget[]>()
+
+/** Цели ждущих действий — один раз на объект среза. */
+const busyTargetsOf = (status: ActionStatus): readonly FlashTarget[] => {
+  let targets = busyTargets.get(status)
+  if (!targets) {
+    targets = Object.values(status).flatMap(entry =>
+      entry.pending && entry.target ? entry.target : [],
+    )
+    busyTargets.set(status, targets)
+  }
+  return targets
+}
+
+/** Есть ли ждущее действие меню с целью (ADR 0152, §3). */
+export const hasBusyTargets = (status: ActionStatus | undefined) =>
+  !!status && busyTargetsOf(status).length > 0
+
+/** Ячейка — в цели ждущего действия меню (ADR 0152, §3). */
+export const isCellBusy = (
+  table: unknown,
+  status: ActionStatus | undefined,
+  rowId: string,
+  columnId: string,
+): boolean => {
+  if (!status) return false
+  const targets = busyTargetsOf(status)
+  return targets.some(target => targetContains(table, target, rowId, columnId))
 }
 
 /** Состояние кебаба: ждущие и неувиденные упавшие действия. */

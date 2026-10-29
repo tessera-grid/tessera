@@ -5,6 +5,11 @@
  */
 import { logWarn } from '../../core/logger'
 import {
+  followRowList as followRows,
+  followSpans,
+  shiftIndexSpan,
+} from '../../core/rowListFollow'
+import {
   type RowListChange,
   type RowSource,
   rowSourceOf,
@@ -524,15 +529,16 @@ export const indexCellSelectionFeature: TableFeature = {
 /** Смена списка `change` под диапазоном: выше — сдвиг, ниже — без изменений, внутри — `null`. */
 const shiftRange = (
   range: CellSelectionRange,
-  { at, delta }: RowListChange,
+  change: RowListChange,
 ): CellSelectionRange | null => {
   if (!hasIndexes(range)) return range
-  const top = Math.min(range.anchorRowIndex!, range.focusRowIndex!)
-  const bottom = Math.max(range.anchorRowIndex!, range.focusRowIndex!)
-  // Вставка — перед строкой `at`, удаление — строки `[at, at - delta)`.
-  const end = delta >= 0 ? at : at - delta
-  if (at > bottom) return range
-  if (end > top) return null
+  const delta = shiftIndexSpan(
+    Math.min(range.anchorRowIndex!, range.focusRowIndex!),
+    Math.max(range.anchorRowIndex!, range.focusRowIndex!),
+    change,
+  )
+  if (delta === null) return null
+  if (delta === 0) return range
   return {
     ...range,
     anchorRowIndex: range.anchorRowIndex! + delta,
@@ -540,41 +546,12 @@ const shiftRange = (
   }
 }
 
-/** Диапазоны после пачек смен списка; `null` — смена прошла внутри диапазона. */
-const followChanges = (
-  ranges: CellSelectionState,
-  batches: readonly (readonly RowListChange[])[],
-): CellSelectionState | null => {
-  let current = ranges
-  for (const batch of batches) {
-    // Смены пачки — в индексах до неё: с конца списка места выше не сдвигаются.
-    const changes = [...batch].sort((a, b) => b.at - a.at)
-    const next: CellSelectionState = []
-    for (const range of current) {
-      let moved: CellSelectionRange | null = range
-      for (const change of changes) {
-        moved = shiftRange(moved, change)
-        if (!moved) return null
-      }
-      next.push(moved)
-    }
-    current = next
-  }
-  return current
-}
-
 interface FollowTable {
-  store: {
-    get: () => Record<string, unknown>
-    subscribe: (listener: () => void) => { unsubscribe: () => void }
-  }
+  store: { get: () => Record<string, unknown> }
   setCellSelection: (
     updater: (old: CellSelectionState) => CellSelectionState,
   ) => void
 }
-
-/** Срезы выборки: их смена — новая выборка строк (ADR 0146, §6). */
-const QUERY_SLICES = ['sorting', 'columnFilters', 'globalFilter', 'grouping']
 
 /**
  * Выделение по индексам следует за списком (ADR 0146, §6): новая выборка сбрасывает его,
@@ -582,33 +559,17 @@ const QUERY_SLICES = ['sorting', 'columnFilters', 'globalFilter', 'grouping']
  */
 export const followRowList = (table: unknown) => {
   const t = table as FollowTable
-  let seen: { epoch: number; version: number; query: unknown[] } | undefined
-  const check = () => {
-    if (!isIndexSelection(table)) {
-      seen = undefined
-      return
-    }
-    const source = rowSourceOf(table)
-    const state = t.store.get()
-    const query = QUERY_SLICES.map(key => state[key])
-    const epoch = source.epoch?.() ?? 0
-    const version = source.version?.() ?? 0
-    const before = seen
-    seen = { epoch, version, query }
-    const ranges = (state.cellSelection ?? []) as CellSelectionState
-    if (!before || !ranges.length) return
-    if (
-      before.epoch !== epoch ||
-      query.some((value, index) => value !== before.query[index])
-    ) {
-      t.setCellSelection(() => [])
-      return
-    }
-    if (before.version === version) return
-    const batches = source.changesSince?.(before.version)
-    const next = batches ? followChanges(ranges, batches) : null
-    if (next !== ranges) t.setCellSelection(() => next ?? [])
-  }
-  const subscription = t.store.subscribe(check)
-  return () => subscription.unsubscribe()
+  const ranges = () => (t.store.get().cellSelection ?? []) as CellSelectionState
+  return followRows(table, {
+    active: () => ranges().length > 0,
+    reset: () => t.setCellSelection(() => []),
+    shift: batches => {
+      const current = ranges()
+      const next = followSpans(current, batches, shiftRange)
+      if (next === null) t.setCellSelection(() => [])
+      else if (next.some((range, index) => range !== current[index])) {
+        t.setCellSelection(() => next)
+      }
+    },
+  })
 }

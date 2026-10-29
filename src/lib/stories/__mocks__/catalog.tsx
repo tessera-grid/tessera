@@ -34,6 +34,7 @@ export const CATALOG_STATES = {
     'focus',
     'editing',
     'pending',
+    'menuPending',
     'error',
     'cellError',
     'highlight',

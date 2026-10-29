@@ -22,12 +22,14 @@ export { COLUMN_SELECTION_ID } from './lib/plugins/rowSelection'
 export { COLUMN_EXPANDING_ID } from './lib/plugins/rowExpanding'
 export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
 
-// Публичная подсветка строк, ячеек и колонок (ADR 0080): `table.highlight`.
+// Публичная подсветка строк, ячеек, колонок и диапазонов (ADR 0080, ADR 0152): `table.highlight`.
 export type {
+  FlashTarget,
   HighlightHandle,
   HighlightOptions,
   HighlightTarget,
   HighlightTone,
+  RangeTarget,
 } from './lib/core/highlights/highlightFeature'
 // Вспышка итога на цели асинхронного действия (ADR 0134): `table.flashOutcome`.
 export type { FlashOutcome } from './lib/core/flashes/flashFeature'

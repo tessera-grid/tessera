@@ -33,6 +33,8 @@ import {
   actionStatusSeed,
   highlightSeed,
   outcomeFlashSeed,
+  pendingWaveSeed,
+  rangeFlashSeed,
   INLINE_HEADER_ACTIONS,
   inlineHeaderActions,
 } from './perf-cases'
@@ -286,6 +288,8 @@ const AI10_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
 const OF20_COST = { ratio: 1.3, plusMs: 4 }
+const TG11_COST = { ratio: 1.3, plusMs: 4 }
+const TG18_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
 const AV11_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
@@ -913,6 +917,148 @@ describe('Производительность прокрутки — вспыш
         }
       } finally {
         hold.remove()
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вспышка диапазона (ADR 0152, TG11): 1000×1000 без плагинов, спокойная прокрутка со
+// вспышкой одного диапазона на всё тело против той же выборки без неё. Каждая ячейка окна
+// проверяет, попадает ли она в диапазон.
+describe('Производительность прокрутки — вспышка диапазона', () => {
+  test(
+    'TG11: спокойная прокрутка 1000×1000 со вспышкой диапазона на всё тело не дороже той же выборки без неё больше чем на 30 % (или 4 мс)',
+    async () => {
+      const hold = document.createElement('style')
+      hold.textContent = '.data-grid-theme { --tsr-comp-flash-duration: 600s; }'
+      document.head.append(hold)
+      const measure = async (seeded: boolean) => {
+        const seed = rangeFlashSeed(LARGE.dataCount)
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: [seed.entry],
+        })
+        await waitForGrid()
+        if (seeded) {
+          seed.flash()
+        }
+        await expect
+          .poll(() => document.querySelector('[data-flash]') !== null)
+          .toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      try {
+        const runs = await againstBase(measure)
+        const base = medianAxes(runs.base)
+        const seeded = medianAxes(runs.variant)
+        const ceiling = axesCeiling(base, TG11_COST)
+        const record = (
+          id: string,
+          label: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label,
+            operation: 'scroll',
+            size: '1000×1000',
+            plugins: 'none',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: (['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r[axis].p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
+              ...r[axis],
+            })),
+          })
+        await record('TG11-base', 'без вспышки', base, false)
+        await record('TG11', 'вспышка диапазона на всё тело', seeded, true)
+
+        for (const axis of ['y', 'x'] as const) {
+          expect(
+            seeded[axis].p95Ms,
+            `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+          ).toBeLessThanOrEqual(ceiling[axis])
+        }
+      } finally {
+        hold.remove()
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Волна ожидания на цели (ADR 0152, TG18): 1000×1000 без плагинов, спокойная прокрутка, пока
+// действие меню ждёт с целью на всё тело, — у каждой ячейки окна своя анимация волны.
+describe('Производительность прокрутки — волна ожидания', () => {
+  test(
+    'TG18: спокойная прокрутка 1000×1000 с ожиданием на всём теле не дороже той же выборки без него больше чем на 30 % (или 4 мс)',
+    async () => {
+      const measure = async (seeded: boolean) => {
+        const seed = pendingWaveSeed(LARGE.dataCount)
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: [seed.entry],
+        })
+        await waitForGrid()
+        if (seeded) {
+          seed.pend()
+        }
+        await expect
+          .poll(() => document.querySelector('[aria-busy="true"]') !== null)
+          .toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, TG18_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('TG18-base', 'без ожидания', base, false)
+      await record('TG18', 'ожидание на всём теле', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          seeded[axis].p95Ms,
+          `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,

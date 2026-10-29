@@ -18,9 +18,11 @@ import {
   stepDone,
   until,
   waitForRows,
+  watchFlash,
 } from './__mocks__/catalogPlay'
 import { storyLabels } from './__mocks__/storyLabels'
 import { createDemoServer } from './__mocks__/plugins/asyncActionsDemo/asyncActionsDemo'
+import { PENDING_WAVE_ANIMATION } from '../grid/useSkeletonWave'
 import { nestedRowActions } from './__mocks__/plugins/nestedActionsDemo/nestedActionsDemo'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -363,6 +365,8 @@ const archiveAction: RowAction = {
     await ARCHIVE_SERVER.runs.answer()
     if (archiveRefused) throw new Error(ARCHIVE_REFUSAL)
   },
+  // Итог — на строке (ADR 0152): отказ вспыхивает на ней, пока ждёт — строка занята.
+  target: ctx => ({ row: ctx.row.id }),
 }
 
 const archiveDemo: TesseraFeatureEntry = {
@@ -395,7 +399,7 @@ const ASYNC_ACTION: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось, а кнопка меню строки показывает ожидание, пока сервер выполняет действие.',
+    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, кнопка меню строки показывает ожидание, а строка чуть темнеет и по ней проходит светлый блик.',
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => {
       archiveRefused = false
@@ -405,7 +409,7 @@ const ASYNC_ACTION: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Сервер не выполнил действие. На кнопке меню строки появляется отметка ошибки, она видна без наведения; подсказка кнопки называет невыполненное действие.',
+    hint: 'Сервер не выполнил действие. Строка коротко вспыхивает тоном отказа, а на кнопке меню строки остаётся отметка ошибки, видная без наведения; подсказка кнопки называет невыполненное действие.',
     states: ['body.error'],
     enter: stepAction(async (root, { signal }) => {
       archiveRefused = true
@@ -453,15 +457,44 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
       await until(() => expect(kebabOf(canvas)).not.toBeNull())
       await expect(kebabBusy(canvas)).toBe(false)
     })
+    const rowCells = () =>
+      canvas.querySelectorAll<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${MENU_ROW}"] [data-column-id]`,
+      )
     await step(ASYNC_ACTION[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(kebabBusy(canvas)).toBe(true)
       await expect(openMenu()).toBeNull()
+      const cells = [...rowCells()]
+      await expect(cells.length).toBeGreaterThan(0)
+      for (const cell of cells) {
+        await expect(cell).toHaveAttribute('aria-busy', 'true')
+      }
+      // Волна у каждой ячейки строки или неподвижный свет при уменьшенном движении.
+      await until(() =>
+        expect(
+          document.querySelector('[data-pending-wave-still]') !== null ||
+            document
+              .getAnimations()
+              .filter(animation => animation.id === PENDING_WAVE_ANIMATION)
+              .length === cells.length,
+        ).toBe(true),
+      )
     })
     await step(ASYNC_ACTION[2]!.title, async () => {
+      const flash = watchFlash(
+        canvas,
+        `.data-grid__body-row[data-row-id="${MENU_ROW}"]`,
+        'reverted',
+      )
       await guideNext(canvas)
       await stepDone(canvas)
+      await until(() => expect(flash.seen()).toBe(true))
+      flash.stop()
+      for (const cell of rowCells()) {
+        await expect(cell).not.toHaveAttribute('aria-busy')
+      }
       await expect(kebabFailed(canvas)).toBe(true)
       await expect(kebabBusy(canvas)).toBe(false)
       await expect(kebabOf(canvas)?.getAttribute('aria-label')).toContain(

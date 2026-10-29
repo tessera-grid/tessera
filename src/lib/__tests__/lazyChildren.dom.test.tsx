@@ -17,7 +17,7 @@ import { useCreateTable } from '../core/useCreateTable'
 import { rowExpanding, rowGrouping } from '../plugins'
 import { readLoadedChildren } from '../plugins/rowExpanding/lazyChildrenFeature'
 import { readFlashes } from '../core/flashes/flashFeature'
-import { parseTargetKey } from '../core/highlights/highlightFeature'
+import { targetIdsOf } from '../core/highlights/highlightFeature'
 import { toggleRowExpanded } from '../plugins/rowExpanding/toggleRowExpanded'
 import type { RowExpandingHooks } from '../plugins/rowExpanding'
 
@@ -49,7 +49,7 @@ const arrivals = () =>
   Object.fromEntries(
     Object.entries(readFlashes(captured))
       .filter(([, entry]) => entry.outcome === 'arrived')
-      .map(([key, entry]) => [parseTargetKey(key).rowId, entry]),
+      .map(([key, entry]) => [targetIdsOf(key).rowIds[0], entry]),
   )
 let root: Root | undefined
 

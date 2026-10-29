@@ -710,3 +710,106 @@ describe('Вспышка итога: высокая контрастность',
     }
   })
 })
+
+describe('Вспышка и подсветка диапазона: вид (ADR 0152)', () => {
+  test('TG10: вспышка и подсветка диапазона — контраст текста не ниже 4.5:1 в обеих темах, axe с color-contrast, в forced-colors — Mark, и на ячейках выделения', async ({
+    skip,
+  }) => {
+    holdLong()
+    await mount({ pinned: true, cells: true })
+    // Выделение внутри обоих диапазонов: под вспышкой и подсветкой.
+    selectCell(cellEl('r2', 'a'))
+    selectCell(cellEl('r4', 'b'), true)
+    await expect
+      .poll(() => cellEl('r4', 'b').getAttribute('data-cell-selected'))
+      .toBe('true')
+    const flashRange = {
+      range: { rows: ['r1', 'r2'], columns: ['a', 'c'] },
+    } as unknown as HighlightTarget
+    const highlightRange = {
+      range: { rows: ['r4', 'r5'], columns: ['a', 'c'] },
+    } as unknown as HighlightTarget
+    const cells = (rows: string[]) =>
+      rows.flatMap(rowId => ['a', 'b', 'c'].map(c => cellEl(rowId, c)))
+    const textOf = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('.data-grid__cell-wrapper-content') ?? el
+
+    await inBothThemes(async () => {
+      let handle!: { clear: () => void }
+      await act(() => {
+        table.flashOutcome(flashRange, 'reverted')
+        handle = table.highlight(highlightRange, { tone: 'danger' })
+      })
+      const fills: [string[], number[]][] = [
+        [['r1', 'r2'], fillOf('reverted')],
+        [['r4', 'r5'], toRgba(resolve('var(--tsr-comp-highlight-danger-bg)'))],
+      ]
+      for (const [rows, fill] of fills) {
+        for (const cell of cells(rows)) {
+          const id = `${rows.join('–')}:${cell.dataset.columnId}`
+          expect(
+            cell.hasAttribute('data-flash') ||
+              cell.hasAttribute('data-highlight'),
+            id,
+          ).toBe(true)
+          const bg = [...over(fill, backgroundOf(cell)), 1]
+          const text = toRgba(getComputedStyle(textOf(cell)).color)
+          expect(contrast(text, bg), id).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+      const { violations } = await axe.run(
+        document.querySelector<HTMLElement>('[role="table"]')!,
+        {
+          ...AXE_OPTIONS,
+          rules: {
+            ...AXE_OPTIONS.rules,
+            'color-contrast': { enabled: true },
+          },
+        },
+      )
+      expect(violations.map(v => v.id)).toEqual([])
+      await act(() => handle.clear())
+    })
+
+    skip(
+      server.browser === 'webkit',
+      'WebKit не подменяет цвета в forced-colors',
+    )
+    await commands.forcedColors(true)
+    try {
+      const sys = (name: string) => {
+        const probe = document.createElement('span')
+        probe.style.color = name
+        document.body.append(probe)
+        const value = getComputedStyle(probe).color
+        probe.remove()
+        return value
+      }
+      // Выделенная ячейка вне диапазонов: вспышка в режиме — сразу, без перехода фона.
+      await expect
+        .poll(() => getComputedStyle(cellEl('r3', 'a')).backgroundColor)
+        .toBe(sys('Highlight'))
+      table.flashOutcome({ cell: ['r3', 'a'] }, 'reverted')
+      await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      )
+      expect(getComputedStyle(cellEl('r3', 'a')).backgroundColor).toBe(
+        sys('Mark'),
+      )
+      await act(() => {
+        table.flashOutcome(flashRange, 'reverted')
+        table.highlight(highlightRange, { tone: 'danger' })
+      })
+      for (const cell of cells(['r1', 'r2', 'r4', 'r5'])) {
+        const id = `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${cell.dataset.columnId}`
+        await expect
+          .poll(() => getComputedStyle(cell).backgroundColor)
+          .toBe(sys('Mark'))
+        expect(getComputedStyle(cell).backgroundColor, id).toBe(sys('Mark'))
+        expect(getComputedStyle(textOf(cell)).color, id).toBe(sys('MarkText'))
+      }
+    } finally {
+      await commands.forcedColors(false)
+    }
+  })
+})

@@ -19,6 +19,7 @@ import {
 import { foreignSliceMessage } from './coreState'
 import { pruneFlashes, readFlashes } from './flashes/flashFeature'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
+import { followIndexRanges } from './highlights/followRanges'
 import { rowSourceOf } from './rowSource'
 import { abortServerActions } from './serverActions'
 import {
@@ -129,6 +130,9 @@ export const useTableEffects = (
       pruneFlashes(table, hasRow, hasColumn)
     }
   })
+
+  // Диапазоны подсветки и вспышки на индексах следуют за списком строк (ADR 0152, §4).
+  useEffect(() => followIndexRanges(table), [table])
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.
   useEffect(

@@ -197,6 +197,55 @@
  * обрезал бы её по внутреннему краю границы, поэтому обрезка — clip-path по внешнему
  * краю (overflow-clip-margin нет в Safari).
  */
+/*
+ * Волна ожидания на цели действия меню (ADR 0152, §3): полоса общей волны (ADR 0121) по фону
+ * ячейки, под текстом — слой ниже содержимого в изолированной ячейке. Едет анимацией WAAPI
+ * (usePendingWave): путь в координатах содержимого, общий `startTime`; в покое — за левым
+ * краем. Уменьшенное движение и большая цель — неподвижный слабый свет.
+ */
+.body__cell[aria-busy='true'] {
+  isolation: isolate;
+}
+
+/* Подложка занятой ячейки: блик идёт поверх неё. */
+.body__cell[aria-busy='true']::after {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  pointer-events: none;
+  background: var(--tsr-comp-pending-bg);
+}
+
+.body__cell[aria-busy='true']::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto 0 0;
+  width: var(--tsr-comp-skeleton-wave-width);
+  transform: translateX(-100%);
+  pointer-events: none;
+  background: linear-gradient(
+    calc(90deg + atan(var(--tsr-comp-skeleton-wave-tilt))),
+    transparent,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 10%, transparent) 10%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 32%, transparent) 20%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 62%, transparent) 30%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 88%, transparent) 40%,
+    var(--tsr-comp-pending-wave) 50%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 88%, transparent) 60%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 62%, transparent) 70%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 32%, transparent) 80%,
+    color-mix(in oklch, var(--tsr-comp-pending-wave) 10%, transparent) 90%,
+    transparent
+  );
+}
+
+/* Без блика — одна подложка: уменьшенное движение или цель больше порога (usePendingWave). */
+:global([data-pending-wave-still]) .body__cell[aria-busy='true']::before {
+  display: none;
+}
+
 .body__cell[data-tree-depth] {
   contain: layout;
   clip-path: inset(0);
@@ -293,6 +342,25 @@
     border-top: 1px solid var(--tsr-comp-cell-divider-color);
   }
 
+  /*
+   * Ожидание на цели действия меню (ADR 0152, §3): вместо волны — пунктирный контур на слое
+   * полосы. `forced-color-adjust: none` — только у него: свойство наследуется, на ячейке оно
+   * сняло бы подмену цветов и с текста.
+   */
+  .body__cell[aria-busy='true']::after {
+    display: none;
+  }
+
+  .body__cell[aria-busy='true']::before {
+    display: block;
+    forced-color-adjust: none;
+    inset: 0;
+    width: auto;
+    transform: none;
+    background: none;
+    border: 1px dotted Highlight;
+  }
+
   /* Наведение ячейки — контур `Highlight`: цвет токена браузер подменил бы. */
   :where(:global(.data-grid-theme):not([data-refreshing]))
     .body__cell:hover:not(
@@ -317,8 +385,17 @@
     forced-color-adjust: none;
   }
 
-  /* Заливка ячейки главнее строки (ADR 0126): закреплённой — токенами её фона. */
-  .body__cell[data-cell-selected='true']:not([data-cell-focused='true']) {
+  /*
+   * Заливка ячейки главнее строки (ADR 0126): закреплённой — токенами её фона. Подсветка и
+   * вспышка отказа главнее выделения, как у выбранной и подсвеченной строки (ADR 0152).
+   */
+  .body__cell[data-cell-selected='true']:not(
+      [data-cell-focused='true'],
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    ) {
     --tsr-comp-focus-ring: HighlightText;
     --tsr-comp-cell-divider-color: Highlight;
     --tsr-comp-cell-pinned-left-bg: Highlight;
@@ -329,8 +406,21 @@
     background-color: Highlight;
   }
 
-  .body__cell[data-cell-selected='true']:not([data-cell-focused='true']),
-  .body__cell[data-cell-selected='true']:not([data-cell-focused='true']) * {
+  .body__cell[data-cell-selected='true']:not(
+      [data-cell-focused='true'],
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    ),
+  .body__cell[data-cell-selected='true']:not(
+      [data-cell-focused='true'],
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    )
+    * {
     color: HighlightText;
   }
 

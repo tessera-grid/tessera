@@ -263,6 +263,75 @@ export const outcomeFlashSeed = (rows: number) => {
 }
 
 /**
+ * Засев вспышки диапазона (ADR 0152, TG11): один диапазон на всё тело — все строки и все
+ * колонки. Как у `outcomeFlashSeed`, вспышку ставит тест после монтирования.
+ */
+export const rangeFlashSeed = (rows: number) => {
+  let table:
+    | {
+        flashOutcome: (target: object, outcome: string) => void
+        getAllLeafColumns: () => { id: string }[]
+      }
+    | undefined
+  const entry: TesseraFeatureEntry = {
+    id: 'perfRangeFlash',
+    setup: t => {
+      table = t as typeof table
+    },
+  }
+  const flash = () => {
+    const columns = table!.getAllLeafColumns()
+    table!.flashOutcome(
+      {
+        range: {
+          rows: ['item-id-0', `item-id-${rows - 1}`],
+          columns: [columns[0]!.id, columns.at(-1)!.id],
+        },
+      },
+      'reverted',
+    )
+  }
+  return { entry, flash }
+}
+
+/**
+ * Засев ожидания на цели (ADR 0152, TG18): действие меню ждёт с целью-диапазоном на всё
+ * тело — по всем ячейкам окна идёт волна ожидания. Ставит тест после монтирования.
+ */
+export const pendingWaveSeed = (rows: number) => {
+  let table:
+    | {
+        setActionStatus: (updater: (prev: object) => object) => void
+        getAllLeafColumns: () => { id: string }[]
+      }
+    | undefined
+  const entry: TesseraFeatureEntry = {
+    id: 'perfPendingWave',
+    setup: t => {
+      table = t as typeof table
+    },
+  }
+  const pend = () => {
+    const columns = table!.getAllLeafColumns()
+    table!.setActionStatus(prev => ({
+      ...prev,
+      'perf|wave': {
+        pending: true,
+        target: [
+          {
+            range: {
+              rows: ['item-id-0', `item-id-${rows - 1}`],
+              columns: [columns[0]!.id, columns.at(-1)!.id],
+            },
+          },
+        ],
+      },
+    }))
+  }
+  return { entry, pend }
+}
+
+/**
  * Засев подсветки (ADR 0080, HL19): каждая 10-я строка и третья колонка залиты.
  * Через публичный `table.highlight` из `setup`, как плагин.
  */

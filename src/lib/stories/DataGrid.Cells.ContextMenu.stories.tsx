@@ -1,7 +1,12 @@
 import { useState } from 'react'
+import { ArrowDownToLine } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
+import type { TesseraFeatureEntry } from '../core/features'
+import type { ContextMenuAction } from '../core/headerActions'
+import { createDemoServer } from './__mocks__/plugins/asyncActionsDemo/asyncActionsDemo'
+import { PENDING_WAVE_ANIMATION as PENDING_WAVE } from '../grid/useSkeletonWave'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
@@ -21,6 +26,7 @@ import {
   settle,
   until,
   waitForRows,
+  watchFlash,
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
@@ -285,6 +291,25 @@ const recalculate = () =>
 const recalculatePending = () => !!recalculate()?.hasAttribute('data-pending')
 const recalculateFailed = () =>
   !!recalculate()?.querySelector('[data-action-failed]')
+/**
+ * Знак ожидания у `count` ячеек (ADR 0152, §3): волна у каждой или неподвижный свет —
+ * при уменьшенном движении, как в тестах каталога.
+ */
+const pendingShown = (count: number) =>
+  document.querySelector('[data-pending-wave-still]') !== null ||
+  document.getAnimations().filter(animation => animation.id === PENDING_WAVE)
+    .length === count
+const busyCell = (root: ParentNode) =>
+  at(root, ASYNC_TARGET).getAttribute('aria-busy') === 'true'
+const flashedCell = (root: ParentNode) =>
+  at(root, ASYNC_TARGET).getAttribute('data-flash') === 'reverted'
+/** Вспышка держится на время снимка шага (ADR 0130, DG6): токен — до отказа шага. */
+const holdFlash = (canvas: HTMLElement) =>
+  canvas
+    .querySelectorAll<HTMLElement>('.data-grid-theme')
+    .forEach(theme =>
+      theme.style.setProperty('--tsr-comp-flash-duration', '600000ms'),
+    )
 /** Ход гайда: пересчёт запущен, меню после него открыто заново. */
 const run = { started: false, reopened: false }
 
@@ -317,7 +342,7 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Пункт ждёт ответа и заблокирован.',
+    hint: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Ячейка чуть темнеет и по ней проходит светлый блик — она занята, а пункт ждёт ответа и заблокирован.',
     states: ['overlay.contextMenu'],
     immediate: true,
     enter: untilDone(
@@ -329,8 +354,29 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
     ),
   },
   {
+    title: 'Отказ на ячейке',
+    hint: 'Сервер не выполнил пересчёт. Меню закрыто, и ячейка, где его запускали, коротко вспыхивает тоном отказа — отказ виден там, где начато действие.',
+    immediate: true,
+    enter: root => {
+      // Вспышка — от запуска, который шаг видел занятым, а не прежняя.
+      let sawBusy = false
+      return untilDone(
+        root => sawBusy && flashedCell(root),
+        root => {
+          if (busyCell(root)) {
+            sawBusy = true
+            if (openMenu()) closeMenu()
+          } else if (sawBusy || flashedCell(root)) return
+          else if (openMenu() && !recalculatePending()) startRecalculate(root)
+          else if (openMenu()) closeMenu()
+          else startRecalculate(root)
+        },
+      )(root, undefined)
+    },
+  },
+  {
     title: 'Сервер отказал',
-    hint: 'Сервер не выполнил пересчёт. Отказ объявлен, а при следующем открытии меню у пункта значок ошибки, его подсказка — причина.',
+    hint: 'При следующем открытии меню у пункта значок ошибки, его подсказка — причина; отказ объявлен.',
     states: ['overlay.contextMenu'],
     enter: root => {
       run.reopened = false
@@ -388,8 +434,23 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(recalculatePending()).toBe(true))
       expect(recalculate()).toHaveAttribute('aria-disabled', 'true')
+      expect(busyCell(canvas)).toBe(true)
+      await until(() => expect(pendingShown(1)).toBe(true))
     })
     await step(ASYNC_ITEMS[2]!.title, async () => {
+      const flash = watchFlash(
+        canvas,
+        `.data-grid__body-row[data-row-id="${ASYNC_TARGET.row}"] [data-column-id="${ASYNC_TARGET.column}"]`,
+        'reverted',
+      )
+      holdFlash(canvas)
+      await guideNext(canvas)
+      await until(() => expect(flash.seen()).toBe(true))
+      flash.stop()
+      expect(openMenu()).toBeNull()
+      expect(busyCell(canvas)).toBe(false)
+    })
+    await step(ASYNC_ITEMS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(recalculateFailed()).toBe(true))
       const item = recalculate()!
@@ -399,6 +460,168 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       )
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
+    })
+  },
+}
+
+// --- ADR 0152 S1 ---------------------------------------------------------------------
+
+/** Выделение 3 × 2: от `FROM` до `TO`, меню открывается на `ON`. */
+const FROM = { row: 'item-id-2', column: 'firstName' }
+const TO = { row: 'item-id-4', column: 'lastName' }
+const ON = { row: 'item-id-3', column: 'lastName' }
+const SELECTION_CELLS = 6
+const FILL = '[data-action-id$="selectionFill"]'
+const SELECTION_REFUSAL = 'Cells are locked by another user'
+
+/** «Сервер» гайда: придерживает ответ, пока шаг ожидания на виду, затем отказывает. */
+const FILL_SERVER = createDemoServer()
+
+const fillAction: ContextMenuAction = {
+  id: 'selectionFill',
+  icon: () => <ArrowDownToLine width={16} height={16} />,
+  label: () => 'Fill down',
+  onSelect: async () => {
+    await FILL_SERVER.runs.answer()
+    throw new Error(SELECTION_REFUSAL)
+  },
+}
+
+const fillDemo: TesseraFeatureEntry = {
+  id: 'selectionFillGuide',
+  contextMenuActions: [fillAction],
+}
+
+const fillItem = () => openMenu()?.querySelector<HTMLElement>(FILL) ?? null
+const selectionCells = (root: ParentNode) => [
+  ...root.querySelectorAll<HTMLElement>(
+    '.data-grid__body-cell[data-cell-selected="true"]',
+  ),
+]
+const allBusy = (root: ParentNode) => {
+  const cells = selectionCells(root)
+  return (
+    cells.length === SELECTION_CELLS &&
+    cells.every(cell => cell.getAttribute('aria-busy') === 'true')
+  )
+}
+const allFlashed = (root: ParentNode) => {
+  const cells = selectionCells(root)
+  return (
+    cells.length === SELECTION_CELLS &&
+    cells.every(cell => cell.getAttribute('data-flash') === 'reverted')
+  )
+}
+
+/** Выделить 3 × 2 и открыть меню внутри — по одному жесту за попытку. */
+const selectAndOpen = (root: HTMLElement) => {
+  if (selectedCells(root) !== SELECTION_CELLS) {
+    if (openMenu()) closeMenu()
+    else if (!isSelected(at(root, FROM))) pressCell(at(root, FROM))
+    else pressCell(at(root, TO), { shiftKey: true })
+  } else openAt(at(root, ON))
+}
+
+const REFUSED_ON_SELECTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Меню на выделении',
+    hint: 'Пользователь выделил шесть ячеек и открыл меню на одной из них. Заполнение применяется ко всему выделению, его выполняет сервер.',
+    states: ['overlay.contextMenu'],
+    enter: root => {
+      const still = steady()
+      return untilDone(
+        root =>
+          selectedCells(root) === SELECTION_CELLS &&
+          still(at(root, ON)) &&
+          menuAt(at(root, ON)) &&
+          !!fillItem(),
+        selectAndOpen,
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Выделение ждёт ответа',
+    hint: 'Пользователь выбрал заполнение. Меню закрылось; пока сервер отвечает, всё выделение чуть темнеет и по нему проходит светлый блик — оно занято.',
+    states: ['body.menuPending'],
+    enter: root => {
+      FILL_SERVER.runs.hold()
+      return untilDone(
+        root => allBusy(root) && !openMenu(),
+        root => {
+          if (allBusy(root)) {
+            if (openMenu()) closeMenu()
+          } else if (selectedCells(root) === SELECTION_CELLS && fillItem()) {
+            fillItem()!.click()
+          } else selectAndOpen(root)
+        },
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Отказ на выделении',
+    hint: 'Сервер отказал. Всё выделение коротко вспыхивает тоном отказа — там, где применялось действие; отказ объявлен.',
+    immediate: true,
+    enter: root => {
+      FILL_SERVER.runs.release()
+      return untilDone(
+        root => allFlashed(root),
+        root => {
+          if (allBusy(root)) return
+          if (openMenu() && fillItem()) fillItem()!.click()
+          else selectAndOpen(root)
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0152, S1: действие над выделением отказано — вспыхивает всё выделение. */
+export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
+  name: 'Refused on a selection',
+  parameters: { scenario: '0152/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ действия над выделением"
+      steps={REFUSED_ON_SELECTION}
+      args={guideArgs(
+        {
+          enableContextMenu: true,
+          enableCellSelection: true,
+          actionsDemo: 'none',
+          extraPlugins: [fillDemo],
+          columnCount: 8,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(REFUSED_ON_SELECTION[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(fillItem()).not.toBeNull())
+      expect(selectedCells(canvas)).toBe(SELECTION_CELLS)
+      await settle()
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+    await step(REFUSED_ON_SELECTION[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(allBusy(canvas)).toBe(true))
+      await until(() => expect(pendingShown(SELECTION_CELLS)).toBe(true))
+      expect(openMenu()).toBeNull()
+      expect(
+        at(canvas, { row: 'item-id-1', column: 'firstName' }),
+      ).not.toHaveAttribute('aria-busy')
+    })
+    await step(REFUSED_ON_SELECTION[2]!.title, async () => {
+      const flash = watchFlash(canvas, '.data-grid__body-cell', 'reverted')
+      holdFlash(canvas)
+      await guideNext(canvas)
+      await until(() => expect(flash.most()).toBe(SELECTION_CELLS))
+      flash.stop()
+      expect(allBusy(canvas)).toBe(false)
     })
   },
 }

@@ -7,6 +7,7 @@ import type { MouseEvent, ReactNode, RefObject } from 'react'
 
 import type { TableLabels } from '../../core/localization'
 import type { CellComponentProps, HeaderComponentProps } from '../createSlots'
+import type { FlashTarget } from '../highlights/highlightFeature'
 
 /** Все слоты, в которых может жить действие (шапка + ячейка + строка действий). */
 export type SlotName =
@@ -52,6 +53,15 @@ export interface MenuAction<TCtx = any> {
     ctx: TCtx,
     signal: AbortSignal,
   ) => DisabledResult | Promise<DisabledResult>
+  /**
+   * Цель итога (ADR 0152): отказ промиса `onSelect` вспыхивает на ней, пока он ждёт — её
+   * ячейки несут `aria-busy`. `defaultTarget` — цель по умолчанию: у контекстного меню —
+   * ячейка или выделение, у кебабов и инлайн-кнопок — нет. `false` — без цели.
+   */
+  target?: (
+    ctx: TCtx,
+    defaultTarget: FlashTarget | readonly FlashTarget[] | undefined,
+  ) => FlashTarget | readonly FlashTarget[] | false
   /** Текст отказа действия или проверки; без него — текст ошибки или подпись. */
   errorMessage?: (
     ctx: TCtx,
