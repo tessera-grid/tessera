@@ -1242,6 +1242,24 @@ export const HighContrastRowActionsNestedStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastRowActionsAsyncStep1 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 1),
+  name: 'Rows/Actions — Async action, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsAsyncStep2 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 2),
+  name: 'Rows/Actions — Async action, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowActionsAsyncStep3 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 3),
+  name: 'Rows/Actions — Async action, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastRowHighlightPlayground = {
   ...twin(
     rowsHighlightStories.default,

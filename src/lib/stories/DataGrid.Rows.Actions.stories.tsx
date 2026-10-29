@@ -1,5 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { Archive } from 'lucide-react'
 import { expect } from 'storybook/test'
+
+import type { RowAction } from '../core/headerActions'
 
 import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
@@ -16,6 +19,8 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
+import { createDemoServer } from './__mocks__/plugins/asyncActionsDemo/asyncActionsDemo'
 import { nestedRowActions } from './__mocks__/plugins/nestedActionsDemo/nestedActionsDemo'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -27,7 +32,8 @@ import {
 
 /**
  * Действия строки (ADR 0025): `Playground` — колонка действий и набор действий строки;
- * S1 — действие из меню строки, S1 ADR 0079 — вложенные разделы меню строки.
+ * S1 — действие из меню строки, S1 ADR 0079 — вложенные разделы меню строки, S3 ADR
+ * 0078 — действие строки выполняет сервер.
  */
 const meta = {
   ...dataGridMeta,
@@ -335,6 +341,132 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(labelItem()).toHaveAttribute('aria-checked', 'true')
       await expect(openMenu()).not.toBeNull()
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0078 S3 ---------------------------------------------------------------------
+
+/** «Сервер» гайда: придерживает ответ, пока шаг ожидания на виду; отказывает по команде. */
+const ARCHIVE_SERVER = createDemoServer()
+let archiveRefused = false
+const ARCHIVE_REFUSAL = 'Row is locked by another user'
+
+const archiveAction: RowAction = {
+  id: 'serverArchive',
+  slot: 'actionRowSlot',
+  placement: 'menu',
+  icon: () => <Archive width={16} height={16} />,
+  label: () => 'Archive',
+  onSelect: async () => {
+    await ARCHIVE_SERVER.runs.answer()
+    if (archiveRefused) throw new Error(ARCHIVE_REFUSAL)
+  },
+}
+
+const archiveDemo: TesseraFeatureEntry = {
+  id: 'rowArchiveGuide',
+  slotActions: [archiveAction],
+}
+
+const kebabBusy = (root: ParentNode) =>
+  kebabOf(root)?.getAttribute('aria-busy') === 'true'
+const kebabFailed = (root: ParentNode) =>
+  !!kebabOf(root)?.querySelector('[data-error-indicator][data-shown="true"]')
+
+/** Пользователь выбирает архивирование в меню строки, пока не выполнится `done`. */
+const archive = (root: HTMLElement, done: () => boolean, signal: AbortSignal) =>
+  repeat(
+    done,
+    () => {
+      if (kebabBusy(root)) return
+      if (!openMenu()) {
+        if (!document.querySelector('[role="menu"]')) kebabOf(root)?.click()
+      } else itemOf(archiveAction.id)?.click()
+    },
+    signal,
+  )
+
+const ASYNC_ACTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Действие строки на сервере',
+    hint: 'Приложение добавило в меню строки действие, которое выполняет сервер. У каждой строки — кнопка меню.',
+  },
+  {
+    title: 'Действие выполняется',
+    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось, а кнопка меню строки показывает ожидание, пока сервер выполняет действие.',
+    states: ['body.pending'],
+    enter: stepAction((root, { signal }) => {
+      archiveRefused = false
+      ARCHIVE_SERVER.runs.hold()
+      return archive(root, () => kebabBusy(root) && !openMenu(), signal)
+    }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер не выполнил действие. На кнопке меню строки появляется отметка ошибки, она видна без наведения; подсказка кнопки называет невыполненное действие.',
+    states: ['body.error'],
+    enter: stepAction(async (root, { signal }) => {
+      archiveRefused = true
+      ARCHIVE_SERVER.runs.release()
+      await archive(
+        root,
+        () => kebabFailed(root) && !kebabBusy(root) && !openMenu(),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0078, S3: действие меню строки выполняет сервер — ожидание и отказ на кнопке меню строки. */
+export const RowActionsAsync: StoryObj<StoryProps> = {
+  name: 'Async action',
+  parameters: {
+    scenario: '0078/S3',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Действие строки на сервере"
+      steps={ASYNC_ACTION}
+      args={guideArgs(
+        {
+          enableRowActions: true,
+          enableRowActionMenu: true,
+          actionsDemo: 'none',
+          extraPlugins: [archiveDemo],
+          dataCount: 20,
+          containerHeight: '460',
+          height: '360',
+          maxHeight: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(ASYNC_ACTION[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(kebabOf(canvas)).not.toBeNull())
+      await expect(kebabBusy(canvas)).toBe(false)
+    })
+    await step(ASYNC_ACTION[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(kebabBusy(canvas)).toBe(true)
+      await expect(openMenu()).toBeNull()
+    })
+    await step(ASYNC_ACTION[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(kebabFailed(canvas)).toBe(true)
+      await expect(kebabBusy(canvas)).toBe(false)
+      await expect(kebabOf(canvas)?.getAttribute('aria-label')).toContain(
+        labels.actionsFailed('Archive'),
+      )
       await settle()
     })
   },
