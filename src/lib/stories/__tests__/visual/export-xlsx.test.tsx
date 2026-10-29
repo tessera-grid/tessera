@@ -96,7 +96,7 @@ const deferredFormat = () => {
 }
 
 describe('dataExport — Excel', () => {
-  test('XL7: serialize с Promise — кнопка ждёт до скачивания; отказ логируется, на кнопке отметка отказа, onExported не вызван', async () => {
+  test('XL7: serialize с Promise — кнопка ждёт до скачивания; отказ не логируется, на кнопке отметка отказа, onExported не вызван', async () => {
     const downloads = captureDownloads()
     const onExported = vi.fn()
     const ok = deferredFormat()
@@ -123,10 +123,9 @@ describe('dataExport — Excel', () => {
     await humanClick(button()!)
     await expect.poll(() => button()!.getAttribute('aria-busy')).toBe('true')
     failing.control.reject(new Error('sheet broke'))
-    await expect.poll(() => error.mock.calls.length).toBeGreaterThan(0)
-    expect(String(error.mock.calls[0]![0])).toContain('sheet broke')
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
     await expect.poll(() => failureShownOn(button())).toBe(true)
+    expect(error).not.toHaveBeenCalled()
     expect(button()).toHaveAccessibleDescription(
       tableLabels.actionFailedRetry('sheet broke'),
     )

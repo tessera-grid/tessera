@@ -486,6 +486,29 @@ export const ExportServer: StoryObj<StoryProps> = {
 
 // --- ADR 0073 S1 ---------------------------------------------------------------------
 
+const EXCEL_REFUSAL = 'The workbook could not be built'
+
+/** Формат Excel, который по команде шага не собирает файл. */
+const excel = (() => {
+  const base = exportFormats.xlsx()
+  let refusing = false
+  return {
+    format: {
+      ...base,
+      serialize: (data: Parameters<typeof base.serialize>[0]) =>
+        refusing
+          ? Promise.reject(new Error(EXCEL_REFUSAL))
+          : base.serialize(data),
+    },
+    allow: () => {
+      refusing = false
+    },
+    refuse: () => {
+      refusing = true
+    },
+  }
+})()
+
 const EXCEL: readonly GuideStoryStep[] = [
   {
     title: 'Два формата',
@@ -496,6 +519,7 @@ const EXCEL: readonly GuideStoryStep[] = [
     hint: 'В настройках выгрузки выбран формат Excel.',
     states: ['overlay.export'],
     enter: stepAction(async (root, { signal }) => {
+      excel.allow()
       await openExportPanel(root, signal)
       await chooseAxis('format', 'xlsx', signal)
     }),
@@ -504,9 +528,25 @@ const EXCEL: readonly GuideStoryStep[] = [
     title: 'Пользователь выгрузил',
     hint: 'Скачался файл Excel с данными таблицы.',
     enter: stepAction(async (root, { signal }) => {
+      excel.allow()
       await openExportPanel(root, signal)
       await chooseAxis('format', 'xlsx', signal)
       await runExport(signal)
+    }),
+  },
+  {
+    title: 'Файл не собран',
+    hint: 'Пользователь снова выгрузил Excel, но собрать файл не удалось. Файла нет: кнопка выгрузки отмечена отказом, её подсказка — причина.',
+    enter: stepAction(async (root, { signal }) => {
+      if (exportFailed()) return
+      excel.refuse()
+      await openExportPanel(root, signal)
+      await chooseAxis('format', 'xlsx', signal)
+      await repeat(
+        () => exportFailed(),
+        () => byTestId('export-run')?.click(),
+        signal,
+      )
     }),
   },
 ]
@@ -527,7 +567,7 @@ export const ExportExcel: StoryObj<StoryProps> = {
         {
           ...GRID,
           dataCount: 200,
-          dataExportFormats: [exportFormats.csv(), exportFormats.xlsx()],
+          dataExportFormats: [exportFormats.csv(), excel.format],
           onExported,
         },
         args,
@@ -559,6 +599,13 @@ export const ExportExcel: StoryObj<StoryProps> = {
         expect(await zipEntryText(bytes, 'xl/worksheets/sheet1.xml')).toContain(
           `<t xml:space="preserve">${firstCell}</t>`,
         )
+      })
+      await step(EXCEL[3]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(exportFailed()).toBe(true)
+        await expect(exportDescription()).toContain(EXCEL_REFUSAL)
+        await expect(download.names).toEqual(['export.xlsx'])
       })
     } finally {
       download.restore()

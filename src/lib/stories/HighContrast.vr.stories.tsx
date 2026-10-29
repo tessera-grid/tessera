@@ -1170,6 +1170,12 @@ export const HighContrastExportExcelStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastExportExcelStep4 = {
+  ...twinStep(exportStories, exportStories.ExportExcel, 4),
+  name: 'Export — Excel, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastPaginationPlayground = {
   ...twin(panelsPaginationMeta, PaginationPlayground),
   name: 'Panels/Pagination — Playground',

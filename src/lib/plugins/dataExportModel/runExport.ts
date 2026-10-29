@@ -80,8 +80,8 @@ const invoke = (
 /**
  * Выполняет выгрузку с настройками. Возвращает промис, пока потребитель не завершил
  * серверный `onExport` (EX28) или асинхронный формат не собран (XL7); иначе
- * `undefined`. Отказ `onExport` отклоняет промис, отказ формата логируется и отклоняет
- * промис, отказ `onExported` — только логируется.
+ * `undefined`. Отказ `onExport` и формата отклоняет промис, отказ `onExported` — только
+ * логируется.
  */
 export const runExport = (
   table: unknown,
@@ -133,17 +133,9 @@ export const runExport = (
   }
   const content = format.serialize(data)
   if (!isThenable(content)) return finish(content)
-  // Асинхронный формат (xlsx): кнопка ждёт; отказ логируется и отклоняет промис.
-  const built = Promise.resolve(content).then(
-    resolved => finish(resolved),
-    (error: unknown) => {
-      logError(
-        table as never,
-        `dataExport: формат ${format.id} не собран: ${error instanceof Error ? error.message : String(error)}`,
-      )
-      throw error
-    },
-  )
+  // Асинхронный формат (xlsx): кнопка ждёт; отказ отклоняет промис — его причина на
+  // отметке кнопки (ADR 0136, FB6).
+  const built = Promise.resolve(content).then(resolved => finish(resolved))
   if (outcome) reportOutcome(table, outcome, built)
   return built
 }
