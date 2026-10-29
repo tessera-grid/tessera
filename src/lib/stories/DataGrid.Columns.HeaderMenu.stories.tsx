@@ -11,6 +11,8 @@ import {
   afterRows,
   guideNext,
   headKebab,
+  pointAt,
+  pollUntil,
   settle,
   until,
   waitForRows,
@@ -22,7 +24,13 @@ import {
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  type StepRun,
+  stepAction,
+} from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -122,12 +130,27 @@ const inColumnMenu =
 const pinned = (root: ParentNode) =>
   headCellOf(root, MENU_COLUMN)?.getAttribute('data-cell-pinned') === 'left'
 
-/** Закрепить колонку пунктом меню и открыть меню снова — с пунктом открепления. */
-const pinFromMenu = inColumnMenu((menu, root) => {
-  if (pinned(root)) return true
-  menuItemsOf(menu, 'columnPinning')[0]?.click()
-  return false
-})
+/**
+ * Закрепить колонку пунктом меню. Включённое закрепление встаёт в заголовок кнопкой
+ * (ADR 0156); фокус, который программный выбор вернул кнопке меню с кольцом, снимается.
+ */
+const pinFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
+  let chosen = false
+  await pollUntil(() => {
+    if (pinned(root) && !openMenu()) return true
+    const menu = openMenu()
+    if (!menu) {
+      if (!chosen) headKebab(root, MENU_COLUMN)?.click()
+      return false
+    }
+    if (!menu.hasAttribute('data-open') || chosen) return false
+    menuItemsOf(menu, 'columnPinning')[0]?.click()
+    chosen = true
+    return false
+  }, signal)
+  const focused = document.activeElement
+  if (focused instanceof HTMLElement && root.contains(focused)) focused.blur()
+}
 
 const IN_MENU: readonly GuideStoryStep[] = [
   {
@@ -147,9 +170,9 @@ const IN_MENU: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь закрепил колонку из меню',
-    hint: 'Колонка закреплена у левого края, а пункт меню теперь предлагает её открепить.',
-    states: ['overlay.menu'],
-    enter: afterRows(pinFromMenu),
+    hint: 'Колонка закреплена у левого края. Включённое закрепление встало в заголовок кнопкой с отметкой, остальные действия остались в меню.',
+    states: ['head.activeIndicator'],
+    enter: stepAction((root, { signal }) => pinFromMenu(root, signal)),
   },
 ]
 
@@ -207,10 +230,9 @@ export const HeaderMenuInMenu: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(pinned(canvas)).toBe(true))
       await until(() =>
-        expect(
-          menuItemsOf(openMenu(), 'columnPinning')[0]?.textContent?.trim(),
-        ).toBe(labels.unpin),
+        expect(marked(buttonOf(canvas, MENU_COLUMN, 'column-pin'))).toBe(true),
       )
+      await expect(openMenu()).toBeNull()
       await settle()
     })
   },
@@ -363,6 +385,211 @@ export const HeaderMenuActiveActions: StoryObj<StoryProps> = {
       await expect(getComputedStyle(headKebab(canvas, 'name')!).opacity).toBe(
         '1',
       )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0156 S1 ---------------------------------------------------------------------
+
+interface NarrowApi {
+  setSorting: (value: { id: string; desc: boolean }[]) => void
+  setColumnSizing: (value: Record<string, number>) => void
+}
+
+let narrowApi: NarrowApi | null = null
+
+/** Отдаёт таблицу шагам: сброс сортировки и ширины — как с чистого листа. */
+const narrowHost = definePlugin<{ enabled?: boolean }>()({
+  id: 'headerMenuNarrowHost',
+  setup: () => table => {
+    narrowApi = table as unknown as NarrowApi
+    return () => {
+      narrowApi = null
+    }
+  },
+})
+
+const NARROW_COLUMN = 'name'
+const NARROW_WIDTH = 180
+const WIDE_WIDTH = 260
+const NARROW_COLUMNS = filteringColumns.map(column =>
+  column.id === NARROW_COLUMN ? { ...column, size: NARROW_WIDTH } : column,
+)
+
+const pinButton = (root: ParentNode) =>
+  buttonOf(root, NARROW_COLUMN, 'column-pin')
+const sortButton = (root: ParentNode) =>
+  buttonOf(root, NARROW_COLUMN, 'column-sort')
+const sorted = (root: ParentNode = document) =>
+  headCellOf(root, NARROW_COLUMN)?.getAttribute('aria-sort') === 'ascending'
+
+/** Колонка узкая, сортировки нет, указателя над заголовком нет. */
+const narrowRest = (sorting: { id: string; desc: boolean }[] = []) =>
+  afterRows(() => {
+    narrowApi?.setColumnSizing({ [NARROW_COLUMN]: NARROW_WIDTH })
+    narrowApi?.setSorting(sorting)
+  })
+
+/** Сортировка по возрастанию — пунктом меню колонки; пункт закрывает меню. */
+const sortFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
+  narrowApi?.setColumnSizing({ [NARROW_COLUMN]: NARROW_WIDTH })
+  if (sorted()) return
+  narrowApi?.setSorting([])
+  let chosen = false
+  await pollUntil(() => {
+    if (sorted()) return true
+    const menu = openMenu()
+    if (!menu) {
+      if (!chosen) headKebab(root, NARROW_COLUMN)?.click()
+      return false
+    }
+    if (!menu.hasAttribute('data-open') || chosen) return false
+    menu
+      .querySelector<HTMLElement>(
+        '[data-action-id="columnSorting"][data-item-id="asc"]',
+      )
+      ?.click()
+    chosen = true
+    return false
+  }, signal)
+  await pollUntil(() => !openMenu(), signal)
+  // Программный выбор возвращает фокус на кнопку меню с кольцом, мышь — без него.
+  const focused = document.activeElement
+  if (
+    focused instanceof HTMLElement &&
+    headCellOf(root, NARROW_COLUMN)?.contains(focused)
+  ) {
+    focused.blur()
+  }
+}
+
+const NARROW_HOVER = {
+  hover: `.data-grid__head-cell[data-column-id="${NARROW_COLUMN}"]`,
+}
+
+/** Указатель над заголовком, когда ряд уже такой, каким его ждёт шаг. */
+const pointWhen =
+  (ready: (root: HTMLElement) => boolean) =>
+  async (root: HTMLElement, { signal, onLeave }: StepRun) => {
+    await pollUntil(() => ready(root), signal)
+    onLeave(pointAt(headCellOf(root, NARROW_COLUMN)!))
+  }
+
+const NARROW: readonly GuideStoryStep[] = [
+  {
+    title: 'Узкая колонка',
+    hint: 'Указатель над заголовком первой колонки. В нём помещается одна кнопка и кнопка меню: в ряду — закрепление, сортировка и фильтр — в меню колонки.',
+    pseudo: NARROW_HOVER,
+    enter: stepAction(async (root, run) => {
+      narrowRest()(root)
+      await pointWhen(el => !!pinButton(el) && !sorted(el))(root, run)
+    }),
+  },
+  {
+    title: 'Сортировка включена из меню',
+    hint: 'Пользователь открыл меню колонки и выбрал сортировку по возрастанию. Включённая сортировка встала в ряд и видна с отметкой без наведения.',
+    states: ['head.activeIndicator'],
+    enter: stepAction((root, { signal }) => sortFromMenu(root, signal)),
+  },
+  {
+    title: 'Пользователь выключил сортировку кнопкой',
+    hint: 'Указатель над заголовком: кнопка сортировки осталась на месте без отметки, повторное нажатие снова включит сортировку. Закрепление — в меню колонки.',
+    pseudo: NARROW_HOVER,
+    enter: stepAction(async (root, { signal, onLeave }) => {
+      await sortFromMenu(root, signal)
+      onLeave(pointAt(headCellOf(root, NARROW_COLUMN)!))
+      sortButton(root)!.click()
+      await pollUntil(() => !sorted(), signal)
+    }),
+  },
+  {
+    title: 'Указатель вернулся',
+    hint: 'Пользователь увёл указатель с заголовка и навёл снова. Невключённая сортировка ушла в меню, кнопка закрепления вернулась в ряд.',
+    pseudo: NARROW_HOVER,
+    enter: stepAction(async (root, run) => {
+      narrowRest()(root)
+      await pointWhen(el => !!pinButton(el) && !sorted(el))(root, run)
+    }),
+  },
+  {
+    title: 'Колонку расширили',
+    hint: 'Пользователь расширил колонку: все три кнопки помещаются в ряд, меню колонки не нужно.',
+    pseudo: NARROW_HOVER,
+    enter: stepAction(async (root, run) => {
+      afterRows(() => {
+        narrowApi?.setSorting([])
+        narrowApi?.setColumnSizing({ [NARROW_COLUMN]: WIDE_WIDTH })
+      })(root)
+      await pointWhen(el => !headKebab(el, NARROW_COLUMN))(root, run)
+    }),
+  },
+]
+
+/** ADR 0156, S1: в узкой колонке включённое действие уходит в меню последним. */
+export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
+  name: 'Narrow column',
+  parameters: {
+    scenario: '0156/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Включённое действие остаётся в ряду"
+      steps={NARROW}
+      args={guideArgs(
+        {
+          columnsOverride: NARROW_COLUMNS,
+          dataOverride: filteringData,
+          enableHeaderActionMenu: true,
+          // Три действия ниже порога: в меню их уводит только ширина колонки.
+          headerActionMenuThreshold: 4,
+          enableColumnPinning: true,
+          enableColumnSorting: true,
+          enableColumnFiltering: true,
+          enableColumnSizing: true,
+          extraPlugins: [narrowHost()],
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const kebab = () => headKebab(canvas, NARROW_COLUMN)
+    await step(NARROW[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(pinButton(canvas)).not.toBeNull())
+      await expect(sortButton(canvas)).toBeNull()
+      await expect(kebab()).not.toBeNull()
+    })
+    await step(NARROW[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(marked(sortButton(canvas))).toBe(true))
+      await expect(pinButton(canvas)).toBeNull()
+      await expect(marked(kebab())).toBe(false)
+      await settle()
+    })
+    await step(NARROW[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sorted()).toBe(false))
+      await expect(sortButton(canvas)).not.toBeNull()
+      await expect(marked(sortButton(canvas))).toBe(false)
+      await expect(pinButton(canvas)).toBeNull()
+      await settle()
+    })
+    await step(NARROW[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pinButton(canvas)).not.toBeNull())
+      await expect(sortButton(canvas)).toBeNull()
+      await settle()
+    })
+    await step(NARROW[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sortButton(canvas)).not.toBeNull())
+      await expect(pinButton(canvas)).not.toBeNull()
+      await expect(kebab()).toBeNull()
       await settle()
     })
   },

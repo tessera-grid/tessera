@@ -1,6 +1,6 @@
 /**
  * Юнит-покрытие слот-машинерии (чистые функции): раскладка действий слота и пункты
- * меню — ADR 0024, AM1–AM9, AM20–AM23, AM33.
+ * меню — ADR 0024, AM1–AM9, AM20–AM23, AM33; включённые уходят последними — ADR 0156, KA1–KA2.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { describe, expect, it, vi } from 'vitest'
@@ -373,6 +373,78 @@ describe('headerActions: кнопки по ширине (ADR 0111)', () => {
     })
     expect(byThreshold.inline).toEqual([])
     expect(byThreshold.menu).toHaveLength(4)
+  })
+})
+
+describe('headerActions: включённые уходят в кебаб последними (ADR 0156)', () => {
+  const four = ['a', 'b', 'c', 'd'].map((id, order) => action({ id, order }))
+  const ids = (list: SlotAction[]) => list.map(a => a.id)
+  const layout = ({
+    capacity,
+    active,
+    threshold = 10,
+    mode = 'auto' as const,
+    list = four,
+  }: {
+    capacity?: number
+    active: string[]
+    threshold?: number
+    mode?: 'auto' | 'always'
+    list?: SlotAction[]
+  }) =>
+    resolveActionLayout({
+      actions: list,
+      opaqueCount: 0,
+      config: { mode, threshold },
+      ctx: {},
+      capacity,
+      active: new Set(active),
+    })
+
+  it('KA1: по ширине в кебаб уходят сначала невключённые сворачиваемые, затем включённые; внутри группы — с конца по order; в ряду — порядок order; кебаб занимает одно место', () => {
+    // Места на 3: две кнопки и кебаб. Включённое a держится, уходят невключённые с конца.
+    const firstActive = layout({ capacity: 3, active: ['a'] })
+    expect(ids(firstActive.inline)).toEqual(['a', 'b'])
+    expect(ids(firstActive.menu)).toEqual(['c', 'd'])
+    // Включённое d с конца остаётся, в ряду — порядок order, а не «включённые первыми».
+    const lastActive = layout({ capacity: 3, active: ['d'] })
+    expect(ids(lastActive.inline)).toEqual(['a', 'd'])
+    expect(ids(lastActive.menu)).toEqual(['b', 'c'])
+    // Включённых больше, чем мест: невключённые ушли все, включённые — с конца.
+    const crowded = layout({ capacity: 3, active: ['a', 'c', 'd'] })
+    expect(ids(crowded.inline)).toEqual(['a', 'c'])
+    expect(ids(crowded.menu)).toEqual(['b', 'd'])
+    // Места на 1 — только кебаб, включённые тоже в нём.
+    expect(ids(layout({ capacity: 1, active: ['a'] }).inline)).toEqual([])
+    // Всё помещается — кебаба нет.
+    expect(layout({ capacity: 4, active: ['b'] }).collapsed).toBe(false)
+    // Без набора включённых — по `active(ctx)` действия.
+    const own = resolveActionLayout({
+      actions: four.map(a => (a.id === 'd' ? { ...a, active: () => true } : a)),
+      opaqueCount: 0,
+      config: { mode: 'auto', threshold: 10 },
+      ctx: {},
+      capacity: 3,
+    })
+    expect(ids(own.inline)).toEqual(['a', 'd'])
+  })
+
+  it("KA2: по порогу невключённые сворачиваются, включённые остаются в ряду, пока помещаются по ширине; mode: 'always' сворачивает все, включённые тоже", () => {
+    // Порог достигнут: в ряду только включённые, кебаб с остальными.
+    const byThreshold = layout({ threshold: 3, active: ['b', 'd'] })
+    expect(byThreshold.collapsed).toBe(true)
+    expect(ids(byThreshold.inline)).toEqual(['b', 'd'])
+    expect(ids(byThreshold.menu)).toEqual(['a', 'c'])
+    // Ширина режет и включённые: место на 2 — одна включённая и кебаб.
+    const narrow = layout({ threshold: 3, active: ['b', 'd'], capacity: 2 })
+    expect(ids(narrow.inline)).toEqual(['b'])
+    expect(ids(narrow.menu)).toEqual(['a', 'c', 'd'])
+    // Включённых нет — всё в кебабе, как прежде (AM3).
+    expect(ids(layout({ threshold: 3, active: [] }).inline)).toEqual([])
+    // `always` — явный выбор приложения: в кебабе все.
+    const always = layout({ mode: 'always', active: ['b', 'd'] })
+    expect(always.inline).toEqual([])
+    expect(ids(always.menu)).toEqual(['a', 'b', 'c', 'd'])
   })
 })
 

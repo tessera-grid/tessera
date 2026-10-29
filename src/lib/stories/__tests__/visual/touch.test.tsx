@@ -1,8 +1,8 @@
 import axe from 'axe-core'
-import { commands, server } from 'vitest/browser'
+import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
-import { revealedHandleWidth } from '../helpers'
+import { humanClick, revealedHandleWidth } from '../helpers'
 
 import { Stories, renderGrid } from '../helpers'
 import { composed } from '../stories'
@@ -14,6 +14,12 @@ import { scrollLayer } from '../../../core/scrollStretch'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnSorting } from '../../../plugins/columnSorting'
+import {
+  columnFiltering,
+  columnPinning,
+  columnSizing,
+  headerActionMenu,
+} from '../../../plugins'
 
 // Касания (ADR 0086, TU1–TU12, TU14): проект `touch` в `npm test` — Chromium без
 // наведения и с грубым указателем — и проект `mobile` в `test:engines` (iPhone, Pixel).
@@ -816,6 +822,149 @@ describe('«Стоп» на касаниях (ADR 0153)', () => {
 
       await touch.realTap(center(button()))
       await expect.poll(() => signals[0]!.aborted).toBe(true)
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+// Включённые действия уходят в кебаб последними (ADR 0156, KA4): смена включённости ряд
+// не перестраивает, пока заголовок тронут, — мышью, клавиатурой и касанием.
+
+interface RowApi {
+  setSorting: (value: { id: string; desc: boolean }[]) => void
+  setColumnSizing: (value: Record<string, number>) => void
+}
+
+let rowApi: RowApi
+
+const ROW_DATA = Array.from({ length: 6 }, (_, i) => ({
+  id: String(i),
+  name: `Name ${i}`,
+  city: i % 2 ? 'Rome' : 'Paris',
+}))
+
+const RowGrid = () => {
+  const table = useCreateTable({
+    columns: [
+      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+      { id: 'city', accessorKey: 'city', header: 'City' },
+    ] as never,
+    data: ROW_DATA,
+    getRowId: (row: (typeof ROW_DATA)[number]) => row.id,
+    plugins: [
+      columnPinning(),
+      columnSorting(),
+      columnFiltering(),
+      columnSizing(),
+      headerActionMenu({ threshold: 4 }),
+    ] as never,
+  })
+  rowApi = table as unknown as RowApi
+  return (
+    <div style={{ width: 700, height: 360 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Включённые действия в ряду заголовка (ADR 0156)', () => {
+  test('KA4: выключение кнопкой в ряду не перестраивает ряд, пока указатель или фокус в заголовке: второе нажатие снова включает, фокус на кнопке; после ухода ряд перестраивается — мышью, клавиатурой и касанием', async () => {
+    const screen = await render(<RowGrid />)
+    await waitForGrid()
+    const nameHead = () =>
+      document.querySelector<HTMLElement>(
+        `${HEAD_CELL}[data-column-id="name"]`,
+      )!
+    const sortButton = () =>
+      nameHead().querySelector<HTMLElement>('.column-sort__button')!
+    const row = () =>
+      [
+        ...nameHead().querySelectorAll<HTMLElement>(
+          '[class*="column-"][class*="__button"], [data-action-menu]',
+        ),
+      ].map(button =>
+        button.hasAttribute('data-action-menu')
+          ? 'menu'
+          : (button.className.match(/column-(\w+)__button/)?.[1] ?? '?'),
+      )
+    const sorted = () => nameHead().getAttribute('aria-sort') ?? 'none'
+    const frame = () => new Promise(requestAnimationFrame)
+    /** Сортировка ходит по кругу: снять — одно или два нажатия. */
+    const untilOff = async (press: () => Promise<unknown>) => {
+      for (let i = 0; i < 3 && sorted() !== 'none'; i++) {
+        const before = sorted()
+        await press()
+        await expect.poll(sorted).not.toBe(before)
+      }
+      expect(sorted()).toBe('none')
+    }
+    try {
+      // Ширина на одну кнопку и кебаб.
+      for (let width = 140; width <= 300; width += 5) {
+        rowApi.setColumnSizing({ name: width })
+        await frame()
+        await frame()
+        if (row().length === 2 && row().includes('menu')) break
+      }
+      expect(row()).toEqual(['pin', 'menu'])
+      const sortOn = async () => {
+        rowApi.setSorting([{ id: 'name', desc: false }])
+        await expect.poll(row).toEqual(['sort', 'menu'])
+      }
+
+      // Мышь.
+      await sortOn()
+      await userEvent.hover(nameHead())
+      await humanClick(sortButton())
+      await expect.poll(sorted).toBe('none')
+      expect(row()).toEqual(['sort', 'menu'])
+      await humanClick(sortButton())
+      await expect.poll(sorted).not.toBe('none')
+      await untilOff(() => humanClick(sortButton()))
+      expect(row()).toEqual(['sort', 'menu'])
+      await userEvent.hover(document.body, { position: { x: 1, y: 1 } })
+      await expect.poll(row).toEqual(['pin', 'menu'])
+
+      // Клавиатура: фокус остаётся на кнопке, ряд ждёт ухода фокуса.
+      await sortOn()
+      sortButton().focus()
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(sorted).toBe('none')
+      expect(row()).toEqual(['sort', 'menu'])
+      expect(document.activeElement).toBe(sortButton())
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(sorted).not.toBe('none')
+      await untilOff(() => userEvent.keyboard('{Enter}'))
+      expect(row()).toEqual(['sort', 'menu'])
+      for (
+        let i = 0;
+        i < 5 && nameHead().contains(document.activeElement);
+        i++
+      ) {
+        await userEvent.keyboard('{Tab}')
+      }
+      expect(nameHead().contains(document.activeElement)).toBe(false)
+      await expect.poll(row).toEqual(['pin', 'menu'])
+
+      // Касание: заголовок тронут до касания вне его.
+      ;(document.activeElement as HTMLElement | null)?.blur()
+      await sortOn()
+      if (!chromium) return
+      await touch.realTap(center(sortButton()))
+      await expect.poll(sorted).toBe('none')
+      await wait(100)
+      expect(row()).toEqual(['sort', 'menu'])
+      await touch.realTap(center(sortButton()))
+      await expect.poll(sorted).not.toBe('none')
+      await untilOff(() => touch.realTap(center(sortButton())))
+      await wait(100)
+      expect(row()).toEqual(['sort', 'menu'])
+      const cell = document.querySelector<HTMLElement>(
+        `${BODY_CELL}[data-column-id="city"]`,
+      )!
+      await touch.realTap(center(cell))
+      await expect.poll(row).toEqual(['pin', 'menu'])
     } finally {
       await screen.unmount()
     }

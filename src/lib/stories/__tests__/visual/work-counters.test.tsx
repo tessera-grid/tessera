@@ -481,6 +481,68 @@ describe('Счётчики работы — кнопки заголовка по
   })
 })
 
+describe('Счётчики работы — включённые действия в ряду (ADR 0156)', () => {
+  test('KA8: состояние «тронут» заголовка перерисовывает только его зону действий; зоны других заголовков — нет', async () => {
+    const { measure, table } = await mountGrid({
+      enableColumnSorting: true,
+      enableColumnFiltering: true,
+      enableColumnPinning: true,
+      enableColumnSizing: true,
+      enableHeaderActionMenu: true,
+      headerActionMenuThreshold: 10,
+    })
+    const api = table() as {
+      setColumnSizing: (sizing: Record<string, number>) => void
+      setSorting: (sorting: { id: string; desc: boolean }[]) => void
+    }
+    const head = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__head-cell[data-column-id="${id}"]`,
+      )!
+    const sortButton = () =>
+      head('firstName').querySelector<HTMLElement>('.column-sort__button')
+    const pinButton = () =>
+      head('firstName').querySelector<HTMLElement>('.column-pin__button')
+    // Узкие колонки: в ряду одна кнопка и кебаб; у первой включена сортировка.
+    let width = 140
+    for (; width <= 300; width += 5) {
+      api.setColumnSizing({ firstName: width, lastName: width })
+      await new Promise(requestAnimationFrame)
+      await new Promise(requestAnimationFrame)
+      if (
+        pinButton() &&
+        head('firstName').querySelector('[data-action-menu]')
+      ) {
+        break
+      }
+    }
+    api.setSorting([{ id: 'firstName', desc: false }])
+    await expect.poll(sortButton).not.toBeNull()
+    await userEvent.hover(head('lastName'))
+
+    // Наведение, пока ряд не отстаёт от включённых, зону не перерисовывает.
+    const hover = await measure(async () => {
+      await userEvent.hover(head('firstName'))
+    })
+    expect(renders(hover, ActionsZone), describeWork(hover)).toBe(0)
+
+    // Выключение под указателем: ряд ждёт ухода; уход перерисовывает одну зону.
+    await userEvent.click(sortButton()!)
+    await expect
+      .poll(() => head('firstName').getAttribute('aria-sort'))
+      .toBe('none')
+    expect(sortButton()).not.toBeNull()
+    const leave = await measure(async () => {
+      await userEvent.hover(head('lastName'))
+      await expect.poll(pinButton).not.toBeNull()
+    })
+    expect(
+      renders(leave, ActionsZone),
+      describeWork(leave),
+    ).toBeLessThanOrEqual(2)
+  })
+})
+
 describe('Счётчики работы — ручка колонки (ADR 0114)', () => {
   test('CO10: наведение на заголовок раскрывает ручку без перерисовок — ни зон действий, ни ручек, ни заголовков', async () => {
     const { measure } = await mountGrid({

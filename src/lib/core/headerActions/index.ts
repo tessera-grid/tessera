@@ -97,6 +97,11 @@ export interface ResolveActionLayoutParams {
    * с конца. `undefined` — ширина не ограничивает.
    */
   capacity?: number
+  /**
+   * Id включённых действий для раскладки (ADR 0156): они уходят в кебаб последними.
+   * `undefined` — по `active(ctx)` действия.
+   */
+  active?: ReadonlySet<string>
 }
 
 export interface ActionLayout {
@@ -150,10 +155,11 @@ export const buttonCapacity = ({
 }): number => Math.max(0, Math.floor((width - reserve + gap) / (button + gap)))
 
 /**
- * Чистое решение раскладки действий слота. По порогу (all-or-nothing) применимые
- * действия либо все инлайн, либо схлопнутые в кебаб; вместимость ряда (`capacity`)
- * уводит в кебаб ещё и не поместившиеся — с конца, кебаб занимает одно место.
- * Опаковые компоненты кебаб схлопнуть не может (учтены в пороге и в ряду).
+ * Чистое решение раскладки действий слота. Порог уводит в кебаб невключённые
+ * сворачиваемые (`mode: 'always'` — все), вместимость ряда (`capacity`) — ещё и не
+ * поместившиеся: сначала невключённые, затем включённые, с конца по `order`; кебаб
+ * занимает одно место (ADR 0156). Опаковые компоненты кебаб схлопнуть не может (учтены
+ * в пороге и в ряду).
  */
 export const resolveActionLayout = ({
   actions,
@@ -161,6 +167,7 @@ export const resolveActionLayout = ({
   config,
   ctx,
   capacity,
+  active,
 }: ResolveActionLayoutParams): ActionLayout => {
   const applicable = sortByOrder(
     actions.filter(action => action.visible?.(ctx) !== false),
@@ -174,11 +181,23 @@ export const resolveActionLayout = ({
     return { collapsed: false, inline: regular, menu: [] }
   }
 
+  const isActive = (action: SlotAction) =>
+    active ? active.has(action.id) : action.active?.(ctx) === true
   const total = regular.length + opaqueCount + (menuOnly.length > 0 ? 1 : 0)
-  const shouldCollapse = config.mode === 'always' || total >= config.threshold
-  const collapsible = shouldCollapse
-    ? regular.filter(action => action.collapsible !== false)
-    : overflowOf(regular, opaqueCount, menuOnly.length > 0, capacity)
+  const all = regular.filter(action => action.collapsible !== false)
+  const collapsible =
+    config.mode === 'always'
+      ? all
+      : overflowOf(
+          regular,
+          total >= config.threshold
+            ? all.filter(action => !isActive(action))
+            : [],
+          opaqueCount,
+          menuOnly.length > 0,
+          capacity,
+          isActive,
+        )
 
   if (collapsible.length === 0 && menuOnly.length === 0) {
     return { collapsed: false, inline: regular, menu: [] }
@@ -193,24 +212,34 @@ export const resolveActionLayout = ({
 }
 
 /**
- * Сворачиваемые действия, которым нет места в ряду из `capacity` кнопок: с конца по
- * `order`; появившийся кебаб занимает одно место.
+ * Свёрнутые порогом (`folded`) и сворачиваемые, которым нет места в ряду из
+ * `capacity` кнопок: сначала невключённые, затем включённые, с конца по `order`;
+ * появившийся кебаб занимает одно место.
  */
 const overflowOf = (
   regular: SlotAction[],
+  folded: SlotAction[],
   opaqueCount: number,
   hasMenu: boolean,
   capacity: number | undefined,
+  isActive: (action: SlotAction) => boolean,
 ): SlotAction[] => {
+  const left = regular.filter(action => !folded.includes(action))
+  const withMenu = hasMenu || folded.length > 0
   if (
     capacity === undefined ||
-    regular.length + opaqueCount + (hasMenu ? 1 : 0) <= capacity
+    left.length + opaqueCount + (withMenu ? 1 : 0) <= capacity
   ) {
-    return []
+    return folded
   }
-  const collapsible = regular.filter(action => action.collapsible !== false)
-  const fixed = regular.length - collapsible.length + opaqueCount + 1
-  return collapsible.slice(Math.max(0, capacity - fixed))
+  const collapsible = left.filter(action => action.collapsible !== false)
+  const fixed = left.length - collapsible.length + opaqueCount + 1
+  const extra = collapsible.length - Math.max(0, capacity - fixed)
+  const byEviction = [
+    ...collapsible.filter(action => !isActive(action)).reverse(),
+    ...collapsible.filter(isActive).reverse(),
+  ]
+  return [...folded, ...byEviction.slice(0, extra)]
 }
 
 /** Сколько применимых действий включено (`active`) — знак на кебабе (ADR 0062). */

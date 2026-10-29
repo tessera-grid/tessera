@@ -3271,6 +3271,56 @@ export const HighContrastHeaderMenuAsyncActionsStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastHeaderMenuNarrowActiveStep1 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuNarrowActive,
+    1,
+  ),
+  name: 'Columns/Header menu — Narrow column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuNarrowActiveStep2 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuNarrowActive,
+    2,
+  ),
+  name: 'Columns/Header menu — Narrow column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuNarrowActiveStep3 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuNarrowActive,
+    3,
+  ),
+  name: 'Columns/Header menu — Narrow column, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuNarrowActiveStep4 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuNarrowActive,
+    4,
+  ),
+  name: 'Columns/Header menu — Narrow column, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuNarrowActiveStep5 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuNarrowActive,
+    5,
+  ),
+  name: 'Columns/Header menu — Narrow column, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastPinningColumnsStep1 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningColumns, 1),
   name: 'Columns/Pinning — Pin columns, шаг 1',

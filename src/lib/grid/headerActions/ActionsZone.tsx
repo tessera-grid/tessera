@@ -19,6 +19,7 @@ import { useTableState } from '../../core/reactivity'
 import { ActionButton } from './ActionButton'
 import { ActionInlineMenu, ActionMenu, ActionPanel } from './ActionMenu.lazy'
 import { HeaderMetricsContext, headerCapacityOf } from './headerCapacity'
+import { ActionsHostContext, useHeldActive } from './useHeldActive'
 import { zoneViewKey } from './zoneViewKey'
 
 interface ActionsZoneProps {
@@ -57,6 +58,18 @@ export const ActionsZone = memo(
         ? headerCapacityOf(context.header, metrics)
         : undefined
 
+    // Включённые уходят в кебаб последними; смену включённости ряд принимает, когда
+    // заголовок не тронут (ADR 0156).
+    const liveActive = useTableState(table, () =>
+      descriptors
+        .filter(action => action.active?.(context) === true)
+        .map(action => action.id)
+        .sort()
+        .join(','),
+    )
+    const heldActive = useHeldActive(liveActive, useContext(ActionsHostContext))
+    const active = new Set(heldActive ? heldActive.split(',') : [])
+
     useTableState(table, () =>
       zoneViewKey({
         actions: descriptors,
@@ -65,6 +78,7 @@ export const ActionsZone = memo(
         ctx: context,
         labels,
         capacity: capacityOf(),
+        active,
       }),
     )
 
@@ -74,6 +88,7 @@ export const ActionsZone = memo(
       config: table.options.actionMenu?.[slot],
       ctx: context,
       capacity: capacityOf(),
+      active,
     })
 
     const variant = slot === 'actionRowSlot' ? 'row' : 'cell'

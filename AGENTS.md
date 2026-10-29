@@ -1003,6 +1003,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       меню, цель `'table'` — свечение и плашка, строка-заглушка ленивых детей), PW4 — в
       `server-row-model`, модульный `pendingOnData` (PW5 — правило в `rendering.md`), история
       S1 ([ADR 0155](docs/decisions/0155-pending-on-data.md)).
+    - _Включённые действия в ряду:_ модульный `slots` (KA1–KA2 — по ширине и по порогу
+      включённые уходят в кебаб последними, `mode: 'always'` сворачивает все), визуальный
+      `active-actions-row` (KA3, KA5–KA6 — точка на кебабе, включение из кебаба мышью и
+      клавиатурой, протяжка ширины), KA4 — в `touch` (удержание ряда мышью, клавиатурой и
+      касанием), KA8 — в `work-counters`, перф KA7 — в `scroll`, история «Columns/Header
+      menu — Narrow column» (S1) ([ADR 0156](docs/decisions/0156-active-actions-stay-in-row.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,

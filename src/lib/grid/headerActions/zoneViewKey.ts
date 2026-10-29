@@ -79,6 +79,7 @@ export const zoneViewKey = ({
   ctx,
   labels,
   capacity,
+  active,
 }: {
   actions: SlotAction[]
   opaqueCount: number
@@ -86,6 +87,7 @@ export const zoneViewKey = ({
   ctx: unknown
   labels: TableLabels
   capacity?: number
+  active?: ReadonlySet<string>
 }) => {
   const { collapsed, inline, menu } = resolveActionLayout({
     actions,
@@ -93,6 +95,7 @@ export const zoneViewKey = ({
     config,
     ctx: ctx as never,
     capacity,
+    active,
   })
   return JSON.stringify([
     collapsed,

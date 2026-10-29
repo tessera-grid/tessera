@@ -127,7 +127,10 @@ describe('Action menu — header', () => {
   })
 
   test('AM13: пункт меню исполняет действие — пиннинг из меню закрепляет столбец, label реактивен', async () => {
-    const { container } = await renderHeaderMenu()
+    // `always`: включённое действие остаётся в меню (ADR 0156), подпись пункта видна.
+    const { container } = await renderHeaderMenu({
+      headerActionMenuMode: 'always',
+    })
 
     const firstCol = dataHeadCells(container)[0]
     const colId = firstCol.getAttribute('data-column-id')!

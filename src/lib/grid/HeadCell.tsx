@@ -10,6 +10,7 @@ import {
   useCallback,
   useId,
   useMemo,
+  useRef,
 } from 'react'
 
 import type { DraggableAttributes } from '@dnd-kit/core'
@@ -35,6 +36,7 @@ import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
 import type { CommonColumnDef } from '../core/commonFeature.types'
 import { ActionsZone } from './headerActions/ActionsZone'
+import { ActionsHostContext } from './headerActions/useHeldActive'
 import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
 import { pinnedSideToDom } from './cellPinningParams'
@@ -171,10 +173,12 @@ export const HeadCellView = ({
   )
   const setDragNodeRef = drag?.setNodeRef
   const navRef = nav?.ref
+  const hostRef = useRef<HTMLDivElement | null>(null)
   const setNodeRef = useCallback(
     (node: HTMLDivElement | null) => {
       setDragNodeRef?.(node)
       assignRef(navRef, node)
+      hostRef.current = node
     },
     [setDragNodeRef, navRef],
   )
@@ -212,7 +216,7 @@ export const HeadCellView = ({
     getHeaderRowStart(header) + header.rowSpan === headerRowCount
 
   const slots = (
-    <>
+    <ActionsHostContext.Provider value={hostRef}>
       {canRenderSlots && (
         <ActionsZone
           slot="leftHeaderSlot"
@@ -228,7 +232,7 @@ export const HeadCellView = ({
           context={header.getContext()}
         />
       )}
-    </>
+    </ActionsHostContext.Provider>
   )
 
   const content: ReactNode = drag ? (

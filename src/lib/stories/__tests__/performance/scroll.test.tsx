@@ -285,6 +285,7 @@ const CF12_COST = { ratio: 3, plusMs: 4 }
 const MI23_COST = { ratio: 1.3, plusMs: 4 }
 const TL8_COST = { ratio: 1.3, plusMs: 4 }
 const AI10_COST = { ratio: 1.3, plusMs: 4 }
+const KA7_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
 const OF20_COST = { ratio: 1.3, plusMs: 4 }
@@ -644,6 +645,83 @@ describe('Производительность прокрутки — индик
         })
       await record('AI10-base', 'заголовки без сортировки', base, false)
       await record('AI10', 'сортировка по всем колонкам', sorted, true)
+
+      expect(
+        sorted.p95Ms,
+        `X p95=${sorted.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Включённые действия в ряду (ADR 0156, KA7): 1000×1000 со всеми плагинами, колонки
+// узкие — в ряду одна кнопка и кебаб, у каждого заголовка включена сортировка и держится в
+// ряду, против той же выборки без сортировки.
+describe('Производительность прокрутки — включённые действия в ряду', () => {
+  test(
+    'KA7: горизонтальная прокрутка 1000×1000 узких колонок, где у каждого заголовка включена сортировка, не дороже той же прокрутки без включённых',
+    async () => {
+      const measure = async (sorted: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...ALL_PLUGINS,
+          ...INLINE_HEADER_ACTIONS,
+          // Узкие колонки: ширина уводит кнопки в кебаб (ADR 0111).
+          columnsOverride: makeColumns(LARGE.columnCount).map(column => ({
+            ...column,
+            size: 170,
+          })),
+          extraPlugins: sorted ? [sortAllColumnsSeed()] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => !!document.querySelector('[data-action-menu]'))
+          .toBe(true)
+        await expect
+          .poll(
+            () =>
+              document.querySelector(
+                '.data-grid__head-cell .column-sort__button [data-active-indicator][data-count]',
+              ) !== null,
+          )
+          .toBe(sorted)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return x
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const sorted = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, KA7_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'x',
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('KA7-base', 'узкие колонки без включённых', base, false)
+      await record('KA7', 'узкие колонки, сортировка в ряду', sorted, true)
 
       expect(
         sorted.p95Ms,
