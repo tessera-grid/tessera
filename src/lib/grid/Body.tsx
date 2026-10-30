@@ -18,6 +18,7 @@ import { DraggableBodyRow } from './DraggableBodyRow'
 import { findDropParent } from './dnd/dropParent'
 import { LoadMoreError } from './LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
+import { hasStickyRows, StickyRows } from './StickyRows'
 import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
@@ -166,6 +167,41 @@ export const Body = ({
       data-layout={layout}
     >
       <ColumnWindowContext.Provider value={virtualColumns}>
+        {hasStickyRows(table) && virtualRows.length > 0 && (
+          <StickyRows
+            table={table}
+            source={rowSource}
+            rowHeight={virtualRows[0]!.size}
+            rowsKey={virtualRows}
+            renderRow={(entry, { last, pushed }) => (
+              <BodyRow
+                key={`sticky-${entry.row.id}`}
+                copy
+                stickyLast={last}
+                stickyPushed={pushed}
+                layout={layout}
+                row={entry.row}
+                virtualRow={{
+                  key: `sticky-${entry.row.id}`,
+                  index: entry.index,
+                  start: entry.top,
+                  end: entry.top + virtualRows[0]!.size,
+                  size: virtualRows[0]!.size,
+                  lane: 0,
+                }}
+                visibleCells={entry.row.getVisibleCells()}
+                leafColumns={leafColumns}
+                leftCellSlot={leftCellSlot}
+                rightCellSlot={rightCellSlot}
+                cellSlot={cellSlot}
+                actionRowSlot={actionRowSlot}
+                ariaRowIndexBase={ariaRowIndexBase}
+                selectableRows={selectableRows}
+                isVirtualColumns={isVirtualColumns}
+              />
+            )}
+          />
+        )}
         <RowMotion
           enabled={rowAnimation}
           rows={rows}

@@ -114,6 +114,93 @@
   grid-auto-rows: max-content;
 }
 
+/*
+ * Закреплённые колонки (ADR 0011): тон и линия по краю — только когда под блоком
+ * прокручено содержимое; до того он как обычные колонки. Внутренний край блока у конца
+ * таблицы скруглён, как край липкой строки.
+ */
+.table__container:not([data-pinned-left-stuck]) {
+  --tsr-comp-cell-pinned-left-bg: var(--tsr-comp-row-bg);
+  --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-comp-row-odd-bg);
+
+  & [data-cell-last-left-pinned='true'] {
+    border-right-color: transparent;
+  }
+}
+
+.table__container:not([data-pinned-right-stuck]) {
+  --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-row-bg);
+  --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-row-odd-bg);
+
+  & [data-cell-first-right-pinned='true'] {
+    border-left-color: transparent;
+  }
+}
+
+/*
+ * Прилипший блок отбрасывает тень на прокручиваемые колонки — только в их сторону.
+ * Выбранная ячейка добавляет тень к кромкам выделения сама; обёртка содержимого
+ * наследует тень ячейки, ей вторая не нужна.
+ */
+.table__container[data-pinned-left-stuck] [data-cell-last-left-pinned='true'] {
+  --tsr-pinned-edge-shadow: var(--tsr-comp-shadow-pinned-left);
+  clip-path: inset(0 -16px 0 0);
+}
+
+.table__container[data-pinned-right-stuck]
+  [data-cell-first-right-pinned='true']:not([data-actions-column-cell='true']) {
+  --tsr-pinned-edge-shadow: var(--tsr-comp-shadow-pinned-right);
+  clip-path: inset(0 0 0 -16px);
+}
+
+.table__container[data-pinned-left-stuck]
+  [data-cell-last-left-pinned='true']:not([data-cell-selected='true']),
+.table__container[data-pinned-right-stuck]
+  [data-cell-first-right-pinned='true']:not(
+    [data-actions-column-cell='true']
+  ):not([data-cell-selected='true']) {
+  box-shadow: var(--tsr-pinned-edge-shadow);
+
+  & :global(.data-grid__cell-wrapper-content) {
+    box-shadow: none;
+  }
+}
+
+/* Концы блока: сверху — первый ряд шапки, снизу — футер, без футера — последняя строка. */
+.table__container[data-pinned-left-stuck]
+  :global(
+    .data-grid__head-cell
+  )[data-first-headers-row='true'][data-cell-last-left-pinned='true'] {
+  border-top-right-radius: var(--tsr-comp-sticky-radius);
+}
+
+.table__container[data-pinned-right-stuck]
+  :global(
+    .data-grid__head-cell
+  )[data-first-headers-row='true'][data-cell-first-right-pinned='true']:not(
+    [data-actions-column-cell='true']
+  ) {
+  border-top-left-radius: var(--tsr-comp-sticky-radius);
+}
+
+.table__container[data-pinned-left-stuck]
+  :is(
+    :global(.data-grid__footer-cell),
+    .table:not([data-footer-position]) [data-last-row='true'] *
+  )[data-cell-last-left-pinned='true'] {
+  border-bottom-right-radius: var(--tsr-comp-sticky-radius);
+}
+
+.table__container[data-pinned-right-stuck]
+  :is(
+    :global(.data-grid__footer-cell),
+    .table:not([data-footer-position]) [data-last-row='true'] *
+  )[data-cell-first-right-pinned='true']:not(
+    [data-actions-column-cell='true']
+  ) {
+  border-bottom-left-radius: var(--tsr-comp-sticky-radius);
+}
+
 /* Закреплённый футер (ADR 0118) липнет к низу области — таблица не ниже неё. */
 .table[data-footer-position='pinned'] {
   min-height: 100%;

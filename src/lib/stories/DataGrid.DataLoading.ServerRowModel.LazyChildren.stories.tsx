@@ -38,7 +38,8 @@ import {
 
 /**
  * Вложенные строки с сервера (ADR 0138, S7): `Playground` — тысяча строк, у каждой — вложенные
- * записи на «сервере», размер блока и память блоков — контролами; S7 — раскрытие строки.
+ * записи на «сервере», размер блока и память блоков — контролами; S7 — раскрытие строки;
+ * S4 ADR 0160 — липкие ветки.
  */
 const meta = {
   ...dataGridMeta,
@@ -237,6 +238,84 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
       await expect(rows[parent + 1 + TREE_CHILDREN]?.dataset.rowId).toBe(
         'item-id-2',
       )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0160, S4: липкие ветки дерева SSRM --------------------------------------------
+
+const STICKY_PARENT = 'item-id-0'
+const stickyTreeProps: GuideStoryStep['props'] = context => ({
+  ...treeProps!(context),
+  rowExpandingStickyRows: true,
+})
+const stickyIds = (root: HTMLElement) =>
+  [
+    ...root.querySelectorAll<HTMLElement>('[data-sticky-rows] [data-row-id]'),
+  ].map(row => row.dataset.rowId)
+const branchRow = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${STICKY_PARENT}"]:not([data-sticky-copy])`,
+  )
+const branchOpen = (root: HTMLElement) =>
+  branchRow(root)?.dataset.expanded === 'true' &&
+  !!root.querySelector(`.data-grid__body-row[data-row-id="${STICKY_PARENT}.0"]`)
+
+/** Пользователь раскрыл первую строку, её вложенные строки пришли. */
+const openBranch = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!branchRow(root), signal)
+  if (branchRow(root)!.dataset.expanded !== 'true') {
+    branchRow(root)!.querySelector<HTMLElement>('.row-expand-button')!.click()
+  }
+  await pollUntil(() => branchOpen(root), signal)
+}
+
+const STICKY_BRANCHES: readonly GuideStoryStep[] = [
+  {
+    title: 'Строка раскрыта',
+    hint: 'Сервер отдал вложенные строки первой строки — они под ней с отступом уровня.',
+    props: stickyTreeProps,
+    enter: stepAction(async (root, { signal }) => {
+      server.hold = false
+      await openBranch(root, signal)
+      root.querySelector<HTMLElement>('.data-grid__container')!.scrollTop = 0
+    }),
+  },
+  {
+    title: 'Пользователь прокрутил ветку',
+    hint: 'Строка ушла вверх, но держится под шапкой, пока видны её вложенные строки: видно, чья это ветка. Тень отделяет её от строк ниже.',
+    enter: stepAction(async (root, { signal }) => {
+      await openBranch(root, signal)
+      const scroller = root.querySelector<HTMLElement>('.data-grid__container')!
+      scroller.scrollTop = branchRow(root)!.offsetHeight * 2
+      await pollUntil(() => stickyIds(root).length === 1, signal)
+    }),
+  },
+]
+
+/** ADR 0160, S4: липкая строка ветки дерева серверной модели при прокрутке. */
+export const ServerStickyBranches: StoryObj<StoryProps> = {
+  name: 'Sticky branches',
+  parameters: { scenario: '0160/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Липкие ветки"
+      steps={STICKY_BRANCHES}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(STICKY_BRANCHES[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(branchOpen(canvas)).toBe(true)
+      await expect(stickyIds(canvas)).toEqual([])
+    })
+    await step(STICKY_BRANCHES[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(stickyIds(canvas)).toEqual([STICKY_PARENT])
       await settle()
     })
   },

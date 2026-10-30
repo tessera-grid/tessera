@@ -85,7 +85,8 @@
       inset 0 2px 0 0 var(--tsr-sel-edge-top, transparent),
       inset -2px 0 0 0 var(--tsr-sel-edge-right, transparent),
       inset 0 -2px 0 0 var(--tsr-sel-edge-bottom, transparent),
-      inset 2px 0 0 0 var(--tsr-sel-edge-left, transparent);
+      inset 2px 0 0 0 var(--tsr-sel-edge-left, transparent),
+      var(--tsr-pinned-edge-shadow, 0 0 transparent);
   }
 
   /* Активная (anchor) ячейка — как в Excel/Sheets: НЕ заливается тинтом (виден фон

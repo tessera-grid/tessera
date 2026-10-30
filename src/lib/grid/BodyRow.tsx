@@ -34,6 +34,14 @@ import styles from '../grid/BodyRow/BodyRow.module.css'
 
 export interface TableBodyRowProps {
   layout: 'grid' | 'flex'
+  /**
+   * Липкая копия строки группы под шапкой (ADR 0160, §3): без клавиатурной навигации и
+   * `aria-*` строки; `stickyLast` — нижняя в стопке, под ней отделитель; `stickyPushed` —
+   * группа кончилась, следующая выталкивает копию: она уходит как обычная строка.
+   */
+  copy?: boolean
+  stickyLast?: boolean
+  stickyPushed?: boolean
   row: Row<any, any>
   visibleCells: Cell<any, any, unknown>[]
   virtualRow: VirtualItem
@@ -223,10 +231,11 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
   const { highlight, flash } = useRowStateSubscription(row)
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const flashed = flashRender([{ layer: 'row', entry: flash }])
-  const nav = useKeyboardNavigationRow(
+  const navRow = useKeyboardNavigationRow(
     (row as unknown as { table: unknown }).table,
     virtualRow.index,
   )
+  const nav = props.copy ? undefined : navRow
 
   const canExpand = row.getCanExpand?.() ?? false
   // Состояние раскрытия строки озвучивается, только если его можно менять (ADR 0119).
@@ -268,6 +277,9 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       aria-posinset={props.treePosInSet}
       data-index={virtualRow.index}
       data-row-id={row.id}
+      data-sticky-copy={props.copy || undefined}
+      data-sticky-last={props.stickyLast || undefined}
+      data-sticky-pushed={props.stickyPushed || undefined}
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}

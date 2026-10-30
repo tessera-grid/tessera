@@ -94,6 +94,7 @@ import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { useRowHeights } from './useRowHeights'
 import { useControlColumnSizes } from './useControlColumnSizes'
 import { ScrollingAttribute } from './ScrollingAttribute'
+import { PinnedEdgesAttribute } from './PinnedEdgesAttribute'
 import type { DataGridProps } from './dataGridTypes'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
@@ -236,7 +237,8 @@ export const DataGrid = ({
 
   const headerGroupsDepth = headerGroups.length
   const hasNestedGroups = headerGroupsDepth > 1
-  const headHeight = headerGroupsDepth * heights.head + headerGroupsDepth
+  // Разделитель в 1px — между строками шапки; под последней — тень, а не рамка.
+  const headHeight = headerGroupsDepth * heights.head + headerGroupsDepth - 1
   // Над телом шапка, под ним — не больше строки футера.
   const aroundBody = headHeight + heights.row
 
@@ -562,6 +564,10 @@ export const DataGrid = ({
                       onCancelled={focusBody}
                     />
                     <ScrollingAttribute getScrollElement={getScrollElement} />
+                    <PinnedEdgesAttribute
+                      getScrollElement={getScrollElement}
+                      columnSizes={columnSizes}
+                    />
                     {enableOverflowTooltip && (
                       <OverflowTooltip getScrollElement={getScrollElement} />
                     )}

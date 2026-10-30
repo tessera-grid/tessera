@@ -18,6 +18,11 @@ export interface RowGroupingOptions extends Omit<
 > {
   /** `false` — плагин отключён. */
   enabled?: boolean
+  /**
+   * Строка группы держится под шапкой, пока видны её строки; вложенные — стопкой
+   * (ADR 0160, §3). По умолчанию выключено.
+   */
+  stickyRows?: boolean
 }
 
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
@@ -31,4 +36,5 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
   features: rowGroupingModelFeatures,
   // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).
   slotActions: [groupHeaderAction],
+  options: o => ({ stickyGroupRows: o.enabled !== false && !!o.stickyRows }),
 })

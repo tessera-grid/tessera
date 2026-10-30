@@ -1007,6 +1007,50 @@ export const HighContrastExpandingExpandAllStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastGroupingStickyRowsStep1 = {
+  ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 1),
+  name: 'Rows/Grouping — Sticky group rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupingStickyRowsStep2 = {
+  ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 2),
+  name: 'Rows/Grouping — Sticky group rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupingStickyRowsStep3 = {
+  ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 3),
+  name: 'Rows/Grouping — Sticky group rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupingStickyRowsStep4 = {
+  ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 4),
+  name: 'Rows/Grouping — Sticky group rows, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerStickyBranchesStep1 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerStickyBranches,
+    1,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Sticky branches, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerStickyBranchesStep2 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerStickyBranches,
+    2,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Sticky branches, шаг 2',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelMillionRowsStep1 = {
   ...twinStep(
     serverRowModelStories,

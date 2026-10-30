@@ -194,6 +194,8 @@
   /* Слои (z-index) — не цвет, не тема; component-константы. */
   --tsr-comp-z-index-pinned: 2;
   --tsr-comp-z-index-head: 3;
+  /* Липкие строки групп — над строками тела, внутри тела (ADR 0160). */
+  --tsr-comp-z-index-sticky-rows: 6;
   --tsr-comp-z-index-loader: 4;
   --tsr-comp-z-index-tooltip: 1500;
 
@@ -481,6 +483,11 @@
   --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-cell-odd-pinned-left-bg);
   --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-cell-pinned-left-bg);
   --tsr-comp-cell-pinned-border-color: var(--tsr-sys-border);
+  /* Липкие строки групп и веток (ADR 0160, §3) — как закреплённые колонки. */
+  --tsr-comp-sticky-row-bg: var(--tsr-comp-cell-pinned-left-bg);
+  --tsr-comp-sticky-row-border-color: var(--tsr-comp-cell-pinned-border-color);
+  /* Скругление края у конца липкого блока: строк под шапкой и закреплённых колонок. */
+  --tsr-comp-sticky-radius: calc(2 * var(--tsr-sys-radius));
 
   /* DnD строк: облако на месте, куда бросить нельзя (ADR 0137). */
   --tsr-comp-row-drop-invalid-overlay-bg: color-mix(
@@ -796,6 +803,10 @@
   --tsr-comp-shadow-color: var(--tsr-sys-shadow-color);
   --tsr-comp-shadow-head: 0 4px 8px var(--tsr-comp-shadow-color);
   --tsr-comp-shadow-footer: 0 -4px 8px var(--tsr-comp-shadow-color);
+  /* Тень у края прилипших закреплённых колонок — как под шапкой; разлёт по вертикали
+     прячет затухание на стыках строк. */
+  --tsr-comp-shadow-pinned-left: -4px 0 8px 8px var(--tsr-comp-shadow-color);
+  --tsr-comp-shadow-pinned-right: 4px 0 8px 8px var(--tsr-comp-shadow-color);
   /* Затемнение от черты грипа ширины влево — до кнопок, на подпись (ADR 0135). */
   --tsr-comp-shadow-grip-color: color-mix(
     in srgb,

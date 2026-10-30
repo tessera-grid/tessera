@@ -16,12 +16,12 @@ import {
 // Каждое требование — отдельный именованный тест `R<n>`.
 
 describe('Ядро на TanStack — размеры и отступы', () => {
-  test('R6: высота ряда заголовков фиксирована (50px/уровень + 1px разделитель)', async () => {
+  test('R6: высота ряда заголовков фиксирована (50px на уровень, между уровнями — 1px разделитель)', async () => {
     renderGrid({ columnCount: 4, dataCount: 4 })
     await waitForGrid()
 
-    // Один уровень заголовков → переменная высоты шапки = 50 + 1.
-    expect(cssVar(HEAD_HEIGHT_VAR)).toBe('51px')
+    // Один уровень заголовков — разделителей нет: переменная высоты шапки = 50.
+    expect(cssVar(HEAD_HEIGHT_VAR)).toBe('50px')
 
     const cells = headCells()
     cells.forEach(cell => {

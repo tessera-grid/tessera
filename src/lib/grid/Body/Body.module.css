@@ -73,3 +73,36 @@
   position: absolute;
   inset: 0;
 }
+
+/*
+ * Липкие строки групп и веток (ADR 0160, §3): блок нулевой высоты держится под шапкой,
+ * копии строк — в нём. Над строками тела, под шапкой: тело — свой контекст наложения.
+ */
+.sticky {
+  position: sticky;
+  top: var(--tsr-comp-head-height);
+  grid-row: 1;
+  grid-column: 1;
+  height: 0;
+  z-index: var(--tsr-comp-z-index-sticky-rows);
+
+  /*
+   * Как закреплённые колонки (ADR 0011, CP28): ступень тона на всю строку — и у её
+   * закреплённых ячеек, чётной строки и нечётной, — и линия по краю у тела.
+   */
+  & [data-sticky-copy]:not([data-sticky-pushed]) {
+    --tsr-comp-row-bg: var(--tsr-comp-sticky-row-bg);
+    --tsr-comp-row-odd-bg: var(--tsr-comp-sticky-row-bg);
+    --tsr-comp-cell-pinned-left-bg: var(--tsr-comp-sticky-row-bg);
+    --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-comp-sticky-row-bg);
+    --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-sticky-row-bg);
+    --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-sticky-row-bg);
+  }
+
+  /* Нижние углы скруглены; линия у тела — тенью, она идёт за скруглением. */
+  & [data-sticky-last] {
+    border-bottom-left-radius: var(--tsr-comp-sticky-radius);
+    border-bottom-right-radius: var(--tsr-comp-sticky-radius);
+    box-shadow: 0 1px 0 var(--tsr-comp-sticky-row-border-color);
+  }
+}

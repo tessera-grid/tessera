@@ -62,6 +62,11 @@ export interface RowExpandingOptions extends Omit<
    * раскрытие только по строкам. По умолчанию есть.
    */
   expandAll?: boolean
+  /**
+   * Строка ветки дерева держится под шапкой, пока видны её дети; вложенные — стопкой
+   * (ADR 0160, §3). По умолчанию выключено.
+   */
+  stickyRows?: boolean
   /** Бизнес-колбэк раскрытия строки (аргумент фабрики); читается живо. */
   onExpandRow?: RowExpandingHooks['onExpandRow']
   /** У строки есть дети, которых нет в `subRows`, — их грузит `loadChildren` (ADR 0054). */
@@ -198,6 +203,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     return {
       getRowCanExpand: o.enabled === false ? undefined : getRowCanExpand,
       rowExpandAllButton: o.enabled !== false && o.expandAll !== false,
+      stickyBranchRows: o.enabled !== false && !!o.stickyRows,
     }
   },
 })

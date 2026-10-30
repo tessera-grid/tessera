@@ -326,6 +326,12 @@ export const rowExpandingExpandAllType = booleanControl(
   'Кнопка «Раскрыть всё / Свернуть всё» в шапке колонки раскрытия (`expandAll`)',
   true,
 )
+export const rowExpandingStickyRowsType = booleanControl(
+  'Строка ветки держится под шапкой, пока видны её дети (`stickyRows`)',
+)
+export const rowGroupingStickyRowsType = booleanControl(
+  'Строка группы держится под шапкой, пока видны её строки (`stickyRows`)',
+)
 export const rowExpandingColumnType = radioControl(
   'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`)',
   ['auto', 'always'],

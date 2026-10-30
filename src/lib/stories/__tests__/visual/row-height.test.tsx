@@ -88,7 +88,7 @@ describe('Высота строк и шапки, ширина колонок п�
     await waitForRows()
     // Вложенная шапка мока: Info → More Info → Age — три строки.
     const depth = 3
-    expect(cssVar('--tsr-comp-head-height')).toBe(`${depth * 72 + depth}px`)
+    expect(cssVar('--tsr-comp-head-height')).toBe(`${depth * 72 + depth - 1}px`)
     // Разделители — только между строками шапки.
     expect(heightOf(document.querySelector(HEAD)!)).toBe(depth * 72 + depth - 1)
     expect(new Set(rows().map(heightOf))).toEqual(new Set([44]))
@@ -96,7 +96,7 @@ describe('Высота строк и шапки, ширина колонок п�
 
     await render(<composed.SizingPlayground rowHeight={60} />)
     await waitForRows()
-    expect(cssVar('--tsr-comp-head-height')).toBe('61px')
+    expect(cssVar('--tsr-comp-head-height')).toBe('60px')
     for (const cell of document.querySelectorAll(HEAD_CELL)) {
       expect(heightOf(cell)).toBe(60)
     }
@@ -113,7 +113,7 @@ describe('Высота строк и шапки, ширина колонок п�
 
     expect(new Set(rows().map(heightOf))).toEqual(new Set([60]))
     expect(heightOf(document.querySelector(HEAD)!)).toBe(70)
-    expect(cssVar('--tsr-comp-head-height')).toBe('71px')
+    expect(cssVar('--tsr-comp-head-height')).toBe('70px')
     expect(cssVar('--tsr-comp-body-height')).toBe(`${1000 * 60}px`)
   })
 
@@ -155,7 +155,7 @@ describe('Высота строк и шапки, ширина колонок п�
       .toEqual(new Set([70]))
     expect(getScroller()).toBe(scroller)
     expect(cssVar('--tsr-comp-body-height')).toBe(`${200 * 70}px`)
-    expect(cssVar('--tsr-comp-head-height')).toBe('71px')
+    expect(cssVar('--tsr-comp-head-height')).toBe('70px')
 
     const bottom =
       scroller.getBoundingClientRect().top +
