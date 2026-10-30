@@ -28,7 +28,7 @@ export interface StickyRow {
 
 interface StickyTable {
   options: { stickyGroupRows?: boolean; stickyBranchRows?: boolean }
-  scrollToRow?: (rowId: string, options?: { align?: 'start' }) => unknown
+  scrollToRowIndex?: (index: number, options?: { align?: 'start' }) => unknown
 }
 
 /** Глубже не бывает: стопка ограничена, даже если дерево глубже. */
@@ -138,14 +138,11 @@ export const StickyRows = ({
   table,
   source,
   rowHeight,
-  rowsKey,
   renderRow,
 }: {
   table: unknown
   source: RowSource<AnyRow>
   rowHeight: number
-  /** Строки окна сменились — стопка пересчитывается. */
-  rowsKey: unknown
   /**
    * `last` — нижняя невытесняемая копия: под ней отделитель; `pushed` — группа кончилась,
    * копию выталкивает следующая.
@@ -175,9 +172,10 @@ export const StickyRows = ({
     setStack(prev => (sameStack(prev, next) ? prev : next))
   })
 
+  // Каждая отрисовка тела: строки окна меняет и приход блока серверной модели.
   useIsomorphicLayoutEffect(() => {
     update.current()
-  }, [rowsKey, source, rowHeight, update])
+  })
 
   useIsomorphicLayoutEffect(() => {
     const scroller = ref.current?.closest<HTMLElement>('.data-grid__container')
@@ -198,13 +196,16 @@ export const StickyRows = ({
   })
 
   // Шеврон копии сворачивает группу — к её строке, иначе свёрнутая ушла бы выше экрана.
+  // Строка встаёт под копиями предков: они остаются в стопке над ней.
   const onClickCapture = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as Element
     if (!target.closest('.row-expand-button')) return
     const id = target.closest<HTMLElement>('[data-row-id]')?.dataset.rowId
-    if (id === undefined) return
+    const level = stack.findIndex(entry => entry.row.id === id)
+    if (level < 0) return
+    const index = stack[level]!.index - level
     requestAnimationFrame(() =>
-      (table as StickyTable).scrollToRow?.(id, { align: 'start' }),
+      (table as StickyTable).scrollToRowIndex?.(index, { align: 'start' }),
     )
   }
 

@@ -284,6 +284,7 @@ const AS14_COST = { ratio: 3, plusMs: 4 }
 const CF12_COST = { ratio: 3, plusMs: 4 }
 const MI23_COST = { ratio: 1.3, plusMs: 4 }
 const TL8_COST = { ratio: 1.3, plusMs: 4 }
+const EA10_COST = { ratio: 1.3, plusMs: 4 }
 const AI10_COST = { ratio: 1.3, plusMs: 4 }
 const KA7_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
@@ -579,6 +580,80 @@ describe('Производительность прокрутки — линии
             `${axis.toUpperCase()} p95=${lined[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
           )
           .toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Липкие строки групп (ADR 0160, EA10): 1000×1000, строки сгруппированы и раскрыты; с
+// липкими строками против той же выборки без них. Скорость ниже порога быстрой прокрутки:
+// копии и строки рисуются, а не заменяются скелетами.
+describe('Производительность прокрутки — липкие строки групп', () => {
+  test(
+    'EA10: прокрутка 1000×1000 с раскрытыми группами и липкими строками не дороже той же прокрутки без них',
+    async () => {
+      const measure = async (sticky: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableRowGrouping: true,
+          initialGrouping: ['gender'],
+          enableRowExpanding: true,
+          initialExpanded: true,
+          rowGroupingStickyRows: sticky,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        // После прокрутки строка группы ушла вверх: копия под шапкой ровно тогда, когда
+        // липкие строки включены.
+        await expect
+          .poll(
+            () =>
+              document.querySelector('[data-sticky-rows] [data-row-id]') !==
+              null,
+          )
+          .toBe(sticky)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const sticky = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, EA10_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'rowGrouping',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('EA10-base', 'группы без липких строк', base, false)
+      await record('EA10', 'липкие строки групп', sticky, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          sticky[axis].p95Ms,
+          `${axis} p95=${sticky[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,

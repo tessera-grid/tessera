@@ -123,7 +123,8 @@
   --tsr-comp-cell-pinned-left-bg: var(--tsr-comp-row-bg);
   --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-comp-row-odd-bg);
 
-  & [data-cell-last-left-pinned='true'] {
+  /* Через таблицу: правило ячейки с разделителем — той же силы. */
+  & .table [data-cell-last-left-pinned='true'] {
     border-right-color: transparent;
   }
 }
@@ -132,7 +133,7 @@
   --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-row-bg);
   --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-row-odd-bg);
 
-  & [data-cell-first-right-pinned='true'] {
+  & .table [data-cell-first-right-pinned='true'] {
     border-left-color: transparent;
   }
 }

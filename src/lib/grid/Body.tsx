@@ -172,7 +172,6 @@ export const Body = ({
             table={table}
             source={rowSource}
             rowHeight={virtualRows[0]!.size}
-            rowsKey={virtualRows}
             renderRow={(entry, { last, pushed }) => (
               <BodyRow
                 key={`sticky-${entry.row.id}`}

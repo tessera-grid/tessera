@@ -257,6 +257,7 @@ export interface PerfRecord {
     | 'serverRowModel, pagination'
     | 'rowDragging'
     | 'serverRowModel, rowDragging'
+    | 'rowGrouping'
     | 'backToTop'
     | 'loading'
     | 'footer'

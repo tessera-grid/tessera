@@ -564,10 +564,7 @@ export const DataGrid = ({
                       onCancelled={focusBody}
                     />
                     <ScrollingAttribute getScrollElement={getScrollElement} />
-                    <PinnedEdgesAttribute
-                      getScrollElement={getScrollElement}
-                      columnSizes={columnSizes}
-                    />
+                    <PinnedEdgesAttribute getScrollElement={getScrollElement} />
                     {enableOverflowTooltip && (
                       <OverflowTooltip getScrollElement={getScrollElement} />
                     )}

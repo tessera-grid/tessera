@@ -126,6 +126,7 @@ export const BodyRowCells = ({
   slotDepth,
   isVirtualColumns,
   isRowInteract,
+  copy,
 }: BodyRowCellsProps) => {
   const virtualColumns =
     useContext(ColumnWindowContext) ?? virtualColumnsProp ?? []
@@ -146,6 +147,7 @@ export const BodyRowCells = ({
       treeOpen,
       slotDepth,
       absoluteLeft,
+      copy,
     })
 
     // Пиннутые ячейки — sticky-сиблинги в потоке; центральные — position:absolute по
@@ -199,6 +201,7 @@ export const BodyRowCells = ({
             treeBranch={treeBranch}
             treeOpen={treeOpen}
             slotDepth={slotDepth}
+            copy={copy}
           />
         )
       })}

@@ -106,3 +106,16 @@
     box-shadow: 0 1px 0 var(--tsr-comp-sticky-row-border-color);
   }
 }
+
+/* Высокая контрастность (ADR 0087): тень режим снимает — под стопкой линия, как под шапкой. */
+@media (forced-colors: active) {
+  .sticky [data-sticky-last]::before {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    z-index: calc(var(--tsr-comp-z-index-pinned) + 1);
+    height: 1px;
+    background-color: var(--tsr-comp-cell-divider-color);
+    pointer-events: none;
+  }
+}

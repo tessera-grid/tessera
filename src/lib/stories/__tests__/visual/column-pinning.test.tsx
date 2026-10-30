@@ -343,6 +343,12 @@ describe('Column Pinning — requirements', () => {
           document.querySelector(`${BODY_CELL}[data-cell-pinned='left']`),
         )
         .not.toBeNull()
+      // Тон закрепления — у прилипшего блока (CP39): под ним прокручено содержимое.
+      const scroller = document.querySelector<HTMLElement>(SCROLLER)!
+      scroller.scrollLeft = 200
+      await expect
+        .poll(() => scroller.hasAttribute('data-pinned-left-stuck'))
+        .toBe(true)
       // Курсор вне грида: hover заголовка и строки меняет их фон.
       await parkPointer()
       // Ячейка при закреплении остаётся той же — её фон доходит до тона переходом.

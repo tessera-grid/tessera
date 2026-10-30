@@ -68,6 +68,8 @@ interface TableBodyCellProps {
   // монтаж/демонтаж на границе окна не пере-раскладывал соседей. Для пиннутых и
   // невиртуализированных ячеек не задаётся (обычный поток/sticky).
   absoluteLeft?: number
+  /** Ячейка липкой копии строки (ADR 0160): в клавиатурной навигации не участвует. */
+  copy?: boolean
 }
 
 export const BodyCell = memo(
@@ -84,6 +86,7 @@ export const BodyCell = memo(
     treeOpen,
     slotDepth,
     absoluteLeft,
+    copy,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
     // Новая ссылка на предикат плагина (canSelectCell, canEditCell…) — перерисовка.
@@ -187,7 +190,12 @@ export const BodyCell = memo(
     const cellSel = useCellSelection(cell)
     // Клавиатурная навигация (плагин keyboardNavigation): при наличии владеет
     // roving tabindex ячейки; `null` без плагина.
-    const nav = useKeyboardNavigationCell(table, rowIndex, cell.column.id)
+    const nav = useKeyboardNavigationCell(
+      table,
+      rowIndex,
+      cell.column.id,
+      !copy,
+    )
     const labels = useLocalization()
     // Число строк группы серверной группировки (ADR 0144, §2) — рядом с её значением.
     const groupCount = (

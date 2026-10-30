@@ -59,7 +59,8 @@ interface Item {
 const COLUMNS = [
   { id: 'a', accessorKey: 'a', header: 'A', size: 120 },
   { id: 'b', accessorKey: 'b', header: 'B', size: 140 },
-  { id: 'c', accessorKey: 'c', header: 'C', size: 120 },
+  // Шире области: закреплённая колонка прилипает при прокрутке (ADR 0011, CP39).
+  { id: 'c', accessorKey: 'c', header: 'C', size: 400 },
 ]
 
 const Grid = ({
@@ -107,6 +108,12 @@ const waitRows = () =>
 const mount = async (selected: string[] = [], mode?: ContrastMode) => {
   const screen = await render(<Grid selected={selected} contrast={mode} />)
   await waitRows()
+  // Тон и рамка закрепления — у прилипшего блока: под ним прокручено содержимое.
+  const scroller = document.querySelector<HTMLElement>('.data-grid__container')!
+  scroller.scrollLeft = 20
+  await expect
+    .poll(() => scroller.hasAttribute('data-pinned-left-stuck'))
+    .toBe(true)
   return screen
 }
 

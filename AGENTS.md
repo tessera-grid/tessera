@@ -427,7 +427,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       [ADR 0049](docs/decisions/0049-native-header-spans.md).
     - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19, CP30), гайды «Columns/Pinning» (S1–S2),
       `column-pinning-right` (CP20–CP27, CP29, CP34 — правые закреплённые ячейки следуют наведению и выбору строки), `column-pinning-footer`
-      (CP31–CP33, CP35 — футер следует закреплению, ячейка колонки действий — как её заголовок) — [ADR 0011](docs/decisions/0011-column-pinning.md),
+      (CP31–CP33, CP35 — футер следует закреплению, ячейка колонки действий — как её заголовок),
+      `column-pinning-stuck` (CP39–CP40 — тон, разделитель и тень блока только при прилипании,
+      скругления концов края) — [ADR 0011](docs/decisions/0011-column-pinning.md),
       `column-leaf-pinning` (LP1–LP10 — PoC пиннинга листьев,
       [ADR 0011](docs/decisions/0011-column-pinning.md)),
       `column-sorting` (CS1–CS24, [ADR 0012](docs/decisions/0012-column-sorting.md)),
@@ -1037,8 +1039,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       блоков, срез «всё, кроме», аргумент `expandAll`), визуальный `expand-all` (EA3–EA4 — ленивые
       строки окна по кнопке и при прокрутке, имя, подсказка, мышь, клавиатура, словарь, значки),
       перф EA11 — в `interaction`, истории «Data loading/Server row model/Grouping — Expand all» (S1)
-      и «Rows/Expanding — Expand all» (S2)
-      ([ADR 0160](docs/decisions/0160-expand-all-and-sticky-rows.md), этап 1).
+      и «Rows/Expanding — Expand all» (S2); липкие строки — визуальный `sticky-rows` (EA6–EA7,
+      EA9 — стопка, выталкивание, горизонталь и закреплённые колонки, SSRM, шеврон копии,
+      клавиатура и скринридер, axe, токен линии, `forced-colors`), модульный `stickyRows.dom`
+      (EA8), перф EA10 — в `scroll`, истории «Rows/Grouping — Sticky group rows» (S3) и «Data
+      loading/Server row model/Lazy children — Sticky branches» (S4)
+      ([ADR 0160](docs/decisions/0160-expand-all-and-sticky-rows.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,
