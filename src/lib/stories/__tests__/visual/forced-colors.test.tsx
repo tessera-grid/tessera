@@ -552,6 +552,66 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
+  test('HC20: наведение ячейки заголовка — контур 1px Highlight по краю (нижний — над линией под шапкой), без заливки, у обычной и закреплённой колонки', async () => {
+    await page.viewport(414, 720)
+    try {
+      await mount()
+      const highlight = rgbOf('Highlight')
+      const canvas = rgbOf('Canvas')
+      // a — закреплённая колонка, b — обычная.
+      for (const column of ['a', 'b']) {
+        const head = headCellEl(column)
+        const quiet = head.getBoundingClientRect()
+        const y = quiet.top + quiet.height / 2
+        expectPixel(
+          (await snapshot())(quiet.left + 0.5, y),
+          canvas,
+          `${column}: без наведения контура нет`,
+        )
+        await userEvent.hover(head)
+        await expect
+          .poll(() => style(head, '::before').borderTopColor)
+          .toBe(sys('Highlight'))
+        const shot = await snapshot()
+        const box = head.getBoundingClientRect()
+        const x = box.left + box.width / 2
+        expectPixel(shot(box.left + 0.5, y), highlight, `${column}: левый край`)
+        // Край закреплённой колонки — своя граница: контур внутри неё.
+        const edge = parseFloat(style(head).borderRightWidth)
+        expectPixel(
+          shot(box.right - edge - 0.5, y),
+          highlight,
+          `${column}: правый край`,
+        )
+        expectPixel(
+          shot(x, box.top + 0.5),
+          highlight,
+          `${column}: верхний край`,
+        )
+        // Нижний край — над линией под шапкой (HC18), линия остаётся.
+        expectPixel(
+          shot(x, box.bottom - 1.5),
+          highlight,
+          `${column}: нижний край`,
+        )
+        expectPixel(
+          shot(x, box.bottom - 0.5),
+          rgbOf('GrayText'),
+          `${column}: линия под шапкой`,
+        )
+        expectPixel(shot(box.left + 1.5, y), canvas, `${column}: контур в 1px`)
+        // Без заливки: внутри ячейки, правее подписи, — фон палитры.
+        expectPixel(
+          shot(box.right - edge - 4, y),
+          canvas,
+          `${column}: без заливки`,
+        )
+      }
+    } finally {
+      await page.viewport(414, 896)
+    }
+  })
+
   test('HC5: подсветка строки, ячейки и колонки любого тона — фон Mark, текст MarkText', async () => {
     await mount()
     table.highlight({ row: 'r1' }, { tone: 'danger' })

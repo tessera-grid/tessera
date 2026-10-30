@@ -324,6 +324,18 @@
   .head__cell:is([data-column-highlight], [data-column-flash='reverted']) * {
     color: MarkText;
   }
+
+  /*
+   * Наведение — контур `Highlight`, как у ячейки тела: смену фона режим снимает. Нижний
+   * край — над линией под шапкой: строка шапки — свой слой, линию поверх неё не перекрыть.
+   */
+  .head__cell:hover:not([data-actions-column-cell='true'])::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 1px;
+    border: 1px solid Highlight;
+    pointer-events: none;
+  }
 }
 
 /* Под виртуализацией колонок спейсер в DOM первый: правые закреплённые — после него. */
