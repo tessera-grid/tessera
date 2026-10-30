@@ -131,10 +131,14 @@ export const holdRowAtLevel = async (
   return {
     ...held,
     xAt,
-    /** Бросок: удерживать больше нечего — фильтр событий снят. */
-    release: () => {
-      held.release()
+    /**
+     * Бросок: удерживать больше нечего — фильтр событий снят. Промис — когда dnd-kit
+     * перестал глотать клики, как у `dragHold`.
+     */
+    release: async () => {
+      const released = held.release()
       lift()
+      await released
     },
   }
 }

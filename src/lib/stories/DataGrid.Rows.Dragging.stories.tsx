@@ -411,7 +411,7 @@ const COLLAPSED_GROUPS: readonly GuideStoryStep[] = [
       // Строки ниже доезжают после раскрытия (ADR 0107) — цель меряется на месте.
       await sleep(400)
       await pauseOver(root, held, 'node-2', run.signal)
-      held.release()
+      await held.release()
     }),
   },
 ]
@@ -592,7 +592,7 @@ const dropIntoGroup =
       () => !!rowOf(root, groupId)?.hasAttribute('data-row-drop-parent'),
       run.signal,
     )
-    held.release()
+    await held.release()
   }
 
 /** «Сервер» отвечает на перенос, который ждёт. */

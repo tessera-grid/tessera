@@ -287,7 +287,7 @@ const holdInOpenBranch = async (root: HTMLElement, run: StepRun) => {
 const dropIntoBranch = async (root: HTMLElement, run: StepRun) => {
   if (inBranch(root)) return
   const held = await holdInOpenBranch(root, run)
-  held.release()
+  await held.release()
 }
 
 const TREE: readonly GuideStoryStep[] = [
@@ -446,7 +446,7 @@ const dropIntoLima = async (root: HTMLElement, run: StepRun) => {
     y += slot.top < group.top ? 6 : -6
     await held.moveTo({ x: held.xAt(1), y }, 2)
   }
-  held.release()
+  await held.release()
 }
 
 const GROUPS: readonly GuideStoryStep[] = [
