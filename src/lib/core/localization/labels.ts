@@ -9,6 +9,10 @@ export interface TableLabels {
   expandRow: string
   /** Имя и тултип кнопки раскрытия у раскрытой строки */
   collapseRow: string
+  /** Имя и тултип кнопки в шапке колонки раскрытия, если есть свёрнутые строки (ADR 0160) */
+  expandAll: string
+  /** Имя и тултип той же кнопки, когда раскрыто всё */
+  collapseAll: string
   /** Тултип кнопки закрепления колонки */
   pin: string
   /** Тултип кнопки открепления колонки */
@@ -396,6 +400,8 @@ type DefaultLabels = Record<keyof TableLabels, string> & LabelDictionary
 export const DEFAULT_LABELS = {
   expandRow: 'Expand row',
   collapseRow: 'Collapse row',
+  expandAll: 'Expand all',
+  collapseAll: 'Collapse all',
   pin: 'Pin column',
   unpin: 'Unpin column',
   pinLeft: 'Pin left',

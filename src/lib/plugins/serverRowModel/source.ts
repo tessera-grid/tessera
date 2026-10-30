@@ -30,7 +30,8 @@ import {
 } from '../../core/rowSelectionAll'
 import { serverAggregationsOf } from '../../core/serverAggregations'
 import { isThenable } from '../../core/thenable'
-import { BlockTree } from './tree'
+import { BlockTree, type ExpandedRows } from './tree'
+import { isExpandedAll } from '../../core/expandAll'
 import type {
   ServerRowModelHooks,
   ServerRowTransaction,
@@ -85,25 +86,31 @@ interface SourceRow {
 
 type Store = BlockTree<unknown, SourceRow, Query>
 
-const expandedSets = new WeakMap<object, ReadonlySet<string>>()
+const expandedSets = new WeakMap<object, ExpandedRows>()
+
+/** «Раскрыть всё» без исключений: `expanded: true` (ADR 0160, §1). */
+const EXPAND_ALL: ExpandedRows = { all: true, except: new Set() }
 
 /**
- * Раскрытые строки по срезу `expanded`; один набор на значение среза. «Раскрыть всё»
- * (`true`) ветки не раскрывает (ADR 0138, §14).
+ * Раскрытые строки по срезу `expanded`; один объект на значение среза. `true` и
+ * `{ all, except }` — «раскрыто всё, кроме» (ADR 0160, §1).
  */
 const expandedSetOf = (
   t: ServerTable,
   none: ReadonlySet<string>,
-): ReadonlySet<string> => {
+): ExpandedRows => {
   const value = t.atoms.expanded?.get()
+  if (value === true) return EXPAND_ALL
   if (typeof value !== 'object' || value === null) return none
   let set = expandedSets.get(value)
   if (!set) {
-    set = new Set(
-      Object.entries(value as Record<string, boolean>)
-        .filter(([, open]) => open)
-        .map(([id]) => id),
-    )
+    set = isExpandedAll(value)
+      ? { all: true, except: new Set(value.except) }
+      : new Set(
+          Object.entries(value as Record<string, boolean>)
+            .filter(([, open]) => open)
+            .map(([id]) => id),
+        )
     expandedSets.set(value, set)
   }
   return set
@@ -350,6 +357,8 @@ const createServerSource = (table: unknown): ServerSource => {
         buildRows(data, start, depth, parentId, query.grouping),
       idOf: row => row.id,
       expanded: () => expandedSetOf(t, notExpanded),
+      canExpand: row =>
+        !!(row as { getCanExpand?: () => boolean }).getCanExpand?.(),
       childCount: id => groupChildCount(generation.store.rowById(id)),
       onChange: () => {
         if (generation === shown) {

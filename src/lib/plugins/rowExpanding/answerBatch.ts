@@ -7,7 +7,11 @@ import { batch } from '@tanstack/react-store'
 
 import { announceLabel } from '../../core/announcer'
 import { flashOutcome } from '../../core/flashes/flashFeature'
-import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
+import {
+  readLoadedChildren,
+  refreshAfterExpandAll,
+  setLoadedAnswer,
+} from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 
 export interface BatchTable {
@@ -67,6 +71,7 @@ const apply = (table: BatchTable, answers: readonly Answer[]) => {
       return next
     })
   })
+  if (fresh.length > 0) refreshAfterExpandAll(table)
   if (fresh.length === 0) {
     return
   }

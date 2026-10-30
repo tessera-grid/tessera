@@ -204,6 +204,8 @@ const MODEL_READERS: Record<string, string> = {
     'фабрика модели сортировки клиентского режима (ADR 0064, 0072)',
   'plugins/rowExpanding/lazyCoreRowModel.ts':
     'фабрика исходной модели ленивого дерева (ADR 0067)',
+  'plugins/rowExpanding/ExpandAllComponent.tsx':
+    'свёрнутые раскрываемые строки клиентского режима — подпись кнопки «Раскрыть всё»; в SSRM — срез (ADR 0160)',
   'plugins/rowGroupingModel/groupedRowModel.ts':
     'фабрика модели группировки клиентского режима (ADR 0068)',
   'plugins/columnFilteringModel/options.ts':

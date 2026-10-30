@@ -8,7 +8,7 @@
  *    columnPinning (пиннинг сервисных колонок) и columnSizing (авто-слайс), остальное
  *    прокидывается из state/handlers потребителя.
  */
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { OnDebugAction } from './debugActions'
 
 import { makeStateUpdater, useTable } from '@tanstack/react-table'
@@ -370,6 +370,9 @@ export const useCreateTable = <
         },
       ]),
   )
+  // Сужение зависит не только от данных: плагин просит пересчёт, когда сменилось то, что
+  // оно читает из таблицы (ответы ленивых строк при «раскрыть всё», ADR 0160).
+  const [narrowEpoch, setNarrowEpoch] = useState(0)
   const effective = useEffectiveState({
     narrow,
     owned,
@@ -378,7 +381,7 @@ export const useCreateTable = <
     listeners: slices.listeners,
     table: freshTable,
     getAtoms: () => tableRef.current?.atoms,
-    inputs: [data, columnsSignature],
+    inputs: [data, columnsSignature, narrowEpoch],
     // Первая загрузка видна условиям показа служебных колонок (ADR 0060, SL25).
     context: {
       options: { ...folded.options, loading },
@@ -416,6 +419,7 @@ export const useCreateTable = <
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
     state: controlledState,
+    refreshNarrowing: () => setNarrowEpoch(epoch => epoch + 1),
     onColumnPinningChange,
     onColumnSizingChange,
     onColumnAutoSizingChange,

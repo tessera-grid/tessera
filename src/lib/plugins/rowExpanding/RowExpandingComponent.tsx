@@ -22,7 +22,12 @@ import {
 import { rowSourceOf } from '../../core/rowSource'
 import { rejectionText } from '../../core/thenable'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
-import { cancelBranchLoad, toggleRowExpanded } from './toggleRowExpanded'
+import { readLoadedChildren } from './lazyChildrenFeature'
+import {
+  cancelBranchLoad,
+  isLazyRow,
+  toggleRowExpanded,
+} from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
 
 export const RowExpandingComponent = ({
@@ -59,6 +64,17 @@ export const RowExpandingComponent = ({
     [branchLoading, table, row],
   )
   const waiting = pending || branchLoading
+
+  // Человек раскрыл всё кнопкой (ADR 0160, §2): ленивая строка окна грузит детей, когда
+  // её ячейка появилась, — и при прокрутке.
+  const expandAll = useSlice(table, 'rowExpandAll' as never) as
+    boolean | undefined
+  useEffect(() => {
+    if (!expandAll || failed || !hooks.loadChildren) return
+    if (!isLazyRow(row, hooks.hasChildren) || row.getIsExpanded()) return
+    if (row.id in readLoadedChildren(table)) return
+    toggleRowExpanded(row, hooks)
+  }, [expandAll, failed, hooks, row, table])
 
   if (!row.getCanExpand()) {
     return null

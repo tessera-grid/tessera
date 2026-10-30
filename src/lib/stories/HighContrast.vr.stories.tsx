@@ -959,6 +959,54 @@ export const HighContrastServerDragGroupsStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerGroupingExpandAllStep1 = {
+  ...twinStep(
+    serverGroupingStories,
+    serverGroupingStories.ServerGroupingExpandAll,
+    1,
+  ),
+  name: 'Data loading/Server row model/Grouping — Expand all, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupingExpandAllStep2 = {
+  ...twinStep(
+    serverGroupingStories,
+    serverGroupingStories.ServerGroupingExpandAll,
+    2,
+  ),
+  name: 'Data loading/Server row model/Grouping — Expand all, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupingExpandAllStep3 = {
+  ...twinStep(
+    serverGroupingStories,
+    serverGroupingStories.ServerGroupingExpandAll,
+    3,
+  ),
+  name: 'Data loading/Server row model/Grouping — Expand all, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingExpandAllStep1 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingExpandAll, 1),
+  name: 'Rows/Expanding — Expand all, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingExpandAllStep2 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingExpandAll, 2),
+  name: 'Rows/Expanding — Expand all, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingExpandAllStep3 = {
+  ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingExpandAll, 3),
+  name: 'Rows/Expanding — Expand all, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelMillionRowsStep1 = {
   ...twinStep(
     serverRowModelStories,

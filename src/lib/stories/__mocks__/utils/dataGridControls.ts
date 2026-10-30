@@ -119,6 +119,7 @@ import {
   rowActionsWidthType,
   rowExpandingColumnType,
   rowExpandingMaxDepthType,
+  rowExpandingExpandAllType,
   rowDraggingExpandDelayType,
   rowDraggingRevertOnRejectType,
   columnDraggingRevertOnRejectType,
@@ -252,6 +253,7 @@ export const dataGridArgTypes = {
       ...when('enableRowExpanding', {
         rowExpandingMaxDepth: rowExpandingMaxDepthType,
         rowExpandingColumn: rowExpandingColumnType,
+        rowExpandingExpandAll: rowExpandingExpandAllType,
         expandAll: expandAllType,
       }),
       enableRowExpandingModel: enableRowExpandingModelType,
@@ -486,6 +488,7 @@ export const dataGridDefaultArgs = {
   enableRowExpanding: false,
   rowExpandingMaxDepth: DEFAULT_MAX_EXPANDING_DEPTH,
   rowExpandingColumn: 'auto',
+  rowExpandingExpandAll: true,
   enableRowExpandingModel: false,
   enableTreeLines: false,
   enableRowDragging: false,

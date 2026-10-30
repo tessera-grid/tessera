@@ -15,6 +15,7 @@ import {
   clearExpandFailed,
   markExpandFailed,
   readLoadedChildren,
+  refreshAfterExpandAll,
   setLoadedAnswer,
 } from './lazyChildrenFeature'
 import { type BatchTable, enqueueAnswer } from './answerBatch'
@@ -42,11 +43,13 @@ export const isLazyRow = (
     ?.length &&
   hasChildren(row)
 
-const storeAnswer = (table: unknown, rowId: string, rows: unknown) =>
+const storeAnswer = (table: unknown, rowId: string, rows: unknown) => {
   setLoadedAnswer(table, prev => ({
     ...prev,
     [rowId]: Array.isArray(rows) ? rows : [],
   }))
+  refreshAfterExpandAll(table)
+}
 
 /**
  * Отмена загрузки ветки серверной модели (ADR 0155, §3): запросы ветки прерваны, строка
@@ -90,6 +93,10 @@ export const toggleRowExpanded = (
   row.toggleExpanded(expanding)
   const notified = hooks.onExpandRow?.(row, expanding)
   if (!expanding) {
+    // Свернули строку — «раскрыто всё» кончилось: ленивые строки больше не грузятся сами.
+    ;(
+      pendingRow.table as { setRowExpandAll?: (on: boolean) => void }
+    ).setRowExpandAll?.(false)
     return
   }
   const { table } = pendingRow

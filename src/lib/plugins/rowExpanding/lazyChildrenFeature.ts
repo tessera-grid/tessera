@@ -97,6 +97,18 @@ export const setLoadedAnswer = (
   updater: Updater<LoadedChildren>,
 ) => writeSlice(table as LazyTable, 'loadedChildren', updater)
 
+/**
+ * Ответ ленивой строки записан при «раскрыть всё» кнопкой (ADR 0160, §2): сохранённый срез
+ * `true` не меняется, и сужение раскрытия пересчитывается по просьбе.
+ */
+export const refreshAfterExpandAll = (table: unknown) => {
+  const t = table as {
+    atoms: { rowExpandAll?: { get: () => boolean } }
+    options: { refreshNarrowing?: () => void }
+  }
+  if (t.atoms.rowExpandAll?.get()) t.options.refreshNarrowing?.()
+}
+
 export const markExpandFailed = (
   table: unknown,
   rowId: string,

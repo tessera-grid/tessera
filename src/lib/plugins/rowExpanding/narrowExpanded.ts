@@ -7,7 +7,6 @@
 import type { ExpandedState } from '@tanstack/react-table'
 
 import type { NarrowState } from '../../core/effectiveState'
-import { logWarn } from '../../core/logger'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import type { Row } from '../../types'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
@@ -43,17 +42,9 @@ export const narrowExpanded =
     if ((table.atoms.grouping?.get() ?? []).length > 0) {
       return value
     }
-    // Серверная модель строк: «раскрыть всё» запросило бы детей у каждой строки списка
-    // (ADR 0138, §14).
-    if (serverRowModelReason(table)) {
-      if (value !== true) return value
-      logWarn(
-        table as never,
-        'rowExpanding: expanded: true does not expand rows with serverRowModel — expand rows by id',
-        'rowExpanding:serverExpandAll',
-      )
-      return {}
-    }
+    // Серверная модель строк: «раскрыть всё» раскрывает строки окна по мере прихода
+    // (ADR 0160, §1) — сужать нечего.
+    if (serverRowModelReason(table)) return value
     const { flatRows, rowsById } = table.getCoreRowModel()
     const pending = table.atoms.rowExpandPending?.get() ?? {}
     // Ленивая строка без детей (ответа ещё нет) и без ожидания раскрытой не видна.

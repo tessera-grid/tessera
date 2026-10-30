@@ -16,6 +16,7 @@ import {
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
+  ChevronsDown,
   ChevronsUpDown,
   CircleAlert,
   Columns3,
@@ -79,6 +80,10 @@ export interface TableIcons {
   expand: IconComponent
   /** Раскрытая строка: по умолчанию тот же шеврон с поворотом; свой значок — без поворота */
   expanded: IconComponent
+  /** Раскрыть все строки — кнопка в шапке колонки раскрытия (ADR 0160): двойной шеврон */
+  expandAll: IconComponent
+  /** Свернуть все строки: по умолчанию тот же шеврон с поворотом; свой значок — без поворота */
+  collapseAll: IconComponent
   /** Чекбокс — пустой */
   checkboxOutline: IconComponent
   /** Чекбокс — отмеченный */
@@ -155,6 +160,8 @@ export const DEFAULT_ICONS: TableIcons = {
   grouped: Group,
   expand: ChevronDown,
   expanded: ChevronDown,
+  expandAll: ChevronsDown,
+  collapseAll: ChevronsDown,
   checkboxOutline: CheckboxOutlineIcon,
   checkboxChecked: Check,
   checkboxIndeterminate: Minus,

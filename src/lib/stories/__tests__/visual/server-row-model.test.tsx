@@ -1268,7 +1268,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       }
     })
 
-    test('SD40: раскрытие в SSRM — кнопкой и клавишами, как в клиентском дереве; дети с отступом по уровню; expanded: true ветки не раскрывает, dev-warn', async () => {
+    test('SD40: раскрытие в SSRM — кнопкой и клавишами, как в клиентском дереве; дети с отступом по уровню', async () => {
       const { getRows } = server(treeAnswer)
       const screen = await render(
         <Grid
@@ -1300,37 +1300,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
         await expect.poll(() => rowOf('r1.0')).not.toBeNull()
       } finally {
         await screen.unmount()
-      }
-
-      // «Раскрыть всё» ветки не раскрывает и предупреждает.
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const all = server(treeAnswer)
-      const second = await render(
-        <Grid
-          getRows={all.getRows}
-          rowCount={1000}
-          plugins={[
-            rowExpanding({ hasChildren, initialExpanded: true } as never),
-          ]}
-        />,
-      )
-      try {
-        await expect.poll(() => toggleOf('r1')).not.toBeNull()
-        await nextFrame()
-        expect(all.calls.some(call => call.request.parentId)).toBe(false)
-        expect(rowOf('r1')!.dataset.expanded).toBe('false')
-        expect(
-          warn.mock.calls.some(call =>
-            call.some(
-              part =>
-                String(part).includes('expanded: true') &&
-                String(part).includes('serverRowModel'),
-            ),
-          ),
-        ).toBe(true)
-      } finally {
-        warn.mockRestore()
-        await second.unmount()
       }
     })
 

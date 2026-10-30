@@ -1033,6 +1033,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       строки-группы по пути значений), перф MV11 — в `interaction`, истории «Data
       loading/Server row model/Dragging» (S1–S4)
       ([ADR 0159](docs/decisions/0159-ssrm-row-dragging.md)).
+    - _«Раскрыть всё»:_ модульный `expandAll.dom` (EA1–EA2, EA5 — SSRM: ветки окна очередью
+      блоков, срез «всё, кроме», аргумент `expandAll`), визуальный `expand-all` (EA3–EA4 — ленивые
+      строки окна по кнопке и при прокрутке, имя, подсказка, мышь, клавиатура, словарь, значки),
+      перф EA11 — в `interaction`, истории «Data loading/Server row model/Grouping — Expand all» (S1)
+      и «Rows/Expanding — Expand all» (S2)
+      ([ADR 0160](docs/decisions/0160-expand-all-and-sticky-rows.md), этап 1).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,

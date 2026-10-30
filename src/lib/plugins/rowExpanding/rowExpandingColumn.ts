@@ -12,6 +12,7 @@ export const COLUMN_EXPANDING_ID = getActionColumnId('rowExpanding')
 
 export const getRowExpandingColumn = ({
   cell,
+  header,
 }: ServiceColumnParts): ColumnDef<any, any, any> =>
   ({
     id: COLUMN_EXPANDING_ID,
@@ -21,7 +22,7 @@ export const getRowExpandingColumn = ({
     accessorKey: 'id',
     minSize: 0,
     size: COLUMN_ACTIONS_SIZE,
-    header: undefined,
+    header,
     enableSorting: false,
     enableResizing: false,
     cell,

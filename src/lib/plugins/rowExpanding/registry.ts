@@ -30,6 +30,7 @@ import {
   COLUMN_EXPANDING_ID,
   getRowExpandingColumn,
 } from './rowExpandingColumn'
+import { ExpandAllComponent } from './ExpandAllComponent'
 import { RowExpandingComponent } from './RowExpandingComponent'
 import { isLazyRow } from './toggleRowExpanded'
 import {
@@ -56,6 +57,11 @@ export interface RowExpandingOptions extends Omit<
    * строки; `'always'` — всегда (серверный режим, ADR 0050).
    */
   column?: ServiceColumnMode
+  /**
+   * Кнопка «Раскрыть всё / Свернуть всё» в шапке колонки раскрытия (ADR 0160, §2); `false` —
+   * раскрытие только по строкам. По умолчанию есть.
+   */
+  expandAll?: boolean
   /** Бизнес-колбэк раскрытия строки (аргумент фабрики); читается живо. */
   onExpandRow?: RowExpandingHooks['onExpandRow']
   /** У строки есть дети, которых нет в `subRows`, — их грузит `loadChildren` (ADR 0054). */
@@ -132,6 +138,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
   column: {
     id: COLUMN_EXPANDING_ID,
     cell: RowExpandingComponent,
+    header: ExpandAllComponent,
     make: getRowExpandingColumn,
     side: 'leading',
     order: 2,
@@ -190,6 +197,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     // Опции модели выставляет rowExpandingModel; выключенный интерфейс предела не задаёт.
     return {
       getRowCanExpand: o.enabled === false ? undefined : getRowCanExpand,
+      rowExpandAllButton: o.enabled !== false && o.expandAll !== false,
     }
   },
 })

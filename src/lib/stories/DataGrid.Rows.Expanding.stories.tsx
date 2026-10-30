@@ -29,7 +29,7 @@ import {
 /**
  * Раскрытие строк (ADR 0015): `Playground` — дерево, глубина и колонка раскрытия;
  * S2 ADR 0041 — раскрытие ждёт сервера, S1 ADR 0054 — ленивые дети, S3 ADR 0134 —
- * отказ в раскрытии.
+ * отказ в раскрытии, S2 ADR 0160 — «раскрыть всё» кнопкой в шапке.
  */
 const meta = {
   ...dataGridMeta,
@@ -69,6 +69,7 @@ export const RowExpandingPlayground: StoryObj<StoryProps> = {
     'enableRowExpanding',
     'rowExpandingMaxDepth',
     'rowExpandingColumn',
+    'rowExpandingExpandAll',
     'enableTreeLines',
   ]),
 }
@@ -659,6 +660,94 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
       await expect(
         cancelToggle(canvas)!.querySelector('[data-failure-indicator]'),
       ).toBeNull()
+    })
+  },
+}
+
+// --- ADR 0160 S2: «Раскрыть всё / Свернуть всё» кнопкой в шапке ----------------------
+
+const expandAllButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.row-expand-all-button')
+/** Раскрыты все строки с детьми, которые видны. */
+const allShownExpanded = (root: ParentNode) =>
+  rowsInOrder(root)
+    .filter(row => toggleIn(row))
+    .every(row => isExpanded(row))
+const noneExpanded = (root: ParentNode) =>
+  rowsInOrder(root).every(row => !isExpanded(row))
+
+const EXPAND_ALL_ARGS = {
+  ...GRID,
+  dataOverride: rowExpandingData,
+  enableRowExpanding: true,
+  rowExpandingMaxDepth: 3,
+  initialExpanded: {},
+} satisfies Partial<StoryProps>
+
+const EXPAND_ALL: readonly GuideStoryStep[] = [
+  {
+    title: 'Дерево свёрнуто',
+    hint: 'Строки с детьми свёрнуты. В шапке колонки с кнопками раскрытия — кнопка, которая раскрывает все строки сразу.',
+  },
+  {
+    title: 'Пользователь раскрыл всё',
+    hint: 'Раскрыты все строки с детьми на всех уровнях. Кнопка в шапке теперь сворачивает всё — её имя и подсказка сменились.',
+    enter: untilDone(
+      root => allShownExpanded(root) && rowsInOrder(root).length > 10,
+      root => {
+        if (noneExpanded(root)) expandAllButton(root)?.click()
+      },
+    ),
+  },
+  {
+    title: 'Пользователь свернул всё',
+    hint: 'Все строки свёрнуты разом, видны только корни. Кнопка в шапке снова раскрывает всё.',
+    enter: untilDone(noneExpanded, root => {
+      if (!noneExpanded(root)) expandAllButton(root)?.click()
+    }),
+  },
+]
+
+/** ADR 0160, S2: пользователь раскрывает и сворачивает всё дерево кнопкой в шапке. */
+export const ExpandingExpandAll: StoryObj<StoryProps> = {
+  name: 'Expand all',
+  parameters: { scenario: '0160/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Раскрыть всё"
+      steps={EXPAND_ALL}
+      args={guideArgs(EXPAND_ALL_ARGS, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(EXPAND_ALL[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(expandAllButton(canvas)).not.toBeNull())
+      await expect(noneExpanded(canvas)).toBe(true)
+      await expect(expandAllButton(canvas)).toHaveAccessibleName(
+        labels.expandAll,
+      )
+    })
+    await step(EXPAND_ALL[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(
+          allShownExpanded(canvas) && rowsInOrder(canvas).length > 10,
+        ).toBe(true),
+      )
+      await expect(expandAllButton(canvas)).toHaveAccessibleName(
+        labels.collapseAll,
+      )
+    })
+    await step(EXPAND_ALL[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(noneExpanded(canvas)).toBe(true))
+      await expect(expandAllButton(canvas)).toHaveAccessibleName(
+        labels.expandAll,
+      )
+      await settle()
     })
   },
 }

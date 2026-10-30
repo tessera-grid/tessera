@@ -39,7 +39,7 @@ import {
 /**
  * Серверная группировка (ADR 0144): `Playground` — сто тысяч строк, сгруппированных «сервером»,
  * колонка группировки и число строк групп — контролами; S1 — группировка по колонке, S2 —
- * раскрытие группы, S3 — итог в футере, S4 — отказ сервера.
+ * раскрытие группы, S3 — итог в футере, S4 — отказ сервера; S1 ADR 0160 — «раскрыть всё».
  */
 const meta = {
   ...dataGridMeta,
@@ -444,6 +444,108 @@ export const ServerRowModelGroupingRefused: StoryObj<StoryProps> = {
       await expect(
         groupButton(canvas)!.closest('[data-button-active]'),
       ).toHaveAttribute('data-button-active', 'false')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0160, S1: «раскрыть всё» в серверных группах ----------------------------------
+
+const expandAllButton = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('.row-expand-all-button')
+const groupExpanded = (row: HTMLElement) =>
+  row.getAttribute('data-expanded') === 'true'
+/** Первая группа раскрыта, её строки пришли. */
+const firstGroupLoaded = (root: HTMLElement) => {
+  const rows = bodyRows(root)
+  return (
+    rows.length > 1 &&
+    groupExpanded(rows[0]!) &&
+    rows[1]!.dataset.groupRow !== 'true'
+  )
+}
+
+/** Пользователь нажал «раскрыть всё»; «сервер» держит строки групп. */
+const expandAll = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(
+    () => !!expandAllButton(root) && groupRows(root).length > 0,
+    signal,
+  )
+  server.hold = true
+  if (!groupRows(root).every(groupExpanded)) expandAllButton(root)!.click()
+  await pollUntil(
+    () => server.held.length > 0 && skeletonRows(root) > 0,
+    signal,
+  )
+}
+
+const EXPAND_ALL: readonly GuideStoryStep[] = [
+  {
+    title: 'Группы свёрнуты',
+    hint: 'Сервер сгруппировал строки по городу; группы свёрнуты, их строки таблица ещё не загружала. В шапке колонки с кнопками раскрытия — кнопка, которая раскрывает все группы сразу.',
+    // Отказ прошлого гайда снят до открытия таблицы: она открывается с группами.
+    props: context => {
+      groupServer.refuse = false
+      return groupProps({ grouping: ['city'] })!(context)
+    },
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => groupRows(root).length > 0, signal)
+    }),
+  },
+  {
+    title: 'Пользователь раскрыл всё',
+    hint: 'Раскрыты все группы, но строки таблица попросила только у групп на экране: под ними — блоки скелетов, пока ответ в пути. Группы ниже попросят свои строки, когда до них дойдёт прокрутка.',
+    states: ['body.skeleton'],
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length > 0 || firstGroupLoaded(root)) return
+      await expandAll(root, signal)
+    }),
+  },
+  {
+    title: 'Сервер ответил',
+    hint: 'Строки первой группы встали под ней с отступом уровня. Кнопка в шапке теперь сворачивает всё.',
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length === 0 && !firstGroupLoaded(root)) {
+        await expandAll(root, signal)
+      }
+      server.hold = false
+      release()
+      await pollUntil(
+        () => firstGroupLoaded(root) && skeletonRows(root) === 0,
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0160, S1: «раскрыть всё» раскрывает серверные группы, строки просят видимые. */
+export const ServerGroupingExpandAll: StoryObj<StoryProps> = {
+  name: 'Expand all',
+  parameters: { scenario: '0160/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Раскрыть всё"
+      steps={EXPAND_ALL}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EXPAND_ALL[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(groupRows(canvas).some(groupExpanded)).toBe(false)
+    })
+    await step(EXPAND_ALL[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(groupRows(canvas).every(groupExpanded)).toBe(true)
+      // Строки просят только группы на экране.
+      await expect(new Set(server.parents).size).toBeLessThanOrEqual(2)
+    })
+    await step(EXPAND_ALL[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(firstGroupLoaded(canvas)).toBe(true)
       await settle()
     })
   },

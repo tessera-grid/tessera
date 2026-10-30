@@ -19,6 +19,12 @@ import type {
   TableFeatures,
   Updater,
 } from '../../types'
+import {
+  isExpandedAll,
+  isRowExpandedIn,
+  withRowExpanded,
+} from '../../core/expandAll'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { readPluginHooks } from '../../core/definePlugin'
 import { readLoadedChildren } from './lazyChildrenFeature'
 import { isLazyRow, toggleRowExpanded } from './toggleRowExpanded'
@@ -28,9 +34,15 @@ export type RowExpandPending = Record<string, number>
 
 interface RowExpandPendingStateSlice {
   rowExpandPending: RowExpandPending
+  /**
+   * Человек раскрыл всё кнопкой (ADR 0160, §2): ленивые строки окна грузят детей при
+   * появлении. Программное `expanded: true` сессию не начинает.
+   */
+  rowExpandAll: boolean
 }
 interface RowExpandPendingOptions {
   onRowExpandPendingChange?: (updater: Updater<RowExpandPending>) => void
+  onRowExpandAllChange?: (updater: Updater<boolean>) => void
 }
 interface RowExpandPendingRowAPI {
   getIsExpandPending: () => boolean
@@ -44,6 +56,7 @@ interface RowExpandPendingRowAPI {
 }
 interface RowExpandPendingTableAPI {
   setRowExpandPending: (updater: Updater<RowExpandPending>) => void
+  setRowExpandAll: (on: boolean) => void
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -81,7 +94,12 @@ type PendingAtom = {
   set: (value: RowExpandPending) => void
 }
 
-type PendingTable = { atoms: { rowExpandPending?: PendingAtom } }
+type PendingTable = {
+  atoms: {
+    rowExpandPending?: PendingAtom
+    rowExpandAll?: { get: () => boolean }
+  }
+}
 
 const EMPTY: RowExpandPending = {}
 
@@ -92,10 +110,23 @@ const hasOwnSubRows = (row: Row<any, any>) =>
     }
   ).getSubRows?.(row.original, row.index)?.length
 
+interface AllRow {
+  id: string
+  table: {
+    atoms: { expanded?: { get: () => unknown } }
+    setExpanded: (updater: (old: unknown) => unknown) => void
+  }
+}
+
 export const rowExpandingPendingFeature: TableFeature = {
-  getInitialState: state => ({ rowExpandPending: EMPTY, ...state }),
+  getInitialState: state => ({
+    rowExpandPending: EMPTY,
+    rowExpandAll: false,
+    ...state,
+  }),
   getDefaultTableOptions: table => ({
     onRowExpandPendingChange: makeStateUpdater('rowExpandPending', table),
+    onRowExpandAllChange: makeStateUpdater('rowExpandAll', table),
   }),
   constructTableAPIs: table => {
     assignTableAPIs('rowExpandingPendingFeature', table, {
@@ -110,10 +141,49 @@ export const rowExpandingPendingFeature: TableFeature = {
           atom?.set(functionalUpdate(updater, atom.get()))
         },
       },
+      table_setRowExpandAll: {
+        fn: (on: boolean) => {
+          const atom = (table as unknown as PendingTable).atoms.rowExpandAll
+          if (atom?.get() === on) return
+          ;(table.options as RowExpandPendingOptions).onRowExpandAllChange?.(on)
+        },
+      },
     })
   },
   assignRowPrototype: (prototype, table) => {
+    // Стоковые методы TanStack: «всё, кроме» и серверная модель строк их обходят.
+    const stock = prototype as {
+      getIsExpanded: (this: unknown) => boolean
+      toggleExpanded: (this: unknown, expanded?: boolean) => void
+    }
+    const { getIsExpanded, toggleExpanded } = stock
     assignPrototypeAPIs('rowExpandingPendingFeature', prototype, table, {
+      // Срез «раскрыто всё, кроме» (ADR 0160, §1); в серверной модели строк переключение
+      // пишет его же — список строк TanStack там пуст.
+      row_getIsExpanded: {
+        fn: (row: AllRow) => {
+          const value = row.table.atoms.expanded?.get()
+          return isExpandedAll(value)
+            ? isRowExpandedIn(value, row.id)
+            : getIsExpanded.call(row)
+        },
+      },
+      row_toggleExpanded: {
+        fn: (row: AllRow, expanded?: boolean) => {
+          const value = row.table.atoms.expanded?.get()
+          if (!serverRowModelReason(row.table) && !isExpandedAll(value)) {
+            toggleExpanded.call(row, expanded)
+            return
+          }
+          row.table.setExpanded(old =>
+            withRowExpanded(
+              old,
+              row.id,
+              expanded ?? !isRowExpandedIn(old, row.id),
+            ),
+          )
+        },
+      },
       row_getIsExpandPending: {
         fn: (row: { id: string; table: PendingTable }) =>
           !!row.table.atoms.rowExpandPending?.get()[row.id],

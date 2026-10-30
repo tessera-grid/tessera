@@ -16,6 +16,18 @@ export interface TreeRequest<TQuery> {
   parentId?: string
 }
 
+/** Раскрыто всё, кроме `except` (ADR 0160, §1). */
+export interface ExpandAll {
+  all: true
+  except: ReadonlySet<string>
+}
+
+/** Раскрытые строки: набор `id` или «всё, кроме». */
+export type ExpandedRows = ReadonlySet<string> | ExpandAll
+
+export const isExpandAll = (expanded: ExpandedRows): expanded is ExpandAll =>
+  'all' in expanded
+
 export interface BlockTreeOptions<TData, TRow, TQuery> {
   blockSize: number
   maxBlocks: number
@@ -33,8 +45,10 @@ export interface BlockTreeOptions<TData, TRow, TQuery> {
     parentId: string | undefined,
   ) => TRow[]
   idOf: (row: TRow) => string
-  /** Раскрытые строки: срез `expanded` в виде набора `id`. */
-  expanded: () => ReadonlySet<string>
+  /** Раскрытые строки по срезу `expanded`; один и тот же объект на значение среза. */
+  expanded: () => ExpandedRows
+  /** Строку можно раскрыть — её раскрывает «всё, кроме» (ADR 0160, §1). */
+  canExpand?: (row: TRow) => boolean
   /** Итог ветки раскрытой строки до первого ответа — число строк группы (ADR 0144). */
   childCount?: (id: string) => number | undefined
   onChange: () => void
@@ -68,6 +82,8 @@ interface Layout<TData, TRow, TQuery> {
 interface Position {
   parent: string | undefined
   local: number
+  /** Строку можно раскрыть: «всё, кроме» раскрывает её, и после вытеснения блока. */
+  expandable?: boolean
 }
 
 /** Транзакция строк дерева (ADR 0157): `add` — данные и место в ветке `parentId`. */
@@ -112,7 +128,7 @@ export class BlockTree<TData, TRow, TQuery> {
   private windowed = new Set<TreeNode<TData, TRow, TQuery>>()
   private cache: {
     version: number
-    expanded: ReadonlySet<string>
+    expanded: ExpandedRows
     layout: Layout<TData, TRow, TQuery>
   } | null = null
   private readonly root: TreeNode<TData, TRow, TQuery>
@@ -148,6 +164,7 @@ export class BlockTree<TData, TRow, TQuery> {
           this.positions.set(options.idOf(row), {
             parent: parentId,
             local: start + offset,
+            expandable: options.canExpand?.(row) ?? false,
           }),
         )
         return rows
@@ -167,6 +184,12 @@ export class BlockTree<TData, TRow, TQuery> {
     return node
   }
 
+  private isOpen(expanded: ExpandedRows, id: string) {
+    return isExpandAll(expanded)
+      ? !!this.positions.get(id)?.expandable && !expanded.except.has(id)
+      : expanded.has(id)
+  }
+
   /** Раскладка веток по срезу `expanded`; ветка раскрытой строки заводится при надобности. */
   private layout(): Layout<TData, TRow, TQuery> {
     const expanded = this.options.expanded()
@@ -177,12 +200,16 @@ export class BlockTree<TData, TRow, TQuery> {
     ) {
       return this.cache.layout
     }
+    // «Всё, кроме»: раскрытые — раскрываемые строки, которые дерево видело.
+    const open = isExpandAll(expanded)
+      ? [...this.positions.keys()].filter(id => this.isOpen(expanded, id))
+      : expanded
     const build = (
       node: TreeNode<TData, TRow, TQuery>,
     ): Layout<TData, TRow, TQuery> => {
       const count = node.store.count()
       const children: Layout<TData, TRow, TQuery>['children'] = []
-      for (const id of expanded) {
+      for (const id of open) {
         const position = this.positions.get(id)
         if (!position || position.parent !== node.parentId) continue
         if (position.local >= count) continue
@@ -393,7 +420,7 @@ export class BlockTree<TData, TRow, TQuery> {
       if (excess <= 0) break
       for (const row of candidate.node.store.dropBlock(candidate.index)) {
         const id = this.options.idOf(row)
-        if (!expanded.has(id)) this.positions.delete(id)
+        if (!this.isOpen(expanded, id)) this.positions.delete(id)
       }
       excess--
     }
@@ -443,7 +470,9 @@ export class BlockTree<TData, TRow, TQuery> {
   branchLoading(id: string): boolean {
     const node = this.nodes.get(id)
     return (
-      !!node && this.options.expanded().has(id) && node.store.awaitingFirst()
+      !!node &&
+      this.isOpen(this.options.expanded(), id) &&
+      node.store.awaitingFirst()
     )
   }
 

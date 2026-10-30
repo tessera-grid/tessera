@@ -3533,6 +3533,115 @@ describe('Отзывчивость взаимодействий — ленивы
   )
 })
 
+// «Раскрыть всё» в SSRM (ADR 0160, EA11): кнопка в шапке при 1 000 000 корней против
+// раскрытия одной ветки (замер SD46) — детей просят только ветки окна.
+/** Кнопкой «Раскрыть всё» при 1 000 000 корней: работа и запросы веток. */
+const measureServerExpandAll = async () => {
+  treeCalls = []
+  await render(<ServerTreeGrid total={1_000_000} />)
+  await expect.poll(() => treeCalls.length).toBeGreaterThanOrEqual(1)
+  const roots = treeCalls[0]!
+  roots.resolve({ rows: feedRows(roots.start, roots.end - roots.start) })
+  const rowOf = (id: string) =>
+    document.querySelector<HTMLElement>(
+      `.data-grid__body-row[data-row-id="${id}"]`,
+    )
+  const button = () =>
+    document.querySelector<HTMLElement>('.row-expand-all-button')!
+  await expect.poll(() => rowOf('f1')).not.toBeNull()
+  const answerBranches = () => {
+    for (const call of treeCalls) {
+      if (!call.parentId) continue
+      call.resolve({
+        rows: feedRows(0, BRANCH).map((row, k) => ({
+          ...row,
+          id: `${call.parentId}.${k}`,
+        })),
+        rowCount: BRANCH,
+      })
+    }
+  }
+  const result = await measureInteractionWork(
+    // Ветка окна приходит ответом, при повторе — из кэша.
+    async () => {
+      button().click()
+      await expect
+        .poll(() => {
+          answerBranches()
+          return rowOf('f0.0')
+        })
+        .not.toBeNull()
+    },
+    {
+      // «Свернуть всё» — та же кнопка: замер снова раскрывает всё.
+      afterWarmup: async () => {
+        button().click()
+        await expect.poll(() => rowOf('f0.0')).toBeNull()
+      },
+    },
+  )
+  // Ветки окна ответили — новых запросов нет: окно занимает ветка первой строки.
+  await new Promise(resolve => setTimeout(resolve, 200))
+  const branchRequests = treeCalls.filter(call => call.parentId).length
+  await cleanup()
+  return { ...result, branchRequests }
+}
+
+describe('Отзывчивость взаимодействий — «раскрыть всё» в серверной модели строк', () => {
+  test(
+    'EA11: «раскрыть всё» в SSRM при 1 000 000 корней — запросов не больше, чем блоков окна; кадр не дороже раскрытия одной ветки (как SD46)',
+    async () => {
+      const runs = await againstBase(variant =>
+        variant
+          ? measureServerExpandAll()
+          : measureServerBranch(true).then(run => ({
+              ...run,
+              branchRequests: 0,
+            })),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const all = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 30 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1 000 000×3',
+          plugins: 'serverRowModel, rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('EA11-base', 'раскрытие одной ветки', base, false)
+      await record('EA11', '«раскрыть всё»', all, true)
+      // Блок ветки — 100 строк: окно в 600px целиком в ветке первой строки.
+      for (const run of runs.variant) {
+        expect(run.branchRequests).toBeGreaterThan(0)
+        expect(run.branchRequests).toBeLessThanOrEqual(2)
+      }
+      expect(
+        all.longestMs,
+        `longest=${all.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Подсказка виртуализатору (ADR 0145, HV8): раскрытие ветки при 1 000 000 корней в SSRM и
 // дописывание 100 строк к 100 000 в ленте — с подсказкой против сверки ключей.
 const HV8_CASES = [

@@ -8,6 +8,7 @@ import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
 import type { Cell, Column, Row } from '../types'
+import { isRowExpandedIn } from '../core/expandAll'
 import type { CellSlot } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { hasExpandToggle } from '../core/keyboardActions'
@@ -84,7 +85,7 @@ export const useRowStateSubscription = (row: Row<any, any>) => {
     const move = s.rowMoves?.[row.id]
     return {
       selected: s.rowSelection?.[row.id] ?? false,
-      expanded: s.expanded === true ? true : (s.expanded?.[row.id] ?? false),
+      expanded: isRowExpandedIn(s.expanded, row.id),
       grouping: s.grouping,
       expandPending: s.rowExpandPending?.[row.id] ?? 0,
       highlight: s.highlights?.[highlightKey],

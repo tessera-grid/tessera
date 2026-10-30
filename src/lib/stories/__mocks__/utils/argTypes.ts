@@ -322,6 +322,10 @@ export const rowExpandingMaxDepthType = numberControl(
   { min: 0, max: 10, step: 1 },
   String(DEFAULT_MAX_EXPANDING_DEPTH),
 )
+export const rowExpandingExpandAllType = booleanControl(
+  'Кнопка «Раскрыть всё / Свернуть всё» в шапке колонки раскрытия (`expandAll`)',
+  true,
+)
 export const rowExpandingColumnType = radioControl(
   'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`)',
   ['auto', 'always'],
