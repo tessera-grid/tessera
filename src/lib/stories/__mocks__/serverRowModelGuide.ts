@@ -358,3 +358,55 @@ export const groupRowOf = (root: HTMLElement, city: string) =>
   )
 export const parisItems = () =>
   allGroupItems().filter(item => item.city === 'Paris')
+
+// --- Дерево «сервера» (ADR 0138, S7) ---------------------------------------------------
+
+export const TREE_TOTAL = 1000
+export const TREE_BLOCK = 50
+/** Вложенных строк у каждой строки верхнего уровня. */
+export const TREE_CHILDREN = 4
+
+/** Тысяча строк, у каждой — четыре вложенные; вложенные «сервер» держит по `server.hold`. */
+export const treeProps: GuideStoryStep['props'] = () => ({
+  columnsOverride: filteringColumns,
+  dataOverride: [],
+  enableServerRowModel: true,
+  serverRowModelBlockSize: TREE_BLOCK,
+  serverRowModelRowCount: TREE_TOTAL,
+  enableRowExpanding: true,
+  rowExpandingHasChildren: (row: { depth: number }) => row.depth === 0,
+  // Линии дерева у веток серверной модели (ADR 0161).
+  enableTreeLines: true,
+  serverRowModelGetRows: ({
+    start,
+    end,
+    parentId,
+    signal,
+  }: ServerRowsRequest) =>
+    new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
+      server.starts.push(start)
+      if (parentId) server.parents.push(parentId)
+      const answer = () => {
+        if (signal.aborted) return
+        if (!parentId) {
+          resolve(serverAnswer({ start, end }, TREE_TOTAL, true))
+          return
+        }
+        // Вложенные строки — свои записи «сервера» с id родителя в начале.
+        const first = TREE_TOTAL + Number(parentId.split('-').at(-1)) * 100
+        resolve({
+          rows: Array.from(
+            { length: Math.max(0, Math.min(end, TREE_CHILDREN) - start) },
+            (_, k) => ({
+              ...filteringItemAt(first + start + k),
+              id: `${parentId}.${start + k}`,
+            }),
+          ),
+          rowCount: TREE_CHILDREN,
+        })
+      }
+      if (server.hold && parentId) server.held.push(answer)
+      else setTimeout(answer, SERVER_DELAY_MS)
+    }),
+  extraPlugins: [serverReset],
+})

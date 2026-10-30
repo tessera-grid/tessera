@@ -34,16 +34,35 @@ export const groupKeysOfRow = (row: Row<any, any>): unknown[] =>
     ? groupKeysOf(isServerGroupRow(row) ? row.id : row.parentId)
     : []
 
+/** Флажки у вложенных строк (ADR 0162): каскад (`true`), каждая сама (`'self'`) или нет. */
+export const subRowsOf = (table: unknown): boolean | 'self' =>
+  (table as { options?: { rowSelectionSubRows?: boolean | 'self' } }).options
+    ?.rowSelectionSubRows ?? false
+
+/** Дерево серверной модели с каскадом: выбор строки-родителя ведёт её ветку (ADR 0162, §2). */
+export const isBranchCascade = (table: unknown): boolean =>
+  !!serverRowModelReason(table) &&
+  groupingLength(table) === 0 &&
+  subRowsOf(table) === true
+
+/** Предки строки дерева серверной модели от корня (ADR 0162). */
+export const rowPathOf = (row: Row<any, any>): readonly string[] =>
+  (row.table as { getRowSource?: () => RowSource })
+    .getRowSource?.()
+    .ancestors?.(row.id) ?? []
+
 /**
- * Флажок у строки: в дереве серверной модели — у корней (ADR 0138, §14), при серверной
- * группировке — у строк данных и групп (ADR 0144, §5; ADR 0148), в клиентском дереве — по
+ * Флажок у строки: при серверной группировке — у строк данных и групп (ADR 0144, §5;
+ * ADR 0148); у вложенных строк — с `subRows` (ADR 0162), а в клиентском каскаде — ещё и по
  * `getCanSelectSubRows`.
  */
 export const isSelectableInList = (row: Row<any, any>): boolean => {
+  if (row.depth === 0) return true
+  const subRows = subRowsOf(row.table)
   if (serverRowModelReason(row.table)) {
-    return groupingLength(row.table) > 0 || row.depth === 0
+    return groupingLength(row.table) > 0 || !!subRows
   }
-  return !(row.depth > 0 && !row.getCanSelectSubRows())
+  return subRows === 'self' || row.getCanSelectSubRows()
 }
 
 /** Есть ли хотя бы одна выбираемая строка (v9-замена table.getCanSomeRowsSelect). */

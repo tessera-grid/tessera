@@ -2574,6 +2574,110 @@ describe('Производительность прокрутки — линии
   )
 })
 
+// Выбор вложенных строк (ADR 0162, NS11): то же дерево TL15 с каскадом; тысяча веток выбрана
+// узлами с исключением против того же дерева, выбранного целиком без узлов: заливка выбранных
+// строк одна, разница — поиск узла по пути предков.
+const NS11_COST = { ratio: 1.15, plusMs: 2 }
+const NS11_BRANCHES = 1000
+const NS11_SELECTION = {
+  all: false,
+  except: Array.from({ length: NS11_BRANCHES }, (_, i) => `r${i}`),
+  branches: Array.from({ length: NS11_BRANCHES }, (_, i) => ({
+    id: `r${i}`,
+    all: true,
+    except: [`r${i}.1`],
+  })),
+}
+const NS11_EVERYTHING = { all: true, except: [] }
+const SelectedTreeServerGrid = ({ selected }: { selected: boolean }) => {
+  const table = useCreateTable({
+    columns: GROUPED_COLUMNS as never,
+    data: NO_GROUPED_ROWS,
+    getRowId: (row: GroupedRow) => row.id,
+    plugins: [
+      serverRowModel({ getRows: treeRowsOf, rowCount: TL15_ROOTS }),
+      rowExpanding({
+        hasChildren: (row: { depth: number }) => row.depth === 0,
+        initialExpanded: true,
+      } as never),
+      rowSelection({
+        subRows: true,
+        rowSelection: selected ? NS11_SELECTION : NS11_EVERYTHING,
+      }),
+    ] as never,
+  })
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Производительность прокрутки — выбор вложенных строк в серверной модели', () => {
+  test(
+    'NS11: прокрутка дерева серверной модели с 1 000 000 корней и тысячей веток, выбранных узлами, не дороже того же дерева, выбранного целиком, больше чем на 15 % (+2 мс)',
+    async () => {
+      const rowOf = (id: string) =>
+        document.querySelector(`.data-grid__body-row[data-row-id="${id}"]`)
+      const measure = async (selected: boolean) => {
+        const screen = render(<SelectedTreeServerGrid selected={selected} />)
+        await expect.poll(() => rowOf('r0.2')).not.toBeNull()
+        // Выбор и правда применён: строка ветки выбрана, исключение узла — нет.
+        await expect
+          .poll(() => rowOf('r0.0')!.getAttribute('data-selected'))
+          .toBe('true')
+        expect(rowOf('r0.1')!.getAttribute('data-selected')).toBe(
+          String(!selected),
+        )
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: true,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const selected = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, NS11_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1 000 000 корней',
+          plugins: 'serverRowModel, rowExpanding, rowSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y' as const,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('NS11-base', 'выбрано всё без узлов', base, false)
+      await record('NS11', 'тысяча выбранных веток', selected, true)
+      expect(
+        selected.p95Ms,
+        `p95=${selected.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Выбор группы целиком (ADR 0148, GX12): спокойная прокрутка 1 000 000 строк в ста
 // раскрытых группах, каждая выбрана узлом с исключениями, против той же выборки, выбранной
 // целиком без узлов: заливка выбранных строк одна, разница — поиск узла по пути групп.

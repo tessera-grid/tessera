@@ -9,6 +9,7 @@ export {
 } from './rowSelectionModel'
 export type {
   RowSelectionAll,
+  RowSelectionBranch,
   RowSelectionGroup,
   RowSelectionValue,
 } from '../core/rowSelectionAll'

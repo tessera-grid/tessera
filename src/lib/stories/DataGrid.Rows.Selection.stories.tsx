@@ -29,7 +29,7 @@ import {
 /**
  * Выбор строк (ADR 0014): `Playground` — выбранные строки в покое; S1 — выбор всех
  * строк и смена страницы, S2 — родитель вместе с детьми; выбор щелчком без флажков —
- * S5 ADR 0120.
+ * S5 ADR 0120; каждая строка дерева сама — S2 ADR 0162.
  */
 const meta = {
   ...dataGridMeta,
@@ -297,6 +297,102 @@ export const SubRowSelection: StoryObj<StoryProps> = {
       await expect(selected(bodyRow(canvas, UNSELECTED))).toBe(false)
       for (const id of CHILDREN.filter(id => id !== UNSELECTED))
         await expect(selected(bodyRow(canvas, id))).toBe(true)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0162, S2 --------------------------------------------------------------------
+
+/** Второй родитель дерева и его вложенная строка, которую выбирает пользователь. */
+const OTHER_PARENT = (subRowTree[1] as { id: string }).id
+const OTHER_CHILD = `${OTHER_PARENT}-0`
+
+const checked = (root: HTMLElement, id: string) =>
+  checkboxOf(bodyRow(root, id))?.getAttribute('aria-checked')
+
+/** Пользователь отмечает флажок строки `id`, пока она не выбрана. */
+const selectOnly = (id: string) => (root: HTMLElement) => {
+  if (!selected(bodyRow(root, id))) checkboxOf(bodyRow(root, id))?.click()
+}
+
+const SELF_ROWS: readonly GuideStoryStep[] = [
+  {
+    title: 'Дерево раскрыто',
+    hint: 'Строки сгруппированы по родителям, у каждой строки — свой флажок. Ничего не выбрано.',
+  },
+  {
+    title: 'Пользователь выбрал родителя',
+    hint: 'Выбран только сам родитель: его вложенные строки остались невыбранными.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => selected(bodyRow(root, PARENT)),
+      selectOnly(PARENT),
+    ),
+  },
+  {
+    title: 'Пользователь выбрал вложенную строку другого родителя',
+    hint: 'Выбрана только эта строка. Флажок её родителя не изменился и частичного выбора не показывает: каждая строка выбирается сама.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root =>
+        selected(bodyRow(root, PARENT)) && selected(bodyRow(root, OTHER_CHILD)),
+      root => {
+        selectOnly(PARENT)(root)
+        selectOnly(OTHER_CHILD)(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0162, S2: пользователь отмечает отдельные строки дерева, не трогая их детей. */
+export const SelectionSubRowsSelf: StoryObj<StoryProps> = {
+  name: 'Each row on its own',
+  parameters: {
+    scenario: '0162/S2',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Выбор отдельных строк дерева"
+      steps={SELF_ROWS}
+      args={guideArgs(
+        {
+          dataOverride: subRowTree,
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          initialExpanded: true,
+          enableRowSelection: true,
+          rowSelectionSubRows: 'self',
+          enableRowExpanding: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SELF_ROWS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(bodyRow(canvas, OTHER_CHILD)).toBeTruthy())
+      await expect(orderedRows(canvas).some(selected)).toBe(false)
+      await expect(checkboxOf(bodyRow(canvas, CHILDREN[0]!))).not.toBeNull()
+    })
+    await step(SELF_ROWS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selected(bodyRow(canvas, PARENT))).toBe(true))
+      for (const id of CHILDREN)
+        await expect(selected(bodyRow(canvas, id))).toBe(false)
+    })
+    await step(SELF_ROWS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(selected(bodyRow(canvas, OTHER_CHILD))).toBe(true),
+      )
+      await expect(selected(bodyRow(canvas, OTHER_PARENT))).toBe(false)
+      await expect(checked(canvas, OTHER_PARENT)).toBe('false')
+      await expect(selected(bodyRow(canvas, PARENT))).toBe(true)
       await settle()
     })
   },

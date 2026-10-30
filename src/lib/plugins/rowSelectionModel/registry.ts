@@ -22,16 +22,20 @@ import {
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
 import { GROUP_ROW_PREFIX, type RowSource } from '../../core/rowSource'
-import { groupingLength, isGroupingActive } from './selectionHelpers'
+import { groupingLength, isGroupingActive, subRowsOf } from './selectionHelpers'
 
 export interface RowSelectionModelOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Разрешить выбор дочерних строк (каскад на поддерево). */
-  subRows?: boolean
   /**
-   * Выбранные строки по `id` или «всё, кроме» `{ all, except, groups? }` серверной модели
-   * строк (ADR 0138, §9; ADR 0148): задаёт приложение; без него срез хранит грид.
+   * Флажки у вложенных строк (ADR 0162): `true` — с каскадом на поддерево, `'self'` — каждая
+   * строка выбирается сама; без него — флажки только у строк верхнего уровня.
+   */
+  subRows?: boolean | 'self'
+  /**
+   * Выбранные строки по `id` или «всё, кроме» `{ all, except, groups?, branches? }` серверной
+   * модели строк (ADR 0138, §9; ADR 0148; ADR 0162): задаёт приложение; без него срез хранит
+   * грид.
    */
   rowSelection?: RowSelectionValue
   /** Новое значение среза после каждого изменения изнутри грида. */
@@ -44,15 +48,23 @@ export interface RowSelectionModelOptions {
 export const rowSelectionModelFeatures = { rowSelectionFeature }
 
 /**
- * Строка, которую выбирает «всё, кроме»: в дереве серверной модели — корень (ADR 0138, §14),
- * при серверной группировке — строка данных, а не группа (ADR 0144, §5).
+ * Строка, которую выбирает «всё, кроме»: в дереве серверной модели — корень, а с `subRows` —
+ * любая строка (ADR 0138, §14; ADR 0162); при серверной группировке — строка данных, а не
+ * группа (ADR 0144, §5).
  */
 const rootRow = (table: unknown) => (id: string) =>
   groupingLength(table) > 0
     ? !id.startsWith(GROUP_ROW_PREFIX)
-    : ((table as { getRowSource?: () => RowSource<{ depth: number }> })
+    : !!subRowsOf(table) ||
+      ((table as { getRowSource?: () => RowSource<{ depth: number }> })
         .getRowSource?.()
         .byId(id)?.depth ?? 0) === 0
+
+/** Предки строки дерева серверной модели — путь её узла в дереве выбора (ADR 0162). */
+const rowPathOf = (table: unknown) => (id: string) =>
+  (table as { getRowSource?: () => RowSource })
+    .getRowSource?.()
+    .ancestors?.(id) ?? []
 
 /** Строка-группа строки данных при серверной группировке (ADR 0148); без неё — нет. */
 const rowGroupOf = (table: unknown) => (id: string) =>
@@ -77,7 +89,10 @@ const enableRowSelection = (row: Row<any, any>): boolean => {
   return false
 }
 
-/** В дереве серверной модели вложенные строки не выбираются: флажки только у корней. */
+/**
+ * Каскад TanStack — в клиентском режиме; в серверной модели каскад ведёт дерево выбора
+ * (ADR 0162, §2).
+ */
 const enableSubRowSelection = (row: Row<any, any>) =>
   !serverRowModelReason(row.table)
 
@@ -97,8 +112,13 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
           ? NO_SELECTION
           : value
       }
-      // Узлам групп нужен путь строки из источника таблицы — без неё пересчёт после коммита.
-      if (isAllSelection(value) && value.groups?.length && !table) {
+      // Узлам групп и веток нужен путь строки из источника таблицы — без неё пересчёт после
+      // коммита.
+      if (
+        isAllSelection(value) &&
+        (value.groups?.length || value.branches?.length) &&
+        !table
+      ) {
         return undefined
       }
       return isAllSelection(value)
@@ -106,6 +126,7 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
             value,
             table ? rootRow(table) : undefined,
             table ? rowGroupOf(table) : undefined,
+            table ? rowPathOf(table) : undefined,
           )
         : value
     },
@@ -114,7 +135,9 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
     // При disabled — жёстко false (иначе present-but-disabled фича активна:
     // v9 фиксирует набор фич на маунте, гейт рантайм-тоггла — опцией).
     enableRowSelection: o.enabled === false ? false : enableRowSelection,
-    enableSubRowSelection: o.subRows ? enableSubRowSelection : false,
+    // `'self'` — флажки у вложенных строк без каскада (ADR 0162, §1).
+    enableSubRowSelection: o.subRows === true ? enableSubRowSelection : false,
+    rowSelectionSubRows: o.enabled === false ? false : (o.subRows ?? false),
     // Клик по флажку не выделяет диапазон: выбор диапазоном — не жест грида.
     enableRowRangeSelection: false,
   }),

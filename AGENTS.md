@@ -946,6 +946,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       группы, «выбрать всё», счётчик, сброс при смене группировки с откатом, `Space`, axe и
       `forced-colors`, канал действий), перф GX12 — в `scroll`, истории «Data loading/Server
       row model/Selection» S1–S3 ([ADR 0148](docs/decisions/0148-group-selection-in-ssrm.md)).
+    - _Выбор вложенных строк:_ модульный `nestedRowSelection.dom` (NS1, NS3, NS5–NS7, NS9–NS10 —
+      каскад и `'self'` в клиенте и SSRM, узлы веток в срезе, «выбрать всё», счётчик по размеру
+      ветки, смена выборки и выгрузка, флажок без третьего состояния, транзакции и перенос),
+      визуальный `server-row-model` (NS2, NS4, NS8 — ветка с незагруженными потомками, «только
+      строка», `Space`, axe и `forced-colors`), перф NS11 — в `scroll`, истории «Data
+      loading/Server row model/Selection — Select a tree branch» (S1) и «Rows/Selection — Each
+      row on its own» (S2) ([ADR 0162](docs/decisions/0162-nested-row-selection.md)).
     - _Ошибка в ячейке:_ `cell-errors` (ER1–ER7 — точка у ячейки с ошибкой, одна или на кнопке
       правки, тултип и описание, `aria-invalid` в трёх ролях, отказ сохранения первым, живая
       функция и сортировка, страница, виртуализация, SSRM, контраст и `forced-colors`),

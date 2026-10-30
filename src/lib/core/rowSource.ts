@@ -63,6 +63,13 @@ export interface RowSource<TRow = unknown> {
   treeAria?: (
     index: number,
   ) => { level: number; posInSet: number; setSize: number } | undefined
+  /** `id` предков строки дерева от корня (серверная модель, ADR 0162). */
+  ancestors?: (id: string) => readonly string[]
+  /**
+   * Строк в ветке на всех уровнях, у корня (`undefined`) — во всём дереве; неизвестно —
+   * `undefined` (серверная модель, ADR 0162).
+   */
+  subtreeSize?: (parentId: string | undefined) => number | undefined
   /**
    * Линии дерева строки по индексу — из раскладки, без прохода по строкам (серверная
    * модель, ADR 0161).

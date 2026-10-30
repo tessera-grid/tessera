@@ -1,6 +1,6 @@
 import axe from 'axe-core'
 import { render } from 'vitest-browser-react'
-import { commands, userEvent } from 'vitest/browser'
+import { commands, server as browser, userEvent } from 'vitest/browser'
 import { describe, expect, test, vi } from 'vitest'
 
 import '../../../core/themeVariables/theme.css'
@@ -30,7 +30,13 @@ import { setColumnFilterByUser, setSearchByUser } from '../../../core/filtering'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { measureWork, renders } from '../work.helpers'
-import { AXE_OPTIONS, contrast, effectiveBg, toRgba } from './a11y-helpers'
+import {
+  AXE_OPTIONS,
+  contrast,
+  effectiveBg,
+  inBothThemes,
+  toRgba,
+} from './a11y-helpers'
 
 // Серверная модель строк на гриде (ADR 0138, этап 2): высота на весь итог, скелеты
 // незагруженных строк, блоки по окну прокрутки, неизвестный итог, отказы блока и списка.
@@ -193,6 +199,18 @@ const liveRegion = () => q('[role="status"][aria-live="polite"]')!
 const pendingRow = (index: number) =>
   q(`[data-pending-row][data-index="${index}"]`)
 const press = (keys: string) => userEvent.keyboard(keys)
+const fc = commands as unknown as {
+  forcedColors: (active: boolean) => Promise<void>
+}
+/** Системный цвет палитры, как его отдаёт браузер. */
+const systemColor = (name: string) => {
+  const probe = document.createElement('span')
+  probe.style.color = name
+  document.body.append(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  return color
+}
 /** Настоящая мышь Playwright. */
 const pointer = commands as unknown as {
   realDragHold: (from: object, to: object, steps?: number) => Promise<void>
@@ -1353,44 +1371,227 @@ describe('Серверная модель строк (ADR 0138)', () => {
       }
     })
 
-    test('SD45: выбор в дереве SSRM — флажки только у корней; «Выбрать всё» — итог корней', async () => {
-      const { getRows } = server(treeAnswer)
-      const changes: unknown[] = []
-      const screen = await render(
-        <Grid
-          getRows={getRows}
-          rowCount={1000}
-          plugins={[
-            rowExpanding({ hasChildren }),
-            // Выбор вложенных включён — в SSRM их флажков всё равно нет.
-            rowSelection({
-              subRows: true,
-              selectedCount: true,
-              onRowSelectionChange: next => changes.push(next),
-            }),
-          ]}
-        />,
-      )
+    test('SD45: выбор в дереве SSRM без `subRows` — флажки только у корней, «Выбрать всё» — итог корней; с `subRows` — флажки и у вложенных', async () => {
       const checkbox = (id: string) =>
         rowOf(id)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
       const count = () =>
         q('[data-testid="selected-rows-count"]')?.textContent?.trim() ?? ''
-      try {
+      const mount = async (subRows?: boolean | 'self') => {
+        const { getRows } = server(treeAnswer)
+        const changes: unknown[] = []
+        const screen = await render(
+          <Grid
+            getRows={getRows}
+            rowCount={1000}
+            plugins={[
+              rowExpanding({ hasChildren }),
+              rowSelection({
+                subRows,
+                selectedCount: true,
+                onRowSelectionChange: next => changes.push(next),
+              }),
+            ]}
+          />,
+        )
         await expect.poll(() => toggleOf('r1')).not.toBeNull()
         await humanClick(toggleOf('r1')!)
         await expect.poll(() => rowOf('r1.0')).not.toBeNull()
+        return { screen, changes }
+      }
+
+      const plain = await mount()
+      try {
         expect(checkbox('r1')).not.toBeNull()
         expect(checkbox('r1.0')).toBeNull()
-
         await userEvent.click(q('.data-grid__head-cell .row-select-checkbox')!)
         await expect
-          .poll(() => changes.at(-1))
+          .poll(() => plain.changes.at(-1))
           .toEqual({ all: true, except: [] })
         await expect.poll(count).toBe(tableLabels.selectedRows(1000))
         expect(rowOf('r1.0')!.getAttribute('data-selected')).toBe('false')
       } finally {
-        await screen.unmount()
+        await plain.screen.unmount()
       }
+
+      for (const subRows of [true, 'self'] as const) {
+        const nested = await mount(subRows)
+        try {
+          expect(checkbox('r1'), String(subRows)).not.toBeNull()
+          expect(checkbox('r1.0'), String(subRows)).not.toBeNull()
+        } finally {
+          await nested.screen.unmount()
+        }
+      }
+    })
+    describe('выбор вложенных строк (ADR 0162)', () => {
+      const checkbox = (id: string) =>
+        rowOf(id)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+      const checked = (id: string) => checkbox(id)?.getAttribute('aria-checked')
+      const headCheckbox = () =>
+        q('.data-grid__head-cell .row-select-checkbox')!
+      const cellOf = (id: string) =>
+        rowOf(id)?.querySelector<HTMLElement>('[data-column-id="city"]') ?? null
+      const children = (parentId: string) =>
+        Array.from({ length: CHILDREN }, (_, i) => `${parentId}.${i}`)
+
+      test('NS2: SSRM, subRows: true — выбор родителя выбирает всё поддерево, в том числе незагруженное; пришедшие позже строки выбраны; флажок родителя — в трёх состояниях (aria-checked="mixed")', async () => {
+        // Дети ждут ответа из теста.
+        const { calls, getRows } = server(request =>
+          request.parentId ? undefined : treeAnswer(request),
+        )
+        const screen = await render(
+          <Grid
+            getRows={getRows}
+            rowCount={1000}
+            plugins={[
+              rowExpanding({ hasChildren }),
+              rowSelection({ subRows: true }),
+            ]}
+          />,
+        )
+        try {
+          await expect.poll(() => checkbox('r1')).not.toBeNull()
+          // Ветка ещё не загружалась: выбрали родителя до прихода детей.
+          await humanClick(checkbox('r1')!)
+          await expect.poll(() => checked('r1')).toBe('true')
+          await humanClick(toggleOf('r1')!)
+          await expect
+            .poll(() => calls.some(call => call.request.parentId === 'r1'))
+            .toBe(true)
+          const branch = calls.find(call => call.request.parentId === 'r1')!
+          branch.settle(treeAnswer(branch.request))
+          await expect.poll(() => rowOf('r1.4')).not.toBeNull()
+          for (const id of children('r1')) {
+            expect(rowOf(id)!.getAttribute('data-selected'), id).toBe('true')
+            expect(checked(id), id).toBe('true')
+          }
+          expect(rowOf('r2')!.getAttribute('data-selected')).toBe('false')
+
+          // Сняли одну строку ветки — родитель частично выбран.
+          await humanClick(checkbox('r1.2')!)
+          await expect.poll(() => checked('r1')).toBe('mixed')
+          expect(rowOf('r1')!.getAttribute('data-selected')).toBe('true')
+          expect(checked('r1.2')).toBe('false')
+          // Вернули — снова выбран целиком.
+          await humanClick(checkbox('r1.2')!)
+          await expect.poll(() => checked('r1')).toBe('true')
+        } finally {
+          await screen.unmount()
+        }
+      })
+
+      test("NS4: SSRM, subRows: 'self' — флажки у всех строк, выбор строки не трогает потомков и предков; срез — id или { all, except }", async () => {
+        const { getRows } = server(treeAnswer)
+        const changes: unknown[] = []
+        const screen = await render(
+          <Grid
+            getRows={getRows}
+            rowCount={1000}
+            plugins={[
+              rowExpanding({ hasChildren }),
+              rowSelection({
+                subRows: 'self',
+                onRowSelectionChange: next => changes.push(next),
+              }),
+            ]}
+          />,
+        )
+        try {
+          await expect.poll(() => toggleOf('r1')).not.toBeNull()
+          await humanClick(toggleOf('r1')!)
+          await expect.poll(() => rowOf('r1.4')).not.toBeNull()
+          for (const id of ['r1', ...children('r1')]) {
+            expect(checkbox(id), id).not.toBeNull()
+          }
+          // Родитель — без потомков.
+          await humanClick(checkbox('r1')!)
+          await expect.poll(() => changes.at(-1)).toEqual({ r1: true })
+          for (const id of children('r1')) expect(checked(id), id).toBe('false')
+          // Строка ветки — без предка; родитель без третьего состояния.
+          await humanClick(checkbox('r1')!)
+          await humanClick(checkbox('r1.1')!)
+          await expect.poll(() => changes.at(-1)).toEqual({ 'r1.1': true })
+          expect(checked('r1')).toBe('false')
+          expect(rowOf('r1')!.getAttribute('data-selected')).toBe('false')
+
+          // «Выбрать всё», затем снятая строка ветки — исключение, её родитель выбран.
+          await humanClick(headCheckbox())
+          await expect
+            .poll(() => changes.at(-1))
+            .toEqual({ all: true, except: [] })
+          await humanClick(checkbox('r1.3')!)
+          await expect
+            .poll(() => changes.at(-1))
+            .toEqual({ all: true, except: ['r1.3'] })
+          expect(checked('r1')).toBe('true')
+          expect(checked('r1.3')).toBe('false')
+          expect(checked('r1.4')).toBe('true')
+        } finally {
+          await screen.unmount()
+        }
+      })
+
+      test('NS8: Space на любой строке переключает её выбор; aria-selected у строк; axe в роли treegrid и вид в forced-colors', async () => {
+        const { getRows } = server(treeAnswer)
+        const screen = await render(
+          <Grid
+            getRows={getRows}
+            rowCount={1000}
+            plugins={[
+              rowExpanding({ hasChildren }),
+              keyboardNavigation(),
+              rowSelection({ subRows: true }),
+            ]}
+          />,
+        )
+        const options = {
+          ...AXE_OPTIONS,
+          rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+        }
+        try {
+          await expect.poll(() => toggleOf('r1')).not.toBeNull()
+          await humanClick(toggleOf('r1')!)
+          await expect.poll(() => rowOf('r1.4')).not.toBeNull()
+          expect(q('[role="treegrid"]')).not.toBeNull()
+          // Корень: Space выбирает его ветку.
+          await humanClick(cellOf('r1')!)
+          await userEvent.keyboard(' ')
+          await expect
+            .poll(() => rowOf('r1')!.getAttribute('aria-selected'))
+            .toBe('true')
+          expect(rowOf('r1.2')!.getAttribute('aria-selected')).toBe('true')
+          // Строка ветки: Space снимает её — родитель частично выбран.
+          await humanClick(cellOf('r1.2')!)
+          await userEvent.keyboard(' ')
+          await expect
+            .poll(() => rowOf('r1.2')!.getAttribute('aria-selected'))
+            .toBe('false')
+          await expect.poll(() => checked('r1')).toBe('mixed')
+          expect(rowOf('r2')!.getAttribute('aria-selected')).toBe('false')
+
+          await inBothThemes(async () => {
+            expect(
+              (await axe.run(q('.data-grid-theme')!, options)).violations,
+            ).toEqual([])
+          })
+          if (browser.browser !== 'webkit') {
+            await fc.forcedColors(true)
+            try {
+              // Частичный флажок родителя залит системным цветом выбора, как выбранный.
+              expect(getComputedStyle(checkbox('r1')!).backgroundColor).toBe(
+                systemColor('Highlight'),
+              )
+              expect(
+                (await axe.run(q('.data-grid-theme')!, options)).violations,
+              ).toEqual([])
+            } finally {
+              await fc.forcedColors(false)
+            }
+          }
+        } finally {
+          await screen.unmount()
+        }
+      })
     })
   })
 

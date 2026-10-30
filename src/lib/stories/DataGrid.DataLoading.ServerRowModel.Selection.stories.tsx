@@ -29,6 +29,10 @@ import {
   serverReset,
   serverProps,
   refreshing,
+  release,
+  skeletonRows,
+  TREE_CHILDREN,
+  treeProps,
   groupServer,
   groupProps,
   groupButton,
@@ -41,7 +45,7 @@ import {
  * Выбор строк в серверной модели (ADR 0138, ADR 0148): `Playground` — десять тысяч строк с
  * флажками, группировка и число строк групп — контролами; S6 ADR 0138 — выбрать всё, кроме
  * нескольких строк, и выгрузить; S1–S3 ADR 0148 — выбор группы целиком, сброс сменой
- * группировки, счётчик без размеров групп.
+ * группировки, счётчик без размеров групп; S1 ADR 0162 — выбор ветки дерева целиком.
  */
 const meta = {
   ...dataGridMeta,
@@ -581,6 +585,188 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
         expect(selectedCount(canvas)).toBe(
           labels.selectedRowsAndGroups(1, labels.selectedGroupsCount(1)),
         ),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0162: выбор ветки дерева целиком -------------------------------------------
+
+/** Строка со вложенными строками, которую выбирает пользователь. */
+const BRANCH_PARENT = 'item-id-1'
+/** Вложенная строка, с которой пользователь снимает выбор. */
+const BRANCH_UNCHECKED = `${BRANCH_PARENT}.2`
+
+/** Дерево «сервера» с флажками у всех строк и выбором ветки целиком. */
+const branchSelectProps: GuideStoryStep['props'] = context => ({
+  ...treeProps!(context),
+  enableRowSelection: true,
+  rowSelectionSubRows: true,
+  rowSelectionSelectedCount: true,
+})
+
+const treeRow = (root: HTMLElement, id: string) =>
+  root.querySelector<HTMLElement>(`.data-grid__body-row[data-row-id="${id}"]`)
+const treeCheckbox = (root: HTMLElement, id: string) =>
+  treeRow(root, id)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+const treeToggle = (root: HTMLElement, id: string) =>
+  treeRow(root, id)?.querySelector<HTMLElement>('.row-expand-button') ?? null
+const branchShown = (root: HTMLElement) =>
+  !!treeRow(root, `${BRANCH_PARENT}.0`) && skeletonRows(root) === 0
+
+/** Пользователь отметил флажок строки со вложенными строками. */
+const selectBranch = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!treeCheckbox(root, BRANCH_PARENT), signal)
+  if (
+    !isChecked(treeCheckbox(root, BRANCH_PARENT)) &&
+    !isPartial(treeCheckbox(root, BRANCH_PARENT))
+  ) {
+    treeCheckbox(root, BRANCH_PARENT)!.click()
+  }
+  await pollUntil(
+    () =>
+      isChecked(treeCheckbox(root, BRANCH_PARENT)) ||
+      isPartial(treeCheckbox(root, BRANCH_PARENT)),
+    signal,
+  )
+}
+
+/** Пользователь раскрыл выбранную строку, «сервер» держит ответ. */
+const openBranch = async (root: HTMLElement, signal: AbortSignal) => {
+  await selectBranch(root, signal)
+  if (branchShown(root) || server.held.length > 0) return
+  server.hold = true
+  if (treeToggle(root, BRANCH_PARENT)!.getAttribute('aria-expanded') !== 'true')
+    treeToggle(root, BRANCH_PARENT)!.click()
+  await pollUntil(
+    () => server.held.length > 0 && skeletonRows(root) > 0,
+    signal,
+  )
+}
+
+/** Вложенные строки пришли. */
+const branchArrived = async (root: HTMLElement, signal: AbortSignal) => {
+  await openBranch(root, signal)
+  server.hold = false
+  release()
+  await pollUntil(() => branchShown(root), signal)
+}
+
+const BRANCH_SELECTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Дерево с флажками',
+    hint: 'Сервер отдаёт верхний уровень списка блоками, у каждой строки — флажок. Вложенных строк таблица ещё не загружала, ничего не выбрано.',
+    props: branchSelectProps,
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!treeCheckbox(root, BRANCH_PARENT), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал строку со вложенными',
+    hint: 'Флажок выбрал строку вместе со всеми вложенными, хотя ни одна из них не загружена: запросов к серверу не было. Сколько их, таблица не знает, поэтому нижняя панель считает строки и ветки по отдельности.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectBranch(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь раскрыл строку',
+    hint: 'Таблица попросила у сервера вложенные строки. Пока ответ в пути, под строкой — блок строк-скелетов.',
+    states: ['body.selection', 'body.skeleton'],
+    enter: stepAction(async (root, { signal }) => {
+      await openBranch(root, signal)
+    }),
+  },
+  {
+    title: 'Сервер ответил',
+    hint: 'Вложенные строки пришли уже выбранными. Теперь размер ветки известен, и нижняя панель считает выбранные строки точно.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await branchArrived(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь снял одну вложенную строку',
+    hint: 'Снятая строка стала исключением внутри ветки: флажок родителя показывает частичный выбор, счётчик уменьшился на одну.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await branchArrived(root, signal)
+      if (isChecked(treeCheckbox(root, BRANCH_UNCHECKED)))
+        treeCheckbox(root, BRANCH_UNCHECKED)!.click()
+      await pollUntil(
+        () => isPartial(treeCheckbox(root, BRANCH_PARENT)),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0162, S1: выбрать ветку серверного дерева целиком — вложенные, пришедшие позже, выбраны. */
+export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
+  name: 'Select a tree branch',
+  parameters: {
+    scenario: '0162/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Выбор ветки дерева"
+      steps={BRANCH_SELECTION}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(BRANCH_SELECTION[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(false)
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(BRANCH_SELECTION[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(true)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          labels.selectedRowsAndGroups(1, labels.selectedBranchesCount(1)),
+        ),
+      )
+      await expect(server.parents).not.toContain(BRANCH_PARENT)
+    })
+    await step(BRANCH_SELECTION[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(skeletonRows(canvas)).toBeGreaterThan(0)
+      await expect(server.parents).toContain(BRANCH_PARENT)
+    })
+    await step(BRANCH_SELECTION[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      for (let k = 0; k < TREE_CHILDREN; k++) {
+        const id = `${BRANCH_PARENT}.${k}`
+        await expect(isChecked(treeCheckbox(canvas, id))).toBe(true)
+        await expect(treeRow(canvas, id)).toHaveAttribute(
+          'data-selected',
+          'true',
+        )
+      }
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          labels.selectedRows(1 + TREE_CHILDREN),
+        ),
+      )
+    })
+    await step(BRANCH_SELECTION[4]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(isPartial(treeCheckbox(canvas, BRANCH_PARENT))).toBe(true)
+      await expect(isChecked(treeCheckbox(canvas, BRANCH_UNCHECKED))).toBe(
+        false,
+      )
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(labels.selectedRows(TREE_CHILDREN)),
       )
       await settle()
     })

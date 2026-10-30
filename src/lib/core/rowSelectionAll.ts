@@ -1,8 +1,8 @@
 /**
- * Выбор «всё, кроме» серверной модели строк (ADR 0138, §9) и дерево выбора групп
- * (ADR 0148): срез `rowSelection` хранит `{ all, except, groups? }`, а TanStack получает
- * эффективное значение — объект, где строка выбрана по ближайшему узлу пути её групп, в том
- * числе строки блоков, которые придут позже.
+ * Выбор «всё, кроме» серверной модели строк (ADR 0138, §9) и дерево выбора групп (ADR 0148)
+ * и веток (ADR 0162): срез `rowSelection` хранит `{ all, except, groups?, branches? }`, а
+ * TanStack получает эффективное значение — объект, где строка выбрана по ближайшему узлу пути
+ * её групп или предков, в том числе строки блоков, которые придут позже.
  * Общий модуль выбора строк и выгрузки — вне папок плагинов (IV3).
  */
 import type { RowSelectionState } from '@tanstack/react-table'
@@ -21,14 +21,30 @@ export interface RowSelectionGroup {
 }
 
 /**
+ * Узел ветки дерева в дереве выбора (ADR 0162, §2): узлы вложены по дереву строк — узел ветки
+ * стоит внутри узла её родителя.
+ */
+export interface RowSelectionBranch {
+  /** Строка-родитель ветки. */
+  id: string
+  /** Ветка выбрана целиком, кроме `except` и узлов `branches` внутри неё. */
+  all: boolean
+  /** Вложенные строки ветки, чьё состояние обратно `all`. */
+  except: string[]
+  branches?: RowSelectionBranch[]
+}
+
+/**
  * Выбор без перечисления строк: выбрана вся выборка (`all`), кроме `except`, или не выбрана,
- * кроме `except`; узлы `groups` — группы, чьё состояние отличается от родителя (ADR 0148).
+ * кроме `except`; узлы `groups` — группы, чьё состояние отличается от родителя (ADR 0148);
+ * узлы `branches` — ветки дерева (ADR 0162). Узлы групп и веток вместе не встречаются.
  */
 export interface RowSelectionAll {
   all: boolean
   /** Строки, чьё состояние обратно `all`. */
   except: string[]
   groups?: RowSelectionGroup[]
+  branches?: RowSelectionBranch[]
 }
 
 /** Срез выбора строк: выбранные `id` или «всё, кроме». */
@@ -40,7 +56,7 @@ export const isAllSelection = (value: unknown): value is RowSelectionAll =>
   typeof (value as { all?: unknown }).all === 'boolean' &&
   Array.isArray((value as { except?: unknown }).except)
 
-type Node = RowSelectionAll & { keys?: unknown[] }
+type Node = RowSelectionAll & { keys?: unknown[]; id?: string }
 
 const sameKey = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b)
@@ -76,35 +92,49 @@ export const groupSelectionOf = (
   return node.all ? 'all' : 'none'
 }
 
-/** Узлы без отличий от родителя убраны; пустой выбор и выбор без групп — прежней формы. */
+/** Подузлы групп и веток без отличий от узла убраны. */
+const normalizeChildren = (node: Node) => {
+  const kept = (children: Node[] | undefined) =>
+    children
+      ?.map(child => normalizeNode(child, node.all))
+      .filter((child): child is Node => !!child)
+  return {
+    groups: kept(node.groups) as RowSelectionGroup[] | undefined,
+    branches: kept(node.branches) as RowSelectionBranch[] | undefined,
+  }
+}
+
+/** Узлы без отличий от родителя убраны; пустой выбор и выбор без узлов — прежней формы. */
 const normalizeNode = (node: Node, parentAll: boolean): Node | undefined => {
-  const groups = node.groups
-    ?.map(group => normalizeNode(group, node.all))
-    .filter((group): group is Node => !!group) as
-    RowSelectionGroup[] | undefined
-  if (node.all === parentAll && node.except.length === 0 && !groups?.length) {
+  const { groups, branches } = normalizeChildren(node)
+  if (
+    node.all === parentAll &&
+    node.except.length === 0 &&
+    !groups?.length &&
+    !branches?.length
+  ) {
     return undefined
   }
   return {
-    keys: node.keys,
+    ...(node.keys ? { keys: node.keys } : {}),
+    ...(node.id !== undefined ? { id: node.id } : {}),
     all: node.all,
     except: node.except,
     ...(groups?.length ? { groups } : {}),
+    ...(branches?.length ? { branches } : {}),
   }
 }
 
 const normalize = (root: Node): RowSelectionValue => {
-  const groups = root.groups
-    ?.map(group => normalizeNode(group, root.all))
-    .filter((group): group is Node => !!group) as
-    RowSelectionGroup[] | undefined
-  if (!root.all && !groups?.length) {
+  const { groups, branches } = normalizeChildren(root)
+  if (!root.all && !groups?.length && !branches?.length) {
     return Object.fromEntries(root.except.map(id => [id, true]))
   }
   return {
     all: root.all,
     except: root.except,
     ...(groups?.length ? { groups } : {}),
+    ...(branches?.length ? { branches } : {}),
   }
 }
 
@@ -112,6 +142,7 @@ const cloneNode = <T extends Node>(node: T): T => ({
   ...node,
   except: [...node.except],
   ...(node.groups ? { groups: node.groups.map(cloneNode) } : {}),
+  ...(node.branches ? { branches: node.branches.map(cloneNode) } : {}),
 })
 
 /** Дерево по срезу: выбранные `id` — исключения невыбранного корня. */
@@ -175,23 +206,159 @@ export const toggleRowIn = (
   return normalize(root)
 }
 
+// --- Ветки дерева (ADR 0162) ---------------------------------------------------------
+
+/** Ближайший к пути узел ветки (`path` — id предков строки от корня) и сколько пути пройдено. */
+const branchWalk = (root: Node, path: readonly string[]) => {
+  let node = root
+  let depth = 0
+  for (const id of path) {
+    const child = node.branches?.find(branch => branch.id === id)
+    if (!child) break
+    node = child
+    depth++
+  }
+  return { node, depth }
+}
+
+/** Строка выбрана по ближайшему узлу пути её предков. */
+export const rowSelectedIn = (
+  value: RowSelectionAll,
+  path: readonly string[],
+  id: string,
+) => {
+  const { node } = branchWalk(value, path)
+  return node.all !== node.except.includes(id)
+}
+
+/**
+ * Флажок строки-родителя при каскаде (ADR 0162, §2): строка и её ветка выбраны целиком,
+ * частично или не выбраны.
+ */
+export const branchSelectionOf = (
+  value: RowSelectionAll,
+  path: readonly string[],
+  id: string,
+): 'all' | 'some' | 'none' => {
+  const own = rowSelectedIn(value, path, id)
+  const { node, depth } = branchWalk(value, path)
+  const branch =
+    depth === path.length
+      ? node.branches?.find(each => each.id === id)
+      : undefined
+  if (
+    branch &&
+    (branch.all !== own ||
+      branch.except.length > 0 ||
+      !!branch.branches?.length)
+  ) {
+    return 'some'
+  }
+  return own ? 'all' : 'none'
+}
+
+/** Строка уходит из исключений узлов пути. */
+const dropFromPath = (root: Node, path: readonly string[], id: string) => {
+  let node: Node | undefined = root
+  node.except = node.except.filter(each => each !== id)
+  for (const parent of path) {
+    node = node.branches?.find(branch => branch.id === parent)
+    if (!node) return
+    node.except = node.except.filter(each => each !== id)
+  }
+}
+
+/** Узел ветки родителя по пути; недостающие узлы заводятся с состоянием своего родителя. */
+const branchNodeAt = (root: Node, path: readonly string[]) => {
+  let node = root
+  for (const parent of path) {
+    let child: Node | undefined = node.branches?.find(
+      branch => branch.id === parent,
+    )
+    if (!child) {
+      child = { id: parent, all: node.all, except: [] }
+      node.branches = [...(node.branches ?? []), child as RowSelectionBranch]
+    }
+    node = child
+  }
+  return node
+}
+
+/**
+ * Выбрать строку дерева или снять с неё выбор (ADR 0162): исключение — в узле её родителя,
+ * при каскаде (`cascade`) ветка строки встаёт в то же состояние целиком.
+ */
+export const toggleBranchRowIn = (
+  value: RowSelectionValue | undefined,
+  path: readonly string[],
+  id: string,
+  selected: boolean,
+  cascade: boolean,
+): RowSelectionValue => {
+  const root = treeOf(value)
+  dropFromPath(root, path, id)
+  const node = branchNodeAt(root, path)
+  if (selected !== node.all) node.except.push(id)
+  if (cascade) {
+    node.branches = [
+      ...(node.branches ?? []).filter(branch => branch.id !== id),
+      { id, all: selected, except: [] },
+    ]
+  }
+  return normalize(root)
+}
+
+/**
+ * Строка дерева переехала из ветки с путём `from` в ветку с путём `to`: её выбор и выбор её
+ * ветки — прежние (ADR 0162, §4). Без узлов веток выбор от места строки не зависит.
+ */
+export const moveRowIn = (
+  value: RowSelectionValue,
+  id: string,
+  from: readonly string[],
+  to: readonly string[],
+): RowSelectionValue => {
+  if (!isAllSelection(value) || !value.branches?.length) return value
+  const selected = rowSelectedIn(value, from, id)
+  const root = treeOf(value)
+  const { node, depth } = branchWalk(root, from)
+  let branch =
+    depth === from.length
+      ? (node.branches?.find(each => each.id === id) as Node | undefined)
+      : undefined
+  if (branch) node.branches = node.branches!.filter(each => each !== branch)
+  else branch = { id, all: node.all, except: [] }
+  dropFromPath(root, from, id)
+  const target = branchNodeAt(root, to)
+  if (selected !== target.all) target.except.push(id)
+  target.branches = [
+    ...(target.branches ?? []).filter(each => each.id !== id),
+    branch as RowSelectionBranch,
+  ]
+  return normalize(root)
+}
+
 /**
  * Строк выбрано по дереву; `size(keys)` — строк данных в группе пути (у корня — пусто),
- * `undefined` — неизвестно. Неизвестен размер нужного узла — `undefined` (ADR 0148, §3).
+ * `branchSize(id)` — вложенных строк ветки на всех уровнях; `undefined` — неизвестно.
+ * Неизвестен размер нужного узла — `undefined` (ADR 0148, §3; ADR 0162, §4).
  */
 export const countSelectionIn = (
   value: RowSelectionAll,
   size: (keys: readonly unknown[]) => number | undefined,
+  branchSize?: (id: string) => number | undefined,
 ): number | undefined => {
+  const sizeOf = (node: Node) =>
+    node.id !== undefined ? branchSize?.(node.id) : size(keysOf(node))
   const count = (node: Node): number | undefined => {
-    const own = node.all ? size(keysOf(node)) : 0
+    const own = node.all ? sizeOf(node) : 0
     if (own === undefined) return undefined
     let selected = node.all ? own - node.except.length : node.except.length
-    for (const group of node.groups ?? []) {
-      const inner = count(group)
+    for (const child of [...(node.groups ?? []), ...(node.branches ?? [])]) {
+      const inner = count(child)
       if (inner === undefined) return undefined
       if (node.all) {
-        const whole = size(group.keys)
+        const whole = sizeOf(child)
         if (whole === undefined) return undefined
         selected += inner - whole
       } else selected += inner
@@ -202,24 +369,27 @@ export const countSelectionIn = (
 }
 
 /**
- * Выбор без размеров групп: отдельно выбранные строки и группы, выбранные целиком, — или
- * исключения выбранной выборки (строки и снятые группы).
+ * Выбор без размеров узлов: отдельно выбранные строки и группы или ветки, выбранные
+ * целиком, — или исключения выбранной выборки (строки и снятые группы или ветки).
  */
 export const selectionPartsOf = (value: RowSelectionAll) => {
   let rows = 0
   let groups = 0
+  let branches = 0
   let excluded = 0
   const walk = (node: Node, parentAll: boolean) => {
     if (node !== value && node.all !== parentAll) {
-      if (node.all) groups++
-      else excluded++
+      if (!node.all) excluded++
+      else if (node.id !== undefined) branches++
+      else groups++
     }
     if (node.all) excluded += node.except.length
     else rows += node.except.length
-    for (const group of node.groups ?? []) walk(group, node.all)
+    for (const child of [...(node.groups ?? []), ...(node.branches ?? [])])
+      walk(child, node.all)
   }
   walk(value, value.all)
-  return { rows, groups, excluded }
+  return { rows, groups, branches, excluded }
 }
 
 const effective = new WeakMap<
@@ -229,29 +399,48 @@ const effective = new WeakMap<
 const sourceOf = new WeakMap<object, RowSelectionAll>()
 
 interface SelectionContext {
-  /** Выбираемая строка данных (в дереве SSRM — только корни, ADR 0138, §14). */
+  /** Выбираемая строка данных (в дереве SSRM без `subRows` — только корни, ADR 0138, §14). */
   test?: (id: string) => boolean
   /** Строка-группа, в которой строка данных; без группировки — нет. */
   groupOf?: (id: string) => string | undefined
+  /** `id` предков строки дерева от корня (ADR 0162). */
+  pathOf?: (id: string) => readonly string[]
 }
 
 /**
  * Эффективное значение «всё, кроме» для TanStack: строка данных выбрана по ближайшему узлу
- * пути её групп, если она выбираема; строка-группа — если выбрана целиком. Ключей у объекта
- * нет — перечислить весь итог нельзя; один объект на значение среза.
+ * пути её групп или веток, если она выбираема; строка-группа — если выбрана целиком. Ключей
+ * у объекта нет — перечислить весь итог нельзя; один объект на значение среза.
  */
 export const effectiveSelectionOf = (
   value: RowSelectionAll,
   eligible?: (id: string) => boolean,
   groupOfRow?: (id: string) => string | undefined,
+  pathOfRow?: (id: string) => readonly string[],
 ): RowSelectionState => {
   const cached = effective.get(value)
   if (cached) {
     if (eligible) cached.holder.test = eligible
     if (groupOfRow) cached.holder.groupOf = groupOfRow
+    if (pathOfRow) cached.holder.pathOf = pathOfRow
     return cached.proxy
   }
-  const holder: SelectionContext = { test: eligible, groupOf: groupOfRow }
+  const holder: SelectionContext = {
+    test: eligible,
+    groupOf: groupOfRow,
+    pathOf: pathOfRow,
+  }
+  // Узел ветки — один раз на родителя строки и значение среза.
+  const branchNodes = new Map<string, Node>()
+  const nodeOfParent = (path: readonly string[]) => {
+    const key = path.at(-1) ?? ''
+    let node = branchNodes.get(key)
+    if (!node) {
+      node = branchWalk(value, path).node
+      branchNodes.set(key, node)
+    }
+    return node
+  }
   // Узел и состояние — один раз на группу и значение среза: строк много, групп мало.
   const nodes = new Map<string, Node>()
   const nodeOfGroup = (groupId = '') => {
@@ -274,7 +463,10 @@ export const effectiveSelectionOf = (
       return all
     }
     if (!(holder.test?.(key) ?? true)) return false
-    const node = nodeOfGroup(holder.groupOf?.(key))
+    const node =
+      value.branches?.length && holder.pathOf
+        ? nodeOfParent(holder.pathOf(key))
+        : nodeOfGroup(holder.groupOf?.(key))
     return node.all !== node.except.includes(key)
   }
   const proxy = new Proxy({} as RowSelectionState, {
@@ -340,15 +532,27 @@ export const dropRowsIn = (
   const prune = <T extends Node>(node: T): T => {
     const except = node.except.filter(id => !ids.has(id))
     if (except.length !== node.except.length) dropped = true
+    // Узел удалённой строки-родителя уходит вместе с ней (ADR 0162, §4).
+    const branches = node.branches?.filter(branch => !ids.has(branch.id))
+    if (branches && branches.length !== node.branches!.length) dropped = true
     return {
       ...node,
       except,
       ...(node.groups ? { groups: node.groups.map(prune) } : {}),
+      ...(branches ? { branches: branches.map(prune) } : {}),
     }
   }
   const pruned = prune(value as Node)
   return dropped ? normalize(pruned) : value
 }
+
+/** Выбрано всё без исключений и узлов групп и веток (ADR 0148, §2; ADR 0162, §2). */
+export const isWholeSelection = (value: RowSelectionAll | undefined) =>
+  !!value &&
+  value.all &&
+  value.except.length === 0 &&
+  !value.groups?.length &&
+  !value.branches?.length
 
 /** Ничего не выбрано. */
 export const isSelectionEmpty = (value: RowSelectionValue) =>
@@ -372,6 +576,21 @@ export const setAllSelectionRow = (
 ) =>
   (table as SelectionTable).setRowSelection?.(previous =>
     toggleRowIn(previous, keys, rowId, selected),
+  )
+
+/**
+ * Выбрать строку дерева серверной модели или снять с неё выбор (ADR 0162): `path` — её
+ * предки, `cascade` — с её веткой.
+ */
+export const setBranchRowSelected = (
+  table: unknown,
+  rowId: string,
+  path: readonly string[],
+  selected: boolean,
+  cascade: boolean,
+) =>
+  (table as SelectionTable).setRowSelection?.(previous =>
+    toggleBranchRowIn(previous, path, rowId, selected, cascade),
   )
 
 /** Выбрать группу целиком или снять с неё выбор (ADR 0148). */

@@ -25,6 +25,7 @@ import {
 } from '../../core/rowSource'
 import {
   dropRowsIn,
+  moveRowIn,
   rowSelectionValueOf,
   setRowSelectionValue,
 } from '../../core/rowSelectionAll'
@@ -769,6 +770,7 @@ const createServerSource = (table: unknown): ServerSource => {
       const row = shown.store.rowById(id)
       // Строки уже нет в кэше (ушла за окно): встаёт по данным, итог ветки прежний.
       if (!row && original === undefined) return false
+      const from = shown.store.ancestorsOf(id)
       const result = shown.store.applyTransaction(
         row
           ? { parentId, remove: [id], add: { data: [row.original], index } }
@@ -778,7 +780,12 @@ const createServerSource = (table: unknown): ServerSource => {
               rowCount: shown.store.branchSize(parentId)?.count,
             },
       )
-      return result !== 'branchNotLoaded'
+      if (result === 'branchNotLoaded') return false
+      // Выбор строки и её ветки идёт за ней (ADR 0162, §4).
+      const selection = rowSelectionValueOf(table)
+      const moved = moveRowIn(selection, id, from, shown.store.ancestorsOf(id))
+      if (moved !== selection) setRowSelectionValue(table, moved)
+      return true
     },
     offset: () => pageBounds().start,
     pageOf: listIndex => {
@@ -843,6 +850,9 @@ const createServerSource = (table: unknown): ServerSource => {
       const { start, end } = pageBounds()
       return start + index < end ? shown.store.ariaAt(start + index) : undefined
     },
+    // Выбор вложенных строк (ADR 0162): путь строки и размеры веток.
+    ancestors: id => shown.store.ancestorsOf(id),
+    subtreeSize: parentId => shown.store.subtreeSize(parentId),
     // Линии дерева (ADR 0161): за концом страницы детей нет.
     treeLines: index => {
       const { start, end } = pageBounds()

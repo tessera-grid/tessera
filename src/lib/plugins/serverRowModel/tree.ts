@@ -374,6 +374,43 @@ export class BlockTree<TData, TRow, TQuery> {
     }
   }
 
+  /**
+   * `id` предков строки от корня — по местам строк (ADR 0162): место раскрытой строки дерево
+   * помнит и после вытеснения её блока.
+   */
+  ancestorsOf(id: string): string[] {
+    const path: string[] = []
+    for (
+      let parent = this.positions.get(id)?.parent;
+      parent !== undefined;
+      parent = this.positions.get(parent)?.parent
+    ) {
+      path.unshift(parent)
+    }
+    return path
+  }
+
+  /**
+   * Строк в ветке `parentId` на всех уровнях (у корня — во всём дереве, ADR 0162, §4):
+   * известно, если размер ветки точный, её строки пришли и у каждой, которую можно раскрыть,
+   * размер ветки тоже известен; иначе `undefined`.
+   */
+  subtreeSize(parentId: string | undefined): number | undefined {
+    const node = this.nodes.get(parentId)
+    if (!node || !node.store.isTotalKnown()) return undefined
+    const count = node.store.count()
+    let total = count
+    for (let local = 0; local < count; local++) {
+      const row = node.store.rowAt(local)
+      if (!row) return undefined
+      if (!this.options.canExpand?.(row)) continue
+      const inner = this.subtreeSize(this.options.idOf(row))
+      if (inner === undefined) return undefined
+      total += inner
+    }
+    return total
+  }
+
   /** Окно тела по веткам; ветки вне окна запросов не держат. */
   setWindow(first: number, last: number, fast = false) {
     this.window = { first, last, fast }

@@ -9,7 +9,7 @@ import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
-import { groupSelectionOfRow, toggleRowSelection } from './keyboardActions'
+import { rowCheckboxOf, toggleRowSelection } from './keyboardActions'
 import {
   groupKeysOfRow,
   isGroupingActive,
@@ -28,17 +28,11 @@ export const RowSelectionComponent = ({
 
   const { grouped, canSelect, selected, indeterminate } = useTableState(
     table,
-    () => {
-      const groupState = group ? groupSelectionOfRow(row) : undefined
-      return {
-        grouped: isGroupingActive(table),
-        canSelect: row.getCanSelect(),
-        selected: groupState ? groupState === 'all' : row.getIsSelected(),
-        indeterminate: groupState
-          ? groupState === 'some'
-          : row.getIsSomeSelected(),
-      }
-    },
+    () => ({
+      grouped: isGroupingActive(table),
+      canSelect: row.getCanSelect(),
+      ...rowCheckboxOf(row),
+    }),
   )
 
   // Активная группировка делает выбор недоступным: прячем чекбокс.
@@ -62,7 +56,7 @@ export const RowSelectionComponent = ({
           }
         : {
             action: 'toggleRow',
-            detail: { rowId: row.id, selected: !row.getIsSelected() },
+            detail: { rowId: row.id, selected: !selected },
           }),
       source: sourceOf(event),
     })

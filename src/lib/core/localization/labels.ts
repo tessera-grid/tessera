@@ -359,6 +359,8 @@ export interface TableLabels {
   selectedRowsAndGroups: (count: number, groups: string) => string
   selectedRowsAndGroupsShort: (count: number, groups: string) => string
   selectedGroupsCount: (count: number) => string
+  /** Ветки дерева, выбранные без числа их строк (ADR 0162, §4): «2 ветки» */
+  selectedBranchesCount: (count: number) => string
   /** Добавка к счётчику выбранных: выбранные строки, скрытые фильтром (ADR 0045) */
   selectedRowsHidden: (count: number) => string
   /** Поле быстрого поиска в тулбаре (`quickSearch`): плейсхолдер и доступное имя */
@@ -628,6 +630,8 @@ export const DEFAULT_LABELS = {
   selectedRowsAndGroupsShort_zero: '{groups}',
   selectedGroupsCount: '{count} groups',
   selectedGroupsCount_one: '{count} group',
+  selectedBranchesCount: '{count} branches',
+  selectedBranchesCount_one: '{count} branch',
   selectedRowsHiddenShort: '{count} hidden',
   filteredRowsShort: '{shown} / {total}',
   groupRowCount: '({count})',

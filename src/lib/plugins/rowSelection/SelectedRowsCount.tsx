@@ -18,7 +18,10 @@ import { useSlice, useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
-import { groupingLength } from '../rowSelectionModel/selectionHelpers'
+import {
+  groupingLength,
+  subRowsOf,
+} from '../rowSelectionModel/selectionHelpers'
 
 /** Выбранные `id` среза, а не строки модели: выбор на других страницах тоже считается. */
 export const countSelectedRows = (selection: RowSelectionState | undefined) =>
@@ -49,6 +52,9 @@ export const countHiddenSelectedRows = (
 const listTotalOf = (table: unknown) => {
   const source = (table as { getRowSource: () => RowSource }).getRowSource()
   if (source.leafCount && groupingLength(table) > 0) return source.leafCount()
+  // С `subRows` «Выбрать всё» берёт и вложенные строки — строки всего дерева (ADR 0162, §4).
+  if (source.subtreeSize && subRowsOf(table))
+    return source.subtreeSize(undefined)
   // В дереве серверной модели «Выбрать всё» — итог корней (ADR 0138, §14).
   const total = source.rootCount?.() ?? source.total?.() ?? source.count()
   return total < 0 ? source.count() : total
@@ -89,11 +95,18 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   }
 
   const all = allSelectionOf(selection)
-  const exact = all ? countSelectionIn(all, groupSizeOf(table)) : undefined
-  // Размер нужной группы неизвестен: «все, кроме k» или «N строк и k групп» (ADR 0148, §3).
+  const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  const exact = all
+    ? countSelectionIn(all, groupSizeOf(table), id => source.subtreeSize?.(id))
+    : undefined
+  // Размер нужной группы или ветки неизвестен: «все, кроме k» или «N строк и k групп» —
+  // либо «… и k веток» (ADR 0148, §3; ADR 0162, §4).
   if (all && exact === undefined) {
-    const { rows, groups, excluded } = selectionPartsOf(all)
-    const groupsLabel = labels.selectedGroupsCount(groups)
+    const { rows, groups, branches, excluded } = selectionPartsOf(all)
+    const groupsLabel =
+      branches > 0
+        ? labels.selectedBranchesCount(branches)
+        : labels.selectedGroupsCount(groups)
     return (
       <StatusBarCount
         data-testid="selected-rows-count"

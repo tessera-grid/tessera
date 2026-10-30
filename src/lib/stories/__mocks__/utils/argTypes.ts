@@ -305,11 +305,24 @@ export const enableRowSelectionType = booleanControl(
 export const enableRowSelectionModelType = booleanControl(
   'Выбор строк без флажков: выбранные строки по состоянию `rowSelection` (плагин `rowSelectionModel`)',
 )
-export const rowSelectionModelSubRowsType = booleanControl(
-  'Выбор строки модели выбирает её потомков (`subRows`)',
+/**
+ * Выбор вложенных строк (ADR 0162): нет — только строки верхнего уровня, `true` — с
+ * потомками, `'self'` — каждая строка сама.
+ */
+const subRowsControl = (description: string): InputType => ({
+  control: {
+    type: 'inline-radio',
+    labels: { false: 'off', true: 'cascade', self: 'self' },
+  },
+  options: [false, true, 'self'],
+  description,
+  table: { defaultValue: { summary: 'false' } },
+})
+export const rowSelectionModelSubRowsType = subRowsControl(
+  'Выбор вложенных строк модели (`subRows`): `true` — с потомками, `self` — каждая строка сама',
 )
-export const rowSelectionSubRowsType = booleanControl(
-  'Выбор строки выбирает её потомков (`subRows`)',
+export const rowSelectionSubRowsType = subRowsControl(
+  'Флажки у вложенных строк (`subRows`): `true` — выбор с потомками, `self` — каждая строка сама',
 )
 export const rowSelectionSelectedCountType = booleanControl(
   'Счётчик выбранных строк в нижней панели (`selectedCount`)',

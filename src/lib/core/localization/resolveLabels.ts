@@ -73,6 +73,7 @@ export const LABEL_PARAMS = {
   selectedRowsAndGroups: ['count', 'groups'],
   selectedRowsAndGroupsShort: ['count', 'groups'],
   selectedGroupsCount: ['count'],
+  selectedBranchesCount: ['count'],
   selectedRowsHidden: ['count'],
   searchColumnsHint: ['columns'],
   filtersActive: ['count'],

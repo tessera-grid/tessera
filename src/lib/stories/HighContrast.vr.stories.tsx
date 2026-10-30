@@ -2030,6 +2030,36 @@ export const HighContrastSubRowSelectionStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastSelectionSubRowsSelfStep1 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.SelectionSubRowsSelf,
+    1,
+  ),
+  name: 'Rows/Selection — Each row on its own, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSelectionSubRowsSelfStep2 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.SelectionSubRowsSelf,
+    2,
+  ),
+  name: 'Rows/Selection — Each row on its own, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSelectionSubRowsSelfStep3 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.SelectionSubRowsSelf,
+    3,
+  ),
+  name: 'Rows/Selection — Each row on its own, шаг 3',
+  tags: ['!test'],
+}
+
 // --- Шаги гайдов (ADR 0130, DG3): близнец у каждого шага каждого гайда ---
 
 export const HighContrastCellSelectionByCommandStep1 = {
@@ -4211,6 +4241,56 @@ export const HighContrastServerGroupSelectCountStep3 = {
     3,
   ),
   name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeSelectBranchStep1 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerTreeSelectBranch,
+    1,
+  ),
+  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeSelectBranchStep2 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerTreeSelectBranch,
+    2,
+  ),
+  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeSelectBranchStep3 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerTreeSelectBranch,
+    3,
+  ),
+  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeSelectBranchStep4 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerTreeSelectBranch,
+    4,
+  ),
+  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeSelectBranchStep5 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerTreeSelectBranch,
+    5,
+  ),
+  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 5',
   tags: ['!test'],
 }
 

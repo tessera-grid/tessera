@@ -10,6 +10,7 @@ import { useLocalization } from '../../core/localization'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { useSlice } from '../../core/reactivity'
 import {
+  isWholeSelection,
   rowSelectionValueOf,
   setAllRowsSelected,
   tableAllSelection,
@@ -37,12 +38,10 @@ export const HeadSelectionComponent = ({
   const { isAllRowsSelected = false, onSelectAllRowsOnPage } = hooks
 
   // Серверная модель строк: «Выбрать всё» — весь итог без загрузки, снятые флажки —
-  // исключения (ADR 0138, §9); узлы групп оно сбрасывает (ADR 0148, §2).
+  // исключения (ADR 0138, §9); узлы групп и веток оно сбрасывает (ADR 0148, §2; ADR 0162).
   if (serverRowModelReason(table)) {
     const all = tableAllSelection(table)
-    // Выбрано всё без исключений и узлов групп (ADR 0148, §2).
-    const allSelected =
-      !!all && all.all && all.except.length === 0 && !all.groups?.length
+    const allSelected = isWholeSelection(all)
     const handleSelectAll = (event: unknown) => {
       reportAction(table, {
         plugin: 'rowSelection',
