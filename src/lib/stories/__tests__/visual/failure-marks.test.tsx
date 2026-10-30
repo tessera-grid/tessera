@@ -185,6 +185,18 @@ describe('Отметка отказа у носителей', () => {
         tableLabels.actionFailedRetry(reason),
       )
     }
+    /** Причина видна и глазами: подсказкой при наведении (IR10). */
+    const tooltipText = () =>
+      [...document.querySelectorAll('[data-side]')]
+        .map(el => el.textContent?.trim())
+        .find(Boolean)
+    const expectReasonOnHover = async (button: Element, reason: string) => {
+      await userEvent.hover(button)
+      await expect
+        .poll(tooltipText, { timeout: 2000 })
+        .toBe(tableLabels.actionFailedRetry(reason))
+      await userEvent.unhover(button)
+    }
 
     await humanClick(toggleOf('r0')!)
     await refuse(server, 'No access')
@@ -193,11 +205,13 @@ describe('Отметка отказа у носителей', () => {
     await moveRowDown('r2')
     await refuse(server, 'Row is locked')
     await expectMark(() => rowHandleOf('r2'), 'Row is locked')
+    await expectReasonOnHover(rowHandleOf('r2')!, 'Row is locked')
 
     headEl('b').focus()
     await userEvent.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
     await refuse(server, 'Column is fixed')
     await expectMark(() => columnHandleOf('b'), 'Column is fixed')
+    await expectReasonOnHover(columnHandleOf('b')!, 'Column is fixed')
 
     await humanClick(pageButton('next'))
     await refuse(server, 'Offline')

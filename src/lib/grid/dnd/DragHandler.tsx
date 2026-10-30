@@ -108,6 +108,7 @@ export const DragHandler = ({
   }
   // Квадратная кнопка кита: ожидание и отметка отказа — как у кнопок (ADR 0112, 0114,
   // 0136); отказ загрузки меню — свежее отказа переноса.
+  const failed = menu.trigger.failure ?? failure
   const button = (
     <IconButton
       ref={setNode}
@@ -116,9 +117,11 @@ export const DragHandler = ({
       disabled={disabled}
       className={clsx(styles.handle, 'drag__handler--column')}
       pending={busy || menu.trigger.pending}
-      failure={menu.trigger.failure ?? failure}
+      failure={failed}
       {...ownAttributes}
       aria-label={label}
+      // Подсказка ручки — только причина отказа (ADR 0127, IR10): без отказа её нет.
+      label={failed === undefined ? undefined : label}
       {...(hasMenu && {
         'aria-haspopup': 'menu' as const,
         'aria-expanded': menu.open,
