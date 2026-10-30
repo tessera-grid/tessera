@@ -60,6 +60,7 @@ import {
 import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { serverRowModel } from '../../../plugins/serverRowModel'
+import { pagination } from '../../../plugins/pagination'
 import { cellSelection } from '../../../plugins/cellSelection'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
@@ -3211,6 +3212,96 @@ describe('Отзывчивость взаимодействий — транза
       expect(
         inserted.longestMs,
         `longest=${inserted.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Пагинация в SSRM (ADR 0158, SP11): переход между загруженными страницами по 100 строк
+// при итоге 1 000 000 против клиентской смены страницы того же размера на 100 000 строк.
+const PAGED_ROWS = 100
+const CLIENT_PAGED_DATA = feedRows(0, 100_000)
+const PagedGrid = ({ server }: { server: boolean }) => {
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: server ? NO_FEED : CLIENT_PAGED_DATA,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      ...(server
+        ? [
+            serverRowModel({
+              rowCount: 1_000_000,
+              blockSize: PAGED_ROWS,
+              getRows: ({ start, end }) =>
+                Promise.resolve({ rows: feedRows(start, end - start) }),
+            }),
+          ]
+        : []),
+      pagination({ initialPageSize: PAGED_ROWS }),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — пагинация SSRM', () => {
+  test(
+    'SP11: переход на страницу из кэша при итоге 1 000 000 не дороже клиентской смены страницы того же размера',
+    async () => {
+      const measure = async (server: boolean) => {
+        await render(<PagedGrid server={server} />)
+        await expect.poll(firstRowId).toBe('f0')
+        // Вторая страница загружена до замера: переход — из кэша.
+        pageButton('next')!.click()
+        await expect.poll(firstRowId).toBe(`f${PAGED_ROWS}`)
+        pageButton('previous')!.click()
+        await expect.poll(firstRowId).toBe('f0')
+        let forward = true
+        const result = await measureInteractionWork(async () => {
+          pageButton(forward ? 'next' : 'previous')!.click()
+          await expect.poll(firstRowId).toBe(forward ? `f${PAGED_ROWS}` : 'f0')
+          forward = !forward
+        })
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(server => measure(server))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const paged = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: gated ? '1 000 000×3' : '100 000×3',
+          plugins: gated ? 'serverRowModel, pagination' : 'pagination',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('SP11-base', 'клиентская смена страницы', base, false)
+      await record('SP11', 'страница SSRM из кэша', paged, true)
+      expect(
+        paged.longestMs,
+        `longest=${paged.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

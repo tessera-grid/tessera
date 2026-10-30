@@ -523,15 +523,43 @@ const loadedRow = async (
   }
 }
 
+/**
+ * Индекс строки на её странице. У источника со страницами индекс сквозной: строка другой
+ * страницы — сперва переход на неё (ADR 0158, §5); `undefined` — вызов перебит.
+ */
+const pageLocalIndex = async (
+  table: ScrollTable,
+  listIndex: number,
+  alive: () => boolean,
+) => {
+  const source = table.getRowSource()
+  if (!source.offset) return listIndex
+  const page = source.pageOf?.(listIndex)
+  if (
+    page !== undefined &&
+    page !== paginationOf(table)?.pageIndex &&
+    table.setPageIndex
+  ) {
+    table.setPageIndex(page)
+    // Тело перерисовано и прокручено к началу страницы (ADR 0038) — до прокрутки к строке.
+    if (!(await until(() => paginationOf(table)?.pageIndex === page, alive)))
+      return undefined
+    await frame()
+  }
+  return listIndex - source.offset()
+}
+
 /** Прыжок по индексу, загрузка строки и доводка по ней; `rowId` — ждём именно её. */
 const toIndex = async (
   table: ScrollTable,
   viewport: ScrollViewport,
   scroller: HTMLElement,
-  index: number,
+  listIndex: number,
   alive: () => boolean,
   target: Pick<Target, 'align' | 'behavior' | 'columnId' | 'rowId'>,
 ) => {
+  const index = await pageLocalIndex(table, listIndex, alive)
+  if (index === undefined || !alive()) return false
   if (index < 0 || index >= table.getRowSource().count()) return false
   await place(
     table,
@@ -595,9 +623,13 @@ export const scrollToRow = async (
   if (columnId !== undefined && !column?.getIsVisible()) return false
 
   let index = indexOf(table, rowId)
-  // Строка не загружена (серверная модель строк): прокрутка по подсказке индекса.
-  if (index === -1 && options.index !== undefined) {
-    return toIndex(table, viewport, scroller, options.index, alive, {
+  // Строка загружена на другой странице серверной модели (ADR 0158) — по её сквозному
+  // индексу; не загружена — по подсказке.
+  const listIndex =
+    index === -1 ? (table.getRowSource().listIndexOf?.(rowId) ?? -1) : -1
+  const hint = listIndex !== -1 ? listIndex : options.index
+  if (index === -1 && hint !== undefined) {
+    return toIndex(table, viewport, scroller, hint, alive, {
       align,
       behavior,
       columnId: column?.getIsPinned() ? undefined : columnId,

@@ -104,7 +104,7 @@ export const DataGridTable = ({
       : null
   }) as DropPreview | null
 
-  const rowWindow = getRowWindow(table, rows)
+  const rowWindow = getRowWindow(table, rows, rowSource)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const {

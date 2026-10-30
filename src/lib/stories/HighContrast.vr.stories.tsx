@@ -24,6 +24,7 @@ import * as serverSelectionStories from './DataGrid.DataLoading.ServerRowModel.S
 import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowModel.CellSelection.stories'
 import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
 import * as serverTransactionsStories from './DataGrid.DataLoading.ServerRowModel.Transactions.stories'
+import * as serverPaginationStories from './DataGrid.DataLoading.ServerRowModel.Pagination.stories'
 import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
@@ -728,6 +729,136 @@ export const HighContrastServerTransactionRefetchStep3 = {
     3,
   ),
   name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationPagesStep1 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationPages,
+    1,
+  ),
+  name: 'Data loading/Server row model/Pagination — Load pages, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationPagesStep2 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationPages,
+    2,
+  ),
+  name: 'Data loading/Server row model/Pagination — Load pages, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationPagesStep3 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationPages,
+    3,
+  ),
+  name: 'Data loading/Server row model/Pagination — Load pages, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationPagesStep4 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationPages,
+    4,
+  ),
+  name: 'Data loading/Server row model/Pagination — Load pages, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationUnknownTotalStep1 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationUnknownTotal,
+    1,
+  ),
+  name: 'Data loading/Server row model/Pagination — Unknown total, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationUnknownTotalStep2 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationUnknownTotal,
+    2,
+  ),
+  name: 'Data loading/Server row model/Pagination — Unknown total, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationGroupsStep1 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationGroups,
+    1,
+  ),
+  name: 'Data loading/Server row model/Pagination — Groups on pages, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationGroupsStep2 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationGroups,
+    2,
+  ),
+  name: 'Data loading/Server row model/Pagination — Groups on pages, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationGroupsStep3 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationGroups,
+    3,
+  ),
+  name: 'Data loading/Server row model/Pagination — Groups on pages, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationEditingStep1 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationEditing,
+    1,
+  ),
+  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationEditingStep2 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationEditing,
+    2,
+  ),
+  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationEditingStep3 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationEditing,
+    3,
+  ),
+  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPaginationEditingStep4 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.ServerPaginationEditing,
+    4,
+  ),
+  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 4',
   tags: ['!test'],
 }
 

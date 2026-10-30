@@ -622,6 +622,36 @@ export class BlockTree<TData, TRow, TQuery> {
     return this.root.store.count()
   }
 
+  /** Итог корней известен: задан, пришёл в ответе или найден коротким блоком. */
+  isRootCountKnown(): boolean {
+    return this.root.store.isTotalKnown()
+  }
+
+  /** Сквозной индекс корня с местом `local` (ADR 0158, §1). */
+  rootIndex(local: number): number {
+    return this.globalOf(undefined, local)
+  }
+
+  /** Место корня, в чьей ветке стоит строка со сквозным индексом; `-1` — нет строки. */
+  rootOf(index: number): number {
+    const place = this.resolve(index)
+    if (!place) return -1
+    let parent = place.node.parentId
+    let local = place.local
+    while (parent !== undefined) {
+      const position = this.positions.get(parent)
+      if (!position) return -1
+      parent = position.parent
+      local = position.local
+    }
+    return local
+  }
+
+  /** Раскладка списка: тот же объект, пока строки по индексам не сменились. */
+  layoutKey(): object {
+    return this.layout()
+  }
+
   retry(blockIndex: number) {
     this.root.store.retry(blockIndex)
   }

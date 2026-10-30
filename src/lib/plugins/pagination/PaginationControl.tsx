@@ -29,7 +29,10 @@ import {
   pageRange,
   resolvePageSizes,
 } from './model'
+import { pluginStateKey } from '../../core/definePlugin'
 import {
+  isManualPagination,
+  pageCountsOf,
   paginationInertReason,
   type PaginationTable,
 } from '../paginationModel/model'
@@ -52,11 +55,22 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const pagination = useTableState(table, state => state.pagination) as
     PaginationState | undefined
 
+  // Корни серверной модели строк приходят блоками (ADR 0158, §4).
+  useTableState(
+    table,
+    state =>
+      (state as unknown as Record<string, unknown>)[
+        pluginStateKey('serverRowModel')
+      ],
+  )
+
   const inert = paginationInertReason(table) !== undefined
-  const rowCount = inert ? 0 : t.getRowCount()
-  const pageCount = inert ? 0 : t.getPageCount()
+  const counts = inert
+    ? { rowCount: 0, pageCount: 0, known: true }
+    : pageCountsOf(table, pagination?.pageSize ?? 1)
+  const { rowCount, pageCount, known } = counts
   const pageIndex = pagination?.pageIndex ?? 0
-  const manual = !!t.options.manualPagination
+  const manual = isManualPagination(table)
   // Заглушку сменяет выбор по состоянию: клик по ней до загрузки не теряется (PG20),
   // ожидание и ошибка загрузки видны на ней (ADR 0061, LZ15–LZ16).
   const sizeSelect = useLazyPopover(
@@ -75,14 +89,14 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
 
   // Строк стало меньше, а страница осталась прежней — к последней существующей.
   useEffect(() => {
-    if (inert || manual || pageIndex === 0) {
+    if (inert || manual || !known || pageIndex === 0) {
       return
     }
     const clamped = clampedPageIndex(pageIndex, pageCount)
     if (clamped !== pageIndex) {
       t.setPageIndex(clamped)
     }
-  }, [inert, manual, t, pageIndex, pageCount])
+  }, [inert, manual, known, t, pageIndex, pageCount])
 
   if (!pagination || inert) {
     return null
@@ -95,12 +109,16 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     table.options as { paginationPageSizes?: number[] | false }
   ).paginationPageSizes
 
-  const announcePage = (index: number, pages: number) =>
-    announceLabel(table, all => all.pageAnnouncement(index + 1, pages))
+  const announcePage = (index: number, pages: number | undefined) =>
+    announceLabel(table, all =>
+      pages === undefined
+        ? all.pageAnnouncementOfMany(index + 1)
+        : all.pageAnnouncement(index + 1, pages),
+    )
 
   const goTo = (index: number, control: PageAction) => {
     changePageByUser(t, () => t.setPageIndex(index), index, pageSize, control)
-    announcePage(index, pageCount)
+    announcePage(index, known ? pageCount : undefined)
   }
 
   const changeSize = (size: number) => {
@@ -111,7 +129,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       size,
       'size',
     )
-    announcePage(0, Math.max(1, Math.ceil(rowCount / size)))
+    announcePage(0, known ? Math.max(1, Math.ceil(rowCount / size)) : undefined)
   }
 
   const sizePlaceholder = (
@@ -134,7 +152,10 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
 
   const empty = rowCount === 0
   const atStart = empty || pageIndex <= 0
-  const atEnd = empty || pageIndex >= lastIndex
+  // Итог неизвестен: дальше можно, пока впереди есть корни; последней страницы нет (§4).
+  const atEnd =
+    empty ||
+    (known ? pageIndex >= lastIndex : (pageIndex + 1) * pageSize >= rowCount)
 
   return (
     <nav
@@ -177,8 +198,10 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
             width={RANGE_SKELETON_WIDTH}
             height="var(--tsr-comp-skeleton-text-height)"
           />
-        ) : (
+        ) : known ? (
           labels.pageRange(from, to, rowCount)
+        ) : (
+          labels.pageRangeOfMany(from, to)
         )}
       </span>
       <div className={styles.buttons}>
@@ -211,7 +234,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           action="last"
           label={labels.lastPage}
           icon={<icons.lastPage width={ICON_SIZE} height={ICON_SIZE} />}
-          disabled={atEnd}
+          disabled={atEnd || !known}
           onClick={() => goTo(lastIndex, 'last')}
         />
       </div>

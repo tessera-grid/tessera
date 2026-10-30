@@ -14,6 +14,7 @@ import {
 } from '../cancellation'
 import { reportAction } from '../debugActions'
 import type { TableLabels } from '../localization'
+import { serverRowModelReason } from '../pluginDiagnostics'
 import type { RowSource } from '../rowSource'
 import {
   rowSelectionValueOf,
@@ -125,8 +126,9 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
   switch (kind) {
     case 'sorting':
       return !!options.manualSorting
+    // Страницы серверной модели строк — из её кэша, ждать нечего (ADR 0158).
     case 'pagination':
-      return !!options.manualPagination
+      return !!options.manualPagination && !serverRowModelReason(t)
     case 'filtering':
       return !!options.columnFilteringServer
     case 'search':

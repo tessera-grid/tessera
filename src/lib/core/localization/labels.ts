@@ -293,8 +293,12 @@ export interface TableLabels {
   lastPage: string
   /** Диапазон строк текущей страницы: «1–25 of 1000» */
   pageRange: (from: number, to: number, total: number) => string
+  /** Диапазон строк страницы, когда итог неизвестен: «1–25 of many» (ADR 0158) */
+  pageRangeOfMany: (from: number, to: number) => string
   /** Объявление смены страницы */
   pageAnnouncement: (page: number, pages: number) => string
+  /** Объявление смены страницы, когда число страниц неизвестно */
+  pageAnnouncementOfMany: (page: number) => string
   /** Счётчик загруженных строк в нижней панели (`infiniteScroll({ loadedCount })`): итог неизвестен и известен */
   loadedRows: (count: number) => string
   loadedRowsOf: (count: number, total: number) => string
@@ -570,7 +574,9 @@ export const DEFAULT_LABELS = {
   nextPage: 'Next page',
   lastPage: 'Last page',
   pageRange: '{from}–{to} of {total}',
+  pageRangeOfMany: '{from}–{to} of many',
   pageAnnouncement: 'Page {page} of {pages}',
+  pageAnnouncementOfMany: 'Page {page}',
   loadedRows: 'Loaded {count}',
   loadedRowsOf: 'Loaded {count} of {total}',
   loadMoreFailed: "Couldn't load more rows",

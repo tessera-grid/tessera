@@ -52,13 +52,15 @@ export const useRowSourceWindow = (
     }
   }, [source, conditions, virtualizer])
 
+  // Окно — в индексах страницы: другая страница — другие строки при том же окне (ADR 0158).
+  const page = useTableState(table as never, s => s.pagination)
   useIsomorphicLayoutEffect(() => {
     source.observe?.({
       first,
       last,
       fast: fastScroll.getSnapshot().isFastScrolling,
     })
-  }, [source, first, last, fastScroll])
+  }, [source, first, last, fastScroll, page])
 
   useEffect(() => {
     if (!source.observe) return

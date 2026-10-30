@@ -65,6 +65,17 @@ export interface RowSource<TRow = unknown> {
   ) => { level: number; posInSet: number; setSize: number } | undefined
   /** Строк верхнего уровня: «Выбрать всё» в дереве — их итог. */
   rootCount?: () => number
+  /** Итог строк верхнего уровня известен; без него пейджер — «из многих» (ADR 0158, §4). */
+  rootCountKnown?: () => boolean
+  /**
+   * Сквозной индекс первой строки источника: источник — страница списка (ADR 0158), его
+   * индексы — от её начала.
+   */
+  offset?: () => number
+  /** Страница, где стоит строка со сквозным индексом; `undefined` — такой строки нет. */
+  pageOf?: (listIndex: number) => number | undefined
+  /** Сквозной индекс строки, в том числе на другой странице; `-1` — её нет в списке. */
+  listIndexOf?: (id: string) => number
   /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
   groupChildCount?(row: TRow): number | undefined
   /** Итоги колонок выборки — из ответа сервера (ADR 0144, §4). */

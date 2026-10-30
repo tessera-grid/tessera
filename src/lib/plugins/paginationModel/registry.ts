@@ -11,7 +11,11 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
-import { paginationInertReason, resetPageOnReorder } from './model'
+import {
+  paginationInertReason,
+  resetPageOnReorder,
+  warnServerInSsrm,
+} from './model'
 
 export const DEFAULT_PAGE_SIZE = 25
 
@@ -63,5 +67,8 @@ export const paginationModel = definePlugin<PaginationModelOptions>()({
       initialState: { pagination: { pageIndex: 0, pageSize } },
     }
   },
-  setup: () => resetPageOnReorder,
+  setup: o => table => {
+    warnServerInSsrm(table, !!o.server)
+    return resetPageOnReorder(table)
+  },
 })

@@ -12,6 +12,7 @@ import { markLoadAnnounced } from '../../core/cancellation'
 import { reportAction, reportOutcome } from '../../core/debugActions'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import { logWarn } from '../../core/logger'
+import { activePageOf } from '../../core/pagination'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
 import {
@@ -130,12 +131,17 @@ const sources = new WeakMap<object, ServerSource>()
  * Строки, чьи блоки держатся: активная ячейка, строка в правке и строки, чьё сохранение в
  * пути, — его итог пишется в кэш (§7).
  */
-const pinnedOf = (t: ServerTable, indexOf: (id: string) => number) => {
+const pinnedOf = (
+  t: ServerTable,
+  indexOf: (id: string) => number,
+  offset: number,
+) => {
   const pinned: number[] = []
   const active = t.atoms[pluginStateKey('keyboardNavigation')]?.get() as
     { rowIndex?: number } | undefined
+  // Активная ячейка — в индексах страницы (ADR 0158).
   if (active?.rowIndex !== undefined && active.rowIndex >= 0) {
-    pinned.push(active.rowIndex)
+    pinned.push(offset + active.rowIndex)
   }
   const editing = t.atoms[pluginStateKey('cellEditing')]?.get() as
     | {
@@ -362,15 +368,61 @@ const createServerSource = (table: unknown): ServerSource => {
   /** Выборка, чьё окно ещё идёт; на экране до его прихода — `shown`. */
   let next: Generation | null = null
 
+  /**
+   * Страница списка (ADR 0158, §1): сквозные индексы `[start, end)` — от корня страницы до
+   * корня следующей, с раскрытыми ветками; без пагинации — весь список.
+   */
+  const boundsOf = (store: Store) => {
+    const all = store.count()
+    const page = activePageOf(table)
+    if (!page) return { start: 0, end: all }
+    const roots = store.rootCount()
+    const first = page.pageIndex * page.pageSize
+    return {
+      start: first >= roots ? all : store.rootIndex(first),
+      end:
+        first + page.pageSize >= roots
+          ? all
+          : store.rootIndex(first + page.pageSize),
+    }
+  }
+  let bounds:
+    { layout: object; page: unknown; start: number; end: number } | undefined
+  /** Страница на экране: один расчёт на раскладку и срез страницы. */
+  const pageBounds = () => {
+    const layout = shown.store.layoutKey()
+    const page = activePageOf(table)
+    if (bounds?.layout !== layout || bounds.page !== page) {
+      bounds = { layout, page, ...boundsOf(shown.store) }
+    }
+    return bounds
+  }
+
+  /** Окно тела в индексах страницы — в сквозные индексы хранилища. */
+  const listWindow = (store: Store, window: RowWindow) => {
+    const { start, end } =
+      store === shown.store ? pageBounds() : boundsOf(store)
+    return {
+      first: start + window.first,
+      last: Math.min(start + window.last, end - 1),
+    }
+  }
+
   /** Прежнее хранилище новых блоков не просит, пока окно новой выборки идёт. */
   const observeShown = () => {
     if (!lastWindow) return
-    shown.store.setPinned(pinnedOf(t, id => shown.store.indexOf(id)))
-    shown.store.setWindow(
-      lastWindow.first,
-      lastWindow.last,
-      lastWindow.fast || !!next,
+    shown.store.setPinned(
+      pinnedOf(t, id => shown.store.indexOf(id), pageBounds().start),
     )
+    const { first, last } = listWindow(shown.store, lastWindow)
+    shown.store.setWindow(first, last, lastWindow.fast || !!next)
+  }
+
+  /** Окно тела — окну хранилища новой выборки. */
+  const observeNext = (window: RowWindow) => {
+    if (!next) return
+    const { first, last } = listWindow(next.store, window)
+    next.store.setWindow(first, last, window.fast)
   }
 
   /** Выбросить окно новой выборки; ждущие его — тому, что придёт вместо. */
@@ -435,10 +487,14 @@ const createServerSource = (table: unknown): ServerSource => {
     early = []
     if (suspended) next.store.suspend()
     if (lastWindow) {
-      next.store.setWindow(
-        top ? 0 : lastWindow.first,
-        top ? lastWindow.last - lastWindow.first : lastWindow.last,
-        lastWindow.fast,
+      observeNext(
+        top
+          ? {
+              ...lastWindow,
+              first: 0,
+              last: lastWindow.last - lastWindow.first,
+            }
+          : lastWindow,
       )
     }
     observeShown()
@@ -616,6 +672,34 @@ const createServerSource = (table: unknown): ServerSource => {
     return 'applied'
   }
 
+  /**
+   * Другая страница — другой список для следящих за строками: журнал её не связывает с
+   * прежней (ADR 0158), раскладка — новая.
+   */
+  let seenPage: unknown = activePageOf(table)
+  /** Начало страницы на каждой раскладке, которую видели следящие. */
+  const offsets = new Map<number, number>()
+  const checkPage = () => {
+    const page = activePageOf(table)
+    if (page === seenPage) return
+    seenPage = page
+    layoutVersion++
+    journal.length = 0
+    offsets.clear()
+  }
+  const currentVersion = () => {
+    // Раскладка считается лениво: смены пишутся при её пересчёте.
+    const { start } = pageBounds()
+    checkPage()
+    if (!offsets.has(layoutVersion)) {
+      offsets.set(layoutVersion, start)
+      if (offsets.size > JOURNAL_SIZE + 1) {
+        offsets.delete(offsets.keys().next().value!)
+      }
+    }
+    return layoutVersion
+  }
+
   // Отказ списка — тот же объект, пока данные хранилища не менялись.
   let listError: { version: number; value: RowLoadError | undefined } = {
     version: -1,
@@ -626,17 +710,38 @@ const createServerSource = (table: unknown): ServerSource => {
       return shown.store
     },
     // Отказ списка целиком — строк для тела нет: заглушка встаёт вместо него.
-    count: () => (shown.store.failedEmpty() ? 0 : shown.store.count()),
-    at: index => shown.store.rowAt(index),
+    count: () => {
+      if (shown.store.failedEmpty()) return 0
+      const { start, end } = pageBounds()
+      return end - start
+    },
+    at: index => {
+      const { start, end } = pageBounds()
+      return index < 0 || start + index >= end
+        ? undefined
+        : shown.store.rowAt(start + index)
+    },
     keyByIndex: true,
     branchLoading: id => shown.store.branchLoading(id),
     cancelBranch: id => shown.store.cancelBranch(id),
     byId: id => shown.store.rowById(id),
-    indexOf: id => shown.store.indexOf(id),
+    indexOf: id => {
+      const index = shown.store.indexOf(id)
+      const { start, end } = pageBounds()
+      return index < start || index >= end ? -1 : index - start
+    },
+    listIndexOf: id => shown.store.indexOf(id),
+    offset: () => pageBounds().start,
+    pageOf: listIndex => {
+      const page = activePageOf(table)
+      const root = page ? shown.store.rootOf(listIndex) : -1
+      return root < 0 ? undefined : Math.floor(root / page!.pageSize)
+    },
+    rootCountKnown: () => shown.store.isRootCountKnown(),
     observe: window => {
       lastWindow = window
       observeShown()
-      next?.store.setWindow(window.first, window.last, window.fast)
+      observeNext(window)
       settleShown()
       settleNext()
     },
@@ -672,28 +777,49 @@ const createServerSource = (table: unknown): ServerSource => {
     setRowData,
     applyRowTransaction,
     // Без загруженных строк отказ показывает заглушка (`loadError`), а не строки ошибки.
-    failures: () => (shown.store.hasLoaded() ? shown.store.failures() : []),
+    failures: () => {
+      if (!shown.store.hasLoaded()) return []
+      const { start, end } = pageBounds()
+      return shown.store
+        .failures()
+        .filter(failure => failure.end > start && failure.start < end)
+        .map(failure => ({
+          ...failure,
+          start: Math.max(failure.start, start) - start,
+          end: Math.min(failure.end, end) - start,
+        }))
+    },
     // Строки дерева (ADR 0138, §14): уровень, место среди соседей и их число.
-    treeAria: index => shown.store.ariaAt(index),
+    treeAria: index => {
+      const { start, end } = pageBounds()
+      return start + index < end ? shown.store.ariaAt(start + index) : undefined
+    },
     // «Выбрать всё» в дереве — итог корней (§14).
     rootCount: () => shown.store.rootCount(),
     groupChildCount,
     totals: () => shown.totals,
     leafCount: () => shown.leafCount,
     epoch: () => epoch,
-    version: () => {
-      // Раскладка считается лениво: смены пишутся при её пересчёте.
-      shown.store.count()
-      return layoutVersion
-    },
+    version: currentVersion,
+    // Смены — в индексах страницы: сквозные индексы сдвинуты на её начало до и после.
     changesSince: since => {
-      shown.store.count()
-      if (since === layoutVersion) return []
+      const version = currentVersion()
+      if (since === version) return []
       const at = journal.findIndex(entry => entry.version === since + 1)
-      return at === -1 ? undefined : journal.slice(at).map(e => e.changes)
+      const before = offsets.get(since)
+      if (at === -1 || before === undefined) return undefined
+      const after = offsets.get(version)!
+      const batches = journal.slice(at).map(e => e.changes)
+      return [
+        ...(before ? [[{ at: 0, delta: before }]] : []),
+        ...batches,
+        ...(after ? [[{ at: 0, delta: -after }]] : []),
+      ]
     },
-    loadRange: (first, last, signal) =>
-      shown.store.loadRange(first, last, signal),
+    loadRange: (first, last, signal) => {
+      const { start } = pageBounds()
+      return shown.store.loadRange(start + first, start + last, signal)
+    },
     loadError: () => {
       if (queryError) return queryError
       if (listError.version !== version) {

@@ -12,6 +12,7 @@ import { useEffect, useRef } from 'react'
 import type { PaginationState } from '@tanstack/react-table'
 
 import { setPluginState, pluginStateKey } from './definePlugin'
+import type { RowSource } from './rowSource'
 import { scrollLayer } from './scrollStretch'
 import {
   type ActiveCell,
@@ -36,10 +37,30 @@ export interface RowWindow {
   total: number
 }
 
+/**
+ * Пагинация включена: модель режет страницы. Так её узнают и серверная модель строк, где
+ * страницу режет источник (ADR 0158).
+ */
+export const isPaginationActive = (table: unknown) =>
+  (table as { options: { paginateExpandedRows?: boolean } }).options
+    .paginateExpandedRows === false
+
+/** Срез страницы, когда пагинация включена. */
+export const activePageOf = (table: unknown): PaginationState | undefined =>
+  isPaginationActive(table)
+    ? (table as PaginatedTable).atoms.pagination?.get()
+    : undefined
+
 export const getRowWindow = (
   table: unknown,
   rows: readonly WindowRow[],
+  source?: Pick<RowSource, 'offset' | 'count'>,
 ): RowWindow => {
+  // Страницу режет источник строк (ADR 0158): смещение — его.
+  if (source?.offset) {
+    const offset = source.offset()
+    return { offset, total: offset + source.count() }
+  }
   const t = table as PaginatedTable
   const pagination = t.atoms.pagination?.get()
   if (!pagination) {

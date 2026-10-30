@@ -15,7 +15,6 @@ import {
   columnPinning,
   columnSorting,
   infiniteScroll,
-  pagination,
   rowDragging,
   rowGrouping,
   columnSortingModel,
@@ -1427,14 +1426,13 @@ describe('Серверная модель строк (ADR 0138)', () => {
     })
   })
 
-  test('SD49: в SSRM пейджер, хвост скелет-строк ленты и ручки перетаскивания строк не показаны — и в конце списка', async () => {
+  test('SD49: в SSRM хвост скелет-строк ленты и ручки перетаскивания строк не показаны — и в конце списка', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { getRows } = server(({ start, end }) => ({
       rows: rowsOf(start, end),
     }))
     /** Ничего от инертных плагинов на экране. */
     const expectNothing = () => {
-      expect.soft(q('nav[data-testid="pagination"]'), 'пейджер').toBeNull()
       expect
         .soft(q('[data-testid="infinite-scroll-tail"]'), 'хвост ленты')
         .toBeNull()
@@ -1443,34 +1441,29 @@ describe('Серверная модель строк (ADR 0138)', () => {
         .soft(q('[data-row-draggable="true"]'), 'перетаскиваемая строка')
         .toBeNull()
     }
-    // Пагинация — своим гридом: при ней лента инертна и без серверной модели.
-    for (const plugins of [
-      [
-        columnSorting(),
-        // Загрузка ленты не кончается: у живой ленты в конце стоял бы хвост скелетов.
-        infiniteScroll({
-          hasMore: true,
-          onLoadMore: () => new Promise<void>(() => {}),
-        }),
-        rowDragging(),
-      ],
-      [columnSorting(), pagination()],
-    ]) {
-      const screen = await render(
-        <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,
-      )
-      try {
-        await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
-        // Кнопки шапки — из ленивого модуля: дождаться их прихода.
-        await expect.poll(sortButton).not.toBeNull()
-        expectNothing()
-        // Конец списка: лента показала бы здесь хвост.
-        await scrollToIndex(999)
-        await expect.poll(() => rowAt(999)?.dataset.rowId).toBe('r999')
-        expectNothing()
-      } finally {
-        await screen.unmount()
-      }
+    const plugins = [
+      columnSorting(),
+      // Загрузка ленты не кончается: у живой ленты в конце стоял бы хвост скелетов.
+      infiniteScroll({
+        hasMore: true,
+        onLoadMore: () => new Promise<void>(() => {}),
+      }),
+      rowDragging(),
+    ]
+    const screen = await render(
+      <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,
+    )
+    try {
+      await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
+      // Кнопки шапки — из ленивого модуля: дождаться их прихода.
+      await expect.poll(sortButton).not.toBeNull()
+      expectNothing()
+      // Конец списка: лента показала бы здесь хвост.
+      await scrollToIndex(999)
+      await expect.poll(() => rowAt(999)?.dataset.rowId).toBe('r999')
+      expectNothing()
+    } finally {
+      await screen.unmount()
     }
     warn.mockRestore()
   })

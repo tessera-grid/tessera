@@ -4,10 +4,12 @@
  */
 import type { PaginationState } from '@tanstack/react-table'
 
+import { logWarn } from '../../core/logger'
 import {
   type PluginDiagnose,
   serverRowModelReason,
 } from '../../core/pluginDiagnostics'
+import { rowSourceOf } from '../../core/rowSource'
 
 interface Atom<T> {
   get: () => T
@@ -36,18 +38,54 @@ export interface PaginationTable {
 }
 
 /**
+ * Страницы режет серверная модель строк (ADR 0158): `server` не действует, данные страниц
+ * запрашивает грид.
+ */
+export const isManualPagination = (table: unknown) =>
+  !!(table as PaginationTable).options.manualPagination &&
+  !serverRowModelReason(table)
+
+/**
  * Активный плагин с `manualPagination` — серверный режим: без итога число страниц
  * неизвестно (PG8).
  */
 export const paginationInertReason: PluginDiagnose = table => {
-  const { manualPagination, rowCount, pageCount } = (table as PaginationTable)
-    .options
-  return (
-    serverRowModelReason(table) ??
-    (manualPagination && rowCount === undefined && pageCount === undefined
-      ? 'noRowCount'
-      : undefined)
-  )
+  const { rowCount, pageCount } = (table as PaginationTable).options
+  return isManualPagination(table) &&
+    rowCount === undefined &&
+    pageCount === undefined
+    ? 'noRowCount'
+    : undefined
+}
+
+/** Строк верхнего уровня во всём списке и страниц; `known` — итог известен. */
+export const pageCountsOf = (
+  table: unknown,
+  pageSize: number,
+): { rowCount: number; pageCount: number; known: boolean } => {
+  const t = table as PaginationTable
+  const source = rowSourceOf(table)
+  // Серверная модель строк: корни считает источник, итог бывает неизвестен (ADR 0158, §4).
+  if (serverRowModelReason(table) && source.rootCount) {
+    const rowCount = source.total?.() === 0 ? 0 : source.rootCount()
+    return {
+      rowCount,
+      pageCount: Math.ceil(rowCount / pageSize),
+      known: source.rootCountKnown?.() ?? true,
+    }
+  }
+  return { rowCount: t.getRowCount(), pageCount: t.getPageCount(), known: true }
+}
+
+/** `server: true` в серверной модели строк не действует (ADR 0158, §7). */
+export const warnServerInSsrm = (table: unknown, server: boolean) => {
+  if (server && serverRowModelReason(table)) {
+    logWarn(
+      table as never,
+      'pagination: server has no effect with the server row model — the grid requests page rows itself',
+      'pagination:serverInSsrm',
+    )
+  }
 }
 
 /**
@@ -69,7 +107,7 @@ export const resetPageOnReorder = (table: unknown) => {
         return
       }
       previous = next
-      if (!t.options.manualPagination) {
+      if (!isManualPagination(table)) {
         t.setPageIndex(0)
       }
     })

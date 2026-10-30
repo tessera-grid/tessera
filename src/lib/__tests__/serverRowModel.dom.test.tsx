@@ -347,19 +347,15 @@ describe('серверная модель строк на таблице (ADR 01
     expect(source().at(500)).toBeUndefined()
     expect(version()).toBe(seen)
   })
-  it("SD26: pagination, paginationModel, infiniteScroll, rowDragging и rowGroupingModel инертны с причиной 'serverRowModel' и dev-warn", () => {
+  it("SD26: infiniteScroll, rowGroupingModel и rowDragging инертны с причиной 'serverRowModel' и dev-warn; pagination и paginationModel активны", () => {
     const extra = [
       pagination(),
       infiniteScroll({ onLoadMore: () => {} }),
       rowDragging(),
     ]
-    const ids = [
-      'pagination',
-      'paginationModel',
-      'infiniteScroll',
-      'rowDragging',
-      'rowGroupingModel',
-    ]
+    const ids = ['infiniteScroll', 'rowDragging', 'rowGroupingModel']
+    // Страницы режет серверная модель (ADR 0158): пагинация — без причины.
+    const paged = ['pagination', 'paginationModel']
     const reasons = () =>
       Object.fromEntries(
         (
@@ -369,8 +365,11 @@ describe('серверная модель строк на таблице (ADR 01
             reason?: string
           }[]
         )
-          .filter(diagnostic => ids.includes(diagnostic.id))
-          .map(diagnostic => [diagnostic.id, diagnostic.reason]),
+          .filter(diagnostic => [...ids, ...paged].includes(diagnostic.id))
+          .map(diagnostic => [
+            diagnostic.id,
+            diagnostic.reason ?? diagnostic.status,
+          ]),
       )
     // Модели без интерфейса — своим набором: интерфейс подключает модель сам.
     const models = [paginationModel(), rowGroupingModel()]
@@ -379,15 +378,21 @@ describe('серверная модель строк на таблице (ADR 01
     act(() => root.unmount())
     root = createRoot(document.createElement('div'))
     act(() => root.render(<Grid extra={extra} />))
-    expect({ ...fromModels, ...reasons() }).toEqual(
-      Object.fromEntries(ids.map(id => [id, 'serverRowModel'])),
-    )
+    expect({ ...fromModels, ...reasons() }).toEqual({
+      ...Object.fromEntries(ids.map(id => [id, 'serverRowModel'])),
+      ...Object.fromEntries(paged.map(id => [id, 'active'])),
+    })
     for (const id of ids) {
       expect(
         warnings().some(
           text => text.includes(id) && text.includes('serverRowModel'),
         ),
       ).toBe(true)
+    }
+    for (const id of paged) {
+      expect(warnings().some(text => text.includes(`${id} инертен`))).toBe(
+        false,
+      )
     }
 
     // Без загрузчика строки ведёт клиент — этой причины нет.
