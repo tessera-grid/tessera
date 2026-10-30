@@ -484,8 +484,8 @@ Tessera затевалась (highload-CRM-таблицы), — поэтому �
   с копированием и догрузкой строк — тоже ([ADR 0146](decisions/0146-cell-selection-in-ssrm.md)).
   Выбор группы целиком — [ADR 0148](decisions/0148-group-selection-in-ssrm.md) (внедрён
   2026-10-28); группировка вместе с деревом данных — осознанное ограничение (ниже).
-  Приняты 2026-10-29, не внедрены: добавление и удаление строк без перезапроса
-  ([ADR 0157](decisions/0157-ssrm-row-transactions.md)), пагинация
+  Добавление и удаление строк без перезапроса — [ADR 0157](decisions/0157-ssrm-row-transactions.md)
+  (внедрён 2026-10-29). Приняты 2026-10-29, не внедрены: пагинация
   ([ADR 0158](decisions/0158-ssrm-pagination.md)), перетаскивание строк
   ([ADR 0159](decisions/0159-ssrm-row-dragging.md)), «раскрыть всё» и липкие строки групп
   ([ADR 0160](decisions/0160-expand-all-and-sticky-rows.md)), линии дерева

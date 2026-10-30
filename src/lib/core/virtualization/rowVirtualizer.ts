@@ -14,6 +14,8 @@ import { useRowRangeExtractor } from './rowRangeExtractor'
 import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
 import { scrollLayer } from '../scrollStretch'
 import { firstChangedIndex, type RowBuild, rowBuildOf } from '../rowChanges'
+import { followIndex } from '../rowListFollow'
+import { scrollGridTo } from '../scrollGridTo'
 
 const ROWS_OVERSCAN = 5
 /** Строка растянутой области на экране — по объекту строки виртуализатора. */
@@ -105,6 +107,32 @@ export const useRowVirtualizer = ({
         behavior === 'smooth' ? 'smooth' : 'instant',
       )
     },
+  })
+
+  // Строки выше экрана вставлены или удалены — прокрутка держит первую строку экрана
+  // (ADR 0157, §3); у начала списка, как якорь прокрутки браузера, не держит.
+  const listSeen = useRef<{ epoch: number; version: number } | undefined>(
+    undefined,
+  )
+  useIsomorphicLayoutEffect(() => {
+    const version = rows.version?.()
+    if (version === undefined) {
+      listSeen.current = undefined
+      return
+    }
+    const epoch = rows.epoch?.() ?? 0
+    const before = listSeen.current
+    listSeen.current = { epoch, version }
+    if (!before || before.epoch !== epoch || before.version === version) return
+    const scroller = getScrollElement()
+    const batches = rows.changesSince?.(before.version)
+    if (!scroller || !batches) return
+    const top = scrollLayer(scroller).top()
+    if (top <= 0) return
+    const anchor = Math.floor(top / rowHeight)
+    const moved = followIndex(anchor, batches) - anchor
+    if (moved)
+      scrollGridTo(scroller, { top: top + moved * rowHeight }, 'instant')
   })
 
   // Новая высота: замеры строк прежней высоты больше не верны.

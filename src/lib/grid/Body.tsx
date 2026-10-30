@@ -166,6 +166,8 @@ export const Body = ({
         <RowMotion
           enabled={rowAnimation}
           rows={rows}
+          source={rowSource}
+          listVersion={rowSource.version?.()}
           virtualRows={virtualRows}
           bodyRef={bodyRef}
         >

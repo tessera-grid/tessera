@@ -15,7 +15,6 @@ import {
 } from '../../core/rowSelectionAll'
 import type { Row } from '../../types'
 import {
-  groupingLength,
   groupKeysOfRow,
   isGroupingActive,
   isSelectableInList,
@@ -61,11 +60,9 @@ export const toggleRowSelection = (
     return
   }
   // «Всё, кроме» (ADR 0138, §9) и серверная группировка (ADR 0148): снятый флажок —
-  // исключение в узле группы строки, поставленный — без него.
-  if (
-    tableAllSelection(row.table) ||
-    (serverRowModelReason(row.table) && groupingLength(row.table) > 0)
-  ) {
+  // исключение в узле группы строки, поставленный — без него. В серверной модели
+  // строки нет в модели TanStack: стоковый переключатель её не находит.
+  if (tableAllSelection(row.table) || serverRowModelReason(row.table)) {
     setAllSelectionRow(
       row.table,
       row.id,

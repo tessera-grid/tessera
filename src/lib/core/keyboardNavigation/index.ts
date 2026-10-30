@@ -25,6 +25,7 @@ export {
   isFooterRowIndex,
 } from './model'
 export { getHeaderRowIndex } from './header'
+export { followActiveCell } from './followActiveCell'
 export {
   resolveNavigationKey,
   type NavigationBounds,

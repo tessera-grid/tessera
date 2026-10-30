@@ -28,6 +28,25 @@ export interface ServerRowsResponse<TData = unknown> {
   leafCount?: number
 }
 
+/**
+ * Транзакция строк серверной модели (ADR 0157): добавить, обновить и удалить строки без
+ * перезапроса. `index` — место добавленных в ветке `parentId` (в списке уже без удалённых);
+ * без него таблица тихо перезапрашивает окно.
+ */
+export interface ServerRowTransaction<TData = any> {
+  add?: TData[]
+  index?: number
+  update?: TData[]
+  remove?: string[]
+  parentId?: string
+  /** Итог ветки после транзакции, если его знает приложение. */
+  rowCount?: number
+}
+
+/** Итог транзакции: применена, окно перезапрошено или ветки нет в раскладке. */
+export type ServerRowTransactionResult =
+  'applied' | 'refetch' | 'branchNotLoaded'
+
 export interface ServerRowModelHooks<TData = any> {
   /** Загрузить строки; читается живо. */
   getRows?: (

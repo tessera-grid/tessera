@@ -82,6 +82,12 @@ export const markLoadCancelled = (table: unknown) => {
   if (store) cancelledLoads.add(store)
 }
 
+/**
+ * Конец загрузки уже объявлен своим текстом: перезапрос окна транзакцией строк объявляет
+ * добавленные строки (ADR 0157, §4), а не «загружено».
+ */
+export const markLoadAnnounced = markLoadCancelled
+
 /** Коммит после отмены: пометку снимает первое же чтение. */
 export const takeLoadCancelled = (table: unknown) => {
   const store = storeOf(table)

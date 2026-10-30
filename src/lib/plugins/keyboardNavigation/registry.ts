@@ -10,6 +10,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import {
   type ActiveCell,
+  followActiveCell,
   INITIAL_ACTIVE_CELL,
   KEYBOARD_NAVIGATION,
 } from '../../core/keyboardNavigation'
@@ -20,5 +21,7 @@ export const keyboardNavigation = definePlugin<KeyboardNavigationOptions>()({
   diagnose: neverInert,
   state: (): ActiveCell => INITIAL_ACTIVE_CELL,
   controlled: { value: 'activeCell', onChange: 'onActiveCellChange' },
+  // Активная ячейка серверной модели держит свою строку при смене списка (ADR 0157, §3).
+  setup: () => followActiveCell,
   options: o => ({ enableKeyboardNavigation: o.enabled !== false }),
 })

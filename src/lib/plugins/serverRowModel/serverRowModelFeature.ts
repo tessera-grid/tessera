@@ -5,7 +5,9 @@
 import { assignTableAPIs } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import { logWarn } from '../../core/logger'
 import type { ServerSource } from './source'
+import type { ServerRowTransaction, ServerRowTransactionResult } from './types'
 
 export interface RefreshRowsOptions {
   /** Сразу скелет вместо строк на экране. */
@@ -17,6 +19,13 @@ interface ServerRowModelTableAPI<TData> {
   refreshRows: (options?: RefreshRowsOptions) => void
   /** Заменить данные загруженной строки; незагруженная — вызов игнорируется. */
   setRowData: (id: string, updater: Updater<TData>) => void
+  /**
+   * Добавить, обновить и удалить строки без перезапроса (ADR 0157); в клиентском режиме —
+   * `undefined` и предупреждение.
+   */
+  applyRowTransaction: (
+    transaction: ServerRowTransaction<TData>,
+  ) => ServerRowTransactionResult | undefined
   /** Итог колонки выборки из ответа сервера (ADR 0144, §4); без него — `undefined`. */
   getColumnTotal: (columnId: string) => unknown
 }
@@ -48,6 +57,19 @@ export const serverRowModelFeature: TableFeature = {
       },
       table_getColumnTotal: {
         fn: (columnId: string) => serverSource(table).totals?.()?.[columnId],
+      },
+      table_applyRowTransaction: {
+        fn: (transaction: ServerRowTransaction) => {
+          const apply = serverSource(table).applyRowTransaction
+          if (apply) return apply(transaction)
+          // В клиентском режиме данные у приложения: оно меняет `data` само (ADR 0157).
+          logWarn(
+            table as never,
+            'applyRowTransaction works only with the server row model: change data instead',
+            'serverRowModel:clientTransaction',
+          )
+          return undefined
+        },
       },
       table_setRowData: {
         fn: (id: string, updater: Updater<unknown>) =>

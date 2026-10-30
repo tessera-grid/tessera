@@ -8,7 +8,9 @@
 import { constructRow, functionalUpdate } from '@tanstack/react-table'
 
 import { announceLabel } from '../../core/announcer'
+import { markLoadAnnounced } from '../../core/cancellation'
 import { reportAction, reportOutcome } from '../../core/debugActions'
+import { flashOutcome } from '../../core/flashes/flashFeature'
 import { logWarn } from '../../core/logger'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin/channels'
@@ -20,11 +22,18 @@ import {
   type RowSource,
   type RowWindow,
 } from '../../core/rowSource'
+import {
+  dropRowsIn,
+  rowSelectionValueOf,
+  setRowSelectionValue,
+} from '../../core/rowSelectionAll'
 import { serverAggregationsOf } from '../../core/serverAggregations'
 import { isThenable } from '../../core/thenable'
 import { BlockTree } from './tree'
 import type {
   ServerRowModelHooks,
+  ServerRowTransaction,
+  ServerRowTransactionResult,
   ServerRowsRequest,
   ServerRowsResponse,
 } from './types'
@@ -36,6 +45,8 @@ export const DEFAULT_BLOCK_SIZE = 100
 export const DEFAULT_MAX_BLOCKS = 100
 /** Сколько смен раскладки помнит журнал списка. */
 const JOURNAL_SIZE = 64
+/** Транзакции фоновой вкладки, где кадров нет, применяются по таймеру. */
+const HIDDEN_TAB_FALLBACK_MS = 100
 
 type Query = Pick<
   ServerRowsRequest,
@@ -107,6 +118,10 @@ export interface ServerSource extends RowSource<SourceRow> {
   refresh: (options?: { purge?: boolean }) => void
   /** Заменить данные загруженной строки (§7). */
   setRowData: (id: string, updater: Updater<unknown>) => void
+  /** Транзакция строк (ADR 0157): применяется задачей после кадра вместе с соседними. */
+  applyRowTransaction: (
+    transaction: ServerRowTransaction,
+  ) => ServerRowTransactionResult
 }
 
 const sources = new WeakMap<object, ServerSource>()
@@ -374,10 +389,15 @@ const createServerSource = (table: unknown): ServerSource => {
     const state = generation.store.windowState()
     if (state === 'loading') return
     next = null
+    const added = arrivals
+    arrivals = []
     if (state === 'loaded') {
       shown.store.dispose()
       shown = generation
       for (const waiter of generation.waiters) waiter.resolve()
+      const arrived = added.filter(id => shown.store.indexOf(id) !== -1)
+      announceArrivals(arrived, 0)
+      if (arrived.length) markLoadAnnounced(table)
     } else {
       generation.store.dispose()
       const error = new Error(state.failed ?? '')
@@ -484,6 +504,118 @@ const createServerSource = (table: unknown): ServerSource => {
     if (found) changed()
   }
 
+  /** Добавленные без места (ADR 0157, §1): вспыхивают, когда придёт перезапрошенное окно. */
+  let arrivals: string[] = []
+
+  /** Новые строки вспыхивают «пришла» (§4, ADR 0056); одно объявление на пачку (§5). */
+  const announceArrivals = (arrived: readonly string[], removed: number) => {
+    if (arrived.length) {
+      flashOutcome(
+        table,
+        arrived.map(row => ({ row })),
+        'arrived',
+      )
+    }
+    if (arrived.length || removed) {
+      announceLabel(table, labels =>
+        [
+          arrived.length ? labels.announceRowsAdded(arrived.length) : '',
+          removed ? labels.announceRowsRemoved(removed) : '',
+        ]
+          .filter(Boolean)
+          .join('. '),
+      )
+    }
+  }
+
+  /** Транзакции, ждущие кадра (ADR 0157, §5): применяются вместе, одно объявление. */
+  let queued: ServerRowTransaction[] = []
+  const flushTransactions = () => {
+    const batch = queued
+    queued = []
+    const arrived: string[] = []
+    let removed = 0
+    const gone = new Set<string>()
+    for (const transaction of batch) {
+      for (const id of transaction.remove ?? []) gone.add(id)
+      const result = shown.store.applyTransaction({
+        parentId: transaction.parentId,
+        add: transaction.add?.length
+          ? { data: transaction.add, index: transaction.index! }
+          : undefined,
+        remove: transaction.remove,
+        rowCount: transaction.rowCount,
+      })
+      if (result === 'branchNotLoaded') continue
+      for (const data of transaction.add ?? []) {
+        arrived.push(t.getRowId(data, 0))
+      }
+      // Итог задан приложением — удалены и незагруженные строки.
+      removed +=
+        transaction.rowCount === undefined
+          ? result.removed
+          : (transaction.remove?.length ?? 0)
+    }
+    // Удалённые строки выпадают из выбора (§3).
+    const selection = rowSelectionValueOf(table)
+    const kept = dropRowsIn(selection, gone)
+    if (kept !== selection) setRowSelectionValue(table, kept)
+    announceArrivals(arrived, removed)
+  }
+  const scheduleTransactions = () => {
+    let frame: number | undefined
+    let afterFrame: ReturnType<typeof setTimeout> | undefined
+    const run = () => {
+      if (frame !== undefined) cancelAnimationFrame(frame)
+      clearTimeout(timer)
+      clearTimeout(afterFrame)
+      flushTransactions()
+    }
+    const timer = setTimeout(run, HIDDEN_TAB_FALLBACK_MS)
+    if (typeof requestAnimationFrame === 'function') {
+      frame = requestAnimationFrame(() => {
+        frame = undefined
+        afterFrame = setTimeout(run, 0)
+      })
+    }
+  }
+
+  const applyRowTransaction = (
+    transaction: ServerRowTransaction,
+  ): ServerRowTransactionResult => {
+    reportAction(table, {
+      plugin: SERVER_ROW_MODEL,
+      action: 'rowTransaction',
+      detail: {
+        add: transaction.add?.length ?? 0,
+        update: transaction.update?.length ?? 0,
+        remove: transaction.remove?.length ?? 0,
+      },
+      source: 'api',
+    })
+    for (const data of transaction.update ?? []) {
+      setRowData(t.getRowId(data, 0), () => data)
+    }
+    // Место новой строки знает только сервер: окно перезапрашивается тихо (§1).
+    if (transaction.add?.length && transaction.index === undefined) {
+      refresh(false)
+      for (const data of transaction.add) arrivals.push(t.getRowId(data, 0))
+      return 'refetch'
+    }
+    if (
+      (transaction.add?.length || transaction.rowCount !== undefined) &&
+      !shown.store.hasBranch(transaction.parentId)
+    ) {
+      return 'branchNotLoaded'
+    }
+    if (!transaction.add?.length && !transaction.remove?.length) {
+      if (transaction.rowCount === undefined) return 'applied'
+    }
+    if (queued.length === 0) scheduleTransactions()
+    queued.push(transaction)
+    return 'applied'
+  }
+
   // Отказ списка — тот же объект, пока данные хранилища не менялись.
   let listError: { version: number; value: RowLoadError | undefined } = {
     version: -1,
@@ -538,6 +670,7 @@ const createServerSource = (table: unknown): ServerSource => {
           : -1,
     refresh: options => refresh(!!options?.purge),
     setRowData,
+    applyRowTransaction,
     // Без загруженных строк отказ показывает заглушка (`loadError`), а не строки ошибки.
     failures: () => (shown.store.hasLoaded() ? shown.store.failures() : []),
     // Строки дерева (ADR 0138, §14): уровень, место среди соседей и их число.

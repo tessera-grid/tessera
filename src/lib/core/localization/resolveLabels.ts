@@ -48,6 +48,8 @@ export const LABEL_PARAMS = {
   announceSelection: ['count'],
   announceCopy: ['count'],
   announceCopyLoading: ['count'],
+  announceRowsAdded: ['count'],
+  announceRowsRemoved: ['count'],
   copyTooManyRows: ['count', 'max'],
   announceLoaded: ['count'],
   pageRange: ['from', 'to', 'total'],

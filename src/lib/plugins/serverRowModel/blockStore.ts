@@ -68,9 +68,39 @@ type Block<TRow> =
 
 const MAX_CONCURRENT = 2
 
+/** Правка строк ветки (ADR 0157): удалить места `remove`, затем вставить `rows` на место `at`. */
+export interface RowEdits<TRow> {
+  remove: readonly number[]
+  insert?: { at: number; rows: readonly TRow[] }
+  /** Итог после правки, если его задало приложение. */
+  rowCount?: number
+}
+
+/**
+ * Новое место строки после правки: `-1` — строку удалили. Вставка считается в списке уже без
+ * удалённых строк.
+ */
+export const editedIndex = (
+  index: number,
+  removed: readonly number[],
+  insert?: { at: number; count: number },
+): number => {
+  let next = index
+  for (const gone of removed) {
+    if (gone === index) return -1
+    if (gone < index) next--
+  }
+  return insert && next >= insert.at ? next + insert.count : next
+}
+
 export class BlockStore<TData, TRow, TQuery> {
   private readonly blocks = new Map<number, Block<TRow>>()
   private readonly indexById = new Map<string, number>()
+  /**
+   * Строки, чьё место известно после правки, а блок не собран целиком (ADR 0157, §2): видны,
+   * пока не придёт их блок.
+   */
+  private readonly loose = new Map<number, TRow>()
   private window: { first: number; last: number } | null = null
   private pinned: number[] = []
   /** Порядок обращений к блокам: больше — нужен позже. */
@@ -105,6 +135,7 @@ export class BlockStore<TData, TRow, TQuery> {
         end = Math.max(end, index * this.size + block.rows.length)
       }
     }
+    for (const index of this.loose.keys()) end = Math.max(end, index + 1)
     return this.ended ? end : end + this.size
   }
 
@@ -112,13 +143,16 @@ export class BlockStore<TData, TRow, TQuery> {
     const block = this.blocks.get(Math.floor(index / this.size))
     return block?.status === 'loaded'
       ? block.rows[index % this.size]
-      : undefined
+      : this.loose.get(index)
   }
 
   /** Заменить загруженную строку по индексу; незагруженная — без изменений. */
   replaceRow(index: number, row: TRow) {
     const block = this.blocks.get(Math.floor(index / this.size))
-    if (block?.status !== 'loaded') return
+    if (block?.status !== 'loaded') {
+      if (this.loose.has(index)) this.loose.set(index, row)
+      return
+    }
     const rows = [...block.rows]
     rows[index % this.size] = row
     block.rows = rows
@@ -169,10 +203,17 @@ export class BlockStore<TData, TRow, TQuery> {
       const block = this.blocks.get(index)
       if (block?.status === 'loaded') block.used = this.tick()
     }
+    for (const [index, row] of this.loose) {
+      if (needed.has(this.blockOf(index))) continue
+      this.indexById.delete(this.options.idOf(row))
+      this.loose.delete(index)
+    }
     if (!fast) {
       for (const index of needed) {
         const block = this.blocks.get(index)
-        if (!block) this.blocks.set(index, { status: 'queued' })
+        if (!block) {
+          if (!this.covered(index)) this.blocks.set(index, { status: 'queued' })
+        }
         // Отказавший блок вернулся в окно: один автоповтор.
         else if (block.status === 'error' && block.away && !block.retried)
           this.blocks.set(index, { status: 'queued', auto: true })
@@ -272,7 +313,9 @@ export class BlockStore<TData, TRow, TQuery> {
     for (const index of this.neededBlocks()) {
       const block = this.blocks.get(index)
       if (block?.status === 'error') return { failed: block.reason }
-      if (block?.status !== 'loaded') loading = true
+      if (block?.status !== 'loaded' && !(!block && this.covered(index))) {
+        loading = true
+      }
     }
     return loading ? 'loading' : 'loaded'
   }
@@ -284,6 +327,7 @@ export class BlockStore<TData, TRow, TQuery> {
     }
     this.blocks.clear()
     this.indexById.clear()
+    this.loose.clear()
     this.window = null
   }
 
@@ -294,6 +338,7 @@ export class BlockStore<TData, TRow, TQuery> {
     }
     this.blocks.clear()
     this.indexById.clear()
+    this.loose.clear()
     this.total = rowCount
     this.ended = false
     this.options.onChange()
@@ -321,6 +366,111 @@ export class BlockStore<TData, TRow, TQuery> {
   resume() {
     this.suspended = false
     if (this.window) this.setWindow(this.window.first, this.window.last)
+  }
+
+  /**
+   * Транзакция строк ветки (ADR 0157, §2): загруженные строки встают на новые места, блоки
+   * собираются заново; блок, собранный не целиком, отдаёт строки в `loose` — его запрос
+   * уйдёт, только если блок попадёт в окно. Запросы с места правки и дальше отменяются: их
+   * ответ — в прежних местах.
+   */
+  applyEdits(edits: RowEdits<TRow>) {
+    const removed = [...edits.remove].sort((a, b) => a - b)
+    const insert = edits.insert && {
+      at: edits.insert.at,
+      count: edits.insert.rows.length,
+    }
+    const from = Math.min(removed[0] ?? Infinity, insert?.at ?? Infinity)
+    if (from === Infinity && edits.rowCount === undefined) return
+    const known = new Map(this.knownRows())
+    const placed = new Map<number, TRow>()
+    for (const [index, row] of known) {
+      const next = editedIndex(index, removed, insert)
+      if (next === -1) continue
+      ;(row as { index?: number }).index = next
+      placed.set(next, row)
+    }
+    edits.insert?.rows.forEach((row, offset) =>
+      placed.set(edits.insert!.at + offset, row),
+    )
+    const gone = removed.filter(index => known.has(index)).length
+    if (edits.rowCount !== undefined) this.total = edits.rowCount
+    else if (this.total !== undefined) {
+      this.total += (insert?.count ?? 0) - gone
+    }
+    const firstBlock = from === Infinity ? 0 : this.blockOf(from)
+    for (const [index, block] of this.blocks) {
+      if (block.status !== 'loaded' && index < firstBlock) continue
+      if (block.status === 'pending') block.abort.abort()
+      this.blocks.delete(index)
+    }
+    this.loose.clear()
+    this.indexById.clear()
+    const byBlock = new Map<number, Map<number, TRow>>()
+    for (const [index, row] of placed) {
+      const block = this.blockOf(index)
+      const rows = byBlock.get(block) ?? new Map<number, TRow>()
+      byBlock.set(block, rows)
+      rows.set(index, row)
+      this.indexById.set(this.options.idOf(row), index)
+    }
+    const end =
+      this.total ?? (this.ended ? Math.max(-1, ...placed.keys()) + 1 : Infinity)
+    for (const [block, rows] of byBlock) {
+      const start = block * this.size
+      const stop = Math.min(start + this.size, end)
+      let whole = stop > start
+      for (let index = start; whole && index < stop; index++) {
+        whole = rows.has(index)
+      }
+      if (whole) {
+        const blockRows: TRow[] = []
+        for (let index = start; index < stop; index++) {
+          blockRows.push(rows.get(index)!)
+        }
+        this.blocks.set(block, {
+          status: 'loaded',
+          rows: blockRows,
+          used: this.tick(),
+        })
+      } else {
+        for (const [index, row] of rows) this.loose.set(index, row)
+      }
+    }
+    this.options.onChange()
+    if (this.window) this.setWindow(this.window.first, this.window.last)
+  }
+
+  /**
+   * Строки окна в блоке известны после транзакции (ADR 0157, §2): блок не запрашивается,
+   * пока окно не дойдёт до строки, которой нет.
+   */
+  private covered(block: number) {
+    if (!this.window || this.loose.size === 0) return false
+    const start = Math.max(block * this.size, this.window.first)
+    const end = Math.min(
+      (block + 1) * this.size - 1,
+      this.window.last,
+      this.count() - 1,
+    )
+    if (start > end) return false
+    for (let index = start; index <= end; index++) {
+      if (!this.loose.has(index)) return false
+    }
+    return true
+  }
+
+  /** Загруженные строки ветки и их места: строки блоков и `loose`. */
+  knownRows(): [number, TRow][] {
+    const result: [number, TRow][] = []
+    for (const [index, block] of this.blocks) {
+      if (block.status !== 'loaded') continue
+      block.rows.forEach((row, offset) =>
+        result.push([index * this.size + offset, row]),
+      )
+    }
+    for (const entry of this.loose) result.push(entry)
+    return result
   }
 
   private get size() {
@@ -415,10 +565,23 @@ export class BlockStore<TData, TRow, TQuery> {
   private applyBlock(blockIndex: number, response: BlockResponse<TData>) {
     const start = blockIndex * this.size
     const rows = this.options.toRows(response.rows, start)
+    for (let index = start; index < start + this.size; index++) {
+      const row = this.loose.get(index)
+      if (row === undefined) continue
+      this.indexById.delete(this.options.idOf(row))
+      this.loose.delete(index)
+    }
     this.blocks.set(blockIndex, { status: 'loaded', rows, used: this.tick() })
-    rows.forEach((row, offset) =>
-      this.indexById.set(this.options.idOf(row), start + offset),
-    )
+    rows.forEach((row, offset) => {
+      const id = this.options.idOf(row)
+      // Пришедшая строка — уже «запасная» на другом месте: сервер знает её место лучше
+      // (ADR 0157, §2), дубля в списке нет.
+      const was = this.indexById.get(id)
+      if (was !== undefined && this.loose.get(was) !== undefined) {
+        this.loose.delete(was)
+      }
+      this.indexById.set(id, start + offset)
+    })
     if (response.rowCount !== undefined) {
       this.total = response.rowCount
     } else if (this.total === undefined && rows.length < this.size) {

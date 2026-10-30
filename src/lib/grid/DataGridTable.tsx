@@ -262,7 +262,8 @@ export const DataGridTable = ({
               isVirtualColumns={isVirtualColumns}
               enableRowDragging={enableRowDragging}
               rowAnimation={
-                options.enableRowAnimation !== false && !!rowSource.rows
+                options.enableRowAnimation !== false &&
+                (!!rowSource.rows || !!rowSource.changesSince)
               }
             />
           </BodyDndBoundary>

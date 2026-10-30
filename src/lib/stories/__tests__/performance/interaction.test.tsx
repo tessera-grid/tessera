@@ -3111,6 +3111,112 @@ describe('Отзывчивость взаимодействий — сервер
   )
 })
 
+// Транзакции строк SSRM (ADR 0157, RT12): вставка 100 строк одной транзакцией при итоге
+// 1 000 000 против 100 вызовов `setRowData` той же таблицы — пересборка блоков на месте не
+// дороже замены строк.
+interface TransactionGridTable {
+  applyRowTransaction: (transaction: object) => unknown
+  setRowData: (id: string, updater: (row: FeedRow) => FeedRow) => void
+}
+let transactionTable: TransactionGridTable | undefined
+const TransactionGrid = () => {
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: NO_FEED,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        rowCount: 1_000_000,
+        blockSize: 100,
+        getRows: ({ start, end }) =>
+          Promise.resolve({ rows: feedRows(start, end - start) }),
+      }),
+    ] as never,
+  })
+  transactionTable = table as unknown as TransactionGridTable
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — транзакции строк SSRM', () => {
+  test(
+    'RT12: вставка 100 строк при итоге 1 000 000 не дороже 100 вызовов setRowData',
+    async () => {
+      const ROWS = 100
+      const cell = (index: number) =>
+        document.querySelector(
+          `.data-grid__body-row[data-index="${index}"] .data-grid__body-cell[data-column-id="a"]`,
+        )?.textContent
+      const measure = async (insert: boolean) => {
+        await render(<TransactionGrid />)
+        await expect.poll(() => cell(0)).toBe('Name 0')
+        let round = 0
+        const result = await measureInteractionWork(async () => {
+          const tag = `t${round++}`
+          if (insert) {
+            transactionTable!.applyRowTransaction({
+              add: Array.from({ length: ROWS }, (_, k) => ({
+                ...feedRows(k, 1)[0],
+                id: `${tag}-${k}`,
+                a: `${tag} ${k}`,
+              })),
+              index: 0,
+            })
+          } else {
+            for (let k = 0; k < ROWS; k++) {
+              transactionTable!.setRowData(`f${k}`, row => ({
+                ...row,
+                a: `${tag} ${k}`,
+              }))
+            }
+          }
+          await expect.poll(() => cell(0)).toBe(`${tag} 0`)
+        })
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const inserted = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1 000 000×3',
+          plugins: 'serverRowModel',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('RT12-base', '100 × setRowData', base, false)
+      await record('RT12', 'транзакция из 100 строк', inserted, true)
+      expect(
+        inserted.longestMs,
+        `longest=${inserted.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Ленивые дети в SSRM (ADR 0138, SD46): раскрытие ветки со 100 детьми при 1 000 000 корней
 // против того же раскрытия при 1000 корней. Цена — пересчёт размеров виртуализатора на
 // миллион строк (§14): он растёт с числом строк, раскладка веток — нет.

@@ -321,6 +321,35 @@ export const rowSelectionValueOf = (table: unknown): RowSelectionValue => {
   return allSelectionOf(selection) ?? ((selection ?? {}) as RowSelectionState)
 }
 
+/**
+ * Удалённые строки выпадают из выбора: из выбранных `id` и из исключений каждого узла
+ * (ADR 0157, §3). Ничего не выпало — тот же объект.
+ */
+export const dropRowsIn = (
+  value: RowSelectionValue,
+  ids: ReadonlySet<string>,
+): RowSelectionValue => {
+  if (ids.size === 0) return value
+  if (!isAllSelection(value)) {
+    if (!Object.keys(value).some(id => ids.has(id))) return value
+    return Object.fromEntries(
+      Object.entries(value).filter(([id]) => !ids.has(id)),
+    )
+  }
+  let dropped = false
+  const prune = <T extends Node>(node: T): T => {
+    const except = node.except.filter(id => !ids.has(id))
+    if (except.length !== node.except.length) dropped = true
+    return {
+      ...node,
+      except,
+      ...(node.groups ? { groups: node.groups.map(prune) } : {}),
+    }
+  }
+  const pruned = prune(value as Node)
+  return dropped ? normalize(pruned) : value
+}
+
 /** Ничего не выбрано. */
 export const isSelectionEmpty = (value: RowSelectionValue) =>
   !isAllSelection(value) && !Object.values(value).some(Boolean)

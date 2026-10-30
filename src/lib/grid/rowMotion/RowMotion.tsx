@@ -2,12 +2,16 @@
  * Движение строк (ADR 0107): FLIP по видимым позициям. Перед коммитом новой модели
  * строк снимает положение смонтированных строк и копии уходящих, после коммита
  * запускает Web Animations от старта к местам модели. Класс — ради
- * `getSnapshotBeforeUpdate`: только он видит DOM до изменений коммита.
+ * `getSnapshotBeforeUpdate`: только он видит DOM до изменений коммита. Серверная модель
+ * (ADR 0157, §4) массива строк не имеет: смена — по номеру раскладки, прежние места — по
+ * журналу смен списка.
  */
 import { Component, createRef, type ReactNode, type RefObject } from 'react'
 
 import type { VirtualItem } from '../../../vendor/tanstack-virtual/react-virtual'
 
+import type { RowSource } from '../../core/rowSource'
+import { priorIndex } from '../../core/rowListFollow'
 import { planRowMotion, type RowMotionPlan } from './planRowMotion'
 import { rowMotionTiming } from './rowMotionTiming'
 import styles from '../Body/Body.module.css'
@@ -20,6 +24,10 @@ const DND_SHIFT = /translate3d\([^,]+,\s*(-?[\d.]+)px/
 interface RowMotionProps {
   enabled: boolean
   rows: readonly { id: string }[]
+  /** Источник строк по индексу (серверная модель): движение — по его журналу. */
+  source?: RowSource<{ id: string }>
+  /** Номер раскладки источника по индексу. */
+  listVersion?: number
   virtualRows: readonly VirtualItem[]
   bodyRef: RefObject<HTMLDivElement | null>
   children: ReactNode
@@ -30,6 +38,7 @@ interface Snapshot {
   /** Копии строк, которые после коммита уйдут из окна. */
   leaving: Map<string, HTMLElement>
   prevRows: readonly { id: string }[]
+  prevVersion?: number
   /** Позиция прокрутки до коммита: запоздавшее событие прежней прокрутки не обрывает движение. */
   scrolledAt: { top: number; left: number }
   /**
@@ -111,15 +120,16 @@ export class RowMotion extends Component<RowMotionProps> {
     const body = this.props.bodyRef.current
     if (
       !body ||
-      prev.rows === this.props.rows ||
+      (prev.rows === this.props.rows &&
+        prev.listVersion === this.props.listVersion) ||
       !this.props.enabled ||
       prefersReducedMotion()
     ) {
       return null
     }
     const bodyTop = body.getBoundingClientRect().top
-    const { rows, virtualRows } = this.props
-    const next = new Set(virtualRows.map(item => rows[item.index]?.id))
+    const { virtualRows } = this.props
+    const next = new Set(virtualRows.map(item => this.idAt(item.index)))
     const before = new Map<string, number>()
     const leaving = new Map<string, HTMLElement>()
     for (const row of body.querySelectorAll<HTMLElement>(ROW)) {
@@ -138,6 +148,7 @@ export class RowMotion extends Component<RowMotionProps> {
       before,
       leaving,
       prevRows: prev.rows,
+      prevVersion: prev.listVersion,
       scrolledAt: {
         top: scroller?.scrollTop ?? 0,
         left: scroller?.scrollLeft ?? 0,
@@ -169,6 +180,11 @@ export class RowMotion extends Component<RowMotionProps> {
     this.finish()
   }
 
+  private idAt(index: number) {
+    const { rows, source } = this.props
+    return source?.keyByIndex ? source.at(index)?.id : rows[index]?.id
+  }
+
   /** Довести движение до конца: строки на места, призраки — прочь (RM12). */
   readonly finish = () => {
     clearTimeout(this.timer)
@@ -196,6 +212,7 @@ export class RowMotion extends Component<RowMotionProps> {
     before,
     leaving,
     prevRows,
+    prevVersion,
     scrolledAt,
     timing,
     viewport,
@@ -203,8 +220,13 @@ export class RowMotion extends Component<RowMotionProps> {
   }: Snapshot) {
     this.finish()
     const body = this.props.bodyRef.current
-    const { rows, virtualRows } = this.props
+    const { rows, source, virtualRows } = this.props
     if (!body || virtualRows.length === 0) return
+    const batches =
+      source?.keyByIndex && prevVersion !== undefined
+        ? source.changesSince?.(prevVersion)
+        : undefined
+    if (source?.keyByIndex && !batches) return
     const rowSize = virtualRows[0].size
     const offset = virtualRows[0].start - virtualRows[0].index * rowSize
     // Сдвиг dnd-kit, оставшийся строке после смены модели посреди перетаскивания: строка,
@@ -214,13 +236,17 @@ export class RowMotion extends Component<RowMotionProps> {
       const y = Number(DND_SHIFT.exec(row.style.transform)?.[1] ?? 0)
       if (y) shifts.set(row.dataset.rowId!, y)
     }
-    const after = virtualRows.map(item => {
-      const id = rows[item.index].id
-      return {
-        id,
-        index: item.index,
-        start: item.start + (shifts.get(id) ?? 0),
-      }
+    const after = virtualRows.flatMap(item => {
+      // Незагруженная строка серверной модели — скелет, не движется.
+      const id = this.idAt(item.index)
+      if (id === undefined) return []
+      return [
+        {
+          id,
+          index: item.index,
+          start: item.start + (shifts.get(id) ?? 0),
+        },
+      ]
     })
     const mounted = new Set(after.map(row => row.id))
     const plan = planRowMotion({
@@ -229,14 +255,24 @@ export class RowMotion extends Component<RowMotionProps> {
       rowSize,
       startOf: index => offset + index * rowSize,
       // Пришедшие в окно ищутся в прошлой модели, ушедшие из окна — в новой.
-      prevIndexOf: lazyIndexes(
-        prevRows,
-        after.filter(row => !before.has(row.id)).map(row => row.id),
-      ),
-      nextIndexOf: lazyIndexes(
-        rows,
-        [...before.keys()].filter(id => !mounted.has(id)),
-      ),
+      prevIndexOf: batches
+        ? id => {
+            const index = source!.indexOf(id)
+            return index === -1 ? undefined : priorIndex(index, batches)
+          }
+        : lazyIndexes(
+            prevRows,
+            after.filter(row => !before.has(row.id)).map(row => row.id),
+          ),
+      nextIndexOf: batches
+        ? id => {
+            const index = source!.indexOf(id)
+            return index === -1 ? undefined : index
+          }
+        : lazyIndexes(
+            rows,
+            [...before.keys()].filter(id => !mounted.has(id)),
+          ),
     })
     if (!plan) return
     this.start(
@@ -250,7 +286,10 @@ export class RowMotion extends Component<RowMotionProps> {
       viewport,
       footer && {
         ...footer,
-        shift: (rows.length - prevRows.length) * rowSize,
+        shift:
+          (batches
+            ? batches.flat().reduce((sum, change) => sum + change.delta, 0)
+            : rows.length - prevRows.length) * rowSize,
       },
     )
   }
@@ -281,6 +320,21 @@ export class RowMotion extends Component<RowMotionProps> {
       Math.min(from, to) < viewport.bottom &&
       Math.max(from, to) + rowSize > viewport.top
 
+    // Строки, удалённые транзакцией серверной модели, сперва гаснут на своём месте, затем
+    // строки закрывают щель (ADR 0157, §4): иначе соседи наезжают на призрак и удаления
+    // не видно.
+    const removing =
+      !!this.props.source?.keyByIndex &&
+      plan.exits.some(
+        exit =>
+          exit.to === null &&
+          leaving.has(exit.id) &&
+          seen(exit.from, exit.from),
+      )
+    const settle = removing
+      ? { ...timing, delay: duration, fill: 'backwards' as const }
+      : timing
+
     const mounted = new Map<string, HTMLElement>()
     for (const row of body.querySelectorAll<HTMLElement>(ROW)) {
       mounted.set(row.dataset.rowId!, row)
@@ -292,7 +346,7 @@ export class RowMotion extends Component<RowMotionProps> {
         this.animations.push(
           row.animate(
             [{ translate: `0 ${dy}px` }, { translate: '0 0' }],
-            timing,
+            settle,
           ),
         )
       }
@@ -302,7 +356,7 @@ export class RowMotion extends Component<RowMotionProps> {
       const start = starts.get(id) ?? 0
       if (row && seen(start, start)) {
         this.animations.push(
-          row.animate([{ opacity: 0 }, { opacity: 1 }], timing),
+          row.animate([{ opacity: 0 }, { opacity: 1 }], settle),
         )
       }
     }
@@ -379,12 +433,12 @@ export class RowMotion extends Component<RowMotionProps> {
             { translate: `0 ${-laid}px` },
             { translate: `0 ${footer.shift - laid}px` },
           ],
-          { ...timing, fill: 'forwards' },
+          { ...settle, fill: 'both' },
         ),
       )
     }
 
-    this.timer = setTimeout(this.finish, duration)
+    this.timer = setTimeout(this.finish, removing ? duration * 2 : duration)
     this.scrolledAt = scrolledAt
     this.scroller = body.closest('.data-grid__container')
     this.scroller?.addEventListener('scroll', this.onScroll, { passive: true })

@@ -79,6 +79,8 @@ export {
   serverRowModel,
   type ServerRowModelOptions,
   type ServerRowModelHooks,
+  type ServerRowTransaction,
+  type ServerRowTransactionResult,
   type ServerRowsRequest,
   type ServerRowsResponse,
   type RefreshRowsOptions,

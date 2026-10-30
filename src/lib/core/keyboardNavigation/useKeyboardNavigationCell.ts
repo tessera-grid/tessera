@@ -100,8 +100,10 @@ export const useKeyboardNavigationCell = (
       return
     }
     tracking.pending = false
+    const quiet = tracking.quiet
+    tracking.quiet = false
     const scroller = el.closest<HTMLElement>(SCROLLER_SELECTOR)
-    if (scroller) {
+    if (scroller && !quiet) {
       // Шапка и закреплённый футер — sticky: по вертикали доводить не нужно;
       // незакреплённый футер — строка в потоке (ADR 0118, §6).
       ensureCellVisible(

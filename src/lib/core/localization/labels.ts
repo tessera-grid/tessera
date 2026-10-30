@@ -246,6 +246,10 @@ export interface TableLabels {
   announceCopy: (cells: number) => string
   /** Объявление ожидания копирования: догружаются строки выделения (ADR 0146) */
   announceCopyLoading: (rows: number) => string
+  /** Объявление транзакции строк серверной модели: строки добавлены (ADR 0157) */
+  announceRowsAdded: (count: number) => string
+  /** Объявление транзакции строк серверной модели: строки удалены (ADR 0157) */
+  announceRowsRemoved: (count: number) => string
   /** Отказ копирования: строк выделения больше предела `maxCopyRows` (ADR 0146) */
   copyTooManyRows: (rows: number, max: number) => string
   /** Отказ копирования: браузер не дал записать в буфер обмена (ADR 0146) */
@@ -533,6 +537,10 @@ export const DEFAULT_LABELS = {
   announceCopy_one: 'Copied {count} cell',
   announceCopyLoading: 'Copying: loading {count} rows',
   announceCopyLoading_one: 'Copying: loading {count} row',
+  announceRowsAdded: 'Added {count} rows',
+  announceRowsAdded_one: 'Added {count} row',
+  announceRowsRemoved: 'Removed {count} rows',
+  announceRowsRemoved_one: 'Removed {count} row',
   copyTooManyRows: 'The limit is {max} rows. Use export',
   copyClipboardDenied: "The browser didn't allow writing to the clipboard",
   announceLoaded: 'Loaded {count} rows',

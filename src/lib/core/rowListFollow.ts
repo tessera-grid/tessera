@@ -44,6 +44,47 @@ export const followSpans = <T>(
   return current
 }
 
+/**
+ * Место строки после пачек смен; строка удалена — место строки за ней, она теперь там
+ * (ADR 0157, §3). Конец списка таблица ограничивает сама.
+ */
+export const followIndex = (
+  index: number,
+  batches: readonly (readonly RowListChange[])[],
+): number => {
+  let current = index
+  for (const batch of batches) {
+    for (const { at, delta } of [...batch].sort((a, b) => b.at - a.at)) {
+      if (delta >= 0) {
+        if (at <= current) current += delta
+      } else if (current >= at - delta) current += delta
+      else if (current >= at) current = at
+    }
+  }
+  return current
+}
+
+/**
+ * Место строки до пачек смен — обратный ход `followIndex`; `undefined` — строку вставили
+ * (движение строк ADR 0107 в серверной модели).
+ */
+export const priorIndex = (
+  index: number,
+  batches: readonly (readonly RowListChange[])[],
+): number | undefined => {
+  let current = index
+  for (let batch = batches.length - 1; batch >= 0; batch--) {
+    for (const { at, delta } of [...batches[batch]].sort(
+      (a, b) => a.at - b.at,
+    )) {
+      if (current < at) continue
+      if (delta > 0 && current < at + delta) return undefined
+      current -= delta
+    }
+  }
+  return current
+}
+
 interface FollowTable {
   store: {
     get: () => Record<string, unknown>

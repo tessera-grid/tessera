@@ -23,6 +23,7 @@ import * as serverGroupingStories from './DataGrid.DataLoading.ServerRowModel.Gr
 import * as serverSelectionStories from './DataGrid.DataLoading.ServerRowModel.Selection.stories'
 import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowModel.CellSelection.stories'
 import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
+import * as serverTransactionsStories from './DataGrid.DataLoading.ServerRowModel.Transactions.stories'
 import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
@@ -607,6 +608,126 @@ export const HighContrastServerRowModelEditCellStep3 = {
     3,
   ),
   name: 'Data loading/Server row model/Editing — Edit a cell, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionAddStep1 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionAdd,
+    1,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionAddStep2 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionAdd,
+    2,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionAddStep3 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionAdd,
+    3,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionAddStep4 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionAdd,
+    4,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionRemoveStep1 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionRemove,
+    1,
+  ),
+  name: 'Data loading/Server row model/Transactions — Remove selected rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionRemoveStep2 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionRemove,
+    2,
+  ),
+  name: 'Data loading/Server row model/Transactions — Remove selected rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionRemoveStep3 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionRemove,
+    3,
+  ),
+  name: 'Data loading/Server row model/Transactions — Remove selected rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionLiveStep1 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionLive,
+    1,
+  ),
+  name: 'Data loading/Server row model/Transactions — Live updates, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionLiveStep2 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionLive,
+    2,
+  ),
+  name: 'Data loading/Server row model/Transactions — Live updates, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionRefetchStep1 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionRefetch,
+    1,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionRefetchStep2 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionRefetch,
+    2,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTransactionRefetchStep3 = {
+  ...twinStep(
+    serverTransactionsStories,
+    serverTransactionsStories.ServerTransactionRefetch,
+    3,
+  ),
+  name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 3',
   tags: ['!test'],
 }
 

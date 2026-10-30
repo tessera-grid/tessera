@@ -5,7 +5,7 @@
  * блоки свёрнутых веток, затем давно не нужные.
  */
 import { timeSlicer } from '../../core/timeSlice'
-import { BlockStore, type BlockResponse } from './blockStore'
+import { BlockStore, type BlockResponse, editedIndex } from './blockStore'
 
 export interface TreeRequest<TQuery> {
   start: number
@@ -69,6 +69,17 @@ interface Position {
   parent: string | undefined
   local: number
 }
+
+/** Транзакция строк дерева (ADR 0157): `add` — данные и место в ветке `parentId`. */
+export interface TreeTransaction<TData> {
+  parentId?: string
+  add?: { data: readonly TData[]; index: number }
+  remove?: readonly string[]
+  rowCount?: number
+}
+
+/** Итог транзакции: сколько загруженных строк удалено или ветки нет в раскладке. */
+export type TreeTransactionResult = { removed: number } | 'branchNotLoaded'
 
 /** Отказ блока в сквозных индексах. */
 export interface TreeFailure {
@@ -456,6 +467,133 @@ export class BlockTree<TData, TRow, TQuery> {
       if (state === 'loading') loading = true
     }
     return loading ? 'loading' : 'loaded'
+  }
+
+  /**
+   * Транзакция строк (ADR 0157, §1–§2): удаление по `id` в любых ветках, вставка в ветку
+   * `parentId`. Смены списка — одной пачкой в индексах до неё; удалённая раскрытая строка
+   * уносит свою ветку.
+   */
+  applyTransaction(transaction: TreeTransaction<TData>): TreeTransactionResult {
+    const { add, remove = [], rowCount } = transaction
+    const target = this.nodes.get(transaction.parentId)
+    const open = this.openNodes()
+    if ((add || rowCount !== undefined) && (!target || !open.has(target))) {
+      return 'branchNotLoaded'
+    }
+    const layout = this.layout()
+    const removals = new Map<TreeNode<TData, TRow, TQuery>, number[]>()
+    for (const id of remove) {
+      const position = this.positions.get(id)
+      const node = position && this.nodes.get(position.parent)
+      if (!node || node.store.indexOf(id) !== position.local) continue
+      removals.set(node, [...(removals.get(node) ?? []), position.local])
+    }
+    const changes: ListChange[] = []
+    const branchSize = (id: string) => this.findLayout(layout, id)?.size ?? 0
+    for (const [node, locals] of removals) {
+      if (!open.has(node)) continue
+      for (const local of locals) {
+        const at = this.globalOf(node.parentId, local)
+        const id = this.options.idOf(node.store.rowAt(local)!)
+        changes.push({ at, delta: -(1 + branchSize(id)) })
+      }
+    }
+    let inserted: TRow[] = []
+    if (add && target) {
+      const locals = removals.get(target) ?? []
+      // Место вставки — в списке без удалённых строк; в журнал — место до правки.
+      let before = add.index
+      for (const gone of [...locals].sort((a, b) => a - b)) {
+        if (gone <= before) before++
+      }
+      inserted = this.options.toRows(
+        add.data as TData[],
+        add.index,
+        target.depth,
+        target.parentId,
+      )
+      if (open.has(target)) {
+        changes.push({
+          at: this.globalOf(target.parentId, before),
+          delta: inserted.length,
+        })
+      }
+    }
+    for (const [node, locals] of removals) {
+      for (const local of locals) {
+        this.dropBranch(this.options.idOf(node.store.rowAt(local)!))
+      }
+    }
+    const edited = new Set([...removals.keys(), ...(target ? [target] : [])])
+    for (const node of edited) {
+      const removed = removals.get(node) ?? []
+      const insert =
+        node === target && add
+          ? { at: add.index, count: inserted.length }
+          : undefined
+      for (const [id, position] of this.positions) {
+        if (position.parent !== node.parentId) continue
+        const next = editedIndex(position.local, removed, insert)
+        if (next === -1) this.positions.delete(id)
+        else position.local = next
+      }
+      node.store.applyEdits({
+        remove: removed,
+        insert:
+          node === target && add
+            ? { at: add.index, rows: inserted }
+            : undefined,
+        rowCount: node === target ? rowCount : undefined,
+      })
+    }
+    inserted.forEach((row, offset) =>
+      this.positions.set(this.options.idOf(row), {
+        parent: transaction.parentId,
+        local: add!.index + offset,
+      }),
+    )
+    // Раскладка пересчитывается без сверки: смены уже в журнале.
+    this.version++
+    this.cache = null
+    this.layout()
+    if (changes.length) this.options.onLayoutChange?.(changes)
+    this.scheduleWindow()
+    this.options.onChange()
+    return { removed: [...removals.values()].flat().length }
+  }
+
+  /** Ветка `parentId` в раскладке: корень или раскрытая строка с хранилищем. */
+  hasBranch(parentId: string | undefined): boolean {
+    const node = this.nodes.get(parentId)
+    return !!node && this.openNodes().has(node)
+  }
+
+  /** Ветка строки в раскладке. */
+  private findLayout(
+    layout: Layout<TData, TRow, TQuery>,
+    id: string,
+  ): Layout<TData, TRow, TQuery> | undefined {
+    for (const child of layout.children) {
+      if (child.layout.node.parentId === id) return child.layout
+      const found = this.findLayout(child.layout, id)
+      if (found) return found
+    }
+    return undefined
+  }
+
+  /** Строку удалили: её ветка и ветки потомков уходят из дерева. */
+  private dropBranch(id: string) {
+    const node = this.nodes.get(id)
+    if (!node) return
+    for (const [childId, position] of [...this.positions]) {
+      if (position.parent === id) {
+        this.dropBranch(childId)
+        this.positions.delete(childId)
+      }
+    }
+    node.store.dispose()
+    this.nodes.delete(id)
   }
 
   replaceRow(index: number, row: TRow) {
