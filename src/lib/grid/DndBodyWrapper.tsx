@@ -35,6 +35,7 @@ import {
   getRowDraggingEvents,
 } from '../plugins/rowDragging'
 import { createExpandTimer } from '../plugins/rowDragging/expandTimer'
+import { dragRowsOf } from '../plugins/rowDragging/dragRows'
 import { readRowNestingIndent } from '../core/rowNesting'
 import { createDropLevel } from './dnd/dropLevel'
 import {
@@ -52,11 +53,10 @@ import { useLatest } from '../core/useLatest'
 import { REACT_MAJOR } from '../core/reactVersion'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
-export const findDraggableRow = <TRow extends { id: string }>(
-  rows: readonly TRow[],
+export const findDraggableRow = <TRow,>(
+  rows: { byId: (id: string) => TRow | undefined },
   activeId: string | null | undefined,
-): TRow | undefined =>
-  activeId == null ? undefined : rows.find(row => row.id === activeId)
+): TRow | undefined => (activeId == null ? undefined : rows.byId(activeId))
 
 /**
  * id строк для `SortableContext` тела — только строки окна виртуализатора (D34):
@@ -64,9 +64,14 @@ export const findDraggableRow = <TRow extends { id: string }>(
  * по `virtualIndex` из данных строки.
  */
 export const getSortableRowIds = (
-  rows: readonly { id: string }[],
+  rows: { at: (index: number) => { id: string } | undefined },
   virtualRows: readonly { index: number }[],
-): string[] => virtualRows.map(virtualRow => rows[virtualRow.index].id)
+): string[] =>
+  // Незагруженная строка серверной модели — не место броска (ADR 0159, §3).
+  virtualRows.flatMap(virtualRow => {
+    const row = rows.at(virtualRow.index)
+    return row ? [row.id] : []
+  })
 
 /**
  * Смена места броска — в коммите `over` dnd-kit (ADR 0108, PV5). React 18 коммитит
@@ -175,19 +180,21 @@ export const DndBodyWrapper = ({
     'rowDragging' as never,
   ) as RowDragOverlayState
 
-  const { rows } = table.getRowModel()
+  // Строки по индексу окна: модель TanStack или источник серверной модели (ADR 0159).
+  const modelRows = table.getRowModel().rows
+  const rows = useMemo(() => dragRowsOf(table, modelRows), [table, modelRows])
 
   // Группа раскрылась посреди сессии — индексы места сдвинулись без движения
   // указателя: выровнять их по id до кадра (ADR 0109, §1).
   useIsomorphicLayoutEffect(() => {
     const { activeId, fromIndex, overIndex, overId } = rowDragging
     if (activeId === null || fromIndex === null || overIndex === null) return
-    const staleFrom = rows[fromIndex]?.id !== activeId
-    const staleOver = overId !== null && rows[overIndex]?.id !== overId
+    const staleFrom = rows.at(fromIndex)?.id !== activeId
+    const staleOver = overId !== null && rows.at(overIndex)?.id !== overId
     // Индексы выровнены — слот над свернувшейся группой уходит на её уровень.
     if (!staleFrom && !staleOver) return rowModelChange.current()
     const indexOf = (id: string, at: number) =>
-      rows[at]?.id === id ? at : rows.findIndex(row => row.id === id)
+      rows.at(at)?.id === id ? at : rows.indexOf(id)
     const from = indexOf(String(activeId), fromIndex)
     const over = overId === null ? overIndex : indexOf(overId, overIndex)
     if (from < 0 || over < 0) return
@@ -231,13 +238,9 @@ export const DndBodyWrapper = ({
 
   // Вне перетаскивания список строк постоянный: сдвиг окна не перерисовывает строки через
   // контекст dnd-kit (ADR 0149, PS11). Строки окна нужны только идущему перетаскиванию (D34).
-  const items = useMemo(
-    () =>
-      activeId === null
-        ? NO_SORTABLE_ROWS
-        : getSortableRowIds(rows, virtualRows),
-    [activeId, rows, virtualRows],
-  )
+  // Строки серверной модели приходят без смены раскладки: id окна — на каждый рендер сессии.
+  const items =
+    activeId === null ? NO_SORTABLE_ROWS : getSortableRowIds(rows, virtualRows)
 
   const sensors = useSensors(
     useSensor(PointerSensor, sensorOptions),

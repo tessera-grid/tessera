@@ -17,18 +17,24 @@ export interface DropPlace<TRow> {
   index: number
 }
 
+/** Строки по индексу окна: массив модели или источник строк (ADR 0159). */
+interface PlaceRows<TRow> {
+  at: (index: number) => TRow | undefined
+  readonly length: number
+}
+
 export const dropPlace = <TRow extends PlaceRow>(
-  rows: readonly TRow[],
+  rows: PlaceRows<TRow>,
   active: PlaceRow,
   { from, to, depth }: { from: number; to: number; depth: number },
 ): DropPlace<TRow> => {
   const parentAt = findDropParent(rows, { from, to, depth }, 0)
-  const parent = parentAt < 0 ? undefined : rows[parentAt]
+  const parent = parentAt < 0 ? undefined : rows.at(parentAt)
   // Сестра в своей группе стоит после убранной строки — её индекс на один меньше.
   const sameGroup = active.parentId === parent?.id
   const shifted = (index: number) =>
     sameGroup && active.index < index ? index - 1 : index
-  const at = (position: number) => rows[indexBeforeMove(position, from, to)]!
+  const at = (position: number) => rows.at(indexBeforeMove(position, from, to))!
   for (let position = to - 1; position >= 0; position--) {
     const row = at(position)
     if (row.depth < depth) break

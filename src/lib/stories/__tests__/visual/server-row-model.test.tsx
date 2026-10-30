@@ -15,7 +15,6 @@ import {
   columnPinning,
   columnSorting,
   infiniteScroll,
-  rowDragging,
   rowGrouping,
   columnSortingModel,
   keyboardNavigation,
@@ -1426,7 +1425,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
     })
   })
 
-  test('SD49: в SSRM хвост скелет-строк ленты и ручки перетаскивания строк не показаны — и в конце списка', async () => {
+  test('SD49: в SSRM хвост скелет-строк ленты не показан — и в конце списка', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { getRows } = server(({ start, end }) => ({
       rows: rowsOf(start, end),
@@ -1436,10 +1435,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expect
         .soft(q('[data-testid="infinite-scroll-tail"]'), 'хвост ленты')
         .toBeNull()
-      expect.soft(q('.drag__handler--column'), 'ручка строки').toBeNull()
-      expect
-        .soft(q('[data-row-draggable="true"]'), 'перетаскиваемая строка')
-        .toBeNull()
     }
     const plugins = [
       columnSorting(),
@@ -1448,7 +1443,6 @@ describe('Серверная модель строк (ADR 0138)', () => {
         hasMore: true,
         onLoadMore: () => new Promise<void>(() => {}),
       }),
-      rowDragging(),
     ]
     const screen = await render(
       <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,

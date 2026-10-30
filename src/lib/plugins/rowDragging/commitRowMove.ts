@@ -49,6 +49,8 @@ export interface RowMoveCommit {
   /** Ленивый перенос — стадия модели до итога; иначе `write` пишет в `data` сразу. */
   lazy?: LazyRowMove
   write?: () => void
+  /** Откат при отказе вместо записи в `data` по id: перенос в кэше серверной модели. */
+  revert?: () => void
   /** Объект данных строки и id сестёр модели на новом месте (без неё). */
   original?: unknown
   anchors?: readonly string[]
@@ -204,7 +206,9 @@ const reject = (
   } else {
     dropRowMove(table, rowId)
   }
-  if (!entry.lazy && revert) {
+  if (!entry.lazy && revert && commit.revert) {
+    commit.revert()
+  } else if (!entry.lazy && revert) {
     writeDataMove(table, {
       rowId,
       from: commit.parentId,

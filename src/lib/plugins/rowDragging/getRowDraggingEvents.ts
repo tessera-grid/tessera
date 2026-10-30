@@ -34,7 +34,9 @@ import { commitRowMove } from './commitRowMove'
 import { reportAction } from '../../core/debugActions'
 import { inOneCommit } from '../../core/oneCommit'
 import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
+import { dragRowsOf } from './dragRows'
 import { dropPlace } from './dropPlace'
+import { commitServerMove } from './serverMove'
 import type { ExpandTimer } from './expandTimer'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 import { reorderRows } from './reorderRows'
@@ -104,8 +106,7 @@ export const getRowDraggingEvents = (
   onRowDragCancel?: (event: DragCancelEvent) => void
   onRowDragAbort?: (event: DragAbortEvent) => void
 } => {
-  const rowModel = table.getRowModel()
-  const rows = rowModel?.rows
+  const rows = dragRowsOf(table)
 
   const rowDraggingState = (
     table as unknown as {
@@ -172,9 +173,9 @@ export const getRowDraggingEvents = (
   ) => {
     const isDownMove = activeVirtualIndex < overVirtualIndex
 
-    const overItem = rows[overVirtualIndex]
-    const prevItem = rows[overVirtualIndex - 1]
-    const nextItem = rows[overVirtualIndex + 1]
+    const overItem = rows.at(overVirtualIndex)
+    const prevItem = rows.at(overVirtualIndex - 1)
+    const nextItem = rows.at(overVirtualIndex + 1)
     const targetItem = (isDownMove ? overItem : prevItem) as
       Row<any, any> | undefined
 
@@ -190,8 +191,7 @@ export const getRowDraggingEvents = (
     )
   }
 
-  const rowById = (id: string): Row<any, any> | undefined =>
-    table.getRowModel().rowsById[id]
+  const rowById = (id: string): Row<any, any> | undefined => rows.byId(id)
 
   /** Группа раскрыта паузой: запомнить, чтобы свернуть после сессии (ADR 0109, §3). */
   const openByDelay = (group: Row<any, any>) => {
@@ -270,7 +270,7 @@ export const getRowDraggingEvents = (
     !!(activeRow as ExpandableRow).getIsLazyParent &&
     !canMoveInLazyTree(table) &&
     (isLazyParent(activeRow.getParentRow()) ||
-      isLazyParent(rows[findDropParent(rows, { from, to, depth }, 0)]))
+      isLazyParent(rows.at(findDropParent(rows, { from, to, depth }, 0))))
 
   // Шаг уровня читается из темы на старте перетаскивания, а не в рендере (RE64):
   // обработчики, пересозданные посреди перетаскивания, читают его при первом событии.
@@ -284,7 +284,9 @@ export const getRowDraggingEvents = (
     onRowModelChange: () => {
       const { activeId, fromIndex, overIndex, depth } = rowDraggingState
       if (activeId === null || fromIndex === null || !overIndex) return
-      const above = rows[indexBeforeMove(overIndex - 1, fromIndex, overIndex)]
+      const above = rows.at(
+        indexBeforeMove(overIndex - 1, fromIndex, overIndex),
+      )
       if (!closedAfterDelay(above) || depth <= above!.depth) return
       onRowDraggingChange(prev => ({
         ...prev,
@@ -329,6 +331,14 @@ export const getRowDraggingEvents = (
     },
     onRowDragMove: ({ active, over, delta }) => {
       if (!over) {
+        return
+      }
+      // Строка под указателем не загружена: соседей не видно — бросок недоступен (ADR 0159, §3).
+      if ((over.data.current as { pending?: boolean } | undefined)?.pending) {
+        expandTimer?.clear()
+        onRowDraggingChange?.(prev =>
+          prev.acceptable ? { ...prev, acceptable: false } : prev,
+        )
         return
       }
       if (over.id !== rowDraggingState.overId) {
@@ -415,8 +425,13 @@ export const getRowDraggingEvents = (
 
       const activeIsGroup = activeRow.subRows.length > 0
 
-      // Бросок без перестановки (мимо, на то же место, недопустимо) — `cancel`.
-      if (!over || !rowDraggingState.acceptable) {
+      // Бросок без перестановки (мимо, на то же место, недопустимо, на незагруженную
+      // строку) — `cancel`.
+      if (
+        !over ||
+        !rowDraggingState.acceptable ||
+        (over.data.current as { pending?: boolean } | undefined)?.pending
+      ) {
         expandDraggableGroupAgain(activeRow)
 
         return cancel(active.id, 'cancel')
@@ -442,6 +457,27 @@ export const getRowDraggingEvents = (
       }
 
       const rowId = String(active.id)
+      // Серверная модель (ADR 0159, §2): строка встаёт на место слота транзакцией источника.
+      if (rows.server) {
+        reportAction(table, {
+          plugin: 'rowDragging',
+          action: 'drop',
+          detail: { rowId, index: overVirtualIndex },
+          source: 'pointer',
+          phase: 'end',
+        })
+        commitServerMove(
+          table,
+          rowId,
+          activeVirtualIndex,
+          overVirtualIndex,
+          releaseSessionHooks<Partial<RowDraggingHooks>>(
+            table as never,
+            'rowDragging',
+          ).onRowDragEnd,
+        )
+        return resetDragState()
+      }
       const activeParentId = activeRow.parentId
       const place = dropPlace(rows, activeRow, {
         from: activeVirtualIndex,

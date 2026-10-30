@@ -1,5 +1,4 @@
 import { type CSSProperties, type ReactNode, useRef } from 'react'
-import { serverRowModelReason } from '../core/pluginDiagnostics'
 
 import clsx from 'clsx'
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
@@ -78,9 +77,8 @@ export const DataGridTable = ({
   style,
 }: DataGridTableProps) => {
   const options = table.options as any
-  // В серверной модели строк перетаскивание инертно: массива строк для dnd-kit нет (ADR 0138).
-  const enableRowDragging =
-    !!options.enableRowDragging && !serverRowModelReason(table)
+  // Инертность перетаскивания (сортировка, фильтр, дерево серверной модели) решает строка.
+  const enableRowDragging = !!options.enableRowDragging
   const enableColumnDragging = !!options.enableColumnDragging
   // rowSelection даёт функциональный enableRowSelection (гейт группировки), выкл — false.
   const enableRowSelection = !!options.enableRowSelection

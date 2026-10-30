@@ -150,12 +150,13 @@ describe('rowDragging', () => {
 describe('rowDragging — поиск перетаскиваемой строки', () => {
   it('D33: без активного перетаскивания тело не обходит строки в поисках перетаскиваемой', () => {
     let reads = 0
-    const rows = new Proxy([{ id: 'a' }, { id: 'b' }], {
-      get(target, key, receiver) {
-        if (typeof key === 'string' && /^\d+$/.test(key)) reads++
-        return Reflect.get(target, key, receiver)
+    const list = [{ id: 'a' }, { id: 'b' }]
+    const rows = {
+      byId: (id: string) => {
+        reads++
+        return list.find(row => row.id === id)
       },
-    })
+    }
     expect(findDraggableRow(rows, null)).toBeUndefined()
     expect(reads).toBe(0)
     expect(findDraggableRow(rows, 'b')).toEqual({ id: 'b' })

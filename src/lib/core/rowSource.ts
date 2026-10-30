@@ -76,6 +76,12 @@ export interface RowSource<TRow = unknown> {
   pageOf?: (listIndex: number) => number | undefined
   /** Сквозной индекс строки, в том числе на другой странице; `-1` — её нет в списке. */
   listIndexOf?: (id: string) => number
+  /**
+   * Перенести строку верхнего уровня на место `index` среди корней — сразу, без запроса
+   * (ADR 0159, §2). Строки нет в кэше — встаёт по данным `original`, итог прежний; без них
+   * — `false`.
+   */
+  moveRow?: (id: string, index: number, original?: unknown) => boolean
   /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
   groupChildCount?(row: TRow): number | undefined
   /** Итоги колонок выборки — из ответа сервера (ADR 0144, §4). */

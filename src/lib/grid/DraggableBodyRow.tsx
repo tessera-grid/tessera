@@ -62,6 +62,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
     setDroppableNodeRef,
     transform,
     overIndex,
+    over,
     isDragging,
     isSorting,
   } = useSortable({
@@ -78,6 +79,10 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
   })
 
   const isRowInteract = overIndex === -1
+  // Указатель над незагруженной строкой: слота нет, бросок недоступен (ADR 0159, §3).
+  const slotHidden =
+    isDragging &&
+    !!(over?.data.current as { pending?: boolean } | undefined)?.pending
   const node = useRef<HTMLDivElement | null>(null)
   // dnd-kit гасит сдвиги на рендер, в котором сменились строки окна (группа раскрылась
   // посреди сессии): строка держит прежний сдвиг, иначе соседи на кадр встают на места
@@ -134,6 +139,7 @@ export const DraggableBodyRow = memo((props: TableBodyRowProps) => {
       {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
       data-row-draggable={isDragging}
+      data-row-slot-hidden={slotHidden || undefined}
       data-row-drop-parent={props.dropParent || undefined}
       data-row-interact={isRowInteract}
       data-last-row={row.getIsLastRow()}

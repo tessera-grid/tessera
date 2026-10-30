@@ -25,6 +25,7 @@ import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowMod
 import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
 import * as serverTransactionsStories from './DataGrid.DataLoading.ServerRowModel.Transactions.stories'
 import * as serverPaginationStories from './DataGrid.DataLoading.ServerRowModel.Pagination.stories'
+import * as serverDraggingStories from './DataGrid.DataLoading.ServerRowModel.Dragging.stories'
 import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
@@ -859,6 +860,54 @@ export const HighContrastServerPaginationEditingStep4 = {
     4,
   ),
   name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragMoveStep1 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragMove, 1),
+  name: 'Data loading/Server row model/Dragging — Move a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragMoveStep2 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragMove, 2),
+  name: 'Data loading/Server row model/Dragging — Move a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragMoveStep3 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragMove, 3),
+  name: 'Data loading/Server row model/Dragging — Move a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragRefusedStep1 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerDragRefused,
+    1,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move refused, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragRefusedStep2 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerDragRefused,
+    2,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move refused, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragRefusedStep3 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerDragRefused,
+    3,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move refused, шаг 3',
   tags: ['!test'],
 }
 

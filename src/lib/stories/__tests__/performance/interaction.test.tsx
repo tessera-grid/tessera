@@ -61,6 +61,8 @@ import { exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { serverRowModel } from '../../../plugins/serverRowModel'
 import { pagination } from '../../../plugins/pagination'
+import { rowDragging } from '../../../plugins/rowDragging'
+import { moveRow } from '../../../plugins/rowDragging/moveRow'
 import { cellSelection } from '../../../plugins/cellSelection'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
@@ -3302,6 +3304,105 @@ describe('Отзывчивость взаимодействий — пагина
       expect(
         paged.longestMs,
         `longest=${paged.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Перенос строки в SSRM (ADR 0159, MV11): запись переноса при итоге 1 000 000 против того
+// же переноса в клиентском режиме на 100 000 строк — путь броска, меню и клавиш один.
+let moveTable: unknown
+const CLIENT_MOVE_DATA = feedRows(0, 100_000)
+const MoveGrid = ({ server }: { server: boolean }) => {
+  const [rows, setRows] = useState(CLIENT_MOVE_DATA)
+  const table = useCreateTable({
+    columns: FEED_COLUMNS as never,
+    data: server ? NO_FEED : rows,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      ...(server
+        ? [
+            serverRowModel({
+              rowCount: 1_000_000,
+              blockSize: 100,
+              getRows: ({ start, end }) =>
+                Promise.resolve({ rows: feedRows(start, end - start) }),
+            }),
+          ]
+        : []),
+      rowDragging({ onRowOrderChange: setRows as never }),
+    ] as never,
+  })
+  moveTable = table
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — перенос строки SSRM', () => {
+  test(
+    'MV11: бросок при итоге 1 000 000 не дороже броска в клиентском режиме на 100 000 строк',
+    async () => {
+      const idAt = (index: number) =>
+        document.querySelector<HTMLElement>(
+          `.data-grid__body-row[data-index="${index}"]`,
+        )?.dataset.rowId
+      const rowOf = (id: string) =>
+        (
+          moveTable as {
+            getRowSource: () => { byId: (id: string) => unknown }
+          }
+        )
+          .getRowSource()
+          .byId(id)
+      const measure = async (server: boolean) => {
+        await render(<MoveGrid server={server} />)
+        await expect.poll(() => idAt(2)).toBe('f2')
+        let down = true
+        const result = await measureInteractionWork(async () => {
+          moveRow(rowOf('f2'), moveTable, down ? 1 : -1)
+          await expect.poll(() => idAt(down ? 3 : 2)).toBe('f2')
+          down = !down
+        })
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(server => measure(server))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const moved = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: gated ? '1 000 000×3' : '100 000×3',
+          plugins: gated ? 'serverRowModel, rowDragging' : 'rowDragging',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('MV11-base', 'перенос строки на клиенте', base, false)
+      await record('MV11', 'перенос строки SSRM', moved, true)
+      expect(
+        moved.longestMs,
+        `longest=${moved.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

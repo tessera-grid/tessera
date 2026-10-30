@@ -12,14 +12,14 @@ export const indexBeforeMove = (position: number, from: number, to: number) => {
  * вне окна не подсвечивается. `-1` — родителя нет.
  */
 export const findDropParent = (
-  rows: readonly { depth: number }[],
+  rows: { at: (index: number) => { depth: number } | undefined },
   { from, to, depth }: { from: number; to: number; depth: number },
   lowest: number,
 ): number => {
   if (depth <= 0) return -1
   for (let position = to - 1; position >= lowest; position--) {
     const index = indexBeforeMove(position, from, to)
-    const rowDepth = rows[index].depth
+    const rowDepth = rows.at(index)!.depth
     if (rowDepth < depth) return rowDepth === depth - 1 ? index : -1
   }
   return -1

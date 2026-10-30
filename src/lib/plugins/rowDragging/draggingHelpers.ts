@@ -140,7 +140,7 @@ export const getOffsetLeftFromDepth = (depth: number, offsetLeftPx: number) => {
  */
 export const getTargetParentId = (
   targetItem: Row<any, any> | undefined,
-  nextItem: Row<any, any>,
+  nextItem: Row<any, any> | undefined,
   currentDepth: number,
 ) => {
   if (currentDepth === 0 || !targetItem) {

@@ -275,6 +275,9 @@ export interface TableLabels {
   /** Пункты меню ручки строки; `indentRow` / `outdentRow` — вложить в группу выше / вынести из группы */
   moveUp: string
   moveDown: string
+  /** Меню ручки строки в серверной модели: к краям списка (ADR 0159, §6) */
+  moveToStart: string
+  moveToEnd: string
   indentRow: string
   outdentRow: string
   /** Меню грипа ширины: имя меню и пункты */
@@ -561,6 +564,8 @@ export const DEFAULT_LABELS = {
   moveRight: 'Move right',
   moveUp: 'Move up',
   moveDown: 'Move down',
+  moveToStart: 'Move to start',
+  moveToEnd: 'Move to end',
   indentRow: 'Indent',
   outdentRow: 'Outdent',
   columnWidth: 'Column width',

@@ -347,15 +347,15 @@ describe('серверная модель строк на таблице (ADR 01
     expect(source().at(500)).toBeUndefined()
     expect(version()).toBe(seen)
   })
-  it("SD26: infiniteScroll, rowGroupingModel и rowDragging инертны с причиной 'serverRowModel' и dev-warn; pagination и paginationModel активны", () => {
+  it("SD26: infiniteScroll и rowGroupingModel инертны с причиной 'serverRowModel' и dev-warn; pagination, paginationModel и rowDragging в плоском списке активны", () => {
     const extra = [
       pagination(),
       infiniteScroll({ onLoadMore: () => {} }),
       rowDragging(),
     ]
-    const ids = ['infiniteScroll', 'rowDragging', 'rowGroupingModel']
-    // Страницы режет серверная модель (ADR 0158): пагинация — без причины.
-    const paged = ['pagination', 'paginationModel']
+    const ids = ['infiniteScroll', 'rowGroupingModel']
+    // Страницы режет серверная модель (ADR 0158), перенос — её транзакцией (ADR 0159).
+    const paged = ['pagination', 'paginationModel', 'rowDragging']
     const reasons = () =>
       Object.fromEntries(
         (

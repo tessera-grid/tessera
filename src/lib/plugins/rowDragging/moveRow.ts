@@ -10,6 +10,12 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { readRowMoves } from '../../core/rowMoves'
 import { commitRowMove, type RowMoveCommit } from './commitRowMove'
 import { canNestInto } from './draggingHelpers'
+import {
+  moveServerRow,
+  type RowMoveEdge,
+  serverMoveSource,
+  serverMoveTarget,
+} from './serverMove'
 import type { RowDraggingHooks } from './types'
 
 interface OrderItem {
@@ -54,7 +60,8 @@ const onRowOrderChangeOf = (table: unknown) =>
  */
 export const isMovableRow = (row: unknown, table: unknown) =>
   (row as MoveRow).getCanDrag() &&
-  !!onRowOrderChangeOf(table) &&
+  // Порядок серверной модели — в её кэше, `onRowOrderChange` не нужен (ADR 0159, §2).
+  (!!onRowOrderChangeOf(table) || !!serverMoveSource(table)) &&
   !((row as MoveRow).id in readRowMoves(table))
 
 const isLazy = (row: MoveRow | undefined) => !!row?.getIsLazyParent?.()
@@ -125,6 +132,12 @@ export const canMoveRow = (
   table: unknown,
   direction: RowMoveDirection,
 ) => {
+  const server = serverMoveSource(table)
+  if (server) {
+    return (
+      serverMoveTarget(server, (row as MoveRow).id, direction) !== undefined
+    )
+  }
   const r = row as MoveRow
   const to = r.index + direction
   return to >= 0 && to < siblingsOf(r, table).length
@@ -136,6 +149,10 @@ export const moveRow = (
   direction: RowMoveDirection,
 ) => {
   if (!canMoveRow(row, table, direction)) {
+    return
+  }
+  if (serverMoveSource(table)) {
+    moveServerRow(table, (row as MoveRow).id, direction)
     return
   }
   const r = row as MoveRow
@@ -250,3 +267,22 @@ export const unnestRow = (row: unknown, table: unknown) => {
     }),
   )
 }
+
+/** Перенос к краю списка серверной модели (ADR 0159, §6). */
+export const canMoveRowToEdge = (
+  row: unknown,
+  table: unknown,
+  edge: RowMoveEdge,
+) => {
+  const server = serverMoveSource(table)
+  return (
+    !!server &&
+    serverMoveTarget(server, (row as MoveRow).id, edge) !== undefined
+  )
+}
+
+export const moveRowToEdge = (
+  row: unknown,
+  table: unknown,
+  edge: RowMoveEdge,
+) => moveServerRow(table, (row as MoveRow).id, edge)

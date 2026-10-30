@@ -13,13 +13,16 @@ import { DragHandler } from '../../grid/dnd'
 import {
   type RowMoveDirection,
   canMoveRow,
+  canMoveRowToEdge,
   canNestRow,
   canUnnestRow,
   isMovableRow,
   moveRow,
+  moveRowToEdge,
   nestRow,
   unnestRow,
 } from './moveRow'
+import { type RowMoveEdge, serverMoveSource } from './serverMove'
 
 type MoveAtoms = {
   atoms: { rowDragging: unknown; rowMoves: unknown; rowMoveFailed: unknown }
@@ -50,9 +53,23 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
     onSelect: () => moveRow(row, table, direction),
   })
 
+  const edge = (id: string, label: string, to: RowMoveEdge) => ({
+    id,
+    label,
+    disabled: !canMoveRowToEdge(row, table, to),
+    onSelect: () => moveRowToEdge(row, table, to),
+  })
+
   const getMenuItems = () => [
     move('moveUp', labels.moveUp, -1),
     move('moveDown', labels.moveDown, 1),
+    // В серверной модели — к краям всего списка (ADR 0159, §6).
+    ...(serverMoveSource(table)
+      ? [
+          edge('moveToStart', labels.moveToStart, 'start'),
+          edge('moveToEnd', labels.moveToEnd, 'end'),
+        ]
+      : []),
     ...((table.options as { enableExpanding?: boolean }).enableExpanding ===
     true
       ? [

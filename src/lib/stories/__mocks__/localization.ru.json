@@ -185,6 +185,8 @@
   "moveRight": "Вправо",
   "moveUp": "Вверх",
   "moveDown": "Вниз",
+  "moveToStart": "В начало",
+  "moveToEnd": "В конец",
   "indentRow": "Вложить в строку выше",
   "outdentRow": "Вынести на уровень выше",
   "columnWidth": "Ширина колонки",

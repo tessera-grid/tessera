@@ -251,3 +251,8 @@
   opacity: 0;
   transition: var(--tsr-comp-row-transition);
 }
+
+/* Слот над незагруженной строкой серверной модели скрыт: соседей не видно (ADR 0159, §3). */
+.body__row[data-row-slot-hidden] {
+  visibility: hidden;
+}

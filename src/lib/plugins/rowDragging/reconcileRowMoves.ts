@@ -12,6 +12,7 @@ import {
 } from '../../core/rowMoves'
 import { dropRowMove, writeTarget } from './commitRowMove'
 import { type FailedAttempts, withoutGone } from '../../core/failedAttempts'
+import { serverMoveSource } from './serverMove'
 
 interface ReconcileTable {
   options: { data: readonly unknown[] }
@@ -36,6 +37,16 @@ const containsRow = (
   return !!rows?.some((item, i) => idOf(item, i, parentId) === rowId)
 }
 
+/**
+ * Строка в модели: в серверной модели строк — в кэше источника, в модели TanStack её нет
+ * (ADR 0159, §2).
+ */
+const knownRows = (table: unknown) => {
+  const { rowsById } = (table as ReconcileTable).getCoreRowModel()
+  const server = serverMoveSource(table)
+  return (id: string) => !!rowsById[id] || !!server?.byId(id)
+}
+
 /** Отметка отказа строки, ушедшей из модели, снимается (IR14). */
 const pruneFailures = (table: unknown) => {
   const t = table as ReconcileTable & {
@@ -45,8 +56,7 @@ const pruneFailures = (table: unknown) => {
   }
   const failed = t.atoms.rowMoveFailed?.get()
   if (!failed || Object.keys(failed).length === 0) return
-  const { rowsById } = t.getCoreRowModel()
-  t.setRowMoveFailed?.(prev => withoutGone(prev, id => !!rowsById[id]))
+  t.setRowMoveFailed?.(prev => withoutGone(prev, knownRows(table)))
 }
 
 export const reconcileRowMoves = (table: unknown) => {
@@ -63,6 +73,7 @@ export const reconcileRowMoves = (table: unknown) => {
   const t = table as ReconcileTable
   const answers = t.atoms.loadedChildren?.get() ?? {}
   const { rowsById } = t.getCoreRowModel()
+  const known = knownRows(table)
   const seen = checked.get(t.atoms)
   const inputsChanged =
     !seen || seen.data !== t.options.data || seen.answers !== answers
@@ -72,7 +83,8 @@ export const reconcileRowMoves = (table: unknown) => {
     const entry = moves[rowId]!
     const move = entry.lazy
     if (!move) {
-      if (!rowsById[rowId]) dropRowMove(table, rowId)
+      // Перенос серверной модели снимает только его итог: за окном строки в кэше нет.
+      if (!known(rowId) && !serverMoveSource(table)) dropRowMove(table, rowId)
       continue
     }
     const { from, to } = move

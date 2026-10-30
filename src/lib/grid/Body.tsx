@@ -191,6 +191,7 @@ export const Body = ({
             if (!row) {
               return (
                 <PendingRow
+                  droppable={!!enableRowDragging}
                   tree={treeRows ? sourceAria?.(virtualRow.index) : undefined}
                   key={`pending-${virtualRow.index}`}
                   table={table}
