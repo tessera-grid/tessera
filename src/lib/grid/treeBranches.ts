@@ -1,18 +1,30 @@
 /**
  * Ветки линий дерева (ADR 0102, §2): у каких уровней строки ниже есть сёстры. Один
- * обратный проход по модели в порядке обхода дерева, без id и объекта на строку.
+ * обратный проход по модели в порядке обхода дерева, без id и объекта на строку; в
+ * серверной модели — по раскладке дерева, без прохода (ADR 0161).
  */
 interface TreeRow {
   depth: number
 }
 
 export interface TreeLinesIndex {
+  /** Строк в списке. */
+  count: number
+  /** Глубина строки `index`; за концом списка — `-1`. */
+  depth: (index: number) => number
   /** Уровни 1…глубина: `1` — ниже есть строка той же глубины раньше, чем мельче. */
   branch: (index: number) => string
   /** Следом идёт ребёнок строки: линия детей выходит из неё. */
   open: (index: number) => boolean
   /** Состояние прохода на строке `index` (вместе с ней); за концом модели — пустое. */
   seenFrom: (index: number) => number
+}
+
+/** Линии строки по месту в раскладке: глубина, ветки уровней, линия к детям. */
+export interface TreeLinesAt {
+  depth: number
+  branch: string
+  open: boolean
 }
 
 /** Глубже маска не считается: уровни дальше рисуются как законченные. */
@@ -34,6 +46,14 @@ const branchOf = (mask: number, depth: number) => {
   return branch
 }
 
+/** Маска по строке веток. */
+const maskOfBranch = (branch: string) => {
+  let mask = 0
+  for (let level = 1; level <= Math.min(branch.length, MAX_DEPTH); level++)
+    if (branch[level - 1] === '1') mask |= 1 << level
+  return mask
+}
+
 export const getTreeLines = (rows: readonly TreeRow[]): TreeLinesIndex => {
   const masks = new Int32Array(rows.length)
   // Бит k: после текущей строки есть строка глубины k раньше, чем строка мельче k.
@@ -44,6 +64,8 @@ export const getTreeLines = (rows: readonly TreeRow[]): TreeLinesIndex => {
     seen = withRow(seen, depth)
   }
   return {
+    count: rows.length,
+    depth: index => rows[index]?.depth ?? -1,
     branch: index => branchOf(masks[index], levelOf(rows[index].depth)),
     open: index =>
       index + 1 < rows.length && rows[index + 1].depth > rows[index].depth,
@@ -56,6 +78,25 @@ export const getTreeLines = (rows: readonly TreeRow[]): TreeLinesIndex => {
     },
   }
 }
+
+/**
+ * Индекс линий по раскладке, которая знает линии каждой строки (серверная модель, ADR
+ * 0161): строка за списком или без места — пустая.
+ */
+export const treeLinesOf = (
+  count: number,
+  at: (index: number) => TreeLinesAt | undefined,
+): TreeLinesIndex => ({
+  count,
+  depth: index => (index < count ? (at(index)?.depth ?? -1) : -1),
+  branch: index => at(index)?.branch ?? '',
+  open: index => at(index)?.open ?? false,
+  seenFrom: index => {
+    const lines = index < count ? at(index) : undefined
+    if (!lines) return 0
+    return withRow(maskOfBranch(lines.branch), levelOf(lines.depth))
+  },
+})
 
 export interface TreeLinesProjection {
   /** Модельные индексы: откуда строка взята и куда встанет (как `arrayMove`). */
@@ -73,13 +114,12 @@ export interface TreeLinesProjection {
  * `start…end`.
  */
 export const projectTreeLines = (
-  rows: readonly TreeRow[],
   lines: TreeLinesIndex,
   { from, to, depth }: TreeLinesProjection,
   start: number,
   end: number,
 ): Pick<TreeLinesIndex, 'branch' | 'open'> => {
-  const last = rows.length - 1
+  const last = lines.count - 1
   /** Модельный индекс строки на позиции `p` после переноса. */
   const source = (p: number) => {
     if (p === to) return from
@@ -87,8 +127,7 @@ export const projectTreeLines = (
     if (from > to && p > to && p <= from) return p - 1
     return p
   }
-  const depthAt = (p: number) =>
-    p === to ? depth : (rows[source(p)]?.depth ?? -1)
+  const depthAt = (p: number) => (p === to ? depth : lines.depth(source(p)))
 
   const hi = Math.min(last, Math.max(end, from, to))
   // За `hi` позиции совпадают с моделью: состояние берётся из её прохода.

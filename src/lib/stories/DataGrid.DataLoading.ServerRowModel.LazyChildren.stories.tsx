@@ -130,6 +130,8 @@ const treeProps: GuideStoryStep['props'] = () => ({
   serverRowModelRowCount: TREE_TOTAL,
   enableRowExpanding: true,
   rowExpandingHasChildren: (row: { depth: number }) => row.depth === 0,
+  // Линии дерева у веток серверной модели (ADR 0161).
+  enableTreeLines: true,
   serverRowModelGetRows: ({
     start,
     end,
@@ -284,7 +286,7 @@ const STICKY_BRANCHES: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь прокрутил ветку',
-    hint: 'Строка ушла вверх, но держится под шапкой, пока видны её вложенные строки: видно, чья это ветка. Тень отделяет её от строк ниже.',
+    hint: 'Строка ушла вверх, но держится под шапкой, пока видны её вложенные строки: видно, чья это ветка. Линия отделяет её от строк ниже.',
     enter: stepAction(async (root, { signal }) => {
       await openBranch(root, signal)
       const scroller = root.querySelector<HTMLElement>('.data-grid__container')!
@@ -293,6 +295,165 @@ const STICKY_BRANCHES: readonly GuideStoryStep[] = [
     }),
   },
 ]
+
+// --- ADR 0161, S1: линии дерева серверной модели ---------------------------------------
+
+const LINES_PARENT = 'item-id-0'
+const LINES_BLOCK = 10
+/** Вложенных строк у ветки: сервер их число не сообщает, последний блок короче. */
+const LINES_CHILDREN = 25
+
+const linesProps: GuideStoryStep['props'] = context => ({
+  ...treeProps!(context),
+  serverRowModelBlockSize: LINES_BLOCK,
+  serverRowModelGetRows: ({
+    start,
+    end,
+    parentId,
+    signal,
+  }: ServerRowsRequest) =>
+    new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
+      const answer = () => {
+        if (signal.aborted) return
+        if (!parentId) {
+          resolve(serverAnswer({ start, end }, TREE_TOTAL, true))
+          return
+        }
+        // Итога нет: размер ветки таблица узнаёт по короткому блоку.
+        const first = TREE_TOTAL + Number(parentId.split('-').at(-1)) * 100
+        resolve({
+          rows: Array.from(
+            { length: Math.max(0, Math.min(end, LINES_CHILDREN) - start) },
+            (_, k) => ({
+              ...filteringItemAt(first + start + k),
+              id: `${parentId}.${start + k}`,
+            }),
+          ),
+        })
+      }
+      // Первый блок ветки — сразу, следующие держит шаг гайда.
+      if (parentId && start > 0 && server.hold) server.held.push(answer)
+      else setTimeout(answer, SERVER_DELAY_MS)
+    }),
+})
+const childRow = (root: HTMLElement, k: number) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${LINES_PARENT}.${k}"]`,
+  )
+/** У строки линия поворачивает и кончается: она последняя в ветке. */
+const endsBranch = (row: HTMLElement | null) =>
+  !!row?.querySelector(
+    '[data-tree-depth] [aria-hidden] > span[class*="elbow"]:not([class*="joined"])',
+  )
+const linesScroller = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('.data-grid__container')!
+/** Вложенная строка `k` — в середине области: видно и её, и строки за ней. */
+const showChild = (root: HTMLElement, k: number) => {
+  const row = childRow(root, k)
+  if (!row) return
+  const scroller = linesScroller(root)
+  scroller.scrollTop = row.offsetTop - scroller.clientHeight / 2
+}
+
+/** Ветка раскрыта, первый блок пришёл, следующий держит «сервер». */
+const openLines = async (root: HTMLElement, signal: AbortSignal) => {
+  server.hold = true
+  await pollUntil(() => !!toggleOf(root, LINES_PARENT), signal)
+  if (toggleOf(root, LINES_PARENT)!.getAttribute('aria-expanded') !== 'true') {
+    toggleOf(root, LINES_PARENT)!.click()
+  }
+  await pollUntil(
+    () => !!childRow(root, LINES_BLOCK - 1) && server.held.length > 0,
+    signal,
+  )
+}
+
+/** Второй блок ветки пришёл, конец его — в середине области; третий держит «сервер». */
+const secondBlock = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!childRow(root, LINES_BLOCK)) {
+    await openLines(root, signal)
+    release()
+  }
+  await pollUntil(() => !!childRow(root, LINES_BLOCK), signal)
+  const first = childRow(root, LINES_BLOCK)!
+  const scroller = linesScroller(root)
+  scroller.scrollTop =
+    first.offsetTop +
+    first.offsetHeight * LINES_BLOCK -
+    scroller.clientHeight / 2
+  await pollUntil(() => !!childRow(root, LINES_BLOCK * 2 - 1), signal)
+}
+
+const TREE_LINES: readonly GuideStoryStep[] = [
+  {
+    title: 'Ветка раскрыта',
+    hint: 'Пользователь раскрыл строку, и сервер отдал первый блок её вложенных строк, не сообщив, сколько их всего. Линии ведут от строки к вложенным строкам, а у последней пришедшей линия идёт дальше вниз — к строкам-скелетам, которые ещё грузятся.',
+    states: ['body.skeleton'],
+    props: linesProps,
+    enter: stepAction(async (root, { signal }) => {
+      linesScroller(root).scrollTop = 0
+      await openLines(root, signal)
+      showChild(root, LINES_BLOCK - 1)
+    }),
+  },
+  {
+    title: 'Пришёл следующий блок',
+    hint: 'Сервер ответил на следующий блок. Скелеты сменились строками на тех же местах — линии не сдвинулись и по-прежнему ведут вниз: за этим блоком могут быть ещё строки.',
+    enter: stepAction(async (root, { signal }) => {
+      await secondBlock(root, signal)
+      showChild(root, LINES_BLOCK * 2 - 1)
+    }),
+  },
+  {
+    title: 'Ветка кончилась',
+    hint: 'Последний блок пришёл короче остальных — строк в ветке больше нет. У последней вложенной строки линия поворачивает и кончается, ниже идёт следующая строка верхнего уровня.',
+    enter: stepAction(async (root, { signal }) => {
+      if (!childRow(root, LINES_BLOCK * 2 - 1)) await secondBlock(root, signal)
+      server.hold = false
+      release()
+      showChild(root, LINES_BLOCK * 2 - 1)
+      await pollUntil(
+        () => endsBranch(childRow(root, LINES_CHILDREN - 1)),
+        signal,
+      )
+      showChild(root, LINES_CHILDREN - 1)
+    }),
+  },
+]
+
+/** ADR 0161, S1: линии дерева ведут к вложенным строкам серверной модели блок за блоком. */
+export const ServerTreeLines: StoryObj<StoryProps> = {
+  name: 'Tree lines',
+  parameters: { scenario: '0161/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Линии дерева"
+      steps={TREE_LINES}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(TREE_LINES[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(endsBranch(childRow(canvas, LINES_BLOCK - 1))).toBe(false)
+      await expect(skeletonRows(canvas)).toBeGreaterThan(0)
+    })
+    await step(TREE_LINES[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(endsBranch(childRow(canvas, LINES_BLOCK * 2 - 1))).toBe(
+        false,
+      )
+    })
+    await step(TREE_LINES[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(endsBranch(childRow(canvas, LINES_CHILDREN - 1))).toBe(true)
+      await settle()
+    })
+  },
+}
 
 /** ADR 0160, S4: липкая строка ветки дерева серверной модели при прокрутке. */
 export const ServerStickyBranches: StoryObj<StoryProps> = {

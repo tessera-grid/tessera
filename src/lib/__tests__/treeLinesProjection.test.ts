@@ -52,7 +52,6 @@ describe('Проекция линий дерева на бросок (ADR 0108)'
       const start = Math.floor(next() * rows.length)
       const end = Math.min(rows.length - 1, start + Math.floor(next() * 12))
       const projected = projectTreeLines(
-        rows,
         getTreeLines(rows),
         { from, to, depth },
         start,
@@ -71,15 +70,15 @@ describe('Проекция линий дерева на бросок (ADR 0108)'
     const big = tree(100_000, random(11))
     const lines = getTreeLines(big)
     let reads = 0
-    const counted = new Proxy(big, {
-      get(target, key, receiver) {
-        if (typeof key === 'string' && /^\d+$/.test(key)) reads++
-        return Reflect.get(target, key, receiver)
+    const counted = {
+      ...lines,
+      depth: (index: number) => {
+        reads++
+        return lines.depth(index)
       },
-    })
+    }
     const view = projectTreeLines(
       counted,
-      lines,
       { from: 50_010, to: 50_004, depth: 1 },
       50_000,
       50_020,

@@ -63,6 +63,7 @@ import {
   rowGrouping,
   serverRowModel,
   type ServerRowsRequest,
+  treeLines,
 } from '../../../plugins'
 
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
@@ -2464,6 +2465,109 @@ describe('Производительность прокрутки — серве
       expect(
         grouped.p95Ms,
         `p95=${grouped.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Линии дерева в серверной модели (ADR 0161, TL15): 1 000 000 корней, раскрыты все, у
+// каждого — три ребёнка; с линиями против того же дерева без них. Ответы синхронные:
+// меряется прокрутка, а не ожидание блоков.
+const TL15_COST = { ratio: 1.3, plusMs: 4 }
+const TL15_ROOTS = 1_000_000
+const TL15_CHILDREN = 3
+const treeRowsOf = ({ start, end, parentId }: ServerRowsRequest) => {
+  const total = parentId ? TL15_CHILDREN : TL15_ROOTS
+  return {
+    rows: Array.from(
+      { length: Math.max(0, Math.min(end, total) - start) },
+      (_, k): GroupedRow => {
+        const id = parentId ? `${parentId}.${start + k}` : `r${start + k}`
+        return { id, name: id, city: '', amount: k }
+      },
+    ),
+    rowCount: total,
+  }
+}
+const TreeServerGrid = ({ lines }: { lines: boolean }) => {
+  const table = useCreateTable({
+    columns: GROUPED_COLUMNS as never,
+    data: NO_GROUPED_ROWS,
+    getRowId: (row: GroupedRow) => row.id,
+    plugins: [
+      serverRowModel({ getRows: treeRowsOf, rowCount: TL15_ROOTS }),
+      rowExpanding({
+        hasChildren: (row: { depth: number }) => row.depth === 0,
+        initialExpanded: true,
+      } as never),
+      ...(lines ? [treeLines()] : []),
+    ] as never,
+  })
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Производительность прокрутки — линии дерева в серверной модели', () => {
+  test(
+    'TL15: прокрутка дерева серверной модели с 1 000 000 корней и раскрытыми ветками с линиями не дороже той же прокрутки без линий',
+    async () => {
+      const measure = async (lines: boolean) => {
+        const screen = render(<TreeServerGrid lines={lines} />)
+        await expect
+          .poll(() =>
+            document.querySelector('.data-grid__body-row[data-row-id="r0.2"]'),
+          )
+          .not.toBeNull()
+        // Ветки раскрыты, и линии есть ровно тогда, когда включены.
+        expect(document.querySelector('[data-tree-depth]') !== null).toBe(lines)
+        // Миллион строк — растянутая область (ADR 0142): прокрутка колесом, 1:1.
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: true,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const lined = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, TL15_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1 000 000 корней',
+          plugins: 'serverRowModel, rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y' as const,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('TL15-base', 'дерево без линий', base, false)
+      await record('TL15', 'дерево с линиями', lined, true)
+      expect(
+        lined.p95Ms,
+        `p95=${lined.p95Ms.toFixed(1)}ms (база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

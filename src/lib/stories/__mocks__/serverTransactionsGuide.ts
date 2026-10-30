@@ -111,6 +111,8 @@ export const txProps =
     ...(tree && {
       enableRowExpanding: true,
       rowExpandingHasChildren: (row: { depth: number }) => row.depth === 0,
+      // Линии дерева у веток серверной модели (ADR 0161).
+      enableTreeLines: true,
     }),
     serverRowModelGetRows: ({
       start,

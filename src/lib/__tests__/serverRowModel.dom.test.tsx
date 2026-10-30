@@ -668,18 +668,18 @@ describe('серверная модель строк на таблице (ADR 01
       )
     })
 
-    it("SD44: treeLines инертен в SSRM с причиной 'serverRowModel' и dev-warn", () => {
+    it('SD44: treeLines в SSRM активен, линии — по раскладке дерева (ADR 0161)', () => {
       tree(10, [treeLines()])
-      expect(table.getPluginDiagnostics()).toContainEqual({
-        id: 'treeLines',
-        status: 'inert',
-        reason: 'serverRowModel',
-      })
+      expect(table.getPluginDiagnostics()).toContainEqual(
+        expect.objectContaining({ id: 'treeLines', status: 'active' }),
+      )
+      expect(table.options.enableTreeLines).toBe(true)
       expect(
         warnings().some(
           text => text.includes('treeLines') && text.includes('serverRowModel'),
         ),
-      ).toBe(true)
+      ).toBe(false)
+      expect(typeof source().treeLines).toBe('function')
     })
   })
 })

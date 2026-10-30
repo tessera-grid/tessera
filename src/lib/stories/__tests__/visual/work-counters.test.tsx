@@ -20,7 +20,9 @@ import { RowSelectionComponent } from '../../../plugins/rowSelection/RowSelectio
 import {
   columnSorting,
   headerActionMenu,
+  rowExpanding,
   serverRowModel,
+  treeLines,
 } from '../../../plugins'
 import { LinearProgress } from '../../../ui/LinearProgress'
 import { IconButton } from '../../../ui/IconButton'
@@ -688,6 +690,123 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     expect(arrived).toBeGreaterThan(0)
     expect(renders(work, BodyRow), describeWork(work)).toBe(arrived)
     for (const row of kept) expect(row.isConnected).toBe(true)
+  })
+})
+
+// Линии дерева в серверной модели (ADR 0161, TL14): раскрытие, приход блока и транзакция
+// перерисовывают только строки окна, чьи линии или место изменились.
+describe('линии дерева в серверной модели (ADR 0161)', () => {
+  test('TL14: раскрытие, приход блока и транзакция перерисовывают только строки окна, чьи линии или место изменились', async () => {
+    const roots = getData(40)
+    const kids = getData(25)
+    const BLOCK = 10
+    const branch = roots[3]!.id
+    const held: { start: number; answer: () => void }[] = []
+    const { measure, table } = await mountGrid({}, roots, [
+      serverRowModel({
+        rowCount: roots.length,
+        blockSize: BLOCK,
+        // Корни и первый блок ветки — сразу, второй блок ветки ждёт ответа теста.
+        getRows: ({ start, end, parentId }) => {
+          if (!parentId) return { rows: roots.slice(start, end) }
+          const rows = kids
+            .slice(start, end)
+            .map((row, k) => ({ ...row, id: `${parentId}.${start + k}` }))
+          if (start === 0) return { rows, rowCount: kids.length }
+          return new Promise(resolve => {
+            held.push({
+              start,
+              answer: () => resolve({ rows, rowCount: kids.length }),
+            })
+          })
+        },
+      }),
+      rowExpanding({
+        hasChildren: (row: { depth: number }) => row.depth === 0,
+      } as never),
+      treeLines(),
+    ])
+    const bodyRow = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${CSS.escape(id)}"]`,
+      )
+    /** Строки окна: место и части линий по id. */
+    const snapshot = () =>
+      new Map(
+        [
+          ...document.querySelectorAll<HTMLElement>(
+            '.data-grid__body-row[data-row-id]',
+          ),
+        ].map(row => [
+          row.dataset.rowId!,
+          `${row.dataset.index}|${[
+            ...row.querySelectorAll<HTMLElement>(
+              '[data-tree-depth] [aria-hidden] > span:not([data-leaving])',
+            ),
+          ]
+            .map(
+              span =>
+                span.className +
+                span.style.getPropertyValue('--tsr-tree-level'),
+            )
+            .sort()
+            .join(' ')}`,
+        ]),
+      )
+    /**
+     * Строки, у которых сменились место или линии, пришедшие в окно и ушедшие из него:
+     * ушедшая успевает сдвинуться в промежуточном коммите.
+     */
+    const changed = (before: Map<string, string>) => {
+      const after = snapshot()
+      return (
+        [...after].filter(([id, state]) => before.get(id) !== state).length +
+        [...before.keys()].filter(id => !after.has(id)).length
+      )
+    }
+    const expectOnlyChanged = (work: Work, before: Map<string, string>) => {
+      const count = changed(before)
+      expect(count, describeWork(work)).toBeGreaterThan(0)
+      expect(rowRenders(work), describeWork(work)).toBeLessThanOrEqual(count)
+    }
+    await expect.poll(() => bodyRow(branch)).not.toBeNull()
+
+    // Раскрытие: строки выше раскрытой не перерисовываются.
+    let before = snapshot()
+    let work = await measure(async () => {
+      ;(table() as { getRow: (id: string) => { toggleExpanded: () => void } })
+        .getRow(branch)
+        .toggleExpanded()
+      await expect.poll(() => bodyRow(`${branch}.0`)).not.toBeNull()
+    })
+    expectOnlyChanged(work, before)
+    for (const id of roots.slice(0, 3).map(row => row.id))
+      expect(before.get(id)).toBe(snapshot().get(id))
+
+    // Приход блока ветки: строки на месте с прежними линиями не перерисовываются.
+    await expect.poll(() => held.some(call => call.start === BLOCK)).toBe(true)
+    before = snapshot()
+    work = await measure(async () => {
+      held.find(call => call.start === BLOCK)!.answer()
+      await expect.poll(() => bodyRow(`${branch}.${BLOCK}`)).not.toBeNull()
+    })
+    expectOnlyChanged(work, before)
+
+    // Транзакция: строка в начало ветки — строки выше ветки на месте.
+    before = snapshot()
+    work = await measure(async () => {
+      ;(
+        table() as {
+          applyRowTransaction: (transaction: unknown) => unknown
+        }
+      ).applyRowTransaction({
+        parentId: branch,
+        add: [{ ...kids[0], id: `${branch}.new` }],
+        index: 0,
+      })
+      await expect.poll(() => bodyRow(`${branch}.new`)).not.toBeNull()
+    })
+    expectOnlyChanged(work, before)
   })
 })
 

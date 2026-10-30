@@ -324,6 +324,8 @@ export const groupProps =
     enableRowGrouping: true,
     rowGroupingInitialGrouping: grouping,
     enableRowExpanding: true,
+    // Линии дерева у серверных групп (ADR 0161).
+    enableTreeLines: true,
     enableFooter: true,
     ...(search && { enableQuickSearch: true }),
     serverRowModelGetRows: (request: ServerRowsRequest) =>

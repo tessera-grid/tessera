@@ -345,6 +345,35 @@ export class BlockTree<TData, TRow, TQuery> {
       : undefined
   }
 
+  /**
+   * Линии дерева по сквозному индексу (ADR 0161, §1): у строки и каждого предка — есть ли
+   * ниже сестра, то есть место меньше размера ветки без единицы. Размер неизвестен — блок
+   * впереди, линия идёт вниз; короткий блок делает размер точным.
+   */
+  linesAt(index: number) {
+    const layout = this.layout()
+    const place = this.resolve(index, layout)
+    if (!place) return undefined
+    const { depth } = place.node
+    let branch = ''
+    let node: TreeNode<TData, TRow, TQuery> | undefined = place.node
+    let local = place.local
+    // Уровень `k` — строка или её предок на глубине `k`.
+    for (let level = depth; level >= 1 && node; level--) {
+      branch = (local < node.store.count() - 1 ? '1' : '0') + branch
+      const position = this.positions.get(node.parentId!)
+      if (!position) break
+      node = this.nodes.get(position.parent)
+      local = position.local
+    }
+    const next = this.resolve(index + 1, layout)
+    return {
+      depth,
+      branch: branch.padStart(depth, '0'),
+      open: !!next && next.node.depth > depth,
+    }
+  }
+
   /** Окно тела по веткам; ветки вне окна запросов не держат. */
   setWindow(first: number, last: number, fast = false) {
     this.window = { first, last, fast }

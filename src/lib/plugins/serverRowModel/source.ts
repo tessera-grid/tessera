@@ -843,6 +843,15 @@ const createServerSource = (table: unknown): ServerSource => {
       const { start, end } = pageBounds()
       return start + index < end ? shown.store.ariaAt(start + index) : undefined
     },
+    // Линии дерева (ADR 0161): за концом страницы детей нет.
+    treeLines: index => {
+      const { start, end } = pageBounds()
+      if (start + index >= end) return undefined
+      const lines = shown.store.linesAt(start + index)
+      return lines && start + index + 1 >= end
+        ? { ...lines, open: false }
+        : lines
+    },
     // «Выбрать всё» в дереве — итог корней (§14).
     rootCount: () => shown.store.rootCount(),
     groupChildCount,

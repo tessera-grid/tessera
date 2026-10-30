@@ -22,7 +22,7 @@ import { hasStickyRows, StickyRows } from './StickyRows'
 import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
-import { getTreeLines, projectTreeLines } from './treeBranches'
+import { getTreeLines, projectTreeLines, treeLinesOf } from './treeBranches'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -112,9 +112,17 @@ export const Body = ({
           : getTreeAria(rows),
     [treeRows, rows, sourceAria],
   )
+  // Серверная модель знает линии строки по раскладке дерева (ADR 0161).
+  const sourceLines = rowSource.treeLines
+  const rowCount = rowSource.count()
   const treeLinesIndex = useMemo(
-    () => (treeLines ? getTreeLines(rows) : undefined),
-    [treeLines, rows],
+    () =>
+      !treeLines
+        ? undefined
+        : sourceLines
+          ? treeLinesOf(rowCount, sourceLines)
+          : getTreeLines(rows),
+    [treeLines, rows, sourceLines, rowCount],
   )
   const drop = enableRowDragging ? dropPreview : null
   const labels = useLocalization()
@@ -128,14 +136,13 @@ export const Body = ({
     () =>
       treeLinesIndex && drop
         ? projectTreeLines(
-            rows,
             treeLinesIndex,
             drop,
             Math.max(0, first - 1),
-            Math.min(rows.length - 1, last + 1),
+            Math.min(treeLinesIndex.count - 1, last + 1),
           )
         : undefined,
-    [treeLinesIndex, rows, drop, first, last],
+    [treeLinesIndex, drop, first, last],
   )
   // Будущий родитель слота подсвечен (ADR 0109, §4).
   // Строки — по источнику: у серверной модели массива строк нет (ADR 0159, §4).
@@ -225,12 +232,26 @@ export const Body = ({
                 />
               )
             }
-            // Строка ещё не загружена (ADR 0138, §5): скелет на её месте.
+            // Строка ещё не загружена (ADR 0138, §5): скелет на её месте — с линиями дерева
+            // её места (ADR 0161, §2).
             if (!row) {
+              const depth = treeLinesIndex?.depth(virtualRow.index) ?? -1
+              const pending = depth >= 0 && linesOf(virtualRow.index, false)
               return (
                 <PendingRow
                   droppable={!!enableRowDragging}
                   tree={treeRows ? sourceAria?.(virtualRow.index) : undefined}
+                  skeletonTree={
+                    pending
+                      ? {
+                          depth,
+                          branch: pending.branch ?? '',
+                          open: !!pending.open,
+                          parent: false,
+                        }
+                      : undefined
+                  }
+                  treeLines={!!pending}
                   key={`pending-${virtualRow.index}`}
                   table={table}
                   layout={layout}

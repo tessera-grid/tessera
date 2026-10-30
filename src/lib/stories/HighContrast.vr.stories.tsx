@@ -1051,6 +1051,36 @@ export const HighContrastServerStickyBranchesStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerTreeLinesStep1 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerTreeLines,
+    1,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeLinesStep2 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerTreeLines,
+    2,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeLinesStep3 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerTreeLines,
+    3,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelMillionRowsStep1 = {
   ...twinStep(
     serverRowModelStories,

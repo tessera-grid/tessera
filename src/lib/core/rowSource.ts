@@ -63,6 +63,13 @@ export interface RowSource<TRow = unknown> {
   treeAria?: (
     index: number,
   ) => { level: number; posInSet: number; setSize: number } | undefined
+  /**
+   * Линии дерева строки по индексу — из раскладки, без прохода по строкам (серверная
+   * модель, ADR 0161).
+   */
+  treeLines?: (
+    index: number,
+  ) => { depth: number; branch: string; open: boolean } | undefined
   /** Строк верхнего уровня: «Выбрать всё» в дереве — их итог. */
   rootCount?: () => number
   /** Итог строк верхнего уровня известен; без него пейджер — «из многих» (ADR 0158, §4). */

@@ -208,6 +208,7 @@ export const dragProps =
             enableRowGrouping: true,
             rowGroupingInitialGrouping: ['city'],
             enableRowExpanding: true,
+            enableTreeLines: true,
           }
         : { serverRowModelRowCount: DRAG_TOTAL }),
       serverRowModelGetRows: (request: ServerRowsRequest) =>
@@ -227,6 +228,8 @@ export const dragProps =
       ...(tree && {
         enableRowExpanding: true,
         rowExpandingHasChildren: (row: { id: string }) => isBranch(row.id),
+        // Линии дерева у веток серверной модели (ADR 0161).
+        enableTreeLines: true,
       }),
       enableRowDragging: true,
       onRowDragEnd: (end: RowDragEnd) =>
