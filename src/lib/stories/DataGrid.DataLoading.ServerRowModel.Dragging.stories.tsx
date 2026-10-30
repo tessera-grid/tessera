@@ -41,7 +41,7 @@ import { DRAG_FILL, OVERLAY } from './rowDragging.dnd'
 /**
  * Перетаскивание строк в серверной модели (ADR 0159): `Playground` — строки с «сервера»
  * с ручным порядком, ответ «сервера» на перенос и ветки — контролами; S1 — перенос
- * подтверждён, S2 — отказ, S3 — перенос в ветку.
+ * подтверждён, S2 — отказ, S3 — перенос в ветку, S4 — перенос в другую серверную группу.
  */
 const meta = {
   ...dataGridMeta,
@@ -57,16 +57,16 @@ const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
 interface DraggingPlaygroundArgs extends StoryProps {
   saveDelayMs: number
   refuseMoves: boolean
-  branches: boolean
+  rowShape: 'list' | 'branches' | 'groups'
 }
 
 export const ServerDraggingPlayground: StoryObj<DraggingPlaygroundArgs> = {
   name: 'Playground',
-  parameters: showControls(['saveDelayMs', 'refuseMoves', 'branches'], {
+  parameters: showControls(['saveDelayMs', 'refuseMoves', 'rowShape'], {
     dataCount: 'строки подаёт «сервер» демо',
     columnCount: 'колонки задаёт демо',
   }),
-  args: { ...layout, saveDelayMs: 800, refuseMoves: false, branches: false },
+  args: { ...layout, saveDelayMs: 800, refuseMoves: false, rowShape: 'list' },
   argTypes: {
     saveDelayMs: {
       description: 'Время ответа «сервера» на перенос, мс',
@@ -76,18 +76,25 @@ export const ServerDraggingPlayground: StoryObj<DraggingPlaygroundArgs> = {
       description: '«Сервер» отклоняет переносы',
       control: 'boolean',
     },
-    branches: {
-      description: 'У части строк — вложенные строки с «сервера»',
-      control: 'boolean',
+    rowShape: {
+      description:
+        'Строки «сервера»: список, у части строк — вложенные строки или группы по городу',
+      control: 'select',
+      options: ['list', 'branches', 'groups'],
     },
   },
-  render: ({ saveDelayMs, refuseMoves, branches, ...args }) => {
+  render: ({ saveDelayMs, refuseMoves, rowShape, ...args }) => {
     dragServer.auto = true
     dragServer.refuse = refuseMoves
     return (
       <StoryComponent
+        key={rowShape}
         {...normalizeArgs(args)}
-        {...dragProps({ delayMs: saveDelayMs, tree: branches })!(AT_REST)}
+        {...dragProps({
+          delayMs: saveDelayMs,
+          tree: rowShape === 'branches',
+          groups: rowShape === 'groups',
+        })!(AT_REST)}
       />
     )
   },
@@ -382,6 +389,138 @@ export const ServerDragTree: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(inBranch(canvas)).toBe(true)
       await expect(movePending(canvas, LEAF)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+// --- S4: перенос в другую серверную группу -----------------------------------------------
+
+const GROUPED_LEAF = 'item-id-1'
+const groupIdOf = (city: string) => `group:${JSON.stringify([city])}`
+const FROM_GROUP = groupIdOf('Berlin')
+const TO_GROUP = groupIdOf('Lima')
+
+const cityOf = (root: HTMLElement, id: string) =>
+  rowOf(root, id)?.querySelector('[data-column-id="city"]')?.textContent ?? ''
+const visitsOf = (root: HTMLElement, id: string) =>
+  rowOf(root, id)?.querySelector('[data-column-id="visits"]')?.textContent ?? ''
+/** Строка — первая в группе Lima. */
+const inLima = (root: HTMLElement) =>
+  indexOfRow(root, GROUPED_LEAF) === indexOfRow(root, TO_GROUP) + 1
+
+/** Обе группы раскрыты, их строки пришли. */
+const openGroups = async (root: HTMLElement, signal: AbortSignal) => {
+  for (const id of [FROM_GROUP, TO_GROUP]) {
+    await pollUntil(() => !!toggleOf(root, id), signal)
+    if (toggleOf(root, id)!.getAttribute('aria-expanded') !== 'true') {
+      toggleOf(root, id)!.click()
+    }
+  }
+  await pollUntil(
+    () => !!rowOf(root, GROUPED_LEAF) && !!rowOf(root, 'item-id-4'),
+    signal,
+  )
+}
+
+/** Пользователь переносит строку из группы Berlin первой в группу Lima. */
+const dropIntoLima = async (root: HTMLElement, run: StepRun) => {
+  if (inLima(root)) return
+  await openGroups(root, run.signal)
+  const held: HeldRow = await holdRowAtLevel(
+    root,
+    GROUPED_LEAF,
+    TO_GROUP,
+    1,
+    run,
+    'name',
+  )
+  let y = rowOf(root, TO_GROUP)!.getBoundingClientRect().bottom
+  for (let tries = 0; ; tries++) {
+    await layoutStill(rowOf(root, TO_GROUP)!)
+    run.signal.throwIfAborted()
+    const slot = root.querySelector(DRAG_FILL)!.getBoundingClientRect()
+    const group = rowOf(root, TO_GROUP)!.getBoundingClientRect()
+    if (Math.abs(slot.top - group.bottom) < 2 && !placeInvalid(root)) break
+    if (tries === 12) throw new Error(`Слот не под группой ${TO_GROUP}`)
+    y += slot.top < group.top ? 6 : -6
+    await held.moveTo({ x: held.xAt(1), y }, 2)
+  }
+  held.release()
+}
+
+const GROUPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки по городам',
+    hint: 'Сервер отдаёт строки, сгруппированные по городу; у каждой группы — число строк в ней. Две группы раскрыты.',
+    props: dragProps({ groups: true }),
+    enter: stepAction(async (root, { signal }) => {
+      dragServer.auto = false
+      await openGroups(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь перенёс строку в другой город',
+    hint: 'Строка встала первой в другой группе, а сервер ещё сохраняет перенос: по ручке бежит дуга ожидания. Город в строке и числа строк групп пока прежние — их меняет приложение, когда сервер ответит.',
+    states: ['drag.pending'],
+    enter: stepAction(async (root, run) => {
+      await dropIntoLima(root, run)
+      await pollUntil(() => movePending(root, GROUPED_LEAF), run.signal)
+    }),
+  },
+  {
+    title: 'Сервер подтвердил',
+    hint: 'Сервер сохранил перенос и сменил город строки. Приложение передало таблице новые данные строки и обеих групп: в строке — новый город, у групп — новые числа строк и итоги. Строка коротко вспыхнула тоном успеха.',
+    enter: stepAction(async (root, run) => {
+      await dropIntoLima(root, run)
+      await pollUntil(() => dragServer.moves.length > 0, run.signal)
+      answerMove(true)
+      await pollUntil(
+        () =>
+          !movePending(root, GROUPED_LEAF) &&
+          cityOf(root, GROUPED_LEAF) === 'Lima',
+        run.signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0159, S4: строка переносится в другую серверную группу, приложение меняет группу. */
+export const ServerDragGroups: StoryObj<StoryProps> = {
+  name: 'Move to another group',
+  parameters: { scenario: '0159/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Перенос в другую группу"
+      steps={GROUPS}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUPS[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(cityOf(canvas, GROUPED_LEAF)).toBe('Berlin')
+    })
+    await step(GROUPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
+      await expect(inLima(canvas)).toBe(true)
+      await expect(cityOf(canvas, GROUPED_LEAF)).toBe('Berlin')
+      await expect(cityOf(canvas, FROM_GROUP)).toBe('Berlin (3)')
+      await expect(cityOf(canvas, TO_GROUP)).toBe('Lima (3)')
+    })
+    await step(GROUPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(inLima(canvas)).toBe(true)
+      await expect(cityOf(canvas, GROUPED_LEAF)).toBe('Lima')
+      await expect(cityOf(canvas, FROM_GROUP)).toBe('Berlin (2)')
+      await expect(cityOf(canvas, TO_GROUP)).toBe('Lima (4)')
+      await expect(visitsOf(canvas, FROM_GROUP)).toBe('17')
+      await expect(visitsOf(canvas, TO_GROUP)).toBe('28')
+      await expect(movePending(canvas, GROUPED_LEAF)).toBe(false)
       await settle()
     })
   },

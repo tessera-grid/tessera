@@ -4,7 +4,7 @@
  * `onRowDragEnd` получает место в ветке, отказ промиса возвращает строку.
  */
 import { readPluginHooks } from '../../core/definePlugin'
-import { type RowSource, rowSourceOf } from '../../core/rowSource'
+import { groupKeysOf, type RowSource, rowSourceOf } from '../../core/rowSource'
 import { commitRowMove } from './commitRowMove'
 import type { RowDraggingHooks } from './types'
 
@@ -77,6 +77,15 @@ export const moveServerRow = (
   )
 }
 
+/** Значения колонок группировки по пути строки-группы `groupId` (ADR 0159, §5). */
+const groupValuesOf = (
+  groupId: string | undefined,
+  grouping: readonly string[],
+): Record<string, unknown> =>
+  Object.fromEntries(
+    groupKeysOf(groupId).map((value, level) => [grouping[level], value]),
+  )
+
 /**
  * Перенос строки на место `place`; `from` и `to` — строки броска в индексах страницы для
  * `onRowDragEnd`.
@@ -94,6 +103,10 @@ export const commitServerMove = (
   const before = { parentId: row?.parentId, index: row?.index ?? 0 }
   // Перенос за окно уносит строку из кэша: откат ставит её по данным (ADR 0159, §2).
   const original = row?.original
+  const grouping =
+    (
+      table as { atoms: { grouping?: { get: () => string[] } } }
+    ).atoms.grouping?.get() ?? []
   commitRowMove(
     table,
     {
@@ -103,6 +116,10 @@ export const commitServerMove = (
       parentId: place.parentId,
       previousParentId: before.parentId,
       index: place.index,
+      ...(grouping.length > 0 && {
+        groupValues: groupValuesOf(place.parentId, grouping),
+        previousGroupValues: groupValuesOf(before.parentId, grouping),
+      }),
       write: () => source.moveRow?.(rowId, place),
       revert: () => source.moveRow?.(rowId, before, original),
     },

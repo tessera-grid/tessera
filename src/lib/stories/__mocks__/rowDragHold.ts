@@ -56,7 +56,7 @@ export const centerInWindow = async (row: Element) => {
 /** Строка тела, а не её призрак движения (ADR 0107). */
 export const rowOf = (root: ParentNode, id: string) =>
   root.querySelector<HTMLElement>(
-    `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`,
+    `${ROW}[data-row-id="${CSS.escape(id)}"]:not([data-row-ghost])`,
   )
 
 /** Отступ уровня строки — по колонке `column` с отступом дерева. */
@@ -72,7 +72,11 @@ export const indentOf = (
   )
 
 export const rowIndent = (root: ParentNode, id: string, column?: string) =>
-  indentOf(root, `${ROW}[data-row-id="${id}"]:not([data-row-ghost])`, column)
+  indentOf(
+    root,
+    `${ROW}[data-row-id="${CSS.escape(id)}"]:not([data-row-ghost])`,
+    column,
+  )
 
 /**
  * Действие шага: берёт строку `id` за ручку и держит над строкой `overId` так, чтобы

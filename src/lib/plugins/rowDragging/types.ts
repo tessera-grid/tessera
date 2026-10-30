@@ -47,6 +47,13 @@ export interface RowDragEnd {
   previousParentId?: string
   /** Место среди сестёр после переноса. */
   index: number
+  /**
+   * Серверная группировка (ADR 0159, §5): значения колонок группировки группы после
+   * переноса — колонка → значение.
+   */
+  groupValues?: Record<string, unknown>
+  /** Значения колонок группировки группы до переноса. */
+  previousGroupValues?: Record<string, unknown>
 }
 
 export interface RowDraggingHooks {

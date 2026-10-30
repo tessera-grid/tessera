@@ -941,6 +941,24 @@ export const HighContrastServerDragTreeStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerDragGroupsStep1 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 1),
+  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragGroupsStep2 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 2),
+  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragGroupsStep3 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 3),
+  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelMillionRowsStep1 = {
   ...twinStep(
     serverRowModelStories,

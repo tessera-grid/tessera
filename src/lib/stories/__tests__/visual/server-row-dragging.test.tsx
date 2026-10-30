@@ -11,6 +11,7 @@ import {
   rowDragging,
   type RowDragEnd,
   rowExpanding,
+  rowGrouping,
   serverRowModel,
   type ServerRowsRequest,
   type ServerRowsResponse,
@@ -36,11 +37,39 @@ import {
 interface Item {
   id: string
   name: string
+  city?: string
+  /** Строк в группе — у строки-группы. */
+  count?: number
 }
 
 // Уровень броска помощники меряют по колонке `country`.
 const COLUMNS = [{ id: 'country', accessorKey: 'name', header: 'Name' }]
+const GROUP_COLUMNS = [
+  ...COLUMNS,
+  { id: 'city', accessorKey: 'city', header: 'City' },
+]
 const NO_DATA: Item[] = []
+
+/** Города групп: строка `r<i>` — в городе `CITIES[i % 3]`. */
+const CITIES = ['A', 'B', 'C']
+const groupId = (city: string) => `group:${JSON.stringify([city])}`
+
+/** «Сервер» с группировкой по городу: города или строки одного города. */
+const groupedRows = ({ start, end, groupKeys }: ServerRowsRequest) => {
+  const items: Item[] = Array.from({ length: 9 }, (_, i) => ({
+    id: `r${i}`,
+    name: `N${i}`,
+    city: CITIES[i % 3],
+  }))
+  const rows: Item[] =
+    groupKeys.length === 0
+      ? CITIES.map(city => ({ id: '', name: '', city, count: 3 }))
+      : items.filter(item => item.city === groupKeys[0])
+  return Promise.resolve({
+    rows: rows.slice(start, end),
+    rowCount: rows.length,
+  })
+}
 
 /** «Сервер»: блоки по запросу теста или сразу. */
 const server = ({
@@ -108,6 +137,7 @@ const Grid = ({
   blockSize = 20,
   onRowDragEnd,
   tree = false,
+  groups = false,
   height = 420,
 }: {
   getRows: (request: ServerRowsRequest) => Promise<ServerRowsResponse<Item>>
@@ -116,16 +146,26 @@ const Grid = ({
   onRowDragEnd?: (end: RowDragEnd) => void | PromiseLike<unknown>
   /** У строк r3 и r5 — вложенные строки. */
   tree?: boolean
+  /** Строки сгруппированы «сервером» по городу. */
+  groups?: boolean
   height?: number
 }) => {
   const table = useCreateTable({
-    columns: COLUMNS as never,
+    columns: (groups ? GROUP_COLUMNS : COLUMNS) as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
-      serverRowModel({ getRows, rowCount, blockSize }),
+      serverRowModel({
+        getRows,
+        rowCount: groups ? undefined : rowCount,
+        blockSize,
+        getGroupChildCount: (row: Item) => row.count,
+      }),
       rowDragging({ onRowDragEnd }),
       ...(tree ? [rowExpanding({ hasChildren: isBranch as never })] : []),
+      ...(groups
+        ? [rowGrouping({ initialGrouping: ['city'] }), rowExpanding()]
+        : []),
     ] as never,
   })
   return (
@@ -342,6 +382,63 @@ describe('перетаскивание строк в серверной моде
       })
       expect(indexOf('r3.0')).toBe(indexOf('r5') + 1)
       expect(depthOf(rowById('r3.0')!)).toBe(1)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('MV7: серверные группы — лист переносится в другую группу того же уровня, onRowDragEnd получает id и значения колонок группировки обеих групп; строки-группы не переносятся', async () => {
+    const ends: RowDragEnd[] = []
+    const screen = await render(
+      <Grid
+        getRows={groupedRows}
+        groups
+        height={640}
+        onRowDragEnd={end => void ends.push(end)}
+      />,
+    )
+    const toggle = (city: string) =>
+      rowById(groupId(city))!.querySelector<HTMLElement>('.row-expand-button')!
+    try {
+      await expect.poll(() => rowById(groupId('C'))).not.toBeNull()
+      toggle('A').click()
+      await expect.poll(() => rowById('r0')).not.toBeNull()
+      toggle('B').click()
+      await expect.poll(() => rowById('r1')).not.toBeNull()
+
+      // У строки-группы ручки нет.
+      await userEvent.hover(rowById(groupId('B'))!)
+      await nextFrame()
+      expect(rowById(groupId('B'))!.querySelector(HANDLE)).toBeNull()
+
+      // Лист группы A — первым в группу B.
+      let { at } = await dragOver('r0', groupId('B'), 1)
+      await settleSlotAfter(groupId('B'), at)
+      await release()
+      expect(ends.at(-1)).toEqual(
+        expect.objectContaining({
+          rowId: 'r0',
+          parentId: groupId('B'),
+          previousParentId: groupId('A'),
+          index: 0,
+          groupValues: { city: 'B' },
+          previousGroupValues: { city: 'A' },
+        }),
+      )
+      expect(indexOf('r0')).toBe(indexOf(groupId('B')) + 1)
+      expect(depthOf(rowById('r0')!)).toBe(1)
+
+      // Уровень групп листу недоступен: бросок на уровень групп кладёт его последним в B.
+      ;({ at } = await dragOver('r3', 'r7', 0))
+      await settleSlotAfter('r7', at)
+      await release()
+      expect(ends.at(-1)).toMatchObject({
+        rowId: 'r3',
+        parentId: groupId('B'),
+        previousParentId: groupId('A'),
+      })
+      expect(depthOf(rowById('r3')!)).toBe(1)
+      expect(indexOf('r3')).toBe(indexOf('r7') + 1)
     } finally {
       await screen.unmount()
     }

@@ -57,6 +57,9 @@ export interface RowMoveCommit {
   /** Id сестёр и место строки до переноса — для отката по id (ADR 0114, §4). */
   fromAnchors?: readonly string[]
   fromIndex?: number
+  /** Значения колонок группировки групп после и до переноса (ADR 0159, §5). */
+  groupValues?: Record<string, unknown>
+  previousGroupValues?: Record<string, unknown>
 }
 
 const withoutEntry = (moves: RowMoves, rowId: string): RowMoves => {
@@ -265,6 +268,10 @@ export const commitRowMove = (
     parentId: commit.parentId,
     previousParentId: commit.previousParentId,
     index: commit.index,
+    ...(commit.groupValues && {
+      groupValues: commit.groupValues,
+      previousGroupValues: commit.previousGroupValues,
+    }),
   })
   // Итог — с причиной: броском, клавишей или пунктом меню ручки этой задачи (ADR 0125).
   reportOutcome(table, { plugin: 'rowDragging', action: 'commitMove' }, result)

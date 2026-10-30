@@ -208,11 +208,10 @@ const createServerSource = (table: unknown): ServerSource => {
   let layoutVersion = 0
   const journal: { version: number; changes: RowListChange[] }[] = []
 
-  /** Строка-группа уровня `depth`: id из пути значений групп (ADR 0144, §2). */
-  const buildGroupRow = (
+  /** Значение группы в данных строки-группы и её id из пути значений (ADR 0144, §2). */
+  const groupKeyOf = (
     original: unknown,
     index: number,
-    depth: number,
     parentId: string | undefined,
     columnId: string,
   ) => {
@@ -222,6 +221,18 @@ const createServerSource = (table: unknown): ServerSource => {
       : (original as Record<string, unknown> | null)?.[columnId]
     const id =
       GROUP_ROW_PREFIX + JSON.stringify([...groupKeysOf(parentId), value])
+    return { id, value }
+  }
+
+  /** Строка-группа уровня `depth`. */
+  const buildGroupRow = (
+    original: unknown,
+    index: number,
+    depth: number,
+    parentId: string | undefined,
+    columnId: string,
+  ) => {
+    const { id, value } = groupKeyOf(original, index, parentId, columnId)
     const row = constructRow(
       table as never,
       id,
@@ -540,6 +551,18 @@ const createServerSource = (table: unknown): ServerSource => {
     changed()
   }
 
+  /**
+   * Строка `update` транзакции: по id данных, а данные строки-группы — по пути значений
+   * ветки `parentId` (ADR 0159, §5): своего id у них нет.
+   */
+  const updatedRowId = (data: unknown, parentId: string | undefined) => {
+    const id = t.getRowId(data, 0)
+    const { grouping } = shown.query
+    const level = groupKeysOf(parentId).length
+    if (level >= grouping.length || shown.store.indexOf(id) >= 0) return id
+    return groupKeyOf(data, 0, parentId, grouping[level]!).id
+  }
+
   /** Новые данные строки — в каждом хранилище, где она загружена. */
   const setRowData = (id: string, updater: Updater<unknown>) => {
     let found = false
@@ -650,7 +673,7 @@ const createServerSource = (table: unknown): ServerSource => {
       source: 'api',
     })
     for (const data of transaction.update ?? []) {
-      setRowData(t.getRowId(data, 0), () => data)
+      setRowData(updatedRowId(data, transaction.parentId), () => data)
     }
     // Место новой строки знает только сервер: окно перезапрашивается тихо (§1).
     if (transaction.add?.length && transaction.index === undefined) {

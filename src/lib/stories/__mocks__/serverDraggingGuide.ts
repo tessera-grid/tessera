@@ -6,6 +6,7 @@
 import type { TesseraFeatureEntry } from '../../core/features'
 import type {
   RowDragEnd,
+  ServerRowTransaction,
   ServerRowsRequest,
   ServerRowsResponse,
 } from '../../plugins'
@@ -17,6 +18,11 @@ import {
   filteringColumns,
   filteringItemAt,
 } from './filteringData'
+import {
+  type GroupItem,
+  aggregate,
+  groupingColumns,
+} from './serverRowModelGuide'
 
 export const DRAG_TOTAL = 1000
 const DRAG_BLOCK = 100
@@ -28,8 +34,13 @@ interface Move {
   reject: (error: Error) => void
 }
 
+/** Строк в режиме групп (S4): по три на город. */
+const GROUP_ITEMS = 15
+
 const initialItems = () =>
-  Array.from({ length: DRAG_TOTAL }, (_, i) => filteringItemAt(i))
+  Array.from({ length: dragServer.groups ? GROUP_ITEMS : DRAG_TOTAL }, (_, i) =>
+    filteringItemAt(i),
+  )
 
 /** Вложенных строк у ветки. */
 const BRANCH_CHILDREN = 4
@@ -38,10 +49,19 @@ const BRANCH_CHILDREN = 4
 export const isBranch = (id: string) =>
   !id.includes('.') && Number(id.split('-').at(-1)) % 4 === 3
 
+interface GroupTable {
+  store: unknown
+  applyRowTransaction: (transaction: ServerRowTransaction) => unknown
+}
+
 /** Порядок строк «сервера» и переносы, ждущие его ответа. */
 export const dragServer = {
   table: undefined as unknown,
-  items: initialItems(),
+  /** Таблица: приложение передаёт ей транзакции (S4). */
+  grid: undefined as GroupTable | undefined,
+  /** Строки сгруппированы «сервером» по городу (S4). */
+  groups: false,
+  items: [] as FilteringItem[],
   moves: [] as Move[],
   /** Вложенные строки веток, которые «сервер» уже отдавал. */
   children: new Map<string, FilteringItem[]>(),
@@ -52,6 +72,55 @@ export const dragServer = {
   auto: false,
   /** Ответ на перенос — отказ. */
   refuse: false,
+}
+dragServer.items = initialItems()
+
+/** Строка-группа города: число строк и итоги — как их считает «сервер». */
+const groupRowOf = (city: string): GroupItem => {
+  const members = dragServer.items.filter(item => item.city === city)
+  return {
+    id: '',
+    name: '',
+    city,
+    vip: null,
+    ...aggregate(members),
+    count: members.length,
+  }
+}
+
+/** Ответ «сервера» на запрос с группировкой: города или строки одного города. */
+const groupAnswer = ({
+  start,
+  end,
+  groupKeys,
+}: ServerRowsRequest): ServerRowsResponse<GroupItem> => {
+  const rows: GroupItem[] =
+    groupKeys.length === 0
+      ? [...new Set(dragServer.items.map(item => item.city))]
+          .sort((a, b) => a.localeCompare(b))
+          .map(groupRowOf)
+      : dragServer.items.filter(item => item.city === groupKeys[0])
+  return { rows: rows.slice(start, end), rowCount: rows.length }
+}
+
+/**
+ * Перенос в другую группу подтверждён: строка уходит в другой город на место броска, и
+ * приложение передаёт таблице новые данные строки и обеих групп (ADR 0159, §5).
+ */
+const answerGroupMove = (end: RowDragEnd) => {
+  const from = dragServer.items.findIndex(item => item.id === end.rowId)
+  const [item] = dragServer.items.splice(from, 1)
+  const moved = { ...item!, ...end.groupValues } as FilteringItem
+  const members = dragServer.items.filter(other => other.city === moved.city)
+  const before = members[end.index]
+  const at = before
+    ? dragServer.items.indexOf(before)
+    : dragServer.items.indexOf(members.at(-1)!) + 1
+  dragServer.items.splice(at, 0, moved)
+  const previous = end.previousGroupValues?.city as string
+  dragServer.grid?.applyRowTransaction({
+    update: [moved, groupRowOf(previous), groupRowOf(moved.city)],
+  })
 }
 
 /** Строки ветки `parentId`, без него — верхнего уровня. */
@@ -87,6 +156,11 @@ export const answerMove = (ok: boolean) => {
     move.reject(new Error(MOVE_REFUSAL))
     return
   }
+  if (move.end.groupValues) {
+    answerGroupMove(move.end)
+    move.resolve()
+    return
+  }
   const source = listOf(move.end.previousParentId)
   const from = source.findIndex(item => item.id === move.end.rowId)
   const [item] = source.splice(from, 1)
@@ -98,7 +172,8 @@ export const answerMove = (ok: boolean) => {
 const dragReset: TesseraFeatureEntry = {
   id: 'serverDraggingGuideReset',
   setup: table => {
-    const store = (table as { store: unknown }).store
+    const store = (table as GroupTable).store
+    dragServer.grid = table as GroupTable
     if (dragServer.table === store) return
     dragServer.table = store
     dragServer.items = initialItems()
@@ -110,41 +185,63 @@ const dragReset: TesseraFeatureEntry = {
   },
 }
 
-/** Таблица гайда; `tree` — у строк верхнего уровня есть ветки (S3). */
+/**
+ * Таблица гайда; `tree` — у строк верхнего уровня есть ветки (S3), `groups` — строки
+ * сгруппированы «сервером» по городу (S4).
+ */
 export const dragProps =
-  ({ delayMs = SERVER_DELAY_MS, tree = false } = {}): GuideStoryStep['props'] =>
-  () => ({
-    columnsOverride: filteringColumns,
-    dataOverride: [],
-    enableServerRowModel: true,
-    serverRowModelBlockSize: DRAG_BLOCK,
-    serverRowModelRowCount: DRAG_TOTAL,
-    serverRowModelGetRows: ({ start, end, parentId }: ServerRowsRequest) =>
-      new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
-        const answer = () => {
-          const list = listOf(parentId)
-          resolve({ rows: list.slice(start, end), rowCount: list.length })
-        }
-        if (parentId && dragServer.holdChildren) dragServer.held.push(answer)
-        else setTimeout(answer, delayMs)
+  ({
+    delayMs = SERVER_DELAY_MS,
+    tree = false,
+    groups = false,
+  } = {}): GuideStoryStep['props'] =>
+  () => {
+    dragServer.groups = groups
+    return {
+      columnsOverride: groups ? groupingColumns : filteringColumns,
+      dataOverride: [],
+      enableServerRowModel: true,
+      serverRowModelBlockSize: DRAG_BLOCK,
+      ...(groups
+        ? {
+            serverRowModelGetGroupChildCount: (row: GroupItem) => row.count,
+            enableRowGrouping: true,
+            rowGroupingInitialGrouping: ['city'],
+            enableRowExpanding: true,
+          }
+        : { serverRowModelRowCount: DRAG_TOTAL }),
+      serverRowModelGetRows: (request: ServerRowsRequest) =>
+        new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
+          const { start, end, parentId } = request
+          const answer = () => {
+            if (request.grouping.length > 0) {
+              resolve(groupAnswer(request))
+              return
+            }
+            const list = listOf(parentId)
+            resolve({ rows: list.slice(start, end), rowCount: list.length })
+          }
+          if (parentId && dragServer.holdChildren) dragServer.held.push(answer)
+          else setTimeout(answer, delayMs)
+        }),
+      ...(tree && {
+        enableRowExpanding: true,
+        rowExpandingHasChildren: (row: { id: string }) => isBranch(row.id),
       }),
-    ...(tree && {
-      enableRowExpanding: true,
-      rowExpandingHasChildren: (row: { id: string }) => isBranch(row.id),
-    }),
-    enableRowDragging: true,
-    onRowDragEnd: (end: RowDragEnd) =>
-      new Promise<void>((resolve, reject) => {
-        dragServer.moves.push({ end, resolve, reject })
-        if (dragServer.auto) {
-          setTimeout(() => answerMove(!dragServer.refuse), delayMs)
-        }
-      }),
-    extraPlugins: [dragReset],
-  })
+      enableRowDragging: true,
+      onRowDragEnd: (end: RowDragEnd) =>
+        new Promise<void>((resolve, reject) => {
+          dragServer.moves.push({ end, resolve, reject })
+          if (dragServer.auto) {
+            setTimeout(() => answerMove(!dragServer.refuse), delayMs)
+          }
+        }),
+      extraPlugins: [dragReset],
+    }
+  }
 
 export const rowOf = (root: ParentNode, id: string) =>
-  root.querySelector<HTMLElement>(`${ROW}[data-row-id="${id}"]`)
+  root.querySelector<HTMLElement>(`${ROW}[data-row-id="${CSS.escape(id)}"]`)
 /** Место строки в списке. */
 export const indexOfRow = (root: ParentNode, id: string) =>
   Number(rowOf(root, id)?.dataset.index ?? -1)

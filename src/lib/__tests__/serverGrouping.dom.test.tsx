@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
  * Серверная группировка на таблице (ADR 0144; GS1–GS2, GS10–GS11): поля запроса,
- * строки-группы и их ветки, запрос выгрузки, инертность клиентской модели и ленивых детей.
+ * строки-группы и их ветки, запрос выгрузки, инертность клиентской модели и ленивых детей;
+ * MV12 — `update` строки-группы по пути значений (ADR 0159).
  * Запуск: npx vitest run --config vitest.node.config.ts serverGrouping
  */
 import { act } from 'react'
@@ -196,6 +197,53 @@ describe('серверная группировка на таблице (ADR 014
     expect(leaf.getIsGrouped()).toBe(false)
     expect(source().indexOf('US')).toBe(2)
     expect(source().indexOf('group:["US"]')).toBe(0)
+  })
+
+  it('MV12: update транзакции с данными строки-группы обновляет её по пути значений — parentId ветки и значению колонки группировки уровня; строки данных — по id, как прежде', async () => {
+    act(() =>
+      root.render(
+        <Grid
+          plugins={[
+            rowGrouping({ initialGrouping: ['country', 'city'] }),
+            rowExpanding(),
+          ]}
+        />,
+      ),
+    )
+    show(0, 9)
+    await respond(calls.at(-1)!, [group('US', '', 3), group('FR', '', 1)])
+    await expand({ 'group:["US"]': true })
+    await respond(calls.at(-1)!, [group('US', 'NY', 2)])
+    await expand({ 'group:["US"]': true, 'group:["US","NY"]': true })
+    await respond(calls.at(-1)!, [
+      { id: 'o1', country: 'US', city: 'NY', amount: 1 },
+      { id: 'o2', country: 'US', city: 'NY', amount: 2 },
+    ])
+    const countOf = (id: string) =>
+      source().groupChildCount!(source().byId(id)!)
+    const amountOf = (id: string) =>
+      (source().byId(id) as unknown as { original: Item }).original.amount
+
+    // Верхний уровень — без parentId.
+    act(() => table.applyRowTransaction({ update: [group('FR', '', 7)] }))
+    expect(countOf('group:["FR"]')).toBe(7)
+    // Второй уровень — в ветке группы US.
+    act(() =>
+      table.applyRowTransaction({
+        parentId: 'group:["US"]',
+        update: [group('US', 'NY', 9)],
+      }),
+    )
+    expect(countOf('group:["US","NY"]')).toBe(9)
+    expect(countOf('group:["US"]')).toBe(3)
+    // Строка данных — по своему id, без parentId.
+    act(() =>
+      table.applyRowTransaction({
+        update: [{ id: 'o2', country: 'US', city: 'NY', amount: 5 }],
+      }),
+    )
+    expect(amountOf('o2')).toBe(5)
+    expect(source().indexOf('o2')).toBe(3)
   })
 
   it('GS10: серверная выгрузка получает grouping и aggregations в query', async () => {

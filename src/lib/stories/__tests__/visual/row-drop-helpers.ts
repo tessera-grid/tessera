@@ -22,7 +22,9 @@ export const INDENT = '[data-column-id="country"]'
 export const SKELETON = '[class*="skeleton"]'
 
 export const rowById = (id: string) =>
-  document.querySelector<HTMLElement>(`${BODY_ROW}[data-row-id="${id}"]`)
+  document.querySelector<HTMLElement>(
+    `${BODY_ROW}[data-row-id="${CSS.escape(id)}"]`,
+  )
 export const slot = () =>
   document.querySelector<HTMLElement>(`${BODY_ROW}[data-row-draggable="true"]`)
 export const container = () =>

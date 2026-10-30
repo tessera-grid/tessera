@@ -100,6 +100,8 @@ type DraggableTable = {
 type DraggableRow = {
   table: DraggableTable
   getParentRow: () => { getIsLazyParent?: () => boolean } | undefined
+  /** Колонка строки-группы серверной группировки. */
+  groupingColumnId?: string
 }
 
 /** Ленивый перенос без `onRowDragEnd` недопустим (ADR 0112, §2). */
@@ -116,13 +118,17 @@ export const warnLazyTree = (table: unknown) =>
 
 /**
  * Группировка / сортировка / фильтр гасят drag (вложенная шапка — нет, ADR 0052). В
- * серверной модели строк — тоже они: порядком владеет сервер (ADR 0159, §1).
+ * серверной модели строк — сортировка и фильтр: порядком владеет сервер (ADR 0159, §1).
  */
 export const rowDraggingInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
   const t = table as DraggableTable
-  if ((t.atoms.grouping?.get() ?? []).length > 0) {
+  // Серверная группировка — лист переносится между группами (ADR 0159, §5).
+  if (
+    (t.atoms.grouping?.get() ?? []).length > 0 &&
+    !serverRowModelReason(table)
+  ) {
     return 'grouping'
   }
   if ((t.atoms.sorting?.get() ?? []).length > 0) {
@@ -149,6 +155,10 @@ export const canDragRow = (row: DraggableRow): boolean => {
   const reason = rowDraggingInertReason(row.table)
   if (reason !== undefined) {
     warnPluginInert(row.table, 'rowDragging', reason)
+    return false
+  }
+  // Строки-группы серверной группировки не переносятся (ADR 0159, §5).
+  if (row.groupingColumnId !== undefined) {
     return false
   }
   if (

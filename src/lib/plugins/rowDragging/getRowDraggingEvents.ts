@@ -274,6 +274,11 @@ export const getRowDraggingEvents = (
     (isLazyParent(activeRow.getParentRow()) ||
       isLazyParent(rows.at(findDropParent(rows, { from, to, depth }, 0))))
 
+  const serverGrouped = () =>
+    rows.server &&
+    ((table.atoms as { grouping?: { get: () => unknown[] } }).grouping?.get()
+      .length ?? 0) > 0
+
   /**
    * Место броска в серверной модели (ADR 0159, §4): ветка раскрыта, её строки пришли, сестра
    * рядом видна; иначе `undefined`.
@@ -406,8 +411,14 @@ export const getRowDraggingEvents = (
         : getMaxDepth(targetItem, table)
       const validDepth = getValidDepth(currentDepth, minDepth, maxDepth)
       const blocked = (depth: number) =>
-        lazyBlocked(activeRow, activeVirtualIndex, overVirtualIndex, depth)
-      if (blocked(validDepth)) warnLazyTree(table)
+        lazyBlocked(activeRow, activeVirtualIndex, overVirtualIndex, depth) ||
+        // Серверные группы: лист — только в группу того же уровня (ADR 0159, §5).
+        (serverGrouped() && depth !== activeRow.depth)
+      if (
+        lazyBlocked(activeRow, activeVirtualIndex, overVirtualIndex, validDepth)
+      ) {
+        warnLazyTree(table)
+      }
       // Строка с детьми в группу не вкладывается; ленивый перенос — только с колбэком.
       // Есть допустимый уровень — слот на нём, нет — место недопустимо (ADR 0137, §3).
       const withChildren = activeRow.getCanExpand?.() ?? false
